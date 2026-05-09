@@ -28,6 +28,7 @@ const lottieContainer = useTemplateRef<HTMLDivElement>('lottieContainer')
 const assetsReady = ref(false)
 const posterFaded = ref(!poster)
 let anim: AnimationItem | null = null
+let videos: HTMLVideoElement[] = []
 let loadGen = 0
 let fadeTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -63,7 +64,8 @@ function swapImageForVideo(
   fo.setAttribute('height', height)
   const v = document.createElement('video')
   v.src = href
-  v.autoplay = true
+  v.autoplay = false
+  v.preload = 'auto'
   v.loop = true
   v.muted = true
   v.playsInline = true
@@ -93,7 +95,9 @@ function prepareAssets(container: HTMLElement): Promise<void> {
       image.getAttribute('href') ?? image.getAttributeNS(XLINK_NS, 'href') ?? ''
     if (!href) continue
     if (/\.(webm|mp4)$/i.test(href)) {
-      pending.push(whenLoaded(swapImageForVideo(image, href)))
+      const v = swapImageForVideo(image, href)
+      videos.push(v)
+      pending.push(whenLoaded(v))
     } else {
       const img = new Image()
       img.src = href
@@ -107,36 +111,47 @@ watch(
   [lottieContainer, () => src, () => assetsPath],
   async ([container]) => {
     const gen = ++loadGen
+    for (const v of videos) v.pause()
+    videos = []
     anim?.destroy()
     anim = null
     assetsReady.value = false
     if (!container) return
-    const { default: lottie } = await import('lottie-web')
-    if (gen !== loadGen) return
-    const created = lottie.loadAnimation({
-      container,
-      renderer: 'svg',
-      loop: true,
-      autoplay: false,
-      path: src,
-      assetsPath,
-      rendererSettings: { preserveAspectRatio: 'xMidYMid slice' }
-    })
-    anim = created
-    created.addEventListener('DOMLoaded', () => {
-      if (gen !== loadGen || anim !== created) return
-      created.goToAndStop(0, true)
-      void prepareAssets(container).then(() => {
+    try {
+      const { default: lottie } = await import('lottie-web')
+      if (gen !== loadGen) return
+      const created = lottie.loadAnimation({
+        container,
+        renderer: 'svg',
+        loop: true,
+        autoplay: false,
+        path: src,
+        assetsPath,
+        rendererSettings: { preserveAspectRatio: 'xMidYMid slice' }
+      })
+      anim = created
+      created.addEventListener('DOMLoaded', () => {
         if (gen !== loadGen || anim !== created) return
-        assetsReady.value = true
+        created.goToAndStop(0, true)
+        void prepareAssets(container).then(() => {
+          if (gen !== loadGen || anim !== created) return
+          assetsReady.value = true
+          emit('ready')
+        })
+      })
+      created.addEventListener('data_failed', () => {
+        if (gen !== loadGen || anim !== created) return
+        console.error('[LottieVideoPlayer] Lottie data failed to load:', src)
         emit('ready')
       })
-    })
-    created.addEventListener('data_failed', () => {
-      if (gen !== loadGen || anim !== created) return
-      console.error('[LottieVideoPlayer] Lottie data failed to load:', src)
+    } catch (err) {
+      if (gen !== loadGen) return
+      console.error('[LottieVideoPlayer] failed to initialize:', src, err)
+      anim?.destroy()
+      anim = null
+      assetsReady.value = false
       emit('ready')
-    })
+    }
   },
   { immediate: true }
 )
@@ -144,14 +159,24 @@ watch(
 watch(
   () => assetsReady.value && posterFaded.value && playing,
   (shouldPlay) => {
-    if (!anim) return
-    if (shouldPlay) anim.goToAndPlay(0, true)
-    else anim.pause()
+    if (shouldPlay) {
+      anim?.goToAndPlay(0, true)
+      for (const v of videos) {
+        void v.play().catch(() => {})
+      }
+    } else {
+      anim?.pause()
+      for (const v of videos) {
+        v.pause()
+        v.currentTime = 0
+      }
+    }
   }
 )
 
 onBeforeUnmount(() => {
   if (fadeTimer) clearTimeout(fadeTimer)
+  for (const v of videos) v.pause()
   anim?.destroy()
 })
 </script>
