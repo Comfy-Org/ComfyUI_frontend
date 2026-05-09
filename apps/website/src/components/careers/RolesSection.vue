@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { useIntersectionObserver, useTemplateRefsList } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
 import type { Department } from '../../data/roles'
 import type { Locale } from '../../i18n/translations'
 
+import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import { t } from '../../i18n/translations'
+import { scrollTo } from '../../scripts/smoothScroll'
 import CategoryNav from '../common/CategoryNav.vue'
 import SectionLabel from '../common/SectionLabel.vue'
 
@@ -13,24 +17,67 @@ const { locale = 'en', departments = [] } = defineProps<{
   departments?: readonly Department[]
 }>()
 
-const activeCategory = ref('all')
-
 const visibleDepartments = computed(() =>
   departments.filter((d) => d.roles.length > 0)
 )
 
-const categories = computed(() => [
-  { label: 'ALL', value: 'all' },
-  ...visibleDepartments.value.map((d) => ({ label: d.name, value: d.key }))
-])
-
-const filteredDepartments = computed(() =>
-  activeCategory.value === 'all'
-    ? visibleDepartments.value
-    : visibleDepartments.value.filter((d) => d.key === activeCategory.value)
+const categories = computed(() =>
+  visibleDepartments.value.map((d) => ({ label: d.name, value: d.key }))
 )
 
 const hasRoles = computed(() => visibleDepartments.value.length > 0)
+
+const activeCategory = ref('')
+
+const sectionRefs = useTemplateRefsList<HTMLElement>()
+const visibleSections = ref(new Set<string>())
+
+let isScrolling = false
+
+const HEADER_OFFSET = -144
+
+const deptElementId = (key: string) => `careers-dept-${key}`
+
+useIntersectionObserver(
+  sectionRefs,
+  (entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) {
+        visibleSections.value.add(entry.target.id)
+      } else {
+        visibleSections.value.delete(entry.target.id)
+      }
+    }
+    if (isScrolling) return
+    let best: IntersectionObserverEntry | null = null
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue
+      if (!best || entry.boundingClientRect.top < best.boundingClientRect.top) {
+        best = entry
+      }
+    }
+    if (best) activeCategory.value = best.target.id
+  },
+  { rootMargin: '-20% 0px -60% 0px' }
+)
+
+function scrollToDepartment(deptKey: string) {
+  activeCategory.value = deptKey
+  isScrolling = true
+  const el = document.getElementById(deptElementId(deptKey))
+  if (!el) {
+    isScrolling = false
+    return
+  }
+  scrollTo(el, {
+    offset: HEADER_OFFSET,
+    duration: 0.8,
+    immediate: prefersReducedMotion(),
+    onComplete: () => {
+      isScrolling = false
+    }
+  })
+}
 </script>
 
 <template>
@@ -48,9 +95,10 @@ const hasRoles = computed(() => visibleDepartments.value.length > 0)
             </h2>
             <CategoryNav
               v-if="hasRoles"
-              v-model="activeCategory"
               :categories="categories"
+              :model-value="activeCategory"
               class="mt-4"
+              @update:model-value="scrollToDepartment"
             />
           </div>
         </div>
@@ -65,9 +113,18 @@ const hasRoles = computed(() => visibleDepartments.value.length > 0)
           </p>
 
           <div
-            v-for="dept in filteredDepartments"
+            v-for="dept in visibleDepartments"
+            :id="deptElementId(dept.key)"
+            :ref="sectionRefs.set"
             :key="dept.key"
-            class="mb-12 last:mb-0"
+            :class="
+              cn(
+                'mb-12 scroll-mt-24 last:mb-0 motion-safe:transition-all motion-safe:duration-700 motion-safe:ease-out md:scroll-mt-36',
+                visibleSections.has(deptElementId(dept.key))
+                  ? 'opacity-100 motion-safe:translate-y-0'
+                  : 'opacity-0 motion-safe:translate-y-6'
+              )
+            "
           >
             <SectionLabel>
               {{ dept.name }}
