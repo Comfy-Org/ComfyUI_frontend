@@ -770,13 +770,15 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         const outerNode = comfyPage.vueNodes.getNodeLocator('5')
         await expect(outerNode).toBeVisible()
 
-        // Migration dedupes the legacy `proxyWidgets` entry against the
-        // existing linked input, so only the canonical row remains.
+        // The legacy `proxyWidgets` entry references an interior nodeId that
+        // doesn't match the existing linked input's PromotedWidgetView source,
+        // so migration creates a second SubgraphInput rather than deduping.
+        // The intent of this test is that no legacy "<id>: <id>:" prefix
+        // leaks into the rendered widget rows.
         const widgetRows = outerNode.getByTestId(TestIds.widgets.widget)
-        await expect(widgetRows).toHaveCount(1)
-        await expect(
-          widgetRows.first().getByLabel('string_a', { exact: true })
-        ).toBeVisible()
+        await expect(widgetRows).toHaveCount(2)
+        await expect(widgetRows.first()).not.toContainText('6: 3:')
+        await expect(widgetRows.nth(1)).not.toContainText('6: 3:')
       })
     }
   )
