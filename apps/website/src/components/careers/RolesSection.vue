@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { useIntersectionObserver, useTemplateRefsList } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
@@ -30,7 +29,6 @@ const hasRoles = computed(() => visibleDepartments.value.length > 0)
 const activeCategory = ref('')
 
 const sectionRefs = useTemplateRefsList<HTMLElement>()
-const revealedSections = ref(new Set<string>())
 
 let isScrolling = false
 
@@ -42,9 +40,6 @@ const deptKeyFromId = (id: string) => id.replace(/^careers-dept-/, '')
 useIntersectionObserver(
   sectionRefs,
   (entries) => {
-    for (const entry of entries) {
-      if (entry.isIntersecting) revealedSections.value.add(entry.target.id)
-    }
     if (isScrolling) return
     let best: IntersectionObserverEntry | null = null
     for (const entry of entries) {
@@ -114,14 +109,7 @@ function scrollToDepartment(deptKey: string) {
             :id="deptElementId(dept.key)"
             :ref="sectionRefs.set"
             :key="dept.key"
-            :class="
-              cn(
-                'mb-12 scroll-mt-24 last:mb-0 motion-safe:transition-all motion-safe:duration-700 motion-safe:ease-out md:scroll-mt-36',
-                revealedSections.has(deptElementId(dept.key))
-                  ? 'opacity-100 motion-safe:translate-y-0'
-                  : 'motion-safe:translate-y-6 motion-safe:opacity-0'
-              )
-            "
+            class="mb-12 scroll-mt-24 last:mb-0 md:scroll-mt-36"
           >
             <SectionLabel>
               {{ dept.name }}
