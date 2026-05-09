@@ -7,8 +7,7 @@
      more separation. Could be lifted to a design-system
      --shadow-floating-panel token in a follow-up. */
   --app-mode-floating-panel-shadow:
-    0 2px 4px rgb(0 0 0 / 0.4),
-    0 16px 48px rgb(0 0 0 / 0.45);
+    0 2px 4px rgb(0 0 0 / 0.4), 0 16px 48px rgb(0 0 0 / 0.45);
 }
 
 /* Shared surface for FloatingPanel + Builder toolbars. */
