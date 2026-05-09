@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useIntersectionObserver } from '@vueuse/core'
-import { ref, useTemplateRef, watch } from 'vue'
+import { ref, useTemplateRef } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -10,38 +10,37 @@ import NodeBadge from '../common/NodeBadge.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const SCENE3_LOTTIE_PATH = '/animations/scene3/scene3.json'
-const SCENE3_ASSETS_PATH =
-  'https://media.comfy.org/website/homepage/showcase/scene3/'
-const SCENE3_POSTER_PATH = `${SCENE3_ASSETS_PATH}poster.webp`
+const SHOWCASE_CDN = 'https://media.comfy.org/website/homepage/showcase'
+
+type LottieConfig = { src: string; assetsPath: string; poster: string }
+
+const lottieScene = (scene: string): LottieConfig => ({
+  src: `/animations/${scene}/${scene}.json`,
+  assetsPath: `${SHOWCASE_CDN}/${scene}/`,
+  poster: `${SHOWCASE_CDN}/${scene}/poster.webp`
+})
 
 type Feature = {
   title: string
   description: string
-  video?: string
-  lottie?: { src: string; assetsPath?: string; poster?: string }
+  lottie: LottieConfig
 }
 
 const features: Feature[] = [
   {
     title: t('showcase.feature1.title', locale),
     description: t('showcase.feature1.description', locale),
-    video:
-      'https://media.comfy.org/website/homepage/showcase/node-workflow.webm'
+    lottie: lottieScene('scene1')
   },
   {
     title: t('showcase.feature2.title', locale),
     description: t('showcase.feature2.description', locale),
-    video: 'https://media.comfy.org/website/homepage/showcase/ui-overview.webm'
+    lottie: lottieScene('scene2')
   },
   {
     title: t('showcase.feature3.title', locale),
     description: t('showcase.feature3.description', locale),
-    lottie: {
-      src: SCENE3_LOTTIE_PATH,
-      assetsPath: SCENE3_ASSETS_PATH,
-      poster: SCENE3_POSTER_PATH
-    }
+    lottie: lottieScene('scene3')
   }
 ]
 
@@ -52,25 +51,11 @@ const badgeSegments = [
 ]
 
 const activeIndex = ref(0)
-const videoRefs = new Map<number, HTMLVideoElement>()
-const setVideoRef = (index: number) => (el: unknown) => {
-  if (el instanceof HTMLVideoElement) videoRefs.set(index, el)
-  else videoRefs.delete(index)
-}
 const sectionRef = useTemplateRef<HTMLElement>('sectionRef')
 const isVisible = ref(false)
 
 useIntersectionObserver(sectionRef, ([entry]) => {
   isVisible.value = entry?.isIntersecting ?? false
-})
-
-watch(activeIndex, (current, previous) => {
-  videoRefs.get(previous)?.pause()
-  const activeVideo = videoRefs.get(current)
-  if (activeVideo) {
-    activeVideo.currentTime = 0
-    activeVideo.play().catch(() => {})
-  }
 })
 </script>
 
@@ -89,7 +74,7 @@ watch(activeIndex, (current, previous) => {
 
     <!-- Content area -->
     <div class="mt-12 flex flex-col lg:mt-24 lg:flex-row lg:items-stretch">
-      <!-- Video area (desktop only) -->
+      <!-- Lottie area (desktop only) -->
       <div class="hidden flex-1 lg:flex">
         <div
           :class="
@@ -102,38 +87,22 @@ watch(activeIndex, (current, previous) => {
           <div
             class="bg-primary-comfy-ink relative size-full overflow-hidden rounded-[calc(2.5rem-2px)]"
           >
-            <template v-for="(feature, i) in features" :key="feature.title">
-              <video
-                v-if="feature.video"
-                :ref="setVideoRef(i)"
-                :src="feature.video"
-                :autoplay="i === 0"
-                :preload="i === 0 ? 'metadata' : 'none'"
-                loop
-                muted
-                playsinline
-                :class="
-                  cn(
-                    'absolute inset-0 size-full object-cover transition-opacity duration-300 will-change-[opacity]',
-                    activeIndex === i ? 'opacity-100' : 'opacity-0'
-                  )
-                "
-              />
-              <LottieVideoPlayer
-                v-else-if="feature.lottie && isVisible"
-                :src="feature.lottie.src"
-                :assets-path="feature.lottie.assetsPath"
-                :poster="feature.lottie.poster"
-                :playing="activeIndex === i"
-                poster-class="bg-transparency-white-t4"
-                :class="
-                  cn(
-                    'bg-transparency-white-t4 absolute inset-0 size-full transition-opacity duration-300 will-change-[opacity]',
-                    activeIndex === i ? 'opacity-100' : 'opacity-0'
-                  )
-                "
-              />
-            </template>
+            <LottieVideoPlayer
+              v-for="(feature, i) in features"
+              v-show="isVisible"
+              :key="feature.title"
+              :src="feature.lottie.src"
+              :assets-path="feature.lottie.assetsPath"
+              :poster="feature.lottie.poster"
+              :playing="activeIndex === i"
+              poster-class="bg-transparency-white-t4"
+              :class="
+                cn(
+                  'bg-transparency-white-t4 absolute inset-0 size-full transition-opacity duration-300 will-change-[opacity]',
+                  activeIndex === i ? 'opacity-100' : 'opacity-0'
+                )
+              "
+            />
           </div>
         </div>
       </div>
@@ -141,7 +110,7 @@ watch(activeIndex, (current, previous) => {
       <!-- Feature accordion -->
       <div class="flex w-full flex-col lg:w-85 lg:gap-4">
         <template v-for="(feature, i) in features" :key="feature.title">
-          <!-- Video area (mobile, rendered before active item) -->
+          <!-- Lottie area (mobile, rendered before active item) -->
           <div
             v-if="activeIndex === i"
             :class="cn('aspect-video lg:hidden', i !== 0 && 'mt-4')"
@@ -152,17 +121,7 @@ watch(activeIndex, (current, previous) => {
               <div
                 class="bg-primary-comfy-ink size-full overflow-hidden rounded-[calc(2rem-2px)]"
               >
-                <video
-                  v-if="feature.video"
-                  :src="feature.video"
-                  autoplay
-                  loop
-                  muted
-                  playsinline
-                  class="size-full object-cover"
-                />
                 <LottieVideoPlayer
-                  v-else-if="feature.lottie"
                   :src="feature.lottie.src"
                   :assets-path="feature.lottie.assetsPath"
                   :poster="feature.lottie.poster"
