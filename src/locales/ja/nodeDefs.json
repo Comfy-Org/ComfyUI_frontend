@@ -24,6 +24,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_image": {
+        "name": "start_image"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "ノイズを追加",
     "inputs": {
@@ -8011,6 +8045,21 @@
       }
     }
   },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "背景除去モデルの読み込み",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "bg_removal_name",
+        "tooltip": "画像から背景を除去するために使用するモデル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bg_model",
+        "tooltip": null
+      }
+    }
+  },
   "LoadImage": {
     "display_name": "画像を読み込む",
     "inputs": {
@@ -13457,6 +13506,25 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "RemoveBackground": {
+    "display_name": "背景を除去",
+    "inputs": {
+      "bg_removal_model": {
+        "name": "bg_removal_model",
+        "tooltip": "マスクを生成するために使用する背景除去モデル"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "背景を除去する入力画像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "マスク",
+        "tooltip": "生成された前景マスク"
       }
     }
   },
