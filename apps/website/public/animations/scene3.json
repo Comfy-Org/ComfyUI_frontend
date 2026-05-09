@@ -1141,19 +1141,12 @@
         }
       ]
     },
-    {
-      "id": "video_1",
-      "w": 1056,
-      "h": 784,
-      "u": "Assets/",
-      "p": "eye.webm",
-      "e": 0
-    },
+    { "id": "video_1", "w": 1056, "h": 784, "u": "", "p": "eye.webm", "e": 0 },
     {
       "id": "video_2",
       "w": 1056,
       "h": 784,
-      "u": "Assets/",
+      "u": "",
       "p": "dusk_mountains.webm",
       "e": 0
     },
@@ -1161,7 +1154,7 @@
       "id": "video_3",
       "w": 1056,
       "h": 784,
-      "u": "Assets/",
+      "u": "",
       "p": "clouds.webm",
       "e": 0
     },
@@ -1169,7 +1162,7 @@
       "id": "video_4",
       "w": 1056,
       "h": 784,
-      "u": "Assets/",
+      "u": "",
       "p": "swings.webm",
       "e": 0
     },
@@ -1177,7 +1170,7 @@
       "id": "video_5",
       "w": 1056,
       "h": 784,
-      "u": "Assets/",
+      "u": "",
       "p": "kyrie.webm",
       "e": 0
     },
@@ -1185,7 +1178,7 @@
       "id": "video_6",
       "w": 1056,
       "h": 784,
-      "u": "Assets/",
+      "u": "",
       "p": "eat_it_dance.webm",
       "e": 0
     },
@@ -1193,7 +1186,7 @@
       "id": "video_7",
       "w": 1056,
       "h": 784,
-      "u": "Assets/",
+      "u": "",
       "p": "flower.webm",
       "e": 0
     },
@@ -1201,7 +1194,7 @@
       "id": "video_8",
       "w": 1056,
       "h": 784,
-      "u": "Assets/",
+      "u": "",
       "p": "paul_trillo.webm",
       "e": 0
     },
@@ -1209,7 +1202,7 @@
       "id": "video_9",
       "w": 1056,
       "h": 784,
-      "u": "Assets/",
+      "u": "",
       "p": "dududu.webm",
       "e": 0
     }

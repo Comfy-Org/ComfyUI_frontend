@@ -15,7 +15,7 @@ const SHOWCASE_CDN = 'https://media.comfy.org/website/homepage/showcase'
 type LottieConfig = { src: string; assetsPath: string; poster: string }
 
 const lottieScene = (scene: string): LottieConfig => ({
-  src: `/animations/${scene}/${scene}.json`,
+  src: `/animations/${scene}.json`,
   assetsPath: `${SHOWCASE_CDN}/${scene}/`,
   poster: `${SHOWCASE_CDN}/${scene}/poster.webp`
 })
@@ -75,11 +75,11 @@ useIntersectionObserver(sectionRef, ([entry]) => {
     <!-- Content area -->
     <div class="mt-12 flex flex-col lg:mt-24 lg:flex-row lg:items-stretch">
       <!-- Lottie area (desktop only) -->
-      <div class="hidden flex-1 lg:flex">
+      <div class="hidden flex-1 lg:block">
         <div
           :class="
             cn(
-              'rounded-5xl relative flex w-full items-center justify-center overflow-hidden p-0.5',
+              'rounded-5xl relative aspect-1056/784 max-h-160 w-full overflow-hidden p-0.5',
               isVisible && 'animate-border-spin'
             )
           "
@@ -87,22 +87,26 @@ useIntersectionObserver(sectionRef, ([entry]) => {
           <div
             class="bg-primary-comfy-ink relative size-full overflow-hidden rounded-[calc(2.5rem-2px)]"
           >
-            <LottieVideoPlayer
+            <div
               v-for="(feature, i) in features"
               v-show="isVisible"
               :key="feature.title"
-              :src="feature.lottie.src"
-              :assets-path="feature.lottie.assetsPath"
-              :poster="feature.lottie.poster"
-              :playing="activeIndex === i"
-              poster-class="bg-transparency-white-t4"
               :class="
                 cn(
-                  'bg-transparency-white-t4 absolute inset-0 size-full transition-opacity duration-300 will-change-[opacity]',
+                  'absolute inset-0 transition-opacity duration-300 will-change-[opacity]',
                   activeIndex === i ? 'opacity-100' : 'opacity-0'
                 )
               "
-            />
+            >
+              <LottieVideoPlayer
+                :src="feature.lottie.src"
+                :assets-path="feature.lottie.assetsPath"
+                :poster="feature.lottie.poster"
+                :playing="activeIndex === i"
+                poster-class="bg-transparency-white-t4"
+                class="bg-transparency-white-t4 size-full"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -148,7 +152,11 @@ useIntersectionObserver(sectionRef, ([entry]) => {
           <!-- Accordion item with connector -->
           <div
             :class="
-              cn('flex items-stretch', activeIndex !== i && 'mt-4 lg:mt-0')
+              cn(
+                'flex items-stretch',
+                activeIndex !== i && 'mt-4 lg:mt-0',
+                activeIndex === i && 'lg:flex-1'
+              )
             "
           >
             <img
@@ -162,9 +170,9 @@ useIntersectionObserver(sectionRef, ([entry]) => {
               type="button"
               :class="
                 cn(
-                  'rounded-5xl w-full cursor-pointer p-8 text-left transition-colors duration-300',
+                  'rounded-5xl flex w-full cursor-pointer flex-col justify-between p-8 text-left transition-colors duration-300',
                   activeIndex === i
-                    ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
+                    ? 'bg-primary-comfy-yellow text-primary-comfy-ink lg:h-full'
                     : 'bg-transparency-white-t4 text-primary-comfy-canvas lg:ml-5'
                 )
               "
