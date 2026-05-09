@@ -543,7 +543,7 @@ describe('realtime scan verifies pending cloud candidates', () => {
       }
     ])
     const verifySpy = vi
-      .spyOn(missingMediaScan, 'verifyCloudMediaCandidates')
+      .spyOn(missingMediaScan, 'verifyMediaCandidates')
       .mockImplementation(async (candidates) => {
         for (const c of candidates) c.isMissing = true
       })
@@ -686,7 +686,7 @@ describe('realtime verification staleness guards', () => {
     let resolveVerify: (() => void) | undefined
     const verifyPromise = new Promise<void>((r) => (resolveVerify = r))
     const verifySpy = vi
-      .spyOn(missingMediaScan, 'verifyCloudMediaCandidates')
+      .spyOn(missingMediaScan, 'verifyMediaCandidates')
       .mockImplementation(async (candidates) => {
         await verifyPromise
         for (const c of candidates) c.isMissing = true

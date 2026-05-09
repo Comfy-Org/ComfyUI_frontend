@@ -19,8 +19,17 @@ import {
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { assetService } from '@/platform/assets/services/assetService'
 import { isAbortError } from '@/utils/typeGuardUtil'
+import {
+  getAnnotatedMediaPathTypeForDetection,
+  getMediaPathDetectionNames,
+  normalizeAnnotatedMediaPathForDetection
+} from './mediaPathDetectionUtil'
+import {
+  getAssetDetectionNames,
+  resolveMissingMediaAssetSources
+} from './missingMediaAssetResolver'
+import type { MissingMediaAssetResolver } from './missingMediaAssetResolver'
 
 /** Map of node types to their media widget name and media type. */
 const MEDIA_NODE_WIDGETS: Record<
@@ -28,6 +37,7 @@ const MEDIA_NODE_WIDGETS: Record<
   { widgetName: string; mediaType: MediaType }
 > = {
   LoadImage: { widgetName: 'image', mediaType: 'image' },
+  LoadImageMask: { widgetName: 'image', mediaType: 'image' },
   LoadVideo: { widgetName: 'file', mediaType: 'video' },
   LoadAudio: { widgetName: 'audio', mediaType: 'audio' }
 }
@@ -39,7 +49,8 @@ function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
 /**
  * Scan combo widgets on media nodes for file values that may be missing.
  *
- * OSS: `isMissing` resolved immediately via widget options.
+ * OSS: `isMissing` is resolved immediately via widget options unless an
+ * output annotation needs generated-history verification.
  * Cloud: `isMissing` left `undefined` for async verification.
  */
 export function scanAllMediaCandidates(
@@ -92,8 +103,17 @@ export function scanNodeMediaCandidates(
     if (isCloud) {
       isMissing = undefined
     } else {
-      const options = resolveComboValues(widget)
-      isMissing = !options.includes(value)
+      const type = getAnnotatedMediaPathTypeForDetection(value)
+      if (type === 'output') {
+        isMissing = undefined
+      } else {
+        const options = resolveComboValues(widget)
+        const detectionNames = getMediaPathDetectionNames(value)
+        const existsInOptions = detectionNames.some((name) =>
+          options.includes(name)
+        )
+        isMissing = !existsInOptions
+      }
     }
 
     candidates.push({
@@ -109,29 +129,57 @@ export function scanNodeMediaCandidates(
   return candidates
 }
 
-type InputAssetFetcher = (signal?: AbortSignal) => Promise<AssetItem[]>
+interface MediaVerificationOptions {
+  isCloud: boolean
+  signal?: AbortSignal
+  resolveAssetSources?: MissingMediaAssetResolver
+}
 
 /**
- * Verify cloud media candidates against input assets available to the user,
- * including public assets returned by the asset list API.
+ * Verify media candidates against assets available to the current runtime.
  *
  * A candidate's `name` may be either a filename or an opaque asset hash.
  * Cloud-side `asset_hash` is not guaranteed to follow a single shape, so we
- * match against the union of `asset.name` and `asset.asset_hash`.
+ * match against the union of `asset.name` and `asset.asset_hash`. Output
+ * candidates are matched against Cloud output assets or Core generated-history
+ * assets because Core resolves those annotations against output folders, not
+ * input files.
+ * Cloud accepts compact annotated media paths, so only Cloud verification
+ * normalizes compact suffixes.
  */
-export async function verifyCloudMediaCandidates(
+export async function verifyMediaCandidates(
   candidates: MissingMediaCandidate[],
-  signal?: AbortSignal,
-  fetchInputAssets: InputAssetFetcher = fetchMissingInputAssets
+  {
+    isCloud,
+    signal,
+    resolveAssetSources = resolveMissingMediaAssetSources
+  }: MediaVerificationOptions
 ): Promise<void> {
   if (signal?.aborted) return
 
   const pending = candidates.filter((c) => c.isMissing === undefined)
   if (pending.length === 0) return
 
+  // Core stores spaced annotations such as `file.png [output]`; Cloud also
+  // accepts compact forms such as `file.png[output]`.
+  const pathOptions = { allowCompactSuffix: isCloud }
+  const generatedMatchNames = getGeneratedCandidateMatchNames(
+    pending,
+    pathOptions
+  )
+
   let inputAssets: AssetItem[]
+  let generatedAssets: AssetItem[]
   try {
-    inputAssets = await fetchInputAssets(signal)
+    const assetSources = await resolveAssetSources({
+      signal,
+      isCloud,
+      includeGeneratedAssets: generatedMatchNames.size > 0,
+      generatedMatchNames,
+      allowCompactSuffix: isCloud
+    })
+    inputAssets = assetSources.inputAssets
+    generatedAssets = assetSources.generatedAssets
   } catch (err) {
     if (signal?.aborted || isAbortError(err)) return
     throw err
@@ -139,21 +187,62 @@ export async function verifyCloudMediaCandidates(
 
   if (signal?.aborted) return
 
-  const assetIdentifiers = new Set<string>()
-  for (const asset of inputAssets) {
-    if (asset.asset_hash) assetIdentifiers.add(asset.asset_hash)
-    if (asset.name) assetIdentifiers.add(asset.name)
-  }
+  const inputAssetIdentifiers = new Set<string>()
+  const outputAssetIdentifiers = new Set<string>()
+  addAssetIdentifiers(inputAssetIdentifiers, inputAssets, pathOptions)
+  addAssetIdentifiers(outputAssetIdentifiers, generatedAssets, pathOptions)
 
   for (const candidate of pending) {
-    candidate.isMissing = !assetIdentifiers.has(candidate.name)
+    const detectionNames = getMediaPathDetectionNames(
+      candidate.name,
+      pathOptions
+    )
+    const type = getAnnotatedMediaPathTypeForDetection(
+      candidate.name,
+      pathOptions
+    )
+    const identifiers =
+      type === 'output' ? outputAssetIdentifiers : inputAssetIdentifiers
+    candidate.isMissing = !detectionNames.some((name) => identifiers.has(name))
   }
 }
 
-async function fetchMissingInputAssets(
-  signal?: AbortSignal
-): Promise<AssetItem[]> {
-  return await assetService.getInputAssetsIncludingPublic(signal)
+function getGeneratedCandidateMatchNames(
+  candidates: MissingMediaCandidate[],
+  pathOptions: { allowCompactSuffix: boolean }
+): Set<string> {
+  const names = new Set<string>()
+  for (const candidate of candidates) {
+    if (!isGeneratedCandidate(candidate, pathOptions)) continue
+
+    names.add(
+      normalizeAnnotatedMediaPathForDetection(candidate.name, pathOptions)
+    )
+  }
+  return names
+}
+
+function isGeneratedCandidate(
+  candidate: MissingMediaCandidate,
+  pathOptions: { allowCompactSuffix: boolean }
+): boolean {
+  const type = getAnnotatedMediaPathTypeForDetection(
+    candidate.name,
+    pathOptions
+  )
+  return type === 'output'
+}
+
+function addAssetIdentifiers(
+  identifiers: Set<string>,
+  assets: AssetItem[],
+  pathOptions: { allowCompactSuffix: boolean }
+) {
+  for (const asset of assets) {
+    for (const name of getAssetDetectionNames(asset, pathOptions)) {
+      identifiers.add(name)
+    }
+  }
 }
 
 /** Group confirmed-missing candidates by file name into view models. */
