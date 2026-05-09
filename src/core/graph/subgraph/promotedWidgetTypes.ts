@@ -31,6 +31,12 @@ export interface PromotedWidgetView extends IBaseWidget {
    */
   readonly sourceNodeId: string
   readonly sourceWidgetName: string
+
+  /**
+   * Per-instance value hydration that writes only to host widget state, never
+   * cascading into the shared interior widget. Used during configure/clone.
+   */
+  hydrateHostValue(value: IBaseWidget['value']): void
 }
 
 export function isPromotedWidgetView(

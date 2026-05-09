@@ -269,6 +269,16 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   /**
+   * Write a value into this host's widget store entry without cascading into
+   * the shared interior widget — the only safe path for per-instance hydration
+   * during `configure()` and clone, where multiple SubgraphNode instances
+   * reference the same shared interior nodes.
+   */
+  hydrateHostValue(value: IBaseWidget['value']): void {
+    this.setHostWidgetState(value)
+  }
+
+  /**
    * Returns the cached bound subgraph slot reference, refreshing only when
    * the subgraph node's input list has changed (length mismatch).
    *

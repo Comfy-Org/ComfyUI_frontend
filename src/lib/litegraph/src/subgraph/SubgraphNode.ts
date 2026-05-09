@@ -706,6 +706,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this._applyPromotedWidgetValues(info.widgets_values)
   }
 
+  /**
+   * Hydrate per-instance promoted widget values into this host's widget value
+   * store entry. Routing through `PromotedWidgetView.set value` would cascade
+   * into the shared interior widget, stomping every other SubgraphNode
+   * instance that references the same shared interior.
+   */
   private _applyPromotedWidgetValues(
     widgetValues: ExportedSubgraphInstance['widgets_values']
   ): void {
@@ -713,10 +719,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     let valueIndex = 0
     for (const input of this.inputs) {
-      const widget = input._widget
-      if (!widget || !isPromotedWidgetView(widget)) continue
+      const view = input._widget
+      if (!view || !isPromotedWidgetView(view)) continue
       if (valueIndex >= widgetValues.length) return
-      widget.value = widgetValues[valueIndex]
+      view.hydrateHostValue(widgetValues[valueIndex])
       valueIndex += 1
     }
   }
