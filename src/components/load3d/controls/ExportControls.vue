@@ -1,4 +1,3 @@
-import { t } from '@/i18n'
 <template>
   <div class="flex flex-col">
     <div class="show-export-formats relative">
@@ -36,6 +35,7 @@ import { t } from '@/i18n'
 </template>
 
 <script setup lang="ts">
+import { t } from '@/i18n'
 import { onMounted, onUnmounted, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'

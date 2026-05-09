@@ -1,4 +1,3 @@
-import { t } from '@/i18n'
 <template>
   <div class="space-y-4">
     <Select v-model="exportFormat">
@@ -27,6 +26,7 @@ import { t } from '@/i18n'
 </template>
 
 <script setup lang="ts">
+import { t } from '@/i18n'
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'

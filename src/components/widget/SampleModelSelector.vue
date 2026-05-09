@@ -1,4 +1,3 @@
-import { t } from '@/i18n'
 <template>
   <BaseModalLayout :content-title="$t('assetBrowser.checkpoints')">
     <template #leftPanel>
@@ -124,6 +123,7 @@ import { t } from '@/i18n'
 </template>
 
 <script setup lang="ts">
+import { t } from '@/i18n'
 import { computed, provide, ref } from 'vue'
 
 import MoreButton from '@/components/button/MoreButton.vue'
@@ -157,7 +157,7 @@ const projectOptions = ref([
 const sortOptions = ref([
   { name: 'Popular', value: 'popular' },
   { name: 'Latest', value: 'latest' },
-  { name: 'A → Z', value: 'az' }
+  { name: 'A 鈫?Z', value: 'az' }
 ])
 
 const tempNavigation = ref<(NavItemData | NavGroupData)[]>([

@@ -13,7 +13,7 @@ export const badgeVariants = cva({
       contrast: 'bg-base-foreground text-base-background'
     },
     variant: {
-      label: t('g.h_3_5_px_1_text_3xs_font_semibold_uppercase'),
+      label: 'g.h_3_5_px_1_text_3xs_font_semibold_uppercase',
       dot: 'size-2',
       circle: 'size-3.5 text-3xs font-semibold'
     }
