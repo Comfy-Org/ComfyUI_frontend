@@ -5,13 +5,21 @@ import { storeToRefs } from 'pinia'
 import { computed, useTemplateRef, watch } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import { useAppModeStore } from '@/stores/appModeStore'
 
 const { isArrangeMode } = useAppMode()
 const appModeStore = useAppModeStore()
+const settingStore = useSettingStore()
 const { viewportScale, viewportOffsetX, viewportOffsetY } =
   storeToRefs(appModeStore)
+
+// Reserve the backdrop gutter on whichever side the user has the
+// global sidebar pinned so the dotted-grid doesn't slide under it.
+const sidebarOnLeft = computed(
+  () => settingStore.get('Comfy.Sidebar.Location') !== 'right'
+)
 
 const bgRef = useTemplateRef<HTMLElement>('bgRef')
 
@@ -104,8 +112,10 @@ const gridSpacing = computed(() => {
     :class="
       cn(
         'builder-backdrop fixed z-50 overflow-hidden',
-        'top-(--workflow-tabs-height) right-0 bottom-0',
-        'left-(--sidebar-width,0px)',
+        'top-(--workflow-tabs-height) bottom-0',
+        sidebarOnLeft
+          ? 'right-0 left-(--sidebar-width,0px)'
+          : 'right-(--sidebar-width,0px) left-0',
         'bg-layout-canvas',
         'bg-[radial-gradient(circle,var(--color-layout-grid-dot)_1px,transparent_1.5px)]'
       )

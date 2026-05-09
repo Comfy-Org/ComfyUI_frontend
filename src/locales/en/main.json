@@ -3410,6 +3410,10 @@
       "size": "size",
       "seed": "seed"
     },
+    "selection": {
+      "select": "Select",
+      "deselect": "Deselect"
+    },
     "builder": {
       "title": "App builder mode",
       "exit": "Exit builder",

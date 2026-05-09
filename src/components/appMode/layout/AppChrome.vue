@@ -15,6 +15,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   openShareDialog,
   prefetchShareDialog
@@ -65,6 +66,14 @@ const canvasStore = useCanvasStore()
 const { appScalePercentage } = storeToRefs(canvasStore)
 const commandStore = useCommandStore()
 const { toastErrorHandler } = useErrorHandling()
+const settingStore = useSettingStore()
+
+// Reserve the chrome's outer gutter on whichever side the user has
+// the global sidebar pinned. Builder variant only — the app-mode
+// variant is absolute-inset inside LayoutView and uses no gutter.
+const sidebarOnLeft = computed(
+  () => settingStore.get('Comfy.Sidebar.Location') !== 'right'
+)
 
 // GraphCanvasMenu registers initScaleSync() for graph view; builder
 // doesn't mount that menu so we register from here.
@@ -221,8 +230,10 @@ function cellClass(cell: ChromeCell): string {
         // primevue / design-system widget defaults.
         'app-mode-themed app-chrome pointer-events-none absolute inset-0 z-1',
         variant === 'builder' && [
-          'fixed top-(--workflow-tabs-height) right-0 bottom-0',
-          'left-(--sidebar-width,0px) z-90 cursor-not-allowed'
+          'fixed top-(--workflow-tabs-height) bottom-0 z-90 cursor-not-allowed',
+          sidebarOnLeft
+            ? 'right-0 left-(--sidebar-width,0px)'
+            : 'right-(--sidebar-width,0px) left-0'
         ]
       )
     "

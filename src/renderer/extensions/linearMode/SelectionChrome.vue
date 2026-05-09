@@ -1,14 +1,27 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-defineProps<{
+const { ariaLabel, isSelected } = defineProps<{
   isSelected: boolean
   top: number
   left: number
   width: number
   height: number
+  /** Optional override; falls back to a localized "Toggle selection". */
+  ariaLabel?: string
 }>()
 defineEmits<{ toggle: [] }>()
+
+const { t } = useI18n()
+const accessibleName = computed(
+  () =>
+    ariaLabel ??
+    (isSelected
+      ? t('linearMode.selection.deselect')
+      : t('linearMode.selection.select'))
+)
 </script>
 <template>
   <!-- Teleported to <body> to escape TransformPane's stacking context.
@@ -18,6 +31,7 @@ defineEmits<{ toggle: [] }>()
       class="group pointer-events-auto fixed flex cursor-pointer flex-row items-stretch gap-2"
       role="button"
       tabindex="0"
+      :aria-label="accessibleName"
       :aria-pressed="isSelected"
       :style="{
         top: `${top}px`,

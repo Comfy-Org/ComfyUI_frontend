@@ -445,11 +445,16 @@ export const useOutputWindowStore = defineStore('appModeOutputWindow', () => {
       { x: last.x, y: last.y - newH - SPAWN_GAP }
     ]
     for (const c of candidates) {
-      const newRect: Rect = { x: c.x, y: c.y, w: newW, h: newH }
+      // Snap first, then test — the returned position is snapped,
+      // so overlap-checking the unsnapped candidate can let snap
+      // drift cause an undetected collision with a neighbor.
+      const sx = snapSpawn(c.x)
+      const sy = snapSpawn(c.y)
+      const newRect: Rect = { x: sx, y: sy, w: newW, h: newH }
       const collides = windows.value.some((w) =>
         rectsOverlap(newRect, entryRect(w))
       )
-      if (!collides) return { x: snapSpawn(c.x), y: snapSpawn(c.y) }
+      if (!collides) return { x: sx, y: sy }
     }
 
     // Cluster boxed in — wrap to a fresh row below.

@@ -222,13 +222,18 @@ export const useAppModeStore = defineStore('appMode', () => {
     selectedInputs.value = inputs
     selectedOutputs.value = outputs
 
+    // Reset panel state to defaults so a workflow without saved
+    // layout doesn't inherit the previous workflow's panel preset /
+    // collapse / width / rows. `loadSelections` runs on every active-
+    // workflow swap, so this is the only place that re-initializes.
     const layout = data?.layout
-    if (!layout) return
-    if (layout.panelPreset) panelPreset.value = layout.panelPreset
-    if (typeof layout.panelCollapsed === 'boolean')
-      panelCollapsed.value = layout.panelCollapsed
-    if (layout.panelWidthCells) panelWidthCells.value = layout.panelWidthCells
-    if (layout.panelRows) panelRows.value = layout.panelRows
+    panelPreset.value = layout?.panelPreset ?? 'right-dock'
+    panelCollapsed.value =
+      typeof layout?.panelCollapsed === 'boolean'
+        ? layout.panelCollapsed
+        : false
+    panelWidthCells.value = layout?.panelWidthCells ?? 8
+    panelRows.value = layout?.panelRows ?? []
   }
 
   function resetSelectedToWorkflow() {

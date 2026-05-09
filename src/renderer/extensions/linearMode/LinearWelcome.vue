@@ -8,6 +8,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -19,6 +20,12 @@ const { setMode } = useAppMode()
 const { toastErrorHandler } = useErrorHandling()
 const appModeStore = useAppModeStore()
 const { hasOutputs, hasNodes } = storeToRefs(appModeStore)
+const settingStore = useSettingStore()
+// Reserve the gutter on the side the sidebar is pinned to so the
+// welcome panel doesn't slide under it.
+const sidebarOnLeft = computed(
+  () => settingStore.get('Comfy.Sidebar.Location') !== 'right'
+)
 
 const workflowStore = useWorkflowStore()
 const isAppDefault = computed(
@@ -48,7 +55,10 @@ async function runFromPill(e: MouseEvent) {
         'panel-chrome pointer-events-auto absolute z-1 flex flex-col overflow-hidden',
         'top-[calc(var(--spacing-layout-outer)+var(--spacing-layout-cell)+var(--spacing-layout-gutter))]',
         'max-h-[calc(100%-var(--spacing-layout-outer)*2-var(--spacing-layout-cell)*2-var(--spacing-layout-gutter)*2)]',
-        'left-(--spacing-layout-outer) w-(--panel-dock-width,440px)'
+        sidebarOnLeft
+          ? 'left-[calc(var(--sidebar-width,0px)+var(--spacing-layout-outer))]'
+          : 'left-(--spacing-layout-outer)',
+        'w-(--panel-dock-width,440px)'
       )
     "
   >

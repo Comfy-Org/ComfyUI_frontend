@@ -35,13 +35,19 @@ function togglePromotion() {
 }
 </script>
 <template>
+  <!-- Single render path; toggle wrapper styling instead of swapping
+       trees so the slotted widget doesn't unmount/remount on every
+       selection-mode flip (would drop input focus + any widget-local
+       state). `contents` makes the wrapper transparent to layout. -->
   <div
-    v-if="showSelection"
     ref="wrapper"
-    class="col-span-2 grid grid-cols-2 items-stretch"
+    :class="
+      showSelection ? 'col-span-2 grid grid-cols-2 items-stretch' : 'contents'
+    "
   >
     <slot />
     <SelectionChrome
+      v-if="showSelection"
       :is-selected="isPromoted"
       :top="top"
       :left="left"
@@ -50,5 +56,4 @@ function togglePromotion() {
       @toggle="togglePromotion"
     />
   </div>
-  <slot v-else />
 </template>

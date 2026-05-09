@@ -119,9 +119,15 @@ const CHROME_STEP_PX = 56
 const dashboardInsetsKey = computed(() => {
   const pr = dashboardInsets.value.panelRect
   if (!pr) return 'no-panel'
-  const pStart = Math.round(pr.x / CHROME_STEP_PX)
-  const pEnd = Math.round((pr.x + pr.w) / CHROME_STEP_PX)
-  return `${pStart},${pEnd}`
+  // Encode all four bounds (snapped to chrome cells) so vertical
+  // panel movement also retriggers relayout. Earlier this only
+  // tracked x-extent; a panel dragged from float-tl to float-bl
+  // didn't re-pack output tiles.
+  const xStart = Math.round(pr.x / CHROME_STEP_PX)
+  const xEnd = Math.round((pr.x + pr.w) / CHROME_STEP_PX)
+  const yStart = Math.round(pr.y / CHROME_STEP_PX)
+  const yEnd = Math.round((pr.y + pr.h) / CHROME_STEP_PX)
+  return `${xStart},${xEnd},${yStart},${yEnd}`
 })
 
 watch(
@@ -168,6 +174,11 @@ let dragging = false
 
 function handlePointerDown(e: PointerEvent) {
   if (e.button !== 0 && e.button !== 1) return
+  // Only arm pan-drag from the workspace background. Pointers landing
+  // on the floating panel or chrome should bubble naturally so panel
+  // clicks/scrolls don't get reinterpreted as a workspace pan.
+  const bg = bgRef.value
+  if (!bg || !(e.target instanceof Node) || !bg.contains(e.target)) return
   dragStart = { x: e.clientX, y: e.clientY, pointerId: e.pointerId }
 }
 
