@@ -32,16 +32,23 @@ test.describe('Careers page @smoke', () => {
     }
   })
 
-  test('ENGINEERING category filter narrows the role list', async ({
+  test('clicking a department button scrolls to and activates that section', async ({
     page
   }) => {
     const allCount = await page.getByTestId('careers-role-link').count()
-    await page.getByRole('button', { name: 'ENGINEERING', exact: true }).click()
-    const engineeringLocator = page.getByTestId('careers-role-link')
-    await expect(engineeringLocator.first()).toBeVisible()
-    const engineeringCount = await engineeringLocator.count()
-    expect(engineeringCount).toBeLessThanOrEqual(allCount)
-    expect(engineeringCount).toBeGreaterThan(0)
+
+    const engineeringButton = page.getByRole('button', {
+      name: 'ENGINEERING',
+      exact: true
+    })
+    await engineeringButton.click()
+
+    await expect(engineeringButton).toHaveAttribute('aria-pressed', 'true')
+
+    const engineeringSection = page.locator('#careers-dept-engineering')
+    await expect(engineeringSection).toBeInViewport()
+
+    expect(await page.getByTestId('careers-role-link').count()).toBe(allCount)
   })
 })
 

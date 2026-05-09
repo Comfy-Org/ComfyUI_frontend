@@ -30,23 +30,20 @@ const hasRoles = computed(() => visibleDepartments.value.length > 0)
 const activeCategory = ref('')
 
 const sectionRefs = useTemplateRefsList<HTMLElement>()
-const visibleSections = ref(new Set<string>())
+const revealedSections = ref(new Set<string>())
 
 let isScrolling = false
 
 const HEADER_OFFSET = -144
 
 const deptElementId = (key: string) => `careers-dept-${key}`
+const deptKeyFromId = (id: string) => id.replace(/^careers-dept-/, '')
 
 useIntersectionObserver(
   sectionRefs,
   (entries) => {
     for (const entry of entries) {
-      if (entry.isIntersecting) {
-        visibleSections.value.add(entry.target.id)
-      } else {
-        visibleSections.value.delete(entry.target.id)
-      }
+      if (entry.isIntersecting) revealedSections.value.add(entry.target.id)
     }
     if (isScrolling) return
     let best: IntersectionObserverEntry | null = null
@@ -56,7 +53,7 @@ useIntersectionObserver(
         best = entry
       }
     }
-    if (best) activeCategory.value = best.target.id
+    if (best) activeCategory.value = deptKeyFromId(best.target.id)
   },
   { rootMargin: '-20% 0px -60% 0px' }
 )
@@ -120,9 +117,9 @@ function scrollToDepartment(deptKey: string) {
             :class="
               cn(
                 'mb-12 scroll-mt-24 last:mb-0 motion-safe:transition-all motion-safe:duration-700 motion-safe:ease-out md:scroll-mt-36',
-                visibleSections.has(deptElementId(dept.key))
+                revealedSections.has(deptElementId(dept.key))
                   ? 'opacity-100 motion-safe:translate-y-0'
-                  : 'opacity-0 motion-safe:translate-y-6'
+                  : 'motion-safe:translate-y-6 motion-safe:opacity-0'
               )
             "
           >
