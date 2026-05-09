@@ -24,6 +24,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "batch_size": {
+        "name": "حجم الدفعة"
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "length": {
+        "name": "الطول"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_image": {
+        "name": "الصورة_البدء"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "إضافة ضجيج",
     "inputs": {
@@ -8011,6 +8045,21 @@
       }
     }
   },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "تحميل نموذج إزالة الخلفية",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "اسم_إزالة_الخلفية",
+        "tooltip": "النموذج المستخدم لإزالة الخلفيات من الصور"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "نموذج_الخلفية",
+        "tooltip": null
+      }
+    }
+  },
   "LoadImage": {
     "display_name": "تحميل صورة",
     "inputs": {
@@ -13457,6 +13506,25 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "RemoveBackground": {
+    "display_name": "إزالة الخلفية",
+    "inputs": {
+      "bg_removal_model": {
+        "name": "نموذج_إزالة_الخلفية",
+        "tooltip": "نموذج إزالة الخلفية المستخدم لتوليد القناع"
+      },
+      "image": {
+        "name": "الصورة",
+        "tooltip": "صورة الإدخال لإزالة الخلفية منها"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "القناع",
+        "tooltip": "قناع المقدمة المُنتج"
       }
     }
   },
