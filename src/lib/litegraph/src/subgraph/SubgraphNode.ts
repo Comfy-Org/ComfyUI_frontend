@@ -48,7 +48,10 @@ import { readHostQuarantine } from '@/core/graph/subgraph/migration/quarantineEn
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import {
+  stripGraphPrefix,
+  useWidgetValueStore
+} from '@/stores/widgetValueStore'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
@@ -107,11 +110,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   private _cacheVersion = 0
   private _linkedEntriesCache?: {
     version: number
+    inputOrderKey: string
     hasMissingBoundSourceWidget: boolean
     entries: LinkedPromotionEntry[]
   }
   private _promotedViewsCache?: {
     version: number
+    inputOrderKey: string
     hasMissingBoundSourceWidget: boolean
     views: PromotedWidgetView[]
   }
@@ -166,10 +171,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   private _getLinkedPromotionEntries(cache = true): LinkedPromotionEntry[] {
     const hasMissingBoundSourceWidget = this._hasMissingBoundSourceWidget()
+    const inputOrderKey = this._getInputOrderKey()
     const cached = this._linkedEntriesCache
     if (
       cache &&
       cached?.version === this._cacheVersion &&
+      cached.inputOrderKey === inputOrderKey &&
       cached.hasMissingBoundSourceWidget === hasMissingBoundSourceWidget
     )
       return cached.entries
@@ -232,6 +239,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (cache)
       this._linkedEntriesCache = {
         version: this._cacheVersion,
+        inputOrderKey,
         hasMissingBoundSourceWidget,
         entries: deduplicatedEntries
       }
@@ -258,9 +266,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   private _getPromotedViews(): PromotedWidgetView[] {
     const hasMissingBoundSourceWidget = this._hasMissingBoundSourceWidget()
+    const inputOrderKey = this._getInputOrderKey()
     const cachedViews = this._promotedViewsCache
     if (
       cachedViews?.version === this._cacheVersion &&
+      cachedViews.inputOrderKey === inputOrderKey &&
       cachedViews.hasMissingBoundSourceWidget === hasMissingBoundSourceWidget
     )
       return cachedViews.views
@@ -284,11 +294,18 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     this._promotedViewsCache = {
       version: this._cacheVersion,
+      inputOrderKey,
       hasMissingBoundSourceWidget,
       views
     }
 
     return views
+  }
+
+  private _getInputOrderKey(): string {
+    return this.inputs
+      .map((input) => input._subgraphSlot?.id ?? input.name)
+      .join('|')
   }
 
   private _invalidatePromotedViewsCache(): void {
@@ -1242,8 +1259,17 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         this.id,
         getPromotedWidgetHostStateName(widget)
       )
+      const sourceState = widgetStore.getWidget(
+        rootGraphId,
+        stripGraphPrefix(widget.sourceNodeId),
+        widget.sourceWidgetName
+      )
       const value =
-        state && isWidgetValue(state.value) ? state.value : undefined
+        state && isWidgetValue(state.value)
+          ? state.value
+          : sourceState && isWidgetValue(sourceState.value)
+            ? sourceState.value
+            : undefined
       widgetValues.push(value)
       hasSerializableValue ||= value !== undefined
     }
@@ -1252,6 +1278,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     return serialized
   }
+
   override clone() {
     const clone = super.clone()
 

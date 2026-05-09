@@ -65,8 +65,99 @@ export function reorderSubgraphInputsByName(
     return leftOrder - rightOrder
   }
 
-  subgraphNode.subgraph.inputs.sort(byOrder)
-  subgraphNode.inputs.sort(byOrder)
+  const orderedIndices = subgraphNode.subgraph.inputs
+    .map((input, index) => ({ input, index }))
+    .sort((left, right) => byOrder(left.input, right.input))
+    .map(({ index }) => index)
+  applySubgraphInputOrder(subgraphNode, orderedIndices)
+}
+
+export function reorderSubgraphInputsByWidgetOrder(
+  subgraphNode: SubgraphNode,
+  orderedWidgets: readonly IBaseWidget[]
+): void {
+  const remainingIndices = new Set(subgraphNode.inputs.keys())
+  const orderedIndices = orderedWidgets.flatMap((orderedWidget) => {
+    for (const index of remainingIndices) {
+      const widget = subgraphNode.inputs[index]?._widget
+      if (widget && isSamePromotedWidget(widget, orderedWidget)) {
+        remainingIndices.delete(index)
+        return [index]
+      }
+    }
+    return []
+  })
+
+  for (const index of remainingIndices) orderedIndices.push(index)
+
+  applySubgraphInputOrder(subgraphNode, orderedIndices)
+}
+
+export function reorderSubgraphInputAtIndex(
+  subgraphNode: SubgraphNode,
+  oldPosition: number,
+  newPosition: number
+): void {
+  if (
+    oldPosition < 0 ||
+    newPosition < 0 ||
+    oldPosition >= subgraphNode.subgraph.inputs.length ||
+    newPosition >= subgraphNode.subgraph.inputs.length
+  )
+    return
+
+  const orderedIndices = subgraphNode.subgraph.inputs.map((_, index) => index)
+  const [movedIndex] = orderedIndices.splice(oldPosition, 1)
+  if (movedIndex !== undefined)
+    orderedIndices.splice(newPosition, 0, movedIndex)
+
+  applySubgraphInputOrder(subgraphNode, orderedIndices)
+}
+
+function applySubgraphInputOrder(
+  subgraphNode: SubgraphNode,
+  orderedIndices: readonly number[]
+): void {
+  const rows = subgraphNode.subgraph.inputs.map((input, index) => ({
+    subgraphInput: input,
+    hostInput: subgraphNode.inputs[index],
+    value: subgraphNode.inputs[index]?._widget?.value
+  }))
+
+  const orderedRows = orderedIndices.flatMap((index) => rows[index] ?? [])
+
+  subgraphNode.subgraph.inputs.splice(
+    0,
+    subgraphNode.subgraph.inputs.length,
+    ...orderedRows.map((row) => row.subgraphInput)
+  )
+  subgraphNode.inputs.splice(
+    0,
+    subgraphNode.inputs.length,
+    ...orderedRows.flatMap((row) => row.hostInput ?? [])
+  )
+
+  for (const [index, input] of subgraphNode.subgraph.inputs.entries()) {
+    for (const linkId of input.linkIds) {
+      const link = subgraphNode.subgraph.getLink(linkId)
+      if (link) link.origin_slot = index
+    }
+  }
+
+  subgraphNode.widgets.forEach((widget, index) => {
+    const value = orderedRows[index]?.value
+    if (value !== undefined) widget.value = value
+  })
+}
+
+function isSamePromotedWidget(left: IBaseWidget, right: IBaseWidget): boolean {
+  return (
+    isPromotedWidgetView(left) &&
+    isPromotedWidgetView(right) &&
+    left.sourceNodeId === right.sourceNodeId &&
+    left.sourceWidgetName === right.sourceWidgetName &&
+    left.disambiguatingSourceNodeId === right.disambiguatingSourceNodeId
+  )
 }
 
 export function getSourceNodeId(w: IBaseWidget): string | undefined {

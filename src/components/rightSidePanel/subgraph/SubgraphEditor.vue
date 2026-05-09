@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import DraggableList from '@/components/common/DraggableList.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -14,7 +14,7 @@ import {
   isRecommendedWidget,
   promoteWidget,
   pruneDisconnected,
-  reorderSubgraphInputsByName
+  reorderSubgraphInputsByWidgetOrder
 } from '@/core/graph/subgraph/promotionUtils'
 import type { WidgetItem } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -32,6 +32,7 @@ const canvasStore = useCanvasStore()
 const previewExposureStore = usePreviewExposureStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const { searchQuery } = storeToRefs(rightSidePanelStore)
+const inputOrderVersion = ref(0)
 
 const activeNode = computed(() => {
   const node = canvasStore.selectedItems[0]
@@ -62,6 +63,7 @@ const activePromotedWidgets = computed<WidgetItem[]>({
 })
 
 function getActivePromotedWidgets(node: SubgraphNode): WidgetItem[] {
+  void inputOrderVersion.value
   return node.widgets.flatMap((widget): WidgetItem[] => {
     if (!isPromotedWidgetView(widget)) return []
     const sourceNode = node.subgraph._nodes_by_id[widget.sourceNodeId]
@@ -99,10 +101,11 @@ function updateActiveWidgets(value: WidgetItem[], currentItems: WidgetItem[]) {
     if (!nextKeys.has(toKey(item))) demote(item)
   }
   if (currentKeys.size === nextKeys.size) {
-    reorderSubgraphInputsByName(
+    reorderSubgraphInputsByWidgetOrder(
       node,
-      value.map(([, widget]) => widget.name)
+      value.map(([, widget]) => widget)
     )
+    inputOrderVersion.value += 1
   }
   refreshPromotedWidgetRendering()
 }

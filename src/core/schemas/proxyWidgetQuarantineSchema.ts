@@ -37,6 +37,8 @@ export type ProxyWidgetErrorQuarantineEntry = Omit<
 export function parseProxyWidgetErrorQuarantine(
   property: NodeProperty | undefined
 ): ProxyWidgetErrorQuarantineEntry[] {
+  if (property === undefined) return []
+
   try {
     const result = proxyWidgetErrorQuarantinePropertySchema.safeParse(
       typeof property === 'string' ? JSON.parse(property) : property

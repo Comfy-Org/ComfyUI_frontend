@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { parseProxyWidgetErrorQuarantine } from './proxyWidgetQuarantineSchema'
 import type { ProxyWidgetQuarantineReason } from './proxyWidgetQuarantineSchema'
@@ -47,7 +47,12 @@ describe(parseProxyWidgetErrorQuarantine, () => {
   })
 
   it('returns empty array for undefined', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
     expect(parseProxyWidgetErrorQuarantine(undefined)).toEqual([])
+
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
   })
 
   it('returns empty array for malformed JSON string', () => {

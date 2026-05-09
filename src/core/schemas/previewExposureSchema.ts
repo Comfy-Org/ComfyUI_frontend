@@ -15,6 +15,8 @@ const previewExposuresPropertySchema = z.array(previewExposureSchema)
 export function parsePreviewExposures(
   property: NodeProperty | undefined
 ): PreviewExposure[] {
+  if (property === undefined) return []
+
   try {
     if (typeof property === 'string') property = JSON.parse(property)
     const result = previewExposuresPropertySchema.safeParse(

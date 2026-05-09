@@ -24,13 +24,16 @@ vi.mock('@/services/litegraphService', () => ({
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   getPromotableWidgets,
+  getSourceNodeId,
   hasUnpromotedWidgets,
   isLinkedPromotion,
   isPreviewPseudoWidget,
   promoteValueWidgetViaSubgraphInput,
   promoteRecommendedWidgets,
   pruneDisconnected,
-  reorderSubgraphInputsByName
+  reorderSubgraphInputAtIndex,
+  reorderSubgraphInputsByName,
+  reorderSubgraphInputsByWidgetOrder
 } from './promotionUtils'
 
 function widget(
@@ -507,6 +510,166 @@ describe('reorderSubgraphInputsByName', () => {
       'third',
       'first',
       'second'
+    ])
+  })
+
+  it('reorders promoted widgets on the host node from subgraph input order', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const firstNode = new LGraphNode('First')
+    const secondNode = new LGraphNode('Second')
+    subgraph.add(firstNode)
+    subgraph.add(secondNode)
+
+    const firstInput = firstNode.addInput('first', 'STRING')
+    const firstWidget = firstNode.addWidget('text', 'first', '', () => {})
+    firstInput.widget = { name: firstWidget.name }
+    const secondInput = secondNode.addInput('second', 'STRING')
+    const secondWidget = secondNode.addWidget('text', 'second', '', () => {})
+    secondInput.widget = { name: secondWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
+    promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
+
+    expect(host.widgets.map((widget) => widget.name)).toEqual([
+      'first',
+      'second'
+    ])
+
+    reorderSubgraphInputsByName(host, ['second', 'first'])
+
+    expect(host.widgets.map((widget) => widget.name)).toEqual([
+      'second',
+      'first'
+    ])
+  })
+
+  it('updates subgraph input link slot indices after reordering', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const firstNode = new LGraphNode('First')
+    const secondNode = new LGraphNode('Second')
+    subgraph.add(firstNode)
+    subgraph.add(secondNode)
+
+    const firstInput = firstNode.addInput('first', 'STRING')
+    const firstWidget = firstNode.addWidget('text', 'first', '', () => {})
+    firstInput.widget = { name: firstWidget.name }
+    const secondInput = secondNode.addInput('second', 'STRING')
+    const secondWidget = secondNode.addWidget('text', 'second', '', () => {})
+    secondInput.widget = { name: secondWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
+    promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
+
+    reorderSubgraphInputsByName(host, ['second', 'first'])
+
+    const [secondSlot, firstSlot] = subgraph.inputs
+    const secondLink = subgraph.getLink(secondSlot.linkIds[0])
+    const firstLink = subgraph.getLink(firstSlot.linkIds[0])
+
+    expect(secondLink?.origin_slot).toBe(0)
+    expect(firstLink?.origin_slot).toBe(1)
+  })
+})
+
+describe('reorderSubgraphInputAtIndex', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.restoreAllMocks()
+  })
+
+  it('moves host widget values with dragged input rows', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const firstNode = new LGraphNode('First')
+    const secondNode = new LGraphNode('Second')
+    subgraph.add(firstNode)
+    subgraph.add(secondNode)
+
+    const firstInput = firstNode.addInput('text', 'STRING')
+    const firstWidget = firstNode.addWidget('text', 'text', '', () => {})
+    firstInput.widget = { name: firstWidget.name }
+    const secondInput = secondNode.addInput('text', 'STRING')
+    const secondWidget = secondNode.addWidget('text', 'text', '', () => {})
+    secondInput.widget = { name: secondWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
+    promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
+    host.widgets[0].value = 'first value'
+    host.widgets[1].value = 'second value'
+
+    reorderSubgraphInputAtIndex(host, 0, 1)
+
+    expect(host.widgets.map((widget) => getSourceNodeId(widget))).toEqual([
+      String(secondNode.id),
+      String(firstNode.id)
+    ])
+    expect(host.widgets.map((widget) => widget.value)).toEqual([
+      'second value',
+      'first value'
+    ])
+  })
+
+  it('updates subgraph link slot indices after moving a row', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const firstNode = new LGraphNode('First')
+    const secondNode = new LGraphNode('Second')
+    subgraph.add(firstNode)
+    subgraph.add(secondNode)
+
+    const firstInput = firstNode.addInput('first', 'STRING')
+    const firstWidget = firstNode.addWidget('text', 'first', '', () => {})
+    firstInput.widget = { name: firstWidget.name }
+    const secondInput = secondNode.addInput('second', 'STRING')
+    const secondWidget = secondNode.addWidget('text', 'second', '', () => {})
+    secondInput.widget = { name: secondWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
+    promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
+
+    reorderSubgraphInputAtIndex(host, 0, 1)
+
+    const [secondSlot, firstSlot] = subgraph.inputs
+    const secondLink = subgraph.getLink(secondSlot.linkIds[0])
+    const firstLink = subgraph.getLink(firstSlot.linkIds[0])
+
+    expect(secondLink?.origin_slot).toBe(0)
+    expect(firstLink?.origin_slot).toBe(1)
+  })
+})
+
+describe('reorderSubgraphInputsByWidgetOrder', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.restoreAllMocks()
+  })
+
+  it('reorders duplicate-named promoted inputs by widget identity', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const firstNode = new LGraphNode('First')
+    const secondNode = new LGraphNode('Second')
+    subgraph.add(firstNode)
+    subgraph.add(secondNode)
+
+    const firstInput = firstNode.addInput('text', 'STRING')
+    const firstWidget = firstNode.addWidget('text', 'text', '', () => {})
+    firstInput.widget = { name: firstWidget.name }
+    const secondInput = secondNode.addInput('text', 'STRING')
+    const secondWidget = secondNode.addWidget('text', 'text', '', () => {})
+    secondInput.widget = { name: secondWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
+    promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
+    host.widgets[0].value = 'first value'
+    host.widgets[1].value = 'second value'
+
+    reorderSubgraphInputsByWidgetOrder(host, [host.widgets[1], host.widgets[0]])
+
+    expect(host.widgets.map((widget) => getSourceNodeId(widget))).toEqual([
+      String(secondNode.id),
+      String(firstNode.id)
+    ])
+    expect(host.serialize().widgets_values).toEqual([
+      'second value',
+      'first value'
     ])
   })
 })

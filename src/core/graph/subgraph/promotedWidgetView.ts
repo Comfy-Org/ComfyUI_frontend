@@ -8,6 +8,7 @@ import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { t } from '@/i18n'
+import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import {
   stripGraphPrefix,
@@ -50,6 +51,14 @@ function isWidgetValue(value: unknown): value is IBaseWidget['value'] {
   if (typeof value === 'number') return true
   if (typeof value === 'boolean') return true
   return value !== null && typeof value === 'object'
+}
+
+function isValueControlWidget(widget: IBaseWidget): boolean {
+  return (
+    (widget as Record<symbol, unknown>)[IS_CONTROL_WIDGET] === true &&
+    typeof widget.beforeQueued === 'function' &&
+    typeof widget.afterQueued === 'function'
+  )
 }
 
 type LegacyMouseWidget = IBaseWidget & {
@@ -399,6 +408,43 @@ class PromotedWidgetView implements IPromotedWidgetView {
     e?: CanvasPointerEvent
   ) {
     this.resolveAtHost()?.widget.callback?.(value, canvas, node, pos, e)
+  }
+
+  beforeQueued(): void {
+    // Source widgets linked through subgraph inputs are inert for prompt
+    // serialization.  Control-after-generate is applied to the promoted host
+    // value in afterQueued so the next prompt uses the updated SubgraphNode
+    // value, not the linked source value.
+  }
+
+  afterQueued(): void {
+    this.applyValueControlToHost()
+  }
+
+  private applyValueControlToHost(): void {
+    const resolved = this.resolveAtHost()
+    const controlWidget =
+      resolved?.widget.linkedWidgets?.find(isValueControlWidget)
+    if (!controlWidget) return
+
+    const mode = controlWidget.value
+    if (mode === 'fixed') return
+
+    const current = this.value
+    if (typeof current !== 'number') return
+
+    const { min = 0, max = 1, step2 = 1 } = this.options
+    let next = current
+    if (mode === 'increment') next += step2
+    else if (mode === 'decrement') next -= step2
+    else if (mode === 'randomize') {
+      const safeMax = Math.min(1125899906842624, max)
+      const safeMin = Math.max(-1125899906842624, min)
+      const range = (safeMax - safeMin) / step2
+      next = Math.floor(Math.random() * range) * step2 + safeMin
+    }
+    next = Math.min(Math.max(next, min), max)
+    this.value = next
   }
 
   private resolveAtHost():

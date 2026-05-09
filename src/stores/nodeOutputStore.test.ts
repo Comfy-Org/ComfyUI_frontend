@@ -341,6 +341,14 @@ describe('nodeOutputStore getPreviewParam', () => {
     expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
   })
 
+  it('should return empty string if outputs.images only contains null entries', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode()
+    const outputs = createMockOutputs(fromAny([null]))
+    expect(store.getPreviewParam(node, outputs)).toBe('')
+    expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
+  })
+
   it('should return empty string if outputs.images contains SVG images', () => {
     const store = useNodeOutputStore()
     const node = createMockNode()

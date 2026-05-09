@@ -16,7 +16,8 @@ import { useI18n } from 'vue-i18n'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   getWidgetName,
-  isWidgetPromotedOnSubgraphNode
+  isWidgetPromotedOnSubgraphNode,
+  reorderSubgraphInputAtIndex
 } from '@/core/graph/subgraph/promotionUtils'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -185,19 +186,7 @@ function setDraggableState() {
       this.draggableItem as HTMLElement
     )
 
-    const subgraphInputs = node.subgraph.inputs
-    const hostInputs = node.inputs
-
-    if (
-      oldPosition >= subgraphInputs.length ||
-      newPosition >= subgraphInputs.length
-    )
-      return
-
-    const [input] = subgraphInputs.splice(oldPosition, 1)
-    if (input) subgraphInputs.splice(newPosition, 0, input)
-    const [nodeInput] = hostInputs.splice(oldPosition, 1)
-    if (nodeInput) hostInputs.splice(newPosition, 0, nodeInput)
+    reorderSubgraphInputAtIndex(node, oldPosition, newPosition)
     canvasStore.canvas?.setDirty(true, true)
   }
 }

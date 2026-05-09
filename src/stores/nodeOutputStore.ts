@@ -97,9 +97,11 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     // If no images, return false
     if (!outputs?.images?.length) return false
 
+    const images = outputs.images.filter((image) => image != null)
+    if (!images.length) return false
+
     // If svg images, return false
-    if (outputs.images.some((image) => image.filename?.endsWith('svg')))
-      return false
+    if (images.some((image) => image.filename?.endsWith('svg'))) return false
 
     return true
   }
@@ -128,10 +130,12 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const rand = app.getRandParam()
     const previewParam = getPreviewParam(node, outputs)
 
-    return outputs.images.map((image) => {
-      const params = new URLSearchParams(image)
-      return api.apiURL(`/view?${params}${previewParam}${rand}`)
-    })
+    return outputs.images
+      .filter((image) => image != null)
+      .map((image) => {
+        const params = new URLSearchParams(image)
+        return api.apiURL(`/view?${params}${previewParam}${rand}`)
+      })
   }
 
   function getNodeOutputByExecutionId(
@@ -159,10 +163,12 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const rand = app.getRandParam()
     const previewParam = getPreviewParam(node, outputs)
 
-    return outputs.images.map((image) => {
-      const params = new URLSearchParams(image)
-      return api.apiURL(`/view?${params}${previewParam}${rand}`)
-    })
+    return outputs.images
+      .filter((image) => image != null)
+      .map((image) => {
+        const params = new URLSearchParams(image)
+        return api.apiURL(`/view?${params}${previewParam}${rand}`)
+      })
   }
 
   function setExecutionPreviews(executionId: string, previewImages: string[]) {
