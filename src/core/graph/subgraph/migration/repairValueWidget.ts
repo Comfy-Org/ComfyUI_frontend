@@ -121,6 +121,8 @@ function repairCreateSubgraphInput(
   const slotType = String(slot.type ?? sourceWidget.type ?? '*')
 
   const newSubgraphInput = subgraph.addInput(desiredName, slotType)
+  // Mirror LGraphNode.configure: input.label → widget.label propagation.
+  if (slot.label !== undefined) newSubgraphInput.label = slot.label
   const link = newSubgraphInput.connect(slot, sourceNode)
   if (!link) {
     subgraph.removeInput(newSubgraphInput)

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { computed, provide, shallowRef } from 'vue'
+import { computed, provide, shallowRef, triggerRef } from 'vue'
 
 import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
 import { useI18n } from 'vue-i18n'
@@ -62,6 +62,9 @@ useEventListener(
   app.rootGraph.events,
   'configured',
   () => (graphNodes.value = app.rootGraph.nodes)
+)
+useEventListener(app.rootGraph.events, 'node:slot-label:changed', () =>
+  triggerRef(graphNodes)
 )
 
 const mappedSelections = computed((): WidgetEntry[] => {
