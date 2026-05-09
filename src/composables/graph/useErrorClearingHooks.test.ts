@@ -348,6 +348,43 @@ describe('installErrorClearingHooks lifecycle', () => {
     expect(node.onConnectionsChange).toBe(chainedAfterFirst)
   })
 
+  it('scans added-node missing models before the deferred media scan', async () => {
+    const graph = new LGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockImplementation(
+      (_rootGraph, node) => [
+        fromAny({
+          nodeId: String(node.id),
+          nodeType: node.type,
+          widgetName: 'ckpt_name',
+          isAssetSupported: false,
+          name: 'fake_model.safetensors',
+          directory: 'checkpoints',
+          isMissing: true
+        })
+      ]
+    )
+    const mediaScan = vi
+      .spyOn(missingMediaScan, 'scanNodeMediaCandidates')
+      .mockReturnValue([])
+    installErrorClearingHooks(graph)
+
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    node.type = 'CheckpointLoaderSimple'
+    graph.add(node)
+
+    await Promise.resolve()
+
+    expect(useMissingModelStore().missingModelCandidates).toEqual([
+      expect.objectContaining({ name: 'fake_model.safetensors' })
+    ])
+    expect(mediaScan).not.toHaveBeenCalled()
+
+    await Promise.resolve()
+
+    expect(mediaScan).toHaveBeenCalledTimes(1)
+  })
+
   it('skips added-node missing media scan when upload state is marked before deferred scan runs', async () => {
     const graph = new LGraph()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)

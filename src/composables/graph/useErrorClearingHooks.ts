@@ -155,24 +155,35 @@ function isNodeInactive(mode: number): boolean {
   return mode === LGraphEventMode.NEVER || mode === LGraphEventMode.BYPASS
 }
 
+interface NodeErrorScanOptions {
+  scanModelsAndNodes?: boolean
+  scanMedia?: boolean
+}
+
 /** Scan a single node and add confirmed missing model/media to stores.
  *  For subgraph containers, also scans all active interior nodes. */
-function scanAndAddNodeErrors(node: LGraphNode): void {
+function scanAndAddNodeErrors(
+  node: LGraphNode,
+  { scanModelsAndNodes = true, scanMedia = true }: NodeErrorScanOptions = {}
+): void {
   if (!app.rootGraph) return
 
   if (node.isSubgraphNode?.() && node.subgraph) {
     for (const innerNode of collectAllNodes(node.subgraph)) {
       if (innerNode.isSubgraphNode?.()) continue
       if (isNodeInactive(innerNode.mode)) continue
-      scanSingleNodeErrors(innerNode)
+      scanSingleNodeErrors(innerNode, { scanModelsAndNodes, scanMedia })
     }
     return
   }
 
-  scanSingleNodeErrors(node)
+  scanSingleNodeErrors(node, { scanModelsAndNodes, scanMedia })
 }
 
-function scanSingleNodeErrors(node: LGraphNode): void {
+function scanSingleNodeErrors(
+  node: LGraphNode,
+  { scanModelsAndNodes = true, scanMedia = true }: NodeErrorScanOptions = {}
+): void {
   if (!app.rootGraph) return
   // Skip when any enclosing subgraph is muted/bypassed. Callers only
   // verify each node's own mode; entering a bypassed subgraph (via
@@ -183,58 +194,72 @@ function scanSingleNodeErrors(node: LGraphNode): void {
   const execId = getExecutionIdByNode(app.rootGraph, node)
   if (!execId || !isAncestorPathActive(app.rootGraph, execId)) return
 
-  const modelCandidates = scanNodeModelCandidates(
-    app.rootGraph,
-    node,
-    isCloud
-      ? (nodeType, widgetName) =>
-          assetService.shouldUseAssetBrowser(nodeType, widgetName)
-      : () => false,
-    (nodeType) => useModelToNodeStore().getCategoryForNodeType(nodeType)
-  )
-  const confirmedModels = modelCandidates.filter((c) => c.isMissing === true)
-  if (confirmedModels.length) {
-    useMissingModelStore().addMissingModels(confirmedModels)
-  }
-  // Cloud scans return isMissing: undefined for asset-browser-supported
-  // widgets until async verification resolves. Without this, realtime
-  // add/un-bypass paths would silently drop those candidates.
-  const pendingModels = modelCandidates.filter((c) => c.isMissing === undefined)
-  if (pendingModels.length) {
-    void verifyAndAddPendingModels(pendingModels)
+  if (scanModelsAndNodes) {
+    const modelCandidates = scanNodeModelCandidates(
+      app.rootGraph,
+      node,
+      isCloud
+        ? (nodeType, widgetName) =>
+            assetService.shouldUseAssetBrowser(nodeType, widgetName)
+        : () => false,
+      (nodeType) => useModelToNodeStore().getCategoryForNodeType(nodeType)
+    )
+    const confirmedModels = modelCandidates.filter((c) => c.isMissing === true)
+    if (confirmedModels.length) {
+      useMissingModelStore().addMissingModels(confirmedModels)
+    }
+    // Cloud scans return isMissing: undefined for asset-browser-supported
+    // widgets until async verification resolves. Without this, realtime
+    // add/un-bypass paths would silently drop those candidates.
+    const pendingModels = modelCandidates.filter(
+      (c) => c.isMissing === undefined
+    )
+    if (pendingModels.length) {
+      void verifyAndAddPendingModels(pendingModels)
+    }
   }
 
-  const mediaCandidates = scanNodeMediaCandidates(app.rootGraph, node, isCloud)
-  const confirmedMedia = mediaCandidates.filter((c) => c.isMissing === true)
-  if (confirmedMedia.length) {
-    useMissingMediaStore().addMissingMedia(confirmedMedia)
-  }
-  // Cloud media scans return pending for asset verification. OSS scans only
-  // return pending for generated output/temp media.
-  const pendingMedia = mediaCandidates.filter((c) => c.isMissing === undefined)
-  if (pendingMedia.length) {
-    void verifyAndAddPendingMedia(pendingMedia)
+  if (scanMedia) {
+    const mediaCandidates = scanNodeMediaCandidates(
+      app.rootGraph,
+      node,
+      isCloud
+    )
+    const confirmedMedia = mediaCandidates.filter((c) => c.isMissing === true)
+    if (confirmedMedia.length) {
+      useMissingMediaStore().addMissingMedia(confirmedMedia)
+    }
+    // Cloud media scans return pending for asset verification. OSS scans only
+    // return pending for generated output media.
+    const pendingMedia = mediaCandidates.filter(
+      (c) => c.isMissing === undefined
+    )
+    if (pendingMedia.length) {
+      void verifyAndAddPendingMedia(pendingMedia)
+    }
   }
 
   // Check for missing node type
-  const originalType = node.last_serialization?.type ?? node.type ?? 'Unknown'
-  if (!(originalType in LiteGraph.registered_node_types)) {
-    const execId = getExecutionIdByNode(app.rootGraph, node)
-    if (execId) {
-      const nodeReplacementStore = useNodeReplacementStore()
-      const replacement = nodeReplacementStore.getReplacementFor(originalType)
-      const store = useMissingNodesErrorStore()
-      const existing = store.missingNodesError?.nodeTypes ?? []
-      store.surfaceMissingNodes([
-        ...existing,
-        {
-          type: originalType,
-          nodeId: execId,
-          cnrId: getCnrIdFromNode(node),
-          isReplaceable: replacement !== null,
-          replacement: replacement ?? undefined
-        }
-      ])
+  if (scanModelsAndNodes) {
+    const originalType = node.last_serialization?.type ?? node.type ?? 'Unknown'
+    if (!(originalType in LiteGraph.registered_node_types)) {
+      const execId = getExecutionIdByNode(app.rootGraph, node)
+      if (execId) {
+        const nodeReplacementStore = useNodeReplacementStore()
+        const replacement = nodeReplacementStore.getReplacementFor(originalType)
+        const store = useMissingNodesErrorStore()
+        const existing = store.missingNodesError?.nodeTypes ?? []
+        store.surfaceMissingNodes([
+          ...existing,
+          {
+            type: originalType,
+            nodeId: execId,
+            cnrId: getCnrIdFromNode(node),
+            isReplaceable: replacement !== null,
+            replacement: replacement ?? undefined
+          }
+        ])
+      }
     }
   }
 }
@@ -293,10 +318,10 @@ async function verifyAndAddPendingMedia(
   }
 }
 
-function scanAddedNode(node: LGraphNode): void {
+function scanAddedNode(node: LGraphNode, options?: NodeErrorScanOptions): void {
   if (!app.rootGraph || ChangeTracker.isLoadingGraph) return
   if (isNodeInactive(node.mode)) return
-  scanAndAddNodeErrors(node)
+  scanAndAddNodeErrors(node, options)
 }
 
 function handleNodeModeChange(
@@ -368,11 +393,15 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     // Scan pasted/duplicated nodes for missing models/media.
     // Skip during loadGraphData (undo/redo/tab switch) — those are
     // handled by the full pipeline or cache restore.
-    // Deferred so onNodeAdded fires after node.configure() restores widget
-    // values. The extra microtask lets drag/drop upload handlers mark transient
-    // media-upload state before missing-media detection reads the widget value.
+    // Model and node scans use the original one-microtask deferral so pasted
+    // missing-model errors appear before selection-scoped tabs recalculate.
+    // Media gets one extra microtask so drag/drop upload handlers can mark
+    // transient upload state before media detection reads the widget value.
     if (!ChangeTracker.isLoadingGraph) {
-      queueMicrotask(() => queueMicrotask(() => scanAddedNode(node)))
+      queueMicrotask(() => {
+        scanAddedNode(node, { scanMedia: false })
+        queueMicrotask(() => scanAddedNode(node, { scanModelsAndNodes: false }))
+      })
     }
 
     originalOnNodeAdded?.call(this, node)
