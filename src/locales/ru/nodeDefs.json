@@ -24,6 +24,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "batch_size": {
+        "name": "размер_пакета"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "length": {
+        "name": "длина"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_image": {
+        "name": "start_image"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "Добавить шум",
     "inputs": {
@@ -8011,6 +8045,21 @@
       }
     }
   },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "Загрузить модель удаления фона",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "bg_removal_name",
+        "tooltip": "Модель, используемая для удаления фона с изображений"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bg_model",
+        "tooltip": null
+      }
+    }
+  },
   "LoadImage": {
     "display_name": "Загрузить изображение",
     "inputs": {
@@ -13457,6 +13506,25 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "RemoveBackground": {
+    "display_name": "Удалить фон",
+    "inputs": {
+      "bg_removal_model": {
+        "name": "bg_removal_model",
+        "tooltip": "Модель удаления фона, используемая для создания маски"
+      },
+      "image": {
+        "name": "изображение",
+        "tooltip": "Входное изображение для удаления фона"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": "Сгенерированная маска переднего плана"
       }
     }
   },

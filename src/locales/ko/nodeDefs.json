@@ -24,6 +24,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_image": {
+        "name": "start_image"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "노이즈 추가",
     "inputs": {
@@ -8011,6 +8045,21 @@
       }
     }
   },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "배경 제거 모델 불러오기",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "bg_removal_name",
+        "tooltip": "이미지에서 배경을 제거하는 데 사용되는 모델"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bg_model",
+        "tooltip": null
+      }
+    }
+  },
   "LoadImage": {
     "display_name": "이미지 로드",
     "inputs": {
@@ -13457,6 +13506,25 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "RemoveBackground": {
+    "display_name": "배경 제거",
+    "inputs": {
+      "bg_removal_model": {
+        "name": "bg_removal_model",
+        "tooltip": "마스크 생성을 위해 사용되는 배경 제거 모델"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "배경을 제거할 입력 이미지"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": "생성된 전경 마스크"
       }
     }
   },

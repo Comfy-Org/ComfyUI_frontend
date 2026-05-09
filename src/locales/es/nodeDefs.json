@@ -24,6 +24,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "batch_size": {
+        "name": "tamaño_de_lote"
+      },
+      "height": {
+        "name": "alto"
+      },
+      "length": {
+        "name": "longitud"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "start_image": {
+        "name": "imagen_inicial"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ancho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "AñadirRuido",
     "inputs": {
@@ -8011,6 +8045,21 @@
       }
     }
   },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "Cargar modelo de eliminación de fondo",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "nombre_del_modelo_de_eliminación_de_fondo",
+        "tooltip": "El modelo utilizado para eliminar fondos de imágenes"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "modelo_de_fondo",
+        "tooltip": null
+      }
+    }
+  },
   "LoadImage": {
     "display_name": "Cargar Imagen",
     "inputs": {
@@ -13457,6 +13506,25 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "RemoveBackground": {
+    "display_name": "Eliminar fondo",
+    "inputs": {
+      "bg_removal_model": {
+        "name": "modelo_de_eliminación_de_fondo",
+        "tooltip": "Modelo de eliminación de fondo utilizado para generar la máscara"
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Imagen de entrada para eliminar el fondo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "máscara",
+        "tooltip": "Máscara de primer plano generada"
       }
     }
   },

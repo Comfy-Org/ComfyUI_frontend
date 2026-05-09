@@ -24,6 +24,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "batch_size": {
+        "name": "toplu_boyut"
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "length": {
+        "name": "uzunluk"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_image": {
+        "name": "başlangıç_görseli"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "Gürültü Ekle",
     "inputs": {
@@ -8011,6 +8045,21 @@
       }
     }
   },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "Arka Plan Kaldırma Modelini Yükle",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "arka_plan_kaldırma_adı",
+        "tooltip": "Görsellerden arka planı kaldırmak için kullanılan model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bg_model",
+        "tooltip": null
+      }
+    }
+  },
   "LoadImage": {
     "display_name": "Görüntü Yükle",
     "inputs": {
@@ -13457,6 +13506,25 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "RemoveBackground": {
+    "display_name": "Arka Planı Kaldır",
+    "inputs": {
+      "bg_removal_model": {
+        "name": "arka_plan_kaldırma_modeli",
+        "tooltip": "Maskeyi oluşturmak için kullanılan arka plan kaldırma modeli"
+      },
+      "image": {
+        "name": "görsel",
+        "tooltip": "Arka planı kaldırılacak giriş görseli"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": "Oluşturulan ön plan maskesi"
       }
     }
   },
