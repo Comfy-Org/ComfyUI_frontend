@@ -83,8 +83,7 @@ function isWidgetShownOnParents(
 
       return isWidgetPromotedOnSubgraphNode(parent, {
         sourceNodeId: interiorNodeId,
-        sourceWidgetName: widget.sourceWidgetName,
-        disambiguatingSourceNodeId: widget.disambiguatingSourceNodeId
+        sourceWidgetName: widget.sourceWidgetName
       })
     }
     return isWidgetPromotedOnSubgraphNode(parent, {

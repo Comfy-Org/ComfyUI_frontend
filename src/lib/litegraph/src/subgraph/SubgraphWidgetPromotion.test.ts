@@ -8,6 +8,7 @@ import type {
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
 import { BaseWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigrationFlush'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 
 import {
@@ -356,7 +357,14 @@ describe('SubgraphWidgetPromotion', () => {
       expect(widgetSourceIds).toContain(keptSamplerNodeId)
     })
 
-    it('should normalize legacy prefixed proxyWidgets on configure', () => {
+    it('quarantines legacy prefixed proxyWidgets that target a deep leaf widget', () => {
+      // ADR 0009: each SubgraphNode is opaque. The legacy
+      // "<nestedId>: <leafId>: <leafWidgetName>" encoding referenced a deep
+      // leaf widget through nested chain traversal. Under the opaque model
+      // the migration cannot resolve that identity at the immediate level,
+      // so the entry is quarantined rather than reconstructed as a
+      // canonical promoted view. Users with this legacy state must
+      // re-promote through each subgraph level explicitly.
       const rootGraph = createTestRootGraph()
 
       const innerSubgraph = createTestSubgraph({
@@ -396,20 +404,16 @@ describe('SubgraphWidgetPromotion', () => {
       }
 
       hostNode.configure(serializedHostNode)
+      flushProxyWidgetMigration({ hostNode })
 
       const promotedWidgets = hostNode.widgets
         .filter(isPromotedWidgetView)
         .filter((widget) => !widget.name.startsWith('$$'))
 
-      expect(promotedWidgets).toHaveLength(1)
-      expect(promotedWidgets[0].type).toBe('number')
-      expect(promotedWidgets[0].value).toBe(123)
-      expect(promotedWidgets[0].sourceWidgetName).toBe('noise_seed')
-      expect(promotedWidgets[0].disambiguatingSourceNodeId).toBe(
-        String(samplerNode.id)
-      )
-      // ADR 0009: configure() no longer rewrites properties.proxyWidgets.
-      // Normalization is observable on the synthetic widget surface above.
+      expect(promotedWidgets).toHaveLength(0)
+      expect(hostNode.properties.proxyWidgets).toBeUndefined()
+      const quarantine = hostNode.properties.proxyWidgetErrorQuarantine
+      expect(Array.isArray(quarantine) && quarantine.length).toBeGreaterThan(0)
     })
 
     it('should preserve promoted widget entries after cloning', () => {

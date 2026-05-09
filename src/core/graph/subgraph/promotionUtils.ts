@@ -36,8 +36,7 @@ export function getWidgetName(w: IBaseWidget): string {
 export function isLinkedPromotion(
   subgraphNode: SubgraphNode,
   sourceNodeId: string,
-  sourceWidgetName: string,
-  disambiguatingSourceNodeId?: string
+  sourceWidgetName: string
 ): boolean {
   return subgraphNode.inputs.some((input) => {
     const w = input._widget
@@ -45,9 +44,7 @@ export function isLinkedPromotion(
       w &&
       isPromotedWidgetView(w) &&
       w.sourceNodeId === sourceNodeId &&
-      w.sourceWidgetName === sourceWidgetName &&
-      (!disambiguatingSourceNodeId ||
-        w.disambiguatingSourceNodeId === disambiguatingSourceNodeId)
+      w.sourceWidgetName === sourceWidgetName
     )
   })
 }
@@ -155,14 +152,13 @@ function isSamePromotedWidget(left: IBaseWidget, right: IBaseWidget): boolean {
     isPromotedWidgetView(left) &&
     isPromotedWidgetView(right) &&
     left.sourceNodeId === right.sourceNodeId &&
-    left.sourceWidgetName === right.sourceWidgetName &&
-    left.disambiguatingSourceNodeId === right.disambiguatingSourceNodeId
+    left.sourceWidgetName === right.sourceWidgetName
   )
 }
 
 export function getSourceNodeId(w: IBaseWidget): string | undefined {
   if (!isPromotedWidgetView(w)) return undefined
-  return w.disambiguatingSourceNodeId ?? w.sourceNodeId
+  return w.sourceNodeId
 }
 
 function isPreviewExposed(
@@ -201,8 +197,7 @@ export function isWidgetPromotedOnSubgraphNode(
     isLinkedPromotion(
       subgraphNode,
       source.sourceNodeId,
-      source.sourceWidgetName,
-      source.disambiguatingSourceNodeId
+      source.sourceWidgetName
     ) || isPreviewExposed(subgraphNode, source)
   )
 }
@@ -213,10 +208,7 @@ function toPromotionSource(
 ): PromotedWidgetSource {
   return {
     sourceNodeId: String(node.id),
-    sourceWidgetName: getWidgetName(widget),
-    disambiguatingSourceNodeId: isPromotedWidgetView(widget)
-      ? widget.disambiguatingSourceNodeId
-      : undefined
+    sourceWidgetName: getWidgetName(widget)
   }
 }
 
@@ -346,9 +338,7 @@ export function demoteWidget(
         linkedWidget &&
         isPromotedWidgetView(linkedWidget) &&
         linkedWidget.sourceNodeId === source.sourceNodeId &&
-        linkedWidget.sourceWidgetName === source.sourceWidgetName &&
-        linkedWidget.disambiguatingSourceNodeId ===
-          source.disambiguatingSourceNodeId
+        linkedWidget.sourceWidgetName === source.sourceWidgetName
       )
     })
     if (linkedInput) {

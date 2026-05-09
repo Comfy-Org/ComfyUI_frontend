@@ -3,7 +3,7 @@ import type {
   PrimitiveBypassTargetRef,
   ProxyEntryClassification
 } from '@/core/graph/subgraph/migration/proxyWidgetMigrationPlanTypes'
-import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { LegacyProxyEntrySource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   getPromotableWidgets,
@@ -19,9 +19,9 @@ interface ClassificationResult {
 
 interface ClassifyProxyEntryArgs {
   hostNode: SubgraphNode
-  normalized: PromotedWidgetSource
+  normalized: LegacyProxyEntrySource
   /** All proxy entries this planner pass is considering — needed to detect primitive fan-out. */
-  cohort: readonly PromotedWidgetSource[]
+  cohort: readonly LegacyProxyEntrySource[]
 }
 
 const PRIMITIVE_NODE_TYPE = 'PrimitiveNode'
@@ -33,7 +33,7 @@ type LinkedInputMatch =
 
 function findLinkedSubgraphInputMatch(
   hostNode: SubgraphNode,
-  normalized: PromotedWidgetSource
+  normalized: LegacyProxyEntrySource
 ): LinkedInputMatch {
   const matches: string[] = []
   for (const input of hostNode.inputs) {
@@ -41,10 +41,7 @@ function findLinkedSubgraphInputMatch(
     if (!widget || !isPromotedWidgetView(widget)) continue
     if (
       widget.sourceNodeId === normalized.sourceNodeId &&
-      widget.sourceWidgetName === normalized.sourceWidgetName &&
-      (!normalized.disambiguatingSourceNodeId ||
-        widget.disambiguatingSourceNodeId ===
-          normalized.disambiguatingSourceNodeId)
+      widget.sourceWidgetName === normalized.sourceWidgetName
     ) {
       matches.push(input.name)
     }
@@ -74,7 +71,7 @@ function collectPrimitiveTargets(
 }
 
 function cohortReferencesPrimitive(
-  cohort: readonly PromotedWidgetSource[],
+  cohort: readonly LegacyProxyEntrySource[],
   primitiveNodeId: string
 ): boolean {
   let count = 0

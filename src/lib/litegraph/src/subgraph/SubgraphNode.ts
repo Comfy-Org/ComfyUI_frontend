@@ -147,15 +147,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       if (!targetWidget) continue
 
       if (inputNode.isSubgraphNode()) {
-        if (isPromotedWidgetView(targetWidget)) {
-          return {
-            sourceNodeId: String(inputNode.id),
-            sourceWidgetName: targetWidget.sourceWidgetName,
-            disambiguatingSourceNodeId:
-              targetWidget.disambiguatingSourceNodeId ??
-              targetWidget.sourceNodeId
-          }
-        }
+        // ADR 0009: each SubgraphNode is opaque. The promoted source on the
+        // parent host always references the immediate child's input slot, not
+        // the deeper leaf widget identity that the child internally exposes.
         return {
           sourceNodeId: String(inputNode.id),
           sourceWidgetName: targetInput.name
@@ -227,8 +221,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         entry.inputKey,
         entry.sourceNodeId,
         entry.sourceWidgetName,
-        entry.inputName,
-        entry.disambiguatingSourceNodeId
+        entry.inputName
       )
       if (seenEntryKeys.has(entryKey)) return false
 
@@ -287,7 +280,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           entry.sourceNodeId,
           entry.sourceWidgetName,
           entry.viewKey ? displayNameByViewKey.get(entry.viewKey) : undefined,
-          entry.disambiguatingSourceNodeId,
           entry.slotName
         )
     )
@@ -318,28 +310,18 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     sourceNodeId: string
     sourceWidgetName: string
     viewKey: string
-    disambiguatingSourceNodeId?: string
     slotName: string
   }> {
     return linkedEntries.map(
-      ({
-        inputKey,
-        inputName,
-        slotName,
-        sourceNodeId,
-        sourceWidgetName,
-        disambiguatingSourceNodeId
-      }) => ({
+      ({ inputKey, inputName, slotName, sourceNodeId, sourceWidgetName }) => ({
         sourceNodeId,
         sourceWidgetName,
         slotName,
-        disambiguatingSourceNodeId,
         viewKey: this._makePromotionViewKey(
           inputKey,
           sourceNodeId,
           sourceWidgetName,
-          inputName,
-          disambiguatingSourceNodeId
+          inputName
         )
       })
     )
@@ -354,8 +336,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           entry.inputKey,
           entry.sourceNodeId,
           entry.sourceWidgetName,
-          entry.inputName,
-          entry.disambiguatingSourceNodeId
+          entry.inputName
         ),
         entry.inputName
       ])
@@ -366,18 +347,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     inputKey: string,
     sourceNodeId: string,
     sourceWidgetName: string,
-    inputName = '',
-    disambiguatingSourceNodeId?: string
+    inputName = ''
   ): string {
-    return disambiguatingSourceNodeId
-      ? JSON.stringify([
-          inputKey,
-          sourceNodeId,
-          sourceWidgetName,
-          inputName,
-          disambiguatingSourceNodeId
-        ])
-      : JSON.stringify([inputKey, sourceNodeId, sourceWidgetName, inputName])
+    return JSON.stringify([inputKey, sourceNodeId, sourceWidgetName, inputName])
   }
 
   /** Manages lifecycle of all subgraph event listeners */
@@ -882,10 +854,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     const nodeId = String(interiorNode.id)
     const widgetName = interiorWidget.name
-    const sourceNodeId =
-      interiorNode.isSubgraphNode() && isPromotedWidgetView(interiorWidget)
-        ? interiorWidget.sourceNodeId
-        : undefined
 
     const previousView = input._widget
 
@@ -911,15 +879,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           nodeId,
           widgetName,
           input.label ?? subgraphInput.name,
-          sourceNodeId,
           subgraphInput.name
         ),
       this._makePromotionViewKey(
         String(subgraphInput.id),
         nodeId,
         widgetName,
-        input.label ?? input.name,
-        sourceNodeId
+        input.label ?? input.name
       )
     )
 
@@ -1094,8 +1060,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const resolved = resolveConcretePromotedWidget(
       this,
       view.sourceNodeId,
-      view.sourceWidgetName,
-      view.disambiguatingSourceNodeId
+      view.sourceWidgetName
     )
     if (resolved.status !== 'resolved') return
 
@@ -1124,8 +1089,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           String(input._subgraphSlot.id),
           view.sourceNodeId,
           view.sourceWidgetName,
-          inputName,
-          view.disambiguatingSourceNodeId
+          inputName
         )
       )
     }

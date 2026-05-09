@@ -46,12 +46,7 @@ const { t } = useI18n()
 const hasParents = computed(() => parents?.length > 0)
 const isLinked = computed(() => {
   if (!node.isSubgraphNode() || !isPromotedWidgetView(widget)) return false
-  return isLinkedPromotion(
-    node,
-    widget.sourceNodeId,
-    widget.sourceWidgetName,
-    widget.disambiguatingSourceNodeId
-  )
+  return isLinkedPromotion(node, widget.sourceNodeId, widget.sourceWidgetName)
 })
 const canToggleVisibility = computed(() => hasParents.value && !isLinked.value)
 const favoriteNode = computed(() =>

@@ -16,7 +16,6 @@ import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxy
 import { readHostQuarantine } from '@/core/graph/subgraph/migration/quarantineEntry'
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})
@@ -69,7 +68,7 @@ describe(flushProxyWidgetMigration, () => {
 
     const exposures = usePreviewExposureStore().getExposures(
       host.rootGraph.id,
-      createNodeLocatorId(host.rootGraph.id, host.id)
+      String(host.id)
     )
     expect(exposures).toHaveLength(1)
     expect(exposures[0].sourcePreviewName).toBe('$$canvas-image-preview')
@@ -152,10 +151,7 @@ describe(flushProxyWidgetMigration, () => {
       expect(first.previewMigrated).toBe(1)
 
       const exposuresAfterFirst = usePreviewExposureStore()
-        .getExposures(
-          host.rootGraph.id,
-          createNodeLocatorId(host.rootGraph.id, host.id)
-        )
+        .getExposures(host.rootGraph.id, String(host.id))
         .map((e) => ({ ...e }))
 
       const second = flushProxyWidgetMigration({ hostNode: host })
@@ -169,7 +165,7 @@ describe(flushProxyWidgetMigration, () => {
       expect(
         usePreviewExposureStore().getExposures(
           host.rootGraph.id,
-          createNodeLocatorId(host.rootGraph.id, host.id)
+          String(host.id)
         )
       ).toEqual(exposuresAfterFirst)
     })

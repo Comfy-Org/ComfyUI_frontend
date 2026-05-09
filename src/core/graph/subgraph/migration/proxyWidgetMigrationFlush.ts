@@ -8,7 +8,7 @@ import {
 } from '@/core/graph/subgraph/migration/quarantineEntry'
 import { repairPrimitiveFanout } from '@/core/graph/subgraph/migration/repairPrimitiveFanout'
 import { repairValueWidget } from '@/core/graph/subgraph/migration/repairValueWidget'
-import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { LegacyProxyEntrySource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import type { ProxyWidgetErrorQuarantineEntry } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
@@ -37,7 +37,7 @@ const EMPTY_RESULT: FlushProxyWidgetMigrationResult = {
 }
 
 function toLegacyTuple(
-  source: PromotedWidgetSource
+  source: LegacyProxyEntrySource
 ): SerializedProxyWidgetTuple {
   return source.disambiguatingSourceNodeId
     ? [

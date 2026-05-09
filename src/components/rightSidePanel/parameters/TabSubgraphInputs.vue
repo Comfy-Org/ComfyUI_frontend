@@ -63,8 +63,7 @@ function isSamePromotedWidget(a: IBaseWidget, b: IBaseWidget): boolean {
     isPromotedWidgetView(a) &&
     isPromotedWidgetView(b) &&
     a.sourceNodeId === b.sourceNodeId &&
-    a.sourceWidgetName === b.sourceWidgetName &&
-    a.disambiguatingSourceNodeId === b.disambiguatingSourceNodeId
+    a.sourceWidgetName === b.sourceWidgetName
   )
 }
 
@@ -124,10 +123,7 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
     ({ node: interiorNode, widget }) =>
       !isWidgetPromotedOnSubgraphNode(node, {
         sourceNodeId: String(interiorNode.id),
-        sourceWidgetName: getWidgetName(widget),
-        disambiguatingSourceNodeId: isPromotedWidgetView(widget)
-          ? widget.disambiguatingSourceNodeId
-          : undefined
+        sourceWidgetName: getWidgetName(widget)
       })
   )
 })

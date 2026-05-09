@@ -13,7 +13,7 @@ import {
 
 import { classifyProxyEntry } from '@/core/graph/subgraph/migration/classifyProxyEntry'
 import type {
-  PromotedWidgetSource,
+  LegacyProxyEntrySource,
   PromotedWidgetView
 } from '@/core/graph/subgraph/promotedWidgetTypes'
 
@@ -41,7 +41,7 @@ function makeSource(
   sourceNodeId: string,
   sourceWidgetName: string,
   disambiguatingSourceNodeId?: string
-): PromotedWidgetSource {
+): LegacyProxyEntrySource {
   return {
     sourceNodeId,
     sourceWidgetName,
@@ -79,28 +79,26 @@ describe(classifyProxyEntry, () => {
       })
     })
 
-    it('matches already-linked inputs by disambiguatingSourceNodeId when provided', () => {
+    it('quarantines as ambiguous when canonical inputs share the same identity, even if the legacy entry has a disambiguator', () => {
+      // ADR 0009: canonical PromotedWidgetView no longer carries a
+      // `disambiguatingSourceNodeId`, so two inputs sharing the same
+      // (sourceNodeId, sourceWidgetName) cannot be told apart by the
+      // classifier. The legacy entry's disambiguator is metadata only and
+      // does not break the tie.
       const host = buildHost()
       const innerNode = new LGraphNode('Inner')
       innerNode.addWidget('number', 'seed', 0, () => {})
       host.subgraph.add(innerNode)
 
-      const firstInput = host.addInput('first_seed', '*')
-      firstInput._widget = fromPartial<PromotedWidgetView>({
-        node: host,
-        name: 'seed',
-        sourceNodeId: String(innerNode.id),
-        sourceWidgetName: 'seed',
-        disambiguatingSourceNodeId: 'first'
-      })
-      const secondInput = host.addInput('second_seed', '*')
-      secondInput._widget = fromPartial<PromotedWidgetView>({
-        node: host,
-        name: 'seed',
-        sourceNodeId: String(innerNode.id),
-        sourceWidgetName: 'seed',
-        disambiguatingSourceNodeId: 'second'
-      })
+      for (const inputName of ['first_seed', 'second_seed']) {
+        const input = host.addInput(inputName, '*')
+        input._widget = fromPartial<PromotedWidgetView>({
+          node: host,
+          name: 'seed',
+          sourceNodeId: String(innerNode.id),
+          sourceWidgetName: 'seed'
+        })
+      }
 
       const normalized = makeSource(String(innerNode.id), 'seed', 'second')
       const result = classifyProxyEntry({
@@ -109,9 +107,9 @@ describe(classifyProxyEntry, () => {
         cohort: [normalized]
       })
 
-      expect(result.plan).toEqual({
-        kind: 'alreadyLinked',
-        subgraphInputName: 'second_seed'
+      expect(result).toEqual({
+        classification: 'unknown',
+        plan: { kind: 'quarantine', reason: 'ambiguousSubgraphInput' }
       })
     })
 

@@ -117,7 +117,12 @@ describe(repairValueWidget, () => {
       expect(inputSlot._widget?.value).toBe(7)
     })
 
-    it('applies host value to the linked input with the matching disambiguator', () => {
+    it('routes by subgraphInputName, ignoring legacy disambiguator metadata', () => {
+      // ADR 0009: canonical PromotedWidgetView no longer carries a
+      // `disambiguatingSourceNodeId`. Repair routes the host value to the
+      // input named by `subgraphInputName`; any disambiguator carried on the
+      // legacy entry is metadata only and does not affect the canonical
+      // match.
       const host = buildHost()
       const innerNode = new LGraphNode('Inner')
       innerNode.addWidget('number', 'seed', 0, () => {})
@@ -129,7 +134,6 @@ describe(repairValueWidget, () => {
         name: 'seed',
         sourceNodeId: String(innerNode.id),
         sourceWidgetName: 'seed',
-        disambiguatingSourceNodeId: 'first',
         value: 1
       })
       const secondInput = host.addInput('second_seed', '*')
@@ -138,7 +142,6 @@ describe(repairValueWidget, () => {
         name: 'seed',
         sourceNodeId: String(innerNode.id),
         sourceWidgetName: 'seed',
-        disambiguatingSourceNodeId: 'second',
         value: 2
       })
 

@@ -1,4 +1,4 @@
-import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { LegacyProxyEntrySource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { ProxyWidgetQuarantineReason } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
@@ -56,7 +56,7 @@ type MigrationPlanKind = MigrationPlan['kind']
  * applying mutations.
  */
 export interface PendingMigrationEntry {
-  normalized: PromotedWidgetSource
+  normalized: LegacyProxyEntrySource
   legacyOrderIndex: number
   hostValue: HostValue
   classification: ProxyEntryClassification

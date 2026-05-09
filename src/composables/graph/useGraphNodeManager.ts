@@ -227,18 +227,15 @@ function safeWidgetMapper(
     }
   }
 
-  function resolvePromotedSourceByInputName(inputName: string): {
-    sourceNodeId: string
-    sourceWidgetName: string
-    disambiguatingSourceNodeId?: string
-  } | null {
+  function resolvePromotedSourceByInputName(
+    inputName: string
+  ): PromotedWidgetSource | null {
     const resolvedTarget = resolveSubgraphInputTarget(node, inputName)
     if (!resolvedTarget) return null
 
     return {
       sourceNodeId: resolvedTarget.nodeId,
-      sourceWidgetName: resolvedTarget.widgetName,
-      disambiguatingSourceNodeId: resolvedTarget.sourceNodeId
+      sourceWidgetName: resolvedTarget.widgetName
     }
   }
 
@@ -256,10 +253,9 @@ function safeWidgetMapper(
     const matchedInput = matchPromotedInput(node.inputs, widget)
     const promotedInputName = matchedInput?.name
     const displayName = promotedInputName ?? widget.name
-    const directSource = {
+    const directSource: PromotedWidgetSource = {
       sourceNodeId: widget.sourceNodeId,
-      sourceWidgetName: widget.sourceWidgetName,
-      disambiguatingSourceNodeId: widget.disambiguatingSourceNodeId
+      sourceWidgetName: widget.sourceWidgetName
     }
     const promotedSource =
       matchedInput?._widget === widget
@@ -306,8 +302,7 @@ function safeWidgetMapper(
           ? resolveConcretePromotedWidget(
               node,
               promotedSource.sourceNodeId,
-              promotedSource.sourceWidgetName,
-              promotedSource.disambiguatingSourceNodeId
+              promotedSource.sourceWidgetName
             )
           : null
       const resolvedSource =
@@ -320,11 +315,7 @@ function safeWidgetMapper(
       const effectiveWidget = sourceWidget ?? widget
 
       const localId = isPromotedWidgetView(widget)
-        ? String(
-            sourceNode?.id ??
-              promotedSource?.disambiguatingSourceNodeId ??
-              promotedSource?.sourceNodeId
-          )
+        ? String(sourceNode?.id ?? promotedSource?.sourceNodeId)
         : undefined
       const nodeId =
         subgraphId && localId ? `${subgraphId}:${localId}` : undefined

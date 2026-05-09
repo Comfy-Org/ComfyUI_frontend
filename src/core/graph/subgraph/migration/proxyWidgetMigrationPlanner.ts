@@ -6,7 +6,7 @@ import type {
 } from '@/core/graph/subgraph/migration/proxyWidgetMigrationPlanTypes'
 import { HOST_VALUE_HOLE } from '@/core/graph/subgraph/migration/proxyWidgetMigrationPlanTypes'
 import { normalizeLegacyProxyWidgetEntry } from '@/core/graph/subgraph/legacyProxyWidgetNormalization'
-import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { LegacyProxyEntrySource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
@@ -37,7 +37,7 @@ export function planProxyWidgetMigration(
   const tuples = parseProxyWidgets(hostNode.properties.proxyWidgets)
   if (tuples.length === 0) return { entries: [] }
 
-  const normalized: PromotedWidgetSource[] = tuples.map(
+  const normalized: LegacyProxyEntrySource[] = tuples.map(
     ([sourceNodeId, sourceWidgetName, disambiguator]) =>
       normalizeLegacyProxyWidgetEntry(
         hostNode,

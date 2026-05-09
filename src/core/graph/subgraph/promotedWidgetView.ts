@@ -31,12 +31,7 @@ export { isPromotedWidgetView } from './promotedWidgetTypes'
 export function getPromotedWidgetHostStateName(
   widget: IPromotedWidgetView
 ): string {
-  return [
-    widget.name,
-    widget.sourceNodeId,
-    widget.sourceWidgetName,
-    widget.disambiguatingSourceNodeId ?? ''
-  ].join(':')
+  return [widget.name, widget.sourceNodeId, widget.sourceWidgetName].join(':')
 }
 
 interface SubgraphSlotRef {
@@ -76,7 +71,6 @@ export function createPromotedWidgetView(
   nodeId: string,
   widgetName: string,
   displayName?: string,
-  disambiguatingSourceNodeId?: string,
   identityName?: string
 ): IPromotedWidgetView {
   return new PromotedWidgetView(
@@ -84,7 +78,6 @@ export function createPromotedWidgetView(
     nodeId,
     widgetName,
     displayName,
-    disambiguatingSourceNodeId,
     identityName
   )
 }
@@ -120,7 +113,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
     nodeId: string,
     widgetName: string,
     private readonly displayName?: string,
-    readonly disambiguatingSourceNodeId?: string,
     private readonly identityName?: string
   ) {
     this.sourceNodeId = nodeId
@@ -453,8 +445,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
     return resolvePromotedWidgetAtHost(
       this.subgraphNode,
       this.sourceNodeId,
-      this.sourceWidgetName,
-      this.disambiguatingSourceNodeId
+      this.sourceWidgetName
     )
   }
 
@@ -468,8 +459,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
     const result = resolveConcretePromotedWidget(
       this.subgraphNode,
       this.sourceNodeId,
-      this.sourceWidgetName,
-      this.disambiguatingSourceNodeId
+      this.sourceWidgetName
     )
     const resolved = result.status === 'resolved' ? result.resolved : undefined
 
@@ -509,9 +499,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
       if (boundWidget && isPromotedWidgetView(boundWidget)) {
         return (
           boundWidget.sourceNodeId === this.sourceNodeId &&
-          boundWidget.sourceWidgetName === this.sourceWidgetName &&
-          boundWidget.disambiguatingSourceNodeId ===
-            this.disambiguatingSourceNodeId
+          boundWidget.sourceWidgetName === this.sourceWidgetName
         )
       }
 

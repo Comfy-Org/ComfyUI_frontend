@@ -25,8 +25,7 @@ function findHostInputForLinkedSource(
   hostNode: SubgraphNode,
   sourceNodeId: string,
   sourceWidgetName: string,
-  subgraphInputName: string | undefined,
-  disambiguatingSourceNodeId?: string
+  subgraphInputName: string | undefined
 ):
   | { kind: 'none' }
   | { kind: 'one'; input: INodeInputSlot }
@@ -40,9 +39,7 @@ function findHostInputForLinkedSource(
     if (!widget || !isPromotedWidgetView(widget)) return false
     return (
       widget.sourceNodeId === sourceNodeId &&
-      widget.sourceWidgetName === sourceWidgetName &&
-      (!disambiguatingSourceNodeId ||
-        widget.disambiguatingSourceNodeId === disambiguatingSourceNodeId)
+      widget.sourceWidgetName === sourceWidgetName
     )
   })
   if (matches.length === 0) return { kind: 'none' }
@@ -68,8 +65,7 @@ function repairAlreadyLinked(
     entry.normalized.sourceWidgetName,
     entry.plan.kind === 'alreadyLinked'
       ? entry.plan.subgraphInputName
-      : undefined,
-    entry.normalized.disambiguatingSourceNodeId
+      : undefined
   )
   if (hostInput.kind === 'ambiguous') {
     return { ok: false, reason: 'ambiguousSubgraphInput' }
