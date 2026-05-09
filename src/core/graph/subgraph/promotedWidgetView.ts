@@ -240,7 +240,10 @@ class PromotedWidgetView implements IPromotedWidgetView {
       name: this.hostWidgetStateName,
       type: resolved?.widget.type ?? 'button',
       value,
-      options: resolved?.widget.options ?? {},
+      // Clone — never share the interior widget's options reference, or
+      // host-state mutations (e.g. disabled toggle) leak into the shared
+      // interior across every SubgraphNode instance.
+      options: { ...(resolved?.widget.options ?? {}) },
       label: this.displayName,
       serialize: this.serialize,
       disabled: this.computedDisabled

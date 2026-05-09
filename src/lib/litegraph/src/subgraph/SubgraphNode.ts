@@ -716,6 +716,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     widgetValues: ExportedSubgraphInstance['widgets_values']
   ): void {
     if (!widgetValues) return
+    // Transient clones created during clipboard duplicate go through
+    // configure() with `id === -1` before being added to the graph.
+    // Hydrating under id `-1` would poison `useWidgetValueStore` and
+    // race with the eventual real instance for ownership of host state.
+    if (this.id === -1) return
 
     let valueIndex = 0
     for (const input of this.inputs) {
