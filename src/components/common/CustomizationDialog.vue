@@ -1,5 +1,9 @@
 <template>
-  <Dialog :open="visible" @update:open="(open) => (visible = open)">
+  <Dialog
+    :open="visible"
+    :modal="false"
+    @update:open="(open) => (visible = open)"
+  >
     <DialogPortal>
       <DialogOverlay />
       <DialogContent size="md" :aria-labelledby="titleId">

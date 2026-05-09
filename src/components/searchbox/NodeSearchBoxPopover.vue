@@ -1,5 +1,5 @@
 <template>
-  <DialogRoot :open="visible" @update:open="onOpenChange">
+  <DialogRoot :open="visible" :modal="false" @update:open="onOpenChange">
     <DialogPortal>
       <DialogOverlay class="fixed inset-0 z-1700 bg-transparent" />
       <DialogContent
