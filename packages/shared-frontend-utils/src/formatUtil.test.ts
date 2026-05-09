@@ -3,12 +3,14 @@ import { describe, expect, it } from 'vitest'
 import {
   appendWorkflowJsonExt,
   ensureWorkflowSuffix,
+  getFilePathSeparatorVariants,
   getFilenameDetails,
   getMediaTypeFromFilename,
   getPathDetails,
   highlightQuery,
   isCivitaiModelUrl,
   isPreviewableMediaType,
+  joinFilePath,
   truncateFilename
 } from './formatUtil'
 
@@ -296,6 +298,42 @@ describe('formatUtil', () => {
         filename: 'test',
         suffix: 'json'
       })
+    })
+  })
+
+  describe('joinFilePath', () => {
+    it('joins subfolder and filename with normalized slash separators', () => {
+      expect(joinFilePath('nested\\folder', 'child\\file.png')).toBe(
+        'nested/folder/child/file.png'
+      )
+    })
+
+    it('trims boundary separators without changing the filename body', () => {
+      expect(joinFilePath('/nested/folder/', '/file.png')).toBe(
+        'nested/folder/file.png'
+      )
+    })
+
+    it('returns the normalized filename when no subfolder is provided', () => {
+      expect(joinFilePath('', 'nested\\file.png')).toBe('nested/file.png')
+    })
+
+    it('returns the normalized subfolder without a trailing slash when no filename is provided', () => {
+      expect(joinFilePath('nested\\folder', '')).toBe('nested/folder')
+      expect(joinFilePath('nested\\folder', null)).toBe('nested/folder')
+    })
+  })
+
+  describe('getFilePathSeparatorVariants', () => {
+    it('returns slash and backslash variants for nested paths', () => {
+      expect(getFilePathSeparatorVariants('nested\\folder/file.png')).toEqual([
+        'nested/folder/file.png',
+        'nested\\folder\\file.png'
+      ])
+    })
+
+    it('returns a single value when no separator is present', () => {
+      expect(getFilePathSeparatorVariants('file.png')).toEqual(['file.png'])
     })
   })
 
