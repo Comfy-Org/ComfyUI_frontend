@@ -1,21 +1,20 @@
 <template>
-  <Dialog :open="visible" @update:open="onOpenChange">
+  <DialogRoot :open="visible" @update:open="onOpenChange">
     <DialogPortal>
-      <DialogOverlay />
+      <DialogOverlay class="fixed inset-0 z-1700 bg-transparent" />
       <DialogContent
-        size="full"
         :class="
           cn(
-            'top-1/4 translate-y-0 border-0 bg-transparent p-0 shadow-none',
+            'fixed top-[25vh] left-1/2 z-1701 -translate-x-1/2 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
             useSearchBoxV2
-              ? 'w-full max-w-4xl min-w-lg overflow-visible max-md:min-w-0'
-              : 'mt-[25vh] w-3/5 max-w-3xl min-w-[24rem] max-md:ml-0'
+              ? 'w-full max-w-4xl min-w-lg max-md:min-w-0'
+              : 'w-3/5 max-w-3xl min-w-[24rem]'
           )
         "
         :aria-label="$t('g.search')"
         @pointer-down-outside="onPointerDownOutside"
       >
-        <VisuallyHidden as-child>
+        <VisuallyHidden>
           <DialogTitle>{{ $t('g.search') }}</DialogTitle>
         </VisuallyHidden>
         <div v-if="useSearchBoxV2" role="search" class="relative">
@@ -45,21 +44,22 @@
         />
       </DialogContent>
     </DialogPortal>
-  </Dialog>
+  </DialogRoot>
 </template>
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener, useWindowSize } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { VisuallyHidden } from 'reka-ui'
+import {
+  DialogContent,
+  DialogOverlay,
+  DialogPortal,
+  DialogRoot,
+  DialogTitle,
+  VisuallyHidden
+} from 'reka-ui'
 import { computed, ref, toRaw, watch, watchEffect } from 'vue'
-
-import Dialog from '@/components/ui/dialog/Dialog.vue'
-import DialogContent from '@/components/ui/dialog/DialogContent.vue'
-import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
-import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { LiteGraphCanvasEvent } from '@/lib/litegraph/src/litegraph'
