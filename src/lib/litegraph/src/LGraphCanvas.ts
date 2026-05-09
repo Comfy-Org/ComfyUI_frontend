@@ -3793,6 +3793,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         typeof pointer.pointerId === 'number' &&
         pointer.pointerId === e.pointerId
       ) {
+        this._finishDragZoom()
         pointer.reset()
       }
       return
