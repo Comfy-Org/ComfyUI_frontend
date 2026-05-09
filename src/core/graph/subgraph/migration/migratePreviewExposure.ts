@@ -1,7 +1,6 @@
 import type { PendingMigrationEntry } from '@/core/graph/subgraph/migration/proxyWidgetMigrationPlanTypes'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 type MigratePreviewExposureResult =
   | { ok: true; previewName: string }
@@ -50,10 +49,7 @@ export function migratePreviewExposure(
     }
   }
 
-  const hostNodeLocator = createNodeLocatorId(
-    hostNode.rootGraph.id,
-    hostNode.id
-  )
+  const hostNodeLocator = String(hostNode.id)
   const existing = store
     .getExposures(hostNode.rootGraph.id, hostNodeLocator)
     .find(

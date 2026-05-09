@@ -10,7 +10,6 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 type TestPromotedWidget = IBaseWidget & {
   sourceNodeId: string
@@ -30,7 +29,8 @@ import {
   isPreviewPseudoWidget,
   promoteValueWidgetViaSubgraphInput,
   promoteRecommendedWidgets,
-  pruneDisconnected
+  pruneDisconnected,
+  reorderSubgraphInputsByName
 } from './promotionUtils'
 
 function widget(
@@ -155,10 +155,7 @@ describe('pruneDisconnected', () => {
     interiorNode.type = 'PreviewImage'
     subgraphNode.subgraph.add(interiorNode)
 
-    const hostLocator = createNodeLocatorId(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id
-    )
+    const hostLocator = String(subgraphNode.id)
     usePreviewExposureStore().addExposure(
       subgraphNode.rootGraph.id,
       hostLocator,
@@ -275,10 +272,7 @@ describe('promoteRecommendedWidgets', () => {
 
     promoteRecommendedWidgets(subgraphNode)
 
-    const hostLocator = createNodeLocatorId(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id
-    )
+    const hostLocator = String(subgraphNode.id)
     expect(
       usePreviewExposureStore().getExposures(
         subgraphNode.rootGraph.id,
@@ -324,10 +318,7 @@ describe('promoteRecommendedWidgets', () => {
 
     promoteRecommendedWidgets(subgraphNode)
 
-    const hostLocator = createNodeLocatorId(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id
-    )
+    const hostLocator = String(subgraphNode.id)
     expect(
       usePreviewExposureStore().getExposures(
         subgraphNode.rootGraph.id,
@@ -354,10 +345,7 @@ describe('promoteRecommendedWidgets', () => {
     // which eagerly registers $$canvas-image-preview for supported node types
     const subgraphNode = createTestSubgraphNode(subgraph)
 
-    const hostLocator = createNodeLocatorId(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id
-    )
+    const hostLocator = String(subgraphNode.id)
     expect(
       usePreviewExposureStore().getExposures(
         subgraphNode.rootGraph.id,
@@ -490,5 +478,35 @@ describe('isLinkedPromotion', () => {
     expect(isLinkedPromotion(subgraphNode, '4', 'value')).toBe(true)
     expect(isLinkedPromotion(subgraphNode, '3', 'value')).toBe(false)
     expect(isLinkedPromotion(subgraphNode, '5', 'string_a')).toBe(false)
+  })
+})
+
+describe('reorderSubgraphInputsByName', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('reorders subgraph inputs and host inputs by subgraph input name', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'first', type: 'number' },
+        { name: 'second', type: 'number' },
+        { name: 'third', type: 'number' }
+      ]
+    })
+    const host = createTestSubgraphNode(subgraph)
+
+    reorderSubgraphInputsByName(host, ['third', 'first', 'second'])
+
+    expect(host.subgraph.inputs.map((input) => input.name)).toEqual([
+      'third',
+      'first',
+      'second'
+    ])
+    expect(host.inputs.map((input) => input.name)).toEqual([
+      'third',
+      'first',
+      'second'
+    ])
   })
 })

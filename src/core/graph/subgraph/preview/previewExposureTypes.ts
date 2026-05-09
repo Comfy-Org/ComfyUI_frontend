@@ -3,9 +3,6 @@ import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
 /**
  * One step along a chain of preview exposures rooted at an outer host.
- *
- * `exposure` is the canonical entry on `(rootGraphId, hostNodeLocator)` that
- * the walk traversed at this step.
  */
 export interface ResolvedPreviewChainStep {
   rootGraphId: UUID

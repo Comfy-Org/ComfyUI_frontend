@@ -15,7 +15,6 @@ import { HOST_VALUE_HOLE } from '@/core/graph/subgraph/migration/proxyWidgetMigr
 import { migratePreviewExposure } from '@/core/graph/subgraph/migration/migratePreviewExposure'
 import type { ResolveNestedHostFn } from '@/stores/previewExposureStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})
@@ -75,7 +74,7 @@ describe(migratePreviewExposure, () => {
       ok: true,
       previewName: '$$canvas-image-preview'
     })
-    const locator = createNodeLocatorId(host.rootGraph.id, host.id)
+    const locator = String(host.id)
     expect(store.getExposures(host.rootGraph.id, locator)).toHaveLength(1)
   })
 
@@ -87,7 +86,7 @@ describe(migratePreviewExposure, () => {
     host.subgraph.add(otherInner)
 
     const store = usePreviewExposureStore()
-    const locator = createNodeLocatorId(host.rootGraph.id, host.id)
+    const locator = String(host.id)
     store.addExposure(host.rootGraph.id, locator, {
       sourceNodeId: String(innerNode.id),
       sourcePreviewName: '$$canvas-image-preview'
@@ -114,7 +113,7 @@ describe(migratePreviewExposure, () => {
     host.subgraph.add(innerNode)
 
     const store = usePreviewExposureStore()
-    const locator = createNodeLocatorId(host.rootGraph.id, host.id)
+    const locator = String(host.id)
     store.addExposure(host.rootGraph.id, locator, {
       sourceNodeId: String(innerNode.id),
       sourcePreviewName: '$$canvas-image-preview'
@@ -171,14 +170,8 @@ describe(migratePreviewExposure, () => {
     outerSubgraph.add(placeholder)
 
     const store = usePreviewExposureStore()
-    const innerLocator = createNodeLocatorId(
-      innerHost.rootGraph.id,
-      innerHost.id
-    )
-    const outerLocator = createNodeLocatorId(
-      outerHost.rootGraph.id,
-      outerHost.id
-    )
+    const innerLocator = String(innerHost.id)
+    const outerLocator = String(outerHost.id)
 
     // Inner host: the leaf exposure (canonical $$ name) the outer chain
     // ultimately resolves to.

@@ -61,6 +61,7 @@ const icon = computed(() =>
     </Button>
     <div
       v-if="isDraggable"
+      data-testid="subgraph-widget-drag-handle"
       class="pointer-events-none icon-[lucide--grip-vertical] size-4"
     />
   </div>

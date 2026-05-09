@@ -18,7 +18,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
 
@@ -53,6 +52,23 @@ export function isLinkedPromotion(
   })
 }
 
+export function reorderSubgraphInputsByName(
+  subgraphNode: SubgraphNode,
+  orderedInputNames: readonly string[]
+): void {
+  const order = new Map(
+    orderedInputNames.map((name, index) => [name, index] as const)
+  )
+  const byOrder = <T extends { name: string }>(left: T, right: T) => {
+    const leftOrder = order.get(left.name) ?? Number.MAX_SAFE_INTEGER
+    const rightOrder = order.get(right.name) ?? Number.MAX_SAFE_INTEGER
+    return leftOrder - rightOrder
+  }
+
+  subgraphNode.subgraph.inputs.sort(byOrder)
+  subgraphNode.inputs.sort(byOrder)
+}
+
 export function getSourceNodeId(w: IBaseWidget): string | undefined {
   if (!isPromotedWidgetView(w)) return undefined
   return w.disambiguatingSourceNodeId ?? w.sourceNodeId
@@ -62,10 +78,7 @@ function isPreviewExposed(
   subgraphNode: SubgraphNode,
   source: PromotedWidgetSource
 ): boolean {
-  const hostLocator = createNodeLocatorId(
-    subgraphNode.rootGraph.id,
-    subgraphNode.id
-  )
+  const hostLocator = String(subgraphNode.id)
   return usePreviewExposureStore()
     .getExposures(subgraphNode.rootGraph.id, hostLocator)
     .some(
@@ -165,7 +178,7 @@ function promotePreviewViaExposure(
 ): void {
   const store = usePreviewExposureStore()
   const rootGraphId = subgraphNode.rootGraph.id
-  const hostLocator = createNodeLocatorId(rootGraphId, subgraphNode.id)
+  const hostLocator = String(subgraphNode.id)
   const existing = store
     .getExposures(rootGraphId, hostLocator)
     .some(
@@ -254,7 +267,7 @@ export function demoteWidget(
 
     if (isPreviewPseudoWidget(widget)) {
       const previewStore = usePreviewExposureStore()
-      const hostLocator = createNodeLocatorId(parent.rootGraph.id, parent.id)
+      const hostLocator = String(parent.id)
       const exposure = previewStore
         .getExposures(parent.rootGraph.id, hostLocator)
         .find(

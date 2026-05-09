@@ -61,6 +61,46 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     app.nodePreviewImages = {}
   })
 
+  it('keeps execution-keyed outputs distinct from locator-keyed outputs', () => {
+    const store = useNodeOutputStore()
+    const firstOutput = createMockOutputs([{ filename: 'first.png' }])
+    const secondOutput = createMockOutputs([{ filename: 'second.png' }])
+
+    store.setNodeOutputsByExecutionId('11:20:10', firstOutput)
+    store.setNodeOutputsByExecutionId('12:20:10', secondOutput)
+
+    expect(store.getNodeOutputByExecutionId('11:20:10')).toEqual(firstOutput)
+    expect(store.getNodeOutputByExecutionId('12:20:10')).toEqual(secondOutput)
+  })
+
+  it('merges execution-keyed outputs when merge is true', () => {
+    const store = useNodeOutputStore()
+    const initialOutput = createMockOutputs([{ filename: 'first.png' }])
+    const nextOutput = createMockOutputs([{ filename: 'second.png' }])
+
+    store.setNodeOutputsByExecutionId('11:20:10', initialOutput)
+    store.setNodeOutputsByExecutionId('11:20:10', nextOutput, { merge: true })
+
+    expect(store.getNodeOutputByExecutionId('11:20:10')?.images).toEqual([
+      { filename: 'first.png' },
+      { filename: 'second.png' }
+    ])
+  })
+
+  it('keeps execution-keyed previews distinct from locator-keyed previews', () => {
+    const store = useNodeOutputStore()
+
+    store.setNodePreviewsByExecutionId('11:20:10', ['blob:first'])
+    store.setNodePreviewsByExecutionId('12:20:10', ['blob:second'])
+
+    expect(store.getNodePreviewImagesByExecutionId('11:20:10')).toEqual([
+      'blob:first'
+    ])
+    expect(store.getNodePreviewImagesByExecutionId('12:20:10')).toEqual([
+      'blob:second'
+    ])
+  })
+
   it('should update reactive nodeOutputs.value when merging outputs', () => {
     const store = useNodeOutputStore()
     const executionId = '1'

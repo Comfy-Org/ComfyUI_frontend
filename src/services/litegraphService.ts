@@ -70,7 +70,6 @@ import {
   isVideoOutput,
   migrateWidgetsValues
 } from '@/utils/litegraphUtil'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'
@@ -188,7 +187,7 @@ export const useLitegraphService = () => {
   }
 
   function getPseudoWidgetPreviewTargets(node: SubgraphNode): LGraphNode[] {
-    const hostLocator = createNodeLocatorId(node.rootGraph.id, node.id)
+    const hostLocator = String(node.id)
     const promotions = usePreviewExposureStore()
       .getExposures(node.rootGraph.id, hostLocator)
       .map((exposure) => ({

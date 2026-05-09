@@ -34,12 +34,28 @@ export function usePromotedPreviews(
     if (!(node instanceof SubgraphNode)) return []
 
     const rootGraphId = node.rootGraph.id
-    const hostLocator = createNodeLocatorId(rootGraphId, node.id)
+    const hostLocator = String(node.id)
+    const legacyHostLocator = createNodeLocatorId(rootGraphId, node.id)
 
-    const exposures = previewExposureStore.getExposures(
+    const instanceExposures = previewExposureStore.getExposures(
       rootGraphId,
       hostLocator
     )
+    let exposures = instanceExposures
+    if (!exposures.length) {
+      const legacyExposures = previewExposureStore.getExposures(
+        rootGraphId,
+        legacyHostLocator
+      )
+      if (legacyExposures.length) {
+        previewExposureStore.setExposures(
+          rootGraphId,
+          hostLocator,
+          legacyExposures
+        )
+        exposures = legacyExposures
+      }
+    }
 
     const exposurePairs = exposures.map((exposure) => ({
       exposureName: exposure.name,
@@ -63,7 +79,34 @@ export function usePromotedPreviews(
       const sourceNode = currentHost?.subgraph.getNodeById(sourceNodeId)
       if (!(sourceNode instanceof SubgraphNode)) return undefined
 
-      const nestedHostLocator = createNodeLocatorId(rootGraphId, sourceNode.id)
+      const nestedHostLocator = `${currentHostLocator}:${sourceNode.id}`
+      const legacyNestedHostLocator = createNodeLocatorId(
+        rootGraphId,
+        sourceNode.id
+      )
+      const nestedExposures = previewExposureStore.getExposures(
+        rootGraphId,
+        nestedHostLocator
+      )
+      if (!nestedExposures.length) {
+        const definitionExposures = previewExposureStore.getExposures(
+          rootGraphId,
+          String(sourceNode.id)
+        )
+        const legacyExposures = definitionExposures.length
+          ? definitionExposures
+          : previewExposureStore.getExposures(
+              rootGraphId,
+              legacyNestedHostLocator
+            )
+        if (legacyExposures.length) {
+          previewExposureStore.setExposures(
+            rootGraphId,
+            nestedHostLocator,
+            legacyExposures
+          )
+        }
+      }
       hostNodesByLocator.set(nestedHostLocator, sourceNode)
       return { rootGraphId, hostNodeLocator: nestedHostLocator }
     }
@@ -95,10 +138,24 @@ export function usePromotedPreviews(
       )
       const reactiveOutputs = nodeOutputStore.nodeOutputs[locatorId]
       const reactivePreviews = nodeOutputStore.nodePreviewImages[locatorId]
-      if (!reactiveOutputs?.images?.length && !reactivePreviews?.length)
+      const leafExecutionId = `${leafHostLocator}:${leaf.sourceNodeId}`
+      const reactiveExecutionOutputs =
+        nodeOutputStore.nodeOutputsByExecutionId?.[leafExecutionId]
+      const reactiveExecutionPreviews =
+        nodeOutputStore.nodePreviewImagesByExecutionId?.[leafExecutionId]
+      if (
+        !reactiveOutputs?.images?.length &&
+        !reactivePreviews?.length &&
+        !reactiveExecutionOutputs?.images?.length &&
+        !reactiveExecutionPreviews?.length
+      )
         continue
 
-      const urls = nodeOutputStore.getNodeImageUrls(interiorNode)
+      const urls =
+        nodeOutputStore.getNodeImageUrlsByExecutionId?.(
+          leafExecutionId,
+          interiorNode
+        ) ?? nodeOutputStore.getNodeImageUrls(interiorNode)
       if (!urls?.length) continue
 
       const type =

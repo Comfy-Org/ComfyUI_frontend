@@ -16,11 +16,19 @@ import { usePromotedPreviews } from './usePromotedPreviews'
 
 type MockNodeOutputStore = Pick<
   ReturnType<typeof useNodeOutputStore>,
-  'nodeOutputs' | 'nodePreviewImages' | 'getNodeImageUrls'
+  | 'nodeOutputs'
+  | 'nodeOutputsByExecutionId'
+  | 'nodePreviewImages'
+  | 'nodePreviewImagesByExecutionId'
+  | 'getNodeImageUrls'
+  | 'getNodeImageUrlsByExecutionId'
 >
 
 const getNodeImageUrls = vi.hoisted(() =>
   vi.fn<MockNodeOutputStore['getNodeImageUrls']>()
+)
+const getNodeImageUrlsByExecutionId = vi.hoisted(() =>
+  vi.fn<MockNodeOutputStore['getNodeImageUrlsByExecutionId']>()
 )
 const useNodeOutputStoreMock = vi.hoisted(() =>
   vi.fn<() => MockNodeOutputStore>()
@@ -35,8 +43,15 @@ vi.mock('@/stores/nodeOutputStore', () => {
 function createMockNodeOutputStore(): MockNodeOutputStore {
   return {
     nodeOutputs: reactive<MockNodeOutputStore['nodeOutputs']>({}),
+    nodeOutputsByExecutionId: reactive<
+      MockNodeOutputStore['nodeOutputsByExecutionId']
+    >({}),
     nodePreviewImages: reactive<MockNodeOutputStore['nodePreviewImages']>({}),
-    getNodeImageUrls
+    nodePreviewImagesByExecutionId: reactive<
+      MockNodeOutputStore['nodePreviewImagesByExecutionId']
+    >({}),
+    getNodeImageUrls,
+    getNodeImageUrlsByExecutionId
   }
 }
 
@@ -102,6 +117,7 @@ describe(usePromotedPreviews, () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     getNodeImageUrls.mockReset()
+    getNodeImageUrlsByExecutionId.mockReset()
 
     nodeOutputStore = createMockNodeOutputStore()
     useNodeOutputStoreMock.mockReturnValue(nodeOutputStore)
@@ -283,7 +299,7 @@ describe(usePromotedPreviews, () => {
     const store = usePreviewExposureStore()
     store.addExposure(
       outerSetup.subgraphNode.rootGraph.id,
-      createNodeLocatorId(outerSetup.subgraphNode.rootGraph.id, innerHost.id),
+      String(innerHost.id),
       {
         sourceNodeId: String(leafNode.id),
         sourcePreviewName: '$$canvas-image-preview'
@@ -316,6 +332,67 @@ describe(usePromotedPreviews, () => {
         sourceWidgetName: '$$canvas-image-preview',
         type: 'image',
         urls: mockUrls
+      }
+    ])
+  })
+
+  it('keeps promoted previews distinct for multiple instances of a shared subgraph definition', () => {
+    const innerSetup = createSetup()
+    const leafNode = addInteriorNode(innerSetup, {
+      id: 10,
+      previewMediaType: 'image'
+    })
+
+    const outerSetup = createSetup()
+    const innerHost = createTestSubgraphNode(innerSetup.subgraph, { id: 20 })
+    outerSetup.subgraph.add(innerHost)
+    const firstHost = createTestSubgraphNode(outerSetup.subgraph, { id: 11 })
+    const secondHost = createTestSubgraphNode(outerSetup.subgraph, { id: 12 })
+
+    const store = usePreviewExposureStore()
+    store.addExposure(firstHost.rootGraph.id, '11', {
+      sourceNodeId: String(innerHost.id),
+      sourcePreviewName: '$$canvas-image-preview'
+    })
+    store.addExposure(firstHost.rootGraph.id, '12', {
+      sourceNodeId: String(innerHost.id),
+      sourcePreviewName: '$$canvas-image-preview'
+    })
+    store.addExposure(firstHost.rootGraph.id, '11:20', {
+      sourceNodeId: String(leafNode.id),
+      sourcePreviewName: '$$canvas-image-preview'
+    })
+    store.addExposure(firstHost.rootGraph.id, '12:20', {
+      sourceNodeId: String(leafNode.id),
+      sourcePreviewName: '$$canvas-image-preview'
+    })
+
+    nodeOutputStore.nodePreviewImagesByExecutionId['11:20:10'] = ['blob:first']
+    nodeOutputStore.nodePreviewImagesByExecutionId['12:20:10'] = ['blob:second']
+    getNodeImageUrlsByExecutionId.mockImplementation((executionId) => {
+      if (executionId === '11:20:10') return ['blob:first']
+      if (executionId === '12:20:10') return ['blob:second']
+      return undefined
+    })
+
+    expect(usePromotedPreviews(() => firstHost).promotedPreviews.value).toEqual(
+      [
+        {
+          sourceNodeId: '10',
+          sourceWidgetName: '$$canvas-image-preview',
+          type: 'image',
+          urls: ['blob:first']
+        }
+      ]
+    )
+    expect(
+      usePromotedPreviews(() => secondHost).promotedPreviews.value
+    ).toEqual([
+      {
+        sourceNodeId: '10',
+        sourceWidgetName: '$$canvas-image-preview',
+        type: 'image',
+        urls: ['blob:second']
       }
     ])
   })

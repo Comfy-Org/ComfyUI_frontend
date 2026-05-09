@@ -22,7 +22,6 @@ import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import type { ISlotType, TWidgetType } from '@/lib/litegraph/src/litegraph'
 import { BaseWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import {
   createTestSubgraph,
@@ -156,7 +155,7 @@ describe('SubgraphNode.serialize (ADR 0009)', () => {
       const subgraph = createTestSubgraph()
       const hostNode = createTestSubgraphNode(subgraph)
       const rootGraphId = hostNode.rootGraph.id
-      const hostLocator = createNodeLocatorId(rootGraphId, hostNode.id)
+      const hostLocator = String(hostNode.id)
 
       hostNode.properties.previewExposures = [
         {
@@ -185,7 +184,7 @@ describe('SubgraphNode.serialize (ADR 0009)', () => {
 
       const store = usePreviewExposureStore()
       const rootGraphId = hostNode.rootGraph.id
-      const hostLocator = createNodeLocatorId(rootGraphId, hostNode.id)
+      const hostLocator = String(hostNode.id)
 
       store.addExposure(rootGraphId, hostLocator, {
         sourceNodeId: '12',
@@ -210,6 +209,56 @@ describe('SubgraphNode.serialize (ADR 0009)', () => {
           sourcePreviewName: 'videopreview'
         }
       ])
+    })
+
+    it('serializes preview exposures per host instance', () => {
+      const subgraph = createTestSubgraph()
+      const firstHost = createTestSubgraphNode(subgraph, { id: 101 })
+      const secondHost = createTestSubgraphNode(subgraph, { id: 102 })
+      subgraph.rootGraph.add(firstHost)
+      subgraph.rootGraph.add(secondHost)
+
+      const store = usePreviewExposureStore()
+      const rootGraphId = firstHost.rootGraph.id
+
+      store.addExposure(rootGraphId, String(firstHost.id), {
+        sourceNodeId: '12',
+        sourcePreviewName: '$$canvas-image-preview'
+      })
+      store.addExposure(rootGraphId, String(secondHost.id), {
+        sourceNodeId: '14',
+        sourcePreviewName: 'videopreview'
+      })
+
+      const firstExposures = firstHost.serialize().properties?.previewExposures
+      const secondExposures =
+        secondHost.serialize().properties?.previewExposures
+
+      expect(Array.isArray(firstExposures)).toBe(true)
+      expect(Array.isArray(secondExposures)).toBe(true)
+      if (!Array.isArray(firstExposures) || !Array.isArray(secondExposures))
+        throw new Error('Expected serialized previewExposures arrays')
+
+      expect(firstExposures).toEqual([
+        {
+          name: '$$canvas-image-preview',
+          sourceNodeId: '12',
+          sourcePreviewName: '$$canvas-image-preview'
+        }
+      ])
+      expect(secondExposures).toEqual([
+        {
+          name: 'videopreview',
+          sourceNodeId: '14',
+          sourcePreviewName: 'videopreview'
+        }
+      ])
+      expect(firstExposures?.[0]).not.toHaveProperty('hostInstanceId')
+      expect(firstExposures?.[0]).not.toHaveProperty('hostNodeLocator')
+      expect(firstExposures?.[0]).not.toHaveProperty('rootGraphId')
+      expect(secondExposures?.[0]).not.toHaveProperty('hostInstanceId')
+      expect(secondExposures?.[0]).not.toHaveProperty('hostNodeLocator')
+      expect(secondExposures?.[0]).not.toHaveProperty('rootGraphId')
     })
 
     it('omits previewExposures when the store has no entries for the host', () => {

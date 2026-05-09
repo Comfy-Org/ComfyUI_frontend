@@ -14,17 +14,15 @@ import type {
  */
 export interface PreviewExposureChainContext {
   /**
-   * Return the canonical preview exposures registered on
-   * `(rootGraphId, hostNodeLocator)`.
+   * Return preview exposures registered for a host execution path.
    */
   getExposures(
     rootGraphId: UUID,
     hostNodeLocator: string
   ): readonly PreviewExposure[]
   /**
-   * If `sourceNodeId` (interpreted on the host's interior subgraph) is itself
-   * a SubgraphNode, return the inner host's `(rootGraphId, hostNodeLocator)`
-   * so the walk can recurse. Return `undefined` for leaf (non-host) sources.
+   * Resolve a source node to its nested host execution path when it is a
+   * SubgraphNode.
    */
   resolveNestedHost(
     rootGraphId: UUID,

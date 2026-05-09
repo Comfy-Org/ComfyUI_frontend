@@ -49,7 +49,6 @@ import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
@@ -746,7 +745,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     usePreviewExposureStore().setExposures(
       this.rootGraph.id,
-      createNodeLocatorId(this.rootGraph.id, this.id),
+      String(this.id),
       parsePreviewExposures(this.properties.previewExposures)
     )
 
@@ -770,7 +769,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     for (const node of this.subgraph.nodes) {
       if (!supportsVirtualCanvasImagePreview(node)) continue
-      const hostLocator = createNodeLocatorId(this.rootGraph.id, this.id)
+      const hostLocator = String(this.id)
       const previewStore = usePreviewExposureStore()
       const existing = previewStore
         .getExposures(this.rootGraph.id, hostLocator)
@@ -1211,7 +1210,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // be copied into interior widgets, which would cause cross-host stomping.
 
     const rootGraphId = this.rootGraph.id
-    const hostLocator = createNodeLocatorId(rootGraphId, this.id)
+    const hostLocator = String(this.id)
 
     const previewExposures = usePreviewExposureStore().getExposures(
       rootGraphId,

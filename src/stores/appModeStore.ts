@@ -90,18 +90,25 @@ export const useAppModeStore = defineStore('appMode', () => {
       return input
     }
 
-    if (resolveNode(storedId)) return input
+    if (directRootWidgetExists(storedId, widgetName)) return input
 
     const projection = projectLegacyTupleThroughHost(storedId, widgetName)
     if (projection) {
       return [projection.hostLocator, projection.subgraphInputName, input[2]]
     }
 
+    if (resolveNode(storedId)) return input
+
     console.warn(
       '[appModeStore] dropping legacy selectedInput tuple — no canonical identity available',
       { storedId, widgetName }
     )
     return null
+  }
+
+  function directRootWidgetExists(nodeId: NodeId, widgetName: string): boolean {
+    const node = app.rootGraph?.getNodeById?.(nodeId)
+    return Boolean(node?.widgets?.some((widget) => widget.name === widgetName))
   }
 
   function projectLegacyTupleThroughHost(

@@ -13,17 +13,13 @@ const EMPTY_EXPOSURES: readonly PreviewExposure[] = Object.freeze([])
 /**
  * Optional resolver passed by callers that want {@link resolveChain} to walk
  * nested subgraph host boundaries.
- *
- * Given a `(rootGraphId, hostNodeLocator, sourceNodeId)` triple, return the
- * `(rootGraphId, hostNodeLocator)` of the inner host SubgraphNode the source
- * resolves to, or `undefined` for non-host (leaf) sources.
  */
 export type ResolveNestedHostFn = NonNullable<
   PreviewExposureChainContext['resolveNestedHost']
 >
 
 export const usePreviewExposureStore = defineStore('previewExposure', () => {
-  // Keyed by (rootGraphId, hostNodeLocator).
+  // Host ids are execution paths like `11` or `11:20`, not NodeLocatorIds.
   const exposures = ref(new Map<UUID, Map<string, PreviewExposure[]>>())
 
   function _getHostsForGraph(
