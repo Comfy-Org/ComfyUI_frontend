@@ -24,6 +24,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "batch_size": {
+        "name": "taille_du_lot"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "length": {
+        "name": "longueur"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "start_image": {
+        "name": "image_de_départ"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "AjouterBruit",
     "inputs": {
@@ -8011,6 +8045,21 @@
       }
     }
   },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "Charger le modèle de suppression d’arrière-plan",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "nom_du_modèle_de_suppression_arrière-plan",
+        "tooltip": "Le modèle utilisé pour supprimer les arrière-plans des images"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "modèle_bg",
+        "tooltip": null
+      }
+    }
+  },
   "LoadImage": {
     "display_name": "Charger Image",
     "inputs": {
@@ -13457,6 +13506,25 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "RemoveBackground": {
+    "display_name": "Supprimer l’arrière-plan",
+    "inputs": {
+      "bg_removal_model": {
+        "name": "modèle_de_suppression_arrière-plan",
+        "tooltip": "Modèle de suppression d’arrière-plan utilisé pour générer le masque"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Image d’entrée dont l’arrière-plan doit être supprimé"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masque",
+        "tooltip": "Masque de premier plan généré"
       }
     }
   },

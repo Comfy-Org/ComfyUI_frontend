@@ -24,6 +24,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "batch_size": {
+        "name": "اندازه بچ"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "start_image": {
+        "name": "تصویر اولیه"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "AddNoise",
     "inputs": {
@@ -8011,6 +8045,21 @@
       }
     }
   },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "بارگذاری مدل حذف پس‌زمینه",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "نام مدل حذف پس‌زمینه",
+        "tooltip": "مدلی که برای حذف پس‌زمینه از تصاویر استفاده می‌شود"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مدل حذف پس‌زمینه",
+        "tooltip": null
+      }
+    }
+  },
   "LoadImage": {
     "display_name": "بارگذاری تصویر",
     "inputs": {
@@ -13457,6 +13506,25 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "RemoveBackground": {
+    "display_name": "حذف پس‌زمینه",
+    "inputs": {
+      "bg_removal_model": {
+        "name": "مدل حذف پس‌زمینه",
+        "tooltip": "مدل حذف پس‌زمینه که برای تولید ماسک استفاده می‌شود"
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویر ورودی برای حذف پس‌زمینه"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ماسک",
+        "tooltip": "ماسک پیش‌زمینه تولید شده"
       }
     }
   },
