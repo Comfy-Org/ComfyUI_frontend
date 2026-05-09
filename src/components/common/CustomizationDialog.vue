@@ -1,53 +1,76 @@
 <template>
-  <Dialog v-model:visible="visible" :header="$t('g.customizeFolder')">
-    <div class="p-fluid">
-      <div class="field icon-field">
-        <label for="icon">{{ $t('g.icon') }}</label>
-        <SelectButton
-          v-model="selectedIcon"
-          :options="iconOptions"
-          option-label="name"
-          data-key="value"
-        >
-          <template #option="slotProps">
-            <i
-              :class="['pi', slotProps.option.value, 'mr-2']"
-              :style="{ color: finalColor }"
+  <Dialog :open="visible" @update:open="(open) => (visible = open)">
+    <DialogPortal>
+      <DialogOverlay />
+      <DialogContent size="md" :aria-labelledby="titleId">
+        <DialogHeader>
+          <DialogTitle :id="titleId">
+            {{ $t('g.customizeFolder') }}
+          </DialogTitle>
+          <DialogClose />
+        </DialogHeader>
+        <div class="flex flex-col gap-4 px-4 py-2">
+          <div class="flex flex-col gap-2">
+            <label for="customization-icon" class="text-sm font-medium">
+              {{ $t('g.icon') }}
+            </label>
+            <SelectButton
+              id="customization-icon"
+              v-model="selectedIcon"
+              :options="iconOptions"
+              option-label="name"
+              data-key="value"
+            >
+              <template #option="slotProps">
+                <i
+                  :class="['pi', slotProps.option.value, 'mr-2']"
+                  :style="{ color: finalColor }"
+                />
+              </template>
+            </SelectButton>
+          </div>
+          <hr class="border-t border-border-subtle" />
+          <div class="flex flex-col gap-2">
+            <label for="customization-color" class="text-sm font-medium">
+              {{ $t('g.color') }}
+            </label>
+            <ColorCustomizationSelector
+              id="customization-color"
+              v-model="finalColor"
+              :color-options="colorOptions"
             />
-          </template>
-        </SelectButton>
-      </div>
-      <Divider />
-      <div class="field color-field">
-        <label for="color">{{ $t('g.color') }}</label>
-        <ColorCustomizationSelector
-          v-model="finalColor"
-          :color-options="colorOptions"
-        />
-      </div>
-    </div>
-    <template #footer>
-      <Button variant="textonly" @click="resetCustomization">
-        <i class="pi pi-refresh" />
-        {{ $t('g.reset') }}
-      </Button>
-      <Button autofocus @click="confirmCustomization">
-        <i class="pi pi-check" />
-        {{ $t('g.confirm') }}
-      </Button>
-    </template>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="textonly" @click="resetCustomization">
+            <i class="pi pi-refresh" />
+            {{ $t('g.reset') }}
+          </Button>
+          <Button autofocus @click="confirmCustomization">
+            <i class="pi pi-check" />
+            {{ $t('g.confirm') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </DialogPortal>
   </Dialog>
 </template>
 
 <script setup lang="ts">
-import Dialog from 'primevue/dialog'
-import Divider from 'primevue/divider'
 import SelectButton from 'primevue/selectbutton'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ColorCustomizationSelector from '@/components/common/ColorCustomizationSelector.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Dialog from '@/components/ui/dialog/Dialog.vue'
+import DialogClose from '@/components/ui/dialog/DialogClose.vue'
+import DialogContent from '@/components/ui/dialog/DialogContent.vue'
+import DialogFooter from '@/components/ui/dialog/DialogFooter.vue'
+import DialogHeader from '@/components/ui/dialog/DialogHeader.vue'
+import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
+import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 
 const { t } = useI18n()
@@ -67,6 +90,8 @@ const visible = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value)
 })
+
+const titleId = useId()
 
 const nodeBookmarkStore = useNodeBookmarkStore()
 
@@ -109,10 +134,6 @@ const resetCustomization = () => {
 
 const confirmCustomization = () => {
   emit('confirm', selectedIcon.value.value, finalColor.value)
-  closeDialog()
-}
-
-const closeDialog = () => {
   visible.value = false
 }
 
@@ -134,11 +155,5 @@ watch(
 
 .p-selectbutton .p-button .pi {
   font-size: 1.5rem;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
 }
 </style>
