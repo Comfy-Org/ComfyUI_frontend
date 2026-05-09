@@ -296,19 +296,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
    */
   const createTemporary = (path?: string, workflowData?: ComfyWorkflowJSON) => {
     const fullPath = getUnconflictedPath(
-      ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
+      ComfyWorkflow.basePath + (path ?? '未保存的工作流.json')
     )
-
-    const normalizedWorkflowData = workflowData
-      ? ensureWorkflowId(workflowData)
-      : undefined
-
-    // Try to reuse an existing loaded workflow with the same filename
-    // that is not stored in the workflows directory
-    if (path && normalizedWorkflowData) {
-      const existingWorkflow = workflows.value.find(
-        (w) => w.fullFilename === path
-      )
+...
+      ComfyWorkflow.basePath + (path ?? '未保存的工作流.json')
+    )
       if (
         existingWorkflow?.changeTracker &&
         !existingWorkflow.directory.startsWith(

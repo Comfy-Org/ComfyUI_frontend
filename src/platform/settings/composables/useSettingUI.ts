@@ -329,7 +329,7 @@ export function useSettingUI(
     // Account settings - show different panels based on distribution and auth state
     {
       key: 'account',
-      label: 'Account',
+      label: '账户',
       children: [
         userPanel.node,
         ...(isLoggedIn.value &&
@@ -347,13 +347,13 @@ export function useSettingUI(
     // Normal settings stored in the settingStore
     {
       key: 'settings',
-      label: 'Application Settings',
+      label: '应用设置',
       children: settingCategories.value.map(translateCategory)
     },
     // Special settings such as about, keybinding, extension, server-config
     {
       key: 'specialSettings',
-      label: 'Special Settings',
+      label: '特殊设置',
       children: [
         keybindingPanel.node,
         extensionPanel.node,
