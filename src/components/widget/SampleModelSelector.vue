@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 <template>
   <BaseModalLayout :content-title="$t('assetBrowser.checkpoints')">
     <template #leftPanel>
@@ -160,20 +161,20 @@ const sortOptions = ref([
 ])
 
 const tempNavigation = ref<(NavItemData | NavGroupData)[]>([
-  { id: 'installed', label: 'Installed', icon: 'icon-[lucide--download]' },
+  { id: 'installed', label: t('g.installed'), icon: 'icon-[lucide--download]' },
   {
     title: 'TAGS',
     items: [
-      { id: 'tag-sd15', label: 'SD 1.5', icon: 'icon-[lucide--tag]' },
-      { id: 'tag-sdxl', label: 'SDXL', icon: 'icon-[lucide--tag]' },
-      { id: 'tag-utility', label: 'Utility', icon: 'icon-[lucide--tag]' }
+      { id: 'tag-sd15', label: t('g.sd_1_5'), icon: 'icon-[lucide--tag]' },
+      { id: 'tag-sdxl', label: t('g.sdxl'), icon: 'icon-[lucide--tag]' },
+      { id: 'tag-utility', label: t('g.utility'), icon: 'icon-[lucide--tag]' }
     ]
   },
   {
     title: 'CATEGORIES',
     items: [
-      { id: 'cat-models', label: 'Models', icon: 'icon-[lucide--layers]' },
-      { id: 'cat-nodes', label: 'Nodes', icon: 'icon-[lucide--grid-3x3]' }
+      { id: 'cat-models', label: t('g.models'), icon: 'icon-[lucide--layers]' },
+      { id: 'cat-nodes', label: t('g.nodes'), icon: 'icon-[lucide--grid-3x3]' }
     ]
   }
 ])

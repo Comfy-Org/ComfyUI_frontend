@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import Tag from './Tag.vue'
@@ -19,7 +20,7 @@ const meta: Meta<typeof Tag> = {
     removable: { control: 'boolean' }
   },
   args: {
-    label: 'Tag',
+    label: t('g.tag'),
     shape: 'square',
     state: 'default',
     removable: false
@@ -33,21 +34,21 @@ export const Default: Story = {}
 
 export const Rounded: Story = {
   args: {
-    label: 'Tag',
+    label: t('g.tag'),
     shape: 'rounded'
   }
 }
 
 export const Unselected: Story = {
   args: {
-    label: 'Tag',
+    label: t('g.tag'),
     state: 'unselected'
   }
 }
 
 export const Removable: Story = {
   args: {
-    label: 'Tag',
+    label: t('g.tag'),
     removable: true
   }
 }

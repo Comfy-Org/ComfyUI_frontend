@@ -1902,21 +1902,21 @@ const ext: ComfyExtension = {
   commands: [
     {
       id: 'Comfy.GroupNode.ConvertSelectedNodesToGroupNode',
-      label: 'Convert selected nodes to group node',
+      label: t('g.convert_selected_nodes_to_group_node'),
       icon: 'pi pi-sitemap',
       versionAdded: '1.3.17',
       function: () => convertSelectedNodesToGroupNode()
     },
     {
       id: 'Comfy.GroupNode.UngroupSelectedGroupNodes',
-      label: 'Ungroup selected group nodes',
+      label: t('g.ungroup_selected_group_nodes'),
       icon: 'pi pi-sitemap',
       versionAdded: '1.3.17',
       function: () => ungroupSelectedGroupNodes()
     },
     {
       id: 'Comfy.GroupNode.ManageGroupNodes',
-      label: 'Manage group nodes',
+      label: t('g.manage_group_nodes'),
       icon: 'pi pi-cog',
       versionAdded: '1.3.17',
       function: (...args: unknown[]) =>

@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { toRef } from 'vue'
 
@@ -133,7 +134,7 @@ const sampleAssets: AssetItem[] = [
 
 const cancelAction: JobAction = {
   icon: 'icon-[lucide--x]',
-  label: 'Cancel',
+  label: t('g.cancel'),
   variant: 'destructive'
 }
 

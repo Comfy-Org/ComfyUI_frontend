@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 <template>
   <div class="space-y-4">
     <Select v-model="exportFormat">
@@ -40,9 +41,9 @@ const emit = defineEmits<{
 }>()
 
 const exportFormats = [
-  { label: 'GLB', value: 'glb' },
-  { label: 'OBJ', value: 'obj' },
-  { label: 'STL', value: 'stl' }
+  { label: t('g.glb'), value: 'glb' },
+  { label: t('g.obj'), value: 'obj' },
+  { label: t('g.stl'), value: 'stl' }
 ]
 
 const exportFormat = ref('obj')

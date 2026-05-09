@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import { markRaw } from 'vue'
 
 import JobHistorySidebarTab from '@/components/sidebar/tabs/JobHistorySidebarTab.vue'
@@ -11,7 +12,7 @@ export const useJobHistorySidebarTab = (): SidebarTabExtension => {
     icon: 'icon-[lucide--history]',
     title: 'queue.jobHistory',
     tooltip: 'queue.jobHistory',
-    label: 'queue.jobHistory',
+    label: t('g.queue_jobhistory'),
     component: markRaw(JobHistorySidebarTab),
     type: 'vue',
     iconBadge: () => {

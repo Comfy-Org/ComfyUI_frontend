@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import { computed, markRaw, reactive } from 'vue'
 
 import NodeLibrarySidebarTab from '@/components/sidebar/tabs/NodeLibrarySidebarTab.vue'
@@ -18,7 +19,7 @@ export function useNodeLibrarySidebarTab(): SidebarTabExtension {
     icon: 'icon-[comfy--node]',
     title: 'sideToolbar.nodeLibrary',
     tooltip: 'sideToolbar.nodeLibrary',
-    label: 'sideToolbar.labels.nodes',
+    label: t('g.sidetoolbar_labels_nodes'),
     component,
     type: 'vue' as const
   })

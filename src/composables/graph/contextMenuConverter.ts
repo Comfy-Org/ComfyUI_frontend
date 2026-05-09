@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import { default as DOMPurify } from 'dompurify'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -342,7 +343,7 @@ export function buildStructuredMenu(options: MenuOption[]): MenuOption[] {
 
     // Add non-clickable Extensions label
     result.push({
-      label: 'Extensions',
+      label: t('g.extensions'),
       type: 'category',
       disabled: true
     })

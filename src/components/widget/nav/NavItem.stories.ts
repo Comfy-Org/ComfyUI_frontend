@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import NavItem from './NavItem.vue'
@@ -57,32 +58,32 @@ export const InteractiveList: Story = {
       const items = [
         {
           id: 'downloads',
-          label: 'Downloads',
+          label: t('g.downloads'),
           icon: 'icon-[lucide--download]'
         },
         {
           id: 'models',
-          label: 'Models',
+          label: t('g.models'),
           icon: 'icon-[lucide--layers]'
         },
         {
           id: 'nodes',
-          label: 'Nodes',
+          label: t('g.nodes'),
           icon: 'icon-[lucide--grid-3x3]'
         },
         {
           id: 'tags',
-          label: 'Tags',
+          label: t('g.tags'),
           icon: 'icon-[lucide--tag]'
         },
         {
           id: 'settings',
-          label: 'Settings',
+          label: t('g.settings'),
           icon: 'icon-[lucide--wrench]'
         },
         {
           id: 'default',
-          label: 'Default Icon',
+          label: t('g.default_icon'),
           icon: 'icon-[lucide--folder]'
         }
       ]

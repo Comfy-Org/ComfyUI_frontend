@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import Badge from './Badge.vue'
@@ -18,7 +19,7 @@ const meta = {
     }
   },
   args: {
-    label: 'NEW',
+    label: t('g.new'),
     severity: 'default'
   }
 } satisfies Meta<typeof Badge>
@@ -30,35 +31,35 @@ export const Default: Story = {}
 
 export const Secondary: Story = {
   args: {
-    label: 'NEW',
+    label: t('g.new'),
     severity: 'secondary'
   }
 }
 
 export const Warn: Story = {
   args: {
-    label: 'NEW',
+    label: t('g.new'),
     severity: 'warn'
   }
 }
 
 export const Danger: Story = {
   args: {
-    label: 'NEW',
+    label: t('g.new'),
     severity: 'danger'
   }
 }
 
 export const Contrast: Story = {
   args: {
-    label: 'NEW',
+    label: t('g.new'),
     severity: 'contrast'
   }
 }
 
 export const Circle: Story = {
   args: {
-    label: '3',
+    label: t('g.3'),
     variant: 'circle'
   }
 }

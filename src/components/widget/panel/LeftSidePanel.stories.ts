@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
@@ -22,17 +23,17 @@ export const Default: Story = {
     navItems: [
       {
         id: 'installed',
-        label: 'Installed',
+        label: t('g.installed'),
         icon: 'icon-[lucide--download]'
       },
       {
         id: 'models',
-        label: 'Models',
+        label: t('g.models'),
         icon: 'icon-[lucide--layers]'
       },
       {
         id: 'nodes',
-        label: 'Nodes',
+        label: t('g.nodes'),
         icon: 'icon-[lucide--grid-3x3]'
       }
     ]
@@ -57,7 +58,7 @@ export const WithGroups: Story = {
     navItems: [
       {
         id: 'installed',
-        label: 'Installed',
+        label: t('g.installed'),
         icon: 'icon-[lucide--download]'
       },
       {
@@ -65,17 +66,17 @@ export const WithGroups: Story = {
         items: [
           {
             id: 'tag-sd15',
-            label: 'SD 1.5',
+            label: t('g.sd_1_5'),
             icon: 'icon-[lucide--tag]'
           },
           {
             id: 'tag-sdxl',
-            label: 'SDXL',
+            label: t('g.sdxl'),
             icon: 'icon-[lucide--tag]'
           },
           {
             id: 'tag-utility',
-            label: 'Utility',
+            label: t('g.utility'),
             icon: 'icon-[lucide--tag]'
           }
         ]
@@ -85,12 +86,12 @@ export const WithGroups: Story = {
         items: [
           {
             id: 'cat-models',
-            label: 'Models',
+            label: t('g.models'),
             icon: 'icon-[lucide--layers]'
           },
           {
             id: 'cat-nodes',
-            label: 'Nodes',
+            label: t('g.nodes'),
             icon: 'icon-[lucide--grid-3x3]'
           }
         ]
@@ -120,22 +121,22 @@ export const DefaultIcons: Story = {
     navItems: [
       {
         id: 'home',
-        label: 'Home',
+        label: t('g.home'),
         icon: 'icon-[lucide--folder]'
       },
       {
         id: 'documents',
-        label: 'Documents',
+        label: t('g.documents'),
         icon: 'icon-[lucide--folder]'
       },
       {
         id: 'downloads',
-        label: 'Downloads',
+        label: t('g.downloads'),
         icon: 'icon-[lucide--folder]'
       },
       {
         id: 'desktop',
-        label: 'Desktop',
+        label: t('g.desktop'),
         icon: 'icon-[lucide--folder]'
       }
     ]
@@ -160,12 +161,12 @@ export const LongLabels: Story = {
     navItems: [
       {
         id: 'general',
-        label: 'General Settings',
+        label: t('g.general_settings'),
         icon: 'icon-[lucide--wrench]'
       },
       {
         id: 'appearance',
-        label: 'Appearance & Themes Configuration',
+        label: t('g.appearance_themes_configuration'),
         icon: 'icon-[lucide--wrench]'
       },
       {
@@ -173,12 +174,12 @@ export const LongLabels: Story = {
         items: [
           {
             id: 'performance',
-            label: 'Performance & Optimization Settings',
+            label: t('g.performance_optimization_settings'),
             icon: 'icon-[lucide--zap]'
           },
           {
             id: 'experimental',
-            label: 'Experimental Features (Beta)',
+            label: t('g.experimental_features_beta'),
             icon: 'icon-[lucide--puzzle]'
           }
         ]

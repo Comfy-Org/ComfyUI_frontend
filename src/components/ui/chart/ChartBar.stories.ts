@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import ChartBar from './ChartBar.vue'
@@ -26,7 +27,7 @@ export const Default: Story = {
       labels: ['A', 'B', 'C', 'D'],
       datasets: [
         {
-          label: 'BarName1',
+          label: t('g.barname1'),
           data: [10, 50, 35, 75],
           backgroundColor: '#ff8000'
         }
@@ -42,12 +43,12 @@ export const MultipleDatasets: Story = {
       labels: ['A', 'B', 'C', 'D'],
       datasets: [
         {
-          label: 'Series 1',
+          label: t('g.series_1'),
           data: [30, 60, 45, 80],
           backgroundColor: '#ff8000'
         },
         {
-          label: 'Series 2',
+          label: t('g.series_2'),
           data: [50, 40, 70, 20],
           backgroundColor: '#4ade80'
         }

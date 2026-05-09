@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { computed, provide, ref } from 'vue'
 
@@ -89,7 +90,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
     const tempNavigation = ref<(NavItemData | NavGroupData)[]>([
       {
         id: 'installed',
-        label: 'Installed',
+        label: t('g.installed'),
         icon: 'icon-[lucide--folder]'
       },
       {
@@ -97,17 +98,17 @@ const createStoryTemplate = (args: StoryArgs) => ({
         items: [
           {
             id: 'tag-sd15',
-            label: 'SD 1.5',
+            label: t('g.sd_1_5'),
             icon: 'icon-[lucide--tag]'
           },
           {
             id: 'tag-sdxl',
-            label: 'SDXL',
+            label: t('g.sdxl'),
             icon: 'icon-[lucide--tag]'
           },
           {
             id: 'tag-utility',
-            label: 'Utility',
+            label: t('g.utility'),
             icon: 'icon-[lucide--tag]'
           }
         ]
@@ -117,12 +118,12 @@ const createStoryTemplate = (args: StoryArgs) => ({
         items: [
           {
             id: 'cat-models',
-            label: 'Models',
+            label: t('g.models'),
             icon: 'icon-[lucide--layers]'
           },
           {
             id: 'cat-nodes',
-            label: 'Nodes',
+            label: t('g.nodes'),
             icon: 'icon-[lucide--grid-3x3]'
           }
         ]

@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
@@ -27,7 +28,7 @@ const meta: Meta<typeof MultiSelect> = {
     searchPlaceholder: { control: 'text' }
   },
   args: {
-    label: 'Category',
+    label: t('g.category'),
     size: 'lg',
     showSearchBox: false,
     showSelectedCount: false,

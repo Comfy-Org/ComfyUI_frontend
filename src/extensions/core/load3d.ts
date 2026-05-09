@@ -230,7 +230,7 @@ useExtensionService().registerExtension({
     {
       id: 'Comfy.3DViewer.Open3DViewer',
       icon: 'pi pi-pencil',
-      label: 'Open 3D Viewer (Beta) for Selected Node',
+      label: t('g.open_3d_viewer_beta_for_selected_node'),
       function: () => {
         const selectedNodes = app.canvas.selected_nodes
         if (!selectedNodes || Object.keys(selectedNodes).length !== 1) return
