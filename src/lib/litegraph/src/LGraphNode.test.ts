@@ -587,6 +587,42 @@ describe('LGraphNode', () => {
       expect(node.widgets![0].value).toBe(1)
       expect(node.widgets![1].value).toBe(100)
     })
+
+    test('serialize/configure round-trip preserves values when a non-serializable widget precedes serializable ones', () => {
+      const source = new LGraphNode('TestNode')
+      source.serialize_widgets = true
+      source.addWidget('button', 'preview', '', undefined)
+      source.addWidget('text', 'model', '', undefined)
+      source.addWidget('text', 'vae', '', undefined)
+      source.addWidget('text', 'clip', '', undefined)
+      source.widgets![0].serialize = false
+      source.widgets![1].value = 'model.safetensors'
+      source.widgets![2].value = 'vae.safetensors'
+      source.widgets![3].value = 'clip.safetensors'
+
+      const serialized = source.serialize()
+      expect(serialized.widgets_values).toEqual([
+        'model.safetensors',
+        'vae.safetensors',
+        'clip.safetensors'
+      ])
+
+      const roundTripped = JSON.parse(JSON.stringify(serialized))
+
+      const target = new LGraphNode('TestNode')
+      target.serialize_widgets = true
+      target.addWidget('button', 'preview', '', undefined)
+      target.addWidget('text', 'model', '', undefined)
+      target.addWidget('text', 'vae', '', undefined)
+      target.addWidget('text', 'clip', '', undefined)
+      target.widgets![0].serialize = false
+
+      target.configure(roundTripped)
+
+      expect(target.widgets![1].value).toBe('model.safetensors')
+      expect(target.widgets![2].value).toBe('vae.safetensors')
+      expect(target.widgets![3].value).toBe('clip.safetensors')
+    })
   })
 
   describe('getInputSlotPos', () => {
