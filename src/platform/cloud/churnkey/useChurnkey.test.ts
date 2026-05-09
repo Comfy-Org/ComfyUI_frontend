@@ -10,8 +10,6 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
 
 const { workspaceApi } = await import('@/platform/workspace/api/workspaceApi')
 
-const ORIGINAL_ENV = { ...import.meta.env }
-
 describe('useChurnkey', () => {
   beforeEach(() => {
     vi.stubEnv('VITE_CHURNKEY_APP_ID', 'app-test-123')
@@ -21,7 +19,6 @@ describe('useChurnkey', () => {
     vi.unstubAllEnvs()
     vi.restoreAllMocks()
     delete (window as { churnkey?: unknown }).churnkey
-    Object.assign(import.meta.env, ORIGINAL_ENV)
   })
 
   it('throws when the embed script has not loaded', async () => {

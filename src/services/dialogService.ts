@@ -600,20 +600,22 @@ export const useDialogService = () => {
     const { useFeatureFlags } = await import('@/composables/useFeatureFlags')
     const { flags } = useFeatureFlags()
 
-    if (flags.churnkeyCancellationEnabled) {
-      const { useChurnkey } =
-        await import('@/platform/cloud/churnkey/useChurnkey')
-      if (useChurnkey().isConfigured) {
-        const { launchChurnkeyCancellation } =
-          await import('@/platform/cloud/churnkey/launchChurnkeyCancellation')
-        return launchChurnkeyCancellation()
-      }
+    if (!flags.churnkeyCancellationEnabled) {
+      return showCancelSubscriptionDialog(cancelAt)
+    }
+
+    const { useChurnkey } =
+      await import('@/platform/cloud/churnkey/useChurnkey')
+    if (!useChurnkey().isConfigured) {
       console.warn(
         '[Churnkey] Cancellation flag is enabled but VITE_CHURNKEY_APP_ID is not set; falling back to legacy dialog.'
       )
+      return showCancelSubscriptionDialog(cancelAt)
     }
 
-    return showCancelSubscriptionDialog(cancelAt)
+    const { launchChurnkeyCancellation } =
+      await import('@/platform/cloud/churnkey/launchChurnkeyCancellation')
+    return launchChurnkeyCancellation()
   }
 
   /** Shows one-time cloud notification modal for macOS desktop users. */

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const showDialog = vi.hoisted(() => vi.fn())
 const churnkeyCancellation = vi.hoisted(() => vi.fn())
@@ -56,6 +56,10 @@ describe('launchCancellationFlow', () => {
     useChurnkeyMock.mockReset()
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('launches Churnkey when flag is enabled and configured', async () => {
     useFeatureFlagsMock.mockReturnValue({
       flags: { churnkeyCancellationEnabled: true }
@@ -83,8 +87,9 @@ describe('launchCancellationFlow', () => {
       key: 'cancel-subscription',
       props: { cancelAt: '2026-12-01' }
     })
-    expect(warn).toHaveBeenCalled()
-    warn.mockRestore()
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('VITE_CHURNKEY_APP_ID')
+    )
   })
 
   it('uses the legacy dialog when flag is disabled', async () => {
