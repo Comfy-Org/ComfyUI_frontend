@@ -38,7 +38,20 @@ export function isLinkedPromotion(
   sourceNodeId: string,
   sourceWidgetName: string
 ): boolean {
-  return subgraphNode.inputs.some((input) => {
+  return (
+    findHostInputForPromotion(subgraphNode, sourceNodeId, sourceWidgetName) !==
+    undefined
+  )
+}
+
+/** Find the host input on `subgraphNode` whose `_widget` is the
+ * `PromotedWidgetView` for `(sourceNodeId, sourceWidgetName)`. */
+function findHostInputForPromotion(
+  subgraphNode: SubgraphNode,
+  sourceNodeId: string,
+  sourceWidgetName: string
+) {
+  return subgraphNode.inputs.find((input) => {
     const w = input._widget
     return (
       w &&
@@ -332,15 +345,12 @@ export function demoteWidget(
   for (const parent of parents) {
     if (!parent.subgraph) continue
 
-    const linkedInput = parent.subgraph.inputs.find((input) => {
-      const linkedWidget = input._widget
-      return (
-        linkedWidget &&
-        isPromotedWidgetView(linkedWidget) &&
-        linkedWidget.sourceNodeId === source.sourceNodeId &&
-        linkedWidget.sourceWidgetName === source.sourceWidgetName
-      )
-    })
+    const hostInput = findHostInputForPromotion(
+      parent,
+      source.sourceNodeId,
+      source.sourceWidgetName
+    )
+    const linkedInput = hostInput?._subgraphSlot
     if (linkedInput) {
       parent.subgraph.removeInput(linkedInput)
       continue
