@@ -204,6 +204,21 @@ describe('scanNodeMediaCandidates', () => {
     expect(result).toEqual([])
   })
 
+  it('returns empty while a media upload is pending on the node', () => {
+    const graph = makeGraph([])
+    const node = makeMediaNode(
+      1,
+      'LoadVideo',
+      [makeMediaCombo('file', 'clip.mp4', [])],
+      0
+    )
+    node.isUploading = true
+
+    const result = scanNodeMediaCandidates(graph, node, false)
+
+    expect(result).toEqual([])
+  })
+
   it.each([
     {
       nodeType: 'LoadImage',

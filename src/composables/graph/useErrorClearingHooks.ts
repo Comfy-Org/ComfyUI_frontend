@@ -368,10 +368,11 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     // Scan pasted/duplicated nodes for missing models/media.
     // Skip during loadGraphData (undo/redo/tab switch) — those are
     // handled by the full pipeline or cache restore.
-    // Deferred to microtask because onNodeAdded fires before
-    // node.configure() restores widget values.
+    // Deferred so onNodeAdded fires after node.configure() restores widget
+    // values. The extra microtask lets drag/drop upload handlers mark transient
+    // media-upload state before missing-media detection reads the widget value.
     if (!ChangeTracker.isLoadingGraph) {
-      queueMicrotask(() => scanAddedNode(node))
+      queueMicrotask(() => queueMicrotask(() => scanAddedNode(node)))
     }
 
     originalOnNodeAdded?.call(this, node)

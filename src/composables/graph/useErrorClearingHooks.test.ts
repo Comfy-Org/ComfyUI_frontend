@@ -347,6 +347,26 @@ describe('installErrorClearingHooks lifecycle', () => {
     installErrorClearingHooks(graph)
     expect(node.onConnectionsChange).toBe(chainedAfterFirst)
   })
+
+  it('skips added-node missing media scan when upload state is marked before deferred scan runs', async () => {
+    const graph = new LGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
+    installErrorClearingHooks(graph)
+
+    const node = new LGraphNode('LoadVideo')
+    node.type = 'LoadVideo'
+    node.addWidget('combo', 'file', 'uploading.mp4', () => undefined, {
+      values: []
+    })
+
+    graph.add(node)
+    node.isUploading = true
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(useMissingMediaStore().missingMediaCandidates).toBeNull()
+  })
 })
 
 describe('onNodeRemoved clears missing asset errors by execution ID', () => {
