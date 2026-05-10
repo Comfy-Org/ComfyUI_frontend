@@ -356,8 +356,9 @@ describe('installErrorClearingHooks lifecycle', () => {
   it('scans added-node missing models before the deferred media scan', async () => {
     const graph = new LGraph()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockImplementation(
-      (_rootGraph, node) => [
+    const modelScan = vi
+      .spyOn(missingModelScan, 'scanNodeModelCandidates')
+      .mockImplementation((_rootGraph, node) => [
         {
           nodeId: String(node.id),
           nodeType: node.type,
@@ -367,8 +368,7 @@ describe('installErrorClearingHooks lifecycle', () => {
           directory: 'checkpoints',
           isMissing: true
         } satisfies MissingModelCandidate
-      ]
-    )
+      ])
     const mediaScan = vi
       .spyOn(missingMediaScan, 'scanNodeMediaCandidates')
       .mockReturnValue([])
@@ -380,6 +380,7 @@ describe('installErrorClearingHooks lifecycle', () => {
 
     await Promise.resolve()
 
+    expect(modelScan).toHaveBeenCalledOnce()
     expect(useMissingModelStore().missingModelCandidates).toEqual([
       expect.objectContaining({ name: 'fake_model.safetensors' })
     ])
@@ -388,9 +389,12 @@ describe('installErrorClearingHooks lifecycle', () => {
     await Promise.resolve()
 
     expect(mediaScan).toHaveBeenCalledTimes(1)
+    expect(modelScan.mock.invocationCallOrder[0]).toBeLessThan(
+      mediaScan.mock.invocationCallOrder[0]
+    )
   })
 
-  it('does not surface added-node missing media when upload state is marked before deferred scan runs', async () => {
+  it('does not surface added-node missing media when upload state is marked between deferred scans', async () => {
     const graph = new LGraph()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
@@ -404,8 +408,8 @@ describe('installErrorClearingHooks lifecycle', () => {
     })
 
     graph.add(node)
-    node.isUploading = true
     await Promise.resolve()
+    node.isUploading = true
     await Promise.resolve()
 
     expect(useMissingMediaStore().missingMediaCandidates).toBeNull()

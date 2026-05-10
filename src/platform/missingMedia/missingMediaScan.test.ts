@@ -204,7 +204,25 @@ describe('scanNodeMediaCandidates', () => {
     expect(result).toEqual([])
   })
 
-  it('returns empty while a media upload is pending on the node', () => {
+  it.each([false, true])(
+    'returns empty while a media upload is pending on the node (isCloud: %s)',
+    (isCloud) => {
+      const graph = makeGraph([])
+      const node = makeMediaNode(
+        1,
+        'LoadVideo',
+        [makeMediaCombo('file', 'clip.mp4', [])],
+        0
+      )
+      node.isUploading = true
+
+      const result = scanNodeMediaCandidates(graph, node, isCloud)
+
+      expect(result).toEqual([])
+    }
+  )
+
+  it('detects missing media again after upload state clears', () => {
     const graph = makeGraph([])
     const node = makeMediaNode(
       1,
@@ -212,11 +230,20 @@ describe('scanNodeMediaCandidates', () => {
       [makeMediaCombo('file', 'clip.mp4', [])],
       0
     )
+
     node.isUploading = true
+    expect(scanNodeMediaCandidates(graph, node, false)).toEqual([])
 
-    const result = scanNodeMediaCandidates(graph, node, false)
-
-    expect(result).toEqual([])
+    node.isUploading = false
+    expect(scanNodeMediaCandidates(graph, node, false)).toEqual([
+      expect.objectContaining({
+        nodeType: 'LoadVideo',
+        widgetName: 'file',
+        mediaType: 'video',
+        name: 'clip.mp4',
+        isMissing: true
+      })
+    ])
   })
 
   it.each([

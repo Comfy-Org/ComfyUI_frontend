@@ -54,8 +54,8 @@ function createMockNode(): LGraphNode {
   })
 }
 
-function createFile(name = 'test.png'): File {
-  return new File(['data'], name, { type: 'image/png' })
+function createFile(name = 'test.png', type = 'image/png'): File {
+  return new File(['data'], name, { type })
 }
 
 function successResponse(name: string, subfolder?: string) {
@@ -103,6 +103,18 @@ describe('useNodeImageUpload', () => {
 
     await promise
     expect(node.isUploading).toBe(false)
+  })
+
+  it('sets isUploading while shared media upload handles a video file', async () => {
+    mockFetchApi.mockResolvedValueOnce(successResponse('clip.mp4'))
+
+    const promise = capturedDragOnDrop([createFile('clip.mp4', 'video/mp4')])
+    expect(node.isUploading).toBe(true)
+
+    await promise
+
+    expect(node.isUploading).toBe(false)
+    expect(onUploadComplete).toHaveBeenCalledWith(['clip.mp4'])
   })
 
   it('clears node.imgs on upload start', async () => {
