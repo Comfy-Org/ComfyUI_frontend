@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useIntersectionObserver, useTemplateRefsList } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { useEventListener, useTemplateRefsList } from '@vueuse/core'
+import { computed, onMounted, ref } from 'vue'
 
 import type { Department } from '../../data/roles'
 import type { Locale } from '../../i18n/translations'
@@ -31,27 +31,38 @@ const activeCategory = ref('')
 const sectionRefs = useTemplateRefsList<HTMLElement>()
 
 let isScrolling = false
+let pendingFrame = 0
 
 const HEADER_OFFSET = -144
+const ACTIVATION_OFFSET = 300
 
 const deptElementId = (key: string) => `careers-dept-${key}`
-const deptKeyFromId = (id: string) => id.replace(/^careers-dept-/, '')
 
-useIntersectionObserver(
-  sectionRefs,
-  (entries) => {
-    if (isScrolling) return
-    let best: IntersectionObserverEntry | null = null
-    for (const entry of entries) {
-      if (!entry.isIntersecting) continue
-      if (!best || entry.boundingClientRect.top < best.boundingClientRect.top) {
-        best = entry
-      }
+function pickActiveSection() {
+  pendingFrame = 0
+  if (isScrolling) return
+  const sections = sectionRefs.value as HTMLElement[]
+  if (sections.length === 0) return
+
+  let active = sections[0]
+  for (const el of sections) {
+    if (el.getBoundingClientRect().top - ACTIVATION_OFFSET <= 0) {
+      active = el
+    } else {
+      break
     }
-    if (best) activeCategory.value = deptKeyFromId(best.target.id)
-  },
-  { rootMargin: '-20% 0px -60% 0px' }
-)
+  }
+  activeCategory.value = active.id.replace(/^careers-dept-/, '')
+}
+
+function scheduleUpdate() {
+  if (pendingFrame !== 0) return
+  pendingFrame = requestAnimationFrame(pickActiveSection)
+}
+
+onMounted(pickActiveSection)
+useEventListener('scroll', scheduleUpdate, { passive: true })
+useEventListener('resize', scheduleUpdate, { passive: true })
 
 function scrollToDepartment(deptKey: string) {
   activeCategory.value = deptKey
@@ -67,6 +78,7 @@ function scrollToDepartment(deptKey: string) {
     immediate: prefersReducedMotion(),
     onComplete: () => {
       isScrolling = false
+      pickActiveSection()
     }
   })
 }
