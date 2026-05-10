@@ -224,9 +224,7 @@ const readJson = (
   const nullTerminatorPos = findNullTerminator(data, start, length)
   const fullText = decodeJsonText(data, start, nullTerminatorPos).trim()
 
-  // Legacy VHS pre-fix path double-stringified `prompt`, so on-disk bytes
-  // start with `"` and the inner `{...}` is JSON with backslash-escaped
-  // quotes — invalid as JSON until the outer string is unwrapped.
+  // Legacy VHS double-stringified prompt — unwrap outer string before parsing.
   const unwrapped = unwrapStringifiedJson(fullText)
   if (unwrapped !== null) return unwrapped
 
