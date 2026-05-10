@@ -46,14 +46,32 @@ function createMockPointerEvent(
   return mockEvent as PointerEvent
 }
 
-function createMockWheelEvent(ctrlKey = false, metaKey = false): WheelEvent {
+function createMockWheelEvent(
+  ctrlKey = false,
+  metaKey = false,
+  deltaX = 0,
+  deltaY = 100
+): WheelEvent {
   const mockEvent: Partial<WheelEvent> = {
     ctrlKey,
     metaKey,
+    deltaX,
+    deltaY,
     preventDefault: vi.fn(),
     stopPropagation: vi.fn()
   }
   return mockEvent as WheelEvent
+}
+
+function makeScrollable(element: HTMLElement) {
+  Object.defineProperty(element, 'clientHeight', {
+    configurable: true,
+    value: 100
+  })
+  Object.defineProperty(element, 'scrollHeight', {
+    configurable: true,
+    value: 200
+  })
 }
 
 describe('useCanvasInteractions', () => {
@@ -177,20 +195,20 @@ describe('useCanvasInteractions', () => {
       document.body.removeChild(captureElement)
     })
 
-    it('should NOT forward wheel events when capture element IS focused', () => {
+    it('should NOT forward wheel events when non-text capture element IS focused', () => {
       const { get } = useSettingStore()
       vi.mocked(get).mockReturnValue('legacy')
 
       const captureElement = document.createElement('div')
       captureElement.setAttribute('data-capture-wheel', 'true')
-      const textarea = document.createElement('textarea')
-      captureElement.appendChild(textarea)
+      const input = document.createElement('input')
+      captureElement.appendChild(input)
       document.body.appendChild(captureElement)
-      textarea.focus()
+      input.focus()
 
       const { handleWheel } = useCanvasInteractions()
       const mockEvent = createMockWheelEvent()
-      Object.defineProperty(mockEvent, 'target', { value: textarea })
+      Object.defineProperty(mockEvent, 'target', { value: input })
 
       handleWheel(mockEvent)
 
@@ -198,6 +216,48 @@ describe('useCanvasInteractions', () => {
       expect(mockEvent.stopPropagation).not.toHaveBeenCalled()
 
       document.body.removeChild(captureElement)
+    })
+
+    it('should NOT forward vertical wheel events when text capture element is scrollable', () => {
+      const { get } = useSettingStore()
+      vi.mocked(get).mockReturnValue('legacy')
+
+      const textarea = document.createElement('textarea')
+      textarea.setAttribute('data-capture-wheel', 'true')
+      makeScrollable(textarea)
+      document.body.appendChild(textarea)
+
+      const { handleWheel } = useCanvasInteractions()
+      const mockEvent = createMockWheelEvent(false, false, 0, 100)
+      Object.defineProperty(mockEvent, 'target', { value: textarea })
+
+      handleWheel(mockEvent)
+
+      expect(mockEvent.preventDefault).not.toHaveBeenCalled()
+      expect(mockEvent.stopPropagation).not.toHaveBeenCalled()
+
+      document.body.removeChild(textarea)
+    })
+
+    it('should forward vertical wheel events when text capture element is not scrollable', () => {
+      const { get } = useSettingStore()
+      vi.mocked(get).mockReturnValue('legacy')
+
+      const textarea = document.createElement('textarea')
+      textarea.setAttribute('data-capture-wheel', 'true')
+      document.body.appendChild(textarea)
+      textarea.focus()
+
+      const { handleWheel } = useCanvasInteractions()
+      const mockEvent = createMockWheelEvent(false, false, 0, 100)
+      Object.defineProperty(mockEvent, 'target', { value: textarea })
+
+      handleWheel(mockEvent)
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled()
+      expect(mockEvent.stopPropagation).toHaveBeenCalled()
+
+      document.body.removeChild(textarea)
     })
 
     it('should forward ctrl+wheel to canvas when capture element IS focused in standard mode', () => {
