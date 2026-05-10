@@ -299,7 +299,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const fullPath = getUnconflictedPath(
       ComfyWorkflow.basePath + (path ?? t('workflow.unsavedFilename'))
     )
-    return createNewWorkflow(fullPath, ensureWorkflowId(workflowData))
+    return createNewWorkflow(fullPath, workflowData)
   }
 
   /**

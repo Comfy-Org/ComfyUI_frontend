@@ -540,7 +540,7 @@
     "extension": "Extension",
     "server_config": "Server-Config",
     "general": "General",
-    "": "账户",
+    "Account": "Account",
     "sidetoolbar_labels_workflows": "sideToolbar.labels.workflows",
     "background_color": "Background Color",
     "random_seed": "Random Seed",
