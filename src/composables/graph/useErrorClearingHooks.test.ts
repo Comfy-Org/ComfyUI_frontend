@@ -353,6 +353,27 @@ describe('installErrorClearingHooks lifecycle', () => {
     expect(node.onConnectionsChange).toBe(chainedAfterFirst)
   })
 
+  it('scans added-node missing models after widget values are restored', async () => {
+    const graph = new LGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    installErrorClearingHooks(graph)
+
+    const node = new LGraphNode('CheckpointLoaderSimple')
+    node.type = 'CheckpointLoaderSimple'
+    const widget = node.addWidget('combo', 'ckpt_name', '', () => undefined, {
+      values: []
+    })
+
+    graph.add(node)
+    widget.value = 'fake_model.safetensors'
+
+    await Promise.resolve()
+
+    expect(useMissingModelStore().missingModelCandidates).toEqual([
+      expect.objectContaining({ name: 'fake_model.safetensors' })
+    ])
+  })
+
   it('scans added-node missing models before the deferred media scan', async () => {
     const graph = new LGraph()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
