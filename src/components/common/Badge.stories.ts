@@ -59,7 +59,7 @@ export const Contrast: Story = {
 
 export const Circle: Story = {
   args: {
-    label: t('g.3'),
+    label: '3',
     variant: 'circle'
   }
 }
