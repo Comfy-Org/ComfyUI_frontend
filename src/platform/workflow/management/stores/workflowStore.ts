@@ -296,20 +296,18 @@ export const useWorkflowStore = defineStore('workflow', () => {
    */
   const createTemporary = (path?: string, workflowData?: ComfyWorkflowJSON) => {
     const fullPath = getUnconflictedPath(
-      ComfyWorkflow.basePath + (path ?? '未保存的工作流.json')
+      ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
     )
-...
-      ComfyWorkflow.basePath + (path ?? '未保存的工作流.json')
-    )
-      if (
-        existingWorkflow?.changeTracker &&
-        !existingWorkflow.directory.startsWith(
-          ComfyWorkflow.basePath.slice(0, -1)
-        )
-      ) {
-        existingWorkflow.changeTracker.reset(normalizedWorkflowData)
-        return existingWorkflow
-      }
+    const normalizedWorkflowData = ensureWorkflowId(workflowData)
+    const existingWorkflow = workflowLookup.value[fullPath]
+    if (
+      existingWorkflow?.changeTracker &&
+      !existingWorkflow.directory.startsWith(
+        ComfyWorkflow.basePath.slice(0, -1)
+      )
+    ) {
+      existingWorkflow.changeTracker.reset(normalizedWorkflowData)
+      return existingWorkflow
     }
 
     return createNewWorkflow(fullPath, normalizedWorkflowData)

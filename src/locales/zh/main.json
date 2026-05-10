@@ -1513,7 +1513,18 @@
   },
   "groupNode": {
     "create": "创建组节点",
-    "enterName": "输入名称"
+    "enterName": "输入名称",
+    "inUseError": "此名称的组节点已嵌入此工作流中，请移除任何实例或使用新名称。",
+    "overwriteConfirm": "此名称的组节点已嵌入此工作流中，确定要覆盖吗？",
+    "convertToNodes": "转换为节点",
+    "manageGroupNode": "管理组节点",
+    "convertToGroupNodeDeprecated": "转换为组节点（已弃用）",
+    "manageGroupNodes": "管理组节点",
+    "noNodesSelected": "未选择节点",
+    "selectMultipleNodes": "请选择多个节点以转换为组节点",
+    "containsSubgraphNode": "所选节点包含子图节点",
+    "containsGroupNode": "所选节点包含组节点",
+    "runningProgress": "正在运行 {nodeName} ({current}/{total})"
   },
   "help": {
     "helpCenterMenu": "帮助中心菜单",
@@ -2997,6 +3008,9 @@
     "troubleshoot": "故障排除"
   },
   "settingsCategories": {
+    "Account": "账户",
+    "Application Settings": "应用设置",
+    "Special Settings": "特殊设置",
     "3D": "3D",
     "3DViewer": "3D查看器",
     "API Nodes": "API 节点",

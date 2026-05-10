@@ -143,13 +143,13 @@ class GroupNodeBuilder {
     switch (used) {
       case Workflow.InUse.InWorkflow:
         useToastStore().addAlert(
-          'An in use group node with this name already exists embedded in this workflow, please remove any instances or use a new name.'
+          t('groupNode.inUseError')
         )
         return
       case Workflow.InUse.Registered:
         if (
           !confirm(
-            'A group node with this name already exists embedded in this workflow, are you sure you want to overwrite it?'
+            t('groupNode.overwriteConfirm')
           )
         ) {
           return
@@ -1305,7 +1305,7 @@ export class GroupNodeHandler {
         0,
         null,
         {
-          content: 'Convert to nodes',
+          content: t('groupNode.convertToNodes'),
           // @ts-expect-error async callback not expected by legacy menu API
           callback: async () => {
             const convertFn = (
@@ -1317,7 +1317,7 @@ export class GroupNodeHandler {
           }
         },
         {
-          content: 'Manage Group Node',
+          content: t('groupNode.manageGroupNode'),
           callback: () => manageGroupNodes(this.type)
         }
       )
@@ -1365,7 +1365,7 @@ export class GroupNodeHandler {
             : parseInt(String(this.runningInternalNodeId), 10)
         const n = groupData.nodes[nodeIdx] as { title?: string; type?: string }
         if (!n) return
-        const message = `Running ${n.title || n.type} (${this.runningInternalNodeId}/${groupData.nodes.length})`
+        const message = t('groupNode.runningProgress', { nodeName: n.title || n.type, current: this.runningInternalNodeId, total: groupData.nodes.length })
         ctx.save()
         ctx.font = '12px sans-serif'
         const sz = ctx.measureText(message)
@@ -1845,18 +1845,18 @@ const replaceLegacySeparators = (nodes: ComfyNode[]): void => {
 async function convertSelectedNodesToGroupNode() {
   const nodes = Object.values(app.canvas.selected_nodes ?? {})
   if (nodes.length === 0) {
-    throw new Error('No nodes selected')
+    throw new Error(t('groupNode.noNodesSelected'))
   }
   if (nodes.length === 1) {
-    throw new Error('Please select multiple nodes to convert to group node')
+    throw new Error(t('groupNode.selectMultipleNodes'))
   }
 
   for (const node of nodes) {
     if (node instanceof SubgraphNode) {
-      throw new Error('Selected nodes contain a subgraph node')
+      throw new Error(t('groupNode.containsSubgraphNode'))
     }
     if (GroupNodeHandler.isGroupNode(node)) {
-      throw new Error('Selected nodes contain a group node')
+      throw new Error(t('groupNode.containsGroupNode'))
     }
   }
   return await GroupNodeHandler.fromNodes(nodes)
@@ -1947,7 +1947,7 @@ const ext: ComfyExtension = {
     const convertEnabled = !convertDisabled(selected)
 
     items.push({
-      content: `Convert to Group Node (Deprecated)`,
+      content: t('groupNode.convertToGroupNodeDeprecated'),
       disabled: !convertEnabled,
       // @ts-expect-error async callback - legacy menu API doesn't expect Promise
       callback: async () => convertSelectedNodesToGroupNode()
@@ -1956,7 +1956,7 @@ const ext: ComfyExtension = {
     const groups = canvas.graph?.extra?.groupNodes
     const manageDisabled = !groups || !Object.keys(groups).length
     items.push({
-      content: `Manage Group Nodes`,
+      content: t('groupNode.manageGroupNodes'),
       disabled: manageDisabled,
       callback: () => manageGroupNodes()
     })
@@ -1974,7 +1974,7 @@ const ext: ComfyExtension = {
 
     return [
       {
-        content: `Convert to Group Node (Deprecated)`,
+        content: t('groupNode.convertToGroupNodeDeprecated'),
         disabled: !convertEnabled,
         // @ts-expect-error async callback - legacy menu API doesn't expect Promise
         callback: async () => convertSelectedNodesToGroupNode()

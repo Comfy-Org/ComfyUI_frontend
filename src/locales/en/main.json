@@ -1337,7 +1337,18 @@
   },
   "groupNode": {
     "create": "Create group node",
-    "enterName": "Enter name"
+    "enterName": "Enter name",
+    "inUseError": "An in use group node with this name already exists embedded in this workflow, please remove any instances or use a new name.",
+    "overwriteConfirm": "A group node with this name already exists embedded in this workflow, are you sure you want to overwrite it?",
+    "convertToNodes": "Convert to nodes",
+    "manageGroupNode": "Manage Group Node",
+    "convertToGroupNodeDeprecated": "Convert to Group Node (Deprecated)",
+    "manageGroupNodes": "Manage Group Nodes",
+    "noNodesSelected": "No nodes selected",
+    "selectMultipleNodes": "Please select multiple nodes to convert to group node",
+    "containsSubgraphNode": "Selected nodes contain a subgraph node",
+    "containsGroupNode": "Selected nodes contain a group node",
+    "runningProgress": "Running {nodeName} ({current}/{total})"
   },
   "nodeTemplates": {
     "saveAsTemplate": "Save as template",
@@ -1636,6 +1647,9 @@
     "confirmQuit": "There are unsaved workflows open; any unsaved changes will be lost.  Ignore this and quit?"
   },
   "settingsCategories": {
+    "Account": "Account",
+    "Application Settings": "Application Settings",
+    "Special Settings": "Special Settings",
     "Comfy-Desktop": "Comfy-Desktop",
     "General": "General",
     "Appearance": "Appearance",
