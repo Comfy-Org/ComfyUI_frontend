@@ -17421,7 +17421,8 @@
         "name": "PBR"
       },
       "quad": {
-        "name": "چهارضلعی"
+        "name": "چهارضلعی",
+        "tooltip": "این پارامتر منسوخ شده است و هیچ تأثیری ندارد."
       },
       "texture": {
         "name": "تکسچر"
@@ -19386,6 +19387,156 @@
     "outputs": {
       "0": {
         "tooltip": "مدل با پنجره‌های زمینه اعمال‌شده در هنگام نمونه‌گیری."
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_inject_scale": {
+        "name": "audio_inject_scale",
+        "tooltip": "مقیاس ویژگی‌های صوتی هنگام تزریق به مدل ویدیو."
+      },
+      "video_frames": {
+        "name": "video_frames"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio_encoder_output",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps_string",
+        "tooltip": "نرخ فریم بر ثانیه (fps) محاسبه‌شده بر اساس طول صوت و تعداد فریم‌های ویدیو. در prompt استفاده می‌شود."
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "صوت برای محاسبه تعداد کل فریم‌های خروجی و استخراج صوت بخش."
+      },
+      "images": {
+        "name": "images"
+      },
+      "segment_index": {
+        "name": "segment_index",
+        "tooltip": "این بخش کدام است (۰ برای اول، ۱ برای دوم و ...)"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "طول این بخش (معمولاً ۱۴۹ فریم)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "دنباله keyframe با padding"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "ماسک نشان‌دهنده فریم‌های معتبر"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "بخش صوتی برای این بخش ویدیو"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "صوت برای برش هر بخش خروجی."
+      },
+      "images": {
+        "name": "images"
+      },
+      "num_segments": {
+        "name": "num_segments",
+        "tooltip": "تعداد بخش‌های padding که به صورت لیست خروجی داده می‌شود."
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "طول هر بخش (معمولاً ۱۴۹ فریم)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "دنباله‌های keyframe با padding"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "ماسک‌ها برای نشان دادن فریم‌های معتبر"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "بخش صوتی برای هر بخش ویدیو"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "audio_encoder_output": {
+        "name": "خروجی رمزگذار صوتی"
+      },
+      "clip_vision_output": {
+        "name": "خروجی بینایی clip",
+        "tooltip": "بردارهای بینایی CLIP برای اولین فریم."
+      },
+      "clip_vision_output_ref": {
+        "name": "خروجی مرجع بینایی clip",
+        "tooltip": "بردارهای بینایی CLIP برای تصویر مرجع."
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول",
+        "tooltip": "تعداد فریم‌های ویدئوی تولیدشده. برای WanDancer باید ۱۴۹ باقی بماند."
+      },
+      "mask": {
+        "name": "ماسک",
+        "tooltip": "ماسک شرطی‌سازی تصویر برای تصویر(ها)ی شروع. سفید حفظ می‌شود، سیاه تولید می‌شود. برای تولیدات محلی استفاده می‌شود."
+      },
+      "negative": {
+        "name": "منفی"
+      },
+      "positive": {
+        "name": "مثبت"
+      },
+      "start_image": {
+        "name": "تصویر شروع",
+        "tooltip": "تصویر(ها)ی اولیه برای رمزگذاری؛ می‌تواند هر تعداد فریم باشد."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
+        "tooltip": null
+      },
+      "2": {
+        "name": "لاتنت",
+        "tooltip": "لاتنت خالی."
       }
     }
   },

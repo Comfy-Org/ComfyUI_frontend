@@ -17421,7 +17421,8 @@
         "name": "pbr"
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "此參數已棄用，無任何作用。"
       },
       "texture": {
         "name": "texture"
@@ -19386,6 +19387,156 @@
     "outputs": {
       "0": {
         "tooltip": "在採樣期間應用上下文窗口的模型。"
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_inject_scale": {
+        "name": "audio_inject_scale",
+        "tooltip": "將音訊特徵注入到影片模型時的縮放比例。"
+      },
+      "video_frames": {
+        "name": "video_frames"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio_encoder_output",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps_string",
+        "tooltip": "根據音訊長度與影片影格數計算出的 fps，會用於提示詞中。"
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "用於計算總輸出影格數並擷取片段音訊的音訊。"
+      },
+      "images": {
+        "name": "images"
+      },
+      "segment_index": {
+        "name": "segment_index",
+        "tooltip": "這是第幾個片段（第一個為 0，第二個為 1，以此類推）"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "此片段的長度（通常為 149 影格）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "已補齊的關鍵影格序列"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "標示有效影格的 mask"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "此影片片段對應的音訊片段"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "要為每個輸出片段切割的音訊。"
+      },
+      "images": {
+        "name": "images"
+      },
+      "num_segments": {
+        "name": "num_segments",
+        "tooltip": "要以清單形式輸出的補齊片段數量。"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "每個片段的長度（通常為 149 影格）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "已補齊的關鍵影格序列"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "標示有效影格的 mask"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "每個影片片段對應的音訊片段"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "audio_encoder_output": {
+        "name": "audio_encoder_output"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "第一幀的 CLIP 視覺嵌入。"
+      },
+      "clip_vision_output_ref": {
+        "name": "clip_vision_output_ref",
+        "tooltip": "參考圖像的 CLIP 視覺嵌入。"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "長度",
+        "tooltip": "生成影片的幀數。對於 WanDancer，應保持 149。"
+      },
+      "mask": {
+        "name": "遮罩",
+        "tooltip": "起始圖像的圖像處理遮罩。白色保留，黑色生成。用於局部生成。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "start_image": {
+        "name": "起始圖像",
+        "tooltip": "要編碼的初始圖像，可為任意幀數。"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "空的 latent。"
       }
     }
   },

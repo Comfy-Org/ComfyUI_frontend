@@ -17421,7 +17421,8 @@
         "name": "PBR"
       },
       "quad": {
-        "name": "四边形"
+        "name": "四边形",
+        "tooltip": "此参数已弃用，无任何作用。"
       },
       "texture": {
         "name": "纹理"
@@ -19386,6 +19387,156 @@
     "outputs": {
       "0": {
         "tooltip": "在采样过程中应用了上下文窗口的模型。"
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "音频"
+      },
+      "audio_inject_scale": {
+        "name": "音频注入比例",
+        "tooltip": "将音频特征注入到视频模型时的比例。"
+      },
+      "video_frames": {
+        "name": "视频帧"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "音频编码器输出",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps字符串",
+        "tooltip": "根据音频长度和视频帧数计算得到的fps。用于提示词中。"
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "audio": {
+        "name": "音频",
+        "tooltip": "用于计算总输出帧数并提取片段音频。"
+      },
+      "images": {
+        "name": "图像"
+      },
+      "segment_index": {
+        "name": "片段索引",
+        "tooltip": "这是第几个片段（第一个为0，第二个为1，以此类推）"
+      },
+      "segment_length": {
+        "name": "片段长度",
+        "tooltip": "该片段的长度（通常为149帧）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "关键帧序列",
+        "tooltip": "填充后的关键帧序列"
+      },
+      "1": {
+        "name": "关键帧掩码",
+        "tooltip": "指示有效帧的掩码"
+      },
+      "2": {
+        "name": "音频片段",
+        "tooltip": "该视频片段对应的音频片段"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "audio": {
+        "name": "音频",
+        "tooltip": "为每个输出片段切分音频。"
+      },
+      "images": {
+        "name": "图像"
+      },
+      "num_segments": {
+        "name": "片段数量",
+        "tooltip": "要以列表形式输出多少个填充片段。"
+      },
+      "segment_length": {
+        "name": "片段长度",
+        "tooltip": "每个片段的长度（通常为149帧）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "关键帧序列",
+        "tooltip": "填充后的关键帧序列"
+      },
+      "1": {
+        "name": "关键帧掩码",
+        "tooltip": "指示有效帧的掩码"
+      },
+      "2": {
+        "name": "音频片段",
+        "tooltip": "每个视频片段对应的音频片段"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "audio_encoder_output": {
+        "name": "音频编码器输出"
+      },
+      "clip_vision_output": {
+        "name": "clip视觉输出",
+        "tooltip": "第一帧的CLIP视觉嵌入。"
+      },
+      "clip_vision_output_ref": {
+        "name": "clip视觉参考输出",
+        "tooltip": "参考图像的CLIP视觉嵌入。"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度",
+        "tooltip": "生成视频的帧数。对于WanDancer应保持为149。"
+      },
+      "mask": {
+        "name": "掩码",
+        "tooltip": "用于起始图像的图像条件掩码。白色保留，黑色生成。用于局部生成。"
+      },
+      "negative": {
+        "name": "负向"
+      },
+      "positive": {
+        "name": "正向"
+      },
+      "start_image": {
+        "name": "起始图像",
+        "tooltip": "要编码的初始图像，可以为任意帧数。"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "name": "负向",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "空的latent。"
       }
     }
   },

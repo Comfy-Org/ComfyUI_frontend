@@ -17421,7 +17421,8 @@
         "name": "PBR"
       },
       "quad": {
-        "name": "쿼드"
+        "name": "쿼드",
+        "tooltip": "이 매개변수는 더 이상 사용되지 않으며 아무런 동작도 하지 않습니다."
       },
       "texture": {
         "name": "텍스처"
@@ -19386,6 +19387,156 @@
     "outputs": {
       "0": {
         "tooltip": "샘플링 중 컨텍스트 창이 적용된 모델입니다."
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_inject_scale": {
+        "name": "audio_inject_scale",
+        "tooltip": "오디오 특징을 비디오 모델에 주입할 때의 스케일입니다."
+      },
+      "video_frames": {
+        "name": "video_frames"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio_encoder_output",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps_string",
+        "tooltip": "오디오 길이와 비디오 프레임 수를 기반으로 계산된 fps입니다. 프롬프트에 사용됩니다."
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "총 출력 프레임 계산 및 구간 오디오 추출에 사용할 오디오입니다."
+      },
+      "images": {
+        "name": "images"
+      },
+      "segment_index": {
+        "name": "segment_index",
+        "tooltip": "이 구간이 몇 번째인지 (첫 번째는 0, 두 번째는 1 등)"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "이 구간의 길이 (보통 149 프레임)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "패딩된 키프레임 시퀀스"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "유효한 프레임을 나타내는 마스크"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "이 비디오 구간에 해당하는 오디오 구간"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "각 출력 구간에 맞게 오디오를 분할합니다."
+      },
+      "images": {
+        "name": "images"
+      },
+      "num_segments": {
+        "name": "num_segments",
+        "tooltip": "리스트로 출력할 패딩된 구간의 개수"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "각 구간의 길이 (보통 149 프레임)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "패딩된 키프레임 시퀀스들"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "유효한 프레임을 나타내는 마스크들"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "각 비디오 구간에 해당하는 오디오 구간"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "audio_encoder_output": {
+        "name": "audio_encoder_output"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "첫 번째 프레임의 CLIP 비전 임베딩입니다."
+      },
+      "clip_vision_output_ref": {
+        "name": "clip_vision_output_ref",
+        "tooltip": "참조 이미지의 CLIP 비전 임베딩입니다."
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이",
+        "tooltip": "생성된 비디오의 프레임 수입니다. WanDancer의 경우 149로 유지해야 합니다."
+      },
+      "mask": {
+        "name": "마스크",
+        "tooltip": "시작 이미지(들)에 대한 이미지 조건 마스크입니다. 흰색은 유지되고, 검은색은 생성됩니다. 로컬 생성에 사용됩니다."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "start_image": {
+        "name": "시작 이미지",
+        "tooltip": "인코딩할 초기 이미지(들)입니다. 프레임 수는 자유롭게 설정할 수 있습니다."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "비어 있는 latent."
       }
     }
   },

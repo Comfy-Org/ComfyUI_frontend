@@ -17421,7 +17421,8 @@
         "name": "pbr"
       },
       "quad": {
-        "name": "dörtgen"
+        "name": "dörtgen",
+        "tooltip": "Bu parametre kullanımdan kaldırılmıştır ve hiçbir şey yapmaz."
       },
       "texture": {
         "name": "doku"
@@ -19386,6 +19387,156 @@
     "outputs": {
       "0": {
         "tooltip": "Örnekleme sırasında bağlam pencereleri uygulanmış model."
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "ses"
+      },
+      "audio_inject_scale": {
+        "name": "ses_enjeksiyon_ölçeği",
+        "tooltip": "Ses özelliklerinin video modeline enjekte edilirken kullanılacak ölçek."
+      },
+      "video_frames": {
+        "name": "video_kareleri"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ses_kodlayıcı_çıktısı",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps_dizgesi",
+        "tooltip": "Ses uzunluğu ve video kare sayısına göre hesaplanan fps. İstem içinde kullanılır."
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "audio": {
+        "name": "ses",
+        "tooltip": "Toplam çıktı karelerini hesaplamak ve segment sesini çıkarmak için ses."
+      },
+      "images": {
+        "name": "görseller"
+      },
+      "segment_index": {
+        "name": "segment_indeksi",
+        "tooltip": "Bu hangi segment (ilk için 0, ikinci için 1, vb.)"
+      },
+      "segment_length": {
+        "name": "segment_uzunluğu",
+        "tooltip": "Bu segmentin uzunluğu (genellikle 149 kare)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "anahtar_kare_dizisi",
+        "tooltip": "Doldurulmuş anahtar kare dizisi"
+      },
+      "1": {
+        "name": "anahtar_kare_maskesi",
+        "tooltip": "Geçerli kareleri gösteren maske"
+      },
+      "2": {
+        "name": "ses_segmenti",
+        "tooltip": "Bu video segmenti için ses segmenti"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "audio": {
+        "name": "ses",
+        "tooltip": "Her üretilen segment için bölünecek ses."
+      },
+      "images": {
+        "name": "görseller"
+      },
+      "num_segments": {
+        "name": "segment_sayısı",
+        "tooltip": "Liste olarak kaç doldurulmuş segment üretileceği."
+      },
+      "segment_length": {
+        "name": "segment_uzunluğu",
+        "tooltip": "Her segmentin uzunluğu (genellikle 149 kare)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "anahtar_kare_dizileri",
+        "tooltip": "Doldurulmuş anahtar kare dizileri"
+      },
+      "1": {
+        "name": "anahtar_kare_maskeleri",
+        "tooltip": "Geçerli kareleri gösteren maskeler"
+      },
+      "2": {
+        "name": "ses_segmenti",
+        "tooltip": "Her video segmenti için ses segmenti"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "audio_encoder_output": {
+        "name": "audio_encoder_output"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "İlk kare için CLIP vision gömüleri."
+      },
+      "clip_vision_output_ref": {
+        "name": "clip_vision_output_ref",
+        "tooltip": "Referans görsel için CLIP vision gömüleri."
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "length": {
+        "name": "uzunluk",
+        "tooltip": "Oluşturulan videodaki kare sayısı. WanDancer için 149 olarak kalmalıdır."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "Başlangıç görsel(ler)i için görsel koşullandırma maskesi. Beyaz korunur, siyah üretilir. Yerel üretimler için kullanılır."
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "positive": {
+        "name": "pozitif"
+      },
+      "start_image": {
+        "name": "başlangıç görseli",
+        "tooltip": "Kodlanacak ilk görsel(ler), herhangi bir kare sayısı olabilir."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negatif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Boş latent."
       }
     }
   },

@@ -17421,7 +17421,8 @@
         "name": "pbr"
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "Ce paramètre est obsolète et n'a aucun effet."
       },
       "texture": {
         "name": "texture"
@@ -19386,6 +19387,156 @@
     "outputs": {
       "0": {
         "tooltip": "Le modèle avec fenêtres contextuelles appliquées pendant l'échantillonnage."
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_inject_scale": {
+        "name": "audio_inject_scale",
+        "tooltip": "L'échelle des caractéristiques audio lors de leur injection dans le modèle vidéo."
+      },
+      "video_frames": {
+        "name": "video_frames"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio_encoder_output",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps_string",
+        "tooltip": "Le nombre d'images par seconde calculé en fonction de la durée de l'audio et du nombre d'images vidéo. Utilisé dans l'invite."
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio pour calculer le nombre total d'images de sortie et extraire l'audio du segment."
+      },
+      "images": {
+        "name": "images"
+      },
+      "segment_index": {
+        "name": "segment_index",
+        "tooltip": "Quel segment est-ce (0 pour le premier, 1 pour le second, etc.)"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "Longueur de ce segment (généralement 149 images)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "Séquence de keyframes complétée"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "Masque indiquant les images valides"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "Segment audio pour ce segment vidéo"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio à découper pour chaque segment émis."
+      },
+      "images": {
+        "name": "images"
+      },
+      "num_segments": {
+        "name": "num_segments",
+        "tooltip": "Combien de segments complétés à émettre sous forme de listes."
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "Longueur de chaque segment (généralement 149 images)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "Séquences de keyframes complétées"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "Masques indiquant les images valides"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "Segment audio pour chaque segment vidéo"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "audio_encoder_output": {
+        "name": "audio_encoder_output"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "Les embeddings CLIP vision pour la première image."
+      },
+      "clip_vision_output_ref": {
+        "name": "clip_vision_output_ref",
+        "tooltip": "Les embeddings CLIP vision pour l’image de référence."
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "length": {
+        "name": "longueur",
+        "tooltip": "Le nombre d’images dans la vidéo générée. Doit rester à 149 pour WanDancer."
+      },
+      "mask": {
+        "name": "masque",
+        "tooltip": "Masque de conditionnement d’image pour l’image ou les images de départ. Le blanc est conservé, le noir est généré. Utilisé pour les générations locales."
+      },
+      "negative": {
+        "name": "négatif"
+      },
+      "positive": {
+        "name": "positif"
+      },
+      "start_image": {
+        "name": "image_de_départ",
+        "tooltip": "L’image ou les images initiales à encoder, peut contenir n’importe quel nombre d’images."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "négatif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Latent vide."
       }
     }
   },

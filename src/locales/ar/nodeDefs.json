@@ -17421,7 +17421,8 @@
         "name": "PBR"
       },
       "quad": {
-        "name": "رباعي"
+        "name": "رباعي",
+        "tooltip": "هذا المعامل قديم ولم يعد له أي تأثير."
       },
       "texture": {
         "name": "الملمس"
@@ -19386,6 +19387,156 @@
     "outputs": {
       "0": {
         "tooltip": "النموذج مع نوافذ السياق المطبقة أثناء أخذ العينات."
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "الصوت"
+      },
+      "audio_inject_scale": {
+        "name": "مقياس حقن الصوت",
+        "tooltip": "المقياس لميزات الصوت عند حقنها في نموذج الفيديو."
+      },
+      "video_frames": {
+        "name": "إطارات الفيديو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مخرجات مشفر الصوت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "سلسلة معدل الإطارات (fps)",
+        "tooltip": "معدل الإطارات المحسوب بناءً على طول الصوت وعدد إطارات الفيديو. يُستخدم في الموجه."
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "audio": {
+        "name": "الصوت",
+        "tooltip": "الصوت المستخدم لحساب إجمالي إطارات الإخراج واستخراج صوت المقطع."
+      },
+      "images": {
+        "name": "الصور"
+      },
+      "segment_index": {
+        "name": "فهرس المقطع",
+        "tooltip": "أي مقطع هذا (٠ للأول، ١ للثاني، إلخ.)"
+      },
+      "segment_length": {
+        "name": "طول المقطع",
+        "tooltip": "طول هذا المقطع (عادةً ١٤٩ إطاراً)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "تسلسل الإطارات الرئيسية المبطنة",
+        "tooltip": "تسلسل الإطارات الرئيسية بعد التبطين"
+      },
+      "1": {
+        "name": "قناع الإطارات الرئيسية",
+        "tooltip": "قناع يحدد الإطارات الصالحة"
+      },
+      "2": {
+        "name": "مقطع الصوت",
+        "tooltip": "مقطع الصوت لهذا الجزء من الفيديو"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "audio": {
+        "name": "الصوت",
+        "tooltip": "الصوت الذي سيتم تقطيعه لكل مقطع صادر."
+      },
+      "images": {
+        "name": "الصور"
+      },
+      "num_segments": {
+        "name": "عدد المقاطع",
+        "tooltip": "عدد المقاطع المبطنة التي سيتم إصدارها كقوائم."
+      },
+      "segment_length": {
+        "name": "طول المقطع",
+        "tooltip": "طول كل مقطع (عادةً ١٤٩ إطاراً)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "تسلسلات الإطارات الرئيسية المبطنة",
+        "tooltip": "تسلسلات الإطارات الرئيسية بعد التبطين"
+      },
+      "1": {
+        "name": "أقنعة الإطارات الرئيسية",
+        "tooltip": "أقنعة تحدد الإطارات الصالحة"
+      },
+      "2": {
+        "name": "مقطع الصوت",
+        "tooltip": "مقطع الصوت لكل جزء من الفيديو"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "audio_encoder_output": {
+        "name": "مخرجات ترميز الصوت"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "تضمينات CLIP للرؤية للإطار الأول."
+      },
+      "clip_vision_output_ref": {
+        "name": "clip_vision_output_ref",
+        "tooltip": "تضمينات CLIP للرؤية لصورة المرجع."
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "length": {
+        "name": "الطول",
+        "tooltip": "عدد الإطارات في الفيديو المُنتج. يجب أن يبقى ١٤٩ لـ WanDancer."
+      },
+      "mask": {
+        "name": "قناع",
+        "tooltip": "قناع معالجة الصورة للصورة/الصور الابتدائية. الأبيض يبقى، الأسود يُولّد. يُستخدم للتوليد المحلي."
+      },
+      "negative": {
+        "name": "سلبي"
+      },
+      "positive": {
+        "name": "إيجابي"
+      },
+      "start_image": {
+        "name": "الصورة الابتدائية",
+        "tooltip": "الصورة أو الصور الأولية التي سيتم ترميزها، يمكن أن تكون أي عدد من الإطارات."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "إيجابي",
+        "tooltip": null
+      },
+      "1": {
+        "name": "سلبي",
+        "tooltip": null
+      },
+      "2": {
+        "name": "كامِن",
+        "tooltip": "كامِن فارغ."
       }
     }
   },

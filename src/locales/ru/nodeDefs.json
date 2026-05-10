@@ -17421,7 +17421,8 @@
         "name": "PBR"
       },
       "quad": {
-        "name": "квад"
+        "name": "квад",
+        "tooltip": "Этот параметр устарел и больше не используется."
       },
       "texture": {
         "name": "текстура"
@@ -19386,6 +19387,156 @@
     "outputs": {
       "0": {
         "tooltip": "Модель с применёнными контекстными окнами во время сэмплирования."
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_inject_scale": {
+        "name": "audio_inject_scale",
+        "tooltip": "Масштаб аудиофич при внедрении в видеомодель."
+      },
+      "video_frames": {
+        "name": "video_frames"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio_encoder_output",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps_string",
+        "tooltip": "Вычисленный fps на основе длины аудио и количества видеокадров. Используется в prompt."
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Аудио для расчёта общего количества выходных кадров и извлечения сегмента аудио."
+      },
+      "images": {
+        "name": "images"
+      },
+      "segment_index": {
+        "name": "segment_index",
+        "tooltip": "Какой это сегмент (0 — первый, 1 — второй и т.д.)"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "Длина этого сегмента (обычно 149 кадров)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "Дополненная последовательность ключевых кадров"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "Маска, указывающая валидные кадры"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "Аудиосегмент для этого видеосегмента"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Аудио для нарезки для каждого выдаваемого сегмента."
+      },
+      "images": {
+        "name": "images"
+      },
+      "num_segments": {
+        "name": "num_segments",
+        "tooltip": "Сколько дополненных сегментов выдавать в виде списков."
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "Длина каждого сегмента (обычно 149 кадров)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "Дополненные последовательности ключевых кадров"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "Маски, указывающие валидные кадры"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "Аудиосегмент для каждого видеосегмента"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "audio_encoder_output": {
+        "name": "audio_encoder_output"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "Визуальные эмбеддинги CLIP для первого кадра."
+      },
+      "clip_vision_output_ref": {
+        "name": "clip_vision_output_ref",
+        "tooltip": "Визуальные эмбеддинги CLIP для референсного изображения."
+      },
+      "height": {
+        "name": "высота"
+      },
+      "length": {
+        "name": "длина",
+        "tooltip": "Количество кадров в сгенерированном видео. Для WanDancer должно оставаться 149."
+      },
+      "mask": {
+        "name": "маска",
+        "tooltip": "Маска для обработки изображения начального кадра(ов). Белое сохраняется, черное генерируется. Используется для локальной генерации."
+      },
+      "negative": {
+        "name": "негативный"
+      },
+      "positive": {
+        "name": "позитивный"
+      },
+      "start_image": {
+        "name": "начальное изображение",
+        "tooltip": "Исходное изображение(я) для кодирования, может быть любое количество кадров."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "позитивный",
+        "tooltip": null
+      },
+      "1": {
+        "name": "негативный",
+        "tooltip": null
+      },
+      "2": {
+        "name": "латентный",
+        "tooltip": "Пустое латентное пространство."
       }
     }
   },
