@@ -91,7 +91,8 @@ const extractJson = (
     const jsonText = new TextDecoder().decode(data.slice(jsonStart, end))
     const parsed = JSON.parse(jsonText)
     if (typeof parsed === 'string') {
-      return JSON.parse(parsed)
+      const inner = JSON.parse(parsed)
+      return typeof inner === 'object' && inner !== null ? inner : null
     }
     return parsed
   } catch {

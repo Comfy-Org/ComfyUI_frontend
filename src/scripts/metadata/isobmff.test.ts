@@ -15,6 +15,10 @@ const legacyFixturePath = path.resolve(
   __dirname,
   '__fixtures__/with_legacy_metadata.mp4'
 )
+const tripleEncodedFixturePath = path.resolve(
+  __dirname,
+  '__fixtures__/with_triple_encoded_metadata.mp4'
+)
 
 const LEGACY_PROMPT = {
   '1': { class_type: 'KSampler', inputs: { seed: 12345 } }
@@ -45,6 +49,16 @@ describe('ISOBMFF (MP4) metadata', () => {
 
     expect(result.workflow).toEqual(LEGACY_WORKFLOW)
     expect(result.prompt).toEqual(LEGACY_PROMPT)
+  })
+
+  it('drops triple-encoded values rather than surfacing string payloads', async () => {
+    const bytes = fs.readFileSync(tripleEncodedFixturePath)
+    const file = new File([bytes], 'triple.mp4', { type: 'video/mp4' })
+
+    const result = await getFromIsobmffFile(file)
+
+    expect(result.workflow).toBeUndefined()
+    expect(result.prompt).toBeUndefined()
   })
 
   it('returns empty for non-ISOBMFF data', async () => {
