@@ -12,6 +12,7 @@ import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
+import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -373,6 +374,11 @@ function buildSlotMetadata(
   inputs?.forEach((input, index) => {
     let originNodeId: string | undefined
     let originOutputName: string | undefined
+    // Promotion via SubgraphInput materialises a real link from the
+    // SUBGRAPH_INPUT sentinel into the interior widget's input slot.
+    // That link is internal plumbing — not an external connection — so
+    // exclude it from `linked` (which downstream renders as disabled).
+    let isPromotionLink = false
 
     if (input.link != null && graphRef) {
       const link = graphRef.getLink(input.link)
@@ -380,12 +386,13 @@ function buildSlotMetadata(
         originNodeId = String(link.origin_id)
         const originNode = graphRef.getNodeById(link.origin_id)
         originOutputName = originNode?.outputs?.[link.origin_slot]?.name
+        isPromotionLink = link.origin_id === SUBGRAPH_INPUT_ID
       }
     }
 
     const slotInfo: WidgetSlotMetadata = {
       index,
-      linked: input.link != null,
+      linked: input.link != null && !isPromotionLink,
       originNodeId,
       originOutputName,
       type: String(input.type)
