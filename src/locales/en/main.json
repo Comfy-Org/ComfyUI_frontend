@@ -4008,5 +4008,8 @@
     "training": "Training…",
     "processingVideo": "Processing video…",
     "running": "Running…"
+  },
+  "workflow": {
+    "unsavedFilename": "Unsaved Workflow.json"
   }
 }

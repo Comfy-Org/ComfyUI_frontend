@@ -3943,5 +3943,8 @@
     "label": "缩放控制",
     "showMinimap": "显示小地图",
     "zoomToFit": "适合画面"
+  },
+  "workflow": {
+    "unsavedFilename": "未保存的工作流.json"
   }
 }
