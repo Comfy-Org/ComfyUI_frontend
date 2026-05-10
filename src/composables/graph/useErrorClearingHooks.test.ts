@@ -21,6 +21,11 @@ import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNod
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
+
+beforeEach(() => {
+  vi.restoreAllMocks()
+})
 
 describe('Connection error clearing via onConnectionsChange', () => {
   beforeEach(() => {
@@ -353,7 +358,7 @@ describe('installErrorClearingHooks lifecycle', () => {
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockImplementation(
       (_rootGraph, node) => [
-        fromAny({
+        {
           nodeId: String(node.id),
           nodeType: node.type,
           widgetName: 'ckpt_name',
@@ -361,7 +366,7 @@ describe('installErrorClearingHooks lifecycle', () => {
           name: 'fake_model.safetensors',
           directory: 'checkpoints',
           isMissing: true
-        })
+        } satisfies MissingModelCandidate
       ]
     )
     const mediaScan = vi
@@ -385,10 +390,11 @@ describe('installErrorClearingHooks lifecycle', () => {
     expect(mediaScan).toHaveBeenCalledTimes(1)
   })
 
-  it('skips added-node missing media scan when upload state is marked before deferred scan runs', async () => {
+  it('does not surface added-node missing media when upload state is marked before deferred scan runs', async () => {
     const graph = new LGraph()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
+    const mediaScan = vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates')
     installErrorClearingHooks(graph)
 
     const node = new LGraphNode('LoadVideo')
@@ -403,6 +409,7 @@ describe('installErrorClearingHooks lifecycle', () => {
     await Promise.resolve()
 
     expect(useMissingMediaStore().missingMediaCandidates).toBeNull()
+    expect(mediaScan).toHaveBeenCalledOnce()
   })
 })
 
@@ -668,7 +675,6 @@ describe('realtime scan verifies pending cloud candidates', () => {
 
 describe('realtime verification staleness guards', () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
@@ -828,7 +834,6 @@ describe('realtime verification staleness guards', () => {
 
 describe('scan skips interior of bypassed subgraph containers', () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
