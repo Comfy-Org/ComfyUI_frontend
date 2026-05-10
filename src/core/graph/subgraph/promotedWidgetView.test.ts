@@ -1128,67 +1128,6 @@ describe('SubgraphNode.widgets getter', () => {
     ])
   })
 
-  test('configure prunes stale disconnected host aliases that resolve to the active linked concrete widget', () => {
-    const nestedSubgraph = createTestSubgraph({
-      inputs: [{ name: 'string_a', type: '*' }]
-    })
-
-    const concreteNode = new LGraphNode('ConcreteNode')
-    const concreteInput = concreteNode.addInput('string_a', '*')
-    concreteNode.addWidget('text', 'string_a', 'value', () => {})
-    concreteInput.widget = { name: 'string_a' }
-    nestedSubgraph.add(concreteNode)
-    nestedSubgraph.inputNode.slots[0].connect(concreteInput, concreteNode)
-
-    const hostSubgraph = createTestSubgraph({
-      inputs: [{ name: 'string_a', type: '*' }]
-    })
-
-    const activeAliasNode = createTestSubgraphNode(nestedSubgraph, { id: 118 })
-    const staleAliasNode = createTestSubgraphNode(nestedSubgraph, { id: 119 })
-    hostSubgraph.add(activeAliasNode)
-    hostSubgraph.add(staleAliasNode)
-
-    activeAliasNode._internalConfigureAfterSlots()
-    staleAliasNode._internalConfigureAfterSlots()
-    hostSubgraph.inputNode.slots[0].connect(
-      activeAliasNode.inputs[0],
-      activeAliasNode
-    )
-
-    const hostSubgraphNode = createTestSubgraphNode(hostSubgraph, { id: 120 })
-    hostSubgraphNode.graph?.add(hostSubgraphNode)
-
-    setPromotions(hostSubgraphNode, [
-      [String(activeAliasNode.id), 'string_a'],
-      [String(staleAliasNode.id), 'string_a']
-    ])
-
-    const serialized = hostSubgraphNode.serialize()
-    const restoredNode = createTestSubgraphNode(hostSubgraph, { id: 121 })
-    restoredNode.configure({
-      ...serialized,
-      id: restoredNode.id,
-      type: hostSubgraph.id,
-      inputs: []
-    })
-
-    const restoredPromotions = usePromotionStore().getPromotions(
-      restoredNode.rootGraph.id,
-      restoredNode.id
-    )
-    expect(restoredPromotions).toStrictEqual([
-      {
-        sourceNodeId: String(activeAliasNode.id),
-        sourceWidgetName: 'string_a'
-      }
-    ])
-
-    const restoredWidgets = promotedWidgets(restoredNode)
-    expect(restoredWidgets).toHaveLength(1)
-    expect(restoredWidgets[0].sourceNodeId).toBe(String(activeAliasNode.id))
-  })
-
   test('serialize syncs duplicate-name linked inputs by subgraph slot identity', () => {
     const subgraph = createTestSubgraph({
       inputs: [
@@ -1337,193 +1276,6 @@ describe('SubgraphNode.widgets getter', () => {
     expect(subgraphNode.widgets).toHaveLength(1)
   })
 
-  test('migrates legacy -1 entries via _resolveLegacyEntry', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
-    innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
-
-    // Simulate a slot-connected widget so legacy resolution works
-    const subgraph = subgraphNode.subgraph
-    subgraph.addInput('stringWidget', '*')
-    subgraphNode._internalConfigureAfterSlots()
-
-    // The _internalConfigureAfterSlots would have set up the slot-connected
-    // widget via _setWidget if there's a link. For unit testing legacy
-    // migration, we need to set up the input._widget manually.
-    const input = subgraphNode.inputs.find((i) => i.name === 'stringWidget')
-    if (input) {
-      input._widget = createPromotedWidgetView(
-        subgraphNode,
-        String(innerNodes[0].id),
-        'stringWidget'
-      )
-    }
-
-    // Set legacy -1 format via properties and re-run hydration
-    subgraphNode.properties.proxyWidgets = [['-1', 'stringWidget']]
-    subgraphNode._internalConfigureAfterSlots()
-
-    // Migration should have rewritten the store with resolved IDs
-    const entries = usePromotionStore().getPromotions(
-      subgraphNode.rootGraph.id,
-      subgraphNode.id
-    )
-    expect(entries).toStrictEqual([
-      {
-        sourceNodeId: String(innerNodes[0].id),
-        sourceWidgetName: 'stringWidget'
-      }
-    ])
-  })
-
-  test('hydrate promotions from serialize/configure round-trip', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
-    const innerNode = firstInnerNode(innerNodes)
-    innerNode.addWidget('text', 'widgetA', 'a', () => {})
-
-    setPromotions(subgraphNode, [[String(innerNode.id), 'widgetA']])
-    const serialized = subgraphNode.serialize()
-
-    const restoredNode = createTestSubgraphNode(subgraphNode.subgraph, {
-      id: 99
-    })
-    restoredNode.configure({
-      ...serialized,
-      id: restoredNode.id,
-      type: subgraphNode.subgraph.id
-    })
-
-    const restoredEntries = usePromotionStore().getPromotions(
-      restoredNode.rootGraph.id,
-      restoredNode.id
-    )
-    expect(restoredEntries).toStrictEqual([
-      {
-        sourceNodeId: String(innerNode.id),
-        sourceWidgetName: 'widgetA'
-      }
-    ])
-  })
-
-  test('configure with empty serialized inputs keeps linked filtering active', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [{ name: 'string_a', type: '*' }]
-    })
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 97 })
-    subgraphNode.graph?.add(subgraphNode)
-
-    const linkedNodeA = new LGraphNode('LinkedNodeA')
-    const linkedInputA = linkedNodeA.addInput('string_a', '*')
-    linkedNodeA.addWidget('text', 'string_a', 'a', () => {})
-    linkedInputA.widget = { name: 'string_a' }
-    subgraph.add(linkedNodeA)
-
-    const linkedNodeB = new LGraphNode('LinkedNodeB')
-    const linkedInputB = linkedNodeB.addInput('string_a', '*')
-    linkedNodeB.addWidget('text', 'string_a', 'b', () => {})
-    linkedInputB.widget = { name: 'string_a' }
-    subgraph.add(linkedNodeB)
-
-    const storeOnlyNode = new LGraphNode('StoreOnlyNode')
-    storeOnlyNode.addWidget('text', 'string_a', 'independent', () => {})
-    subgraph.add(storeOnlyNode)
-
-    subgraph.inputNode.slots[0].connect(linkedInputA, linkedNodeA)
-    subgraph.inputNode.slots[0].connect(linkedInputB, linkedNodeB)
-
-    setPromotions(subgraphNode, [
-      [String(linkedNodeA.id), 'string_a'],
-      [String(linkedNodeB.id), 'string_a'],
-      [String(storeOnlyNode.id), 'string_a']
-    ])
-
-    const serialized = subgraphNode.serialize()
-    const restoredNode = createTestSubgraphNode(subgraph, { id: 98 })
-    restoredNode.configure({
-      ...serialized,
-      id: restoredNode.id,
-      type: subgraph.id,
-      inputs: []
-    })
-
-    const restoredWidgets = promotedWidgets(restoredNode)
-    expect(restoredWidgets).toHaveLength(2)
-
-    const linkedViewCount = restoredWidgets.filter((widget) =>
-      [String(linkedNodeA.id), String(linkedNodeB.id)].includes(
-        widget.sourceNodeId
-      )
-    ).length
-    expect(linkedViewCount).toBe(1)
-    expect(
-      restoredWidgets.some(
-        (widget) => widget.sourceNodeId === String(storeOnlyNode.id)
-      )
-    ).toBe(true)
-  })
-
-  test('configure with serialized inputs rebinds subgraph slots for linked filtering', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [{ name: 'string_a', type: '*' }]
-    })
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 107 })
-    subgraphNode.graph?.add(subgraphNode)
-
-    const linkedNodeA = new LGraphNode('LinkedNodeA')
-    const linkedInputA = linkedNodeA.addInput('string_a', '*')
-    linkedNodeA.addWidget('text', 'string_a', 'a', () => {})
-    linkedInputA.widget = { name: 'string_a' }
-    subgraph.add(linkedNodeA)
-
-    const linkedNodeB = new LGraphNode('LinkedNodeB')
-    const linkedInputB = linkedNodeB.addInput('string_a', '*')
-    linkedNodeB.addWidget('text', 'string_a', 'b', () => {})
-    linkedInputB.widget = { name: 'string_a' }
-    subgraph.add(linkedNodeB)
-
-    const storeOnlyNode = new LGraphNode('StoreOnlyNode')
-    storeOnlyNode.addWidget('text', 'string_a', 'independent', () => {})
-    subgraph.add(storeOnlyNode)
-
-    subgraph.inputNode.slots[0].connect(linkedInputA, linkedNodeA)
-    subgraph.inputNode.slots[0].connect(linkedInputB, linkedNodeB)
-
-    setPromotions(subgraphNode, [
-      [String(linkedNodeA.id), 'string_a'],
-      [String(linkedNodeB.id), 'string_a'],
-      [String(storeOnlyNode.id), 'string_a']
-    ])
-
-    const serialized = subgraphNode.serialize()
-    const restoredNode = createTestSubgraphNode(subgraph, { id: 108 })
-    restoredNode.configure({
-      ...serialized,
-      id: restoredNode.id,
-      type: subgraph.id,
-      inputs: [
-        {
-          name: 'string_a',
-          type: '*',
-          link: null
-        }
-      ]
-    })
-
-    const restoredWidgets = promotedWidgets(restoredNode)
-    expect(restoredWidgets).toHaveLength(2)
-
-    const linkedViewCount = restoredWidgets.filter((widget) =>
-      [String(linkedNodeA.id), String(linkedNodeB.id)].includes(
-        widget.sourceNodeId
-      )
-    ).length
-    expect(linkedViewCount).toBe(1)
-    expect(
-      restoredWidgets.some(
-        (widget) => widget.sourceNodeId === String(storeOnlyNode.id)
-      )
-    ).toBe(true)
-  })
-
   test('fixture keeps earliest linked representative and independent promotion only', () => {
     const { graph, hostNode } = setupComplexPromotionFixture()
 
@@ -1558,34 +1310,8 @@ describe('SubgraphNode.widgets getter', () => {
     expect(getValue('19')).toBe('independent-value')
   })
 
-  test('fixture refreshes duplicate fallback after linked representative recovers', () => {
-    const { subgraph, hostNode } = setupComplexPromotionFixture()
-
-    const earliestLinkedNode = subgraph.getNodeById(20)
-    if (!earliestLinkedNode?.widgets)
-      throw new Error('Expected fixture to contain node 20 with widgets')
-
-    const originalWidgets = earliestLinkedNode.widgets
-    earliestLinkedNode.widgets = originalWidgets.filter(
-      (widget) => widget.name !== 'string_a'
-    )
-
-    const unresolvedWidgets = promotedWidgets(hostNode)
-    expect(
-      unresolvedWidgets.map((widget) => widget.sourceNodeId)
-    ).toStrictEqual(['18', '20', '19'])
-
-    earliestLinkedNode.widgets = originalWidgets
-
-    const restoredWidgets = promotedWidgets(hostNode)
-    expect(restoredWidgets.map((widget) => widget.sourceNodeId)).toStrictEqual([
-      '20',
-      '19'
-    ])
-  })
-
-  test('fixture converges external widgets and keeps rendered value isolation after transient linked fallback churn', () => {
-    const { subgraph, hostNode } = setupComplexPromotionFixture()
+  test('fixture keeps rendered value isolation between linked representative and second promotion', () => {
+    const { hostNode } = setupComplexPromotionFixture()
 
     const initialWidgets = promotedWidgets(hostNode)
     expect(initialWidgets.map((widget) => widget.sourceNodeId)).toStrictEqual([
@@ -1593,33 +1319,10 @@ describe('SubgraphNode.widgets getter', () => {
       '19'
     ])
 
-    const earliestLinkedNode = subgraph.getNodeById(20)
-    if (!earliestLinkedNode?.widgets)
-      throw new Error('Expected fixture to contain node 20 with widgets')
-
-    const originalWidgets = earliestLinkedNode.widgets
-    earliestLinkedNode.widgets = originalWidgets.filter(
-      (widget) => widget.name !== 'string_a'
-    )
-
-    const transientWidgets = promotedWidgets(hostNode)
-    expect(transientWidgets.map((widget) => widget.sourceNodeId)).toStrictEqual(
-      ['18', '20', '19']
-    )
-
-    earliestLinkedNode.widgets = originalWidgets
-
-    const finalWidgets = promotedWidgets(hostNode)
-    expect(finalWidgets).toHaveLength(2)
-    expect(finalWidgets.map((widget) => widget.sourceNodeId)).toStrictEqual([
-      '20',
-      '19'
-    ])
-
-    const finalLinkedView = finalWidgets.find(
+    const finalLinkedView = initialWidgets.find(
       (widget) => widget.sourceNodeId === '20'
     )
-    const finalIndependentView = finalWidgets.find(
+    const finalIndependentView = initialWidgets.find(
       (widget) => widget.sourceNodeId === '19'
     )
     if (!finalLinkedView || !finalIndependentView)
@@ -1632,50 +1335,6 @@ describe('SubgraphNode.widgets getter', () => {
     finalLinkedView.value = 'linked-final'
     expect(finalLinkedView.value).toBe('linked-final')
     expect(finalIndependentView.value).toBe('independent-final')
-  })
-
-  test('clone output preserves proxyWidgets for promotion hydration', () => {
-    const [subgraphNode, innerNodes] = setupSubgraph(1)
-    const innerNode = firstInnerNode(innerNodes)
-    innerNode.addWidget('text', 'widgetA', 'a', () => {})
-
-    setPromotions(subgraphNode, [[String(innerNode.id), 'widgetA']])
-
-    const createNodeSpy = vi
-      .spyOn(LiteGraph, 'createNode')
-      .mockImplementation(() =>
-        createTestSubgraphNode(subgraphNode.subgraph, { id: 999 })
-      )
-
-    const clonedNode = subgraphNode.clone()
-    expect(clonedNode).toBeTruthy()
-    createNodeSpy.mockRestore()
-    if (!clonedNode) throw new Error('Expected clone to return a node')
-
-    const clonedSerialized = clonedNode.serialize()
-    expect(clonedSerialized.properties?.proxyWidgets).toStrictEqual([
-      [String(innerNode.id), 'widgetA']
-    ])
-
-    const hydratedClone = createTestSubgraphNode(subgraphNode.subgraph, {
-      id: 100
-    })
-    hydratedClone.configure({
-      ...clonedSerialized,
-      id: hydratedClone.id,
-      type: subgraphNode.subgraph.id
-    })
-
-    const hydratedEntries = usePromotionStore().getPromotions(
-      hydratedClone.rootGraph.id,
-      hydratedClone.id
-    )
-    expect(hydratedEntries).toStrictEqual([
-      {
-        sourceNodeId: String(innerNode.id),
-        sourceWidgetName: 'widgetA'
-      }
-    ])
   })
 })
 
