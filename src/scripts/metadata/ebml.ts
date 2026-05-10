@@ -222,12 +222,34 @@ const readJson = (
   if (length <= 0) return null
 
   const nullTerminatorPos = findNullTerminator(data, start, length)
-  const jsonStartPos = findJsonStart(data, start, nullTerminatorPos - start)
+  const fullText = decodeJsonText(data, start, nullTerminatorPos).trim()
 
+  // Legacy VHS pre-fix path double-stringified `prompt`, so on-disk bytes
+  // start with `"` and the inner `{...}` is JSON with backslash-escaped
+  // quotes — invalid as JSON until the outer string is unwrapped.
+  const unwrapped = unwrapStringifiedJson(fullText)
+  if (unwrapped !== null) return unwrapped
+
+  const jsonStartPos = findJsonStart(data, start, nullTerminatorPos - start)
   if (jsonStartPos === null) return null
 
   const jsonText = decodeJsonText(data, jsonStartPos, nullTerminatorPos)
   return parseJsonText(jsonText)
+}
+
+const unwrapStringifiedJson = (
+  text: string
+): ComfyWorkflowJSON | ComfyApiWorkflow | null => {
+  if (!text.startsWith('"')) return null
+
+  try {
+    const inner = JSON.parse(text)
+    if (typeof inner !== 'string') return null
+    const parsed = JSON.parse(inner)
+    return typeof parsed === 'object' && parsed !== null ? parsed : null
+  } catch {
+    return null
+  }
 }
 
 const decodeJsonText = (
