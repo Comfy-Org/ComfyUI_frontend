@@ -131,8 +131,23 @@ function onOpenChange(open: boolean) {
   visible.value = open
   if (!open) clearFilters()
 }
-function onPointerDownOutside(event: Event) {
-  if (!dismissable.value) event.preventDefault()
+// PrimeVue overlays (filter Dialog, AutoComplete dropdown, Select panel)
+// teleport to body, so Reka treats clicks on them as "outside" and would
+// dismiss the outer dialog. Treat clicks on any PrimeVue overlay as inside.
+const PRIMEVUE_OVERLAY_SELECTORS =
+  '.p-dialog-mask, .p-dialog, .p-overlay-mask, .p-overlay, .p-autocomplete-overlay, .p-select-overlay, .p-popover'
+
+function onPointerDownOutside(
+  event: CustomEvent<{ originalEvent: PointerEvent }>
+) {
+  if (!dismissable.value) {
+    event.preventDefault()
+    return
+  }
+  const target = event.detail.originalEvent.target
+  if (target instanceof Element && target.closest(PRIMEVUE_OVERLAY_SELECTORS)) {
+    event.preventDefault()
+  }
 }
 const canvasStore = useCanvasStore()
 
