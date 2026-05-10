@@ -11,6 +11,20 @@ import {
 import { getFromIsobmffFile } from './isobmff'
 
 const fixturePath = path.resolve(__dirname, '__fixtures__/with_metadata.mp4')
+const legacyFixturePath = path.resolve(
+  __dirname,
+  '__fixtures__/with_legacy_metadata.mp4'
+)
+
+const LEGACY_PROMPT = {
+  '1': { class_type: 'KSampler', inputs: { seed: 12345 } }
+}
+
+const LEGACY_WORKFLOW = {
+  last_node_id: 1,
+  nodes: [{ id: 1, type: 'KSampler' }],
+  links: []
+}
 
 describe('ISOBMFF (MP4) metadata', () => {
   it('extracts workflow and prompt from QuickTime keys/ilst boxes', async () => {
@@ -21,6 +35,16 @@ describe('ISOBMFF (MP4) metadata', () => {
 
     expect(result.workflow).toEqual(EXPECTED_WORKFLOW)
     expect(result.prompt).toEqual(EXPECTED_PROMPT)
+  })
+
+  it('unwraps legacy double-stringified prompt values', async () => {
+    const bytes = fs.readFileSync(legacyFixturePath)
+    const file = new File([bytes], 'legacy.mp4', { type: 'video/mp4' })
+
+    const result = await getFromIsobmffFile(file)
+
+    expect(result.workflow).toEqual(LEGACY_WORKFLOW)
+    expect(result.prompt).toEqual(LEGACY_PROMPT)
   })
 
   it('returns empty for non-ISOBMFF data', async () => {

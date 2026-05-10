@@ -47,7 +47,8 @@ export type TextRange = {
 export enum ASCII {
   GLTF = 0x46546c67,
   JSON = 0x4e4f534a,
-  OPEN_BRACE = 0x7b
+  OPEN_BRACE = 0x7b,
+  QUOTE = 0x22
 }
 
 export enum GltfSizeBytes {

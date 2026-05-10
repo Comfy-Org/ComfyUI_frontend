@@ -78,14 +78,22 @@ const extractJson = (
   end: number
 ): ComfyWorkflowJSON | ComfyApiWorkflow | null => {
   let jsonStart = start
-  while (jsonStart < end && data[jsonStart] !== ASCII.OPEN_BRACE) {
+  while (
+    jsonStart < end &&
+    data[jsonStart] !== ASCII.OPEN_BRACE &&
+    data[jsonStart] !== ASCII.QUOTE
+  ) {
     jsonStart++
   }
   if (jsonStart >= end) return null
 
   try {
     const jsonText = new TextDecoder().decode(data.slice(jsonStart, end))
-    return JSON.parse(jsonText)
+    const parsed = JSON.parse(jsonText)
+    if (typeof parsed === 'string') {
+      return JSON.parse(parsed)
+    }
+    return parsed
   } catch {
     return null
   }
