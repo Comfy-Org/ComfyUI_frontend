@@ -33,17 +33,15 @@ import {
   createPromotedWidgetView,
   isPromotedWidgetView
 } from '@/core/graph/subgraph/promotedWidgetView'
-import { normalizeLegacyProxyWidgetEntry } from '@/core/graph/subgraph/legacyProxyWidgetNormalization'
+import { migrateLegacyProxyWidgets } from '@/core/graph/subgraph/migrateLegacyProxyWidgets'
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import { hasWidgetNode } from '@/core/graph/subgraph/widgetNodeTypeGuard'
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   supportsVirtualCanvasImagePreview
 } from '@/composables/node/canvasImagePreviewTypes'
-import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import {
   makePromotionEntryKey,
@@ -655,31 +653,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
   }
 
-  private _resolveLegacyEntry(
-    widgetName: string
-  ): [string, string] | undefined {
-    // Legacy -1 entries use the slot name as the widget name.
-    // Find the input with that name, then trace to the connected interior widget.
-    const input = this.inputs.find((i) => i.name === widgetName)
-    if (!input?._widget) {
-      // Fallback: find via subgraph input slot connection
-      const resolvedTarget = resolveSubgraphInputTarget(this, widgetName)
-      if (!resolvedTarget) return undefined
-      return [resolvedTarget.nodeId, resolvedTarget.widgetName]
-    }
-
-    const widget = input._widget
-    if (isPromotedWidgetView(widget)) {
-      return [widget.sourceNodeId, widget.sourceWidgetName]
-    }
-
-    // Fallback: find via subgraph input slot connection
-    const resolvedTarget = resolveSubgraphInputTarget(this, widgetName)
-    if (!resolvedTarget) return undefined
-
-    return [resolvedTarget.nodeId, resolvedTarget.widgetName]
-  }
-
   /** Manages lifecycle of all subgraph event listeners */
   private _eventAbortController = new AbortController()
 
@@ -1052,50 +1025,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // This prevents stale/duplicate serialized inputs from persisting (#9977).
     this.inputs = this.inputs.filter((input) => input._subgraphSlot)
 
-    // Ensure proxyWidgets is initialized so it serializes
-    this.properties.proxyWidgets ??= []
-
     // Clear view cache — forces re-creation on next getter access.
-    // Do NOT clear properties.proxyWidgets — it was already populated
-    // from serialized data by super.configure(info) before this runs.
     this._promotedViewManager.clear()
     this._invalidatePromotedViewsCache()
 
-    // Hydrate the store from serialized properties.proxyWidgets
-    const raw = parseProxyWidgets(this.properties.proxyWidgets)
+    migrateLegacyProxyWidgets(this)
+    this._rebindInputSubgraphSlots()
+
     const store = usePromotionStore()
-
-    const entries = raw
-      .map(([nodeId, widgetName, sourceNodeId]) => {
-        if (nodeId === '-1') {
-          const resolved = this._resolveLegacyEntry(widgetName)
-          if (resolved)
-            return { sourceNodeId: resolved[0], sourceWidgetName: resolved[1] }
-          if (import.meta.env.DEV) {
-            console.warn(
-              `[SubgraphNode] Failed to resolve legacy -1 entry for widget "${widgetName}"`
-            )
-          }
-          return null
-        }
-        if (!this.subgraph.getNodeById(nodeId)) return null
-
-        return normalizeLegacyProxyWidgetEntry(
-          this,
-          nodeId,
-          widgetName,
-          sourceNodeId
-        )
-      })
-      .filter((e): e is NonNullable<typeof e> => e !== null)
-
-    store.setPromotions(this.rootGraph.id, this.id, entries)
-
-    // Write back resolved entries so legacy or stale entries don't persist
-    const serialized = this._serializeEntries(entries)
-    if (JSON.stringify(serialized) !== JSON.stringify(raw)) {
-      this.properties.proxyWidgets = serialized
-    }
 
     // Check all inputs for connected widgets
     for (const input of this.inputs) {
