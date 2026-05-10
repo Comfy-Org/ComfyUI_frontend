@@ -1,22 +1,29 @@
 <template>
-  <DialogRoot :open="visible" :modal="false" @update:open="onOpenChange">
-    <DialogPortal>
-      <DialogOverlay class="fixed inset-0 z-1700 bg-transparent" />
-      <DialogContent
-        :class="
-          cn(
-            'fixed top-[25vh] left-1/2 z-1701 -translate-x-1/2 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
-            useSearchBoxV2
-              ? 'w-full max-w-4xl min-w-lg max-md:min-w-0'
-              : 'w-3/5 max-w-3xl min-w-[24rem]'
-          )
-        "
-        :aria-label="$t('g.search')"
-        @pointer-down-outside="onPointerDownOutside"
-      >
-        <VisuallyHidden>
-          <DialogTitle>{{ $t('g.search') }}</DialogTitle>
-        </VisuallyHidden>
+  <div>
+    <Dialog
+      v-model:visible="visible"
+      modal
+      :dismissable-mask="dismissable"
+      :pt="{
+        root: {
+          class: useSearchBoxV2
+            ? 'w-full max-w-[56rem] min-w-[32rem] max-md:min-w-0 bg-transparent border-0 overflow-visible'
+            : 'invisible-dialog-root'
+        },
+        mask: {
+          class: useSearchBoxV2 ? 'items-start' : 'node-search-box-dialog-mask'
+        },
+        transition: {
+          enterFromClass: 'opacity-0 scale-75',
+          // 100ms is the duration of the transition in the dialog component
+          enterActiveClass: 'transition-all duration-100 ease-out',
+          leaveActiveClass: 'transition-all duration-100 ease-in',
+          leaveToClass: 'opacity-0 scale-75'
+        }
+      }"
+      @hide="clearFilters"
+    >
+      <template #container>
         <div v-if="useSearchBoxV2" role="search" class="relative">
           <NodeSearchContent
             :filters="nodeFilters"
@@ -42,23 +49,15 @@
           @remove-filter="removeFilter"
           @add-node="addNode"
         />
-      </DialogContent>
-    </DialogPortal>
-  </DialogRoot>
+      </template>
+    </Dialog>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener, useWindowSize } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import {
-  DialogContent,
-  DialogOverlay,
-  DialogPortal,
-  DialogRoot,
-  DialogTitle,
-  VisuallyHidden
-} from 'reka-ui'
+import Dialog from 'primevue/dialog'
 import { computed, ref, toRaw, watch, watchEffect } from 'vue'
 
 import type { Point } from '@/lib/litegraph/src/interfaces'
@@ -126,28 +125,6 @@ function clearFilters() {
 }
 function closeDialog() {
   visible.value = false
-}
-function onOpenChange(open: boolean) {
-  visible.value = open
-  if (!open) clearFilters()
-}
-// PrimeVue overlays (filter Dialog, AutoComplete dropdown, Select panel)
-// teleport to body, so Reka treats clicks on them as "outside" and would
-// dismiss the outer dialog. Treat clicks on any PrimeVue overlay as inside.
-const PRIMEVUE_OVERLAY_SELECTORS =
-  '.p-dialog-mask, .p-dialog, .p-overlay-mask, .p-overlay, .p-autocomplete-overlay, .p-select-overlay, .p-popover'
-
-function onPointerDownOutside(
-  event: CustomEvent<{ originalEvent: PointerEvent }>
-) {
-  if (!dismissable.value) {
-    event.preventDefault()
-    return
-  }
-  const target = event.detail.originalEvent.target
-  if (target instanceof Element && target.closest(PRIMEVUE_OVERLAY_SELECTORS)) {
-    event.preventDefault()
-  }
 }
 const canvasStore = useCanvasStore()
 
@@ -373,3 +350,24 @@ watch(visible, () => {
 useEventListener(document, 'litegraph:canvas', canvasEventHandler)
 defineExpose({ showSearchBox })
 </script>
+
+<style>
+.invisible-dialog-root {
+  width: 60%;
+  min-width: 24rem;
+  max-width: 48rem;
+  border: 0 !important;
+  background-color: transparent !important;
+  margin-top: 25vh;
+  margin-left: 400px;
+}
+@media all and (max-width: 768px) {
+  .invisible-dialog-root {
+    margin-left: 0;
+  }
+}
+
+.node-search-box-dialog-mask {
+  align-items: flex-start !important;
+}
+</style>
