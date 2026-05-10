@@ -17,7 +17,6 @@ import type {
   NodeBindable,
   TWidgetType
 } from '@/lib/litegraph/src/types/widgets'
-import { usePromotionStore } from '@/stores/promotionStore'
 import type { WidgetState } from '@/stores/widgetValueStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -26,7 +25,6 @@ export interface DrawWidgetOptions {
   width: number
   /** Synonym for "low quality". */
   showText?: boolean
-  /** When true, suppresses the promoted outline color (e.g. for projected copies on SubgraphNode). */
   suppressPromotedOutline?: boolean
   /** Transient image source for preview widgets rendered on behalf of another node (e.g. subgraph promotion). */
   previewImages?: HTMLImageElement[]
@@ -206,17 +204,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     }
   }
 
-  getOutlineColor(suppressPromotedOutline = false) {
-    const graphId = this.node.graph?.rootGraph.id
-    if (
-      graphId &&
-      !suppressPromotedOutline &&
-      usePromotionStore().isPromotedByAny(graphId, {
-        sourceNodeId: String(this.node.id),
-        sourceWidgetName: this.name
-      })
-    )
-      return LiteGraph.WIDGET_PROMOTED_OUTLINE_COLOR
+  getOutlineColor(_suppressPromotedOutline = false) {
     return this.advanced
       ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR
       : LiteGraph.WIDGET_OUTLINE_COLOR

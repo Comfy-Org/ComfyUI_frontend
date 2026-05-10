@@ -28,8 +28,11 @@ import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 
 import type { ComfyApp } from './app'
+import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
 import './domWidget'
 import './errorNodeWidgets'
+
+export { IS_CONTROL_WIDGET }
 
 export type ComfyWidgetConstructorV2 = (
   node: LGraphNode,
@@ -77,7 +80,6 @@ export function updateControlWidgetLabel(widget: IBaseWidget) {
   }
 }
 
-export const IS_CONTROL_WIDGET = Symbol()
 const HAS_EXECUTED = Symbol()
 
 export function addValueControlWidget(
@@ -175,6 +177,14 @@ export function addValueControlWidgets(
   }
 
   const applyWidgetControl = () => {
+    if (
+      node.inputs?.some(
+        (input) =>
+          input.widget?.name === targetWidget.name && input.link != null
+      )
+    )
+      return
+
     var v = valueControl.value
 
     if (isCombo && v !== 'fixed') {

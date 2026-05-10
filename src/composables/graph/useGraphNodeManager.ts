@@ -12,6 +12,7 @@ import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
+import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -227,18 +228,15 @@ function safeWidgetMapper(
     }
   }
 
-  function resolvePromotedSourceByInputName(inputName: string): {
-    sourceNodeId: string
-    sourceWidgetName: string
-    disambiguatingSourceNodeId?: string
-  } | null {
+  function resolvePromotedSourceByInputName(
+    inputName: string
+  ): PromotedWidgetSource | null {
     const resolvedTarget = resolveSubgraphInputTarget(node, inputName)
     if (!resolvedTarget) return null
 
     return {
       sourceNodeId: resolvedTarget.nodeId,
-      sourceWidgetName: resolvedTarget.widgetName,
-      disambiguatingSourceNodeId: resolvedTarget.sourceNodeId
+      sourceWidgetName: resolvedTarget.widgetName
     }
   }
 
@@ -256,10 +254,9 @@ function safeWidgetMapper(
     const matchedInput = matchPromotedInput(node.inputs, widget)
     const promotedInputName = matchedInput?.name
     const displayName = promotedInputName ?? widget.name
-    const directSource = {
+    const directSource: PromotedWidgetSource = {
       sourceNodeId: widget.sourceNodeId,
-      sourceWidgetName: widget.sourceWidgetName,
-      disambiguatingSourceNodeId: widget.disambiguatingSourceNodeId
+      sourceWidgetName: widget.sourceWidgetName
     }
     const promotedSource =
       matchedInput?._widget === widget
@@ -306,8 +303,7 @@ function safeWidgetMapper(
           ? resolveConcretePromotedWidget(
               node,
               promotedSource.sourceNodeId,
-              promotedSource.sourceWidgetName,
-              promotedSource.disambiguatingSourceNodeId
+              promotedSource.sourceWidgetName
             )
           : null
       const resolvedSource =
@@ -320,11 +316,7 @@ function safeWidgetMapper(
       const effectiveWidget = sourceWidget ?? widget
 
       const localId = isPromotedWidgetView(widget)
-        ? String(
-            sourceNode?.id ??
-              promotedSource?.disambiguatingSourceNodeId ??
-              promotedSource?.sourceNodeId
-          )
+        ? String(sourceNode?.id ?? promotedSource?.sourceNodeId)
         : undefined
       const nodeId =
         subgraphId && localId ? `${subgraphId}:${localId}` : undefined
@@ -382,6 +374,11 @@ function buildSlotMetadata(
   inputs?.forEach((input, index) => {
     let originNodeId: string | undefined
     let originOutputName: string | undefined
+    // Promotion via SubgraphInput materialises a real link from the
+    // SUBGRAPH_INPUT sentinel into the interior widget's input slot.
+    // That link is internal plumbing — not an external connection — so
+    // exclude it from `linked` (which downstream renders as disabled).
+    let isPromotionLink = false
 
     if (input.link != null && graphRef) {
       const link = graphRef.getLink(input.link)
@@ -389,12 +386,13 @@ function buildSlotMetadata(
         originNodeId = String(link.origin_id)
         const originNode = graphRef.getNodeById(link.origin_id)
         originOutputName = originNode?.outputs?.[link.origin_slot]?.name
+        isPromotionLink = link.origin_id === SUBGRAPH_INPUT_ID
       }
     }
 
     const slotInfo: WidgetSlotMetadata = {
       index,
-      linked: input.link != null,
+      linked: input.link != null && !isPromotionLink,
       originNodeId,
       originOutputName,
       type: String(input.type)

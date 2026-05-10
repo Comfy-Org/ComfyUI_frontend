@@ -8,6 +8,7 @@ import type {
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
 import { BaseWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigrationFlush'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 
 import {
@@ -291,9 +292,9 @@ describe('SubgraphWidgetPromotion', () => {
 
       hostNode.configure(serializedHostNode)
 
-      expect(hostNode.properties.proxyWidgets).toStrictEqual([
-        [String(interiorNode.id), 'batch_size']
-      ])
+      // ADR 0009: configure() no longer writes resolved entries back to
+      // properties.proxyWidgets. Hydration is observable via the synthetic
+      // widget surface instead.
       expect(hostNode.widgets).toHaveLength(1)
       expect(hostNode.widgets[0].name).toBe('batch_size')
       expect(hostNode.widgets[0].value).toBe(1)
@@ -356,7 +357,14 @@ describe('SubgraphWidgetPromotion', () => {
       expect(widgetSourceIds).toContain(keptSamplerNodeId)
     })
 
-    it('should normalize legacy prefixed proxyWidgets on configure', () => {
+    it('quarantines legacy prefixed proxyWidgets that target a deep leaf widget', () => {
+      // ADR 0009: each SubgraphNode is opaque. The legacy
+      // "<nestedId>: <leafId>: <leafWidgetName>" encoding referenced a deep
+      // leaf widget through nested chain traversal. Under the opaque model
+      // the migration cannot resolve that identity at the immediate level,
+      // so the entry is quarantined rather than reconstructed as a
+      // canonical promoted view. Users with this legacy state must
+      // re-promote through each subgraph level explicitly.
       const rootGraph = createTestRootGraph()
 
       const innerSubgraph = createTestSubgraph({
@@ -396,21 +404,16 @@ describe('SubgraphWidgetPromotion', () => {
       }
 
       hostNode.configure(serializedHostNode)
+      flushProxyWidgetMigration({ hostNode })
 
       const promotedWidgets = hostNode.widgets
         .filter(isPromotedWidgetView)
         .filter((widget) => !widget.name.startsWith('$$'))
 
-      expect(promotedWidgets).toHaveLength(1)
-      expect(promotedWidgets[0].type).toBe('number')
-      expect(promotedWidgets[0].value).toBe(123)
-      expect(promotedWidgets[0].sourceWidgetName).toBe('noise_seed')
-      expect(promotedWidgets[0].disambiguatingSourceNodeId).toBe(
-        String(samplerNode.id)
-      )
-      expect(hostNode.properties.proxyWidgets).toStrictEqual([
-        [String(nestedNode.id), 'noise_seed', String(samplerNode.id)]
-      ])
+      expect(promotedWidgets).toHaveLength(0)
+      expect(hostNode.properties.proxyWidgets).toBeUndefined()
+      const quarantine = hostNode.properties.proxyWidgetErrorQuarantine
+      expect(Array.isArray(quarantine) && quarantine.length).toBeGreaterThan(0)
     })
 
     it('should preserve promoted widget entries after cloning', () => {
@@ -427,31 +430,21 @@ describe('SubgraphWidgetPromotion', () => {
       subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
 
       const hostNode = createTestSubgraphNode(subgraph)
-
-      // serialize() syncs the promotion store into properties.proxyWidgets
       const serialized = hostNode.serialize()
-      const originalProxyWidgets = serialized.properties!
-        .proxyWidgets as string[][]
 
-      expect(originalProxyWidgets.length).toBeGreaterThan(0)
-      expect(
-        originalProxyWidgets.some(([, widgetName]) => widgetName === 'text')
-      ).toBe(true)
-
-      // Simulate clone: create a second SubgraphNode configured from serialized data
+      // ADR 0009: clone preservation no longer relies on properties.proxyWidgets.
+      // The promoted widgets are derived from the linked SubgraphInputs that
+      // come through the serialized inputs/links, so the host's own widgets
+      // getter should expose the promoted view after configure.
       const cloneNode = createTestSubgraphNode(subgraph)
       cloneNode.configure(serialized)
-      const cloneProxyWidgets = cloneNode.properties.proxyWidgets as string[][]
 
-      expect(cloneProxyWidgets.length).toBeGreaterThan(0)
-      expect(
-        cloneProxyWidgets.some(([, widgetName]) => widgetName === 'text')
-      ).toBe(true)
+      const promotedNames = cloneNode.widgets
+        .filter(isPromotedWidgetView)
+        .filter((widget) => !widget.name.startsWith('$$'))
+        .map((widget) => widget.sourceWidgetName)
 
-      // Clone's proxyWidgets should reference the same interior node
-      const originalNodeIds = originalProxyWidgets.map(([nodeId]) => nodeId)
-      const cloneNodeIds = cloneProxyWidgets.map(([nodeId]) => nodeId)
-      expect(cloneNodeIds).toStrictEqual(originalNodeIds)
+      expect(promotedNames).toContain('text')
     })
   })
 

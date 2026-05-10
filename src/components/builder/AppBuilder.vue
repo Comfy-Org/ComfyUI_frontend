@@ -29,6 +29,7 @@ import { renameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
 import { resolveNodeWidget } from '@/utils/litegraphUtil'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { cn } from '@comfyorg/tailwind-utils'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
@@ -157,10 +158,12 @@ function handleClick(e: MouseEvent) {
   }
   if (!isSelectInputsMode.value || widget.options.canvasOnly) return
 
-  const storeId = isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
-  const storeName = isPromotedWidgetView(widget)
-    ? widget.sourceWidgetName
-    : widget.name
+  const isPromoted = isPromotedWidgetView(widget)
+  const storeId =
+    isPromoted && app.rootGraph?.id
+      ? createNodeLocatorId(app.rootGraph.id, node.id)
+      : node.id
+  const storeName = widget.name
   const index = appModeStore.selectedInputs.findIndex(
     ([nodeId, widgetName]) => storeId == nodeId && storeName === widgetName
   )

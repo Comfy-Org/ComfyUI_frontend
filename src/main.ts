@@ -12,6 +12,7 @@ import { createApp } from 'vue'
 import { VueFire, VueFireAuth } from 'vuefire'
 
 import { getFirebaseConfig } from '@/config/firebase'
+import { wireProxyWidgetMigrationFlush } from '@/core/graph/subgraph/migration/wireProxyWidgetMigrationFlush'
 import {
   configValueOrDefault,
   remoteConfig
@@ -107,6 +108,10 @@ app
     firebaseApp,
     modules: [VueFireAuth()]
   })
+
+// ADR 0009: hook the proxyWidget migration flush into LGraph.configure.
+// Late-bound so the LGraph layer doesn't import the PreviewExposureStore.
+wireProxyWidgetMigrationFlush()
 
 const bootstrapStore = useBootstrapStore(pinia)
 void bootstrapStore.startStoreBootstrap()

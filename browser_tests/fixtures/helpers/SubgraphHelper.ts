@@ -393,31 +393,62 @@ export class SubgraphHelper {
   > {
     return this.page.evaluate(() => {
       const graph = window.app!.canvas.graph!
+      const serialized = window.app!.graph!.serialize()
       return graph._nodes
         .filter(
           (node) =>
             typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
         )
         .map((node) => {
-          const proxyWidgets = Array.isArray(node.properties?.proxyWidgets)
-            ? node.properties.proxyWidgets
+          const widgetEntries = (node.widgets ?? []).flatMap((widget) => {
+            if (
+              widget &&
+              typeof widget === 'object' &&
+              'sourceNodeId' in widget &&
+              typeof widget.sourceNodeId === 'string' &&
+              'sourceWidgetName' in widget &&
+              typeof widget.sourceWidgetName === 'string'
+            ) {
+              return [
+                [widget.sourceNodeId, widget.sourceWidgetName] as [
+                  string,
+                  string
+                ]
+              ]
+            }
+            return []
+          })
+
+          const serializedNode = serialized.nodes.find(
+            (candidate) => String(candidate.id) === String(node.id)
+          )
+          const previewExposures = Array.isArray(
+            serializedNode?.properties?.previewExposures
+          )
+            ? serializedNode.properties.previewExposures
             : []
-          const promotedWidgets = proxyWidgets
-            .filter(
-              (entry): entry is [string, string] =>
-                Array.isArray(entry) &&
-                entry.length >= 2 &&
-                typeof entry[0] === 'string' &&
-                typeof entry[1] === 'string'
-            )
-            .map(
-              ([interiorNodeId, widgetName]) =>
-                [interiorNodeId, widgetName] as [string, string]
-            )
+          const previewEntries = previewExposures.flatMap((entry) => {
+            if (
+              typeof entry === 'object' &&
+              entry !== null &&
+              'sourceNodeId' in entry &&
+              typeof entry.sourceNodeId === 'string' &&
+              'sourcePreviewName' in entry &&
+              typeof entry.sourcePreviewName === 'string'
+            ) {
+              return [
+                [entry.sourceNodeId, entry.sourcePreviewName] as [
+                  string,
+                  string
+                ]
+              ]
+            }
+            return []
+          })
 
           return {
             hostNodeId: String(node.id),
-            promotedWidgets
+            promotedWidgets: [...widgetEntries, ...previewEntries]
           }
         })
         .sort((a, b) => Number(a.hostNodeId) - Number(b.hostNodeId))

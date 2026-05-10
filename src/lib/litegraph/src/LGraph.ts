@@ -1,6 +1,5 @@
 import { toString } from 'es-toolkit/compat'
 
-import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -10,10 +9,7 @@ import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import {
-  makePromotionEntryKey,
-  usePromotionStore
-} from '@/stores/promotionStore'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
@@ -54,6 +50,7 @@ import type {
   Size
 } from './interfaces'
 import { LiteGraph, SubgraphNode } from './litegraph'
+import { runSubgraphMigrationFlushHook } from './subgraph/subgraphMigrationHook'
 import {
   alignOutsideContainer,
   alignToContainer,
@@ -379,7 +376,7 @@ export class LGraph
 
     const graphId = this.id
     if (this.isRootGraph && graphId !== zeroUuid) {
-      usePromotionStore().clearGraph(graphId)
+      usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
     }
 
@@ -1927,13 +1924,6 @@ export class LGraph
     subgraphNode._setConcreteSlots()
     subgraphNode.arrange()
 
-    // Repair ancestor promotions: when nodes are packed into a nested
-    // subgraph, any host SubgraphNode whose proxyWidgets referenced the
-    // moved nodes must be repointed to chain through the new nested node.
-    if (!this.isRootGraph) {
-      this._repointAncestorPromotions(nodes, subgraphNode as SubgraphNode)
-    }
-
     this.canvasAction((c) =>
       c.canvas.dispatchEvent(
         new CustomEvent('subgraph-converted', {
@@ -1944,75 +1934,6 @@ export class LGraph
     )
 
     return { subgraph, node: subgraphNode as SubgraphNode }
-  }
-
-  /**
-   * After packing nodes into a nested subgraph, repoint any ancestor
-   * SubgraphNode promotions that referenced the moved nodes so they
-   * chain through the newly created nested SubgraphNode.
-   */
-  private _repointAncestorPromotions(
-    movedNodes: Set<LGraphNode>,
-    nestedSubgraphNode: SubgraphNode
-  ): void {
-    const movedNodeIds = new Set([...movedNodes].map((n) => String(n.id)))
-    const store = usePromotionStore()
-    const nestedNodeId = String(nestedSubgraphNode.id)
-    const graphId = this.rootGraph.id
-    const nestedEntries = store.getPromotions(graphId, nestedSubgraphNode.id)
-    const nextNestedEntries = [...nestedEntries]
-    const nestedEntryKeys = new Set(
-      nestedEntries.map((entry) => makePromotionEntryKey(entry))
-    )
-    const hostUpdates: Array<{
-      node: SubgraphNode
-      entries: PromotedWidgetSource[]
-    }> = []
-
-    // Find all SubgraphNode instances that host `this` subgraph.
-    // They live in any graph and have `type === this.id`.
-    const allGraphs: LGraph[] = [
-      this.rootGraph,
-      ...this.rootGraph._subgraphs.values()
-    ]
-    for (const graph of allGraphs) {
-      for (const node of graph._nodes) {
-        if (!node.isSubgraphNode() || node.type !== this.id) continue
-
-        const entries = store.getPromotions(graphId, node.id)
-        const movedEntries = entries.filter((entry) =>
-          movedNodeIds.has(entry.sourceNodeId)
-        )
-        if (movedEntries.length === 0) continue
-
-        for (const entry of movedEntries) {
-          const key = makePromotionEntryKey(entry)
-          if (nestedEntryKeys.has(key)) continue
-          nestedEntryKeys.add(key)
-          nextNestedEntries.push(entry)
-        }
-
-        const nextEntries = entries.map((entry) => {
-          if (!movedNodeIds.has(entry.sourceNodeId)) return entry
-          return {
-            sourceNodeId: nestedNodeId,
-            sourceWidgetName: entry.sourceWidgetName,
-            disambiguatingSourceNodeId:
-              entry.disambiguatingSourceNodeId ?? entry.sourceNodeId
-          }
-        })
-
-        hostUpdates.push({ node, entries: nextEntries })
-      }
-    }
-
-    if (nextNestedEntries.length !== nestedEntries.length)
-      store.setPromotions(graphId, nestedSubgraphNode.id, nextNestedEntries)
-
-    for (const { node, entries } of hostUpdates) {
-      store.setPromotions(graphId, node.id, entries)
-      node.rebuildInputWidgetBindings()
-    }
   }
 
   unpackSubgraph(
@@ -2734,6 +2655,16 @@ export class LGraph
       }
 
       this.updateExecutionOrder()
+
+      // ADR 0009: forward-ratchet legacy properties.proxyWidgets on each
+      // host SubgraphNode. Late-bound hook (registered in app init) so the
+      // LGraph layer doesn't pull in the PreviewExposureStore at module
+      // load — that would create a circular dependency.
+      for (const node of this._nodes) {
+        if (!(node instanceof SubgraphNode)) continue
+        if (node.properties?.proxyWidgets === undefined) continue
+        runSubgraphMigrationFlushHook(node, nodeDataMap.get(node.id))
+      }
 
       this.onConfigure?.(data)
       this.incrementVersion()

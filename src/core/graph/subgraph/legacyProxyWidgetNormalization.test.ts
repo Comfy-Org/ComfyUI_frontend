@@ -105,7 +105,11 @@ describe('normalizeLegacyProxyWidgetEntry', () => {
     expect(result.disambiguatingSourceNodeId).toBe(String(samplerNode.id))
   })
 
-  it('returns original entry when prefix cannot be resolved', () => {
+  it('strips legacy prefix and surfaces it as disambiguator even when the bare name does not resolve', () => {
+    // ADR 0009: each SubgraphNode is opaque, so legacy nested
+    // disambiguator-based lookup no longer reaches deep widgets. The
+    // prefix is preserved as `disambiguatingSourceNodeId` lookup metadata
+    // for migration tooling.
     const { hostNode, innerNode } = createHostWithInnerWidget('seed')
 
     const result = normalizeLegacyProxyWidgetEntry(
@@ -116,7 +120,8 @@ describe('normalizeLegacyProxyWidgetEntry', () => {
 
     expect(result).toEqual({
       sourceNodeId: String(innerNode.id),
-      sourceWidgetName: '999: nonexistent_widget'
+      sourceWidgetName: 'nonexistent_widget',
+      disambiguatingSourceNodeId: '999'
     })
   })
 })

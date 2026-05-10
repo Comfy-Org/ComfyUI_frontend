@@ -5,12 +5,14 @@ import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import type { ChangeTracker } from '@/scripts/changeTracker'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 const mockEmptyWorkflowDialog = vi.hoisted(() => {
   let lastOptions: { onEnterBuilder: () => void; onDismiss: () => void }
@@ -504,6 +506,140 @@ describe('appModeStore', () => {
         'Comfy.VueNodes.Enabled',
         expect.anything()
       )
+    })
+  })
+
+  // ADR 0009: legacy `(sourceNodeId, sourceWidgetName)` selection tuples
+  // for promoted widgets must project through the wrapping host SubgraphNode
+  // into `(hostNodeLocator, subgraphInputName)`. Tuples that cannot be
+  // projected are dropped with `console.warn`.
+  describe('legacy selectedInput tuple migration (ADR 0009)', () => {
+    it('migrates legacy promoted widget selected inputs before node-existence passthrough', () => {
+      const rootGraphId = '11111111-1111-4111-8111-111111111111'
+      const hostId = 5
+      const sourceNodeId = 42
+      const subgraphInputName = 'Prompt'
+      const sourceWidgetName = 'text'
+      const hostWidget = {
+        name: subgraphInputName,
+        sourceNodeId: String(sourceNodeId),
+        sourceWidgetName
+      }
+      const hostNode = Object.assign(Object.create(SubgraphNode.prototype), {
+        id: hostId,
+        inputs: [{ name: subgraphInputName, _widget: hostWidget }],
+        widgets: [hostWidget],
+        isSubgraphNode: () => true
+      }) as SubgraphNode
+
+      vi.mocked(app.rootGraph).id = rootGraphId
+      vi.mocked(app.rootGraph).nodes = [hostNode]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn(
+        (id: NodeId | null | undefined) => (id == hostId ? hostNode : null)
+      )
+      mockResolveNode.mockImplementation((id) =>
+        id == sourceNodeId
+          ? fromAny<LGraphNode, unknown>({ id: sourceNodeId })
+          : undefined
+      )
+
+      const result = store.pruneLinearData({
+        inputs: [[sourceNodeId, sourceWidgetName, { height: 120 }]],
+        outputs: []
+      })
+
+      expect(result.inputs).toEqual([
+        [
+          createNodeLocatorId(rootGraphId, hostId),
+          subgraphInputName,
+          { height: 120 }
+        ]
+      ])
+    })
+
+    it('keeps a direct root-node widget when its id and name collide with a promoted source', () => {
+      const rootGraphId = '11111111-1111-4111-8111-111111111111'
+      const hostId = 5
+      const sourceNodeId = 42
+      const sourceWidgetName = 'text'
+      const rootNode = fromAny<LGraphNode, unknown>({
+        id: sourceNodeId,
+        widgets: [{ name: sourceWidgetName }]
+      })
+      const hostWidget = {
+        name: 'Prompt',
+        sourceNodeId: String(sourceNodeId),
+        sourceWidgetName
+      }
+      const hostNode = Object.assign(Object.create(SubgraphNode.prototype), {
+        id: hostId,
+        inputs: [{ name: 'Prompt', _widget: hostWidget }],
+        widgets: [hostWidget],
+        isSubgraphNode: () => true
+      }) as SubgraphNode
+
+      vi.mocked(app.rootGraph).id = rootGraphId
+      vi.mocked(app.rootGraph).nodes = [rootNode, hostNode]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn(
+        (id: NodeId | null | undefined) =>
+          id == sourceNodeId ? rootNode : id == hostId ? hostNode : null
+      )
+      mockResolveNode.mockImplementation((id) =>
+        id == sourceNodeId ? rootNode : undefined
+      )
+
+      const result = store.pruneLinearData({
+        inputs: [[sourceNodeId, sourceWidgetName, { height: 120 }]],
+        outputs: []
+      })
+
+      expect(result.inputs).toEqual([
+        [sourceNodeId, sourceWidgetName, { height: 120 }]
+      ])
+    })
+
+    it('warns and drops a tuple whose source node no longer resolves', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mockResolveNode.mockReturnValue(undefined)
+
+      const result = store.pruneLinearData({
+        inputs: [[42 as NodeId, 'widget-name', { height: 42 }]],
+        outputs: []
+      })
+
+      expect(result.inputs).toEqual([])
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('legacy selectedInput tuple'),
+        expect.objectContaining({
+          storedId: 42,
+          widgetName: 'widget-name'
+        })
+      )
+      warnSpy.mockRestore()
+    })
+
+    it('passes through tuples already in `hostLocator:subgraphInputName` form', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const hostId = 5
+      const hostLocator = '11111111-1111-4111-8111-111111111111:5'
+      const hostNode = fromAny<LGraphNode, unknown>({
+        id: hostId,
+        isSubgraphNode: () => true,
+        widgets: [{ name: 'subgraph_input_name' }]
+      })
+      vi.mocked(app.rootGraph).getNodeById = vi.fn(
+        (id: NodeId | null | undefined) => (id == hostId ? hostNode : null)
+      )
+
+      const result = store.pruneLinearData({
+        inputs: [[hostLocator, 'subgraph_input_name']],
+        outputs: []
+      })
+
+      expect(result.inputs).toEqual([[hostLocator, 'subgraph_input_name']])
+      expect(warnSpy).not.toHaveBeenCalled()
+      warnSpy.mockRestore()
     })
   })
 })

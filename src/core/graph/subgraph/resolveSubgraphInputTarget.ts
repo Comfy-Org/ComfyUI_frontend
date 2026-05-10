@@ -1,12 +1,10 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-import { isPromotedWidgetView } from './promotedWidgetTypes'
 import { resolveSubgraphInputLink } from './resolveSubgraphInputLink'
 
 type ResolvedSubgraphInputTarget = {
   nodeId: string
   widgetName: string
-  sourceNodeId?: string
 }
 
 export function resolveSubgraphInputTarget(
@@ -17,28 +15,17 @@ export function resolveSubgraphInputTarget(
     node,
     inputName,
     ({ inputNode, targetInput, getTargetWidget }) => {
+      const targetWidget = getTargetWidget()
+      if (!targetWidget) return undefined
+
       if (inputNode.isSubgraphNode()) {
-        const targetWidget = getTargetWidget()
-        if (!targetWidget) return undefined
-
-        if (isPromotedWidgetView(targetWidget)) {
-          return {
-            nodeId: String(inputNode.id),
-            widgetName: targetWidget.sourceWidgetName,
-            sourceNodeId:
-              targetWidget.disambiguatingSourceNodeId ??
-              targetWidget.sourceNodeId
-          }
-        }
-
+        // ADR 0009: each SubgraphNode is opaque. The promoted target is the
+        // child SubgraphNode's input slot, not a deeper leaf widget.
         return {
           nodeId: String(inputNode.id),
           widgetName: targetInput.name
         }
       }
-
-      const targetWidget = getTargetWidget()
-      if (!targetWidget) return undefined
 
       return {
         nodeId: String(inputNode.id),

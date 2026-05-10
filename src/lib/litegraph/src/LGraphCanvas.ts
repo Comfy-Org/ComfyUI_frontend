@@ -9065,9 +9065,9 @@ function remapProxyWidgets(
 
 /**
  * Remaps pasted subgraph interior node IDs that would collide with existing
- * node IDs in the root graph. Also patches subgraph link node IDs and
- * SubgraphNode `properties.proxyWidgets` references so promoted widget
- * associations stay aligned with remapped interior IDs.
+ * node IDs in the root graph. Also patches subgraph link node IDs and legacy
+ * SubgraphNode `properties.proxyWidgets` references so migration input stays
+ * aligned with remapped interior IDs until the ADR 0009 flush consumes it.
  */
 export function remapClipboardSubgraphNodeIds(
   parsed: ClipboardItems,

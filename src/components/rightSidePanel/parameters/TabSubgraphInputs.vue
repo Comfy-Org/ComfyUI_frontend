@@ -14,13 +14,17 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { getWidgetName } from '@/core/graph/subgraph/promotionUtils'
+import {
+  getWidgetName,
+  isWidgetPromotedOnSubgraphNode,
+  reorderSubgraphInputAtIndex
+} from '@/core/graph/subgraph/promotionUtils'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import { DraggableList } from '@/scripts/ui/draggableList'
-import { usePromotionStore } from '@/stores/promotionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 import { searchWidgets } from '../shared'
@@ -33,7 +37,6 @@ const { node } = defineProps<{
 
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
-const promotionStore = usePromotionStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const { focusedSection, searchQuery } = storeToRefs(rightSidePanelStore)
 
@@ -55,9 +58,31 @@ const draggableList = ref<DraggableList | undefined>(undefined)
 const sectionWidgetsRef = useTemplateRef('sectionWidgetsRef')
 const advancedInputsSectionRef = useTemplateRef('advancedInputsSectionRef')
 
-const promotionEntries = computed(() =>
-  promotionStore.getPromotions(node.rootGraph.id, node.id)
-)
+function isSamePromotedWidget(a: IBaseWidget, b: IBaseWidget): boolean {
+  return (
+    isPromotedWidgetView(a) &&
+    isPromotedWidgetView(b) &&
+    a.sourceNodeId === b.sourceNodeId &&
+    a.sourceWidgetName === b.sourceWidgetName
+  )
+}
+
+function getPromotedWidgets(): IBaseWidget[] {
+  const inputWidgets = node.inputs
+    .map((input) => input._widget)
+    .filter((widget): widget is IBaseWidget =>
+      Boolean(widget && isPromotedWidgetView(widget))
+    )
+  const extraWidgets = (node.widgets ?? []).filter(
+    (widget) =>
+      isPromotedWidgetView(widget) &&
+      !inputWidgets.some((inputWidget) =>
+        isSamePromotedWidget(inputWidget, widget)
+      )
+  )
+
+  return [...inputWidgets, ...extraWidgets]
+}
 
 watch(
   focusedSection,
@@ -81,37 +106,7 @@ watch(
 )
 
 const widgetsList = computed((): NodeWidgetsList => {
-  const entries = promotionEntries.value
-  const { widgets = [] } = node
-
-  const result: NodeWidgetsList = []
-  for (const {
-    sourceNodeId: entryNodeId,
-    sourceWidgetName,
-    disambiguatingSourceNodeId
-  } of entries) {
-    const widget = widgets.find((w) => {
-      if (isPromotedWidgetView(w)) {
-        if (
-          String(w.sourceNodeId) !== entryNodeId ||
-          w.sourceWidgetName !== sourceWidgetName
-        )
-          return false
-
-        if (!disambiguatingSourceNodeId) return true
-
-        return (
-          (w.disambiguatingSourceNodeId ?? w.sourceNodeId) ===
-          disambiguatingSourceNodeId
-        )
-      }
-      return w.name === sourceWidgetName
-    })
-    if (widget) {
-      result.push({ node, widget })
-    }
-  }
-  return result
+  return getPromotedWidgets().map((widget) => ({ node, widget }))
 })
 
 const advancedInputsWidgets = computed((): NodeWidgetsList => {
@@ -126,12 +121,9 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
 
   return allInteriorWidgets.filter(
     ({ node: interiorNode, widget }) =>
-      !promotionStore.isPromoted(node.rootGraph.id, node.id, {
+      !isWidgetPromotedOnSubgraphNode(node, {
         sourceNodeId: String(interiorNode.id),
-        sourceWidgetName: getWidgetName(widget),
-        disambiguatingSourceNodeId: isPromotedWidgetView(widget)
-          ? widget.disambiguatingSourceNodeId
-          : undefined
+        sourceWidgetName: getWidgetName(widget)
       })
   )
 })
@@ -190,12 +182,7 @@ function setDraggableState() {
       this.draggableItem as HTMLElement
     )
 
-    promotionStore.movePromotion(
-      node.rootGraph.id,
-      node.id,
-      oldPosition,
-      newPosition
-    )
+    reorderSubgraphInputAtIndex(node, oldPosition, newPosition)
     canvasStore.canvas?.setDirty(true, true)
   }
 }

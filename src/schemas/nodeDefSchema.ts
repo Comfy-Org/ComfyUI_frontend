@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
-import { resultItemType } from '@/schemas/apiSchema'
+import { resultItemType } from '@/schemas/resultItemTypeSchema'
 import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
 
 const zComboOption = z.union([z.string(), z.number()])

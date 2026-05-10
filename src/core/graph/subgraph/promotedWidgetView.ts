@@ -8,6 +8,7 @@ import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { t } from '@/i18n'
+import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import {
   stripGraphPrefix,
@@ -27,6 +28,12 @@ import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidget
 export type { PromotedWidgetView } from './promotedWidgetTypes'
 export { isPromotedWidgetView } from './promotedWidgetTypes'
 
+export function getPromotedWidgetHostStateName(
+  widget: IPromotedWidgetView
+): string {
+  return [widget.name, widget.sourceNodeId, widget.sourceWidgetName].join(':')
+}
+
 interface SubgraphSlotRef {
   name: string
   label?: string
@@ -39,6 +46,14 @@ function isWidgetValue(value: unknown): value is IBaseWidget['value'] {
   if (typeof value === 'number') return true
   if (typeof value === 'boolean') return true
   return value !== null && typeof value === 'object'
+}
+
+function isValueControlWidget(widget: IBaseWidget): boolean {
+  return (
+    (widget as Record<symbol, unknown>)[IS_CONTROL_WIDGET] === true &&
+    typeof widget.beforeQueued === 'function' &&
+    typeof widget.afterQueued === 'function'
+  )
 }
 
 type LegacyMouseWidget = IBaseWidget & {
@@ -56,7 +71,6 @@ export function createPromotedWidgetView(
   nodeId: string,
   widgetName: string,
   displayName?: string,
-  disambiguatingSourceNodeId?: string,
   identityName?: string
 ): IPromotedWidgetView {
   return new PromotedWidgetView(
@@ -64,7 +78,6 @@ export function createPromotedWidgetView(
     nodeId,
     widgetName,
     displayName,
-    disambiguatingSourceNodeId,
     identityName
   )
 }
@@ -100,7 +113,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
     nodeId: string,
     widgetName: string,
     private readonly displayName?: string,
-    readonly disambiguatingSourceNodeId?: string,
     private readonly identityName?: string
   ) {
     this.sourceNodeId = nodeId
@@ -150,12 +162,17 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   get value(): IBaseWidget['value'] {
+    const hostState = this.getHostWidgetState()
+    if (hostState && isWidgetValue(hostState.value)) return hostState.value
+
     const state = this.getWidgetState()
     if (state && isWidgetValue(state.value)) return state.value
     return this.resolveAtHost()?.widget.value
   }
 
   set value(value: IBaseWidget['value']) {
+    this.setHostWidgetState(value)
+
     const linkedWidgets = this.getLinkedInputWidgets()
     if (linkedWidgets.length > 0) {
       const widgetStore = useWidgetValueStore()
@@ -200,6 +217,43 @@ class PromotedWidgetView implements IPromotedWidgetView {
     }
   }
 
+  private getHostWidgetState(): WidgetState | undefined {
+    return useWidgetValueStore().getWidget(
+      this.graphId,
+      this.subgraphNode.id,
+      this.hostWidgetStateName
+    )
+  }
+
+  private setHostWidgetState(value: IBaseWidget['value']): void {
+    if (!isWidgetValue(value)) return
+
+    const state = this.getHostWidgetState()
+    if (state) {
+      state.value = value
+      return
+    }
+
+    const resolved = this.resolveDeepest()
+    useWidgetValueStore().registerWidget(this.graphId, {
+      nodeId: this.subgraphNode.id,
+      name: this.hostWidgetStateName,
+      type: resolved?.widget.type ?? 'button',
+      value,
+      // Clone — never share the interior widget's options reference, or
+      // host-state mutations (e.g. disabled toggle) leak into the shared
+      // interior across every SubgraphNode instance.
+      options: { ...(resolved?.widget.options ?? {}) },
+      label: this.displayName,
+      serialize: this.serialize,
+      disabled: this.computedDisabled
+    })
+  }
+
+  private get hostWidgetStateName(): string {
+    return getPromotedWidgetHostStateName(this)
+  }
+
   get label(): string | undefined {
     const slot = this.getBoundSubgraphSlot()
     if (slot) return slot.label ?? slot.displayName ?? slot.name
@@ -215,6 +269,16 @@ class PromotedWidgetView implements IPromotedWidgetView {
     // Also persist to widget state store for save/reload resilience
     const state = this.getWidgetState()
     if (state) state.label = value
+  }
+
+  /**
+   * Write a value into this host's widget store entry without cascading into
+   * the shared interior widget — the only safe path for per-instance hydration
+   * during `configure()` and clone, where multiple SubgraphNode instances
+   * reference the same shared interior nodes.
+   */
+  hydrateHostValue(value: IBaseWidget['value']): void {
+    this.setHostWidgetState(value)
   }
 
   /**
@@ -351,14 +415,50 @@ class PromotedWidgetView implements IPromotedWidgetView {
     this.resolveAtHost()?.widget.callback?.(value, canvas, node, pos, e)
   }
 
+  beforeQueued(): void {
+    // Source widgets linked through subgraph inputs are inert for prompt
+    // serialization.  Control-after-generate is applied to the promoted host
+    // value in afterQueued so the next prompt uses the updated SubgraphNode
+    // value, not the linked source value.
+  }
+
+  afterQueued(): void {
+    this.applyValueControlToHost()
+  }
+
+  private applyValueControlToHost(): void {
+    const resolved = this.resolveAtHost()
+    const controlWidget =
+      resolved?.widget.linkedWidgets?.find(isValueControlWidget)
+    if (!controlWidget) return
+
+    const mode = controlWidget.value
+    if (mode === 'fixed') return
+
+    const current = this.value
+    if (typeof current !== 'number') return
+
+    const { min = 0, max = 1, step2 = 1 } = this.options
+    let next = current
+    if (mode === 'increment') next += step2
+    else if (mode === 'decrement') next -= step2
+    else if (mode === 'randomize') {
+      const safeMax = Math.min(1125899906842624, max)
+      const safeMin = Math.max(-1125899906842624, min)
+      const range = (safeMax - safeMin) / step2
+      next = Math.floor(Math.random() * range) * step2 + safeMin
+    }
+    next = Math.min(Math.max(next, min), max)
+    this.value = next
+  }
+
   private resolveAtHost():
     | { node: LGraphNode; widget: IBaseWidget }
     | undefined {
     return resolvePromotedWidgetAtHost(
       this.subgraphNode,
       this.sourceNodeId,
-      this.sourceWidgetName,
-      this.disambiguatingSourceNodeId
+      this.sourceWidgetName
     )
   }
 
@@ -372,8 +472,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
     const result = resolveConcretePromotedWidget(
       this.subgraphNode,
       this.sourceNodeId,
-      this.sourceWidgetName,
-      this.disambiguatingSourceNodeId
+      this.sourceWidgetName
     )
     const resolved = result.status === 'resolved' ? result.resolved : undefined
 
@@ -413,9 +512,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
       if (boundWidget && isPromotedWidgetView(boundWidget)) {
         return (
           boundWidget.sourceNodeId === this.sourceNodeId &&
-          boundWidget.sourceWidgetName === this.sourceWidgetName &&
-          boundWidget.disambiguatingSourceNodeId ===
-            this.disambiguatingSourceNodeId
+          boundWidget.sourceWidgetName === this.sourceWidgetName
         )
       }
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { computed, provide, shallowRef } from 'vue'
+import { computed, onBeforeUnmount, provide, shallowRef, triggerRef } from 'vue'
 
 import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
 import { useI18n } from 'vue-i18n'
@@ -63,6 +63,17 @@ useEventListener(
   'configured',
   () => (graphNodes.value = app.rootGraph.nodes)
 )
+// `LGraph.trigger()` invokes `onTrigger` synchronously but does not dispatch
+// on `events`, so chain through `onTrigger` to react to slot-label renames.
+const previousOnTrigger = app.rootGraph.onTrigger
+app.rootGraph.onTrigger = (event) => {
+  previousOnTrigger?.(event)
+  if (event.type === 'node:slot-label:changed') triggerRef(graphNodes)
+}
+onBeforeUnmount(() => {
+  if (app.rootGraph.onTrigger === undefined) return
+  app.rootGraph.onTrigger = previousOnTrigger
+})
 
 const mappedSelections = computed((): WidgetEntry[] => {
   void graphNodes.value

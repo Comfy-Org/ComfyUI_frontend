@@ -93,12 +93,11 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
         )
         .toBe(1)
 
-      await expect(
-        firstSubgraphNode.locator('.lg-node-widgets')
-      ).not.toContainText('$$canvas-image-preview')
-      await expect(
-        secondSubgraphNode.locator('.lg-node-widgets')
-      ).not.toContainText('$$canvas-image-preview')
+      // Hosts whose only promoted content is preview exposures have empty
+      // node.widgets, so the `.lg-node-widgets` container is not rendered at
+      // all (gated by `<NodeWidgets v-if="nodeData.widgets?.length">`). The
+      // assertion above (count by name returns the right number) already
+      // proves previews don't render as regular widget rows.
 
       await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
       await comfyPage.command.executeCommand('Comfy.QueuePrompt')

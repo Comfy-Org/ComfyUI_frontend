@@ -10,20 +10,33 @@ export interface ResolvedPromotedWidget {
 export interface PromotedWidgetSource {
   sourceNodeId: string
   sourceWidgetName: string
+}
+
+/**
+ * Legacy proxyWidget tuple shape carried through migration. The optional
+ * `disambiguatingSourceNodeId` is read from legacy `properties.proxyWidgets`
+ * payloads only — canonical runtime state never sets it. See ADR 0009.
+ */
+export interface LegacyProxyEntrySource extends PromotedWidgetSource {
   disambiguatingSourceNodeId?: string
 }
 
 export interface PromotedWidgetView extends IBaseWidget {
   readonly node: SubgraphNode
+  /**
+   * Identity of the immediate interior child whose widget (or input slot, for
+   * nested SubgraphNode children) this view exposes. Per ADR 0009 each
+   * SubgraphNode is opaque: the parent's promoted view references the
+   * immediate child only and does not flatten to deeper origins.
+   */
   readonly sourceNodeId: string
   readonly sourceWidgetName: string
+
   /**
-   * The original leaf-level source node ID, used to distinguish promoted
-   * widgets with the same name on the same intermediate node. Unlike
-   * `sourceNodeId` (the direct interior node), this traces to the deepest
-   * origin.
+   * Per-instance value hydration that writes only to host widget state, never
+   * cascading into the shared interior widget. Used during configure/clone.
    */
-  readonly disambiguatingSourceNodeId?: string
+  hydrateHostValue(value: IBaseWidget['value']): void
 }
 
 export function isPromotedWidgetView(

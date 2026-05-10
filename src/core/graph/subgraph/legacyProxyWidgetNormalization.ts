@@ -1,89 +1,54 @@
-import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { LegacyProxyEntrySource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 
 const LEGACY_PROXY_WIDGET_PREFIX_PATTERN = /^\s*(\d+)\s*:\s*(.+)$/
 
-type PromotedWidgetPatch = Omit<PromotedWidgetSource, 'sourceNodeId'>
-
 function canResolve(
   hostNode: SubgraphNode,
   sourceNodeId: string,
-  widgetName: string,
-  disambiguator?: string
+  widgetName: string
 ): boolean {
   return (
-    resolveConcretePromotedWidget(
-      hostNode,
-      sourceNodeId,
-      widgetName,
-      disambiguator
-    ).status === 'resolved'
+    resolveConcretePromotedWidget(hostNode, sourceNodeId, widgetName).status ===
+    'resolved'
   )
 }
 
-function tryResolveCandidate(
-  hostNode: SubgraphNode,
-  sourceNodeId: string,
-  widgetName: string,
-  disambiguator?: string
-): PromotedWidgetPatch | undefined {
-  if (!canResolve(hostNode, sourceNodeId, widgetName, disambiguator))
-    return undefined
-
-  return {
-    sourceWidgetName: widgetName,
-    ...(disambiguator && { disambiguatingSourceNodeId: disambiguator })
-  }
+interface StrippedPrefix {
+  sourceWidgetName: string
+  /** Deepest legacy `n: ` prefix removed from the original widget name. */
+  deepestPrefixId?: string
 }
 
-function resolveLegacyPrefixedEntry(
-  hostNode: SubgraphNode,
-  sourceNodeId: string,
-  sourceWidgetName: string,
-  disambiguatingSourceNodeId?: string
-): PromotedWidgetPatch | undefined {
+function stripLegacyPrefixes(sourceWidgetName: string): StrippedPrefix {
   let remaining = sourceWidgetName
-
+  let deepestPrefixId: string | undefined
   while (true) {
     const match = LEGACY_PROXY_WIDGET_PREFIX_PATTERN.exec(remaining)
-    if (!match) return undefined
-
-    const [, legacySourceNodeId, unprefixed] = match
-    remaining = unprefixed
-
-    const disambiguators = [
-      legacySourceNodeId,
-      ...(disambiguatingSourceNodeId ? [disambiguatingSourceNodeId] : []),
-      undefined
-    ]
-
-    for (const disambiguator of disambiguators) {
-      const resolved = tryResolveCandidate(
-        hostNode,
-        sourceNodeId,
-        remaining,
-        disambiguator
-      )
-      if (resolved) return resolved
-    }
+    if (!match) return { sourceWidgetName: remaining, deepestPrefixId }
+    deepestPrefixId = match[1]
+    remaining = match[2]
   }
 }
 
+/**
+ * Normalize a legacy `proxyWidgets` entry.
+ *
+ * Under ADR 0009 each `SubgraphNode` is opaque, so the canonical state never
+ * resolves through deep nested identities. This helper still recognizes the
+ * legacy `"<id>: <name>"` prefix encoding and surfaces the deepest prefix as
+ * `disambiguatingSourceNodeId` so migration tooling can preserve it as
+ * lookup metadata. The bare entry is returned unchanged when it already
+ * resolves at the immediate level.
+ */
 export function normalizeLegacyProxyWidgetEntry(
   hostNode: SubgraphNode,
   sourceNodeId: string,
   sourceWidgetName: string,
   disambiguatingSourceNodeId?: string
-): PromotedWidgetSource {
-  if (
-    canResolve(
-      hostNode,
-      sourceNodeId,
-      sourceWidgetName,
-      disambiguatingSourceNodeId
-    )
-  ) {
+): LegacyProxyEntrySource {
+  if (canResolve(hostNode, sourceNodeId, sourceWidgetName)) {
     return {
       sourceNodeId,
       sourceWidgetName,
@@ -91,19 +56,13 @@ export function normalizeLegacyProxyWidgetEntry(
     }
   }
 
-  const patch = resolveLegacyPrefixedEntry(
-    hostNode,
-    sourceNodeId,
-    sourceWidgetName,
-    disambiguatingSourceNodeId
-  )
-
+  const stripped = stripLegacyPrefixes(sourceWidgetName)
   const patchDisambiguatingSourceNodeId =
-    patch?.disambiguatingSourceNodeId ?? disambiguatingSourceNodeId
+    stripped.deepestPrefixId ?? disambiguatingSourceNodeId
 
   return {
     sourceNodeId,
-    sourceWidgetName: patch?.sourceWidgetName ?? sourceWidgetName,
+    sourceWidgetName: stripped.sourceWidgetName,
     ...(patchDisambiguatingSourceNodeId && {
       disambiguatingSourceNodeId: patchDisambiguatingSourceNodeId
     })

@@ -63,11 +63,15 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   const nodeOutputs = ref<Record<string, ExecutedWsMessage['output']>>({})
+  const nodeOutputsByExecutionId = ref<
+    Record<string, ExecutedWsMessage['output']>
+  >({})
 
   // Reactive state for node preview images - mirrors app.nodePreviewImages
   const nodePreviewImages = ref<Record<string, string[]>>(
     app.nodePreviewImages || {}
   )
+  const nodePreviewImagesByExecutionId = ref<Record<string, string[]>>({})
 
   function getNodeOutputs(
     node: LGraphNode
@@ -93,9 +97,11 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     // If no images, return false
     if (!outputs?.images?.length) return false
 
+    const images = outputs.images.filter((image) => image != null)
+    if (!images.length) return false
+
     // If svg images, return false
-    if (outputs.images.some((image) => image.filename?.endsWith('svg')))
-      return false
+    if (images.some((image) => image.filename?.endsWith('svg'))) return false
 
     return true
   }
@@ -124,10 +130,85 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const rand = app.getRandParam()
     const previewParam = getPreviewParam(node, outputs)
 
-    return outputs.images.map((image) => {
-      const params = new URLSearchParams(image)
-      return api.apiURL(`/view?${params}${previewParam}${rand}`)
-    })
+    return outputs.images
+      .filter((image) => image != null)
+      .map((image) => {
+        const params = new URLSearchParams(image)
+        return api.apiURL(`/view?${params}${previewParam}${rand}`)
+      })
+  }
+
+  function getNodeOutputByExecutionId(
+    executionId: string
+  ): ExecutedWsMessage['output'] | undefined {
+    return nodeOutputsByExecutionId.value[executionId]
+  }
+
+  function getNodePreviewImagesByExecutionId(
+    executionId: string
+  ): string[] | undefined {
+    return nodePreviewImagesByExecutionId.value[executionId]
+  }
+
+  function getNodeImageUrlsByExecutionId(
+    executionId: string,
+    node: LGraphNode
+  ): string[] | undefined {
+    const previews = getNodePreviewImagesByExecutionId(executionId)
+    if (previews?.length) return previews
+
+    const outputs = getNodeOutputByExecutionId(executionId)
+    if (!outputs?.images?.length) return
+
+    const rand = app.getRandParam()
+    const previewParam = getPreviewParam(node, outputs)
+
+    return outputs.images
+      .filter((image) => image != null)
+      .map((image) => {
+        const params = new URLSearchParams(image)
+        return api.apiURL(`/view?${params}${previewParam}${rand}`)
+      })
+  }
+
+  function setExecutionPreviews(executionId: string, previewImages: string[]) {
+    const existingPreviews = nodePreviewImagesByExecutionId.value[executionId]
+    if (existingPreviews?.[Symbol.iterator]) {
+      for (const url of existingPreviews) {
+        releaseSharedObjectUrl(url)
+      }
+    }
+    for (const url of previewImages) {
+      retainSharedObjectUrl(url)
+    }
+    nodePreviewImagesByExecutionId.value[executionId] = previewImages
+  }
+
+  function revokeExecutionPreviews(executionId: string) {
+    const previews = nodePreviewImagesByExecutionId.value[executionId]
+    if (!previews?.[Symbol.iterator]) return
+    for (const url of previews) {
+      releaseSharedObjectUrl(url)
+    }
+    delete nodePreviewImagesByExecutionId.value[executionId]
+  }
+
+  function mergeOutputRecords(
+    existingOutput: ExecutedWsMessage['output'],
+    outputs: ExecutedWsMessage['output'] | ResultItem
+  ): ExecutedWsMessage['output'] {
+    const merged = { ...existingOutput }
+    for (const k in outputs) {
+      const existingValue = merged[k]
+      const newValue = (outputs as Record<NodeLocatorId, unknown>)[k]
+
+      if (Array.isArray(existingValue) && Array.isArray(newValue)) {
+        merged[k] = existingValue.concat(newValue)
+      } else {
+        merged[k] = newValue
+      }
+    }
+    return merged
   }
 
   /**
@@ -242,6 +323,14 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     outputs: ExecutedWsMessage['output'] | ResultItem,
     options: SetOutputOptions = {}
   ) {
+    if (outputs != null) {
+      const existingOutput = nodeOutputsByExecutionId.value[executionId]
+      nodeOutputsByExecutionId.value[executionId] =
+        options.merge && existingOutput
+          ? mergeOutputRecords(existingOutput, outputs)
+          : outputs
+    }
+
     const nodeLocatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
     if (!nodeLocatorId) return
 
@@ -259,6 +348,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     executionId: string,
     previewImages: string[]
   ) {
+    setExecutionPreviews(executionId, previewImages)
+
     const nodeLocatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
     if (!nodeLocatorId) return
     setNodePreviewsByLocatorId(nodeLocatorId, previewImages)
@@ -310,6 +401,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
    * @param executionId - The execution ID
    */
   function revokePreviewsByExecutionId(executionId: string) {
+    revokeExecutionPreviews(executionId)
+
     const nodeLocatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
     if (!nodeLocatorId) return
     scheduleRevoke(nodeLocatorId, () =>
@@ -350,6 +443,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     }
     app.nodePreviewImages = {}
     nodePreviewImages.value = {}
+    nodePreviewImagesByExecutionId.value = {}
   }
 
   /**
@@ -441,6 +535,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   function resetAllOutputsAndPreviews() {
     app.nodeOutputs = {}
     nodeOutputs.value = {}
+    nodeOutputsByExecutionId.value = {}
     revokeAllPreviews()
   }
 
@@ -474,6 +569,9 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     // Getters
     getNodeOutputs,
     getNodeImageUrls,
+    getNodeImageUrlsByExecutionId,
+    getNodeOutputByExecutionId,
+    getNodePreviewImagesByExecutionId,
     getNodePreviews,
     getPreviewParam,
 
@@ -499,7 +597,9 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     // State
     nodeOutputs,
+    nodeOutputsByExecutionId,
     nodePreviewImages,
+    nodePreviewImagesByExecutionId,
     latestPreview
   }
 })
