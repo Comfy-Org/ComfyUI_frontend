@@ -91,7 +91,7 @@ const isOpen = ref(false)
           </div>
         </div>
         <div
-          class="flex flex-1 items-center justify-between pl-1 text-xs text-node-component-slot-text"
+          class="flex flex-1 items-center justify-between pl-1 text-xs text-component-node-foreground"
         >
           <template v-if="displayMode === 'hex'">
             <span>{{ displayHex }}</span>
