@@ -2,6 +2,20 @@
 
 Marketing/brand website built with Astro + Vue.
 
+## Build-time data sources
+
+External data used during static generation should use the shared build-data
+source helpers in `src/utils/buildDataSource.ts` and
+`src/utils/buildDataReporter.ts`. Each source owns its domain parsing, but the
+shared machinery owns the repeated lifecycle:
+
+1. Fetch fresh data once per build process.
+2. Validate and map to a committed snapshot shape.
+3. Fall back to the committed snapshot on fetch/schema/network failure.
+4. Emit GitHub Actions annotations and `$GITHUB_STEP_SUMMARY` rows once per
+   build process.
+5. Refresh snapshots through package scripts that write atomically.
+
 ## Ashby careers integration
 
 `/careers` and `/zh-CN/careers` are rendered from Ashby's public job board
@@ -113,6 +127,19 @@ git commit apps/website/src/data/ashby-roles.snapshot.json
 The script exits non-zero on any non-fresh outcome so stale/empty
 snapshots can't be accidentally committed.
 
+## GitHub stars integration
+
+The navigation star badge is rendered from the GitHub repository API at build
+time through the same snapshot-fallback lifecycle.
+
+- Runtime source: `src/utils/github.ts`
+- Snapshot: `src/data/github-stars.snapshot.json`
+- CI reporter: `src/utils/github.ci.ts`
+- Refresh script: `pnpm --filter @comfyorg/website github-stars:refresh-snapshot`
+
+`WEBSITE_GITHUB_STARS_OVERRIDE` remains available for visual snapshots and local
+determinism. It must be a non-negative integer and is build-time only.
+
 ## HubSpot contact form
 
 The contact page uses HubSpot's hosted form embed for the interest form:
@@ -146,3 +173,5 @@ renders the documented embed container.
 - `pnpm test:unit` — Vitest unit tests
 - `pnpm test:e2e` — Playwright E2E tests (requires `pnpm build` first)
 - `pnpm ashby:refresh-snapshot` — refresh the committed careers snapshot
+- `pnpm github-stars:refresh-snapshot` — refresh the committed GitHub stars
+  snapshot

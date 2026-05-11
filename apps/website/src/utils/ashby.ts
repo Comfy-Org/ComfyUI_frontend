@@ -9,25 +9,24 @@ import {
   AshbyJobBoardResponseSchema,
   AshbyJobPostingSchema
 } from './ashby.schema'
+import type { BuildDataFetchResult, BuildDataOutcome } from './buildDataSource'
+import { createBuildDataSource } from './buildDataSource'
 
 const DEFAULT_BASE_URL = 'https://api.ashbyhq.com'
 const DEFAULT_TIMEOUT_MS = 10_000
 const RETRY_DELAYS_MS = [1_000, 2_000, 4_000]
 
-export interface DroppedRole {
+interface DroppedRole {
   title: string
   reason: string
 }
 
-export type FetchOutcome =
-  | {
-      status: 'fresh'
-      snapshot: RolesSnapshot
-      droppedCount: number
-      droppedRoles: DroppedRole[]
-    }
-  | { status: 'stale'; snapshot: RolesSnapshot; reason: string }
-  | { status: 'failed'; reason: string }
+interface FreshRolesData {
+  droppedCount: number
+  droppedRoles: DroppedRole[]
+}
+
+export type FetchOutcome = BuildDataOutcome<RolesSnapshot, FreshRolesData>
 
 interface FetchRolesOptions {
   apiKey?: string
@@ -40,56 +39,50 @@ interface FetchRolesOptions {
   sleep?: (ms: number) => Promise<void>
 }
 
-let inflight: Promise<FetchOutcome> | undefined
+const ashbySource = createBuildDataSource<
+  FetchRolesOptions,
+  RolesSnapshot,
+  FreshRolesData
+>({
+  name: 'Ashby roles',
+  fetchFresh: fetchFreshRoles,
+  readSnapshot: (options) => readSnapshot(options.snapshotUrl),
+  getCacheKey: getAshbyCacheKey
+})
 
-export function resetAshbyFetcherForTests(): void {
-  inflight = undefined
-}
+export const resetAshbyFetcherForTests = ashbySource.resetForTests
+export const fetchRolesForBuild = ashbySource.fetchForBuild
 
-export function fetchRolesForBuild(
-  options: FetchRolesOptions = {}
-): Promise<FetchOutcome> {
-  inflight ??= doFetchRolesForBuild(options)
-  return inflight
-}
-
-async function doFetchRolesForBuild(
+async function fetchFreshRoles(
   options: FetchRolesOptions
-): Promise<FetchOutcome> {
+): Promise<BuildDataFetchResult<RolesSnapshot, FreshRolesData>> {
   const apiKey = options.apiKey ?? process.env.WEBSITE_ASHBY_API_KEY
   const boardName =
     options.boardName ?? process.env.WEBSITE_ASHBY_JOB_BOARD_NAME
 
   if (!apiKey || !boardName) {
-    return fallback(
-      'missing WEBSITE_ASHBY_API_KEY or WEBSITE_ASHBY_JOB_BOARD_NAME',
-      options.snapshotUrl
-    )
+    return {
+      kind: 'err',
+      reason: 'missing WEBSITE_ASHBY_API_KEY or WEBSITE_ASHBY_JOB_BOARD_NAME'
+    }
   }
 
   const result = await tryFetchAndParse(apiKey, boardName, options)
   if (result.kind === 'ok') {
     return {
-      status: 'fresh',
+      kind: 'ok',
       snapshot: {
         fetchedAt: new Date().toISOString(),
         departments: result.departments
       },
-      droppedCount: result.droppedRoles.length,
-      droppedRoles: result.droppedRoles
+      data: {
+        droppedCount: result.droppedRoles.length,
+        droppedRoles: result.droppedRoles
+      }
     }
   }
 
-  return fallback(result.reason, options.snapshotUrl)
-}
-
-async function fallback(
-  reason: string,
-  snapshotUrl: URL | undefined
-): Promise<FetchOutcome> {
-  const snapshot = await readSnapshot(snapshotUrl)
-  if (snapshot) return { status: 'stale', snapshot, reason }
-  return { status: 'failed', reason }
+  return result
 }
 
 interface FetchOk {
@@ -296,4 +289,16 @@ function isRolesSnapshot(value: unknown): value is RolesSnapshot {
 
 function defaultSleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function getAshbyCacheKey(options: FetchRolesOptions): string {
+  return JSON.stringify({
+    apiKey: options.apiKey ?? process.env.WEBSITE_ASHBY_API_KEY ?? '',
+    boardName:
+      options.boardName ?? process.env.WEBSITE_ASHBY_JOB_BOARD_NAME ?? '',
+    baseUrl: options.baseUrl ?? DEFAULT_BASE_URL,
+    timeoutMs: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    retryDelaysMs: options.retryDelaysMs ?? RETRY_DELAYS_MS,
+    snapshotUrl: options.snapshotUrl?.href ?? ''
+  })
 }
