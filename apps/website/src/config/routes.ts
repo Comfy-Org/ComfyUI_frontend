@@ -14,6 +14,8 @@ const baseRoutes = {
   demos: '/demos',
   termsOfService: '/terms-of-service',
   privacyPolicy: '/privacy-policy',
+  affiliates: '/affiliates',
+  affiliateTerms: '/affiliates/terms',
   contact: '/contact'
 } as const
 
@@ -28,6 +30,7 @@ export function getRoutes(locale: Locale = 'en'): Routes {
 }
 
 export const externalLinks = {
+  affiliateApplicationForm: 'https://forms.gle/RS8L2ttcuGap4Q1v6',
   apiKeys: 'https://platform.comfy.org/profile/api-keys',
   blog: 'https://blog.comfy.org/',
   cloud: 'https://cloud.comfy.org',

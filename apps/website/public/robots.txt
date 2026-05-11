@@ -30,29 +30,38 @@ Disallow: /_astro/
 Disallow: /_website/
 Disallow: /_vercel/
 Disallow: /payment/
+Disallow: /affiliates
 
 User-agent: GPTBot
 Allow: /
+Disallow: /affiliates
 
 User-agent: OAI-SearchBot
 Allow: /
+Disallow: /affiliates
 
 User-agent: ChatGPT-User
 Allow: /
+Disallow: /affiliates
 
 User-agent: ClaudeBot
 Allow: /
+Disallow: /affiliates
 
 User-agent: Claude-User
 Allow: /
+Disallow: /affiliates
 
 User-agent: Claude-SearchBot
 Allow: /
+Disallow: /affiliates
 
 User-agent: PerplexityBot
 Allow: /
+Disallow: /affiliates
 
 User-agent: Google-Extended
 Allow: /
+Disallow: /affiliates
 
 Sitemap: https://comfy.org/sitemap-index.xml
