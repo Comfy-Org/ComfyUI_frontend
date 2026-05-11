@@ -28,7 +28,11 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         <!-- CTA buttons -->
         <div class="mt-10 flex flex-col gap-4 lg:flex-row">
           <DownloadLocalButton :locale />
-          <BrandButton :href="externalLinks.github" variant="outline" size="lg">
+          <BrandButton
+            :href="externalLinks.githubInstall"
+            variant="outline"
+            size="lg"
+          >
             <span class="inline-flex items-center gap-2">
               <i
                 class="icon-mask size-5 -translate-y-px mask-[url('/icons/social/github.svg')]"

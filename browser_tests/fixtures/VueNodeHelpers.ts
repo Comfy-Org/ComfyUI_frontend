@@ -5,6 +5,7 @@ import type { Locator, Page } from '@playwright/test'
 
 import { TestIds } from '@e2e/fixtures/selectors'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 
 export class VueNodeHelpers {
   /**
@@ -35,6 +36,22 @@ export class VueNodeHelpers {
    */
   getNodeInnerWrapper(nodeId: string): Locator {
     return this.getNodeLocator(nodeId).getByTestId(TestIds.node.innerWrapper)
+  }
+
+  getInputSlotRow(nodeId: string, slotIndex: number): Locator {
+    return this.getNodeLocator(nodeId)
+      .locator('.lg-slot--input')
+      .filter({
+        has: this.page.locator(
+          `[data-slot-key="${getSlotKey(nodeId, slotIndex, true)}"]`
+        )
+      })
+  }
+
+  getInputSlotConnectionDot(nodeId: string, slotIndex: number): Locator {
+    return this.getInputSlotRow(nodeId, slotIndex).getByTestId(
+      TestIds.node.slotConnectionDot
+    )
   }
 
   /**
@@ -201,12 +218,19 @@ export class VueNodeHelpers {
   }
 
   /**
+   * Locator for the Enter Subgraph footer button.
+   */
+  getSubgraphEnterButton(nodeId?: string): Locator {
+    const root = nodeId ? this.getNodeLocator(nodeId) : this.page
+    return root.getByTestId(TestIds.widgets.subgraphEnterButton).first()
+  }
+
+  /**
    * Enter the subgraph of a node.
    * @param nodeId - The ID of the node to enter the subgraph of. If not provided, the first matched subgraph will be entered.
    */
   async enterSubgraph(nodeId?: string): Promise<void> {
-    const locator = nodeId ? this.getNodeLocator(nodeId) : this.page
-    const editButton = locator.getByTestId(TestIds.widgets.subgraphEnterButton)
+    const editButton = this.getSubgraphEnterButton(nodeId)
 
     // The footer tab button extends below the node body (visible area),
     // but its bounding box center overlaps the node body div.
