@@ -179,4 +179,27 @@ describe('_startDraggingItems defers onSelectionChange', () => {
     expect(canvas.onSelectionChange).toBe(onSelectionChange)
     canvas.processSelect = original
   })
+
+  it('invokes the callback captured at drag-start, not a later replacement', () => {
+    const captured = vi.fn()
+    const replacement = vi.fn()
+    canvas.onSelectionChange = captured
+
+    canvas['_startDraggingItems'](node, pointer, true)
+    canvas.onSelectionChange = replacement
+
+    vi.advanceTimersByTime(16)
+
+    expect(captured).toHaveBeenCalledTimes(1)
+    expect(replacement).not.toHaveBeenCalled()
+  })
+
+  it('does not throw if the canvas is torn down before the RAF fires', () => {
+    canvas.onSelectionChange = vi.fn()
+    canvas['_startDraggingItems'](node, pointer, true)
+
+    canvasElement.remove()
+
+    expect(() => vi.advanceTimersByTime(16)).not.toThrow()
+  })
 })
