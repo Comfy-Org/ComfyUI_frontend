@@ -23,6 +23,7 @@ export function markStorageUnavailable(): void {
   storageAvailable = false
 }
 
+/** @internal Test-only: do not call from production code paths. */
 export function resetStorageAvailable(): void {
   storageAvailable = true
 }

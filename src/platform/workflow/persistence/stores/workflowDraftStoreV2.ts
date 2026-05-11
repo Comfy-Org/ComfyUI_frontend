@@ -148,6 +148,12 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * Tolerates index/payload desync: orphaned `order` keys with no matching
    * entry in `entries` are stripped in-place and the loop continues, rather
    * than bailing out and leaving evictable drafts behind.
+   *
+   * Recovery writes (`persistIndex(currentIndex)` after a failed write) are
+   * best-effort; their return value is intentionally ignored because there
+   * is no useful action to take when the recovery itself also fails — the
+   * caller will already see `false` and surface the toast. A subsequent
+   * `saveDraft` will re-converge the index via `removeOrphanedEntries`.
    */
   function handleQuotaExceeded(
     path: string,
@@ -177,13 +183,12 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
         evictedCount++
       }
 
-      if (
-        writePayload(workspaceId, draftKey, { data, updatedAt: Date.now() })
-      ) {
+      const now = Date.now()
+      if (writePayload(workspaceId, draftKey, { data, updatedAt: now })) {
         const { index: finalIndex } = upsertEntry(
           currentIndex,
           path,
-          { ...meta, updatedAt: Date.now() },
+          { ...meta, updatedAt: now },
           MAX_DRAFTS
         )
         if (!persistIndex(finalIndex)) {
@@ -201,6 +206,12 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     return false
   }
 
+  /**
+   * Approximates the UTF-8 byte size of the envelope `writePayload` actually
+   * stores. We hard-code `updatedAt: 0` rather than the real timestamp because
+   * the missing ~12 bytes are noise compared to the kilobyte-scale workflow
+   * payload this telemetry exists to measure.
+   */
   function payloadByteSize(data: string): number {
     return new TextEncoder().encode(JSON.stringify({ data, updatedAt: 0 }))
       .length
