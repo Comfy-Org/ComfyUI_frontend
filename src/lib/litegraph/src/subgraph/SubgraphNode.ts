@@ -44,8 +44,8 @@ import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   supportsVirtualCanvasImagePreview
 } from '@/composables/node/canvasImagePreviewTypes'
-import { readHostQuarantine } from '@/core/graph/subgraph/migration/quarantineEntry'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
+import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -1216,7 +1216,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       delete serializedProperties.previewExposures
     }
 
-    const quarantine = readHostQuarantine(this)
+    const quarantine = parseProxyWidgetErrorQuarantine(
+      this.properties.proxyWidgetErrorQuarantine
+    )
     if (quarantine.length === 0) {
       delete serializedProperties.proxyWidgetErrorQuarantine
     } else {

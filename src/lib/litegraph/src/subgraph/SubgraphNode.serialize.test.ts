@@ -14,20 +14,21 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { ISlotType, TWidgetType } from '@/lib/litegraph/src/litegraph'
+import { BaseWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
+
 import {
   appendHostQuarantine,
   makeQuarantineEntry
-} from '@/core/graph/subgraph/migration/quarantineEntry'
+} from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
-import type { ISlotType, TWidgetType } from '@/lib/litegraph/src/litegraph'
-import { BaseWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import {
   reorderSubgraphInputAtIndex,
   reorderSubgraphInputsByName
 } from '@/core/graph/subgraph/promotionUtils'
+import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'

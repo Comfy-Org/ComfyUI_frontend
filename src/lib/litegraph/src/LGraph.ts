@@ -50,7 +50,6 @@ import type {
   Size
 } from './interfaces'
 import { LiteGraph, SubgraphNode } from './litegraph'
-import { runSubgraphMigrationFlushHook } from './subgraph/subgraphMigrationHook'
 import {
   alignOutsideContainer,
   alignToContainer,
@@ -182,6 +181,16 @@ export class LGraph
 
   static STATUS_STOPPED = 1
   static STATUS_RUNNING = 2
+
+  /**
+   * Late-bound migration hook. Set once during app init from the wiring layer
+   * to avoid a circular dependency through PreviewExposureStore. Left undefined
+   * in tests that exercise `configure()` without the migration pipeline.
+   */
+  static proxyWidgetMigrationFlush?: (
+    hostNode: SubgraphNode,
+    nodeData: ISerialisedNode | undefined
+  ) => void
 
   /** List of LGraph properties that are manually handled by {@link LGraph.configure}. */
   static readonly ConfigureProperties = new Set([
@@ -2663,7 +2672,21 @@ export class LGraph
       for (const node of this._nodes) {
         if (!(node instanceof SubgraphNode)) continue
         if (node.properties?.proxyWidgets === undefined) continue
-        runSubgraphMigrationFlushHook(node, nodeDataMap.get(node.id))
+        const nodeData = nodeDataMap.get(node.id)
+        if (LGraph.proxyWidgetMigrationFlush) {
+          LGraph.proxyWidgetMigrationFlush(node, nodeData)
+        } else if (
+          node.properties.proxyWidgets !== undefined &&
+          (import.meta.env.DEV || import.meta.env.MODE === 'test')
+        ) {
+          console.warn(
+            '[SubgraphNode] Legacy proxyWidgets were not migrated because no migration flush hook is wired',
+            {
+              hostNodeId: node.id,
+              proxyWidgets: node.properties.proxyWidgets
+            }
+          )
+        }
       }
 
       this.onConfigure?.(data)

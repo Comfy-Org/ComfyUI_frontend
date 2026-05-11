@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeId, Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
@@ -8,7 +8,8 @@ import {
   LGraphNode,
   LiteGraph,
   LLink,
-  Reroute
+  Reroute,
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
@@ -16,6 +17,7 @@ import { zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import {
+  createTestSubgraph,
   createTestSubgraphData,
   createTestSubgraphNode
 } from './subgraph/__fixtures__/subgraphHelpers'
@@ -982,6 +984,54 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     for (const entry of pw as unknown[][]) {
       expect(Array.isArray(entry)).toBe(true)
       expect(idsB.has(String(entry[0]))).toBe(true)
+    }
+  })
+
+  it('warns when configuring a host with legacy proxyWidgets and no migration hook is wired', () => {
+    // The migration hook is wired in app init via main.ts; in pure
+    // litegraph-level tests (and any other configure() path that runs without
+    // the hook) we expect a console.warn so the missed migration is visible.
+    // Build a host SubgraphNode programmatically (registering its type),
+    // serialise the root, then configure() a fresh LGraph from that payload
+    // with the migration hook unset.
+    const subgraph = createTestSubgraph()
+    const sourceHost = createTestSubgraphNode(subgraph)
+    sourceHost.graph!.add(sourceHost)
+    sourceHost.properties.proxyWidgets = [['9999', 'seed']]
+    const serialized = sourceHost.rootGraph.serialize()
+    const instanceData = sourceHost.serialize()
+
+    const previous = LGraph.proxyWidgetMigrationFlush
+    LGraph.proxyWidgetMigrationFlush = undefined
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    LiteGraph.registerNodeType(
+      subgraph.id,
+      class TestSubgraphNode extends SubgraphNode {
+        constructor() {
+          super(new LGraph(), subgraph, instanceData)
+        }
+      }
+    )
+    try {
+      const graph = new LGraph()
+      graph.configure(serialized)
+
+      const migrationCall = warn.mock.calls.find((call) =>
+        typeof call[0] === 'string'
+          ? call[0].includes('Legacy proxyWidgets were not migrated')
+          : false
+      )
+      expect(migrationCall).toBeDefined()
+      expect(migrationCall![1]).toEqual(
+        expect.objectContaining({
+          hostNodeId: expect.any(Number),
+          proxyWidgets: expect.anything()
+        })
+      )
+    } finally {
+      LGraph.proxyWidgetMigrationFlush = previous
+      LiteGraph.unregisterNodeType(subgraph.id)
+      warn.mockRestore()
     }
   })
 

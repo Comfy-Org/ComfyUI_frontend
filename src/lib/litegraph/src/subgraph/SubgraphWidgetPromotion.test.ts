@@ -8,7 +8,7 @@ import type {
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
 import { BaseWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigrationFlush'
+import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 
 import {
