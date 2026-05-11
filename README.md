@@ -545,7 +545,7 @@ app.registerExtension({
     {
       text: 'Nightly',
       label: 'BETA',
-      variant: 'warning',  // 'info' | 'warning' | 'error'
+      variant: 'warning', // 'info' | 'warning' | 'error'
       icon: 'pi pi-exclamation-triangle',
       tooltip: 'You are using a nightly build'
     }
@@ -554,6 +554,7 @@ app.registerExtension({
 ```
 
 Variants:
+
 - `info`: Default informational badge (white label, gray background)
 - `warning`: Warning badge (orange theme, higher emphasis)
 - `error`: Error/alert badge (red theme, highest emphasis)
@@ -573,7 +574,7 @@ app.registerExtension({
       icon: 'icon-[lucide--message-circle-question-mark]',
       label: 'Feedback',
       tooltip: 'Send feedback about ComfyUI',
-      class: 'custom-button-class',  // Optional CSS classes
+      class: 'custom-button-class', // Optional CSS classes
       onClick: () => {
         // Button click handler
         alert('Feedback clicked!')
@@ -596,7 +597,7 @@ Extensions can render markdown to sanitized HTML using the built-in markdown ren
 // Render markdown with GitHub Flavored Markdown support
 const html = app.extensionManager.renderMarkdownToHtml(
   '# Hello\n\nThis is **bold** text',
-  'https://example.com'  // Optional base URL for relative links
+  'https://example.com' // Optional base URL for relative links
 )
 
 // The output is sanitized with DOMPurify for XSS protection
@@ -604,6 +605,7 @@ document.getElementById('content').innerHTML = html
 ```
 
 Features:
+
 - GitHub Flavored Markdown (GFM) support via marked
 - Automatic XSS sanitization via DOMPurify
 - Optional base URL for resolving relative links

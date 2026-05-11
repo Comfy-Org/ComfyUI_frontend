@@ -41,6 +41,7 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 The project uses **Nx** for build orchestration and task management.
 
 ### Structure
+
 - **Apps:**
   - `apps/desktop-ui/` - Desktop application (Electron)
   - `apps/website/` - Marketing/documentation website
@@ -60,6 +61,7 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 ## Build, Test, and Development Commands
 
 ### Development
+
 - `pnpm dev`: Start Vite dev server
 - `pnpm dev:cloud`: Dev server connected to cloud backend (testcloud.comfy.org)
 - `pnpm dev:electron`: Dev server with Electron API mocks
@@ -67,6 +69,7 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 - `pnpm dev:no-vue`: Dev server with Vue plugins disabled
 
 ### Build
+
 - `pnpm build`: Type-check then production build to `dist/`
 - `pnpm build:cloud`: Production build with cloud distribution
 - `pnpm build:desktop`: Build desktop UI variant
@@ -75,11 +78,13 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 - `pnpm preview`: Preview the production build locally
 
 ### Testing
+
 - `pnpm test:unit`: Run Vitest unit tests
 - `pnpm test:browser:local`: Run Playwright E2E tests (`browser_tests/`)
 - `pnpm test:coverage`: Run unit tests with coverage report
 
 ### Code Quality
+
 - `pnpm lint` / `pnpm lint:fix`: Lint (ESLint + oxlint)
 - `pnpm lint:desktop`: Lint desktop app
 - `pnpm format` / `pnpm format:check`: oxfmt
@@ -89,15 +94,18 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 - `pnpm knip`: Check for unused exports and dependencies
 
 ### Storybook
+
 - `pnpm storybook`: Start Storybook development server
 - `pnpm storybook:desktop`: Start Storybook for desktop UI
 - `pnpm build-storybook`: Build static Storybook
 
 ### Internationalization
+
 - `pnpm collect-i18n`: Collect i18n strings using Playwright
 - `pnpm locale`: Lobe i18n CLI command
 
 ### Analysis & Utilities
+
 - `pnpm size:collect` / `pnpm size:report`: Bundle size analysis
 - `pnpm json-schema`: Generate JSON schema from TypeScript types
 - `pnpm zipdist`: Create distribution zip file
