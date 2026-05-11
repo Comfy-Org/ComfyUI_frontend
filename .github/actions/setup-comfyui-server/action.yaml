@@ -52,4 +52,11 @@ runs:
       working-directory: ComfyUI
       run: |
         python main.py --cpu --multi-user --front-end-root ../dist ${{ inputs.extra_server_params }} &
-        wait-for-it --service 127.0.0.1:8188 -t 600
+        if command -v wait-for-it &> /dev/null; then
+          wait-for-it --service 127.0.0.1:8188 -t 600
+        else
+          for i in $(seq 1 60); do
+            curl -s http://127.0.0.1:8188 > /dev/null && break
+            sleep 10
+          done
+        fi
