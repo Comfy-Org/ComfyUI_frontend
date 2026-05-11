@@ -2682,8 +2682,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       !pointer.onDrag &&
       this.allow_dragcanvas
     ) {
-      // allow dragging canvas based on leftMouseClickBehavior or read-only mode
-      if (LiteGraph.leftMouseClickBehavior === 'panning' || this.read_only) {
+      /**
+       * Always pan for single-finger touch — selection-by-drag is a desktop
+       * idiom that does not translate to mobile, where the natural gesture
+       * for moving the viewport is dragging with one finger.
+       */
+      const isTouch = e.pointerType === 'touch'
+      if (
+        LiteGraph.leftMouseClickBehavior === 'panning' ||
+        this.read_only ||
+        isTouch
+      ) {
         pointer.onClick = () => this.processSelect(null, e)
         pointer.finally = () => (this.dragging_canvas = false)
         this.dragging_canvas = true
