@@ -173,6 +173,83 @@ jobs:
           path: ./playwright-report/
           retention-days: 30
 
+  playwright-tests-windows-chromium:
+    timeout-minutes: 45
+    needs: setup
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Download built frontend
+        uses: actions/download-artifact@v7
+        with:
+          name: frontend-dist
+          path: dist/
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Setup ComfyUI server
+        uses: ./.github/actions/setup-comfyui-server
+        with:
+          launch_server: 'true'
+
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
+      - name: Run Playwright tests (chromium on Windows)
+        id: playwright
+        shell: bash
+        run: pnpm exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --reporter=blob
+        env:
+          PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+
+      - name: Upload blob report
+        uses: actions/upload-artifact@v6
+        if: ${{ !cancelled() }}
+        with:
+          name: blob-report-windows-chromium-${{ matrix.shardIndex }}
+          path: blob-report/
+          retention-days: 1
+
+  merge-windows-reports:
+    needs: [changes, playwright-tests-windows-chromium]
+    runs-on: ubuntu-latest
+    if: ${{ !cancelled() && needs.changes.outputs.should-run == 'true' }}
+    steps:
+      - name: Install pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          version: 10
+
+      - name: Download blob reports
+        uses: actions/download-artifact@v7
+        with:
+          path: ./all-blob-reports
+          pattern: blob-report-windows-chromium-*
+          merge-multiple: true
+
+      - name: Merge into HTML Report
+        run: |
+          pnpm dlx @playwright/test merge-reports --reporter=html ./all-blob-reports
+          PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
+          pnpm dlx @playwright/test merge-reports --reporter=json ./all-blob-reports
+
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report-windows-chromium
+          path: ./playwright-report/
+          retention-days: 30
+
   # Merge sharded test reports (no container needed - only runs CLI)
   merge-reports:
     needs: [changes, playwright-tests-chromium-sharded]
@@ -211,7 +288,7 @@ jobs:
   # expanded check names so PRs with no e2e-relevant changes aren't stuck.
   e2e-status:
     if: ${{ always() }}
-    needs: [changes, playwright-tests-chromium-sharded, playwright-tests]
+    needs: [changes, playwright-tests-chromium-sharded, playwright-tests, playwright-tests-windows-chromium]
     runs-on: ubuntu-latest
     steps:
       - name: Check E2E results
@@ -219,9 +296,10 @@ jobs:
           SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
           SHARDED: ${{ needs.playwright-tests-chromium-sharded.result }}
           BROWSERS: ${{ needs.playwright-tests.result }}
+          WINDOWS_CHROMIUM: ${{ needs.playwright-tests-windows-chromium.result }}
         run: |
           [[ "$SHOULD_RUN" != "true" ]] && echo "E2E skipped" && exit 0
-          [[ "$SHARDED" != "success" || "$BROWSERS" != "success" ]] && echo "E2E failed" && exit 1
+          [[ "$SHARDED" != "success" || "$BROWSERS" != "success" || "$WINDOWS_CHROMIUM" != "success" ]] && echo "E2E failed" && exit 1
           echo "E2E passed"
 
   #### BEGIN Deployment and commenting (non-forked PRs only)
@@ -256,7 +334,7 @@ jobs:
 
   # Deploy and comment for non-forked PRs only
   deploy-and-comment:
-    needs: [changes, playwright-tests, merge-reports]
+    needs: [changes, playwright-tests, merge-reports, merge-windows-reports]
     runs-on: ubuntu-latest
     if: >-
       ${{
