@@ -4,7 +4,7 @@ name: 'CI: Tests E2E Windows'
 on:
   workflow_dispatch:
   pull_request:
-    types: [labeled, synchronize, reopened]
+    types: [opened, labeled, synchronize, reopened]
     branches-ignore: [wip/*, draft/*, temp/*]
 
 concurrency:
