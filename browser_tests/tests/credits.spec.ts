@@ -70,6 +70,10 @@ function createCreditsTest(
           comfyPage.page.getByTestId(TestIds.user.currentUserButton)
         ).toBeVisible()
         await dismissSubscriptionDialogIfOpen(comfyPage.page)
+        // The subscription bootstrap can surface a transient error toast
+        // top-right that overlaps the popover region and intercepts clicks on
+        // `add-credits-button`. Clear any queued toasts before yielding.
+        await comfyPage.toast.closeToasts()
         await use(helper)
         await helper.clearMocks()
       },
