@@ -1,0 +1,9 @@
+src/
+scripts/
+tsconfig*.json
+typedoc.json
+docs-build/
+*.test.ts
+*.spec.ts
+__tests__/
+node_modules/

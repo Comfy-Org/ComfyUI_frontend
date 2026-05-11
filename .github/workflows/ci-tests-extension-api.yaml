@@ -1,0 +1,88 @@
+# Description: Extension API test suite (I-TF) + compat-floor gate (I-TF.7)
+#
+# Runs on any PR touching extension-api declaration files, extension-api-v2
+# implementation/tests, or the touch-point DB/rollup (blast-radius changes).
+#
+# Two jobs:
+#   test          — vitest run against src/extension-api-v2/__tests__/
+#   compat-floor  — python scripts/check-compat-floor.py (exits 1 if any
+#                   blast_radius ≥ 2.0 category is missing a stub triple)
+#
+# The compat-floor job is the CI enforcement of PLAN.md §Compat-floor:
+#   "Every blast_radius ≥ 2.0 pattern MUST pass v1 + v2 + migration before v2 ships."
+name: 'CI: Tests Extension API'
+
+on:
+  push:
+    branches: [main, master, dev*, core/*, extension-v2*]
+    paths:
+      - 'src/extension-api/**'
+      - 'src/extension-api-v2/**'
+      - 'packages/extension-api/**'
+      - 'vitest.extension-api.config.mts'
+      - 'research/touch-points/rollup.yaml'
+      - 'research/touch-points/behavior-categories.yaml'
+      - 'scripts/check-compat-floor.py'
+      - 'pnpm-lock.yaml'
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+    paths:
+      - 'src/extension-api/**'
+      - 'src/extension-api-v2/**'
+      - 'packages/extension-api/**'
+      - 'vitest.extension-api.config.mts'
+      - 'research/touch-points/rollup.yaml'
+      - 'research/touch-points/behavior-categories.yaml'
+      - 'scripts/check-compat-floor.py'
+      - 'pnpm-lock.yaml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Extension API tests (vitest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Run extension-api test suite
+        run: pnpm test:extension-api
+
+      - name: Run with coverage (push only)
+        if: github.event_name == 'push'
+        run: pnpm test:extension-api:coverage
+
+      - name: Upload coverage to Codecov
+        if: github.event_name == 'push'
+        uses: codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad # v5.5.3
+        with:
+          files: coverage/lcov.info
+          flags: extension-api
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+  compat-floor:
+    name: Compat-floor gate (blast_radius ≥ 2.0)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.11'
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Check compat floor
+        run: python3 scripts/check-compat-floor.py
+        # Exits 1 if any blast_radius ≥ 2.0 behavior category is missing
+        # any of its three stub files (v1/v2/migration). Enforces PLAN.md §Compat-floor.

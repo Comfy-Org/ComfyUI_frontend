@@ -1,0 +1,28 @@
+{
+  "name": "@comfyorg/extension-api",
+  "version": "0.1.0",
+  "description": "Official TypeScript extension API for ComfyUI custom nodes",
+  "type": "module",
+  "exports": {
+    ".": "./build/index.js"
+  },
+  "types": "./build/index.d.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --emitDeclarationOnly --outDir build",
+    "docs:build": "tsx scripts/build-docs.ts",
+    "docs:watch": "tsx scripts/build-docs.ts --watch"
+  },
+  "devDependencies": {
+    "tsx": "catalog:",
+    "typedoc": "0.28.19",
+    "typedoc-plugin-markdown": "^4.6.3",
+    "typescript": "catalog:"
+  },
+  "nx": {
+    "tags": [
+      "scope:shared",
+      "type:api"
+    ]
+  }
+}

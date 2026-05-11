@@ -1,0 +1,97 @@
+# Description: Publish @comfyorg/extension-api to npm with provenance attestation.
+#
+# Triggered by a tag push matching 'extension-api-v*' (e.g. extension-api-v0.1.0).
+# Also supports workflow_dispatch for a manual dry-run (set dry_run: true).
+#
+# Prerequisites (one-time human setup):
+#   - NPM_TOKEN secret must be set in the repo/org settings with publish
+#     access to the @comfyorg scope on npmjs.com.
+#   - The @comfyorg npm scope already exists (used by @comfyorg/comfyui-frontend).
+#
+# PKG4.D4 (MIG1 / Phase A — surface-only shim)
+name: 'Extension API: Publish'
+
+on:
+  push:
+    tags:
+      - 'extension-api-v*'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run — build and verify without publishing'
+        required: false
+        default: 'true'
+        type: boolean
+
+permissions:
+  contents: write   # needed to create GitHub Release
+  id-token: write   # needed for npm provenance via OIDC
+
+jobs:
+  publish:
+    name: Publish @comfyorg/extension-api
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # full history for release notes
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Setup npm registry
+        uses: actions/setup-node@v4
+        with:
+          registry-url: 'https://registry.npmjs.org/'
+
+      - name: Build package
+        run: pnpm --filter @comfyorg/extension-api build
+
+      - name: Typecheck package
+        run: pnpm --filter @comfyorg/extension-api typecheck
+
+      - name: Verify package version matches tag
+        if: github.event_name == 'push'
+        run: |
+          TAG="${GITHUB_REF_NAME}"                           # e.g. extension-api-v0.1.0
+          PKG_VERSION=$(node -p "require('./packages/extension-api/package.json').version")
+          TAG_VERSION="${TAG#extension-api-v}"               # strip prefix → 0.1.0
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Tag '$TAG' implies version '$TAG_VERSION' but packages/extension-api/package.json has '$PKG_VERSION'. Update the package.json before tagging."
+            exit 1
+          fi
+          echo "Version check passed: $PKG_VERSION"
+
+      - name: Publish to npm (with provenance)
+        if: github.event_name == 'push' || inputs.dry_run == 'false'
+        run: |
+          cd packages/extension-api
+          npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Dry-run report
+        if: inputs.dry_run == 'true'
+        run: |
+          echo "=== DRY RUN — would publish ==="
+          cd packages/extension-api
+          npm pack --dry-run
+          echo "=== End dry run ==="
+
+      - name: Create GitHub Release
+        if: github.event_name == 'push'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = context.ref.replace('refs/tags/', '')
+            const { data: release } = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tag,
+              name: tag,
+              generate_release_notes: true,
+              draft: false,
+              prerelease: context.ref.includes('-alpha') || context.ref.includes('-beta') || context.ref.includes('-rc')
+            })
+            console.log(`Release created: ${release.html_url}`)
