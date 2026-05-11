@@ -4,21 +4,21 @@ import { isReservedUserMetadataKey } from './assetUserMetadataReservedKeys'
 
 export type UserMetadataPrimitiveType = 'string' | 'number' | 'boolean'
 
-export type ParsedCustomPrimitiveRow = {
+type ParsedCustomPrimitiveRow = {
   kind: 'customPrimitive'
   key: string
   primitiveType: UserMetadataPrimitiveType
   value: string | number | boolean
 }
 
-export type ParsedSystemReadOnlyRow = {
+type ParsedSystemReadOnlyRow = {
   kind: 'systemReadOnly'
   key: string
   primitiveType: UserMetadataPrimitiveType
   value: string | number | boolean
 }
 
-export type ParsedUnsupportedRow = {
+type ParsedUnsupportedRow = {
   kind: 'unsupported'
   key: string
   preview: string
