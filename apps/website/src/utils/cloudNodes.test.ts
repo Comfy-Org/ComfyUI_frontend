@@ -279,6 +279,23 @@ describe('fetchCloudNodesForBuild', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1)
   })
 
+  it('throws when called twice with materially different options', async () => {
+    const fetchImpl = vi.fn(async () => response({ ImpactNode: validNode() }))
+    await fetchCloudNodesForBuild({
+      apiKey: KEY,
+      baseUrl: BASE_URL,
+      fetchImpl: fetchImpl as typeof fetch
+    })
+
+    expect(() =>
+      fetchCloudNodesForBuild({
+        apiKey: 'different-key',
+        baseUrl: BASE_URL,
+        fetchImpl: fetchImpl as typeof fetch
+      })
+    ).toThrow(/called twice with different options/)
+  })
+
   it('returns fresh even when registry enrichment fails', async () => {
     fetchRegistryPacksMock.mockResolvedValue(new Map())
     const fetchImpl = vi.fn(async () => response({ ImpactNode: validNode() }))

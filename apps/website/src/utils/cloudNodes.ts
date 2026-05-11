@@ -44,15 +44,38 @@ interface FetchCloudNodesOptions {
 }
 
 let inflight: Promise<FetchOutcome> | undefined
+let inflightOptions: FetchCloudNodesOptions | undefined
 
 export function resetCloudNodesFetcherForTests(): void {
   inflight = undefined
+  inflightOptions = undefined
+}
+
+function optionsDifferMaterially(
+  a: FetchCloudNodesOptions,
+  b: FetchCloudNodesOptions
+): boolean {
+  return (
+    a.apiKey !== b.apiKey ||
+    a.baseUrl !== b.baseUrl ||
+    a.timeoutMs !== b.timeoutMs ||
+    a.snapshotUrl?.href !== b.snapshotUrl?.href
+  )
 }
 
 export function fetchCloudNodesForBuild(
   options: FetchCloudNodesOptions = {}
 ): Promise<FetchOutcome> {
-  inflight ??= doFetchCloudNodesForBuild(options)
+  if (inflight && inflightOptions) {
+    if (optionsDifferMaterially(inflightOptions, options)) {
+      throw new Error(
+        'fetchCloudNodesForBuild called twice with different options; call resetCloudNodesFetcherForTests() between distinct configurations'
+      )
+    }
+    return inflight
+  }
+  inflightOptions = options
+  inflight = doFetchCloudNodesForBuild(options)
   return inflight
 }
 

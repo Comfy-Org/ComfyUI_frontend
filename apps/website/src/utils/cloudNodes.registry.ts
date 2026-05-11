@@ -67,6 +67,7 @@ export async function fetchRegistryPacks(
   const batches = chunk(uniquePackIds, BATCH_SIZE)
   const resolved = new Map<string, RegistryPack | null>()
   let successCount = 0
+  let failureCount = 0
 
   for (const batch of batches) {
     const nodes = await fetchBatchWithRetry(
@@ -76,6 +77,7 @@ export async function fetchRegistryPacks(
       timeoutMs
     )
     if (!nodes) {
+      failureCount += 1
       for (const packId of batch) {
         resolved.set(packId, null)
       }
@@ -92,6 +94,12 @@ export async function fetchRegistryPacks(
     for (const packId of batch) {
       resolved.set(packId, nodesById.get(packId) ?? null)
     }
+  }
+
+  if (failureCount > 0) {
+    console.warn(
+      `[cloud-nodes] registry enrichment: ${successCount}/${batches.length} batches succeeded, ${failureCount} failed`
+    )
   }
 
   if (successCount === 0) {
