@@ -55,6 +55,13 @@ export function defaultFileFor(filename: string): MockAssetFile {
     }
   }
 
+  if (normalized.endsWith('.jpg') || normalized.endsWith('.jpeg')) {
+    return {
+      filePath: getFixturePath('example.jpg'),
+      contentType: 'image/jpeg'
+    }
+  }
+
   if (normalized.endsWith('.webm')) {
     return {
       filePath: getFixturePath('workflowInMedia/workflow.webm'),

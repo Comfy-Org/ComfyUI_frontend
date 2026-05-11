@@ -22,6 +22,9 @@ const inputFilesRoutePattern = /\/internal\/files\/input(?:\?.*)?$/
 const viewRoutePattern = /\/api\/view(?:\?.*)?$/
 const DEFAULT_FIXTURE_CREATE_TIME = Date.UTC(2024, 0, 1, 0, 0, 0)
 
+type InputFilesResponse = string[]
+type ViewErrorResponse = { error: string }
+
 type MockPreviewOutput = NonNullable<JobEntry['preview_output']> & {
   filename?: string
   subfolder?: string
@@ -214,10 +217,14 @@ export class AssetScenarioHelper {
     }
 
     this.inputFilesRouteHandler = async (route: Route) => {
+      const response = this.importedFiles.map(
+        (asset) => asset.name
+      ) satisfies InputFilesResponse
+
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(this.importedFiles.map((asset) => asset.name))
+        body: JSON.stringify(response)
       })
     }
 
@@ -236,10 +243,14 @@ export class AssetScenarioHelper {
       const subfolder = url.searchParams.get('subfolder') ?? ''
 
       if (!filename) {
+        const response = {
+          error: 'Missing filename'
+        } satisfies ViewErrorResponse
+
         await route.fulfill({
           status: 400,
           contentType: 'application/json',
-          body: JSON.stringify({ error: 'Missing filename' })
+          body: JSON.stringify(response)
         })
         return
       }
