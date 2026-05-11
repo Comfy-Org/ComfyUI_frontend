@@ -102,6 +102,7 @@ class Load3d {
 
   private disposeContextMenuGuard: (() => void) | null = null
   private resizeObserver: ResizeObserver | null = null
+  private getZoomScaleCallback: (() => number) | undefined
 
   constructor(
     container: Element | HTMLElement,
@@ -112,6 +113,7 @@ class Load3d {
     this.isViewerMode = options.isViewerMode || false
     this.onContextMenuCallback = options.onContextMenu
     this.getDimensionsCallback = options.getDimensions
+    this.getZoomScaleCallback = options.getZoomScale
 
     if (options.width && options.height) {
       this.targetWidth = options.width
@@ -630,6 +632,10 @@ class Load3d {
     this.eventManager.removeEventListener(event, callback)
   }
 
+  emitModelReady(): void {
+    this.eventManager.emitEvent('modelReady', null)
+  }
+
   refreshViewport(): void {
     this.handleResize()
   }
@@ -644,6 +650,11 @@ class Load3d {
 
     const containerWidth = parentElement.clientWidth
     const containerHeight = parentElement.clientHeight
+
+    // Scale pixel density to match the graph zoom level so the 3D scene
+    // renders at the correct resolution when the canvas is zoomed in or out.
+    const zoomScale = this.getZoomScaleCallback?.() ?? 1
+    this.renderer.setPixelRatio(Math.min(zoomScale, 3))
 
     if (this.getDimensionsCallback) {
       const dims = this.getDimensionsCallback()
@@ -805,6 +816,8 @@ class Load3d {
       }
       this.cameraManager.setCameraState(savedState)
       this.controlsManager.controls?.update()
+
+      this.forceRender()
     }
   }
 
