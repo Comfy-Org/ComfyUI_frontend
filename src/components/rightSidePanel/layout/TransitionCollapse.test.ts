@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 
@@ -100,5 +100,22 @@ describe('TransitionCollapse', () => {
     await nextTick()
 
     expect(animateMock).not.toHaveBeenCalled()
+  })
+
+  it('skips web animations on leave when animations are disabled', async () => {
+    const { rerender } = renderHost(true)
+
+    await nextTick()
+    await rerender({ shown: true })
+    await nextTick()
+
+    expect(screen.getByText('Panel content')).toBeInTheDocument()
+
+    animateMock.mockClear()
+    await rerender({ shown: false })
+    await nextTick()
+
+    expect(animateMock).not.toHaveBeenCalled()
+    expect(screen.queryByText('Panel content')).not.toBeInTheDocument()
   })
 })
