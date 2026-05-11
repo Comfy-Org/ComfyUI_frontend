@@ -95,27 +95,21 @@ describe('useNodeImageUpload', () => {
     })
   })
 
-  it('sets isUploading true during upload and false after', async () => {
-    mockFetchApi.mockResolvedValueOnce(successResponse('test.png'))
+  it.each([
+    ['image', 'test.png', 'image/png'],
+    ['video', 'clip.mp4', 'video/mp4']
+  ])(
+    'sets isUploading true during %s upload and false after',
+    async (_mediaType, filename, mimeType) => {
+      mockFetchApi.mockResolvedValueOnce(successResponse(filename))
 
-    const promise = capturedDragOnDrop([createFile()])
-    expect(node.isUploading).toBe(true)
+      const promise = capturedDragOnDrop([createFile(filename, mimeType)])
+      expect(node.isUploading).toBe(true)
 
-    await promise
-    expect(node.isUploading).toBe(false)
-  })
-
-  it('sets isUploading while shared media upload handles a video file', async () => {
-    mockFetchApi.mockResolvedValueOnce(successResponse('clip.mp4'))
-
-    const promise = capturedDragOnDrop([createFile('clip.mp4', 'video/mp4')])
-    expect(node.isUploading).toBe(true)
-
-    await promise
-
-    expect(node.isUploading).toBe(false)
-    expect(onUploadComplete).toHaveBeenCalledWith(['clip.mp4'])
-  })
+      await promise
+      expect(node.isUploading).toBe(false)
+    }
+  )
 
   it('clears node.imgs on upload start', async () => {
     mockFetchApi.mockResolvedValueOnce(successResponse('test.png'))

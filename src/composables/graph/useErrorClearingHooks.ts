@@ -325,6 +325,9 @@ function scanAddedNode(
 function scheduleAddedNodeScan(node: LGraphNode): void {
   queueMicrotask(() => {
     scanAddedNode(node, scanSingleNodeModelsAndTypes)
+    // Paste/drop upload handlers run immediately after graph.add and must set
+    // node.isUploading synchronously before their first await. This second
+    // microtask lets that upload state settle before media widgets are scanned.
     queueMicrotask(() => scanAddedNode(node, scanSingleNodeMedia))
   })
 }
