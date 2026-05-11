@@ -83,6 +83,7 @@ function makeInstance() {
   // and ViewHelper, none of which are available in happy-dom. Skip it and
   // inject stubs directly onto the prototype instance so delegation methods
   // can be exercised in isolation.
+  const eventManager = { emitEvent: vi.fn() }
   const load3d = Object.create(Load3d.prototype) as Load3d
   Object.assign(load3d, {
     gizmoManager: gizmo,
@@ -92,6 +93,7 @@ function makeInstance() {
     controlsManager,
     viewHelperManager,
     animationManager,
+    eventManager,
     adapterRef: { current: null },
     forceRender: vi.fn(),
     handleResize: vi.fn()
@@ -106,6 +108,7 @@ function makeInstance() {
     controlsManager,
     viewHelperManager,
     animationManager,
+    eventManager,
     forceRender: load3d.forceRender as ReturnType<typeof vi.fn>
   }
 }
@@ -280,7 +283,7 @@ describe('Load3d', () => {
       const sceneResize = vi.fn()
 
       Object.assign(ctx.load3d, {
-        renderer: { domElement: canvas, setSize },
+        renderer: { domElement: canvas, setSize, setPixelRatio: vi.fn() },
         targetWidth: 400,
         targetHeight: 200,
         targetAspectRatio: 2,
@@ -382,6 +385,70 @@ describe('Load3d', () => {
       const args = updateBackgroundSize.mock.calls[0]
       expect(args[2]).toBe(800)
       expect(args[3]).toBe(400)
+    })
+
+    it('handleResize calls setPixelRatio with the value returned by getZoomScaleCallback', () => {
+      delete (ctx.load3d as { handleResize?: unknown }).handleResize
+
+      const parent = document.createElement('div')
+      Object.defineProperty(parent, 'clientWidth', {
+        value: 400,
+        configurable: true
+      })
+      Object.defineProperty(parent, 'clientHeight', {
+        value: 400,
+        configurable: true
+      })
+      const canvas = document.createElement('canvas')
+      parent.appendChild(canvas)
+
+      const setPixelRatio = vi.fn()
+
+      Object.assign(ctx.load3d, {
+        renderer: { domElement: canvas, setSize: vi.fn(), setPixelRatio },
+        getZoomScaleCallback: () => 2.5,
+        targetWidth: 0,
+        targetHeight: 0,
+        isViewerMode: false,
+        cameraManager: { ...ctx.cameraManager, handleResize: vi.fn() },
+        sceneManager: { ...ctx.sceneManager, handleResize: vi.fn() }
+      })
+
+      ctx.load3d.handleResize()
+
+      expect(setPixelRatio).toHaveBeenCalledWith(2.5)
+    })
+
+    it('handleResize defaults to pixelRatio 1 when no getZoomScaleCallback is provided', () => {
+      delete (ctx.load3d as { handleResize?: unknown }).handleResize
+
+      const parent = document.createElement('div')
+      Object.defineProperty(parent, 'clientWidth', {
+        value: 400,
+        configurable: true
+      })
+      Object.defineProperty(parent, 'clientHeight', {
+        value: 400,
+        configurable: true
+      })
+      const canvas = document.createElement('canvas')
+      parent.appendChild(canvas)
+
+      const setPixelRatio = vi.fn()
+
+      Object.assign(ctx.load3d, {
+        renderer: { domElement: canvas, setSize: vi.fn(), setPixelRatio },
+        getZoomScaleCallback: undefined,
+        targetWidth: 0,
+        targetHeight: 0,
+        isViewerMode: false,
+        cameraManager: { ...ctx.cameraManager, handleResize: vi.fn() },
+        sceneManager: { ...ctx.sceneManager, handleResize: vi.fn() }
+      })
+
+      ctx.load3d.handleResize()
+
+      expect(setPixelRatio).toHaveBeenCalledWith(1)
     })
   })
 
@@ -698,6 +765,88 @@ describe('Load3d', () => {
 
       expect(ctx.gizmo.removeFromScene).toHaveBeenCalledOnce()
       expect(ctx.gizmo.ensureHelperInScene).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('emitModelReady', () => {
+    it('emits a modelReady event on the eventManager', () => {
+      ctx.load3d.emitModelReady()
+      expect(ctx.eventManager.emitEvent).toHaveBeenCalledWith(
+        'modelReady',
+        null
+      )
+    })
+  })
+
+  describe('captureThumbnail', () => {
+    function setupForCapture() {
+      const cameraStub = {
+        toggleCamera: vi.fn(),
+        getCurrentCameraType: vi.fn().mockReturnValue('perspective'),
+        getCameraState: vi.fn().mockReturnValue({
+          position: { x: 1, y: 2, z: 3 },
+          target: { x: 0, y: 0, z: 0 },
+          zoom: 1,
+          cameraType: 'perspective'
+        }),
+        setCameraState: vi.fn(),
+        perspectiveCamera: new THREE.PerspectiveCamera()
+      }
+      const controlsStub = {
+        controls: { target: { copy: vi.fn() }, update: vi.fn() }
+      }
+      const sceneCaptureMock = vi.fn().mockResolvedValue({
+        scene: 'data:image/png;base64,scene',
+        mask: 'm',
+        normal: 'n'
+      })
+      const modelGroup = new THREE.Group()
+      modelGroup.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1)))
+      Object.assign(ctx.load3d, {
+        cameraManager: cameraStub,
+        controlsManager: controlsStub,
+        sceneManager: {
+          ...ctx.sceneManager,
+          gridHelper: { visible: true },
+          captureScene: sceneCaptureMock
+        },
+        modelManager: {
+          ...ctx.modelManager,
+          currentModel: modelGroup
+        }
+      })
+      return { cameraStub, sceneCaptureMock }
+    }
+
+    it('throws when no model is loaded', async () => {
+      Object.assign(ctx.load3d, {
+        modelManager: { ...ctx.modelManager, currentModel: null }
+      })
+
+      await expect(ctx.load3d.captureThumbnail()).rejects.toThrow(
+        'No model loaded for thumbnail capture'
+      )
+    })
+
+    it('forces a render after restoring camera state so the visible canvas reflects the live scene, not the offscreen capture', async () => {
+      const { cameraStub } = setupForCapture()
+
+      const result = await ctx.load3d.captureThumbnail(64, 64)
+
+      expect(result).toBe('data:image/png;base64,scene')
+      expect(cameraStub.setCameraState).toHaveBeenCalled()
+      // forceRender must be called AFTER the live state has been restored.
+      const setCameraOrder = cameraStub.setCameraState.mock.invocationCallOrder
+      const forceRenderOrder = ctx.forceRender.mock.invocationCallOrder
+      expect(forceRenderOrder.at(-1)).toBeGreaterThan(setCameraOrder.at(-1)!)
+    })
+
+    it('still forces a render in finally when captureScene rejects', async () => {
+      const { sceneCaptureMock } = setupForCapture()
+      sceneCaptureMock.mockRejectedValueOnce(new Error('boom'))
+
+      await expect(ctx.load3d.captureThumbnail(64, 64)).rejects.toThrow('boom')
+      expect(ctx.forceRender).toHaveBeenCalled()
     })
   })
 })
