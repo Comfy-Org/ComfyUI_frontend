@@ -12,7 +12,7 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 import {
   getClipboardText,
   interceptClipboardWrite
-} from '@e2e/helpers/clipboardSpy'
+} from '@e2e/fixtures/utils/clipboardSpy'
 
 const test = mergeTests(comfyPageFixture, logsTerminalFixture, webSocketFixture)
 

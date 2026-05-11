@@ -24,6 +24,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "batch_size": {
+        "name": "اندازه بچ"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "start_image": {
+        "name": "تصویر اولیه"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "AddNoise",
     "inputs": {
@@ -1655,6 +1689,10 @@
       },
       "1": {
         "tooltip": null
+      },
+      "2": {
+        "name": "بولین",
+        "tooltip": null
       }
     }
   },
@@ -1968,6 +2006,10 @@
     "description": "تنظیم دستی پنجره‌های زمینه.",
     "display_name": "پنجره‌های زمینه (دستی)",
     "inputs": {
+      "causal_window_fix": {
+        "name": "causal_window_fix",
+        "tooltip": "آیا یک فریم اصلاح علّی به پنجره‌های زمینه‌ای که با شاخص ۰ شروع نمی‌شوند اضافه شود یا خیر."
+      },
       "closed_loop": {
         "name": "حلقه بسته",
         "tooltip": "آیا حلقه پنجره زمینه بسته شود؛ فقط برای برنامه‌ریزی حلقه‌ای قابل استفاده است."
@@ -2928,6 +2970,28 @@
     "outputs": {
       "0": {
         "name": "voice",
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyARVideoLatent": {
+    "display_name": "EmptyARVideoLatent",
+    "inputs": {
+      "batch_size": {
+        "name": "اندازه دسته"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -4145,6 +4209,54 @@
       }
     }
   },
+  "GeminiNanoBanana2V2": {
+    "description": "تولید یا ویرایش تصاویر به صورت همزمان از طریق Google Vertex API.",
+    "display_name": "نانو بنانا ۲",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "model_thinking_level": {
+        "name": "سطح تفکر مدل"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "متن پرامپت برای توصیف تصویری که باید تولید شود یا ویرایش‌هایی که باید اعمال شوند. هرگونه محدودیت، سبک یا جزئیاتی که مدل باید رعایت کند را وارد کنید."
+      },
+      "response_modalities": {
+        "name": "حالت‌های پاسخ"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "وقتی مقدار بذر روی یک عدد خاص تنظیم شود، مدل تلاش می‌کند تا برای درخواست‌های تکراری، پاسخ مشابهی ارائه دهد. خروجی قطعی تضمین نمی‌شود. همچنین تغییر مدل یا تنظیمات پارامترها مانند دما می‌تواند حتی با همان مقدار بذر، باعث تغییر در پاسخ شود. به طور پیش‌فرض، مقدار بذر به صورت تصادفی انتخاب می‌شود."
+      },
+      "system_prompt": {
+        "name": "پرامپت سیستمی",
+        "tooltip": "دستورالعمل‌های پایه‌ای که رفتار هوش مصنوعی را تعیین می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "تصویر تفکر",
+        "tooltip": "اولین تصویر از فرایند تفکر مدل. فقط در صورت انتخاب سطح تفکر HIGH و حالت پاسخ IMAGE+TEXT در دسترس است."
+      }
+    }
+  },
   "GeminiNode": {
     "description": "تولید پاسخ متنی با مدل هوش مصنوعی Gemini گوگل. می‌توانید انواع مختلفی از ورودی‌ها (متن، تصویر، صوت، ویدئو) را به عنوان زمینه برای تولید پاسخ‌های مرتبط‌تر و معنادارتر ارائه دهید.",
     "display_name": "Google Gemini",
@@ -4526,6 +4638,156 @@
       },
       "tapered_corners": {
         "name": "گوشه‌های نرم"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseImageToVideoApi": {
+    "description": "تولید ویدیو از یک تصویر فریم اول با استفاده از مدل HappyHorse.",
+    "display_name": "HappyHorse تبدیل تصویر به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "first_frame": {
+        "name": "فریم اول",
+        "tooltip": "تصویر فریم اول. نسبت ابعاد خروجی از این تصویر استخراج می‌شود."
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed مورد استفاده برای تولید."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "تولید ویدیو با حضور یک شخص یا شیء از مواد مرجع با مدل HappyHorse. پشتیبانی از اجراهای تک‌نفره و تعامل چندنفره.",
+    "display_name": "HappyHorse تبدیل مرجع به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed مورد استفاده برای تولید."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "تولید ویدیو بر اساس پرامپت متنی با استفاده از مدل HappyHorse.",
+    "display_name": "HappyHorse تبدیل متن به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed مورد استفاده برای تولید."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "ویرایش ویدیو با دستور متنی یا تصاویر مرجع با مدل HappyHorse. مدت زمان خروجی بین ۳ تا ۱۵ ثانیه و مطابق با ویدیوی ورودی است؛ ورودی‌های بیش از ۱۵ ثانیه کوتاه می‌شوند.",
+    "display_name": "HappyHorse ویرایش ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed مورد استفاده برای تولید."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیویی که باید ویرایش شود."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود یا خیر."
       }
     },
     "outputs": {
@@ -7787,6 +8049,21 @@
       }
     }
   },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "بارگذاری مدل حذف پس‌زمینه",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "نام مدل حذف پس‌زمینه",
+        "tooltip": "مدلی که برای حذف پس‌زمینه از تصاویر استفاده می‌شود"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مدل حذف پس‌زمینه",
+        "tooltip": null
+      }
+    }
+  },
   "LoadImage": {
     "display_name": "بارگذاری تصویر",
     "inputs": {
@@ -8177,6 +8454,42 @@
       }
     }
   },
+  "LumaImageEditNode2": {
+    "description": "ویرایش یک تصویر موجود با استفاده از متن راهنما و مدل Luma UNI-1.",
+    "display_name": "ویرایش تصویر Luma UNI-1",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده برای ویرایش."
+      },
+      "model_style": {
+        "name": "سبک"
+      },
+      "model_web_search": {
+        "name": "جستجوی وب"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "توضیح ویرایش مورد نظر. ۱ تا ۶۰۰۰ نویسه."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "source": {
+        "name": "منبع",
+        "tooltip": "تصویر منبع برای ویرایش."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LumaImageModifyNode": {
     "description": "تغییر تصاویر به صورت همزمان بر اساس پرامپت و نسبت تصویر.",
     "display_name": "Luma Image to Image",
@@ -8245,6 +8558,41 @@
       "style_image_weight": {
         "name": "style_image_weight",
         "tooltip": "وزن تصویر سبک. اگر style_image ارائه نشود، نادیده گرفته می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaImageNode2": {
+    "description": "تولید تصویر از متن با استفاده از مدل Luma UNI-1.",
+    "display_name": "تصویر Luma UNI-1",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده برای تولید."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_style": {
+        "name": "سبک"
+      },
+      "model_web_search": {
+        "name": "جستجوی وب"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "توضیح متنی تصویر مورد نظر. ۱ تا ۶۰۰۰ نویسه."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
       }
     },
     "outputs": {
@@ -11339,120 +11687,6 @@
       }
     }
   },
-  "MoonvalleyImg2VideoNode": {
-    "description": "گره تبدیل تصویر به ویدیو Moonvalley Marey",
-    "display_name": "Moonvalley Marey Image to Video",
-    "inputs": {
-      "control_after_generate": {
-        "name": "کنترل پس از تولید"
-      },
-      "image": {
-        "name": "تصویر",
-        "tooltip": "تصویر مرجع برای تولید ویدیو استفاده می‌شود"
-      },
-      "negative_prompt": {
-        "name": "پرامپت منفی",
-        "tooltip": "متن پرامپت منفی"
-      },
-      "prompt": {
-        "name": "پرامپت"
-      },
-      "prompt_adherence": {
-        "name": "پایبندی به پرامپت",
-        "tooltip": "مقیاس راهنمایی برای کنترل تولید"
-      },
-      "resolution": {
-        "name": "وضوح",
-        "tooltip": "وضوح ویدیوی خروجی"
-      },
-      "seed": {
-        "name": "بذر",
-        "tooltip": "مقدار بذر تصادفی"
-      },
-      "steps": {
-        "name": "گام‌ها",
-        "tooltip": "تعداد گام‌های حذف نویز"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "Moonvalley Marey تبدیل متن به ویدیو",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "متن پرامپت منفی"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "prompt_adherence": {
-        "name": "prompt_adherence",
-        "tooltip": "مقیاس راهنمایی برای کنترل تولید"
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "وضوح ویدیوی خروجی"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "مقدار seed تصادفی"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "گام‌های استنتاج"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey تبدیل ویدیو به ویدیو",
-    "inputs": {
-      "control_type": {
-        "name": "control_type"
-      },
-      "motion_intensity": {
-        "name": "motion_intensity",
-        "tooltip": "فقط در صورتی استفاده می‌شود که control_type برابر با 'Motion Transfer' باشد"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "متن پرامپت منفی"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "توضیح ویدیوی مورد نظر برای تولید"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "مقدار seed تصادفی"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "تعداد گام‌های استنتاج"
-      },
-      "video": {
-        "name": "video",
-        "tooltip": "ویدیوی مرجع برای تولید ویدیوی خروجی. باید حداقل ۵ ثانیه باشد. ویدیوهای طولانی‌تر از ۵ ثانیه به‌صورت خودکار کوتاه می‌شوند. فقط فرمت MP4 پشتیبانی می‌شود."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "Morphology": {
     "display_name": "ImageMorphology",
     "inputs": {
@@ -11675,8 +11909,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "description": "تولید تصویر به صورت همزمان از طریق نقطه پایانی GPT Image 1 شرکت OpenAI.",
-    "display_name": "OpenAI GPT Image 1",
+    "description": "تولید تصویر به صورت همزمان از طریق نقطه پایانی GPT Image 2 شرکت OpenAI.",
+    "display_name": "OpenAI GPT Image 2",
     "inputs": {
       "background": {
         "name": "background",
@@ -11684,6 +11918,14 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "فقط زمانی استفاده می‌شود که «اندازه» روی «سفارشی» باشد. باید مضربی از ۱۶ باشد (فقط برای GPT Image 2)."
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "فقط زمانی استفاده می‌شود که «اندازه» روی «سفارشی» باشد. باید مضربی از ۱۶ باشد (فقط برای GPT Image 2)."
       },
       "image": {
         "name": "image",
@@ -11768,6 +12010,20 @@
       },
       "size": {
         "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpticalFlowLoader": {
+    "display_name": "بارگذاری مدل Optical Flow",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "مدل optical flow برای بارگذاری. فایل‌ها باید در پوشه 'optical_flow' قرار گیرند. در حال حاضر فقط raft_large.pth از torchvision پشتیبانی می‌شود."
       }
     },
     "outputs": {
@@ -12376,7 +12632,7 @@
   "PrimitiveInt": {
     "display_name": "عدد صحیح",
     "inputs": {
-      "control_after_generate": {
+      "fixed": {
         "name": "کنترل پس از تولید"
       },
       "value": {
@@ -13254,6 +13510,25 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "RemoveBackground": {
+    "display_name": "حذف پس‌زمینه",
+    "inputs": {
+      "bg_removal_model": {
+        "name": "مدل حذف پس‌زمینه",
+        "tooltip": "مدل حذف پس‌زمینه که برای تولید ماسک استفاده می‌شود"
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویر ورودی برای حذف پس‌زمینه"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ماسک",
+        "tooltip": "ماسک پیش‌زمینه تولید شده"
       }
     }
   },
@@ -14263,6 +14538,20 @@
       },
       "2": {
         "name": "latent"
+      }
+    }
+  },
+  "SamplerARVideo": {
+    "display_name": "نمونه‌بردار ویدئوی AR",
+    "inputs": {
+      "num_frame_per_block": {
+        "name": "تعداد فریم در هر بلوک",
+        "tooltip": "تعداد فریم در هر بلوک خودبازگشتی. ۱ = فریم به فریم، ۳ = به صورت تکه‌ای. باید با حالت آموزش checkpoint مطابقت داشته باشد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -16466,6 +16755,9 @@
   "TextGenerate": {
     "display_name": "تولید متن",
     "inputs": {
+      "audio": {
+        "name": "صدا"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16509,6 +16801,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "در صورت وجود، از پرامپت/قالب سیستمی داخلی مدل استفاده شود."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "فریم‌های ویدیو به صورت دسته‌ای از تصاویر. فرض بر ۲۴ فریم بر ثانیه است؛ به صورت داخلی به ۱ فریم بر ثانیه نمونه‌برداری می‌شود."
       }
     },
     "outputs": {
@@ -16521,6 +16817,9 @@
   "TextGenerateLTX2Prompt": {
     "display_name": "تولید متن LTX2Prompt",
     "inputs": {
+      "audio": {
+        "name": "صدا"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16564,6 +16863,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "در صورت وجود، از پرامپت/قالب سیستمی داخلی مدل استفاده شود."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "فریم‌های ویدیو به صورت دسته‌ای از تصاویر. فرض بر ۲۴ فریم بر ثانیه است؛ به صورت داخلی به ۱ فریم بر ثانیه نمونه‌برداری می‌شود."
       }
     },
     "outputs": {
@@ -16735,6 +17038,45 @@
         "name": "مدل بزرگ‌نمایی"
       },
       "upscaler_resolution": {
+        "name": "وضوح بزرگ‌نمایی"
+      },
+      "video": {
+        "name": "ویدیو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhanceV2": {
+    "description": "با فناوری قدرتمند بزرگ‌نمایی و بازیابی، به ویدیو جان تازه ببخشید.",
+    "display_name": "Topaz Video Enhance",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "سطح فشرده‌سازی پویا",
+        "tooltip": "سطح CQP."
+      },
+      "interpolation_model": {
+        "name": "مدل درون‌یابی"
+      },
+      "upscaler_model": {
+        "name": "مدل بزرگ‌نمایی"
+      },
+      "upscaler_model_creativity": {
+        "name": "خلاقیت"
+      },
+      "upscaler_model_prompt": {
+        "name": "پرامپت"
+      },
+      "upscaler_model_realism": {
+        "name": "واقع‌گرایی"
+      },
+      "upscaler_model_sharp": {
+        "name": "وضوح"
+      },
+      "upscaler_model_upscaler_resolution": {
         "name": "وضوح بزرگ‌نمایی"
       },
       "video": {
@@ -17083,7 +17425,8 @@
         "name": "PBR"
       },
       "quad": {
-        "name": "چهارضلعی"
+        "name": "چهارضلعی",
+        "tooltip": "این پارامتر منسوخ شده است و هیچ تأثیری ندارد."
       },
       "texture": {
         "name": "تکسچر"
@@ -17600,6 +17943,127 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "VOIDInpaintConditioning": {
+    "display_name": "VOIDInpaintConditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "تعداد فریم‌های پیکسلی برای پردازش. برای CogVideoX-Fun-V1.5 (patch_size_t=۲)، latent_t باید زوج باشد — طول‌هایی که latent_t فرد تولید می‌کنند گرد به پایین می‌شوند (مثلاً ۴۹ → ۴۵)."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "quadmask": {
+        "name": "quadmask",
+        "tooltip": "quadmask پیش‌پردازش‌شده از VOIDQuadmaskPreprocess [T, H, W]"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "فریم‌های ویدیوی منبع [T, H, W, ۳]"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDQuadmaskPreprocess": {
+    "display_name": "VOIDQuadmaskPreprocess",
+    "inputs": {
+      "dilate_width": {
+        "name": "dilate_width",
+        "tooltip": "شعاع گسترش برای ناحیه اصلی mask (۰ = بدون گسترش)"
+      },
+      "mask": {
+        "name": "mask"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "quadmask",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDSampler": {
+    "display_name": "VOIDSampler",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDWarpedNoise": {
+    "display_name": "VOIDWarpedNoise",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "تعداد فریم‌های پیکسلی. برای زوج بودن latent_t گرد به پایین می‌شود (نیاز patch_size_t=۲)، مثلاً ۴۹ → ۴۵."
+      },
+      "optical_flow": {
+        "name": "optical_flow",
+        "tooltip": "مدل optical flow از OpticalFlowLoader (RAFT-large)."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "خروجی فریم‌های ویدیو از مرحله ۱ [T, H, W, ۳]"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "warped_noise",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDWarpedNoiseSource": {
+    "display_name": "VOIDWarpedNoiseSource",
+    "inputs": {
+      "warped_noise": {
+        "name": "warped_noise",
+        "tooltip": "latent نویز تغییرشکل‌یافته از VOIDWarpedNoise"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -18927,6 +19391,156 @@
     "outputs": {
       "0": {
         "tooltip": "مدل با پنجره‌های زمینه اعمال‌شده در هنگام نمونه‌گیری."
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_inject_scale": {
+        "name": "audio_inject_scale",
+        "tooltip": "مقیاس ویژگی‌های صوتی هنگام تزریق به مدل ویدیو."
+      },
+      "video_frames": {
+        "name": "video_frames"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio_encoder_output",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps_string",
+        "tooltip": "نرخ فریم بر ثانیه (fps) محاسبه‌شده بر اساس طول صوت و تعداد فریم‌های ویدیو. در prompt استفاده می‌شود."
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "صوت برای محاسبه تعداد کل فریم‌های خروجی و استخراج صوت بخش."
+      },
+      "images": {
+        "name": "images"
+      },
+      "segment_index": {
+        "name": "segment_index",
+        "tooltip": "این بخش کدام است (۰ برای اول، ۱ برای دوم و ...)"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "طول این بخش (معمولاً ۱۴۹ فریم)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "دنباله keyframe با padding"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "ماسک نشان‌دهنده فریم‌های معتبر"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "بخش صوتی برای این بخش ویدیو"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "صوت برای برش هر بخش خروجی."
+      },
+      "images": {
+        "name": "images"
+      },
+      "num_segments": {
+        "name": "num_segments",
+        "tooltip": "تعداد بخش‌های padding که به صورت لیست خروجی داده می‌شود."
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "طول هر بخش (معمولاً ۱۴۹ فریم)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "دنباله‌های keyframe با padding"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "ماسک‌ها برای نشان دادن فریم‌های معتبر"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "بخش صوتی برای هر بخش ویدیو"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "audio_encoder_output": {
+        "name": "خروجی رمزگذار صوتی"
+      },
+      "clip_vision_output": {
+        "name": "خروجی بینایی clip",
+        "tooltip": "بردارهای بینایی CLIP برای اولین فریم."
+      },
+      "clip_vision_output_ref": {
+        "name": "خروجی مرجع بینایی clip",
+        "tooltip": "بردارهای بینایی CLIP برای تصویر مرجع."
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول",
+        "tooltip": "تعداد فریم‌های ویدئوی تولیدشده. برای WanDancer باید ۱۴۹ باقی بماند."
+      },
+      "mask": {
+        "name": "ماسک",
+        "tooltip": "ماسک شرطی‌سازی تصویر برای تصویر(ها)ی شروع. سفید حفظ می‌شود، سیاه تولید می‌شود. برای تولیدات محلی استفاده می‌شود."
+      },
+      "negative": {
+        "name": "منفی"
+      },
+      "positive": {
+        "name": "مثبت"
+      },
+      "start_image": {
+        "name": "تصویر شروع",
+        "tooltip": "تصویر(ها)ی اولیه برای رمزگذاری؛ می‌تواند هر تعداد فریم باشد."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
+        "tooltip": null
+      },
+      "2": {
+        "name": "لاتنت",
+        "tooltip": "لاتنت خالی."
       }
     }
   },

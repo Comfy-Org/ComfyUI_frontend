@@ -1,22 +1,67 @@
 <template>
-  <div class="flex items-center gap-2 px-2 py-1.5">
+  <div class="flex min-w-0 items-center gap-2.5 pl-3">
     <button
-      v-for="chip in chips"
-      :key="chip.key"
       type="button"
-      :aria-pressed="activeChipKey === chip.key"
-      :class="
-        cn(
-          'flex-auto cursor-pointer rounded-md border border-secondary-background px-3 py-1 text-sm transition-colors',
-          activeChipKey === chip.key
-            ? 'text-foreground bg-secondary-background'
-            : 'bg-transparent text-muted-foreground hover:border-base-foreground/60 hover:text-base-foreground/60'
-        )
-      "
-      @click="emit('selectChip', chip)"
+      data-testid="toggle-category-sidebar"
+      aria-controls="node-search-category-sidebar"
+      :aria-expanded="isSidebarOpen"
+      :aria-label="isSidebarOpen ? t('g.hideLeftPanel') : t('g.showLeftPanel')"
+      :class="chipClass(isSidebarOpen)"
+      @click="isSidebarOpen = !isSidebarOpen"
     >
-      {{ chip.label }}
+      <i class="icon-[lucide--panel-left] size-4" />
     </button>
+
+    <div class="h-5 w-px shrink-0 bg-border-subtle" />
+
+    <div
+      data-testid="filter-chips-scroll"
+      class="flex min-w-0 flex-1 items-center gap-2.5 overflow-x-auto pr-3"
+    >
+      <!-- Category filter buttons -->
+      <button
+        v-for="btn in categoryButtons"
+        :key="btn.id"
+        type="button"
+        :data-testid="`search-category-${btn.id}`"
+        :aria-pressed="activeCategory === btn.id"
+        :class="chipClass(activeCategory === btn.id)"
+        @click="emit('selectCategory', btn.id)"
+      >
+        {{ btn.label }}
+      </button>
+
+      <div class="h-5 w-px shrink-0 bg-border-subtle" />
+
+      <!-- Type filter popovers (Input / Output) -->
+      <NodeSearchTypeFilterPopover
+        v-for="tf in typeFilters"
+        :key="tf.chip.key"
+        :chip="tf.chip"
+        :selected-values="tf.values"
+        @toggle="(v) => emit('toggleFilter', tf.chip.filter, v)"
+        @clear="emit('clearFilterGroup', tf.chip.filter.id)"
+        @escape-close="emit('focusSearch')"
+      >
+        <button
+          type="button"
+          :data-testid="`search-filter-${tf.chip.key}`"
+          :class="chipClass(false, tf.values.length > 0)"
+        >
+          <span v-if="tf.values.length > 0" class="flex items-center">
+            <span
+              v-for="val in tf.values.slice(0, MAX_VISIBLE_DOTS)"
+              :key="val"
+              class="-mx-[2px] text-lg leading-none"
+              :style="{ color: getLinkTypeColor(val) }"
+              >&bull;</span
+            >
+          </span>
+          {{ tf.chip.label }}
+          <i class="icon-[lucide--chevron-down] size-3.5" />
+        </button>
+      </NodeSearchTypeFilterPopover>
+    </div>
   </div>
 </template>
 
@@ -35,53 +80,100 @@ export interface FilterChip {
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import NodeSearchTypeFilterPopover from '@/components/searchbox/v2/NodeSearchTypeFilterPopover.vue'
+import { RootCategory } from '@/components/searchbox/v2/rootCategories'
+import type { RootCategoryId } from '@/components/searchbox/v2/rootCategories'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { FuseFilterWithValue } from '@/utils/fuseUtil'
+import { getLinkTypeColor } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { activeChipKey = null } = defineProps<{
-  activeChipKey?: string | null
+const {
+  filters = [],
+  activeCategory = null,
+  hasFavorites = false,
+  hasEssentialNodes = false,
+  hasBlueprintNodes = false,
+  hasPartnerNodes = false,
+  hasCustomNodes = false
+} = defineProps<{
+  filters?: FuseFilterWithValue<ComfyNodeDefImpl, string>[]
+  activeCategory?: string | null
+  hasFavorites?: boolean
+  hasEssentialNodes?: boolean
+  hasBlueprintNodes?: boolean
+  hasPartnerNodes?: boolean
+  hasCustomNodes?: boolean
 }>()
 
+const isSidebarOpen = defineModel<boolean>('isSidebarOpen', { default: true })
+
 const emit = defineEmits<{
-  selectChip: [chip: FilterChip]
+  toggleFilter: [filterDef: FuseFilter<ComfyNodeDefImpl, string>, value: string]
+  clearFilterGroup: [filterId: string]
+  focusSearch: []
+  selectCategory: [category: RootCategoryId]
 }>()
 
 const { t } = useI18n()
 const nodeDefStore = useNodeDefStore()
 
-const chips = computed<FilterChip[]>(() => {
-  const searchService = nodeDefStore.nodeSearchService
-  return [
-    {
-      key: 'blueprints',
-      label: t('sideToolbar.nodeLibraryTab.filterOptions.blueprints'),
-      filter: searchService.nodeSourceFilter
-    },
-    {
-      key: 'partnerNodes',
-      label: t('sideToolbar.nodeLibraryTab.filterOptions.partnerNodes'),
-      filter: searchService.nodeSourceFilter
-    },
-    {
-      key: 'essentials',
-      label: t('g.essentials'),
-      filter: searchService.nodeSourceFilter
-    },
-    {
-      key: 'extensions',
-      label: t('g.extensions'),
-      filter: searchService.nodeSourceFilter
-    },
-    {
-      key: 'input',
-      label: t('g.input'),
-      filter: searchService.inputTypeFilter
-    },
-    {
-      key: 'output',
-      label: t('g.output'),
-      filter: searchService.outputTypeFilter
-    }
-  ]
+const MAX_VISIBLE_DOTS = 4
+
+const categoryButtons = computed(() => {
+  const buttons: { id: RootCategoryId; label: string }[] = []
+  if (hasFavorites) {
+    buttons.push({ id: RootCategory.Favorites, label: t('g.bookmarked') })
+  }
+  if (hasBlueprintNodes) {
+    buttons.push({ id: RootCategory.Blueprint, label: t('g.blueprints') })
+  }
+  buttons.push({ id: RootCategory.Comfy, label: t('g.comfy') })
+  if (hasEssentialNodes) {
+    buttons.push({ id: RootCategory.Essentials, label: t('g.essentials') })
+  }
+  if (hasPartnerNodes) {
+    buttons.push({ id: RootCategory.PartnerNodes, label: t('g.partner') })
+  }
+  if (hasCustomNodes) {
+    buttons.push({ id: RootCategory.Custom, label: t('g.extensions') })
+  }
+  return buttons
 })
+
+const inputChip = computed<FilterChip>(() => ({
+  key: 'input',
+  label: t('g.input'),
+  filter: nodeDefStore.nodeSearchService.inputTypeFilter
+}))
+
+const outputChip = computed<FilterChip>(() => ({
+  key: 'output',
+  label: t('g.output'),
+  filter: nodeDefStore.nodeSearchService.outputTypeFilter
+}))
+
+const selectedInputValues = computed(() =>
+  filters.filter((f) => f.filterDef.id === 'input').map((f) => f.value)
+)
+
+const selectedOutputValues = computed(() =>
+  filters.filter((f) => f.filterDef.id === 'output').map((f) => f.value)
+)
+
+const typeFilters = computed(() => [
+  { chip: inputChip.value, values: selectedInputValues.value },
+  { chip: outputChip.value, values: selectedOutputValues.value }
+])
+
+function chipClass(isActive: boolean, hasSelections = false) {
+  return cn(
+    'flex shrink-0 cursor-pointer items-center justify-center gap-1 rounded-md border border-secondary-background px-3 py-1 font-inter text-sm transition-colors',
+    isActive
+      ? 'border-base-foreground bg-base-foreground text-base-background'
+      : hasSelections
+        ? 'border-base-foreground/60 bg-transparent text-base-foreground/60 hover:border-base-foreground/60 hover:text-base-foreground/60'
+        : 'bg-transparent text-muted-foreground hover:border-base-foreground/60 hover:text-base-foreground/60'
+  )
+}
 </script>

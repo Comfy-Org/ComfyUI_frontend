@@ -2,26 +2,30 @@ name: 'CI: Website E2E'
 
 on:
   push:
-    branches: [main, website/*]
-    paths:
-      - 'apps/website/**'
-      - 'packages/design-system/**'
-      - 'packages/tailwind-utils/**'
-      - 'pnpm-lock.yaml'
+    branches: [main]
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
-    paths:
-      - 'apps/website/**'
-      - 'packages/design-system/**'
-      - 'packages/tailwind-utils/**'
-      - 'pnpm-lock.yaml'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.repository }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      app-website-changes: ${{ steps.changes.outputs.app-website-changes }}
+      packages-changes: ${{ steps.changes.outputs.packages-changes }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
   website-e2e:
+    needs: changes
+    if: ${{ needs.changes.outputs.app-website-changes == 'true' || needs.changes.outputs.packages-changes == 'true' }}
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.58.1-noble
@@ -45,6 +49,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build website
+        env:
+          WEBSITE_GITHUB_STARS_OVERRIDE: 110000
         run: pnpm --filter @comfyorg/website build
 
       - name: Run Playwright tests
@@ -161,7 +167,11 @@ jobs:
   post-starting-comment:
     # Safe to comment from pull_request trigger: fork PRs are excluded by the guard below.
     # This avoids a ci-*/pr-* workflow_run split for a comment that must appear immediately.
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    needs: changes
+    if: |
+      github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.fork == false
+      && (needs.changes.outputs.app-website-changes == 'true' || needs.changes.outputs.packages-changes == 'true')
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write

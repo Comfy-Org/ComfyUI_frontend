@@ -63,8 +63,7 @@
         v-model:material-mode="modelConfig!.materialMode"
         v-model:up-direction="modelConfig!.upDirection"
         v-model:show-skeleton="modelConfig!.showSkeleton"
-        :hide-material-mode="isSplatModel"
-        :is-ply-model="isPlyModel"
+        :material-modes="materialModes"
         :has-skeleton="hasSkeleton"
       />
 
@@ -105,7 +104,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import CameraControls from '@/components/load3d/controls/CameraControls.vue'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
@@ -120,18 +119,23 @@ import type {
   CameraConfig,
   GizmoMode,
   LightConfig,
+  MaterialMode,
   ModelConfig,
   SceneConfig
 } from '@/extensions/core/load3d/interfaces'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
-  isSplatModel = false,
-  isPlyModel = false,
+  canUseGizmo = true,
+  canUseLighting = true,
+  canExport = true,
+  materialModes = ['original', 'normal', 'wireframe'],
   hasSkeleton = false
 } = defineProps<{
-  isSplatModel?: boolean
-  isPlyModel?: boolean
+  canUseGizmo?: boolean
+  canUseLighting?: boolean
+  canExport?: boolean
+  materialModes?: readonly MaterialMode[]
   hasSkeleton?: boolean
 }>()
 
@@ -163,12 +167,22 @@ const categoryLabels: Record<string, string> = {
 }
 
 const availableCategories = computed(() => {
-  if (isSplatModel) {
-    return ['scene', 'model', 'camera']
-  }
-
-  return ['scene', 'model', 'camera', 'light', 'gizmo', 'export']
+  const categories = ['scene', 'model', 'camera']
+  if (canUseLighting) categories.push('light')
+  if (canUseGizmo) categories.push('gizmo')
+  if (canExport) categories.push('export')
+  return categories
 })
+
+watch(
+  availableCategories,
+  (categories) => {
+    if (!categories.includes(activeCategory.value)) {
+      activeCategory.value = 'scene'
+    }
+  },
+  { immediate: true }
+)
 
 const showSceneControls = computed(
   () => activeCategory.value === 'scene' && !!sceneConfig.value
@@ -181,13 +195,16 @@ const showCameraControls = computed(
 )
 const showLightControls = computed(
   () =>
+    canUseLighting &&
     activeCategory.value === 'light' &&
     !!lightConfig.value &&
     !!modelConfig.value
 )
-const showExportControls = computed(() => activeCategory.value === 'export')
+const showExportControls = computed(
+  () => canExport && activeCategory.value === 'export'
+)
 const showGizmoControls = computed(
-  () => activeCategory.value === 'gizmo' && !!modelConfig.value
+  () => canUseGizmo && activeCategory.value === 'gizmo' && !!modelConfig.value
 )
 
 const toggleMenu = () => {

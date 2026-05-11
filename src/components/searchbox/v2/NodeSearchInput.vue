@@ -7,61 +7,41 @@
       @remove-tag="onRemoveTag"
       @click="inputRef?.focus()"
     >
-      <!-- Active filter label (filter selection mode) -->
-      <span
-        v-if="activeFilter"
-        class="text-foreground -my-1 inline-flex shrink-0 items-center gap-1 rounded-lg bg-base-background px-2 py-1 text-sm opacity-80"
-      >
-        {{ activeFilter.label }}:
-        <button
-          type="button"
-          data-testid="cancel-filter"
-          class="aspect-square cursor-pointer rounded-full border-none bg-transparent text-muted-foreground hover:text-base-foreground"
-          :aria-label="$t('g.remove')"
-          @click="emit('cancelFilter')"
-        >
-          <i class="pi pi-times text-xs" />
-        </button>
-      </span>
       <!-- Applied filter chips -->
-      <template v-if="!activeFilter">
-        <TagsInputItem
-          v-for="filter in filters"
-          :key="filterKey(filter)"
-          :value="filterKey(filter)"
-          data-testid="filter-chip"
-          class="-my-1 inline-flex items-center gap-1 rounded-lg bg-base-background px-2 py-1 data-[state=active]:ring-2 data-[state=active]:ring-primary"
+      <TagsInputItem
+        v-for="filter in filters"
+        :key="filterKey(filter)"
+        :value="filterKey(filter)"
+        data-testid="filter-chip"
+        class="-my-1 inline-flex items-center gap-1 rounded-lg bg-base-background px-2 py-1 data-[state=active]:ring-2 data-[state=active]:ring-primary"
+      >
+        <span class="text-sm opacity-80">
+          {{ t(`g.${filter.filterDef.id}`) }}:
+        </span>
+        <span :style="{ color: getLinkTypeColor(filter.value) }"> &bull; </span>
+        <span class="text-sm">{{ filter.value }}</span>
+        <TagsInputItemDelete
+          as="button"
+          type="button"
+          data-testid="chip-delete"
+          :aria-label="$t('g.remove')"
+          class="ml-1 flex aspect-square cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-muted-foreground hover:text-base-foreground"
         >
-          <span class="text-sm opacity-80">
-            {{ t(`g.${filter.filterDef.id}`) }}:
-          </span>
-          <span :style="{ color: getLinkTypeColor(filter.value) }">
-            &bull;
-          </span>
-          <span class="text-sm">{{ filter.value }}</span>
-          <TagsInputItemDelete
-            as="button"
-            type="button"
-            data-testid="chip-delete"
-            :aria-label="$t('g.remove')"
-            class="ml-1 aspect-square cursor-pointer rounded-full border-none bg-transparent text-muted-foreground hover:text-base-foreground"
-          >
-            <i class="pi pi-times text-xs" />
-          </TagsInputItemDelete>
-        </TagsInputItem>
-      </template>
+          <i class="icon-[lucide--x] size-3" />
+        </TagsInputItemDelete>
+      </TagsInputItem>
       <TagsInputInput as-child>
         <input
           ref="inputRef"
-          v-model="inputValue"
+          v-model="searchQuery"
           type="text"
           role="combobox"
           aria-autocomplete="list"
           :aria-expanded="true"
-          :aria-controls="activeFilter ? 'filter-options-list' : 'results-list'"
-          :aria-label="inputPlaceholder"
-          :placeholder="inputPlaceholder"
-          class="text-foreground h-6 min-w-[min(300px,80vw)] flex-1 border-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+          aria-controls="results-list"
+          :aria-label="t('g.addNode')"
+          :placeholder="t('g.addNode')"
+          class="text-foreground h-6 min-w-[min(300px,80vw)] flex-1 border-none bg-transparent font-inter text-sm outline-none placeholder:text-muted-foreground"
           @keydown.enter.prevent="emit('selectCurrent')"
           @keydown.down.prevent="emit('navigateDown')"
           @keydown.up.prevent="emit('navigateUp')"
@@ -81,22 +61,18 @@ import {
   TagsInputRoot
 } from 'reka-ui'
 
-import type { FilterChip } from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 import { getLinkTypeColor } from '@/utils/litegraphUtil'
 
-const { filters, activeFilter } = defineProps<{
+const { filters } = defineProps<{
   filters: FuseFilterWithValue<ComfyNodeDefImpl, string>[]
-  activeFilter: FilterChip | null
 }>()
 
 const searchQuery = defineModel<string>('searchQuery', { required: true })
-const filterQuery = defineModel<string>('filterQuery', { required: true })
 
 const emit = defineEmits<{
   removeFilter: [filter: FuseFilterWithValue<ComfyNodeDefImpl, string>]
-  cancelFilter: []
   navigateDown: []
   navigateUp: []
   selectCurrent: []
@@ -104,23 +80,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const inputRef = ref<HTMLInputElement>()
-
-const inputValue = computed({
-  get: () => (activeFilter ? filterQuery.value : searchQuery.value),
-  set: (value: string) => {
-    if (activeFilter) {
-      filterQuery.value = value
-    } else {
-      searchQuery.value = value
-    }
-  }
-})
-
-const inputPlaceholder = computed(() =>
-  activeFilter
-    ? t('g.filterByType', { type: activeFilter.label.toLowerCase() })
-    : t('g.addNode')
-)
 
 const tagValues = computed(() => filters.map(filterKey))
 

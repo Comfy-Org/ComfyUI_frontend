@@ -52,6 +52,15 @@ export const customerStories: CustomerStory[] = [
     detailPrefix: 'customers.detail.ubisoft-chord',
     readMoreHref:
       'https://blog.comfy.org/p/ubisoft-open-sources-the-chord-model'
+  },
+  {
+    slug: 'groove-jones',
+    image:
+      'https://media.comfy.org/website/customers/groove-jones/crocs-nfl-dicks-sporting-goods-fooh.webp',
+    category: 'customers.story.groove-jones.category',
+    title: 'customers.story.groove-jones.title',
+    body: 'customers.story.groove-jones.body',
+    detailPrefix: 'customers.detail.groove-jones'
   }
 ]
 

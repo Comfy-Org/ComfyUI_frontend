@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import { computed, inject, ref } from 'vue'
+import { useIntersectionObserver } from '@vueuse/core'
+import { computed, inject, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import {
+  findServerPreviewUrl,
+  isAssetPreviewSupported
+} from '@/platform/assets/utils/assetPreviewUtil'
+
 import { AssetKindKey } from './types'
-import type { LayoutMode } from './types'
+import type { FormDropdownMenuItemProps } from './types'
 
-interface Props {
-  index: number
-  selected: boolean
-  previewUrl: string
-  name: string
-  label?: string
-  layout?: LayoutMode
-}
+const props = defineProps<FormDropdownMenuItemProps>()
 
-const props = defineProps<Props>()
+const { t } = useI18n()
 
 const emit = defineEmits<{
   click: [index: number]
@@ -27,6 +27,42 @@ const actualDimensions = ref<string | null>(null)
 const assetKind = inject(AssetKindKey)
 
 const isVideo = computed(() => assetKind?.value === 'video')
+const isMesh = computed(() => assetKind?.value === 'mesh')
+
+const mediaContainerRef = ref<HTMLElement>()
+const resolvedMeshPreview = ref<string | null>(null)
+const meshPreviewAttempted = ref(false)
+
+function toLookupName(name: string): string {
+  const stripped = name.replace(/ \[output\]$/, '')
+  const slash = stripped.lastIndexOf('/')
+  return slash === -1 ? stripped : stripped.substring(slash + 1)
+}
+
+async function resolveMeshPreview() {
+  if (!isAssetPreviewSupported()) return
+  const url = await findServerPreviewUrl(toLookupName(props.name))
+  if (url) resolvedMeshPreview.value = url
+}
+
+useIntersectionObserver(mediaContainerRef, ([entry]) => {
+  if (!entry?.isIntersecting) return
+  if (!isMesh.value || meshPreviewAttempted.value) return
+  meshPreviewAttempted.value = true
+  void resolveMeshPreview()
+})
+
+watch(
+  () => props.name,
+  () => {
+    meshPreviewAttempted.value = false
+    resolvedMeshPreview.value = null
+  }
+)
+
+const displayedPreviewUrl = computed(() =>
+  isMesh.value ? resolvedMeshPreview.value : props.previewUrl
+)
 
 function handleClick() {
   emit('click', props.index)
@@ -74,6 +110,7 @@ function handleVideoLoad(event: Event) {
     <!-- Image -->
     <div
       v-if="layout !== 'list-small'"
+      ref="mediaContainerRef"
       :class="
         cn(
           'relative',
@@ -93,30 +130,42 @@ function handleVideoLoad(event: Event) {
       <!-- Selected Icon -->
       <div
         v-if="selected"
+        :aria-label="t('g.selected')"
+        role="img"
         class="absolute top-1 left-1 size-4 rounded-full border border-base-foreground bg-primary-background"
       >
         <i
           class="bold icon-[lucide--check] size-3 translate-y-[-0.5px] text-base-foreground"
+          aria-hidden="true"
         />
       </div>
       <video
         v-if="previewUrl && isVideo"
         :src="previewUrl"
+        :aria-label="label ?? name"
         class="size-full object-cover"
         preload="metadata"
         muted
         @loadeddata="handleVideoLoad"
       />
       <img
-        v-else-if="previewUrl"
-        :src="previewUrl"
+        v-else-if="displayedPreviewUrl"
+        :src="displayedPreviewUrl"
         :alt="name"
         draggable="false"
         class="size-full object-cover"
         @load="handleImageLoad"
       />
       <div
+        v-else-if="isMesh"
+        data-testid="dropdown-item-mesh-placeholder"
+        class="flex size-full items-center justify-center bg-modal-card-placeholder-background"
+      >
+        <i class="icon-[lucide--box] text-3xl text-muted-foreground" />
+      </div>
+      <div
         v-else
+        data-testid="dropdown-item-media-placeholder"
         class="size-full bg-linear-to-tr from-blue-400 via-teal-500 to-green-400"
       />
     </div>

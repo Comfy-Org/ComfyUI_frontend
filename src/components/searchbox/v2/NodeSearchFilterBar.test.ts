@@ -1,4 +1,4 @@
-import { render, within } from '@testing-library/vue'
+import { cleanup, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -9,19 +9,16 @@ import {
   setupTestPinia,
   testI18n
 } from '@/components/searchbox/v2/__test__/testUtils'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn(() => undefined),
-    set: vi.fn()
-  }))
-}))
 
 describe(NodeSearchFilterBar, () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     setupTestPinia()
+    const settings = useSettingStore()
+    settings.settingValues['Comfy.NodeLibrary.Bookmarks.V2'] = []
+    settings.settingValues['Comfy.NodeLibrary.BookmarksCustomization'] = {}
     useNodeDefStore().updateNodeDefs([
       createMockNodeDef({
         name: 'ImageNode',
@@ -33,57 +30,93 @@ describe(NodeSearchFilterBar, () => {
 
   async function createRender(props = {}) {
     const user = userEvent.setup()
-    const onSelectChip = vi.fn()
-    const { container } = render(NodeSearchFilterBar, {
-      props: { onSelectChip, ...props },
-      global: { plugins: [testI18n] }
+    const onSelectCategory = vi.fn()
+    const onUpdateIsSidebarOpen = vi.fn()
+    render(NodeSearchFilterBar, {
+      props: {
+        onSelectCategory,
+        'onUpdate:isSidebarOpen': onUpdateIsSidebarOpen,
+        ...props
+      },
+      global: {
+        plugins: [testI18n],
+        stubs: {
+          NodeSearchTypeFilterPopover: {
+            template: '<div data-testid="popover"><slot /></div>',
+            props: ['chip', 'selectedValues']
+          }
+        }
+      }
     })
     await nextTick()
-    const view = within(container as HTMLElement)
-    return { user, onSelectChip, view }
+    return { user, onSelectCategory, onUpdateIsSidebarOpen }
   }
 
-  it('should render all filter chips', async () => {
-    const { view } = await createRender()
+  const buttonTexts = () =>
+    screen.getAllByRole('button').map((b) => b.textContent?.trim())
 
-    const buttons = view.getAllByRole('button')
-    expect(buttons).toHaveLength(6)
-    expect(buttons[0]).toHaveTextContent('Blueprints')
-    expect(buttons[1]).toHaveTextContent('Partner Nodes')
-    expect(buttons[2]).toHaveTextContent('Essentials')
-    expect(buttons[3]).toHaveTextContent('Extensions')
-    expect(buttons[4]).toHaveTextContent('Input')
-    expect(buttons[5]).toHaveTextContent('Output')
+  it.each([
+    { prop: 'hasFavorites', label: 'Bookmarked' },
+    { prop: 'hasBlueprintNodes', label: 'Blueprints' },
+    { prop: 'hasEssentialNodes', label: 'Essentials' },
+    { prop: 'hasPartnerNodes', label: 'Partner' },
+    { prop: 'hasCustomNodes', label: 'Extensions' }
+  ] as const)(
+    'shows the $label button only when $prop is true',
+    async ({ prop, label }) => {
+      await createRender()
+      expect(buttonTexts()).not.toContain(label)
+
+      cleanup()
+      await createRender({ [prop]: true })
+      expect(buttonTexts()).toContain(label)
+    }
+  )
+
+  it('always renders the Comfy button and Input/Output type filter triggers', async () => {
+    await createRender()
+    const texts = buttonTexts()
+    expect(texts).toContain('Comfy')
+    expect(texts).toContain('Input')
+    expect(texts).toContain('Output')
   })
 
-  it('should mark active chip as pressed when activeChipKey matches', async () => {
-    const { view } = await createRender({ activeChipKey: 'input' })
+  it('should emit selectCategory when category button is clicked', async () => {
+    const { user, onSelectCategory } = await createRender({
+      hasCustomNodes: true
+    })
 
-    expect(view.getByRole('button', { name: 'Input' })).toHaveAttribute(
+    await user.click(screen.getByRole('button', { name: 'Extensions' }))
+
+    expect(onSelectCategory).toHaveBeenCalledWith('custom')
+  })
+
+  it('should apply active styling when activeCategory matches', async () => {
+    await createRender({ activeCategory: 'custom', hasCustomNodes: true })
+
+    expect(screen.getByRole('button', { name: 'Extensions' })).toHaveAttribute(
       'aria-pressed',
       'true'
     )
   })
 
-  it('should not mark chips as pressed when activeChipKey does not match', async () => {
-    const { view } = await createRender({ activeChipKey: null })
-
-    view.getAllByRole('button').forEach((btn) => {
-      expect(btn).toHaveAttribute('aria-pressed', 'false')
+  it('should expose aria-expanded=false and emit update:isSidebarOpen=true when toggled from collapsed', async () => {
+    const { user, onUpdateIsSidebarOpen } = await createRender({
+      isSidebarOpen: false
     })
+    const toggle = screen.getByTestId('toggle-category-sidebar')
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+
+    await user.click(toggle)
+    expect(onUpdateIsSidebarOpen).toHaveBeenCalledExactlyOnceWith(true)
   })
 
-  it('should emit selectChip with chip data when clicked', async () => {
-    const { user, onSelectChip, view } = await createRender()
-
-    await user.click(view.getByRole('button', { name: 'Input' }))
-
-    expect(onSelectChip).toHaveBeenCalledWith(
-      expect.objectContaining({
-        key: 'input',
-        label: 'Input',
-        filter: expect.anything()
-      })
+  it('should expose aria-expanded=true when isSidebarOpen prop is true', async () => {
+    await createRender({ isSidebarOpen: true })
+    expect(screen.getByTestId('toggle-category-sidebar')).toHaveAttribute(
+      'aria-expanded',
+      'true'
     )
   })
 })

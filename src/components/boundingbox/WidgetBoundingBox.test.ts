@@ -26,7 +26,7 @@ const ScrubableNumberInputStub = defineComponent({
     step: { type: Number, default: 1 },
     disabled: { type: Boolean, default: false }
   },
-  // eslint-disable-next-line vue/no-unused-emit-declarations
+
   emits: ['update:modelValue'],
   template: `
     <input

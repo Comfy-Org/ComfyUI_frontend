@@ -42,7 +42,7 @@ const RangeEditorStub = defineComponent({
     histogram: { type: Object, default: null },
     display: { type: String, default: '' }
   },
-  // eslint-disable-next-line vue/no-unused-emit-declarations
+
   emits: ['update:modelValue'],
   template: `
     <div data-testid="range-editor"

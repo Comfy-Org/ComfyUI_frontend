@@ -24,6 +24,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "batch_size": {
+        "name": "размер_пакета"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "length": {
+        "name": "длина"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_image": {
+        "name": "start_image"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "Добавить шум",
     "inputs": {
@@ -1655,6 +1689,10 @@
       },
       "1": {
         "tooltip": null
+      },
+      "2": {
+        "name": "BOOL",
+        "tooltip": null
       }
     }
   },
@@ -1968,6 +2006,10 @@
     "description": "Ручная установка контекстных окон.",
     "display_name": "Контекстные окна (Ручная настройка)",
     "inputs": {
+      "causal_window_fix": {
+        "name": "causal_window_fix",
+        "tooltip": "Добавлять ли причинно-следственный корректирующий кадр к окнам контекста с индексом, отличным от 0."
+      },
       "closed_loop": {
         "name": "замкнутый_цикл",
         "tooltip": "Замыкать ли цикл контекстного окна; применимо только к циклическим расписаниям."
@@ -2928,6 +2970,28 @@
     "outputs": {
       "0": {
         "name": "voice",
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyARVideoLatent": {
+    "display_name": "EmptyARVideoLatent",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -4145,6 +4209,54 @@
       }
     }
   },
+  "GeminiNanoBanana2V2": {
+    "description": "Генерируйте или редактируйте изображения синхронно через Google Vertex API.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый запрос, описывающий изображение для генерации или редактирования. Укажите любые ограничения, стили или детали, которым должна следовать модель."
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Когда seed фиксирован на определённом значении, модель старается выдавать одинаковый результат при повторных запросах. Детерминированный результат не гарантируется. Также изменение модели или параметров, таких как temperature, может привести к различиям в ответе даже при одинаковом seed. По умолчанию используется случайное значение seed."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Базовые инструкции, определяющие поведение ИИ."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "Первое изображение из процесса мышления модели. Доступно только при thinking_level HIGH и модальности IMAGE+TEXT."
+      }
+    }
+  },
   "GeminiNode": {
     "description": "Генерируйте текстовые ответы с помощью модели ИИ Google Gemini. Вы можете предоставить несколько типов входных данных (текст, изображения, аудио, видео) в качестве контекста для генерации более релевантных и осмысленных ответов.",
     "display_name": "Google Gemini",
@@ -4526,6 +4638,156 @@
       },
       "tapered_corners": {
         "name": "заостренные_углы"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseImageToVideoApi": {
+    "description": "Создайте видео из изображения первого кадра с помощью модели HappyHorse.",
+    "display_name": "HappyHorse: изображение в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "Изображение первого кадра. Соотношение сторон результата определяется этим изображением."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Зерно для генерации."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли AI-водяной знак к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "Создайте видео с человеком или объектом по референсным материалам с помощью модели HappyHorse. Поддерживаются одиночные персонажи и взаимодействие нескольких персонажей.",
+    "display_name": "HappyHorse: референс в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_ratio": {
+        "name": "соотношение"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Зерно для генерации."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли AI-водяной знак к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "Создаёт видео по текстовому промпту с помощью модели HappyHorse.",
+    "display_name": "HappyHorse: текст в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_ratio": {
+        "name": "соотношение"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Зерно для генерации."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли AI-водяной знак к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "Редактируйте видео с помощью текстовых инструкций или референсных изображений в модели HappyHorse. Длительность результата — 3-15 секунд и соответствует входному видео; входные видео длиннее 15 секунд будут обрезаны.",
+    "display_name": "HappyHorse: редактирование видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_ratio": {
+        "name": "соотношение"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Зерно для генерации."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Видео для редактирования."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли AI-водяной знак к результату."
       }
     },
     "outputs": {
@@ -7787,6 +8049,21 @@
       }
     }
   },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "Загрузить модель удаления фона",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "bg_removal_name",
+        "tooltip": "Модель, используемая для удаления фона с изображений"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bg_model",
+        "tooltip": null
+      }
+    }
+  },
   "LoadImage": {
     "display_name": "Загрузить изображение",
     "inputs": {
@@ -8177,6 +8454,42 @@
       }
     }
   },
+  "LumaImageEditNode2": {
+    "description": "Редактирование существующего изображения с помощью текстового запроса, используя модель Luma UNI-1.",
+    "display_name": "Luma UNI-1 Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель, используемая для редактирования."
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_web_search": {
+        "name": "web_search"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Описание желаемого редактирования. 1–6000 символов."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, нужно ли повторно запускать узел; результаты всегда недетерминированы, независимо от seed."
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "Исходное изображение для редактирования."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LumaImageModifyNode": {
     "description": "Синхронно изменяет изображения на основе запроса и соотношения сторон.",
     "display_name": "Luma Image to Image",
@@ -8245,6 +8558,41 @@
       "style_image_weight": {
         "name": "style_image_weight",
         "tooltip": "Вес изображения стиля. Игнорируется, если style_image не предоставлено."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaImageNode2": {
+    "description": "Генерация изображений по текстовому описанию с помощью модели Luma UNI-1.",
+    "display_name": "Luma UNI-1 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель, используемая для генерации."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_web_search": {
+        "name": "web_search"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовое описание желаемого изображения. 1–6000 символов."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, нужно ли повторно запускать узел; результаты всегда недетерминированы, независимо от seed."
       }
     },
     "outputs": {
@@ -11339,120 +11687,6 @@
       }
     }
   },
-  "MoonvalleyImg2VideoNode": {
-    "description": "Узел Moonvalley Marey: Изображение в видео",
-    "display_name": "Moonvalley Marey: Изображение в видео",
-    "inputs": {
-      "control_after_generate": {
-        "name": "управление после генерации"
-      },
-      "image": {
-        "name": "изображение",
-        "tooltip": "Эталонное изображение, используемое для генерации видео"
-      },
-      "negative_prompt": {
-        "name": "негативный_промпт",
-        "tooltip": "Текст негативного промпта"
-      },
-      "prompt": {
-        "name": "промпт"
-      },
-      "prompt_adherence": {
-        "name": "следование_промпту",
-        "tooltip": "Коэффициент управления генерацией"
-      },
-      "resolution": {
-        "name": "разрешение",
-        "tooltip": "Разрешение выходного видео"
-      },
-      "seed": {
-        "name": "сид",
-        "tooltip": "Значение случайного сида"
-      },
-      "steps": {
-        "name": "шаги",
-        "tooltip": "Количество шагов денизинга"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "Moonvalley Marey: Текст в видео",
-    "inputs": {
-      "control_after_generate": {
-        "name": "управление после генерации"
-      },
-      "negative_prompt": {
-        "name": "негативный_промпт",
-        "tooltip": "Текст негативного промпта"
-      },
-      "prompt": {
-        "name": "промпт"
-      },
-      "prompt_adherence": {
-        "name": "следование_запросу",
-        "tooltip": "Коэффициент управления генерацией"
-      },
-      "resolution": {
-        "name": "разрешение",
-        "tooltip": "Разрешение выходного видео"
-      },
-      "seed": {
-        "name": "сид",
-        "tooltip": "Случайное значение сида"
-      },
-      "steps": {
-        "name": "шаги",
-        "tooltip": "Шаги вывода"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey Video to Video",
-    "inputs": {
-      "control_type": {
-        "name": "тип_управления"
-      },
-      "motion_intensity": {
-        "name": "интенсивность_движения",
-        "tooltip": "Используется только если тип_управления 'Передача движения'"
-      },
-      "negative_prompt": {
-        "name": "негативный_запрос",
-        "tooltip": "Текст негативного запроса"
-      },
-      "prompt": {
-        "name": "запрос",
-        "tooltip": "Описывает видео для генерации"
-      },
-      "seed": {
-        "name": "сид",
-        "tooltip": "Случайное значение сида"
-      },
-      "steps": {
-        "name": "шаги",
-        "tooltip": "Количество шагов вывода"
-      },
-      "video": {
-        "name": "видео",
-        "tooltip": "Эталонное видео, используемое для генерации выходного видео. Должно быть длиной не менее 5 секунд. Видео длиннее 5 секунд будут автоматически обрезаны. Поддерживается только формат MP4."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "Morphology": {
     "display_name": "Морфология изображения",
     "inputs": {
@@ -11675,8 +11909,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "description": "Генерирует изображения синхронно через конечную точку OpenAI GPT Image 1.",
-    "display_name": "OpenAI GPT Image 1",
+    "description": "Генерирует изображения синхронно через конечную точку OpenAI GPT Image 2.",
+    "display_name": "OpenAI GPT Image 2",
     "inputs": {
       "background": {
         "name": "background",
@@ -11684,6 +11918,14 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "Используется только если значение «size» — «Custom». Должно быть кратно 16 (только для GPT Image 2)."
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "Используется только если значение «size» — «Custom». Должно быть кратно 16 (только для GPT Image 2)."
       },
       "image": {
         "name": "image",
@@ -11702,7 +11944,7 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Текстовый запрос для GPT Image 1"
+        "tooltip": "Текстовый запрос для GPT Image 2"
       },
       "quality": {
         "name": "quality",
@@ -11768,6 +12010,20 @@
       },
       "size": {
         "name": "размер"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpticalFlowLoader": {
+    "display_name": "Загрузка модели оптического потока",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "Модель оптического потока для загрузки. Файлы должны быть размещены в папке 'optical_flow'. В настоящее время поддерживается только raft_large.pth из torchvision."
       }
     },
     "outputs": {
@@ -12376,7 +12632,7 @@
   "PrimitiveInt": {
     "display_name": "Int",
     "inputs": {
-      "control_after_generate": {
+      "fixed": {
         "name": "контроль после генерации"
       },
       "value": {
@@ -13254,6 +13510,25 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "RemoveBackground": {
+    "display_name": "Удалить фон",
+    "inputs": {
+      "bg_removal_model": {
+        "name": "bg_removal_model",
+        "tooltip": "Модель удаления фона, используемая для создания маски"
+      },
+      "image": {
+        "name": "изображение",
+        "tooltip": "Входное изображение для удаления фона"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": "Сгенерированная маска переднего плана"
       }
     }
   },
@@ -14263,6 +14538,20 @@
       },
       "2": {
         "name": "латентный"
+      }
+    }
+  },
+  "SamplerARVideo": {
+    "display_name": "Sampler AR Video",
+    "inputs": {
+      "num_frame_per_block": {
+        "name": "num_frame_per_block",
+        "tooltip": "Кадров в каждом авторегрессионном блоке. 1 = покадрово, 3 = блоками. Должно соответствовать режиму обучения контрольной точки."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -16466,6 +16755,9 @@
   "TextGenerate": {
     "display_name": "TextGenerate",
     "inputs": {
+      "audio": {
+        "name": "аудио"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16509,6 +16801,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "Использовать встроенный системный шаблон/подсказку, если он есть у модели."
+      },
+      "video": {
+        "name": "видео",
+        "tooltip": "Кадры видео как пакет изображений. Предполагается 24 кадра в секунду; внутренне дискретизируется до 1 кадра в секунду."
       }
     },
     "outputs": {
@@ -16521,6 +16817,9 @@
   "TextGenerateLTX2Prompt": {
     "display_name": "TextGenerateLTX2Prompt",
     "inputs": {
+      "audio": {
+        "name": "аудио"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16564,6 +16863,10 @@
       "use_default_template": {
         "name": "use_default_template",
         "tooltip": "Использовать встроенный системный шаблон/подсказку, если он есть у модели."
+      },
+      "video": {
+        "name": "видео",
+        "tooltip": "Кадры видео как пакет изображений. Предполагается 24 кадра в секунду; внутренне дискретизируется до 1 кадра в секунду."
       }
     },
     "outputs": {
@@ -16736,6 +17039,45 @@
       },
       "upscaler_resolution": {
         "name": "разрешение увеличителя"
+      },
+      "video": {
+        "name": "видео"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhanceV2": {
+    "description": "Оживите видео с помощью мощных технологий увеличения разрешения и восстановления.",
+    "display_name": "Topaz Video Enhance",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "уровень динамического сжатия",
+        "tooltip": "Уровень CQP."
+      },
+      "interpolation_model": {
+        "name": "interpolation_model"
+      },
+      "upscaler_model": {
+        "name": "upscaler_model"
+      },
+      "upscaler_model_creativity": {
+        "name": "креативность"
+      },
+      "upscaler_model_prompt": {
+        "name": "промпт"
+      },
+      "upscaler_model_realism": {
+        "name": "реализм"
+      },
+      "upscaler_model_sharp": {
+        "name": "резкость"
+      },
+      "upscaler_model_upscaler_resolution": {
+        "name": "разрешение увеличения"
       },
       "video": {
         "name": "видео"
@@ -17083,7 +17425,8 @@
         "name": "PBR"
       },
       "quad": {
-        "name": "квад"
+        "name": "квад",
+        "tooltip": "Этот параметр устарел и больше не используется."
       },
       "texture": {
         "name": "текстура"
@@ -17600,6 +17943,127 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "VOIDInpaintConditioning": {
+    "display_name": "VOIDInpaintConditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Количество пиксельных кадров для обработки. Для CogVideoX-Fun-V1.5 (patch_size_t=2) latent_t должен быть чётным — длины, дающие нечётный latent_t, округляются вниз (например, 49 → 45)."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "quadmask": {
+        "name": "quadmask",
+        "tooltip": "Предварительно обработанная quadmask из VOIDQuadmaskPreprocess [T, H, W]"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Кадры исходного видео [T, H, W, 3]"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDQuadmaskPreprocess": {
+    "display_name": "VOIDQuadmaskPreprocess",
+    "inputs": {
+      "dilate_width": {
+        "name": "dilate_width",
+        "tooltip": "Радиус дилатации для основной области маски (0 = без дилатации)"
+      },
+      "mask": {
+        "name": "mask"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "quadmask",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDSampler": {
+    "display_name": "VOIDSampler",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDWarpedNoise": {
+    "display_name": "VOIDWarpedNoise",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Количество пиксельных кадров. Округляется вниз для чётного latent_t (требование patch_size_t=2), например, 49 → 45."
+      },
+      "optical_flow": {
+        "name": "optical_flow",
+        "tooltip": "Модель оптического потока из OpticalFlowLoader (RAFT-large)."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Кадры видео из первого прохода [T, H, W, 3]"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "warped_noise",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDWarpedNoiseSource": {
+    "display_name": "VOIDWarpedNoiseSource",
+    "inputs": {
+      "warped_noise": {
+        "name": "warped_noise",
+        "tooltip": "Латент искажённого шума из VOIDWarpedNoise"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -18927,6 +19391,156 @@
     "outputs": {
       "0": {
         "tooltip": "Модель с применёнными контекстными окнами во время сэмплирования."
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_inject_scale": {
+        "name": "audio_inject_scale",
+        "tooltip": "Масштаб аудиофич при внедрении в видеомодель."
+      },
+      "video_frames": {
+        "name": "video_frames"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio_encoder_output",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps_string",
+        "tooltip": "Вычисленный fps на основе длины аудио и количества видеокадров. Используется в prompt."
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Аудио для расчёта общего количества выходных кадров и извлечения сегмента аудио."
+      },
+      "images": {
+        "name": "images"
+      },
+      "segment_index": {
+        "name": "segment_index",
+        "tooltip": "Какой это сегмент (0 — первый, 1 — второй и т.д.)"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "Длина этого сегмента (обычно 149 кадров)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "Дополненная последовательность ключевых кадров"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "Маска, указывающая валидные кадры"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "Аудиосегмент для этого видеосегмента"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Аудио для нарезки для каждого выдаваемого сегмента."
+      },
+      "images": {
+        "name": "images"
+      },
+      "num_segments": {
+        "name": "num_segments",
+        "tooltip": "Сколько дополненных сегментов выдавать в виде списков."
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "Длина каждого сегмента (обычно 149 кадров)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "Дополненные последовательности ключевых кадров"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "Маски, указывающие валидные кадры"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "Аудиосегмент для каждого видеосегмента"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "audio_encoder_output": {
+        "name": "audio_encoder_output"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "Визуальные эмбеддинги CLIP для первого кадра."
+      },
+      "clip_vision_output_ref": {
+        "name": "clip_vision_output_ref",
+        "tooltip": "Визуальные эмбеддинги CLIP для референсного изображения."
+      },
+      "height": {
+        "name": "высота"
+      },
+      "length": {
+        "name": "длина",
+        "tooltip": "Количество кадров в сгенерированном видео. Для WanDancer должно оставаться 149."
+      },
+      "mask": {
+        "name": "маска",
+        "tooltip": "Маска для обработки изображения начального кадра(ов). Белое сохраняется, черное генерируется. Используется для локальной генерации."
+      },
+      "negative": {
+        "name": "негативный"
+      },
+      "positive": {
+        "name": "позитивный"
+      },
+      "start_image": {
+        "name": "начальное изображение",
+        "tooltip": "Исходное изображение(я) для кодирования, может быть любое количество кадров."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "позитивный",
+        "tooltip": null
+      },
+      "1": {
+        "name": "негативный",
+        "tooltip": null
+      },
+      "2": {
+        "name": "латентный",
+        "tooltip": "Пустое латентное пространство."
       }
     }
   },

@@ -5,6 +5,8 @@ import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import TabErrors from './TabErrors.vue'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
 
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -50,6 +52,12 @@ describe('TabErrors.vue', () => {
           rightSidePanel: {
             noErrors: 'No errors',
             noneSearchDesc: 'No results found',
+            missingModels: {
+              missingModelsTitle: 'Missing Models',
+              downloadAll: 'Download all',
+              refresh: 'Refresh',
+              refreshing: 'Refreshing missing models.'
+            },
             promptErrors: {
               prompt_no_outputs: {
                 desc: 'Prompt has no outputs'
@@ -82,7 +90,7 @@ describe('TabErrors.vue', () => {
             template: '<div><slot name="label" /><slot /></div>'
           },
           Button: {
-            template: '<button><slot /></button>'
+            template: '<button v-bind="$attrs"><slot /></button>'
           }
         }
       }
@@ -240,5 +248,59 @@ describe('TabErrors.vue', () => {
     expect(screen.getByText('RuntimeError: Out of memory')).toBeInTheDocument()
     expect(screen.getByTestId('runtime-error-panel')).toBeInTheDocument()
     expect(screen.getAllByText('RuntimeError: Out of memory')).toHaveLength(1)
+  })
+
+  it('shows missing model Refresh in the section header when no model is downloadable', async () => {
+    const missingModel = {
+      nodeId: '1',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: 'local-only.safetensors',
+      directory: 'checkpoints',
+      isMissing: true,
+      isAssetSupported: true
+    } satisfies MissingModelCandidate
+
+    const { user } = renderComponent({
+      missingModel: {
+        missingModelCandidates: [missingModel]
+      }
+    })
+    const missingModelStore = useMissingModelStore()
+
+    expect(screen.getByText('Missing Models (1)')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('missing-model-actions')
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByTestId('missing-model-header-refresh'))
+
+    expect(missingModelStore.refreshMissingModels).toHaveBeenCalled()
+  })
+
+  it('keeps missing model Refresh in the card actions when models are downloadable', () => {
+    const missingModel = {
+      nodeId: '1',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: 'downloadable.safetensors',
+      url: 'https://huggingface.co/comfy/test/resolve/main/downloadable.safetensors',
+      directory: 'checkpoints',
+      isMissing: true,
+      isAssetSupported: true
+    } satisfies MissingModelCandidate
+
+    renderComponent({
+      missingModel: {
+        missingModelCandidates: [missingModel]
+      }
+    })
+
+    expect(
+      screen.queryByTestId('missing-model-header-refresh')
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('missing-model-actions')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Download all/ })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeVisible()
   })
 })

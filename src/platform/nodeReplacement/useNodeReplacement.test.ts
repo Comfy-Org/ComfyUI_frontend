@@ -983,4 +983,177 @@ describe('useNodeReplacement', () => {
       expect(mockRemoveMissingNodesByType).toHaveBeenCalledWith(['TypeA'])
     })
   })
+
+  describe('transfer edge cases', () => {
+    it('skips input transfer when the old node has no matching input slot', () => {
+      const placeholder = createPlaceholderNode(1, 'OldType', [
+        { name: 'present_input', link: null }
+      ])
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const newNode = createNewNode([{ name: 'new_input', link: null }], [])
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      const result = replaceNodesInPlace([
+        makeMissingNodeType('OldType', {
+          new_node_id: 'NewType',
+          old_node_id: 'OldType',
+          old_widget_ids: null,
+          // old_id refers to an input that does not exist on the placeholder.
+          input_mapping: [
+            { new_id: 'new_input', old_id: 'missing_input_name' }
+          ],
+          output_mapping: null
+        })
+      ])
+
+      // Replacement still completes; the missing-old-slot transfer is a no-op.
+      expect(result).toEqual(['OldType'])
+      expect(newNode.inputs[0].link).toBeNull()
+    })
+
+    it('does not throw when output_mapping references a new output index that does not exist', () => {
+      // NOTE: The current source skips transfer silently in this case, leaving
+      // the link's origin_slot pointing at a now-missing slot on the new node.
+      // That dangling state is a separate source-level concern; this test only
+      // pins that the missing-slot branch does not crash the replacement loop.
+      // Do not extend this test to assert specific link state on the dangling
+      // path — codifying that as "correct" would block fixing the underlying
+      // cleanup gap in transferOutputConnections.
+      const link = createMockLink(20, 1, 0, 5, 0)
+      const placeholder = createPlaceholderNode(
+        1,
+        'OldType',
+        [],
+        [{ name: 'IMAGE', links: [20] }]
+      )
+      const graph = createMockGraph([placeholder], [link])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      // newNode has NO outputs; output_mapping points at index 0 which does not exist.
+      const newNode = createNewNode([], [])
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      expect(() =>
+        replaceNodesInPlace([
+          makeMissingNodeType('OldType', {
+            new_node_id: 'NewType',
+            old_node_id: 'OldType',
+            old_widget_ids: null,
+            input_mapping: null,
+            output_mapping: [{ new_idx: 0, old_idx: 0 }]
+          })
+        ])
+      ).not.toThrow()
+    })
+
+    it('is a no-op when set_value targets a widget that does not exist on the new node', () => {
+      const placeholder = createPlaceholderNode(1, 'OldType', [
+        { name: 'image', link: null }
+      ])
+      placeholder.onRemoved = vi.fn()
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      // newNode has only one widget; set_value targets a different name.
+      const newNode = createNewNode(
+        [{ name: 'image', link: null }],
+        [],
+        [{ name: 'resize_method', value: 'bilinear' }]
+      )
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      const result = replaceNodesInPlace([
+        makeMissingNodeType('OldType', {
+          new_node_id: 'NewType',
+          old_node_id: 'OldType',
+          old_widget_ids: null,
+          input_mapping: [
+            { new_id: 'nonexistent_widget', set_value: 'should-not-stick' }
+          ],
+          output_mapping: null
+        })
+      ])
+
+      expect(result).toEqual(['OldType'])
+      // Existing widget is unchanged; no new widget was created.
+      expect(newNode.widgets).toHaveLength(1)
+      expect(newNode.widgets![0].value).toBe('bilinear')
+    })
+
+    it('skips set_value mapping when the new_id uses dot-notation', () => {
+      const placeholder = createPlaceholderNode(1, 'OldType')
+      placeholder.onRemoved = vi.fn()
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const newNode = createNewNode(
+        [{ name: 'input', link: null }],
+        [],
+        [{ name: 'resize_type', value: '' }]
+      )
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      replaceNodesInPlace([
+        makeMissingNodeType('OldType', {
+          new_node_id: 'NewType',
+          old_node_id: 'OldType',
+          old_widget_ids: null,
+          input_mapping: [
+            // Dot-notation target — the set_value should NOT be applied.
+            { new_id: 'resize_type.multiplier', set_value: 'dot-notation-skip' }
+          ],
+          output_mapping: null
+        })
+      ])
+
+      expect(newNode.widgets![0].value).toBe('')
+    })
+
+    it('invokes nodeGraph.onNodeAdded for each replaced node so VueNode data refreshes', () => {
+      const placeholder = createPlaceholderNode(1, 'OldType')
+      const graph = createMockGraph([placeholder])
+      const onNodeAdded = vi.fn()
+      ;(graph as { onNodeAdded?: (n: LGraphNode) => void }).onNodeAdded =
+        onNodeAdded
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const newNode = createNewNode()
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      replaceNodesInPlace([
+        makeMissingNodeType('OldType', {
+          new_node_id: 'NewType',
+          old_node_id: 'OldType',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      expect(onNodeAdded).toHaveBeenCalledTimes(1)
+      expect(onNodeAdded).toHaveBeenCalledWith(newNode)
+    })
+  })
 })
