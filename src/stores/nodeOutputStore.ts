@@ -367,22 +367,11 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     }
   }
 
-  /**
-   * Remove node outputs for a specific node
-   * Clears both outputs and preview images
-   */
-  function removeNodeOutputs(nodeId: number | string) {
-    const nodeLocatorId = nodeIdToNodeLocatorId(Number(nodeId))
-    if (!nodeLocatorId) return false
-
-    // Clear from app.nodeOutputs
+  function removeOutputsByLocatorId(nodeLocatorId: NodeLocatorId) {
     const hadOutputs = !!app.nodeOutputs[nodeLocatorId]
     delete app.nodeOutputs[nodeLocatorId]
-
-    // Clear from reactive state
     delete nodeOutputs.value[nodeLocatorId]
 
-    // Clear preview images
     if (app.nodePreviewImages[nodeLocatorId]) {
       const previews = app.nodePreviewImages[nodeLocatorId]
       if (previews?.[Symbol.iterator]) {
@@ -395,6 +384,22 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     }
 
     return hadOutputs
+  }
+
+  /**
+   * Remove node outputs for a specific node
+   * Clears both outputs and preview images
+   */
+  function removeNodeOutputs(nodeId: number | string) {
+    const nodeLocatorId = nodeIdToNodeLocatorId(Number(nodeId))
+    if (!nodeLocatorId) return false
+    return removeOutputsByLocatorId(nodeLocatorId)
+  }
+
+  // Resolves the locator from the node's own graph, so interior subgraph nodes
+  // are addressed correctly even when the user has a different graph active.
+  function removeNodeOutputsForNode(node: LGraphNode) {
+    return removeOutputsByLocatorId(nodeToNodeLocatorId(node))
   }
 
   function snapshotOutputs(): Record<string, ExecutedWsMessage['output']> {
@@ -493,6 +498,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     revokeAllPreviews,
     revokeSubgraphPreviews,
     removeNodeOutputs,
+    removeNodeOutputsForNode,
     snapshotOutputs,
     restoreOutputs,
     resetAllOutputsAndPreviews,

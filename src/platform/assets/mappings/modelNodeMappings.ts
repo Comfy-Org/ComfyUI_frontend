@@ -52,9 +52,6 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   // ---- SAM3 3D segmentation (comfyui-sam3) ----
   ['sam3', 'LoadSAM3Model', 'model_path'],
 
-  // ---- Ultralytics detection (comfyui-impact-subpack) ----
-  ['ultralytics', 'UltralyticsDetectorProvider', 'model_name'],
-
   // ---- DepthAnything (comfyui-depthanythingv2, comfyui-depthanythingv3) ----
   ['depthanything', 'DownloadAndLoadDepthAnythingV2Model', 'model'],
   ['depthanything3', 'DownloadAndLoadDepthAnythingV3Model', 'model'],

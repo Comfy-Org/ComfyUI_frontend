@@ -914,9 +914,9 @@ const translations = {
     'zh-CN': '我应该选择 Comfy Cloud 还是本地 ComfyUI（自托管）？'
   },
   'cloud.faq.3.a': {
-    en: "Comfy Cloud (beta) has zero setup, is easy to share with your team, and is faster than most GPUs you can run on a desktop workstation. You can immediately run the best models and workflows from the community on Comfy Cloud.\nLocal ComfyUI is infinitely customizable, works offline, and you don't need to worry about queue times. However, depending on what you want to create, you might need to have a good GPU and some amount of technical knowledge to install community-created custom nodes.",
+    en: "Comfy Cloud has zero setup, is easy to share with your team, and is faster than most GPUs you can run on a desktop workstation. You can immediately run the best models and workflows from the community on Comfy Cloud.\nLocal ComfyUI is infinitely customizable, works offline, and you don't need to worry about queue times. However, depending on what you want to create, you might need to have a good GPU and some amount of technical knowledge to install community-created custom nodes.",
     'zh-CN':
-      'Comfy Cloud（测试版）无需任何设置，方便与团队共享，比大多数桌面工作站 GPU 更快。您可以立即在 Comfy Cloud 上运行社区中最好的模型和工作流。\n本地 ComfyUI 可以无限定制，支持离线工作，无需担心排队时间。但根据您的创作需求，可能需要一块好的 GPU 以及一定的技术知识来安装社区创建的自定义节点。'
+      'Comfy Cloud 无需任何设置，方便与团队共享，比大多数桌面工作站 GPU 更快。您可以立即在 Comfy Cloud 上运行社区中最好的模型和工作流。\n本地 ComfyUI 可以无限定制，支持离线工作，无需担心排队时间。但根据您的创作需求，可能需要一块好的 GPU 以及一定的技术知识来安装社区创建的自定义节点。'
   },
   'cloud.faq.4.q': {
     en: 'Do I need a GPU or a strong computer to use Comfy Cloud?',
@@ -1119,6 +1119,10 @@ const translations = {
     en: 'Import your own LoRAs',
     'zh-CN': '导入你自己的 LoRA'
   },
+  'pricing.plan.creator.feature2': {
+    en: '3 concurrent API jobs',
+    'zh-CN': '3 个并发 API 任务'
+  },
 
   'pricing.plan.pro.label': { en: 'PRO', 'zh-CN': '专业版' },
   'pricing.plan.pro.summary': {
@@ -1142,6 +1146,10 @@ const translations = {
   'pricing.plan.pro.feature1': {
     en: 'Longer workflow runtime (up to 1 hour)',
     'zh-CN': '更长工作流运行时长（最长 1 小时）'
+  },
+  'pricing.plan.pro.feature2': {
+    en: '5 concurrent API jobs',
+    'zh-CN': '5 个并发 API 任务'
   },
 
   'pricing.enterprise.label': { en: 'ENTERPRISE', 'zh-CN': '企业版' },
@@ -1279,10 +1287,6 @@ const translations = {
   'pricing.included.feature11.description': {
     en: 'Run multiple workflows in parallel to speed up your pipeline.',
     'zh-CN': '并行运行多个工作流，加速你的流程。'
-  },
-  'pricing.included.comingSoon': {
-    en: 'coming soon',
-    'zh-CN': '即将推出'
   },
 
   // VideoPlayer
@@ -1603,7 +1607,7 @@ const translations = {
   },
   'nav.comfyHub': { en: 'Comfy Hub', 'zh-CN': 'Comfy Hub' },
   'nav.gallery': { en: 'Gallery', 'zh-CN': '画廊' },
-  'nav.blogs': { en: 'Blogs', 'zh-CN': '博客' },
+  'nav.blogs': { en: 'Blog', 'zh-CN': '博客' },
   'nav.github': { en: 'GitHub', 'zh-CN': 'GitHub' },
   'nav.discord': { en: 'Discord', 'zh-CN': 'Discord' },
   'nav.docs': { en: 'Docs', 'zh-CN': '文档' },
@@ -3502,18 +3506,6 @@ const translations = {
     en: 'Dale Carman | Co-founder @ Groove Jones',
     'zh-CN': 'Dale Carman | Groove Jones 联合创始人'
   },
-  'customers.detail.groove-jones.topic-10.block.2.label': {
-    en: 'GROOVE JONES CONTRIBUTORS',
-    'zh-CN': 'GROOVE JONES 贡献者'
-  },
-  'customers.detail.groove-jones.topic-10.block.2.name': {
-    en: 'TBD',
-    'zh-CN': '待补充'
-  },
-  'customers.detail.groove-jones.topic-10.block.2.role': {
-    en: 'TBD',
-    'zh-CN': '待补充'
-  },
 
   // Contact – FormSection
   'contact.form.badge': {
@@ -3545,6 +3537,94 @@ const translations = {
     en: "and we'll route your request.",
     'zh-CN': '我们会为您处理请求。'
   },
+
+  'demos.category.templates': { en: 'TEMPLATES', 'zh-CN': '模板' },
+  'demos.category.gettingStarted': { en: 'GETTING STARTED', 'zh-CN': '入门' },
+
+  'demos.image-to-video.title': {
+    en: 'Create a Video from an Image',
+    'zh-CN': '从图片创建视频'
+  },
+  'demos.image-to-video.description': {
+    en: 'Learn how to use the Image to Video workflow template in ComfyUI to generate short video clips from a single image.',
+    'zh-CN':
+      '了解如何使用 ComfyUI 中的图片转视频工作流模板，从单张图片生成短视频。'
+  },
+  'demos.image-to-video.transcript': {
+    en: '<ol><li><strong>Open ComfyUI</strong> — Launch the application and you\'ll see the node-based workflow canvas where all your AI pipelines are built.</li><li><strong>Browse templates</strong> — Click the workflow templates button in the sidebar to browse available starting points.</li><li><strong>Select Image to Video</strong> — Find and select the "Image to Video" template from the list to load it onto your canvas.</li><li><strong>Upload your image</strong> — Click the image upload node and select the source image you want to animate.</li><li><strong>Run the workflow</strong> — Click the "Queue" button to execute the workflow and generate your video output.</li></ol>',
+    'zh-CN':
+      '<ol><li><strong>打开 ComfyUI</strong> — 启动应用程序，您将看到基于节点的工作流画布。</li><li><strong>浏览模板</strong> — 点击侧栏中的工作流模板按钮，浏览可用模板。</li><li><strong>选择图片转视频</strong> — 从列表中找到并选择"图片转视频"模板。</li><li><strong>上传图片</strong> — 点击图片上传节点，选择要动画化的源图片。</li><li><strong>运行工作流</strong> — 点击"排队"按钮执行工作流并生成视频输出。</li></ol>'
+  },
+
+  'demos.workflow-templates.title': {
+    en: 'Browse Workflow Templates',
+    'zh-CN': '浏览工作流模板'
+  },
+  'demos.workflow-templates.description': {
+    en: "Explore ComfyUI's built-in workflow templates to quickly get started with common AI generation tasks.",
+    'zh-CN': '探索 ComfyUI 内置的工作流模板，快速开始常见的 AI 生成任务。'
+  },
+  'demos.workflow-templates.transcript': {
+    en: '<ol><li><strong>Open the template browser</strong> — Click the templates icon in the ComfyUI sidebar to open the template library.</li><li><strong>Browse categories</strong> — Templates are organized by task: image generation, video, upscaling, and more.</li><li><strong>Preview a template</strong> — Hover over any template to see a preview of its workflow and expected output.</li><li><strong>Load and customize</strong> — Click to load a template, then modify parameters to fit your needs.</li></ol>',
+    'zh-CN':
+      '<ol><li><strong>打开模板浏览器</strong> — 点击 ComfyUI 侧栏中的模板图标。</li><li><strong>浏览分类</strong> — 模板按任务分类：图像生成、视频、放大等。</li><li><strong>预览模板</strong> — 将鼠标悬停在模板上查看预览。</li><li><strong>加载并自定义</strong> — 点击加载模板，然后修改参数。</li></ol>'
+  },
+
+  'demos.community-workflows.title': {
+    en: 'Explore and Use a Community Workflow from the Hub',
+    'zh-CN': '探索并使用社区工作流'
+  },
+  'demos.community-workflows.description': {
+    en: 'Discover how to find and get started with popular community workflows for generative AI projects.',
+    'zh-CN': '了解如何查找并使用流行的社区工作流来构建生成式 AI 项目。'
+  },
+  'demos.community-workflows.transcript': {
+    en: '<ol><li><strong>Open the Workflow Hub</strong> — From the ComfyUI sidebar, navigate to the community Workflow Hub to browse curated and trending workflows shared by the community.</li><li><strong>Browse popular workflows</strong> — Explore featured projects sorted by popularity, recency, and category to find one that matches your goal.</li><li><strong>Preview a workflow</strong> — Click a workflow card to see example outputs, required models, and a description of what it produces.</li><li><strong>Open in ComfyUI</strong> — Use the "Get Started" action to load the selected community workflow directly onto your canvas.</li><li><strong>Run and customize</strong> — Queue the workflow to generate your first result, then tweak prompts, models, and parameters to make it your own.</li></ol>',
+    'zh-CN':
+      '<ol><li><strong>打开工作流中心</strong> — 在 ComfyUI 侧栏中，进入社区工作流中心，浏览社区分享的精选和热门工作流。</li><li><strong>浏览热门工作流</strong> — 按热度、时间和分类浏览精选项目，找到符合需求的工作流。</li><li><strong>预览工作流</strong> — 点击工作流卡片，查看示例输出、所需模型和功能描述。</li><li><strong>在 ComfyUI 中打开</strong> — 使用"开始使用"按钮，将选中的社区工作流直接加载到画布。</li><li><strong>运行并自定义</strong> — 排队执行工作流以生成首个结果，然后调整提示词、模型和参数。</li></ol>'
+  },
+
+  'demos.nav.nextDemo': { en: "What's Next", 'zh-CN': '下一个演示' },
+  'demos.nav.viewDemo': { en: 'View Demo', 'zh-CN': '查看演示' },
+  'demos.nav.allDemos': { en: 'All Demos', 'zh-CN': '所有演示' },
+  'demos.transcript.label': { en: 'Demo transcript', 'zh-CN': '演示文字记录' },
+  'demos.transcript.note': {
+    en: '(for accessibility & search)',
+    'zh-CN': '（无障碍和搜索）'
+  },
+  'demos.loading': {
+    en: 'Loading interactive demo…',
+    'zh-CN': '正在加载互动演示…'
+  },
+  'demos.noscript': {
+    en: 'This interactive demo requires JavaScript.',
+    'zh-CN': '此互动演示需要 JavaScript。'
+  },
+  'demos.noscript.link': {
+    en: 'View on Arcade →',
+    'zh-CN': '在 Arcade 上查看 →'
+  },
+  'demos.duration.2min': { en: '~2 min', 'zh-CN': '~2 分钟' },
+  'demos.difficulty.beginner': { en: 'Beginner', 'zh-CN': '入门' },
+  'demos.difficulty.intermediate': {
+    en: 'Intermediate',
+    'zh-CN': '中级'
+  },
+  'demos.difficulty.advanced': { en: 'Advanced', 'zh-CN': '高级' },
+  'demos.embed.label': {
+    en: 'Interactive demo',
+    'zh-CN': '互动演示'
+  },
+  'demos.comingSoon.title': {
+    en: 'Coming Soon',
+    'zh-CN': '即将推出'
+  },
+  'demos.comingSoon.body': {
+    en: 'This page is being redesigned. Check back soon.',
+    'zh-CN': '此页面正在重新设计中，请稍后再来。'
+  },
+  'demos.breadcrumb.home': { en: 'Home', 'zh-CN': '首页' },
+  'demos.breadcrumb.demos': { en: 'Demos', 'zh-CN': '演示' },
 
   'customers.story.whatsNext': {
     en: "What's next?",
@@ -3596,6 +3676,49 @@ const translations = {
   'customers.feedback.role3': {
     en: 'Head of AI at Creative Studios',
     'zh-CN': 'Creative Studios AI 负责人'
+  },
+
+  // Payment status pages
+  'payment.success.label': {
+    en: 'PAYMENT',
+    'zh-CN': '支付'
+  },
+  'payment.success.title': {
+    en: 'Payment successful',
+    'zh-CN': '支付成功'
+  },
+  'payment.success.subtitle': {
+    en: "Thanks for your purchase. Your account has been credited and you're ready to keep building.",
+    'zh-CN': '感谢您的购买。您的账户已充值完成，可以继续创作了。'
+  },
+  'payment.success.primaryCta': {
+    en: 'CONTINUE TO COMFY CLOUD',
+    'zh-CN': '前往 COMFY CLOUD'
+  },
+  'payment.success.secondaryCta': {
+    en: 'VIEW USAGE & PAYMENTS',
+    'zh-CN': '查看用量与支付'
+  },
+  'payment.failed.label': {
+    en: 'PAYMENT',
+    'zh-CN': '支付'
+  },
+  'payment.failed.title': {
+    en: 'Unable to complete payment',
+    'zh-CN': '无法完成支付'
+  },
+  'payment.failed.subtitle': {
+    en: "Your payment didn't go through and you have not been charged. Reach out to support or read the subscription docs if you need help.",
+    'zh-CN':
+      '您的支付未能完成，未发生扣款。如需帮助，请联系支持或查阅订阅文档。'
+  },
+  'payment.failed.primaryCta': {
+    en: 'CONTACT SUPPORT',
+    'zh-CN': '联系支持'
+  },
+  'payment.failed.secondaryCta': {
+    en: 'READ SUBSCRIPTION DOCS',
+    'zh-CN': '查看订阅文档'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 

@@ -56,6 +56,7 @@ import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
@@ -248,11 +249,17 @@ const onExecutionSuccess = async () => {
 }
 
 const { onReconnecting, onReconnected } = useReconnectingNotification()
+const refreshOnReconnect = useReconnectQueueRefresh()
+
+const handleReconnected = async () => {
+  onReconnected()
+  await refreshOnReconnect()
+}
 
 useEventListener(api, 'status', onStatus)
 useEventListener(api, 'execution_success', onExecutionSuccess)
 useEventListener(api, 'reconnecting', onReconnecting)
-useEventListener(api, 'reconnected', onReconnected)
+useEventListener(api, 'reconnected', handleReconnected)
 
 onMounted(() => {
   executionStore.bindExecutionEvents()
