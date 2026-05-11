@@ -27,7 +27,8 @@ export enum ServerFeatureFlag {
   WORKFLOW_SHARING_ENABLED = 'workflow_sharing_enabled',
   COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
-  SHOW_SIGNIN_BUTTON = 'show_signin_button'
+  SHOW_SIGNIN_BUTTON = 'show_signin_button',
+  NEW_USER_DEFAULT_TEMPLATE_TAB = 'new_user_default_template_tab'
 }
 
 /**
@@ -161,6 +162,19 @@ export function useFeatureFlags() {
     get showSignInButton(): boolean | undefined {
       return api.getServerFeature<boolean | undefined>(
         ServerFeatureFlag.SHOW_SIGNIN_BUTTON,
+        undefined
+      )
+    },
+    /**
+     * Template category id shown by default when the template selector
+     * opens for a new user during onboarding. Used for A/B testing the
+     * onboarding tab via PostHog feature flags. Returns `undefined` when
+     * unset so callers fall back to the built-in default.
+     */
+    get newUserDefaultTemplateTab(): string | undefined {
+      return resolveFlag<string | undefined>(
+        ServerFeatureFlag.NEW_USER_DEFAULT_TEMPLATE_TAB,
+        remoteConfig.value.new_user_default_template_tab,
         undefined
       )
     }
