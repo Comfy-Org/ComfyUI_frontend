@@ -78,11 +78,18 @@ vi.mock('@/composables/useCopyToClipboard', () => ({
   })
 }))
 
+const mockExportWorkflowAction = vi.hoisted(() => vi.fn())
+const mockOpenWorkflowAction = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/workflow/core/services/workflowActionsService', () => ({
   useWorkflowActionsService: () => ({
-    openWorkflowAction: vi.fn(),
-    exportWorkflowAction: vi.fn()
+    openWorkflowAction: mockOpenWorkflowAction,
+    exportWorkflowAction: mockExportWorkflowAction
   })
+}))
+
+const mockExtractWorkflowFromAsset = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/workflow/utils/workflowExtractionUtil', () => ({
+  extractWorkflowFromAsset: mockExtractWorkflowFromAsset
 }))
 
 vi.mock('@/services/litegraphService', () => ({
@@ -373,6 +380,69 @@ describe('useMediaAssetActions', () => {
         expect(capturedFilenames.values).not.toContain('file1.jpeg')
         expect(capturedFilenames.values).not.toContain('file2.jpeg')
       })
+    })
+  })
+
+  describe('exportWorkflow', () => {
+    const successResult = { success: true } as const
+    const cancelledResult = { success: false, cancelled: true } as const
+    const failureResult = { success: false, error: 'boom' } as const
+    const noWorkflowResult = {
+      success: false,
+      error: 'No workflow data available'
+    } as const
+
+    function getToastAdd() {
+      return vi.mocked(useToast().add)
+    }
+
+    beforeEach(() => {
+      mockExtractWorkflowFromAsset.mockResolvedValue({
+        workflow: { version: 0.4 },
+        filename: 'export.json'
+      })
+    })
+
+    it('does not show a toast when the user cancels the filename prompt', async () => {
+      mockExportWorkflowAction.mockResolvedValue(cancelledResult)
+      const actions = useMediaAssetActions()
+
+      await actions.exportWorkflow(createMockAsset())
+
+      expect(getToastAdd()).not.toHaveBeenCalled()
+    })
+
+    it('shows a success toast on successful export', async () => {
+      mockExportWorkflowAction.mockResolvedValue(successResult)
+      const actions = useMediaAssetActions()
+
+      await actions.exportWorkflow(createMockAsset())
+
+      expect(getToastAdd()).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
+    })
+
+    it('shows an error toast on actual failure', async () => {
+      mockExportWorkflowAction.mockResolvedValue(failureResult)
+      const actions = useMediaAssetActions()
+
+      await actions.exportWorkflow(createMockAsset())
+
+      expect(getToastAdd()).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+    })
+
+    it('shows a warning toast when the workflow is missing', async () => {
+      mockExportWorkflowAction.mockResolvedValue(noWorkflowResult)
+      const actions = useMediaAssetActions()
+
+      await actions.exportWorkflow(createMockAsset())
+
+      expect(getToastAdd()).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'warn' })
+      )
     })
   })
 

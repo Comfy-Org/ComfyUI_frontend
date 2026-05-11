@@ -378,6 +378,8 @@ export function useMediaAssetActions() {
       filename
     )
 
+    if (result.cancelled) return
+
     if (!result.success) {
       const isNoWorkflow = result.error?.includes('No workflow')
       toast.add({
@@ -565,7 +567,7 @@ export function useMediaAssetActions() {
 
         if (result.success) {
           succeeded++
-        } else {
+        } else if (!result.cancelled) {
           failed++
         }
       } catch {
