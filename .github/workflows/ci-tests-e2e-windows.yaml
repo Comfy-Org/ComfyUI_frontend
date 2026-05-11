@@ -1,0 +1,117 @@
+# Description: On-demand Windows Chromium browser tests without screenshot baselines
+name: 'CI: Tests E2E Windows'
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [labeled, synchronize, reopened]
+    branches-ignore: [wip/*, draft/*, temp/*]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  setup:
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        contains(github.event.pull_request.labels.*.name, 'Run Windows E2E')
+      }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: true
+
+      - name: Upload built frontend
+        uses: actions/upload-artifact@v6
+        with:
+          name: frontend-dist-windows-e2e
+          path: dist/
+          retention-days: 1
+
+  playwright-tests-windows:
+    needs: setup
+    runs-on: windows-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8]
+        shardTotal: [8]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Download built frontend
+        uses: actions/download-artifact@v7
+        with:
+          name: frontend-dist-windows-e2e
+          path: dist/
+
+      - name: Setup ComfyUI server
+        uses: ./.github/actions/setup-comfyui-server
+        with:
+          launch_server: true
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
+      - name: Run Playwright tests (Windows shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
+        run: >
+          pnpm exec playwright test
+          --project=chromium
+          --grep-invert @screenshot
+          --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+          --reporter=blob
+        shell: bash
+        env:
+          PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+
+      - name: Upload blob report
+        uses: actions/upload-artifact@v6
+        if: ${{ !cancelled() }}
+        with:
+          name: blob-report-windows-${{ matrix.shardIndex }}
+          path: blob-report/
+          retention-days: 1
+
+  merge-reports:
+    needs: playwright-tests-windows
+    runs-on: ubuntu-latest
+    if: ${{ !cancelled() }}
+    steps:
+      - name: Install pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          version: 10
+
+      - name: Download blob reports
+        uses: actions/download-artifact@v7
+        with:
+          path: ./all-blob-reports
+          pattern: blob-report-windows-*
+          merge-multiple: true
+
+      - name: Merge into HTML Report
+        run: |
+          pnpm dlx @playwright/test merge-reports --reporter=html ./all-blob-reports
+          PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
+          pnpm dlx @playwright/test merge-reports --reporter=json ./all-blob-reports
+
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report-windows-chromium
+          path: ./playwright-report/
+          retention-days: 30
