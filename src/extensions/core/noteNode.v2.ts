@@ -34,7 +34,11 @@
  * GAP-1 is closed.
  */
 
-import { LGraphCanvas, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphCanvas,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import { ComfyWidgets } from '../../scripts/widgets'
 import { defineExtension } from '@/extension-api'
 
