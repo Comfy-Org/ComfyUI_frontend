@@ -30,7 +30,7 @@ reviews:
 
           Fail if all of the following are true:
           1. The PR title and/or any commit subject in the PR uses bug-fix language such as `fix`, `fixed`, `fixes`, `fixing`, `bugfix`, or `hotfix`.
-          2. The PR changes files under `src/` or `/packages` related to the main frontend application but the PR does not change at least one file under `browser_tests/`.
+          2. The PR changes files under `src/` or `packages/` related to the main frontend application but the PR does not change at least one file under `browser_tests/`.
           3. The PR description lacks a concrete explanation of why an end-to-end regression test was not added.
 
           Do not fail if the changes are exclusively in `apps/website`, just documentation changes, or changes related to CI processes.
