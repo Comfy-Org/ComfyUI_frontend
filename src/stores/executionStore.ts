@@ -20,7 +20,6 @@ import type {
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type {
   ExecutedWsMessage,
-  ExecutingWsMessage,
   ExecutionCachedWsMessage,
   ExecutionErrorWsMessage,
   ExecutionInterruptedWsMessage,
@@ -39,6 +38,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeId } from '@/types/nodeId'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { AppMode } from '@/utils/appMode'
@@ -519,6 +519,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
     const jobId = e.detail.prompt_id
+    clearInitializationByJobId(jobId)
     if (!messageMatchesActiveWorkflow(jobId, e.detail.workflow_id)) return
     setWorkflowStatus(jobId, {
       status: 'completed',
@@ -542,24 +543,19 @@ export const useExecutionStore = defineStore('execution', () => {
     resetExecutionState(jobId)
   }
 
-  function handleExecuting(e: CustomEvent<ExecutingWsMessage | null>): void {
+  function handleExecuting(e: CustomEvent<NodeId | null>): void {
     progressCoalescer.cancel()
     if (e.detail == null) progressStateCoalescer.cancel()
-
-    if (
-      e.detail != null &&
-      !messageMatchesActiveWorkflow(e.detail.prompt_id, e.detail.workflow_id)
-    ) {
-      return
-    }
 
     // Clear the current node progress when a new node starts executing
     _executingNodeProgress.value = null
 
     if (!activeJob.value) return
 
-    // Update the executing nodes list
     if (e.detail == null) {
+      if (activeJobId.value) {
+        delete queuedJobs.value[activeJobId.value]
+      }
       activeJobId.value = null
     }
   }
@@ -687,6 +683,24 @@ export const useExecutionStore = defineStore('execution', () => {
     }
 
     return true
+  }
+
+  /**
+   * Returns true when workflow ownership for {@link jobId} can be resolved
+   * — either by an explicit `workflow_id` on the incoming message or by a
+   * mapping registered when the job was queued. When this returns false
+   * the caller should fall back to whatever legacy guard applied before
+   * workflow gating was introduced.
+   */
+  function canResolveWorkflowOwnership(
+    jobId: JobId,
+    messageWorkflowId: string | undefined
+  ): boolean {
+    return (
+      Boolean(messageWorkflowId) ||
+      jobIdToWorkflowId.value.has(jobId) ||
+      jobIdToSessionWorkflowPath.value.has(jobId)
+    )
   }
 
   const progressCoalescer = createRafCoalescer<ProgressWsMessage>((detail) => {
@@ -907,18 +921,12 @@ export const useExecutionStore = defineStore('execution', () => {
     const { nodeId, text, prompt_id, workflow_id } = e.detail
     if (!text || !nodeId) return
 
-    // Prefer the workflow-ownership gate when ownership can be resolved
-    // (workflow_id on the message, or a registered mapping). Only fall back
-    // to the legacy active-prompt guard when ownership is unresolvable;
-    // otherwise activeJobId pointing at a different workflow's job would
-    // incorrectly drop messages for the visible workflow.
+    // Prefer the workflow-ownership gate when ownership can be resolved.
+    // Only fall back to the legacy active-prompt guard when ownership is
+    // unresolvable; otherwise activeJobId pointing at a different workflow's
+    // job would incorrectly drop messages for the visible workflow.
     if (prompt_id) {
-      const canResolveWorkflow =
-        Boolean(workflow_id) ||
-        jobIdToWorkflowId.value.has(prompt_id) ||
-        jobIdToSessionWorkflowPath.value.has(prompt_id)
-
-      if (canResolveWorkflow) {
+      if (canResolveWorkflowOwnership(prompt_id, workflow_id)) {
         if (!messageMatchesActiveWorkflow(prompt_id, workflow_id)) return
       } else if (activeJobId.value && prompt_id !== activeJobId.value) {
         return
