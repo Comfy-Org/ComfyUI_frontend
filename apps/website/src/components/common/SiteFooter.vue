@@ -88,7 +88,7 @@ const contactColumn = {
     { label: t('footer.sales', locale), href: routes.contact },
     {
       label: t('footer.support', locale),
-      href: externalLinks.discord,
+      href: externalLinks.support,
       external: true
     },
     { label: t('footer.press', locale), href: 'mailto:press@comfy.org' }

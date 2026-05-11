@@ -252,6 +252,20 @@ describe('CurrentUserPopoverLegacy', () => {
     expect(screen.getByText('Log Out')).toBeInTheDocument()
   })
 
+  describe('credits help icon (FE-617)', () => {
+    it('renders the credits help icon as an interactive button with the unified-credits tooltip as its accessible name', () => {
+      renderComponent()
+
+      const helpButton = screen.getByTestId('credits-info-button')
+      expect(helpButton).toBeInTheDocument()
+      expect(helpButton.tagName).toBe('BUTTON')
+      expect(helpButton).toHaveAttribute(
+        'aria-label',
+        enMessages.credits.unified.tooltip
+      )
+    })
+  })
+
   it('opens user settings and emits close event when settings item is clicked', async () => {
     const { user, onClose } = renderComponent()
 

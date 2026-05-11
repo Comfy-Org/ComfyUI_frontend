@@ -180,7 +180,14 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       if (getMediaTypeFromFilename(asset.name) !== targetMediaType) continue
       if (seen.has(asset.id)) continue
       seen.add(asset.id)
-      const annotatedPath = `${asset.name} [output]`
+      const subfolder =
+        kind === 'mesh'
+          ? getOutputAssetMetadata(asset.user_metadata)?.subfolder
+          : undefined
+      const pathWithSubfolder = subfolder
+        ? `${subfolder}/${asset.name}`
+        : asset.name
+      const annotatedPath = `${pathWithSubfolder} [output]`
       const displayLabel = `${getAssetDisplayFilename(asset)} [output]`
       items.push({
         id: `output-${asset.id}`,

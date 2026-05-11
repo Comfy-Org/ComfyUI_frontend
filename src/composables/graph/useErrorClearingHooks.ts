@@ -28,7 +28,7 @@ import {
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import {
   scanNodeMediaCandidates,
-  verifyCloudMediaCandidates
+  verifyMediaCandidates
 } from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
@@ -162,6 +162,7 @@ function scanAndAddNodeErrors(node: LGraphNode): void {
 
   if (node.isSubgraphNode?.() && node.subgraph) {
     for (const innerNode of collectAllNodes(node.subgraph)) {
+      if (innerNode.isSubgraphNode?.()) continue
       if (isNodeInactive(innerNode.mode)) continue
       scanSingleNodeErrors(innerNode)
     }
@@ -208,8 +209,8 @@ function scanSingleNodeErrors(node: LGraphNode): void {
   if (confirmedMedia.length) {
     useMissingMediaStore().addMissingMedia(confirmedMedia)
   }
-  // Cloud media scans always return isMissing: undefined pending
-  // verification against the input-assets list.
+  // Cloud media scans return pending for asset verification. OSS scans only
+  // return pending for generated output/temp media.
   const pendingMedia = mediaCandidates.filter((c) => c.isMissing === undefined)
   if (pendingMedia.length) {
     void verifyAndAddPendingMedia(pendingMedia)
@@ -281,7 +282,7 @@ async function verifyAndAddPendingMedia(
 ): Promise<void> {
   const rootGraphAtScan = app.rootGraph
   try {
-    await verifyCloudMediaCandidates(pending)
+    await verifyMediaCandidates(pending, { isCloud })
     if (app.rootGraph !== rootGraphAtScan) return
     const verified = pending.filter(
       (c) => c.isMissing === true && isCandidateStillActive(c.nodeId)

@@ -11,6 +11,7 @@ const baseRoutes = {
   about: '/about',
   careers: '/careers',
   customers: '/customers',
+  demos: '/demos',
   termsOfService: '/terms-of-service',
   privacyPolicy: '/privacy-policy',
   contact: '/contact'
@@ -33,8 +34,12 @@ export const externalLinks = {
   discord: 'https://discord.com/invite/comfyorg',
   docs: 'https://docs.comfy.org/',
   docsApi: 'https://docs.comfy.org/api-reference/cloud',
+  docsSubscription: 'https://docs.comfy.org/support/subscription/subscribing',
   github: 'https://github.com/Comfy-Org/ComfyUI',
+  githubInstall: 'https://github.com/Comfy-Org/ComfyUI#installing',
   platform: 'https://platform.comfy.org',
+  platformUsage: 'https://platform.comfy.org/profile/usage',
+  support: 'https://support.comfy.org/hc/en-us',
   workflows: 'https://comfy.org/workflows',
   youtube: 'https://www.youtube.com/@ComfyOrg'
 } as const
