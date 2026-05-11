@@ -418,21 +418,48 @@ describe('useWorkflowService', () => {
       })
       vi.mocked(workflowStore.saveWorkflow).mockResolvedValue()
 
-      await useWorkflowService().saveWorkflow(workflow)
+      const result = await useWorkflowService().saveWorkflow(workflow)
 
+      expect(result).toBe(true)
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
     })
 
-    it('should call saveWorkflowAs for temporary workflows', async () => {
+    it('should return false when temporary workflow save is cancelled', async () => {
       const workflow = createModeTestWorkflow({
         path: 'workflows/Unsaved Workflow.json'
       })
       Object.defineProperty(workflow, 'isTemporary', { get: () => true })
       vi.spyOn(workflow, 'promptSave').mockResolvedValue(null)
 
-      await useWorkflowService().saveWorkflow(workflow)
+      const result = await useWorkflowService().saveWorkflow(workflow)
 
+      expect(result).toBe(false)
       expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('closeWorkflow', () => {
+    let workflowStore: ReturnType<typeof useWorkflowStore>
+    let service: ReturnType<typeof useWorkflowService>
+
+    beforeEach(() => {
+      workflowStore = useWorkflowStore()
+      service = useWorkflowService()
+    })
+
+    it('keeps a temporary workflow open when Save As is cancelled', async () => {
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/Unsaved Workflow.json'
+      })
+      workflow.isModified = true
+      Object.defineProperty(workflow, 'isTemporary', { get: () => true })
+      vi.spyOn(workflow, 'promptSave').mockResolvedValue(null)
+      mockConfirm.mockResolvedValue(true)
+
+      const closed = await service.closeWorkflow(workflow)
+
+      expect(closed).toBe(false)
+      expect(workflowStore.closeWorkflow).not.toHaveBeenCalled()
     })
   })
 

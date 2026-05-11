@@ -10057,6 +10057,8 @@ export interface components {
             };
             progress: number;
             create_time: number;
+            /** @description Actual credits consumed by the task. Present once status is finalized; 0 for failed tasks. */
+            consumed_credit?: number;
         };
         TripoSuccessTask: {
             /** @enum {integer} */
@@ -12575,12 +12577,16 @@ export interface components {
         Rodin3DGenerateRequest: {
             /** @description The reference images to generate 3D Assets. */
             images: string;
+            /** @description Text prompt used by the upstream Rodin API. Required by upstream for text-to-3D requests (no images uploaded); optional for image-to-3D requests where it acts as additional guidance. */
+            prompt?: string;
             /** @description Seed. */
             seed?: number;
             tier?: components["schemas"]["RodinTierType"];
             material?: components["schemas"]["RodinMaterialType"];
             quality?: components["schemas"]["RodinQualityType"];
             mesh_mode?: components["schemas"]["RodinMeshModeType"];
+            /** @description Optional list of upstream addon flags (e.g. "HighPack"). */
+            addons?: string[];
         };
         /**
          * @description Rodin Tier para options

@@ -1119,6 +1119,10 @@ const translations = {
     en: 'Import your own LoRAs',
     'zh-CN': '导入你自己的 LoRA'
   },
+  'pricing.plan.creator.feature2': {
+    en: '3 concurrent API jobs',
+    'zh-CN': '3 个并发 API 任务'
+  },
 
   'pricing.plan.pro.label': { en: 'PRO', 'zh-CN': '专业版' },
   'pricing.plan.pro.summary': {
@@ -1142,6 +1146,10 @@ const translations = {
   'pricing.plan.pro.feature1': {
     en: 'Longer workflow runtime (up to 1 hour)',
     'zh-CN': '更长工作流运行时长（最长 1 小时）'
+  },
+  'pricing.plan.pro.feature2': {
+    en: '5 concurrent API jobs',
+    'zh-CN': '5 个并发 API 任务'
   },
 
   'pricing.enterprise.label': { en: 'ENTERPRISE', 'zh-CN': '企业版' },
@@ -1599,7 +1607,7 @@ const translations = {
   },
   'nav.comfyHub': { en: 'Comfy Hub', 'zh-CN': 'Comfy Hub' },
   'nav.gallery': { en: 'Gallery', 'zh-CN': '画廊' },
-  'nav.blogs': { en: 'Blogs', 'zh-CN': '博客' },
+  'nav.blogs': { en: 'Blog', 'zh-CN': '博客' },
   'nav.github': { en: 'GitHub', 'zh-CN': 'GitHub' },
   'nav.discord': { en: 'Discord', 'zh-CN': 'Discord' },
   'nav.docs': { en: 'Docs', 'zh-CN': '文档' },
@@ -3560,6 +3568,20 @@ const translations = {
     en: '<ol><li><strong>Open the template browser</strong> — Click the templates icon in the ComfyUI sidebar to open the template library.</li><li><strong>Browse categories</strong> — Templates are organized by task: image generation, video, upscaling, and more.</li><li><strong>Preview a template</strong> — Hover over any template to see a preview of its workflow and expected output.</li><li><strong>Load and customize</strong> — Click to load a template, then modify parameters to fit your needs.</li></ol>',
     'zh-CN':
       '<ol><li><strong>打开模板浏览器</strong> — 点击 ComfyUI 侧栏中的模板图标。</li><li><strong>浏览分类</strong> — 模板按任务分类：图像生成、视频、放大等。</li><li><strong>预览模板</strong> — 将鼠标悬停在模板上查看预览。</li><li><strong>加载并自定义</strong> — 点击加载模板，然后修改参数。</li></ol>'
+  },
+
+  'demos.community-workflows.title': {
+    en: 'Explore and Use a Community Workflow from the Hub',
+    'zh-CN': '探索并使用社区工作流'
+  },
+  'demos.community-workflows.description': {
+    en: 'Discover how to find and get started with popular community workflows for generative AI projects.',
+    'zh-CN': '了解如何查找并使用流行的社区工作流来构建生成式 AI 项目。'
+  },
+  'demos.community-workflows.transcript': {
+    en: '<ol><li><strong>Open the Workflow Hub</strong> — From the ComfyUI sidebar, navigate to the community Workflow Hub to browse curated and trending workflows shared by the community.</li><li><strong>Browse popular workflows</strong> — Explore featured projects sorted by popularity, recency, and category to find one that matches your goal.</li><li><strong>Preview a workflow</strong> — Click a workflow card to see example outputs, required models, and a description of what it produces.</li><li><strong>Open in ComfyUI</strong> — Use the "Get Started" action to load the selected community workflow directly onto your canvas.</li><li><strong>Run and customize</strong> — Queue the workflow to generate your first result, then tweak prompts, models, and parameters to make it your own.</li></ol>',
+    'zh-CN':
+      '<ol><li><strong>打开工作流中心</strong> — 在 ComfyUI 侧栏中，进入社区工作流中心，浏览社区分享的精选和热门工作流。</li><li><strong>浏览热门工作流</strong> — 按热度、时间和分类浏览精选项目，找到符合需求的工作流。</li><li><strong>预览工作流</strong> — 点击工作流卡片，查看示例输出、所需模型和功能描述。</li><li><strong>在 ComfyUI 中打开</strong> — 使用"开始使用"按钮，将选中的社区工作流直接加载到画布。</li><li><strong>运行并自定义</strong> — 排队执行工作流以生成首个结果，然后调整提示词、模型和参数。</li></ol>'
   },
 
   'demos.nav.nextDemo': { en: "What's Next", 'zh-CN': '下一个演示' },
