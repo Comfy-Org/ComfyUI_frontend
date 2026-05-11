@@ -135,6 +135,7 @@ export type RemoteConfig = {
   // Always funnel it through normalizeTurnstileMode before trusting it as a
   // TurnstileMode — that resolver is the single narrowing boundary.
   signup_turnstile?: string
+  new_user_default_template_tab?: string
 }
 
 /**

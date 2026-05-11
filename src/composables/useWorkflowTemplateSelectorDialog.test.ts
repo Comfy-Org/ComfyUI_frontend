@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockDialogService = vi.hoisted(() => ({
   showLayoutDialog: vi.fn()
@@ -14,6 +14,10 @@ const mockNewUserService = vi.hoisted(() => ({
 
 const mockTelemetry = vi.hoisted(() => ({
   trackTemplateLibraryOpened: vi.fn()
+}))
+
+const mockFlags = vi.hoisted(() => ({
+  newUserDefaultTemplateTab: undefined as string | undefined
 }))
 
 vi.mock('@/services/dialogService', () => ({
@@ -32,6 +36,10 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => mockTelemetry
 }))
 
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({ flags: mockFlags })
+}))
+
 vi.mock(
   '@/components/custom/widget/WorkflowTemplateSelectorDialog.vue',
   () => ({
@@ -42,6 +50,11 @@ vi.mock(
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
 describe('useWorkflowTemplateSelectorDialog', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockFlags.newUserDefaultTemplateTab = undefined
+  })
+
   describe('show', () => {
     it('defaults to "all" category for non-new users', () => {
       mockNewUserService.isNewUser.mockReturnValue(false)
@@ -73,6 +86,38 @@ describe('useWorkflowTemplateSelectorDialog', () => {
 
     it('defaults to "all" when new user status is undetermined', () => {
       mockNewUserService.isNewUser.mockReturnValue(null)
+
+      const dialog = useWorkflowTemplateSelectorDialog()
+      dialog.show()
+
+      expect(mockDialogService.showLayoutDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          props: expect.objectContaining({
+            initialCategory: 'all'
+          })
+        })
+      )
+    })
+
+    it('uses feature flag override for new users when set', () => {
+      mockNewUserService.isNewUser.mockReturnValue(true)
+      mockFlags.newUserDefaultTemplateTab = 'popular'
+
+      const dialog = useWorkflowTemplateSelectorDialog()
+      dialog.show()
+
+      expect(mockDialogService.showLayoutDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          props: expect.objectContaining({
+            initialCategory: 'popular'
+          })
+        })
+      )
+    })
+
+    it('ignores feature flag override for non-new users', () => {
+      mockNewUserService.isNewUser.mockReturnValue(false)
+      mockFlags.newUserDefaultTemplateTab = 'popular'
 
       const dialog = useWorkflowTemplateSelectorDialog()
       dialog.show()
