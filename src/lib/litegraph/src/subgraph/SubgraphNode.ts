@@ -107,14 +107,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   private _cacheVersion = 0
   private _linkedEntriesCache?: {
     version: number
-    inputOrderKey: string
-    hasMissingBoundSourceWidget: boolean
     entries: LinkedPromotionEntry[]
   }
   private _promotedViewsCache?: {
     version: number
-    inputOrderKey: string
-    hasMissingBoundSourceWidget: boolean
     views: PromotedWidgetView[]
   }
 
@@ -161,16 +157,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   private _getLinkedPromotionEntries(cache = true): LinkedPromotionEntry[] {
-    const hasMissingBoundSourceWidget = this._hasMissingBoundSourceWidget()
-    const inputOrderKey = this._getInputOrderKey()
     const cached = this._linkedEntriesCache
-    if (
-      cache &&
-      cached?.version === this._cacheVersion &&
-      cached.inputOrderKey === inputOrderKey &&
-      cached.hasMissingBoundSourceWidget === hasMissingBoundSourceWidget
-    )
-      return cached.entries
+    if (cache && cached?.version === this._cacheVersion) return cached.entries
 
     const linkedEntries: LinkedPromotionEntry[] = []
 
@@ -229,45 +217,39 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (cache)
       this._linkedEntriesCache = {
         version: this._cacheVersion,
-        inputOrderKey,
-        hasMissingBoundSourceWidget,
         entries: deduplicatedEntries
       }
 
     return deduplicatedEntries
   }
 
-  private _hasMissingBoundSourceWidget(): boolean {
-    return this.inputs.some((input) => {
-      const boundWidget =
-        input._widget && isPromotedWidgetView(input._widget)
-          ? input._widget
-          : undefined
-      if (!boundWidget) return false
-
-      const boundNode = this.subgraph.getNodeById(boundWidget.sourceNodeId)
-      return (
-        boundNode?.widgets?.some(
-          (widget) => widget.name === boundWidget.sourceWidgetName
-        ) !== true
-      )
-    })
-  }
-
   private _getPromotedViews(): PromotedWidgetView[] {
-    const hasMissingBoundSourceWidget = this._hasMissingBoundSourceWidget()
-    const inputOrderKey = this._getInputOrderKey()
     const cachedViews = this._promotedViewsCache
-    if (
-      cachedViews?.version === this._cacheVersion &&
-      cachedViews.inputOrderKey === inputOrderKey &&
-      cachedViews.hasMissingBoundSourceWidget === hasMissingBoundSourceWidget
-    )
-      return cachedViews.views
+    if (cachedViews?.version === this._cacheVersion) return cachedViews.views
 
     const linkedEntries = this._getLinkedPromotionEntries()
-    const displayNameByViewKey = this._buildDisplayNameByViewKey(linkedEntries)
-    const reconcileEntries = this._buildLinkedReconcileEntries(linkedEntries)
+    const reconcileEntries: Array<{
+      sourceNodeId: string
+      sourceWidgetName: string
+      viewKey: string
+      slotName: string
+    }> = []
+    const displayNameByViewKey = new Map<string, string>()
+    for (const entry of linkedEntries) {
+      const viewKey = this._makePromotionViewKey(
+        entry.inputKey,
+        entry.sourceNodeId,
+        entry.sourceWidgetName,
+        entry.inputName
+      )
+      reconcileEntries.push({
+        sourceNodeId: entry.sourceNodeId,
+        sourceWidgetName: entry.sourceWidgetName,
+        slotName: entry.slotName,
+        viewKey
+      })
+      displayNameByViewKey.set(viewKey, entry.inputName)
+    }
 
     const views = this._promotedViewManager.reconcile(
       reconcileEntries,
@@ -283,61 +265,19 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     this._promotedViewsCache = {
       version: this._cacheVersion,
-      inputOrderKey,
-      hasMissingBoundSourceWidget,
       views
     }
 
     return views
   }
 
-  private _getInputOrderKey(): string {
-    return this.inputs
-      .map((input) => input._subgraphSlot?.id ?? input.name)
-      .join('|')
-  }
-
-  private _invalidatePromotedViewsCache(): void {
+  invalidatePromotedViews(): void {
     this._cacheVersion++
   }
 
-  private _buildLinkedReconcileEntries(
-    linkedEntries: LinkedPromotionEntry[]
-  ): Array<{
-    sourceNodeId: string
-    sourceWidgetName: string
-    viewKey: string
-    slotName: string
-  }> {
-    return linkedEntries.map(
-      ({ inputKey, inputName, slotName, sourceNodeId, sourceWidgetName }) => ({
-        sourceNodeId,
-        sourceWidgetName,
-        slotName,
-        viewKey: this._makePromotionViewKey(
-          inputKey,
-          sourceNodeId,
-          sourceWidgetName,
-          inputName
-        )
-      })
-    )
-  }
-
-  private _buildDisplayNameByViewKey(
-    linkedEntries: LinkedPromotionEntry[]
-  ): Map<string, string> {
-    return new Map(
-      linkedEntries.map((entry) => [
-        this._makePromotionViewKey(
-          entry.inputKey,
-          entry.sourceNodeId,
-          entry.sourceWidgetName,
-          entry.inputName
-        ),
-        entry.inputName
-      ])
-    )
+  private _mutateInputs(fn: () => void): void {
+    fn()
+    this.invalidatePromotedViews()
   }
 
   private _makePromotionViewKey(
@@ -413,10 +353,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
             )
           return
         }
-        const input = this.addInput(name, type, {
-          _subgraphSlot: subgraphInput
+        let input!: INodeInputSlot & Partial<ISubgraphInput>
+        this._mutateInputs(() => {
+          input = this.addInput(name, type, {
+            _subgraphSlot: subgraphInput
+          })
         })
-        this._invalidatePromotedViewsCache()
 
         this._addSubgraphInputListeners(subgraphInput, input)
       },
@@ -429,8 +371,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const widget = e.detail.input._widget
         if (widget) this.ensureWidgetRemoved(widget)
 
-        this.removeInput(e.detail.index)
-        this._invalidatePromotedViewsCache()
+        this._mutateInputs(() => this.removeInput(e.detail.index))
         this.setDirtyCanvas(true, true)
       },
       { signal }
@@ -468,7 +409,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         // collisions when two promoted inputs share the same label.
         // Display is handled via input.label and _widget.label.
         if (input._widget) input._widget.label = newName
-        this._invalidatePromotedViewsCache()
+        this.invalidatePromotedViews()
         this.graph?.trigger('node:slot-label:changed', {
           nodeId: this.id,
           slotType: NodeSlotType.INPUT
@@ -534,7 +475,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphInput.events.addEventListener(
       'input-connected',
       (e) => {
-        this._invalidatePromotedViewsCache()
+        this.invalidatePromotedViews()
         input.shape = this.getSlotShape(subgraphInput, e.detail.input)
         if (!e.detail.widget || !e.detail.node) return
 
@@ -564,7 +505,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
             e.detail.node
           )
 
-        this._invalidatePromotedViewsCache()
+        this.invalidatePromotedViews()
       },
       { signal }
     )
@@ -572,14 +513,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphInput.events.addEventListener(
       'input-disconnected',
       () => {
-        this._invalidatePromotedViewsCache()
+        this.invalidatePromotedViews()
         input.shape = this.getSlotShape(subgraphInput)
 
         // If links remain, rebind to the current representative.
         const connectedWidgets = subgraphInput.getConnectedWidgets()
         if (connectedWidgets.length > 0) {
           this._resolveInputWidget(subgraphInput, input)
-          this._invalidatePromotedViewsCache()
+          this.invalidatePromotedViews()
           return
         }
 
@@ -588,14 +529,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         delete input.pos
         delete input.widget
         input._widget = undefined
-        this._invalidatePromotedViewsCache()
+        this.invalidatePromotedViews()
       },
       { signal }
     )
   }
 
   private _rebindInputSubgraphSlots(): void {
-    this._invalidatePromotedViewsCache()
+    this.invalidatePromotedViews()
 
     const subgraphSlots = [...this.subgraph.inputNode.slots]
     const slotsBySignature = new Map<string, SubgraphInput[]>()
@@ -660,27 +601,29 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       }
     }
 
-    this.inputs.length = 0
-    this.inputs.push(
-      ...this.subgraph.inputNode.slots.map((slot) =>
-        Object.assign(
-          new NodeInputSlot(
+    this._mutateInputs(() => {
+      this.inputs.length = 0
+      this.inputs.push(
+        ...this.subgraph.inputNode.slots.map((slot) =>
+          Object.assign(
+            new NodeInputSlot(
+              {
+                name: slot.name,
+                localized_name: slot.localized_name,
+                label: slot.label,
+                shape: this.getSlotShape(slot),
+                type: slot.type,
+                link: null
+              },
+              this
+            ),
             {
-              name: slot.name,
-              localized_name: slot.localized_name,
-              label: slot.label,
-              shape: this.getSlotShape(slot),
-              type: slot.type,
-              link: null
-            },
-            this
-          ),
-          {
-            _subgraphSlot: slot
-          }
+              _subgraphSlot: slot
+            }
+          )
         )
       )
-    )
+    })
 
     this.outputs.length = 0
     this.outputs.push(
@@ -713,11 +656,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     widgetValues: ExportedSubgraphInstance['widgets_values']
   ): void {
     if (!widgetValues) return
-    // Transient clones created during clipboard duplicate go through
-    // configure() with `id === -1` before being added to the graph.
-    // Hydrating under id `-1` would poison `useWidgetValueStore` and
-    // race with the eventual real instance for ownership of host state.
-    if (this.id === -1) return
 
     let valueIndex = 0
     for (const input of this.inputs) {
@@ -735,11 +673,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     // Prune inputs that don't map to any subgraph slot definition.
     // This prevents stale/duplicate serialized inputs from persisting (#9977).
-    this.inputs = this.inputs.filter((input) => input._subgraphSlot)
+    this._mutateInputs(() => {
+      this.inputs = this.inputs.filter((input) => input._subgraphSlot)
+    })
 
-    // Clear view cache — forces re-creation on next getter access.
     this._promotedViewManager.clear()
-    this._invalidatePromotedViewsCache()
+    this.invalidatePromotedViews()
 
     usePreviewExposureStore().setExposures(
       this.rootGraph.id,
@@ -763,7 +702,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       this._resolveInputWidget(subgraphInput, input)
     }
 
-    this._invalidatePromotedViewsCache()
+    this.invalidatePromotedViews()
 
     for (const node of this.subgraph.nodes) {
       if (!supportsVirtualCanvasImagePreview(node)) continue
@@ -791,7 +730,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
    */
   rebuildInputWidgetBindings(): void {
     this._promotedViewManager.clear()
-    this._invalidatePromotedViewsCache()
+    this.invalidatePromotedViews()
 
     for (const input of this.inputs) {
       delete input.widget
@@ -802,7 +741,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       this._resolveInputWidget(subgraphInput, input)
     }
 
-    this._invalidatePromotedViewsCache()
+    this.invalidatePromotedViews()
   }
 
   private _resolveInputWidget(
@@ -859,7 +798,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     inputWidget: IWidgetLocator | undefined,
     interiorNode: LGraphNode
   ) {
-    this._invalidatePromotedViewsCache()
+    this.invalidatePromotedViews()
 
     const nodeId = String(interiorNode.id)
     const widgetName = interiorWidget.name
@@ -918,7 +857,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   override onAdded(_graph: LGraph): void {
-    this._invalidatePromotedViewsCache()
+    this.invalidatePromotedViews()
   }
 
   /**
@@ -1084,7 +1023,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   private _removePromotedView(view: PromotedWidgetView): void {
-    this._invalidatePromotedViewsCache()
+    this.invalidatePromotedViews()
 
     this._promotedViewManager.remove(view.sourceNodeId, view.sourceWidgetName)
     for (const input of this.inputs) {
@@ -1124,12 +1063,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       subgraphNode: this
     })
 
-    this._invalidatePromotedViewsCache()
+    this.invalidatePromotedViews()
   }
 
   override onRemoved(): void {
     this._eventAbortController.abort()
-    this._invalidatePromotedViewsCache()
+    this.invalidatePromotedViews()
 
     for (const widget of this.widgets) {
       if (isPromotedWidgetView(widget)) {

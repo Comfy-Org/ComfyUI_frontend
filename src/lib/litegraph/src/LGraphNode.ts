@@ -1025,6 +1025,10 @@ export class LGraphNode
 
     if (LiteGraph.use_uuids) data.id = LiteGraph.uuidv4()
 
+    // Subclasses' configure() (e.g. SubgraphNode) keys per-instance state
+    // by id; borrow the source's id so that hydration targets the right slot
+    // before graph.add reassigns.
+    node.id = this.id
     node.configure(data)
 
     return node

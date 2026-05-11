@@ -159,6 +159,7 @@ function applySubgraphInputOrder(
     subgraphNode.inputs.length,
     ...orderedRows.flatMap((row) => row.hostInput ?? [])
   )
+  subgraphNode.invalidatePromotedViews()
 
   for (const [index, input] of subgraphNode.subgraph.inputs.entries()) {
     for (const linkId of input.linkIds) {
