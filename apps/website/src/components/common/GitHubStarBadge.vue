@@ -18,7 +18,7 @@ const { stars } = defineProps<{
     <NodeBadge
       :segments="[{ text: stars }]"
       segment-class="px-1.5 py-0 sm:py-0 lg:py-0"
-      text-class="ppformula-text-center text-[10px] leading-none translate-y-0"
+      text-class="text-[10px] translate-y-0"
       size-class="h-5 sm:h-5"
     />
     <span
