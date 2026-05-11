@@ -180,9 +180,20 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 const mockRemoveNodeOutputs = vi.hoisted(() => vi.fn())
+const mockRemoveNodeOutputsForNode = vi.hoisted(() => vi.fn())
 vi.mock('@/stores/nodeOutputStore', () => ({
   useNodeOutputStore: () => ({
-    removeNodeOutputs: mockRemoveNodeOutputs
+    removeNodeOutputs: mockRemoveNodeOutputs,
+    removeNodeOutputsForNode: mockRemoveNodeOutputsForNode
+  })
+}))
+
+const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: () => ({
+    activeWorkflow: {
+      changeTracker: { captureCanvasState: mockCaptureCanvasState }
+    }
   })
 }))
 
@@ -869,8 +880,12 @@ describe('useMediaAssetActions', () => {
       )
       expect(typeof removeArg).toBe('function')
 
-      removeArg({ id: 42 })
-      expect(mockRemoveNodeOutputs).toHaveBeenCalledWith(42)
+      const sampleNode = { id: 42 }
+      removeArg(sampleNode)
+      expect(mockRemoveNodeOutputsForNode).toHaveBeenCalledWith(sampleNode)
+      // Locator is resolved from the node's own graph, not from the raw id —
+      // covers Load Image / Load Video nodes nested inside subgraphs.
+      expect(mockRemoveNodeOutputs).not.toHaveBeenCalled()
 
       expect(mockClearWidgetValues).toHaveBeenCalledWith(
         mockAppGraph.value,
@@ -881,6 +896,19 @@ describe('useMediaAssetActions', () => {
         mockAppGraph.value,
         new Set(['foo.png', 'foo.png [input]', 'abc123.png'])
       )
+
+      // markMissing + previewCache must run before widget-value clearing,
+      // otherwise findNodesReferencingValues sees blanked widgets and matches
+      // nothing.
+      const markOrder = mockMarkMissingMedia.mock.invocationCallOrder[0]
+      const cacheOrder = mockClearNodePreviewCache.mock.invocationCallOrder[0]
+      const clearOrder = mockClearWidgetValues.mock.invocationCallOrder[0]
+      expect(markOrder).toBeLessThan(clearOrder)
+      expect(cacheOrder).toBeLessThan(clearOrder)
+
+      // Programmatic widget mutation doesn't go through DOM events, so the
+      // workflow won't be flagged as modified unless we capture explicitly.
+      expect(mockCaptureCanvasState).toHaveBeenCalled()
     })
 
     it('emits the [output]-annotated variant for output assets, including subfolder', async () => {
@@ -924,6 +952,7 @@ describe('useMediaAssetActions', () => {
       expect(mockClearNodePreviewCache).not.toHaveBeenCalled()
       expect(mockClearWidgetValues).not.toHaveBeenCalled()
       expect(mockMarkMissingMedia).not.toHaveBeenCalled()
+      expect(mockCaptureCanvasState).not.toHaveBeenCalled()
     })
   })
 })

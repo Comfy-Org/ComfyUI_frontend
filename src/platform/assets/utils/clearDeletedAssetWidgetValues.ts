@@ -13,9 +13,10 @@ import { findNodesReferencingValues } from './clearNodePreviewCacheForValues'
  * output assets the file is still served (history-soft-delete), so the
  * preview re-renders despite the asset being "deleted" everywhere else.
  *
- * Updates both `widget.value` (drives reactive UI) and
- * `node.widgets_values[i]` (drives serialization) so the next workflow save
- * persists the cleared state.
+ * Mutates `widget.value` (which `LGraphNode.serialize` re-reads to rebuild
+ * `widgets_values`) and invokes `widget.callback` so widgets like Load Image
+ * run their own change-handling (clearing `node.imgs`, calling
+ * `setNodeOutputs`, etc.).
  *
  * FE-230 — covers the post-reload case without re-introducing
  * useMissingMediaPreviewSync, which couldn't distinguish deletion from
@@ -28,14 +29,11 @@ export function clearDeletedAssetWidgetValues(
   if (deletedValues.size === 0) return
   for (const node of findNodesReferencingValues(rootGraph, deletedValues)) {
     if (!node.widgets) continue
-    for (let i = 0; i < node.widgets.length; i++) {
-      const widget = node.widgets[i]
+    for (const widget of node.widgets) {
       if (typeof widget.value !== 'string') continue
       if (!deletedValues.has(widget.value)) continue
       widget.value = ''
-      if (node.widgets_values) {
-        node.widgets_values[i] = ''
-      }
+      widget.callback?.('')
     }
     node.graph?.setDirtyCanvas(true)
   }

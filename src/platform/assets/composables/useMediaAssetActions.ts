@@ -7,6 +7,7 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -684,13 +685,17 @@ export function useMediaAssetActions() {
                 })
                 if (deletedValues.size > 0) {
                   const nodeOutputStore = useNodeOutputStore()
+                  // Order matters: mark + cache-clear both look up nodes by
+                  // current widget.value, so they must run before
+                  // clearDeletedAssetWidgetValues blanks those values.
+                  markDeletedAssetsAsMissingMedia(rootGraph, deletedValues)
                   clearNodePreviewCacheForValues(
                     rootGraph,
                     deletedValues,
-                    (node) => nodeOutputStore.removeNodeOutputs(node.id)
+                    (node) => nodeOutputStore.removeNodeOutputsForNode(node)
                   )
                   clearDeletedAssetWidgetValues(rootGraph, deletedValues)
-                  markDeletedAssetsAsMissingMedia(rootGraph, deletedValues)
+                  useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
                 }
               }
 
