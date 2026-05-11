@@ -22,9 +22,7 @@ const { locale = 'en' } = defineProps<{
         {{ t('cloudNodes.hero.heading', locale) }}
       </h1>
 
-      <p
-        class="text-primary-warm-gray max-w-3xl text-base/relaxed md:text-lg"
-      >
+      <p class="text-primary-warm-gray max-w-3xl text-base/relaxed md:text-lg">
         {{ t('cloudNodes.hero.body', locale) }}
       </p>
     </div>
