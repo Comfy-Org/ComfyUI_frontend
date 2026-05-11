@@ -127,9 +127,7 @@ export class BuilderSelectHelper {
     await popoverTrigger.click()
     await this.page.getByText('Rename', { exact: true }).click()
 
-    const dialogInput = this.page.locator(
-      '.p-dialog-content input[type="text"]'
-    )
+    const dialogInput = this.page.getByRole('dialog').getByRole('textbox')
     await dialogInput.fill(newName)
     await this.page.keyboard.press('Enter')
     await dialogInput.waitFor({ state: 'hidden' })

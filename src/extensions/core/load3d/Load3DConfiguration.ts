@@ -1,3 +1,4 @@
+import { LOAD3D_NONE_MODEL } from '@/extensions/core/load3d/constants'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type {
@@ -22,6 +23,20 @@ type Load3DConfigurationSettings = {
   height?: IBaseWidget
   bgImagePath?: string
   silentOnNotFound?: boolean
+}
+
+const ANNOTATED_FILENAME_PATTERN = / \[(input|output|temp)\]$/
+
+export function parseAnnotatedFilename(
+  rawValue: string,
+  fallbackFolder: string
+): { filename: string; folder: string } {
+  const match = ANNOTATED_FILENAME_PATTERN.exec(rawValue)
+  if (!match) return { filename: rawValue, folder: fallbackFolder }
+  return {
+    filename: rawValue.slice(0, match.index),
+    folder: match[1]
+  }
 }
 
 class Load3DConfiguration {
@@ -80,7 +95,7 @@ class Load3DConfiguration {
     )
 
     if (filePath) {
-      onModelWidgetUpdate(filePath)
+      void onModelWidgetUpdate(filePath)
     }
   }
 
@@ -95,8 +110,8 @@ class Load3DConfiguration {
       cameraState,
       silentOnNotFound
     )
-    if (modelWidget.value) {
-      onModelWidgetUpdate(modelWidget.value)
+    if (modelWidget.value && modelWidget.value !== LOAD3D_NONE_MODEL) {
+      void onModelWidgetUpdate(modelWidget.value)
     }
 
     const originalCallback = modelWidget.callback
@@ -117,7 +132,7 @@ class Load3DConfiguration {
     })
 
     modelWidget.callback = (value: string | number | boolean | object) => {
-      onModelWidgetUpdate(value)
+      void onModelWidgetUpdate(value)
 
       if (originalCallback) {
         originalCallback(value)
@@ -266,16 +281,22 @@ class Load3DConfiguration {
   ) {
     let isFirstLoad = true
     return async (value: string | number | boolean | object) => {
-      if (!value) return
+      if (!value || value === LOAD3D_NONE_MODEL) {
+        this.load3d.clearModel()
+        return
+      }
 
-      const filename = value as string
+      const { filename, folder } = parseAnnotatedFilename(
+        value as string,
+        loadFolder
+      )
 
       this.setResourceFolder(filename)
 
       const modelUrl = api.apiURL(
         Load3dUtils.getResourceURL(
           ...Load3dUtils.splitFilePath(filename),
-          loadFolder
+          folder
         )
       )
 
@@ -292,6 +313,8 @@ class Load3DConfiguration {
         }
         isFirstLoad = false
       }
+
+      this.load3d.emitModelReady()
     }
   }
 

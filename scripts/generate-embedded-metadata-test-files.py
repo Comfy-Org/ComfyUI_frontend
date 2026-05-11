@@ -19,6 +19,7 @@ import subprocess
 
 import av
 from PIL import Image
+from PIL.PngImagePlugin import PngInfo
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FIXTURES_DIR = os.path.join(REPO_ROOT, 'src', 'scripts', 'metadata', '__fixtures__')
@@ -115,6 +116,15 @@ def generate_av_fixture(
     report(name)
 
 
+def generate_png():
+    img = make_1x1_image()
+    info = PngInfo()
+    info.add_text('workflow', WORKFLOW_JSON)
+    info.add_text('prompt', PROMPT_JSON)
+    img.save(out('with_metadata.png'), 'PNG', pnginfo=info)
+    report('with_metadata.png')
+
+
 def generate_webp():
     img = make_1x1_image()
     exif = build_exif_bytes()
@@ -167,6 +177,7 @@ def generate_webm():
 
 if __name__ == '__main__':
     print('Generating fixtures...')
+    generate_png()
     generate_webp()
     generate_avif()
     generate_flac()

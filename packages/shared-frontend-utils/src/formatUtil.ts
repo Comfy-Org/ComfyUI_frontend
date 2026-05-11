@@ -256,6 +256,31 @@ export function isValidUrl(url: string): boolean {
   }
 }
 
+export function joinFilePath(
+  subfolder: string | null | undefined,
+  filename: string | null | undefined
+): string {
+  const normalizedSubfolder = normalizeFilePathSeparators(
+    subfolder ?? ''
+  ).replace(/^\/+|\/+$/g, '')
+  const normalizedFilename = normalizeFilePathSeparators(
+    filename ?? ''
+  ).replace(/^\/+/g, '')
+  if (!normalizedSubfolder) return normalizedFilename
+  if (!normalizedFilename) return normalizedSubfolder
+  return `${normalizedSubfolder}/${normalizedFilename}`
+}
+
+export function getFilePathSeparatorVariants(filepath: string): string[] {
+  const slashPath = normalizeFilePathSeparators(filepath)
+  const backslashPath = slashPath.replace(/\//g, '\\')
+  return slashPath === backslashPath ? [slashPath] : [slashPath, backslashPath]
+}
+
+function normalizeFilePathSeparators(filepath: string): string {
+  return filepath.replace(/[\\/]+/g, '/')
+}
+
 /**
  * Parses a filepath into its filename and subfolder components.
  *
@@ -274,8 +299,7 @@ export function parseFilePath(filepath: string): {
 } {
   if (!filepath?.trim()) return { filename: '', subfolder: '' }
 
-  const normalizedPath = filepath
-    .replace(/[\\/]+/g, '/') // Normalize path separators
+  const normalizedPath = normalizeFilePathSeparators(filepath)
     .replace(/^\//, '') // Remove leading slash
     .replace(/\/$/, '') // Remove trailing slash
 

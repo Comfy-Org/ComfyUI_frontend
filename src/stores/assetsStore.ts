@@ -6,7 +6,10 @@ import {
   mapInputFileToAssetItem,
   mapTaskOutputToAssetItem
 } from '@/platform/assets/composables/media/assetMappers'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type {
+  AssetItem,
+  TagsOperationResult
+} from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { PaginationOptions } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
@@ -250,6 +253,32 @@ export const useAssetsStore = defineStore('assets', () => {
     } finally {
       isLoadingMore.value = false
     }
+  }
+
+  /**
+   * Patch preview_id/preview_url for a single asset already in memory,
+   * matched by name. Used after persistThumbnail succeeds so an open Asset
+   * panel reflects the new thumbnail without refetching the whole history.
+   * Match by name because the cloud assets API and the history API use
+   * different id spaces; name is the stable cross-API identifier.
+   */
+  const setAssetPreview = (
+    name: string,
+    previewId: string,
+    previewUrl: string
+  ) => {
+    const patch = (list: AssetItem[]) => {
+      const idx = list.findIndex((a) => a.name === name)
+      if (idx < 0) return
+      list[idx] = {
+        ...list[idx],
+        preview_id: previewId,
+        preview_url: previewUrl
+      }
+    }
+    patch(historyAssets.value)
+    patch(allHistoryItems.value)
+    patch(inputAssets.value)
   }
 
   /**
@@ -610,11 +639,16 @@ export const useAssetsStore = defineStore('assets', () => {
 
         updateAssetInCache(asset.id, { tags: newTags }, cacheKey)
 
+        let removedTagsOnServer: string[] = []
         try {
-          const removeResult =
-            tagsToRemove.length > 0
-              ? await assetService.removeAssetTags(asset.id, tagsToRemove)
-              : undefined
+          let removeResult: TagsOperationResult | undefined
+          if (tagsToRemove.length > 0) {
+            removeResult = await assetService.removeAssetTags(
+              asset.id,
+              tagsToRemove
+            )
+            removedTagsOnServer = removeResult.removed ?? tagsToRemove
+          }
 
           const addResult =
             tagsToAdd.length > 0
@@ -628,6 +662,33 @@ export const useAssetsStore = defineStore('assets', () => {
         } catch (error) {
           console.error('Failed to update asset tags:', error)
           updateAssetInCache(asset.id, { tags: originalTags }, cacheKey)
+
+          if (removedTagsOnServer.length > 0) {
+            try {
+              await assetService.addAssetTags(asset.id, removedTagsOnServer)
+            } catch (compensationError) {
+              console.error(
+                'Failed to restore tags after partial failure; invalidating cache to force refetch:',
+                compensationError
+              )
+              const categoriesToInvalidate = new Set<string>()
+              const resolved = cacheKey ? resolveCategory(cacheKey) : undefined
+              if (resolved) {
+                categoriesToInvalidate.add(resolved)
+              }
+              for (const [
+                category,
+                state
+              ] of modelStateByCategory.value.entries()) {
+                if (state.assets?.has(asset.id)) {
+                  categoriesToInvalidate.add(category)
+                }
+              }
+              for (const category of categoriesToInvalidate) {
+                invalidateCategory(category)
+              }
+            }
+          }
         }
       }
 
@@ -747,6 +808,7 @@ export const useAssetsStore = defineStore('assets', () => {
     updateInputs,
     updateHistory,
     loadMoreHistory,
+    setAssetPreview,
 
     // Input mapping helpers
     inputAssetsByFilename,
