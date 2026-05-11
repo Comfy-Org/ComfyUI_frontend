@@ -182,13 +182,16 @@ describe('ModelInfoPanel', () => {
   })
 
   describe('Accordion Structure', () => {
-    it('renders all three section labels', () => {
+    it('renders all section labels including custom metadata', () => {
       renderPanel(createMockAsset())
       expect(
         screen.getByText('assetBrowser.modelInfo.basicInfo')
       ).toBeInTheDocument()
       expect(
         screen.getByText('assetBrowser.modelInfo.modelTagging')
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText('assetBrowser.modelInfo.customMetadata')
       ).toBeInTheDocument()
       expect(
         screen.getByText('assetBrowser.modelInfo.modelDescription')

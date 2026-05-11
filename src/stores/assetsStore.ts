@@ -659,7 +659,7 @@ export const useAssetsStore = defineStore('assets', () => {
         asset: AssetItem,
         userMetadata: Record<string, unknown>,
         cacheKey?: string
-      ) {
+      ): Promise<boolean> {
         const originalMetadata = asset.user_metadata
         updateAssetInCache(asset.id, { user_metadata: userMetadata }, cacheKey)
 
@@ -668,6 +668,7 @@ export const useAssetsStore = defineStore('assets', () => {
             user_metadata: userMetadata
           })
           updateAssetInCache(asset.id, updatedAsset, cacheKey)
+          return true
         } catch (error) {
           console.error('Failed to update asset metadata:', error)
           updateAssetInCache(
@@ -675,6 +676,7 @@ export const useAssetsStore = defineStore('assets', () => {
             { user_metadata: originalMetadata },
             cacheKey
           )
+          return false
         }
       }
 
@@ -790,7 +792,7 @@ export const useAssetsStore = defineStore('assets', () => {
       invalidateCategory: () => {},
       updateModelsForTag: async () => {},
       updateAllUserAssetsForLibrary: async () => {},
-      updateAssetMetadata: async () => {},
+      updateAssetMetadata: async (): Promise<boolean> => true,
       updateAssetTags: async () => {},
       invalidateModelsForCategory: () => {}
     }

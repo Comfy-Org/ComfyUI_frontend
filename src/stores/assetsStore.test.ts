@@ -1141,12 +1141,13 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       }
       vi.mocked(assetService.updateAsset).mockResolvedValueOnce(serverResponse)
 
-      await store.updateAssetMetadata(
+      const ok = await store.updateAssetMetadata(
         original,
         { note: 'optimistic' },
         'CheckpointLoaderSimple'
       )
 
+      expect(ok).toBe(true)
       const cached = store.getAssets('CheckpointLoaderSimple')[0]
       expect(cached.user_metadata).toEqual({ note: 'server-confirmed' })
     })
@@ -1168,12 +1169,13 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       )
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      await store.updateAssetMetadata(
+      const ok = await store.updateAssetMetadata(
         original,
         { note: 'will be reverted' },
         'CheckpointLoaderSimple'
       )
 
+      expect(ok).toBe(false)
       const cached = store.getAssets('CheckpointLoaderSimple')[0]
       expect(cached.user_metadata).toEqual({ note: 'before' })
       consoleSpy.mockRestore()

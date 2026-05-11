@@ -3076,7 +3076,25 @@
       "triggerPhrases": "Trigger Phrases",
       "description": "Description",
       "descriptionNotSet": "No description set",
-      "descriptionPlaceholder": "Add a description for this model..."
+      "descriptionPlaceholder": "Add a description for this model...",
+      "customMetadata": "Custom Metadata",
+      "customMetadataHint": "Add your own fields.",
+      "noCustomMetadata": "No custom metadata",
+      "addCustomMetadataField": "Add field",
+      "saveMetadataFailed": "Could not save metadata. Try again.",
+      "deleteMetadataField": "Delete custom metadata field",
+      "removeDraftField": "Remove draft field",
+      "metadataKeyPlaceholder": "field_name",
+      "metadataTypeString": "Text",
+      "metadataTypeNumber": "Num",
+      "metadataTypeBoolean": "Bool",
+      "customMetadataKeyError": {
+        "empty": "Key cannot be empty",
+        "reserved": "This key is reserved for built-in fields",
+        "invalid_format": "Use letters, numbers, or underscore; start with a letter or _",
+        "max_length": "Key is too long",
+        "duplicate": "This key is already used"
+      }
     },
     "media": {
       "threeDModelPlaceholder": "3D Model",
