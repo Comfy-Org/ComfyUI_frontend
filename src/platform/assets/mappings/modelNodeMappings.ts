@@ -197,5 +197,18 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   ['mediapipe', 'LivePortraitLoadMediaPipeCropper', ''],
 
   // ---- Superprompt text enhancement ----
-  ['superprompt-v1', 'Superprompt', '']
+  ['superprompt-v1', 'Superprompt', ''],
+
+  // ---- Background removal (ComfyUI core) ----
+  ['background_removal', 'LoadBackgroundRemovalModel', 'bg_removal_name'],
+
+  // ---- Frame interpolation (ComfyUI core) ----
+  ['frame_interpolation', 'FrameInterpolationModelLoader', 'model_name'],
+
+  // ---- FILM VFI (ComfyUI-Frame-Interpolation) ----
+  ['film', 'FILM VFI', 'ckpt_name']
+
+  // NOTE: ultralytics/bbox + ultralytics/segm intentionally NOT registered
+  // here. Tracked in BE-689 — re-enable only after cloud-side fixes land
+  // (tag lookup + submitted value mismatch). See PR #12075.
 ] as const satisfies ReadonlyArray<readonly [string, string, string]>

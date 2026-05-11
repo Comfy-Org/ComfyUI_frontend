@@ -38,7 +38,10 @@ const EXPECTED_DEFAULT_TYPES = [
   'segformer_b3_fashion',
   'nlf',
   'FlashVSR',
-  'FlashVSR-v1.1'
+  'FlashVSR-v1.1',
+  'background_removal',
+  'frame_interpolation',
+  'film'
 ] as const
 
 type NodeDefStoreType = ReturnType<typeof useNodeDefStore>
@@ -87,7 +90,10 @@ const MOCK_NODE_NAMES = [
   'IPAdapterModelLoader',
   'LS_LoadSegformerModel',
   'LoadNLFModel',
-  'FlashVSRNode'
+  'FlashVSRNode',
+  'LoadBackgroundRemovalModel',
+  'FrameInterpolationModelLoader',
+  'FILM VFI'
 ] as const
 
 const mockNodeDefsByName = Object.fromEntries(
@@ -261,7 +267,10 @@ describe('useModelToNodeStore', () => {
       ['FlashVSR', 'FlashVSRNode', ''],
       ['FlashVSR-v1.1', 'FlashVSRNode', ''],
       ['segformer_b2_clothes', 'LS_LoadSegformerModel', 'model_name'],
-      ['segformer_b3_fashion', 'LS_LoadSegformerModel', 'model_name']
+      ['segformer_b3_fashion', 'LS_LoadSegformerModel', 'model_name'],
+      ['background_removal', 'LoadBackgroundRemovalModel', 'bg_removal_name'],
+      ['frame_interpolation', 'FrameInterpolationModelLoader', 'model_name'],
+      ['film', 'FILM VFI', 'ckpt_name']
     ])(
       'should return correct provider for %s',
       (modelType, expectedNodeName, expectedKey) => {
