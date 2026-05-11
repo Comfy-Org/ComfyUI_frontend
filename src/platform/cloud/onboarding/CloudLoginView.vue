@@ -7,7 +7,7 @@
           {{ t('auth.login.title') }}
         </h1>
         <i18n-t
-          v-if="isFreeTierEnabled"
+          v-if="isFreeTierEnabled && !googleSsoBlockedReason"
           keypath="auth.login.signUpFreeTierPromo"
           tag="p"
           class="my-0 text-base text-muted"

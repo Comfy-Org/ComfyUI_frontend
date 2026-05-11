@@ -632,6 +632,10 @@ class Load3d {
     this.eventManager.removeEventListener(event, callback)
   }
 
+  emitModelReady(): void {
+    this.eventManager.emitEvent('modelReady', null)
+  }
+
   refreshViewport(): void {
     this.handleResize()
   }
@@ -812,6 +816,8 @@ class Load3d {
       }
       this.cameraManager.setCameraState(savedState)
       this.controlsManager.controls?.update()
+
+      this.forceRender()
     }
   }
 

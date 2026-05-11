@@ -310,8 +310,7 @@ export const zImportPublishedAssetsResponse = z.object({
  * Request body for importing assets from a published workflow.
  */
 export const zImportPublishedAssetsRequest = z.object({
-  published_asset_ids: z.array(z.string().min(1).max(64)).max(1000),
-  share_id: z.string().min(1).max(64)
+  published_asset_ids: z.array(z.string())
 })
 
 /**
