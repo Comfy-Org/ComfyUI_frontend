@@ -99,6 +99,11 @@
                 type="file"
                 accept="image/*"
                 class="hidden"
+                :aria-label="
+                  slot.key === 'before'
+                    ? $t('comfyHubPublish.selectComparisonBeforeFile')
+                    : $t('comfyHubPublish.selectComparisonAfterFile')
+                "
                 @change="(e) => handleComparisonSelect(e, slot.key)"
               />
               <template v-if="comparisonPreviewUrls[slot.key]">
@@ -146,6 +151,7 @@
                 : 'image/*'
             "
             class="hidden"
+            :aria-label="$t('comfyHubPublish.selectThumbnailFile')"
             @change="handleFileSelect"
           />
           <template v-if="thumbnailPreviewUrl">

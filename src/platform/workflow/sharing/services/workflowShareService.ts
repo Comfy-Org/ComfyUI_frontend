@@ -249,7 +249,11 @@ export function useWorkflowShareService() {
     if (!prefill && record.listed) {
       try {
         prefill = await fetchHubWorkflowPrefill(record.shareId)
-      } catch {
+      } catch (error) {
+        console.warn(
+          '[share][publish-status] Failed to fetch hub prefill:',
+          error
+        )
         prefill = null
       }
     }
