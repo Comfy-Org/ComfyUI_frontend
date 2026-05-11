@@ -602,5 +602,74 @@ describe('useComfyManagerStore', () => {
 
       expect(toastAddMock).not.toHaveBeenCalled()
     })
+
+    it('does not show toast for non-install failures (update, uninstall, etc.)', async () => {
+      const store = useComfyManagerStore()
+      const updateFailure: ManagerComponents['schemas']['TaskHistoryItem'] = {
+        ui_id: 'update-1',
+        client_id: 'test',
+        kind: 'update',
+        result: 'failed',
+        status: { status_str: 'error', completed: false, messages: ['boom'] },
+        timestamp: new Date().toISOString()
+      }
+      const uninstallFailure: ManagerComponents['schemas']['TaskHistoryItem'] =
+        {
+          ui_id: 'uninstall-1',
+          client_id: 'test',
+          kind: 'uninstall',
+          result: 'failed',
+          status: { status_str: 'error', completed: false, messages: ['boom'] },
+          timestamp: new Date().toISOString()
+        }
+      setTaskHistory(store, {
+        a: updateFailure,
+        b: uninstallFailure
+      })
+      await nextTick()
+      await vi.runAllTimersAsync()
+
+      expect(toastAddMock).not.toHaveBeenCalled()
+    })
+
+    it('does not re-notify already-notified failures when history is replayed', async () => {
+      const store = useComfyManagerStore()
+      // First failure triggers notification
+      setTaskHistory(store, { a: errorTask('a') })
+      await nextTick()
+      await vi.runAllTimersAsync()
+      expect(toastAddMock).toHaveBeenCalledTimes(1)
+
+      toastAddMock.mockClear()
+
+      // Simulate server state replay: resetTaskState clears local state,
+      // then history is re-populated with the same failed task
+      store.resetTaskState()
+      await nextTick()
+      setTaskHistory(store, { a: errorTask('a') })
+      await nextTick()
+      await vi.runAllTimersAsync()
+
+      // Should notify again after reset (fresh session)
+      expect(toastAddMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not re-notify same failure ID within same session', async () => {
+      const store = useComfyManagerStore()
+      setTaskHistory(store, { a: errorTask('a') })
+      await nextTick()
+      await vi.runAllTimersAsync()
+      expect(toastAddMock).toHaveBeenCalledTimes(1)
+
+      toastAddMock.mockClear()
+
+      // Re-assign same history (simulating server push with same data)
+      setTaskHistory(store, { a: errorTask('a') })
+      await nextTick()
+      await vi.runAllTimersAsync()
+
+      // Should NOT re-notify - already notified about this ID
+      expect(toastAddMock).not.toHaveBeenCalled()
+    })
   })
 })
