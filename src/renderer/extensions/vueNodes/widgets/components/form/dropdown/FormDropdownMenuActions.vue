@@ -16,8 +16,10 @@ import type { LayoutMode, SortOption } from './types'
 
 const { t } = useI18n()
 
-defineProps<{
+const { showSort = true, showLayoutSwitcher = true } = defineProps<{
   sortOptions: SortOption[]
+  showSort?: boolean
+  showLayoutSwitcher?: boolean
   showOwnershipFilter?: boolean
   ownershipOptions?: OwnershipFilterOption[]
   showBaseModelFilter?: boolean
@@ -112,6 +114,7 @@ function toggleBaseModelSelection(item: FilterOption) {
     />
 
     <Button
+      v-if="showSort"
       ref="sortTriggerRef"
       :aria-label="t('assetBrowser.sortBy')"
       :title="t('assetBrowser.sortBy')"
@@ -132,6 +135,7 @@ function toggleBaseModelSelection(item: FilterOption) {
       <i class="icon-[lucide--arrow-up-down] size-4" />
     </Button>
     <Popover
+      v-if="showSort"
       ref="sortPopoverRef"
       :dismissable="true"
       :close-on-escape="true"
@@ -306,6 +310,7 @@ function toggleBaseModelSelection(item: FilterOption) {
     </Popover>
 
     <div
+      v-if="showLayoutSwitcher"
       :class="
         cn(
           actionButtonStyle,
