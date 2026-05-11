@@ -83,13 +83,20 @@ function transformAssetForDisplay(asset: AssetItem): AssetDisplayItem {
   return built
 }
 
+export interface UseAssetBrowserOptions {
+  /** Use mixed-library labels (e.g. merged input/output/models/temp browser). */
+  mixedAssetLibrary?: boolean
+}
+
 /**
  * Asset Browser composable
  * Manages search, filtering, asset transformation and selection logic
  */
 export function useAssetBrowser(
-  assetsSource: Ref<AssetItem[] | undefined> = ref<AssetItem[] | undefined>([])
+  assetsSource: Ref<AssetItem[] | undefined> = ref<AssetItem[] | undefined>([]),
+  options?: UseAssetBrowserOptions
 ) {
+  const mixedAssetLibrary = options?.mixedAssetLibrary ?? false
   const assets = computed<AssetItem[]>(() => assetsSource.value ?? [])
   const assetDownloadStore = useAssetDownloadStore()
   const { sessionDownloadCount } = storeToRefs(assetDownloadStore)
@@ -139,10 +146,13 @@ export function useAssetBrowser(
   })
 
   const navItems = computed<(NavItemData | NavGroupData)[]>(() => {
+    const allQuickLabel = mixedAssetLibrary
+      ? t('assetBrowser.allAssets')
+      : t('assetBrowser.allModels')
     const quickFilters: NavItemData[] = [
       {
         id: 'all',
-        label: t('assetBrowser.allModels'),
+        label: allQuickLabel,
         icon: 'icon-[lucide--list]'
       },
       {
@@ -177,7 +187,9 @@ export function useAssetBrowser(
   // Compute content title from selected nav item
   const contentTitle = computed(() => {
     if (selectedNavItem.value === 'all') {
-      return t('assetBrowser.allModels')
+      return mixedAssetLibrary
+        ? t('assetBrowser.allAssets')
+        : t('assetBrowser.allModels')
     }
     if (selectedNavItem.value === 'imported') {
       return t('assetBrowser.imported')

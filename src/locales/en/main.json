@@ -2917,8 +2917,13 @@
   "cloudSurvey_steps_familiarity": "How familiar are you with ComfyUI?",
   "cloudSurvey_steps_intent": "What do you want to create with ComfyUI?",
   "cloudSurvey_steps_source": "Where did you hear about ComfyUI?",
+  "assetLibraryExplorer": {
+    "viewAll": "View all",
+    "allUserAssetsModalTitle": "Assets"
+  },
   "assetBrowser": {
     "allCategory": "All {category}",
+    "allAssets": "All Assets",
     "allModels": "All Models",
     "byType": "By type",
     "emptyImported": {

@@ -3,6 +3,16 @@
     :title="isInFolderView ? '' : $t('sideToolbar.mediaAssets.title')"
     v-bind="$attrs"
   >
+    <template #title-append>
+      <button
+        v-if="!isInFolderView"
+        type="button"
+        class="m-0 ml-2 shrink-0 cursor-pointer rounded-md border-0 bg-transparent p-2 text-left text-sm font-medium text-text-primary underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-interface-stroke"
+        @click="openAllUserAssetsLibrary"
+      >
+        {{ $t('assetLibraryExplorer.viewAll') }}
+      </button>
+    </template>
     <template #alt-title>
       <div
         v-if="isInFolderView"
@@ -237,6 +247,7 @@ import Button from '@/components/ui/button/Button.vue'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
+import { useBrowseAllUserAssetsLibrary } from '@/platform/assets/composables/useBrowseAllUserAssetsLibrary'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
@@ -263,6 +274,11 @@ const Load3dViewerContent = defineAsyncComponent(
 )
 
 const { t } = useI18n()
+const { openBrowseAllUserAssetsLibrary } = useBrowseAllUserAssetsLibrary()
+
+function openAllUserAssetsLibrary() {
+  void openBrowseAllUserAssetsLibrary()
+}
 
 const emit = defineEmits<{ assetSelected: [asset: AssetItem] }>()
 

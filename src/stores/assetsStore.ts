@@ -10,6 +10,7 @@ import type {
   AssetItem,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
+import { ALL_USER_ASSETS_CACHE_CATEGORY } from '@/platform/assets/constants/allUserAssetsBrowse'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { PaginationOptions } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
@@ -548,6 +549,63 @@ export const useAssetsStore = defineStore('assets', () => {
       }
 
       /**
+       * Loads merged user assets (input, output, models, temp) for the
+       * all-assets browser modal. Each tag is fully paginated via the asset API.
+       */
+      async function updateAllUserAssetsForLibrary(): Promise<void> {
+        const category = ALL_USER_ASSETS_CACHE_CATEGORY
+        if (pendingPromiseByCategory.has(category)) {
+          return await pendingPromiseByCategory.get(category)!
+        }
+
+        const existingState = modelStateByCategory.value.get(category)
+        const state = createState(existingState?.assets)
+        state.isLoading = true
+        state.hasMore = false
+        pendingRequestByCategory.set(category, state)
+        modelStateByCategory.value.set(category, state)
+
+        const promise = (async () => {
+          try {
+            const tags = ['input', 'output', 'models', 'temp'] as const
+            const settled = await Promise.allSettled(
+              tags.map((tag) =>
+                assetService.getAllAssetsByTag(tag, true, {
+                  limit: MODEL_BATCH_SIZE
+                })
+              )
+            )
+
+            const merged = new Map<string, AssetItem>()
+            for (const result of settled) {
+              if (result.status === 'fulfilled') {
+                for (const asset of result.value) {
+                  merged.set(asset.id, asset)
+                }
+              }
+            }
+
+            state.assets = new Map(merged)
+            state.offset = merged.size
+            state.isLoading = false
+            assetsArrayCache.delete(category)
+          } catch (err) {
+            if (!isStale(category, state)) {
+              console.error(`Error loading merged assets for ${category}:`, err)
+              state.error = err instanceof Error ? err : new Error(String(err))
+              state.isLoading = false
+            }
+          } finally {
+            pendingRequestByCategory.delete(category)
+            pendingPromiseByCategory.delete(category)
+          }
+        })()
+
+        pendingPromiseByCategory.set(category, promise)
+        await promise
+      }
+
+      /**
        * Invalidate the cache for a specific category.
        * Forces a refetch on next access.
        * @param category The category to invalidate (e.g., 'checkpoints', 'loras')
@@ -712,6 +770,7 @@ export const useAssetsStore = defineStore('assets', () => {
         hasCategory,
         updateModelsForNodeType,
         updateModelsForTag,
+        updateAllUserAssetsForLibrary,
         invalidateCategory,
         updateAssetMetadata,
         updateAssetTags,
@@ -730,6 +789,7 @@ export const useAssetsStore = defineStore('assets', () => {
       updateModelsForNodeType: async () => {},
       invalidateCategory: () => {},
       updateModelsForTag: async () => {},
+      updateAllUserAssetsForLibrary: async () => {},
       updateAssetMetadata: async () => {},
       updateAssetTags: async () => {},
       invalidateModelsForCategory: () => {}
@@ -745,6 +805,7 @@ export const useAssetsStore = defineStore('assets', () => {
     hasCategory,
     updateModelsForNodeType,
     updateModelsForTag,
+    updateAllUserAssetsForLibrary,
     invalidateCategory,
     updateAssetMetadata,
     updateAssetTags,
@@ -825,6 +886,7 @@ export const useAssetsStore = defineStore('assets', () => {
     // Model assets - actions
     updateModelsForNodeType,
     updateModelsForTag,
+    updateAllUserAssetsForLibrary,
     invalidateCategory,
     updateAssetMetadata,
     updateAssetTags,
