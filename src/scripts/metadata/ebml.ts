@@ -353,6 +353,7 @@ export function getFromWebmFile(file: File): Promise<ComfyMetadata> {
     const reader = new FileReader()
     reader.onload = (event) => handleFileLoad(event, resolve)
     reader.onerror = () => resolve({})
+    reader.onabort = () => resolve({})
     reader.readAsArrayBuffer(file.slice(0, MAX_READ_BYTES))
   })
 }

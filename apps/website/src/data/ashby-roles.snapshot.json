@@ -1,24 +1,10 @@
 {
-  "fetchedAt": "2026-04-24T18:59:03.989Z",
+  "fetchedAt": "2026-05-02T20:15:18.321Z",
   "departments": [
     {
       "name": "DESIGN",
       "key": "design",
       "roles": [
-        {
-          "id": "4c5d6afb78652df7",
-          "title": "Freelance Motion Designer",
-          "department": "Design",
-          "location": "San Francisco",
-          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/a7ccc2b4-4d9d-4e04-b39c-28a711995b5b/application"
-        },
-        {
-          "id": "0f5256cf302e552b",
-          "title": "Creative Artist",
-          "department": "Design",
-          "location": "San Francisco",
-          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/19ba10aa-4961-45e8-8473-66a8a7a8079d/application"
-        },
         {
           "id": "e915f2c78b17f93b",
           "title": "Senior Product Designer",
@@ -32,13 +18,6 @@
           "department": "Design",
           "location": "San Francisco",
           "applyUrl": "https://jobs.ashbyhq.com/comfy-org/abc787b9-ad85-421c-8218-debd23bea096/application"
-        },
-        {
-          "id": "5746486d87874937",
-          "title": "Graphic Designer",
-          "department": "Design",
-          "location": "San Francisco",
-          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/49fa0b07-3fa1-4a3a-b2c6-d2cc684ad63f/application"
         },
         {
           "id": "547b6ba622c800a5",
@@ -115,6 +94,13 @@
           "department": "Engineering",
           "location": "San Francisco",
           "applyUrl": "https://jobs.ashbyhq.com/comfy-org/9e4b9029-c3e9-436b-82c4-a1a9f1b8c16e/application"
+        },
+        {
+          "id": "2eb53e8943cc9396",
+          "title": "Growth Engineer",
+          "department": "Engineering",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/f1fdde76-84ae-48c1-b0f9-9654dd8e7de5/application"
         }
       ]
     },
@@ -122,6 +108,27 @@
       "name": "MARKETING",
       "key": "marketing",
       "roles": [
+        {
+          "id": "4c5d6afb78652df7",
+          "title": "Freelance Motion Designer",
+          "department": "Marketing",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/a7ccc2b4-4d9d-4e04-b39c-28a711995b5b/application"
+        },
+        {
+          "id": "0f5256cf302e552b",
+          "title": "Creative Artist",
+          "department": "Marketing",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/19ba10aa-4961-45e8-8473-66a8a7a8079d/application"
+        },
+        {
+          "id": "5746486d87874937",
+          "title": "Graphic Designer",
+          "department": "Marketing",
+          "location": "San Francisco",
+          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/49fa0b07-3fa1-4a3a-b2c6-d2cc684ad63f/application"
+        },
         {
           "id": "b5803a0d4785d406",
           "title": "Lifecycle Growth Marketer",
@@ -144,7 +151,7 @@
       "roles": [
         {
           "id": "ec68ae44dd5943c9",
-          "title": "Senior Technical Recruiter",
+          "title": "Talent Lead",
           "department": "Operations",
           "location": "San Francisco",
           "applyUrl": "https://jobs.ashbyhq.com/comfy-org/d5008532-c45d-46e6-ba2c-20489d364362/application"

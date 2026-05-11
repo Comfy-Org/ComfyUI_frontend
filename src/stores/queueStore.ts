@@ -525,78 +525,88 @@ export const useQueueStore = defineStore('queue', () => {
     dirty = false
     isLoading.value = true
     try {
-      const [queue, history] = await Promise.all([
-        api.getQueue(),
+      const [queueResult, historyResult] = await Promise.allSettled([
+        api.getQueue({ throwOnError: true }),
         api.getHistory(maxHistoryItems.value)
       ])
 
-      // API returns pre-sorted data (sort_by=create_time&order=desc)
-      runningTasks.value = queue.Running.map((job) => new TaskItemImpl(job))
-      pendingTasks.value = queue.Pending.map((job) => new TaskItemImpl(job))
+      // Track activeJobIds for reconciliation across both blocks
+      let activeJobIds: Set<string> | null = null
 
-      const currentHistory = toValue(historyTasks)
+      if (queueResult.status === 'fulfilled') {
+        const queue = queueResult.value
+        // API returns pre-sorted data (sort_by=create_time&order=desc)
+        runningTasks.value = queue.Running.map((job) => new TaskItemImpl(job))
+        pendingTasks.value = queue.Pending.map((job) => new TaskItemImpl(job))
 
-      const appearedTasks = [...pendingTasks.value, ...runningTasks.value]
-      const executionStore = useExecutionStore()
-      appearedTasks.forEach((task) => {
-        const jobIdString = String(task.jobId)
-        const workflowId = task.workflowId
-        if (workflowId && jobIdString) {
-          executionStore.registerJobWorkflowIdMapping(jobIdString, workflowId)
-        }
-      })
+        const appearedTasks = [...pendingTasks.value, ...runningTasks.value]
+        const executionStore = useExecutionStore()
+        appearedTasks.forEach((task) => {
+          const jobIdString = String(task.jobId)
+          const workflowId = task.workflowId
+          if (workflowId && jobIdString) {
+            executionStore.registerJobWorkflowIdMapping(jobIdString, workflowId)
+          }
+        })
 
-      const activeJobIds = new Set([
-        ...queue.Running.map((j) => j.id),
-        ...queue.Pending.map((j) => j.id)
-      ])
+        activeJobIds = new Set([
+          ...queue.Running.map((j) => j.id),
+          ...queue.Pending.map((j) => j.id)
+        ])
 
-      // Only reconcile initializing jobs when the queue fetch returned data.
-      // api.getQueue() returns empty Running/Pending on transient errors,
-      // which would incorrectly clear all initializing prompts.
-      const queueHasData = queue.Running.length > 0 || queue.Pending.length > 0
-      if (queueHasData) {
         executionStore.reconcileInitializingJobs(activeJobIds)
+      } else {
+        console.error('Failed to fetch queue:', queueResult.reason)
       }
 
-      // Reconcile terminal jobs whenever history is non-empty. The last
-      // active job finishing legitimately produces empty Running/Pending,
-      // and terminal eviction is the only path that clears stuck node
-      // progress when WebSocket terminal messages are dropped.
-      if (history.length > 0) {
-        const terminalJobIds = new Set(history.map((j) => j.id))
-        executionStore.reconcileTerminalJobs(activeJobIds, terminalJobIds)
-      }
+      if (historyResult.status === 'fulfilled') {
+        const history = historyResult.value
+        const currentHistory = toValue(historyTasks)
+        const executionStore = useExecutionStore()
 
-      // Sort by create_time descending and limit to maxItems
-      const sortedHistory = [...history]
-        .sort((a, b) => b.create_time - a.create_time)
-        .slice(0, toValue(maxHistoryItems))
-
-      // Reuse existing TaskItemImpl instances or create new
-      // Must recreate if outputs_count changed (e.g., API started returning it)
-      const existingByJobId = new Map(
-        currentHistory.map((impl) => [impl.jobId, impl])
-      )
-
-      const nextHistoryTasks = sortedHistory.map((job) => {
-        const existing = existingByJobId.get(job.id)
-        if (!existing) return new TaskItemImpl(job)
-        // Recreate if outputs_count changed to ensure lazy loading works
-        if (existing.outputsCount !== (job.outputs_count ?? undefined)) {
-          return new TaskItemImpl(job)
+        // Reconcile terminal jobs whenever history is non-empty. The last
+        // active job finishing legitimately produces empty Running/Pending,
+        // and terminal eviction is the only path that clears stuck node
+        // progress when WebSocket terminal messages are dropped.
+        if (history.length > 0 && activeJobIds) {
+          const terminalJobIds = new Set(history.map((j) => j.id))
+          executionStore.reconcileTerminalJobs(activeJobIds, terminalJobIds)
         }
-        return existing
-      })
 
-      const isHistoryUnchanged =
-        nextHistoryTasks.length === currentHistory.length &&
-        nextHistoryTasks.every((task, index) => task === currentHistory[index])
+        // Sort by create_time descending and limit to maxItems
+        const sortedHistory = [...history]
+          .sort((a, b) => b.create_time - a.create_time)
+          .slice(0, toValue(maxHistoryItems))
 
-      if (!isHistoryUnchanged) {
-        historyTasks.value = nextHistoryTasks
+        // Reuse existing TaskItemImpl instances or create new
+        // Must recreate if outputs_count changed (e.g., API started returning it)
+        const existingByJobId = new Map(
+          currentHistory.map((impl) => [impl.jobId, impl])
+        )
+
+        const nextHistoryTasks = sortedHistory.map((job) => {
+          const existing = existingByJobId.get(job.id)
+          if (!existing) return new TaskItemImpl(job)
+          // Recreate if outputs_count changed to ensure lazy loading works
+          if (existing.outputsCount !== (job.outputs_count ?? undefined)) {
+            return new TaskItemImpl(job)
+          }
+          return existing
+        })
+
+        const isHistoryUnchanged =
+          nextHistoryTasks.length === currentHistory.length &&
+          nextHistoryTasks.every(
+            (task, index) => task === currentHistory[index]
+          )
+
+        if (!isHistoryUnchanged) {
+          historyTasks.value = nextHistoryTasks
+        }
+        hasFetchedHistorySnapshot.value = true
+      } else {
+        console.error('Failed to fetch history:', historyResult.reason)
       }
-      hasFetchedHistorySnapshot.value = true
     } finally {
       isLoading.value = false
       inFlight = false

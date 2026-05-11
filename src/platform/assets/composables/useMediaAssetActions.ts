@@ -7,16 +7,23 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
 import { getAssetUrl } from '../utils/assetUrlUtil'
+import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
+import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
+import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
+import { getAssetOutputCount } from '../utils/outputAssetUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
@@ -28,6 +35,35 @@ import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
 
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
+
+/**
+ * Canonical widget-value strings that may reference this asset, scoped by the
+ * asset's source type so basenames cannot cross-match across input/output.
+ *
+ * Output assets emit `<name> [output]` (and the subfolder-prefixed form when
+ * present in metadata). Input/temp assets emit the bare name plus the explicit
+ * annotation. `asset_hash` is included whenever present, since cloud-stored
+ * assets can be referenced by hash.
+ */
+function widgetValueVariantsForAsset(asset: AssetItem): string[] {
+  const variants: string[] = []
+  const type = getAssetType(asset, 'input')
+  const name = asset.name
+  if (name) {
+    if (type === 'output') {
+      const subfolder = getOutputAssetMetadata(asset.user_metadata)?.subfolder
+      const path = subfolder ? `${subfolder}/${name}` : name
+      variants.push(`${path} [output]`)
+    } else if (type === 'temp') {
+      variants.push(`${name} [temp]`)
+    } else {
+      variants.push(name)
+      variants.push(`${name} [input]`)
+    }
+  }
+  if (asset.asset_hash) variants.push(asset.asset_hash)
+  return variants
+}
 
 export function useMediaAssetActions() {
   const { t } = useI18n()
@@ -116,6 +152,8 @@ export function useMediaAssetActions() {
       const jobIds: string[] = []
       const assetIds: string[] = []
       const jobAssetNameFilters: Record<string, string[]> = {}
+      const countedOutputJobIds = new Set<string>()
+      let fileCount = 0
 
       for (const asset of assets) {
         if (getAssetType(asset) === 'output') {
@@ -127,6 +165,15 @@ export function useMediaAssetActions() {
           // Only add name filters when outputCount is unknown.
           // When outputCount is set, the asset is a job-level selection
           // from the gallery and the user wants all outputs for that job.
+          if (metadata?.outputCount != null) {
+            if (!countedOutputJobIds.has(jobId)) {
+              countedOutputJobIds.add(jobId)
+              fileCount += getAssetOutputCount(asset)
+            }
+          } else {
+            fileCount += 1
+          }
+
           if (metadata?.jobId && asset.name && metadata.outputCount == null) {
             if (!jobAssetNameFilters[metadata.jobId]) {
               jobAssetNameFilters[metadata.jobId] = []
@@ -137,6 +184,7 @@ export function useMediaAssetActions() {
           }
         } else {
           assetIds.push(asset.id)
+          fileCount += 1
         }
       }
 
@@ -159,7 +207,11 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'info',
         summary: t('exportToast.exportStarted'),
-        detail: t('mediaAsset.selection.exportStarted', assets.length),
+        detail: t(
+          'mediaAsset.selection.exportStarted',
+          { count: fileCount },
+          fileCount
+        ),
         life: 3000
       })
     } catch (error) {
@@ -620,6 +672,31 @@ export function useMediaAssetActions() {
               }
               if (hasInputAssets) {
                 await assetsStore.updateInputs()
+              }
+
+              const rootGraph = app.rootGraph
+              if (rootGraph) {
+                const deletedValues = new Set<string>()
+                assetArray.forEach((asset, index) => {
+                  if (results[index].status !== 'fulfilled') return
+                  for (const value of widgetValueVariantsForAsset(asset)) {
+                    deletedValues.add(value)
+                  }
+                })
+                if (deletedValues.size > 0) {
+                  const nodeOutputStore = useNodeOutputStore()
+                  // Order matters: mark + cache-clear both look up nodes by
+                  // current widget.value, so they must run before
+                  // clearDeletedAssetWidgetValues blanks those values.
+                  markDeletedAssetsAsMissingMedia(rootGraph, deletedValues)
+                  clearNodePreviewCacheForValues(
+                    rootGraph,
+                    deletedValues,
+                    (node) => nodeOutputStore.removeNodeOutputsForNode(node)
+                  )
+                  clearDeletedAssetWidgetValues(rootGraph, deletedValues)
+                  useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
+                }
               }
 
               // Invalidate model caches for affected categories

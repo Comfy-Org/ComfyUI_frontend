@@ -165,6 +165,7 @@ export function getGltfBinaryMetadata(file: File): Promise<ComfyMetadata> {
       }
     }
     reader.onerror = () => resolve({})
+    reader.onabort = () => resolve({})
     reader.readAsArrayBuffer(file.slice(0, bytesToRead))
   })
 }

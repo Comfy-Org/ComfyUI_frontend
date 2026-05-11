@@ -707,6 +707,16 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
+  /**
+   * Clears the active job if the server's queue snapshot doesn't list it.
+   * Used after WS reconnect to recover from stale state when a job finished
+   * during the disconnect window.
+   */
+  function clearActiveJobIfStale(activeJobIds: Set<JobId>) {
+    const id = activeJobId.value
+    if (id && !activeJobIds.has(id)) resetExecutionState(id)
+  }
+
   function isJobInitializing(jobId: JobId | number | undefined): boolean {
     if (!jobId) return false
     return initializingJobIds.value.has(String(jobId))
@@ -880,6 +890,7 @@ export const useExecutionStore = defineStore('execution', () => {
     reconcileInitializingJobs,
     reconcileTerminalJobs,
     reconcileMirrorForActiveWorkflow,
+    clearActiveJobIfStale,
     bindExecutionEvents,
     unbindExecutionEvents,
     storeJob,
