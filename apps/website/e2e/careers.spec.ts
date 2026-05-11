@@ -35,15 +35,26 @@ test.describe('Careers page @smoke', () => {
   test('clicking a department button scrolls to and activates that section', async ({
     page
   }) => {
+    const rolesSection = page.getByTestId('careers-roles')
+    await rolesSection.scrollIntoViewIfNeeded()
+    await expect(rolesSection).toBeVisible()
+
     const allCount = await page.getByTestId('careers-role-link').count()
 
     const engineeringButton = page.getByRole('button', {
       name: 'ENGINEERING',
       exact: true
     })
-    await engineeringButton.click()
 
-    await expect(engineeringButton).toHaveAttribute('aria-pressed', 'true')
+    // RolesSection is hydrated via `client:visible`. Once the button responds
+    // to a click by flipping aria-pressed, Vue is hydrated and the rest of
+    // the locator logic is in effect.
+    await expect(async () => {
+      await engineeringButton.click()
+      await expect(engineeringButton).toHaveAttribute('aria-pressed', 'true', {
+        timeout: 1_000
+      })
+    }).toPass({ timeout: 10_000 })
 
     const engineeringSection = page.locator('#careers-dept-engineering')
     await expect(engineeringSection).toBeInViewport()
