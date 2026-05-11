@@ -28,7 +28,7 @@
         data-testid="node-widget"
         :class="
           cn(
-            'lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch transition-opacity',
+            'lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch transition-opacity duration-150',
             widget.advanced && isAdvancedHovered && 'opacity-30'
           )
         "
