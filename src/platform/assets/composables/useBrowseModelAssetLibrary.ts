@@ -7,7 +7,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useDialogService } from '@/services/dialogService'
 
-export interface BrowseModelAssetLibraryOptions {
+interface BrowseModelAssetLibraryOptions {
   /** Overrides default {@link sideToolbar.modelLibrary} title */
   title?: string
 }

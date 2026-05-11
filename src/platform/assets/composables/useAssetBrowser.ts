@@ -83,7 +83,7 @@ function transformAssetForDisplay(asset: AssetItem): AssetDisplayItem {
   return built
 }
 
-export interface UseAssetBrowserOptions {
+interface UseAssetBrowserOptions {
   /** Use mixed-library labels (e.g. merged input/output/models/temp browser). */
   mixedAssetLibrary?: boolean
 }

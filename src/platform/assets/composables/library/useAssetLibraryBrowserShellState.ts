@@ -12,7 +12,7 @@ import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
-export interface AssetLibraryBrowserShellProps {
+interface AssetLibraryBrowserShellProps {
   nodeType?: string
   assetType?: string
   onSelect?: (asset: AssetItem) => void
@@ -22,7 +22,7 @@ export interface AssetLibraryBrowserShellProps {
   overrideAssets?: AssetItem[]
 }
 
-export interface AssetLibraryBrowserShellOptions {
+interface AssetLibraryBrowserShellOptions {
   /** e.g. emit('asset-select', asset) from {@link AssetBrowserModal.vue} */
   onAssetSelectNotify?: (asset: AssetDisplayItem) => void
 }

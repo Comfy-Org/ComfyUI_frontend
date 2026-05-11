@@ -11,7 +11,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useDialogService } from '@/services/dialogService'
 
-export interface BrowseAllUserAssetsLibraryOptions {
+interface BrowseAllUserAssetsLibraryOptions {
   title?: string
 }
 
