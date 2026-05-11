@@ -141,6 +141,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "start_image": {
+        "name": "start_image"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AudioAdjustVolume": {
     "display_name": "Audio Adjust Volume",
     "inputs": {
@@ -196,7 +230,7 @@
     }
   },
   "AudioEncoderLoader": {
-    "display_name": "AudioEncoderLoader",
+    "display_name": "Load Audio Encoder",
     "inputs": {
       "audio_encoder_name": {
         "name": "audio_encoder_name"
@@ -988,7 +1022,7 @@
     }
   },
   "CaseConverter": {
-    "display_name": "Text Case Converter",
+    "display_name": "Convert Text Case",
     "inputs": {
       "string": {
         "name": "string"
@@ -1185,7 +1219,7 @@
   },
   "CLIPLoader": {
     "display_name": "Load CLIP",
-    "description": "[Recipes]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\n hidream: llama-3.1 (Recommend) or t5\nomnigen2: qwen vl 2.5 3B",
+    "description": "[Recipes]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\n hidream: llama-3.1 (Recommend) or t5\nomnigen2: qwen vl 2.5 3B",
     "inputs": {
       "clip_name": {
         "name": "clip_name"
@@ -1655,6 +1689,10 @@
       },
       "1": {
         "tooltip": null
+      },
+      "2": {
+        "name": "BOOL",
+        "tooltip": null
       }
     }
   },
@@ -2011,6 +2049,10 @@
       "split_conds_to_windows": {
         "name": "split_conds_to_windows",
         "tooltip": "Whether to split multiple conditionings (created by ConditionCombine) to each window based on region index."
+      },
+      "causal_window_fix": {
+        "name": "causal_window_fix",
+        "tooltip": "Whether to add a causal fix frame to non-0-indexed context windows."
       }
     },
     "outputs": {
@@ -2020,7 +2062,7 @@
     }
   },
   "ControlNetApply": {
-    "display_name": "Apply ControlNet (OLD)",
+    "display_name": "Apply ControlNet (DEPRECATED)",
     "inputs": {
       "conditioning": {
         "name": "conditioning"
@@ -2434,7 +2476,7 @@
     }
   },
   "CropMask": {
-    "display_name": "CropMask",
+    "display_name": "Crop Mask",
     "inputs": {
       "mask": {
         "name": "mask"
@@ -2966,6 +3008,28 @@
       }
     }
   },
+  "EmptyARVideoLatent": {
+    "display_name": "EmptyARVideoLatent",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyAudio": {
     "display_name": "Empty Audio",
     "inputs": {
@@ -3112,7 +3176,7 @@
     }
   },
   "EmptyImage": {
-    "display_name": "EmptyImage",
+    "display_name": "Empty Image",
     "inputs": {
       "width": {
         "name": "width"
@@ -3331,7 +3395,7 @@
     }
   },
   "FeatherMask": {
-    "display_name": "FeatherMask",
+    "display_name": "Feather Mask",
     "inputs": {
       "mask": {
         "name": "mask"
@@ -4037,6 +4101,54 @@
       }
     }
   },
+  "GeminiNanoBanana2V2": {
+    "display_name": "Nano Banana 2",
+    "description": "Generate or edit images synchronously via Google Vertex API.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt describing the image to generate or the edits to apply. Include any constraints, styles, or details the model should follow."
+      },
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "When the seed is fixed to a specific value, the model makes a best effort to provide the same response for repeated requests. Deterministic output isn't guaranteed. Also, changing the model or parameter settings, such as the temperature, can cause variations in the response even when you use the same seed value. By default, a random seed value is used."
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Foundational instructions that dictate an AI's behavior."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "First image from the model's thinking process. Only available with thinking_level HIGH and IMAGE+TEXT modality."
+      }
+    }
+  },
   "GeminiNode": {
     "display_name": "Google Gemini",
     "description": "Generate text responses with Google's Gemini AI model. You can provide multiple types of inputs (text, images, audio, video) as context for generating more relevant and meaningful responses.",
@@ -4216,7 +4328,7 @@
     }
   },
   "GLIGENLoader": {
-    "display_name": "GLIGENLoader",
+    "display_name": "Load GLIGEN Model",
     "inputs": {
       "gligen_name": {
         "name": "gligen_name"
@@ -4813,7 +4925,7 @@
     }
   },
   "HunyuanRefinerLatent": {
-    "display_name": "HunyuanRefinerLatent",
+    "display_name": "Hunyuan Latent Refiner",
     "inputs": {
       "positive": {
         "name": "positive"
@@ -4918,7 +5030,7 @@
     }
   },
   "HunyuanVideo15SuperResolution": {
-    "display_name": "HunyuanVideo15SuperResolution",
+    "display_name": "Hunyuan Video 1.5 Super Resolution",
     "inputs": {
       "positive": {
         "name": "positive"
@@ -4958,7 +5070,7 @@
     }
   },
   "HypernetworkLoader": {
-    "display_name": "HypernetworkLoader",
+    "display_name": "Load Hypernetwork",
     "inputs": {
       "model": {
         "name": "model"
@@ -5146,7 +5258,7 @@
     }
   },
   "ImageAddNoise": {
-    "display_name": "ImageAddNoise",
+    "display_name": "Add Noise to Image",
     "inputs": {
       "image": {
         "name": "image"
@@ -5169,7 +5281,7 @@
     }
   },
   "ImageBatch": {
-    "display_name": "Batch Images",
+    "display_name": "Batch Images (DEPRECATED)",
     "inputs": {
       "image1": {
         "name": "image1"
@@ -5180,7 +5292,7 @@
     }
   },
   "ImageBlend": {
-    "display_name": "Image Blend",
+    "display_name": "Blend Images",
     "inputs": {
       "image1": {
         "name": "image1"
@@ -5237,7 +5349,7 @@
     }
   },
   "ImageCompare": {
-    "display_name": "Image Compare",
+    "display_name": "Compare Images",
     "description": "Compares two images side by side with a slider.",
     "inputs": {
       "compare_view": {
@@ -5252,11 +5364,8 @@
     }
   },
   "ImageCompositeMasked": {
-    "display_name": "ImageCompositeMasked",
+    "display_name": "Image Composite Masked",
     "inputs": {
-      "destination": {
-        "name": "destination"
-      },
       "source": {
         "name": "source"
       },
@@ -5269,6 +5378,9 @@
       "resize_source": {
         "name": "resize_source"
       },
+      "destination": {
+        "name": "destination"
+      },
       "mask": {
         "name": "mask"
       }
@@ -5280,7 +5392,7 @@
     }
   },
   "ImageCrop": {
-    "display_name": "Image Crop (Deprecated)",
+    "display_name": "Crop Image (DEPRECATED)",
     "inputs": {
       "image": {
         "name": "image"
@@ -5305,7 +5417,7 @@
     }
   },
   "ImageCropV2": {
-    "display_name": "Image Crop",
+    "display_name": "Crop Image",
     "inputs": {
       "image": {
         "name": "image"
@@ -5344,7 +5456,7 @@
     }
   },
   "ImageFlip": {
-    "display_name": "ImageFlip",
+    "display_name": "Flip Image",
     "inputs": {
       "image": {
         "name": "image"
@@ -5360,7 +5472,7 @@
     }
   },
   "ImageFromBatch": {
-    "display_name": "ImageFromBatch",
+    "display_name": "Get Image from Batch",
     "inputs": {
       "image": {
         "name": "image"
@@ -5440,7 +5552,7 @@
     }
   },
   "ImageInvert": {
-    "display_name": "Invert Image",
+    "display_name": "Invert Image Colors",
     "inputs": {
       "image": {
         "name": "image"
@@ -5518,7 +5630,7 @@
     }
   },
   "ImageQuantize": {
-    "display_name": "ImageQuantize",
+    "display_name": "Quantize Image",
     "inputs": {
       "image": {
         "name": "image"
@@ -5537,7 +5649,7 @@
     }
   },
   "ImageRGBToYUV": {
-    "display_name": "ImageRGBToYUV",
+    "display_name": "Image RGB to YUV",
     "inputs": {
       "image": {
         "name": "image"
@@ -5559,7 +5671,7 @@
     }
   },
   "ImageRotate": {
-    "display_name": "Image Rotate",
+    "display_name": "Rotate Image",
     "inputs": {
       "image": {
         "name": "image"
@@ -5609,7 +5721,7 @@
     }
   },
   "ImageScaleToMaxDimension": {
-    "display_name": "ImageScaleToMaxDimension",
+    "display_name": "Scale Image to Max Dimension",
     "inputs": {
       "image": {
         "name": "image"
@@ -5628,7 +5740,7 @@
     }
   },
   "ImageScaleToTotalPixels": {
-    "display_name": "ImageScaleToTotalPixels",
+    "display_name": "Scale Image to Total Pixels",
     "inputs": {
       "image": {
         "name": "image"
@@ -5650,7 +5762,7 @@
     }
   },
   "ImageSharpen": {
-    "display_name": "ImageSharpen",
+    "display_name": "Sharpen Image",
     "inputs": {
       "image": {
         "name": "image"
@@ -5672,7 +5784,7 @@
     }
   },
   "ImageStitch": {
-    "display_name": "Image Stitch",
+    "display_name": "Stitch Images",
     "description": "Stitches image2 to image1 in the specified direction.\nIf image2 is not provided, returns image1 unchanged.\nOptional spacing can be added between images.",
     "inputs": {
       "image1": {
@@ -5733,7 +5845,7 @@
     }
   },
   "ImageYUVToRGB": {
-    "display_name": "ImageYUVToRGB",
+    "display_name": "Image YUV to RGB",
     "inputs": {
       "Y": {
         "name": "Y"
@@ -5818,7 +5930,7 @@
     }
   },
   "InvertMask": {
-    "display_name": "InvertMask",
+    "display_name": "Invert Mask",
     "inputs": {
       "mask": {
         "name": "mask"
@@ -5865,7 +5977,7 @@
     }
   },
   "JsonExtractString": {
-    "display_name": "Extract String from JSON",
+    "display_name": "Extract Text from JSON",
     "inputs": {
       "json_string": {
         "name": "json_string"
@@ -7524,6 +7636,21 @@
       }
     }
   },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "Load Background Removal Model",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "bg_removal_name",
+        "tooltip": "The model used to remove backgrounds from images"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bg_model",
+        "tooltip": null
+      }
+    }
+  },
   "LoadImage": {
     "display_name": "Load Image",
     "inputs": {
@@ -8185,7 +8312,7 @@
     }
   },
   "LTXVPreprocess": {
-    "display_name": "LTXVPreprocess",
+    "display_name": "LTXV Preprocess",
     "inputs": {
       "image": {
         "name": "image"
@@ -8327,6 +8454,42 @@
       }
     }
   },
+  "LumaImageEditNode2": {
+    "display_name": "Luma UNI-1 Image Edit",
+    "description": "Edit an existing image with a text prompt using the Luma UNI-1 model.",
+    "inputs": {
+      "source": {
+        "name": "source",
+        "tooltip": "Source image to edit."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Description of the desired edit. 1–6000 characters."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for editing."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_web_search": {
+        "name": "web_search"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LumaImageModifyNode": {
     "display_name": "Luma Image to Image",
     "description": "Modifies images synchronously based on prompt and aspect ratio.",
@@ -8395,6 +8558,41 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaImageNode2": {
+    "display_name": "Luma UNI-1 Image",
+    "description": "Generate images from text using the Luma UNI-1 model.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of the desired image. 1–6000 characters."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for generation."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_web_search": {
+        "name": "web_search"
       }
     },
     "outputs": {
@@ -8775,7 +8973,7 @@
     }
   },
   "MaskComposite": {
-    "display_name": "MaskComposite",
+    "display_name": "Combine Masks",
     "inputs": {
       "destination": {
         "name": "destination"
@@ -11787,7 +11985,7 @@
     }
   },
   "OpenAIVideoSora2": {
-    "display_name": "OpenAI Sora - Video (Deprecated)",
+    "display_name": "OpenAI Sora - Video (DEPRECATED)",
     "description": "OpenAI video and audio generation.\n\nDEPRECATION NOTICE: OpenAI will stop serving the Sora v2 API in September 2026. This node will be removed from ComfyUI at that time.",
     "inputs": {
       "model": {
@@ -11812,6 +12010,20 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpticalFlowLoader": {
+    "display_name": "Load Optical Flow Model",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "Optical flow model to load.  Files must be placed in the 'optical_flow' folder.  Today only torchvision's raft_large.pth is supported."
       }
     },
     "outputs": {
@@ -12030,7 +12242,7 @@
     }
   },
   "PerpNeg": {
-    "display_name": "Perp-Neg (DEPRECATED by PerpNegGuider)",
+    "display_name": "Perp-Neg (DEPRECATED by Perp-Neg Guider)",
     "inputs": {
       "model": {
         "name": "model"
@@ -12049,7 +12261,7 @@
     }
   },
   "PerpNegGuider": {
-    "display_name": "PerpNegGuider",
+    "display_name": "Perp-Neg Guider",
     "inputs": {
       "model": {
         "name": "model"
@@ -12434,7 +12646,7 @@
     }
   },
   "PrimitiveString": {
-    "display_name": "String",
+    "display_name": "Text String",
     "inputs": {
       "value": {
         "name": "value"
@@ -12447,7 +12659,7 @@
     }
   },
   "PrimitiveStringMultiline": {
-    "display_name": "String (Multiline)",
+    "display_name": "Text String (Multiline)",
     "inputs": {
       "value": {
         "name": "value"
@@ -13183,7 +13395,7 @@
     }
   },
   "RegexExtract": {
-    "display_name": "Text Extract Substring",
+    "display_name": "Extract Text",
     "inputs": {
       "string": {
         "name": "string"
@@ -13214,7 +13426,7 @@
     }
   },
   "RegexMatch": {
-    "display_name": "Text Match",
+    "display_name": "Match Text",
     "inputs": {
       "string": {
         "name": "string"
@@ -13240,7 +13452,7 @@
     }
   },
   "RegexReplace": {
-    "display_name": "Text Replace (Regex)",
+    "display_name": "Replace Text (Regex)",
     "description": "Find and replace text using regex patterns.",
     "inputs": {
       "string": {
@@ -13273,6 +13485,25 @@
       }
     }
   },
+  "RemoveBackground": {
+    "display_name": "Remove Background",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Input image to remove the background from"
+      },
+      "bg_removal_model": {
+        "name": "bg_removal_model",
+        "tooltip": "Background removal model used to generate the mask"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": "Generated foreground mask"
+      }
+    }
+  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -13293,7 +13524,7 @@
     }
   },
   "RepeatImageBatch": {
-    "display_name": "RepeatImageBatch",
+    "display_name": "Repeat Image Batch",
     "inputs": {
       "image": {
         "name": "image"
@@ -13376,7 +13607,7 @@
     }
   },
   "ResizeAndPadImage": {
-    "display_name": "ResizeAndPadImage",
+    "display_name": "Resize And Pad Image",
     "inputs": {
       "image": {
         "name": "image"
@@ -14026,11 +14257,11 @@
       },
       "detection_threshold": {
         "name": "detection_threshold",
-        "tooltip": "Score threshold for text-prompted detection"
+        "tooltip": "Score threshold for text-prompted detection."
       },
       "max_objects": {
         "name": "max_objects",
-        "tooltip": "Max tracked objects (0=unlimited). Initial masks count toward this limit."
+        "tooltip": "Max tracked objects. Initial masks count toward this limit. 0 uses the internal cap of 64."
       },
       "detect_interval": {
         "name": "detect_interval",
@@ -14048,6 +14279,20 @@
     "outputs": {
       "0": {
         "name": "track_data",
+        "tooltip": null
+      }
+    }
+  },
+  "SamplerARVideo": {
+    "display_name": "Sampler AR Video",
+    "inputs": {
+      "num_frame_per_block": {
+        "name": "num_frame_per_block",
+        "tooltip": "Frames per autoregressive block. 1 = framewise, 3 = chunkwise. Must match the checkpoint's training mode."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -14586,7 +14831,7 @@
     }
   },
   "SaveImageWebsocket": {
-    "display_name": "SaveImageWebsocket",
+    "display_name": "Save Image (Websocket)",
     "inputs": {
       "images": {
         "name": "images"
@@ -14622,7 +14867,7 @@
     }
   },
   "SaveSVGNode": {
-    "display_name": "SaveSVGNode",
+    "display_name": "Save SVG",
     "description": "Save SVG files on disk.",
     "inputs": {
       "svg": {
@@ -14678,7 +14923,7 @@
     }
   },
   "SaveWEBM": {
-    "display_name": "SaveWEBM",
+    "display_name": "Save WEBM",
     "inputs": {
       "images": {
         "name": "images"
@@ -15736,7 +15981,7 @@
     }
   },
   "StringCompare": {
-    "display_name": "Text Compare",
+    "display_name": "Compare Text",
     "inputs": {
       "string_a": {
         "name": "string_a"
@@ -15758,7 +16003,7 @@
     }
   },
   "StringConcatenate": {
-    "display_name": "Text Concatenate",
+    "display_name": "Concatenate Text",
     "inputs": {
       "string_a": {
         "name": "string_a"
@@ -15777,7 +16022,7 @@
     }
   },
   "StringContains": {
-    "display_name": "Text Contains",
+    "display_name": "Contains Text",
     "inputs": {
       "string": {
         "name": "string"
@@ -15811,7 +16056,7 @@
     }
   },
   "StringReplace": {
-    "display_name": "Text Replace",
+    "display_name": "Replace Text",
     "inputs": {
       "string": {
         "name": "string"
@@ -15830,7 +16075,7 @@
     }
   },
   "StringSubstring": {
-    "display_name": "Text Substring",
+    "display_name": "Substring",
     "inputs": {
       "string": {
         "name": "string"
@@ -15849,7 +16094,7 @@
     }
   },
   "StringTrim": {
-    "display_name": "Text Trim",
+    "display_name": "Trim Text",
     "inputs": {
       "string": {
         "name": "string"
@@ -16508,7 +16753,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "TextGenerate",
+    "display_name": "Generate Text",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -16570,7 +16815,7 @@
     }
   },
   "TextGenerateLTX2Prompt": {
-    "display_name": "TextGenerateLTX2Prompt",
+    "display_name": "Generate LTX2 Prompt",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -17189,7 +17434,8 @@
         "name": "face_limit"
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "This parameter is deprecated and does nothing."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -17396,7 +17642,7 @@
     }
   },
   "unCLIPCheckpointLoader": {
-    "display_name": "unCLIPCheckpointLoader",
+    "display_name": "Load unCLIP Checkpoint",
     "inputs": {
       "ckpt_name": {
         "name": "ckpt_name"
@@ -18464,8 +18710,129 @@
       }
     }
   },
+  "VOIDInpaintConditioning": {
+    "display_name": "VOIDInpaintConditioning",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Source video frames [T, H, W, 3]"
+      },
+      "quadmask": {
+        "name": "quadmask",
+        "tooltip": "Preprocessed quadmask from VOIDQuadmaskPreprocess [T, H, W]"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Number of pixel frames to process. For CogVideoX-Fun-V1.5 (patch_size_t=2), latent_t must be even — lengths that produce odd latent_t are rounded down (e.g. 49 → 45)."
+      },
+      "batch_size": {
+        "name": "batch_size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDQuadmaskPreprocess": {
+    "display_name": "VOIDQuadmaskPreprocess",
+    "inputs": {
+      "mask": {
+        "name": "mask"
+      },
+      "dilate_width": {
+        "name": "dilate_width",
+        "tooltip": "Dilation radius for the primary mask region (0 = no dilation)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "quadmask",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDSampler": {
+    "display_name": "VOIDSampler",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDWarpedNoise": {
+    "display_name": "VOIDWarpedNoise",
+    "inputs": {
+      "optical_flow": {
+        "name": "optical_flow",
+        "tooltip": "Optical flow model from OpticalFlowLoader (RAFT-large)."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Pass 1 output video frames [T, H, W, 3]"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Number of pixel frames. Rounded down to make latent_t even (patch_size_t=2 requirement), e.g. 49 → 45."
+      },
+      "batch_size": {
+        "name": "batch_size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "warped_noise",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDWarpedNoiseSource": {
+    "display_name": "VOIDWarpedNoiseSource",
+    "inputs": {
+      "warped_noise": {
+        "name": "warped_noise",
+        "tooltip": "Warped noise latent from VOIDWarpedNoise"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VoxelToMesh": {
-    "display_name": "VoxelToMesh",
+    "display_name": "Voxel to Mesh",
     "inputs": {
       "voxel": {
         "name": "voxel"
@@ -18484,7 +18851,7 @@
     }
   },
   "VoxelToMeshBasic": {
-    "display_name": "VoxelToMeshBasic",
+    "display_name": "Voxel to Mesh (Basic)",
     "inputs": {
       "voxel": {
         "name": "voxel"
@@ -19063,6 +19430,156 @@
     "outputs": {
       "0": {
         "tooltip": "The model with context windows applied during sampling."
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "video_frames": {
+        "name": "video_frames"
+      },
+      "audio_inject_scale": {
+        "name": "audio_inject_scale",
+        "tooltip": "The scale for the audio features when injected into the video model."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio_encoder_output",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps_string",
+        "tooltip": "The calculated fps based on the audio length and the number of video frames. Used in the prompt."
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "images": {
+        "name": "images"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "Length of this segment (usually 149 frames)"
+      },
+      "segment_index": {
+        "name": "segment_index",
+        "tooltip": "Which segment this is (0 for first, 1 for second, etc.)"
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio to calculate total output frames from and extract segment audio."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "Padded keyframe sequence"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "Mask indicating valid frames"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "Audio segment for this video segment"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "images": {
+        "name": "images"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "Length of each segment (usually 149 frames)"
+      },
+      "num_segments": {
+        "name": "num_segments",
+        "tooltip": "How many padded segments to emit as lists."
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio to slice for each emitted segment."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "Padded keyframe sequences"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "Masks indicating valid frames"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "Audio segment for each video segment"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "The number of frames in the generated video. Should stay 149 for WanDancer."
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "The CLIP vision embeds for the first frame."
+      },
+      "clip_vision_output_ref": {
+        "name": "clip_vision_output_ref",
+        "tooltip": "The CLIP vision embeds for the reference image."
+      },
+      "start_image": {
+        "name": "start_image",
+        "tooltip": "The initial image(s) to be encoded, can be any number of frames."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "Image conditioning mask for the start image(s). White is kept, black is generated. Used for the local generations."
+      },
+      "audio_encoder_output": {
+        "name": "audio_encoder_output"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Empty latent."
       }
     }
   },

@@ -1179,7 +1179,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const categories = LiteGraph.getNodeTypesCategories(
         canvas.filter || graph.filter
       ).filter((category) => category.startsWith(base_category))
-      const entries: AddNodeMenu[] = []
+      const categoryEntries: AddNodeMenu[] = []
 
       for (const category of categories) {
         if (!category) continue
@@ -1197,11 +1197,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         // in case it has a namespace like "shader::math/rand" it hides the namespace
         if (name.includes('::')) name = name.split('::', 2)[1]
 
-        const index = entries.findIndex(
+        const index = categoryEntries.findIndex(
           (entry) => entry.value === category_path
         )
         if (index === -1) {
-          entries.push({
+          categoryEntries.push({
             value: category_path,
             content: name,
             has_submenu: true,
@@ -1212,11 +1212,19 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         }
       }
 
+      const compareByContent = (a: AddNodeMenu, b: AddNodeMenu) =>
+        (a.content ?? '').localeCompare(b.content ?? '', undefined, {
+          numeric: true,
+          sensitivity: 'base'
+        })
+      categoryEntries.sort(compareByContent)
+
       const nodes = LiteGraph.getNodeTypesInCategory(
         base_category.slice(0, -1),
         canvas.filter || graph.filter
       )
 
+      const nodeEntries: AddNodeMenu[] = []
       for (const node of nodes) {
         if (node.skip_list) continue
 
@@ -1246,8 +1254,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
         }
 
-        entries.push(entry)
+        nodeEntries.push(entry)
       }
+
+      nodeEntries.sort(compareByContent)
+
+      const entries: AddNodeMenu[] = [...categoryEntries, ...nodeEntries]
 
       new LiteGraph.ContextMenu(entries, { event: e, parentMenu: prev_menu })
     }

@@ -13,6 +13,7 @@ export class VueNodeFixture {
   public readonly collapseButton: Locator
   public readonly collapseIcon: Locator
   public readonly root: Locator
+  public readonly widgets: Locator
 
   constructor(private readonly locator: Locator) {
     this.header = locator.locator('[data-testid^="node-header-"]')
@@ -23,6 +24,7 @@ export class VueNodeFixture {
     this.collapseButton = locator.getByTestId('node-collapse-button')
     this.collapseIcon = this.collapseButton.locator('i')
     this.root = locator
+    this.widgets = this.locator.locator('.lg-node-widget')
   }
 
   async getTitle(): Promise<string> {
@@ -37,6 +39,16 @@ export class VueNodeFixture {
 
   async toggleCollapse(): Promise<void> {
     await this.collapseButton.click()
+  }
+
+  /**
+   * Select this node and delete it via the Delete key, waiting for the node
+   * element to leave the DOM before resolving.
+   */
+  async delete(): Promise<void> {
+    await this.header.click()
+    await this.header.press('Delete')
+    await this.locator.waitFor({ state: 'hidden' })
   }
 
   async getCollapseIconClass(): Promise<string> {

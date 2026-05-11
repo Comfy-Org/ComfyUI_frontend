@@ -89,8 +89,6 @@ const login = async () => {
 onMounted(async () => {
   document.getElementById('splash-loader')?.remove()
 
-  if (!userStore.initialized) {
-    await userStore.initialize()
-  }
+  await userStore.initialize()
 })
 </script>
