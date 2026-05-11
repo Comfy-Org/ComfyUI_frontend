@@ -1,6 +1,6 @@
-# Description: Manual workflow to refresh the apps/website Ashby roles snapshot
-# and open a PR. Merging the PR triggers the existing Vercel website production
-# deploy via ci-vercel-website-preview.yaml.
+# Description: Manual workflow to refresh apps/website data snapshots and open
+# a PR. Merging the PR triggers the existing Vercel website production deploy
+# via ci-vercel-website-preview.yaml.
 name: 'Release: Website'
 
 on:
@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  refresh-snapshot:
+  refresh-snapshots:
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
     permissions:
@@ -31,15 +31,20 @@ jobs:
           api_key: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           job_board_name: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
 
+      - name: Refresh GitHub stars snapshot
+        run: pnpm --filter @comfyorg/website github-stars:refresh-snapshot
+
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
         with:
           token: ${{ secrets.PR_GH_TOKEN }}
-          commit-message: 'chore(website): refresh Ashby roles snapshot'
-          title: 'chore(website): refresh Ashby roles snapshot'
+          commit-message: 'chore(website): refresh data snapshots'
+          title: 'chore(website): refresh data snapshots'
           body: |
-            Automated refresh of `apps/website/src/data/ashby-roles.snapshot.json`
-            from the Ashby job board API.
+            Automated refresh of website build-data snapshots:
+
+            - `apps/website/src/data/ashby-roles.snapshot.json`
+            - `apps/website/src/data/github-stars.snapshot.json`
 
             **Flow:**
             1. `Release: Website` workflow ran (manual trigger).
@@ -47,12 +52,11 @@ jobs:
             3. `CI: Vercel Website Preview` deploys a preview for review.
             4. Merging to `main` triggers the production Vercel deploy.
 
-            The snapshot fallback in `apps/website/src/utils/ashby.ts` remains
-            intact: builds without `WEBSITE_ASHBY_API_KEY` continue to use the
-            committed snapshot.
+            The snapshot fallback paths remain intact: builds use committed
+            snapshots whenever a live build-data source is unavailable.
 
             Triggered by workflow run `${{ github.run_id }}`.
-          branch: chore/refresh-ashby-snapshot-${{ github.run_id }}
+          branch: chore/refresh-website-data-snapshots-${{ github.run_id }}
           base: main
           labels: |
             Release:Website

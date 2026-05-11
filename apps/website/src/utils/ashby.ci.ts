@@ -1,39 +1,31 @@
-import { appendFileSync } from 'node:fs'
-
 import type { FetchOutcome } from './ashby'
 
-let hasReported = false
+import {
+  createBuildDataReporter,
+  describeSnapshotAge,
+  escapeAnnotation
+} from './buildDataReporter'
 
-export function resetAshbyReporterForTests(): void {
-  hasReported = false
-}
+const ashbyReporter = createBuildDataReporter({
+  summaryHeading: '## 💼 Careers (Ashby)\n',
+  buildAnnotations,
+  buildSummaryRows
+})
 
-export function reportAshbyOutcome(outcome: FetchOutcome): void {
-  if (hasReported) return
-  hasReported = true
-
-  const lines = buildAnnotations(outcome)
-  for (const line of lines) {
-    process.stdout.write(`${line}\n`)
-  }
-
-  const summaryPath = process.env.GITHUB_STEP_SUMMARY
-  if (summaryPath) {
-    try {
-      appendFileSync(summaryPath, buildStepSummary(outcome))
-    } catch {
-      // Writing the summary is best-effort; do not fail the build if the
-      // runner's summary file is unavailable (e.g. local dev).
-    }
-  }
-}
+export const resetAshbyReporterForTests = ashbyReporter.resetForTests
+export const reportAshbyOutcome = ashbyReporter.report
 
 function buildAnnotations(outcome: FetchOutcome): string[] {
   if (outcome.status === 'fresh') {
     if (outcome.droppedCount === 0) return []
     const roleCount = outcome.droppedCount === 1 ? 'role' : 'roles'
     const drops = outcome.droppedRoles
-      .map((d) => `  - ${d.title ? `"${d.title}"` : '(untitled)'}: ${d.reason}`)
+      .map(
+        (d) =>
+          `  - ${escapeAnnotation(
+            d.title ? `"${d.title}"` : '(untitled)'
+          )}: ${escapeAnnotation(d.reason)}`
+      )
       .join('%0A')
     return [
       `::warning title=Ashby: dropped ${outcome.droppedCount} invalid ${roleCount}::Dropped roles:%0A${drops}%0A%0AAction items:%0A  1. Fix the posting in Ashby admin (e.g. assign a department, fix the URL).%0A  2. If the v1 schema is too strict for a legitimate case, relax the field in apps/website/src/utils/ashby.schema.ts and add a test.%0A  3. These roles will not appear on the careers page until fixed.`
@@ -63,12 +55,7 @@ function staleAnnotation(reason: string): string {
   return `::warning title=Ashby API unavailable::${escaped}. Using last-known-good snapshot.%0A%0AAction items:%0A  1. Check https://status.ashbyhq.com%0A  2. Re-run this workflow once Ashby is healthy.`
 }
 
-function escapeAnnotation(value: string): string {
-  return value.replace(/\r?\n/g, '%0A').replace(/\r/g, '%0D')
-}
-
-function buildStepSummary(outcome: FetchOutcome): string {
-  const header = '## 💼 Careers (Ashby)\n'
+function buildSummaryRows(outcome: FetchOutcome): Array<[string, string]> {
   const rows: Array<[string, string]> = []
 
   if (outcome.status === 'fresh') {
@@ -95,19 +82,5 @@ function buildStepSummary(outcome: FetchOutcome): string {
     rows.push(['Reason', outcome.reason])
   }
 
-  const table =
-    '| | |\n|---|---|\n' +
-    rows.map(([k, v]) => `| **${k}** | ${v} |`).join('\n') +
-    '\n'
-
-  return `${header}${table}\n`
-}
-
-function describeSnapshotAge(fetchedAt: string): string {
-  const fetched = new Date(fetchedAt).getTime()
-  if (Number.isNaN(fetched)) return 'unknown'
-  const days = Math.floor((Date.now() - fetched) / 86_400_000)
-  if (days <= 0) return 'today'
-  if (days === 1) return '1 day'
-  return `${days} days`
+  return rows
 }
