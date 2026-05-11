@@ -2,9 +2,18 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import type { CustomNodesI18n } from '@/schemas/apiSchema'
 
 const NODE_TYPE = 'DevToolsNodeWithStringInput'
 const LOCALIZED_ZH = '本地化字符串输入 (ZH)'
+
+const i18nResponse: CustomNodesI18n = {
+  zh: {
+    nodeDefs: {
+      [NODE_TYPE]: { display_name: LOCALIZED_ZH }
+    }
+  }
+}
 
 test.describe(
   'Custom node locales loading',
@@ -15,13 +24,7 @@ test.describe(
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({
-            zh: {
-              nodeDefs: {
-                [NODE_TYPE]: { display_name: LOCALIZED_ZH }
-              }
-            }
-          })
+          body: JSON.stringify(i18nResponse)
         })
       })
     })
