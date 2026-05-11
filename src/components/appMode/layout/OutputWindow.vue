@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import type { MenuItem } from 'primevue/menuitem'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -12,21 +11,14 @@ import PanelHeader from './PanelHeader.vue'
 
 const { t } = useI18n()
 const {
-  defaultWidth = 512,
-  defaultHeight = 560,
   title,
-  menuEntries = [],
   initialPosition,
   initialWidth,
   initialHeight,
   zIndex,
   bodyAspect
 } = defineProps<{
-  defaultWidth?: number
-  defaultHeight?: number
   title?: string
-  /** Appended below the internal Maximize / Restore entry. */
-  menuEntries?: MenuItem[]
   /** Workspace-coord starting position. */
   initialPosition?: { x: number; y: number }
   /** User-set dimensions; switches off bodyAspect content-fit. */
@@ -45,17 +37,9 @@ const emit = defineEmits<{
 
 const userSized = computed(() => initialWidth != null || initialHeight != null)
 
-// TODO: maximize-to-workspace is buggy — UI removed but state +
-// toggle handler kept so we can re-add the menu entry once fixed:
-//   { icon: 'icon-[lucide--maximize] size-[18px]',
-//     label: t('linearMode.outputs.maximize'),
-//     command: _toggleMaximized }
-// (rename back to `toggleMaximized` when re-wired.)
-const maximized = ref(false)
-function _toggleMaximized() {
-  maximized.value = !maximized.value
-}
-void _toggleMaximized
+// TODO: maximize-to-workspace is buggy and the menu entry was removed.
+// When re-adding, restore as a `toggleMaximized` ref + handler and
+// gate the drag/resize/aspect-fit branches on it.
 
 const appModeStore = useAppModeStore()
 const { viewportScale, noZoomMode } = storeToRefs(appModeStore)
@@ -84,17 +68,13 @@ const snapSize = (v: number) => {
 }
 
 // Initialize from the spawn coordinate so the first paint already has
-// the right transform — no (0,0) flash before onMounted.
+// the right transform — no (0,0) flash. The store's nextSpawnPosition
+// always provides an initialPosition; the 512/560 literals here only
+// matter as the spawn-default size before the user sizes the window.
 const wx = ref(initialPosition?.x ?? 0)
 const wy = ref(initialPosition?.y ?? 0)
-const ww = ref(initialWidth ?? defaultWidth)
-const wh = ref(initialHeight ?? defaultHeight)
-
-onMounted(() => {
-  if (initialPosition) return
-  wx.value = snapPos(Math.max(0, (window.innerWidth - ww.value) / 2))
-  wy.value = snapPos(Math.max(0, (window.innerHeight - wh.value) / 2 - 32))
-})
+const ww = ref(initialWidth ?? 512)
+const wh = ref(initialHeight ?? 560)
 
 // Skip while dragging so the pointer wins over stale prop values.
 watch(
@@ -122,9 +102,7 @@ const { isDragging: dragging, start: handleHeaderPointerDown } = usePointerDrag(
     stopPropagation: true,
     onStart: (e) => {
       if (e.button !== 0 || noZoomMode.value) return false
-      // Promote even when maximized; only drag is gated.
       emit('promote')
-      if (maximized.value) return false
       dragStart = { px: e.clientX, py: e.clientY, bx: wx.value, by: wy.value }
     },
     onMove: (e) => {
@@ -178,7 +156,6 @@ const { isDragging: resizing, start: handleResizePointerDown } = usePointerDrag(
     onStart: (e) => {
       if (e.button !== 0 || noZoomMode.value) return false
       emit('promote')
-      if (maximized.value) return false
       const dir = (e.currentTarget as HTMLElement).dataset.resizeDir as
         | ResizeDir
         | undefined
@@ -270,7 +247,7 @@ const { isDragging: resizing, start: handleResizePointerDown } = usePointerDrag(
 )
 
 const showHeader = computed(() => {
-  if (!noZoomMode.value || maximized.value) return true
+  if (!noZoomMode.value) return true
   return (
     ww.value >= HEADERLESS_THRESHOLD_W && wh.value >= HEADERLESS_THRESHOLD_H
   )
@@ -281,26 +258,20 @@ const showHeader = computed(() => {
   <section
     ref="sectionRef"
     class="panel-chrome floating-panel pointer-events-auto absolute flex flex-col overflow-hidden"
-    :style="
-      maximized
-        ? { inset: '0px', zIndex: zIndex ?? 30 }
-        : {
-            // translate3d keeps drag on the compositor.
-            transform: `translate3d(${wx}px, ${wy}px, 0)`,
-            width: `${ww}px`,
-            zIndex: zIndex ?? 30,
-            ...(userSized || bodyAspect == null ? { height: `${wh}px` } : {})
-          }
-    "
+    :style="{
+      // translate3d keeps drag on the compositor.
+      transform: `translate3d(${wx}px, ${wy}px, 0)`,
+      width: `${ww}px`,
+      zIndex: zIndex ?? 30,
+      ...(userSized || bodyAspect == null ? { height: `${wh}px` } : {})
+    }"
   >
     <PanelHeader
       v-if="showHeader"
       :title="title || t('linearMode.outputs.title')"
-      :draggable="!maximized && !noZoomMode"
+      :draggable="!noZoomMode"
       :dragging="dragging"
       :collapsible="false"
-      :menu-entries="menuEntries"
-      :menu-label="t('linearMode.floatingPanel.menu')"
       @pointerdown="handleHeaderPointerDown"
     >
       <template #leading>
@@ -316,13 +287,11 @@ const showHeader = computed(() => {
       <!-- bodyAspect drives auto-fit only when the user hasn't resized. -->
       <div
         class="flex min-h-0"
-        :class="(bodyAspect == null || userSized) && !maximized ? 'flex-1' : ''"
+        :class="bodyAspect == null || userSized ? 'flex-1' : ''"
         :style="
-          bodyAspect != null && !userSized && !maximized
+          bodyAspect != null && !userSized
             ? { width: '100%', aspectRatio: String(bodyAspect) }
-            : maximized
-              ? { flex: '1' }
-              : undefined
+            : undefined
         "
       >
         <slot />
@@ -343,7 +312,7 @@ const showHeader = computed(() => {
          the tile edge so half is inside the tile and half overhangs;
          this widens the click target without making the visible
          border feel thicker. -->
-    <template v-if="!maximized && !noZoomMode">
+    <template v-if="!noZoomMode">
       <div
         data-resize-dir="n"
         class="absolute inset-x-5 -top-1.5 z-30 h-3 cursor-n-resize"

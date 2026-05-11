@@ -9,7 +9,7 @@ const {
   draggable = false,
   dragging = false,
   collapsible = true,
-  menuEntries,
+  menuEntries = [],
   expandLabel,
   collapseLabel,
   menuLabel
@@ -18,11 +18,13 @@ const {
   draggable?: boolean
   dragging?: boolean
   collapsible?: boolean
-  menuEntries: MenuItem[]
+  /** Empty array (the default) hides the kebab menu entirely. */
+  menuEntries?: MenuItem[]
   /** Required when `collapsible` is true so icon-only buttons have accessible names. */
   expandLabel?: string
   collapseLabel?: string
-  menuLabel: string
+  /** Required only when `menuEntries` is non-empty. */
+  menuLabel?: string
 }>()
 
 const collapsed = defineModel<boolean>('collapsed', { default: false })

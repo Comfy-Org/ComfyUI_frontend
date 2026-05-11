@@ -16,23 +16,13 @@ import type { PanelPreset } from './panelTypes'
 import { usePanelDrag } from './usePanelDrag'
 import { usePanelResize } from './usePanelResize'
 
-const {
-  title,
-  movable = false,
-  defaultPreset = 'right-dock'
-} = defineProps<{
+const { title, movable = false } = defineProps<{
   title?: string
   movable?: boolean
-  /** Preset to restore when the user picks "Reset layout". */
-  defaultPreset?: PanelPreset
 }>()
 
 const preset = defineModel<PanelPreset>('preset', { required: true })
 const collapsed = defineModel<boolean>('collapsed', { default: false })
-
-const emit = defineEmits<{
-  'reset-layout': []
-}>()
 
 const { t } = useI18n()
 
@@ -112,10 +102,9 @@ const menuEntries = computed<MenuItem[]>(() => [
     label: t('linearMode.floatingPanel.resetLayout'),
     icon: 'icon-[lucide--rotate-ccw]',
     command: () => {
-      preset.value = defaultPreset
+      preset.value = 'right-dock'
       collapsed.value = false
       panelWidthCells.value = 8
-      emit('reset-layout')
     }
   }
 ])

@@ -99,7 +99,14 @@ watch(
       // it would occupy in no-zoom mode.
       return
     }
-    const latest = windowStore.windows[windowStore.windows.length - 1]
+    // Newest by createdSeq, not array order — useOutputWindowSync can
+    // push newest-first when multiple items arrive in a single tick.
+    const latest = windowStore.windows.reduce<
+      (typeof windowStore.windows)[number] | undefined
+    >(
+      (newest, w) => (!newest || w.createdSeq > newest.createdSeq ? w : newest),
+      undefined
+    )
     if (!latest) return
     appModeStore.flyTo({
       x: latest.position.x,

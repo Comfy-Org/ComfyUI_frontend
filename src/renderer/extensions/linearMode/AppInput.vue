@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { useElementBounding, useRafFn } from '@vueuse/core'
-import { remove } from 'es-toolkit'
 import { computed, useTemplateRef, watch } from 'vue'
 
-import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 import SelectionChrome from '@/renderer/extensions/linearMode/SelectionChrome.vue'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useHideInputSelection } from '@/types/widgetTypes'
@@ -15,7 +13,11 @@ const { id, enable, name } = defineProps<{
 }>()
 
 const appModeStore = useAppModeStore()
-const isPromoted = computed(() => appModeStore.selectedInputs.some(matchesThis))
+const isPromoted = computed(() =>
+  appModeStore.selectedInputs.some(
+    ([nodeId, widgetName]) => id === String(nodeId) && name === widgetName
+  )
+)
 const hideInputSelection = useHideInputSelection()
 const showSelection = computed(() => enable && !hideInputSelection)
 
@@ -26,12 +28,8 @@ const { top, left, width, height, update } = useElementBounding(wrapperRef)
 const { pause, resume } = useRafFn(update, { immediate: false })
 watch(showSelection, (s) => (s ? resume() : pause()), { immediate: true })
 
-function matchesThis([nodeId, widgetName]: LinearInput) {
-  return id === String(nodeId) && name === widgetName
-}
 function togglePromotion() {
-  if (isPromoted.value) remove(appModeStore.selectedInputs, matchesThis)
-  else appModeStore.selectedInputs.push([id, name])
+  appModeStore.toggleSelectedInput(id, name)
 }
 </script>
 <template>
