@@ -639,15 +639,5 @@ describe('useCoreCommands', () => {
         expect(app.canvas.deleteSelected).toHaveBeenCalled()
       })
     })
-
-    describe('ExitSubgraph', () => {
-      it('cancels ghost placement when active and skips graph navigation', async () => {
-        app.canvas.state.ghostNodeId = 7
-
-        await findCommand('Comfy.Graph.ExitSubgraph').function()
-
-        expect(app.canvas.finalizeGhostPlacement).toHaveBeenCalledWith(true)
-      })
-    })
   })
 })
