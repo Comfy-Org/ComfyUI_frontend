@@ -92,7 +92,7 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
     pendingInvites: mockPendingInvites,
     permissions: mockPermissions,
     uiConfig: mockUiConfig,
-    isActiveSubscription: mockIsActiveSubscription,
+    canAccessSubscriptionFeatures: mockIsActiveSubscription,
     userPhotoUrl: ref(null),
     isCurrentUser: (m: WorkspaceMember) =>
       m.email.toLowerCase() === 'owner@example.com',
