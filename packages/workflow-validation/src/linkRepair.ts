@@ -80,20 +80,6 @@ function getNodeById(
   return graph.nodes.find((n) => n.id == id)
 }
 
-function extendLink(link: SerialisedLinkArray): SerialisedLinkObject & {
-  link: SerialisedLinkArray
-} {
-  return {
-    link,
-    id: link[0],
-    origin_id: link[1],
-    origin_slot: link[2],
-    target_id: link[3],
-    target_slot: link[4],
-    type: link[5]
-  }
-}
-
 interface RepairOptions {
   fix?: boolean
   silent?: boolean
@@ -351,11 +337,6 @@ export function repairLinks(
   linksReverse.reverse()
   for (const l of linksReverse) {
     if (!l) continue
-    const linkObj =
-      (l as SerialisedLinkObject).origin_slot != null
-        ? (l as SerialisedLinkObject)
-        : extendLink(l as SerialisedLinkArray)
-
     const ctx = toLinkContext(l)
     const originNode = getNodeById(graph, ctx.originId)
     const originHasLink = () =>
@@ -437,7 +418,6 @@ export function repairLinks(
         }
       }
     }
-    void linkObj
   }
 
   for (const l of linksReverse) {

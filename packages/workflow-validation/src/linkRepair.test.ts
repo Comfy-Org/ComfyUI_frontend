@@ -106,3 +106,29 @@ describe('repairLinks live-graph branch', () => {
     expect(linkRecord[42]).toBeUndefined()
   })
 })
+
+describe('repairLinks happy-path repair flow', () => {
+  it('patches a missing origin reference and deletes a dangling link, reporting non-zero patched and deleted counts', () => {
+    const graph: SerialisedGraph = {
+      nodes: [
+        { id: 1, outputs: [output([])] },
+        { id: 2, inputs: [input(10)] },
+        { id: 3, outputs: [output([])] }
+      ],
+      links: [
+        [10, 1, 0, 2, 0, '*'],
+        [99, 3, 0, 999, 0, '*']
+      ]
+    }
+
+    const result = repairLinks(graph, { fix: true, silent: true })
+
+    expect(result.patched).toBeGreaterThan(0)
+    expect(result.deleted).toBeGreaterThan(0)
+    expect(graph.nodes[0]!.outputs![0]!.links).toContain(10)
+    const danglingSurvives = (graph.links as SerialisedLinkArray[]).some(
+      (l) => Array.isArray(l) && l[0] === 99
+    )
+    expect(danglingSurvives).toBe(false)
+  })
+})

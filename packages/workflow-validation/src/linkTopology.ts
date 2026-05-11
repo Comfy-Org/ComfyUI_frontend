@@ -79,11 +79,10 @@ export function toLinkContext(
   }
 }
 
-function getNodeById(
-  graph: SerialisedGraph,
-  id: string | number
-): SerialisedNode | undefined {
-  return graph.nodes.find((n) => n.id == id)
+function buildNodeIndex(graph: SerialisedGraph): Map<string, SerialisedNode> {
+  const index = new Map<string, SerialisedNode>()
+  for (const node of graph.nodes) index.set(String(node.id), node)
+  return index
 }
 
 function iterateLinks(
@@ -108,10 +107,11 @@ function iterateLinks(
  */
 export function validateLinkTopology(graph: SerialisedGraph): TopologyError[] {
   const errors: TopologyError[] = []
+  const nodesById = buildNodeIndex(graph)
   for (const l of iterateLinks(graph)) {
     const link = toLinkContext(l)
-    const origin = getNodeById(graph, link.originId)
-    const target = getNodeById(graph, link.targetId)
+    const origin = nodesById.get(String(link.originId))
+    const target = nodesById.get(String(link.targetId))
 
     if (!origin) errors.push({ kind: 'missing-origin-node', link })
     if (!target) errors.push({ kind: 'missing-target-node', link })
