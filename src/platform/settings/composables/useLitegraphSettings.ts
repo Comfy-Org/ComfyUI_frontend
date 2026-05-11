@@ -18,7 +18,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
  * Idempotency is achieved by resetting NavigationMode to its default after
  * migration: subsequent boots see `legacy` and exit early.
  */
-async function migrateLegacyNavigationSettings(
+export async function migrateLegacyNavigationSettings(
   settingStore: ReturnType<typeof useSettingStore>
 ) {
   const navMode = settingStore.get('Comfy.Canvas.NavigationMode')
