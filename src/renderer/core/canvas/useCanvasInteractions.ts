@@ -7,6 +7,47 @@ import { app } from '@/scripts/app'
 
 const TEXT_WHEEL_CAPTURE_SELECTOR = 'textarea, [role="textarea"]'
 
+function getWheelCaptureElement(event: WheelEvent): HTMLElement | null {
+  const target = event.target as HTMLElement | null
+  const captureElement = target?.closest('[data-capture-wheel="true"]')
+
+  return captureElement instanceof HTMLElement ? captureElement : null
+}
+
+function getTextWheelCaptureElement(event: WheelEvent): HTMLElement | null {
+  const target = event.target as HTMLElement | null
+  const captureElement = getWheelCaptureElement(event)
+  const textCaptureElement = target?.closest(TEXT_WHEEL_CAPTURE_SELECTOR)
+
+  if (
+    textCaptureElement instanceof HTMLElement &&
+    captureElement?.contains(textCaptureElement)
+  ) {
+    return textCaptureElement
+  }
+
+  return captureElement?.matches(TEXT_WHEEL_CAPTURE_SELECTOR)
+    ? captureElement
+    : null
+}
+
+function isVerticalWheel(event: WheelEvent): boolean {
+  return (
+    Math.abs(event.deltaY) > 0 &&
+    Math.abs(event.deltaY) >= Math.abs(event.deltaX)
+  )
+}
+
+function textCapturesVerticalScroll(event: WheelEvent): boolean {
+  const textCaptureElement = getTextWheelCaptureElement(event)
+
+  return !!(
+    textCaptureElement &&
+    isVerticalWheel(event) &&
+    textCaptureElement.scrollHeight > textCaptureElement.clientHeight
+  )
+}
+
 /**
  * Composable for handling canvas interactions from Vue components.
  * This provides a unified way to forward events to the LiteGraph canvas.
@@ -27,46 +68,6 @@ export function useCanvasInteractions() {
   const shouldHandleNodePointerEvents = computed(
     () => !(canvasStore.canvas?.read_only ?? false)
   )
-
-  const getWheelCaptureElement = (event: WheelEvent): HTMLElement | null => {
-    const target = event.target as HTMLElement | null
-    const captureElement = target?.closest('[data-capture-wheel="true"]')
-
-    return captureElement instanceof HTMLElement ? captureElement : null
-  }
-
-  const getTextWheelCaptureElement = (
-    event: WheelEvent
-  ): HTMLElement | null => {
-    const target = event.target as HTMLElement | null
-    const captureElement = getWheelCaptureElement(event)
-    const textCaptureElement = target?.closest(TEXT_WHEEL_CAPTURE_SELECTOR)
-
-    if (
-      textCaptureElement instanceof HTMLElement &&
-      captureElement?.contains(textCaptureElement)
-    ) {
-      return textCaptureElement
-    }
-
-    return captureElement?.matches(TEXT_WHEEL_CAPTURE_SELECTOR)
-      ? captureElement
-      : null
-  }
-
-  const isVerticalWheel = (event: WheelEvent): boolean =>
-    Math.abs(event.deltaY) > 0 &&
-    Math.abs(event.deltaY) >= Math.abs(event.deltaX)
-
-  const textCapturesVerticalScroll = (event: WheelEvent): boolean => {
-    const textCaptureElement = getTextWheelCaptureElement(event)
-
-    return !!(
-      textCaptureElement &&
-      isVerticalWheel(event) &&
-      textCaptureElement.scrollHeight > textCaptureElement.clientHeight
-    )
-  }
 
   /**
    * Returns true if the wheel event target is inside an element that should
