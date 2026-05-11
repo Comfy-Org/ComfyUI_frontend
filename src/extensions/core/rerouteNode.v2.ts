@@ -204,7 +204,9 @@ function registerRerouteType() {
       for (const node of updateNodes) {
         node.outputs[0].type = inputType || '*'
         node.__outputType = displayType
-        node.outputs[0].name = node.properties.showOutputText ? `${displayType}` : ''
+        node.outputs[0].name = node.properties.showOutputText
+          ? `${displayType}`
+          : ''
         node.setSize(node.computeSize())
         for (const l of node.outputs[0].links || []) {
           const link = graph.links[l]
@@ -230,7 +232,10 @@ function registerRerouteType() {
       for (const node of updateNodes) {
         if (widgetConfig && outputType) {
           node.inputs[0].widget = { name: 'value' }
-          setWidgetConfig(node.inputs[0], [widgetType ?? `${displayType}`, widgetConfig])
+          setWidgetConfig(node.inputs[0], [
+            widgetType ?? `${displayType}`,
+            widgetConfig
+          ])
         } else {
           setWidgetConfig(node.inputs[0], undefined)
         }
