@@ -190,6 +190,9 @@ export class ComfyPage {
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
 
+  /** Whether the current test runs in Vue Nodes mode (initialized from `@vue-nodes` tag). */
+  public isVueNodes = false
+
   /** Test user ID for the current context */
   get id() {
     return this.userIds[comfyPageFixture.info().parallelIndex]
@@ -352,6 +355,12 @@ export class ComfyPage {
     await nextFrame(this.page)
   }
 
+  async idleFrames(count: number) {
+    for (let i = 0; i < count; i++) {
+      await this.nextFrame()
+    }
+  }
+
   async delay(ms: number) {
     return sleep(ms)
   }
@@ -494,6 +503,7 @@ export const comfyPageFixture = base.extend<{
     comfyPage.userIds[parallelIndex] = userId
 
     const isVueNodes = testInfo.tags.includes('@vue-nodes')
+    comfyPage.isVueNodes = isVueNodes
 
     try {
       await comfyPage.setupSettings({

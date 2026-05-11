@@ -24,20 +24,12 @@ function isActiveTracker(tracker: ChangeTracker): boolean {
   return useWorkflowStore().activeWorkflow?.changeTracker === tracker
 }
 
-const reportedInactiveCalls = new Set<string>()
-
 /**
  * Report a ChangeTracker method being called on an inactive tracker —
  * a lifecycle violation that usually indicates stale extension state or
- * an incorrect call ordering. Reports once per method per workflow per
- * session so the signal is not drowned out by hot-path invocations while
- * still distinguishing between workflows.
+ * an incorrect call ordering.
  */
 function reportInactiveTrackerCall(method: string, workflowPath: string) {
-  const key = `${method}:${workflowPath}`
-  if (reportedInactiveCalls.has(key)) return
-  reportedInactiveCalls.add(key)
-
   console.warn(`${method}() called on inactive tracker for: ${workflowPath}`)
 
   if (isDesktop) {

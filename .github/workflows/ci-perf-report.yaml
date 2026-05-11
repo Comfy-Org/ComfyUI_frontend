@@ -54,10 +54,14 @@ jobs:
       - name: Start ComfyUI server
         uses: ./.github/actions/start-comfyui-server
 
+      # PRs run each test once to keep wall time bounded; main runs 3× so the
+      # baseline saved to perf-data has enough samples to median over noise.
       - name: Run performance tests
         id: perf
         continue-on-error: true
-        run: pnpm exec playwright test --project=performance --workers=1 --repeat-each=3
+        env:
+          PERF_REPEAT: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && '3' || '2' }}
+        run: pnpm exec playwright test --project=performance --workers=1 --repeat-each=$PERF_REPEAT
 
       - name: Upload perf metrics
         if: always()
