@@ -14,6 +14,7 @@ const baseRoutes = {
   demos: '/demos',
   termsOfService: '/terms-of-service',
   privacyPolicy: '/privacy-policy',
+  affiliateTerms: '/affiliates/terms',
   contact: '/contact'
 } as const
 
