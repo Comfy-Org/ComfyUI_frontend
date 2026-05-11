@@ -1689,6 +1689,10 @@
       },
       "1": {
         "tooltip": null
+      },
+      "2": {
+        "name": "BOOL",
+        "tooltip": null
       }
     }
   },
