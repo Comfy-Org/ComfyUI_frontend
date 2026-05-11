@@ -24,6 +24,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_image": {
+        "name": "start_image"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "ノイズを追加",
     "inputs": {
@@ -1654,6 +1688,10 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "BOOL",
         "tooltip": null
       }
     }
@@ -8011,6 +8049,21 @@
       }
     }
   },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "背景除去モデルの読み込み",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "bg_removal_name",
+        "tooltip": "画像から背景を除去するために使用するモデル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bg_model",
+        "tooltip": null
+      }
+    }
+  },
   "LoadImage": {
     "display_name": "画像を読み込む",
     "inputs": {
@@ -13460,6 +13513,25 @@
       }
     }
   },
+  "RemoveBackground": {
+    "display_name": "背景を除去",
+    "inputs": {
+      "bg_removal_model": {
+        "name": "bg_removal_model",
+        "tooltip": "マスクを生成するために使用する背景除去モデル"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "背景を除去する入力画像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "マスク",
+        "tooltip": "生成された前景マスク"
+      }
+    }
+  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -17353,7 +17425,8 @@
         "name": "pbr"
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "このパラメータは非推奨であり、何も行いません。"
       },
       "texture": {
         "name": "texture"
@@ -19318,6 +19391,156 @@
     "outputs": {
       "0": {
         "tooltip": "サンプリング中にコンテキストウィンドウが適用されたモデル。"
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_inject_scale": {
+        "name": "audio_inject_scale",
+        "tooltip": "オーディオ特徴量をビデオモデルに注入する際のスケール。"
+      },
+      "video_frames": {
+        "name": "video_frames"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio_encoder_output",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps_string",
+        "tooltip": "オーディオの長さとビデオフレーム数から計算されたfps。プロンプトで使用されます。"
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "出力フレーム総数の計算やセグメントオーディオの抽出に使用するオーディオ。"
+      },
+      "images": {
+        "name": "images"
+      },
+      "segment_index": {
+        "name": "segment_index",
+        "tooltip": "このセグメントがどれか（最初は0、次は1など）"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "このセグメントの長さ（通常は149フレーム）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "パディングされたキーフレームシーケンス"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "有効なフレームを示すマスク"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "このビデオセグメント用のオーディオセグメント"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "各出力セグメント用にスライスするオーディオ。"
+      },
+      "images": {
+        "name": "images"
+      },
+      "num_segments": {
+        "name": "num_segments",
+        "tooltip": "リストとして出力するパディング済みセグメントの数。"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "各セグメントの長さ（通常は149フレーム）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "パディングされたキーフレームシーケンス"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "有効なフレームを示すマスク"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "各ビデオセグメント用のオーディオセグメント"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "audio_encoder_output": {
+        "name": "audio_encoder_output"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "最初のフレームのCLIP vision埋め込み。"
+      },
+      "clip_vision_output_ref": {
+        "name": "clip_vision_output_ref",
+        "tooltip": "参照画像のCLIP vision埋め込み。"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ",
+        "tooltip": "生成される動画のフレーム数。WanDancerの場合は149のままにしてください。"
+      },
+      "mask": {
+        "name": "マスク",
+        "tooltip": "開始画像の画像処理用マスク。白は保持、黒は生成されます。ローカル生成に使用されます。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "start_image": {
+        "name": "開始画像",
+        "tooltip": "エンコードする初期画像。任意のフレーム数を指定できます。"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "空のlatent。"
       }
     }
   },
