@@ -2,7 +2,11 @@
   <Dialog :open="visible" @update:open="(open) => (visible = open)">
     <DialogPortal>
       <DialogOverlay />
-      <DialogContent size="md" :aria-labelledby="titleId">
+      <DialogContent
+        size="md"
+        :aria-labelledby="titleId"
+        @pointer-down-outside.prevent
+      >
         <DialogHeader>
           <DialogTitle :id="titleId">
             {{
