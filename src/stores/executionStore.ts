@@ -15,7 +15,6 @@ import type {
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type {
   ExecutedWsMessage,
-  ExecutingWsMessage,
   ExecutionCachedWsMessage,
   ExecutionErrorWsMessage,
   ExecutionInterruptedWsMessage,
@@ -302,14 +301,22 @@ export const useExecutionStore = defineStore('execution', () => {
       })
     }
     const jobId = e.detail.prompt_id
+    clearInitializationByJobId(jobId)
     if (!messageMatchesActiveWorkflow(jobId, e.detail.workflow_id)) return
     resetExecutionState(jobId)
   }
 
-  function handleExecuting(e: CustomEvent<ExecutingWsMessage>): void {
-    const { prompt_id: jobId, workflow_id: messageWorkflowId } = e.detail
-    if (!messageMatchesActiveWorkflow(jobId, messageWorkflowId)) return
+  function handleExecuting(e: CustomEvent<NodeId | null>): void {
     _executingNodeProgress.value = null
+
+    if (!activeJob.value) return
+
+    if (typeof e.detail !== 'string') {
+      if (activeJobId.value) {
+        delete queuedJobs.value[activeJobId.value]
+      }
+      activeJobId.value = null
+    }
   }
 
   /**
@@ -422,6 +429,24 @@ export const useExecutionStore = defineStore('execution', () => {
     }
 
     return true
+  }
+
+  /**
+   * Returns true when workflow ownership for {@link jobId} can be resolved
+   * — either by an explicit `workflow_id` on the incoming message or by a
+   * mapping registered when the job was queued. When this returns false
+   * the caller should fall back to whatever legacy guard applied before
+   * workflow gating was introduced.
+   */
+  function canResolveWorkflowOwnership(
+    jobId: JobId,
+    messageWorkflowId: string | undefined
+  ): boolean {
+    return (
+      Boolean(messageWorkflowId) ||
+      jobIdToWorkflowId.value.has(jobId) ||
+      jobIdToSessionWorkflowPath.value.has(jobId)
+    )
   }
 
   function handleProgress(e: CustomEvent<ProgressWsMessage>) {
@@ -592,18 +617,12 @@ export const useExecutionStore = defineStore('execution', () => {
     const { nodeId, text, prompt_id, workflow_id } = e.detail
     if (!text || !nodeId) return
 
-    // Prefer the workflow-ownership gate when ownership can be resolved
-    // (workflow_id on the message, or a registered mapping). Only fall back
-    // to the legacy active-prompt guard when ownership is unresolvable;
-    // otherwise activeJobId pointing at a different workflow's job would
-    // incorrectly drop messages for the visible workflow.
+    // Prefer the workflow-ownership gate when ownership can be resolved.
+    // Only fall back to the legacy active-prompt guard when ownership is
+    // unresolvable; otherwise activeJobId pointing at a different workflow's
+    // job would incorrectly drop messages for the visible workflow.
     if (prompt_id) {
-      const canResolveWorkflow =
-        Boolean(workflow_id) ||
-        jobIdToWorkflowId.value.has(prompt_id) ||
-        jobIdToSessionWorkflowPath.value.has(prompt_id)
-
-      if (canResolveWorkflow) {
+      if (canResolveWorkflowOwnership(prompt_id, workflow_id)) {
         if (!messageMatchesActiveWorkflow(prompt_id, workflow_id)) return
       } else if (activeJobId.value && prompt_id !== activeJobId.value) {
         return

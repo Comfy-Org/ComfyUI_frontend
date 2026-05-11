@@ -17,7 +17,6 @@ import {
   type ComfyNode,
   type ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ExecutingWsMessage } from '@/schemas/apiSchema'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { useDialogService } from '@/services/dialogService'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -1447,11 +1446,7 @@ export class GroupNodeHandler {
           ).runningInternalNodeId = innerNodeIndex
           api.dispatchCustomEvent(
             type as 'executing',
-            getEvent(
-              detail,
-              `${this.node.id}`,
-              this.node
-            ) as unknown as ExecutingWsMessage
+            getEvent(detail, `${this.node.id}`, this.node) as string
           )
         }
       }
@@ -1464,11 +1459,8 @@ export class GroupNodeHandler {
 
     const executing = handleEvent(
       'executing',
-      (d) => (typeof d === 'string' ? d : (d?.display_node ?? d?.node)),
-      (d, id) =>
-        typeof d === 'object'
-          ? { ...d, node: id, display_node: id }
-          : { prompt_id: '', node: id, display_node: id }
+      (d) => (typeof d === 'string' ? d : undefined),
+      (_d, id) => id
     )
 
     const executed = handleEvent(

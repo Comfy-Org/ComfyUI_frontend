@@ -23,7 +23,8 @@ import type {
 } from '@/platform/workflow/templates/types/template'
 import type {
   ComfyApiWorkflow,
-  ComfyWorkflowJSON
+  ComfyWorkflowJSON,
+  NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
   AssetDownloadWsMessage,
@@ -212,7 +213,11 @@ type AsCustomEvents<T> = {
 
 /** Handles differing event and API signatures. */
 type ApiToEventType<T = ApiCalls> = {
-  [K in keyof T]: K extends 'status' ? StatusWsMessageStatus : T[K]
+  [K in keyof T]: K extends 'status'
+    ? StatusWsMessageStatus
+    : K extends 'executing'
+      ? NodeId
+      : T[K]
 }
 
 /** Dictionary of types used in the detail for a custom event */
@@ -723,7 +728,10 @@ export class ComfyApi extends EventTarget {
               this.dispatchCustomEvent('status', msg.data.status ?? null)
               break
             case 'executing':
-              this.dispatchCustomEvent('executing', msg.data)
+              this.dispatchCustomEvent(
+                'executing',
+                msg.data.display_node || msg.data.node
+              )
               break
             case 'execution_start':
             case 'execution_error':

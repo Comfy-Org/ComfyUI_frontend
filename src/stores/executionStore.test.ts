@@ -817,30 +817,6 @@ describe('useExecutionStore - active workflow gating', () => {
     expect(store.activeJobId).toBe('job-1')
   })
 
-  it('executing from a non-active workflow does not clear _executingNodeProgress', () => {
-    mockActiveWorkflow.current = {
-      activeState: { id: 'wf-active' },
-      path: '/wf-active.json'
-    }
-    fireProgress('job-1', '1', 'wf-active', 5, 10)
-    expect(store._executingNodeProgress).not.toBeNull()
-
-    const handler = apiEventHandlers.get('executing')
-    if (!handler) throw new Error('executing handler not bound')
-    handler(
-      new CustomEvent('executing', {
-        detail: {
-          prompt_id: 'job-other',
-          node: '2',
-          display_node: '2',
-          workflow_id: 'wf-other'
-        }
-      })
-    )
-
-    expect(store._executingNodeProgress).not.toBeNull()
-  })
-
   it('execution_cached from a non-active workflow does not mark active job nodes', () => {
     mockActiveWorkflow.current = {
       activeState: { id: 'wf-active' },
@@ -1452,35 +1428,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
   })
 
   describe('executing', () => {
-    it('clears _executingNodeProgress when workflow_id matches the active workflow', () => {
-      mockActiveWorkflow.current = {
-        activeState: { id: 'wf-active' },
-        path: '/wf-active.json'
-      }
-      fire('execution_start', {
-        prompt_id: 'job-1',
-        timestamp: 0,
-        workflow_id: 'wf-active'
-      })
-      store._executingNodeProgress = {
-        value: 1,
-        max: 2,
-        prompt_id: 'job-1',
-        node: '1'
-      }
-
-      fire('executing', {
-        prompt_id: 'job-1',
-        node: '1',
-        display_node: '1',
-        workflow_id: 'wf-active'
-      })
-
-      expect(store._executingNodeProgress).toBeNull()
-    })
-
-    it('clears _executingNodeProgress when ownership is unresolvable (legacy fallback)', () => {
-      mockActiveWorkflow.current = null
+    it('clears _executingNodeProgress and activeJobId when detail is null', () => {
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
       store._executingNodeProgress = {
         value: 1,
@@ -1489,13 +1437,10 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         node: '1'
       }
 
-      fire('executing', {
-        prompt_id: 'job-1',
-        node: '1',
-        display_node: '1'
-      })
+      fire('executing', null)
 
       expect(store._executingNodeProgress).toBeNull()
+      expect(store.activeJobId).toBeNull()
     })
   })
 
