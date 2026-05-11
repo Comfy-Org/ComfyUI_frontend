@@ -237,7 +237,6 @@ describe('computeProcessedWidgets borderStyle', () => {
       },
       graphId: 'graph-test',
       showAdvanced: false,
-      showAdvancedRing: false,
       isGraphReady: false,
       rootGraph: null,
       ui: noopUi
@@ -278,7 +277,6 @@ describe('computeProcessedWidgets borderStyle', () => {
       },
       graphId: 'graph-test',
       showAdvanced: false,
-      showAdvancedRing: false,
       isGraphReady: false,
       rootGraph: null,
       ui: noopUi
@@ -289,7 +287,7 @@ describe('computeProcessedWidgets borderStyle', () => {
     ).toBe(false)
   })
 
-  it('applies advanced border styling to advanced widgets when hide advanced button is hovered', () => {
+  it('does not apply border styling to advanced widgets (advanced hint is applied at row level via opacity)', () => {
     const advancedWidget = createMockWidget({
       name: 'text',
       type: 'combo',
@@ -310,39 +308,6 @@ describe('computeProcessedWidgets borderStyle', () => {
       },
       graphId: 'graph-test',
       showAdvanced: true,
-      showAdvancedRing: true,
-      isGraphReady: false,
-      rootGraph: null,
-      ui: noopUi
-    })
-
-    expect(result[0].simplified.borderStyle).toBe(
-      'ring ring-component-node-widget-advanced'
-    )
-  })
-
-  it('does not apply advanced border styling to advanced widgets when hide advanced button is not hovered', () => {
-    const advancedWidget = createMockWidget({
-      name: 'text',
-      type: 'combo',
-      options: { advanced: true }
-    })
-
-    const result = computeProcessedWidgets({
-      nodeData: {
-        id: '1',
-        type: 'TestNode',
-        widgets: [advancedWidget],
-        title: 'Test',
-        mode: 0,
-        selected: false,
-        executing: false,
-        inputs: [],
-        outputs: []
-      },
-      graphId: 'graph-test',
-      showAdvanced: true,
-      showAdvancedRing: false,
       isGraphReady: false,
       rootGraph: null,
       ui: noopUi

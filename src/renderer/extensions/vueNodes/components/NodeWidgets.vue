@@ -26,7 +26,12 @@
       <div
         v-if="!widget.hidden && (!widget.advanced || showAdvanced)"
         data-testid="node-widget"
-        class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
+        :class="
+          cn(
+            'lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch transition-opacity',
+            widget.advanced && isAdvancedHovered && 'opacity-30'
+          )
+        "
       >
         <!-- Widget Input Slot Dot -->
         <div
@@ -134,8 +139,5 @@ const {
   nodeType,
   processedWidgets,
   showAdvanced
-} = useProcessedWidgets(
-  () => nodeData,
-  () => isAdvancedHovered
-)
+} = useProcessedWidgets(() => nodeData)
 </script>

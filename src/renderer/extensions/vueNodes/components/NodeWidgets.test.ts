@@ -74,14 +74,19 @@ describe('NodeWidgets', () => {
     outputs: []
   })
 
-  function renderComponent(nodeData?: VueNodeData, setupStores?: () => void) {
+  function renderComponent(
+    nodeData?: VueNodeData,
+    setupStores?: () => void,
+    extraProps: { isAdvancedHovered?: boolean } = {}
+  ) {
     const pinia = createTestingPinia({ stubActions: false })
     setActivePinia(pinia)
     setupStores?.()
 
     return render(NodeWidgets, {
       props: {
-        nodeData
+        nodeData,
+        ...extraProps
       },
       global: {
         plugins: [pinia],
@@ -334,5 +339,48 @@ describe('NodeWidgets', () => {
     )
 
     expect(ids).toStrictEqual(['test_node', 'test_node'])
+  })
+
+  describe('advanced widget hover styling', () => {
+    function renderWithAdvancedWidget(isAdvancedHovered: boolean) {
+      const advancedWidget = createMockWidget({
+        name: 'advanced_widget',
+        type: 'toggle',
+        options: { advanced: true }
+      })
+      const nodeData = {
+        ...createMockNodeData('TestNode', [advancedWidget]),
+        showAdvanced: true
+      }
+      return renderComponent(nodeData, undefined, { isAdvancedHovered })
+    }
+
+    it('dims advanced widget row when isAdvancedHovered is true', () => {
+      const { container } = renderWithAdvancedWidget(true)
+      const widgetRow = container.querySelector('.lg-node-widget')
+      expect(widgetRow).not.toBeNull()
+      expect(widgetRow!.className).toContain('opacity-30')
+    })
+
+    it('does not dim advanced widget row when isAdvancedHovered is false', () => {
+      const { container } = renderWithAdvancedWidget(false)
+      const widgetRow = container.querySelector('.lg-node-widget')
+      expect(widgetRow).not.toBeNull()
+      expect(widgetRow!.className).not.toContain('opacity-30')
+    })
+
+    it('does not dim non-advanced widget row even when isAdvancedHovered is true', () => {
+      const regularWidget = createMockWidget({
+        name: 'regular_widget',
+        type: 'combo'
+      })
+      const nodeData = createMockNodeData('TestNode', [regularWidget])
+      const { container } = renderComponent(nodeData, undefined, {
+        isAdvancedHovered: true
+      })
+      const widgetRow = container.querySelector('.lg-node-widget')
+      expect(widgetRow).not.toBeNull()
+      expect(widgetRow!.className).not.toContain('opacity-30')
+    })
   })
 })
