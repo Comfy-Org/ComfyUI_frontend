@@ -1331,10 +1331,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
     })
 
     it('clears initializing state for the starting job', () => {
-      store.initializingJobIds = new Set([
-        'job-1',
-        'job-2'
-      ]) as unknown as Set<string>
+      store.initializingJobIds = new Set(['job-1', 'job-2'])
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
 
       expect(store.initializingJobIds.has('job-1')).toBe(false)
@@ -1424,6 +1421,16 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
       expect(store.activeJobId).toBeNull()
       expect(store.queuedJobs['job-1']).toBeUndefined()
+    })
+
+    it('clears initializing state for the completed job', () => {
+      store.initializingJobIds = new Set(['job-1', 'job-2'])
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+      fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(store.initializingJobIds.has('job-1')).toBe(false)
+      expect(store.initializingJobIds.has('job-2')).toBe(true)
     })
   })
 
