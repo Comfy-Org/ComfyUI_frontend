@@ -141,6 +141,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "start_image": {
+        "name": "start_image"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AudioAdjustVolume": {
     "display_name": "Audio Adjust Volume",
     "inputs": {
@@ -196,7 +230,7 @@
     }
   },
   "AudioEncoderLoader": {
-    "display_name": "AudioEncoderLoader",
+    "display_name": "Load Audio Encoder",
     "inputs": {
       "audio_encoder_name": {
         "name": "audio_encoder_name"
@@ -1654,6 +1688,10 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "BOOL",
         "tooltip": null
       }
     }
@@ -4063,6 +4101,54 @@
       }
     }
   },
+  "GeminiNanoBanana2V2": {
+    "display_name": "Nano Banana 2",
+    "description": "Generate or edit images synchronously via Google Vertex API.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt describing the image to generate or the edits to apply. Include any constraints, styles, or details the model should follow."
+      },
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "When the seed is fixed to a specific value, the model makes a best effort to provide the same response for repeated requests. Deterministic output isn't guaranteed. Also, changing the model or parameter settings, such as the temperature, can cause variations in the response even when you use the same seed value. By default, a random seed value is used."
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Foundational instructions that dictate an AI's behavior."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "First image from the model's thinking process. Only available with thinking_level HIGH and IMAGE+TEXT modality."
+      }
+    }
+  },
   "GeminiNode": {
     "display_name": "Google Gemini",
     "description": "Generate text responses with Google's Gemini AI model. You can provide multiple types of inputs (text, images, audio, video) as context for generating more relevant and meaningful responses.",
@@ -4242,7 +4328,7 @@
     }
   },
   "GLIGENLoader": {
-    "display_name": "GLIGENLoader",
+    "display_name": "Load GLIGEN Model",
     "inputs": {
       "gligen_name": {
         "name": "gligen_name"
@@ -4839,7 +4925,7 @@
     }
   },
   "HunyuanRefinerLatent": {
-    "display_name": "HunyuanRefinerLatent",
+    "display_name": "Hunyuan Latent Refiner",
     "inputs": {
       "positive": {
         "name": "positive"
@@ -4944,7 +5030,7 @@
     }
   },
   "HunyuanVideo15SuperResolution": {
-    "display_name": "HunyuanVideo15SuperResolution",
+    "display_name": "Hunyuan Video 1.5 Super Resolution",
     "inputs": {
       "positive": {
         "name": "positive"
@@ -4984,7 +5070,7 @@
     }
   },
   "HypernetworkLoader": {
-    "display_name": "HypernetworkLoader",
+    "display_name": "Load Hypernetwork",
     "inputs": {
       "model": {
         "name": "model"
@@ -5280,9 +5366,6 @@
   "ImageCompositeMasked": {
     "display_name": "Image Composite Masked",
     "inputs": {
-      "destination": {
-        "name": "destination"
-      },
       "source": {
         "name": "source"
       },
@@ -5294,6 +5377,9 @@
       },
       "resize_source": {
         "name": "resize_source"
+      },
+      "destination": {
+        "name": "destination"
       },
       "mask": {
         "name": "mask"
@@ -5544,7 +5630,7 @@
     }
   },
   "ImageQuantize": {
-    "display_name": "ImageQuantize",
+    "display_name": "Quantize Image",
     "inputs": {
       "image": {
         "name": "image"
@@ -5676,7 +5762,7 @@
     }
   },
   "ImageSharpen": {
-    "display_name": "ImageSharpen",
+    "display_name": "Sharpen Image",
     "inputs": {
       "image": {
         "name": "image"
@@ -7550,6 +7636,21 @@
       }
     }
   },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "Load Background Removal Model",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "bg_removal_name",
+        "tooltip": "The model used to remove backgrounds from images"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bg_model",
+        "tooltip": null
+      }
+    }
+  },
   "LoadImage": {
     "display_name": "Load Image",
     "inputs": {
@@ -8211,7 +8312,7 @@
     }
   },
   "LTXVPreprocess": {
-    "display_name": "LTXVPreprocess",
+    "display_name": "LTXV Preprocess",
     "inputs": {
       "image": {
         "name": "image"
@@ -12141,7 +12242,7 @@
     }
   },
   "PerpNeg": {
-    "display_name": "Perp-Neg (DEPRECATED by PerpNegGuider)",
+    "display_name": "Perp-Neg (DEPRECATED by Perp-Neg Guider)",
     "inputs": {
       "model": {
         "name": "model"
@@ -12160,7 +12261,7 @@
     }
   },
   "PerpNegGuider": {
-    "display_name": "PerpNegGuider",
+    "display_name": "Perp-Neg Guider",
     "inputs": {
       "model": {
         "name": "model"
@@ -13384,6 +13485,25 @@
       }
     }
   },
+  "RemoveBackground": {
+    "display_name": "Remove Background",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Input image to remove the background from"
+      },
+      "bg_removal_model": {
+        "name": "bg_removal_model",
+        "tooltip": "Background removal model used to generate the mask"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": "Generated foreground mask"
+      }
+    }
+  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -14137,11 +14257,11 @@
       },
       "detection_threshold": {
         "name": "detection_threshold",
-        "tooltip": "Score threshold for text-prompted detection"
+        "tooltip": "Score threshold for text-prompted detection."
       },
       "max_objects": {
         "name": "max_objects",
-        "tooltip": "Max tracked objects (0=unlimited). Initial masks count toward this limit."
+        "tooltip": "Max tracked objects. Initial masks count toward this limit. 0 uses the internal cap of 64."
       },
       "detect_interval": {
         "name": "detect_interval",
@@ -14711,7 +14831,7 @@
     }
   },
   "SaveImageWebsocket": {
-    "display_name": "SaveImageWebsocket",
+    "display_name": "Save Image (Websocket)",
     "inputs": {
       "images": {
         "name": "images"
@@ -16633,7 +16753,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "TextGenerate",
+    "display_name": "Generate Text",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -16695,7 +16815,7 @@
     }
   },
   "TextGenerateLTX2Prompt": {
-    "display_name": "TextGenerateLTX2Prompt",
+    "display_name": "Generate LTX2 Prompt",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -17314,7 +17434,8 @@
         "name": "face_limit"
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "This parameter is deprecated and does nothing."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -17521,7 +17642,7 @@
     }
   },
   "unCLIPCheckpointLoader": {
-    "display_name": "unCLIPCheckpointLoader",
+    "display_name": "Load unCLIP Checkpoint",
     "inputs": {
       "ckpt_name": {
         "name": "ckpt_name"
@@ -18711,7 +18832,7 @@
     }
   },
   "VoxelToMesh": {
-    "display_name": "VoxelToMesh",
+    "display_name": "Voxel to Mesh",
     "inputs": {
       "voxel": {
         "name": "voxel"
@@ -18730,7 +18851,7 @@
     }
   },
   "VoxelToMeshBasic": {
-    "display_name": "VoxelToMeshBasic",
+    "display_name": "Voxel to Mesh (Basic)",
     "inputs": {
       "voxel": {
         "name": "voxel"
@@ -19309,6 +19430,156 @@
     "outputs": {
       "0": {
         "tooltip": "The model with context windows applied during sampling."
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "video_frames": {
+        "name": "video_frames"
+      },
+      "audio_inject_scale": {
+        "name": "audio_inject_scale",
+        "tooltip": "The scale for the audio features when injected into the video model."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio_encoder_output",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps_string",
+        "tooltip": "The calculated fps based on the audio length and the number of video frames. Used in the prompt."
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "images": {
+        "name": "images"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "Length of this segment (usually 149 frames)"
+      },
+      "segment_index": {
+        "name": "segment_index",
+        "tooltip": "Which segment this is (0 for first, 1 for second, etc.)"
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio to calculate total output frames from and extract segment audio."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "Padded keyframe sequence"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "Mask indicating valid frames"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "Audio segment for this video segment"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "images": {
+        "name": "images"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "Length of each segment (usually 149 frames)"
+      },
+      "num_segments": {
+        "name": "num_segments",
+        "tooltip": "How many padded segments to emit as lists."
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio to slice for each emitted segment."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "Padded keyframe sequences"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "Masks indicating valid frames"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "Audio segment for each video segment"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "The number of frames in the generated video. Should stay 149 for WanDancer."
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "The CLIP vision embeds for the first frame."
+      },
+      "clip_vision_output_ref": {
+        "name": "clip_vision_output_ref",
+        "tooltip": "The CLIP vision embeds for the reference image."
+      },
+      "start_image": {
+        "name": "start_image",
+        "tooltip": "The initial image(s) to be encoded, can be any number of frames."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "Image conditioning mask for the start image(s). White is kept, black is generated. Used for the local generations."
+      },
+      "audio_encoder_output": {
+        "name": "audio_encoder_output"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Empty latent."
       }
     }
   },

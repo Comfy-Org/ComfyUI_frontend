@@ -24,6 +24,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "batch_size": {
+        "name": "批次大小"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "長度"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_image": {
+        "name": "起始圖像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "新增雜訊",
     "inputs": {
@@ -1654,6 +1688,10 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "BOOL",
         "tooltip": null
       }
     }
@@ -4168,6 +4206,54 @@
       "2": {
         "name": "thought_image",
         "tooltip": "模型思考過程中的第一張圖像。僅在 thinking_level 設為 HIGH 且模態為 IMAGE+TEXT 時可用。"
+      }
+    }
+  },
+  "GeminiNanoBanana2V2": {
+    "description": "透過 Google Vertex API 同步生成或編輯影像。",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_thinking_level": {
+        "name": "思考層級"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "描述要生成影像或要套用編輯的文字提示。請包含模型應遵循的任何限制、風格或細節。"
+      },
+      "response_modalities": {
+        "name": "回應型態"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "當種子值固定時，模型會盡力在重複請求時提供相同的回應，但不保證完全一致。更改模型或參數（如溫度）即使使用相同種子值，也可能導致回應有所不同。預設情況下會使用隨機種子值。"
+      },
+      "system_prompt": {
+        "name": "系統提示",
+        "tooltip": "決定 AI 行為的基礎指令。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "思考影像",
+        "tooltip": "模型思考過程中的第一張影像。僅於思考層級為 HIGH 且回應型態為 IMAGE+TEXT 時提供。"
       }
     }
   },
@@ -7959,6 +8045,21 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "載入背景移除模型",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "bg_removal_name",
+        "tooltip": "用於從圖像中移除背景的模型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bg_model",
         "tooltip": null
       }
     }
@@ -13412,6 +13513,25 @@
       }
     }
   },
+  "RemoveBackground": {
+    "display_name": "移除背景",
+    "inputs": {
+      "bg_removal_model": {
+        "name": "bg_removal_model",
+        "tooltip": "用於產生 mask 的背景移除模型"
+      },
+      "image": {
+        "name": "圖像",
+        "tooltip": "要移除背景的輸入圖像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": "產生的前景 mask"
+      }
+    }
+  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -17305,7 +17425,8 @@
         "name": "pbr"
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "此參數已棄用，無任何作用。"
       },
       "texture": {
         "name": "texture"
@@ -19270,6 +19391,156 @@
     "outputs": {
       "0": {
         "tooltip": "在採樣期間應用上下文窗口的模型。"
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_inject_scale": {
+        "name": "audio_inject_scale",
+        "tooltip": "將音訊特徵注入到影片模型時的縮放比例。"
+      },
+      "video_frames": {
+        "name": "video_frames"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio_encoder_output",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps_string",
+        "tooltip": "根據音訊長度與影片影格數計算出的 fps，會用於提示詞中。"
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "用於計算總輸出影格數並擷取片段音訊的音訊。"
+      },
+      "images": {
+        "name": "images"
+      },
+      "segment_index": {
+        "name": "segment_index",
+        "tooltip": "這是第幾個片段（第一個為 0，第二個為 1，以此類推）"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "此片段的長度（通常為 149 影格）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "已補齊的關鍵影格序列"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "標示有效影格的 mask"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "此影片片段對應的音訊片段"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "要為每個輸出片段切割的音訊。"
+      },
+      "images": {
+        "name": "images"
+      },
+      "num_segments": {
+        "name": "num_segments",
+        "tooltip": "要以清單形式輸出的補齊片段數量。"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "每個片段的長度（通常為 149 影格）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "已補齊的關鍵影格序列"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "標示有效影格的 mask"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "每個影片片段對應的音訊片段"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "audio_encoder_output": {
+        "name": "audio_encoder_output"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "第一幀的 CLIP 視覺嵌入。"
+      },
+      "clip_vision_output_ref": {
+        "name": "clip_vision_output_ref",
+        "tooltip": "參考圖像的 CLIP 視覺嵌入。"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "長度",
+        "tooltip": "生成影片的幀數。對於 WanDancer，應保持 149。"
+      },
+      "mask": {
+        "name": "遮罩",
+        "tooltip": "起始圖像的圖像處理遮罩。白色保留，黑色生成。用於局部生成。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "start_image": {
+        "name": "起始圖像",
+        "tooltip": "要編碼的初始圖像，可為任意幀數。"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "空的 latent。"
       }
     }
   },

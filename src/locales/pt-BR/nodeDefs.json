@@ -24,6 +24,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "batch_size": {
+        "name": "tamanho_do_lote"
+      },
+      "height": {
+        "name": "altura"
+      },
+      "length": {
+        "name": "duração"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "start_image": {
+        "name": "imagem_inicial"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "AddNoise",
     "inputs": {
@@ -1654,6 +1688,10 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "BOOL",
         "tooltip": null
       }
     }
@@ -4168,6 +4206,54 @@
       "2": {
         "name": "thought_image",
         "tooltip": "Primeira imagem do processo de pensamento do modelo. Disponível apenas com thinking_level ALTO e modalidade IMAGEM+TEXTO."
+      }
+    }
+  },
+  "GeminiNanoBanana2V2": {
+    "description": "Gere ou edite imagens de forma síncrona via Google Vertex API.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto descrevendo a imagem a ser gerada ou as edições a serem aplicadas. Inclua quaisquer restrições, estilos ou detalhes que o modelo deve seguir."
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Quando a seed é fixada em um valor específico, o modelo faz o melhor esforço para fornecer a mesma resposta em solicitações repetidas. A saída determinística não é garantida. Além disso, alterar o modelo ou configurações de parâmetros, como a temperatura, pode causar variações na resposta mesmo usando o mesmo valor de seed. Por padrão, um valor de seed aleatório é usado."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Instruções fundamentais que ditam o comportamento da IA."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "Primeira imagem do processo de pensamento do modelo. Disponível apenas com thinking_level ALTO e modalidade IMAGE+TEXT."
       }
     }
   },
@@ -7959,6 +8045,21 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "Carregar Modelo de Remoção de Fundo",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "nome_remoção_fundo",
+        "tooltip": "O modelo usado para remover fundos de imagens"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "modelo_fundo",
         "tooltip": null
       }
     }
@@ -13412,6 +13513,25 @@
       }
     }
   },
+  "RemoveBackground": {
+    "display_name": "Remover Fundo",
+    "inputs": {
+      "bg_removal_model": {
+        "name": "modelo_remoção_fundo",
+        "tooltip": "Modelo de remoção de fundo usado para gerar a máscara"
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "Imagem de entrada para remover o fundo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "máscara",
+        "tooltip": "Máscara de primeiro plano gerada"
+      }
+    }
+  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -17305,7 +17425,8 @@
         "name": "pbr"
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "Este parâmetro está obsoleto e não faz nada."
       },
       "texture": {
         "name": "textura"
@@ -19270,6 +19391,156 @@
     "outputs": {
       "0": {
         "tooltip": "O modelo com janelas de contexto aplicadas durante a amostragem."
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "áudio"
+      },
+      "audio_inject_scale": {
+        "name": "escala_de_injeção_de_áudio",
+        "tooltip": "A escala para as características do áudio ao serem injetadas no modelo de vídeo."
+      },
+      "video_frames": {
+        "name": "quadros_de_vídeo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "saída_do_codificador_de_áudio",
+        "tooltip": null
+      },
+      "1": {
+        "name": "string_fps",
+        "tooltip": "O fps calculado com base na duração do áudio e no número de quadros de vídeo. Usado no prompt."
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "audio": {
+        "name": "áudio",
+        "tooltip": "Áudio para calcular o total de quadros de saída e extrair o áudio do segmento."
+      },
+      "images": {
+        "name": "imagens"
+      },
+      "segment_index": {
+        "name": "índice_do_segmento",
+        "tooltip": "Qual segmento é este (0 para o primeiro, 1 para o segundo, etc.)"
+      },
+      "segment_length": {
+        "name": "comprimento_do_segmento",
+        "tooltip": "Comprimento deste segmento (geralmente 149 quadros)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sequência_de_keyframes",
+        "tooltip": "Sequência de keyframes preenchida"
+      },
+      "1": {
+        "name": "máscara_de_keyframes",
+        "tooltip": "Máscara indicando quadros válidos"
+      },
+      "2": {
+        "name": "segmento_de_áudio",
+        "tooltip": "Segmento de áudio para este segmento de vídeo"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "audio": {
+        "name": "áudio",
+        "tooltip": "Áudio a ser dividido para cada segmento emitido."
+      },
+      "images": {
+        "name": "imagens"
+      },
+      "num_segments": {
+        "name": "número_de_segmentos",
+        "tooltip": "Quantos segmentos preenchidos emitir como listas."
+      },
+      "segment_length": {
+        "name": "comprimento_do_segmento",
+        "tooltip": "Comprimento de cada segmento (geralmente 149 quadros)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sequências_de_keyframes",
+        "tooltip": "Sequências de keyframes preenchidas"
+      },
+      "1": {
+        "name": "máscaras_de_keyframes",
+        "tooltip": "Máscaras indicando quadros válidos"
+      },
+      "2": {
+        "name": "segmento_de_áudio",
+        "tooltip": "Segmento de áudio para cada segmento de vídeo"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "audio_encoder_output": {
+        "name": "audio_encoder_output"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "Os embeddings de visão do CLIP para o primeiro quadro."
+      },
+      "clip_vision_output_ref": {
+        "name": "clip_vision_output_ref",
+        "tooltip": "Os embeddings de visão do CLIP para a imagem de referência."
+      },
+      "height": {
+        "name": "altura"
+      },
+      "length": {
+        "name": "duração",
+        "tooltip": "O número de quadros no vídeo gerado. Deve permanecer 149 para WanDancer."
+      },
+      "mask": {
+        "name": "máscara",
+        "tooltip": "Máscara de condicionamento de imagem para a(s) imagem(ns) inicial(is). Branco é mantido, preto é gerado. Usado para as gerações locais."
+      },
+      "negative": {
+        "name": "negativo"
+      },
+      "positive": {
+        "name": "positivo"
+      },
+      "start_image": {
+        "name": "imagem_inicial",
+        "tooltip": "A(s) imagem(ns) inicial(is) a serem codificadas, pode ser qualquer quantidade de quadros."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latente",
+        "tooltip": "Latente vazio."
       }
     }
   },

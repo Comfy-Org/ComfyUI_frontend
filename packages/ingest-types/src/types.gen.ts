@@ -523,10 +523,6 @@ export type ImportPublishedAssetsRequest = {
    * IDs of published assets (inputs and models) to import.
    */
   published_asset_ids: Array<string>
-  /**
-   * The share ID of the published workflow these assets belong to. Required for authorization.
-   */
-  share_id: string
 }
 
 /**

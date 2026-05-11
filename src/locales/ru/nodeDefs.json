@@ -24,6 +24,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "batch_size": {
+        "name": "размер_пакета"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "length": {
+        "name": "длина"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_image": {
+        "name": "start_image"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "Добавить шум",
     "inputs": {
@@ -1654,6 +1688,10 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "BOOL",
         "tooltip": null
       }
     }
@@ -4168,6 +4206,54 @@
       "2": {
         "name": "thought_image",
         "tooltip": "Первое изображение из процесса мышления модели. Доступно только при уровне мышления HIGH и модальности IMAGE+TEXT."
+      }
+    }
+  },
+  "GeminiNanoBanana2V2": {
+    "description": "Генерируйте или редактируйте изображения синхронно через Google Vertex API.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый запрос, описывающий изображение для генерации или редактирования. Укажите любые ограничения, стили или детали, которым должна следовать модель."
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Когда seed фиксирован на определённом значении, модель старается выдавать одинаковый результат при повторных запросах. Детерминированный результат не гарантируется. Также изменение модели или параметров, таких как temperature, может привести к различиям в ответе даже при одинаковом seed. По умолчанию используется случайное значение seed."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Базовые инструкции, определяющие поведение ИИ."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "Первое изображение из процесса мышления модели. Доступно только при thinking_level HIGH и модальности IMAGE+TEXT."
       }
     }
   },
@@ -7959,6 +8045,21 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "Загрузить модель удаления фона",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "bg_removal_name",
+        "tooltip": "Модель, используемая для удаления фона с изображений"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bg_model",
         "tooltip": null
       }
     }
@@ -13412,6 +13513,25 @@
       }
     }
   },
+  "RemoveBackground": {
+    "display_name": "Удалить фон",
+    "inputs": {
+      "bg_removal_model": {
+        "name": "bg_removal_model",
+        "tooltip": "Модель удаления фона, используемая для создания маски"
+      },
+      "image": {
+        "name": "изображение",
+        "tooltip": "Входное изображение для удаления фона"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": "Сгенерированная маска переднего плана"
+      }
+    }
+  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -17305,7 +17425,8 @@
         "name": "PBR"
       },
       "quad": {
-        "name": "квад"
+        "name": "квад",
+        "tooltip": "Этот параметр устарел и больше не используется."
       },
       "texture": {
         "name": "текстура"
@@ -19270,6 +19391,156 @@
     "outputs": {
       "0": {
         "tooltip": "Модель с применёнными контекстными окнами во время сэмплирования."
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_inject_scale": {
+        "name": "audio_inject_scale",
+        "tooltip": "Масштаб аудиофич при внедрении в видеомодель."
+      },
+      "video_frames": {
+        "name": "video_frames"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio_encoder_output",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps_string",
+        "tooltip": "Вычисленный fps на основе длины аудио и количества видеокадров. Используется в prompt."
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Аудио для расчёта общего количества выходных кадров и извлечения сегмента аудио."
+      },
+      "images": {
+        "name": "images"
+      },
+      "segment_index": {
+        "name": "segment_index",
+        "tooltip": "Какой это сегмент (0 — первый, 1 — второй и т.д.)"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "Длина этого сегмента (обычно 149 кадров)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "Дополненная последовательность ключевых кадров"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "Маска, указывающая валидные кадры"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "Аудиосегмент для этого видеосегмента"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Аудио для нарезки для каждого выдаваемого сегмента."
+      },
+      "images": {
+        "name": "images"
+      },
+      "num_segments": {
+        "name": "num_segments",
+        "tooltip": "Сколько дополненных сегментов выдавать в виде списков."
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "Длина каждого сегмента (обычно 149 кадров)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "Дополненные последовательности ключевых кадров"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "Маски, указывающие валидные кадры"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "Аудиосегмент для каждого видеосегмента"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "audio_encoder_output": {
+        "name": "audio_encoder_output"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "Визуальные эмбеддинги CLIP для первого кадра."
+      },
+      "clip_vision_output_ref": {
+        "name": "clip_vision_output_ref",
+        "tooltip": "Визуальные эмбеддинги CLIP для референсного изображения."
+      },
+      "height": {
+        "name": "высота"
+      },
+      "length": {
+        "name": "длина",
+        "tooltip": "Количество кадров в сгенерированном видео. Для WanDancer должно оставаться 149."
+      },
+      "mask": {
+        "name": "маска",
+        "tooltip": "Маска для обработки изображения начального кадра(ов). Белое сохраняется, черное генерируется. Используется для локальной генерации."
+      },
+      "negative": {
+        "name": "негативный"
+      },
+      "positive": {
+        "name": "позитивный"
+      },
+      "start_image": {
+        "name": "начальное изображение",
+        "tooltip": "Исходное изображение(я) для кодирования, может быть любое количество кадров."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "позитивный",
+        "tooltip": null
+      },
+      "1": {
+        "name": "негативный",
+        "tooltip": null
+      },
+      "2": {
+        "name": "латентный",
+        "tooltip": "Пустое латентное пространство."
       }
     }
   },
