@@ -575,6 +575,9 @@ export function useMediaAssetActions() {
       }
     }
 
+    // All cancelled
+    if (succeeded === 0 && failed === 0) return
+
     if (failed === 0) {
       toast.add({
         severity: 'success',

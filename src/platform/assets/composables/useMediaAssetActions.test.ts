@@ -392,10 +392,6 @@ describe('useMediaAssetActions', () => {
       error: 'No workflow data available'
     } as const
 
-    function getToastAdd() {
-      return vi.mocked(useToast().add)
-    }
-
     beforeEach(() => {
       mockExtractWorkflowFromAsset.mockResolvedValue({
         workflow: { version: 0.4 },
@@ -409,7 +405,7 @@ describe('useMediaAssetActions', () => {
 
       await actions.exportWorkflow(createMockAsset())
 
-      expect(getToastAdd()).not.toHaveBeenCalled()
+      expect(useToast().add).not.toHaveBeenCalled()
     })
 
     it('shows a success toast on successful export', async () => {
@@ -418,7 +414,7 @@ describe('useMediaAssetActions', () => {
 
       await actions.exportWorkflow(createMockAsset())
 
-      expect(getToastAdd()).toHaveBeenCalledWith(
+      expect(useToast().add).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'success' })
       )
     })
@@ -429,7 +425,7 @@ describe('useMediaAssetActions', () => {
 
       await actions.exportWorkflow(createMockAsset())
 
-      expect(getToastAdd()).toHaveBeenCalledWith(
+      expect(useToast().add).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
     })
@@ -440,7 +436,51 @@ describe('useMediaAssetActions', () => {
 
       await actions.exportWorkflow(createMockAsset())
 
-      expect(getToastAdd()).toHaveBeenCalledWith(
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'warn' })
+      )
+    })
+
+    it('shows no toast when every asset in a bulk export is cancelled', async () => {
+      mockExportWorkflowAction.mockResolvedValue(cancelledResult)
+      const actions = useMediaAssetActions()
+
+      await actions.exportMultipleWorkflows([
+        createMockAsset({ id: 'a' }),
+        createMockAsset({ id: 'b' })
+      ])
+
+      expect(useToast().add).not.toHaveBeenCalled()
+    })
+
+    it('shows a success toast for the succeeded subset when some bulk exports are cancelled', async () => {
+      mockExportWorkflowAction
+        .mockResolvedValueOnce(successResult)
+        .mockResolvedValueOnce(cancelledResult)
+      const actions = useMediaAssetActions()
+
+      await actions.exportMultipleWorkflows([
+        createMockAsset({ id: 'a' }),
+        createMockAsset({ id: 'b' })
+      ])
+
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
+    })
+
+    it('shows a partial-success warning toast when some bulk exports fail outright', async () => {
+      mockExportWorkflowAction
+        .mockResolvedValueOnce(successResult)
+        .mockResolvedValueOnce(failureResult)
+      const actions = useMediaAssetActions()
+
+      await actions.exportMultipleWorkflows([
+        createMockAsset({ id: 'a' }),
+        createMockAsset({ id: 'b' })
+      ])
+
+      expect(useToast().add).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'warn' })
       )
     })
