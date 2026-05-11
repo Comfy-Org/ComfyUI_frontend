@@ -62,8 +62,8 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
   test('Preserves combo options on the primitive after pressing R to refresh', async ({
     comfyPage
   }) => {
-    const getPrimitiveComboState = async () =>
-      comfyPage.page.evaluate(() => {
+    async function getPrimitiveComboState() {
+      return comfyPage.page.evaluate(() => {
         const primitive = window.app!.graph!.nodes.find(
           (node) => node.type === 'PrimitiveNode'
         )
@@ -78,31 +78,28 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
           value: widget?.value
         }
       })
+    }
 
     await comfyPage.workflow.loadWorkflow(
       'primitive/primitive_combo_sampler_name'
     )
 
-    await expect
-      .poll(() => getPrimitiveComboState())
-      .toMatchObject({
-        isArray: true,
-        includesEuler: true,
-        value: 'euler'
-      })
+    await expect.poll(getPrimitiveComboState).toMatchObject({
+      isArray: true,
+      includesEuler: true,
+      value: 'euler'
+    })
     const before = await getPrimitiveComboState()
     expect(before.length).toBeGreaterThan(0)
 
     await comfyPage.canvas.click()
     await comfyPage.page.keyboard.press('r')
 
-    await expect
-      .poll(() => getPrimitiveComboState())
-      .toMatchObject({
-        isArray: true,
-        includesEuler: true,
-        value: 'euler'
-      })
+    await expect.poll(getPrimitiveComboState).toMatchObject({
+      isArray: true,
+      includesEuler: true,
+      value: 'euler'
+    })
     const after = await getPrimitiveComboState()
     expect(after.length).toBeGreaterThan(0)
   })
