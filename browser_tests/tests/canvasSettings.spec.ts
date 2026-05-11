@@ -106,8 +106,8 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
   test.describe('Comfy.Graph.LiveSelection', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting(
-        'Comfy.Canvas.NavigationMode',
-        'standard'
+        'Comfy.Canvas.LeftMouseClickBehavior',
+        'select'
       )
     })
 
