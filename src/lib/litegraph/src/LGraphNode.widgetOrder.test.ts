@@ -2,8 +2,10 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { addDynamicCombo } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { sortWidgetValuesByInputOrder } from '@/workbench/utils/nodeDefOrderingUtil'
 
 describe('LGraphNode widget ordering', () => {
@@ -15,6 +17,9 @@ describe('LGraphNode widget ordering', () => {
   })
 
   describe('configure with widgets_values', () => {
+    beforeEach(() => {
+      LiteGraph.namedValuesRestore = false
+    })
     it('should apply widget values in correct order when widgets order matches input_order', () => {
       // Create node with widgets
       node.addWidget('number', 'steps', 20, null, {})
@@ -96,6 +101,120 @@ describe('LGraphNode widget ordering', () => {
       expect(node.widgets![0].value).toBe(30) // steps
       expect(node.widgets![1].value).toBe('Click') // button unchanged
       expect(node.widgets![2].value).toBe(12345) // seed
+    })
+  })
+
+  describe('configure with widgets_values_named', () => {
+    beforeEach(() => {
+      LiteGraph.namedValuesRestore = true
+    })
+    it('should apply widget values from widgets_values_named', () => {
+      // Create node with widgets
+      node.addWidget('number', 'steps', 20, null, {})
+      node.addWidget('number', 'seed', 0, null, {})
+      node.addWidget('text', 'prompt', '', null, {})
+
+      // Configure with widget values
+      const info: ISerialisedNode = {
+        id: 1,
+        type: 'TestNode',
+        pos: [0, 0],
+        size: [200, 100],
+        flags: {},
+        order: 0,
+        mode: 0,
+        widgets_values: [30, 12345, 'test prompt'],
+        widgets_values_named: { steps: 15, prompt: 'prompt', seed: 54321 }
+      }
+
+      node.configure(info)
+
+      // Check widget values are applied correctly
+      expect(node.widgets![0].value).toBe(15) // steps
+      expect(node.widgets![1].value).toBe(54321) // seed
+      expect(node.widgets![2].value).toBe('prompt') // prompt
+    })
+    it('should skip widgets with serialize: false', () => {
+      node.addWidget('number', 'steps', 20, null, {})
+      node.addWidget('button', 'action', 'Click', null, {})
+      node.widgets![1].serialize = false // button should not serialize
+      node.addWidget('number', 'seed', 0, null, {})
+
+      const info: ISerialisedNode = {
+        id: 1,
+        type: 'TestNode',
+        pos: [0, 0],
+        size: [200, 100],
+        flags: {},
+        order: 0,
+        mode: 0,
+        widgets_values: [30, 12345], // Only serializable widgets
+        widgets_values_named: { steps: 30, seed: 12345 }
+      }
+
+      node.configure(info)
+
+      expect(node.widgets![0].value).toBe(30) // steps
+      expect(node.widgets![1].value).toBe('Click') // button unchanged
+      expect(node.widgets![2].value).toBe(12345) // seed
+    })
+    it('should restore widgets which are dynamically added', () => {
+      addDynamicCombo(node, [['INT'], ['INT', 'STRING']])
+
+      const info: ISerialisedNode = {
+        id: 1,
+        type: 'TestNode',
+        pos: [0, 0],
+        size: [200, 100],
+        flags: {},
+        order: 0,
+        mode: 0,
+        widgets_values_named: { '0': 1, '0.0.0.0': 5, '0.0.0.1': 'test' }
+      }
+
+      node.configure(info)
+
+      expect(node.widgets![0].value).toBe(1)
+      expect(node.widgets![1].value).toBe(5)
+      expect(node.widgets![2].value).toBe('test')
+    })
+    it('should support restoration even when order has changed', () => {
+      node.addWidget('number', 'steps', 20, null, {})
+      node.addWidget('number', 'seed', 5, null, {})
+      node.serialize_widgets = true
+
+      const node2 = new LGraphNode('TestNode2')
+      node2.addWidget('number', 'seed', 0, null, {})
+      node2.addWidget('number', 'steps', 0, null, {})
+
+      node2.configure(node.serialize())
+
+      expect(node2.widgets![0].value).toBe(5) // steps
+      expect(node2.widgets![1].value).toBe(20) // seed
+    })
+    it('should support specifying order for legacy workflows', () => {
+      node.addWidget('number', 'steps', 0, null, {})
+      node.addWidget('number', 'seed', 0, null, {})
+      const nodeData = {
+        fallbackWidgetsValuesNames: ['seed', 'steps']
+      } satisfies Partial<ComfyNodeDef> as unknown as ComfyNodeDef
+      node.constructor = Object.assign({}, node.constructor, { nodeData })
+
+      const info: ISerialisedNode = {
+        id: 1,
+        type: 'TestNode',
+        pos: [0, 0],
+        size: [200, 100],
+        flags: {},
+        order: 0,
+        mode: 0,
+        widgets_values: [20, 5] // Only serializable widgets
+      }
+
+      node.configure(info)
+
+      expect(node.widgets![0].value).toBe(5) // steps
+      expect(node.widgets![1].value).toBe(20) // seed
     })
   })
 })
