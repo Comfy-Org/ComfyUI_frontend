@@ -37,7 +37,7 @@
     "lint:desktop": "nx run @comfyorg/desktop-ui:lint",
     "locale": "lobe-i18n locale",
     "oxlint": "oxlint src browser_tests --type-aware",
-    "prepare": "husky || true && git config blame.ignoreRevsFile .git-blame-ignore-revs || true",
+    "prepare": "pnpm exec husky || true && git config blame.ignoreRevsFile .git-blame-ignore-revs || true",
     "preview": "nx preview",
     "storybook": "nx storybook",
     "storybook:desktop": "nx run @comfyorg/desktop-ui:storybook",
@@ -210,20 +210,7 @@
   },
   "engines": {
     "node": "24.x",
-    "pnpm": ">=10"
+    "pnpm": ">=11"
   },
-  "packageManager": "pnpm@10.33.0",
-  "pnpm": {
-    "overrides": {
-      "vite": "catalog:"
-    },
-    "ignoredBuiltDependencies": [
-      "@firebase/util",
-      "core-js",
-      "protobufjs",
-      "sharp",
-      "unrs-resolver",
-      "vue-demi"
-    ]
-  }
+  "packageManager": "pnpm@11.1.1"
 }

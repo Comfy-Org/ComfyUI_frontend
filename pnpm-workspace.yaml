@@ -144,22 +144,20 @@ catalog:
 
 cleanupUnusedCatalogs: true
 
-ignoredBuiltDependencies:
-  - '@firebase/util'
-  - protobufjs
-  - unrs-resolver
-  - vue-demi
-
-onlyBuiltDependencies:
-  - '@playwright/browser-chromium'
-  - '@playwright/browser-firefox'
-  - '@playwright/browser-webkit'
-  - '@sentry/cli'
-  - '@tailwindcss/oxide'
-  - esbuild
-  - nx
-  - oxc-resolver
+allowBuilds:
+  '@firebase/util': false
+  '@sentry/cli': true
+  '@tailwindcss/oxide': true
+  core-js: false
+  esbuild: true
+  nx: true
+  oxc-resolver: true
+  protobufjs: false
+  sharp: false
+  unrs-resolver: false
+  vue-demi: false
 
 overrides:
+  vite: 'catalog:'
   '@tiptap/pm': 2.27.2
   '@types/eslint': '-'
