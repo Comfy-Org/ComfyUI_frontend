@@ -60,15 +60,12 @@ function getIndex(): Map<string, EvidenceRow[]> {
  * Throws when the pattern is unknown — a typo in a test should fail
  * loud, not silently return an empty string.
  */
-export function loadEvidenceSnippet(
-  patternId: string,
-  evidenceIndex = 0
-): string {
+export function loadEvidenceSnippet(patternId: string, rowIndex = 0): string {
   const rows = getIndex().get(patternId)
   if (!rows) {
     throw new Error(
       `loadEvidenceSnippet: unknown patternId "${patternId}". ` +
-        `Check src/extension-api-v2/harness/__fixtures__/touch-point-database.yaml.`
+        `Check src/extension-api-v2/harness/__fixtures__/touch-point-database.json.`
     )
   }
   const withExcerpts = rows.filter(
@@ -78,7 +75,7 @@ export function loadEvidenceSnippet(
   if (withExcerpts.length === 0) {
     return ''
   }
-  const row = withExcerpts[evidenceIndex]
+  const row = withExcerpts[rowIndex]
   return row?.excerpt ?? ''
 }
 
