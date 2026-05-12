@@ -117,6 +117,28 @@ describe('installNodeOutputClearingHooks', () => {
     expect(graph.onNodeRemoved).toBe(original)
   })
 
+  it('clears interior node outputs when a subgraph container is removed from the root graph', () => {
+    const subgraph = createTestSubgraph()
+    const interiorNode = new LGraphNode('LoadImage')
+    subgraph.add(interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 65 })
+    const rootGraph = subgraphNode.graph as LGraph
+    rootGraph.add(subgraphNode)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+
+    const subgraphNodeLocator = String(subgraphNode.id)
+    const interiorLocator = `${subgraph.id}:${interiorNode.id}`
+    seedOutputForLocator(subgraphNodeLocator)
+    seedOutputForLocator(interiorLocator)
+
+    installNodeOutputClearingHooks(rootGraph)
+    rootGraph.remove(subgraphNode)
+
+    expect(app.nodeOutputs[subgraphNodeLocator]).toBeUndefined()
+    expect(app.nodeOutputs[interiorLocator]).toBeUndefined()
+  })
+
   it('does not throw when the removal hook fires for an already-cleared node', () => {
     const graph = new LGraph()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
