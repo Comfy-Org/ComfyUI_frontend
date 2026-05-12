@@ -6,8 +6,7 @@
 // Notes: WidgetHandle identity is by name not position (PR #10392 widgets_values_named migration path).
 //        serialize===false widgets still fire beforeSerialize and still appear in the named map.
 
-import { describe, it, expect } from 'vitest'
-import { expectTypeOf } from 'vitest'
+import { describe, it, expect, expectTypeOf } from 'vitest'
 import type {
   WidgetHandle,
   WidgetBeforeSerializeEvent,

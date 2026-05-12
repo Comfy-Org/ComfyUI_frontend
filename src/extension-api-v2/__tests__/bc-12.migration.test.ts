@@ -3,8 +3,7 @@
 // Exemplar: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/browser_tests/helpers/painter.ts#L70
 // Migration: v1 widget.serializeValue positional index → v2 WidgetHandle.on('beforeSerialize') name-based
 
-import { describe, it, expect } from 'vitest'
-import { expectTypeOf } from 'vitest'
+import { describe, it, expect, expectTypeOf } from 'vitest'
 import type {
   WidgetHandle,
   WidgetBeforeSerializeEvent

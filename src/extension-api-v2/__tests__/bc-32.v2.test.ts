@@ -8,8 +8,7 @@
 //       extensionManager.registerSidebarTab / managed panel slots. The registerVueWidget()
 //       proposed surface (for DOM widget embedding) is not yet in the type surface.
 
-import { describe, it, expect } from 'vitest'
-import { expectTypeOf } from 'vitest'
+import { describe, it, expect, expectTypeOf } from 'vitest'
 import type {
   ExtensionManager,
   SidebarTabExtension,

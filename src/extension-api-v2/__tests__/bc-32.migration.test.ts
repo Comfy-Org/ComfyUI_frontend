@@ -4,8 +4,7 @@
 // Migration: v1 standalone createApp(Component).mount(el) → v2 VueExtension (host Vue sharing)
 //            or registerVueWidget (proposed, for DOM widgets)
 
-import { describe, it, expect } from 'vitest'
-import { expectTypeOf } from 'vitest'
+import { describe, it, expect, expectTypeOf } from 'vitest'
 import type {
   VueExtension,
   CustomExtension,
