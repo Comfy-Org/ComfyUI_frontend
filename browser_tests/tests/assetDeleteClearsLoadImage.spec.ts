@@ -157,7 +157,10 @@ baseTest.describe(
         // Drive the real production flow: assets sidebar → Imported tab →
         // right-click asset card → Delete → confirm dialog.
         const sidebar = comfyPage.menu.assetsTab
-        await sidebar.open()
+        // The default `open()` waits for assets on the Generated tab; we seed
+        // only an input asset, so skip that wait and let `waitForAssets(1)`
+        // gate on the Imported tab instead.
+        await sidebar.open({ waitForAssets: false })
         await sidebar.switchToImported()
         await sidebar.waitForAssets(1)
         await sidebar.rightClickAsset(TARGET_CARD_TEXT)
