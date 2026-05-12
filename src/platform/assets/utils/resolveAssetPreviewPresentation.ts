@@ -44,7 +44,7 @@ function pickThumbnailOnly(asset: AssetPreviewSource): string | undefined {
 }
 
 /** Passed from {@link useI18n} in components; keeps this module free of Vue context. */
-export type AssetPreviewPresentationTranslate = (key: string) => string
+type AssetPreviewPresentationTranslate = (key: string) => string
 
 function resolveAlt(
   asset: AssetPreviewSource,
