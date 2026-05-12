@@ -953,6 +953,50 @@
       }
     }
   },
+  "ByteDanceSeedreamNodeV2": {
+    "description": "توليد موحد من النص إلى الصورة وتحرير دقيق لجملة واحدة بدقة تصل إلى 4K.",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_fail_on_partial": {
+        "name": "فشل عند التوليد الجزئي"
+      },
+      "model_height": {
+        "name": "الارتفاع"
+      },
+      "model_max_images": {
+        "name": "أقصى عدد للصور"
+      },
+      "model_size_preset": {
+        "name": "إعداد الحجم"
+      },
+      "model_width": {
+        "name": "العرض"
+      },
+      "prompt": {
+        "name": "الموجه",
+        "tooltip": "موجه نصي لإنشاء أو تعديل صورة."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة المستخدمة للتوليد."
+      },
+      "watermark": {
+        "name": "علامة مائية",
+        "tooltip": "هل تريد إضافة علامة \"تم الإنشاء بواسطة الذكاء الاصطناعي\" على الصورة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceTextToVideoNode": {
     "description": "توليد فيديو باستخدام نماذج ByteDance عبر API استنادًا إلى النص الموجه",
     "display_name": "ByteDance نص إلى فيديو",
@@ -3432,6 +3476,37 @@
       }
     }
   },
+  "Flux2ImageNode": {
+    "description": "توليد الصور عبر Flux.2 [pro] أو Flux.2 [max] من موجه وصور مرجعية اختيارية.",
+    "display_name": "Flux.2 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_height": {
+        "name": "الارتفاع"
+      },
+      "model_width": {
+        "name": "العرض"
+      },
+      "prompt": {
+        "name": "الموجه",
+        "tooltip": "موجه لتوليد أو تعديل الصورة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة العشوائية المستخدمة لإنشاء الضوضاء."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux2MaxImageNode": {
     "description": "ينشئ الصور بشكل متزامن بناءً على النص والوَضوح.",
     "display_name": "Flux.2 [max] صورة",
@@ -4443,6 +4518,40 @@
       },
       "resolution": {
         "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNodeV2": {
+    "description": "تعديل صورة موجودة بناءً على موجه نصي",
+    "display_name": "تعديل صورة Grok",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع"
+      },
+      "model_number_of_images": {
+        "name": "عدد الصور"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt": {
+        "name": "الموجه",
+        "tooltip": "الموجه النصي المستخدم لتوليد الصورة"
       },
       "seed": {
         "name": "البذرة",
@@ -11957,6 +12066,50 @@
       "size": {
         "name": "الحجم",
         "tooltip": "حجم الصورة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV2": {
+    "description": "توليد الصور عبر نقطة نهاية GPT Image من OpenAI.",
+    "display_name": "OpenAI GPT Image 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_background": {
+        "name": "الخلفية"
+      },
+      "model_custom_height": {
+        "name": "ارتفاع مخصص"
+      },
+      "model_custom_width": {
+        "name": "عرض مخصص"
+      },
+      "model_quality": {
+        "name": "الجودة"
+      },
+      "model_size": {
+        "name": "الحجم"
+      },
+      "n": {
+        "name": "عدد الصور",
+        "tooltip": "كم عدد الصور التي سيتم توليدها"
+      },
+      "prompt": {
+        "name": "الموجه",
+        "tooltip": "موجه نصي لـ GPT Image"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "لم يتم تطبيقها بعد في الخلفية"
       }
     },
     "outputs": {
