@@ -2,14 +2,22 @@
   "name": "@comfyorg/extension-api",
   "version": "0.1.0",
   "description": "Official TypeScript extension API for ComfyUI custom nodes",
+  "files": [
+    "build",
+    "README.md"
+  ],
   "type": "module",
-  "types": "./build/index.d.ts",
+  "types": "./build/extension-api/index.d.ts",
   "exports": {
-    ".": "./build/index.js"
+    ".": {
+      "types": "./build/extension-api/index.d.ts",
+      "import": "./build/index.js",
+      "default": "./build/index.js"
+    }
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
-    "build": "tsc --emitDeclarationOnly --outDir build",
+    "typecheck": "vite build --logLevel warn",
+    "build": "vite build",
     "docs:build": "tsx scripts/build-docs.ts",
     "docs:watch": "tsx scripts/build-docs.ts --watch"
   },
@@ -17,7 +25,12 @@
     "tsx": "catalog:",
     "typedoc": "0.28.19",
     "typedoc-plugin-markdown": "^4.6.3",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:"
+  },
+  "peerDependencies": {
+    "vue": "catalog:"
   },
   "nx": {
     "tags": [
