@@ -1,5 +1,5 @@
 <template>
-  <Dialog :open="isVisible" @update:open="(open) => (isVisible = open)">
+  <Dialog v-model:open="isVisible">
     <DialogPortal>
       <DialogOverlay class="bg-black/70" />
       <DialogContent
@@ -56,8 +56,10 @@ const { videoUrl, ariaLabel = 'Help video' } = defineProps<{
 
 // The dialog mounts inside other dialogs (e.g. UploadModelFooter inside an
 // asset modal). Reka's Escape handling bubbles to the parent dialog and would
-// close it as well. Stop propagation so only this dialog closes.
+// close it as well. Stop propagation so only this dialog closes, and prevent
+// Reka's default auto-dismiss so the close path stays solely under the model.
 function onEscapeKeyDown(event: KeyboardEvent) {
+  event.preventDefault()
   event.stopPropagation()
   isVisible.value = false
 }

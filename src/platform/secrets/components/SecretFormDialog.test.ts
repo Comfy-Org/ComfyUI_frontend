@@ -1,5 +1,5 @@
 import { render } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -80,8 +80,11 @@ vi.mock('@/components/ui/dialog/DialogClose.vue', () => ({
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
 describe('SecretFormDialog', () => {
-  it('prevents backdrop pointer-down-outside from closing the dialog', () => {
+  beforeEach(() => {
     capturedPointerDownOutside = null
+  })
+
+  it('prevents backdrop pointer-down-outside from closing the dialog', () => {
     render(SecretFormDialog, {
       global: { plugins: [i18n] },
       props: { visible: true }

@@ -1,5 +1,5 @@
 <template>
-  <Dialog :open="visible" @update:open="(open) => (visible = open)">
+  <Dialog v-model:open="visible">
     <DialogPortal>
       <DialogOverlay />
       <DialogContent
