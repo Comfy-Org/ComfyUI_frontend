@@ -14,14 +14,14 @@ export type AssetPreviewSource = Pick<
 >
 
 /** Why a tile shows a placeholder instead of a raster preview. */
-export type AssetPreviewPlaceholderReason = 'missing_url' | 'unsupported_type'
+type AssetPreviewPlaceholderReason = 'missing_url' | 'unsupported_type'
 
 /**
  * Resolved preview for asset grid tiles. Phase 1: `image` (raster in {@code
  * <img>}) and `placeholder` only. Future kinds (e.g. `video`, `threeD`,
  * `audio`, `text`) can extend this union without changing {@link AssetPreviewSource}.
  */
-export type AssetPreviewPresentation =
+type AssetPreviewPresentation =
   | { kind: 'image'; url: string; alt: string }
   | {
       kind: 'placeholder'
