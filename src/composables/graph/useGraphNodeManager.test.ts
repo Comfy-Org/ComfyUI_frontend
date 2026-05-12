@@ -443,6 +443,44 @@ describe('Nested promoted widget mapping', () => {
       `${subgraphNodeB.subgraph.id}:${innerNode.id}`
     )
   })
+
+  it('preserves distinct storeNodeId for duplicate-named promoted widgets', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'first_seed', type: '*' },
+        { name: 'second_seed', type: '*' }
+      ]
+    })
+
+    const firstNode = new LGraphNode('FirstNode')
+    const firstInput = firstNode.addInput('seed', '*')
+    firstNode.addWidget('number', 'seed', 1, () => undefined)
+    firstInput.widget = { name: 'seed' }
+    subgraph.add(firstNode)
+    subgraph.inputNode.slots[0].connect(firstInput, firstNode)
+
+    const secondNode = new LGraphNode('SecondNode')
+    const secondInput = secondNode.addInput('seed', '*')
+    secondNode.addWidget('number', 'seed', 2, () => undefined)
+    secondInput.widget = { name: 'seed' }
+    subgraph.add(secondNode)
+    subgraph.inputNode.slots[1].connect(secondInput, secondNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 100 })
+    const graph = subgraphNode.graph as LGraph
+    graph.add(subgraphNode)
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const nodeData = vueNodeData.get(String(subgraphNode.id))
+    const widgets = nodeData?.widgets
+
+    expect(widgets).toHaveLength(2)
+    expect(widgets?.[0]?.storeName).toBe('seed')
+    expect(widgets?.[1]?.storeName).toBe('seed')
+    expect(widgets?.[0]?.storeNodeId).not.toBe(widgets?.[1]?.storeNodeId)
+    expect(widgets?.[0]?.storeNodeId).toBe(`${subgraph.id}:${firstNode.id}`)
+    expect(widgets?.[1]?.storeNodeId).toBe(`${subgraph.id}:${secondNode.id}`)
+  })
 })
 
 describe('Promoted widget sourceExecutionId', () => {
