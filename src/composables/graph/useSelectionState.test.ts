@@ -261,5 +261,24 @@ describe('useSelectionState', () => {
 
       expect(openPanelSpy).not.toHaveBeenCalled()
     })
+
+    test('does nothing when no node definition is available', () => {
+      const canvasStore = useCanvasStore()
+      const node = createMockLGraphNode({ id: 14, type: 'UnknownType' })
+      canvasStore.$state.selectedItems = [node]
+
+      const nodeDefStore = useNodeDefStore()
+      vi.spyOn(nodeDefStore, 'fromLGraphNode').mockReturnValue(null)
+
+      const rightSidePanelStore = useRightSidePanelStore()
+      const openPanelSpy = vi
+        .spyOn(rightSidePanelStore, 'openPanel')
+        .mockImplementation(() => {})
+
+      const { showNodeHelp } = useSelectionState()
+      showNodeHelp()
+
+      expect(openPanelSpy).not.toHaveBeenCalled()
+    })
   })
 })
