@@ -33,9 +33,8 @@ export function useBrowseUserMediaAssetsLibrary() {
   ): Promise<void> {
     if (!settingStore.get('Comfy.Assets.UseAssetAPI')) {
       const confirmed = await dialogService.confirm({
-        title: 'Enable Asset API',
-        message:
-          'The Asset API is currently disabled. Would you like to enable it?',
+        title: t('assets.enableApi.title'),
+        message: t('assets.enableApi.message'),
         type: 'default'
       })
 

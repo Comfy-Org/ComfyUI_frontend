@@ -4,7 +4,7 @@
     data-component-id="AssetBrowserModal"
     class="size-full max-h-full max-w-full min-w-0"
     :content-title="displayTitle"
-    :right-panel-title="$t('assetBrowser.modelInfo.title')"
+    :right-panel-title="rightPanelTitle"
     @close="handleClose"
   >
     <template v-if="shouldShowLeftPanel" #leftPanelHeaderTitle>
@@ -150,6 +150,7 @@ const {
   focusedAsset,
   isRightPanelOpen,
   displayTitle,
+  rightPanelTitle,
   shouldShowLeftPanel,
   showOwnershipFilter,
   emptyMessage,

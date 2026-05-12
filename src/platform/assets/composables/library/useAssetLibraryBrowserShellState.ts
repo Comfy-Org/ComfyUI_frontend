@@ -127,6 +127,12 @@ export function useAssetLibraryBrowserShellState(
     return t('assetBrowser.allCategory', { category: label })
   })
 
+  const rightPanelTitle = computed(() =>
+    props.assetType === USER_MEDIA_ASSETS_ASSET_TYPE
+      ? t('assetBrowser.assetInfo.title')
+      : t('assetBrowser.modelInfo.title')
+  )
+
   const shouldShowLeftPanel = computed(() => {
     return props.showLeftPanel ?? true
   })
@@ -181,6 +187,7 @@ export function useAssetLibraryBrowserShellState(
     focusedAsset,
     isRightPanelOpen,
     displayTitle,
+    rightPanelTitle,
     shouldShowLeftPanel,
     showOwnershipFilter,
     emptyMessage,
