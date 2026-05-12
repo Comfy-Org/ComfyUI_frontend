@@ -15,81 +15,14 @@ import type { NodeExtensionOptions } from '@/extension-api/lifecycle'
 import type { NodeHandle } from '@/extension-api/node'
 import type { NodeEntityId } from '@/world/entityIds'
 
-// ── Local stub: minimal defineNodeExtension + mount machinery ─────────────────
-// Mirrors the real service contract without the ECS world dependency.
-// When Phase B lands, these tests are replaced/supplemented by ones that import
-// the real mountExtensionsForNode with the mocked world (see scope-registry.test.ts).
+// ── Shared harness ────────────────────────────────────────────────────────────
+// Pilot migration off the inline createTestRuntime block — see
+// `harness/README.md` for the broader rollout. When Phase B lands, these
+// tests are replaced/supplemented by ones that import the real
+// mountExtensionsForNode with the mocked world.
+import { createV2Runtime } from './harness/v2Runtime'
 
-interface NodeRecord {
-  entityId: NodeEntityId
-  comfyClass: string
-}
-
-function createTestRuntime() {
-  const extensions: NodeExtensionOptions[] = []
-  const nodes = new Map<NodeEntityId, NodeRecord>()
-  let nextId = 1
-
-  function makeNodeId(): NodeEntityId {
-    return `node:graph-test:${nextId++}` as NodeEntityId
-  }
-
-  function addNode(comfyClass: string): NodeEntityId {
-    const id = makeNodeId()
-    nodes.set(id, { entityId: id, comfyClass })
-    return id
-  }
-
-  function createHandle(record: NodeRecord): NodeHandle {
-    // Minimal NodeHandle stub with just the fields BC.01 tests need.
-    return {
-      entityId: record.entityId,
-      get type() { return record.comfyClass },
-      get comfyClass() { return record.comfyClass },
-      // Remaining NodeHandle fields not needed for BC.01 — stub as no-ops.
-      getPosition: () => [0, 0],
-      getSize: () => [0, 0],
-      getTitle: () => record.comfyClass,
-      setTitle: () => {},
-      getMode: () => 0,
-      setMode: () => {},
-      getProperty: () => undefined,
-      getProperties: () => ({}),
-      setProperty: () => {},
-      widget: () => undefined,
-      widgets: () => [],
-      addWidget: () => { throw new Error('not implemented in stub') },
-      inputs: () => [],
-      outputs: () => [],
-      on: () => () => {},
-    } as unknown as NodeHandle
-  }
-
-  function register(options: NodeExtensionOptions) {
-    extensions.push(options)
-  }
-
-  function mountNode(id: NodeEntityId, isLoaded = false): void {
-    const record = nodes.get(id)
-    if (!record) return
-
-    const sorted = [...extensions].sort((a, b) => a.name.localeCompare(b.name))
-    for (const ext of sorted) {
-      if (ext.nodeTypes && !ext.nodeTypes.includes(record.comfyClass)) continue
-      const hook = isLoaded ? ext.loadedGraphNode : ext.nodeCreated
-      if (!hook) continue
-      hook(createHandle(record))
-    }
-  }
-
-  function clear() {
-    extensions.length = 0
-    nodes.clear()
-    nextId = 1
-  }
-
-  return { register, addNode, mountNode, clear }
-}
+const createTestRuntime = () => createV2Runtime({ idPrefix: 'graph-test' })
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
@@ -130,7 +63,12 @@ describe('BC.01 v2 contract — node lifecycle: creation', () => {
       const rt = createTestRuntime()
       const calls: NodeHandle[] = []
 
-      rt.register({ name: 'bc01.creation-once', nodeCreated(h) { calls.push(h) } })
+      rt.register({
+        name: 'bc01.creation-once',
+        nodeCreated(h) {
+          calls.push(h)
+        }
+      })
       const id = rt.addNode('TestNode')
       rt.mountNode(id)
 
@@ -141,7 +79,12 @@ describe('BC.01 v2 contract — node lifecycle: creation', () => {
       const rt = createTestRuntime()
       let capturedId: NodeEntityId | undefined
 
-      rt.register({ name: 'bc01.entity-id', nodeCreated(h) { capturedId = h.entityId as NodeEntityId } })
+      rt.register({
+        name: 'bc01.entity-id',
+        nodeCreated(h) {
+          capturedId = h.entityId as NodeEntityId
+        }
+      })
       const id = rt.addNode('TestNode')
       rt.mountNode(id)
 
@@ -152,7 +95,12 @@ describe('BC.01 v2 contract — node lifecycle: creation', () => {
       const rt = createTestRuntime()
       let capturedType: string | undefined
 
-      rt.register({ name: 'bc01.type-read', nodeCreated(h) { capturedType = h.type } })
+      rt.register({
+        name: 'bc01.type-read',
+        nodeCreated(h) {
+          capturedType = h.type
+        }
+      })
       const id = rt.addNode('KSampler')
       rt.mountNode(id)
 
@@ -163,7 +111,12 @@ describe('BC.01 v2 contract — node lifecycle: creation', () => {
       const rt = createTestRuntime()
       let callCount = 0
 
-      rt.register({ name: 'bc01.multi-instance', nodeCreated() { callCount++ } })
+      rt.register({
+        name: 'bc01.multi-instance',
+        nodeCreated() {
+          callCount++
+        }
+      })
       rt.mountNode(rt.addNode('TestNode'))
       rt.mountNode(rt.addNode('TestNode'))
 
@@ -179,7 +132,9 @@ describe('BC.01 v2 contract — node lifecycle: creation', () => {
       rt.register({
         name: 'bc01.type-scoped',
         nodeTypes: ['KSampler'],
-        nodeCreated(h) { received.push(h.type) }
+        nodeCreated(h) {
+          received.push(h.type)
+        }
       })
 
       rt.mountNode(rt.addNode('KSampler'))
@@ -192,7 +147,12 @@ describe('BC.01 v2 contract — node lifecycle: creation', () => {
       const rt = createTestRuntime()
       const received: string[] = []
 
-      rt.register({ name: 'bc01.global', nodeCreated(h) { received.push(h.type) } })
+      rt.register({
+        name: 'bc01.global',
+        nodeCreated(h) {
+          received.push(h.type)
+        }
+      })
 
       rt.mountNode(rt.addNode('KSampler'))
       rt.mountNode(rt.addNode('CLIPTextEncode'))
@@ -207,7 +167,9 @@ describe('BC.01 v2 contract — node lifecycle: creation', () => {
       rt.register({
         name: 'bc01.no-fire',
         nodeTypes: ['KSampler'],
-        nodeCreated() { fired = true }
+        nodeCreated() {
+          fired = true
+        }
       })
 
       rt.mountNode(rt.addNode('Note'))
@@ -221,9 +183,24 @@ describe('BC.01 v2 contract — node lifecycle: creation', () => {
       const rt = createTestRuntime()
       const order: string[] = []
 
-      rt.register({ name: 'bc01.z-ext', nodeCreated() { order.push('z-ext') } })
-      rt.register({ name: 'bc01.a-ext', nodeCreated() { order.push('a-ext') } })
-      rt.register({ name: 'bc01.m-ext', nodeCreated() { order.push('m-ext') } })
+      rt.register({
+        name: 'bc01.z-ext',
+        nodeCreated() {
+          order.push('z-ext')
+        }
+      })
+      rt.register({
+        name: 'bc01.a-ext',
+        nodeCreated() {
+          order.push('a-ext')
+        }
+      })
+      rt.register({
+        name: 'bc01.m-ext',
+        nodeCreated() {
+          order.push('m-ext')
+        }
+      })
 
       rt.mountNode(rt.addNode('TestNode'))
 
@@ -236,7 +213,12 @@ describe('BC.01 v2 contract — node lifecycle: creation', () => {
       const rt = createTestRuntime()
       let setupCount = 0
 
-      rt.register({ name: 'bc01.fresh-copy', nodeCreated() { setupCount++ } })
+      rt.register({
+        name: 'bc01.fresh-copy',
+        nodeCreated() {
+          setupCount++
+        }
+      })
 
       rt.mountNode(rt.addNode('TestNode')) // source
       expect(setupCount).toBe(1)
