@@ -129,11 +129,10 @@ describe('BC.02 migration — node lifecycle: teardown', () => {
       const v1Ticks = vi.fn()
       const v2Ticks = vi.fn()
 
-      let v1Handle: ReturnType<typeof setInterval> | undefined
       let v2Handle: ReturnType<typeof setInterval> | undefined
 
       // v1 pattern: manual tracking
-      v1Handle = setInterval(v1Ticks, 100)
+      const v1Handle = setInterval(v1Ticks, 100)
       const v1Node = {
         onRemoved() {
           clearInterval(v1Handle)

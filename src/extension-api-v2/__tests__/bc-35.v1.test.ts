@@ -66,7 +66,9 @@ describe('BC.35 v1 contract — pre-queue widget validation', () => {
         return realQueue(batchCount)
       }
 
-      const result = await (app.queuePrompt as Function)(-1)
+      const result = await (
+        app.queuePrompt as (batchCount: number) => Promise<unknown>
+      )(-1)
       expect(result).toBeUndefined()
       expect(submitted).toHaveLength(0)
     })
