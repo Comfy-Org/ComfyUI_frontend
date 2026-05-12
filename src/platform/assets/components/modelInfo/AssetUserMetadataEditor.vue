@@ -3,6 +3,20 @@
     data-component-id="AssetUserMetadataEditor"
     class="flex min-w-0 flex-col gap-2 px-4 py-2 text-sm text-base-foreground"
   >
+    <div
+      v-if="parsedForEditor.customBucketState === 'invalid'"
+      class="rounded-sm border border-border-default/60 bg-secondary-background/40 p-2 text-xs/snug text-muted-foreground"
+      role="status"
+    >
+      <p class="text-foreground/90 mb-1 font-medium">
+        {{ t('assetBrowser.modelInfo.customMetadataInvalidBucket') }}
+      </p>
+      <p
+        class="line-clamp-4 font-mono text-[11px] leading-snug break-all text-muted-foreground"
+      >
+        {{ parsedForEditor.invalidCustomPreview }}
+      </p>
+    </div>
     <p v-if="introHintText" class="text-xs/snug text-muted-foreground">
       {{ introHintText }}
     </p>
@@ -24,7 +38,7 @@
           >
           <Select
             :model-value="row.primitiveType"
-            :disabled="isImmutable"
+            :disabled="bucketLocksCustomEdits"
             @update:model-value="
               (v) => {
                 if (v !== 'string' && v !== 'number' && v !== 'boolean') return
@@ -55,7 +69,7 @@
             </SelectContent>
           </Select>
           <Button
-            v-if="!isImmutable"
+            v-if="!bucketLocksCustomEdits"
             type="button"
             variant="muted-textonly"
             size="icon-sm"
@@ -70,7 +84,9 @@
           <template v-if="row.primitiveType === 'boolean'">
             <label
               class="relative inline-block h-5 w-9 shrink-0 cursor-pointer rounded-full outline-none focus-within:ring-1 focus-within:ring-border-default"
-              :class="isImmutable && 'pointer-events-none opacity-50'"
+              :class="
+                bucketLocksCustomEdits && 'pointer-events-none opacity-50'
+              "
             >
               <input
                 type="checkbox"
@@ -78,7 +94,7 @@
                 role="switch"
                 :aria-checked="row.value === true"
                 :checked="row.value === true"
-                :disabled="isImmutable"
+                :disabled="bucketLocksCustomEdits"
                 @change="
                   onCustomPrimitiveValueChange(
                     row.key,
@@ -99,7 +115,7 @@
           <Input
             v-else-if="row.primitiveType === 'number'"
             :model-value="String(row.value)"
-            :disabled="isImmutable"
+            :disabled="bucketLocksCustomEdits"
             :class="cn(compactValueInputClass)"
             @update:model-value="
               (v) =>
@@ -112,7 +128,7 @@
           <Input
             v-else
             :model-value="String(row.value)"
-            :disabled="isImmutable"
+            :disabled="bucketLocksCustomEdits"
             :class="cn(compactValueInputClass)"
             @update:model-value="
               (v) =>
@@ -126,6 +142,31 @@
       </div>
 
       <div
+        v-for="row in unsupportedInCustomRows"
+        :key="'unsupported-' + row.key"
+        class="flex min-w-0 flex-col gap-1 rounded-sm border border-border-default/50 bg-secondary-background/30 px-2 py-1.5"
+      >
+        <div class="flex min-w-0 items-center gap-1.5">
+          <span
+            class="min-w-0 flex-1 truncate text-xs text-muted-foreground"
+            :title="row.key"
+            >{{ row.key }}</span
+          >
+          <span
+            class="shrink-0 rounded-sm bg-secondary-background px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-muted-foreground uppercase"
+          >
+            {{ t('assetBrowser.modelInfo.customMetadataReadOnlyValue') }}
+          </span>
+        </div>
+        <p
+          class="line-clamp-4 min-w-0 font-mono text-[11px] leading-snug break-all text-muted-foreground"
+          :title="row.preview"
+        >
+          {{ row.preview }}
+        </p>
+      </div>
+
+      <div
         v-for="draft in draftCustomRows"
         :key="draft.id"
         class="flex min-w-0 flex-col gap-1"
@@ -133,14 +174,14 @@
         <div class="flex min-w-0 items-center gap-1.5">
           <Input
             v-model="draft.key"
-            :disabled="isImmutable"
+            :disabled="bucketLocksCustomEdits"
             :placeholder="t('assetBrowser.modelInfo.metadataKeyPlaceholder')"
             :class="cn(compactValueInputClass, 'min-w-0 flex-1')"
             @blur="tryCommitDraft(draft)"
           />
           <Select
             v-model="draft.primitiveType"
-            :disabled="isImmutable"
+            :disabled="bucketLocksCustomEdits"
             @update:model-value="() => (draft.keyIssue = null)"
           >
             <SelectTrigger size="md" :class="cn(compactSelectTriggerClass)">
@@ -161,7 +202,7 @@
             </SelectContent>
           </Select>
           <Button
-            v-if="!isImmutable"
+            v-if="!bucketLocksCustomEdits"
             type="button"
             variant="muted-textonly"
             size="icon-sm"
@@ -176,7 +217,9 @@
           <template v-if="draft.primitiveType === 'boolean'">
             <label
               class="relative inline-block h-5 w-9 shrink-0 cursor-pointer rounded-full outline-none focus-within:ring-1 focus-within:ring-border-default"
-              :class="isImmutable && 'pointer-events-none opacity-50'"
+              :class="
+                bucketLocksCustomEdits && 'pointer-events-none opacity-50'
+              "
             >
               <input
                 v-model="draft.valueBool"
@@ -184,7 +227,7 @@
                 class="peer absolute inset-0 z-10 size-full cursor-pointer opacity-0"
                 role="switch"
                 :aria-checked="draft.valueBool"
-                :disabled="isImmutable"
+                :disabled="bucketLocksCustomEdits"
                 @change="tryCommitDraft(draft)"
               />
               <span
@@ -200,14 +243,14 @@
           <Input
             v-else-if="draft.primitiveType === 'number'"
             v-model="draft.valueStr"
-            :disabled="isImmutable"
+            :disabled="bucketLocksCustomEdits"
             :class="cn(compactValueInputClass)"
             @blur="tryCommitDraft(draft)"
           />
           <Input
             v-else
             v-model="draft.valueStr"
-            :disabled="isImmutable"
+            :disabled="bucketLocksCustomEdits"
             :class="cn(compactValueInputClass)"
             @blur="tryCommitDraft(draft)"
           />
@@ -220,7 +263,7 @@
       </div>
 
       <Button
-        v-if="!isImmutable"
+        v-if="!bucketLocksCustomEdits"
         type="button"
         variant="muted-textonly"
         size="unset"
@@ -310,19 +353,36 @@ function typeSelectLabel(type: UserMetadataPrimitiveType): string {
   }
 }
 
+const parsedForEditor = computed(() =>
+  parseUserMetadataForEditor(mergedMetadata)
+)
+
 const customPrimitiveRows = computed(
-  () => parseUserMetadataForEditor(mergedMetadata).customPrimitives
+  () => parsedForEditor.value.customPrimitives
+)
+
+const unsupportedInCustomRows = computed(
+  () => parsedForEditor.value.unsupportedInCustom
+)
+
+const bucketLocksCustomEdits = computed(
+  () => isImmutable || parsedForEditor.value.customBucketState === 'invalid'
 )
 
 const draftCustomRows = ref<DraftCustomRow[]>([])
 
 const introHintText = computed(() => {
-  const noCustomRows =
-    customPrimitiveRows.value.length === 0 && draftCustomRows.value.length === 0
-  if (isImmutable && noCustomRows) {
+  const parsed = parsedForEditor.value
+  if (parsed.customBucketState === 'invalid') {
+    return undefined
+  }
+  const noPrimitives = parsed.customPrimitives.length === 0
+  const noUnsupported = parsed.unsupportedInCustom.length === 0
+  const noDrafts = draftCustomRows.value.length === 0
+  if (isImmutable && noPrimitives && noUnsupported && noDrafts) {
     return t('assetBrowser.modelInfo.noCustomMetadata')
   }
-  if (!isImmutable && noCustomRows) {
+  if (!isImmutable && noPrimitives && noDrafts) {
     return t('assetBrowser.modelInfo.customMetadataHint')
   }
   return undefined
@@ -331,10 +391,14 @@ const introHintText = computed(() => {
 watch(
   () => mergedMetadata,
   () => {
-    const keys = new Set(Object.keys(mergedMetadata))
+    const parsed = parseUserMetadataForEditor(mergedMetadata)
+    const keysInCustom = new Set([
+      ...parsed.customPrimitives.map((r) => r.key),
+      ...parsed.unsupportedInCustom.map((r) => r.key)
+    ])
     draftCustomRows.value = draftCustomRows.value.filter((d) => {
       const trimmed = d.key.trim()
-      return !trimmed || !keys.has(trimmed)
+      return !trimmed || !keysInCustom.has(trimmed)
     })
   },
   { deep: true }
@@ -356,6 +420,7 @@ function removeDraft(id: string) {
 }
 
 function emitDelete(key: string) {
+  if (bucketLocksCustomEdits.value) return
   emit('queueCustomChange', {}, [key])
 }
 
@@ -363,10 +428,12 @@ function onCustomPrimitiveValueChange(
   key: string,
   value: string | number | boolean
 ) {
+  if (bucketLocksCustomEdits.value) return
   emit('queueCustomChange', { [key]: value }, [])
 }
 
 function onCustomNumberInput(key: string, raw: string) {
+  if (bucketLocksCustomEdits.value) return
   const n = Number(raw)
   if (!Number.isFinite(n)) return
   emit('queueCustomChange', { [key]: n }, [])
@@ -400,6 +467,7 @@ function onCustomPrimitiveTypeChange(
   value: string | number | boolean
 ) {
   if (oldType === newType) return
+  if (bucketLocksCustomEdits.value) return
   const next = coerceForTypeChange(newType, oldType, value)
   emit('queueCustomChange', { [key]: next }, [])
 }
@@ -408,13 +476,16 @@ function draftKeyConflicts(trimmedKey: string, selfId: string): boolean {
   if (customPrimitiveRows.value.some((r) => r.key === trimmedKey)) {
     return true
   }
+  if (unsupportedInCustomRows.value.some((r) => r.key === trimmedKey)) {
+    return true
+  }
   return draftCustomRows.value.some(
     (d) => d.id !== selfId && d.key.trim() === trimmedKey
   )
 }
 
 function tryCommitDraft(draft: DraftCustomRow) {
-  if (isImmutable) return
+  if (bucketLocksCustomEdits.value) return
   const keyResult = validateCustomMetadataKey(draft.key)
   if (!keyResult.ok) {
     draft.keyIssue = keyResult.issue

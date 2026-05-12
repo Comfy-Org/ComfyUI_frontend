@@ -1,8 +1,10 @@
 import type { AssetUserMetadata } from '@/platform/assets/schemas/assetSchema'
 
-import { isReservedUserMetadataKey } from './assetUserMetadataReservedKeys'
+export const USER_METADATA_CUSTOM_KEY = 'custom'
 
 export type UserMetadataPrimitiveType = 'string' | 'number' | 'boolean'
+
+type CustomMetadataBucketState = 'missing' | 'valid' | 'invalid'
 
 type ParsedCustomPrimitiveRow = {
   kind: 'customPrimitive'
@@ -11,22 +13,14 @@ type ParsedCustomPrimitiveRow = {
   value: string | number | boolean
 }
 
-type ParsedSystemReadOnlyRow = {
-  kind: 'systemReadOnly'
-  key: string
-  primitiveType: UserMetadataPrimitiveType
-  value: string | number | boolean
-}
-
-type ParsedUnsupportedRow = {
-  kind: 'unsupported'
+type ParsedUnsupportedInCustomRow = {
+  kind: 'unsupportedInCustom'
   key: string
   preview: string
 }
 
 export type CustomMetadataKeyIssue =
   | 'empty'
-  | 'reserved'
   | 'invalid_format'
   | 'max_length'
   | 'duplicate'
@@ -44,6 +38,10 @@ function classifyPrimitive(value: unknown): UserMetadataPrimitiveType | null {
     return 'number'
   }
   return null
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
 export function truncateJsonPreview(
@@ -66,8 +64,6 @@ export function validateCustomMetadataKey(key: string):
   | { ok: false; issue: CustomMetadataKeyIssue } {
   const trimmed = key.trim()
   if (!trimmed) return { ok: false, issue: 'empty' }
-  if (isReservedUserMetadataKey(trimmed))
-    return { ok: false, issue: 'reserved' }
   if (trimmed.length > CUSTOM_KEY_MAX_LENGTH)
     return { ok: false, issue: 'max_length' }
   if (!CUSTOM_KEY_PATTERN.test(trimmed))
@@ -79,54 +75,67 @@ export function parseUserMetadataForEditor(
   metadata: Record<string, unknown> | undefined
 ): {
   customPrimitives: ParsedCustomPrimitiveRow[]
-  systemPrimitives: ParsedSystemReadOnlyRow[]
-  unsupported: ParsedUnsupportedRow[]
+  unsupportedInCustom: ParsedUnsupportedInCustomRow[]
+  customBucketState: CustomMetadataBucketState
+  invalidCustomPreview?: string
 } {
-  const customPrimitives: ParsedCustomPrimitiveRow[] = []
-  const systemPrimitives: ParsedSystemReadOnlyRow[] = []
-  const unsupported: ParsedUnsupportedRow[] = []
+  const empty = {
+    customPrimitives: [] as ParsedCustomPrimitiveRow[],
+    unsupportedInCustom: [] as ParsedUnsupportedInCustomRow[],
+    customBucketState: 'missing' as const
+  }
 
   if (!metadata) {
-    return { customPrimitives, systemPrimitives, unsupported }
+    return empty
   }
 
-  const keys = Object.keys(metadata).sort((a, b) => a.localeCompare(b))
-  for (const key of keys) {
-    const raw = metadata[key]
-    const primitiveType = classifyPrimitive(raw)
-    if (primitiveType !== null) {
-      const value = raw as string | number | boolean
-      if (isReservedUserMetadataKey(key)) {
-        systemPrimitives.push({
-          kind: 'systemReadOnly',
-          key,
-          primitiveType,
-          value
-        })
-      } else {
-        customPrimitives.push({
-          kind: 'customPrimitive',
-          key,
-          primitiveType,
-          value
-        })
-      }
-      continue
+  const raw = metadata[USER_METADATA_CUSTOM_KEY]
+  if (raw === undefined) {
+    return empty
+  }
+  if (raw === null || !isPlainObject(raw)) {
+    return {
+      customPrimitives: [],
+      unsupportedInCustom: [],
+      customBucketState: 'invalid',
+      invalidCustomPreview: truncateJsonPreview(raw)
     }
-
-    unsupported.push({
-      kind: 'unsupported',
-      key,
-      preview: truncateJsonPreview(raw)
-    })
   }
 
-  return { customPrimitives, systemPrimitives, unsupported }
+  const customPrimitives: ParsedCustomPrimitiveRow[] = []
+  const unsupportedInCustom: ParsedUnsupportedInCustomRow[] = []
+  const keys = Object.keys(raw).sort((a, b) => a.localeCompare(b))
+  for (const key of keys) {
+    const value = raw[key]
+    const primitiveType = classifyPrimitive(value)
+    if (primitiveType !== null) {
+      customPrimitives.push({
+        kind: 'customPrimitive',
+        key,
+        primitiveType,
+        value: value as string | number | boolean
+      })
+    } else {
+      unsupportedInCustom.push({
+        kind: 'unsupportedInCustom',
+        key,
+        preview: truncateJsonPreview(value)
+      })
+    }
+  }
+
+  return {
+    customPrimitives,
+    unsupportedInCustom,
+    customBucketState: 'valid'
+  }
 }
 
 /**
- * Merges model-info pending fields, custom primitive patches, and custom key
- * deletions into a full `user_metadata` object for PUT.
+ * Merges model-info pending fields and `user_metadata.custom` patches/deletes
+ * into a full `user_metadata` object for PUT. Other top-level keys are only
+ * changed via `modelPanelUpdates`. Custom mutations run only when
+ * `customPatches` or `customDeleteKeys` is non-empty.
  */
 export function mergeUserMetadataForAssetPut(
   assetUserMetadata: Record<string, unknown> | undefined,
@@ -138,15 +147,26 @@ export function mergeUserMetadataForAssetPut(
     ...(assetUserMetadata ?? {}),
     ...modelPanelUpdates
   }
+
+  const hasCustomMutation =
+    Object.keys(customPatches).length > 0 || customDeleteKeys.size > 0
+  if (!hasCustomMutation) {
+    return next
+  }
+
+  const raw = next[USER_METADATA_CUSTOM_KEY]
+  if (raw !== undefined && raw !== null && !isPlainObject(raw)) {
+    return next
+  }
+
+  const base: Record<string, unknown> = isPlainObject(raw) ? { ...raw } : {}
   for (const k of customDeleteKeys) {
-    if (!isReservedUserMetadataKey(k)) {
-      delete next[k]
-    }
+    delete base[k]
   }
   for (const [k, v] of Object.entries(customPatches)) {
-    if (!isReservedUserMetadataKey(k)) {
-      next[k] = v
-    }
+    base[k] = v
   }
+
+  next[USER_METADATA_CUSTOM_KEY] = base
   return next
 }

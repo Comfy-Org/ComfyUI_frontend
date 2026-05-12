@@ -2,26 +2,19 @@ import { describe, expect, it } from 'vitest'
 
 import type { AssetUserMetadata } from '@/platform/assets/schemas/assetSchema'
 
-import { isReservedUserMetadataKey } from './assetUserMetadataReservedKeys'
 import {
   DEFAULT_USER_METADATA_JSON_PREVIEW_MAX,
   mergeUserMetadataForAssetPut,
   parseUserMetadataForEditor,
   truncateJsonPreview,
+  USER_METADATA_CUSTOM_KEY,
   validateCustomMetadataKey
 } from './assetUserMetadataEditorUtils'
 
-describe('isReservedUserMetadataKey', () => {
-  it('treats model and output keys as reserved', () => {
-    expect(isReservedUserMetadataKey('name')).toBe(true)
-    expect(isReservedUserMetadataKey('jobId')).toBe(true)
-    expect(isReservedUserMetadataKey('seed')).toBe(false)
-  })
-})
-
 describe('validateCustomMetadataKey', () => {
-  it('accepts valid identifiers', () => {
+  it('accepts valid identifiers including names that overlap top-level keys', () => {
     expect(validateCustomMetadataKey('seed')).toEqual({ ok: true })
+    expect(validateCustomMetadataKey('name')).toEqual({ ok: true })
     expect(validateCustomMetadataKey('_x')).toEqual({ ok: true })
   })
 
@@ -33,13 +26,6 @@ describe('validateCustomMetadataKey', () => {
     expect(validateCustomMetadataKey('   ')).toEqual({
       ok: false,
       issue: 'empty'
-    })
-  })
-
-  it('rejects reserved keys', () => {
-    expect(validateCustomMetadataKey('name')).toEqual({
-      ok: false,
-      issue: 'reserved'
     })
   })
 
@@ -87,64 +73,107 @@ describe('truncateJsonPreview', () => {
 })
 
 describe('parseUserMetadataForEditor', () => {
-  it('splits custom primitives, system primitives, and unsupported', () => {
+  it('reads only user_metadata.custom primitives and unsupported entries', () => {
     const parsed = parseUserMetadataForEditor({
       seed: 42,
       name: 'Model',
-      extra: { nested: true },
-      tags: ['a'],
-      flag: false
+      [USER_METADATA_CUSTOM_KEY]: {
+        flag: false,
+        caption: 'x',
+        extra: { nested: true },
+        tags: ['a'],
+        nanish: Number.NaN
+      }
     })
+    expect(parsed.customBucketState).toBe('valid')
     expect(parsed.customPrimitives).toEqual([
+      expect.objectContaining({
+        kind: 'customPrimitive',
+        key: 'caption',
+        primitiveType: 'string',
+        value: 'x'
+      }),
       expect.objectContaining({
         kind: 'customPrimitive',
         key: 'flag',
         primitiveType: 'boolean',
         value: false
-      }),
-      expect.objectContaining({
-        kind: 'customPrimitive',
-        key: 'seed',
-        primitiveType: 'number',
-        value: 42
       })
     ])
-    expect(parsed.systemPrimitives).toEqual([
-      expect.objectContaining({
-        kind: 'systemReadOnly',
-        key: 'name',
-        primitiveType: 'string',
-        value: 'Model'
-      })
-    ])
-    expect(parsed.unsupported).toEqual([
-      expect.objectContaining({ kind: 'unsupported', key: 'extra' }),
-      expect.objectContaining({ kind: 'unsupported', key: 'tags' })
+    expect(parsed.unsupportedInCustom.map((r) => r.key).sort()).toEqual([
+      'extra',
+      'nanish',
+      'tags'
     ])
   })
 
-  it('treats NaN as unsupported', () => {
-    const parsed = parseUserMetadataForEditor({ bad: Number.NaN })
-    expect(parsed.customPrimitives).toHaveLength(0)
-    expect(parsed.unsupported).toHaveLength(1)
-    expect(parsed.unsupported[0].key).toBe('bad')
-  })
-
-  it('handles undefined metadata', () => {
-    expect(parseUserMetadataForEditor(undefined)).toEqual({
-      customPrimitives: [],
-      systemPrimitives: [],
-      unsupported: []
+  it('treats top-level primitives as ignored for custom editor', () => {
+    const parsed = parseUserMetadataForEditor({
+      seed: 1,
+      name: 'N'
     })
+    expect(parsed.customBucketState).toBe('missing')
+    expect(parsed.customPrimitives).toHaveLength(0)
+    expect(parsed.unsupportedInCustom).toHaveLength(0)
+  })
+
+  it('treats NaN inside custom as unsupported', () => {
+    const parsed = parseUserMetadataForEditor({
+      [USER_METADATA_CUSTOM_KEY]: { bad: Number.NaN }
+    })
+    expect(parsed.customPrimitives).toHaveLength(0)
+    expect(parsed.unsupportedInCustom).toHaveLength(1)
+    expect(parsed.unsupportedInCustom[0].key).toBe('bad')
+  })
+
+  it('treats missing custom as missing bucket', () => {
+    expect(parseUserMetadataForEditor(undefined)).toMatchObject({
+      customPrimitives: [],
+      unsupportedInCustom: [],
+      customBucketState: 'missing'
+    })
+    expect(parseUserMetadataForEditor({})).toMatchObject({
+      customBucketState: 'missing'
+    })
+  })
+
+  it('treats non-object custom as invalid', () => {
+    const parsed = parseUserMetadataForEditor({
+      [USER_METADATA_CUSTOM_KEY]: 'oops'
+    })
+    expect(parsed.customBucketState).toBe('invalid')
+    expect(parsed.invalidCustomPreview).toBe('"oops"')
+    expect(parsed.customPrimitives).toHaveLength(0)
+  })
+
+  it('treats null custom as invalid', () => {
+    const parsed = parseUserMetadataForEditor({
+      [USER_METADATA_CUSTOM_KEY]: null
+    })
+    expect(parsed.customBucketState).toBe('invalid')
   })
 })
 
 describe('mergeUserMetadataForAssetPut', () => {
   const modelPatch: AssetUserMetadata = { user_description: 'hello' }
 
-  it('merges base, model panel, and custom patches', () => {
+  it('does not add custom when there are no custom mutations', () => {
     const out = mergeUserMetadataForAssetPut(
       { seed: 1, name: 'A' },
+      modelPatch,
+      {},
+      new Set()
+    )
+    expect(out).toEqual({
+      seed: 1,
+      name: 'A',
+      user_description: 'hello'
+    })
+  })
+
+  it('merges custom subtree and preserves other top-level keys', () => {
+    const out = mergeUserMetadataForAssetPut(
+      { seed: 1, name: 'A', jobId: 'j' },
       modelPatch,
       { caption: 'x' },
       new Set()
@@ -152,48 +181,73 @@ describe('mergeUserMetadataForAssetPut', () => {
     expect(out).toEqual({
       seed: 1,
       name: 'A',
+      jobId: 'j',
       user_description: 'hello',
-      caption: 'x'
+      [USER_METADATA_CUSTOM_KEY]: { caption: 'x' }
     })
   })
 
-  it('removes only non-reserved keys listed for delete', () => {
+  it('sets custom to empty object when last primitive key is deleted', () => {
     const out = mergeUserMetadataForAssetPut(
-      { seed: 1, name: 'Keep' },
+      {
+        name: 'N',
+        [USER_METADATA_CUSTOM_KEY]: { only: 1 }
+      },
       {},
       {},
-      new Set(['seed', 'name'])
+      new Set(['only'])
     )
-    expect(out).toEqual({ name: 'Keep' })
+    expect(out[USER_METADATA_CUSTOM_KEY]).toEqual({})
+    expect(out.name).toBe('N')
   })
 
-  it('does not delete reserved keys via custom delete set', () => {
+  it('does not overwrite invalid custom when applying patches', () => {
     const out = mergeUserMetadataForAssetPut(
-      { jobId: 'j1' },
+      { [USER_METADATA_CUSTOM_KEY]: 'broken', name: 'Keep' },
       {},
-      {},
-      new Set(['jobId'])
+      { caption: 'x' },
+      new Set()
     )
-    expect(out).toEqual({ jobId: 'j1' })
+    expect(out[USER_METADATA_CUSTOM_KEY]).toBe('broken')
+    expect(out.name).toBe('Keep')
   })
 
-  it('ignores custom patches for reserved keys', () => {
+  it('writes patches under custom without changing top-level name', () => {
     const out = mergeUserMetadataForAssetPut(
       { name: 'Server' },
       {},
-      { name: 'Hijack' } as Record<string, string | number | boolean>,
+      { name: 'InsideCustom' },
       new Set()
     )
     expect(out.name).toBe('Server')
+    expect(out[USER_METADATA_CUSTOM_KEY]).toEqual({ name: 'InsideCustom' })
   })
 
-  it('preserves unrelated keys when updating a custom field', () => {
+  it('preserves unsupported keys inside custom when patching primitives', () => {
+    const out = mergeUserMetadataForAssetPut(
+      {
+        [USER_METADATA_CUSTOM_KEY]: {
+          caption: 'old',
+          blob: { nested: true }
+        }
+      },
+      {},
+      { caption: 'new' },
+      new Set()
+    )
+    expect(out[USER_METADATA_CUSTOM_KEY]).toEqual({
+      caption: 'new',
+      blob: { nested: true }
+    })
+  })
+
+  it('preserves unrelated top-level keys when updating custom', () => {
     const out = mergeUserMetadataForAssetPut(
       {
         name: 'N',
         base_model: ['SDXL'],
-        caption: 'old',
-        other: { nested: true }
+        other: { nested: true },
+        [USER_METADATA_CUSTOM_KEY]: { caption: 'old' }
       },
       {},
       { caption: 'new' },
@@ -201,7 +255,21 @@ describe('mergeUserMetadataForAssetPut', () => {
     )
     expect(out.name).toBe('N')
     expect(out.base_model).toEqual(['SDXL'])
-    expect(out.caption).toBe('new')
     expect(out.other).toEqual({ nested: true })
+    expect(out[USER_METADATA_CUSTOM_KEY]).toEqual({ caption: 'new' })
+  })
+
+  it('deletes keys inside custom including jobId as a custom sub-key', () => {
+    const out = mergeUserMetadataForAssetPut(
+      {
+        jobId: 'top',
+        [USER_METADATA_CUSTOM_KEY]: { jobId: 'inner', x: 1 }
+      },
+      {},
+      {},
+      new Set(['jobId'])
+    )
+    expect(out.jobId).toBe('top')
+    expect(out[USER_METADATA_CUSTOM_KEY]).toEqual({ x: 1 })
   })
 })
