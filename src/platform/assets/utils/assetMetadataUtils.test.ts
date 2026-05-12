@@ -427,5 +427,17 @@ describe('assetMetadataUtils', () => {
     it('returns plain names unchanged', () => {
       expect(formatAssetCardPlaceholderLabel('plain-name')).toBe('plain-name')
     })
+
+    it('handles Windows-style backslash separators', () => {
+      expect(
+        formatAssetCardPlaceholderLabel('C:\\Models\\loras\\foo.safetensors')
+      ).toBe('foo')
+    })
+
+    it('trims whitespace before extension matching', () => {
+      expect(formatAssetCardPlaceholderLabel('  model.safetensors  ')).toBe(
+        'model'
+      )
+    })
   })
 })

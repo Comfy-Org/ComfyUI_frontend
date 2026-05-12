@@ -116,7 +116,7 @@ export const FallbackPlaceholder: Story = {
     docs: {
       description: {
         story:
-          'AssetCard showing the neutral placeholder when no preview image is available — filename is stripped of extension and separators.'
+          'AssetCard showing the neutral placeholder when no preview image is available — filename is reduced to the last path segment with any known model extension stripped; hyphens and underscores are preserved.'
       }
     }
   }
