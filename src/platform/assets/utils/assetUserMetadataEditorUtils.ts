@@ -155,10 +155,6 @@ export function mergeUserMetadataForAssetPut(
   }
 
   const raw = next[USER_METADATA_CUSTOM_KEY]
-  if (raw !== undefined && raw !== null && !isPlainObject(raw)) {
-    return next
-  }
-
   const base: Record<string, unknown> = isPlainObject(raw) ? { ...raw } : {}
   for (const k of customDeleteKeys) {
     delete base[k]

@@ -43,8 +43,14 @@ function pickThumbnailOnly(asset: AssetPreviewSource): string | undefined {
   return trimUrl(asset.thumbnail_url)
 }
 
-function resolveAlt(asset: AssetPreviewSource): string {
-  return trimUrl(asset.display_name) ?? asset.name ?? 'Asset'
+/** Passed from {@link useI18n} in components; keeps this module free of Vue context. */
+export type AssetPreviewPresentationTranslate = (key: string) => string
+
+function resolveAlt(
+  asset: AssetPreviewSource,
+  t: AssetPreviewPresentationTranslate
+): string {
+  return trimUrl(asset.display_name) ?? asset.name ?? t('assets.fallbackAlt')
 }
 
 function mimeLower(asset: AssetPreviewSource): string {
@@ -74,11 +80,14 @@ function placeholder(
  * {@link AssetPreviewSource.thumbnail_url} over {@link AssetPreviewSource.preview_url}
  * for raster URLs. Video MIME is poster-only (thumbnail) to avoid loading raw
  * video in {@code <img>}.
+ *
+ * @param t {@link useI18n} {@code t} from the caller for localized alt fallbacks.
  */
 export function resolveAssetPreviewPresentation(
-  asset: AssetPreviewSource
+  asset: AssetPreviewSource,
+  t: AssetPreviewPresentationTranslate
 ): AssetPreviewPresentation {
-  const alt = resolveAlt(asset)
+  const alt = resolveAlt(asset, t)
   const mime = mimeLower(asset)
 
   if (mime.startsWith('image/')) {

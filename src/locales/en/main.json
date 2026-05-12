@@ -2921,6 +2921,9 @@
     "viewAll": "View all",
     "userMediaAssetsModalTitle": "Media Assets"
   },
+  "assets": {
+    "fallbackAlt": "Asset"
+  },
   "assetBrowser": {
     "allCategory": "All {category}",
     "allAssets": "All Assets",
@@ -2929,6 +2932,10 @@
     "emptyImported": {
       "canImport": "No imported models yet. Click \"Import\" to add your own.",
       "restricted": "Personal models are only available at Creator tier and above."
+    },
+    "enableAssetAPI": {
+      "title": "Enable Asset API",
+      "message": "The Asset API is currently disabled. Would you like to enable it?"
     },
     "noResultsCanImport": "Try adjusting your search or filters.\nYou can also add models using the \"Import\" button above.",
     "imported": "Imported",

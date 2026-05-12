@@ -201,14 +201,25 @@ describe('mergeUserMetadataForAssetPut', () => {
     expect(out.name).toBe('N')
   })
 
-  it('does not overwrite invalid custom when applying patches', () => {
+  it('treats invalid custom as empty and still applies patches', () => {
     const out = mergeUserMetadataForAssetPut(
       { [USER_METADATA_CUSTOM_KEY]: 'broken', name: 'Keep' },
       {},
       { caption: 'x' },
       new Set()
     )
-    expect(out[USER_METADATA_CUSTOM_KEY]).toBe('broken')
+    expect(out[USER_METADATA_CUSTOM_KEY]).toEqual({ caption: 'x' })
+    expect(out.name).toBe('Keep')
+  })
+
+  it('treats invalid custom as empty and still applies delete keys', () => {
+    const out = mergeUserMetadataForAssetPut(
+      { [USER_METADATA_CUSTOM_KEY]: ['a'], name: 'Keep' },
+      {},
+      {},
+      new Set(['stale'])
+    )
+    expect(out[USER_METADATA_CUSTOM_KEY]).toEqual({})
     expect(out.name).toBe('Keep')
   })
 

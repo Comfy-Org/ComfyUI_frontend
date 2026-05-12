@@ -219,7 +219,7 @@ const tooltipDelay = computed<number>(() =>
   settingStore.get('LiteGraph.Node.TooltipDelay')
 )
 
-const presentation = computed(() => resolveAssetPreviewPresentation(asset))
+const presentation = computed(() => resolveAssetPreviewPresentation(asset, t))
 
 const { isLoading, error } = useImage(
   computed(() => ({

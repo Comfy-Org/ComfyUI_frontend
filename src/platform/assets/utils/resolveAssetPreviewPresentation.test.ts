@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { AssetPreviewSource } from '@/platform/assets/utils/resolveAssetPreviewPresentation'
 import { resolveAssetPreviewPresentation } from '@/platform/assets/utils/resolveAssetPreviewPresentation'
@@ -11,6 +11,8 @@ function base(overrides: Partial<AssetPreviewSource> = {}): AssetPreviewSource {
   }
 }
 
+const t = (key: string) => (key === 'assets.fallbackAlt' ? 'Asset' : key)
+
 describe('resolveAssetPreviewPresentation', () => {
   it('prefers thumbnail_url over preview_url for image mime', () => {
     const p = resolveAssetPreviewPresentation(
@@ -19,7 +21,8 @@ describe('resolveAssetPreviewPresentation', () => {
         mime_type: 'image/png',
         thumbnail_url: 'https://t.example/thumb.png',
         preview_url: 'https://p.example/full.png'
-      })
+      }),
+      t
     )
     expect(p).toEqual({
       kind: 'image',
@@ -34,7 +37,8 @@ describe('resolveAssetPreviewPresentation', () => {
         name: 'x.png',
         mime_type: 'image/png',
         preview_url: 'https://p.example/full.png'
-      })
+      }),
+      t
     )
     expect(p).toEqual({
       kind: 'image',
@@ -48,7 +52,8 @@ describe('resolveAssetPreviewPresentation', () => {
       base({
         name: 'x.png',
         mime_type: 'image/jpeg'
-      })
+      }),
+      t
     )
     expect(p).toEqual({
       kind: 'placeholder',
@@ -59,7 +64,7 @@ describe('resolveAssetPreviewPresentation', () => {
   })
 
   it('returns placeholder when both URLs missing for image extension', () => {
-    const p = resolveAssetPreviewPresentation(base({ name: 'photo.png' }))
+    const p = resolveAssetPreviewPresentation(base({ name: 'photo.png' }), t)
     expect(p).toEqual({
       kind: 'placeholder',
       icon: expect.stringContaining('lucide'),
@@ -75,7 +80,8 @@ describe('resolveAssetPreviewPresentation', () => {
         mime_type: 'video/mp4',
         thumbnail_url: 'https://t.example/poster.jpg',
         preview_url: 'https://p.example/clip.mp4'
-      })
+      }),
+      t
     )
     expect(p).toEqual({
       kind: 'image',
@@ -90,7 +96,8 @@ describe('resolveAssetPreviewPresentation', () => {
         name: 'clip.mp4',
         mime_type: 'video/mp4',
         preview_url: 'https://p.example/clip.mp4'
-      })
+      }),
+      t
     )
     expect(p).toEqual({
       kind: 'placeholder',
@@ -106,7 +113,8 @@ describe('resolveAssetPreviewPresentation', () => {
         name: 'shot.png',
         mime_type: 'application/octet-stream',
         preview_url: 'https://p.example/shot.png'
-      })
+      }),
+      t
     )
     expect(p).toEqual({
       kind: 'image',
@@ -120,7 +128,8 @@ describe('resolveAssetPreviewPresentation', () => {
       base({
         name: 'clip.mp4',
         preview_url: 'https://p.example/clip.mp4'
-      })
+      }),
+      t
     )
     expect(p).toEqual({
       kind: 'placeholder',
@@ -135,7 +144,8 @@ describe('resolveAssetPreviewPresentation', () => {
       base({
         name: 'clip.mp4',
         thumbnail_url: 'https://t.example/poster.png'
-      })
+      }),
+      t
     )
     expect(p).toEqual({
       kind: 'image',
@@ -149,7 +159,8 @@ describe('resolveAssetPreviewPresentation', () => {
       base({
         name: 'model.safetensors',
         preview_url: 'https://p.example/preview.png'
-      })
+      }),
+      t
     )
     expect(p).toEqual({
       kind: 'image',
@@ -159,7 +170,7 @@ describe('resolveAssetPreviewPresentation', () => {
   })
 
   it('3D extension without URL yields unsupported_type placeholder', () => {
-    const p = resolveAssetPreviewPresentation(base({ name: 'mesh.glb' }))
+    const p = resolveAssetPreviewPresentation(base({ name: 'mesh.glb' }), t)
     expect(p).toEqual({
       kind: 'placeholder',
       icon: expect.stringContaining('box'),
@@ -175,7 +186,8 @@ describe('resolveAssetPreviewPresentation', () => {
         display_name: undefined,
         mime_type: 'image/png',
         preview_url: 'https://p.example/only.png'
-      })
+      }),
+      t
     )
     expect(p.kind).toBe('image')
     if (p.kind === 'image') {
@@ -190,7 +202,8 @@ describe('resolveAssetPreviewPresentation', () => {
         mime_type: 'image/png',
         thumbnail_url: '   ',
         preview_url: ''
-      })
+      }),
+      t
     )
     expect(p).toEqual({
       kind: 'placeholder',
@@ -205,13 +218,34 @@ describe('resolveAssetPreviewPresentation', () => {
       base({
         name: 'x.wav',
         mime_type: 'audio/wav'
-      })
+      }),
+      t
     )
     expect(p).toEqual({
       kind: 'placeholder',
       icon: expect.stringContaining('music'),
       alt: 'Display',
       reason: 'unsupported_type'
+    })
+  })
+
+  it('uses translated fallback when display_name and name are nullish', () => {
+    const spy = vi.fn((key: string) =>
+      key === 'assets.fallbackAlt' ? 'LocalizedAsset' : key
+    )
+    const asset = {
+      name: undefined,
+      display_name: undefined,
+      mime_type: 'image/png',
+      thumbnail_url: undefined,
+      preview_url: undefined
+    } as unknown as AssetPreviewSource
+    const p = resolveAssetPreviewPresentation(asset, spy)
+    expect(spy).toHaveBeenCalledWith('assets.fallbackAlt')
+    expect(p).toMatchObject({
+      kind: 'placeholder',
+      alt: 'LocalizedAsset',
+      reason: 'missing_url'
     })
   })
 })
