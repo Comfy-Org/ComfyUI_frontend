@@ -3,8 +3,7 @@
 // Exemplar: https://github.com/kijai/ComfyUI-KJNodes/blob/main/web/js/help_popup.js
 // Migration: v1 raw DOM injection → v2 injectStyles / addPanel / addToolbarItem / renderMarkdownToHtml
 
-import { describe, it, expect } from 'vitest'
-import { expectTypeOf } from 'vitest'
+import { describe, it, expect, expectTypeOf } from 'vitest'
 import type {
   ExtensionManager,
   SidebarTabExtension,

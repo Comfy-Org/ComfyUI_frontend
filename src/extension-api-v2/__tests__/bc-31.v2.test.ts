@@ -8,8 +8,7 @@
 //       Tests below cover what IS designed (renderMarkdownToHtml, VueExtension sidebar/panel slots)
 //       and use it.todo for the proposed-but-undesigned DOM injection API.
 
-import { describe, it, expect } from 'vitest'
-import { expectTypeOf } from 'vitest'
+import { describe, it, expect, expectTypeOf } from 'vitest'
 import type {
   ExtensionManager,
   SidebarTabExtension,
