@@ -85,9 +85,11 @@ describe('formatUtil', () => {
     describe('video files', () => {
       it('should identify video extensions correctly', () => {
         expect(getMediaTypeFromFilename('video.mp4')).toBe('video')
+        expect(getMediaTypeFromFilename('apple.m4v')).toBe('video')
         expect(getMediaTypeFromFilename('clip.webm')).toBe('video')
         expect(getMediaTypeFromFilename('movie.mov')).toBe('video')
         expect(getMediaTypeFromFilename('film.avi')).toBe('video')
+        expect(getMediaTypeFromFilename('episode.mkv')).toBe('video')
       })
     })
 

@@ -953,6 +953,50 @@
       }
     }
   },
+  "ByteDanceSeedreamNodeV2": {
+    "description": "تولید تصویر از متن و ویرایش دقیق جمله‌ای با وضوح تا ۴K به صورت یکپارچه.",
+    "display_name": "ByteDance Seedream ۴.۵ و ۵.۰",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_fail_on_partial": {
+        "name": "fail_on_partial"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_max_images": {
+        "name": "max_images"
+      },
+      "model_size_preset": {
+        "name": "size_preset"
+      },
+      "model_width": {
+        "name": "width"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "پرامپت متنی برای ایجاد یا ویرایش تصویر."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed مورد استفاده برای تولید."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "آیا واترمارک «تولید شده توسط هوش مصنوعی» به تصویر اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceTextToVideoNode": {
     "description": "تولید ویدیو با استفاده از مدل‌های ByteDance از طریق API بر اساس پرامپت",
     "display_name": "تبدیل متن به ویدیو ByteDance",
@@ -3432,6 +3476,37 @@
       }
     }
   },
+  "Flux2ImageNode": {
+    "description": "تولید تصویر با استفاده از Flux.2 [pro] یا Flux.2 [max] از طریق پرامپت و تصاویر مرجع اختیاری.",
+    "display_name": "Flux.2 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_width": {
+        "name": "width"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "پرامپت برای تولید یا ویرایش تصویر"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed تصادفی برای ایجاد نویز."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux2MaxImageNode": {
     "description": "تولید تصویر به صورت همزمان بر اساس پرامپت و وضوح تصویر.",
     "display_name": "Flux.2 [max] Image",
@@ -4447,6 +4522,40 @@
       "seed": {
         "name": "بذر",
         "tooltip": "بذر برای تعیین اینکه node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNodeV2": {
+    "description": "ویرایش یک تصویر موجود بر اساس پرامپت متنی",
+    "display_name": "Grok Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_number_of_images": {
+        "name": "number_of_images"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "پرامپت متنی برای تولید تصویر"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed برای تعیین اجرای مجدد node؛ نتایج واقعی صرف‌نظر از seed غیرقطعی هستند."
       }
     },
     "outputs": {
@@ -11957,6 +12066,50 @@
       "size": {
         "name": "size",
         "tooltip": "اندازه تصویر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV2": {
+    "description": "تولید تصویر از طریق سرویس GPT Image شرکت OpenAI.",
+    "display_name": "OpenAI GPT Image ۲",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_background": {
+        "name": "background"
+      },
+      "model_custom_height": {
+        "name": "custom_height"
+      },
+      "model_custom_width": {
+        "name": "custom_width"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "تعداد تصاویری که باید تولید شود"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "پرامپت متنی برای GPT Image"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "در backend هنوز پیاده‌سازی نشده است"
       }
     },
     "outputs": {
