@@ -14,6 +14,7 @@ export class VueNodeFixture {
   public readonly collapseIcon: Locator
   public readonly root: Locator
   public readonly widgets: Locator
+  public readonly imagePreview: Locator
 
   constructor(private readonly locator: Locator) {
     this.header = locator.locator('[data-testid^="node-header-"]')
@@ -25,6 +26,7 @@ export class VueNodeFixture {
     this.collapseIcon = this.collapseButton.locator('i')
     this.root = locator
     this.widgets = this.locator.locator('.lg-node-widget')
+    this.imagePreview = locator.locator('.image-preview')
   }
 
   async getTitle(): Promise<string> {

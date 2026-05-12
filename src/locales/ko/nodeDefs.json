@@ -24,6 +24,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_image": {
+        "name": "start_image"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "노이즈 추가",
     "inputs": {
@@ -919,6 +953,50 @@
       }
     }
   },
+  "ByteDanceSeedreamNodeV2": {
+    "description": "최대 4K 해상도에서 통합 텍스트-이미지 생성 및 정밀한 단일 문장 편집.",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_fail_on_partial": {
+        "name": "부분 실패 시 중단"
+      },
+      "model_height": {
+        "name": "높이"
+      },
+      "model_max_images": {
+        "name": "최대 이미지 수"
+      },
+      "model_size_preset": {
+        "name": "사이즈 프리셋"
+      },
+      "model_width": {
+        "name": "너비"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지를 생성하거나 편집하기 위한 텍스트 프롬프트입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "생성에 사용할 시드입니다."
+      },
+      "watermark": {
+        "name": "워터마크",
+        "tooltip": "이미지에 \"AI 생성됨\" 워터마크를 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceTextToVideoNode": {
     "description": "프롬프트를 기반으로 API를 통해 ByteDance 모델을 사용하여 비디오 생성",
     "display_name": "ByteDance 텍스트-비디오",
@@ -1654,6 +1732,10 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "BOOL",
         "tooltip": null
       }
     }
@@ -3394,6 +3476,37 @@
       }
     }
   },
+  "Flux2ImageNode": {
+    "description": "프롬프트와 선택적 참조 이미지를 통해 Flux.2 [pro] 또는 Flux.2 [max]로 이미지 생성.",
+    "display_name": "Flux.2 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_height": {
+        "name": "높이"
+      },
+      "model_width": {
+        "name": "너비"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성 또는 편집을 위한 프롬프트"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노이즈 생성을 위한 랜덤 시드입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux2MaxImageNode": {
     "description": "프롬프트와 해상도에 따라 이미지를 동기적으로 생성합니다.",
     "display_name": "Flux.2 [max] 이미지",
@@ -4405,6 +4518,40 @@
       },
       "resolution": {
         "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNodeV2": {
+    "description": "텍스트 프롬프트를 기반으로 기존 이미지를 수정합니다.",
+    "display_name": "Grok 이미지 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_number_of_images": {
+        "name": "이미지 개수"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위해 사용되는 텍스트 프롬프트입니다."
       },
       "seed": {
         "name": "시드",
@@ -8007,6 +8154,21 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "배경 제거 모델 불러오기",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "bg_removal_name",
+        "tooltip": "이미지에서 배경을 제거하는 데 사용되는 모델"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bg_model",
         "tooltip": null
       }
     }
@@ -11912,6 +12074,50 @@
       }
     }
   },
+  "OpenAIGPTImageNodeV2": {
+    "description": "OpenAI의 GPT 이미지 엔드포인트를 통해 이미지를 생성합니다.",
+    "display_name": "OpenAI GPT 이미지 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_background": {
+        "name": "배경"
+      },
+      "model_custom_height": {
+        "name": "사용자 지정 높이"
+      },
+      "model_custom_width": {
+        "name": "사용자 지정 너비"
+      },
+      "model_quality": {
+        "name": "품질"
+      },
+      "model_size": {
+        "name": "사이즈"
+      },
+      "n": {
+        "name": "개수",
+        "tooltip": "생성할 이미지 수"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "GPT 이미지용 텍스트 프롬프트"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "백엔드에서 아직 구현되지 않음"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIInputFiles": {
     "description": "OpenAI 채팅 노드에 대한 입력으로 포함할 입력 파일(텍스트, PDF 등)을 로드하고 준비합니다. 파일은 OpenAI 모델이 응답을 생성할 때 읽힙니다. 🛈 팁: 다른 OpenAI 입력 파일 노드와 함께 연결하여 사용할 수 있습니다.",
     "display_name": "OpenAI ChatGPT 입력 파일",
@@ -13457,6 +13663,25 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "RemoveBackground": {
+    "display_name": "배경 제거",
+    "inputs": {
+      "bg_removal_model": {
+        "name": "bg_removal_model",
+        "tooltip": "마스크 생성을 위해 사용되는 배경 제거 모델"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "배경을 제거할 입력 이미지"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": "생성된 전경 마스크"
       }
     }
   },
@@ -17353,7 +17578,8 @@
         "name": "PBR"
       },
       "quad": {
-        "name": "쿼드"
+        "name": "쿼드",
+        "tooltip": "이 매개변수는 더 이상 사용되지 않으며 아무런 동작도 하지 않습니다."
       },
       "texture": {
         "name": "텍스처"
@@ -19318,6 +19544,156 @@
     "outputs": {
       "0": {
         "tooltip": "샘플링 중 컨텍스트 창이 적용된 모델입니다."
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_inject_scale": {
+        "name": "audio_inject_scale",
+        "tooltip": "오디오 특징을 비디오 모델에 주입할 때의 스케일입니다."
+      },
+      "video_frames": {
+        "name": "video_frames"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio_encoder_output",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps_string",
+        "tooltip": "오디오 길이와 비디오 프레임 수를 기반으로 계산된 fps입니다. 프롬프트에 사용됩니다."
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "총 출력 프레임 계산 및 구간 오디오 추출에 사용할 오디오입니다."
+      },
+      "images": {
+        "name": "images"
+      },
+      "segment_index": {
+        "name": "segment_index",
+        "tooltip": "이 구간이 몇 번째인지 (첫 번째는 0, 두 번째는 1 등)"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "이 구간의 길이 (보통 149 프레임)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "패딩된 키프레임 시퀀스"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "유효한 프레임을 나타내는 마스크"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "이 비디오 구간에 해당하는 오디오 구간"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "각 출력 구간에 맞게 오디오를 분할합니다."
+      },
+      "images": {
+        "name": "images"
+      },
+      "num_segments": {
+        "name": "num_segments",
+        "tooltip": "리스트로 출력할 패딩된 구간의 개수"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "각 구간의 길이 (보통 149 프레임)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "패딩된 키프레임 시퀀스들"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "유효한 프레임을 나타내는 마스크들"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "각 비디오 구간에 해당하는 오디오 구간"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "audio_encoder_output": {
+        "name": "audio_encoder_output"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "첫 번째 프레임의 CLIP 비전 임베딩입니다."
+      },
+      "clip_vision_output_ref": {
+        "name": "clip_vision_output_ref",
+        "tooltip": "참조 이미지의 CLIP 비전 임베딩입니다."
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이",
+        "tooltip": "생성된 비디오의 프레임 수입니다. WanDancer의 경우 149로 유지해야 합니다."
+      },
+      "mask": {
+        "name": "마스크",
+        "tooltip": "시작 이미지(들)에 대한 이미지 조건 마스크입니다. 흰색은 유지되고, 검은색은 생성됩니다. 로컬 생성에 사용됩니다."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "start_image": {
+        "name": "시작 이미지",
+        "tooltip": "인코딩할 초기 이미지(들)입니다. 프레임 수는 자유롭게 설정할 수 있습니다."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "비어 있는 latent."
       }
     }
   },

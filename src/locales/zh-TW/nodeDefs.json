@@ -24,6 +24,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "batch_size": {
+        "name": "批次大小"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "長度"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_image": {
+        "name": "起始圖像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "新增雜訊",
     "inputs": {
@@ -919,6 +953,50 @@
       }
     }
   },
+  "ByteDanceSeedreamNodeV2": {
+    "description": "統一的文字轉圖與精確單句編輯，最高支援 4K 解析度。",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_fail_on_partial": {
+        "name": "部分失敗時終止"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_max_images": {
+        "name": "最大圖像數"
+      },
+      "model_size_preset": {
+        "name": "尺寸預設"
+      },
+      "model_width": {
+        "name": "寬度"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "用於創建或編輯圖像的文字提示。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於生成的隨機種子。"
+      },
+      "watermark": {
+        "name": "浮水印",
+        "tooltip": "是否在圖像上添加「AI 生成」浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceTextToVideoNode": {
     "description": "透過 API 使用字節跳動模型根據提示生成影片",
     "display_name": "字節跳動文字轉影片",
@@ -1654,6 +1732,10 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "BOOL",
         "tooltip": null
       }
     }
@@ -3394,6 +3476,37 @@
       }
     }
   },
+  "Flux2ImageNode": {
+    "description": "透過 Flux.2 [pro] 或 Flux.2 [max]，根據提示詞與可選參考圖像生成圖像。",
+    "display_name": "Flux.2 圖像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_width": {
+        "name": "寬度"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "用於圖像生成或編輯的提示詞"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於產生雜訊的隨機種子。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux2MaxImageNode": {
     "description": "根據提示詞與解析度同步生成圖像。",
     "display_name": "Flux.2 [max] 圖像",
@@ -4409,6 +4522,40 @@
       "seed": {
         "name": "seed",
         "tooltip": "決定節點是否重新執行的種子；實際結果無論種子如何都不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNodeV2": {
+    "description": "根據文字提示修改現有圖像",
+    "display_name": "Grok 圖像編輯",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_number_of_images": {
+        "name": "圖像數量"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "用於生成圖像的文字提示"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "決定節點是否重新執行的種子；實際結果無論種子如何皆為非確定性。"
       }
     },
     "outputs": {
@@ -8007,6 +8154,21 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "載入背景移除模型",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "bg_removal_name",
+        "tooltip": "用於從圖像中移除背景的模型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bg_model",
         "tooltip": null
       }
     }
@@ -11912,6 +12074,50 @@
       }
     }
   },
+  "OpenAIGPTImageNodeV2": {
+    "description": "透過 OpenAI 的 GPT Image 端點生成圖像。",
+    "display_name": "OpenAI GPT 圖像 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_background": {
+        "name": "背景"
+      },
+      "model_custom_height": {
+        "name": "自訂高度"
+      },
+      "model_custom_width": {
+        "name": "自訂寬度"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_size": {
+        "name": "尺寸"
+      },
+      "n": {
+        "name": "數量",
+        "tooltip": "要生成多少張圖像"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "GPT Image 的文字提示"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "後端尚未實作"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIInputFiles": {
     "description": "載入並準備輸入文件（文字、pdf 等）以作為 OpenAI 聊天節點的輸入。生成回應時，OpenAI 模型將讀取這些文件。🛈 提示：可以與其他 OpenAI 輸入文件節點鏈接使用。",
     "display_name": "OpenAI ChatGPT 輸入文件",
@@ -13457,6 +13663,25 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "RemoveBackground": {
+    "display_name": "移除背景",
+    "inputs": {
+      "bg_removal_model": {
+        "name": "bg_removal_model",
+        "tooltip": "用於產生 mask 的背景移除模型"
+      },
+      "image": {
+        "name": "圖像",
+        "tooltip": "要移除背景的輸入圖像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": "產生的前景 mask"
       }
     }
   },
@@ -17353,7 +17578,8 @@
         "name": "pbr"
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "此參數已棄用，無任何作用。"
       },
       "texture": {
         "name": "texture"
@@ -19318,6 +19544,156 @@
     "outputs": {
       "0": {
         "tooltip": "在採樣期間應用上下文窗口的模型。"
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_inject_scale": {
+        "name": "audio_inject_scale",
+        "tooltip": "將音訊特徵注入到影片模型時的縮放比例。"
+      },
+      "video_frames": {
+        "name": "video_frames"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio_encoder_output",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps_string",
+        "tooltip": "根據音訊長度與影片影格數計算出的 fps，會用於提示詞中。"
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "用於計算總輸出影格數並擷取片段音訊的音訊。"
+      },
+      "images": {
+        "name": "images"
+      },
+      "segment_index": {
+        "name": "segment_index",
+        "tooltip": "這是第幾個片段（第一個為 0，第二個為 1，以此類推）"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "此片段的長度（通常為 149 影格）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "已補齊的關鍵影格序列"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "標示有效影格的 mask"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "此影片片段對應的音訊片段"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "要為每個輸出片段切割的音訊。"
+      },
+      "images": {
+        "name": "images"
+      },
+      "num_segments": {
+        "name": "num_segments",
+        "tooltip": "要以清單形式輸出的補齊片段數量。"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "每個片段的長度（通常為 149 影格）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "已補齊的關鍵影格序列"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "標示有效影格的 mask"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "每個影片片段對應的音訊片段"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "audio_encoder_output": {
+        "name": "audio_encoder_output"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "第一幀的 CLIP 視覺嵌入。"
+      },
+      "clip_vision_output_ref": {
+        "name": "clip_vision_output_ref",
+        "tooltip": "參考圖像的 CLIP 視覺嵌入。"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "長度",
+        "tooltip": "生成影片的幀數。對於 WanDancer，應保持 149。"
+      },
+      "mask": {
+        "name": "遮罩",
+        "tooltip": "起始圖像的圖像處理遮罩。白色保留，黑色生成。用於局部生成。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "start_image": {
+        "name": "起始圖像",
+        "tooltip": "要編碼的初始圖像，可為任意幀數。"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "空的 latent。"
       }
     }
   },

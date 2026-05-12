@@ -437,6 +437,9 @@ importers:
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:packages/design-system
+      '@comfyorg/object-info-parser':
+        specifier: workspace:*
+        version: link:packages/object-info-parser
       '@comfyorg/registry-types':
         specifier: workspace:*
         version: link:packages/registry-types
@@ -946,6 +949,12 @@ importers:
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
+      '@comfyorg/object-info-parser':
+        specifier: workspace:*
+        version: link:../../packages/object-info-parser
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:*
+        version: link:../../packages/shared-frontend-utils
       '@comfyorg/tailwind-utils':
         specifier: workspace:*
         version: link:../../packages/tailwind-utils
@@ -1039,6 +1048,22 @@ importers:
       '@hey-api/openapi-ts':
         specifier: 0.93.0
         version: 0.93.0(magicast@0.5.1)(typescript@5.9.3)
+
+  packages/object-info-parser:
+    dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
+      zod-validation-error:
+        specifier: 'catalog:'
+        version: 3.3.0(zod@3.25.76)
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@25.0.3)(@vitest/ui@4.0.16)(esbuild@0.27.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
 
   packages/registry-types: {}
 
