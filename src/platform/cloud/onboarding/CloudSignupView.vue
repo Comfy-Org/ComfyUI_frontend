@@ -188,7 +188,15 @@ const onSuccess = async () => {
   captureOAuthRequestId(route.query)
   const oauthRequestId = getOAuthRequestId()
   if (oauthRequestId) {
-    await sessionCookie.createSessionOrThrow()
+    try {
+      await sessionCookie.createSessionOrThrow()
+    } catch (error) {
+      authError.value =
+        error instanceof Error
+          ? error.message
+          : 'Failed to establish session. Please try again.'
+      return
+    }
     await router.push({
       name: 'cloud-oauth-consent',
       query: { oauth_request_id: oauthRequestId }

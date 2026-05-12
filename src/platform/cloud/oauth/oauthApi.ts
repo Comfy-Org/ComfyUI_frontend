@@ -86,17 +86,32 @@ function assertChallenge(
     typeof challenge.csrf_token !== 'string' ||
     typeof challenge.client_display_name !== 'string' ||
     !Array.isArray(challenge.scopes) ||
-    !Array.isArray(challenge.workspaces)
+    !challenge.scopes.every((scope) => typeof scope === 'string') ||
+    !Array.isArray(challenge.workspaces) ||
+    !challenge.workspaces.every(isValidWorkspace)
   ) {
     throw new Error('OAuth consent challenge is invalid')
   }
+}
+
+function isValidWorkspace(value: unknown): value is OAuthWorkspace {
+  if (typeof value !== 'object' || value === null) return false
+  const workspace = value as Partial<OAuthWorkspace>
+  return (
+    typeof workspace.id === 'string' &&
+    typeof workspace.name === 'string' &&
+    (workspace.type === 'personal' || workspace.type === 'team') &&
+    (workspace.role === 'owner' || workspace.role === 'member')
+  )
 }
 
 export async function fetchOAuthConsentChallenge(
   oauthRequestId: string
 ): Promise<OAuthConsentChallenge> {
   const response = await fetch(
-    oauthUrl(`/oauth/authorize?oauth_request_id=${oauthRequestId}`),
+    oauthUrl(
+      `/oauth/authorize?oauth_request_id=${encodeURIComponent(oauthRequestId)}`
+    ),
     {
       method: 'GET',
       credentials: 'include'
