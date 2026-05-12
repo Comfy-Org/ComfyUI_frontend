@@ -6,7 +6,7 @@ export class ContextMenu {
   public readonly litegraphMenu: Locator
   public readonly litegraphContextMenu: Locator
   public readonly menuItems: Locator
-  public readonly anyMenu: Locator
+  protected readonly anyMenu: Locator
 
   constructor(public readonly page: Page) {
     this.primeVueMenu = page.locator('.p-contextmenu, .p-menu')

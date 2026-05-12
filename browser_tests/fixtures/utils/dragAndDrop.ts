@@ -1,4 +1,5 @@
 import type { Locator } from '@playwright/test'
+
 /**
  * Drag an element from one index to another within a list of locators.
  * Uses mousedown/mousemove/mouseup to trigger the DraggableList library.

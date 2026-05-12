@@ -4,6 +4,7 @@ import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { dragByIndex } from '@e2e/fixtures/utils/dragAndDrop'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 export class SubgraphEditor {
   public readonly root: Locator
@@ -17,15 +18,13 @@ export class SubgraphEditor {
   }
 
   async open(subgraphNode: Locator) {
-    await this.comfyPage.vueNodes.selectNodeByLocator(subgraphNode)
-    // TODO: don't use commands for this
-    await this.comfyPage.command.executeCommand(
-      'Comfy.Graph.EditSubgraphWidgets'
-    )
+    await new VueNodeFixture(subgraphNode).select()
+    const menu = await this.comfyPage.contextMenu.openFor(subgraphNode)
+    await menu.clickMenuItemExact('Edit Subgraph Widgets')
     await expect(this.root, 'Open Properties Panel').toBeVisible()
   }
 
-  resolvePromotionItem(options: {
+  resolveItem(options: {
     nodeName?: string
     nodeId?: string
     widgetName: string
@@ -72,7 +71,7 @@ export class SubgraphEditor {
   ) {
     await this.open(subgraphNode)
 
-    const item = this.resolvePromotionItem(options)
+    const item = this.resolveItem(options)
     await this.togglePromotionOnItem(item, options.toState)
   }
   async dragItem(fromIndex: number, toIndex: number) {

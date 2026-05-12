@@ -819,6 +819,6 @@ test('Linked widgets can not be demoted @vue-nodes', async ({ comfyPage }) => {
   })
 
   await editor.open(subgraphNode)
-  const stepsItem = await editor.resolvePromotionItem({ widgetName: 'steps' })
+  const stepsItem = await editor.resolveItem({ widgetName: 'steps' })
   await expect(editor.getToggleButton(stepsItem)).toBeDisabled()
 })
