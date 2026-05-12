@@ -57,6 +57,10 @@ const mockTokenResponse = {
   permissions: ['owner:*']
 }
 
+function expectedExpiresAtMs(expiresAt: string): string {
+  return new Date(expiresAt).getTime().toString()
+}
+
 describe('useWorkspaceAuthStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -227,9 +231,9 @@ describe('useWorkspaceAuthStore', () => {
       expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBe(
         'workspace-token-abc'
       )
-      expect(
-        sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)
-      ).toBeTruthy()
+      expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)).toBe(
+        expectedExpiresAtMs(mockTokenResponse.expires_at)
+      )
     })
 
     it('sets isLoading to true during operation', async () => {
@@ -251,6 +255,51 @@ describe('useWorkspaceAuthStore', () => {
         json: () => Promise.resolve(mockTokenResponse)
       })
       await switchPromise
+
+      expect(isLoading.value).toBe(false)
+    })
+
+    it('keeps isLoading true until overlapping switches settle', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      let resolveFirstSwitch: (value: unknown) => void = () => {}
+      let resolveSecondSwitch: (value: unknown) => void = () => {}
+      const firstSwitchResponse = new Promise((resolve) => {
+        resolveFirstSwitch = resolve
+      })
+      const secondSwitchResponse = new Promise((resolve) => {
+        resolveSecondSwitch = resolve
+      })
+      const mockFetch = vi
+        .fn()
+        .mockReturnValueOnce(firstSwitchResponse)
+        .mockReturnValueOnce(secondSwitchResponse)
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { isLoading } = storeToRefs(store)
+
+      const firstSwitch = store.switchWorkspace('workspace-123')
+      const secondSwitch = store.switchWorkspace('workspace-other')
+
+      expect(isLoading.value).toBe(true)
+
+      resolveFirstSwitch({
+        ok: true,
+        json: () => Promise.resolve(mockTokenResponse)
+      })
+      await firstSwitch
+
+      expect(isLoading.value).toBe(true)
+
+      resolveSecondSwitch({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...mockTokenResponse,
+            workspace: { ...mockWorkspace, id: 'workspace-other' }
+          })
+      })
+      await secondSwitch
 
       expect(isLoading.value).toBe(false)
     })
@@ -740,6 +789,9 @@ describe('useWorkspaceAuthStore', () => {
       expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBe(
         'workspace-token-abc'
       )
+      expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)).toBe(
+        expectedExpiresAtMs(mockTokenResponse.expires_at)
+      )
       expect(error.value).toBeNull()
       expect(consoleErrorSpy).not.toHaveBeenCalled()
 
@@ -749,6 +801,7 @@ describe('useWorkspaceAuthStore', () => {
           Promise.resolve({ ...mockTokenResponse, token: 'retry-token' })
       })
 
+      // Retry is scheduled at baseDelayMs * 2^maxRetries = 8000ms.
       await vi.advanceTimersByTimeAsync(7999)
       expect(mockFetch).toHaveBeenCalledTimes(5)
 
@@ -797,6 +850,60 @@ describe('useWorkspaceAuthStore', () => {
       consoleErrorSpy.mockRestore()
     })
 
+    it('keeps the old workspace refresh when a newer workspace switch fails', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+
+      const mockFetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { currentWorkspace, workspaceToken } = storeToRefs(store)
+
+      await store.switchWorkspace('workspace-123')
+
+      let resolveRefreshFetch: (value: unknown) => void = () => {}
+      const refreshFetchPromise = new Promise((resolve) => {
+        resolveRefreshFetch = resolve
+      })
+      mockFetch.mockReturnValueOnce(refreshFetchPromise)
+
+      const refreshPromise = store.refreshToken()
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        statusText: 'Forbidden',
+        json: () => Promise.resolve({ message: 'Access denied' })
+      })
+      await expect(store.switchWorkspace('workspace-other')).rejects.toThrow(
+        WorkspaceAuthError
+      )
+
+      const refreshedExpiry = new Date(Date.now() + 7200 * 1000).toISOString()
+      resolveRefreshFetch({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...mockTokenResponse,
+            token: 'refreshed-workspace-token',
+            expires_at: refreshedExpiry
+          })
+      })
+      await refreshPromise
+
+      expect(currentWorkspace.value).toEqual(mockWorkspaceWithRole)
+      expect(workspaceToken.value).toBe('refreshed-workspace-token')
+      expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBe(
+        'refreshed-workspace-token'
+      )
+      expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)).toBe(
+        expectedExpiresAtMs(refreshedExpiry)
+      )
+    })
+
     it('the new workspace wins when the stale refresh resolves last', async () => {
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')
 
@@ -822,12 +929,14 @@ describe('useWorkspaceAuthStore', () => {
 
       // User switches workspace AND its fetch resolves first.
       const newWorkspace = { ...mockWorkspace, id: 'workspace-other' }
+      const newExpiry = new Date(Date.now() + 7200 * 1000).toISOString()
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () =>
           Promise.resolve({
             ...mockTokenResponse,
             token: 'new-workspace-token',
+            expires_at: newExpiry,
             workspace: newWorkspace
           })
       })
@@ -842,13 +951,21 @@ describe('useWorkspaceAuthStore', () => {
       expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBe(
         'new-workspace-token'
       )
+      expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)).toBe(
+        expectedExpiresAtMs(newExpiry)
+      )
 
       // Now resolve the stale refresh fetch — it carries an OLD-workspace
       // token. It must not clobber the new workspace state or sessionStorage.
+      const staleExpiry = new Date(Date.now() + 1800 * 1000).toISOString()
       resolveRefreshFetch({
         ok: true,
         json: () =>
-          Promise.resolve({ ...mockTokenResponse, token: 'stale-token' })
+          Promise.resolve({
+            ...mockTokenResponse,
+            token: 'stale-token',
+            expires_at: staleExpiry
+          })
       })
       await refreshPromise
 
@@ -860,6 +977,56 @@ describe('useWorkspaceAuthStore', () => {
       expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBe(
         'new-workspace-token'
       )
+      expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)).toBe(
+        expectedExpiresAtMs(newExpiry)
+      )
+    })
+
+    it('the new workspace keeps clean error state when a stale refresh fails last', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+
+      const mockFetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { currentWorkspace, workspaceToken, error } = storeToRefs(store)
+
+      await store.switchWorkspace('workspace-123')
+
+      let resolveRefreshFetch: (value: unknown) => void = () => {}
+      const refreshFetchPromise = new Promise((resolve) => {
+        resolveRefreshFetch = resolve
+      })
+      mockFetch.mockReturnValueOnce(refreshFetchPromise)
+
+      const refreshPromise = store.refreshToken()
+
+      const newWorkspace = { ...mockWorkspace, id: 'workspace-other' }
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...mockTokenResponse,
+            token: 'new-workspace-token',
+            workspace: newWorkspace
+          })
+      })
+      await store.switchWorkspace('workspace-other')
+
+      resolveRefreshFetch({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        json: () => Promise.resolve({ message: 'Server error' })
+      })
+      await refreshPromise
+
+      expect(currentWorkspace.value?.id).toBe('workspace-other')
+      expect(workspaceToken.value).toBe('new-workspace-token')
+      expect(error.value).toBeNull()
     })
   })
 
@@ -875,6 +1042,8 @@ describe('useWorkspaceAuthStore', () => {
       )
 
       const originalSessionStorage = globalThis.sessionStorage
+      // happy-dom Storage method spies can miss instance calls; replace the
+      // object so every setItem call deterministically throws.
       const throwingSessionStorage = {
         get length() {
           return originalSessionStorage.length
