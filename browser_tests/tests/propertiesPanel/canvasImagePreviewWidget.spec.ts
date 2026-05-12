@@ -51,9 +51,12 @@ test.describe('Properties panel - canvas image preview widget', () => {
     await expect(panel.panelTitle).toContainText('Load Image')
 
     const widgetItems = panel.contentArea.locator('.widget-item')
-    await expect(widgetItems).toHaveCount(2)
     for (const name of ['image', 'upload']) {
       await expect(widgetItems.filter({ hasText: name })).toHaveCount(1)
     }
+    await expect(
+      panel.contentArea.getByText('$$canvas-image-preview')
+    ).toHaveCount(0)
+    await expect(widgetItems).toHaveCount(2)
   })
 })

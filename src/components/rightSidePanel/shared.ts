@@ -250,6 +250,14 @@ function repeatItems<T>(items: T[]): T[] {
   return result
 }
 
+export function isPanelHiddenWidget(widget: IBaseWidget): boolean {
+  return Boolean(
+    widget.options?.canvasOnly ||
+    widget.options?.hidden ||
+    widget.name.startsWith('$$')
+  )
+}
+
 export function computedSectionDataList(nodes: MaybeRefOrGetter<LGraphNode[]>) {
   const settingStore = useSettingStore()
 
@@ -263,12 +271,8 @@ export function computedSectionDataList(nodes: MaybeRefOrGetter<LGraphNode[]>) {
       const shownWidgets = widgets
         .filter(
           (w) =>
-            !(
-              w.options?.canvasOnly ||
-              w.options?.hidden ||
-              w.name.startsWith('$$') ||
-              (w.options?.advanced && !includesAdvanced.value)
-            )
+            !isPanelHiddenWidget(w) &&
+            !(w.options?.advanced && !includesAdvanced.value)
         )
         .map((widget) => ({ node, widget }))
       return { widgets: shownWidgets, node }
