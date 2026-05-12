@@ -95,12 +95,12 @@ describe('useNodeImageUpload', () => {
     })
   })
 
-  it.each([
-    ['image', 'test.png', 'image/png'],
-    ['video', 'clip.mp4', 'video/mp4']
+  it.for([
+    { mediaType: 'image', filename: 'test.png', mimeType: 'image/png' },
+    { mediaType: 'video', filename: 'clip.mp4', mimeType: 'video/mp4' }
   ])(
-    'sets isUploading true during %s upload and false after',
-    async (_mediaType, filename, mimeType) => {
+    'sets isUploading true during $mediaType upload and false after',
+    async ({ filename, mimeType }) => {
       mockFetchApi.mockResolvedValueOnce(successResponse(filename))
 
       const promise = capturedDragOnDrop([createFile(filename, mimeType)])
