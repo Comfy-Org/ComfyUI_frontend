@@ -18,6 +18,11 @@ import {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
+type ImportPublishedAssetsRequestWithOptionalShareId = Omit<
+  ImportPublishedAssetsRequest,
+  'share_id'
+> & { share_id?: string }
+
 class SharedWorkflowLoadError extends Error {
   readonly status: number | null
 
@@ -261,13 +266,7 @@ export function useWorkflowShareService() {
     assetIds: string[],
     shareId?: string
   ): Promise<void> {
-    // share_id is optional on the wire (BE-898 / cloud #3633). The generated
-    // ImportPublishedAssetsRequest still types it as required from when the
-    // backend briefly required it; once @comfyorg/ingest-types regenerates
-    // with share_id?: string, replace the body type with ImportPublishedAssetsRequest.
-    const body: Omit<ImportPublishedAssetsRequest, 'share_id'> & {
-      share_id?: string
-    } = {
+    const body: ImportPublishedAssetsRequestWithOptionalShareId = {
       published_asset_ids: assetIds,
       ...(shareId ? { share_id: shareId } : {})
     }
