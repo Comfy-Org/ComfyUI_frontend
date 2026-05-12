@@ -39,6 +39,17 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: 'default'
   },
   {
+    id: 'Comfy.NodeSearchBox.ReplaceCanvasMenu',
+    category: ['Comfy', 'Node Search Box', 'ReplaceCanvasMenu'],
+    experimental: true,
+    name: 'Replace canvas right-click "Add Node" with search box',
+    tooltip:
+      'When enabled, the right-click canvas menu opens the node search box instead of the LiteGraph category submenu. The search box includes blueprints, partner nodes, core nodes, and extensions.',
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.46.0'
+  },
+  {
     id: 'Comfy.LinkRelease.Action',
     category: ['LiteGraph', 'LinkRelease', 'Action'],
     name: 'Action on link release (No modifier)',
