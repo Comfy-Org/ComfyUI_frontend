@@ -16,11 +16,14 @@
     "test:visual": "playwright test --project visual",
     "test:visual:update": "playwright test --project visual --update-snapshots",
     "ashby:refresh-snapshot": "tsx ./scripts/refresh-ashby-snapshot.ts",
+    "cloud-nodes:refresh-snapshot": "tsx ./scripts/refresh-cloud-nodes-snapshot.ts",
     "generate:models": "tsx ./scripts/generate-models.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
     "@comfyorg/design-system": "workspace:*",
+    "@comfyorg/object-info-parser": "workspace:*",
+    "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
     "@vercel/analytics": "catalog:",
     "@vueuse/core": "catalog:",
