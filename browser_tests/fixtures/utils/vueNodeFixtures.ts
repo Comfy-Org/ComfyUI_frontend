@@ -42,7 +42,7 @@ export class VueNodeFixture {
   }
 
   async select() {
-    this.header.click()
+    await this.header.click()
   }
 
   async toggleCollapse(): Promise<void> {
