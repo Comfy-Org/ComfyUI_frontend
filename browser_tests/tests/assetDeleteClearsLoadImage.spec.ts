@@ -10,33 +10,51 @@
  * The cloud project is required because input-asset deletion is gated on
  * `isCloud === true` (see `useMediaAssetActions.deleteAssetApi`).
  */
-import { expect, mergeTests } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import type { Asset } from '@comfyorg/ingest-types'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
-  assetApiFixture,
-  createCloudAssetsFixture
-} from '@e2e/fixtures/assetApiFixture'
-import { STABLE_INPUT_IMAGE } from '@e2e/fixtures/data/assetFixtures'
-import { withAsset } from '@e2e/fixtures/helpers/AssetHelper'
+  STABLE_CHECKPOINT,
+  STABLE_INPUT_IMAGE
+} from '@e2e/fixtures/data/assetFixtures'
+import type { AssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
+import { createAssetHelper, withAsset } from '@e2e/fixtures/helpers/AssetHelper'
 
 const TARGET_ASSET: Asset = STABLE_INPUT_IMAGE
 const LOAD_IMAGE_NODE_ID = 10
 
-const baseTest = mergeTests(
-  createCloudAssetsFixture([TARGET_ASSET]),
-  assetApiFixture
-)
+// Register the asset mocks during `page` fixture setup so they are active
+// before `comfyPage.setup()` navigates and boots the cloud app. A checkpoint
+// is included so the cloud distribution's startup queries (which filter by
+// `include_tags=checkpoints`) resolve to a real checkpoint asset.
+const assetHelperByPage = new WeakMap<Page, AssetHelper>()
+
+const baseTest = comfyPageFixture.extend<{ assetApi: AssetHelper }>({
+  page: async ({ page }, use) => {
+    const helper = createAssetHelper(
+      page,
+      withAsset(STABLE_CHECKPOINT),
+      withAsset(TARGET_ASSET)
+    )
+    await helper.mock()
+    assetHelperByPage.set(page, helper)
+    await use(page)
+    await helper.clearMocks()
+    assetHelperByPage.delete(page)
+  },
+  assetApi: async ({ page }, use) => {
+    const helper = assetHelperByPage.get(page)
+    if (!helper) throw new Error('assetApi helper missing for page')
+    await use(helper)
+  }
+})
 
 baseTest.describe(
   'FE-230 asset delete clears Load Image preview',
   { tag: '@cloud' },
   () => {
-    baseTest.beforeEach(async ({ assetApi }) => {
-      assetApi.configure(withAsset(TARGET_ASSET))
-      await assetApi.mock()
-    })
-
     baseTest(
       'deleting an input asset clears widget value, preview cache, and marks workflow modified',
       async ({ comfyPage, assetApi }) => {
