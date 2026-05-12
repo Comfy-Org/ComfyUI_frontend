@@ -10,6 +10,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 function seedOutputForLocator(locatorId: string) {
   app.nodeOutputs[locatorId] = {
@@ -137,6 +138,29 @@ describe('installNodeOutputClearingHooks', () => {
 
     expect(app.nodeOutputs[subgraphNodeLocator]).toBeUndefined()
     expect(app.nodeOutputs[interiorLocator]).toBeUndefined()
+  })
+
+  it('also prunes the active workflow change tracker output cache so undo cannot resurrect the entry', () => {
+    const graph = new LGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+
+    const node = new LGraphNode('LoadImage')
+    graph.add(node)
+    const locator = String(node.id)
+    seedOutputForLocator(locator)
+
+    const trackerCache: Record<string, unknown> = {
+      [locator]: { images: [{ filename: 'preview.png' }] }
+    }
+    vi.spyOn(useWorkflowStore(), 'activeWorkflow', 'get').mockReturnValue({
+      changeTracker: { nodeOutputs: trackerCache }
+    } as never)
+
+    installNodeOutputClearingHooks(graph)
+    graph.remove(node)
+
+    expect(app.nodeOutputs[locator]).toBeUndefined()
+    expect(trackerCache[locator]).toBeUndefined()
   })
 
   it('does not throw when the removal hook fires for an already-cleared node', () => {
