@@ -412,13 +412,16 @@ export function useProcessedWidgets(
     )
   )
 
-  const gridTemplateRows = computed((): string =>
-    visibleWidgets.value
-      .map((w) =>
-        shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
-      )
+  const gridTemplateRows = computed((): string => {
+    const overrides = nodeDataGetter()?.gridOverrides
+    return visibleWidgets.value
+      .map((w) => {
+        const override = overrides?.[w.name]
+        if (override) return override
+        return shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
+      })
       .join(' ')
-  )
+  })
 
   return {
     canSelectInputs,

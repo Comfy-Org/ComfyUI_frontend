@@ -99,6 +99,13 @@ export interface SafeWidgetData {
   promotedLabel?: string
 }
 
+/**
+ * Maps widget name -> CSS grid-template-rows track value
+ * (e.g. '200px', 'minmax(150px, 300px)', '1fr', 'auto').
+ * Persisted on `node.properties.gridOverrides`.
+ */
+export type WidgetGridOverrides = Record<string, string>
+
 export interface VueNodeData {
   executing: boolean
   id: NodeId
@@ -115,6 +122,7 @@ export interface VueNodeData {
     ghost?: boolean
     pinned?: boolean
   }
+  gridOverrides?: WidgetGridOverrides
   hasErrors?: boolean
   inputs?: INodeInputSlot[]
   outputs?: INodeOutputSlot[]
@@ -132,6 +140,9 @@ export interface GraphNodeManager {
 
   // Access to original LiteGraph nodes (non-reactive)
   getNode(id: string): LGraphNode | undefined
+
+  // Re-extract VueNodeData for fields not covered by tracked-property events
+  refreshNode(id: string): void
 
   // Lifecycle methods
   cleanup(): void
@@ -513,10 +524,21 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
     flags: node.flags ? { ...node.flags } : undefined,
     color: node.color || undefined,
     bgcolor: node.bgcolor || undefined,
+    gridOverrides: readGridOverrides(node),
     resizable: node.resizable,
     shape: node.shape,
     showAdvanced: node.showAdvanced
   }
+}
+
+function readGridOverrides(node: LGraphNode): WidgetGridOverrides | undefined {
+  const raw = node.properties?.gridOverrides
+  if (!raw || typeof raw !== 'object') return undefined
+  const entries = Object.entries(raw as Record<string, unknown>).filter(
+    (entry): entry is [string, string] => typeof entry[1] === 'string'
+  )
+  if (entries.length === 0) return undefined
+  return Object.fromEntries(entries)
 }
 
 export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
@@ -858,9 +880,15 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     })
   }
 
+  const refreshNode = (id: string) => {
+    const nodeRef = nodeRefs.get(id)
+    if (nodeRef) vueNodeData.set(id, extractVueNodeData(nodeRef))
+  }
+
   return {
     vueNodeData,
     getNode,
+    refreshNode,
     cleanup
   }
 }
