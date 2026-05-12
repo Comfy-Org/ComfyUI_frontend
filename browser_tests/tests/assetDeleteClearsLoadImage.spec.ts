@@ -10,44 +10,102 @@
  * The cloud project is required because input-asset deletion is gated on
  * `isCloud === true` (see `useMediaAssetActions.deleteAssetApi`).
  */
-import type { Page } from '@playwright/test'
+import type { Page, Route } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { Asset } from '@comfyorg/ingest-types'
+import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   STABLE_CHECKPOINT,
   STABLE_INPUT_IMAGE
 } from '@e2e/fixtures/data/assetFixtures'
-import type { AssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
-import { createAssetHelper, withAsset } from '@e2e/fixtures/helpers/AssetHelper'
 
 const TARGET_ASSET: Asset = STABLE_INPUT_IMAGE
 const LOAD_IMAGE_NODE_ID = 10
+const SEEDED_ASSETS: Asset[] = [STABLE_CHECKPOINT, TARGET_ASSET]
 
-// Register the asset mocks during `page` fixture setup so they are active
-// before `comfyPage.setup()` navigates and boots the cloud app. A checkpoint
-// is included so the cloud distribution's startup queries (which filter by
-// `include_tags=checkpoints`) resolve to a real checkpoint asset.
-const assetHelperByPage = new WeakMap<Page, AssetHelper>()
+type AssetMockApi = {
+  readonly deleteCalls: ReadonlyArray<string>
+}
 
-const baseTest = comfyPageFixture.extend<{ assetApi: AssetHelper }>({
+const assetMockByPage = new WeakMap<Page, { deleteCalls: string[] }>()
+
+function filterByTags(assets: Asset[], url: URL): Asset[] {
+  const includeTags = parseTagParam(url.searchParams.get('include_tags'))
+  const excludeTags = parseTagParam(url.searchParams.get('exclude_tags'))
+  return assets.filter(
+    (asset) =>
+      includeTags.every((tag) => (asset.tags ?? []).includes(tag)) &&
+      excludeTags.every((tag) => !(asset.tags ?? []).includes(tag))
+  )
+}
+
+function parseTagParam(value: string | null): string[] {
+  return (
+    value
+      ?.split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean) ?? []
+  )
+}
+
+// Narrow the route patterns to the cloud API endpoints we actually want to
+// intercept. Using a broader pattern (e.g. `**/assets**`) collides with the
+// cloud build's static bundle paths under `/assets/*.js` and starves the app
+// of its own JavaScript, leaving it stuck on the loading splash.
+async function registerAssetMocks(
+  page: Page,
+  assets: Asset[],
+  deleteCalls: string[]
+): Promise<void> {
+  await page.route(/\/api\/assets(?:\?.*)?$/, (route: Route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    const url = new URL(route.request().url())
+    const filtered = filterByTags(assets, url)
+    const body: ListAssetsResponse = {
+      assets: filtered,
+      total: filtered.length,
+      has_more: false
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(body)
+    })
+  })
+
+  await page.route(/\/api\/assets\/([^/?#]+)$/, (route: Route) => {
+    const method = route.request().method()
+    const id = new URL(route.request().url()).pathname.split('/').pop() ?? ''
+    if (method === 'DELETE') {
+      deleteCalls.push(id)
+      return route.fulfill({ status: 204, body: '' })
+    }
+    if (method === 'GET') {
+      const found = assets.find((asset) => asset.id === id)
+      if (found) return route.fulfill({ status: 200, json: found })
+      return route.fulfill({ status: 404, json: { error: 'Not found' } })
+    }
+    return route.fallback()
+  })
+}
+
+const baseTest = comfyPageFixture.extend<{ assetMock: AssetMockApi }>({
   page: async ({ page }, use) => {
-    const helper = createAssetHelper(
-      page,
-      withAsset(STABLE_CHECKPOINT),
-      withAsset(TARGET_ASSET)
-    )
-    await helper.mock()
-    assetHelperByPage.set(page, helper)
+    const deleteCalls: string[] = []
+    await registerAssetMocks(page, SEEDED_ASSETS, deleteCalls)
+    assetMockByPage.set(page, { deleteCalls })
     await use(page)
-    await helper.clearMocks()
-    assetHelperByPage.delete(page)
+    assetMockByPage.delete(page)
   },
-  assetApi: async ({ page }, use) => {
-    const helper = assetHelperByPage.get(page)
-    if (!helper) throw new Error('assetApi helper missing for page')
-    await use(helper)
+  assetMock: async ({ page }, use) => {
+    const state = assetMockByPage.get(page)
+    if (!state) throw new Error('assetMock state missing for page')
+    await use({
+      get deleteCalls() {
+        return state.deleteCalls
+      }
+    })
   }
 })
 
@@ -57,7 +115,7 @@ baseTest.describe(
   () => {
     baseTest(
       'deleting an input asset clears widget value, preview cache, and marks workflow modified',
-      async ({ comfyPage, assetApi }) => {
+      async ({ comfyPage, assetMock }) => {
         await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
 
         // Point the Load Image widget at the asset we are about to delete and
@@ -110,15 +168,7 @@ baseTest.describe(
 
         // Mocked DELETE was issued.
         await expect
-          .poll(() =>
-            assetApi
-              .getMutations()
-              .some(
-                (m) =>
-                  m.method === 'DELETE' &&
-                  m.endpoint.endsWith(`/assets/${TARGET_ASSET.id}`)
-              )
-          )
+          .poll(() => assetMock.deleteCalls.includes(TARGET_ASSET.id))
           .toBe(true)
 
         // Widget value was cleared.
