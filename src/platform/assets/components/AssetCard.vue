@@ -19,15 +19,43 @@
   >
     <div class="relative aspect-square w-full overflow-hidden rounded-xl">
       <div
-        v-if="isLoading || error"
+        v-if="presentation.kind === 'placeholder'"
         class="flex size-full cursor-pointer items-center justify-center bg-linear-to-br from-smoke-400 via-smoke-800 to-charcoal-400"
-      />
-      <img
-        v-else
-        :src="asset.preview_url"
-        :alt="displayName"
-        class="size-full cursor-pointer object-cover"
-      />
+        role="img"
+        :aria-label="presentation.alt"
+        @click.stop="interactive && $emit('focus', asset)"
+      >
+        <i
+          aria-hidden="true"
+          :class="
+            cn(presentation.icon, 'size-10 text-text-secondary opacity-80')
+          "
+        />
+      </div>
+      <template v-else>
+        <div
+          v-if="isLoading"
+          class="flex size-full cursor-pointer items-center justify-center bg-linear-to-br from-smoke-400 via-smoke-800 to-charcoal-400"
+        />
+        <div
+          v-else-if="error"
+          class="flex size-full cursor-pointer items-center justify-center bg-linear-to-br from-smoke-400 via-smoke-800 to-charcoal-400"
+          role="img"
+          :aria-label="presentation.alt"
+          @click.stop="interactive && $emit('focus', asset)"
+        >
+          <i
+            aria-hidden="true"
+            class="icon-[lucide--image-off] size-10 text-text-secondary opacity-80"
+          />
+        </div>
+        <img
+          v-else
+          :src="presentation.url"
+          :alt="presentation.alt"
+          class="size-full cursor-pointer object-cover"
+        />
+      </template>
 
       <AssetBadgeGroup :badges="asset.badges" />
       <IconGroup
@@ -141,6 +169,7 @@ import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
 import { getAssetCardTitle } from '@/platform/assets/utils/assetMetadataUtils'
+import { resolveAssetPreviewPresentation } from '@/platform/assets/utils/resolveAssetPreviewPresentation'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -190,10 +219,17 @@ const tooltipDelay = computed<number>(() =>
   settingStore.get('LiteGraph.Node.TooltipDelay')
 )
 
-const { isLoading, error } = useImage({
-  src: asset.preview_url ?? '',
-  alt: displayName.value
-})
+const presentation = computed(() => resolveAssetPreviewPresentation(asset))
+
+const { isLoading, error } = useImage(
+  computed(() => ({
+    src: presentation.value.kind === 'image' ? presentation.value.url : '',
+    alt:
+      presentation.value.kind === 'image'
+        ? presentation.value.alt
+        : displayName.value
+  }))
+)
 
 function handleSelect() {
   acknowledgeAsset(asset.id)
