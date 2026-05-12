@@ -369,12 +369,12 @@ describe('useWorkspaceBilling', () => {
       )
     })
 
-    it.each([
+    it.for([
       ['empty string', ''],
       ['null', null]
     ])(
       'does not open a window when API returns %s url',
-      async (_label, url) => {
+      async ([_label, url]) => {
         const openSpy = vi.fn()
         vi.stubGlobal('open', openSpy)
 

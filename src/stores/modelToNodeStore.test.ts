@@ -253,7 +253,7 @@ describe('useModelToNodeStore', () => {
       expect(provider?.key).toBe('')
     })
 
-    it.each([
+    it.for([
       ['sam2', 'DownloadAndLoadSAM2Model', 'model'],
       ['sams', 'SAMLoader', 'model_name'],
       ['ipadapter', 'IPAdapterModelLoader', 'ipadapter_file'],
@@ -264,7 +264,7 @@ describe('useModelToNodeStore', () => {
       ['segformer_b3_fashion', 'LS_LoadSegformerModel', 'model_name']
     ])(
       'should return correct provider for %s',
-      (modelType, expectedNodeName, expectedKey) => {
+      ([modelType, expectedNodeName, expectedKey]) => {
         const modelToNodeStore = useModelToNodeStore()
         modelToNodeStore.registerDefaults()
 
@@ -274,9 +274,9 @@ describe('useModelToNodeStore', () => {
       }
     )
 
-    it.each([['ultralytics'], ['ultralytics/bbox'], ['ultralytics/segm']])(
+    it.for([['ultralytics'], ['ultralytics/bbox'], ['ultralytics/segm']])(
       'should not register %s as a default provider, so the node falls back to its static combo (regression for #8468)',
-      (modelType) => {
+      ([modelType]) => {
         const modelToNodeStore = useModelToNodeStore()
         modelToNodeStore.registerDefaults()
 
