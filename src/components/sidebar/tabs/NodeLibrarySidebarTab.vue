@@ -189,6 +189,7 @@ import NodeTreeFolder from '@/components/sidebar/tabs/nodeLibrary/NodeTreeFolder
 import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import {
   DEFAULT_GROUPING_ID,
@@ -322,7 +323,8 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
       },
       handleClick(e: MouseEvent) {
         if (this.leaf && this.data) {
-          useLitegraphService().addNodeOnGraph(this.data)
+          const node = useLitegraphService().addNodeOnGraph(this.data)
+          if (node) useCanvasStore().canvas?.selectItems([node])
         } else {
           toggleNodeOnEvent(e, this)
         }
