@@ -19,44 +19,25 @@ test.describe('Properties panel - canvas image preview widget', () => {
     panel = new PropertiesPanelHelper(comfyPage.page)
   })
 
-  test('does not render the $$canvas-image-preview widget for LoadImage', async ({
+  test('does not render the $$canvas-image-preview promoted widget on a subgraph node', async ({
     comfyPage
   }) => {
-    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+    await comfyPage.workflow.loadWorkflow(
+      'subgraphs/subgraph-with-preview-node'
+    )
 
-    const loadImageNode = (
-      await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
-    )[0]
-    const { x, y } = await loadImageNode.getPosition()
-
-    await comfyPage.dragDrop.dragAndDropFile('image64x64.webp', {
-      dropPosition: { x, y }
-    })
-
-    await expect
-      .poll(async () =>
-        comfyPage.page.evaluate((id) => {
-          const node = window.app!.graph.getNodeById(id)
-          return (
-            node?.widgets?.some((w) => w.name === '$$canvas-image-preview') ??
-            false
-          )
-        }, loadImageNode.id)
-      )
-      .toBe(true)
-
-    await comfyPage.nodeOps.selectNodes(['Load Image'])
+    await comfyPage.nodeOps.selectNodes(['New Subgraph'])
     await comfyPage.actionbar.propertiesButton.click()
 
-    await expect(panel.panelTitle).toContainText('Load Image')
+    await expect(panel.panelTitle).toContainText('New Subgraph')
 
     const widgetItems = panel.contentArea.locator('.widget-item')
-    for (const name of ['image', 'upload']) {
-      await expect(widgetItems.filter({ hasText: name })).toHaveCount(1)
-    }
+    await expect(
+      widgetItems.filter({ hasText: 'filename_prefix' })
+    ).toHaveCount(1)
     await expect(
       panel.contentArea.getByText('$$canvas-image-preview')
     ).toHaveCount(0)
-    await expect(widgetItems).toHaveCount(2)
+    await expect(widgetItems).toHaveCount(1)
   })
 })
