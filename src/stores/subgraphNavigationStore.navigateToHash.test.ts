@@ -1,0 +1,176 @@
+import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, ref } from 'vue'
+
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { app } from '@/scripts/app'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+
+const ids = vi.hoisted(() => ({
+  root: '00000000-0000-4000-8000-000000000000',
+  validSubgraph: '11111111-1111-4111-8111-111111111111',
+  deletedSubgraph: '22222222-2222-4222-8222-222222222222'
+}))
+
+const routerMocks = vi.hoisted(() => ({
+  push: vi.fn().mockResolvedValue(undefined),
+  replace: vi.fn().mockResolvedValue(undefined)
+}))
+
+const routeHashRef = ref('')
+
+vi.mock('vue-router', () => ({
+  useRouter: () => routerMocks
+}))
+
+vi.mock('@vueuse/router', () => ({
+  useRouteHash: () => routeHashRef
+}))
+
+vi.mock('@/scripts/app', () => {
+  const mockCanvas = {
+    subgraph: null,
+    graph: null,
+    setGraph: vi.fn(),
+    setDirty: vi.fn(),
+    ds: {
+      scale: 1,
+      offset: [0, 0],
+      state: { scale: 1, offset: [0, 0] }
+    }
+  }
+
+  const mockRoot = {
+    id: ids.root,
+    _nodes: [],
+    nodes: [],
+    subgraphs: new Map(),
+    getNodeById: vi.fn()
+  }
+
+  return {
+    app: {
+      graph: mockRoot,
+      rootGraph: mockRoot,
+      canvas: mockCanvas
+    }
+  }
+})
+
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => ({
+    getCanvas: () => app.canvas,
+    currentGraph: null
+  })
+}))
+
+vi.mock('@/utils/graphTraversalUtil', () => ({
+  findSubgraphPathById: vi.fn().mockReturnValue(null)
+}))
+
+vi.mock('@/services/litegraphService', () => ({
+  useLitegraphService: () => ({ fitView: vi.fn() })
+}))
+
+vi.mock(
+  '@/renderer/extensions/vueNodes/composables/useSlotElementTracking',
+  () => ({ requestSlotLayoutSyncForAllNodes: vi.fn() })
+)
+
+vi.mock('@/platform/workflow/core/services/workflowService', () => ({
+  useWorkflowService: () => ({
+    openWorkflow: vi.fn().mockResolvedValue(undefined)
+  })
+}))
+
+function makeSubgraph(id: string): Subgraph {
+  return fromPartial<Subgraph>({
+    id,
+    rootGraph: app.rootGraph,
+    _nodes: [],
+    nodes: []
+  })
+}
+
+async function flushHashWatcher() {
+  await nextTick()
+  await Promise.resolve()
+  await nextTick()
+}
+
+describe('useSubgraphNavigationStore - navigateToHash validation', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+    app.rootGraph.subgraphs.clear()
+    app.canvas.subgraph = undefined
+    app.canvas.graph = app.rootGraph
+    routeHashRef.value = ''
+  })
+
+  it('navigates to a valid, existing subgraph hash', async () => {
+    const subgraph = makeSubgraph(ids.validSubgraph)
+    app.rootGraph.subgraphs.set(subgraph.id, subgraph)
+    useSubgraphNavigationStore()
+
+    routeHashRef.value = `#${ids.validSubgraph}`
+    await flushHashWatcher()
+
+    expect(app.canvas.setGraph).toHaveBeenCalledWith(subgraph)
+    expect(routerMocks.replace).not.toHaveBeenCalled()
+  })
+
+  it('redirects URL to root when hash references a deleted subgraph', async () => {
+    useSubgraphNavigationStore()
+
+    routeHashRef.value = `#${ids.deletedSubgraph}`
+    await flushHashWatcher()
+
+    expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+  })
+
+  it('redirects URL to root when hash is malformed (not a UUID)', async () => {
+    useSubgraphNavigationStore()
+
+    routeHashRef.value = '#not-a-valid-uuid'
+    await flushHashWatcher()
+
+    expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+    expect(app.canvas.setGraph).not.toHaveBeenCalled()
+  })
+
+  it('resets canvas to root when navigating from a deleted subgraph (stale canvas)', async () => {
+    const stale = makeSubgraph(ids.deletedSubgraph)
+    app.canvas.graph = stale
+    useSubgraphNavigationStore()
+
+    routeHashRef.value = `#${ids.deletedSubgraph}`
+    await flushHashWatcher()
+
+    expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+    expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
+  })
+
+  it('does not redirect or re-set graph when hash equals current graph', async () => {
+    app.canvas.graph = fromPartial<LGraph>({ id: ids.root })
+    useSubgraphNavigationStore()
+
+    routeHashRef.value = `#${ids.root}`
+    await flushHashWatcher()
+
+    expect(app.canvas.setGraph).not.toHaveBeenCalled()
+    expect(routerMocks.replace).not.toHaveBeenCalled()
+  })
+
+  it('treats an empty hash as the root graph (no redirect)', async () => {
+    app.canvas.graph = fromPartial<LGraph>({ id: ids.root })
+    useSubgraphNavigationStore()
+
+    routeHashRef.value = ''
+    await flushHashWatcher()
+
+    expect(routerMocks.replace).not.toHaveBeenCalled()
+  })
+})

@@ -10,6 +10,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
+import { isValidSubgraphId } from '@/schemas/subgraphIdSchema'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
@@ -204,16 +205,34 @@ export const useSubgraphNavigationStore = defineStore(
     let blockHashUpdate = false
     let initialLoad = true
 
+    async function redirectToRoot(reason: string) {
+      const root = app.rootGraph
+      const canvas = canvasStore.getCanvas()
+      console.warn(`[subgraphNavigation] ${reason}; redirecting to root graph`)
+      try {
+        blockHashUpdate = true
+        await router.replace('#' + root.id)
+      } finally {
+        blockHashUpdate = false
+      }
+      if (canvas.graph?.id !== root.id) canvas.setGraph(root)
+    }
+
     async function navigateToHash(newHash: string) {
       const root = app.rootGraph
       const locatorId = newHash?.slice(1) || root.id
       const canvas = canvasStore.getCanvas()
-      if (canvas.graph?.id === locatorId) return
-      const targetGraph =
-        (locatorId || root.id) !== root.id
-          ? root.subgraphs.get(locatorId)
-          : root
-      if (targetGraph) return canvas.setGraph(targetGraph)
+
+      const isRoot = locatorId === root.id
+      if (!isRoot && !isValidSubgraphId(locatorId)) {
+        return redirectToRoot(`invalid subgraph id in hash: ${locatorId}`)
+      }
+
+      const targetGraph = isRoot ? root : root.subgraphs.get(locatorId)
+      if (targetGraph) {
+        if (canvas.graph?.id === targetGraph.id) return
+        return canvas.setGraph(targetGraph)
+      }
 
       //Search all open workflows
       for (const workflow of workflowStore.openWorkflows) {
@@ -234,13 +253,14 @@ export const useSubgraphNavigationStore = defineStore(
               ? app.rootGraph
               : app.rootGraph.subgraphs.get(locatorId)
           if (!targetGraph) {
-            console.error('subgraph poofed after load?')
-            return
+            return redirectToRoot('subgraph not found after workflow load')
           }
 
           return canvas.setGraph(targetGraph)
         }
       }
+
+      await redirectToRoot(`subgraph not found: ${locatorId}`)
     }
 
     async function updateHash() {
