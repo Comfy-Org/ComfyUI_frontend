@@ -350,11 +350,30 @@ describe(useWorkflowShareService, () => {
     })
   })
 
-  it('rejects requests with an empty share_id before calling the API', async () => {
-    const service = useWorkflowShareService()
+  it('omits share_id from the payload when not provided', async () => {
+    mockFetchApi.mockResolvedValue(mockJsonResponse({}, true, 200))
 
-    await expect(service.importPublishedAssets(['pa-1'], '')).rejects.toThrow()
-    expect(mockFetchApi).not.toHaveBeenCalled()
+    const service = useWorkflowShareService()
+    await service.importPublishedAssets(['pa-1'])
+
+    expect(mockFetchApi).toHaveBeenCalledWith('/assets/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ published_asset_ids: ['pa-1'] })
+    })
+  })
+
+  it('omits share_id from the payload when shareId is an empty string', async () => {
+    mockFetchApi.mockResolvedValue(mockJsonResponse({}, true, 200))
+
+    const service = useWorkflowShareService()
+    await service.importPublishedAssets(['pa-1'], '')
+
+    expect(mockFetchApi).toHaveBeenCalledWith('/assets/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ published_asset_ids: ['pa-1'] })
+    })
   })
 
   it('throws when import request fails', async () => {

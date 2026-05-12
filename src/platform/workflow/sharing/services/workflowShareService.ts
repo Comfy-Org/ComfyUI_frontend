@@ -1,5 +1,4 @@
 import type { ImportPublishedAssetsRequest } from '@comfyorg/ingest-types'
-import { zImportPublishedAssetsRequest } from '@comfyorg/ingest-types/zod'
 
 import type {
   PublishPrefill,
@@ -260,13 +259,18 @@ export function useWorkflowShareService() {
 
   async function importPublishedAssets(
     assetIds: string[],
-    shareId: string
+    shareId?: string
   ): Promise<void> {
-    const body: ImportPublishedAssetsRequest =
-      zImportPublishedAssetsRequest.parse({
-        published_asset_ids: assetIds,
-        share_id: shareId
-      })
+    // share_id is optional on the wire (BE-898 / cloud #3633). The generated
+    // ImportPublishedAssetsRequest still types it as required from when the
+    // backend briefly required it; once @comfyorg/ingest-types regenerates
+    // with share_id?: string, replace the body type with ImportPublishedAssetsRequest.
+    const body: Omit<ImportPublishedAssetsRequest, 'share_id'> & {
+      share_id?: string
+    } = {
+      published_asset_ids: assetIds,
+      ...(shareId ? { share_id: shareId } : {})
+    }
 
     const response = await api.fetchApi('/assets/import', {
       method: 'POST',
