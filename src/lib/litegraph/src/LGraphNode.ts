@@ -1023,13 +1023,16 @@ export class LGraphNode
     // @ts-expect-error Exceptional case: id is removed so that the graph can assign a new one on add.
     data.id = undefined
 
-    if (LiteGraph.use_uuids) data.id = LiteGraph.uuidv4()
+    // In UUID mode, configure() would overwrite the borrowed id with data.id;
+    // generate the fresh UUID up front and reapply it after hydration.
+    const clonedUuid = LiteGraph.use_uuids ? LiteGraph.uuidv4() : undefined
 
     // Subclasses' configure() (e.g. SubgraphNode) keys per-instance state
     // by id; borrow the source's id so that hydration targets the right slot
     // before graph.add reassigns.
     node.id = this.id
     node.configure(data)
+    if (clonedUuid !== undefined) node.id = clonedUuid
 
     return node
   }

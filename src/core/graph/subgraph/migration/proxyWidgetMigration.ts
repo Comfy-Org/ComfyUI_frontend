@@ -50,6 +50,13 @@ function findSourceWidget(
         w.sourceWidgetName === sourceWidgetName
     )
     if (byDisambiguator) return byDisambiguator
+    // Disambiguator was provided but missed: only fall back to non-promoted
+    // widgets with the same name. Returning a sibling PromotedWidgetView
+    // bound to a different interior node would silently re-introduce the
+    // cross-binding bug the disambiguator exists to prevent.
+    return widgets.find(
+      (w) => !isPromotedWidgetView(w) && w.name === sourceWidgetName
+    )
   }
 
   return widgets.find((w) => w.name === sourceWidgetName)

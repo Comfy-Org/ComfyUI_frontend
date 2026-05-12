@@ -356,7 +356,18 @@ export function promoteWidget(
       continue
     }
     if ('getSlotFromWidget' in node) {
-      promoteValueWidgetViaSubgraphInput(parent, node as LGraphNode, widget)
+      const result = promoteValueWidgetViaSubgraphInput(
+        parent,
+        node as LGraphNode,
+        widget
+      )
+      if (!result.ok) {
+        Sentry.addBreadcrumb({
+          category: 'subgraph',
+          level: 'warning',
+          message: `Failed to promote widget "${source.sourceWidgetName}" on node ${node.id}: ${result.reason}`
+        })
+      }
     }
   }
   refreshPromotedWidgetRendering(parents)
@@ -571,7 +582,14 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
     .filter(isRecommendedWidget)
     .filter(([, widget]) => !isPreviewPseudoWidget(widget))
   for (const [n, w] of filteredWidgets) {
-    promoteValueWidgetViaSubgraphInput(subgraphNode, n, w)
+    const result = promoteValueWidgetViaSubgraphInput(subgraphNode, n, w)
+    if (!result.ok) {
+      Sentry.addBreadcrumb({
+        category: 'subgraph',
+        level: 'warning',
+        message: `Failed to promote widget "${getWidgetName(w)}" on node ${n.id}: ${result.reason}`
+      })
+    }
   }
   subgraphNode.computeSize(subgraphNode.size)
 }

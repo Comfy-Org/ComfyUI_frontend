@@ -45,13 +45,13 @@ export function resolvePreviewExposureChain(
 
   const chainFromLastStep = (): ResolvedPreviewChain | undefined => {
     if (steps.length === 0) return undefined
-    const last = steps[steps.length - 1].exposure
+    const lastStep = steps[steps.length - 1]
     return {
       steps,
       leaf: {
-        rootGraphId: currentRootGraphId,
-        sourceNodeId: last.sourceNodeId,
-        sourcePreviewName: last.sourcePreviewName
+        rootGraphId: lastStep.rootGraphId,
+        sourceNodeId: lastStep.exposure.sourceNodeId,
+        sourcePreviewName: lastStep.exposure.sourcePreviewName
       }
     }
   }

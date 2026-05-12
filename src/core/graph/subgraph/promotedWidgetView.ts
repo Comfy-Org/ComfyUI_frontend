@@ -449,7 +449,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
       next = Math.floor(Math.random() * range) * step2 + safeMin
     }
     next = Math.min(Math.max(next, min), max)
-    this.value = next
+    this.hydrateHostValue(next)
   }
 
   private resolveAtHost():
