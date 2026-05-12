@@ -1,5 +1,20 @@
 import type { RouteRecordRaw } from 'vue-router'
 
+import {
+  captureOAuthRequestId,
+  getOAuthRequestId
+} from '@/platform/cloud/oauth/oauthState'
+
+function oauthConsentRedirect() {
+  const oauthRequestId = getOAuthRequestId()
+  return oauthRequestId
+    ? {
+        name: 'cloud-oauth-consent',
+        query: { oauth_request_id: oauthRequestId }
+      }
+    : { name: 'cloud-user-check' }
+}
+
 export const cloudOnboardingRoutes: RouteRecordRaw[] = [
   {
     path: '/cloud',
@@ -12,6 +27,7 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         component: () =>
           import('@/platform/cloud/onboarding/CloudLoginView.vue'),
         beforeEnter: async (to, _from, next) => {
+          captureOAuthRequestId(to.query)
           // Only redirect if not explicitly switching accounts
           if (!to.query.switchAccount) {
             const { useCurrentUser } =
@@ -19,9 +35,7 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
             const { isLoggedIn } = useCurrentUser()
 
             if (isLoggedIn.value) {
-              // User is already logged in, redirect to user-check
-              // user-check will handle survey, or main page routing
-              return next({ name: 'cloud-user-check' })
+              return next(oauthConsentRedirect())
             }
           }
           next()
@@ -33,13 +47,14 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         component: () =>
           import('@/platform/cloud/onboarding/CloudSignupView.vue'),
         beforeEnter: async (to, _from, next) => {
+          captureOAuthRequestId(to.query)
           if (!to.query.switchAccount) {
             const { useCurrentUser } =
               await import('@/composables/auth/useCurrentUser')
             const { isLoggedIn } = useCurrentUser()
 
             if (isLoggedIn.value) {
-              return next({ name: 'cloud-user-check' })
+              return next(oauthConsentRedirect())
             }
           }
           next()
@@ -57,6 +72,11 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         component: () =>
           import('@/platform/cloud/onboarding/CloudSurveyView.vue'),
         meta: { requiresAuth: true }
+      },
+      {
+        path: 'oauth/consent',
+        name: 'cloud-oauth-consent',
+        component: () => import('@/platform/cloud/oauth/OAuthConsentView.vue')
       },
       {
         path: 'user-check',
