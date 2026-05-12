@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-05-02T20:15:18.321Z",
+  "fetchedAt": "2026-05-12T16:10:34.114Z",
   "departments": [
     {
       "name": "DESIGN",
@@ -11,13 +11,6 @@
           "department": "Design",
           "location": "San Francisco",
           "applyUrl": "https://jobs.ashbyhq.com/comfy-org/b2e864c6-4754-4e04-8f46-1022baa103c3/application"
-        },
-        {
-          "id": "b9f9a23219be7cd4",
-          "title": "Design Engineer",
-          "department": "Design",
-          "location": "San Francisco",
-          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/abc787b9-ad85-421c-8218-debd23bea096/application"
         },
         {
           "id": "547b6ba622c800a5",
@@ -151,17 +144,10 @@
       "roles": [
         {
           "id": "ec68ae44dd5943c9",
-          "title": "Talent Lead",
+          "title": "Head of Talent",
           "department": "Operations",
           "location": "San Francisco",
           "applyUrl": "https://jobs.ashbyhq.com/comfy-org/d5008532-c45d-46e6-ba2c-20489d364362/application"
-        },
-        {
-          "id": "16f556001ce1cef4",
-          "title": "BizOps Strategist",
-          "department": "Operations",
-          "location": "San Francisco",
-          "applyUrl": "https://jobs.ashbyhq.com/comfy-org/145b8558-0ab4-43e8-8fac-b59059cf2537/application"
         },
         {
           "id": "8e773a72c1b8e099",
