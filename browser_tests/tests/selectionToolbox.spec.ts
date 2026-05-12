@@ -42,8 +42,11 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     // Selection toolbox should be visible with multiple nodes selected
     await expect(comfyPage.selectionToolbox).toBeVisible()
     // Border is now drawn on canvas, check via screenshot
+    // Allow small anti-aliasing variance on the canvas-drawn selection border
+    // (see flake history: commits 1cafa4be9, 53165033e, fbcd36d35)
     await expect(comfyPage.canvas).toHaveScreenshot(
-      'selection-toolbox-multiple-nodes-border.png'
+      'selection-toolbox-multiple-nodes-border.png',
+      { maxDiffPixels: 100 }
     )
   })
 

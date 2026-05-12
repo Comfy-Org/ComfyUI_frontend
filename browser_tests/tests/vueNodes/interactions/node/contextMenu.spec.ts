@@ -66,10 +66,8 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
       await openContextMenu(comfyPage, 'KSampler')
       await clickExactMenuItem(comfyPage, 'Rename')
 
-      const titleInput = comfyPage.page.getByTestId(TestIds.node.titleInput)
-      await titleInput.waitFor({ state: 'visible' })
-      await titleInput.fill('My Renamed Sampler')
-      await titleInput.press('Enter')
+      await comfyPage.titleEditor.expectVisible()
+      await comfyPage.titleEditor.setTitle('My Renamed Sampler')
       await comfyPage.nextFrame()
 
       const renamedNode =

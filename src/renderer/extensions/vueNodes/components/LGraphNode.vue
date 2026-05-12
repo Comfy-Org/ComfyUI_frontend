@@ -8,6 +8,7 @@
     tabindex="0"
     :data-node-id="nodeData.id"
     :data-collapsed="isCollapsed || undefined"
+    :data-ghost="nodeData.flags?.ghost || undefined"
     :class="
       cn(
         'group/node lg-node absolute isolate text-sm',
@@ -389,7 +390,7 @@ const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
 const nodeOpacity = computed(() => {
   const globalOpacity = settingStore.get('Comfy.Node.Opacity') ?? 1
 
-  if (nodeData.flags?.ghost) return globalOpacity * 0.3
+  if (nodeData.flags?.ghost) return globalOpacity * 0.6
 
   // For muted/bypassed nodes, apply the 0.5 multiplier on top of global opacity
   if (bypassed.value || muted.value) {
@@ -722,6 +723,7 @@ useGLSLPreview(lgraphNode)
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
   if (!node) return false
+  if (isCollapsed.value) return false
 
   // For subgraph nodes: check for unpromoted widgets
   if (node instanceof SubgraphNode) {
@@ -816,12 +818,8 @@ function handleDragLeave() {
   isDraggingOver.value = false
 }
 
-async function handleDrop(event: DragEvent) {
+function handleDrop() {
   isDraggingOver.value = false
-
-  const node = lgraphNode.value
-  if (!node?.onDragDrop) return
-
-  await node.onDragDrop(event, true)
+  app.dragOverNode = lgraphNode.value
 }
 </script>

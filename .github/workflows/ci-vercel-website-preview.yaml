@@ -4,6 +4,9 @@ name: 'CI: Vercel Website Preview'
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    branches-ignore:
+      - 'core/**'
+      - 'cloud/**'
     paths:
       - 'apps/website/**'
       - 'packages/design-system/**'
@@ -52,6 +55,9 @@ jobs:
         run: vercel pull --yes --environment=preview
 
       - name: Build project artifacts
+        env:
+          WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
+          WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
         run: vercel build
 
       - name: Fetch head commit metadata
@@ -146,6 +152,9 @@ jobs:
         run: vercel pull --yes --environment=production
 
       - name: Build project artifacts
+        env:
+          WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
+          WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
         run: vercel build --prod
 
       - name: Deploy project artifacts to Vercel

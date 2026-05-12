@@ -57,6 +57,19 @@ describe('NodeSearchListItem', () => {
       })
       expect(screen.queryByText('KSamplerNode')).not.toBeInTheDocument()
     })
+
+    it('hides id name for subgraph blueprints even when ShowIdName is enabled', () => {
+      useSettingStore().settingValues['Comfy.NodeSearchBoxImpl.ShowIdName'] =
+        true
+      renderItem({
+        nodeDef: createMockNodeDef({
+          name: 'SubgraphBlueprint.e21be61fc452df75e1324e3cc97c41fb0c01a08a5dad4dcd3a2ac118d8907025',
+          display_name: 'My Blueprint',
+          python_module: 'blueprint'
+        })
+      })
+      expect(screen.queryByTestId('node-id-badge')).not.toBeInTheDocument()
+    })
   })
 
   describe('showDescription mode', () => {

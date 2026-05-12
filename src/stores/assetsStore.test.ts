@@ -24,7 +24,9 @@ vi.mock('@/scripts/api', () => ({
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
     getAssetsByTag: vi.fn(),
+    getAllAssetsByTag: vi.fn(),
     getAssetsForNodeType: vi.fn(),
+    invalidateInputAssetsIncludingPublic: vi.fn(),
     updateAsset: vi.fn(),
     addAssetTags: vi.fn(),
     removeAssetTags: vi.fn()
@@ -537,6 +539,88 @@ describe('assetsStore - Refactored (Option A)', () => {
         const currDate = new Date(store.historyAssets[i].created_at ?? 0)
         expect(prevDate.getTime()).toBeGreaterThanOrEqual(currDate.getTime())
       }
+    })
+  })
+
+  describe('setAssetPreview', () => {
+    it('patches preview_id and preview_url on the matching history asset by name', async () => {
+      const mockHistory = Array.from({ length: 3 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      await store.updateHistory()
+
+      const target = store.historyAssets[1]
+      const targetName = target.name
+
+      store.setAssetPreview(
+        targetName,
+        'preview-xyz',
+        '/assets/preview-xyz/content'
+      )
+
+      const updated = store.historyAssets.find((a) => a.name === targetName)
+      expect(updated?.preview_id).toBe('preview-xyz')
+      expect(updated?.preview_url).toBe('/assets/preview-xyz/content')
+    })
+
+    it('matches by name even when ids differ between APIs', async () => {
+      const mockHistory = [createMockJobItem(0)]
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      await store.updateHistory()
+
+      const historyAssetId = store.historyAssets[0].id
+      const targetName = store.historyAssets[0].name
+
+      // Simulate the cloud-api side using a different id space
+      store.setAssetPreview(targetName, 'p1', '/assets/p1/content')
+
+      expect(store.historyAssets[0].id).toBe(historyAssetId)
+      expect(store.historyAssets[0].preview_id).toBe('p1')
+      expect(store.historyAssets[0].preview_url).toBe('/assets/p1/content')
+    })
+
+    it('does nothing when no asset with that name is loaded', async () => {
+      const mockHistory = Array.from({ length: 2 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      await store.updateHistory()
+
+      const before = store.historyAssets.map((a) => ({ ...a }))
+      store.setAssetPreview('does-not-exist.glb', 'p', '/p')
+
+      expect(store.historyAssets).toEqual(before)
+    })
+
+    it('only patches the asset whose name matches exactly', async () => {
+      const mockHistory = Array.from({ length: 3 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      await store.updateHistory()
+
+      // Patch using a non-matching prefix; the other assets must stay untouched
+      store.setAssetPreview('output_1', 'p', '/p')
+
+      for (const asset of store.historyAssets) {
+        expect(asset.preview_id).toBeUndefined()
+      }
+    })
+
+    it('replaces the asset object so reactivity fires for v-for keyed by id', async () => {
+      const mockHistory = [createMockJobItem(0)]
+      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      await store.updateHistory()
+
+      const before = store.historyAssets[0]
+      const targetName = before.name
+
+      store.setAssetPreview(targetName, 'p', '/p')
+
+      // setAssetPreview replaces the item with a new object via list[idx] = {...}
+      // (rather than mutating in place) so Vue triggers dependent watchers.
+      expect(store.historyAssets[0]).not.toBe(before)
     })
   })
 
@@ -1146,13 +1230,20 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         'featured'
       ])
     })
+  })
 
-    it('rolls back the cache when removeAssetTags succeeds but addAssetTags rejects', async () => {
-      // Documents the known recovery gap on partial-failure during a
-      // "change category" mutation: remove succeeds server-side, add fails,
-      // and the cache is restored to the original tags. The server now has
-      // the old category tag removed, so the cache and backend diverge until
-      // the next refetch — surface that gap here rather than papering over it.
+  describe('updateAssetTags partial-failure compensation', () => {
+    let consoleSpy: ReturnType<typeof vi.spyOn>
+
+    beforeEach(() => {
+      consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    })
+
+    afterEach(() => {
+      consoleSpy.mockRestore()
+    })
+
+    it('re-adds removed tags when add fails so cache and server converge', async () => {
       const store = useAssetsStore()
       const asset = createMockAsset('tags-partial-fail', ['models', 'loras'])
 
@@ -1165,10 +1256,12 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         removed: ['loras'],
         total_tags: ['models']
       })
-      vi.mocked(assetService.addAssetTags).mockRejectedValueOnce(
-        new Error('500 add failed')
-      )
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.mocked(assetService.addAssetTags)
+        .mockRejectedValueOnce(new Error('500 add failed'))
+        .mockResolvedValueOnce({
+          added: ['loras'],
+          total_tags: ['models', 'loras']
+        })
 
       await store.updateAssetTags(
         asset,
@@ -1176,20 +1269,161 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         'LoraLoader'
       )
 
-      expect(vi.mocked(assetService.removeAssetTags)).toHaveBeenCalledWith(
-        'tags-partial-fail',
-        ['loras']
-      )
-      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenCalledWith(
+      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenNthCalledWith(
+        1,
         'tags-partial-fail',
         ['checkpoints']
       )
-      // Cache restored to original tags even though the server has already
-      // removed 'loras'. This codifies a known divergence — fix the recovery
-      // semantics in updateAssetTags to address it (e.g. invalidate the
-      // category cache, or reconcile against the last confirmed total_tags).
+      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenNthCalledWith(
+        2,
+        'tags-partial-fail',
+        ['loras']
+      )
       expect(store.getAssets('LoraLoader')[0].tags).toEqual(['models', 'loras'])
-      consoleSpy.mockRestore()
+    })
+
+    it('invalidates the category cache when compensation also fails', async () => {
+      const store = useAssetsStore()
+      const asset = createMockAsset('tags-compensation-fail', [
+        'models',
+        'loras'
+      ])
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        asset
+      ])
+      await store.updateModelsForNodeType('LoraLoader')
+
+      vi.mocked(assetService.removeAssetTags).mockResolvedValueOnce({
+        removed: ['loras'],
+        total_tags: ['models']
+      })
+      vi.mocked(assetService.addAssetTags)
+        .mockRejectedValueOnce(new Error('500 add failed'))
+        .mockRejectedValueOnce(new Error('503 compensation failed'))
+
+      await store.updateAssetTags(
+        asset,
+        ['models', 'checkpoints'],
+        'LoraLoader'
+      )
+
+      expect(store.hasCategory('loras')).toBe(false)
+      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenCalledTimes(2)
+    })
+
+    it('invalidates overlapping tag caches that also contain the asset when cacheKey is provided', async () => {
+      const store = useAssetsStore()
+      const asset = createMockAsset('tags-overlap-fail', ['models', 'loras'])
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        asset
+      ])
+      await store.updateModelsForNodeType('LoraLoader')
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([asset])
+      await store.updateModelsForTag('models')
+
+      expect(store.hasCategory('loras')).toBe(true)
+      expect(store.hasCategory('tag:models')).toBe(true)
+
+      vi.mocked(assetService.removeAssetTags).mockResolvedValueOnce({
+        removed: ['loras'],
+        total_tags: ['models']
+      })
+      vi.mocked(assetService.addAssetTags)
+        .mockRejectedValueOnce(new Error('500 add failed'))
+        .mockRejectedValueOnce(new Error('503 compensation failed'))
+
+      await store.updateAssetTags(
+        asset,
+        ['models', 'checkpoints'],
+        'LoraLoader'
+      )
+
+      expect(store.hasCategory('loras')).toBe(false)
+      expect(store.hasCategory('tag:models')).toBe(false)
+    })
+
+    it('does not attempt compensation when only the add was attempted', async () => {
+      const store = useAssetsStore()
+      const asset = createMockAsset('tags-add-only-fail', ['models'])
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        asset
+      ])
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+
+      vi.mocked(assetService.addAssetTags).mockRejectedValueOnce(
+        new Error('500 add failed')
+      )
+
+      await store.updateAssetTags(
+        asset,
+        ['models', 'featured'],
+        'CheckpointLoaderSimple'
+      )
+
+      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(assetService.removeAssetTags)).not.toHaveBeenCalled()
+      expect(store.getAssets('CheckpointLoaderSimple')[0].tags).toEqual([
+        'models'
+      ])
+    })
+
+    it('treats removeAssetTags resolution as success even when removed is empty', async () => {
+      const store = useAssetsStore()
+      const asset = createMockAsset('tags-empty-removed', ['models', 'loras'])
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        asset
+      ])
+      await store.updateModelsForNodeType('LoraLoader')
+
+      vi.mocked(assetService.removeAssetTags).mockResolvedValueOnce({
+        removed: [],
+        not_present: ['loras'],
+        total_tags: ['models']
+      })
+      vi.mocked(assetService.addAssetTags).mockRejectedValueOnce(
+        new Error('500 add failed')
+      )
+
+      await store.updateAssetTags(
+        asset,
+        ['models', 'checkpoints'],
+        'LoraLoader'
+      )
+
+      expect(vi.mocked(assetService.addAssetTags)).toHaveBeenCalledTimes(1)
+      expect(store.getAssets('LoraLoader')[0].tags).toEqual(['models', 'loras'])
+    })
+
+    it('invalidates every category containing the asset when no cacheKey is provided', async () => {
+      const store = useAssetsStore()
+      const asset = createMockAsset('tags-no-cachekey', ['models', 'loras'])
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        asset
+      ])
+      await store.updateModelsForNodeType('LoraLoader')
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([asset])
+      await store.updateModelsForTag('models')
+
+      expect(store.hasCategory('loras')).toBe(true)
+      expect(store.hasCategory('tag:models')).toBe(true)
+
+      vi.mocked(assetService.removeAssetTags).mockResolvedValueOnce({
+        removed: ['loras'],
+        total_tags: ['models']
+      })
+      vi.mocked(assetService.addAssetTags)
+        .mockRejectedValueOnce(new Error('500 add failed'))
+        .mockRejectedValueOnce(new Error('503 compensation failed'))
+
+      await store.updateAssetTags(asset, ['models', 'checkpoints'])
+
+      expect(store.hasCategory('loras')).toBe(false)
+      expect(store.hasCategory('tag:models')).toBe(false)
     })
   })
 })
@@ -1259,6 +1493,9 @@ describe('assetsStore - Deletion State and Input Mapping', () => {
           false,
           { limit: 100 }
         )
+        expect(
+          assetService.invalidateInputAssetsIncludingPublic
+        ).toHaveBeenCalledOnce()
       } finally {
         mockIsCloud.value = false
       }

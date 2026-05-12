@@ -1,0 +1,59 @@
+# Description: Manual workflow to refresh the apps/website Ashby roles snapshot
+# and open a PR. Merging the PR triggers the existing Vercel website production
+# deploy via ci-vercel-website-preview.yaml.
+name: 'Release: Website'
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: release-website
+  cancel-in-progress: true
+
+jobs:
+  refresh-snapshot:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Refresh Ashby snapshot
+        uses: ./.github/actions/ashby-pull
+        with:
+          api_key: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
+          job_board_name: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
+        with:
+          token: ${{ secrets.PR_GH_TOKEN }}
+          commit-message: 'chore(website): refresh Ashby roles snapshot'
+          title: 'chore(website): refresh Ashby roles snapshot'
+          body: |
+            Automated refresh of `apps/website/src/data/ashby-roles.snapshot.json`
+            from the Ashby job board API.
+
+            **Flow:**
+            1. `Release: Website` workflow ran (manual trigger).
+            2. This PR opens with the regenerated snapshot.
+            3. `CI: Vercel Website Preview` deploys a preview for review.
+            4. Merging to `main` triggers the production Vercel deploy.
+
+            The snapshot fallback in `apps/website/src/utils/ashby.ts` remains
+            intact: builds without `WEBSITE_ASHBY_API_KEY` continue to use the
+            committed snapshot.
+
+            Triggered by workflow run `${{ github.run_id }}`.
+          branch: chore/refresh-ashby-snapshot-${{ github.run_id }}
+          base: main
+          labels: |
+            Release:Website
+          delete-branch: true

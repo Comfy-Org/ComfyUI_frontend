@@ -407,6 +407,7 @@ export function getFromAvifFile(file: File): Promise<Record<string, string>> {
       console.error('FileReader: Error reading AVIF file:', err)
       resolve({})
     }
+    reader.onabort = () => resolve({})
     reader.readAsArrayBuffer(file)
   })
 }

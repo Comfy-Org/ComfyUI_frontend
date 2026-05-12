@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { useEventListener, useTemplateRefsList } from '@vueuse/core'
+import { computed, onMounted, ref } from 'vue'
 
 import type { Department } from '../../data/roles'
 import type { Locale } from '../../i18n/translations'
 
+import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import { t } from '../../i18n/translations'
+import { scrollTo } from '../../scripts/smoothScroll'
 import CategoryNav from '../common/CategoryNav.vue'
 import SectionLabel from '../common/SectionLabel.vue'
 
@@ -13,24 +16,72 @@ const { locale = 'en', departments = [] } = defineProps<{
   departments?: readonly Department[]
 }>()
 
-const activeCategory = ref('all')
-
 const visibleDepartments = computed(() =>
   departments.filter((d) => d.roles.length > 0)
 )
 
-const categories = computed(() => [
-  { label: 'ALL', value: 'all' },
-  ...visibleDepartments.value.map((d) => ({ label: d.name, value: d.key }))
-])
-
-const filteredDepartments = computed(() =>
-  activeCategory.value === 'all'
-    ? visibleDepartments.value
-    : visibleDepartments.value.filter((d) => d.key === activeCategory.value)
+const categories = computed(() =>
+  visibleDepartments.value.map((d) => ({ label: d.name, value: d.key }))
 )
 
 const hasRoles = computed(() => visibleDepartments.value.length > 0)
+
+const activeCategory = ref('')
+
+const sectionRefs = useTemplateRefsList<HTMLElement>()
+
+let isScrolling = false
+let pendingFrame = 0
+
+const HEADER_OFFSET = -144
+const ACTIVATION_OFFSET = 300
+
+const deptElementId = (key: string) => `careers-dept-${key}`
+
+function pickActiveSection() {
+  pendingFrame = 0
+  if (isScrolling) return
+  const sections = sectionRefs.value as HTMLElement[]
+  if (sections.length === 0) return
+
+  let active = sections[0]
+  for (const el of sections) {
+    if (el.getBoundingClientRect().top - ACTIVATION_OFFSET <= 0) {
+      active = el
+    } else {
+      break
+    }
+  }
+  activeCategory.value = active.id.replace(/^careers-dept-/, '')
+}
+
+function scheduleUpdate() {
+  if (pendingFrame !== 0) return
+  pendingFrame = requestAnimationFrame(pickActiveSection)
+}
+
+onMounted(pickActiveSection)
+useEventListener('scroll', scheduleUpdate, { passive: true })
+useEventListener('resize', scheduleUpdate, { passive: true })
+
+function scrollToDepartment(deptKey: string) {
+  activeCategory.value = deptKey
+  isScrolling = true
+  const el = document.getElementById(deptElementId(deptKey))
+  if (!el) {
+    isScrolling = false
+    return
+  }
+  scrollTo(el, {
+    offset: HEADER_OFFSET,
+    duration: 0.8,
+    immediate: prefersReducedMotion(),
+    onComplete: () => {
+      isScrolling = false
+      pickActiveSection()
+    }
+  })
+}
 </script>
 
 <template>
@@ -48,9 +99,10 @@ const hasRoles = computed(() => visibleDepartments.value.length > 0)
             </h2>
             <CategoryNav
               v-if="hasRoles"
-              v-model="activeCategory"
               :categories="categories"
+              :model-value="activeCategory"
               class="mt-4"
+              @update:model-value="scrollToDepartment"
             />
           </div>
         </div>
@@ -65,9 +117,11 @@ const hasRoles = computed(() => visibleDepartments.value.length > 0)
           </p>
 
           <div
-            v-for="dept in filteredDepartments"
+            v-for="dept in visibleDepartments"
+            :id="deptElementId(dept.key)"
+            :ref="sectionRefs.set"
             :key="dept.key"
-            class="mb-12 last:mb-0"
+            class="mb-12 scroll-mt-24 last:mb-0 md:scroll-mt-36"
           >
             <SectionLabel>
               {{ dept.name }}
