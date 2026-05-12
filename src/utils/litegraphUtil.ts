@@ -59,9 +59,6 @@ export async function createNode(
     const addedNode = graph.add(newNode) ?? null
 
     if (addedNode) {
-      // Ensure newly created nodes appear above existing ones in the
-      // Vue node renderer (Nodes 2.0). Without this, nodes default to
-      // zIndex 0 and render underneath existing nodes (FE-555).
       useNodeZIndex().bringNodeToFront(addedNode.id)
       graph.change()
     }
