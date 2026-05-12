@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useIntersectionObserver } from '@vueuse/core'
+import { useIntersectionObserver, useMediaQuery } from '@vueuse/core'
 import { ref, useTemplateRef } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
@@ -53,6 +53,7 @@ const badgeSegments = [
 const activeIndex = ref(0)
 const sectionRef = useTemplateRef<HTMLElement>('sectionRef')
 const isVisible = ref(false)
+const isMobile = useMediaQuery('(max-width: 1023px)')
 
 useIntersectionObserver(sectionRef, ([entry]) => {
   isVisible.value = entry?.isIntersecting ?? false
@@ -75,7 +76,7 @@ useIntersectionObserver(sectionRef, ([entry]) => {
     <!-- Content area -->
     <div class="mt-12 flex flex-col lg:mt-24 lg:flex-row lg:items-stretch">
       <!-- Lottie area (desktop only) -->
-      <div class="hidden flex-1 lg:block">
+      <div v-if="!isMobile" class="flex-1">
         <div
           :class="
             cn(
@@ -93,7 +94,7 @@ useIntersectionObserver(sectionRef, ([entry]) => {
               :key="feature.title"
               :class="
                 cn(
-                  'absolute inset-0 transition-opacity duration-300 will-change-[opacity]',
+                  'absolute inset-0 transition-opacity duration-300',
                   activeIndex === i ? 'opacity-100' : 'opacity-0'
                 )
               "
@@ -116,8 +117,9 @@ useIntersectionObserver(sectionRef, ([entry]) => {
         <template v-for="(feature, i) in features" :key="feature.title">
           <!-- Lottie area (mobile, rendered before active item) -->
           <div
-            v-if="activeIndex === i"
-            :class="cn('aspect-video lg:hidden', i !== 0 && 'mt-4')"
+            v-if="isMobile"
+            v-show="activeIndex === i"
+            :class="cn('aspect-video', i !== 0 && 'mt-4')"
           >
             <div
               class="animate-border-spin size-full overflow-hidden rounded-4xl p-0.5"
@@ -129,6 +131,7 @@ useIntersectionObserver(sectionRef, ([entry]) => {
                   :src="feature.lottie.src"
                   :assets-path="feature.lottie.assetsPath"
                   :poster="feature.lottie.poster"
+                  :playing="activeIndex === i"
                   poster-class="bg-transparency-white-t4"
                   class="bg-transparency-white-t4 size-full"
                 />
@@ -138,8 +141,8 @@ useIntersectionObserver(sectionRef, ([entry]) => {
 
           <!-- Connector (mobile) -->
           <div
-            v-if="activeIndex === i"
-            class="flex h-5 items-center overflow-visible lg:hidden"
+            v-if="isMobile && activeIndex === i"
+            class="flex h-5 items-center overflow-visible"
           >
             <img
               src="/icons/node-link.svg"

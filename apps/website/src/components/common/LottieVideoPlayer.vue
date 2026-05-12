@@ -22,34 +22,19 @@ const emit = defineEmits<{ ready: [] }>()
 const SVG_NS = 'http://www.w3.org/2000/svg'
 const XLINK_NS = 'http://www.w3.org/1999/xlink'
 
-const POSTER_FADE_MS = 500
-
 const lottieContainer = useTemplateRef<HTMLDivElement>('lottieContainer')
-const assetsReady = ref(false)
-const posterFaded = ref(!poster)
+const assetsLoaded = ref(false)
 let anim: AnimationItem | null = null
 let videos: HTMLVideoElement[] = []
+let images: HTMLImageElement[] = []
 let loadGen = 0
-let fadeTimer: ReturnType<typeof setTimeout> | null = null
+let playRaf: number | null = null
 
-watch(assetsReady, (ready) => {
-  if (fadeTimer) {
-    clearTimeout(fadeTimer)
-    fadeTimer = null
-  }
-  if (!ready) {
-    posterFaded.value = !poster
-    return
-  }
-  if (!poster) {
-    posterFaded.value = true
-    return
-  }
-  fadeTimer = setTimeout(() => {
-    posterFaded.value = true
-    fadeTimer = null
-  }, POSTER_FADE_MS)
-})
+function abortPreloadedImages(toAbort: HTMLImageElement[]) {
+  // Setting src to '' aborts in-flight downloads in most browsers and lets
+  // already-loaded Image objects be released.
+  for (const img of toAbort) img.src = ''
+}
 
 function swapImageForVideo(
   image: SVGImageElement,
@@ -86,9 +71,15 @@ function whenLoaded(el: HTMLVideoElement | HTMLImageElement): Promise<void> {
   })
 }
 
-function prepareAssets(container: HTMLElement): Promise<void> {
+function prepareAssets(container: HTMLElement): {
+  videos: HTMLVideoElement[]
+  images: HTMLImageElement[]
+  ready: Promise<void>
+} {
   const svg = container.querySelector('svg')
-  if (!svg) return Promise.resolve()
+  if (!svg) return { videos: [], images: [], ready: Promise.resolve() }
+  const collectedVideos: HTMLVideoElement[] = []
+  const collectedImages: HTMLImageElement[] = []
   const pending: Promise<void>[] = []
   for (const image of Array.from(svg.querySelectorAll('image'))) {
     const href =
@@ -96,15 +87,20 @@ function prepareAssets(container: HTMLElement): Promise<void> {
     if (!href) continue
     if (/\.(webm|mp4)$/i.test(href)) {
       const v = swapImageForVideo(image, href)
-      videos.push(v)
+      collectedVideos.push(v)
       pending.push(whenLoaded(v))
     } else {
       const img = new Image()
       img.src = href
+      collectedImages.push(img)
       pending.push(whenLoaded(img))
     }
   }
-  return Promise.all(pending).then(() => undefined)
+  return {
+    videos: collectedVideos,
+    images: collectedImages,
+    ready: Promise.all(pending).then(() => undefined)
+  }
 }
 
 watch(
@@ -112,10 +108,12 @@ watch(
   async ([container]) => {
     const gen = ++loadGen
     for (const v of videos) v.pause()
+    abortPreloadedImages(images)
     videos = []
+    images = []
     anim?.destroy()
     anim = null
-    assetsReady.value = false
+    assetsLoaded.value = false
     if (!container) return
     try {
       const { default: lottie } = await import('lottie-web')
@@ -133,9 +131,18 @@ watch(
       created.addEventListener('DOMLoaded', () => {
         if (gen !== loadGen || anim !== created) return
         created.goToAndStop(0, true)
-        void prepareAssets(container).then(() => {
+        const {
+          videos: loadedVideos,
+          images: loadedImages,
+          ready
+        } = prepareAssets(container)
+        // Assign eagerly so the next-gen cleanup pass can pause/abort these
+        // assets even if `ready` is still pending when src changes again.
+        videos = loadedVideos
+        images = loadedImages
+        void ready.then(() => {
           if (gen !== loadGen || anim !== created) return
-          assetsReady.value = true
+          assetsLoaded.value = true
           emit('ready')
         })
       })
@@ -149,7 +156,7 @@ watch(
       console.error('[LottieVideoPlayer] failed to initialize:', src, err)
       anim?.destroy()
       anim = null
-      assetsReady.value = false
+      assetsLoaded.value = false
       emit('ready')
     }
   },
@@ -157,13 +164,25 @@ watch(
 )
 
 watch(
-  () => assetsReady.value && posterFaded.value && playing,
+  () => assetsLoaded.value && playing,
   (shouldPlay) => {
+    if (playRaf !== null) {
+      cancelAnimationFrame(playRaf)
+      playRaf = null
+    }
     if (shouldPlay) {
-      anim?.goToAndPlay(0, true)
-      for (const v of videos) {
-        void v.play().catch(() => {})
-      }
+      // Defer heavy startup work (lottie SVG seek + video decoder init) to the
+      // next animation frame so the parent's opacity transition can paint its
+      // first frame before the main thread is blocked.
+      const gen = loadGen
+      playRaf = requestAnimationFrame(() => {
+        playRaf = null
+        if (gen !== loadGen) return
+        anim?.goToAndPlay(0, true)
+        for (const v of videos) {
+          void v.play().catch(() => {})
+        }
+      })
     } else {
       anim?.pause()
       for (const v of videos) {
@@ -175,8 +194,9 @@ watch(
 )
 
 onBeforeUnmount(() => {
-  if (fadeTimer) clearTimeout(fadeTimer)
+  if (playRaf !== null) cancelAnimationFrame(playRaf)
   for (const v of videos) v.pause()
+  abortPreloadedImages(images)
   anim?.destroy()
 })
 </script>
@@ -185,14 +205,13 @@ onBeforeUnmount(() => {
   <div class="relative">
     <div ref="lottieContainer" class="size-full" />
     <img
-      v-if="poster"
+      v-if="poster && !assetsLoaded"
       :src="poster"
       alt=""
       aria-hidden="true"
       :class="
         cn(
-          'pointer-events-none absolute inset-0 size-full object-cover transition-opacity duration-500',
-          assetsReady ? 'opacity-0' : 'opacity-100',
+          'pointer-events-none absolute inset-0 size-full object-cover',
           posterClass
         )
       "
