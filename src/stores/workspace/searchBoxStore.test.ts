@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type NodeSearchBoxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import type { useSettingStore } from '@/platform/settings/settingStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 
@@ -132,6 +133,45 @@ describe('useSearchBoxStore', () => {
   describe('when user first loads the application', () => {
     it('should have search box hidden by default', () => {
       const store = useSearchBoxStore()
+      expect(store.visible).toBe(false)
+    })
+  })
+
+  describe('openAtEvent', () => {
+    const event = {
+      canvasX: 123,
+      canvasY: 456
+    } as unknown as CanvasPointerEvent
+
+    it('forwards the event to the popover when one is registered', () => {
+      vi.mocked(mockSettingStore.get).mockReturnValue('default')
+      const store = useSearchBoxStore()
+      const mockPopover = createMockPopover()
+      store.setPopoverRef(mockPopover)
+
+      store.openAtEvent(event)
+
+      expect(vi.mocked(mockPopover.showSearchBox)).toHaveBeenCalledWith(event)
+      expect(store.visible).toBe(false)
+    })
+
+    it('falls back to showing the new search box when no popover is registered', () => {
+      vi.mocked(mockSettingStore.get).mockReturnValue('default')
+      const store = useSearchBoxStore()
+      store.setPopoverRef(null)
+
+      store.openAtEvent(event)
+
+      expect(store.visible).toBe(true)
+    })
+
+    it('does nothing when the legacy litegraph search box is selected and no popover is registered', () => {
+      vi.mocked(mockSettingStore.get).mockReturnValue('litegraph (legacy)')
+      const store = useSearchBoxStore()
+      store.setPopoverRef(null)
+
+      store.openAtEvent(event)
+
       expect(store.visible).toBe(false)
     })
   })
