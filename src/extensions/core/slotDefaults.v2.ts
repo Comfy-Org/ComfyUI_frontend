@@ -37,8 +37,22 @@ import { defineExtension } from '@/extension-api'
 
 // ── v2 registration ──────────────────────────────────────────────────────────
 
+/**
+ * @remarks
+ * **DEMO — incomplete migration.** Compared to v1
+ * (`src/extensions/core/slotDefaults.ts`), this v2 port currently only sets
+ * `LiteGraph.search_filter_enabled = true`. The following v1 features are
+ * **not yet ported** and stay as feedback items for Simon/Austin:
+ *
+ *  - Node-type metadata accumulation via `beforeRegisterNodeDef` (GAP-4)
+ *  - Settings-dialog contribution for the suggestion-count slider (GAP-5)
+ *  - LiteGraph slot-type registry mutation (GAP-6, low priority)
+ *
+ * Do not rely on this extension for slot-default behavior in PoC bring-up —
+ * load the v1 `slotDefaults.ts` instead, or wait for the gaps above to land.
+ */
 defineExtension({
-  name: 'Comfy.SlotDefaults.V2',
+  name: 'Comfy.SlotDefaults.V2 (DEMO — incomplete migration)',
 
   init() {
     LiteGraph.search_filter_enabled = true
