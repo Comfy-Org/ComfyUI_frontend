@@ -10,7 +10,7 @@ import {
   normalizePendingWarnings,
   updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
-import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
+import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import {
   ComfyWorkflow,
   useWorkflowStore
@@ -51,7 +51,7 @@ export const useWorkflowService = () => {
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
   const missingNodesErrorStore = useMissingNodesErrorStore()
-  const workflowDraftStore = useWorkflowDraftStore()
+  const workflowDraftStore = useWorkflowDraftStoreV2()
 
   function confirmOverwrite(targetPath: string) {
     return dialogService.confirm({
@@ -59,6 +59,14 @@ export const useWorkflowService = () => {
       type: 'overwrite',
       message: t('sideToolbar.workflowTab.confirmOverwrite'),
       itemList: [targetPath]
+    })
+  }
+
+  function showFailedToSaveDraftToast() {
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('toastMessages.failedToSaveDraft')
     })
   }
 
@@ -380,18 +388,20 @@ export const useWorkflowService = () => {
         if (activeState) {
           try {
             const workflowJson = JSON.stringify(activeState)
-            workflowDraftStore.saveDraft(activeWorkflow.path, {
-              data: workflowJson,
-              updatedAt: Date.now(),
-              name: activeWorkflow.key,
-              isTemporary: activeWorkflow.isTemporary
-            })
+            const saved = workflowDraftStore.saveDraft(
+              activeWorkflow.path,
+              workflowJson,
+              {
+                name: activeWorkflow.key,
+                isTemporary: activeWorkflow.isTemporary
+              }
+            )
+
+            if (!saved) {
+              showFailedToSaveDraftToast()
+            }
           } catch {
-            toastStore.add({
-              severity: 'error',
-              summary: t('g.error'),
-              detail: t('toastMessages.failedToSaveDraft')
-            })
+            showFailedToSaveDraftToast()
           }
         }
       }

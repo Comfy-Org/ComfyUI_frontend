@@ -17,8 +17,10 @@ import {
   moveEntry,
   removeEntry,
   removeOrphanedEntries,
+  touchOrder,
   upsertEntry
 } from '../base/draftCacheV2'
+import type { WorkflowDraftSnapshot } from '../base/draftCache'
 import { hashPath } from '../base/hashUtil'
 import { getWorkspaceId } from '../base/storageKeys'
 import {
@@ -33,7 +35,7 @@ import {
   writeIndex,
   writePayload
 } from '../base/storageIO'
-import { api } from '@/scripts/api'
+import { useWorkflowDraftStore } from './workflowDraftStore'
 import { app as comfyApp } from '@/scripts/app'
 
 interface DraftMeta {
@@ -99,10 +101,112 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   }
 
   /**
-   * Saves a draft (data + metadata).
-   * Primes index cache, writes payload, then persists updated index.
+   * Saves a draft to V2 and shadow-writes the legacy store for rollback.
    */
   function saveDraft(path: string, data: string, meta: DraftMeta): boolean {
+    const savedV2 = saveDraftV2(path, data, meta)
+    const savedLegacy = saveLegacyDraft(path, data, meta)
+
+    return savedV2 || savedLegacy
+  }
+
+  /**
+   * Removes a draft from V2 and legacy rollback storage.
+   */
+  function removeDraft(path: string): void {
+    removeDraftV2(path)
+    removeLegacyDraft(path)
+  }
+
+  /**
+   * Moves a draft from one path to another in V2 and legacy rollback storage.
+   */
+  function moveDraft(oldPath: string, newPath: string, name: string): void {
+    moveDraftV2(oldPath, newPath, name)
+    moveLegacyDraft(oldPath, newPath, name)
+  }
+
+  /**
+   * Gets draft data by path, preferring whichever store has newer content.
+   */
+  function getDraft(path: string): WorkflowDraftSnapshot | null {
+    const v2Draft = getDraftV2(path)
+    const legacyDraft = getLegacyDraft(path)
+
+    if (!v2Draft) return legacyDraft
+    if (!legacyDraft) return v2Draft
+    return legacyDraft.updatedAt > v2Draft.updatedAt ? legacyDraft : v2Draft
+  }
+
+  /**
+   * Marks a draft as recently used without rewriting its payload.
+   */
+  function markDraftUsed(path: string): void {
+    markDraftUsedV2(path)
+    markLegacyDraftUsed(path)
+  }
+
+  /**
+   * Gets the most recent draft path.
+   */
+  function getMostRecentPath(): string | null {
+    const index = loadIndex()
+    const key = getMostRecentKey(index)
+    if (!key) return null
+
+    const entry = index.entries[key]
+    return entry?.path ?? null
+  }
+
+  /**
+   * Loads a draft into the graph.
+   */
+  async function loadDraft(path: string): Promise<boolean> {
+    const draft = getDraft(path)
+    if (!draft) return false
+
+    const loaded = await tryLoadGraph(draft.data, draft.name, () => {
+      removeDraft(path)
+    })
+
+    if (loaded) {
+      markDraftUsed(path)
+    }
+
+    return loaded
+  }
+
+  /**
+   * Loads a persisted workflow with fallback chain.
+   */
+  async function loadPersistedWorkflow(
+    options: LoadPersistedWorkflowOptions
+  ): Promise<boolean> {
+    const { preferredPath, fallbackToLatestDraft = false } = options
+
+    // 1. Try preferred path
+    if (preferredPath && (await loadDraft(preferredPath))) {
+      return true
+    }
+
+    // 2. Fall back to most recent draft
+    if (fallbackToLatestDraft) {
+      const mostRecent = getMostRecentPath()
+      if (mostRecent && (await loadDraft(mostRecent))) {
+        return true
+      }
+    }
+
+    // Legacy fallback is personal-only because those keys are not
+    // workspace-scoped. Remove after 2026-07-15 with the V1 rollback path.
+    return await loadLegacyPersistedWorkflow(options)
+  }
+
+  /**
+   * Saves a draft (data + metadata) to V2.
+   * Primes index cache, writes payload, then persists updated index.
+   */
+  function saveDraftV2(path: string, data: string, meta: DraftMeta): boolean {
     if (!isStorageAvailable()) return false
 
     const workspaceId = currentWorkspaceId()
@@ -201,10 +305,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     return false
   }
 
-  /**
-   * Removes a draft.
-   */
-  function removeDraft(path: string): void {
+  function removeDraftV2(path: string): void {
     const workspaceId = currentWorkspaceId()
     const index = loadIndex()
     const { index: newIndex, removedKey } = removeEntry(index, path)
@@ -215,10 +316,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     }
   }
 
-  /**
-   * Moves a draft from one path to another (rename).
-   */
-  function moveDraft(oldPath: string, newPath: string, name: string): void {
+  function moveDraftV2(oldPath: string, newPath: string, name: string): void {
     const workspaceId = currentWorkspaceId()
     const index = loadIndex()
     const result = moveEntry(index, oldPath, newPath, name)
@@ -241,12 +339,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     }
   }
 
-  /**
-   * Gets draft data by path.
-   */
-  function getDraft(
-    path: string
-  ): { data: string; name: string; isTemporary: boolean } | null {
+  function getDraftV2(path: string): WorkflowDraftSnapshot | null {
     const workspaceId = currentWorkspaceId()
     const index = loadIndex()
     const entry = getEntryByPath(index, path)
@@ -256,27 +349,29 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const payload = readPayload(workspaceId, draftKey)
     if (!payload) {
       // Payload missing - clean up index
-      removeDraft(path)
+      removeDraftV2(path)
       return null
     }
 
     return {
       data: payload.data,
       name: entry.name,
-      isTemporary: entry.isTemporary
+      isTemporary: entry.isTemporary,
+      updatedAt: payload.updatedAt
     }
   }
 
-  /**
-   * Gets the most recent draft path.
-   */
-  function getMostRecentPath(): string | null {
+  function markDraftUsedV2(path: string): void {
     const index = loadIndex()
-    const key = getMostRecentKey(index)
-    if (!key) return null
+    const entry = getEntryByPath(index, path)
+    if (!entry) return
 
-    const entry = index.entries[key]
-    return entry?.path ?? null
+    const draftKey = hashPath(path)
+    persistIndex({
+      ...index,
+      updatedAt: Date.now(),
+      order: touchOrder(index.order, draftKey)
+    })
   }
 
   /**
@@ -299,70 +394,73 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     }
   }
 
-  /**
-   * Loads a draft into the graph.
-   */
-  async function loadDraft(path: string): Promise<boolean> {
-    const draft = getDraft(path)
-    if (!draft) return false
+  function saveLegacyDraft(
+    path: string,
+    data: string,
+    meta: DraftMeta
+  ): boolean {
+    const snapshot: WorkflowDraftSnapshot = {
+      data,
+      updatedAt: Date.now(),
+      name: meta.name,
+      isTemporary: meta.isTemporary
+    }
 
-    const loaded = await tryLoadGraph(draft.data, draft.name, () => {
-      removeDraft(path)
-    })
-
-    return loaded
-  }
-
-  /**
-   * Loads a persisted workflow with fallback chain.
-   */
-  async function loadPersistedWorkflow(
-    options: LoadPersistedWorkflowOptions
-  ): Promise<boolean> {
-    const {
-      workflowName,
-      preferredPath,
-      fallbackToLatestDraft = false
-    } = options
-
-    // 1. Try preferred path
-    if (preferredPath && (await loadDraft(preferredPath))) {
+    try {
+      useWorkflowDraftStore().saveDraft(path, snapshot)
       return true
-    }
-
-    // 2. Fall back to most recent draft
-    if (fallbackToLatestDraft) {
-      const mostRecent = getMostRecentPath()
-      if (mostRecent && (await loadDraft(mostRecent))) {
-        return true
-      }
-    }
-
-    // Legacy fallbacks are NOT workspace-scoped and must only be used for
-    // personal workspace to prevent cross-workspace data leakage.
-    // These exist only for migration from V1 and should be removed after 2026-07-15.
-    if (currentWorkspaceId() !== 'personal') {
+    } catch {
+      // Legacy writes are rollback-only.
+      // Do not block V2 persistence if they fail.
       return false
     }
+  }
 
-    // 3. Legacy fallback: sessionStorage payload (remove after 2026-07-15)
-    const clientId = api.initialClientId ?? api.clientId
-    if (clientId) {
-      try {
-        const sessionPayload = sessionStorage.getItem(`workflow:${clientId}`)
-        if (await tryLoadGraph(sessionPayload, workflowName)) {
-          return true
-        }
-      } catch {
-        // Ignore storage access errors and continue fallback chain
-      }
-    }
-
-    // 4. Legacy fallback: localStorage payload (remove after 2026-07-15)
+  function getLegacyDraft(path: string): WorkflowDraftSnapshot | null {
     try {
-      const localPayload = localStorage.getItem('workflow')
-      return await tryLoadGraph(localPayload, workflowName)
+      return useWorkflowDraftStore().getDraft(path) ?? null
     } catch {
+      // Legacy reads are rollback fallback only. Keep V2 authoritative.
+      return null
+    }
+  }
+
+  function removeLegacyDraft(path: string): void {
+    try {
+      useWorkflowDraftStore().removeDraft(path)
+    } catch {
+      // Legacy writes are rollback-only.
+      // Do not block V2 persistence if they fail.
+    }
+  }
+
+  function moveLegacyDraft(oldPath: string, newPath: string, name: string) {
+    try {
+      useWorkflowDraftStore().moveDraft(oldPath, newPath, name)
+    } catch {
+      // Legacy writes are rollback-only.
+      // Do not block V2 persistence if they fail.
+    }
+  }
+
+  function markLegacyDraftUsed(path: string) {
+    try {
+      useWorkflowDraftStore().markDraftUsed(path)
+    } catch {
+      // Legacy writes are rollback-only.
+      // Do not block V2 persistence if they fail.
+    }
+  }
+
+  async function loadLegacyPersistedWorkflow(
+    options: LoadPersistedWorkflowOptions
+  ): Promise<boolean> {
+    if (currentWorkspaceId() !== 'personal') return false
+
+    try {
+      return await useWorkflowDraftStore().loadPersistedWorkflow(options)
+    } catch {
+      // Legacy reads are rollback fallback only. Keep V2 authoritative.
       return false
     }
   }
@@ -380,6 +478,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     removeDraft,
     moveDraft,
     getDraft,
+    markDraftUsed,
     getMostRecentPath,
     loadPersistedWorkflow,
     reset

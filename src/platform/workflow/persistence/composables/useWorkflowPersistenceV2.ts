@@ -131,6 +131,25 @@ export function useWorkflowPersistenceV2() {
   // Debounced version for graphChanged events
   const debouncedPersist = debounce(persistCurrentWorkflow, PERSIST_DEBOUNCE_MS)
 
+  /**
+   * Opens a saved workflow referenced by a persisted path pointer.
+   *
+   * Drafts are tried before this fallback because they contain unsaved workflow
+   * JSON. This function only syncs workflow file metadata when the path is not
+   * already known locally; it does not load every saved workflow body.
+   */
+  const openSavedWorkflowFromPath = async (path: string) => {
+    let saved = workflowStore.getWorkflowByPath(path)
+    if (!saved) {
+      await workflowStore.loadWorkflows()
+      saved = workflowStore.getWorkflowByPath(path)
+    }
+    if (!saved) return false
+
+    await useWorkflowService().openWorkflow(saved)
+    return true
+  }
+
   const loadPreviousWorkflowFromStorage = async () => {
     const sessionPath = tabState.getActivePath()
 
@@ -146,9 +165,7 @@ export function useWorkflowPersistenceV2() {
 
     // 2. Try saved workflow by path (draft may not exist for saved+unmodified workflows)
     if (sessionPath) {
-      const saved = workflowStore.getWorkflowByPath(sessionPath)
-      if (saved) {
-        await useWorkflowService().openWorkflow(saved)
+      if (await openSavedWorkflowFromPath(sessionPath)) {
         return true
       }
     }
@@ -170,6 +187,24 @@ export function useWorkflowPersistenceV2() {
     }
   }
 
+  const hasRestorableTabState = () => {
+    const storedTabState = tabState.getOpenPaths()
+    const paths = storedTabState?.paths ?? []
+    const activeIndex = storedTabState?.activeIndex ?? -1
+
+    return paths.length > 0 && activeIndex >= 0 && activeIndex < paths.length
+  }
+
+  /**
+   * Loads saved workflow metadata needed to resolve stored tab paths.
+   *
+   * This is intentionally called only after a valid persisted tab pointer is
+   * found. It syncs workflow file metadata, not every workflow JSON body.
+   */
+  const loadWorkflowMetadataForTabRestore = async () => {
+    await workflowStore.loadWorkflows()
+  }
+
   const initializeWorkflow = async () => {
     if (!workflowPersistenceEnabled.value) {
       await loadDefaultWorkflow()
@@ -177,6 +212,10 @@ export function useWorkflowPersistenceV2() {
     }
 
     try {
+      if (hasRestorableTabState()) {
+        return
+      }
+
       const restored = await loadPreviousWorkflowFromStorage()
       if (!restored) {
         await loadDefaultWorkflow()
@@ -266,11 +305,16 @@ export function useWorkflowPersistenceV2() {
     const storedWorkflows = storedTabState?.paths ?? []
     const storedActiveIndex = storedTabState?.activeIndex ?? -1
 
-    const isRestorable = storedWorkflows.length > 0 && storedActiveIndex >= 0
+    const isRestorable =
+      storedWorkflows.length > 0 &&
+      storedActiveIndex >= 0 &&
+      storedActiveIndex < storedWorkflows.length
     if (!isRestorable) {
       tabStateRestored = true
       return
     }
+
+    await loadWorkflowMetadataForTabRestore()
 
     storedWorkflows.forEach((path: string) => {
       if (workflowStore.getWorkflowByPath(path)) return
