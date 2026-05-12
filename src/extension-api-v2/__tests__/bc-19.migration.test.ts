@@ -142,12 +142,12 @@ describe('BC.19 migration — workflow execution trigger', () => {
 
 describe('BC.19 migration — workflow execution trigger [Phase B / shell]', () => {
   it.todo(
-    '[Phase B] v1 monkey-patch and v2 beforeQueuePrompt both fire for UI-triggered runs (toolbar Run button)'
+    '[Phase B/C] v1 monkey-patch and v2 beforeQueuePrompt both fire for UI-triggered runs (toolbar Run button)'
   )
   it.todo(
-    '[Phase B] a v1 monkey-patch and a v2 beforeQueuePrompt handler active simultaneously do not double-submit'
+    '[Phase B/C] a v1 monkey-patch and a v2 beforeQueuePrompt handler active simultaneously do not double-submit'
   )
   it.todo(
-    '[Phase B] mutated payload in v2 reaches the backend in the POST body to /api/prompt'
+    '[Phase B/C] mutated payload in v2 reaches the backend in the POST body to /api/prompt'
   )
 })

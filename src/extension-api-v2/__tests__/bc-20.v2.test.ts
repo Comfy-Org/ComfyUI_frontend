@@ -162,7 +162,7 @@ describe('BC.20 v2 contract — custom node-type registration', () => {
 
 // ── Phase B stubs ─────────────────────────────────────────────────────────────
 
-describe('BC.20 v2 contract — virtual node registration [Phase B]', () => {
+describe('BC.20 v2 contract — virtual node registration [Phase B/C]', () => {
   describe('virtual: true exclusion from ECS spec edges', () => {
     it.todo(
       'NodeExtensionOptions { virtual: true } excludes matching nodes from world.entitiesWith(SpecEdgeKey)'

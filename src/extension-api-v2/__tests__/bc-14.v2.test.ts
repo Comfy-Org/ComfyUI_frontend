@@ -78,34 +78,34 @@ describe('BC.14 v2 contract — graphToPrompt interception (Phase A type surface
 describe('BC.14 v2 contract — beforePrompt runtime [Phase B + UWF Phase 3]', () => {
   describe('ctx.on("beforePrompt", handler) — event registration', () => {
     it.todo(
-      '[Phase B] ExtensionOptions accepts a setup() that calls ctx.on("beforePrompt", fn) inside the defineExtension scope context'
+      '[Phase B/C] ExtensionOptions accepts a setup() that calls ctx.on("beforePrompt", fn) inside the defineExtension scope context'
     )
     it.todo(
-      '[Phase B] beforePrompt handler receives a typed BeforePromptEvent with { spec, workflow } matching the UWF output shape'
+      '[Phase B/C] beforePrompt handler receives a typed BeforePromptEvent with { spec, workflow } matching the UWF output shape'
     )
     it.todo(
-      '[Phase B] mutations to event.spec inside the handler are present in the API body sent to the backend'
+      '[Phase B/C] mutations to event.spec inside the handler are present in the API body sent to the backend'
     )
     it.todo(
-      '[Phase B] handler can reject the prompt via event.reject(reason), preventing queuePrompt from dispatching'
+      '[Phase B/C] handler can reject the prompt via event.reject(reason), preventing queuePrompt from dispatching'
     )
     it.todo(
-      '[Phase B] multiple beforePrompt handlers registered across extensions fire in lexicographic name order (D10b)'
+      '[Phase B/C] multiple beforePrompt handlers registered across extensions fire in lexicographic name order (D10b)'
     )
     it.todo(
-      '[Phase B] each handler sees mutations made by prior handlers in the same event cycle'
+      '[Phase B/C] each handler sees mutations made by prior handlers in the same event cycle'
     )
   })
 
   describe('virtual:true + resolveConnections — KJNodes Set/Get class', () => {
     it.todo(
-      '[Phase B] NodeExtensionOptions accepts virtual:true to mark a node type as layout-only (excluded from spec.edges)'
+      '[Phase B/C] NodeExtensionOptions accepts virtual:true to mark a node type as layout-only (excluded from spec.edges)'
     )
     it.todo(
-      '[Phase B] NodeExtensionOptions accepts resolveConnections(node, graph) => ResolvedEdge[] for per-type connection resolution'
+      '[Phase B/C] NodeExtensionOptions accepts resolveConnections(node, graph) => ResolvedEdge[] for per-type connection resolution'
     )
     it.todo(
-      '[Phase B] resolveConnections receives a read-only graph view (mutations throw in dev mode)'
+      '[Phase B/C] resolveConnections receives a read-only graph view (mutations throw in dev mode)'
     )
     it.todo(
       '[UWF Phase 3] virtual nodes absent from spec.edges after UWF Phase 3 save-time materialization runs'
@@ -117,7 +117,7 @@ describe('BC.14 v2 contract — beforePrompt runtime [Phase B + UWF Phase 3]', (
 
   describe('cg-use-everywhere bridge (graph-wide topology, not per-type)', () => {
     it.todo(
-      '[Phase B] ctx.on("beforePrompt") is the correct bridge for graph-wide type inference (not resolveConnections, which is per-type)'
+      '[Phase B/C] ctx.on("beforePrompt") is the correct bridge for graph-wide type inference (not resolveConnections, which is per-type)'
     )
   })
 })

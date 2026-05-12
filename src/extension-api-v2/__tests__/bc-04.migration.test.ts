@@ -66,28 +66,28 @@ describe('BC.04 migration — node interaction: pointer, selection, resize', () 
     })
 
     it.todo(
-      '[Phase B] computeSize overrides that triggered v1 onResize still trigger v2 sizeChanged'
+      '[Phase B/C] computeSize overrides that triggered v1 onResize still trigger v2 sizeChanged'
     )
   })
 
   describe('mousedown parity (S2.N10) — Phase B', () => {
     it.todo(
-      '[Phase B] v1 node.onMouseDown and v2 handle.on("mouseDown") both fire for the same pointer-down event'
+      '[Phase B/C] v1 node.onMouseDown and v2 handle.on("mouseDown") both fire for the same pointer-down event'
     )
     it.todo(
-      '[Phase B] local coordinates in v1 onMouseDown(event, [x,y]) match v2 event.x / event.y'
+      '[Phase B/C] local coordinates in v1 onMouseDown(event, [x,y]) match v2 event.x / event.y'
     )
     it.todo(
-      '[Phase B] propagation-stop: v1 return true ≡ v2 event.stopPropagation()'
+      '[Phase B/C] propagation-stop: v1 return true ≡ v2 event.stopPropagation()'
     )
   })
 
   describe('selection parity (S2.N17) — Phase B', () => {
     it.todo(
-      '[Phase B] v1 node.onSelected and v2 handle.on("selected") both fire when node is selected'
+      '[Phase B/C] v1 node.onSelected and v2 handle.on("selected") both fire when node is selected'
     )
     it.todo(
-      '[Phase B] v2 introduces explicit deselected event; migration must add deselected handler for cleanup that relied on onSelected re-fire in v1'
+      '[Phase B/C] v2 introduces explicit deselected event; migration must add deselected handler for cleanup that relied on onSelected re-fire in v1'
     )
   })
 

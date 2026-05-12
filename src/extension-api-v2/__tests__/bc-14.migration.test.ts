@@ -209,16 +209,16 @@ describe('BC.14 migration — graphToPrompt interception', () => {
 
 describe('BC.14 migration — graphToPrompt runtime parity [Phase B + UWF Phase 3]', () => {
   it.todo(
-    '[Phase B] v1 monkey-patch and v2 ctx.on("beforePrompt") handler produce identical ApiPromptOutput when given the same base graph'
+    '[Phase B/C] v1 monkey-patch and v2 ctx.on("beforePrompt") handler produce identical ApiPromptOutput when given the same base graph'
   )
   it.todo(
-    '[Phase B] removing the v1 monkey-patch while keeping the v2 handler produces identical final prompt payload'
+    '[Phase B/C] removing the v1 monkey-patch while keeping the v2 handler produces identical final prompt payload'
   )
   it.todo(
-    '[Phase B] v1 patch active alongside v2 handler does not double-mutate the payload (coexistence window)'
+    '[Phase B/C] v1 patch active alongside v2 handler does not double-mutate the payload (coexistence window)'
   )
   it.todo(
-    '[Phase B] v1 throwing inside the patch (cancellation) has equivalent effect to v2 event.reject(reason)'
+    '[Phase B/C] v1 throwing inside the patch (cancellation) has equivalent effect to v2 event.reject(reason)'
   )
   it.todo(
     '[UWF Phase 3] S6.A1 graphToPrompt patches that filter virtual nodes are fully replaced by UWF Phase 3 save-time materialization — no extension code needed'

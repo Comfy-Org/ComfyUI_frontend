@@ -150,9 +150,9 @@ describe('BC.16 migration — per-node execution output', () => {
 
 describe('BC.16 migration — per-node execution output [Phase B / shell]', () => {
   it.todo(
-    '[Phase B] v1 onExecuted and v2 on("executed") fire at the same point in WebSocket message processing'
+    '[Phase B/C] v1 onExecuted and v2 on("executed") fire at the same point in WebSocket message processing'
   )
   it.todo(
-    '[Phase B] v2 on("executed") is automatically cleaned up on node removal; v1 leaks the assignment'
+    '[Phase B/C] v2 on("executed") is automatically cleaned up on node removal; v1 leaks the assignment'
   )
 })

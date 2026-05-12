@@ -215,17 +215,17 @@ describe('BC.07 migration — connection observation', () => {
 
 // ── Phase B stubs ─────────────────────────────────────────────────────────────
 
-describe('BC.07 migration — connection observation [Phase B]', () => {
+describe('BC.07 migration — connection observation [Phase B/C]', () => {
   it.todo(
-    '[Phase B] v1 onConnectInput returning false and v2 veto equivalent both leave the graph unwired'
+    '[Phase B/C] v1 onConnectInput returning false and v2 veto equivalent both leave the graph unwired'
   )
   it.todo(
-    '[Phase B] type coercion in v1 onConnectInput matches type coercion in v2 connected handler'
+    '[Phase B/C] type coercion in v1 onConnectInput matches type coercion in v2 connected handler'
   )
   it.todo(
-    '[Phase B] v1 onConnectOutput veto and v2 equivalent both prevent connectionChange from firing on either endpoint'
+    '[Phase B/C] v1 onConnectOutput veto and v2 equivalent both prevent connectionChange from firing on either endpoint'
   )
   it.todo(
-    '[Phase B] v2 on("connected") fires at the same point in the link-wiring sequence as v1 onConnectionsChange (after graph mutation)'
+    '[Phase B/C] v2 on("connected") fires at the same point in the link-wiring sequence as v1 onConnectionsChange (after graph mutation)'
   )
 })

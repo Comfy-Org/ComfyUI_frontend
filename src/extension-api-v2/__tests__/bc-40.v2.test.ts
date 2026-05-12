@@ -137,7 +137,7 @@ describe('BC.40 v2 contract — file upload and asset URL construction', () => {
 
 // ── Phase B stubs ─────────────────────────────────────────────────────────────
 
-describe('BC.40 v2 contract — file upload and asset URL construction [Phase B]', () => {
+describe('BC.40 v2 contract — file upload and asset URL construction [Phase B/C]', () => {
   it.todo(
     'comfyAPI.uploadFile sends correct FormData to /upload/image with filename, image, subfolder fields'
   )

@@ -186,12 +186,12 @@ describe('BC.19 v2 contract — beforeQueuePrompt event and comfyApp.queuePrompt
 
 describe('BC.19 v2 contract — beforeQueuePrompt [Phase B / shell]', () => {
   it.todo(
-    '[Phase B] on("beforeQueuePrompt") fires for UI-triggered runs, not just programmatic queuePrompt() calls'
+    '[Phase B/C] on("beforeQueuePrompt") fires for UI-triggered runs, not just programmatic queuePrompt() calls'
   )
   it.todo(
-    '[Phase B] cancellation suppresses the actual HTTP POST to /api/prompt'
+    '[Phase B/C] cancellation suppresses the actual HTTP POST to /api/prompt'
   )
   it.todo(
-    '[Phase B] mutated extra_data reaches the backend in the POST body'
+    '[Phase B/C] mutated extra_data reaches the backend in the POST body'
   )
 })

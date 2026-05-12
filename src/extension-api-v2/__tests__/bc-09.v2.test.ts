@@ -159,7 +159,7 @@ describe('BC.09 v2 contract — dynamic slot and output mutation', () => {
 
 // ── Phase B stubs — ECS dispatch + auto-reflow ────────────────────────────────
 
-describe('BC.09 v2 contract — dynamic slot mutation [Phase B]', () => {
+describe('BC.09 v2 contract — dynamic slot mutation [Phase B/C]', () => {
   describe('addInput / addOutput dispatch', () => {
     it.todo(
       'NodeHandle.addInput({ name, type }) dispatches CreateInputSlot command and returns a SlotInfo with stable entityId'

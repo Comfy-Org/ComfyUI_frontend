@@ -258,7 +258,7 @@ describe('BC.02 migration — node lifecycle: teardown', () => {
 
 // ── Phase B stubs ─────────────────────────────────────────────────────────────
 
-describe('BC.02 migration — node lifecycle: teardown [Phase B]', () => {
+describe('BC.02 migration — node lifecycle: teardown [Phase B/C]', () => {
   describe('end-to-end migration equivalence via eval sandbox', () => {
     it.todo(
       'v1 snippet from S2.N4 evidence, replayed via runV1(), produces the same cleanup count as a v2 port via runV2()'

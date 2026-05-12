@@ -166,9 +166,9 @@ describe('BC.17 migration — execution lifecycle events', () => {
 
 describe('BC.17 migration — execution lifecycle events [Phase B / shell]', () => {
   it.todo(
-    '[Phase B] v1 app.api.addEventListener("executed") and v2 on("executed") fire at the same point in WebSocket processing'
+    '[Phase B/C] v1 app.api.addEventListener("executed") and v2 on("executed") fire at the same point in WebSocket processing'
   )
   it.todo(
-    '[Phase B] v1 "reconnecting" and v2 "reconnecting" both fire before the first reconnect attempt'
+    '[Phase B/C] v1 "reconnecting" and v2 "reconnecting" both fire before the first reconnect attempt'
   )
 })
