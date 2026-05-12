@@ -953,6 +953,50 @@
       }
     }
   },
+  "ByteDanceSeedreamNodeV2": {
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "description": "Unified text-to-image generation and precise single-sentence editing at up to 4K resolution.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for creating or editing an image."
+      },
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an \"AI generated\" watermark to the image."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_fail_on_partial": {
+        "name": "fail_on_partial"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_max_images": {
+        "name": "max_images"
+      },
+      "model_size_preset": {
+        "name": "size_preset"
+      },
+      "model_width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceTextToVideoNode": {
     "display_name": "ByteDance Text to Video",
     "description": "Generate video using ByteDance models via api based on prompt",
@@ -1688,6 +1732,10 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "BOOL",
         "tooltip": null
       }
     }
@@ -3428,6 +3476,37 @@
       }
     }
   },
+  "Flux2ImageNode": {
+    "display_name": "Flux.2 Image",
+    "description": "Generate images via Flux.2 [pro] or Flux.2 [max] from a prompt and optional reference images.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation or edit"
+      },
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for creating the noise."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux2MaxImageNode": {
     "display_name": "Flux.2 [max] Image",
     "description": "Generates images synchronously based on prompt and resolution.",
@@ -4443,6 +4522,40 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNodeV2": {
+    "display_name": "Grok Image Edit",
+    "description": "Modify an existing image based on a text prompt",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "The text prompt used to generate the image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_number_of_images": {
+        "name": "number_of_images"
+      },
+      "model_resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -11961,6 +12074,50 @@
       }
     }
   },
+  "OpenAIGPTImageNodeV2": {
+    "display_name": "OpenAI GPT Image 2",
+    "description": "Generates images via OpenAI's GPT Image endpoint.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for GPT Image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "How many images to generate"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "not implemented yet in backend"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_background": {
+        "name": "background"
+      },
+      "model_custom_height": {
+        "name": "custom_height"
+      },
+      "model_custom_width": {
+        "name": "custom_width"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_size": {
+        "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIInputFiles": {
     "display_name": "OpenAI ChatGPT Input Files",
     "description": "Loads and prepares input files (text, pdf, etc.) to include as inputs for the OpenAI Chat Node. The files will be read by the OpenAI model when generating a response. 🛈 TIP: Can be chained together with other OpenAI Input File nodes.",
@@ -17430,7 +17587,8 @@
         "name": "face_limit"
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "This parameter is deprecated and does nothing."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -19425,6 +19583,156 @@
     "outputs": {
       "0": {
         "tooltip": "The model with context windows applied during sampling."
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "video_frames": {
+        "name": "video_frames"
+      },
+      "audio_inject_scale": {
+        "name": "audio_inject_scale",
+        "tooltip": "The scale for the audio features when injected into the video model."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio_encoder_output",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps_string",
+        "tooltip": "The calculated fps based on the audio length and the number of video frames. Used in the prompt."
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "images": {
+        "name": "images"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "Length of this segment (usually 149 frames)"
+      },
+      "segment_index": {
+        "name": "segment_index",
+        "tooltip": "Which segment this is (0 for first, 1 for second, etc.)"
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio to calculate total output frames from and extract segment audio."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "Padded keyframe sequence"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "Mask indicating valid frames"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "Audio segment for this video segment"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "images": {
+        "name": "images"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "Length of each segment (usually 149 frames)"
+      },
+      "num_segments": {
+        "name": "num_segments",
+        "tooltip": "How many padded segments to emit as lists."
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio to slice for each emitted segment."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "Padded keyframe sequences"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "Masks indicating valid frames"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "Audio segment for each video segment"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "The number of frames in the generated video. Should stay 149 for WanDancer."
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "The CLIP vision embeds for the first frame."
+      },
+      "clip_vision_output_ref": {
+        "name": "clip_vision_output_ref",
+        "tooltip": "The CLIP vision embeds for the reference image."
+      },
+      "start_image": {
+        "name": "start_image",
+        "tooltip": "The initial image(s) to be encoded, can be any number of frames."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "Image conditioning mask for the start image(s). White is kept, black is generated. Used for the local generations."
+      },
+      "audio_encoder_output": {
+        "name": "audio_encoder_output"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Empty latent."
       }
     }
   },
