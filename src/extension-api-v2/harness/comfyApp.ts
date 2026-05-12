@@ -41,7 +41,14 @@ export interface MiniComfyApp {
   queuePrompt(): Promise<void>
   /** Register a v1 extension. Stores it for later inspection by tests. */
   registerExtension(ext: MiniExtensionRegistration): void
-  /** Underlying harness World for advanced assertions. */
+  /**
+   * Underlying harness World for advanced assertions.
+   *
+   * @internal Test-only escape hatch. Not part of the public v1
+   * `app` shape. Tests should prefer the `graph`/`extensions`/
+   * `queuePrompt`/`registerExtension` surface; reach for `world`
+   * only when an assertion legitimately needs ECS-level inspection.
+   */
   world: HarnessWorld
 }
 
