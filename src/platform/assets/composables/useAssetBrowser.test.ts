@@ -753,6 +753,9 @@ describe('useAssetBrowser', () => {
         id: 'all',
         label: 'All Assets'
       })
+      expect(
+        navItems.value.some((item) => 'id' in item && item.id === 'imported')
+      ).toBe(false)
       expect(contentTitle.value).toBe('All Assets')
       selectedNavItem.value = 'checkpoints'
       expect(contentTitle.value).toBe('Checkpoints')

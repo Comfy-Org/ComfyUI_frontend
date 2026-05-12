@@ -2919,7 +2919,7 @@
   "cloudSurvey_steps_source": "Where did you hear about ComfyUI?",
   "assetLibraryExplorer": {
     "viewAll": "View all",
-    "allUserAssetsModalTitle": "Assets"
+    "userMediaAssetsModalTitle": "Media Assets"
   },
   "assetBrowser": {
     "allCategory": "All {category}",

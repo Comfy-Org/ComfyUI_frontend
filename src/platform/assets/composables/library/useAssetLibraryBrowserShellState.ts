@@ -2,7 +2,7 @@ import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { ALL_USER_ASSETS_ASSET_TYPE } from '@/platform/assets/constants/allUserAssetsBrowse'
+import { USER_MEDIA_ASSETS_ASSET_TYPE } from '@/platform/assets/constants/userMediaAssetsBrowse'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
@@ -62,8 +62,8 @@ export function useAssetLibraryBrowserShellState(
     if (props.overrideAssets) return
     if (props.nodeType) {
       await assetStore.updateModelsForNodeType(props.nodeType)
-    } else if (props.assetType === ALL_USER_ASSETS_ASSET_TYPE) {
-      await assetStore.updateAllUserAssetsForLibrary()
+    } else if (props.assetType === USER_MEDIA_ASSETS_ASSET_TYPE) {
+      await assetStore.updateUserMediaAssetsForLibrary()
     } else if (props.assetType) {
       await assetStore.updateModelsForTag(props.assetType)
     }
@@ -87,14 +87,14 @@ export function useAssetLibraryBrowserShellState(
     isImportedSelected,
     updateFilters
   } = useAssetBrowser(fetchedAssets, {
-    mixedAssetLibrary: props.assetType === ALL_USER_ASSETS_ASSET_TYPE
+    mixedAssetLibrary: props.assetType === USER_MEDIA_ASSETS_ASSET_TYPE
   })
 
   const focusedAsset = ref<AssetDisplayItem | null>(null)
   const isRightPanelOpen = ref(false)
 
   const primaryCategoryTag = computed(() => {
-    if (props.assetType === ALL_USER_ASSETS_ASSET_TYPE) return 'all'
+    if (props.assetType === USER_MEDIA_ASSETS_ASSET_TYPE) return 'all'
 
     const assets = fetchedAssets.value ?? []
     const tagFromAssets = assets

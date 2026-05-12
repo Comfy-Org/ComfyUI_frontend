@@ -10,7 +10,7 @@ import type {
   AssetItem,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
-import { ALL_USER_ASSETS_CACHE_CATEGORY } from '@/platform/assets/constants/allUserAssetsBrowse'
+import { USER_MEDIA_ASSETS_CACHE_CATEGORY } from '@/platform/assets/constants/userMediaAssetsBrowse'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { PaginationOptions } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
@@ -549,11 +549,12 @@ export const useAssetsStore = defineStore('assets', () => {
       }
 
       /**
-       * Loads merged user assets (input, output, models, temp) for the
-       * all-assets browser modal. Each tag is fully paginated via the asset API.
+       * Loads merged user media (input, output, temp) for the user-media
+       * browser modal. Each tag is fully paginated via the asset API.
+       * Model assets use the dedicated model library flow instead.
        */
-      async function updateAllUserAssetsForLibrary(): Promise<void> {
-        const category = ALL_USER_ASSETS_CACHE_CATEGORY
+      async function updateUserMediaAssetsForLibrary(): Promise<void> {
+        const category = USER_MEDIA_ASSETS_CACHE_CATEGORY
         if (pendingPromiseByCategory.has(category)) {
           return await pendingPromiseByCategory.get(category)!
         }
@@ -567,7 +568,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
         const promise = (async () => {
           try {
-            const tags = ['input', 'output', 'models', 'temp'] as const
+            const tags = ['input', 'output', 'temp'] as const
             const settled = await Promise.allSettled(
               tags.map((tag) =>
                 assetService.getAllAssetsByTag(tag, true, {
@@ -772,7 +773,7 @@ export const useAssetsStore = defineStore('assets', () => {
         hasCategory,
         updateModelsForNodeType,
         updateModelsForTag,
-        updateAllUserAssetsForLibrary,
+        updateUserMediaAssetsForLibrary,
         invalidateCategory,
         updateAssetMetadata,
         updateAssetTags,
@@ -791,7 +792,7 @@ export const useAssetsStore = defineStore('assets', () => {
       updateModelsForNodeType: async () => {},
       invalidateCategory: () => {},
       updateModelsForTag: async () => {},
-      updateAllUserAssetsForLibrary: async () => {},
+      updateUserMediaAssetsForLibrary: async () => {},
       updateAssetMetadata: async (): Promise<boolean> => true,
       updateAssetTags: async () => {},
       invalidateModelsForCategory: () => {}
@@ -807,7 +808,7 @@ export const useAssetsStore = defineStore('assets', () => {
     hasCategory,
     updateModelsForNodeType,
     updateModelsForTag,
-    updateAllUserAssetsForLibrary,
+    updateUserMediaAssetsForLibrary,
     invalidateCategory,
     updateAssetMetadata,
     updateAssetTags,
@@ -888,7 +889,7 @@ export const useAssetsStore = defineStore('assets', () => {
     // Model assets - actions
     updateModelsForNodeType,
     updateModelsForTag,
-    updateAllUserAssetsForLibrary,
+    updateUserMediaAssetsForLibrary,
     invalidateCategory,
     updateAssetMetadata,
     updateAssetTags,

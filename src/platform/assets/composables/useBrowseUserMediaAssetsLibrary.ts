@@ -1,7 +1,7 @@
 import { useI18n } from 'vue-i18n'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { ALL_USER_ASSETS_ASSET_TYPE } from '@/platform/assets/constants/allUserAssetsBrowse'
+import { USER_MEDIA_ASSETS_ASSET_TYPE } from '@/platform/assets/constants/userMediaAssetsBrowse'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { MODELS_TAG } from '@/platform/assets/services/assetService'
@@ -11,16 +11,16 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useDialogService } from '@/services/dialogService'
 
-interface BrowseAllUserAssetsLibraryOptions {
+interface BrowseUserMediaAssetsLibraryOptions {
   title?: string
 }
 
 /**
- * Opens the merged user-asset browser (input, output, models, temp) after the
+ * Opens the merged user media browser (input, output, temp) after the
  * Asset API setting gate. Model-tagged assets add a loader node; other assets
  * use the same loader detection as the media sidebar.
  */
-export function useBrowseAllUserAssetsLibrary() {
+export function useBrowseUserMediaAssetsLibrary() {
   const { t } = useI18n()
   const dialogService = useDialogService()
   const settingStore = useSettingStore()
@@ -28,8 +28,8 @@ export function useBrowseAllUserAssetsLibrary() {
   const toastStore = useToastStore()
   const { addMultipleToWorkflow } = useMediaAssetActions()
 
-  async function openBrowseAllUserAssetsLibrary(
-    options?: BrowseAllUserAssetsLibraryOptions
+  async function openBrowseUserMediaAssetsLibrary(
+    options?: BrowseUserMediaAssetsLibraryOptions
   ): Promise<void> {
     if (!settingStore.get('Comfy.Assets.UseAssetAPI')) {
       const confirmed = await dialogService.confirm({
@@ -47,9 +47,9 @@ export function useBrowseAllUserAssetsLibrary() {
 
     const assetBrowserDialog = useAssetBrowserDialog()
     await assetBrowserDialog.browse({
-      assetType: ALL_USER_ASSETS_ASSET_TYPE,
+      assetType: USER_MEDIA_ASSETS_ASSET_TYPE,
       title:
-        options?.title ?? t('assetLibraryExplorer.allUserAssetsModalTitle'),
+        options?.title ?? t('assetLibraryExplorer.userMediaAssetsModalTitle'),
       onAssetSelected: (asset: AssetItem) => {
         if (asset.tags?.includes(MODELS_TAG)) {
           const result = createModelNodeFromAsset(asset)
@@ -69,5 +69,5 @@ export function useBrowseAllUserAssetsLibrary() {
     })
   }
 
-  return { openBrowseAllUserAssetsLibrary }
+  return { openBrowseUserMediaAssetsLibrary }
 }

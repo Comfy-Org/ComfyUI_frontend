@@ -84,7 +84,7 @@ function transformAssetForDisplay(asset: AssetItem): AssetDisplayItem {
 }
 
 interface UseAssetBrowserOptions {
-  /** Use mixed-library labels (e.g. merged input/output/models/temp browser). */
+  /** Use mixed-library labels (e.g. merged input/output/temp browser). */
   mixedAssetLibrary?: boolean
 }
 
@@ -149,22 +149,25 @@ export function useAssetBrowser(
     const allQuickLabel = mixedAssetLibrary
       ? t('assetBrowser.allAssets')
       : t('assetBrowser.allModels')
-    const quickFilters: NavItemData[] = [
-      {
-        id: 'all',
-        label: allQuickLabel,
-        icon: 'icon-[lucide--list]'
-      },
-      {
-        id: 'imported',
-        label: t('assetBrowser.imported'),
-        icon: 'icon-[lucide--folder-input]',
-        badge:
-          sessionDownloadCount.value > 0
-            ? sessionDownloadCount.value
-            : undefined
-      }
-    ]
+    const allNavItem: NavItemData = {
+      id: 'all',
+      label: allQuickLabel,
+      icon: 'icon-[lucide--list]'
+    }
+    const quickFilters: NavItemData[] = mixedAssetLibrary
+      ? [allNavItem]
+      : [
+          allNavItem,
+          {
+            id: 'imported',
+            label: t('assetBrowser.imported'),
+            icon: 'icon-[lucide--folder-input]',
+            badge:
+              sessionDownloadCount.value > 0
+                ? sessionDownloadCount.value
+                : undefined
+          }
+        ]
 
     if (typeCategories.value.length === 0) {
       return quickFilters
