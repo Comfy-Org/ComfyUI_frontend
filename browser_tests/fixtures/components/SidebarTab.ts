@@ -386,11 +386,14 @@ export class AssetsSidebarTab extends SidebarTab {
     return this.page.locator('.p-contextmenu').getByText(label)
   }
 
-  override async open() {
+  override async open({ waitForAssets = true } = {}) {
     // Remove any toast notifications that may overlay the sidebar button
     await this.dismissToasts()
     await super.open()
     await this.generatedTab.waitFor({ state: 'visible' })
+    if (waitForAssets) {
+      await this.waitForAssets()
+    }
   }
 
   /** Dismiss all visible toast notifications by clicking their close buttons. */
