@@ -30,9 +30,12 @@ async function executeRemoteRequest(
   descriptor: RemoteRequestDescriptor,
   signal: AbortSignal
 ): Promise<unknown> {
-  const authStore = useAuthStore()
-  const authHeader = await authStore.getAuthHeader()
-  const headers = authHeader ? { ...authHeader } : undefined
+  let headers: Record<string, string> | undefined
+  if (descriptor.client === 'comfyApi') {
+    const authStore = useAuthStore()
+    const authHeader = await authStore.getAuthHeader()
+    headers = authHeader ? { ...authHeader } : undefined
+  }
   const url = resolveUrl(descriptor, getComfyApiBaseUrl())
   const response = await axios.get(url, {
     params: descriptor.params,
