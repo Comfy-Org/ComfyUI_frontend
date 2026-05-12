@@ -17,11 +17,12 @@ interface VueComponentRef {
 }
 
 function makeV1WaitForLoad3d(getRef: () => VueComponentRef | null) {
-  return function waitForLoad3d(callback: (ref: VueComponentRef) => void): () => void {
-    let intervalId: ReturnType<typeof setInterval>
+  return function waitForLoad3d(
+    callback: (ref: VueComponentRef) => void
+  ): () => void {
     let settled = false
 
-    intervalId = setInterval(() => {
+    const intervalId: ReturnType<typeof setInterval> = setInterval(() => {
       const ref = getRef()
       if (ref && !settled) {
         settled = true
@@ -43,8 +44,11 @@ function makeV2NodeHandle(entityId: string) {
 
   return {
     entityId,
-    on(event: 'mounted', handler: () => void): () => void {
-      if (mounted) { handler(); return () => {} }
+    on(_event: 'mounted', handler: () => void): () => void {
+      if (mounted) {
+        handler()
+        return () => {}
+      }
       handlers.push(handler)
       return () => {
         const i = handlers.indexOf(handler)
@@ -65,12 +69,16 @@ function makeV2NodeHandle(entityId: string) {
 // ── Compat shim: wraps on('mounted') to look like waitForLoad3d ──────────────
 
 function makeCompatWaitForLoad3d(node: ReturnType<typeof makeV2NodeHandle>) {
-  return function waitForLoad3d(callback: (ref: VueComponentRef) => void): () => void {
+  return function waitForLoad3d(
+    callback: (ref: VueComponentRef) => void
+  ): () => void {
     // Shim: translate waitForLoad3d(cb) → node.on('mounted', cb)
     // No polling needed — the event fires once from the runtime.
     let deprecated = false
     if (!deprecated) {
-      console.warn('[v2 compat] waitForLoad3d is deprecated — use NodeHandle.on("mounted", callback)')
+      console.warn(
+        '[v2 compat] waitForLoad3d is deprecated — use NodeHandle.on("mounted", callback)'
+      )
       deprecated = true
     }
     return node.on('mounted', () => {
@@ -121,7 +129,9 @@ describe('BC.37 migration — VueNode bridge timing (deferred mount access)', ()
 
       const v2Node = makeV2NodeHandle('node:evt:1')
       let fired = false
-      v2Node.on('mounted', () => { fired = true })
+      v2Node.on('mounted', () => {
+        fired = true
+      })
 
       // No timers advance needed — fires synchronously when _simulateMount is called
       v2Node._simulateMount({ initialized: true })
@@ -146,7 +156,9 @@ describe('BC.37 migration — VueNode bridge timing (deferred mount access)', ()
 
       expect(received).toHaveLength(1)
       expect(received[0].initialized).toBe(true)
-      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('waitForLoad3d is deprecated'))
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('waitForLoad3d is deprecated')
+      )
 
       warnSpy.mockRestore()
     })
@@ -155,7 +167,7 @@ describe('BC.37 migration — VueNode bridge timing (deferred mount access)', ()
   describe('timing contract at nodeCreated', () => {
     it("code that previously ran in nodeCreated and expected DOM to be ready must move into 'mounted' handler", () => {
       // v1: extension accessed node ref directly in nodeCreated — ref was often null
-      const eagerVueRef: VueComponentRef | null = null // null at creation time
+      const eagerVueRef = null as VueComponentRef | null // null at creation time
       const eagerResult = eagerVueRef?.initialized ?? 'null-access' // v1: unsafe
 
       expect(eagerResult).toBe('null-access') // demonstrates the v1 bug

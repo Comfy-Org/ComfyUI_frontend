@@ -18,10 +18,8 @@
  * service.
  */
 
-import type {
-  NodeExtensionOptions,
-  WidgetExtensionOptions
-} from '@/types/extensionV2'
+import type { NodeExtensionOptions } from '@/types/extensionV2'
+import type { WidgetExtensionOptions } from '@/extension-api/lifecycle'
 
 import { createMiniComfyApp } from './comfyApp'
 import type { MiniComfyApp } from './comfyApp'
@@ -42,7 +40,10 @@ interface RunV2Options {
  * / `defineWidgetExtension` calls into a per-run registry so tests
  * can assert without touching the global state of the real service.
  */
-export function runV2(snippet: string, options: RunV2Options = {}): RunV2Result {
+export function runV2(
+  snippet: string,
+  options: RunV2Options = {}
+): RunV2Result {
   const app = options.app ?? createMiniComfyApp()
   const errors: Error[] = []
   const nodeExtensions: NodeExtensionOptions[] = []
