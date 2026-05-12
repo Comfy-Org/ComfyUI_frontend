@@ -1,3 +1,4 @@
+import { useI18n } from 'vue-i18n'
 import type { LocationQuery } from 'vue-router'
 import { useRouter } from 'vue-router'
 
@@ -12,8 +13,6 @@ type OAuthResumeResult =
   | { kind: 'resumed' }
   | { kind: 'error'; message: string }
 
-const FALLBACK_ERROR_MESSAGE = 'Failed to establish session. Please try again.'
-
 /**
  * Post-login OAuth resume. If the current login flow originated from an OAuth
  * authorize request, establishes the Cloud session cookie and navigates to the
@@ -22,6 +21,7 @@ const FALLBACK_ERROR_MESSAGE = 'Failed to establish session. Please try again.'
 export function useOAuthPostLoginRedirect() {
   const router = useRouter()
   const sessionCookie = useSessionCookie()
+  const { t } = useI18n()
 
   async function resumeOAuthIfNeeded(
     query: LocationQuery
@@ -35,7 +35,10 @@ export function useOAuthPostLoginRedirect() {
     } catch (error) {
       return {
         kind: 'error',
-        message: error instanceof Error ? error.message : FALLBACK_ERROR_MESSAGE
+        message:
+          error instanceof Error
+            ? error.message
+            : t('oauth.consent.sessionError')
       }
     }
 

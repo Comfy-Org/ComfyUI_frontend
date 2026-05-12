@@ -157,7 +157,15 @@ const onSuccess = async () => {
 
   const oauthResume = await resumeOAuthIfNeeded(route.query)
   if (oauthResume.kind === 'error') {
+    // authError renders only in email-form mode; surface the failure via
+    // a toast so social-login users (Google / GitHub) can see it too.
     authError.value = oauthResume.message
+    toastStore.add({
+      severity: 'error',
+      summary: t('oauth.consent.sessionErrorToastSummary'),
+      detail: oauthResume.message,
+      life: 4000
+    })
     return
   }
   if (oauthResume.kind === 'resumed') return

@@ -15,6 +15,15 @@ vi.mock('@/platform/auth/session/useSessionCookie', () => ({
   useSessionCookie: () => ({ createSessionOrThrow })
 }))
 
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string) =>
+      key === 'oauth.consent.sessionError'
+        ? 'Failed to establish session. Please try again.'
+        : key
+  })
+}))
+
 describe('useOAuthPostLoginRedirect', () => {
   beforeEach(() => {
     sessionStorage.clear()

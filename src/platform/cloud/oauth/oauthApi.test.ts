@@ -171,21 +171,25 @@ describe('submitOAuthConsentDecision', () => {
       })
     })
 
-    await submitOAuthConsentDecision({
-      oauthRequestId: validChallenge.oauth_request_id,
-      csrfToken: validChallenge.csrf_token,
-      decision: 'allow',
-      workspaceId: 'personal-workspace'
-    })
+    try {
+      await submitOAuthConsentDecision({
+        oauthRequestId: validChallenge.oauth_request_id,
+        csrfToken: validChallenge.csrf_token,
+        decision: 'allow',
+        workspaceId: 'personal-workspace'
+      })
 
-    expect(hrefSetter).toHaveBeenCalledWith(
-      'http://127.0.0.1:50632/cb?code=xyz'
-    )
-
-    Object.defineProperty(globalThis, 'location', {
-      configurable: true,
-      value: originalLocation
-    })
+      expect(hrefSetter).toHaveBeenCalledWith(
+        'http://127.0.0.1:50632/cb?code=xyz'
+      )
+    } finally {
+      // Restore unconditionally so an assertion failure doesn't leak the
+      // Proxy'd location into later tests.
+      Object.defineProperty(globalThis, 'location', {
+        configurable: true,
+        value: originalLocation
+      })
+    }
   })
 
   it('throws OAuthApiError on non-2xx', async () => {
