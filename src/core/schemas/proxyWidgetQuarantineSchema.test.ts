@@ -29,7 +29,7 @@ describe(parseProxyWidgetErrorQuarantine, () => {
     expect(parseProxyWidgetErrorQuarantine([entry])).toEqual([entry])
   })
 
-  it.each([
+  it.for([
     'missingSourceNode',
     'missingSourceWidget',
     'missingSubgraphInput',

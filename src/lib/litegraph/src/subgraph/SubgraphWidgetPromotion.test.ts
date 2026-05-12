@@ -829,7 +829,7 @@ describe('SubgraphWidgetPromotion', () => {
         }
       ]
 
-      it.each(reorderCases)('$name', async (c) => {
+      it.for(reorderCases)('$name', async (c) => {
         const subgraph = createTestSubgraph()
         const sources = buildSources(subgraph, c.sources)
         const host = createTestSubgraphNode(subgraph)
@@ -915,7 +915,7 @@ describe('SubgraphWidgetPromotion', () => {
         }
       ]
 
-      it.each(controlCases)('$name', async (c) => {
+      it.for(controlCases)('$name', async (c) => {
         const subgraph = createTestSubgraph()
         const sources = buildSources(
           subgraph,
@@ -1192,7 +1192,7 @@ describe('SubgraphWidgetPromotion', () => {
         }
       ]
 
-      it.each(serializeCases)('$name', (c) => {
+      it.for(serializeCases)('$name', (c) => {
         const hostNode = createTestSubgraphNode(createTestSubgraph())
         if (c.staleProperty)
           hostNode.properties.previewExposures = c.staleProperty
