@@ -80,7 +80,13 @@ const config: KnipConfig = {
     // D18 Phase 1 — brand symbol + isBrandedExtension guard. Currently
     // consumed only by the define* call sites inside extension-api-service;
     // the type-guard and getBrandKind are exported for the Phase 2 loader.
-    'src/extension-api/brand.ts'
+    'src/extension-api/brand.ts',
+    // Strangler-pattern v2 conversions of core extensions. Not yet wired
+    // into the bootstrap (registration lands in a follow-up PR alongside
+    // the v1→v2 cut-over). Tracked by I-EXT (#12144).
+    'src/extensions/core/noteNode.v2.ts',
+    'src/extensions/core/rerouteNode.v2.ts',
+    'src/extensions/core/slotDefaults.v2.ts'
   ],
   vite: {
     config: ['vite?(.*).config.mts']
