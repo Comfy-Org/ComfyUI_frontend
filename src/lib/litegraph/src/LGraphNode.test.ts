@@ -588,6 +588,25 @@ describe('LGraphNode', () => {
       expect(node.widgets![1].value).toBe(100)
     })
 
+    test('configure recovers legacy sparse widgets_values written by pre-compact serialize()', () => {
+      const node = new LGraphNode('TestNode')
+      node.serialize_widgets = true
+      node.addWidget('button', 'preview', '', undefined)
+      node.addWidget('text', 'model', '', undefined)
+      node.addWidget('text', 'vae', '', undefined)
+      node.addWidget('text', 'clip', '', undefined)
+      node.widgets![0].serialize = false
+
+      const legacySparsePayload = JSON.parse(
+        '{"id":1,"type":"TestNode","pos":[100,100],"size":[100,100],"properties":{},"flags":{},"order":0,"mode":0,"widgets_values":[null,"model.safetensors","vae.safetensors","clip.safetensors"]}'
+      )
+      node.configure(legacySparsePayload)
+
+      expect(node.widgets![1].value).toBe('model.safetensors')
+      expect(node.widgets![2].value).toBe('vae.safetensors')
+      expect(node.widgets![3].value).toBe('clip.safetensors')
+    })
+
     test('serialize/configure round-trip preserves values when a non-serializable widget precedes serializable ones', () => {
       const source = new LGraphNode('TestNode')
       source.serialize_widgets = true
