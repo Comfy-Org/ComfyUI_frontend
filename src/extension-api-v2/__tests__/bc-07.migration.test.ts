@@ -11,7 +11,13 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { effectScope, onScopeDispose } from 'vue'
-import type { NodeConnectedEvent, NodeDisconnectedEvent, NodeEntityId, SlotEntityId, SlotDirection } from '@/extension-api/node'
+import type {
+  NodeConnectedEvent,
+  NodeDisconnectedEvent,
+  NodeEntityId,
+  SlotEntityId,
+  SlotDirection
+} from '@/extension-api/node'
 import type { Unsubscribe } from '@/extension-api/events'
 
 // ── V1 shim: prototype-assignment style ──────────────────────────────────────
@@ -29,7 +35,9 @@ interface V1NodeLike {
 function createV1App() {
   const nodes: V1NodeLike[] = []
   return {
-    addNode(node: V1NodeLike) { nodes.push(node) },
+    addNode(node: V1NodeLike) {
+      nodes.push(node)
+    },
     simulateConnectInput(nodeId: number, slot: number, type: string) {
       const node = nodes.find((n) => n.id === nodeId)
       return node?.onConnectInput?.(slot, type)
@@ -38,7 +46,12 @@ function createV1App() {
       const node = nodes.find((n) => n.id === nodeId)
       return node?.onConnectOutput?.(slot, type)
     },
-    simulateConnectionsChange(nodeId: number, type: number, slot: number, connected: boolean) {
+    simulateConnectionsChange(
+      nodeId: number,
+      type: number,
+      slot: number,
+      connected: boolean
+    ) {
       const node = nodes.find((n) => n.id === nodeId)
       node?.onConnectionsChange?.(type, slot, connected)
     }
@@ -53,19 +66,29 @@ function createV2NodeBus() {
   const connectedHandlers: Array<(e: NodeConnectedEvent) => void> = []
   const disconnectedHandlers: Array<(e: NodeDisconnectedEvent) => void> = []
 
-  function on(event: 'connected', fn: (e: NodeConnectedEvent) => void): Unsubscribe
-  function on(event: 'disconnected', fn: (e: NodeDisconnectedEvent) => void): Unsubscribe
+  function on(
+    event: 'connected',
+    fn: (e: NodeConnectedEvent) => void
+  ): Unsubscribe
+  function on(
+    event: 'disconnected',
+    fn: (e: NodeDisconnectedEvent) => void
+  ): Unsubscribe
   function on(event: EventName, fn: (e: never) => void): Unsubscribe {
     if (event === 'connected') {
       connectedHandlers.push(fn as (e: NodeConnectedEvent) => void)
       return () => {
-        const i = connectedHandlers.indexOf(fn as (e: NodeConnectedEvent) => void)
+        const i = connectedHandlers.indexOf(
+          fn as (e: NodeConnectedEvent) => void
+        )
         if (i !== -1) connectedHandlers.splice(i, 1)
       }
     }
     disconnectedHandlers.push(fn as (e: NodeDisconnectedEvent) => void)
     return () => {
-      const i = disconnectedHandlers.indexOf(fn as (e: NodeDisconnectedEvent) => void)
+      const i = disconnectedHandlers.indexOf(
+        fn as (e: NodeDisconnectedEvent) => void
+      )
       if (i !== -1) disconnectedHandlers.splice(i, 1)
     }
   }
@@ -77,7 +100,13 @@ function createV2NodeBus() {
     for (const h of [...disconnectedHandlers]) h(e)
   }
 
-  return { on, emitConnected, emitDisconnected, connectedHandlers, disconnectedHandlers }
+  return {
+    on,
+    emitConnected,
+    emitDisconnected,
+    connectedHandlers,
+    disconnectedHandlers
+  }
 }
 
 // ── Fixture helpers ───────────────────────────────────────────────────────────
@@ -106,21 +135,33 @@ describe('BC.07 migration — connection observation', () => {
       const node: V1NodeLike = {
         id: 1,
         type: 'KSampler',
-        onConnectionsChange(_type, _slot, _connected) { v1Count++ }
+        onConnectionsChange(_type, _slot, _connected) {
+          v1Count++
+        }
       }
       v1App.addNode(node)
 
       // v2: register via on()
-      bus.on('connected', () => { v2Count++ })
-      bus.on('disconnected', () => { v2Count++ })
+      bus.on('connected', () => {
+        v2Count++
+      })
+      bus.on('disconnected', () => {
+        v2Count++
+      })
 
       // Simulate 2 connect + 1 disconnect
-      v1App.simulateConnectionsChange(1, 1, 0, true)   // input connected
-      v1App.simulateConnectionsChange(1, 0, 1, true)   // output connected
-      v1App.simulateConnectionsChange(1, 0, 0, false)  // input disconnected
+      v1App.simulateConnectionsChange(1, 1, 0, true) // input connected
+      v1App.simulateConnectionsChange(1, 0, 1, true) // output connected
+      v1App.simulateConnectionsChange(1, 0, 0, false) // input disconnected
 
-      bus.emitConnected({ slot: makeSlot('in', 'input'), remote: makeSlot('out', 'output') })
-      bus.emitConnected({ slot: makeSlot('in2', 'input'), remote: makeSlot('out2', 'output') })
+      bus.emitConnected({
+        slot: makeSlot('in', 'input'),
+        remote: makeSlot('out', 'output')
+      })
+      bus.emitConnected({
+        slot: makeSlot('in2', 'input'),
+        remote: makeSlot('out2', 'output')
+      })
       bus.emitDisconnected({ slot: makeSlot('in', 'input') })
 
       expect(v2Count).toBe(v1Count)
@@ -156,16 +197,26 @@ describe('BC.07 migration — connection observation', () => {
       const node: V1NodeLike = {
         id: 2,
         type: 'TestNode',
-        onConnectInput(slot) { v1Calls.push(slot) }
+        onConnectInput(slot) {
+          v1Calls.push(slot)
+        }
       }
       v1App.addNode(node)
-      bus.on('connected', (e) => { v2Calls.push(e.slot.name) })
+      bus.on('connected', (e) => {
+        v2Calls.push(e.slot.name)
+      })
 
       // Simulate 2 input connections
       v1App.simulateConnectInput(2, 0, 'IMAGE')
       v1App.simulateConnectInput(2, 1, 'LATENT')
-      bus.emitConnected({ slot: makeSlot('image', 'input'), remote: makeSlot('img_out', 'output') })
-      bus.emitConnected({ slot: makeSlot('latent', 'input'), remote: makeSlot('lat_out', 'output') })
+      bus.emitConnected({
+        slot: makeSlot('image', 'input'),
+        remote: makeSlot('img_out', 'output')
+      })
+      bus.emitConnected({
+        slot: makeSlot('latent', 'input'),
+        remote: makeSlot('lat_out', 'output')
+      })
 
       expect(v2Calls).toHaveLength(v1Calls.length)
       expect(v2Calls).toHaveLength(2)
@@ -184,12 +235,18 @@ describe('BC.07 migration — connection observation', () => {
         onScopeDispose(unsub)
       })
 
-      bus.emitConnected({ slot: makeSlot('in', 'input'), remote: makeSlot('out', 'output') })
+      bus.emitConnected({
+        slot: makeSlot('in', 'input'),
+        remote: makeSlot('out', 'output')
+      })
       expect(handler).toHaveBeenCalledOnce()
 
       // Stopping scope triggers onScopeDispose → unsub
       scope.stop()
-      bus.emitConnected({ slot: makeSlot('in', 'input'), remote: makeSlot('out', 'output') })
+      bus.emitConnected({
+        slot: makeSlot('in', 'input'),
+        remote: makeSlot('out', 'output')
+      })
       expect(handler).toHaveBeenCalledOnce() // no new call
 
       // v1 contrast: prototype methods have no scope — they leak until the node object is GC'd
@@ -203,9 +260,15 @@ describe('BC.07 migration — connection observation', () => {
       const unsubA = bus.on('connected', handlerA)
       bus.on('connected', handlerB)
 
-      bus.emitConnected({ slot: makeSlot('in', 'input'), remote: makeSlot('out', 'output') })
+      bus.emitConnected({
+        slot: makeSlot('in', 'input'),
+        remote: makeSlot('out', 'output')
+      })
       unsubA()
-      bus.emitConnected({ slot: makeSlot('in', 'input'), remote: makeSlot('out', 'output') })
+      bus.emitConnected({
+        slot: makeSlot('in', 'input'),
+        remote: makeSlot('out', 'output')
+      })
 
       expect(handlerA).toHaveBeenCalledOnce()
       expect(handlerB).toHaveBeenCalledTimes(2)

@@ -17,16 +17,25 @@ type QueueFn = (number: number, batchCount: number) => Promise<void>
 
 function makeV1App() {
   const submitted: Array<{ number: number }> = []
-  let queuePrompt: QueueFn = async (number) => { submitted.push({ number }) }
+  let queuePrompt: QueueFn = async (number) => {
+    submitted.push({ number })
+  }
 
   return {
-    get queuePrompt() { return queuePrompt },
-    set queuePrompt(fn: QueueFn) { queuePrompt = fn },
+    get queuePrompt() {
+      return queuePrompt
+    },
+    set queuePrompt(fn: QueueFn) {
+      queuePrompt = fn
+    },
     _submitted: submitted
   }
 }
 
-function v1MonkeyPatch(app: ReturnType<typeof makeV1App>, validator: (n: number) => string | null): void {
+function v1MonkeyPatch(
+  app: ReturnType<typeof makeV1App>,
+  validator: (n: number) => string | null
+): void {
   const original = app.queuePrompt
   app.queuePrompt = async (number, batchCount) => {
     const error = validator(number)
@@ -64,9 +73,16 @@ function makeV2QueueManager() {
       let rejectionMessage: string | undefined
 
       const event: BeforeQueueEvent = {
-        reject(msg) { rejected = true; rejectionMessage = msg },
-        get rejected() { return rejected },
-        get rejectionMessage() { return rejectionMessage }
+        reject(msg) {
+          rejected = true
+          rejectionMessage = msg
+        },
+        get rejected() {
+          return rejected
+        },
+        get rejectionMessage() {
+          return rejectionMessage
+        }
       }
 
       for (const fn of [...handlers]) {
@@ -94,7 +110,9 @@ describe('BC.35 migration — pre-queue widget validation', () => {
       const v1App = makeV1App()
       v1MonkeyPatch(v1App, (n) => (n === 0 ? 'Batch size must be > 0' : null))
 
-      await expect(v1App.queuePrompt(0, 1)).rejects.toThrow('Batch size must be > 0')
+      await expect(v1App.queuePrompt(0, 1)).rejects.toThrow(
+        'Batch size must be > 0'
+      )
       await v1App.queuePrompt(1, 1) // passes
       expect(v1App._submitted).toHaveLength(1)
 
@@ -110,7 +128,7 @@ describe('BC.35 migration — pre-queue widget validation', () => {
       expect(v2.uiMessages()[0]).toBe('Batch size must be > 0')
     })
 
-    it("v2 compat shim: wrapped queuePrompt logic re-expressed as a beforeQueue handler preserves behavior", async () => {
+    it('v2 compat shim: wrapped queuePrompt logic re-expressed as a beforeQueue handler preserves behavior', async () => {
       // The shim translates: if original queuePrompt throws → reject with the error message
       const v2 = makeV2QueueManager()
       let errorFromPatch: string | null = null
@@ -139,8 +157,12 @@ describe('BC.35 migration — pre-queue widget validation', () => {
 
       // v2: two independent handlers — no chaining needed
       const v2 = makeV2QueueManager()
-      v2.on('beforeQueue', (_e) => { /* passes */ })
-      v2.on('beforeQueue', (_e) => { /* passes */ })
+      v2.on('beforeQueue', (_e) => {
+        /* passes */
+      })
+      v2.on('beforeQueue', (_e) => {
+        /* passes */
+      })
 
       const result = await v2.queue(1)
       expect(result.submitted).toBe(true)
@@ -185,7 +207,9 @@ describe('BC.35 migration — pre-queue widget validation', () => {
       // without calling through, ext-A's validation is lost.
       v1MonkeyPatch(v1App, extAValidation)
       // ext-B incorrectly overwrites without preserving ext-A:
-      v1App.queuePrompt = async () => { throw new Error('B rejects') }
+      v1App.queuePrompt = async () => {
+        throw new Error('B rejects')
+      }
 
       await expect(v1App.queuePrompt(1, 1)).rejects.toThrow('B rejects')
       // ext-A's validation was never called — silently clobbered
@@ -193,7 +217,9 @@ describe('BC.35 migration — pre-queue widget validation', () => {
 
       // v2: both handlers are independently registered and both fire
       const v2 = makeV2QueueManager()
-      const v2A = vi.fn((_e: BeforeQueueEvent) => { /* A passes */ })
+      const v2A = vi.fn((_e: BeforeQueueEvent) => {
+        /* A passes */
+      })
       const v2B = vi.fn((e: BeforeQueueEvent) => e.reject('B rejects'))
 
       v2.on('beforeQueue', v2A)

@@ -39,22 +39,32 @@ function makeNodeHandle(
     getSize: () => [100, 100],
     getTitle: () => 'Test',
     getMode: () => 0,
-    getProperty<T>(key: string) { return props[key] as T | undefined },
-    getProperties() { return { ...props } },
+    getProperty<T>(key: string) {
+      return props[key] as T | undefined
+    },
+    getProperties() {
+      return { ...props }
+    },
     isSelected: () => false,
     setPosition: () => {},
     setSize: () => {},
     setTitle: () => {},
     setMode: () => {},
-    setProperty(key: string, value: unknown) { props[key] = value },
+    setProperty(key: string, value: unknown) {
+      props[key] = value
+    },
     widget: () => undefined,
     widgets: () => [],
-    addWidget: () => { throw new Error('not needed') },
+    addWidget: () => {
+      throw new Error('not needed')
+    },
     inputs: () => [],
     outputs: () => [],
     on: () => {},
     // Test-only
-    get _props() { return props },
+    get _props() {
+      return props
+    }
   } as unknown as NodeHandle & { _props: Record<string, unknown> }
 }
 

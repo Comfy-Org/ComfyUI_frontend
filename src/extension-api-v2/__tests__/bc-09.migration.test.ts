@@ -22,7 +22,10 @@ import type { SlotInfo, NodeEntityId, SlotEntityId } from '@/extension-api/node'
 // node.addOutput(name, type) appends to node.outputs array.
 // setSize([w, h]) is manual after slot mutation.
 
-interface V1Slot { name: string; type: string }
+interface V1Slot {
+  name: string
+  type: string
+}
 
 function createV1Node(type = 'TestNode') {
   const inputs: V1Slot[] = []
@@ -32,14 +35,30 @@ function createV1Node(type = 'TestNode') {
 
   return {
     type,
-    get inputs() { return inputs },
-    get outputs() { return outputs },
-    get size() { return size },
-    addInput(name: string, slotType: string) { inputs.push({ name, type: slotType }) },
-    addOutput(name: string, slotType: string) { outputs.push({ name, type: slotType }) },
-    removeInput(index: number) { inputs.splice(index, 1) },
-    removeOutput(index: number) { outputs.splice(index, 1) },
-    setSize(s: [number, number]) { size = s },
+    get inputs() {
+      return inputs
+    },
+    get outputs() {
+      return outputs
+    },
+    get size() {
+      return size
+    },
+    addInput(name: string, slotType: string) {
+      inputs.push({ name, type: slotType })
+    },
+    addOutput(name: string, slotType: string) {
+      outputs.push({ name, type: slotType })
+    },
+    removeInput(index: number) {
+      inputs.splice(index, 1)
+    },
+    removeOutput(index: number) {
+      outputs.splice(index, 1)
+    },
+    setSize(s: [number, number]) {
+      size = s
+    },
     computeSize(): [number, number] {
       const rows = Math.max(inputs.length, outputs.length)
       return [200, Math.max(100, rows * BASE_ROW_HEIGHT + 40)]
@@ -51,9 +70,13 @@ function createV1Node(type = 'TestNode') {
 // Minimal model of the part of NodeHandle that exists today: inputs()/outputs().
 // Mutation is a gap — see Phase B stubs.
 
-function makeSlotInfo(name: string, type: string, direction: 'input' | 'output'): SlotInfo {
+function makeSlotInfo(
+  name: string,
+  type: string,
+  direction: 'input' | 'output'
+): SlotInfo {
   return {
-    entityId: (Math.random() * 1e9 | 0) as unknown as SlotEntityId,
+    entityId: ((Math.random() * 1e9) | 0) as unknown as SlotEntityId,
     name,
     type,
     direction,
@@ -61,7 +84,10 @@ function makeSlotInfo(name: string, type: string, direction: 'input' | 'output')
   }
 }
 
-function createV2ReadSurface(initialInputs: SlotInfo[], initialOutputs: SlotInfo[]) {
+function createV2ReadSurface(
+  initialInputs: SlotInfo[],
+  initialOutputs: SlotInfo[]
+) {
   const inputs = [...initialInputs]
   const outputs = [...initialOutputs]
   return {
@@ -147,9 +173,10 @@ describe('BC.09 migration — dynamic slot and output mutation', () => {
       const v1 = createV1Node()
       v1.addOutput('LATENT', 'LATENT')
 
-      const v2 = createV2ReadSurface([], [
-        makeSlotInfo('LATENT', 'LATENT', 'output')
-      ])
+      const v2 = createV2ReadSurface(
+        [],
+        [makeSlotInfo('LATENT', 'LATENT', 'output')]
+      )
 
       expect(v2.outputs()).toHaveLength(v1.outputs.length)
     })
@@ -186,14 +213,12 @@ describe('BC.09 migration — dynamic slot and output mutation', () => {
   describe('[gap] Slot mutation migration — Phase B required', () => {
     it.todo(
       '[gap] v2 NodeHandle.addInput({ name, type }) equivalent to v1 node.addInput(name, type) — ' +
-      'addInput/removeInput not yet on NodeHandle surface (src/extension-api/node.ts). Phase B gap.'
+        'addInput/removeInput not yet on NodeHandle surface (src/extension-api/node.ts). Phase B gap.'
     )
     it.todo(
       '[gap] v2 NodeHandle.removeInput(name) equivalent to v1 node.removeInput(index) — name-based vs positional. Phase B gap.'
     )
-    it.todo(
-      '[gap] v2 addOutput / removeOutput equivalents. Phase B gap.'
-    )
+    it.todo('[gap] v2 addOutput / removeOutput equivalents. Phase B gap.')
     it.todo(
       '[gap] v2 auto-reflow eliminates the need for v1 setSize(computeSize()) after slot mutation. Phase B gap.'
     )

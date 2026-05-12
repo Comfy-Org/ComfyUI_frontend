@@ -17,14 +17,20 @@ import type { Unsubscribe } from '@/extension-api/events'
 // ── Minimal mock ──────────────────────────────────────────────────────────────
 
 interface SizeChangedEmitter {
-  on(event: 'sizeChanged', handler: (e: NodeSizeChangedEvent) => void): Unsubscribe
+  on(
+    event: 'sizeChanged',
+    handler: (e: NodeSizeChangedEvent) => void
+  ): Unsubscribe
   _emitSizeChanged(size: { width: number; height: number }): void
 }
 
 function createMockNode(): SizeChangedEmitter {
   const listeners: Array<(e: NodeSizeChangedEvent) => void> = []
   return {
-    on(_event: 'sizeChanged', handler: (e: NodeSizeChangedEvent) => void): Unsubscribe {
+    on(
+      _event: 'sizeChanged',
+      handler: (e: NodeSizeChangedEvent) => void
+    ): Unsubscribe {
       listeners.push(handler)
       return () => {
         const idx = listeners.indexOf(handler)
@@ -41,15 +47,16 @@ function createMockNode(): SizeChangedEmitter {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('BC.04 v2 contract — node interaction: pointer, selection, resize', () => {
-
   describe("on('sizeChanged') — resize feedback (S2.N19)", () => {
-    it("fires with { size: { width, height } } when node dimensions change", () => {
+    it('fires with { size: { width, height } } when node dimensions change', () => {
       const node = createMockNode()
       const handler = vi.fn<[NodeSizeChangedEvent], void>()
       node.on('sizeChanged', handler)
       node._emitSizeChanged({ width: 300, height: 200 })
       expect(handler).toHaveBeenCalledOnce()
-      expect(handler).toHaveBeenCalledWith({ size: { width: 300, height: 200 } })
+      expect(handler).toHaveBeenCalledWith({
+        size: { width: 300, height: 200 }
+      })
     })
 
     it('fires again on subsequent resize; each call gets the latest size', () => {
@@ -75,7 +82,8 @@ describe('BC.04 v2 contract — node interaction: pointer, selection, resize', (
 
     it('multiple listeners all receive the event independently', () => {
       const node = createMockNode()
-      const a = vi.fn(), b = vi.fn()
+      const a = vi.fn(),
+        b = vi.fn()
       node.on('sizeChanged', a)
       node.on('sizeChanged', b)
       node._emitSizeChanged({ width: 150, height: 120 })
@@ -85,7 +93,8 @@ describe('BC.04 v2 contract — node interaction: pointer, selection, resize', (
 
     it('unsubscribing one listener does not affect others', () => {
       const node = createMockNode()
-      const a = vi.fn(), b = vi.fn()
+      const a = vi.fn(),
+        b = vi.fn()
       const unsubA = node.on('sizeChanged', a)
       node.on('sizeChanged', b)
       unsubA()
@@ -100,13 +109,11 @@ describe('BC.04 v2 contract — node interaction: pointer, selection, resize', (
       "[Phase B/C] handle.on('mouseDown', handler) fires when pointer-down occurs within node bounding box"
     )
     it.todo(
-      "[Phase B/C] handler receives event with local x/y coordinates relative to node origin"
+      '[Phase B/C] handler receives event with local x/y coordinates relative to node origin'
     )
+    it.todo('[Phase B/C] returning true stops LiteGraph default mouse handling')
     it.todo(
-      "[Phase B/C] returning true stops LiteGraph default mouse handling"
-    )
-    it.todo(
-      "[Phase B/C] listener is auto-removed when node is removed (no leak)"
+      '[Phase B/C] listener is auto-removed when node is removed (no leak)'
     )
   })
 
@@ -118,10 +125,10 @@ describe('BC.04 v2 contract — node interaction: pointer, selection, resize', (
       "[Phase B/C] handle.on('deselected', handler) fires when node exits selected state"
     )
     it.todo(
-      "[Phase B/C] selected/deselected do not fire for programmatic selection with { silent: true }"
+      '[Phase B/C] selected/deselected do not fire for programmatic selection with { silent: true }'
     )
     it.todo(
-      "[Phase B/C] isSelected() getter reflects current state at event fire time"
+      '[Phase B/C] isSelected() getter reflects current state at event fire time'
     )
   })
 })

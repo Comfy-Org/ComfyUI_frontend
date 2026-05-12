@@ -11,7 +11,13 @@ void [loadEvidenceSnippet, runV1]
 
 type Slot = { name: string; type: string; link?: number | null }
 type Group = { title: string; pos: [number, number]; size: [number, number] }
-type Link = { id: number; origin_id: number; origin_slot: number; target_id: number; target_slot: number }
+type Link = {
+  id: number
+  origin_id: number
+  origin_slot: number
+  target_id: number
+  target_slot: number
+}
 
 describe('BC.27 v1 contract — LiteGraph entity direct manipulation (S9.R1/G1/L1/S1)', () => {
   it.skip('S9.R1 has at least one evidence excerpt — TODO(R8): harness snapshot does not yet include S9.R1 excerpts', () => {
@@ -40,7 +46,13 @@ describe('BC.27 v1 contract — LiteGraph entity direct manipulation (S9.R1/G1/L
   })
 
   it('S9.L1 — direct link mutation sets origin/target correctly', () => {
-    const link: Link = { id: 1, origin_id: 10, origin_slot: 0, target_id: 20, target_slot: 0 }
+    const link: Link = {
+      id: 1,
+      origin_id: 10,
+      origin_slot: 0,
+      target_id: 20,
+      target_slot: 0
+    }
     expect(link.origin_id).toBe(10)
     expect(link.target_id).toBe(20)
   })
@@ -53,6 +65,10 @@ describe('BC.27 v1 contract — LiteGraph entity direct manipulation (S9.R1/G1/L
     expect(slot.link).toBeNull()
   })
 
-  it.todo('S9.R1 — reroute node pass-through link remapping (Phase B — requires real LiteGraph serializer)')
-  it.todo('S9.L1 — removing a link from graph.links array disconnects source and target slots (Phase B)')
+  it.todo(
+    'S9.R1 — reroute node pass-through link remapping (Phase B — requires real LiteGraph serializer)'
+  )
+  it.todo(
+    'S9.L1 — removing a link from graph.links array disconnects source and target slots (Phase B)'
+  )
 })

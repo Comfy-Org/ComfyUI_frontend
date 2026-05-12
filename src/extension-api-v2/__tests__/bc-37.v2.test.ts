@@ -95,7 +95,9 @@ describe('BC.37 v2 contract — VueNode bridge timing (deferred mount access)', 
   describe("S4.W5 — NodeHandle.on('mounted') hook", () => {
     it("on('mounted', callback) fires after the Vue component backing the node has mounted", () => {
       let fired = false
-      node.on('mounted', () => { fired = true })
+      node.on('mounted', () => {
+        fired = true
+      })
 
       expect(fired).toBe(false) // not yet
       node._simulateMount({ initialized: true, someVueProp: 'hello' })

@@ -50,7 +50,7 @@ function makeNodeDef(overrides: Partial<MinimalNodeDef> = {}): MinimalNodeDef {
     output: [],
     output_node: false,
     input: { required: {}, optional: {} },
-    ...overrides,
+    ...overrides
   }
 }
 
@@ -79,14 +79,14 @@ function nodeCategory(nodeData: MinimalNodeDef): string {
 describe('BC.24 — Node-def schema inspection [v2 contract]', () => {
   it('S13.SC1 — input.required lookup returns true for present key', () => {
     const nodeData = makeNodeDef({
-      input: { required: { ckpt_name: [['MODEL'], {}] } },
+      input: { required: { ckpt_name: [['MODEL'], {}] } }
     })
     expect(hasRequiredInput(nodeData, 'ckpt_name')).toBe(true)
   })
 
   it('S13.SC1 — input.required lookup returns false for absent key', () => {
     const nodeData = makeNodeDef({
-      input: { required: { ckpt_name: [['MODEL'], {}] } },
+      input: { required: { ckpt_name: [['MODEL'], {}] } }
     })
     expect(hasRequiredInput(nodeData, 'nonexistent')).toBe(false)
   })
@@ -117,8 +117,8 @@ describe('BC.24 — Node-def schema inspection [v2 contract]', () => {
     const nodeData = makeNodeDef({
       input: {
         required: { model: [['MODEL']] },
-        optional: { lora: [['LORA']] },
-      },
+        optional: { lora: [['LORA']] }
+      }
     })
     expect(hasRequiredInput(nodeData, 'model')).toBe(true)
     // optional inputs are not in required — extension must check separately

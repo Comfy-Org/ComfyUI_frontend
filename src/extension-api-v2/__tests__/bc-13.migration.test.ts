@@ -30,7 +30,9 @@ function makeV1NodeType(comfyClass: string) {
     onSerialize(fn: (data: Record<string, unknown>) => void) {
       this._onSerializeHandlers.push(fn)
     },
-    serializeWithOnSerialize(base: Record<string, unknown>): Record<string, unknown> {
+    serializeWithOnSerialize(
+      base: Record<string, unknown>
+    ): Record<string, unknown> {
       const data = this.serialize(base)
       for (const fn of this._onSerializeHandlers) fn(data)
       return data
@@ -46,21 +48,32 @@ function makeV2NodeManager() {
   const handlers: Array<AsyncHandler<NodeBeforeSerializeEvent>> = []
 
   return {
-    on(_event: 'beforeSerialize', handler: AsyncHandler<NodeBeforeSerializeEvent>): Unsubscribe {
+    on(
+      _event: 'beforeSerialize',
+      handler: AsyncHandler<NodeBeforeSerializeEvent>
+    ): Unsubscribe {
       handlers.push(handler)
       return () => {
         const i = handlers.indexOf(handler)
         if (i !== -1) handlers.splice(i, 1)
       }
     },
-    async serialize(baseData: Record<string, unknown>): Promise<Record<string, unknown>> {
-      let data = { ...baseData }
-      let replacer: ((orig: Record<string, unknown>) => Record<string, unknown>) | null = null
+    async serialize(
+      baseData: Record<string, unknown>
+    ): Promise<Record<string, unknown>> {
+      const data = { ...baseData }
+      let replacer:
+        | ((orig: Record<string, unknown>) => Record<string, unknown>)
+        | null = null
 
       const event: NodeBeforeSerializeEvent = {
         context: 'workflow',
-        get data() { return data },
-        replace(fn) { replacer = fn }
+        get data() {
+          return data
+        },
+        replace(fn) {
+          replacer = fn
+        }
       }
 
       for (const fn of [...handlers]) {
@@ -94,8 +107,14 @@ function namedSerialize(
   const named: Record<string, unknown> = {}
   for (const w of widgets) {
     let val = w.value
-    if ((w.type === 'INT' || w.type === 'FLOAT') && typeof val === 'number' && isNaN(val)) {
-      warnFn(`[ComfyUI] Widget "${w.name}" serialized NaN — substituting default (${w.default})`)
+    if (
+      (w.type === 'INT' || w.type === 'FLOAT') &&
+      typeof val === 'number' &&
+      isNaN(val)
+    ) {
+      warnFn(
+        `[ComfyUI] Widget "${w.name}" serialized NaN — substituting default (${w.default})`
+      )
       val = w.default
     }
     named[w.name] = val
@@ -112,7 +131,9 @@ function namedDeserialize(
   for (const spec of specs) {
     const raw = named[spec.name]
     if ((spec.type === 'INT' || spec.type === 'FLOAT') && raw === null) {
-      warnFn(`[ComfyUI] Widget "${spec.name}" loaded null for numeric — restoring default (${spec.default})`)
+      warnFn(
+        `[ComfyUI] Widget "${spec.name}" loaded null for numeric — restoring default (${spec.default})`
+      )
       out[spec.name] = spec.default
     } else if (raw === undefined) {
       out[spec.name] = spec.default
@@ -132,13 +153,18 @@ describe('BC.13 migration — per-node serialization interception', () => {
 
       // v1 path
       const v1 = makeV1NodeType('KSampler')
-      v1.patchSerialize((prev) => (data) => ({ ...prev(data), custom_field: 'from-v1' }))
+      v1.patchSerialize((prev) => (data) => ({
+        ...prev(data),
+        custom_field: 'from-v1'
+      }))
       const v1Result = v1.serialize(base)
       expect(v1Result['custom_field']).toBe('from-v1')
 
       // v2 path
       const v2 = makeV2NodeManager()
-      v2.on('beforeSerialize', async (e) => { e.data['custom_field'] = 'from-v2' })
+      v2.on('beforeSerialize', async (e) => {
+        e.data['custom_field'] = 'from-v2'
+      })
       const v2Result = await v2.serialize(base)
       expect(v2Result['custom_field']).toBe('from-v2')
 
@@ -176,8 +202,12 @@ describe('BC.13 migration — per-node serialization interception', () => {
 
       // v2: two separate listeners
       const v2 = makeV2NodeManager()
-      v2.on('beforeSerialize', async (e) => { e.data['ext_a'] = 'A' })
-      v2.on('beforeSerialize', async (e) => { e.data['ext_b'] = 'B' })
+      v2.on('beforeSerialize', async (e) => {
+        e.data['ext_a'] = 'A'
+      })
+      v2.on('beforeSerialize', async (e) => {
+        e.data['ext_b'] = 'B'
+      })
       const v2Result = await v2.serialize(base)
 
       expect(v1Result['ext_a']).toBe('A')
@@ -207,7 +237,9 @@ describe('BC.13 migration — per-node serialization interception', () => {
 
       // v2: named map → round-trip → deserialize
       const named = namedSerialize(widgets, () => {})
-      const namedJson: Record<string, unknown> = JSON.parse(JSON.stringify(named))
+      const namedJson: Record<string, unknown> = JSON.parse(
+        JSON.stringify(named)
+      )
       const v2Deserialized = namedDeserialize(namedJson, specs, () => {})
 
       // Same values regardless of representation
@@ -245,11 +277,18 @@ describe('BC.13 migration — per-node serialization interception', () => {
 
       // v2: named map — steps is always steps
       const namedBefore = namedSerialize(
-        [{ ...specsBefore[0], value: 42 }, { ...specsBefore[1], value: 25 }],
+        [
+          { ...specsBefore[0], value: 42 },
+          { ...specsBefore[1], value: 25 }
+        ],
         () => {}
       )
       const namedAfter = namedSerialize(
-        [{ ...specsAfter[0], value: 42 }, { ...specsAfter[1], value: 5.0 }, { ...specsAfter[2], value: 25 }],
+        [
+          { ...specsAfter[0], value: 42 },
+          { ...specsAfter[1], value: 5.0 },
+          { ...specsAfter[2], value: 25 }
+        ],
         () => {}
       )
 
@@ -258,10 +297,15 @@ describe('BC.13 migration — per-node serialization interception', () => {
       expect(namedAfter['steps']).toBe(25)
     })
 
-    it("serialize===false widget occupies named-map entry with no positional offset in v2; v1 callers must remove offset logic", () => {
+    it('serialize===false widget occupies named-map entry with no positional offset in v2; v1 callers must remove offset logic', () => {
       const specs: WidgetSpec[] = [
         { name: 'seed', type: 'INT', default: 0 },
-        { name: 'control_after_generate', type: 'STRING', default: 'fixed', serialize: false },
+        {
+          name: 'control_after_generate',
+          type: 'STRING',
+          default: 'fixed',
+          serialize: false
+        },
         { name: 'steps', type: 'INT', default: 20 }
       ]
 
@@ -312,14 +356,14 @@ describe('BC.13 migration — per-node serialization interception', () => {
     it('null numeric widget loaded under v2 emits console.warn and restores declared default rather than loading null', () => {
       const warnMessages: string[] = []
 
-      const specs: WidgetSpec[] = [
-        { name: 'cfg', type: 'FLOAT', default: 7.0 }
-      ]
+      const specs: WidgetSpec[] = [{ name: 'cfg', type: 'FLOAT', default: 7.0 }]
 
       // Simulate a v1-serialized workflow where cfg was NaN → null
       const legacyNamed: Record<string, unknown> = { cfg: null }
 
-      const deserialized = namedDeserialize(legacyNamed, specs, (msg) => warnMessages.push(msg))
+      const deserialized = namedDeserialize(legacyNamed, specs, (msg) =>
+        warnMessages.push(msg)
+      )
 
       expect(deserialized['cfg']).toBe(7.0)
       expect(warnMessages.length).toBe(1)
@@ -334,9 +378,8 @@ describe('BC.13 migration — per-node serialization interception', () => {
       ]
 
       // STRING widget with null value — not a NaN guard scenario
-      const named = namedSerialize(
-        [{ ...specs[0], value: null }],
-        (msg) => warnMessages.push(msg)
+      const named = namedSerialize([{ ...specs[0], value: null }], (msg) =>
+        warnMessages.push(msg)
       )
 
       // No warning for non-numeric null
@@ -344,7 +387,11 @@ describe('BC.13 migration — per-node serialization interception', () => {
       expect(named['optional_lora']).toBeNull()
 
       // Also on deserialize
-      const deserialized = namedDeserialize({ optional_lora: null }, specs, (msg) => warnMessages.push(msg))
+      const deserialized = namedDeserialize(
+        { optional_lora: null },
+        specs,
+        (msg) => warnMessages.push(msg)
+      )
       expect(warnMessages.length).toBe(0)
       expect(deserialized['optional_lora']).toBeNull()
     })

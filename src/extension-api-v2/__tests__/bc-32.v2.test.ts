@@ -20,7 +20,7 @@ import type { Component } from 'vue'
 
 describe('BC.32 v2 contract — embedded framework runtimes and Vue widget bundling', () => {
   describe('VueExtension — designed host-Vue-sharing mechanism', () => {
-    it('VueExtension has type: \'vue\' and component: Component', () => {
+    it("VueExtension has type: 'vue' and component: Component", () => {
       type VEType = VueExtension['type']
       type VEComponent = VueExtension['component']
       expectTypeOf<VEType>().toEqualTypeOf<'vue'>()
@@ -59,14 +59,15 @@ describe('BC.32 v2 contract — embedded framework runtimes and Vue widget bundl
       type RegisterFn = ExtensionManager['registerSidebarTab']
       type Param = Parameters<RegisterFn>[0]
       // The Vue branch of the union must be assignable to the parameter
-      type VueBranchAssignable = Extract<Param, { type: 'vue' }> extends never ? false : true
+      type VueBranchAssignable =
+        Extract<Param, { type: 'vue' }> extends never ? false : true
       const ok: VueBranchAssignable = true
       expect(ok).toBe(true)
     })
   })
 
   describe('VueExtension vs CustomExtension — two mounting strategies', () => {
-    it('VueExtension (type=\'vue\') and CustomExtension (type=\'custom\') are mutually exclusive discriminant branches', () => {
+    it("VueExtension (type='vue') and CustomExtension (type='custom') are mutually exclusive discriminant branches", () => {
       // Can't be both — the type literal discriminant prevents it
       type Overlap = VueExtension & CustomExtension
       type TypeField = Overlap['type']

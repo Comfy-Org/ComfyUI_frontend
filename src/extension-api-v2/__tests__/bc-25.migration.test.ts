@@ -21,7 +21,7 @@ import { loadEvidenceSnippet, runV1, runV2 } from '@/extension-api-v2/harness'
 import type {
   ExtensionManager,
   SidebarTabExtension,
-  ToastMessageOptions,
+  ToastMessageOptions
 } from '@/types/extensionTypes'
 
 void [loadEvidenceSnippet, runV1, runV2]
@@ -44,13 +44,17 @@ function makeV1Shell(): V1AppShell {
   return {
     extensionManager: {
       sidebarTabs,
-      registerSidebarTab(tab: SidebarTabExtension) { sidebarTabs.push(tab) },
+      registerSidebarTab(tab: SidebarTabExtension) {
+        sidebarTabs.push(tab)
+      }
     },
     toast: {
       _queue: toastQueue,
-      add(msg: ToastMessageOptions) { toastQueue.push(msg) },
+      add(msg: ToastMessageOptions) {
+        toastQueue.push(msg)
+      }
     },
-    executedCommands,
+    executedCommands
   }
 }
 
@@ -63,20 +67,28 @@ function makeV2Manager(): ExtensionManager & {
   const toasts: ToastMessageOptions[] = []
   const executed: string[] = []
   return {
-    registerSidebarTab(tab: SidebarTabExtension) { tabs.push(tab) },
+    registerSidebarTab(tab: SidebarTabExtension) {
+      tabs.push(tab)
+    },
     unregisterSidebarTab(id: string) {
-      const i = tabs.findIndex(t => t.id === id)
+      const i = tabs.findIndex((t) => t.id === id)
       if (i !== -1) tabs.splice(i, 1)
     },
     getSidebarTabs: () => [...tabs],
     toast: {
-      add(msg: ToastMessageOptions) { toasts.push(msg) },
+      add(msg: ToastMessageOptions) {
+        toasts.push(msg)
+      },
       remove: () => {},
-      removeAll: () => { toasts.length = 0 },
+      removeAll: () => {
+        toasts.length = 0
+      }
     },
     command: {
       commands: [],
-      execute(id: string) { executed.push(id) },
+      execute(id: string) {
+        executed.push(id)
+      }
     },
     dialog: {} as ExtensionManager['dialog'],
     setting: { get: () => undefined, set: () => {} },
@@ -84,9 +96,15 @@ function makeV2Manager(): ExtensionManager & {
     lastNodeErrors: null,
     lastExecutionError: null,
     renderMarkdownToHtml: (md: string) => md,
-    get _tabs() { return tabs },
-    get _toasts() { return toasts },
-    get _executed() { return executed },
+    get _tabs() {
+      return tabs
+    },
+    get _toasts() {
+      return toasts
+    },
+    get _executed() {
+      return executed
+    }
   } as unknown as ExtensionManager & {
     _tabs: SidebarTabExtension[]
     _toasts: ToastMessageOptions[]
@@ -102,7 +120,7 @@ describe('BC.25 [migration] — S12.UI1: registerSidebarTab', () => {
       id: 'ext.my-panel',
       title: 'My Panel',
       type: 'custom',
-      render: (_c: HTMLElement) => {},
+      render: (_c: HTMLElement) => {}
     }
 
     const v1 = makeV1Shell()
@@ -122,7 +140,7 @@ describe('BC.25 [migration] — S12.UI1: registerSidebarTab', () => {
       title: 'Panel',
       icon: 'pi pi-image',
       type: 'custom',
-      render: (_c: HTMLElement) => {},
+      render: (_c: HTMLElement) => {}
     }
     const v2 = makeV2Manager()
     // Should not throw or require adaptation
@@ -136,7 +154,7 @@ describe('BC.25 [migration] — S12.UI1: toast.add', () => {
     const message: ToastMessageOptions = {
       severity: 'success',
       summary: 'Workflow saved',
-      life: 2000,
+      life: 2000
     }
 
     const v1 = makeV1Shell()

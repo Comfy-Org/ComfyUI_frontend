@@ -18,14 +18,20 @@ import type { Unsubscribe } from '@/extension-api/events'
 // ── Shared mock ───────────────────────────────────────────────────────────────
 
 interface MockNode {
-  on(event: 'sizeChanged', handler: (e: NodeSizeChangedEvent) => void): Unsubscribe
+  on(
+    event: 'sizeChanged',
+    handler: (e: NodeSizeChangedEvent) => void
+  ): Unsubscribe
   _emitSizeChanged(size: { width: number; height: number }): void
 }
 
 function createMockNode(): MockNode {
   const listeners: Array<(e: NodeSizeChangedEvent) => void> = []
   return {
-    on(_event: 'sizeChanged', handler: (e: NodeSizeChangedEvent) => void): Unsubscribe {
+    on(
+      _event: 'sizeChanged',
+      handler: (e: NodeSizeChangedEvent) => void
+    ): Unsubscribe {
       listeners.push(handler)
       return () => {
         const idx = listeners.indexOf(handler)
@@ -42,7 +48,6 @@ function createMockNode(): MockNode {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('BC.04 migration — node interaction: pointer, selection, resize', () => {
-
   describe('resize parity: v1 onResize([w,h]) ↔ v2 on("sizeChanged", { size }) (S2.N19)', () => {
     it('v2 sizeChanged handler receives same dimensions that v1 onResize received', () => {
       const node = createMockNode()

@@ -28,23 +28,21 @@ export default defineConfig({
       // these @vue/reactivity internals.
       optimizer: {
         ssr: {
-          include: ['vue', '@vue/reactivity', '@vue/runtime-core', '@vue/runtime-dom']
+          include: [
+            'vue',
+            '@vue/reactivity',
+            '@vue/runtime-core',
+            '@vue/runtime-dom'
+          ]
         }
       }
     },
-    include: [
-      'src/extension-api-v2/__tests__/**/*.{test,spec}.{ts,mts}'
-    ],
+    include: ['src/extension-api-v2/__tests__/**/*.{test,spec}.{ts,mts}'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'lcov'],
-      include: [
-        'src/extension-api/**/*.ts',
-        'src/extension-api-v2/**/*.ts'
-      ],
-      exclude: [
-        'src/extension-api-v2/__tests__/**'
-      ]
+      include: ['src/extension-api/**/*.ts', 'src/extension-api-v2/**/*.ts'],
+      exclude: ['src/extension-api-v2/__tests__/**']
     },
     reporter: process.env.CI ? ['verbose', 'github-actions'] : ['verbose']
   }

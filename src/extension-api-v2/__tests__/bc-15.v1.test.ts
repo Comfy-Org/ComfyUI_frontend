@@ -32,7 +32,10 @@ describe('BC.15 v1 contract — app.loadGraphData', () => {
           break
         }
       }
-      expect(found, 'Expected at least one S6.A2 excerpt with loadGraphData fingerprint').toBe(true)
+      expect(
+        found,
+        'Expected at least one S6.A2 excerpt with loadGraphData fingerprint'
+      ).toBe(true)
     })
 
     it('S6.A2 snippet is capturable by runV1 without throwing', () => {
@@ -72,7 +75,9 @@ describe('BC.15 v1 contract — app.loadGraphData', () => {
     it('accepts a plain JSON object (not a string) — harness world.addNode accepts plain objects too', () => {
       const app = createMiniComfyApp()
       // The workflow is a plain object literal, not a JSON string
-      const workflowJson = { nodes: [{ type: 'KSampler' }, { type: 'VAEDecode' }] }
+      const workflowJson = {
+        nodes: [{ type: 'KSampler' }, { type: 'VAEDecode' }]
+      }
       // Simulate loadGraphData: iterate the nodes array and add each
       app.world.clear()
       for (const nodeSpec of workflowJson.nodes) {

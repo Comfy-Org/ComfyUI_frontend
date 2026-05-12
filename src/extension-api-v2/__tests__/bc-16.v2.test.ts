@@ -20,7 +20,10 @@ import type { Unsubscribe } from '@/extension-api/events'
 function createExecutedBus() {
   const handlers: Array<(e: NodeExecutedEvent) => void> = []
 
-  function on(_event: 'executed', handler: (e: NodeExecutedEvent) => void): Unsubscribe {
+  function on(
+    _event: 'executed',
+    handler: (e: NodeExecutedEvent) => void
+  ): Unsubscribe {
     handlers.push(handler)
     return () => {
       const i = handlers.indexOf(handler)
@@ -37,7 +40,9 @@ function createExecutedBus() {
 
 // ── Fixture ───────────────────────────────────────────────────────────────────
 
-function makeExecutedEvent(overrides: Partial<NodeExecutedEvent> = {}): NodeExecutedEvent {
+function makeExecutedEvent(
+  overrides: Partial<NodeExecutedEvent> = {}
+): NodeExecutedEvent {
   return {
     output: { text: ['hello world'], images: [] },
     ...overrides
@@ -65,7 +70,9 @@ describe('BC.16 v2 contract — NodeHandle executed event', () => {
     it('handler receives a NodeExecutedEvent with an output field', () => {
       const bus = createExecutedBus()
       let received: NodeExecutedEvent | undefined
-      bus.on('executed', (e) => { received = e })
+      bus.on('executed', (e) => {
+        received = e
+      })
       bus.emit(makeExecutedEvent({ output: { text: ['result'], images: [] } }))
       expect(received).toBeDefined()
       expect(received!.output).toBeDefined()
@@ -85,7 +92,10 @@ describe('BC.16 v2 contract — NodeHandle executed event', () => {
     it('calling Unsubscribe twice is safe', () => {
       const bus = createExecutedBus()
       const unsub = bus.on('executed', vi.fn())
-      expect(() => { unsub(); unsub() }).not.toThrow()
+      expect(() => {
+        unsub()
+        unsub()
+      }).not.toThrow()
     })
   })
 
@@ -93,8 +103,12 @@ describe('BC.16 v2 contract — NodeHandle executed event', () => {
     it('event.output.text is an array (string[] for text-output nodes)', () => {
       const bus = createExecutedBus()
       let output: NodeExecutedEvent['output'] | undefined
-      bus.on('executed', (e) => { output = e.output })
-      bus.emit(makeExecutedEvent({ output: { text: ['line1', 'line2'], images: [] } }))
+      bus.on('executed', (e) => {
+        output = e.output
+      })
+      bus.emit(
+        makeExecutedEvent({ output: { text: ['line1', 'line2'], images: [] } })
+      )
       expect(Array.isArray(output!.text)).toBe(true)
       expect(output!.text).toEqual(['line1', 'line2'])
     })
@@ -102,7 +116,9 @@ describe('BC.16 v2 contract — NodeHandle executed event', () => {
     it('event.output.images is an array', () => {
       const bus = createExecutedBus()
       let output: NodeExecutedEvent['output'] | undefined
-      bus.on('executed', (e) => { output = e.output })
+      bus.on('executed', (e) => {
+        output = e.output
+      })
       bus.emit(makeExecutedEvent({ output: { text: [], images: [] } }))
       expect(Array.isArray(output!.images)).toBe(true)
     })
@@ -115,7 +131,9 @@ describe('BC.16 v2 contract — NodeHandle executed event', () => {
       bus.on('executed', (e) => {
         for (const t of e.output.text ?? []) texts.push(t)
       })
-      bus.emit(makeExecutedEvent({ output: { text: ['alpha', 'beta'], images: [] } }))
+      bus.emit(
+        makeExecutedEvent({ output: { text: ['alpha', 'beta'], images: [] } })
+      )
       expect(texts).toEqual(['alpha', 'beta'])
     })
   })

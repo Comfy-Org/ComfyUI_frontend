@@ -47,11 +47,13 @@ function makeGlobals(): MockGlobals {
   const LiteGraph: MockLiteGraph = {
     NODE_MODES: { ALWAYS: 0, NEVER: 1, ON_EVENT: 2 },
     CONNECTING: 2,
-    createNode<T>(_type: string) { return {} as T },
+    createNode<T>(_type: string) {
+      return {} as T
+    }
   }
   const comfyAPI: MockComfyAPI = {
     getQueue: () => Promise.resolve({ queue_running: [], queue_pending: [] }),
-    interrupt: () => Promise.resolve(),
+    interrupt: () => Promise.resolve()
   }
   return { LiteGraph, comfyAPI }
 }

@@ -57,26 +57,39 @@ describe('BC.14 v1 contract — graphToPrompt monkey-patch', () => {
 
     it('mutations to the resolved prompt object are reflected in the final result', async () => {
       const mockPrompt = {
-        output: { '1': { class_type: 'KSampler', inputs: {} } } as Record<string, unknown>,
+        output: { '1': { class_type: 'KSampler', inputs: {} } } as Record<
+          string,
+          unknown
+        >,
         workflow: {} as Record<string, unknown>
       }
       const app = {
-        graphToPrompt: async () => ({ ...mockPrompt, output: { ...mockPrompt.output } })
+        graphToPrompt: async () => ({
+          ...mockPrompt,
+          output: { ...mockPrompt.output }
+        })
       }
       // Extension adds custom metadata
       const orig = app.graphToPrompt.bind(app)
       app.graphToPrompt = async function () {
         const r = await orig()
-        r.output['meta'] = { custom: true } as unknown as (typeof r.output)[string]
+        r.output['meta'] = {
+          custom: true
+        } as unknown as (typeof r.output)[string]
         return r
       }
       const result = await app.graphToPrompt()
-      expect((result.output['meta'] as Record<string, unknown>).custom).toBe(true)
+      expect((result.output['meta'] as Record<string, unknown>).custom).toBe(
+        true
+      )
     })
 
     it('multiple wrappers in sequence each see prior mutations', async () => {
       const base = {
-        output: { '1': { class_type: 'KSampler', inputs: {} } } as Record<string, unknown>,
+        output: { '1': { class_type: 'KSampler', inputs: {} } } as Record<
+          string,
+          unknown
+        >,
         workflow: {} as Record<string, unknown>
       }
       const app = {

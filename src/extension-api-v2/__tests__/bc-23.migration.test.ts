@@ -34,9 +34,7 @@ function makeLegacyNode(initial: Record<string, unknown> = {}): LegacyNode {
   return { properties: { ...initial } }
 }
 
-function makeV2Node(
-  legacy: LegacyNode
-): NodeHandle & { _legacy: LegacyNode } {
+function makeV2Node(legacy: LegacyNode): NodeHandle & { _legacy: LegacyNode } {
   return {
     entityId: 1 as NodeEntityId,
     type: 'TestNode',
@@ -45,8 +43,12 @@ function makeV2Node(
     getSize: () => [100, 100],
     getTitle: () => 'Test',
     getMode: () => 0,
-    getProperty<T>(key: string) { return legacy.properties[key] as T | undefined },
-    getProperties() { return { ...legacy.properties } },
+    getProperty<T>(key: string) {
+      return legacy.properties[key] as T | undefined
+    },
+    getProperties() {
+      return { ...legacy.properties }
+    },
     isSelected: () => false,
     setPosition: () => {},
     setSize: () => {},
@@ -59,11 +61,15 @@ function makeV2Node(
     },
     widget: () => undefined,
     widgets: () => [],
-    addWidget: () => { throw new Error('not needed') },
+    addWidget: () => {
+      throw new Error('not needed')
+    },
     inputs: () => [],
     outputs: () => [],
     on: () => {},
-    get _legacy() { return legacy },
+    get _legacy() {
+      return legacy
+    }
   } as unknown as NodeHandle & { _legacy: LegacyNode }
 }
 
@@ -109,7 +115,8 @@ describe('BC.23 [migration] — S2.N18: property bag write', () => {
     const v2 = makeV2Node(legacy)
 
     const calls: Array<{ prop: string; value: unknown; prev: unknown }> = []
-    legacy.onPropertyChanged = (prop, value, prev) => calls.push({ prop, value, prev })
+    legacy.onPropertyChanged = (prop, value, prev) =>
+      calls.push({ prop, value, prev })
 
     v2.setProperty('scale', 2.0)
 

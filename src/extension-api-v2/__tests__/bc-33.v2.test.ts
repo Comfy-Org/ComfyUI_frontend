@@ -6,7 +6,7 @@
 // v2 contract: comfyApp.on('domWidgetCreated', (widgetHandle) => { ... })
 //              fires for every DOM widget created by any extension
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 // ── Minimal event bus (models comfyApp event subscription) ───────────────────
 
@@ -17,7 +17,10 @@ function makeEventBus<Events extends Record<string, unknown>>() {
   const registry = new Map<keyof Events, Set<Handler<unknown>>>()
 
   return {
-    on<K extends keyof Events>(event: K, handler: Handler<Events[K]>): Unsubscribe {
+    on<K extends keyof Events>(
+      event: K,
+      handler: Handler<Events[K]>
+    ): Unsubscribe {
       if (!registry.has(event)) registry.set(event, new Set())
       registry.get(event)!.add(handler as Handler<unknown>)
       return () => registry.get(event)?.delete(handler as Handler<unknown>)
@@ -71,7 +74,7 @@ describe('BC.33 v2 contract — cross-extension DOM widget creation observation'
     app = makeEventBus<AppEvents>()
   })
 
-  describe("S4.W6 — domWidgetCreated event", () => {
+  describe('S4.W6 — domWidgetCreated event', () => {
     it("on('domWidgetCreated', handler) registers a listener that fires for every DOM widget created", () => {
       const received: WidgetHandle[] = []
       app.on('domWidgetCreated', (w) => received.push(w))
@@ -88,7 +91,9 @@ describe('BC.33 v2 contract — cross-extension DOM widget creation observation'
 
     it('handler receives a WidgetHandle with type, name, and owning NodeHandle accessible', () => {
       let captured: WidgetHandle | null = null
-      app.on('domWidgetCreated', (w) => { captured = w })
+      app.on('domWidgetCreated', (w) => {
+        captured = w
+      })
 
       const widget = makeWidget({
         name: 'cfg',
@@ -109,7 +114,10 @@ describe('BC.33 v2 contract — cross-extension DOM widget creation observation'
       app.on('domWidgetCreated', (w) => extA_received.push(w)) // ext-A listener
 
       // ext-B creates a widget and the runtime emits the event
-      const extBWidget = makeWidget({ entityId: 'widget:ext-b:1', name: 'ext_b_param' })
+      const extBWidget = makeWidget({
+        entityId: 'widget:ext-b:1',
+        name: 'ext_b_param'
+      })
       app.emit('domWidgetCreated', extBWidget) // runtime emits after ext-B creates it
 
       expect(extA_received).toHaveLength(1)
@@ -126,11 +134,17 @@ describe('BC.33 v2 contract — cross-extension DOM widget creation observation'
       }
 
       expect(log).toHaveLength(5)
-      expect(log).toEqual(['widget:1', 'widget:2', 'widget:3', 'widget:4', 'widget:5'])
+      expect(log).toEqual([
+        'widget:1',
+        'widget:2',
+        'widget:3',
+        'widget:4',
+        'widget:5'
+      ])
     })
   })
 
-  describe("S4.W6 — handler cleanup", () => {
+  describe('S4.W6 — handler cleanup', () => {
     it("off('domWidgetCreated', handler) unregisters the listener without affecting other listeners", () => {
       const aLog: string[] = []
       const bLog: string[] = []

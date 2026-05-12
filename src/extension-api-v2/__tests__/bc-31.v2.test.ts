@@ -37,27 +37,35 @@ describe('BC.31 v2 contract — DOM injection and style management', () => {
   })
 
   describe('VueExtension — Vue component mounting in managed slots (S16.DOM2 host-managed path)', () => {
-    it('VueExtension has type: \'vue\' literal and component: Component', () => {
+    it("VueExtension has type: 'vue' literal and component: Component", () => {
       type VEType = VueExtension['type']
       expectTypeOf<VEType>().toEqualTypeOf<'vue'>()
     })
 
-    it('CustomExtension has type: \'custom\' and render(container) + optional destroy()', () => {
+    it("CustomExtension has type: 'custom' and render(container) + optional destroy()", () => {
       type CEType = CustomExtension['type']
       type RenderFn = CustomExtension['render']
       type DestroyFn = CustomExtension['destroy']
       expectTypeOf<CEType>().toEqualTypeOf<'custom'>()
       expectTypeOf<RenderFn>().parameter(0).toEqualTypeOf<HTMLElement>()
       // destroy is optional
-      type IsOptional = DestroyFn extends (() => void) | undefined ? true : false
+      type IsOptional = DestroyFn extends (() => void) | undefined
+        ? true
+        : false
       const ok: IsOptional = true
       expect(ok).toBe(true)
     })
 
-    it('SidebarTabExtension discriminant: either type=\'vue\' with component or type=\'custom\' with render', () => {
+    it("SidebarTabExtension discriminant: either type='vue' with component or type='custom' with render", () => {
       // SidebarTabExtension is a union — both branches must exist
-      type HasVue = Extract<SidebarTabExtension, { type: 'vue' }> extends never ? false : true
-      type HasCustom = Extract<SidebarTabExtension, { type: 'custom' }> extends never ? false : true
+      type HasVue =
+        Extract<SidebarTabExtension, { type: 'vue' }> extends never
+          ? false
+          : true
+      type HasCustom =
+        Extract<SidebarTabExtension, { type: 'custom' }> extends never
+          ? false
+          : true
       const hasVue: HasVue = true
       const hasCustom: HasCustom = true
       expect(hasVue).toBe(true)
@@ -65,8 +73,14 @@ describe('BC.31 v2 contract — DOM injection and style management', () => {
     })
 
     it('BottomPanelExtension has the same two-branch discriminant as SidebarTabExtension', () => {
-      type HasVue = Extract<BottomPanelExtension, { type: 'vue' }> extends never ? false : true
-      type HasCustom = Extract<BottomPanelExtension, { type: 'custom' }> extends never ? false : true
+      type HasVue =
+        Extract<BottomPanelExtension, { type: 'vue' }> extends never
+          ? false
+          : true
+      type HasCustom =
+        Extract<BottomPanelExtension, { type: 'custom' }> extends never
+          ? false
+          : true
       const hasVue: HasVue = true
       const hasCustom: HasCustom = true
       expect(hasVue).toBe(true)
@@ -75,7 +89,9 @@ describe('BC.31 v2 contract — DOM injection and style management', () => {
 
     it('ExtensionManager.registerSidebarTab accepts a SidebarTabExtension', () => {
       type RegisterFn = ExtensionManager['registerSidebarTab']
-      expectTypeOf<RegisterFn>().parameter(0).toEqualTypeOf<SidebarTabExtension>()
+      expectTypeOf<RegisterFn>()
+        .parameter(0)
+        .toEqualTypeOf<SidebarTabExtension>()
     })
   })
 

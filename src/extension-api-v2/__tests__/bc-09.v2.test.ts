@@ -46,7 +46,12 @@ describe('BC.09 v2 contract — dynamic slot and output mutation', () => {
     it('inputs() returns a readonly array of SlotInfo objects', () => {
       const slots = [
         makeSlotInfo({ name: 'image', type: 'IMAGE', direction: 'input' }),
-        makeSlotInfo({ name: 'mask', type: 'MASK', direction: 'input', entityId: 2 as SlotInfo['entityId'] })
+        makeSlotInfo({
+          name: 'mask',
+          type: 'MASK',
+          direction: 'input',
+          entityId: 2 as SlotInfo['entityId']
+        })
       ]
       const handle = makeNodeHandleWithSlots(slots, [])
 
@@ -65,7 +70,11 @@ describe('BC.09 v2 contract — dynamic slot and output mutation', () => {
 
     it('each SlotInfo has the required fields: entityId, name, type, direction, nodeEntityId', () => {
       const nodeId = 42 as SlotInfo['nodeEntityId']
-      const slot = makeSlotInfo({ name: 'latent', type: 'LATENT', nodeEntityId: nodeId })
+      const slot = makeSlotInfo({
+        name: 'latent',
+        type: 'LATENT',
+        nodeEntityId: nodeId
+      })
       const handle = makeNodeHandleWithSlots([slot], [])
 
       const [s] = handle.inputs()
@@ -79,7 +88,11 @@ describe('BC.09 v2 contract — dynamic slot and output mutation', () => {
     it('direction is always "input" for slots returned by inputs()', () => {
       const slots = [
         makeSlotInfo({ name: 'a', direction: 'input' }),
-        makeSlotInfo({ name: 'b', direction: 'input', entityId: 2 as SlotInfo['entityId'] })
+        makeSlotInfo({
+          name: 'b',
+          direction: 'input',
+          entityId: 2 as SlotInfo['entityId']
+        })
       ]
       const handle = makeNodeHandleWithSlots(slots, [])
       for (const s of handle.inputs()) {
@@ -102,7 +115,12 @@ describe('BC.09 v2 contract — dynamic slot and output mutation', () => {
     it('outputs() returns a readonly array of SlotInfo objects', () => {
       const slots = [
         makeSlotInfo({ name: 'LATENT', type: 'LATENT', direction: 'output' }),
-        makeSlotInfo({ name: 'IMAGE', type: 'IMAGE', direction: 'output', entityId: 2 as SlotInfo['entityId'] })
+        makeSlotInfo({
+          name: 'IMAGE',
+          type: 'IMAGE',
+          direction: 'output',
+          entityId: 2 as SlotInfo['entityId']
+        })
       ]
       const handle = makeNodeHandleWithSlots([], slots)
 
@@ -120,7 +138,11 @@ describe('BC.09 v2 contract — dynamic slot and output mutation', () => {
     it('direction is always "output" for slots returned by outputs()', () => {
       const slots = [
         makeSlotInfo({ name: 'out', direction: 'output' }),
-        makeSlotInfo({ name: 'out2', direction: 'output', entityId: 2 as SlotInfo['entityId'] })
+        makeSlotInfo({
+          name: 'out2',
+          direction: 'output',
+          entityId: 2 as SlotInfo['entityId']
+        })
       ]
       const handle = makeNodeHandleWithSlots([], slots)
       for (const s of handle.outputs()) {
@@ -131,7 +153,11 @@ describe('BC.09 v2 contract — dynamic slot and output mutation', () => {
     it('inputs() and outputs() are independent arrays — do not share references', () => {
       const shared = makeSlotInfo({ name: 'shared' })
       const inSlot = { ...shared, direction: 'input' as const }
-      const outSlot = { ...shared, direction: 'output' as const, entityId: 2 as SlotInfo['entityId'] }
+      const outSlot = {
+        ...shared,
+        direction: 'output' as const,
+        entityId: 2 as SlotInfo['entityId']
+      }
       const handle = makeNodeHandleWithSlots([inSlot], [outSlot])
 
       expect(handle.inputs()[0].direction).toBe('input')
@@ -142,18 +168,12 @@ describe('BC.09 v2 contract — dynamic slot and output mutation', () => {
   describe('[gap] Slot mutation API — not yet on NodeHandle surface', () => {
     it.todo(
       '[gap] addInput(name, type) — not present on NodeHandle v2 surface; gap documented for Phase B. ' +
-      'See: src/extension-api/node.ts NodeHandle interface (no addInput method). ' +
-      'Phase B: add addInput/removeInput/addOutput/removeOutput dispatching CreateSlot/RemoveSlot ECS commands.'
+        'See: src/extension-api/node.ts NodeHandle interface (no addInput method). ' +
+        'Phase B: add addInput/removeInput/addOutput/removeOutput dispatching CreateSlot/RemoveSlot ECS commands.'
     )
-    it.todo(
-      '[gap] removeInput(name) — same gap; Phase B required'
-    )
-    it.todo(
-      '[gap] addOutput(name, type) — same gap; Phase B required'
-    )
-    it.todo(
-      '[gap] removeOutput(name) — same gap; Phase B required'
-    )
+    it.todo('[gap] removeInput(name) — same gap; Phase B required')
+    it.todo('[gap] addOutput(name, type) — same gap; Phase B required')
+    it.todo('[gap] removeOutput(name) — same gap; Phase B required')
   })
 })
 
@@ -167,9 +187,7 @@ describe('BC.09 v2 contract — dynamic slot mutation [Phase B/C]', () => {
     it.todo(
       'NodeHandle.addOutput({ name, type }) dispatches CreateOutputSlot command and the new slot appears in outputs()'
     )
-    it.todo(
-      'addInput with a duplicate name throws a typed DuplicateSlotError'
-    )
+    it.todo('addInput with a duplicate name throws a typed DuplicateSlotError')
   })
 
   describe('removeInput / removeOutput dispatch', () => {

@@ -44,12 +44,24 @@ describe('BC.07 v1 contract — connection observation, intercept, and veto', ()
       const fired: string[] = []
 
       const sourceNode = {
-        onConnectionsChange(_type: number, _slot: number, _connected: boolean, _link: unknown, _ioSlot: unknown) {
+        onConnectionsChange(
+          _type: number,
+          _slot: number,
+          _connected: boolean,
+          _link: unknown,
+          _ioSlot: unknown
+        ) {
           fired.push('source')
         }
       }
       const targetNode = {
-        onConnectionsChange(_type: number, _slot: number, _connected: boolean, _link: unknown, _ioSlot: unknown) {
+        onConnectionsChange(
+          _type: number,
+          _slot: number,
+          _connected: boolean,
+          _link: unknown,
+          _ioSlot: unknown
+        ) {
           fired.push('target')
         }
       }
@@ -61,12 +73,8 @@ describe('BC.07 v1 contract — connection observation, intercept, and veto', ()
       expect(fired).toEqual(['source', 'target'])
     })
 
-    it.todo(
-      'real LiteGraph graph wiring'
-    )
-    it.todo(
-      'link object from LiteGraph'
-    )
+    it.todo('real LiteGraph graph wiring')
+    it.todo('link object from LiteGraph')
   })
 
   describe('S2.N12 — onConnectInput: intercept and veto incoming connections (synthetic)', () => {
@@ -129,9 +137,7 @@ describe('BC.07 v1 contract — connection observation, intercept, and veto', ()
       expect(received).toEqual([2, 'IMAGE', fakeLink, fakeSource, 1])
     })
 
-    it.todo(
-      'real LiteGraph graph wiring'
-    )
+    it.todo('real LiteGraph graph wiring')
   })
 
   describe('S2.N13 — onConnectOutput: intercept and veto outgoing connections (synthetic)', () => {
@@ -166,12 +172,19 @@ describe('BC.07 v1 contract — connection observation, intercept, and veto', ()
         ): boolean {
           return false
         },
-        onConnectionsChange(_type: number, _slot: number, _connected: boolean, _link: unknown, _ioSlot: unknown) {
+        onConnectionsChange(
+          _type: number,
+          _slot: number,
+          _connected: boolean,
+          _link: unknown,
+          _ioSlot: unknown
+        ) {
           changesFired = true
         }
       }
 
-      const vetoed = outputNode.onConnectOutput(0, 'LATENT', {}, {}, 0) === false
+      const vetoed =
+        outputNode.onConnectOutput(0, 'LATENT', {}, {}, 0) === false
       if (!vetoed) {
         outputNode.onConnectionsChange(2, 0, true, {}, undefined)
       }
@@ -183,10 +196,14 @@ describe('BC.07 v1 contract — connection observation, intercept, and veto', ()
       const results: boolean[] = []
 
       const nodeAllow = {
-        onConnectOutput(): boolean { return true }
+        onConnectOutput(): boolean {
+          return true
+        }
       }
       const nodeVeto = {
-        onConnectOutput(): boolean { return false }
+        onConnectOutput(): boolean {
+          return false
+        }
       }
 
       results.push(nodeAllow.onConnectOutput())
@@ -195,12 +212,8 @@ describe('BC.07 v1 contract — connection observation, intercept, and veto', ()
       expect(results).toEqual([true, false])
     })
 
-    it.todo(
-      'real LiteGraph graph wiring'
-    )
-    it.todo(
-      'link object from LiteGraph'
-    )
+    it.todo('real LiteGraph graph wiring')
+    it.todo('link object from LiteGraph')
   })
 
   describe('S2.N3 — evidence excerpts', () => {

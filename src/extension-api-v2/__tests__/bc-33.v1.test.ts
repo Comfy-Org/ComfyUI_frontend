@@ -89,7 +89,7 @@ describe('BC.33 v1 contract — cross-extension DOM widget creation observation'
       obs.observe(container, { childList: true })
 
       container.appendChild(document.createElement('span')) // non-widget
-      container.appendChild(document.createElement('div'))  // could be widget
+      container.appendChild(document.createElement('div')) // could be widget
 
       // JSDOM may batch both appends into one MutationRecord or deliver two records;
       // yield to the event loop to ensure the callback fires before asserting.

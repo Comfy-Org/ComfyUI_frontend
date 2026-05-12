@@ -29,7 +29,9 @@ describe('BC.31 v1 contract — DOM injection and style management', () => {
       const styleEl = document.createElement('style')
       styleEl.textContent = '.bc31-v1-test { color: red; }'
       document.head.appendChild(styleEl)
-      expect(document.head.querySelectorAll('style').length).toBe(beforeCount + 1)
+      expect(document.head.querySelectorAll('style').length).toBe(
+        beforeCount + 1
+      )
       // cleanup
       document.head.removeChild(styleEl)
       expect(document.head.querySelectorAll('style').length).toBe(beforeCount)
@@ -89,7 +91,9 @@ describe('BC.31 v1 contract — DOM injection and style management', () => {
     it('JSDOM: setting innerHTML on a container element renders the content immediately', () => {
       const container = document.createElement('div')
       container.innerHTML = '<span id="bc31-v1-inner">hello</span>'
-      expect(container.querySelector('#bc31-v1-inner')?.textContent).toBe('hello')
+      expect(container.querySelector('#bc31-v1-inner')?.textContent).toBe(
+        'hello'
+      )
     })
 
     it('JSDOM: innerHTML with an attribute renders the attribute on the child', () => {

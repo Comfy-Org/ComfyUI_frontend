@@ -5,7 +5,7 @@
 // compat-floor: NO (absent API gap — migration is from workaround to new first-class event)
 // migration: MutationObserver / polling workaround → comfyApp.on('domWidgetCreated', handler)
 
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 // ── MutationObserver workaround simulation ────────────────────────────────────
 // v1 pattern: extensions used MutationObserver on document.body to detect new
@@ -16,11 +16,15 @@ type Unsubscribe = () => void
 
 function makeMutationObserverWorkaround() {
   // Simulates the v1 pattern: observer detects DOM additions, tries to infer widget info
-  const callbacks: Array<(widget: { domElement: HTMLElement; inferredType: string }) => void> = []
+  const callbacks: Array<
+    (widget: { domElement: HTMLElement; inferredType: string }) => void
+  > = []
   let callCount = 0
 
   return {
-    observe(cb: (info: { domElement: HTMLElement; inferredType: string }) => void) {
+    observe(
+      cb: (info: { domElement: HTMLElement; inferredType: string }) => void
+    ) {
       callbacks.push(cb)
     },
     // Simulates DOM mutation being detected
@@ -65,7 +69,10 @@ function makeV2AppBus() {
   let emitCount = 0
 
   return {
-    on(_event: 'domWidgetCreated', handler: (w: WidgetHandle) => void): Unsubscribe {
+    on(
+      _event: 'domWidgetCreated',
+      handler: (w: WidgetHandle) => void
+    ): Unsubscribe {
       handlers.push(handler)
       return () => {
         const i = handlers.indexOf(handler)

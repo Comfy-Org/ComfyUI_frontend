@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
 
 describe('BC.34 v1 contract — settings-panel custom dialog integration', () => {
   describe('S12.UI3 — innerHTML injection workaround', () => {
-    it("extension can locate the settings dialog via getElementById and inject a button", () => {
+    it('extension can locate the settings dialog via getElementById and inject a button', () => {
       const dialog = document.createElement('div')
       dialog.id = 'comfy-settings-dialog'
       document.body.appendChild(dialog)
@@ -35,7 +35,9 @@ describe('BC.34 v1 contract — settings-panel custom dialog integration', () =>
       const btn = document.getElementById('ext-open-modal')!
 
       let clicked = false
-      btn.addEventListener('click', () => { clicked = true })
+      btn.addEventListener('click', () => {
+        clicked = true
+      })
       btn.click()
       expect(clicked).toBe(true)
 
@@ -51,7 +53,8 @@ describe('BC.34 v1 contract — settings-panel custom dialog integration', () =>
       expect(document.getElementById('ext-injected-btn')).not.toBeNull()
 
       // Simulating ComfyUI re-rendering the settings panel by reassigning innerHTML
-      dialog.innerHTML = '<div class="settings-panel-native">Native settings content</div>'
+      dialog.innerHTML =
+        '<div class="settings-panel-native">Native settings content</div>'
 
       // Injected content is gone
       expect(document.getElementById('ext-injected-btn')).toBeNull()

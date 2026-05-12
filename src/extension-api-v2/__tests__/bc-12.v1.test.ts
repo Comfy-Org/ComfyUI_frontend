@@ -41,7 +41,7 @@ describe('BC.12 v1 contract — per-widget serialization transform', () => {
 
     it.todo(
       // TODO(Phase B): synthetic mock required
-      'serializeValue receives the owning node as first argument and the widget\'s positional index in node.widgets as second argument'
+      "serializeValue receives the owning node as first argument and the widget's positional index in node.widgets as second argument"
     )
 
     it.todo(

@@ -15,14 +15,18 @@ function makeSyntheticNode() {
     id: 7,
     type: 'Load3D',
     widgets: [
-      { name: 'model_file', value: 'scene.glb', callback: null as ((v: string) => void) | null },
+      {
+        name: 'model_file',
+        value: 'scene.glb',
+        callback: null as ((v: string) => void) | null
+      }
     ],
     // Vue component instance — null until mount
     _vueComponent: null as Record<string, unknown> | null,
     // DOM element — null until Vue mounts
     _domElement: null as HTMLElement | null,
     // Removal flag
-    _removed: false,
+    _removed: false
   }
 }
 
@@ -30,7 +34,7 @@ function makeSyntheticNode() {
 function waitForLoad3d(
   node: ReturnType<typeof makeSyntheticNode>,
   callback: (comp: Record<string, unknown>) => void,
-  intervalMs = 0,
+  intervalMs = 0
 ) {
   const id = setInterval(() => {
     if (node._removed) {
@@ -86,13 +90,17 @@ describe('BC.37 v1 contract — VueNode bridge timing (deferred mount access)', 
         const node = makeSyntheticNode()
         const received: Record<string, unknown>[] = []
 
-        waitForLoad3d(node, (comp) => {
-          received.push(comp)
-          vi.useRealTimers()
-          expect(received).toHaveLength(1)
-          expect(received[0]).toHaveProperty('renderer')
-          resolve()
-        }, 10)
+        waitForLoad3d(
+          node,
+          (comp) => {
+            received.push(comp)
+            vi.useRealTimers()
+            expect(received).toHaveLength(1)
+            expect(received[0]).toHaveProperty('renderer')
+            resolve()
+          },
+          10
+        )
 
         // Simulate Vue mount completing after two ticks
         setTimeout(() => {
@@ -108,13 +116,19 @@ describe('BC.37 v1 contract — VueNode bridge timing (deferred mount access)', 
         const node = makeSyntheticNode()
         const mockComp = { renderer: 'mock', getCanvas: () => null }
 
-        waitForLoad3d(node, (comp) => {
-          vi.useRealTimers()
-          expect(comp).toBe(mockComp)
-          resolve()
-        }, 10)
+        waitForLoad3d(
+          node,
+          (comp) => {
+            vi.useRealTimers()
+            expect(comp).toBe(mockComp)
+            resolve()
+          },
+          10
+        )
 
-        setTimeout(() => { node._vueComponent = mockComp }, 15)
+        setTimeout(() => {
+          node._vueComponent = mockComp
+        }, 15)
         vi.advanceTimersByTime(20)
       }))
 
@@ -130,7 +144,9 @@ describe('BC.37 v1 contract — VueNode bridge timing (deferred mount access)', 
         node._removed = true
 
         // Even if _vueComponent is set after removal, callback must not fire
-        setTimeout(() => { node._vueComponent = { renderer: 'too-late' } }, 20)
+        setTimeout(() => {
+          node._vueComponent = { renderer: 'too-late' }
+        }, 20)
 
         vi.advanceTimersByTime(50)
         vi.useRealTimers()

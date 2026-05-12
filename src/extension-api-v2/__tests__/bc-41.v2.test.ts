@@ -65,7 +65,12 @@ function roundTripNamedDict(
 describe('BC.41 v2 contract — widget values positional serialization fragility', () => {
   describe('S17.WV1 — named dict opt-in', () => {
     it('named dict serializes widget values as { widgetName: value } not positional array', () => {
-      const named: WidgetValuesNamed = { seed: 12345, steps: 30, cfg: 7.5, sampler_name: 'euler' }
+      const named: WidgetValuesNamed = {
+        seed: 12345,
+        steps: 30,
+        cfg: 7.5,
+        sampler_name: 'euler'
+      }
 
       expect(typeof named).toBe('object')
       expect(Array.isArray(named)).toBe(false)
@@ -81,9 +86,9 @@ describe('BC.41 v2 contract — widget values positional serialization fragility
       const newOrder: WidgetName[] = ['cfg', 'seed', 'steps']
       const positional = roundTripNamedDict(original, newOrder)
 
-      expect(positional[0]).toBe(8.0)   // cfg
-      expect(positional[1]).toBe(42)    // seed
-      expect(positional[2]).toBe(20)    // steps
+      expect(positional[0]).toBe(8.0) // cfg
+      expect(positional[1]).toBe(42) // seed
+      expect(positional[2]).toBe(20) // steps
     })
 
     it('named dict deserialization survives addition of a new widget (positional would misalign)', () => {
@@ -95,7 +100,7 @@ describe('BC.41 v2 contract — widget values positional serialization fragility
       const newOrder: WidgetName[] = ['seed', 'steps', 'denoise', 'cfg']
       const positional = roundTripNamedDict(named, newOrder)
 
-      expect(positional[3]).toBe(8.0)  // cfg still correct
+      expect(positional[3]).toBe(8.0) // cfg still correct
       expect(positional[2]).toBeNull() // denoise not in named dict → null (new widget default)
     })
 
@@ -133,7 +138,12 @@ describe('BC.41 v2 contract — widget values positional serialization fragility
 
       const result = migrate(0, [42, 20, 7.5, 'euler'])
 
-      expect(result).toEqual({ seed: 42, steps: 20, cfg: 7.5, sampler_name: 'euler' })
+      expect(result).toEqual({
+        seed: 42,
+        steps: 20,
+        cfg: 7.5,
+        sampler_name: 'euler'
+      })
     })
 
     it('migrateWidgetValues can handle version-specific transformations', () => {
@@ -141,9 +151,17 @@ describe('BC.41 v2 contract — widget values positional serialization fragility
       const migrate: MigrateWidgetValues = (oldVersion, values) => {
         if (oldVersion === 0) {
           const [seed, steps, cfg, sampler] = values
-          return { seed: seed as number, steps: steps as number, cfg: cfg as number, sampler_name: sampler }
+          return {
+            seed: seed as number,
+            steps: steps as number,
+            cfg: cfg as number,
+            sampler_name: sampler
+          }
         }
-        return positionalFallback(['seed', 'steps', 'cfg', 'sampler_name'], values)
+        return positionalFallback(
+          ['seed', 'steps', 'cfg', 'sampler_name'],
+          values
+        )
       }
 
       const v0Result = migrate(0, [42, 20, 7.5, 'dpm'])
@@ -180,10 +198,12 @@ describe('BC.41 v2 contract — widget values positional serialization fragility
       // Simulate: beforeSerialize receives current widget values and can transform them.
       const widgets: WidgetValuesNamed = { seed: -1, steps: 20, cfg: 7.5 }
 
-      const beforeSerialize = vi.fn((values: WidgetValuesNamed): WidgetValuesNamed => {
-        // Common pattern: resolve seed=-1 to a random value before saving
-        return { ...values, seed: values.seed === -1 ? 42 : values.seed }
-      })
+      const beforeSerialize = vi.fn(
+        (values: WidgetValuesNamed): WidgetValuesNamed => {
+          // Common pattern: resolve seed=-1 to a random value before saving
+          return { ...values, seed: values.seed === -1 ? 42 : values.seed }
+        }
+      )
 
       const serialized = beforeSerialize(widgets)
 
@@ -195,7 +215,16 @@ describe('BC.41 v2 contract — widget values positional serialization fragility
     it('D7 serialization collapse reduces positional array length, shrinking misalignment surface', () => {
       // D7 Part 4: combo-linked widgets collapse from 4 entries to 2.
       // Fewer positions = fewer ways to misalign.
-      const v1Positions = ['seed', 'steps', 'cfg', 'sampler', 'scheduler', 'denoise', 'extra1', 'extra2']
+      const v1Positions = [
+        'seed',
+        'steps',
+        'cfg',
+        'sampler',
+        'scheduler',
+        'denoise',
+        'extra1',
+        'extra2'
+      ]
       const v2Positions = ['seed', 'steps', 'cfg', 'sampler'] // collapsed
 
       expect(v2Positions.length).toBeLessThan(v1Positions.length)

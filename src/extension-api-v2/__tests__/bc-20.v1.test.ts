@@ -39,11 +39,20 @@ function createMockLiteGraph() {
 
 // ── Minimal extension registration shim ──────────────────────────────────────
 
-interface NodeDef { name: string; inputs: Record<string, unknown> }
-interface NodeTypeStub { prototype: Record<string, unknown>; name: string }
+interface NodeDef {
+  name: string
+  inputs: Record<string, unknown>
+}
+interface NodeTypeStub {
+  prototype: Record<string, unknown>
+  name: string
+}
 
 function createMockApp(LiteGraph: ReturnType<typeof createMockLiteGraph>) {
-  const extensions: { beforeRegisterNodeDef?: (nt: NodeTypeStub, nd: NodeDef) => void; registerCustomNodes?: (app: unknown) => void }[] = []
+  const extensions: {
+    beforeRegisterNodeDef?: (nt: NodeTypeStub, nd: NodeDef) => void
+    registerCustomNodes?: (app: unknown) => void
+  }[] = []
 
   return {
     registerExtension(ext: (typeof extensions)[0]) {
@@ -66,7 +75,9 @@ function createMockApp(LiteGraph: ReturnType<typeof createMockLiteGraph>) {
 // ── Minimal prompt serializer ─────────────────────────────────────────────────
 // v1 graphToPrompt excludes virtual nodes from backend payload.
 
-function serializeGraph(nodes: Array<{ id: number; type: string; constructor: NodeConstructor }>) {
+function serializeGraph(
+  nodes: Array<{ id: number; type: string; constructor: NodeConstructor }>
+) {
   const output: Record<number, { class_type: string }> = {}
   for (const node of nodes) {
     if (!node.constructor.prototype.isVirtualNode) {
@@ -95,10 +106,13 @@ describe('BC.20 v1 contract — LiteGraph.registerNodeType and isVirtualNode', (
       const LiteGraph = createMockLiteGraph()
       const app = createMockApp(LiteGraph)
 
-      class MyRerouteNode { }
+      class MyRerouteNode {}
       app.registerExtension({
         registerCustomNodes() {
-          LiteGraph.registerNodeType('MyReroute', MyRerouteNode as unknown as NodeConstructor)
+          LiteGraph.registerNodeType(
+            'MyReroute',
+            MyRerouteNode as unknown as NodeConstructor
+          )
         }
       })
       app.simulateSetup()
@@ -112,12 +126,15 @@ describe('BC.20 v1 contract — LiteGraph.registerNodeType and isVirtualNode', (
       const LiteGraph = createMockLiteGraph()
       const app = createMockApp(LiteGraph)
 
-      class VirtualNode { }
+      class VirtualNode {}
       VirtualNode.prototype.isVirtualNode = true
 
       app.registerExtension({
         registerCustomNodes() {
-          LiteGraph.registerNodeType('VirtualReroute', VirtualNode as unknown as NodeConstructor)
+          LiteGraph.registerNodeType(
+            'VirtualReroute',
+            VirtualNode as unknown as NodeConstructor
+          )
         }
       })
       app.simulateSetup()
@@ -139,8 +156,14 @@ describe('BC.20 v1 contract — LiteGraph.registerNodeType and isVirtualNode', (
         }
       })
 
-      app.simulateBeforeRegisterNodeDef({ prototype: {}, name: 'KSampler' }, { name: 'KSampler', inputs: {} })
-      app.simulateBeforeRegisterNodeDef({ prototype: {}, name: 'CLIPTextEncode' }, { name: 'CLIPTextEncode', inputs: {} })
+      app.simulateBeforeRegisterNodeDef(
+        { prototype: {}, name: 'KSampler' },
+        { name: 'KSampler', inputs: {} }
+      )
+      app.simulateBeforeRegisterNodeDef(
+        { prototype: {}, name: 'CLIPTextEncode' },
+        { name: 'CLIPTextEncode', inputs: {} }
+      )
 
       expect(seenTypes).toEqual(['KSampler', 'CLIPTextEncode'])
     })
@@ -157,7 +180,10 @@ describe('BC.20 v1 contract — LiteGraph.registerNodeType and isVirtualNode', (
         }
       })
 
-      app.simulateBeforeRegisterNodeDef(nodeType, { name: 'KSampler', inputs: {} })
+      app.simulateBeforeRegisterNodeDef(nodeType, {
+        name: 'KSampler',
+        inputs: {}
+      })
 
       expect(nodeType.prototype['myExtensionData']).toBe('injected')
     })
@@ -167,8 +193,18 @@ describe('BC.20 v1 contract — LiteGraph.registerNodeType and isVirtualNode', (
       const app = createMockApp(LiteGraph)
       const results: string[] = []
 
-      app.registerExtension({ beforeRegisterNodeDef(nt) { nt.prototype['extA'] = true; results.push('A') } })
-      app.registerExtension({ beforeRegisterNodeDef(nt) { nt.prototype['extB'] = true; results.push('B') } })
+      app.registerExtension({
+        beforeRegisterNodeDef(nt) {
+          nt.prototype['extA'] = true
+          results.push('A')
+        }
+      })
+      app.registerExtension({
+        beforeRegisterNodeDef(nt) {
+          nt.prototype['extB'] = true
+          results.push('B')
+        }
+      })
 
       const nt: NodeTypeStub = { prototype: {}, name: 'VAEDecode' }
       app.simulateBeforeRegisterNodeDef(nt, { name: 'VAEDecode', inputs: {} })
@@ -181,14 +217,26 @@ describe('BC.20 v1 contract — LiteGraph.registerNodeType and isVirtualNode', (
 
   describe('S8.P1 — virtual node payload suppression (synthetic)', () => {
     it('serializeGraph excludes nodes with isVirtualNode === true from the output', () => {
-      class RealNode { }
-      class VirtualNode { }
+      class RealNode {}
+      class VirtualNode {}
       VirtualNode.prototype.isVirtualNode = true
 
       const nodes = [
-        { id: 1, type: 'KSampler', constructor: RealNode as unknown as NodeConstructor },
-        { id: 2, type: 'VirtualReroute', constructor: VirtualNode as unknown as NodeConstructor },
-        { id: 3, type: 'CLIPTextEncode', constructor: RealNode as unknown as NodeConstructor }
+        {
+          id: 1,
+          type: 'KSampler',
+          constructor: RealNode as unknown as NodeConstructor
+        },
+        {
+          id: 2,
+          type: 'VirtualReroute',
+          constructor: VirtualNode as unknown as NodeConstructor
+        },
+        {
+          id: 3,
+          type: 'CLIPTextEncode',
+          constructor: RealNode as unknown as NodeConstructor
+        }
       ]
 
       const output = serializeGraph(nodes)
@@ -200,10 +248,18 @@ describe('BC.20 v1 contract — LiteGraph.registerNodeType and isVirtualNode', (
     })
 
     it('non-virtual nodes are all included in the serialized output', () => {
-      class RealNode { }
+      class RealNode {}
       const nodes = [
-        { id: 10, type: 'KSampler', constructor: RealNode as unknown as NodeConstructor },
-        { id: 11, type: 'VAEDecode', constructor: RealNode as unknown as NodeConstructor }
+        {
+          id: 10,
+          type: 'KSampler',
+          constructor: RealNode as unknown as NodeConstructor
+        },
+        {
+          id: 11,
+          type: 'VAEDecode',
+          constructor: RealNode as unknown as NodeConstructor
+        }
       ]
 
       const output = serializeGraph(nodes)

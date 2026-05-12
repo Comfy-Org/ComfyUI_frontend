@@ -23,7 +23,7 @@ describe('BC.08 migration — programmatic linking', () => {
       'v1 node.disconnectInput(slot) and v2 NodeHandle.disconnectInput(slotIndex) both leave the graph with no link on that slot'
     )
     it.todo(
-      'onConnectionsChange (v1) and on(\'connectionChange\') (v2) both fire for the same disconnect operation with equivalent payload data'
+      "onConnectionsChange (v1) and on('connectionChange') (v2) both fire for the same disconnect operation with equivalent payload data"
     )
   })
 

@@ -11,7 +11,10 @@ import { describe, expect, it, vi } from 'vitest'
 // Models the v1 monkey-patch pattern without a real ComfyUI app object.
 
 interface MockApp {
-  queuePrompt: (number: number, batchCount: number) => Promise<{ queued: boolean }>
+  queuePrompt: (
+    number: number,
+    batchCount: number
+  ) => Promise<{ queued: boolean }>
 }
 
 function createMockApp(): MockApp {
@@ -106,7 +109,12 @@ describe('BC.19 v1 contract — app.queuePrompt monkey-patch', () => {
       await app.queuePrompt(0, 1)
 
       // LIFO: B wraps A — B-pre fires first, then A-pre, then A-post, then B-post
-      expect(callOrder).toEqual(['ext-B-pre', 'ext-A-pre', 'ext-A-post', 'ext-B-post'])
+      expect(callOrder).toEqual([
+        'ext-B-pre',
+        'ext-A-pre',
+        'ext-A-post',
+        'ext-B-post'
+      ])
     })
 
     it('extension can inject a field into a mutable prompt object before calling orig()', async () => {
@@ -115,7 +123,9 @@ describe('BC.19 v1 contract — app.queuePrompt monkey-patch', () => {
 
       // Simulate a version of app where queuePrompt receives a prompt object
       interface AppWithPrompt {
-        queuePrompt: (prompt: Record<string, unknown>) => Promise<{ queued: boolean }>
+        queuePrompt: (
+          prompt: Record<string, unknown>
+        ) => Promise<{ queued: boolean }>
       }
       const appExt: AppWithPrompt = {
         async queuePrompt(prompt) {

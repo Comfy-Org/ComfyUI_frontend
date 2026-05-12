@@ -33,7 +33,10 @@ interface MockWidgetHandle {
   name: string
   getValue<T = unknown>(): T
   setValue(value: unknown): void
-  on(event: 'valueChange', handler: (e: WidgetValueChangeEvent) => void): Unsubscribe
+  on(
+    event: 'valueChange',
+    handler: (e: WidgetValueChangeEvent) => void
+  ): Unsubscribe
 }
 
 function createDualWidget(name: string, initial: unknown = '') {
@@ -46,7 +49,9 @@ function createDualWidget(name: string, initial: unknown = '') {
   // v2 shape
   const v2: MockWidgetHandle = {
     name,
-    getValue<T>() { return valueRef.value as T },
+    getValue<T>() {
+      return valueRef.value as T
+    },
     setValue(newValue: unknown) {
       const oldValue = valueRef.value
       if (newValue === oldValue) return
@@ -56,7 +61,10 @@ function createDualWidget(name: string, initial: unknown = '') {
       const event: WidgetValueChangeEvent = { newValue, oldValue }
       for (const fn of v2Listeners) fn(event)
     },
-    on(_event: 'valueChange', handler: (e: WidgetValueChangeEvent) => void): Unsubscribe {
+    on(
+      _event: 'valueChange',
+      handler: (e: WidgetValueChangeEvent) => void
+    ): Unsubscribe {
       v2Listeners.push(handler)
       return () => {
         const idx = v2Listeners.indexOf(handler)
@@ -83,7 +91,7 @@ function createDualWidget(name: string, initial: unknown = '') {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('BC.10 migration — widget value subscription', () => {
-  describe('widget.callback → widget.on(\'valueChange\') — payload shape migration (S4.W1)', () => {
+  describe("widget.callback → widget.on('valueChange') — payload shape migration (S4.W1)", () => {
     it('v1 callback and v2 valueChange handler both fire with the new value for the same interaction', () => {
       const { v1, v2, simulateV1Change } = createDualWidget('steps', 20)
       const v1Received: unknown[] = []
@@ -104,8 +112,12 @@ describe('BC.10 migration — widget value subscription', () => {
       let v1Value: unknown
       let v2Event: WidgetValueChangeEvent | undefined
 
-      v1.callback = (val) => { v1Value = val }
-      v2.on('valueChange', (e) => { v2Event = e })
+      v1.callback = (val) => {
+        v1Value = val
+      }
+      v2.on('valueChange', (e) => {
+        v2Event = e
+      })
 
       simulateV1Change(8)
 
@@ -127,7 +139,7 @@ describe('BC.10 migration — widget value subscription', () => {
       expect(handler).toHaveBeenCalledOnce()
     })
 
-    it('v1 chain-patching and v2 on(\'valueChange\') do not interfere: each operates independently', () => {
+    it("v1 chain-patching and v2 on('valueChange') do not interfere: each operates independently", () => {
       const { v1, v2, simulateV1Change } = createDualWidget('seed', 0)
       const v1Order: string[] = []
       const v2Order: string[] = []
@@ -148,18 +160,21 @@ describe('BC.10 migration — widget value subscription', () => {
     })
   })
 
-  describe('node.onWidgetChanged → per-widget on(\'valueChange\') — S2.N14 migration', () => {
+  describe("node.onWidgetChanged → per-widget on('valueChange') — S2.N14 migration", () => {
     it('v1 onWidgetChanged and v2 per-widget valueChange both fire for the same widget change', () => {
       const { v1, v2, simulateV1Change } = createDualWidget('steps', 20)
       const v1NodeCalls: Array<{ name: string; value: unknown }> = []
       const v2Calls: WidgetValueChangeEvent[] = []
 
       const node = {
-        onWidgetChanged: (name: string, value: unknown) => v1NodeCalls.push({ name, value })
+        onWidgetChanged: (name: string, value: unknown) =>
+          v1NodeCalls.push({ name, value })
       }
 
       // v1: node-level subscription (fires at the node level)
-      v1.callback = (val) => { node.onWidgetChanged(v1.name, val) }
+      v1.callback = (val) => {
+        node.onWidgetChanged(v1.name, val)
+      }
       // v2: per-widget subscription
       v2.on('valueChange', (e) => v2Calls.push(e))
 
@@ -177,8 +192,12 @@ describe('BC.10 migration — widget value subscription', () => {
       const nodeChanges: Array<{ name: string; newValue: unknown }> = []
 
       // v2 migration: subscribe individually — no single node-level event
-      stepW.v2.on('valueChange', (e) => nodeChanges.push({ name: 'steps', newValue: e.newValue }))
-      cfgW.v2.on('valueChange', (e) => nodeChanges.push({ name: 'cfg', newValue: e.newValue }))
+      stepW.v2.on('valueChange', (e) =>
+        nodeChanges.push({ name: 'steps', newValue: e.newValue })
+      )
+      cfgW.v2.on('valueChange', (e) =>
+        nodeChanges.push({ name: 'cfg', newValue: e.newValue })
+      )
 
       stepW.v2.setValue(25)
       cfgW.v2.setValue(8.0)
@@ -191,7 +210,7 @@ describe('BC.10 migration — widget value subscription', () => {
   })
 
   describe('scope disposal isolation', () => {
-    it('disposing one extension\'s listener does not remove another extension\'s listener on the same widget', () => {
+    it("disposing one extension's listener does not remove another extension's listener on the same widget", () => {
       const { v2 } = createDualWidget('steps', 20)
       const ext1 = vi.fn()
       const ext2 = vi.fn()
@@ -223,7 +242,7 @@ describe('BC.10 migration — widget value subscription', () => {
       simulateV1Change(8)
 
       expect(v1Handler).toHaveBeenCalledWith(8) // v1 chain intact
-      expect(v2Handler).not.toHaveBeenCalled()   // v2 removed
+      expect(v2Handler).not.toHaveBeenCalled() // v2 removed
     })
   })
 })

@@ -34,8 +34,12 @@ function makeBeforeQueueEvent(prompt: SerializedPrompt): BeforeQueueEvent {
       rejected = true
       rejectionMessage = message
     },
-    get rejected() { return rejected },
-    get rejectionMessage() { return rejectionMessage }
+    get rejected() {
+      return rejected
+    },
+    get rejectionMessage() {
+      return rejectionMessage
+    }
   }
 }
 
@@ -50,7 +54,9 @@ function makeQueueManager() {
         if (i !== -1) handlers.splice(i, 1)
       }
     },
-    async queue(prompt: SerializedPrompt): Promise<{ submitted: boolean; message?: string }> {
+    async queue(
+      prompt: SerializedPrompt
+    ): Promise<{ submitted: boolean; message?: string }> {
       const event = makeBeforeQueueEvent(prompt)
       for (const fn of [...handlers]) {
         await fn(event)
@@ -64,7 +70,9 @@ function makeQueueManager() {
   }
 }
 
-function makePrompt(overrides: Partial<SerializedPrompt> = {}): SerializedPrompt {
+function makePrompt(
+  overrides: Partial<SerializedPrompt> = {}
+): SerializedPrompt {
   return {
     nodes: [{ id: 1, type: 'KSampler', inputs: { steps: 20, cfg: 7.0 } }],
     ...overrides
@@ -80,7 +88,7 @@ describe('BC.35 v2 contract — pre-queue widget validation', () => {
     qm = makeQueueManager()
   })
 
-  describe("S6.A5 — beforeQueue event", () => {
+  describe('S6.A5 — beforeQueue event', () => {
     it("on('beforeQueue', handler) fires before each queue submission", async () => {
       const spy = vi.fn()
       qm.on('beforeQueue', spy)
@@ -127,7 +135,9 @@ describe('BC.35 v2 contract — pre-queue widget validation', () => {
     })
 
     it('no rejection → queue proceeds with submitted: true', async () => {
-      qm.on('beforeQueue', (_e) => { /* passes */ })
+      qm.on('beforeQueue', (_e) => {
+        /* passes */
+      })
 
       const result = await qm.queue(makePrompt())
       expect(result.submitted).toBe(true)
@@ -138,7 +148,9 @@ describe('BC.35 v2 contract — pre-queue widget validation', () => {
     it('beforeQueue event payload includes the serialized prompt so validators can inspect node values', async () => {
       let capturedPrompt: SerializedPrompt | null = null
 
-      qm.on('beforeQueue', (e) => { capturedPrompt = e.prompt })
+      qm.on('beforeQueue', (e) => {
+        capturedPrompt = e.prompt
+      })
 
       const prompt = makePrompt({
         nodes: [{ id: 1, type: 'KSampler', inputs: { steps: 5, cfg: 1.5 } }]
@@ -168,7 +180,9 @@ describe('BC.35 v2 contract — pre-queue widget validation', () => {
         await new Promise<void>((r) => setTimeout(r, 5))
         order.push(1)
       })
-      qm.on('beforeQueue', (_e) => { order.push(2) })
+      qm.on('beforeQueue', (_e) => {
+        order.push(2)
+      })
 
       const result = await qm.queue(makePrompt())
       expect(order).toEqual([1, 2])

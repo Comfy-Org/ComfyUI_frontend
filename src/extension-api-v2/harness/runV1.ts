@@ -31,7 +31,10 @@ interface RunV1Options {
  * `MiniComfyApp` instance and records that the snippet was "seen" so
  * tests can assert against the surface.
  */
-export function runV1(snippet: string, options: RunV1Options = {}): RunV1Result {
+export function runV1(
+  snippet: string,
+  options: RunV1Options = {}
+): RunV1Result {
   const app = options.app ?? createMiniComfyApp()
   const errors: Error[] = []
 

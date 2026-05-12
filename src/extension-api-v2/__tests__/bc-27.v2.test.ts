@@ -24,7 +24,12 @@
 import { describe, it, expect } from 'vitest'
 
 import { loadEvidenceSnippet, runV1, runV2 } from '@/extension-api-v2/harness'
-import type { NodeHandle, NodeEntityId, SlotInfo, SlotEntityId } from '@/types/extensionV2'
+import type {
+  NodeHandle,
+  NodeEntityId,
+  SlotInfo,
+  SlotEntityId
+} from '@/types/extensionV2'
 
 void [loadEvidenceSnippet, runV1, runV2]
 
@@ -40,7 +45,7 @@ function makeSlotInfo(
     name,
     type,
     direction,
-    nodeEntityId: 1 as NodeEntityId,
+    nodeEntityId: 1 as NodeEntityId
   }
 }
 
@@ -50,7 +55,7 @@ function makeNodeHandleWithSlots(
 ): Pick<NodeHandle, 'inputs' | 'outputs'> {
   return {
     inputs: () => inputs as readonly SlotInfo[],
-    outputs: () => outputs as readonly SlotInfo[],
+    outputs: () => outputs as readonly SlotInfo[]
   }
 }
 

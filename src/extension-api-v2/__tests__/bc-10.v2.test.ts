@@ -15,7 +15,7 @@
 //   widget.on('valueChange'). Tests below reflect the real API surface.
 
 import { shallowRef } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { WidgetValueChangeEvent } from '@/extension-api/widget'
 import type { Unsubscribe } from '@/extension-api/events'
 
@@ -25,16 +25,24 @@ interface MockWidgetHandle {
   name: string
   getValue<T = unknown>(): T
   setValue(value: unknown): void
-  on(event: 'valueChange', handler: (e: WidgetValueChangeEvent) => void): Unsubscribe
+  on(
+    event: 'valueChange',
+    handler: (e: WidgetValueChangeEvent) => void
+  ): Unsubscribe
 }
 
-function createMockWidgetHandle(name: string, initial: unknown = ''): MockWidgetHandle {
+function createMockWidgetHandle(
+  name: string,
+  initial: unknown = ''
+): MockWidgetHandle {
   const valueRef = shallowRef(initial)
   const listeners: Array<(e: WidgetValueChangeEvent) => void> = []
 
   return {
     name,
-    getValue<T>() { return valueRef.value as T },
+    getValue<T>() {
+      return valueRef.value as T
+    },
     setValue(newValue: unknown) {
       const oldValue = valueRef.value
       if (newValue === oldValue) return
@@ -42,7 +50,10 @@ function createMockWidgetHandle(name: string, initial: unknown = ''): MockWidget
       const event: WidgetValueChangeEvent = { newValue, oldValue }
       for (const fn of listeners) fn(event)
     },
-    on(_event: 'valueChange', handler: (e: WidgetValueChangeEvent) => void): Unsubscribe {
+    on(
+      _event: 'valueChange',
+      handler: (e: WidgetValueChangeEvent) => void
+    ): Unsubscribe {
       listeners.push(handler)
       return () => {
         const idx = listeners.indexOf(handler)

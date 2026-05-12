@@ -5,18 +5,31 @@
 // compat-floor: blast_radius ≥ 2.0
 // v1 contract: app.registerExtension({ getCustomWidgets(app) { return { MYWIDGET: (node, inputData, app) => ({ widget: ... }) } } })
 
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 // ── Minimal custom-widget registration shim ───────────────────────────────────
 
-interface V1Widget { name: string; value: unknown; type: string }
-interface V1NodeStub { widgets: V1Widget[]; type: string }
+interface V1Widget {
+  name: string
+  value: unknown
+  type: string
+}
+interface V1NodeStub {
+  widgets: V1Widget[]
+  type: string
+}
 
-type WidgetFactory = (node: V1NodeStub, inputData: unknown[], app: unknown) => { widget: V1Widget }
+type WidgetFactory = (
+  node: V1NodeStub,
+  inputData: unknown[],
+  app: unknown
+) => { widget: V1Widget }
 
 function createWidgetRegistry() {
   const factories = new Map<string, WidgetFactory>()
-  const extensions: { getCustomWidgets?: (app: unknown) => Record<string, WidgetFactory> }[] = []
+  const extensions: {
+    getCustomWidgets?: (app: unknown) => Record<string, WidgetFactory>
+  }[] = []
 
   const api = {
     registerExtension(ext: (typeof extensions)[0]) {
@@ -30,7 +43,11 @@ function createWidgetRegistry() {
         }
       }
     },
-    createWidget(type: string, node: V1NodeStub, inputData: unknown[]): V1Widget | undefined {
+    createWidget(
+      type: string,
+      node: V1NodeStub,
+      inputData: unknown[]
+    ): V1Widget | undefined {
       const factory = factories.get(type)
       if (!factory) return undefined
       const result = factory(node, inputData, api)
@@ -118,7 +135,9 @@ describe('BC.21 v1 contract — Custom widget-type registration', () => {
       registry.registerExtension({
         getCustomWidgets() {
           return {
-            WIDGET_A: (_n, _i, _a) => ({ widget: { name: 'w_a', value: '', type: 'WIDGET_A' } })
+            WIDGET_A: (_n, _i, _a) => ({
+              widget: { name: 'w_a', value: '', type: 'WIDGET_A' }
+            })
           }
         }
       })
@@ -126,7 +145,9 @@ describe('BC.21 v1 contract — Custom widget-type registration', () => {
       registry.registerExtension({
         getCustomWidgets() {
           return {
-            WIDGET_B: (_n, _i, _a) => ({ widget: { name: 'w_b', value: '', type: 'WIDGET_B' } })
+            WIDGET_B: (_n, _i, _a) => ({
+              widget: { name: 'w_b', value: '', type: 'WIDGET_B' }
+            })
           }
         }
       })
@@ -151,7 +172,9 @@ describe('BC.21 v1 contract — Custom widget-type registration', () => {
       registry.registerExtension({
         getCustomWidgets() {
           return {
-            SHARED: (_n, _i, _a) => ({ widget: { name: 'first', value: 1, type: 'SHARED' } })
+            SHARED: (_n, _i, _a) => ({
+              widget: { name: 'first', value: 1, type: 'SHARED' }
+            })
           }
         }
       })
@@ -159,7 +182,9 @@ describe('BC.21 v1 contract — Custom widget-type registration', () => {
       registry.registerExtension({
         getCustomWidgets() {
           return {
-            SHARED: (_n, _i, _a) => ({ widget: { name: 'second', value: 2, type: 'SHARED' } })
+            SHARED: (_n, _i, _a) => ({
+              widget: { name: 'second', value: 2, type: 'SHARED' }
+            })
           }
         }
       })

@@ -53,7 +53,9 @@ describe('BC.01 v1 contract — node lifecycle: creation', () => {
   describe('S2.N1 — nodeCreated hook (synthetic)', () => {
     it('nodeCreated callback receives node as first arg', () => {
       const received: unknown[] = []
-      const extension = { nodeCreated: vi.fn((node: unknown) => received.push(node)) }
+      const extension = {
+        nodeCreated: vi.fn((node: unknown) => received.push(node))
+      }
       const fakeNode = { id: 1, type: 'KSampler' }
 
       extension.nodeCreated(fakeNode)
@@ -63,7 +65,10 @@ describe('BC.01 v1 contract — node lifecycle: creation', () => {
     })
 
     it('properties set on node inside nodeCreated are accessible after the call', () => {
-      const fakeNode: Record<string, unknown> = { id: 2, type: 'CLIPTextEncode' }
+      const fakeNode: Record<string, unknown> = {
+        id: 2,
+        type: 'CLIPTextEncode'
+      }
       const extension = {
         nodeCreated(node: Record<string, unknown>) {
           node.customTag = 'injected-by-extension'
@@ -92,13 +97,9 @@ describe('BC.01 v1 contract — node lifecycle: creation', () => {
       expect(callOrder).toEqual(['A', 'B'])
     })
 
-    it.todo(
-      'fires before node is added to graph'
-    )
+    it.todo('fires before node is added to graph')
 
-    it.todo(
-      'fires before VueNode mounts'
-    )
+    it.todo('fires before VueNode mounts')
   })
 
   describe('S2.N8 — beforeRegisterNodeDef hook (synthetic)', () => {
@@ -110,15 +111,23 @@ describe('BC.01 v1 contract — node lifecycle: creation', () => {
       FakeNodeType.type = 'KSampler'
 
       // Extension patches the prototype inside beforeRegisterNodeDef
-      function beforeRegisterNodeDef(nodeType: { prototype: Record<string, unknown> }) {
+      function beforeRegisterNodeDef(nodeType: {
+        prototype: Record<string, unknown>
+      }) {
         nodeType.prototype.myExtensionMethod = function () {
           return 'patched'
         }
       }
       beforeRegisterNodeDef(FakeNodeType)
 
-      const instanceA = Object.create(FakeNodeType.prototype) as Record<string, unknown>
-      const instanceB = Object.create(FakeNodeType.prototype) as Record<string, unknown>
+      const instanceA = Object.create(FakeNodeType.prototype) as Record<
+        string,
+        unknown
+      >
+      const instanceB = Object.create(FakeNodeType.prototype) as Record<
+        string,
+        unknown
+      >
 
       expect(typeof instanceA.myExtensionMethod).toBe('function')
       expect(typeof instanceB.myExtensionMethod).toBe('function')

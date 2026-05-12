@@ -78,7 +78,7 @@ describe('BC.12 migration — per-widget serialization transform', () => {
 
     it.todo(
       // TODO(Phase B): requires live World + multiple on() registrations
-      'registering on(\'beforeSerialize\') twice does not double-fire; each unsubscribe function removes only the listener it was returned for'
+      "registering on('beforeSerialize') twice does not double-fire; each unsubscribe function removes only the listener it was returned for"
     )
   })
 
@@ -95,18 +95,20 @@ describe('BC.12 migration — per-widget serialization transform', () => {
 
     it.todo(
       // TODO(Phase B): requires live World + graphToPrompt pipeline + workflow round-trip
-      'widgets_values_named round-trip: a workflow serialized under v2 with an on(\'beforeSerialize\') transform deserializes to the same widget values as the equivalent v1 serializeValue workflow'
+      "widgets_values_named round-trip: a workflow serialized under v2 with an on('beforeSerialize') transform deserializes to the same widget values as the equivalent v1 serializeValue workflow"
     )
   })
 
   describe('async transform equivalence', () => {
-    it('v2 on(\'beforeSerialize\') handler type accepts both sync and async functions', () => {
+    it("v2 on('beforeSerialize') handler type accepts both sync and async functions", () => {
       // AsyncHandler<T> = (e: T) => void | Promise<void>
       type Handler = Parameters<WidgetHandle['on']>[1]
       // The beforeSerialize overload's handler must accept Promise return.
       // We check via the on() overload signature: the second param when event='beforeSerialize'
       // is typed as AsyncHandler<WidgetBeforeSerializeEvent>.
-      type AsyncHandlerOfEvent = (e: WidgetBeforeSerializeEvent) => void | Promise<void>
+      type AsyncHandlerOfEvent = (
+        e: WidgetBeforeSerializeEvent
+      ) => void | Promise<void>
       // Assign a sync fn — must compile:
       const _sync: AsyncHandlerOfEvent = (_e) => {}
       // Assign an async fn — must compile:
@@ -117,7 +119,7 @@ describe('BC.12 migration — per-widget serialization transform', () => {
 
     it.todo(
       // TODO(Phase B): requires live World + graphToPrompt pipeline
-      'async transforms: both v1 serializeValue and v2 on(\'beforeSerialize\') are awaited by graphToPrompt() before the workflow is finalized'
+      "async transforms: both v1 serializeValue and v2 on('beforeSerialize') are awaited by graphToPrompt() before the workflow is finalized"
     )
   })
 })

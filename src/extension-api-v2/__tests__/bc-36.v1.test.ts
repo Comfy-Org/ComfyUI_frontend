@@ -15,7 +15,7 @@ function makeComboWidget(name: string, values: string[]) {
     type: 'COMBO' as const,
     value: values[0] ?? null,
     options: { values: [...values] } as { values: string[] },
-    callback: null as ((v: string) => void) | null,
+    callback: null as ((v: string) => void) | null
   }
 }
 
@@ -31,14 +31,18 @@ function makeNumberWidget(name: string, value: number) {
       step: number
       disabled?: boolean
       readonly?: boolean
-    },
+    }
   }
 }
 
 describe('BC.36 v1 contract — PrimeVue widget component API surface', () => {
   describe('S4.W1 — options bag direct mutation (select/combo)', () => {
     it('widget.options.values = [...] replaces the dropdown choices on a COMBO widget at runtime', () => {
-      const w = makeComboWidget('scheduler', ['karras', 'exponential', 'sgm_uniform'])
+      const w = makeComboWidget('scheduler', [
+        'karras',
+        'exponential',
+        'sgm_uniform'
+      ])
       expect(w.options.values).toEqual(['karras', 'exponential', 'sgm_uniform'])
 
       // v1 direct mutation — no setter, no event

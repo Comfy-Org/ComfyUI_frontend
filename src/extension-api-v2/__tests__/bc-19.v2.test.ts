@@ -31,7 +31,10 @@ function createQueueTrigger() {
   const handlers: Array<(e: BeforeQueuePromptEvent) => void> = []
   const submitLog: QueuePayload[] = []
 
-  function on(_event: 'beforeQueuePrompt', handler: (e: BeforeQueuePromptEvent) => void): Unsubscribe {
+  function on(
+    _event: 'beforeQueuePrompt',
+    handler: (e: BeforeQueuePromptEvent) => void
+  ): Unsubscribe {
     handlers.push(handler)
     return () => {
       const i = handlers.indexOf(handler)
@@ -39,7 +42,9 @@ function createQueueTrigger() {
     }
   }
 
-  async function queuePrompt(opts: { batchCount?: number } = {}): Promise<{ submitted: boolean; batchCount: number }> {
+  async function queuePrompt(
+    opts: { batchCount?: number } = {}
+  ): Promise<{ submitted: boolean; batchCount: number }> {
     const batchCount = opts.batchCount ?? 1
     let cancelled = false
     const payload: QueuePayload = {
@@ -48,7 +53,9 @@ function createQueueTrigger() {
     }
     const event: BeforeQueuePromptEvent = {
       payload,
-      cancel() { cancelled = true }
+      cancel() {
+        cancelled = true
+      }
     }
     for (const h of [...handlers]) {
       h(event)
@@ -85,7 +92,9 @@ describe('BC.19 v2 contract — beforeQueuePrompt event and comfyApp.queuePrompt
     it('handler receives a BeforeQueuePromptEvent with a mutable payload', async () => {
       const q = createQueueTrigger()
       let receivedPayload: QueuePayload | undefined
-      q.on('beforeQueuePrompt', (e) => { receivedPayload = e.payload })
+      q.on('beforeQueuePrompt', (e) => {
+        receivedPayload = e.payload
+      })
       await q.queuePrompt()
       expect(receivedPayload).toBeDefined()
       expect(receivedPayload).toHaveProperty('prompt')
@@ -100,14 +109,20 @@ describe('BC.19 v2 contract — beforeQueuePrompt event and comfyApp.queuePrompt
         e.payload.extra_data.extra_pnginfo = { workflow: 'injected' }
       })
       await q.queuePrompt()
-      expect(q.submitLog[0].extra_data.extra_pnginfo).toEqual({ workflow: 'injected' })
+      expect(q.submitLog[0].extra_data.extra_pnginfo).toEqual({
+        workflow: 'injected'
+      })
     })
 
-    it('multiple handlers see each other\'s mutations in order', async () => {
+    it("multiple handlers see each other's mutations in order", async () => {
       const q = createQueueTrigger()
-      q.on('beforeQueuePrompt', (e) => { (e.payload.extra_data as Record<string, unknown>).step1 = true })
       q.on('beforeQueuePrompt', (e) => {
-        expect((e.payload.extra_data as Record<string, unknown>).step1).toBe(true)
+        ;(e.payload.extra_data as Record<string, unknown>).step1 = true
+      })
+      q.on('beforeQueuePrompt', (e) => {
+        expect((e.payload.extra_data as Record<string, unknown>).step1).toBe(
+          true
+        )
         ;(e.payload.extra_data as Record<string, unknown>).step2 = true
       })
       await q.queuePrompt()
@@ -177,7 +192,10 @@ describe('BC.19 v2 contract — beforeQueuePrompt event and comfyApp.queuePrompt
     it('calling Unsubscribe twice does not throw', () => {
       const q = createQueueTrigger()
       const unsub = q.on('beforeQueuePrompt', vi.fn())
-      expect(() => { unsub(); unsub() }).not.toThrow()
+      expect(() => {
+        unsub()
+        unsub()
+      }).not.toThrow()
     })
   })
 })
@@ -191,7 +209,5 @@ describe('BC.19 v2 contract — beforeQueuePrompt [Phase B / shell]', () => {
   it.todo(
     '[Phase B/C] cancellation suppresses the actual HTTP POST to /api/prompt'
   )
-  it.todo(
-    '[Phase B/C] mutated extra_data reaches the backend in the POST body'
-  )
+  it.todo('[Phase B/C] mutated extra_data reaches the backend in the POST body')
 })

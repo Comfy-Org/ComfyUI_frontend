@@ -66,7 +66,9 @@ describe('BC.06 v1 contract — custom canvas drawing (per-node and canvas-level
 
   describe('S3.C1 — LGraphCanvas.prototype method overrides (synthetic)', () => {
     it('overriding a prototype method changes behavior for all instances', () => {
-      interface MockCanvas { drawNodeShape(ctx: object, node: object): string }
+      interface MockCanvas {
+        drawNodeShape(ctx: object, node: object): string
+      }
       const LGraphCanvasProto: MockCanvas = { drawNodeShape: () => 'default' }
 
       LGraphCanvasProto.drawNodeShape = (_ctx, _node) => 'custom'
@@ -76,7 +78,9 @@ describe('BC.06 v1 contract — custom canvas drawing (per-node and canvas-level
     })
 
     it('last-writer-wins — two overrides, second wins', () => {
-      interface MockCanvas { drawNodeShape(ctx: object, node: object): string }
+      interface MockCanvas {
+        drawNodeShape(ctx: object, node: object): string
+      }
       const LGraphCanvasProto: MockCanvas = { drawNodeShape: () => 'default' }
 
       LGraphCanvasProto.drawNodeShape = () => 'first'
@@ -86,18 +90,18 @@ describe('BC.06 v1 contract — custom canvas drawing (per-node and canvas-level
       expect(instance.drawNodeShape({}, {})).toBe('second')
     })
 
-    it.todo(
-      'actual canvas rendering with CanvasRenderingContext2D'
-    )
-    it.todo(
-      'real LiteGraph canvas instance shares the same prototype'
-    )
+    it.todo('actual canvas rendering with CanvasRenderingContext2D')
+    it.todo('real LiteGraph canvas instance shares the same prototype')
   })
 
   describe('S3.C2 — ContextMenu global replacement (synthetic)', () => {
     it('replacing processContextMenu replaces the handler', () => {
-      interface MockCanvas { processContextMenu(event: object): string }
-      const LGraphCanvasProto: MockCanvas = { processContextMenu: () => 'default-menu' }
+      interface MockCanvas {
+        processContextMenu(event: object): string
+      }
+      const LGraphCanvasProto: MockCanvas = {
+        processContextMenu: () => 'default-menu'
+      }
 
       LGraphCanvasProto.processContextMenu = (_event) => 'custom-menu'
 
@@ -108,14 +112,17 @@ describe('BC.06 v1 contract — custom canvas drawing (per-node and canvas-level
     it('calling original inside wrapper preserves default entries (chain-call test)', () => {
       const entries: string[] = []
 
-      interface MockCanvas { processContextMenu(event: object): void }
+      interface MockCanvas {
+        processContextMenu(event: object): void
+      }
       const LGraphCanvasProto: MockCanvas = {
         processContextMenu(_event: object) {
           entries.push('default')
         }
       }
 
-      const original = LGraphCanvasProto.processContextMenu.bind(LGraphCanvasProto)
+      const original =
+        LGraphCanvasProto.processContextMenu.bind(LGraphCanvasProto)
       LGraphCanvasProto.processContextMenu = function (event) {
         entries.push('custom')
         original(event)
@@ -127,12 +134,8 @@ describe('BC.06 v1 contract — custom canvas drawing (per-node and canvas-level
       expect(entries).toEqual(['custom', 'default'])
     })
 
-    it.todo(
-      'actual canvas rendering'
-    )
-    it.todo(
-      'real LiteGraph canvas'
-    )
+    it.todo('actual canvas rendering')
+    it.todo('real LiteGraph canvas')
   })
 
   describe('S2.N9 — evidence excerpts', () => {
@@ -167,7 +170,10 @@ describe('BC.06 v1 contract — custom canvas drawing (per-node and canvas-level
           break
         }
       }
-      expect(found, 'Expected at least one S3.C1 excerpt with drawNodeShape or prototype fingerprint').toBe(true)
+      expect(
+        found,
+        'Expected at least one S3.C1 excerpt with drawNodeShape or prototype fingerprint'
+      ).toBe(true)
     })
 
     it('S3.C1 snippet is capturable by runV1 without throwing', () => {

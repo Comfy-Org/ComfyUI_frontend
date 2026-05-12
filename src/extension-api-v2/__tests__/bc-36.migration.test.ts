@@ -5,7 +5,7 @@
 // compat-floor: blast_radius ≥ 2.0 — MUST pass before v2 ships
 // migration: widget.options.* direct mutation → WidgetHandle.setOptions<T>() typed per-component subsets
 
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 // ── V1 widget options bag simulation ──────────────────────────────────────────
 // v1: extensions directly mutated widget.options — a plain object with no type
@@ -18,8 +18,12 @@ function makeV1Widget(type: string, value: unknown = null) {
     value,
     options, // mutable bag — no enforcement
     // v1 disabled/readonly live inside options
-    get isDisabled() { return !!options['disabled'] },
-    get isReadOnly() { return !!options['readonly'] }
+    get isDisabled() {
+      return !!options['disabled']
+    },
+    get isReadOnly() {
+      return !!options['readonly']
+    }
   }
 }
 
@@ -27,7 +31,16 @@ function makeV1Widget(type: string, value: unknown = null) {
 // The shim intercepts widget.options writes and forwards them to setOptions,
 // dropping excluded keys and emitting deprecation warnings.
 
-const EXCLUDED = new Set(['style', 'class', 'pt', 'dt', 'inputStyle', 'inputClass', 'panelStyle', 'panelClass'])
+const EXCLUDED = new Set([
+  'style',
+  'class',
+  'pt',
+  'dt',
+  'inputStyle',
+  'inputClass',
+  'panelStyle',
+  'panelClass'
+])
 const DISABLED_READONLY = new Set(['disabled', 'readonly'])
 
 type WidgetType = 'Select' | 'Slider' | 'InputText'
@@ -46,7 +59,10 @@ function makeV2WidgetHandle(type: WidgetType, initialValue: unknown = null) {
   return {
     type,
     value: initialValue,
-    setOptions(opts: Record<string, unknown>, warnFn?: (msg: string) => void): void {
+    setOptions(
+      opts: Record<string, unknown>,
+      warnFn?: (msg: string) => void
+    ): void {
       const allowed = ALLOWED[type]
       for (const [key, val] of Object.entries(opts)) {
         if (EXCLUDED.has(key)) {
@@ -54,19 +70,27 @@ function makeV2WidgetHandle(type: WidgetType, initialValue: unknown = null) {
           continue
         }
         if (DISABLED_READONLY.has(key)) {
-          warnFn?.(`[v2 compat] Use setDisabled()/setReadOnly() instead of options.${key}`)
+          warnFn?.(
+            `[v2 compat] Use setDisabled()/setReadOnly() instead of options.${key}`
+          )
           if (key === 'disabled') disabled = Boolean(val)
           if (key === 'readonly') readonly = Boolean(val)
           continue
         }
         if (!allowed.has(key)) {
-          throw new Error(`[v2] setOptions: key '${key}' not valid for type '${type}'`)
+          throw new Error(
+            `[v2] setOptions: key '${key}' not valid for type '${type}'`
+          )
         }
         options[key] = val
       }
     },
-    setDisabled(v: boolean) { disabled = v },
-    setReadOnly(v: boolean) { readonly = v },
+    setDisabled(v: boolean) {
+      disabled = v
+    },
+    setReadOnly(v: boolean) {
+      readonly = v
+    },
     getOption: <T>(k: string) => options[k] as T,
     isDisabled: () => disabled,
     isReadOnly: () => readonly
@@ -120,7 +144,9 @@ describe('BC.36 migration — PrimeVue widget component API surface', () => {
       // disabled forwarded to setDisabled
       expect(v2.isDisabled()).toBe(true)
       // style dropped with warning
-      expect(warnings.some((w) => w.includes("dropped excluded key 'style'"))).toBe(true)
+      expect(
+        warnings.some((w) => w.includes("dropped excluded key 'style'"))
+      ).toBe(true)
       expect(warnings.some((w) => w.includes('setDisabled'))).toBe(true)
     })
   })
@@ -160,7 +186,12 @@ describe('BC.36 migration — PrimeVue widget component API surface', () => {
 
       // v1 extension wrote style and pt into options — shim drops them
       v2.setOptions(
-        { min: 0, max: 100, style: 'width:300px', pt: { root: { class: 'my-slider' } } },
+        {
+          min: 0,
+          max: 100,
+          style: 'width:300px',
+          pt: { root: { class: 'my-slider' } }
+        },
         (msg) => warnings.push(msg)
       )
 
@@ -173,8 +204,12 @@ describe('BC.36 migration — PrimeVue widget component API surface', () => {
       expect(v2.getOption('pt')).toBeUndefined()
 
       // Warnings emitted for each dropped key
-      expect(warnings.filter((w) => w.includes("dropped excluded key 'style'"))).toHaveLength(1)
-      expect(warnings.filter((w) => w.includes("dropped excluded key 'pt'"))).toHaveLength(1)
+      expect(
+        warnings.filter((w) => w.includes("dropped excluded key 'style'"))
+      ).toHaveLength(1)
+      expect(
+        warnings.filter((w) => w.includes("dropped excluded key 'pt'"))
+      ).toHaveLength(1)
     })
 
     it('setOptions<T>() TypeScript overloads prevent style/class/pt at compile time; runtime shim silently drops them', () => {
@@ -182,7 +217,10 @@ describe('BC.36 migration — PrimeVue widget component API surface', () => {
       const warnings: string[] = []
 
       // Runtime: excluded keys are silently dropped by the shim (not stored)
-      v2.setOptions({ panelStyle: 'color:red', inputClass: 'foo', maxlength: 100 }, (msg) => warnings.push(msg))
+      v2.setOptions(
+        { panelStyle: 'color:red', inputClass: 'foo', maxlength: 100 },
+        (msg) => warnings.push(msg)
+      )
 
       // Valid key is stored
       expect(v2.getOption<number>('maxlength')).toBe(100)

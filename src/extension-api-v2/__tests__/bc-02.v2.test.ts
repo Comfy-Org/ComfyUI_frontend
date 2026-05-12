@@ -78,8 +78,12 @@ describe('BC.02 v2 contract — node lifecycle: teardown', () => {
       const cleanupA = vi.fn()
       const cleanupB = vi.fn()
 
-      const nodeA = mountNode(() => { onScopeDispose(cleanupA) })
-      const nodeB = mountNode(() => { onScopeDispose(cleanupB) })
+      const nodeA = mountNode(() => {
+        onScopeDispose(cleanupA)
+      })
+      const nodeB = mountNode(() => {
+        onScopeDispose(cleanupB)
+      })
 
       nodeA.unmount()
 
@@ -96,9 +100,15 @@ describe('BC.02 v2 contract — node lifecycle: teardown', () => {
 
       // Mount 3 nodes, collect their unmount handles
       const handles = [
-        mountNode(() => { onScopeDispose(vi.fn()) }),
-        mountNode(() => { onScopeDispose(vi.fn()) }),
-        mountNode(() => { onScopeDispose(vi.fn()) }),
+        mountNode(() => {
+          onScopeDispose(vi.fn())
+        }),
+        mountNode(() => {
+          onScopeDispose(vi.fn())
+        }),
+        mountNode(() => {
+          onScopeDispose(vi.fn())
+        })
       ]
 
       world.addNode({ type: 'A' })

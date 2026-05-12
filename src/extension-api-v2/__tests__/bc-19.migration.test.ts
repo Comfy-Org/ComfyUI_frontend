@@ -10,39 +10,69 @@
 //
 // I-TF.8.D2 — BC.19 migration wired assertions.
 
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 // ── V1 app shim with patchable queuePrompt ────────────────────────────────────
 
 function createV1App() {
   const submitLog: unknown[] = []
-  let _queuePrompt = async (payload: unknown) => { submitLog.push(payload) }
+  let _queuePrompt = async (payload: unknown) => {
+    submitLog.push(payload)
+  }
 
   return {
-    get queuePrompt() { return _queuePrompt },
-    set queuePrompt(fn: (payload: unknown) => Promise<void>) { _queuePrompt = fn },
-    get submitLog() { return submitLog },
-    async callQueue(payload: unknown) { return _queuePrompt(payload) }
+    get queuePrompt() {
+      return _queuePrompt
+    },
+    set queuePrompt(fn: (payload: unknown) => Promise<void>) {
+      _queuePrompt = fn
+    },
+    get submitLog() {
+      return submitLog
+    },
+    async callQueue(payload: unknown) {
+      return _queuePrompt(payload)
+    }
   }
 }
 
 // ── V2 queue trigger (same as bc-19.v2 shape) ────────────────────────────────
 
 function createV2QueueTrigger() {
-  const handlers: Array<(e: { payload: Record<string, unknown>; cancel(): void }) => void> = []
+  const handlers: Array<
+    (e: { payload: Record<string, unknown>; cancel(): void }) => void
+  > = []
   const submitLog: unknown[] = []
 
-  function on(_evt: 'beforeQueuePrompt', h: (e: { payload: Record<string, unknown>; cancel(): void }) => void) {
+  function on(
+    _evt: 'beforeQueuePrompt',
+    h: (e: { payload: Record<string, unknown>; cancel(): void }) => void
+  ) {
     handlers.push(h)
-    return () => { const i = handlers.indexOf(h); if (i !== -1) handlers.splice(i, 1) }
+    return () => {
+      const i = handlers.indexOf(h)
+      if (i !== -1) handlers.splice(i, 1)
+    }
   }
 
   async function queuePrompt(opts: { batchCount?: number } = {}) {
     let cancelled = false
-    const payload: Record<string, unknown> = { prompt: {}, extra_data: { extra_pnginfo: {} } }
-    const evt = { payload, cancel() { cancelled = true } }
-    for (const h of [...handlers]) { h(evt); if (cancelled) break }
-    if (!cancelled) submitLog.push({ ...evt.payload, batchCount: opts.batchCount ?? 1 })
+    const payload: Record<string, unknown> = {
+      prompt: {},
+      extra_data: { extra_pnginfo: {} }
+    }
+    const evt = {
+      payload,
+      cancel() {
+        cancelled = true
+      }
+    }
+    for (const h of [...handlers]) {
+      h(evt)
+      if (cancelled) break
+    }
+    if (!cancelled)
+      submitLog.push({ ...evt.payload, batchCount: opts.batchCount ?? 1 })
     return { submitted: !cancelled }
   }
 
@@ -66,7 +96,9 @@ describe('BC.19 migration — workflow execution trigger', () => {
       }
 
       // v2: inject via beforeQueuePrompt handler
-      v2.on('beforeQueuePrompt', (e) => { e.payload.auth_token = 'tok-v2' })
+      v2.on('beforeQueuePrompt', (e) => {
+        e.payload.auth_token = 'tok-v2'
+      })
 
       await v1.callQueue({ prompt: {}, extra_data: {} })
       await v2.queuePrompt()
@@ -87,7 +119,9 @@ describe('BC.19 migration — workflow execution trigger', () => {
       const v2 = createV2QueueTrigger()
 
       // v1: wrapper that swallows the call (does not call orig)
-      v1.queuePrompt = async (_payload: unknown) => { /* suppressed */ }
+      v1.queuePrompt = async (_payload: unknown) => {
+        /* suppressed */
+      }
 
       // v2: cancel via event
       v2.on('beforeQueuePrompt', (e) => e.cancel())
@@ -123,8 +157,14 @@ describe('BC.19 migration — workflow execution trigger', () => {
       const v2Calls: number[] = []
 
       // v1: each assignment replaces
-      v1.queuePrompt = async (p) => { v1Calls.push(1); return }
-      v1.queuePrompt = async (p) => { v1Calls.push(2); return }
+      v1.queuePrompt = async (p) => {
+        v1Calls.push(1)
+        return
+      }
+      v1.queuePrompt = async (p) => {
+        v1Calls.push(2)
+        return
+      }
       await v1.callQueue({})
       // Only the second (latest) assignment fires
       expect(v1Calls).toEqual([2])

@@ -20,14 +20,21 @@ import type { ExtensionOptions } from '@/extension-api/lifecycle'
 // Models the S6.A1 pattern: extensions replace app.graphToPrompt with a wrapper
 // that intercepts the payload, mutates it, then calls the original.
 
-interface ApiPromptOutput { [nodeId: string]: { class_type: string; inputs: Record<string, unknown> } }
-interface WorkflowJson { nodes: unknown[]; links: unknown[] }
+interface ApiPromptOutput {
+  [nodeId: string]: { class_type: string; inputs: Record<string, unknown> }
+}
+interface WorkflowJson {
+  nodes: unknown[]
+  links: unknown[]
+}
 
 interface V1App {
   graphToPrompt(): { output: ApiPromptOutput; workflow: WorkflowJson }
 }
 
-function createV1App(baseOutput: ApiPromptOutput = {}): V1App & { callLog: string[] } {
+function createV1App(
+  baseOutput: ApiPromptOutput = {}
+): V1App & { callLog: string[] } {
   const callLog: string[] = []
   return {
     callLog,
@@ -43,7 +50,10 @@ function createV1App(baseOutput: ApiPromptOutput = {}): V1App & { callLog: strin
 
 function applyV1Patch(
   app: V1App & { callLog: string[] },
-  patcher: (payload: { output: ApiPromptOutput; workflow: WorkflowJson }) => void
+  patcher: (payload: {
+    output: ApiPromptOutput
+    workflow: WorkflowJson
+  }) => void
 ) {
   const original = app.graphToPrompt.bind(app)
   app.graphToPrompt = function () {
@@ -72,14 +82,22 @@ function createV2EventBus() {
     handlers.push(handler)
   }
 
-  function emit(spec: ApiPromptOutput, workflow: WorkflowJson): { spec: ApiPromptOutput; rejected: string | null } {
+  function emit(
+    spec: ApiPromptOutput,
+    workflow: WorkflowJson
+  ): { spec: ApiPromptOutput; rejected: string | null } {
     const event: BeforePromptEvent = {
       spec: { ...spec },
       workflow,
-      reject(reason) { rejections.push(reason) }
+      reject(reason) {
+        rejections.push(reason)
+      }
     }
     for (const h of handlers) h(event)
-    return { spec: event.spec, rejected: rejections.length > 0 ? rejections[0] : null }
+    return {
+      spec: event.spec,
+      rejected: rejections.length > 0 ? rejections[0] : null
+    }
   }
 
   return { on, emit }
@@ -90,7 +108,9 @@ function createV2EventBus() {
 describe('BC.14 migration — graphToPrompt interception', () => {
   describe('structural equivalence of v1 patch and v2 event handler (type-level)', () => {
     it('v1 monkey-patch intercepts graphToPrompt and can mutate output keys', () => {
-      const app = createV1App({ '1': { class_type: 'KSampler', inputs: { steps: 20 } } })
+      const app = createV1App({
+        '1': { class_type: 'KSampler', inputs: { steps: 20 } }
+      })
       applyV1Patch(app, (payload) => {
         payload.output['99'] = { class_type: 'VirtualNode', inputs: {} }
       })
@@ -106,7 +126,9 @@ describe('BC.14 migration — graphToPrompt interception', () => {
         e.spec['99'] = { class_type: 'VirtualNode', inputs: {} }
       })
 
-      const baseSpec: ApiPromptOutput = { '1': { class_type: 'KSampler', inputs: { steps: 20 } } }
+      const baseSpec: ApiPromptOutput = {
+        '1': { class_type: 'KSampler', inputs: { steps: 20 } }
+      }
       const { spec } = bus.emit(baseSpec, { nodes: [], links: [] })
 
       expect(spec).toHaveProperty('99')
@@ -116,16 +138,25 @@ describe('BC.14 migration — graphToPrompt interception', () => {
       // v1
       const appV1 = createV1App({ '1': { class_type: 'KSampler', inputs: {} } })
       applyV1Patch(appV1, (payload) => {
-        payload.output['_meta'] = { class_type: '__metadata__', inputs: { version: '1.0' } }
+        payload.output['_meta'] = {
+          class_type: '__metadata__',
+          inputs: { version: '1.0' }
+        }
       })
       const v1Result = appV1.graphToPrompt()
 
       // v2
       const bus = createV2EventBus()
       bus.on('beforePrompt', (e) => {
-        e.spec['_meta'] = { class_type: '__metadata__', inputs: { version: '1.0' } }
+        e.spec['_meta'] = {
+          class_type: '__metadata__',
+          inputs: { version: '1.0' }
+        }
       })
-      const { spec: v2Spec } = bus.emit({ '1': { class_type: 'KSampler', inputs: {} } }, { nodes: [], links: [] })
+      const { spec: v2Spec } = bus.emit(
+        { '1': { class_type: 'KSampler', inputs: {} } },
+        { nodes: [], links: [] }
+      )
 
       expect(v1Result.output['_meta']).toEqual(v2Spec['_meta'])
     })
@@ -195,8 +226,15 @@ describe('BC.14 migration — graphToPrompt interception', () => {
   describe('multiple v2 handlers — each sees prior mutations', () => {
     it('handler B sees metadata injected by handler A in the same event cycle', () => {
       const bus = createV2EventBus()
-      bus.on('beforePrompt', (e) => { e.spec['from-A'] = { class_type: 'A', inputs: {} } })
-      bus.on('beforePrompt', (e) => { e.spec['from-B'] = { class_type: 'B', inputs: { sawA: 'from-A' in e.spec } } })
+      bus.on('beforePrompt', (e) => {
+        e.spec['from-A'] = { class_type: 'A', inputs: {} }
+      })
+      bus.on('beforePrompt', (e) => {
+        e.spec['from-B'] = {
+          class_type: 'B',
+          inputs: { sawA: 'from-A' in e.spec }
+        }
+      })
 
       const { spec } = bus.emit({}, { nodes: [], links: [] })
       expect(spec['from-A']).toBeDefined()

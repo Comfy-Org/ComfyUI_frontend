@@ -38,7 +38,9 @@ describe('BC.18 v2 contract — comfyAPI.fetchApi', () => {
     })
 
     it('fetchApi returns a Promise', () => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response('ok', { status: 200 }))
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response('ok', { status: 200 })
+      )
       const { fetchApi } = createFetchApiStub()
       const result = fetchApi('/api/history')
       expect(result).toBeInstanceOf(Promise)
@@ -47,22 +49,36 @@ describe('BC.18 v2 contract — comfyAPI.fetchApi', () => {
 
   describe('request construction', () => {
     it('fetchApi prepends the base URL when given a relative path', async () => {
-      const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response('{}', { status: 200 }))
+      const fetchMock = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(new Response('{}', { status: 200 }))
       const { fetchApi } = createFetchApiStub('http://localhost:8188')
       await fetchApi('/api/history')
-      expect(fetchMock).toHaveBeenCalledWith('http://localhost:8188/api/history', undefined)
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://localhost:8188/api/history',
+        undefined
+      )
     })
 
     it('fetchApi passes RequestInit options through to fetch', async () => {
-      const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response('{}', { status: 200 }))
+      const fetchMock = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(new Response('{}', { status: 200 }))
       const { fetchApi } = createFetchApiStub()
-      const init: RequestInit = { method: 'POST', body: JSON.stringify({ key: 'val' }), headers: { 'Content-Type': 'application/json' } }
+      const init: RequestInit = {
+        method: 'POST',
+        body: JSON.stringify({ key: 'val' }),
+        headers: { 'Content-Type': 'application/json' }
+      }
       await fetchApi('/api/prompt', init)
       expect(fetchMock).toHaveBeenCalledWith(expect.any(String), init)
     })
 
     it('fetchApi resolves with the Response object returned by fetch', async () => {
-      const mockResponse = new Response('{"status":"ok"}', { status: 200, headers: { 'Content-Type': 'application/json' } })
+      const mockResponse = new Response('{"status":"ok"}', {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
       vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(mockResponse)
       const { fetchApi } = createFetchApiStub()
       const response = await fetchApi('/api/system_stats')
@@ -72,7 +88,9 @@ describe('BC.18 v2 contract — comfyAPI.fetchApi', () => {
 
   describe('non-2xx response handling', () => {
     it('fetchApi resolves (does not reject) on 404', async () => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response('Not Found', { status: 404 }))
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response('Not Found', { status: 404 })
+      )
       const { fetchApi } = createFetchApiStub()
       const response = await fetchApi('/api/missing')
       expect(response.status).toBe(404)
@@ -80,7 +98,9 @@ describe('BC.18 v2 contract — comfyAPI.fetchApi', () => {
     })
 
     it('fetchApi resolves (does not reject) on 500', async () => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response('Server Error', { status: 500 }))
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response('Server Error', { status: 500 })
+      )
       const { fetchApi } = createFetchApiStub()
       const response = await fetchApi('/api/broken')
       expect(response.status).toBe(500)
@@ -89,7 +109,9 @@ describe('BC.18 v2 contract — comfyAPI.fetchApi', () => {
 
   describe('FormData body support', () => {
     it('fetchApi accepts a FormData body and passes it to fetch unchanged', async () => {
-      const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response('{}', { status: 200 }))
+      const fetchMock = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(new Response('{}', { status: 200 }))
       const { fetchApi } = createFetchApiStub()
       const form = new FormData()
       form.append('filename', 'test.png')

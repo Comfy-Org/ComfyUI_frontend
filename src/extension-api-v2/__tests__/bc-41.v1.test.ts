@@ -20,7 +20,7 @@ interface NodeInput {
 // Serialize widget values positionally from a node with given inputs
 function serializeWidgetValues(
   inputs: NodeInput[],
-  values: Record<string, unknown>,
+  values: Record<string, unknown>
 ): unknown[] {
   return inputs.map((inp) => values[inp.name] ?? null)
 }
@@ -28,7 +28,7 @@ function serializeWidgetValues(
 // Deserialize widget values positionally back to a Record
 function deserializeWidgetValues(
   inputs: NodeInput[],
-  widgetsValues: unknown[],
+  widgetsValues: unknown[]
 ): Record<string, unknown> {
   const result: Record<string, unknown> = {}
   inputs.forEach((inp, i) => {
@@ -43,7 +43,7 @@ describe('BC.41 v1 contract — widget values positional serialization fragility
       const inputs: NodeInput[] = [
         { name: 'seed', type: 'INT', required: true },
         { name: 'steps', type: 'INT', required: true },
-        { name: 'cfg', type: 'FLOAT', required: true },
+        { name: 'cfg', type: 'FLOAT', required: true }
       ]
       const values = { seed: 42, steps: 20, cfg: 7.0 }
 
@@ -55,7 +55,7 @@ describe('BC.41 v1 contract — widget values positional serialization fragility
       const inputs: NodeInput[] = [
         { name: 'seed', type: 'INT', required: true },
         { name: 'steps', type: 'INT', required: true },
-        { name: 'cfg', type: 'FLOAT', required: true },
+        { name: 'cfg', type: 'FLOAT', required: true }
       ]
       const widgetsValues = [42, 20, 7.0]
 
@@ -75,14 +75,14 @@ describe('BC.41 v1 contract — widget values positional serialization fragility
         { name: 'new_input', type: 'STRING', required: true }, // inserted!
         { name: 'seed', type: 'INT', required: true },
         { name: 'steps', type: 'INT', required: true },
-        { name: 'cfg', type: 'FLOAT', required: true },
+        { name: 'cfg', type: 'FLOAT', required: true }
       ]
 
       const result = deserializeWidgetValues(newInputs, savedValues)
       // seed gets 42 → but it's mapped to new_input (position 0), seed gets 20
       expect(result.new_input).toBe(42) // wrong! 42 is the seed value
-      expect(result.seed).toBe(20)      // wrong! 20 is steps
-      expect(result.cfg).toBeNull()     // missing — array too short
+      expect(result.seed).toBe(20) // wrong! 20 is steps
+      expect(result.cfg).toBeNull() // missing — array too short
     })
   })
 
@@ -95,7 +95,7 @@ describe('BC.41 v1 contract — widget values positional serialization fragility
         { name: 'sampler', type: 'COMBO', required: true }, // NEW at 0
         { name: 'seed', type: 'INT', required: true },
         { name: 'steps', type: 'INT', required: true },
-        { name: 'cfg', type: 'FLOAT', required: true },
+        { name: 'cfg', type: 'FLOAT', required: true }
       ]
 
       const result = deserializeWidgetValues(newInputs, original)
@@ -111,18 +111,18 @@ describe('BC.41 v1 contract — widget values positional serialization fragility
       // steps is removed from the definition
       const newInputs: NodeInput[] = [
         { name: 'seed', type: 'INT', required: true },
-        { name: 'cfg', type: 'FLOAT', required: true }, // now at index 1
+        { name: 'cfg', type: 'FLOAT', required: true } // now at index 1
       ]
 
       const result = deserializeWidgetValues(newInputs, original)
       expect(result.seed).toBe(42) // correct
-      expect(result.cfg).toBe(20)  // wrong! cfg gets the steps value (20) not cfg value (7.0)
+      expect(result.cfg).toBe(20) // wrong! cfg gets the steps value (20) not cfg value (7.0)
     })
 
     it('round-trip is lossless only when the input definition is identical at save and load time', () => {
       const inputs: NodeInput[] = [
         { name: 'seed', type: 'INT', required: true },
-        { name: 'steps', type: 'INT', required: true },
+        { name: 'steps', type: 'INT', required: true }
       ]
       const original = { seed: 999, steps: 15 }
 

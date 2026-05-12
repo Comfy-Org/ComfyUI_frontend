@@ -16,7 +16,12 @@ import { describe, expect, it, vi } from 'vitest'
 
 // ── Minimal typed EventEmitter stub (mirrors proposed comfyApp.on shape) ──────
 
-type CanvasMode = 'graph' | 'app' | 'builder:inputs' | 'builder:outputs' | 'builder:arrange'
+type CanvasMode =
+  | 'graph'
+  | 'app'
+  | 'builder:inputs'
+  | 'builder:outputs'
+  | 'builder:arrange'
 
 interface MockComfyApp {
   on(event: 'canvasModeChanged', handler: (mode: CanvasMode) => void): void
@@ -31,7 +36,9 @@ function createMockComfyApp(initialMode: CanvasMode = 'graph'): MockComfyApp {
 
   return {
     canvas: {
-      get mode() { return currentMode }
+      get mode() {
+        return currentMode
+      }
     },
     on(_event, handler) {
       listeners.add(handler)
@@ -66,7 +73,13 @@ describe('BC.38 v2 contract — canvas mode observation', () => {
       const received: CanvasMode[] = []
       app.on('canvasModeChanged', (mode) => received.push(mode))
 
-      const modes: CanvasMode[] = ['app', 'builder:inputs', 'builder:outputs', 'builder:arrange', 'graph']
+      const modes: CanvasMode[] = [
+        'app',
+        'builder:inputs',
+        'builder:outputs',
+        'builder:arrange',
+        'graph'
+      ]
       for (const mode of modes) app._emit('canvasModeChanged', mode)
 
       expect(received).toEqual(modes)

@@ -26,7 +26,10 @@ function posToNamed(
 }
 
 /** Simulate loading a named dict from a saved named-dict workflow. */
-function loadNamed(named: WidgetValuesNamed, widgetName: WidgetName): WidgetValue {
+function loadNamed(
+  named: WidgetValuesNamed,
+  widgetName: WidgetName
+): WidgetValue {
   return named[widgetName] ?? null
 }
 
@@ -36,8 +39,22 @@ describe('BC.41 migration — widget values positional serialization fragility',
   describe('positional to named migration', () => {
     it('migrateWidgetValues converts v1 positional array to named dict using historical inputOrder', () => {
       // Historical inputOrder for KSampler (example)
-      const inputOrder: WidgetName[] = ['seed', 'steps', 'cfg', 'sampler_name', 'scheduler', 'denoise']
-      const oldValues: WidgetValuesPositional = [42, 20, 7.5, 'euler', 'normal', 1.0]
+      const inputOrder: WidgetName[] = [
+        'seed',
+        'steps',
+        'cfg',
+        'sampler_name',
+        'scheduler',
+        'denoise'
+      ]
+      const oldValues: WidgetValuesPositional = [
+        42,
+        20,
+        7.5,
+        'euler',
+        'normal',
+        1.0
+      ]
 
       const named = posToNamed(inputOrder, oldValues)
 
@@ -51,24 +68,34 @@ describe('BC.41 migration — widget values positional serialization fragility',
 
     it('positional array misaligns when a widget is inserted; named dict survives insertion', () => {
       const inputOrderBefore: WidgetName[] = ['seed', 'steps', 'cfg']
-      const inputOrderAfter: WidgetName[] = ['seed', 'new_widget', 'steps', 'cfg']
+      const inputOrderAfter: WidgetName[] = [
+        'seed',
+        'new_widget',
+        'steps',
+        'cfg'
+      ]
       const savedPositional: WidgetValuesPositional = [42, 20, 8.0]
 
       // v1 behavior: positional alignment against new order — WRONG
       const v1Misaligned = posToNamed(inputOrderAfter, savedPositional)
-      expect(v1Misaligned.new_widget).toBe(20)  // bug: steps value in new_widget slot
-      expect(v1Misaligned.steps).toBe(8.0)      // bug: cfg value in steps slot
+      expect(v1Misaligned.new_widget).toBe(20) // bug: steps value in new_widget slot
+      expect(v1Misaligned.steps).toBe(8.0) // bug: cfg value in steps slot
 
       // v2 migration: convert using OLD order, then load by name — correct
       const named = posToNamed(inputOrderBefore, savedPositional)
       expect(loadNamed(named, 'seed')).toBe(42)
-      expect(loadNamed(named, 'steps')).toBe(20)   // correct
-      expect(loadNamed(named, 'cfg')).toBe(8.0)    // correct
+      expect(loadNamed(named, 'steps')).toBe(20) // correct
+      expect(loadNamed(named, 'cfg')).toBe(8.0) // correct
       expect(loadNamed(named, 'new_widget')).toBeNull() // new widget has no saved value
     })
 
     it('positional array misaligns when a widget is removed; named dict is unaffected', () => {
-      const inputOrderBefore: WidgetName[] = ['seed', 'sampler_name', 'steps', 'cfg']
+      const inputOrderBefore: WidgetName[] = [
+        'seed',
+        'sampler_name',
+        'steps',
+        'cfg'
+      ]
       const inputOrderAfter: WidgetName[] = ['seed', 'steps', 'cfg'] // sampler_name removed
       const savedPositional: WidgetValuesPositional = [42, 'euler', 20, 8.0]
 
@@ -76,13 +103,13 @@ describe('BC.41 migration — widget values positional serialization fragility',
       const v1Misaligned = posToNamed(inputOrderAfter, savedPositional)
       expect(v1Misaligned.seed).toBe(42)
       expect(v1Misaligned.steps).toBe('euler') // bug: sampler_name value in steps slot
-      expect(v1Misaligned.cfg).toBe(20)        // bug: steps value in cfg slot
+      expect(v1Misaligned.cfg).toBe(20) // bug: steps value in cfg slot
 
       // v2 migration: use old inputOrder to build named dict, then read by name
       const named = posToNamed(inputOrderBefore, savedPositional)
       expect(loadNamed(named, 'seed')).toBe(42)
-      expect(loadNamed(named, 'steps')).toBe(20)  // correct
-      expect(loadNamed(named, 'cfg')).toBe(8.0)   // correct
+      expect(loadNamed(named, 'steps')).toBe(20) // correct
+      expect(loadNamed(named, 'cfg')).toBe(8.0) // correct
     })
 
     it('workflows saved in named-dict format after opt-in load correctly by name regardless of definition order', () => {

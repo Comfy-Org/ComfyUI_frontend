@@ -21,9 +21,7 @@ describe('BC.30 v1 contract — graph change tracking, batching, and reactivity 
   })
 
   describe('S11.G3 — beforeChange / afterChange batching', () => {
-    it.todo(
-      'calling graph.beforeChange() suspends incremental canvas redraws'
-    )
+    it.todo('calling graph.beforeChange() suspends incremental canvas redraws')
     it.todo(
       'calling graph.afterChange() after a batch of mutations triggers a single consolidated redraw'
     )

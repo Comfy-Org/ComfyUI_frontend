@@ -35,14 +35,14 @@ interface MockAPI {
 function makeSharedLiteGraph(): MockLiteGraph {
   return {
     NODE_MODES: { ALWAYS: 0, NEVER: 1, ON_EVENT: 2, ON_TRIGGER: 3 },
-    CONNECTING: 2,
+    CONNECTING: 2
   }
 }
 
 function makeSharedAPI(): MockAPI {
   return {
     getQueue: () => Promise.resolve({ queue_running: [], queue_pending: [] }),
-    interrupt: () => Promise.resolve(),
+    interrupt: () => Promise.resolve()
   }
 }
 
@@ -54,7 +54,8 @@ describe('BC.26 [migration] — S7.G1: window.LiteGraph → named import', () =>
 
     // v1 pattern: window.LiteGraph.NODE_MODES.ALWAYS
     const v1Global = { LiteGraph } as unknown as Window
-    const v1Value = (v1Global as unknown as { LiteGraph: MockLiteGraph }).LiteGraph.NODE_MODES['ALWAYS']
+    const v1Value = (v1Global as unknown as { LiteGraph: MockLiteGraph })
+      .LiteGraph.NODE_MODES['ALWAYS']
 
     // v2 pattern: import { LiteGraph } from '@comfyorg/litegraph'
     // (here we simulate the import as the same module object)

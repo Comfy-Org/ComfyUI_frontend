@@ -15,7 +15,10 @@
 // This file tests the current type surface and documents gaps precisely.
 
 import { describe, expect, it } from 'vitest'
-import type { ExtensionOptions, NodeExtensionOptions } from '@/extension-api/lifecycle'
+import type {
+  ExtensionOptions,
+  NodeExtensionOptions
+} from '@/extension-api/lifecycle'
 
 // ── Phase A — type surface tests ─────────────────────────────────────────────
 
