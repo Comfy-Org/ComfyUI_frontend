@@ -297,7 +297,11 @@ const extraRows = computed<DetailRow[]>(() => {
     const totalGenTimeValue =
       execMs !== undefined ? formatElapsedTime(execMs) : ''
     const computeHoursValue =
-      execMs !== undefined ? (execMs / 3600000).toFixed(3) + ' hours' : ''
+      execMs !== undefined
+        ? t('queue.jobDetails.computeHoursValue', {
+            value: (execMs / 3600000).toFixed(3)
+          })
+        : ''
 
     const rows: DetailRow[] = [
       { label: t('queue.jobDetails.generatedOn'), value: generatedOnValue },
