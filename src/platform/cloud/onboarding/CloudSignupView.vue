@@ -141,11 +141,7 @@ import { useRoute, useRouter } from 'vue-router'
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
-import {
-  captureOAuthRequestId,
-  getOAuthRequestId
-} from '@/platform/cloud/oauth/oauthState'
+import { useOAuthPostLoginRedirect } from '@/platform/cloud/oauth/useOAuthPostLoginRedirect'
 import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
 import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
 import { isCloud } from '@/platform/distribution/types'
@@ -159,7 +155,7 @@ const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const authActions = useAuthActions()
-const sessionCookie = useSessionCookie()
+const { resumeOAuthIfNeeded } = useOAuthPostLoginRedirect()
 const isSecureContext = globalThis.isSecureContext
 const authError = ref('')
 const userIsInChina = ref(false)
@@ -185,24 +181,12 @@ const onSuccess = async () => {
     life: 2000
   })
 
-  captureOAuthRequestId(route.query)
-  const oauthRequestId = getOAuthRequestId()
-  if (oauthRequestId) {
-    try {
-      await sessionCookie.createSessionOrThrow()
-    } catch (error) {
-      authError.value =
-        error instanceof Error
-          ? error.message
-          : 'Failed to establish session. Please try again.'
-      return
-    }
-    await router.push({
-      name: 'cloud-oauth-consent',
-      query: { oauth_request_id: oauthRequestId }
-    })
+  const oauthResume = await resumeOAuthIfNeeded(route.query)
+  if (oauthResume.kind === 'error') {
+    authError.value = oauthResume.message
     return
   }
+  if (oauthResume.kind === 'resumed') return
 
   const previousFullPath = getSafePreviousFullPath(route.query)
   if (previousFullPath) {
