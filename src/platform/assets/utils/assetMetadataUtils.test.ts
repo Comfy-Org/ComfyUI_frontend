@@ -15,7 +15,7 @@ import {
   getAssetTriggerPhrases,
   getAssetUserDescription,
   getSourceName,
-  stripModelFilename
+  formatAssetCardPlaceholderLabel
 } from '@/platform/assets/utils/assetMetadataUtils'
 
 describe('assetMetadataUtils', () => {
@@ -385,41 +385,47 @@ describe('assetMetadataUtils', () => {
     })
   })
 
-  describe('stripModelFilename', () => {
+  describe('formatAssetCardPlaceholderLabel', () => {
     it('strips a single safetensors extension', () => {
-      expect(stripModelFilename('v1-5-pruned-emaonly.safetensors')).toBe(
-        'v1-5-pruned-emaonly'
-      )
+      expect(
+        formatAssetCardPlaceholderLabel('v1-5-pruned-emaonly.safetensors')
+      ).toBe('v1-5-pruned-emaonly')
     })
 
     it('strips path prefix and keeps only the last segment', () => {
-      expect(stripModelFilename('owner/repo/model.safetensors')).toBe('model')
+      expect(
+        formatAssetCardPlaceholderLabel('owner/repo/model.safetensors')
+      ).toBe('model')
     })
 
     it('preserves hyphens and underscores as part of the name', () => {
-      expect(stripModelFilename('detail-tweaker_v2.ckpt')).toBe(
+      expect(formatAssetCardPlaceholderLabel('detail-tweaker_v2.ckpt')).toBe(
         'detail-tweaker_v2'
       )
     })
 
     it('only strips the trailing extension on double-extension names', () => {
-      expect(stripModelFilename('model.fp16.safetensors')).toBe('model.fp16')
+      expect(formatAssetCardPlaceholderLabel('model.fp16.safetensors')).toBe(
+        'model.fp16'
+      )
     })
 
     it('matches extensions case-insensitively', () => {
-      expect(stripModelFilename('Lora_v1.CKPT')).toBe('Lora_v1')
+      expect(formatAssetCardPlaceholderLabel('Lora_v1.CKPT')).toBe('Lora_v1')
     })
 
     it('handles a trailing slash by falling back to the preceding segment', () => {
-      expect(stripModelFilename('Author/')).toBe('Author')
+      expect(formatAssetCardPlaceholderLabel('Author/')).toBe('Author')
     })
 
     it('does not return an empty string when the input is just an extension', () => {
-      expect(stripModelFilename('.safetensors')).toBe('.safetensors')
+      expect(formatAssetCardPlaceholderLabel('.safetensors')).toBe(
+        '.safetensors'
+      )
     })
 
     it('returns plain names unchanged', () => {
-      expect(stripModelFilename('plain-name')).toBe('plain-name')
+      expect(formatAssetCardPlaceholderLabel('plain-name')).toBe('plain-name')
     })
   })
 })

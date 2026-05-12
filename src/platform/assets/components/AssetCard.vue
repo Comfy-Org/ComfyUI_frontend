@@ -20,9 +20,10 @@
     <div class="relative aspect-square w-full overflow-hidden rounded-xl">
       <div
         v-if="isLoading || error"
-        class="flex size-full cursor-pointer items-center justify-center bg-modal-card-placeholder-background p-4"
+        class="flex size-full cursor-pointer items-center justify-center bg-asset-card-fallback-background p-4"
       >
         <span
+          aria-hidden="true"
           class="line-clamp-3 px-2 text-center text-sm font-medium tracking-wide wrap-break-word text-muted-foreground"
         >
           {{ fallbackName }}
@@ -147,8 +148,8 @@ import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
 import {
-  getAssetCardTitle,
-  stripModelFilename
+  formatAssetCardPlaceholderLabel,
+  getAssetCardTitle
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
@@ -182,7 +183,9 @@ const descId = useId()
 
 const displayName = computed(() => getAssetCardTitle(asset))
 
-const fallbackName = computed(() => stripModelFilename(displayName.value))
+const fallbackName = computed(() =>
+  formatAssetCardPlaceholderLabel(displayName.value)
+)
 
 // Format at render so locale switches re-flow; the upstream WeakMap caches
 // AssetItem -> AssetDisplayItem by reference, which would otherwise pin the

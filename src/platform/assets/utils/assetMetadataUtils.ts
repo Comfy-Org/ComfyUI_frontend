@@ -205,8 +205,16 @@ export function getAssetCardTitle(asset: AssetItem): string {
   return getAssetDisplayFilename(asset)
 }
 
-const MODEL_FILE_EXTENSION_PATTERN =
-  /\.(safetensors|ckpt|pt|pth|bin|gguf|sft|onnx)$/i
+export const MODEL_FILE_EXTENSIONS = new Set([
+  '.safetensors',
+  '.ckpt',
+  '.pt',
+  '.pth',
+  '.bin',
+  '.sft',
+  '.onnx',
+  '.gguf'
+])
 
 /**
  * Builds a short caption for an asset card's placeholder when no preview
@@ -214,9 +222,15 @@ const MODEL_FILE_EXTENSION_PATTERN =
  * while preserving hyphens and underscores (these are part of the model name,
  * not delimiters). Never returns an empty string for a non-empty input.
  */
-export function stripModelFilename(name: string): string {
+export function formatAssetCardPlaceholderLabel(name: string): string {
   const segments = name.split('/').filter(Boolean)
   const filename = segments.at(-1) ?? name
-  const stripped = filename.replace(MODEL_FILE_EXTENSION_PATTERN, '').trim()
-  return stripped || filename.trim() || name
+  const lower = filename.toLowerCase()
+  for (const ext of MODEL_FILE_EXTENSIONS) {
+    if (lower.endsWith(ext)) {
+      const stripped = filename.slice(0, -ext.length).trim()
+      return stripped || filename.trim()
+    }
+  }
+  return filename.trim() || name
 }
