@@ -45,11 +45,16 @@ export const useSearchBoxStore = defineStore('searchBox', () => {
     )
   }
 
+  function openAtEvent(event: CanvasPointerEvent) {
+    popoverRef.value?.showSearchBox(event)
+  }
+
   return {
     useSearchBoxV2,
     newSearchBoxEnabled,
     setPopoverRef,
     toggleVisible,
+    openAtEvent,
     visible
   }
 })
