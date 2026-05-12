@@ -372,22 +372,19 @@ describe('useWorkspaceBilling', () => {
     it.for([
       ['empty string', ''],
       ['null', null]
-    ])(
-      'does not open a window when API returns %s url',
-      async ([_label, url]) => {
-        const openSpy = vi.fn()
-        vi.stubGlobal('open', openSpy)
+    ])('does not open a window when API returns %s url', async ([, url]) => {
+      const openSpy = vi.fn()
+      vi.stubGlobal('open', openSpy)
 
-        mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
-          url: url as string
-        })
+      mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
+        url: url as string
+      })
 
-        const billing = setupBilling()
-        await billing.manageSubscription()
+      const billing = setupBilling()
+      await billing.manageSubscription()
 
-        expect(openSpy).not.toHaveBeenCalled()
-      }
-    )
+      expect(openSpy).not.toHaveBeenCalled()
+    })
 
     it('records error when API call fails', async () => {
       mockWorkspaceApi.getPaymentPortalUrl.mockRejectedValue(

@@ -274,9 +274,9 @@ describe('useModelToNodeStore', () => {
       }
     )
 
-    it.for([['ultralytics'], ['ultralytics/bbox'], ['ultralytics/segm']])(
+    it.for(['ultralytics', 'ultralytics/bbox', 'ultralytics/segm'])(
       'should not register %s as a default provider, so the node falls back to its static combo (regression for #8468)',
-      ([modelType]) => {
+      (modelType) => {
         const modelToNodeStore = useModelToNodeStore()
         modelToNodeStore.registerDefaults()
 
