@@ -34,76 +34,47 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
 
   test.describe(
     'Nested subgraph duplicate widget names',
-    { tag: ['@widget'] },
+    { tag: ['@widget', '@vue-nodes'] },
     () => {
       const WORKFLOW = 'subgraphs/nested-duplicate-widget-names'
-
-      test.beforeEach(async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-      })
+      const OUTER_NODE_ID = '4'
+      const INNER_SUBGRAPH_NODE_ID = '3'
 
       test('Promoted widget values from both inner CLIPTextEncode nodes are distinguishable', async ({
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow(WORKFLOW)
 
-        await comfyExpect(async () => {
-          const state = await comfyPage.page.evaluate(() => {
-            const graph = window.app!.canvas.graph!
-            const outerNode = graph.getNodeById('4')
-            if (
-              !outerNode ||
-              typeof outerNode.isSubgraphNode !== 'function' ||
-              !outerNode.isSubgraphNode()
-            ) {
-              return null
-            }
+        // Outer subgraph node (id=4) promotes a SINGLE widget, disambiguated
+        // by source-node id "2" → must resolve to the inner CLIP id=2 value.
+        const outerNode = comfyPage.vueNodes.getNodeLocator(OUTER_NODE_ID)
+        await comfyExpect(outerNode).toBeVisible()
 
-            const dumpWidgets = (widgets: readonly unknown[] | undefined) =>
-              (widgets ?? []).map((w) => {
-                const widget = w as {
-                  name: string
-                  value: unknown
-                  sourceNodeId?: string
-                  sourceWidgetName?: string
-                }
-                return {
-                  name: widget.name,
-                  value: widget.value,
-                  sourceNodeId: widget.sourceNodeId,
-                  sourceWidgetName: widget.sourceWidgetName
-                }
-              })
+        const outerWidgets = outerNode.getByTestId(TestIds.widgets.widget)
+        await comfyExpect(outerWidgets).toHaveCount(1)
 
-            const innerSubgraphNode = outerNode.subgraph.getNodeById(3)
-            return {
-              outer: dumpWidgets(outerNode.widgets),
-              inner: innerSubgraphNode
-                ? dumpWidgets(innerSubgraphNode.widgets)
-                : []
-            }
-          })
+        const exposedTextWidget = outerNode.getByRole('textbox', {
+          name: 'text'
+        })
+        await comfyExpect(exposedTextWidget).toHaveValue('22222222222')
 
-          comfyExpect(state).not.toBeNull()
-          if (!state) return
+        // Inside the outer subgraph, the inner subgraph instance (id=3)
+        // exposes BOTH inner CLIP text widgets, deduplicated by name. Both
+        // source values must be reachable as distinguishable widgets.
+        await comfyPage.vueNodes.enterSubgraph(OUTER_NODE_ID)
 
-          // Inner subgraph instance (id=3) exposes BOTH inner CLIP text widgets,
-          // deduplicated by name. Both source values must be reachable.
-          const innerTextWidgets = state.inner.filter((w) =>
-            w.name.startsWith('text')
-          )
-          comfyExpect(innerTextWidgets).toHaveLength(2)
-          const innerValues = innerTextWidgets.map((w) => w.value)
-          comfyExpect(innerValues).toContain('11111111111')
-          comfyExpect(innerValues).toContain('22222222222')
+        const innerNode = comfyPage.vueNodes.getNodeLocator(
+          INNER_SUBGRAPH_NODE_ID
+        )
+        await comfyExpect(innerNode).toBeVisible()
 
-          // Outer subgraph node (id=4) promotes a SINGLE widget, disambiguated
-          // by source-node id "2" → must resolve to the inner CLIP id=2 value.
-          comfyExpect(state.outer).toHaveLength(1)
-          const exposed = state.outer[0]
-          comfyExpect(exposed.value).toBe('22222222222')
-          comfyExpect(exposed.sourceNodeId).toBe('3')
-        }).toPass({ timeout: 5_000 })
+        const innerTextboxes = innerNode.getByRole('textbox')
+        await comfyExpect(innerTextboxes).toHaveCount(2)
+        const innerValues = await innerTextboxes.evaluateAll((boxes) =>
+          (boxes as HTMLInputElement[]).map((b) => b.value)
+        )
+        comfyExpect(innerValues).toContain('11111111111')
+        comfyExpect(innerValues).toContain('22222222222')
       })
     }
   )
