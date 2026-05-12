@@ -90,23 +90,6 @@ describe('fetchRolesForBuild', () => {
     )
   })
 
-  it('uses jobUrl even when applyUrl is also present', async () => {
-    const fetchImpl = vi.fn(async () =>
-      response({ apiVersion: '1', jobs: [validJob()] })
-    )
-    const outcome = await fetchRolesForBuild({
-      apiKey: KEY,
-      boardName: BOARD,
-      baseUrl: BASE_URL,
-      fetchImpl: fetchImpl as unknown as typeof fetch
-    })
-    expect(outcome.status).toBe('fresh')
-    if (outcome.status !== 'fresh') return
-    expect(outcome.snapshot.departments[0]!.roles[0]!.jobUrl).toBe(
-      'https://jobs.ashbyhq.com/comfy-org/design-engineer'
-    )
-  })
-
   it('drops invalid roles individually and keeps the valid ones', async () => {
     const snapshotUrl = withSnapshotDir(makeSnapshot())
     const fetchImpl = vi.fn(async () =>

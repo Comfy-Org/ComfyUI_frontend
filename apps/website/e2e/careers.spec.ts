@@ -23,18 +23,6 @@ test.describe('Careers page @smoke', () => {
     expect(await roles.count()).toBeGreaterThan(0)
   })
 
-  test('each role links to the Ashby job description page, not the application form', async ({
-    page
-  }) => {
-    const roles = page.getByTestId('careers-role-link')
-    const count = await roles.count()
-    for (let i = 0; i < count; i++) {
-      const href = await roles.nth(i).getAttribute('href')
-      expect(href).toMatch(/^https:\/\/jobs\.ashbyhq\.com\//)
-      expect(href).not.toMatch(/\/application\/?$/)
-    }
-  })
-
   test('clicking a department button scrolls to and activates that section', async ({
     page
   }) => {
@@ -63,6 +51,21 @@ test.describe('Careers page @smoke', () => {
     await expect(engineeringSection).toBeInViewport()
 
     expect(await page.getByTestId('careers-role-link').count()).toBe(allCount)
+  })
+})
+
+test.describe('Careers page role links', () => {
+  test('each role links to the Ashby job description page, not the application form', async ({
+    page
+  }) => {
+    await page.goto('/careers')
+    const roles = page.getByTestId('careers-role-link')
+    const count = await roles.count()
+    for (let i = 0; i < count; i++) {
+      const href = await roles.nth(i).getAttribute('href')
+      expect(href).toMatch(/^https:\/\/jobs\.ashbyhq\.com\//)
+      expect(href).not.toMatch(/\/application\/?$/)
+    }
   })
 })
 
