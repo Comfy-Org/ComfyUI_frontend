@@ -7,7 +7,7 @@ let reporter: AssertReporter | null = null
  * Called once at app startup by platform/ or higher layers to wire in
  * Sentry, toast notifications, etc.
  */
-export function setAssertReporter(fn: AssertReporter): void {
+export function setAssertReporter(fn: AssertReporter | null): void {
   reporter = fn
 }
 

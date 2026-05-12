@@ -12,7 +12,7 @@ describe('assert', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllEnvs()
-    setAssertReporter(() => {})
+    setAssertReporter(null)
   })
 
   it('does nothing when condition is true', () => {
@@ -60,6 +60,15 @@ describe('assert', () => {
     setAssertReporter(reporter)
     assert(true, 'no call')
     expect(reporter).not.toHaveBeenCalled()
+  })
+
+  it('handles null reporter gracefully in non-DEV mode', () => {
+    vi.stubEnv('DEV', false)
+    setAssertReporter(null)
+    expect(() => assert(false, 'null reporter')).not.toThrow()
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[Assertion failed]: null reporter'
+    )
   })
 
   it('swallows reporter exceptions in non-DEV mode', () => {
