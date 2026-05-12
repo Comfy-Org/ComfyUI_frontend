@@ -120,9 +120,7 @@ export function useRemoteOptions<T = unknown>(
     isLoading: computed(() => query.isLoading.value),
     isFetching: computed(() => query.isFetching.value),
     error: computed(() => query.error.value),
-    refetch: async () => {
-      await query.refetch()
-    },
+    refetch: () => query.refetch(),
     invalidate
   }
 }

@@ -9,6 +9,7 @@ export function getBackoff(retryCount: number): number {
 
 export function isRetriableError(err: unknown): boolean {
   if (!axios.isAxiosError(err)) return true
+  if (err.code === 'ERR_CANCELED') return false
   const status = err.response?.status
   if (status == null) return true
   if (status >= 500) return true

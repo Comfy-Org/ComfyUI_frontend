@@ -132,9 +132,9 @@ describe('RichComboWidget', () => {
     )
     const widget = makeWidget(makeRemoteCombo())
     renderWithProviders(RichComboWidget, { widget })
-    expect(
-      await screen.findByTestId('remote-combo-trigger')
-    ).toBeInTheDocument()
+    const trigger = await screen.findByTestId('remote-combo-trigger')
+    expect(trigger).toHaveTextContent(/loading/i)
+    expect(trigger).toHaveAttribute('aria-disabled', 'true')
     resolveResp([])
   })
 
