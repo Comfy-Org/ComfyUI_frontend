@@ -22,17 +22,17 @@ import {
 import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
 import { hasWidgetNode } from '@/core/graph/subgraph/widgetNodeTypeGuard'
 
-import { isPromotedWidgetView } from './promotedWidgetTypes'
+import {
+  getPromotedWidgetHostStateName,
+  isPromotedWidgetView
+} from './promotedWidgetTypes'
 import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidgetTypes'
 
 export type { PromotedWidgetView } from './promotedWidgetTypes'
-export { isPromotedWidgetView } from './promotedWidgetTypes'
-
-export function getPromotedWidgetHostStateName(
-  widget: IPromotedWidgetView
-): string {
-  return [widget.name, widget.sourceNodeId, widget.sourceWidgetName].join(':')
-}
+export {
+  getPromotedWidgetHostStateName,
+  isPromotedWidgetView
+} from './promotedWidgetTypes'
 
 interface SubgraphSlotRef {
   name: string

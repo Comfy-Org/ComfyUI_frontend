@@ -39,6 +39,12 @@ export interface PromotedWidgetView extends IBaseWidget {
   hydrateHostValue(value: IBaseWidget['value']): void
 }
 
+export function getPromotedWidgetHostStateName(
+  widget: PromotedWidgetView
+): string {
+  return [widget.name, widget.sourceNodeId, widget.sourceWidgetName].join(':')
+}
+
 export function isPromotedWidgetView(
   widget: IBaseWidget
 ): widget is PromotedWidgetView {

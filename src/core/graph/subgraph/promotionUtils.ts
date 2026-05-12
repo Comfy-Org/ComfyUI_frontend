@@ -1,7 +1,9 @@
 import * as Sentry from '@sentry/vue'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { getPromotedWidgetHostStateName } from '@/core/graph/subgraph/promotedWidgetView'
+import {
+  getPromotedWidgetHostStateName,
+  isPromotedWidgetView
+} from '@/core/graph/subgraph/promotedWidgetTypes'
 import { t } from '@/i18n'
 import type {
   IContextMenuValue,
