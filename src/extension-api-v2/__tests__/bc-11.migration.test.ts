@@ -8,35 +8,34 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // ── Mock world (same pattern as bc-01.migration.test.ts) ──────────────────────
 
-const mockGetComponent = vi.fn()
-const mockEntitiesWith = vi.fn(() => [])
-
-vi.mock('@/world/worldInstance', () => ({
-  getWorld: () => ({
-    getComponent: mockGetComponent,
-    entitiesWith: mockEntitiesWith,
-    setComponent: vi.fn(),
-    removeComponent: vi.fn()
-  })
+// vi.hoisted factory runs before imports — keep handle creation inline.
+const { mockGetComponent, mockEntitiesWith } = vi.hoisted(() => ({
+  mockGetComponent: vi.fn(),
+  mockEntitiesWith: vi.fn(() => [] as unknown[])
 }))
 
-vi.mock('@/world/widgets/widgetComponents', () => ({
-  WidgetComponentContainer: Symbol('WidgetComponentContainer'),
-  WidgetComponentDisplay: Symbol('WidgetComponentDisplay'),
-  WidgetComponentSchema: Symbol('WidgetComponentSchema'),
-  WidgetComponentSerialize: Symbol('WidgetComponentSerialize'),
-  WidgetComponentValue: Symbol('WidgetComponentValue')
-}))
+import {
+  componentKeyMockFactory,
+  emptyMockFactory,
+  widgetComponentsMockFactory,
+  worldInstanceMockFactory
+} from './harness/worldMocks'
 
-vi.mock('@/world/entityIds', () => ({}))
+// vi.mock factories are hoisted; keep imported helpers behind arrows so
+// the import binding is read lazily at factory invocation time.
+vi.mock('@/world/worldInstance', () =>
+  worldInstanceMockFactory({ mockGetComponent, mockEntitiesWith })
+)
 
-vi.mock('@/world/componentKey', () => ({
-  defineComponentKey: (name: string) => ({ name })
-}))
+vi.mock('@/world/widgets/widgetComponents', () => widgetComponentsMockFactory())
 
-vi.mock('@/extension-api/node', () => ({}))
-vi.mock('@/extension-api/widget', () => ({}))
-vi.mock('@/extension-api/lifecycle', () => ({}))
+vi.mock('@/world/entityIds', () => emptyMockFactory())
+
+vi.mock('@/world/componentKey', () => componentKeyMockFactory())
+
+vi.mock('@/extension-api/node', () => emptyMockFactory())
+vi.mock('@/extension-api/widget', () => emptyMockFactory())
+vi.mock('@/extension-api/lifecycle', () => emptyMockFactory())
 
 import {
   _clearExtensionsForTesting,
@@ -65,7 +64,11 @@ function createV1Widget(name: string, value: unknown): V1Widget {
   return { name, value, callback: undefined }
 }
 
-function createV1ComboWidget(name: string, value: string, values: string[]): V1Widget {
+function createV1ComboWidget(
+  name: string,
+  value: string,
+  values: string[]
+): V1Widget {
   return { name, value, callback: undefined, options: { values } }
 }
 
@@ -177,7 +180,10 @@ describe('BC.11 migration — widget imperative state writes', () => {
       const newValues = ['euler', 'dpm_2', 'lcm']
 
       // v1: direct options mutation
-      const v1Widget = createV1ComboWidget('sampler', 'euler', ['euler', 'dpm_2'])
+      const v1Widget = createV1ComboWidget('sampler', 'euler', [
+        'euler',
+        'dpm_2'
+      ])
       v1Widget.options!.values = newValues
       expect(v1Widget.options!.values).toEqual(newValues)
 
@@ -185,7 +191,9 @@ describe('BC.11 migration — widget imperative state writes', () => {
       defineNodeExtension({
         name: 'bc11.mig.set-options',
         nodeCreated(handle) {
-          const wh = handle.addWidget('COMBO', 'sampler', 'euler', { values: ['euler', 'dpm_2'] })
+          const wh = handle.addWidget('COMBO', 'sampler', 'euler', {
+            values: ['euler', 'dpm_2']
+          })
           wh.setOption('values', newValues)
         }
       })
@@ -203,8 +211,14 @@ describe('BC.11 migration — widget imperative state writes', () => {
 
     it('both v1 and v2 option-set operations are independent per widget', () => {
       // v1: two widgets, each with independent options mutation
-      const v1WidgetA = createV1ComboWidget('schedulerA', 'karras', ['karras', 'normal'])
-      const v1WidgetB = createV1ComboWidget('schedulerB', 'karras', ['karras', 'normal'])
+      const v1WidgetA = createV1ComboWidget('schedulerA', 'karras', [
+        'karras',
+        'normal'
+      ])
+      const v1WidgetB = createV1ComboWidget('schedulerB', 'karras', [
+        'karras',
+        'normal'
+      ])
       v1WidgetA.options!.values = ['karras', 'exponential']
       // B is unaffected
       expect(v1WidgetB.options!.values).toEqual(['karras', 'normal'])
@@ -214,8 +228,12 @@ describe('BC.11 migration — widget imperative state writes', () => {
       defineNodeExtension({
         name: 'bc11.mig.option-independence',
         nodeCreated(handle) {
-          const whA = handle.addWidget('COMBO', 'schedulerA', 'karras', { values: ['karras', 'normal'] })
-          handle.addWidget('COMBO', 'schedulerB', 'karras', { values: ['karras', 'normal'] })
+          const whA = handle.addWidget('COMBO', 'schedulerA', 'karras', {
+            values: ['karras', 'normal']
+          })
+          handle.addWidget('COMBO', 'schedulerB', 'karras', {
+            values: ['karras', 'normal']
+          })
           whA.setOption('values', ['karras', 'exponential'])
         }
       })
@@ -223,7 +241,9 @@ describe('BC.11 migration — widget imperative state writes', () => {
       stubNodeType(id)
       mountExtensionsForNode(id)
 
-      const optCmds = dispatchedCommands.filter((c) => c.type === 'SetWidgetOption' && c.key === 'values')
+      const optCmds = dispatchedCommands.filter(
+        (c) => c.type === 'SetWidgetOption' && c.key === 'values'
+      )
       // Only one setOption dispatch — for whA
       expect(optCmds).toHaveLength(1)
     })

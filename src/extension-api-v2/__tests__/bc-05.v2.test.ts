@@ -8,35 +8,34 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // ── Mock world (same pattern as bc-01.v2.test.ts) ────────────────────────────
 
-const mockGetComponent = vi.fn()
-const mockEntitiesWith = vi.fn(() => [])
-
-vi.mock('@/world/worldInstance', () => ({
-  getWorld: () => ({
-    getComponent: mockGetComponent,
-    entitiesWith: mockEntitiesWith,
-    setComponent: vi.fn(),
-    removeComponent: vi.fn()
-  })
+// vi.hoisted factory runs before imports — keep handle creation inline.
+const { mockGetComponent, mockEntitiesWith } = vi.hoisted(() => ({
+  mockGetComponent: vi.fn(),
+  mockEntitiesWith: vi.fn(() => [] as unknown[])
 }))
 
-vi.mock('@/world/widgets/widgetComponents', () => ({
-  WidgetComponentContainer: Symbol('WidgetComponentContainer'),
-  WidgetComponentDisplay: Symbol('WidgetComponentDisplay'),
-  WidgetComponentSchema: Symbol('WidgetComponentSchema'),
-  WidgetComponentSerialize: Symbol('WidgetComponentSerialize'),
-  WidgetComponentValue: Symbol('WidgetComponentValue')
-}))
+import {
+  componentKeyMockFactory,
+  emptyMockFactory,
+  widgetComponentsMockFactory,
+  worldInstanceMockFactory
+} from './harness/worldMocks'
 
-vi.mock('@/world/entityIds', () => ({}))
+// vi.mock factories are hoisted; keep imported helpers behind arrows so
+// the import binding is read lazily at factory invocation time.
+vi.mock('@/world/worldInstance', () =>
+  worldInstanceMockFactory({ mockGetComponent, mockEntitiesWith })
+)
 
-vi.mock('@/world/componentKey', () => ({
-  defineComponentKey: (name: string) => ({ name })
-}))
+vi.mock('@/world/widgets/widgetComponents', () => widgetComponentsMockFactory())
 
-vi.mock('@/extension-api/node', () => ({}))
-vi.mock('@/extension-api/widget', () => ({}))
-vi.mock('@/extension-api/lifecycle', () => ({}))
+vi.mock('@/world/entityIds', () => emptyMockFactory())
+
+vi.mock('@/world/componentKey', () => componentKeyMockFactory())
+
+vi.mock('@/extension-api/node', () => emptyMockFactory())
+vi.mock('@/extension-api/widget', () => emptyMockFactory())
+vi.mock('@/extension-api/lifecycle', () => emptyMockFactory())
 
 import {
   _clearExtensionsForTesting,
@@ -63,7 +62,10 @@ function stubNodeType(id: NodeEntityId, comfyClass = 'TestNode') {
 
 function makeDiv(height = 120): HTMLElement {
   const el = document.createElement('div')
-  Object.defineProperty(el, 'offsetHeight', { value: height, configurable: true })
+  Object.defineProperty(el, 'offsetHeight', {
+    value: height,
+    configurable: true
+  })
   return el
 }
 
@@ -123,7 +125,10 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
       defineNodeExtension({
         name: 'bc05.v2.handle-name',
         nodeCreated(handle) {
-          const wh = handle.addDOMWidget({ name: 'preview', element: makeDiv() })
+          const wh = handle.addDOMWidget({
+            name: 'preview',
+            element: makeDiv()
+          })
           handleName = wh.name
         }
       })
@@ -163,7 +168,11 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
       defineNodeExtension({
         name: 'bc05.v2.custom-height',
         nodeCreated(handle) {
-          handle.addDOMWidget({ name: 'editor', element: el, height: customHeight })
+          handle.addDOMWidget({
+            name: 'editor',
+            element: el,
+            height: customHeight
+          })
         }
       })
 
@@ -227,7 +236,10 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
       defineNodeExtension({
         name: 'bc05.v2.set-height',
         nodeCreated(handle) {
-          const wh = handle.addDOMWidget({ name: 'resizable', element: makeDiv(100) })
+          const wh = handle.addDOMWidget({
+            name: 'resizable',
+            element: makeDiv(100)
+          })
           wh.setHeight(300)
         }
       })
@@ -237,7 +249,10 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
       mountExtensionsForNode(id)
 
       const setCmd = dispatchedCommands.find(
-        (c) => c.type === 'SetWidgetOption' && c.key === '__domHeight' && c.value === 300
+        (c) =>
+          c.type === 'SetWidgetOption' &&
+          c.key === '__domHeight' &&
+          c.value === 300
       )
 
       expect(setCmd).toBeDefined()

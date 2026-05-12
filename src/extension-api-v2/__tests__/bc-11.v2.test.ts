@@ -8,35 +8,34 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // ── Mock world (same pattern as bc-01.v2.test.ts) ────────────────────────────
 
-const mockGetComponent = vi.fn()
-const mockEntitiesWith = vi.fn(() => [])
-
-vi.mock('@/world/worldInstance', () => ({
-  getWorld: () => ({
-    getComponent: mockGetComponent,
-    entitiesWith: mockEntitiesWith,
-    setComponent: vi.fn(),
-    removeComponent: vi.fn()
-  })
+// vi.hoisted factory runs before imports — keep handle creation inline.
+const { mockGetComponent, mockEntitiesWith } = vi.hoisted(() => ({
+  mockGetComponent: vi.fn(),
+  mockEntitiesWith: vi.fn(() => [] as unknown[])
 }))
 
-vi.mock('@/world/widgets/widgetComponents', () => ({
-  WidgetComponentContainer: Symbol('WidgetComponentContainer'),
-  WidgetComponentDisplay: Symbol('WidgetComponentDisplay'),
-  WidgetComponentSchema: Symbol('WidgetComponentSchema'),
-  WidgetComponentSerialize: Symbol('WidgetComponentSerialize'),
-  WidgetComponentValue: Symbol('WidgetComponentValue')
-}))
+import {
+  componentKeyMockFactory,
+  emptyMockFactory,
+  widgetComponentsMockFactory,
+  worldInstanceMockFactory
+} from './harness/worldMocks'
 
-vi.mock('@/world/entityIds', () => ({}))
+// vi.mock factories are hoisted; keep imported helpers behind arrows so
+// the import binding is read lazily at factory invocation time.
+vi.mock('@/world/worldInstance', () =>
+  worldInstanceMockFactory({ mockGetComponent, mockEntitiesWith })
+)
 
-vi.mock('@/world/componentKey', () => ({
-  defineComponentKey: (name: string) => ({ name })
-}))
+vi.mock('@/world/widgets/widgetComponents', () => widgetComponentsMockFactory())
 
-vi.mock('@/extension-api/node', () => ({}))
-vi.mock('@/extension-api/widget', () => ({}))
-vi.mock('@/extension-api/lifecycle', () => ({}))
+vi.mock('@/world/entityIds', () => emptyMockFactory())
+
+vi.mock('@/world/componentKey', () => componentKeyMockFactory())
+
+vi.mock('@/extension-api/node', () => emptyMockFactory())
+vi.mock('@/extension-api/widget', () => emptyMockFactory())
+vi.mock('@/extension-api/lifecycle', () => emptyMockFactory())
 
 import {
   _clearExtensionsForTesting,
@@ -127,9 +126,9 @@ describe('BC.11 v2 contract — widget imperative state writes', () => {
       stubNodeType(id)
       mountExtensionsForNode(id)
 
-      const setCmd = dispatchedCommands.find((c) => c.type === 'SetWidgetValue') as
-        | { widgetId: string; value: unknown }
-        | undefined
+      const setCmd = dispatchedCommands.find(
+        (c) => c.type === 'SetWidgetValue'
+      ) as { widgetId: string; value: unknown } | undefined
 
       expect(setCmd).toBeDefined()
       expect(setCmd?.widgetId).toBe(capturedWidgetId[0])
@@ -151,7 +150,9 @@ describe('BC.11 v2 contract — widget imperative state writes', () => {
       stubNodeType(id)
       mountExtensionsForNode(id)
 
-      const setCmds = dispatchedCommands.filter((c) => c.type === 'SetWidgetValue')
+      const setCmds = dispatchedCommands.filter(
+        (c) => c.type === 'SetWidgetValue'
+      )
       expect(setCmds).toHaveLength(3)
       expect(setCmds.map((c) => c.value)).toEqual([1, 2, 3])
     })
@@ -172,7 +173,8 @@ describe('BC.11 v2 contract — widget imperative state writes', () => {
       mountExtensionsForNode(id)
 
       const cmd = dispatchedCommands.find(
-        (c) => c.type === 'SetWidgetOption' && c.key === 'hidden' && c.value === true
+        (c) =>
+          c.type === 'SetWidgetOption' && c.key === 'hidden' && c.value === true
       )
       expect(cmd).toBeDefined()
     })
@@ -191,7 +193,10 @@ describe('BC.11 v2 contract — widget imperative state writes', () => {
       mountExtensionsForNode(id)
 
       const cmd = dispatchedCommands.find(
-        (c) => c.type === 'SetWidgetOption' && c.key === 'disabled' && c.value === true
+        (c) =>
+          c.type === 'SetWidgetOption' &&
+          c.key === 'disabled' &&
+          c.value === true
       )
       expect(cmd).toBeDefined()
     })
@@ -202,7 +207,9 @@ describe('BC.11 v2 contract — widget imperative state writes', () => {
       defineNodeExtension({
         name: 'bc11.v2.set-option',
         nodeCreated(handle) {
-          const wh = handle.addWidget('COMBO', 'sampler_name', 'euler', { values: ['euler', 'dpm_2'] })
+          const wh = handle.addWidget('COMBO', 'sampler_name', 'euler', {
+            values: ['euler', 'dpm_2']
+          })
           wh.setOption('values', ['euler', 'dpm_2', 'lcm'])
         }
       })
@@ -233,7 +240,9 @@ describe('BC.11 v2 contract — widget imperative state writes', () => {
       stubNodeType(id)
       mountExtensionsForNode(id)
 
-      const optCmds = dispatchedCommands.filter((c) => c.type === 'SetWidgetOption')
+      const optCmds = dispatchedCommands.filter(
+        (c) => c.type === 'SetWidgetOption'
+      )
       const keys = optCmds.map((c) => c.key)
       expect(keys).toContain('placeholder')
       expect(keys).toContain('maxLength')
@@ -276,7 +285,9 @@ describe('BC.11 v2 contract — widget imperative state writes', () => {
       stubNodeType(id)
       mountExtensionsForNode(id)
 
-      const createCmds = dispatchedCommands.filter((c) => c.type === 'CreateWidget')
+      const createCmds = dispatchedCommands.filter(
+        (c) => c.type === 'CreateWidget'
+      )
       const names = createCmds.map((c) => c.name)
       expect(names).toContain('steps')
       expect(names).toContain('cfg')

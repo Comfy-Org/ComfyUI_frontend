@@ -8,35 +8,34 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // ── Mock world (same pattern as bc-01.migration.test.ts) ──────────────────────
 
-const mockGetComponent = vi.fn()
-const mockEntitiesWith = vi.fn(() => [])
-
-vi.mock('@/world/worldInstance', () => ({
-  getWorld: () => ({
-    getComponent: mockGetComponent,
-    entitiesWith: mockEntitiesWith,
-    setComponent: vi.fn(),
-    removeComponent: vi.fn()
-  })
+// vi.hoisted factory runs before imports — keep handle creation inline.
+const { mockGetComponent, mockEntitiesWith } = vi.hoisted(() => ({
+  mockGetComponent: vi.fn(),
+  mockEntitiesWith: vi.fn(() => [] as unknown[])
 }))
 
-vi.mock('@/world/widgets/widgetComponents', () => ({
-  WidgetComponentContainer: Symbol('WidgetComponentContainer'),
-  WidgetComponentDisplay: Symbol('WidgetComponentDisplay'),
-  WidgetComponentSchema: Symbol('WidgetComponentSchema'),
-  WidgetComponentSerialize: Symbol('WidgetComponentSerialize'),
-  WidgetComponentValue: Symbol('WidgetComponentValue')
-}))
+import {
+  componentKeyMockFactory,
+  emptyMockFactory,
+  widgetComponentsMockFactory,
+  worldInstanceMockFactory
+} from './harness/worldMocks'
 
-vi.mock('@/world/entityIds', () => ({}))
+// vi.mock factories are hoisted; keep imported helpers behind arrows so
+// the import binding is read lazily at factory invocation time.
+vi.mock('@/world/worldInstance', () =>
+  worldInstanceMockFactory({ mockGetComponent, mockEntitiesWith })
+)
 
-vi.mock('@/world/componentKey', () => ({
-  defineComponentKey: (name: string) => ({ name })
-}))
+vi.mock('@/world/widgets/widgetComponents', () => widgetComponentsMockFactory())
 
-vi.mock('@/extension-api/node', () => ({}))
-vi.mock('@/extension-api/widget', () => ({}))
-vi.mock('@/extension-api/lifecycle', () => ({}))
+vi.mock('@/world/entityIds', () => emptyMockFactory())
+
+vi.mock('@/world/componentKey', () => componentKeyMockFactory())
+
+vi.mock('@/extension-api/node', () => emptyMockFactory())
+vi.mock('@/extension-api/widget', () => emptyMockFactory())
+vi.mock('@/extension-api/lifecycle', () => emptyMockFactory())
 
 import {
   _clearExtensionsForTesting,
@@ -111,7 +110,10 @@ function stubNodeType(id: NodeEntityId, comfyClass = 'TestNode') {
 
 function makeDiv(height = 120): HTMLElement {
   const el = document.createElement('div')
-  Object.defineProperty(el, 'offsetHeight', { value: height, configurable: true })
+  Object.defineProperty(el, 'offsetHeight', {
+    value: height,
+    configurable: true
+  })
   return el
 }
 
@@ -172,14 +174,20 @@ describe('BC.05 migration — custom DOM widgets and node sizing', () => {
 
       // v1: getHeight callback
       const v1Node = createV1Node(2)
-      v1Node.addDOMWidget('widget', 'custom', el, { getHeight: () => reportedHeight })
+      v1Node.addDOMWidget('widget', 'custom', el, {
+        getHeight: () => reportedHeight
+      })
       const v1Height = v1Node.domWidgets[0].height
 
       // v2: explicit height option
       defineNodeExtension({
         name: 'bc05.mig.height-parity',
         nodeCreated(handle) {
-          handle.addDOMWidget({ name: 'widget', element: el, height: reportedHeight })
+          handle.addDOMWidget({
+            name: 'widget',
+            element: el,
+            height: reportedHeight
+          })
         }
       })
       const id = makeNodeId(2)
@@ -244,7 +252,10 @@ describe('BC.05 migration — custom DOM widgets and node sizing', () => {
       mountExtensionsForNode(id)
 
       const heightCmd = dispatchedCommands.find(
-        (c) => c.type === 'SetWidgetOption' && c.key === '__domHeight' && c.value === newHeight
+        (c) =>
+          c.type === 'SetWidgetOption' &&
+          c.key === '__domHeight' &&
+          c.value === newHeight
       )
 
       // v1 needed a computeSize override; v2 achieves the same via SetWidgetOption dispatch
