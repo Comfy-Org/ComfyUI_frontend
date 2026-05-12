@@ -19,19 +19,19 @@ import type { NodeExtensionOptions } from '@/extension-api/lifecycle'
 import type { NodeHandle } from '@/extension-api/node'
 import type { NodeEntityId } from '@/world/entityIds'
 
-export interface NodeRecord {
+interface NodeRecord {
   entityId: NodeEntityId
   comfyClass: string
 }
 
-export interface V2Runtime {
+interface V2Runtime {
   register: (options: NodeExtensionOptions) => void
   addNode: (comfyClass: string) => NodeEntityId
   mountNode: (id: NodeEntityId, isLoaded?: boolean) => void
   clear: () => void
 }
 
-export interface V2RuntimeOptions {
+interface V2RuntimeOptions {
   /** Prefix for synthetic entity ids — defaults to `'graph-test'`. */
   idPrefix?: string
 }

@@ -16,51 +16,39 @@
  *   vi.mock('@/extension-api/lifecycle', () => ({}))
  *
  * `vi.mock` is statically hoisted, so the *call sites* must remain in
- * the consumer file. What we centralise here is the factory *bodies*
- * plus a handle-creation helper that pairs cleanly with `vi.hoisted`.
+ * the consumer file. What we centralise here is the factory *bodies*.
+ * The handle-creation block stays inline in each consumer because
+ * `vi.hoisted(...)` runs before module imports resolve.
  *
  * @example
  *   import { vi } from 'vitest'
  *   import {
- *     createWorldMockHandles,
- *     emptyMockFactory,
  *     componentKeyMockFactory,
+ *     emptyMockFactory,
  *     widgetComponentsMockFactory,
  *     worldInstanceMockFactory
  *   } from './harness/worldMocks'
  *
- *   const { mockGetComponent, mockEntitiesWith } = vi.hoisted(
- *     createWorldMockHandles
- *   )
+ *   const { mockGetComponent, mockEntitiesWith } = vi.hoisted(() => ({
+ *     mockGetComponent: vi.fn(),
+ *     mockEntitiesWith: vi.fn(() => [] as unknown[])
+ *   }))
  *
  *   vi.mock('@/world/worldInstance', () =>
  *     worldInstanceMockFactory({ mockGetComponent, mockEntitiesWith })
  *   )
- *   vi.mock('@/world/widgets/widgetComponents', widgetComponentsMockFactory)
- *   vi.mock('@/world/entityIds', emptyMockFactory)
- *   vi.mock('@/world/componentKey', componentKeyMockFactory)
- *   vi.mock('@/extension-api/node', emptyMockFactory)
- *   vi.mock('@/extension-api/widget', emptyMockFactory)
- *   vi.mock('@/extension-api/lifecycle', emptyMockFactory)
+ *   vi.mock('@/world/widgets/widgetComponents', () => widgetComponentsMockFactory())
+ *   vi.mock('@/world/entityIds', () => emptyMockFactory())
+ *   vi.mock('@/world/componentKey', () => componentKeyMockFactory())
+ *   vi.mock('@/extension-api/node', () => emptyMockFactory())
+ *   vi.mock('@/extension-api/widget', () => emptyMockFactory())
+ *   vi.mock('@/extension-api/lifecycle', () => emptyMockFactory())
  */
 import { vi } from 'vitest'
 
-export interface WorldMockHandles {
+interface WorldMockHandles {
   mockGetComponent: ReturnType<typeof vi.fn>
   mockEntitiesWith: ReturnType<typeof vi.fn>
-}
-
-/**
- * Hoist-safe factory for the per-test mock function handles.
- * Wrap with `vi.hoisted(createWorldMockHandles)` at the top of the
- * test file so the resulting handles are available inside the
- * `vi.mock(...)` factory closures.
- */
-export function createWorldMockHandles(): WorldMockHandles {
-  return {
-    mockGetComponent: vi.fn(),
-    mockEntitiesWith: vi.fn(() => [])
-  }
 }
 
 /** Factory body for `@/world/worldInstance`. */
