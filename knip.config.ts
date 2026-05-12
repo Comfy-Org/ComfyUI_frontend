@@ -93,7 +93,12 @@ const config: KnipConfig = {
     'src/extensions/core/webcamCapture.v2.ts',
     // W6.P4.D — canvas-units canary + escape-hatch annotation example
     // (D-coord-space / A13).
-    'src/extensions/core/coordSpaceDemo.v2.ts'
+    'src/extensions/core/coordSpaceDemo.v2.ts',
+    // Test framework harness for v2 extension migration. Consumed by
+    // colocated *.v2.test.ts / *.migration.test.ts files; knip's vitest
+    // entry resolution does not yet see these as test infra. Tracked by
+    // I-TF (#12145).
+    'src/extension-api-v2/harness/**'
   ],
   vite: {
     config: ['vite?(.*).config.mts']
