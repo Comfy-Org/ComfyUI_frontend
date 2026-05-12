@@ -1,4 +1,6 @@
 #!/usr/bin/env tsx
+/* eslint-disable no-console -- CLI build script; stdout progress is intentional */
+
 /**
  * PKG5 docgen pipeline: TypeDoc → Mintlify MDX
  *
@@ -51,14 +53,16 @@ const PAGE_META: Record<string, PageMeta> = {
   // Lifecycle / registration
   defineextension: {
     title: 'defineExtension',
-    description: 'Register an app-scoped extension for init, setup, and shell UI contributions.',
+    description:
+      'Register an app-scoped extension for init, setup, and shell UI contributions.',
     icon: 'code',
     group: 'core',
     order: 1
   },
   definenodeextension: {
     title: 'defineNodeExtension',
-    description: 'Register a node-scoped extension reacting to node lifecycle events.',
+    description:
+      'Register a node-scoped extension reacting to node lifecycle events.',
     icon: 'code',
     group: 'core',
     order: 2
@@ -72,40 +76,46 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   extensionoptions: {
     title: 'ExtensionOptions',
-    description: 'Options object for defineExtension — app-wide lifecycle and shell UI.',
+    description:
+      'Options object for defineExtension — app-wide lifecycle and shell UI.',
     group: 'core',
     order: 4
   },
   nodeextensionoptions: {
     title: 'NodeExtensionOptions',
-    description: 'Options object for defineNodeExtension — node lifecycle hooks.',
+    description:
+      'Options object for defineNodeExtension — node lifecycle hooks.',
     group: 'core',
     order: 5
   },
   widgetextensionoptions: {
     title: 'WidgetExtensionOptions',
-    description: 'Options object for defineWidgetExtension — custom widget rendering.',
+    description:
+      'Options object for defineWidgetExtension — custom widget rendering.',
     group: 'core',
     order: 6
   },
   onnoderemoved: {
     title: 'onNodeRemoved',
     sidebarTitle: 'onNodeRemoved',
-    description: 'Implicit-context lifecycle hook: fires when a node is removed from the graph.',
+    description:
+      'Implicit-context lifecycle hook: fires when a node is removed from the graph.',
     group: 'core',
     order: 7
   },
   onnodemounted: {
     title: 'onNodeMounted',
     sidebarTitle: 'onNodeMounted',
-    description: 'Implicit-context lifecycle hook: fires when a node is fully mounted.',
+    description:
+      'Implicit-context lifecycle hook: fires when a node is fully mounted.',
     group: 'core',
     order: 8
   },
   // Handles
   nodehandle: {
     title: 'NodeHandle',
-    description: 'Controlled access to node state, mutations, slots, and events.',
+    description:
+      'Controlled access to node state, mutations, slots, and events.',
     icon: 'circle-nodes',
     group: 'handles',
     order: 10
@@ -174,13 +184,15 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   widgetbeforeserializeevent: {
     title: 'WidgetBeforeSerializeEvent',
-    description: 'Pre-serialization hook payload — override or skip widget value.',
+    description:
+      'Pre-serialization hook payload — override or skip widget value.',
     group: 'events',
     order: 28
   },
   widgetbeforequeueevent: {
     title: 'WidgetBeforeQueueEvent',
-    description: 'Pre-queue validation payload — call reject() to cancel queue.',
+    description:
+      'Pre-queue validation payload — call reject() to cancel queue.',
     group: 'events',
     order: 29
   },
@@ -218,7 +230,8 @@ const PAGE_META: Record<string, PageMeta> = {
   // Identity
   nodelocatorid: {
     title: 'NodeLocatorId',
-    description: 'Branded string ID that uniquely locates a node across graph snapshots.',
+    description:
+      'Branded string ID that uniquely locates a node across graph snapshots.',
     group: 'identity',
     order: 50
   },
@@ -242,7 +255,10 @@ const GROUP_LABELS: Record<PageMeta['group'], string> = {
 // ── Utilities ────────────────────────────────────────────────────────────────
 
 function slug(stem: string): string {
-  return stem.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  return stem
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
 }
 
 function metaFor(stem: string): PageMeta {
@@ -291,7 +307,10 @@ function toMintlifyMdx(raw: string, stem: string): string {
     .split('\n')
     .map((line) => {
       if (inBlock) {
-        if (line.trim() === '```') { inBlock = false; return line }
+        if (line.trim() === '```') {
+          inBlock = false
+          return line
+        }
         return line
       }
       if (line.startsWith('```')) {
@@ -347,7 +366,8 @@ function toMintlifyMdx(raw: string, stem: string): string {
     /^Stability: (stable|experimental|deprecated)\s*$/gm,
     (_match, level) => {
       if (level === 'stable') return '<Tip>**Stability:** Stable</Tip>'
-      if (level === 'experimental') return '<Warning>**Stability:** Experimental</Warning>'
+      if (level === 'experimental')
+        return '<Warning>**Stability:** Experimental</Warning>'
       return '<Warning>**Stability:** Deprecated</Warning>'
     }
   )
@@ -364,7 +384,9 @@ interface NavPage {
 
 function buildNavSnippet(stems: string[]): NavPage {
   // Sort stems by order then group by category
-  const sortedStems = stems.slice().sort((a, b) => metaFor(a).order - metaFor(b).order)
+  const sortedStems = stems
+    .slice()
+    .sort((a, b) => metaFor(a).order - metaFor(b).order)
   const sortedByGroup: Record<string, string[]> = {}
   for (const stem of sortedStems) {
     const group = metaFor(stem).group
@@ -372,7 +394,14 @@ function buildNavSnippet(stems: string[]): NavPage {
     sortedByGroup[group].push(`extensions/api/${slug(stem)}`)
   }
 
-  const groupOrder: PageMeta['group'][] = ['root', 'core', 'handles', 'events', 'shell', 'identity']
+  const groupOrder: PageMeta['group'][] = [
+    'root',
+    'core',
+    'handles',
+    'events',
+    'shell',
+    'identity'
+  ]
 
   const pages: (string | NavPage)[] = []
 
@@ -408,7 +437,8 @@ function processFiles(): void {
 
   fs.mkdirSync(mintlifyDir, { recursive: true })
 
-  const mdFiles = fs.readdirSync(rawDir, { recursive: true })
+  const mdFiles = fs
+    .readdirSync(rawDir, { recursive: true })
     .filter((f): f is string => typeof f === 'string' && f.endsWith('.md'))
 
   const stems: string[] = []
@@ -453,7 +483,11 @@ if (watchMode) {
     if (debounce) clearTimeout(debounce)
     debounce = setTimeout(() => {
       console.log('\n🔄 Source changed — rebuilding...')
-      try { run() } catch (e) { console.error(e) }
+      try {
+        run()
+      } catch (e) {
+        console.error(e)
+      }
     }, 500)
   })
 } else {
