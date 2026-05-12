@@ -190,6 +190,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import {
   DEFAULT_GROUPING_ID,
@@ -322,9 +323,10 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
       handleClick(e: MouseEvent) {
         const nodeDef = this.data
         if (this.leaf && nodeDef) {
-          withNodeAddSource('sidebar_drag', () =>
+          const node = withNodeAddSource('sidebar_drag', () =>
             useLitegraphService().addNodeOnGraph(nodeDef)
           )
+          if (node) useCanvasStore().canvas?.selectItems([node])
         } else {
           toggleNodeOnEvent(e, this)
         }
