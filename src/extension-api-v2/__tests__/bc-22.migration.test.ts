@@ -14,8 +14,14 @@ import { describe, expect, it, vi } from 'vitest'
 
 // ── V1 menu contribution models ───────────────────────────────────────────────
 
-interface V1MenuItem { label: string; callback: () => void }
-interface V1NodeLike { type: string; id: number }
+interface V1MenuItem {
+  label: string
+  callback: () => void
+}
+interface V1NodeLike {
+  type: string
+  id: number
+}
 
 interface V1Extension {
   name: string
@@ -29,12 +35,16 @@ function createV1MenuSystem() {
   const prototypePatches: Array<(node: V1NodeLike) => V1MenuItem[]> = []
 
   return {
-    registerExtension(ext: V1Extension) { extensions.push(ext) },
+    registerExtension(ext: V1Extension) {
+      extensions.push(ext)
+    },
     registerPrototypePatch(fn: (node: V1NodeLike) => V1MenuItem[]) {
       prototypePatches.push(fn)
     },
     getNodeMenuItems(node: V1NodeLike): V1MenuItem[] {
-      const fromHooks = extensions.flatMap((e) => e.getNodeMenuOptions?.(node) ?? [])
+      const fromHooks = extensions.flatMap(
+        (e) => e.getNodeMenuOptions?.(node) ?? []
+      )
       const fromPatches = prototypePatches.flatMap((fn) => fn(node))
       return [...fromHooks, ...fromPatches]
     },
@@ -46,7 +56,10 @@ function createV1MenuSystem() {
 
 // ── V2 menu model (desired contract, synthetic) ───────────────────────────────
 
-interface V2MenuItem { label: string; action: (ctx: { nodeType: string }) => void }
+interface V2MenuItem {
+  label: string
+  action: (ctx: { nodeType: string }) => void
+}
 
 function createV2MenuSystem() {
   const nodeItems: Map<string, V2MenuItem[]> = new Map()
@@ -70,8 +83,12 @@ function createV2MenuSystem() {
         if (idx !== -1) canvasItems.splice(idx, 1)
       }
     },
-    getNodeItems(nodeType: string) { return nodeItems.get(nodeType) ?? [] },
-    getCanvasItems() { return [...canvasItems] }
+    getNodeItems(nodeType: string) {
+      return nodeItems.get(nodeType) ?? []
+    },
+    getCanvasItems() {
+      return [...canvasItems]
+    }
   }
 }
 
@@ -86,7 +103,8 @@ describe('BC.22 migration — context menu contributions', () => {
       v1.registerExtension({
         name: 'bc22.mig.v1-hook',
         getNodeMenuOptions(node) {
-          if (node.type === 'KSampler') return [{ label: 'Run alone', callback: () => {} }]
+          if (node.type === 'KSampler')
+            return [{ label: 'Run alone', callback: () => {} }]
           return []
         }
       })
@@ -107,13 +125,16 @@ describe('BC.22 migration — context menu contributions', () => {
       v1.registerExtension({
         name: 'bc22.mig.v1-type-guard',
         getNodeMenuOptions(node) {
-          if (node.type === 'KSampler') return [{ label: 'KSampler Only', callback: () => {} }]
+          if (node.type === 'KSampler')
+            return [{ label: 'KSampler Only', callback: () => {} }]
           return []
         }
       })
       v2.addNodeItem('KSampler', { label: 'KSampler Only', action: () => {} })
 
-      expect(v1.getNodeMenuItems({ type: 'CLIPTextEncode', id: 2 })).toHaveLength(0)
+      expect(
+        v1.getNodeMenuItems({ type: 'CLIPTextEncode', id: 2 })
+      ).toHaveLength(0)
       expect(v2.getNodeItems('CLIPTextEncode')).toHaveLength(0)
     })
   })
@@ -124,7 +145,9 @@ describe('BC.22 migration — context menu contributions', () => {
       const v2 = createV2MenuSystem()
 
       // v1: simulate prototype patch that appends to menu for all nodes
-      v1.registerPrototypePatch((_node) => [{ label: 'From Patch', callback: () => {} }])
+      v1.registerPrototypePatch((_node) => [
+        { label: 'From Patch', callback: () => {} }
+      ])
       // v2: equivalent registered item
       v2.addNodeItem('*', { label: 'From Patch', action: () => {} }) // '*' = global
 
@@ -137,14 +160,24 @@ describe('BC.22 migration — context menu contributions', () => {
       const v1 = createV1MenuSystem()
       const v2 = createV2MenuSystem()
 
-      v1.registerPrototypePatch(() => [{ label: 'Patch A', callback: () => {} }])
-      v1.registerPrototypePatch(() => [{ label: 'Patch B', callback: () => {} }])
+      v1.registerPrototypePatch(() => [
+        { label: 'Patch A', callback: () => {} }
+      ])
+      v1.registerPrototypePatch(() => [
+        { label: 'Patch B', callback: () => {} }
+      ])
 
       v2.addNodeItem('TestNode', { label: 'Patch A', action: () => {} })
       v2.addNodeItem('TestNode', { label: 'Patch B', action: () => {} })
 
-      const v1Labels = v1.getNodeMenuItems({ type: 'TestNode', id: 1 }).map((i) => i.label).sort()
-      const v2Labels = v2.getNodeItems('TestNode').map((i) => i.label).sort()
+      const v1Labels = v1
+        .getNodeMenuItems({ type: 'TestNode', id: 1 })
+        .map((i) => i.label)
+        .sort()
+      const v2Labels = v2
+        .getNodeItems('TestNode')
+        .map((i) => i.label)
+        .sort()
 
       expect(v1Labels).toEqual(v2Labels)
     })
@@ -157,7 +190,9 @@ describe('BC.22 migration — context menu contributions', () => {
 
       v1.registerExtension({
         name: 'bc22.mig.canvas-v1',
-        getCanvasMenuOptions() { return [{ label: 'Create Group', callback: () => {} }] }
+        getCanvasMenuOptions() {
+          return [{ label: 'Create Group', callback: () => {} }]
+        }
       })
       v2.addCanvasItem({ label: 'Create Group', action: () => {} })
 
@@ -177,7 +212,9 @@ describe('BC.22 migration — context menu contributions', () => {
 
       v1.registerExtension({
         name: 'bc22.mig.action',
-        getNodeMenuOptions() { return [{ label: 'Do Something', callback: v1Cb }] }
+        getNodeMenuOptions() {
+          return [{ label: 'Do Something', callback: v1Cb }]
+        }
       })
       v2.addNodeItem('KSampler', { label: 'Do Something', action: v2Cb })
 
@@ -192,7 +229,10 @@ describe('BC.22 migration — context menu contributions', () => {
   describe('scope cleanup on dispose', () => {
     it('v2 item removed via disposable is no longer returned by getNodeItems', () => {
       const v2 = createV2MenuSystem()
-      const remove = v2.addNodeItem('KSampler', { label: 'Temporary', action: () => {} })
+      const remove = v2.addNodeItem('KSampler', {
+        label: 'Temporary',
+        action: () => {}
+      })
       v2.addNodeItem('KSampler', { label: 'Permanent', action: () => {} })
 
       expect(v2.getNodeItems('KSampler')).toHaveLength(2)
@@ -203,7 +243,10 @@ describe('BC.22 migration — context menu contributions', () => {
 
     it('removing one item does not affect items registered by other extensions', () => {
       const v2 = createV2MenuSystem()
-      const removeA = v2.addNodeItem('KSampler', { label: 'Ext A item', action: () => {} })
+      const removeA = v2.addNodeItem('KSampler', {
+        label: 'Ext A item',
+        action: () => {}
+      })
       v2.addNodeItem('KSampler', { label: 'Ext B item', action: () => {} })
 
       removeA()
@@ -216,19 +259,19 @@ describe('BC.22 migration — context menu contributions', () => {
   describe('[gap] real v2 API and Phase C strangler', () => {
     it.todo(
       '[gap] NodeExtensionOptions.getNodeMenuOptions not yet on the interface. ' +
-      'Phase B: add to NodeExtensionOptions; runtime merges returned items into the canvas context menu.'
+        'Phase B: add to NodeExtensionOptions; runtime merges returned items into the canvas context menu.'
     )
     it.todo(
       '[gap] ExtensionOptions.getCanvasMenuOptions not yet on the interface. ' +
-      'Phase B: add to ExtensionOptions; runtime merges items into empty-canvas right-click menu.'
+        'Phase B: add to ExtensionOptions; runtime merges items into empty-canvas right-click menu.'
     )
     it.todo(
       '[Phase C strangler] LiteGraph prototype.getExtraMenuOptions patches are intercepted and redirected to v2 node menu registry. ' +
-      'Blocked on I-PG.C — Phase C strangler mechanism (D11).'
+        'Blocked on I-PG.C — Phase C strangler mechanism (D11).'
     )
     it.todo(
       '[Phase C strangler] LGraphCanvas.prototype.getCanvasMenuOptions patches are intercepted and redirected to v2 canvas menu registry. ' +
-      'Blocked on I-PG.C.'
+        'Blocked on I-PG.C.'
     )
   })
 })

@@ -20,7 +20,7 @@ import { loadEvidenceSnippet, runV1, runV2 } from '@/extension-api-v2/harness'
 import type {
   ExtensionManager,
   SidebarTabExtension,
-  ToastMessageOptions,
+  ToastMessageOptions
 } from '@/types/extensionTypes'
 
 void [loadEvidenceSnippet, runV1, runV2]
@@ -37,42 +37,56 @@ function makeExtensionManager(): ExtensionManager & {
   const executed: Array<{ command: string; options?: unknown }> = []
 
   return {
-    registerSidebarTab(tab: SidebarTabExtension) { tabs.push(tab) },
+    registerSidebarTab(tab: SidebarTabExtension) {
+      tabs.push(tab)
+    },
     unregisterSidebarTab(id: string) {
-      const idx = tabs.findIndex(t => t.id === id)
+      const idx = tabs.findIndex((t) => t.id === id)
       if (idx !== -1) tabs.splice(idx, 1)
     },
-    getSidebarTabs() { return [...tabs] },
+    getSidebarTabs() {
+      return [...tabs]
+    },
 
     toast: {
-      add(msg: ToastMessageOptions) { toasts.push(msg) },
+      add(msg: ToastMessageOptions) {
+        toasts.push(msg)
+      },
       remove(msg: ToastMessageOptions) {
         const idx = toasts.indexOf(msg)
         if (idx !== -1) toasts.splice(idx, 1)
       },
-      removeAll() { toasts.length = 0 },
+      removeAll() {
+        toasts.length = 0
+      }
     },
 
     command: {
       commands: [],
       execute(command: string, options?: unknown) {
         executed.push({ command, options })
-      },
+      }
     },
 
     dialog: {} as ExtensionManager['dialog'],
     setting: {
       get: () => undefined,
-      set: () => {},
+      set: () => {}
     },
     workflow: {} as ExtensionManager['workflow'],
     lastNodeErrors: null,
     lastExecutionError: null,
     renderMarkdownToHtml: (md: string) => md,
 
-    get _tabs() { return tabs },
-    get _toasts() { return toasts },
-    get _executed() { return executed },
+    get _tabs() {
+      return tabs
+    },
+    get _toasts() {
+      return toasts
+    },
+    get _executed() {
+      return executed
+    }
   } as unknown as ExtensionManager & {
     _tabs: SidebarTabExtension[]
     _toasts: ToastMessageOptions[]
@@ -90,7 +104,7 @@ describe('BC.25 — Shell UI registration [v2 contract] — registerSidebarTab',
       title: 'My Panel',
       icon: 'pi pi-star',
       type: 'custom',
-      render: (_container: HTMLElement) => {},
+      render: (_container: HTMLElement) => {}
     }
 
     mgr.registerSidebarTab(tab)
@@ -107,7 +121,7 @@ describe('BC.25 — Shell UI registration [v2 contract] — registerSidebarTab',
       id: 'ext.removable',
       title: 'Removable',
       type: 'custom',
-      render: (_c: HTMLElement) => {},
+      render: (_c: HTMLElement) => {}
     }
     mgr.registerSidebarTab(tab)
     expect(mgr.getSidebarTabs()).toHaveLength(1)
@@ -122,7 +136,7 @@ describe('BC.25 — Shell UI registration [v2 contract] — registerSidebarTab',
       id,
       title: id,
       type: 'custom',
-      render: (_c: HTMLElement) => {},
+      render: (_c: HTMLElement) => {}
     })
 
     mgr.registerSidebarTab(makeTab('ext.a'))
@@ -155,7 +169,7 @@ describe('BC.25 — Shell UI registration [v2 contract] — command.execute', ()
     mgr.command.execute('A')
     mgr.command.execute('B')
     mgr.command.execute('C')
-    expect(mgr._executed.map(e => e.command)).toEqual(['A', 'B', 'C'])
+    expect(mgr._executed.map((e) => e.command)).toEqual(['A', 'B', 'C'])
   })
 })
 
@@ -173,7 +187,11 @@ describe('BC.25 — Shell UI registration [v2 contract] — toast.add', () => {
 
   it('toast.add supports error severity with detail', () => {
     const mgr = makeExtensionManager()
-    mgr.toast.add({ severity: 'error', summary: 'Failed', detail: 'Node not found' })
+    mgr.toast.add({
+      severity: 'error',
+      summary: 'Failed',
+      detail: 'Node not found'
+    })
 
     expect(mgr._toasts[0].severity).toBe('error')
     expect(mgr._toasts[0].detail).toBe('Node not found')

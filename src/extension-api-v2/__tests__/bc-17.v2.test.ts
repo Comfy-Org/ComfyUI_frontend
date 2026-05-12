@@ -16,12 +16,29 @@ import type { Unsubscribe } from '@/extension-api/events'
 
 // ── Typed payload shapes (mirrors what the real shell will emit) ──────────────
 
-interface ExecutedPayload { nodeId: string; output: Record<string, unknown> }
-interface ExecutionErrorPayload { nodeId: string; message: string }
-interface ExecutionStartPayload { promptId: string }
-interface ProgressPayload { step: number; totalSteps: number; nodeId: string }
-interface StatusPayload { queueRemaining: number; running: boolean }
-interface ReconnectingPayload { attempt: number }
+interface ExecutedPayload {
+  nodeId: string
+  output: Record<string, unknown>
+}
+interface ExecutionErrorPayload {
+  nodeId: string
+  message: string
+}
+interface ExecutionStartPayload {
+  promptId: string
+}
+interface ProgressPayload {
+  step: number
+  totalSteps: number
+  nodeId: string
+}
+interface StatusPayload {
+  queueRemaining: number
+  running: boolean
+}
+interface ReconnectingPayload {
+  attempt: number
+}
 
 type AppEventMap = {
   executed: ExecutedPayload
@@ -37,7 +54,10 @@ type AppEventMap = {
 function createAppEventBus() {
   const handlers = new Map<string, Array<(e: unknown) => void>>()
 
-  function on<K extends keyof AppEventMap>(event: K, handler: (e: AppEventMap[K]) => void): Unsubscribe {
+  function on<K extends keyof AppEventMap>(
+    event: K,
+    handler: (e: AppEventMap[K]) => void
+  ): Unsubscribe {
     if (!handlers.has(event)) handlers.set(event, [])
     const arr = handlers.get(event)!
     arr.push(handler as (e: unknown) => void)
@@ -47,11 +67,16 @@ function createAppEventBus() {
     }
   }
 
-  function emit<K extends keyof AppEventMap>(event: K, payload: AppEventMap[K]) {
+  function emit<K extends keyof AppEventMap>(
+    event: K,
+    payload: AppEventMap[K]
+  ) {
     for (const h of [...(handlers.get(event) ?? [])]) h(payload)
   }
 
-  function handlerCount(event: string) { return handlers.get(event)?.length ?? 0 }
+  function handlerCount(event: string) {
+    return handlers.get(event)?.length ?? 0
+  }
 
   return { on, emit, handlerCount }
 }
@@ -69,7 +94,9 @@ describe('BC.17 v2 contract — comfyApp event subscriptions', () => {
     it('on("executed") handler fires with typed { nodeId, output } payload', () => {
       const bus = createAppEventBus()
       let received: ExecutedPayload | undefined
-      bus.on('executed', (e) => { received = e })
+      bus.on('executed', (e) => {
+        received = e
+      })
       bus.emit('executed', { nodeId: 'node:g:42', output: { text: ['hi'] } })
       expect(received).toBeDefined()
       expect(received!.nodeId).toBe('node:g:42')
@@ -79,7 +106,9 @@ describe('BC.17 v2 contract — comfyApp event subscriptions', () => {
     it('on("executionError") handler fires with typed { nodeId, message } payload', () => {
       const bus = createAppEventBus()
       let received: ExecutionErrorPayload | undefined
-      bus.on('executionError', (e) => { received = e })
+      bus.on('executionError', (e) => {
+        received = e
+      })
       bus.emit('executionError', { nodeId: 'node:g:7', message: 'CUDA OOM' })
       expect(received!.nodeId).toBe('node:g:7')
       expect(received!.message).toBe('CUDA OOM')
@@ -88,7 +117,9 @@ describe('BC.17 v2 contract — comfyApp event subscriptions', () => {
     it('on("executionStart") handler fires with typed { promptId } payload', () => {
       const bus = createAppEventBus()
       let received: ExecutionStartPayload | undefined
-      bus.on('executionStart', (e) => { received = e })
+      bus.on('executionStart', (e) => {
+        received = e
+      })
       bus.emit('executionStart', { promptId: 'abc-123' })
       expect(received!.promptId).toBe('abc-123')
     })
@@ -98,7 +129,9 @@ describe('BC.17 v2 contract — comfyApp event subscriptions', () => {
     it('on("progress") handler fires with typed { step, totalSteps, nodeId } payload', () => {
       const bus = createAppEventBus()
       let received: ProgressPayload | undefined
-      bus.on('progress', (e) => { received = e })
+      bus.on('progress', (e) => {
+        received = e
+      })
       bus.emit('progress', { step: 5, totalSteps: 20, nodeId: 'node:g:1' })
       expect(received!.step).toBe(5)
       expect(received!.totalSteps).toBe(20)
@@ -120,7 +153,9 @@ describe('BC.17 v2 contract — comfyApp event subscriptions', () => {
     it('on("status") handler fires with typed { queueRemaining, running } payload', () => {
       const bus = createAppEventBus()
       let received: StatusPayload | undefined
-      bus.on('status', (e) => { received = e })
+      bus.on('status', (e) => {
+        received = e
+      })
       bus.emit('status', { queueRemaining: 3, running: true })
       expect(received!.queueRemaining).toBe(3)
       expect(received!.running).toBe(true)
@@ -129,7 +164,9 @@ describe('BC.17 v2 contract — comfyApp event subscriptions', () => {
     it('on("reconnecting") handler fires with typed { attempt } payload', () => {
       const bus = createAppEventBus()
       let received: ReconnectingPayload | undefined
-      bus.on('reconnecting', (e) => { received = e })
+      bus.on('reconnecting', (e) => {
+        received = e
+      })
       bus.emit('reconnecting', { attempt: 1 })
       expect(received!.attempt).toBe(1)
     })
@@ -160,7 +197,10 @@ describe('BC.17 v2 contract — comfyApp event subscriptions', () => {
     it('calling Unsubscribe twice does not throw', () => {
       const bus = createAppEventBus()
       const unsub = bus.on('reconnecting', vi.fn())
-      expect(() => { unsub(); unsub() }).not.toThrow()
+      expect(() => {
+        unsub()
+        unsub()
+      }).not.toThrow()
     })
   })
 

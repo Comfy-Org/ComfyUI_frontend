@@ -15,8 +15,8 @@ function makeApp() {
       return { prompt_id: 'abc-123', number: 0 }
     },
     graph: {
-      _nodes: [] as Array<{ widgets: Array<{ name: string; value: unknown }> }>,
-    },
+      _nodes: [] as Array<{ widgets: Array<{ name: string; value: unknown }> }>
+    }
   }
 }
 

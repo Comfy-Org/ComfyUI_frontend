@@ -11,10 +11,7 @@
 //   Real LiteGraph invocation requires Phase B eval sandbox.
 
 import { describe, expect, it, vi } from 'vitest'
-import {
-  countEvidenceExcerpts,
-  loadEvidenceSnippet
-} from '../harness'
+import { countEvidenceExcerpts, loadEvidenceSnippet } from '../harness'
 
 // ── Minimal v1 widget stub ────────────────────────────────────────────────────
 
@@ -29,7 +26,11 @@ function createV1Widget(name: string, value: unknown = ''): V1Widget {
 }
 
 // Simulate LiteGraph calling widget.callback when the user changes a value.
-function simulateUserChange(widget: V1Widget, newValue: unknown, node?: unknown): void {
+function simulateUserChange(
+  widget: V1Widget,
+  newValue: unknown,
+  node?: unknown
+): void {
   widget.value = newValue
   widget.callback?.(newValue, undefined, node)
 }
@@ -156,13 +157,15 @@ describe('BC.10 v1 contract — widget value subscription', () => {
       ]
       const calls: Array<[string, unknown]> = []
       const node = {
-        onWidgetChanged: (name: string, value: unknown) => calls.push([name, value])
+        onWidgetChanged: (name: string, value: unknown) =>
+          calls.push([name, value])
       }
 
       // Simulate changes to all three widgets
       for (const w of widgets) {
         const oldValue = w.value
-        const newValue = typeof w.value === 'number' ? (w.value as number) + 1 : 'changed'
+        const newValue =
+          typeof w.value === 'number' ? (w.value as number) + 1 : 'changed'
         w.value = newValue
         node.onWidgetChanged(w.name, newValue, oldValue, w)
       }
@@ -192,7 +195,10 @@ describe('BC.10 v1 contract — widget value subscription', () => {
           break
         }
       }
-      expect(found, 'Expected at least one S4.W1 excerpt with callback fingerprint').toBe(true)
+      expect(
+        found,
+        'Expected at least one S4.W1 excerpt with callback fingerprint'
+      ).toBe(true)
     })
 
     it('S2.N14 has at least one evidence excerpt in the database snapshot', () => {

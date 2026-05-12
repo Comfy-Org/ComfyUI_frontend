@@ -26,10 +26,12 @@ describe('BC.18 v1 contract — app.api.fetchApi', () => {
   describe('S6.A3 — authenticated HTTP calls via fetchApi (synthetic)', () => {
     it('fetchApi prepends the base URL so callers use relative paths', async () => {
       const captured: { url: string; init?: RequestInit }[] = []
-      global.fetch = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
-        captured.push({ url: String(url), init })
-        return new Response('{}', { status: 200 })
-      }) as typeof fetch
+      global.fetch = vi.fn(
+        async (url: RequestInfo | URL, init?: RequestInit) => {
+          captured.push({ url: String(url), init })
+          return new Response('{}', { status: 200 })
+        }
+      ) as typeof fetch
 
       const api = createFetchApi('http://localhost:8188')
       await api.fetchApi('/upload/image', { method: 'POST' })
@@ -39,13 +41,19 @@ describe('BC.18 v1 contract — app.api.fetchApi', () => {
 
     it('fetchApi passes init options (method, body) through to fetch unchanged', async () => {
       const captured: { init?: RequestInit }[] = []
-      global.fetch = vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
-        captured.push({ init })
-        return new Response('{}', { status: 200 })
-      }) as typeof fetch
+      global.fetch = vi.fn(
+        async (_url: RequestInfo | URL, init?: RequestInit) => {
+          captured.push({ init })
+          return new Response('{}', { status: 200 })
+        }
+      ) as typeof fetch
 
       const formData = new FormData()
-      formData.append('file', new Blob(['data'], { type: 'image/png' }), 'test.png')
+      formData.append(
+        'file',
+        new Blob(['data'], { type: 'image/png' }),
+        'test.png'
+      )
 
       const api = createFetchApi('http://localhost:8188')
       await api.fetchApi('/upload/image', { method: 'POST', body: formData })
@@ -55,7 +63,9 @@ describe('BC.18 v1 contract — app.api.fetchApi', () => {
     })
 
     it('a non-2xx response is returned as resolved Promise — callers must check response.ok', async () => {
-      global.fetch = vi.fn(async () => new Response('Not Found', { status: 404 })) as typeof fetch
+      global.fetch = vi.fn(
+        async () => new Response('Not Found', { status: 404 })
+      ) as typeof fetch
 
       const api = createFetchApi('http://localhost:8188')
       const response = await api.fetchApi('/nonexistent')
@@ -88,10 +98,12 @@ describe('BC.18 v1 contract — app.api.fetchApi', () => {
 
     it('extension can pass Authorization header inside init', async () => {
       const captured: { headers?: HeadersInit }[] = []
-      global.fetch = vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
-        captured.push({ headers: init?.headers })
-        return new Response('{}', { status: 200 })
-      }) as typeof fetch
+      global.fetch = vi.fn(
+        async (_url: RequestInfo | URL, init?: RequestInit) => {
+          captured.push({ headers: init?.headers })
+          return new Response('{}', { status: 200 })
+        }
+      ) as typeof fetch
 
       const api = createFetchApi('http://localhost:8188')
       await api.fetchApi('/queue', {

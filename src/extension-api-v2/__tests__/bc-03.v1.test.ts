@@ -53,7 +53,10 @@ describe('BC.03 v1 contract — node lifecycle: hydration from saved workflows',
           break
         }
       }
-      expect(found, 'Expected at least one S1.H1 excerpt with beforeRegisterNodeDef fingerprint').toBe(true)
+      expect(
+        found,
+        'Expected at least one S1.H1 excerpt with beforeRegisterNodeDef fingerprint'
+      ).toBe(true)
     })
 
     it('S1.H1 snippet is capturable by runV1 without throwing', () => {
@@ -88,7 +91,10 @@ describe('BC.03 v1 contract — node lifecycle: hydration from saved workflows',
         }
       }
 
-      node.onConfigure({ widgets_values: [42], properties: { custom_label: 'upscaler' } })
+      node.onConfigure({
+        widgets_values: [42],
+        properties: { custom_label: 'upscaler' }
+      })
 
       expect(capturedWidgetsValues).toEqual([42])
     })
@@ -101,7 +107,10 @@ describe('BC.03 v1 contract — node lifecycle: hydration from saved workflows',
         }
       }
 
-      node.onConfigure({ widgets_values: [42], properties: { custom_label: 'upscaler' } })
+      node.onConfigure({
+        widgets_values: [42],
+        properties: { custom_label: 'upscaler' }
+      })
 
       expect(capturedLabel).toBe('upscaler')
     })
@@ -113,13 +122,9 @@ describe('BC.03 v1 contract — node lifecycle: hydration from saved workflows',
       expect(onConfigure).not.toHaveBeenCalled()
     })
 
-    it.todo(
-      'fires during actual LiteGraph graph.configure()'
-    )
+    it.todo('fires during actual LiteGraph graph.configure()')
 
-    it.todo(
-      'LoadedFromWorkflow ECS tag'
-    )
+    it.todo('LoadedFromWorkflow ECS tag')
   })
 
   describe('S1.H1 — beforeRegisterNodeDef hydration guard (synthetic)', () => {
@@ -128,15 +133,21 @@ describe('BC.03 v1 contract — node lifecycle: hydration from saved workflows',
       const proto: Record<string, unknown> = {}
 
       // Simulate beforeRegisterNodeDef injecting onConfigure on the prototype
-      function beforeRegisterNodeDef(nodeType: { prototype: Record<string, unknown> }) {
+      function beforeRegisterNodeDef(nodeType: {
+        prototype: Record<string, unknown>
+      }) {
         nodeType.prototype.onConfigure = function (data: SerializedNodeData) {
           calls.push(data)
         }
       }
       beforeRegisterNodeDef({ prototype: proto })
 
-      const instanceA = Object.create(proto) as { onConfigure: (d: SerializedNodeData) => void }
-      const instanceB = Object.create(proto) as { onConfigure: (d: SerializedNodeData) => void }
+      const instanceA = Object.create(proto) as {
+        onConfigure: (d: SerializedNodeData) => void
+      }
+      const instanceB = Object.create(proto) as {
+        onConfigure: (d: SerializedNodeData) => void
+      }
 
       const dataA: SerializedNodeData = { widgets_values: [1] }
       const dataB: SerializedNodeData = { widgets_values: [2] }

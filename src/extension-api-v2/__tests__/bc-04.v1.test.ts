@@ -116,13 +116,9 @@ describe('BC.04 v1 contract — node interaction: pointer, selection, resize', (
       expect(handler).not.toHaveBeenCalled()
     })
 
-    it.todo(
-      'canvas rendering tests (need LiteGraph canvas)'
-    )
+    it.todo('canvas rendering tests (need LiteGraph canvas)')
 
-    it.todo(
-      'real pointer events (need LiteGraph canvas)'
-    )
+    it.todo('real pointer events (need LiteGraph canvas)')
   })
 
   describe('S2.N17 — node.onSelected (synthetic)', () => {

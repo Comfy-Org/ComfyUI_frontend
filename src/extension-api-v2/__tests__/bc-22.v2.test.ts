@@ -14,7 +14,10 @@
 // I-TF.8 — BC.22 v2 wired assertions.
 
 import { describe, expect, it } from 'vitest'
-import type { NodeExtensionOptions, ExtensionOptions } from '@/extension-api/lifecycle'
+import type {
+  NodeExtensionOptions,
+  ExtensionOptions
+} from '@/extension-api/lifecycle'
 
 // ── Synthetic menu registry ───────────────────────────────────────────────────
 // Models the desired v2 menu contribution surface without the real implementation.
@@ -39,8 +42,12 @@ function createNodeMenuRegistry() {
         if (idx !== -1) l.splice(idx, 1)
       }
     },
-    getItems(nodeType: string) { return items.get(nodeType) ?? [] },
-    clear() { items.clear() }
+    getItems(nodeType: string) {
+      return items.get(nodeType) ?? []
+    },
+    clear() {
+      items.clear()
+    }
   }
 }
 
@@ -54,8 +61,12 @@ function createCanvasMenuRegistry() {
         if (idx !== -1) items.splice(idx, 1)
       }
     },
-    getItems() { return [...items] },
-    clear() { items.length = 0 }
+    getItems() {
+      return [...items]
+    },
+    clear() {
+      items.length = 0
+    }
   }
 }
 
@@ -101,7 +112,10 @@ describe('BC.22 v2 contract — context menu contributions', () => {
 
     it('addItem returns a disposable that removes only that item', () => {
       const reg = createNodeMenuRegistry()
-      const remove = reg.addItem('KSampler', { label: 'Removable', action: () => {} })
+      const remove = reg.addItem('KSampler', {
+        label: 'Removable',
+        action: () => {}
+      })
       reg.addItem('KSampler', { label: 'Stays', action: () => {} })
       expect(reg.getItems('KSampler')).toHaveLength(2)
 
@@ -113,13 +127,19 @@ describe('BC.22 v2 contract — context menu contributions', () => {
     it('calling disposable twice is safe (idempotent)', () => {
       const reg = createNodeMenuRegistry()
       const remove = reg.addItem('KSampler', { label: 'X', action: () => {} })
-      expect(() => { remove(); remove() }).not.toThrow()
+      expect(() => {
+        remove()
+        remove()
+      }).not.toThrow()
     })
 
     it('action callback receives context with node type', () => {
       const reg = createNodeMenuRegistry()
       const received: string[] = []
-      reg.addItem('KSampler', { label: 'Test', action: (ctx) => received.push(ctx.type) })
+      reg.addItem('KSampler', {
+        label: 'Test',
+        action: (ctx) => received.push(ctx.type)
+      })
 
       const items = reg.getItems('KSampler')
       items[0].action({ type: 'KSampler' })
@@ -155,22 +175,22 @@ describe('BC.22 v2 contract — context menu contributions', () => {
   describe('[gap] real v2 API — Phase B / Phase C', () => {
     it.todo(
       '[gap] NodeExtensionOptions does not have addContextMenuItem. ' +
-      'Phase B: add getNodeMenuOptions?(node: NodeHandle): MenuItem[] to NodeExtensionOptions. ' +
-      'Or equivalent declarative form. Replaces S1.H3 (getNodeMenuItems hook) and S2.N5 (prototype.getExtraMenuOptions).'
+        'Phase B: add getNodeMenuOptions?(node: NodeHandle): MenuItem[] to NodeExtensionOptions. ' +
+        'Or equivalent declarative form. Replaces S1.H3 (getNodeMenuItems hook) and S2.N5 (prototype.getExtraMenuOptions).'
     )
     it.todo(
       '[gap] ExtensionOptions does not have addCanvasMenuItem. ' +
-      'Phase B: add getCanvasMenuOptions?(): MenuItem[] to ExtensionOptions. ' +
-      'Replaces S1.H4 (getCanvasMenuItems hook).'
+        'Phase B: add getCanvasMenuOptions?(): MenuItem[] to ExtensionOptions. ' +
+        'Replaces S1.H4 (getCanvasMenuItems hook).'
     )
     it.todo(
       '[Phase C strangler] prototype.getExtraMenuOptions patching (S2.N5) — ' +
-      'intercepted by strangler and redirected to registered v2 menu items. ' +
-      'Blocked on I-PG.C implementation.'
+        'intercepted by strangler and redirected to registered v2 menu items. ' +
+        'Blocked on I-PG.C implementation.'
     )
     it.todo(
       '[Phase C strangler] LGraphCanvas.prototype.getCanvasMenuOptions patching — ' +
-      'intercepted and redirected to v2 canvas menu registry. Phase C only.'
+        'intercepted and redirected to v2 canvas menu registry. Phase C only.'
     )
   })
 })

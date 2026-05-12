@@ -39,13 +39,17 @@ function makeV1Node(inputs: V1Slot[], outputs: V1Slot[]): V1Node {
   return { inputs: [...inputs], outputs: [...outputs] }
 }
 
-function makeSlotInfo(name: string, type: string, dir: 'input' | 'output'): SlotInfo {
+function makeSlotInfo(
+  name: string,
+  type: string,
+  dir: 'input' | 'output'
+): SlotInfo {
   return {
     entityId: 1 as SlotEntityId,
     name,
     type,
     direction: dir,
-    nodeEntityId: 1 as NodeEntityId,
+    nodeEntityId: 1 as NodeEntityId
   }
 }
 
@@ -83,13 +87,13 @@ describe('BC.27 [migration] — S9.S1: slot read access', () => {
     const v1 = makeV1Node(
       [
         { name: 'model', type: 'MODEL', link: null },
-        { name: 'clip', type: 'CLIP', link: null },
+        { name: 'clip', type: 'CLIP', link: null }
       ],
       []
     )
     const v2Inputs = [
       makeSlotInfo('model', 'MODEL', 'input'),
-      makeSlotInfo('clip', 'CLIP', 'input'),
+      makeSlotInfo('clip', 'CLIP', 'input')
     ]
 
     expect(v1.inputs.length).toBe(v2Inputs.length)

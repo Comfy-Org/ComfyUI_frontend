@@ -14,7 +14,7 @@ import type {
 } from '@/extension-api/widget'
 
 describe('BC.12 v2 contract — per-widget serialization transform', () => {
-  describe('WidgetHandle.on(\'beforeSerialize\', handler) — event type shape', () => {
+  describe("WidgetHandle.on('beforeSerialize', handler) — event type shape", () => {
     it('WidgetBeforeSerializeEvent has the correct structural shape', () => {
       // Type-level check — verifies the contract surface without needing a live World.
       type E = WidgetBeforeSerializeEvent
@@ -26,7 +26,7 @@ describe('BC.12 v2 contract — per-widget serialization transform', () => {
       expectTypeOf<E['skip']>().toBeFunction()
     })
 
-    it('WidgetHandle.on accepts \'beforeSerialize\' and returns Unsubscribe', () => {
+    it("WidgetHandle.on accepts 'beforeSerialize' and returns Unsubscribe", () => {
       // Type-level: on('beforeSerialize') overload exists and returns () => void
       type OnBeforeSerialize = WidgetHandle['on']
       type Unsubscribe = ReturnType<WidgetHandle['on']>
@@ -37,14 +37,22 @@ describe('BC.12 v2 contract — per-widget serialization transform', () => {
       type SerializeHandler = Parameters<
         Extract<
           OnBeforeSerialize,
-          (event: 'beforeSerialize', handler: (e: WidgetBeforeSerializeEvent) => void | Promise<void>) => () => void
+          (
+            event: 'beforeSerialize',
+            handler: (e: WidgetBeforeSerializeEvent) => void | Promise<void>
+          ) => () => void
         >
       >[1]
       expectTypeOf<SerializeHandler>().not.toBeNever()
     })
 
     it('beforeSerialize event context discriminant covers all four serialization paths', () => {
-      const contexts = ['workflow', 'prompt', 'clone', 'subgraph-promote'] as const
+      const contexts = [
+        'workflow',
+        'prompt',
+        'clone',
+        'subgraph-promote'
+      ] as const
       type Context = (typeof contexts)[number]
       type EventContext = WidgetBeforeSerializeEvent['context']
 
@@ -65,10 +73,10 @@ describe('BC.12 v2 contract — per-widget serialization transform', () => {
     })
   })
 
-  describe('WidgetHandle.on(\'beforeSerialize\', handler) — runtime behaviour', () => {
+  describe("WidgetHandle.on('beforeSerialize', handler) — runtime behaviour", () => {
     it.todo(
       // TODO(Phase B): requires live World + graphToPrompt pipeline
-      'on(\'beforeSerialize\', fn) fires fn during graphToPrompt(); calling event.setSerializedValue(v) places v in the named map under the widget name'
+      "on('beforeSerialize', fn) fires fn during graphToPrompt(); calling event.setSerializedValue(v) places v in the named map under the widget name"
     )
 
     it.todo(
@@ -78,12 +86,12 @@ describe('BC.12 v2 contract — per-widget serialization transform', () => {
 
     it.todo(
       // TODO(Phase B): requires live World + graphToPrompt pipeline
-      'calling event.skip() in a context=\'prompt\' handler excludes the widget from the backend API prompt; the named-map entry is still written for workflow serialization'
+      "calling event.skip() in a context='prompt' handler excludes the widget from the backend API prompt; the named-map entry is still written for workflow serialization"
     )
 
     it.todo(
       // TODO(Phase B): requires live World + scope disposal
-      'on(\'beforeSerialize\') listener is removed when the extension scope is disposed; subsequent serializations use the raw getValue() result'
+      "on('beforeSerialize') listener is removed when the extension scope is disposed; subsequent serializations use the raw getValue() result"
     )
 
     it.todo(
@@ -106,7 +114,7 @@ describe('BC.12 v2 contract — per-widget serialization transform', () => {
 
     it.todo(
       // TODO(Phase B): requires live World + graphToPrompt pipeline
-      'a widget with setSerializeEnabled(false) still fires beforeSerialize with context=\'prompt\'; the returned serializedValue is NOT sent to the backend prompt'
+      "a widget with setSerializeEnabled(false) still fires beforeSerialize with context='prompt'; the returned serializedValue is NOT sent to the backend prompt"
     )
 
     it.todo(

@@ -24,9 +24,7 @@ describe('BC.29 v2 contract — graph enumeration, mutation, and cross-scope ide
   })
 
   describe('S14.ID1 — cross-subgraph identity helpers', () => {
-    it.todo(
-      'NodeLocatorId.parse(id) returns a typed { scope, localId } object'
-    )
+    it.todo('NodeLocatorId.parse(id) returns a typed { scope, localId } object')
     it.todo(
       'NodeLocatorId.create(scope, localId) returns a stable string compatible with v1 parseNodeLocatorId output'
     )

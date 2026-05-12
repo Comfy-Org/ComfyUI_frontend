@@ -28,7 +28,8 @@ function makeSettingsDialogRegistry() {
 
   return {
     registerDialog(entry: DialogEntry): void {
-      if (entries.has(entry.id)) throw new Error(`Dialog id '${entry.id}' already registered`)
+      if (entries.has(entry.id))
+        throw new Error(`Dialog id '${entry.id}' already registered`)
       entries.set(entry.id, entry)
       dialogState.set(entry.id, { open: false, closeCallback: null })
     },
@@ -36,7 +37,9 @@ function makeSettingsDialogRegistry() {
       const state = dialogState.get(id)
       if (!state) throw new Error(`No dialog registered with id '${id}'`)
       state.open = true
-      const close = () => { state.open = false }
+      const close = () => {
+        state.open = false
+      }
       state.closeCallback = close
       return { close }
     },
@@ -77,7 +80,11 @@ describe('BC.34 v2 contract — settings-panel custom dialog integration', () =>
   describe('S12.UI3 — registerDialog API', () => {
     it('registerDialog({ id, label, component }) adds a trigger entry to the settings panel', () => {
       const comp = makeVueComponent('MySettingsDialog')
-      registry.registerDialog({ id: 'my-ext.settings', label: 'My Extension Settings', component: comp })
+      registry.registerDialog({
+        id: 'my-ext.settings',
+        label: 'My Extension Settings',
+        component: comp
+      })
 
       expect(registry.registeredIds()).toContain('my-ext.settings')
       const entry = registry.getEntry('my-ext.settings')!
@@ -87,7 +94,11 @@ describe('BC.34 v2 contract — settings-panel custom dialog integration', () =>
 
     it('clicking the settings entry opens the component as a managed modal (triggerDialog returns close())', () => {
       const comp = makeVueComponent('ColorPickerDialog')
-      registry.registerDialog({ id: 'ext.color', label: 'Color Settings', component: comp })
+      registry.registerDialog({
+        id: 'ext.color',
+        label: 'Color Settings',
+        component: comp
+      })
 
       expect(registry.isOpen('ext.color')).toBe(false)
 
@@ -114,9 +125,21 @@ describe('BC.34 v2 contract — settings-panel custom dialog integration', () =>
     })
 
     it('multiple extensions registering dialogs each get independent entries', () => {
-      registry.registerDialog({ id: 'ext-a.dialog', label: 'A Settings', component: makeVueComponent('A') })
-      registry.registerDialog({ id: 'ext-b.dialog', label: 'B Settings', component: makeVueComponent('B') })
-      registry.registerDialog({ id: 'ext-c.dialog', label: 'C Settings', component: makeVueComponent('C') })
+      registry.registerDialog({
+        id: 'ext-a.dialog',
+        label: 'A Settings',
+        component: makeVueComponent('A')
+      })
+      registry.registerDialog({
+        id: 'ext-b.dialog',
+        label: 'B Settings',
+        component: makeVueComponent('B')
+      })
+      registry.registerDialog({
+        id: 'ext-c.dialog',
+        label: 'C Settings',
+        component: makeVueComponent('C')
+      })
 
       expect(registry.registeredIds()).toHaveLength(3)
 
@@ -127,16 +150,24 @@ describe('BC.34 v2 contract — settings-panel custom dialog integration', () =>
       expect(registry.isOpen('ext-c.dialog')).toBe(false)
     })
 
-    it("registering the same id twice throws a clear error", () => {
-      registry.registerDialog({ id: 'dup', label: 'X', component: makeVueComponent('X') })
+    it('registering the same id twice throws a clear error', () => {
+      registry.registerDialog({
+        id: 'dup',
+        label: 'X',
+        component: makeVueComponent('X')
+      })
       expect(() =>
-        registry.registerDialog({ id: 'dup', label: 'Y', component: makeVueComponent('Y') })
+        registry.registerDialog({
+          id: 'dup',
+          label: 'Y',
+          component: makeVueComponent('Y')
+        })
       ).toThrow("'dup'")
     })
   })
 
-  describe("S12.UI3 — dialog-trigger: lazy mounting", () => {
-    it("dialog component is lazily mounted only when the trigger is clicked, not at registration time", () => {
+  describe('S12.UI3 — dialog-trigger: lazy mounting', () => {
+    it('dialog component is lazily mounted only when the trigger is clicked, not at registration time', () => {
       registry.registerDialog({
         id: 'lazy.ext',
         label: 'Lazy Dialog',
@@ -152,7 +183,7 @@ describe('BC.34 v2 contract — settings-panel custom dialog integration', () =>
       expect(registry.getMountCount('lazy.ext')).toBe(1)
     })
 
-    it("triggering the dialog a second time does not re-mount the component", () => {
+    it('triggering the dialog a second time does not re-mount the component', () => {
       registry.registerDialog({
         id: 'single-mount.ext',
         label: 'Single Mount',

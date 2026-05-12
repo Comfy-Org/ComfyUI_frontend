@@ -51,10 +51,18 @@ function makeNodeHandle(): Partial<NodeHandle> {
 function createWidgetExtensionRegistry() {
   const extensions: WidgetExtensionOptions[] = []
   return {
-    register(opts: WidgetExtensionOptions) { extensions.push(opts) },
-    findByType(type: string) { return extensions.find((e) => e.type === type) },
-    getAll() { return [...extensions] },
-    clear() { extensions.length = 0 }
+    register(opts: WidgetExtensionOptions) {
+      extensions.push(opts)
+    },
+    findByType(type: string) {
+      return extensions.find((e) => e.type === type)
+    },
+    getAll() {
+      return [...extensions]
+    },
+    clear() {
+      extensions.length = 0
+    }
   }
 }
 
@@ -126,17 +134,26 @@ describe('BC.21 v2 contract — custom widget-type registration', () => {
 
   describe('widgetCreated invocation contract', () => {
     it('widgetCreated receives a WidgetHandle and a NodeHandle (or null for orphan widgets)', () => {
-      const capturedArgs: Array<{ widget: WidgetHandle; parentNode: NodeHandle | null }> = []
+      const capturedArgs: Array<{
+        widget: WidgetHandle
+        parentNode: NodeHandle | null
+      }> = []
 
       const opts: WidgetExtensionOptions = {
         name: 'bc21.test.invocation',
         type: 'CAPTURE_PICKER',
         widgetCreated(widget, parentNode) {
-          capturedArgs.push({ widget, parentNode: parentNode as NodeHandle | null })
+          capturedArgs.push({
+            widget,
+            parentNode: parentNode as NodeHandle | null
+          })
         }
       }
 
-      const widget = makeWidgetHandle({ name: 'my-picker', widgetType: 'CAPTURE_PICKER' })
+      const widget = makeWidgetHandle({
+        name: 'my-picker',
+        widgetType: 'CAPTURE_PICKER'
+      })
       const parentNode = makeNodeHandle() as NodeHandle
 
       opts.widgetCreated!(widget, parentNode)
@@ -186,7 +203,10 @@ describe('BC.21 v2 contract — custom widget-type registration', () => {
         }
       }
 
-      const result = opts.widgetCreated!(makeWidgetHandle(), null) as { render(): void; destroy?(): void }
+      const result = opts.widgetCreated!(makeWidgetHandle(), null) as {
+        render(): void
+        destroy?(): void
+      }
       result.destroy?.()
       expect(destroyFn).toHaveBeenCalledOnce()
     })
@@ -195,15 +215,15 @@ describe('BC.21 v2 contract — custom widget-type registration', () => {
   describe('[gap] getCustomWidgets / registration-before-nodeCreated timing', () => {
     it.todo(
       '[gap] No defineWidgetExtension runtime exists yet — widgetCreated is not called by the Phase A runtime. ' +
-      'Phase B: wire defineWidgetExtension into extensionV2Service so widgetCreated fires for each matching widget instance.'
+        'Phase B: wire defineWidgetExtension into extensionV2Service so widgetCreated fires for each matching widget instance.'
     )
     it.todo(
       '[gap] Widget type registered via defineWidgetExtension should appear in NodeHandle.widgets() after node creation. ' +
-      'Phase B required — needs real ECS WidgetComponentSchema.'
+        'Phase B required — needs real ECS WidgetComponentSchema.'
     )
     it.todo(
       '[gap] Widget extension scope cleanup: widgetCreated destroy() called when extension is disposed. ' +
-      'Phase B required — EffectScope wiring for widget extension lifetime.'
+        'Phase B required — EffectScope wiring for widget extension lifetime.'
     )
   })
 })

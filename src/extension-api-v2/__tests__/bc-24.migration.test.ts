@@ -41,9 +41,9 @@ function makeV1NodeData(overrides: Partial<V1NodeData> = {}): V1NodeData {
     output_node: false,
     input: {
       required: { ckpt_name: [['combo', { values: [] }]] },
-      optional: {},
+      optional: {}
     },
-    ...overrides,
+    ...overrides
   }
 }
 
@@ -52,7 +52,7 @@ function makeV1NodeData(overrides: Partial<V1NodeData> = {}): V1NodeData {
 describe('BC.24 [migration] — S13.SC1: input.required access', () => {
   it('v1 raw key-in check and v2 typed field access are equivalent', () => {
     const nodeData = makeV1NodeData({
-      input: { required: { model: [['MODEL']] }, optional: {} },
+      input: { required: { model: [['MODEL']] }, optional: {} }
     })
 
     // v1 pattern: direct key check on raw object
@@ -67,7 +67,7 @@ describe('BC.24 [migration] — S13.SC1: input.required access', () => {
 
   it('v1 input.required[name][0] slot type extraction and v2 typed access match', () => {
     const nodeData = makeV1NodeData({
-      input: { required: { sampler_name: [['combo', { values: ['euler'] }]] } },
+      input: { required: { sampler_name: [['combo', { values: ['euler'] }]] } }
     })
 
     // v1 pattern: raw positional index
@@ -94,7 +94,7 @@ describe('BC.24 [migration] — S13.SC1: output inspection', () => {
 
     // v1 mock (the registry entry was just nodeData.output stored elsewhere)
     const v1OutputTypes: Record<string, string[]> = {
-      [nodeData.name]: nodeData.output ?? [],
+      [nodeData.name]: nodeData.output ?? []
     }
 
     expect(v1OutputTypes[nodeData.name]).toEqual(nodeData.output)

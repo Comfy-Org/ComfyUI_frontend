@@ -6,7 +6,7 @@
 // Notes: v2 uses widgets_values_named keyed by widget name, eliminating positional drift.
 //        NaN→null pipeline: v2 serializer logs a warning and substitutes the widget's declared default.
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { AsyncHandler } from '@/extension-api/events'
 import type { NodeBeforeSerializeEvent } from '@/extension-api/node'
 
@@ -31,10 +31,14 @@ function makeEvent(
     initialData?: Record<string, unknown>
   } = {}
 ): NodeBeforeSerializeEvent & { _getData(): Record<string, unknown> } {
-  let data: Record<string, unknown> = { ...(overrides.initialData ?? {}) }
-  let replacer: ((orig: Record<string, unknown>) => Record<string, unknown>) | null = null
+  const data: Record<string, unknown> = { ...(overrides.initialData ?? {}) }
+  let replacer:
+    | ((orig: Record<string, unknown>) => Record<string, unknown>)
+    | null = null
 
-  const event: NodeBeforeSerializeEvent & { _getData(): Record<string, unknown> } = {
+  const event: NodeBeforeSerializeEvent & {
+    _getData(): Record<string, unknown>
+  } = {
     context: overrides.context ?? 'workflow',
     get data() {
       return data
@@ -57,7 +61,10 @@ function makeNodeSubscriptionManager() {
   const listeners: Array<AsyncHandler<NodeBeforeSerializeEvent>> = []
 
   return {
-    on(_event: 'beforeSerialize', handler: AsyncHandler<NodeBeforeSerializeEvent>): Unsubscribe {
+    on(
+      _event: 'beforeSerialize',
+      handler: AsyncHandler<NodeBeforeSerializeEvent>
+    ): Unsubscribe {
       listeners.push(handler)
       return () => {
         const idx = listeners.indexOf(handler)
@@ -77,9 +84,10 @@ function makeNodeSubscriptionManager() {
 
 // ── Named-map serializer simulator ───────────────────────────────────────────
 
-function serializeWidgets(
-  widgets: Array<WidgetSpec & { value: unknown }>
-): { named: Record<string, unknown>; warnings: string[] } {
+function serializeWidgets(widgets: Array<WidgetSpec & { value: unknown }>): {
+  named: Record<string, unknown>
+  warnings: string[]
+} {
   const named: Record<string, unknown> = {}
   const warnings: string[] = []
 
@@ -89,7 +97,11 @@ function serializeWidgets(
       continue
     }
     let val = w.value
-    if ((w.type === 'INT' || w.type === 'FLOAT') && typeof val === 'number' && isNaN(val)) {
+    if (
+      (w.type === 'INT' || w.type === 'FLOAT') &&
+      typeof val === 'number' &&
+      isNaN(val)
+    ) {
       warnings.push(
         `[ComfyUI] Widget "${w.name}" on node serialized NaN — substituting default (${w.default})`
       )
@@ -125,7 +137,7 @@ function deserializeWidgets(
 
 describe('BC.13 v2 contract — per-node serialization interception', () => {
   describe("NodeHandle.on('beforeSerialize', fn) — node-level serialization hook (S2.N6, S2.N15)", () => {
-    it("fires fn with the serialization data object during graphToPrompt(); fn may add custom fields", async () => {
+    it('fires fn with the serialization data object during graphToPrompt(); fn may add custom fields', async () => {
       const node = makeNodeSubscriptionManager()
       const event = makeEvent({ initialData: { id: 1, type: 'KSampler' } })
 
@@ -140,7 +152,10 @@ describe('BC.13 v2 contract — per-node serialization interception', () => {
 
     it("custom fields added inside on('beforeSerialize') are present in the workflow JSON under the node's entry", async () => {
       const node = makeNodeSubscriptionManager()
-      const initialData: Record<string, unknown> = { id: 42, type: 'PreviewImage' }
+      const initialData: Record<string, unknown> = {
+        id: 42,
+        type: 'PreviewImage'
+      }
       const event = makeEvent({ initialData })
 
       node.on('beforeSerialize', async (e) => {
@@ -164,9 +179,15 @@ describe('BC.13 v2 contract — per-node serialization interception', () => {
       const node = makeNodeSubscriptionManager()
       const event = makeEvent({ initialData: { id: 7 } })
 
-      node.on('beforeSerialize', async (e) => { e.data['ext_a'] = 'from-A' })
-      node.on('beforeSerialize', async (e) => { e.data['ext_b'] = 'from-B' })
-      node.on('beforeSerialize', async (e) => { e.data['ext_c'] = 'from-C' })
+      node.on('beforeSerialize', async (e) => {
+        e.data['ext_a'] = 'from-A'
+      })
+      node.on('beforeSerialize', async (e) => {
+        e.data['ext_b'] = 'from-B'
+      })
+      node.on('beforeSerialize', async (e) => {
+        e.data['ext_c'] = 'from-C'
+      })
 
       await node.dispatch(event)
 
@@ -175,7 +196,7 @@ describe('BC.13 v2 contract — per-node serialization interception', () => {
       expect(event._getData()['ext_c']).toBe('from-C')
     })
 
-    it("listener removed via unsubscribe; subsequent serializations omit its custom fields", async () => {
+    it('listener removed via unsubscribe; subsequent serializations omit its custom fields', async () => {
       const node = makeNodeSubscriptionManager()
 
       const unsub = node.on('beforeSerialize', async (e) => {
@@ -214,7 +235,7 @@ describe('BC.13 v2 contract — per-node serialization interception', () => {
       expect(event._getData()['saw_step']).toBe(1)
     })
 
-    it("replace() replaces the entire data object; later listeners see the new object", async () => {
+    it('replace() replaces the entire data object; later listeners see the new object', async () => {
       const node = makeNodeSubscriptionManager()
       const event = makeEvent({ initialData: { id: 3, orig: true } })
 
@@ -250,11 +271,18 @@ describe('BC.13 v2 contract — per-node serialization interception', () => {
         { name: 'seed', type: 'INT', default: 0, value: 42 },
         { name: 'steps', type: 'INT', default: 20, value: 30 },
         { name: 'cfg', type: 'FLOAT', default: 7.0, value: 8.5 },
-        { name: 'sampler_name', type: 'STRING', default: 'euler', value: 'dpm_2' }
+        {
+          name: 'sampler_name',
+          type: 'STRING',
+          default: 'euler',
+          value: 'dpm_2'
+        }
       ]
 
       const { named } = serializeWidgets(widgets)
-      const roundTripped: Record<string, unknown> = JSON.parse(JSON.stringify({ named })).named
+      const roundTripped: Record<string, unknown> = JSON.parse(
+        JSON.stringify({ named })
+      ).named
 
       expect(roundTripped['seed']).toBe(42)
       expect(roundTripped['steps']).toBe(30)
@@ -265,7 +293,12 @@ describe('BC.13 v2 contract — per-node serialization interception', () => {
     it('workflow with three widgets including serialize===false deserializes correctly regardless of insertion order', () => {
       const specs: WidgetSpec[] = [
         { name: 'seed', type: 'INT', default: 0 },
-        { name: 'control_after_generate', type: 'STRING', default: 'fixed', serialize: false },
+        {
+          name: 'control_after_generate',
+          type: 'STRING',
+          default: 'fixed',
+          serialize: false
+        },
         { name: 'steps', type: 'INT', default: 20 }
       ]
 
@@ -309,7 +342,7 @@ describe('BC.13 v2 contract — per-node serialization interception', () => {
   })
 
   describe('NaN→null guard (numeric widget safety)', () => {
-    it("NaN numeric widget: v2 logs console.warn and substitutes declared default", () => {
+    it('NaN numeric widget: v2 logs console.warn and substitutes declared default', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
       const widgets: Array<WidgetSpec & { value: unknown }> = [

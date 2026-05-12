@@ -37,8 +37,12 @@ function createV1App() {
         }
       }
     },
-    findWidget(type: string) { return registeredWidgets.get(type) },
-    get widgetTypes() { return [...registeredWidgets.keys()] }
+    findWidget(type: string) {
+      return registeredWidgets.get(type)
+    },
+    get widgetTypes() {
+      return [...registeredWidgets.keys()]
+    }
   }
 }
 
@@ -47,9 +51,15 @@ function createV1App() {
 function createV2WidgetRegistry() {
   const extensions: WidgetExtensionOptions[] = []
   return {
-    register(opts: WidgetExtensionOptions) { extensions.push(opts) },
-    findByType(type: string) { return extensions.find((e) => e.type === type) },
-    get widgetTypes() { return extensions.map((e) => e.type) }
+    register(opts: WidgetExtensionOptions) {
+      extensions.push(opts)
+    },
+    findByType(type: string) {
+      return extensions.find((e) => e.type === type)
+    },
+    get widgetTypes() {
+      return extensions.map((e) => e.type)
+    }
   }
 }
 
@@ -81,7 +91,9 @@ describe('BC.21 migration — custom widget-type registration', () => {
       for (const type of types) {
         v1.registerExtension({
           name: `bc21.mig.v1.${type}`,
-          getCustomWidgets() { return { [type]: { type, render() {} } } }
+          getCustomWidgets() {
+            return { [type]: { type, render() {} } }
+          }
         })
         v2.register({ name: `bc21.mig.v2.${type}`, type })
       }
@@ -102,7 +114,9 @@ describe('BC.21 migration — custom widget-type registration', () => {
 
       // Simulate runtime calling widgetCreated for 3 widget instances of this type.
       const stubs = [1, 2, 3].map((i) => ({
-        entityId: i as WidgetExtensionOptions['name'] extends string ? number : never,
+        entityId: i as WidgetExtensionOptions['name'] extends string
+          ? number
+          : never,
         name: `counter_${i}`,
         widgetType: 'COUNTER_WIDGET'
       }))
@@ -120,7 +134,9 @@ describe('BC.21 migration — custom widget-type registration', () => {
       const opts: WidgetExtensionOptions = {
         name: 'bc21.mig.lifecycle',
         type: 'LIFECYCLE_WIDGET',
-        widgetCreated() { return { render: renderFn, destroy: destroyFn } }
+        widgetCreated() {
+          return { render: renderFn, destroy: destroyFn }
+        }
       }
 
       const result = opts.widgetCreated!(
@@ -140,15 +156,15 @@ describe('BC.21 migration — custom widget-type registration', () => {
   describe('[gap] runtime wiring — Phase B', () => {
     it.todo(
       '[gap] v2 widgetCreated is not yet called by the Phase A runtime — no live EffectScope wiring for widget extensions. ' +
-      'Phase B: wire defineWidgetExtension into the extension service so widgetCreated fires for each live widget instance.'
+        'Phase B: wire defineWidgetExtension into the extension service so widgetCreated fires for each live widget instance.'
     )
     it.todo(
       '[gap] v1 getCustomWidgets fires during extension setup (app ready); v2 defineWidgetExtension should register before nodeCreated fires. ' +
-      'Phase B: confirm ordering guarantee in extensionV2Service.'
+        'Phase B: confirm ordering guarantee in extensionV2Service.'
     )
     it.todo(
       '[gap] v1 custom widget type persists in LiteGraph after extension unloads; v2 type should be removed on dispose. ' +
-      'Phase B: scope cleanup for WidgetExtensionOptions instances.'
+        'Phase B: scope cleanup for WidgetExtensionOptions instances.'
     )
   })
 })

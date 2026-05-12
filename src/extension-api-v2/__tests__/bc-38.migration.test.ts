@@ -12,7 +12,12 @@
 
 import { describe, expect, it, vi } from 'vitest'
 
-type CanvasMode = 'graph' | 'app' | 'builder:inputs' | 'builder:outputs' | 'builder:arrange'
+type CanvasMode =
+  | 'graph'
+  | 'app'
+  | 'builder:inputs'
+  | 'builder:outputs'
+  | 'builder:arrange'
 
 // ── Shared canvas state stub ──────────────────────────────────────────────────
 
@@ -20,14 +25,20 @@ function createCanvasState(initial: CanvasMode = 'graph') {
   const listeners = new Set<(mode: CanvasMode) => void>()
   let mode: CanvasMode = initial
   return {
-    get mode() { return mode },
+    get mode() {
+      return mode
+    },
     transition(next: CanvasMode) {
       mode = next
       for (const fn of listeners) fn(next)
     },
     // v2 proposed API
-    on(_event: 'canvasModeChanged', fn: (mode: CanvasMode) => void) { listeners.add(fn) },
-    off(_event: 'canvasModeChanged', fn: (mode: CanvasMode) => void) { listeners.delete(fn) }
+    on(_event: 'canvasModeChanged', fn: (mode: CanvasMode) => void) {
+      listeners.add(fn)
+    },
+    off(_event: 'canvasModeChanged', fn: (mode: CanvasMode) => void) {
+      listeners.delete(fn)
+    }
   }
 }
 
@@ -145,7 +156,10 @@ describe('BC.38 migration — canvas mode observation', () => {
       // This test confirms the event API is the ONLY portable path.
       const app = { on: vi.fn() }
       app.on('canvasModeChanged', vi.fn())
-      expect(app.on).toHaveBeenCalledWith('canvasModeChanged', expect.any(Function))
+      expect(app.on).toHaveBeenCalledWith(
+        'canvasModeChanged',
+        expect.any(Function)
+      )
     })
   })
 })

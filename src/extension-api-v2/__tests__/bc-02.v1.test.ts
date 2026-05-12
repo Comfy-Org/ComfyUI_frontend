@@ -74,7 +74,7 @@ describe('BC.02 v1 contract — node lifecycle: teardown [harness POC]', () => {
 
       // Remove only A.
       app.graph.remove(idA)
-      cbA()  // simulate LiteGraph calling onRemoved on the removed node only
+      cbA() // simulate LiteGraph calling onRemoved on the removed node only
 
       expect(cbA).toHaveBeenCalledOnce()
       expect(cbB).not.toHaveBeenCalled()

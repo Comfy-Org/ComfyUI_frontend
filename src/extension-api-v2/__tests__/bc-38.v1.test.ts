@@ -18,7 +18,7 @@ function makeCanvas(initialMode: number) {
 function pollCanvasMode(
   canvas: { mode: number },
   onChange: (newMode: number, oldMode: number) => void,
-  intervalMs = 0,
+  intervalMs = 0
 ) {
   let last = canvas.mode
   const id = setInterval(() => {
@@ -47,9 +47,15 @@ describe('BC.38 v1 contract — canvas mode observation', () => {
         const canvas = makeCanvas(0)
         const transitions: Array<[number, number]> = []
 
-        const id = pollCanvasMode(canvas, (n, o) => transitions.push([o, n]), 10)
+        const id = pollCanvasMode(
+          canvas,
+          (n, o) => transitions.push([o, n]),
+          10
+        )
 
-        setTimeout(() => { canvas.mode = 1 }, 20) // switch to app mode
+        setTimeout(() => {
+          canvas.mode = 1
+        }, 20) // switch to app mode
 
         vi.advanceTimersByTime(40)
         clearInterval(id)
@@ -68,9 +74,15 @@ describe('BC.38 v1 contract — canvas mode observation', () => {
 
         const id = pollCanvasMode(canvas, (n, o) => transitions.push([o, n]), 5)
 
-        setTimeout(() => { canvas.mode = 1 }, 10)
-        setTimeout(() => { canvas.mode = 2 }, 25)
-        setTimeout(() => { canvas.mode = 0 }, 40)
+        setTimeout(() => {
+          canvas.mode = 1
+        }, 10)
+        setTimeout(() => {
+          canvas.mode = 2
+        }, 25)
+        setTimeout(() => {
+          canvas.mode = 0
+        }, 40)
 
         vi.advanceTimersByTime(60)
         clearInterval(id)
@@ -93,7 +105,7 @@ describe('BC.38 v1 contract — canvas mode observation', () => {
         type: 'NodeModeChangedEvent',
         node: { id: 5 },
         oldMode: 0, // ALWAYS
-        newMode: 2, // NEVER (muted)
+        newMode: 2 // NEVER (muted)
       }
       const canvasMode = 0 // graph canvas mode
 
@@ -105,7 +117,7 @@ describe('BC.38 v1 contract — canvas mode observation', () => {
     it('v1 app object has no on() method for canvas mode change events', () => {
       const app = {
         canvas: makeCanvas(0),
-        graph: {},
+        graph: {}
         // no on(), no addEventListener() for canvas mode
       } as Record<string, unknown>
 

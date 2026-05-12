@@ -36,8 +36,14 @@ function createNodeEventBus() {
   const connectedHandlers: HandlerEntry<NodeConnectedEvent>[] = []
   const disconnectedHandlers: HandlerEntry<NodeDisconnectedEvent>[] = []
 
-  function on(event: 'connected', handler: (e: NodeConnectedEvent) => void): Unsubscribe
-  function on(event: 'disconnected', handler: (e: NodeDisconnectedEvent) => void): Unsubscribe
+  function on(
+    event: 'connected',
+    handler: (e: NodeConnectedEvent) => void
+  ): Unsubscribe
+  function on(
+    event: 'disconnected',
+    handler: (e: NodeDisconnectedEvent) => void
+  ): Unsubscribe
   function on(event: SupportedEvent, handler: (e: never) => void): Unsubscribe {
     if (event === 'connected') {
       const entry: HandlerEntry<NodeConnectedEvent> = {
@@ -75,12 +81,16 @@ function createNodeEventBus() {
 
 // ── Fixture helpers ───────────────────────────────────────────────────────────
 
-function makeSlotId(n: number) { return n as unknown as SlotEntityId }
-function makeNodeId(n: number) { return n as unknown as NodeEntityId }
+function makeSlotId(n: number) {
+  return n as unknown as SlotEntityId
+}
+function makeNodeId(n: number) {
+  return n as unknown as NodeEntityId
+}
 
 function makeSlot(name: string, dir: SlotDirection, nodeId = makeNodeId(1)) {
   return {
-    entityId: makeSlotId(Math.random() * 1e9 | 0),
+    entityId: makeSlotId((Math.random() * 1e9) | 0),
     name,
     type: 'IMAGE',
     direction: dir,
@@ -88,7 +98,10 @@ function makeSlot(name: string, dir: SlotDirection, nodeId = makeNodeId(1)) {
   } as const
 }
 
-function makeConnectedEvent(localName = 'input', remoteName = 'output'): NodeConnectedEvent {
+function makeConnectedEvent(
+  localName = 'input',
+  remoteName = 'output'
+): NodeConnectedEvent {
   return {
     slot: makeSlot(localName, 'input'),
     remote: makeSlot(remoteName, 'output', makeNodeId(2))
@@ -120,7 +133,9 @@ describe('BC.07 v2 contract — connection observation', () => {
     it('handler receives a NodeConnectedEvent with slot and remote fields', () => {
       const bus = createNodeEventBus()
       let received: NodeConnectedEvent | undefined
-      bus.on('connected', (e) => { received = e })
+      bus.on('connected', (e) => {
+        received = e
+      })
       const evt = makeConnectedEvent('image_in', 'image_out')
       bus.emitConnected(evt)
       expect(received).toBeDefined()
@@ -144,7 +159,10 @@ describe('BC.07 v2 contract — connection observation', () => {
     it('calling Unsubscribe twice is safe (idempotent)', () => {
       const bus = createNodeEventBus()
       const unsub = bus.on('connected', vi.fn())
-      expect(() => { unsub(); unsub() }).not.toThrow()
+      expect(() => {
+        unsub()
+        unsub()
+      }).not.toThrow()
     })
 
     it('multiple handlers all fire; unsubscribing one does not affect the others', () => {
@@ -179,7 +197,9 @@ describe('BC.07 v2 contract — connection observation', () => {
     it('handler receives a NodeDisconnectedEvent with a slot field', () => {
       const bus = createNodeEventBus()
       let received: NodeDisconnectedEvent | undefined
-      bus.on('disconnected', (e) => { received = e })
+      bus.on('disconnected', (e) => {
+        received = e
+      })
       const evt = makeDisconnectedEvent('latent_in')
       bus.emitDisconnected(evt)
       expect(received).toBeDefined()

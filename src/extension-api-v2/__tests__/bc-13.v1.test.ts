@@ -9,7 +9,7 @@
 //        produces silent corruption. Test (a) positional v1 compat, (b) named-map v2 round-trip parity,
 //        (c) null-in-numeric-widget logs warning + substitutes default.
 
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   countEvidenceExcerpts,
   createMiniComfyApp,
@@ -54,7 +54,10 @@ describe('BC.13 v1 contract — per-node serialization interception', () => {
           break
         }
       }
-      expect(found, 'Expected at least one S2.N15 excerpt with onSerialize fingerprint').toBe(true)
+      expect(
+        found,
+        'Expected at least one S2.N15 excerpt with onSerialize fingerprint'
+      ).toBe(true)
     })
 
     it('S2.N15 snippet is capturable by runV1 without throwing', () => {
@@ -74,9 +77,15 @@ describe('BC.13 v1 contract — per-node serialization interception', () => {
         serialize(): Record<string, unknown>
       }
       const baseSerialize = function (this: MockNode) {
-        return { id: this.id, type: this.type, widgets_values: this.widgets_values }
+        return {
+          id: this.id,
+          type: this.type,
+          widgets_values: this.widgets_values
+        }
       }
-      const NodeProto: { serialize: (this: MockNode) => Record<string, unknown> } = {
+      const NodeProto: {
+        serialize: (this: MockNode) => Record<string, unknown>
+      } = {
         serialize: baseSerialize
       }
       // Extension patches
@@ -106,9 +115,15 @@ describe('BC.13 v1 contract — per-node serialization interception', () => {
         serialize(): Record<string, unknown>
       }
       const baseSerialize = function (this: MockNode) {
-        return { id: this.id, type: this.type, widgets_values: this.widgets_values }
+        return {
+          id: this.id,
+          type: this.type,
+          widgets_values: this.widgets_values
+        }
       }
-      const NodeProto: { serialize: (this: MockNode) => Record<string, unknown> } = {
+      const NodeProto: {
+        serialize: (this: MockNode) => Record<string, unknown>
+      } = {
         serialize: baseSerialize
       }
 

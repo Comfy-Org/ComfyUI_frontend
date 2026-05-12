@@ -14,7 +14,6 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   countEvidenceExcerpts,
   createHarnessWorld,
-  createMiniComfyApp,
   loadEvidenceSnippet
 } from '../harness'
 
@@ -32,7 +31,10 @@ describe('BC.03 v2 contract — node lifecycle: hydration from saved workflows',
       const world = createHarnessWorld()
       const capturedHandles: unknown[] = []
 
-      const entityId = world.addNode({ type: 'KSampler', properties: { seed: 42 } })
+      const entityId = world.addNode({
+        type: 'KSampler',
+        properties: { seed: 42 }
+      })
       const record = world.findNode(entityId)!
 
       // Phase A: simulate the v2 dispatch by calling loadedGraphNode directly

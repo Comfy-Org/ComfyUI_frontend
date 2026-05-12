@@ -41,7 +41,9 @@ describe('BC.03 migration — node lifecycle: hydration from saved workflows', (
       // v2 model: loadedGraphNode(handle) per lifecycle.ts:98
       const v2Ext = {
         name: 'test.hydration-migration',
-        loadedGraphNode: vi.fn((handle: { type: string }) => v2Calls.push(handle.type))
+        loadedGraphNode: vi.fn((handle: { type: string }) =>
+          v2Calls.push(handle.type)
+        )
       }
 
       // Simulate loading three nodes from a workflow.
@@ -74,12 +76,17 @@ describe('BC.03 migration — node lifecycle: hydration from saved workflows', (
 
       // v2: handle.properties — same bag, typed access.
       const v2PropertiesSeen: Record<string, unknown> = {}
-      const v2LoadedGraphNode = (handle: { properties: Record<string, unknown> }) => {
+      const v2LoadedGraphNode = (handle: {
+        properties: Record<string, unknown>
+      }) => {
         Object.assign(v2PropertiesSeen, handle.properties)
       }
 
       const savedProperties = { custom_label: 'upscaler', strength: 0.75 }
-      const entityId = world.addNode({ type: 'KSampler', properties: savedProperties })
+      const entityId = world.addNode({
+        type: 'KSampler',
+        properties: savedProperties
+      })
       const record = world.findNode(entityId)!
 
       v1OnConfigure({ properties: record.properties })
@@ -102,7 +109,8 @@ describe('BC.03 migration — node lifecycle: hydration from saved workflows', (
       const v1GuardFn = (nodeTypeName: string) => {
         if (nodeTypeName === 'KSampler') {
           return {
-            onConfigure: (data: { type: string }) => v1HookTargets.push(data.type)
+            onConfigure: (data: { type: string }) =>
+              v1HookTargets.push(data.type)
           }
         }
         return null
@@ -112,7 +120,8 @@ describe('BC.03 migration — node lifecycle: hydration from saved workflows', (
       const v2Ext = {
         name: 'test.type-scope-parity',
         nodeTypes: ['KSampler'],
-        loadedGraphNode: (handle: { type: string }) => v2HookTargets.push(handle.type)
+        loadedGraphNode: (handle: { type: string }) =>
+          v2HookTargets.push(handle.type)
       }
 
       const allTypes = ['KSampler', 'CLIPTextEncode', 'VAEDecode', 'KSampler']

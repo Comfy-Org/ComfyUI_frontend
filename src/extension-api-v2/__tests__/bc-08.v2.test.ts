@@ -21,7 +21,7 @@ describe('BC.08 v2 contract — programmatic linking', () => {
       'connect() with a type-incompatible slot pair throws a typed error and leaves the graph unchanged'
     )
     it.todo(
-      'on(\'connectionChange\') fires on both NodeHandles after a successful connect() call'
+      "on('connectionChange') fires on both NodeHandles after a successful connect() call"
     )
   })
 
@@ -29,11 +29,9 @@ describe('BC.08 v2 contract — programmatic linking', () => {
     it.todo(
       'NodeHandle.disconnectInput(slotIndex) removes the link on the specified input slot and the returned LinkHandle becomes invalid'
     )
+    it.todo('disconnectInput() on an empty slot is a no-op and does not throw')
     it.todo(
-      'disconnectInput() on an empty slot is a no-op and does not throw'
-    )
-    it.todo(
-      'on(\'connectionChange\') fires on both source and target NodeHandles after disconnectInput() removes a link'
+      "on('connectionChange') fires on both source and target NodeHandles after disconnectInput() removes a link"
     )
   })
 })

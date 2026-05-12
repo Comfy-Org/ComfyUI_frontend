@@ -17,7 +17,10 @@ function makeMenuSystem() {
 
   return {
     registerExtension(ext: {
-      getNodeMenuItems?: (value: unknown, options: { node: unknown }) => MenuItem[]
+      getNodeMenuItems?: (
+        value: unknown,
+        options: { node: unknown }
+      ) => MenuItem[]
       getCanvasMenuItems?: () => MenuItem[]
     }) {
       if (ext.getNodeMenuItems) {
@@ -28,11 +31,11 @@ function makeMenuSystem() {
       }
     },
     buildNodeMenu(node: unknown): MenuItem[] {
-      return nodeMenuExtensions.flatMap(fn => fn(node) ?? [])
+      return nodeMenuExtensions.flatMap((fn) => fn(node) ?? [])
     },
     buildCanvasMenu(): MenuItem[] {
-      return canvasMenuExtensions.flatMap(fn => fn() ?? [])
-    },
+      return canvasMenuExtensions.flatMap((fn) => fn() ?? [])
+    }
   }
 }
 
@@ -46,10 +49,10 @@ describe('BC.22 v1 contract — Context menu contributions (S2.N5/S1.H3/S1.H4)',
     menu.registerExtension({
       getNodeMenuItems(_value, _options) {
         return [{ content: 'My Item', callback: () => {} }]
-      },
+      }
     })
     const items = menu.buildNodeMenu({ id: 1 })
-    expect(items.map(i => i.content)).toContain('My Item')
+    expect(items.map((i) => i.content)).toContain('My Item')
   })
 
   it('getNodeMenuItems receives options.node as the right-clicked node', () => {
@@ -59,7 +62,7 @@ describe('BC.22 v1 contract — Context menu contributions (S2.N5/S1.H3/S1.H4)',
       getNodeMenuItems(_value, options) {
         receivedNode = options.node
         return []
-      },
+      }
     })
     const node = { id: 42, type: 'KSampler' }
     menu.buildNodeMenu(node)
@@ -75,9 +78,13 @@ describe('BC.22 v1 contract — Context menu contributions (S2.N5/S1.H3/S1.H4)',
 
   it('multiple extensions contributing node menu items all appear', () => {
     const menu = makeMenuSystem()
-    menu.registerExtension({ getNodeMenuItems: () => [{ content: 'A', callback: () => {} }] })
-    menu.registerExtension({ getNodeMenuItems: () => [{ content: 'B', callback: () => {} }] })
-    const contents = menu.buildNodeMenu({}).map(i => i.content)
+    menu.registerExtension({
+      getNodeMenuItems: () => [{ content: 'A', callback: () => {} }]
+    })
+    menu.registerExtension({
+      getNodeMenuItems: () => [{ content: 'B', callback: () => {} }]
+    })
+    const contents = menu.buildNodeMenu({}).map((i) => i.content)
     expect(contents).toContain('A')
     expect(contents).toContain('B')
   })
@@ -85,11 +92,16 @@ describe('BC.22 v1 contract — Context menu contributions (S2.N5/S1.H3/S1.H4)',
   it('getExtraMenuOptions prototype patch chains and all fire', () => {
     const log: string[] = []
     const proto: { getExtraMenuOptions: (app: unknown) => void } = {
-      getExtraMenuOptions(_app) { log.push('orig') },
+      getExtraMenuOptions(_app) {
+        log.push('orig')
+      }
     }
 
     const prev = proto.getExtraMenuOptions.bind(proto)
-    proto.getExtraMenuOptions = function (app) { log.push('ext'); prev(app) }
+    proto.getExtraMenuOptions = function (app) {
+      log.push('ext')
+      prev(app)
+    }
 
     proto.getExtraMenuOptions({})
     expect(log).toEqual(['ext', 'orig'])
@@ -100,20 +112,26 @@ describe('BC.22 v1 contract — Context menu contributions (S2.N5/S1.H3/S1.H4)',
     menu.registerExtension({
       getCanvasMenuItems() {
         return [{ content: 'Canvas Option', callback: () => {} }]
-      },
+      }
     })
     const items = menu.buildCanvasMenu()
-    expect(items.map(i => i.content)).toContain('Canvas Option')
+    expect(items.map((i) => i.content)).toContain('Canvas Option')
   })
 
   it('multiple extensions contributing canvas menu items all appear', () => {
     const menu = makeMenuSystem()
-    menu.registerExtension({ getCanvasMenuItems: () => [{ content: 'X', callback: () => {} }] })
-    menu.registerExtension({ getCanvasMenuItems: () => [{ content: 'Y', callback: () => {} }] })
-    const contents = menu.buildCanvasMenu().map(i => i.content)
+    menu.registerExtension({
+      getCanvasMenuItems: () => [{ content: 'X', callback: () => {} }]
+    })
+    menu.registerExtension({
+      getCanvasMenuItems: () => [{ content: 'Y', callback: () => {} }]
+    })
+    const contents = menu.buildCanvasMenu().map((i) => i.content)
     expect(contents).toContain('X')
     expect(contents).toContain('Y')
   })
 
-  it.todo('getCanvasMenuItems items appear only when no node is right-clicked (Phase B — requires real canvas hit-testing)')
+  it.todo(
+    'getCanvasMenuItems items appear only when no node is right-clicked (Phase B — requires real canvas hit-testing)'
+  )
 })

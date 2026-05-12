@@ -18,12 +18,20 @@ interface V1NodeLike {
   onExecuted?: (data: { text?: string[]; images?: unknown[] }) => void
 }
 
-function createV1Node(): V1NodeLike & { simulateExecuted(data: { text?: string[]; images?: unknown[] }): void } {
+function createV1Node(): V1NodeLike & {
+  simulateExecuted(data: { text?: string[]; images?: unknown[] }): void
+} {
   const node: V1NodeLike = {}
   return {
-    get onExecuted() { return node.onExecuted },
-    set onExecuted(fn) { node.onExecuted = fn },
-    simulateExecuted(data) { node.onExecuted?.(data) }
+    get onExecuted() {
+      return node.onExecuted
+    },
+    set onExecuted(fn) {
+      node.onExecuted = fn
+    },
+    simulateExecuted(data) {
+      node.onExecuted?.(data)
+    }
   }
 }
 
@@ -34,9 +42,14 @@ function createV2Bus() {
   return {
     on(_evt: 'executed', fn: (e: NodeExecutedEvent) => void) {
       handlers.push(fn)
-      return () => { const i = handlers.indexOf(fn); if (i !== -1) handlers.splice(i, 1) }
+      return () => {
+        const i = handlers.indexOf(fn)
+        if (i !== -1) handlers.splice(i, 1)
+      }
     },
-    emit(e: NodeExecutedEvent) { for (const h of [...handlers]) h(e) }
+    emit(e: NodeExecutedEvent) {
+      for (const h of [...handlers]) h(e)
+    }
   }
 }
 
@@ -50,8 +63,12 @@ describe('BC.16 migration — per-node execution output', () => {
       const v1Texts: string[][] = []
       const v2Texts: string[][] = []
 
-      v1.onExecuted = (data) => { if (data.text) v1Texts.push(data.text) }
-      v2.on('executed', (e) => { if (e.output.text) v2Texts.push(e.output.text) })
+      v1.onExecuted = (data) => {
+        if (data.text) v1Texts.push(data.text)
+      }
+      v2.on('executed', (e) => {
+        if (e.output.text) v2Texts.push(e.output.text)
+      })
 
       const payload = { text: ['Generated text output'], images: [] }
       v1.simulateExecuted(payload)
@@ -66,8 +83,12 @@ describe('BC.16 migration — per-node execution output', () => {
       let v1ImageCount = -1
       let v2ImageCount = -1
 
-      v1.onExecuted = (data) => { v1ImageCount = data.images?.length ?? 0 }
-      v2.on('executed', (e) => { v2ImageCount = e.output.images?.length ?? 0 })
+      v1.onExecuted = (data) => {
+        v1ImageCount = data.images?.length ?? 0
+      }
+      v2.on('executed', (e) => {
+        v2ImageCount = e.output.images?.length ?? 0
+      })
 
       const images = [{ filename: 'a.png', subfolder: '', type: 'output' }]
       v1.simulateExecuted({ text: [], images })

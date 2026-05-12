@@ -30,9 +30,7 @@ describe('BC.08 v1 contract — programmatic linking', () => {
     it.todo(
       'node.disconnectInput(slot) removes the link on the specified input slot and updates both endpoint nodes'
     )
-    it.todo(
-      'disconnectInput() on an empty slot is a no-op and does not throw'
-    )
+    it.todo('disconnectInput() on an empty slot is a no-op and does not throw')
     it.todo(
       'onConnectionsChange fires on both the source and target node after disconnectInput() removes a link'
     )

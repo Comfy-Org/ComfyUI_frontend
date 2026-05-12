@@ -9,8 +9,18 @@ import { countEvidenceExcerpts, loadEvidenceSnippet, runV1 } from '../harness'
 
 void [loadEvidenceSnippet, runV1]
 
-type SidebarTab = { id: string; icon: string; title: string; component: unknown }
-type Toast = { severity: string; summary: string; detail?: string; life?: number }
+type SidebarTab = {
+  id: string
+  icon: string
+  title: string
+  component: unknown
+}
+type Toast = {
+  severity: string
+  summary: string
+  detail?: string
+  life?: number
+}
 
 function makeExtensionManager() {
   const tabs: SidebarTab[] = []
@@ -22,22 +32,22 @@ function makeExtensionManager() {
       tabs.push(tab)
     },
     unregisterSidebarTab(id: string) {
-      const idx = tabs.findIndex(t => t.id === id)
+      const idx = tabs.findIndex((t) => t.id === id)
       if (idx !== -1) tabs.splice(idx, 1)
     },
     command: {
       execute(commandId: string, _opts?: unknown) {
         commandLog.push(commandId)
-      },
+      }
     },
     toast: {
       add(toast: Toast) {
         toasts.push(toast)
-      },
+      }
     },
     _tabs: tabs,
     _toasts: toasts,
-    _commandLog: commandLog,
+    _commandLog: commandLog
   }
 }
 
@@ -48,22 +58,42 @@ describe('BC.25 v1 contract — Shell UI registration (S12.UI1)', () => {
 
   it('registerSidebarTab registers the tab by id', () => {
     const mgr = makeExtensionManager()
-    mgr.registerSidebarTab({ id: 'my-ext.sidebar', icon: 'pi pi-box', title: 'My Panel', component: null })
-    expect(mgr._tabs.map(t => t.id)).toContain('my-ext.sidebar')
+    mgr.registerSidebarTab({
+      id: 'my-ext.sidebar',
+      icon: 'pi pi-box',
+      title: 'My Panel',
+      component: null
+    })
+    expect(mgr._tabs.map((t) => t.id)).toContain('my-ext.sidebar')
   })
 
   it('unregisterSidebarTab removes a previously registered tab', () => {
     const mgr = makeExtensionManager()
-    mgr.registerSidebarTab({ id: 'my-ext.sidebar', icon: 'pi pi-box', title: 'My Panel', component: null })
+    mgr.registerSidebarTab({
+      id: 'my-ext.sidebar',
+      icon: 'pi pi-box',
+      title: 'My Panel',
+      component: null
+    })
     mgr.unregisterSidebarTab('my-ext.sidebar')
-    expect(mgr._tabs.map(t => t.id)).not.toContain('my-ext.sidebar')
+    expect(mgr._tabs.map((t) => t.id)).not.toContain('my-ext.sidebar')
   })
 
   it('multiple sidebar tabs from different extensions coexist', () => {
     const mgr = makeExtensionManager()
-    mgr.registerSidebarTab({ id: 'ext-a.panel', icon: '', title: 'A', component: null })
-    mgr.registerSidebarTab({ id: 'ext-b.panel', icon: '', title: 'B', component: null })
-    const ids = mgr._tabs.map(t => t.id)
+    mgr.registerSidebarTab({
+      id: 'ext-a.panel',
+      icon: '',
+      title: 'A',
+      component: null
+    })
+    mgr.registerSidebarTab({
+      id: 'ext-b.panel',
+      icon: '',
+      title: 'B',
+      component: null
+    })
+    const ids = mgr._tabs.map((t) => t.id)
     expect(ids).toContain('ext-a.panel')
     expect(ids).toContain('ext-b.panel')
   })
@@ -76,14 +106,23 @@ describe('BC.25 v1 contract — Shell UI registration (S12.UI1)', () => {
 
   it('toast.add stores the toast with severity', () => {
     const mgr = makeExtensionManager()
-    mgr.toast.add({ severity: 'info', summary: 'Loaded', detail: 'Extension ready', life: 3000 })
+    mgr.toast.add({
+      severity: 'info',
+      summary: 'Loaded',
+      detail: 'Extension ready',
+      life: 3000
+    })
     expect(mgr._toasts[0].severity).toBe('info')
     expect(mgr._toasts[0].summary).toBe('Loaded')
   })
 
   it('toast.add with error severity is stored correctly', () => {
     const mgr = makeExtensionManager()
-    mgr.toast.add({ severity: 'error', summary: 'Failed', detail: 'Could not connect' })
+    mgr.toast.add({
+      severity: 'error',
+      summary: 'Failed',
+      detail: 'Could not connect'
+    })
     expect(mgr._toasts[0].severity).toBe('error')
   })
 

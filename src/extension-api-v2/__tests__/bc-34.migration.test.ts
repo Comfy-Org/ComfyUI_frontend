@@ -32,7 +32,11 @@ function v1InjectDialog(
   const btn = env.settingsDialogEl.querySelector(clickHandlerSelector)
   if (btn) {
     btn.addEventListener('click', clickFn)
-    env.eventListeners.push({ el: btn as HTMLElement, type: 'click', fn: clickFn })
+    env.eventListeners.push({
+      el: btn as HTMLElement,
+      type: 'click',
+      fn: clickFn
+    })
   }
 }
 
@@ -72,14 +76,22 @@ describe('BC.34 migration — settings-panel custom dialog integration', () => {
     it("document.getElementById('comfy-settings-dialog').innerHTML += is replaced by registerDialog()", () => {
       // v1: direct DOM injection
       const v1 = makeV1SettingsEnv()
-      v1InjectDialog(v1, '<button id="my-btn">Open My Dialog</button>', '#my-btn', vi.fn())
+      v1InjectDialog(
+        v1,
+        '<button id="my-btn">Open My Dialog</button>',
+        '#my-btn',
+        vi.fn()
+      )
       expect(v1.settingsDialogEl.querySelector('#my-btn')).not.toBeNull()
       expect(v1.eventListeners).toHaveLength(1)
 
       // v2: registerDialog owns the mounting — no DOM string surgery
       const v2 = makeV2DialogRegistry()
       const component = { __name: 'MyDialog', setup: vi.fn() }
-      v2.registerDialog({ id: 'my-ext.dialog', label: 'Open My Dialog', component }, /* setupTime */ 1)
+      v2.registerDialog(
+        { id: 'my-ext.dialog', label: 'Open My Dialog', component },
+        /* setupTime */ 1
+      )
 
       // v2 has a single clean entry, no raw HTML, no manual listener wiring
       expect(v2.entries()).toHaveLength(1)
@@ -92,9 +104,16 @@ describe('BC.34 migration — settings-panel custom dialog integration', () => {
       const v2 = makeV2DialogRegistry()
 
       // Valid: Vue component object
-      const vueComponent = { __name: 'LegacyDialogMigrated', setup: vi.fn(), template: '<div/>' }
+      const vueComponent = {
+        __name: 'LegacyDialogMigrated',
+        setup: vi.fn(),
+        template: '<div/>'
+      }
       expect(() =>
-        v2.registerDialog({ id: 'migrated', label: 'Dialog', component: vueComponent }, 1)
+        v2.registerDialog(
+          { id: 'migrated', label: 'Dialog', component: vueComponent },
+          1
+        )
       ).not.toThrow()
 
       // v2 registry stores a component reference, never a string
@@ -108,16 +127,29 @@ describe('BC.34 migration — settings-panel custom dialog integration', () => {
 
       // v1: click listener attached imperatively to DOM
       const v1 = makeV1SettingsEnv()
-      v1InjectDialog(v1, '<button id="save-btn">Save</button>', '#save-btn', clickSpy)
-      v1.settingsDialogEl.querySelector('#save-btn')!.dispatchEvent(new Event('click'))
+      v1InjectDialog(
+        v1,
+        '<button id="save-btn">Save</button>',
+        '#save-btn',
+        clickSpy
+      )
+      v1.settingsDialogEl
+        .querySelector('#save-btn')!
+        .dispatchEvent(new Event('click'))
       expect(clickSpy).toHaveBeenCalledOnce()
 
       // v2 migration: the click logic moves into the Vue component's setup()/methods,
       // not into an addEventListener call. The component itself handles the click.
       const componentSetup = vi.fn()
-      const migratedComponent = { __name: 'MigratedDialog', setup: componentSetup }
+      const migratedComponent = {
+        __name: 'MigratedDialog',
+        setup: componentSetup
+      }
       const v2 = makeV2DialogRegistry()
-      v2.registerDialog({ id: 'migrated.dlg', label: 'Dialog', component: migratedComponent }, 1)
+      v2.registerDialog(
+        { id: 'migrated.dlg', label: 'Dialog', component: migratedComponent },
+        1
+      )
 
       // setup() encapsulates what onclick= did
       migratedComponent.setup()

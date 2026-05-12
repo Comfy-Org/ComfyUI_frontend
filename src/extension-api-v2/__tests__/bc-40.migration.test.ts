@@ -11,18 +11,30 @@ import { describe, expect, it } from 'vitest'
 // ── Pure-function stubs ───────────────────────────────────────────────────────
 
 // v1 pattern: manual URL string construction used in 9+ video-upload extensions
-function v1BuildViewUrl(filename: string, type: string, subfolder: string): string {
+function v1BuildViewUrl(
+  filename: string,
+  type: string,
+  subfolder: string
+): string {
   return `/view?filename=${encodeURIComponent(filename)}&type=${encodeURIComponent(type)}&subfolder=${encodeURIComponent(subfolder)}`
 }
 
 // v2 proposed: URLSearchParams-based construction (canonical form)
-function v2GetFileUrl(filename: string, type: string, subfolder: string): string {
+function v2GetFileUrl(
+  filename: string,
+  type: string,
+  subfolder: string
+): string {
   const params = new URLSearchParams({ filename, type, subfolder })
   return `/view?${params.toString()}`
 }
 
 // v1 FormData construction pattern (stripped from evidence, e.g. S4.W4 patterns)
-function v1BuildUploadFormData(file: File, subfolder: string, type: string): FormData {
+function v1BuildUploadFormData(
+  file: File,
+  subfolder: string,
+  type: string
+): FormData {
   const body = new FormData()
   body.append('image', file, file.name)
   body.append('subfolder', subfolder)
@@ -60,8 +72,9 @@ describe('BC.40 migration — file upload and asset URL construction', () => {
     it('v2 getFileUrl is shorter to call and eliminates manual string interpolation errors', () => {
       // Prove the v2 form is less error-prone by comparing character count of construction
       // (documentation-style test — the value is in the API shape, not a runtime assertion)
-      const v1Code = "'/view?filename=' + encodeURIComponent(f) + '&type=' + encodeURIComponent(t)"
-      const v2Code = "getFileUrl(f, t, s)"
+      const v1Code =
+        "'/view?filename=' + encodeURIComponent(f) + '&type=' + encodeURIComponent(t)"
+      const v2Code = 'getFileUrl(f, t, s)'
       expect(v2Code.length).toBeLessThan(v1Code.length)
     })
   })

@@ -17,13 +17,22 @@ function createV1Api() {
   const listeners = new Map<string, EventListenerOrEventListenerObject[]>()
 
   return {
-    addEventListener(type: string, listener: EventListenerOrEventListenerObject) {
+    addEventListener(
+      type: string,
+      listener: EventListenerOrEventListenerObject
+    ) {
       if (!listeners.has(type)) listeners.set(type, [])
       listeners.get(type)!.push(listener)
     },
-    removeEventListener(type: string, listener: EventListenerOrEventListenerObject) {
+    removeEventListener(
+      type: string,
+      listener: EventListenerOrEventListenerObject
+    ) {
       const arr = listeners.get(type)
-      if (arr) { const i = arr.indexOf(listener); if (i !== -1) arr.splice(i, 1) }
+      if (arr) {
+        const i = arr.indexOf(listener)
+        if (i !== -1) arr.splice(i, 1)
+      }
     },
     dispatchCustom(type: string, detail: unknown) {
       const event = { type, detail } as unknown as CustomEvent
@@ -67,7 +76,8 @@ describe('BC.17 migration — execution lifecycle events', () => {
       const v1Received: unknown[] = []
       const v2Received: unknown[] = []
 
-      v1Api.addEventListener('executed', ((e: CustomEvent) => v1Received.push(e.detail)) as EventListener)
+      v1Api.addEventListener('executed', ((e: CustomEvent) =>
+        v1Received.push(e.detail)) as EventListener)
       v2.on('executed', (e) => v2Received.push(e))
 
       const payload = { nodeId: 'node:g:1', output: { text: ['hello'] } }
@@ -83,7 +93,8 @@ describe('BC.17 migration — execution lifecycle events', () => {
       const v1Detail: unknown[] = []
       const v2Payload: unknown[] = []
 
-      v1Api.addEventListener('execution_error', ((e: CustomEvent) => v1Detail.push(e.detail)) as EventListener)
+      v1Api.addEventListener('execution_error', ((e: CustomEvent) =>
+        v1Detail.push(e.detail)) as EventListener)
       v2.on('executionError', (e) => v2Payload.push(e))
 
       const payload = { nodeId: 'node:g:7', message: 'CUDA OOM' }

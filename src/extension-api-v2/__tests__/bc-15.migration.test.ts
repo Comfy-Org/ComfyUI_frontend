@@ -11,50 +11,91 @@
 //
 // I-TF.8.D2 — BC.15 migration wired assertions.
 
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createMiniComfyApp } from '../harness'
 
 // ── V1 app shim with loadGraphData ────────────────────────────────────────────
 
-interface WorkflowJSON { nodes: Array<{ id: number; type: string }>; links: unknown[] }
+interface WorkflowJSON {
+  nodes: Array<{ id: number; type: string }>
+  links: unknown[]
+}
 
 function createV1App() {
   const loadLog: WorkflowJSON[] = []
-  let _loadGraphData = (json: WorkflowJSON) => { loadLog.push(json) }
+  let _loadGraphData = (json: WorkflowJSON) => {
+    loadLog.push(json)
+  }
 
   return {
-    get loadGraphData() { return _loadGraphData },
-    set loadGraphData(fn: (json: WorkflowJSON) => void) { _loadGraphData = fn },
-    get loadLog() { return loadLog },
-    callLoad(json: WorkflowJSON) { _loadGraphData(json) }
+    get loadGraphData() {
+      return _loadGraphData
+    },
+    set loadGraphData(fn: (json: WorkflowJSON) => void) {
+      _loadGraphData = fn
+    },
+    get loadLog() {
+      return loadLog
+    },
+    callLoad(json: WorkflowJSON) {
+      _loadGraphData(json)
+    }
   }
 }
 
 // ── V2 workflow loader (same as bc-15.v2) ────────────────────────────────────
 
-interface BeforeLoadEvent { workflow: WorkflowJSON; cancel(): void }
-interface AfterLoadEvent { workflow: WorkflowJSON; nodeCount: number }
+interface BeforeLoadEvent {
+  workflow: WorkflowJSON
+  cancel(): void
+}
+interface AfterLoadEvent {
+  workflow: WorkflowJSON
+  nodeCount: number
+}
 
 function createV2Loader() {
   const beforeHandlers: Array<(e: BeforeLoadEvent) => void> = []
   const afterHandlers: Array<(e: AfterLoadEvent) => void> = []
   const loadLog: WorkflowJSON[] = []
 
-  function on(event: 'beforeLoadWorkflow', h: (e: BeforeLoadEvent) => void): () => void
-  function on(event: 'afterLoadWorkflow', h: (e: AfterLoadEvent) => void): () => void
+  function on(
+    event: 'beforeLoadWorkflow',
+    h: (e: BeforeLoadEvent) => void
+  ): () => void
+  function on(
+    event: 'afterLoadWorkflow',
+    h: (e: AfterLoadEvent) => void
+  ): () => void
   function on(event: string, h: (e: never) => void): () => void {
-    const arr = event === 'beforeLoadWorkflow' ? beforeHandlers : afterHandlers as never[]
+    const arr =
+      event === 'beforeLoadWorkflow'
+        ? beforeHandlers
+        : (afterHandlers as never[])
     arr.push(h as never)
-    return () => { const i = arr.indexOf(h as never); if (i !== -1) arr.splice(i, 1) }
+    return () => {
+      const i = arr.indexOf(h as never)
+      if (i !== -1) arr.splice(i, 1)
+    }
   }
 
-  async function loadWorkflow(json: WorkflowJSON): Promise<{ loaded: boolean }> {
+  async function loadWorkflow(
+    json: WorkflowJSON
+  ): Promise<{ loaded: boolean }> {
     let cancelled = false
-    const evt: BeforeLoadEvent = { workflow: { ...json, nodes: [...json.nodes] }, cancel() { cancelled = true } }
+    const evt: BeforeLoadEvent = {
+      workflow: { ...json, nodes: [...json.nodes] },
+      cancel() {
+        cancelled = true
+      }
+    }
     for (const h of [...beforeHandlers]) h(evt)
     if (cancelled) return { loaded: false }
     loadLog.push(evt.workflow)
-    const afterEvt: AfterLoadEvent = { workflow: evt.workflow, nodeCount: evt.workflow.nodes.length }
+    const afterEvt: AfterLoadEvent = {
+      workflow: evt.workflow,
+      nodeCount: evt.workflow.nodes.length
+    }
     for (const h of [...afterHandlers]) h(afterEvt)
     return { loaded: true }
   }
@@ -69,7 +110,10 @@ describe('BC.15 migration — workflow loading', () => {
     it('v1 loadGraphData and v2 loadWorkflow each called once per load invocation', async () => {
       const v1 = createV1App()
       const v2 = createV2Loader()
-      const workflow: WorkflowJSON = { nodes: [{ id: 1, type: 'KSampler' }], links: [] }
+      const workflow: WorkflowJSON = {
+        nodes: [{ id: 1, type: 'KSampler' }],
+        links: []
+      }
 
       v1.callLoad(workflow)
       await v2.loadWorkflow(workflow)
@@ -89,7 +133,10 @@ describe('BC.15 migration — workflow loading', () => {
       // v1: wrap loadGraphData to inject a node
       const origV1 = v1.loadGraphData
       v1.loadGraphData = (json) => {
-        const mutated = { ...json, nodes: [...json.nodes, { id: 99, type: 'injected' }] }
+        const mutated = {
+          ...json,
+          nodes: [...json.nodes, { id: 99, type: 'injected' }]
+        }
         v1Seen.push(mutated)
         origV1(mutated)
       }
@@ -100,7 +147,10 @@ describe('BC.15 migration — workflow loading', () => {
         v2Seen.push({ ...e.workflow })
       })
 
-      const base: WorkflowJSON = { nodes: [{ id: 1, type: 'KSampler' }], links: [] }
+      const base: WorkflowJSON = {
+        nodes: [{ id: 1, type: 'KSampler' }],
+        links: []
+      }
       v1.callLoad(base)
       await v2.loadWorkflow(base)
 
@@ -117,12 +167,17 @@ describe('BC.15 migration — workflow loading', () => {
       const v2 = createV2Loader()
 
       // v1: wrapper that swallows the call
-      v1.loadGraphData = (_json) => { /* intentionally empty — suppressed */ }
+      v1.loadGraphData = (_json) => {
+        /* intentionally empty — suppressed */
+      }
 
       // v2: cancel via beforeLoadWorkflow
       v2.on('beforeLoadWorkflow', (e) => e.cancel())
 
-      const workflow: WorkflowJSON = { nodes: [{ id: 1, type: 'A' }], links: [] }
+      const workflow: WorkflowJSON = {
+        nodes: [{ id: 1, type: 'A' }],
+        links: []
+      }
       v1.callLoad(workflow)
       const { loaded } = await v2.loadWorkflow(workflow)
 
@@ -140,7 +195,13 @@ describe('BC.15 migration — workflow loading', () => {
       const v2SeenCount: number[] = []
 
       // v1: synchronous post-load
-      const workflow: WorkflowJSON = { nodes: [{ id: 1, type: 'A' }, { id: 2, type: 'B' }], links: [] }
+      const workflow: WorkflowJSON = {
+        nodes: [
+          { id: 1, type: 'A' },
+          { id: 2, type: 'B' }
+        ],
+        links: []
+      }
       for (const n of workflow.nodes) v1App.graph.add({ type: n.type })
       v1SeenCount.push(v1App.world.allNodes().length)
 

@@ -39,7 +39,9 @@ describe('BC.31 migration — DOM injection and style management', () => {
 
     it('CustomExtension.destroy() is optional — v2 handles teardown automatically when present', () => {
       type DestroyFn = CustomExtension['destroy']
-      type IsOptional = DestroyFn extends (() => void) | undefined ? true : false
+      type IsOptional = DestroyFn extends (() => void) | undefined
+        ? true
+        : false
       const ok: IsOptional = true
       expect(ok).toBe(true)
     })
@@ -48,7 +50,9 @@ describe('BC.31 migration — DOM injection and style management', () => {
       // Confirms the CustomExtension injection path works for both major panel types.
       type SidebarCustom = Extract<SidebarTabExtension, { type: 'custom' }>
       type PanelCustom = Extract<BottomPanelExtension, { type: 'custom' }>
-      type SidebarHasRender = 'render' extends keyof SidebarCustom ? true : false
+      type SidebarHasRender = 'render' extends keyof SidebarCustom
+        ? true
+        : false
       type PanelHasRender = 'render' extends keyof PanelCustom ? true : false
       const sr: SidebarHasRender = true
       const pr: PanelHasRender = true

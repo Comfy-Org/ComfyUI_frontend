@@ -46,7 +46,10 @@ describe('BC.05 v1 contract — custom DOM widgets and node sizing', () => {
     it('widget returned by addDOMWidget has the given name', () => {
       const node: V1NodeWithWidgets = { widgets: [] }
       const el = document.createElement('div')
-      Object.defineProperty(el, 'offsetHeight', { value: 120, configurable: true })
+      Object.defineProperty(el, 'offsetHeight', {
+        value: 120,
+        configurable: true
+      })
 
       const w = addDOMWidget(node, 'editor', 'custom', el)
 
@@ -57,9 +60,14 @@ describe('BC.05 v1 contract — custom DOM widgets and node sizing', () => {
     it('opts.getHeight() is used when provided (override > offsetHeight)', () => {
       const node: V1NodeWithWidgets = { widgets: [] }
       const el = document.createElement('div')
-      Object.defineProperty(el, 'offsetHeight', { value: 120, configurable: true })
+      Object.defineProperty(el, 'offsetHeight', {
+        value: 120,
+        configurable: true
+      })
 
-      const w = addDOMWidget(node, 'editor', 'custom', el, { getHeight: () => 200 })
+      const w = addDOMWidget(node, 'editor', 'custom', el, {
+        getHeight: () => 200
+      })
 
       expect(w.height).toBe(200)
     })
@@ -75,15 +83,9 @@ describe('BC.05 v1 contract — custom DOM widgets and node sizing', () => {
       expect(found!.element).toBe(el)
     })
 
-    it.todo(
-      'DOM element appended to document'
-    )
-    it.todo(
-      'canvas render triggers opts.onDraw(ctx)'
-    )
-    it.todo(
-      'graph reload persistence'
-    )
+    it.todo('DOM element appended to document')
+    it.todo('canvas render triggers opts.onDraw(ctx)')
+    it.todo('graph reload persistence')
   })
 
   describe('S2.N11 — node.computeSize override (synthetic)', () => {
@@ -92,7 +94,9 @@ describe('BC.05 v1 contract — custom DOM widgets and node sizing', () => {
         computeSize: (_out: [number, number]) => [140, 80] as [number, number]
       }
 
-      const custom = vi.fn((_out: [number, number]) => [300, 150] as [number, number])
+      const custom = vi.fn(
+        (_out: [number, number]) => [300, 150] as [number, number]
+      )
       node.computeSize = custom
 
       const result = (node.computeSize as typeof custom)([0, 0])
@@ -120,7 +124,10 @@ describe('BC.05 v1 contract — custom DOM widgets and node sizing', () => {
       const widgetHeight = 120
       const baseHeight = 80
       const node = {
-        computeSize: (_out: [number, number]): [number, number] => [200, baseHeight + widgetHeight]
+        computeSize: (_out: [number, number]): [number, number] => [
+          200,
+          baseHeight + widgetHeight
+        ]
       }
 
       const [, h] = node.computeSize([0, 0])

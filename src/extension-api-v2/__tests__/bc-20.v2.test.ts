@@ -12,7 +12,10 @@
 // I-TF.8 — BC.20 v2 wired assertions.
 
 import { describe, expect, it } from 'vitest'
-import type { NodeExtensionOptions, WidgetExtensionOptions } from '@/extension-api/lifecycle'
+import type {
+  NodeExtensionOptions,
+  WidgetExtensionOptions
+} from '@/extension-api/lifecycle'
 
 // ── Type-shape helpers ────────────────────────────────────────────────────────
 
@@ -20,19 +23,33 @@ import type { NodeExtensionOptions, WidgetExtensionOptions } from '@/extension-a
 function createNodeExtensionRegistry() {
   const extensions: NodeExtensionOptions[] = []
   return {
-    register(opts: NodeExtensionOptions) { extensions.push(opts) },
-    getAll() { return [...extensions] },
-    findByName(name: string) { return extensions.find((e) => e.name === name) },
-    clear() { extensions.length = 0 }
+    register(opts: NodeExtensionOptions) {
+      extensions.push(opts)
+    },
+    getAll() {
+      return [...extensions]
+    },
+    findByName(name: string) {
+      return extensions.find((e) => e.name === name)
+    },
+    clear() {
+      extensions.length = 0
+    }
   }
 }
 
 function createWidgetExtensionRegistry() {
   const extensions: WidgetExtensionOptions[] = []
   return {
-    register(opts: WidgetExtensionOptions) { extensions.push(opts) },
-    findByType(type: string) { return extensions.find((e) => e.type === type) },
-    clear() { extensions.length = 0 }
+    register(opts: WidgetExtensionOptions) {
+      extensions.push(opts)
+    },
+    findByType(type: string) {
+      return extensions.find((e) => e.type === type)
+    },
+    clear() {
+      extensions.length = 0
+    }
   }
 }
 
@@ -86,15 +103,24 @@ describe('BC.20 v2 contract — custom node-type registration', () => {
       const ext: NodeExtensionOptions = {
         name: 'bc20.test.type-scoped',
         nodeTypes: ['RerouteNode'],
-        nodeCreated(node) { received.push(node.type) }
+        nodeCreated(node) {
+          received.push(node.type)
+        }
       }
 
       // Simulate runtime dispatch (filter by nodeTypes before calling hook).
-      const allTypes = ['RerouteNode', 'KSampler', 'RerouteNode', 'CLIPTextEncode']
+      const allTypes = [
+        'RerouteNode',
+        'KSampler',
+        'RerouteNode',
+        'CLIPTextEncode'
+      ]
       for (const type of allTypes) {
         if (!ext.nodeTypes || ext.nodeTypes.includes(type)) {
           // Minimal handle stub — only `type` matters here.
-          ext.nodeCreated?.({ type, comfyClass: type } as Parameters<NonNullable<typeof ext.nodeCreated>>[0])
+          ext.nodeCreated?.({ type, comfyClass: type } as Parameters<
+            NonNullable<typeof ext.nodeCreated>
+          >[0])
         }
       }
 
@@ -105,13 +131,17 @@ describe('BC.20 v2 contract — custom node-type registration', () => {
       const received: string[] = []
       const ext: NodeExtensionOptions = {
         name: 'bc20.test.global-dispatch',
-        nodeCreated(node) { received.push(node.type) }
+        nodeCreated(node) {
+          received.push(node.type)
+        }
       }
 
       const allTypes = ['RerouteNode', 'KSampler', 'CLIPTextEncode']
       for (const type of allTypes) {
         if (!ext.nodeTypes || ext.nodeTypes.includes(type)) {
-          ext.nodeCreated?.({ type, comfyClass: type } as Parameters<NonNullable<typeof ext.nodeCreated>>[0])
+          ext.nodeCreated?.({ type, comfyClass: type } as Parameters<
+            NonNullable<typeof ext.nodeCreated>
+          >[0])
         }
       }
 
@@ -146,16 +176,16 @@ describe('BC.20 v2 contract — custom node-type registration', () => {
   describe('[gap] virtual: true and resolveConnections — Phase B', () => {
     it.todo(
       '[gap] NodeExtensionOptions does not yet have a `virtual: true` field. ' +
-      'Phase B: add virtual?: boolean to NodeExtensionOptions per D6 §Q5 decision. ' +
-      'Virtual nodes are excluded from the ECS spec edges / graphToPrompt output.'
+        'Phase B: add virtual?: boolean to NodeExtensionOptions per D6 §Q5 decision. ' +
+        'Virtual nodes are excluded from the ECS spec edges / graphToPrompt output.'
     )
     it.todo(
       '[gap] NodeExtensionOptions does not yet have resolveConnections(node, graph) → edges[]. ' +
-      'Phase B: KJNodes-style Set/Get node virtual wiring. See D6 §Q5 for full API shape.'
+        'Phase B: KJNodes-style Set/Get node virtual wiring. See D6 §Q5 for full API shape.'
     )
     it.todo(
       '[gap] isVirtualNode=true prototype property (S8.P1) has no v2 equivalent until Phase B virtual:true lands. ' +
-      'Until then, extensions must continue using the v1 isVirtualNode pattern.'
+        'Until then, extensions must continue using the v1 isVirtualNode pattern.'
     )
   })
 })

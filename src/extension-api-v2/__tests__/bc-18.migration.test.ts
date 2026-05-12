@@ -38,7 +38,9 @@ describe('BC.18 migration — backend HTTP calls', () => {
 
   describe('request equivalence', () => {
     it('v1 app.api.fetchApi and v2 comfyAPI.fetchApi call fetch with the same URL', async () => {
-      const mockFetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}', { status: 200 }))
+      const mockFetch = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(new Response('{}', { status: 200 }))
       const v1 = createV1Api()
       const v2 = createV2ComfyAPI()
 
@@ -53,10 +55,16 @@ describe('BC.18 migration — backend HTTP calls', () => {
     })
 
     it('v1 and v2 both pass RequestInit through to fetch unchanged', async () => {
-      const mockFetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}', { status: 200 }))
+      const mockFetch = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(new Response('{}', { status: 200 }))
       const v1 = createV1Api()
       const v2 = createV2ComfyAPI()
-      const init: RequestInit = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"a":1}' }
+      const init: RequestInit = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{"a":1}'
+      }
 
       await v1.fetchApi('/api/prompt', init)
       const v1Init = mockFetch.mock.calls[0][1]
@@ -69,7 +77,9 @@ describe('BC.18 migration — backend HTTP calls', () => {
     })
 
     it('FormData uploads produce the same body reference in both v1 and v2', async () => {
-      const mockFetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}', { status: 200 }))
+      const mockFetch = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(new Response('{}', { status: 200 }))
       const v1 = createV1Api()
       const v2 = createV2ComfyAPI()
       const form = new FormData()
@@ -88,7 +98,9 @@ describe('BC.18 migration — backend HTTP calls', () => {
 
   describe('response handling equivalence', () => {
     it('both v1 and v2 resolve with a native Response on 200', async () => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}', { status: 200 }))
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response('{}', { status: 200 })
+      )
       const v1 = createV1Api()
       const v2 = createV2ComfyAPI()
 
@@ -100,11 +112,16 @@ describe('BC.18 migration — backend HTTP calls', () => {
     })
 
     it('both v1 and v2 resolve (not reject) on 4xx/5xx', async () => {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('err', { status: 500 }))
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response('err', { status: 500 })
+      )
       const v1 = createV1Api()
       const v2 = createV2ComfyAPI()
 
-      const [r1, r2] = await Promise.all([v1.fetchApi('/api/broken'), v2.fetchApi('/api/broken')])
+      const [r1, r2] = await Promise.all([
+        v1.fetchApi('/api/broken'),
+        v2.fetchApi('/api/broken')
+      ])
       expect(r1.status).toBe(500)
       expect(r2.status).toBe(500)
     })

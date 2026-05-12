@@ -40,7 +40,7 @@ function makeNode() {
       const slotHeight = 20
       const rows = Math.max(inputs.length, outputs.length, 1)
       return [size[0], rows * slotHeight + 40]
-    },
+    }
   }
 }
 
@@ -68,8 +68,16 @@ describe('BC.09 v1 contract — dynamic slot and output mutation', () => {
     })
 
     it('removing an input slot that has an active link also removes the corresponding link from the graph', () => {
-      const graph = { links: new Map<number, { id: number; target_id: number; target_slot: number }>() }
-      const node = { id: 10, inputs: [{ name: 'img', type: 'IMAGE', link: 99 }] as Slot[] }
+      const graph = {
+        links: new Map<
+          number,
+          { id: number; target_id: number; target_slot: number }
+        >()
+      }
+      const node = {
+        id: 10,
+        inputs: [{ name: 'img', type: 'IMAGE', link: 99 }] as Slot[]
+      }
       graph.links.set(99, { id: 99, target_id: 10, target_slot: 0 })
 
       // v1 pattern: remove slot and clean up the link
@@ -107,8 +115,8 @@ describe('BC.09 v1 contract — dynamic slot and output mutation', () => {
       const node = {
         outputs: [
           { name: 'IMAGE', type: 'IMAGE', links: [5, 6] },
-          { name: 'MASK', type: 'MASK', links: [] },
-        ] as OutputSlot[],
+          { name: 'MASK', type: 'MASK', links: [] }
+        ] as OutputSlot[]
       }
       graph.links.set(5, {})
       graph.links.set(6, {})
@@ -131,8 +139,8 @@ describe('BC.09 v1 contract — dynamic slot and output mutation', () => {
       const node = {
         outputs: [
           { name: 'A', type: 'INT', links: [1] },
-          { name: 'B', type: 'INT', links: [2, 3] },
-        ] as OutputSlot[],
+          { name: 'B', type: 'INT', links: [2, 3] }
+        ] as OutputSlot[]
       }
       graph.links.set(1, {})
       graph.links.set(2, {})
@@ -178,7 +186,9 @@ describe('BC.09 v1 contract — dynamic slot and output mutation', () => {
       const node = makeNode()
       // Simulate the canvas draw loop — setSize only mutates size[], not draw
       const mockCanvas = {
-        draw() { drawCalls.push('draw') }
+        draw() {
+          drawCalls.push('draw')
+        }
       }
       node.setSize([400, 300])
       // Canvas draw was not called as part of setSize

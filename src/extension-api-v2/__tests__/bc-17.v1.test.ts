@@ -17,8 +17,8 @@ function makeApi() {
       listeners.get(event)!.push(fn)
     },
     _emit(event: string, detail: unknown) {
-      listeners.get(event)?.forEach(fn => fn({ detail }))
-    },
+      listeners.get(event)?.forEach((fn) => fn({ detail }))
+    }
   }
 }
 
@@ -30,7 +30,9 @@ describe('BC.17 v1 contract — backend execution lifecycle events (S5.A1/A2/A3)
   it("addEventListener('executed') fires with detail.node and detail.output", () => {
     const api = makeApi()
     let detail: unknown
-    api.addEventListener('executed', e => { detail = e.detail })
+    api.addEventListener('executed', (e) => {
+      detail = e.detail
+    })
     api._emit('executed', { node: '5', output: { images: [] } })
     expect((detail as { node: string }).node).toBe('5')
   })
@@ -38,7 +40,9 @@ describe('BC.17 v1 contract — backend execution lifecycle events (S5.A1/A2/A3)
   it("addEventListener('progress') fires with detail.value and detail.max", () => {
     const api = makeApi()
     let detail: unknown
-    api.addEventListener('progress', e => { detail = e.detail })
+    api.addEventListener('progress', (e) => {
+      detail = e.detail
+    })
     api._emit('progress', { value: 3, max: 10 })
     expect((detail as { value: number; max: number }).value).toBe(3)
     expect((detail as { value: number; max: number }).max).toBe(10)
@@ -47,7 +51,9 @@ describe('BC.17 v1 contract — backend execution lifecycle events (S5.A1/A2/A3)
   it("addEventListener('executing') fires with currently-running node id", () => {
     const api = makeApi()
     const ids: unknown[] = []
-    api.addEventListener('executing', e => ids.push((e.detail as { node: string }).node))
+    api.addEventListener('executing', (e) =>
+      ids.push((e.detail as { node: string }).node)
+    )
     api._emit('executing', { node: '7' })
     expect(ids).toEqual(['7'])
   })

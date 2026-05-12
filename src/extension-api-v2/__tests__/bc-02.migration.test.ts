@@ -49,15 +49,17 @@ describe('BC.02 migration — node lifecycle: teardown', () => {
 
       // v2 pattern
       const v2Cleanup = vi.fn()
-      const v2Mount = mountV2(() => { onScopeDispose(v2Cleanup) })
+      const v2Mount = mountV2(() => {
+        onScopeDispose(v2Cleanup)
+      })
 
       expect(v1Cleanup).not.toHaveBeenCalled()
       expect(v2Cleanup).not.toHaveBeenCalled()
 
       // Simulate removal
       app.graph.remove(entityId)
-      v1Node.onRemoved()   // LiteGraph calls this after graph removal
-      v2Mount.unmount()    // service calls scope.stop() after graph removal
+      v1Node.onRemoved() // LiteGraph calls this after graph removal
+      v2Mount.unmount() // service calls scope.stop() after graph removal
 
       expect(v1Cleanup).toHaveBeenCalledOnce()
       expect(v2Cleanup).toHaveBeenCalledOnce()
@@ -87,7 +89,7 @@ describe('BC.02 migration — node lifecycle: teardown', () => {
         })
       })
 
-      app.graph.remove(entityId)    // removes from world
+      app.graph.remove(entityId) // removes from world
       v1Node.onRemoved()
       v2Mount.unmount()
 
@@ -223,12 +225,16 @@ describe('BC.02 migration — node lifecycle: teardown', () => {
       const nodeA = {
         entityId: app.graph.add({ type: 'NodeA' }),
         onRemoved: () => v1Counts.NodeA++,
-        v2: mountV2(() => { onScopeDispose(() => v2Counts.NodeA++) })
+        v2: mountV2(() => {
+          onScopeDispose(() => v2Counts.NodeA++)
+        })
       }
       const nodeB = {
         entityId: app.graph.add({ type: 'NodeB' }),
         onRemoved: () => v1Counts.NodeB++,
-        v2: mountV2(() => { onScopeDispose(() => v2Counts.NodeB++) })
+        v2: mountV2(() => {
+          onScopeDispose(() => v2Counts.NodeB++)
+        })
       }
 
       expect(world.allNodes()).toHaveLength(2)

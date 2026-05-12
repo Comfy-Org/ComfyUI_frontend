@@ -24,7 +24,9 @@ describe('BC.23 v1 contract — node.properties direct mutation (S2.N18)', () =>
     const log: string[] = []
     const node = {
       properties: {} as Record<string, unknown>,
-      onPropertyChanged(_name: string, _value: unknown) { log.push(_name) },
+      onPropertyChanged(_name: string, _value: unknown) {
+        log.push(_name)
+      }
     }
     node.properties['seed'] = 42
     expect(log).toHaveLength(0)

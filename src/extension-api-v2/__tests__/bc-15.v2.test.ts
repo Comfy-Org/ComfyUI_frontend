@@ -13,7 +13,7 @@
 // I-TF.8.D2 — BC.15 v2 wired assertions.
 
 import { describe, expect, it, vi } from 'vitest'
-import { createHarnessWorld, createMiniComfyApp } from '../harness'
+import { createMiniComfyApp } from '../harness'
 
 // ── Synthetic beforeLoad / afterLoad event bus ────────────────────────────────
 // Models the app.on('beforeLoadWorkflow') / app.on('afterLoadWorkflow')
@@ -33,13 +33,21 @@ function createWorkflowLoader() {
   const beforeHandlers: Array<(e: BeforeLoadEvent) => void> = []
   const afterHandlers: Array<(e: AfterLoadEvent) => void> = []
 
-  function on(event: 'beforeLoadWorkflow', handler: (e: BeforeLoadEvent) => void): () => void
-  function on(event: 'afterLoadWorkflow', handler: (e: AfterLoadEvent) => void): () => void
+  function on(
+    event: 'beforeLoadWorkflow',
+    handler: (e: BeforeLoadEvent) => void
+  ): () => void
+  function on(
+    event: 'afterLoadWorkflow',
+    handler: (e: AfterLoadEvent) => void
+  ): () => void
   function on(event: string, handler: (e: never) => void): () => void {
     if (event === 'beforeLoadWorkflow') {
       beforeHandlers.push(handler as (e: BeforeLoadEvent) => void)
       return () => {
-        const i = beforeHandlers.indexOf(handler as (e: BeforeLoadEvent) => void)
+        const i = beforeHandlers.indexOf(
+          handler as (e: BeforeLoadEvent) => void
+        )
         if (i !== -1) beforeHandlers.splice(i, 1)
       }
     } else {
@@ -51,11 +59,15 @@ function createWorkflowLoader() {
     }
   }
 
-  async function loadWorkflow(json: Record<string, unknown>): Promise<{ loaded: boolean; nodeCount: number }> {
+  async function loadWorkflow(
+    json: Record<string, unknown>
+  ): Promise<{ loaded: boolean; nodeCount: number }> {
     let cancelled = false
     const beforeEvt: BeforeLoadEvent = {
       workflow: { ...json },
-      cancel() { cancelled = true }
+      cancel() {
+        cancelled = true
+      }
     }
     for (const h of [...beforeHandlers]) h(beforeEvt)
     if (cancelled) return { loaded: false, nodeCount: 0 }
@@ -97,7 +109,10 @@ describe('BC.15 v2 contract — app.loadWorkflow', () => {
     it('loadWorkflow resolves with loaded: false and nodeCount 0 when cancelled', async () => {
       const loader = createWorkflowLoader()
       loader.on('beforeLoadWorkflow', (e) => e.cancel())
-      const { loaded, nodeCount } = await loader.loadWorkflow({ nodes: [{ id: 1 }], links: [] })
+      const { loaded, nodeCount } = await loader.loadWorkflow({
+        nodes: [{ id: 1 }],
+        links: []
+      })
       expect(loaded).toBe(false)
       expect(nodeCount).toBe(0)
     })
@@ -165,7 +180,9 @@ describe('BC.15 v2 contract — app.loadWorkflow', () => {
     it('afterLoadWorkflow fires after deserialization with the original workflow and node count', async () => {
       const loader = createWorkflowLoader()
       let receivedNodeCount = -1
-      loader.on('afterLoadWorkflow', (e) => { receivedNodeCount = e.nodeCount })
+      loader.on('afterLoadWorkflow', (e) => {
+        receivedNodeCount = e.nodeCount
+      })
       await loader.loadWorkflow({ nodes: [{ id: 1 }, { id: 2 }], links: [] })
       expect(receivedNodeCount).toBe(2)
     })

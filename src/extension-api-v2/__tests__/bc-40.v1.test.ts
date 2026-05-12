@@ -12,7 +12,11 @@
 import { describe, expect, it } from 'vitest'
 
 // v1 URL construction helper — the pattern every extension must duplicate manually
-function buildViewUrl(filename: string, subfolder: string, type: string): string {
+function buildViewUrl(
+  filename: string,
+  subfolder: string,
+  type: string
+): string {
   const params = new URLSearchParams({ filename, subfolder, type })
   return `/view?${params.toString()}`
 }
@@ -25,7 +29,12 @@ interface UploadResponse {
 }
 
 // Minimal FormData shape check
-function buildUploadFormData(file: Blob, filename: string, subfolder: string, type: string): FormData {
+function buildUploadFormData(
+  file: Blob,
+  filename: string,
+  subfolder: string,
+  type: string
+): FormData {
   const fd = new FormData()
   fd.append('image', file, filename)
   fd.append('subfolder', subfolder)
@@ -51,7 +60,7 @@ describe('BC.40 v1 contract — file upload and asset URL construction', () => {
       const response: UploadResponse = {
         name: 'texture.png',
         subfolder: 'models/3d',
-        type: 'input',
+        type: 'input'
       }
 
       expect(response.name).toBe('texture.png')
@@ -69,7 +78,7 @@ describe('BC.40 v1 contract — file upload and asset URL construction', () => {
 
       const fdB = new FormData()
       fdB.append('image', file, 'asset.png')
-      fdB.append('type', 'input')  // different default type — common v1 inconsistency
+      fdB.append('type', 'input') // different default type — common v1 inconsistency
 
       expect(fdA.get('type')).toBe('temp')
       expect(fdB.get('type')).toBe('input')
@@ -79,7 +88,11 @@ describe('BC.40 v1 contract — file upload and asset URL construction', () => {
 
   describe('S17.FA1 — manual /view URL construction', () => {
     it("extension constructs retrieval URL as '/view?filename=...&type=...&subfolder=...' from upload response", () => {
-      const response: UploadResponse = { name: 'scene.glb', subfolder: 'models', type: 'input' }
+      const response: UploadResponse = {
+        name: 'scene.glb',
+        subfolder: 'models',
+        type: 'input'
+      }
       const url = buildViewUrl(response.name, response.subfolder, response.type)
 
       expect(url).toContain('/view?')

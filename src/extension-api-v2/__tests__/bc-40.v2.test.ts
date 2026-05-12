@@ -35,10 +35,7 @@ function getFileUrl(filename: string, type: string, subfolder: string): string {
 
 function createMockComfyAPI() {
   const uploadFile = vi.fn(
-    async (
-      _file: File,
-      opts: UploadOptions = {}
-    ): Promise<UploadResult> => ({
+    async (_file: File, opts: UploadOptions = {}): Promise<UploadResult> => ({
       filename: _file.name,
       subfolder: opts.subfolder ?? '',
       type: opts.type ?? 'input'
@@ -70,9 +67,17 @@ describe('BC.40 v2 contract — file upload and asset URL construction', () => {
     })
 
     it('getFileUrl with an UploadResult spread produces the same URL as individual fields', () => {
-      const result: UploadResult = { filename: 'image.jpg', type: 'output', subfolder: 'renders' }
+      const result: UploadResult = {
+        filename: 'image.jpg',
+        type: 'output',
+        subfolder: 'renders'
+      }
 
-      const fromSpread = getFileUrl(result.filename, result.type, result.subfolder)
+      const fromSpread = getFileUrl(
+        result.filename,
+        result.type,
+        result.subfolder
+      )
       const fromFields = getFileUrl('image.jpg', 'output', 'renders')
 
       expect(fromSpread).toBe(fromFields)
@@ -97,9 +102,16 @@ describe('BC.40 v2 contract — file upload and asset URL construction', () => {
       const api = createMockComfyAPI()
       const file = new File(['data'], 'photo.png', { type: 'image/png' })
 
-      const result = await api.uploadFile(file, { subfolder: 'uploads', type: 'input' })
+      const result = await api.uploadFile(file, {
+        subfolder: 'uploads',
+        type: 'input'
+      })
 
-      expect(result).toEqual({ filename: 'photo.png', subfolder: 'uploads', type: 'input' })
+      expect(result).toEqual({
+        filename: 'photo.png',
+        subfolder: 'uploads',
+        type: 'input'
+      })
     })
 
     it('uploadFile with no options defaults subfolder to empty string and type to input', async () => {
@@ -116,7 +128,10 @@ describe('BC.40 v2 contract — file upload and asset URL construction', () => {
       const api = createMockComfyAPI()
       const file = new File(['x'], 'mask.png', { type: 'image/png' })
 
-      const result = await api.uploadFile(file, { subfolder: 'masks', type: 'input' })
+      const result = await api.uploadFile(file, {
+        subfolder: 'masks',
+        type: 'input'
+      })
       const url = api.getFileUrl(result.filename, result.type, result.subfolder)
 
       expect(url).toContain('filename=mask.png')
