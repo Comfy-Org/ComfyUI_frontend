@@ -484,5 +484,47 @@ describe('useVersionCompatibilityStore', () => {
           mockNow + 7 * 24 * 60 * 60 * 1000
       })
     })
+
+    it('should produce the same dismissal key regardless of package order', async () => {
+      const mockNow = 1000000
+      vi.spyOn(Date, 'now').mockReturnValue(mockNow)
+
+      const packageA = {
+        name: 'comfy-aimdo',
+        installed: '0.1.0',
+        required: '0.2.0'
+      }
+      const packageB = {
+        name: 'comfyui-workflow-templates',
+        installed: '0.9.0',
+        required: '0.9.5'
+      }
+
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '1.24.0',
+          required_frontend_version: '1.24.0',
+          comfy_package_versions: [packageA, packageB]
+        }
+      }
+      mockSystemStatsStore.isInitialized = true
+      await store.checkVersionCompatibility()
+      store.dismissWarning()
+      const firstKey = Object.keys(mockDismissalStorage.value)[0]
+
+      mockDismissalStorage.value = {}
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '1.24.0',
+          required_frontend_version: '1.24.0',
+          comfy_package_versions: [packageB, packageA]
+        }
+      }
+      await store.checkVersionCompatibility()
+      store.dismissWarning()
+      const secondKey = Object.keys(mockDismissalStorage.value)[0]
+
+      expect(firstKey).toBe(secondKey)
+    })
   })
 })

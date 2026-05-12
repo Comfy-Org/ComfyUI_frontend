@@ -74,7 +74,13 @@ export const useVersionCompatibilityStore = defineStore(
       }
       const baseKey = `${frontendVersion.value}-${backendVersion.value}-${requiredFrontendVersion.value}`
       if (outdatedComfyPackages.value.length === 0) return baseKey
-      const packageKey = outdatedComfyPackages.value
+      const packageKey = [...outdatedComfyPackages.value]
+        .sort(
+          (a, b) =>
+            a.name.localeCompare(b.name) ||
+            (a.installed ?? '').localeCompare(b.installed ?? '') ||
+            (a.required ?? '').localeCompare(b.required ?? '')
+        )
         .map((pkg) => `${pkg.name}@${pkg.installed}->${pkg.required}`)
         .join(',')
       return `${baseKey}-${packageKey}`
