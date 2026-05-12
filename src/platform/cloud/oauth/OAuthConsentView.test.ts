@@ -1,9 +1,10 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import OAuthConsentView from '@/platform/cloud/oauth/OAuthConsentView.vue'
+import { OAuthApiError } from '@/platform/cloud/oauth/oauthApi'
 import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
 
 const i18n = createI18n({
@@ -11,17 +12,45 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
+      g: {
+        singleSelectDropdown: 'Select an option'
+      },
       oauth: {
         consent: {
-          allow: 'Allow',
-          deny: 'Deny',
+          allow: 'Continue',
+          deny: 'Cancel',
           genericError: 'OAuth request failed.',
-          loading: 'Loading OAuth request...',
-          missingRequest: 'This OAuth request is missing.',
+          loading: 'Loading authorization request…',
+          missingRequest: 'This authorization request is missing.',
           noWorkspaces: 'No eligible workspaces are available.',
-          resourceLabel: 'Authorize this app',
-          scopesTitle: 'Requested access',
-          workspaceTitle: 'Choose workspace'
+          title: '{client} wants access',
+          subtitle: 'Sign in to {resource} to continue',
+          workspaceLabel: 'Workspace',
+          permissionsHeader: 'Permissions',
+          workspaceHelp: 'Permissions apply to this workspace only.',
+          learnMore: 'Learn more',
+          redirectNotice: "You'll be redirected to",
+          appTypeNative: 'Native app',
+          appTypeWeb: 'Web app',
+          errorExpired:
+            'This consent request has expired or has already been used.',
+          errorScopeBroadening:
+            "The previously approved permissions don't cover this request.",
+          errorUnavailable: "This feature isn't available right now."
+        },
+        scopes: {
+          'mcp:tools:read': {
+            label: 'View available workflow tools'
+          },
+          'mcp:tools:call': {
+            label: 'Run workflows on your behalf'
+          }
+        },
+        workspace: {
+          personal: 'Personal',
+          team: 'Team',
+          owner: 'Owner',
+          member: 'Member'
         }
       }
     }
@@ -33,6 +62,8 @@ const challenge: OAuthConsentChallenge = {
   csrf_token: 'csrf-token',
   client_display_name: 'Cursor',
   resource_display_name: 'ComfyUI MCP',
+  redirect_uri: 'http://127.0.0.1:50632/cb',
+  client_application_type: 'native',
   scopes: ['mcp:tools:read', 'mcp:tools:call', 'mcp:unknown:test'],
   workspaces: [
     {
@@ -63,52 +94,58 @@ const renderConsent = (
   })
 
 describe('OAuthConsentView', () => {
-  it('renders client, resource, and scopes from the challenge', () => {
+  it('renders title, subtitle, and scope checklist', () => {
     renderConsent()
 
-    expect(screen.getByText('Cursor')).toBeVisible()
-    expect(screen.getByText('ComfyUI MCP')).toBeVisible()
-    expect(screen.getByText('mcp:tools:read')).toBeVisible()
-    expect(screen.getByText('mcp:tools:call')).toBeVisible()
+    // Title is "<client> wants access". Subtitle is "Sign in to <resource>
+    // to continue". Both are short and avoid repeating any brand name twice.
+    expect(screen.getByText('Cursor wants access')).toBeVisible()
+    expect(screen.getByText('Sign in to ComfyUI MCP to continue')).toBeVisible()
+    // Permissions section header is just the static word "Permissions".
+    expect(screen.getByText('Permissions')).toBeVisible()
+    // Known scopes render their human-readable labels. We deliberately
+    // avoid MCP jargon ("tools", "metadata") — the user thinks in
+    // ComfyUI vocabulary (workflows), and the consent UI doesn't show
+    // an enumerated tool list, so the label shouldn't promise one.
+    expect(screen.getByText('View available workflow tools')).toBeVisible()
+    expect(screen.getByText('Run workflows on your behalf')).toBeVisible()
+    // Unknown scopes fall back to the raw scope string so a new resource
+    // doesn't require a frontend release just to render its consent page.
     expect(screen.getByText('mcp:unknown:test')).toBeVisible()
   })
 
-  it('requires workspace selection when multiple workspaces are available', async () => {
-    const user = userEvent.setup()
-    const submitDecision = vi.fn()
-    renderConsent({}, submitDecision)
-
-    const allow = screen.getByRole('button', { name: 'Allow' })
-    expect(allow).toBeDisabled()
-
-    await user.click(screen.getByLabelText(/Team/))
-    expect(allow).toBeEnabled()
-
-    await user.click(allow)
-
-    expect(submitDecision).toHaveBeenCalledWith({
-      oauthRequestId: '550e8400-e29b-41d4-a716-446655440000',
-      csrfToken: 'csrf-token',
-      decision: 'allow',
-      workspaceId: 'team-workspace'
-    })
+  it('renders the registered redirect URI verbatim', () => {
+    renderConsent()
+    // Verbatim render — the user must be able to read the loopback URL
+    // and verify it's the localhost callback their CLI is listening on.
+    expect(screen.getByText('http://127.0.0.1:50632/cb')).toBeVisible()
+    expect(screen.getByText("You'll be redirected to")).toBeVisible()
   })
 
-  it('renders a single workspace read-only without auto-submitting', async () => {
+  it('renders a Native badge when client_application_type is "native"', () => {
+    renderConsent()
+    expect(screen.getByText('Native app')).toBeVisible()
+  })
+
+  it('renders a Web badge when client_application_type is "web"', () => {
+    renderConsent({ client_application_type: 'web' })
+    expect(screen.getByText('Web app')).toBeVisible()
+  })
+
+  it('hides the application-type badge for legacy seeded clients', () => {
+    renderConsent({ client_application_type: '' })
+    expect(screen.queryByText('Native app')).not.toBeInTheDocument()
+    expect(screen.queryByText('Web app')).not.toBeInTheDocument()
+  })
+
+  it('preselects the only workspace and submits with it', async () => {
     const user = userEvent.setup()
     const submitDecision = vi.fn()
-    renderConsent(
-      {
-        workspaces: [challenge.workspaces[0]]
-      },
-      submitDecision
-    )
+    renderConsent({ workspaces: [challenge.workspaces[0]] }, submitDecision)
 
-    expect(screen.getByText('Personal')).toBeVisible()
-    expect(screen.queryByRole('radio')).not.toBeInTheDocument()
-    expect(submitDecision).not.toHaveBeenCalled()
-
-    await user.click(screen.getByRole('button', { name: 'Allow' }))
+    // Single-workspace path: Allow is enabled and submission carries the
+    // sole workspace_id.
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
 
     expect(submitDecision).toHaveBeenCalledWith({
       oauthRequestId: '550e8400-e29b-41d4-a716-446655440000',
@@ -118,19 +155,76 @@ describe('OAuthConsentView', () => {
     })
   })
 
-  it('submits deny with the selected workspace', async () => {
+  it('keeps Allow disabled when multiple workspaces are available and none is chosen', () => {
+    renderConsent()
+    const allow = screen.getByRole('button', { name: 'Continue' })
+    expect(allow).toBeDisabled()
+  })
+
+  it('submits deny when the user cancels', async () => {
     const user = userEvent.setup()
     const submitDecision = vi.fn()
-    renderConsent({}, submitDecision)
+    renderConsent({ workspaces: [challenge.workspaces[0]] }, submitDecision)
 
-    await user.click(screen.getByLabelText(/Team/))
-    await user.click(screen.getByRole('button', { name: 'Deny' }))
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
-    expect(submitDecision).toHaveBeenCalledWith({
-      oauthRequestId: '550e8400-e29b-41d4-a716-446655440000',
-      csrfToken: 'csrf-token',
-      decision: 'deny',
-      workspaceId: 'team-workspace'
+    expect(submitDecision).toHaveBeenCalledWith(
+      expect.objectContaining({
+        decision: 'deny',
+        workspaceId: 'personal-workspace'
+      })
+    )
+  })
+
+  it('maps OAuthApiError(400) to the expired-request message', async () => {
+    const submitDecision = vi
+      .fn()
+      .mockRejectedValue(new OAuthApiError('expired', 400))
+    const user = userEvent.setup()
+    renderConsent({ workspaces: [challenge.workspaces[0]] }, submitDecision)
+
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          'This consent request has expired or has already been used.'
+        )
+      ).toBeVisible()
+    })
+  })
+
+  it('maps OAuthApiError(403) to the scope-broadening re-prompt message', async () => {
+    const submitDecision = vi
+      .fn()
+      .mockRejectedValue(new OAuthApiError('scope broadening', 403))
+    const user = userEvent.setup()
+    renderConsent({ workspaces: [challenge.workspaces[0]] }, submitDecision)
+
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          "The previously approved permissions don't cover this request."
+        )
+      ).toBeVisible()
+    })
+  })
+
+  it('maps OAuthApiError(404) to the feature-unavailable message', async () => {
+    const submitDecision = vi
+      .fn()
+      .mockRejectedValue(new OAuthApiError('disabled', 404))
+    const user = userEvent.setup()
+    renderConsent({ workspaces: [challenge.workspaces[0]] }, submitDecision)
+
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("This feature isn't available right now.")
+      ).toBeVisible()
     })
   })
 })

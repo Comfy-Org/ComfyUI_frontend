@@ -10,6 +10,18 @@ export type OAuthConsentChallenge = {
   csrf_token: string
   client_display_name: string
   resource_display_name?: string
+  /**
+   * Exact registered redirect URI the OAuth client will be sent to on
+   * success/deny. Surfaced verbatim so users can verify the destination
+   * (RFC 8252 loopback for CLIs, HTTPS for web clients).
+   */
+  redirect_uri?: string
+  /**
+   * RFC 7591 application_type — "native" (CLI/desktop, loopback redirect),
+   * "web" (HTTPS-hosted), or "" for legacy seeded clients. Used to render
+   * a Native / Web badge so users know what kind of app they're authorizing.
+   */
+  client_application_type?: 'native' | 'web' | ''
   scopes: string[]
   workspaces: OAuthWorkspace[]
 }
@@ -39,13 +51,21 @@ export class OAuthApiError extends Error {
   }
 }
 
-function getOAuthOrigin(): string {
-  return import.meta.env.VITE_CLOUD_INGEST_ORIGIN ?? ''
-}
-
 function oauthUrl(path: string): string {
-  const origin = getOAuthOrigin()
-  return origin ? new URL(path, origin).toString() : path
+  // Relative URL — let the Vite dev-server proxy (same origin as the FE)
+  // or the production same-host deploy hit ingest.
+  //
+  // Going direct cross-origin via VITE_CLOUD_INGEST_ORIGIN is a footgun:
+  // useSessionCookie POSTs /api/auth/session through the proxy, so the
+  // Set-Cookie response lands on the FE origin. A cross-origin fetch to
+  // a different cloud host wouldn't include that cookie, so the consent
+  // challenge would 302 to login (and trip browser cross-origin redirect
+  // rules to boot — the symptom looks like "CORS error" on a fetch
+  // initiated from /oauth/authorize).
+  //
+  // Keep all OAuth calls same-origin. The Vite proxy / production
+  // ingress is the single point of routing.
+  return path
 }
 
 async function readErrorMessage(response: Response): Promise<string> {
