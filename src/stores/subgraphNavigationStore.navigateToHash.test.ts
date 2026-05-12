@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
@@ -79,10 +81,12 @@ vi.mock(
   () => ({ requestSlotLayoutSyncForAllNodes: vi.fn() })
 )
 
+const workflowServiceMocks = vi.hoisted(() => ({
+  openWorkflow: vi.fn().mockResolvedValue(undefined)
+}))
+
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({
-    openWorkflow: vi.fn().mockResolvedValue(undefined)
-  })
+  useWorkflowService: () => workflowServiceMocks
 }))
 
 function makeSubgraph(id: string): Subgraph {
@@ -172,5 +176,35 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     await flushHashWatcher()
 
     expect(routerMocks.replace).not.toHaveBeenCalled()
+  })
+
+  it('redirects to root when a workflow loads but the target subgraph is still missing', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const workflowStore = useWorkflowStore() as unknown as {
+      openWorkflows: ComfyWorkflow[]
+    }
+    workflowStore.openWorkflows = [
+      fromPartial<ComfyWorkflow>({
+        path: 'phantom-workflow.json',
+        filename: 'phantom-workflow.json',
+        activeState: {
+          id: ids.deletedSubgraph,
+          definitions: { subgraphs: [] }
+        }
+      })
+    ]
+
+    useSubgraphNavigationStore()
+
+    routeHashRef.value = `#${ids.deletedSubgraph}`
+    await flushHashWatcher()
+    await flushHashWatcher()
+
+    expect(workflowServiceMocks.openWorkflow).toHaveBeenCalled()
+    expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('subgraph not found after workflow load')
+    )
+    warnSpy.mockRestore()
   })
 })
