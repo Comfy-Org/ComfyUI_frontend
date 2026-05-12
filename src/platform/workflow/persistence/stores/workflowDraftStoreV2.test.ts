@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { MAX_DRAFTS } from '../base/draftTypes'
+import { useWorkflowDraftStore } from './workflowDraftStore'
 import { useWorkflowDraftStoreV2 } from './workflowDraftStoreV2'
 
 vi.mock('@/scripts/api', () => ({
@@ -58,6 +59,23 @@ describe('workflowDraftStoreV2', () => {
       expect(payloadKeys).toHaveLength(1)
     })
 
+    it('shadow-writes the legacy draft store', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft('workflows/test.json', '{"nodes":[]}', {
+        name: 'test',
+        isTemporary: true
+      })
+
+      expect(
+        useWorkflowDraftStore().getDraft('workflows/test.json')
+      ).toMatchObject({
+        data: '{"nodes":[]}',
+        name: 'test',
+        isTemporary: true
+      })
+    })
+
     it('updates existing draft', () => {
       const store = useWorkflowDraftStoreV2()
 
@@ -76,6 +94,22 @@ describe('workflowDraftStoreV2', () => {
       expect(draft!.data).toBe('{"nodes":[1,2,3]}')
       expect(draft!.name).toBe('test-updated')
       expect(draft!.isTemporary).toBe(false)
+    })
+
+    it('returns true when V2 saves and legacy shadow-write fails', () => {
+      const store = useWorkflowDraftStoreV2()
+      const legacyStore = useWorkflowDraftStore()
+      vi.spyOn(legacyStore, 'saveDraft').mockImplementation(() => {
+        throw new Error('legacy unavailable')
+      })
+
+      const result = store.saveDraft('workflows/test.json', '{}', {
+        name: 'test',
+        isTemporary: true
+      })
+
+      expect(result).toBe(true)
+      expect(store.getDraft('workflows/test.json')?.data).toBe('{}')
     })
 
     it('evicts oldest when over limit', () => {
@@ -118,6 +152,9 @@ describe('workflowDraftStoreV2', () => {
         k.startsWith('Comfy.Workflow.Draft.v2:personal:')
       )
       expect(payloadKeys).toHaveLength(0)
+      expect(
+        useWorkflowDraftStore().getDraft('workflows/test.json')
+      ).toBeUndefined()
     })
   })
 
@@ -138,6 +175,84 @@ describe('workflowDraftStoreV2', () => {
       expect(newDraft).not.toBeNull()
       expect(newDraft!.name).toBe('new')
       expect(newDraft!.data).toBe('{"data":"test"}')
+
+      const legacyStore = useWorkflowDraftStore()
+      expect(legacyStore.getDraft('workflows/old.json')).toBeUndefined()
+      expect(legacyStore.getDraft('workflows/new.json')).toMatchObject({
+        name: 'new',
+        data: '{"data":"test"}'
+      })
+    })
+  })
+
+  describe('getDraft', () => {
+    it('prefers legacy draft content when it is newer than V2', () => {
+      const store = useWorkflowDraftStoreV2()
+      const path = 'workflows/test.json'
+
+      store.saveDraft(path, '{"source":"v2"}', {
+        name: 'test',
+        isTemporary: true
+      })
+      useWorkflowDraftStore().saveDraft(path, {
+        data: '{"source":"legacy"}',
+        updatedAt: Date.now() + 1000,
+        name: 'test',
+        isTemporary: true
+      })
+
+      expect(store.getDraft(path)?.data).toBe('{"source":"legacy"}')
+    })
+
+    it('returns null when legacy fallback read fails', () => {
+      const store = useWorkflowDraftStoreV2()
+      const legacyStore = useWorkflowDraftStore()
+      vi.spyOn(legacyStore, 'getDraft').mockImplementation(() => {
+        throw new Error('legacy unavailable')
+      })
+
+      expect(store.getDraft('workflows/missing.json')).toBeNull()
+    })
+
+    it('cleans up the V2 index when a payload is missing', () => {
+      const store = useWorkflowDraftStoreV2()
+      const path = 'workflows/missing-payload.json'
+      store.saveDraft(path, '{"nodes":[]}', {
+        name: 'missing-payload',
+        isTemporary: true
+      })
+      useWorkflowDraftStore().removeDraft(path)
+
+      const payloadKey = Object.keys(localStorage).find((key) =>
+        key.startsWith('Comfy.Workflow.Draft.v2:personal:')
+      )
+      expect(payloadKey).toBeDefined()
+      localStorage.removeItem(payloadKey!)
+
+      expect(store.getDraft(path)).toBeNull()
+      const index = JSON.parse(
+        localStorage.getItem('Comfy.Workflow.DraftIndex.v2:personal')!
+      )
+      expect(index.order).toHaveLength(0)
+    })
+  })
+
+  describe('markDraftUsed', () => {
+    it('updates the V2 recency order', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft('workflows/a.json', '{}', {
+        name: 'a',
+        isTemporary: true
+      })
+      store.saveDraft('workflows/b.json', '{}', {
+        name: 'b',
+        isTemporary: true
+      })
+
+      store.markDraftUsed('workflows/a.json')
+
+      expect(store.getMostRecentPath()).toBe('workflows/a.json')
     })
   })
 
@@ -197,6 +312,23 @@ describe('workflowDraftStoreV2', () => {
       expect(result).toBe(true)
     })
 
+    it('falls back to legacy drafts when V2 has no matching draft', async () => {
+      const store = useWorkflowDraftStoreV2()
+      useWorkflowDraftStore().saveDraft('workflows/legacy.json', {
+        data: '{"nodes":[]}',
+        updatedAt: Date.now(),
+        name: 'legacy',
+        isTemporary: true
+      })
+
+      const result = await store.loadPersistedWorkflow({
+        workflowName: null,
+        preferredPath: 'workflows/legacy.json'
+      })
+
+      expect(result).toBe(true)
+    })
+
     it('returns false when no drafts available', async () => {
       const store = useWorkflowDraftStoreV2()
 
@@ -206,6 +338,72 @@ describe('workflowDraftStoreV2', () => {
       })
 
       expect(result).toBe(false)
+    })
+
+    it('removes an invalid persisted draft after load fails', async () => {
+      const store = useWorkflowDraftStoreV2()
+      const path = 'workflows/bad.json'
+      store.saveDraft(path, 'not-json', {
+        name: 'bad',
+        isTemporary: true
+      })
+
+      const result = await store.loadPersistedWorkflow({
+        workflowName: null,
+        preferredPath: path
+      })
+
+      expect(result).toBe(false)
+      expect(store.getDraft(path)).toBeNull()
+    })
+
+    it('returns false for an empty persisted draft payload', async () => {
+      const store = useWorkflowDraftStoreV2()
+      const path = 'workflows/empty.json'
+      store.saveDraft(path, '', {
+        name: 'empty',
+        isTemporary: true
+      })
+
+      const result = await store.loadPersistedWorkflow({
+        workflowName: null,
+        preferredPath: path
+      })
+
+      expect(result).toBe(false)
+    })
+
+    it('returns false when legacy persisted workflow fallback throws', async () => {
+      const store = useWorkflowDraftStoreV2()
+      const legacyStore = useWorkflowDraftStore()
+      vi.spyOn(legacyStore, 'loadPersistedWorkflow').mockImplementation(() => {
+        throw new Error('legacy unavailable')
+      })
+
+      const result = await store.loadPersistedWorkflow({
+        workflowName: null,
+        preferredPath: 'workflows/missing.json'
+      })
+
+      expect(result).toBe(false)
+    })
+
+    it('does not use legacy persisted workflow fallback outside personal workspace', async () => {
+      sessionStorage.setItem(
+        'Comfy.Workspace.Current',
+        JSON.stringify({ id: 'workspace-1', type: 'org' })
+      )
+      const store = useWorkflowDraftStoreV2()
+      const legacyStore = useWorkflowDraftStore()
+      const legacyLoad = vi.spyOn(legacyStore, 'loadPersistedWorkflow')
+
+      const result = await store.loadPersistedWorkflow({
+        workflowName: null,
+        preferredPath: 'workflows/missing.json'
+      })
+
+      expect(result).toBe(false)
+      expect(legacyLoad).not.toHaveBeenCalled()
     })
   })
 

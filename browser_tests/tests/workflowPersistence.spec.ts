@@ -89,6 +89,53 @@ test.describe('Workflow Persistence', () => {
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeCountA)
   })
 
+  test(
+    'Open workflow tabs are restored after page reload',
+    { tag: '@workflow' },
+    async ({ comfyPage }) => {
+      test.info().annotations.push({
+        type: 'regression',
+        description:
+          'FE-367 — multiple saved workflow tabs should persist across page reload'
+      })
+
+      await comfyPage.settings.setSetting(
+        'Comfy.Workflow.WorkflowTabsPosition',
+        'Topbar'
+      )
+      await comfyPage.workflow.setupWorkflowsDirectory({
+        'restore-a.json': 'default.json',
+        'restore-b.json': 'nodes/single_ksampler.json'
+      })
+
+      const workflowsTab = comfyPage.menu.workflowsTab
+      await workflowsTab.open()
+      await workflowsTab.getPersistedItem('restore-a').dblclick()
+      await comfyPage.workflow.waitForWorkflowIdle()
+      await workflowsTab.getPersistedItem('restore-b').dblclick()
+      await comfyPage.workflow.waitForWorkflowIdle()
+
+      await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
+      const tabNamesBeforeReload = await comfyPage.menu.topbar.getTabNames()
+      expect(tabNamesBeforeReload).toEqual(
+        expect.arrayContaining(['restore-a', 'restore-b'])
+      )
+      const activeTabBeforeReload =
+        await comfyPage.menu.topbar.getActiveTabName()
+      expect(activeTabBeforeReload).toBe('restore-b')
+
+      await comfyPage.workflow.reloadAndWaitForApp()
+
+      await expect
+        .poll(() => comfyPage.menu.topbar.getTabNames())
+        .toEqual(tabNamesBeforeReload)
+      await expect
+        .poll(() => comfyPage.menu.topbar.getActiveTabName())
+        .toBe(activeTabBeforeReload)
+      await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
+    }
+  )
+
   test('Node outputs are preserved when switching workflow tabs', async ({
     comfyPage
   }) => {

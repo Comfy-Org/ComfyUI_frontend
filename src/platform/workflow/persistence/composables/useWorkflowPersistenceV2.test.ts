@@ -1,27 +1,34 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as I18n from 'vue-i18n'
+import { createApp, defineComponent } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
 
 const settingMocks = vi.hoisted(() => ({
-  persistRef: null as { value: boolean } | null
+  persistRef: null as { value: boolean } | null,
+  tutorialCompletedRef: null as { value: boolean } | null,
+  set: vi.fn()
 }))
 
 vi.mock('@/platform/settings/settingStore', async () => {
   const { ref } = await import('vue')
   settingMocks.persistRef = ref(true)
+  settingMocks.tutorialCompletedRef = ref(true)
   return {
     useSettingStore: vi.fn(() => ({
       get: vi.fn((key: string) => {
         if (key === 'Comfy.Workflow.Persist')
           return settingMocks.persistRef!.value
+        if (key === 'Comfy.TutorialCompleted')
+          return settingMocks.tutorialCompletedRef!.value
         return undefined
       }),
-      set: vi.fn()
+      set: settingMocks.set
     }))
   }
 })
@@ -48,16 +55,6 @@ vi.mock(
   })
 )
 
-vi.mock('vue-i18n', async (importOriginal) => {
-  const actual = await importOriginal<typeof I18n>()
-  return {
-    ...actual,
-    useI18n: () => ({
-      t: (key: string) => key
-    })
-  }
-})
-
 const openWorkflowMock = vi.fn()
 const loadBlankWorkflowMock = vi.fn()
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({
@@ -76,10 +73,12 @@ vi.mock(
   })
 )
 
+const commandMocks = vi.hoisted(() => ({
+  execute: vi.fn()
+}))
+
 vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({
-    execute: vi.fn()
-  })
+  useCommandStore: () => commandMocks
 }))
 
 vi.mock('vue-router', () => ({
@@ -126,6 +125,7 @@ const mocks = vi.hoisted(() => {
   const apiMock = {
     clientId: 'test-client',
     initialClientId: 'test-client',
+    listUserDataFullInfo: vi.fn(),
     addEventListener: vi.fn((event: string, handler: () => void) => {
       if (event === 'graphChanged') {
         state.graphChangedHandler = handler
@@ -153,6 +153,43 @@ vi.mock('@/scripts/api', () => ({
   api: mocks.apiMock
 }))
 
+type WorkflowPersistenceV2 = ReturnType<typeof useWorkflowPersistenceV2>
+
+let mountedApps: Array<{ unmount: () => void }> = []
+
+function mountWorkflowPersistence() {
+  const result: { persistence: WorkflowPersistenceV2 | null } = {
+    persistence: null
+  }
+
+  const HostComponent = defineComponent({
+    setup() {
+      result.persistence = useWorkflowPersistenceV2()
+      return () => null
+    }
+  })
+
+  const host = document.createElement('div')
+  const app = createApp(HostComponent)
+  app.use(
+    createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: { en: {} },
+      missingWarn: false,
+      fallbackWarn: false
+    })
+  )
+  app.mount(host)
+  mountedApps.push(app)
+
+  if (!result.persistence) {
+    throw new Error('Workflow persistence did not initialize')
+  }
+
+  return result.persistence
+}
+
 describe('useWorkflowPersistenceV2', () => {
   beforeEach(() => {
     vi.useFakeTimers()
@@ -162,12 +199,14 @@ describe('useWorkflowPersistenceV2', () => {
     sessionStorage.clear()
     vi.clearAllMocks()
     settingMocks.persistRef!.value = true
+    settingMocks.tutorialCompletedRef!.value = true
     mocks.state.graphChangedHandler = null
     mocks.state.currentGraph = { initial: true }
     mocks.serializeMock.mockImplementation(() => mocks.state.currentGraph)
     mocks.loadGraphDataMock.mockReset()
     mocks.apiMock.clientId = 'test-client'
     mocks.apiMock.initialClientId = 'test-client'
+    mocks.apiMock.listUserDataFullInfo.mockResolvedValue([])
     mocks.apiMock.addEventListener.mockImplementation(
       (event: string, handler: () => void) => {
         if (event === 'graphChanged') {
@@ -181,6 +220,10 @@ describe('useWorkflowPersistenceV2', () => {
   })
 
   afterEach(() => {
+    for (const app of mountedApps) {
+      app.unmount()
+    }
+    mountedApps = []
     vi.useRealTimers()
   })
 
@@ -207,6 +250,53 @@ describe('useWorkflowPersistenceV2', () => {
     )
   }
 
+  describe('persistCurrentWorkflow', () => {
+    it('persists graph changes and updates the active path pointer', async () => {
+      const workflowStore = useWorkflowStore()
+      const draftStore = useWorkflowDraftStoreV2()
+      const workflow = await workflowStore
+        .createTemporary('Autosave.json')
+        .load()
+      workflowStore.activeWorkflow = workflow
+      mocks.state.currentGraph = { nodes: [{ id: 1 }] }
+
+      mountWorkflowPersistence()
+      mocks.state.graphChangedHandler?.()
+      await vi.advanceTimersByTimeAsync(PERSIST_DEBOUNCE_MS)
+
+      const draft = draftStore.getDraft(workflow.path)
+      expect(draft?.data).toBe(JSON.stringify(mocks.state.currentGraph))
+
+      const activePointer = JSON.parse(
+        sessionStorage.getItem('Comfy.Workflow.ActivePath:test-client')!
+      )
+      expect(activePointer.path).toBe(workflow.path)
+    })
+
+    it('shows a toast when saving the active workflow draft fails', async () => {
+      const workflowStore = useWorkflowStore()
+      const draftStore = useWorkflowDraftStoreV2()
+      const workflow = await workflowStore
+        .createTemporary('SaveFailure.json')
+        .load()
+      workflowStore.activeWorkflow = workflow
+      vi.spyOn(draftStore, 'saveDraft').mockReturnValue(false)
+
+      mountWorkflowPersistence()
+      mocks.state.graphChangedHandler?.()
+      await vi.advanceTimersByTimeAsync(PERSIST_DEBOUNCE_MS)
+
+      expect(mockToastAdd).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'g.error',
+        detail: 'toastMessages.failedToSaveDraft'
+      })
+      expect(
+        sessionStorage.getItem('Comfy.Workflow.ActivePath:test-client')
+      ).toBeNull()
+    })
+  })
+
   describe('loadPreviousWorkflowFromStorage', () => {
     it('loads saved workflow when draft is missing for session path', async () => {
       const workflowStore = useWorkflowStore()
@@ -215,13 +305,33 @@ describe('useWorkflowPersistenceV2', () => {
       // Set session path to the saved workflow but do NOT create a draft
       writeActivePath(savedWorkflow.path)
 
-      const { initializeWorkflow } = useWorkflowPersistenceV2()
+      const { initializeWorkflow } = mountWorkflowPersistence()
       await initializeWorkflow()
 
       // Should call workflowService.openWorkflow with the saved workflow
       expect(openWorkflowMock).toHaveBeenCalledWith(savedWorkflow)
       // Should NOT fall through to loadGraphData (fallbackToLatestDraft)
       expect(mocks.loadGraphDataMock).not.toHaveBeenCalled()
+      // Should not sync metadata when the workflow is already known locally.
+      expect(mocks.apiMock.listUserDataFullInfo).not.toHaveBeenCalled()
+    })
+
+    it('syncs workflow metadata when saved session path is not known locally', async () => {
+      mocks.apiMock.listUserDataFullInfo.mockResolvedValue([
+        { path: 'SavedWorkflow.json', modified: 100, size: 1 }
+      ])
+      writeActivePath('workflows/SavedWorkflow.json')
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      const workflowStore = useWorkflowStore()
+      expect(mocks.apiMock.listUserDataFullInfo).toHaveBeenCalledWith(
+        'workflows'
+      )
+      expect(openWorkflowMock).toHaveBeenCalledWith(
+        workflowStore.getWorkflowByPath('workflows/SavedWorkflow.json')
+      )
     })
 
     it('prefers draft over saved workflow when draft exists', async () => {
@@ -238,12 +348,13 @@ describe('useWorkflowPersistenceV2', () => {
 
       mocks.loadGraphDataMock.mockResolvedValue(undefined)
 
-      const { initializeWorkflow } = useWorkflowPersistenceV2()
+      const { initializeWorkflow } = mountWorkflowPersistence()
       await initializeWorkflow()
 
       // Should load draft via loadGraphData, not via workflowService.openWorkflow
       expect(mocks.loadGraphDataMock).toHaveBeenCalled()
       expect(openWorkflowMock).not.toHaveBeenCalled()
+      expect(mocks.apiMock.listUserDataFullInfo).not.toHaveBeenCalled()
     })
 
     it('falls back to latest draft only when no session path exists', async () => {
@@ -258,12 +369,51 @@ describe('useWorkflowPersistenceV2', () => {
 
       mocks.loadGraphDataMock.mockResolvedValue(undefined)
 
-      const { initializeWorkflow } = useWorkflowPersistenceV2()
+      const { initializeWorkflow } = mountWorkflowPersistence()
       await initializeWorkflow()
 
       // Should load via fallbackToLatestDraft
       expect(mocks.loadGraphDataMock).toHaveBeenCalled()
       expect(openWorkflowMock).not.toHaveBeenCalled()
+      expect(mocks.apiMock.listUserDataFullInfo).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('initializeWorkflow', () => {
+    it('does not load a default workflow when stored tab state will be restored separately', async () => {
+      writeTabState(['workflows/A.json'], 0)
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(mocks.loadGraphDataMock).not.toHaveBeenCalled()
+      expect(loadBlankWorkflowMock).not.toHaveBeenCalled()
+      expect(mocks.apiMock.listUserDataFullInfo).not.toHaveBeenCalled()
+    })
+
+    it('loads the onboarding blank workflow when persistence is disabled before tutorial completion', async () => {
+      settingMocks.persistRef!.value = false
+      settingMocks.tutorialCompletedRef!.value = false
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(settingMocks.set).toHaveBeenCalledWith(
+        'Comfy.TutorialCompleted',
+        true
+      )
+      expect(loadBlankWorkflowMock).toHaveBeenCalled()
+      expect(commandMocks.execute).toHaveBeenCalledWith('Comfy.BrowseTemplates')
+    })
+
+    it('loads the default graph when persistence is disabled after tutorial completion', async () => {
+      settingMocks.persistRef!.value = false
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(mocks.loadGraphDataMock).toHaveBeenCalled()
+      expect(loadBlankWorkflowMock).not.toHaveBeenCalled()
     })
   })
 
@@ -288,7 +438,7 @@ describe('useWorkflowPersistenceV2', () => {
       // storedActiveIndex = 1 → WorkflowB should be activated
       writeTabState([workflowA.path, workflowB.path], 1)
 
-      const { restoreWorkflowTabsState } = useWorkflowPersistenceV2()
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
       await restoreWorkflowTabsState()
 
       expect(openWorkflowMock).toHaveBeenCalledWith(workflowB)
@@ -312,7 +462,7 @@ describe('useWorkflowPersistenceV2', () => {
 
       writeTabState([workflowA.path, workflowB.path], 0)
 
-      const { restoreWorkflowTabsState } = useWorkflowPersistenceV2()
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
       await restoreWorkflowTabsState()
 
       expect(openWorkflowMock).toHaveBeenCalledWith(workflowA)
@@ -320,10 +470,42 @@ describe('useWorkflowPersistenceV2', () => {
 
     it('does not call openWorkflow when no restorable state', async () => {
       // No tab state written to sessionStorage
-      const { restoreWorkflowTabsState } = useWorkflowPersistenceV2()
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
       await restoreWorkflowTabsState()
 
       expect(openWorkflowMock).not.toHaveBeenCalled()
+      expect(mocks.apiMock.listUserDataFullInfo).not.toHaveBeenCalled()
+    })
+
+    it('does not restore when storedActiveIndex is out of range', async () => {
+      writeTabState(['workflows/A.json'], 1)
+
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+      await restoreWorkflowTabsState()
+
+      expect(openWorkflowMock).not.toHaveBeenCalled()
+      expect(mocks.apiMock.listUserDataFullInfo).not.toHaveBeenCalled()
+    })
+
+    it('loads saved workflows before restoring stored tabs', async () => {
+      mocks.apiMock.listUserDataFullInfo.mockResolvedValue([
+        { path: 'A.json', modified: 100, size: 1 },
+        { path: 'B.json', modified: 200, size: 1 }
+      ])
+
+      writeTabState(['workflows/A.json', 'workflows/B.json'], 1)
+
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+      await restoreWorkflowTabsState()
+
+      const workflowStore = useWorkflowStore()
+      expect(workflowStore.openWorkflows.map((w) => w?.path)).toEqual([
+        'workflows/A.json',
+        'workflows/B.json'
+      ])
+      expect(openWorkflowMock).toHaveBeenCalledWith(
+        workflowStore.getWorkflowByPath('workflows/B.json')
+      )
     })
 
     it('restores temporary workflows and adds them to tabs', async () => {
@@ -339,7 +521,7 @@ describe('useWorkflowPersistenceV2', () => {
 
       writeTabState([path], 0)
 
-      const { restoreWorkflowTabsState } = useWorkflowPersistenceV2()
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
       await restoreWorkflowTabsState()
 
       const restored = workflowStore.getWorkflowByPath(path)
@@ -348,10 +530,32 @@ describe('useWorkflowPersistenceV2', () => {
       expect(workflowStore.openWorkflows.map((w) => w?.path)).toContain(path)
     })
 
+    it('falls back to a default temporary workflow when a stored draft cannot be parsed', async () => {
+      const workflowStore = useWorkflowStore()
+      const draftStore = useWorkflowDraftStoreV2()
+      const path = 'workflows/Broken.json'
+      draftStore.saveDraft(path, 'not-json', {
+        name: 'Broken.json',
+        isTemporary: true
+      })
+
+      writeTabState([path], 0)
+
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+      await restoreWorkflowTabsState()
+
+      expect(draftStore.getDraft(path)).toBeNull()
+      expect(
+        workflowStore.workflows.some(
+          (workflow) => workflow.fullFilename === 'Broken.json'
+        )
+      ).toBe(true)
+    })
+
     it('skips activation when persistence is disabled', async () => {
       settingMocks.persistRef!.value = false
 
-      const { restoreWorkflowTabsState } = useWorkflowPersistenceV2()
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
       await restoreWorkflowTabsState()
 
       expect(openWorkflowMock).not.toHaveBeenCalled()
