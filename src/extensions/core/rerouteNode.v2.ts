@@ -107,6 +107,8 @@ function registerRerouteType() {
     ) {
       const { graph } = this
       if (!graph) return
+      // strangler-bridge:Phase-B — direct ComfyApp access; replace with
+      // dispatch/world signal once the bridge audit lands (D9).
       // @ts-expect-error ComfyApp
       if (globalThis.app?.configuringGraph) return
 
@@ -212,6 +214,8 @@ function registerRerouteType() {
           const link = graph.links[l]
           if (!link) continue
           link.color = color
+          // strangler-bridge:Phase-B — direct ComfyApp access; replace with
+          // dispatch/world signal once the bridge audit lands (D9).
           // @ts-expect-error ComfyApp
           if (globalThis.app?.configuringGraph) continue
           const targetNode = graph.getNodeById(link.target_id)
@@ -263,6 +267,8 @@ function registerRerouteType() {
               this.outputs[0].name = ''
             }
             this.setSize(this.computeSize())
+            // strangler-bridge:Phase-B — direct ComfyApp access; replace with
+            // dispatch/world signal once the bridge audit lands (D9).
             // @ts-expect-error ComfyApp
             globalThis.app?.canvas?.setDirty(true, true)
           }
