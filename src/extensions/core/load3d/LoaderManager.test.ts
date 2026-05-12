@@ -241,7 +241,7 @@ describe('LoaderManager', () => {
   })
 
   describe('pickAdapter', () => {
-    it.each(['stl', 'fbx', 'obj', 'gltf', 'glb'])(
+    it.for(['stl', 'fbx', 'obj', 'gltf', 'glb'])(
       'routes %s to the mesh adapter',
       (ext) => {
         const { pick } = makeLoaderManager()
@@ -249,7 +249,7 @@ describe('LoaderManager', () => {
       }
     )
 
-    it.each(['spz', 'splat', 'ksplat'])(
+    it.for(['spz', 'splat', 'ksplat'])(
       'routes %s to the splat adapter',
       (ext) => {
         const { pick } = makeLoaderManager()
