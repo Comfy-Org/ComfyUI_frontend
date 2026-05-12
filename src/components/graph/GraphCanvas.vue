@@ -165,6 +165,7 @@ import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
+import { installNodeOutputClearingHooks } from '@/composables/graph/useNodeOutputClearingHooks'
 import type { NodeState } from '@/types/nodeState'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
@@ -276,11 +277,16 @@ const { shouldRenderVueNodes } = useVueFeatureFlags()
 
 // Error-clearing hooks run regardless of rendering mode (Vue or legacy canvas).
 let cleanupErrorHooks: (() => void) | null = null
+let cleanupNodeOutputHooks: (() => void) | null = null
 watch(
   () => canvasStore.currentGraph,
   (graph) => {
     cleanupErrorHooks?.()
     cleanupErrorHooks = graph ? installErrorClearingHooks(graph) : null
+    cleanupNodeOutputHooks?.()
+    cleanupNodeOutputHooks = graph
+      ? installNodeOutputClearingHooks(graph)
+      : null
   }
 )
 
@@ -564,6 +570,9 @@ onMounted(async () => {
     // Install error-clearing hooks on the initial graph
     if (comfyApp.canvas?.graph) {
       cleanupErrorHooks = installErrorClearingHooks(comfyApp.canvas.graph)
+      cleanupNodeOutputHooks = installNodeOutputClearingHooks(
+        comfyApp.canvas.graph
+      )
     }
 
     // Load color palette
@@ -614,6 +623,8 @@ onMounted(async () => {
 onUnmounted(() => {
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
+  cleanupNodeOutputHooks?.()
+  cleanupNodeOutputHooks = null
 })
 function forwardPointerDownPanEvent(e: PointerEvent) {
   forwardPanEvent(e, isMiddlePointerInput)
