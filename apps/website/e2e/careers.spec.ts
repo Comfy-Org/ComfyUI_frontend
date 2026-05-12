@@ -23,12 +23,15 @@ test.describe('Careers page @smoke', () => {
     expect(await roles.count()).toBeGreaterThan(0)
   })
 
-  test('each role links to jobs.ashbyhq.com', async ({ page }) => {
+  test('each role links to the Ashby job description page, not the application form', async ({
+    page
+  }) => {
     const roles = page.getByTestId('careers-role-link')
     const count = await roles.count()
     for (let i = 0; i < count; i++) {
       const href = await roles.nth(i).getAttribute('href')
       expect(href).toMatch(/^https:\/\/jobs\.ashbyhq\.com\//)
+      expect(href).not.toMatch(/\/application\/?$/)
     }
   })
 
