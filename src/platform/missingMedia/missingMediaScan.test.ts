@@ -204,7 +204,7 @@ describe('scanNodeMediaCandidates', () => {
     expect(result).toEqual([])
   })
 
-  it.each([false, true])(
+  it.for([false, true])(
     'returns empty while a media upload is pending on the node (isCloud: %s)',
     (isCloud) => {
       const graph = makeGraph([])
