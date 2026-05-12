@@ -157,6 +157,8 @@ watch(activeIndex, (current, previous) => {
             />
             <button
               type="button"
+              :aria-expanded="activeIndex === i"
+              :aria-controls="`feature-panel-${i}`"
               :class="
                 cn(
                   'rounded-5xl w-full cursor-pointer p-8 text-left transition-colors duration-300',
@@ -186,6 +188,8 @@ watch(activeIndex, (current, previous) => {
 
               <!-- Animated description (stacked for constant height) -->
               <div
+                :id="`feature-panel-${i}`"
+                role="region"
                 :class="
                   cn(
                     'grid transition-[grid-template-rows] duration-300',
