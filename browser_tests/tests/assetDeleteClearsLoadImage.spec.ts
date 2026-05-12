@@ -20,8 +20,15 @@ import {
   STABLE_INPUT_IMAGE
 } from '@e2e/fixtures/data/assetFixtures'
 
-const TARGET_ASSET: Asset = STABLE_INPUT_IMAGE
-const LOAD_IMAGE_NODE_ID = 10
+// The asset name must match the dropped file so that the deletion flow's
+// widget-value matching (name + `name [input]`) actually targets the same
+// value the drag-and-drop set on the Load Image widget.
+const DROPPED_FILE = 'image64x64.webp'
+const TARGET_ASSET: Asset = {
+  ...STABLE_INPUT_IMAGE,
+  name: DROPPED_FILE,
+  mime_type: 'image/webp'
+}
 const SEEDED_ASSETS: Asset[] = [STABLE_CHECKPOINT, TARGET_ASSET]
 // MediaAssetCard renders the basename without extension, so card-text
 // matching uses the stripped form.
@@ -121,20 +128,19 @@ baseTest.describe(
       async ({ comfyPage, assetMock }) => {
         await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
 
-        // Point the Load Image widget at the asset we are about to delete and
-        // install a placeholder preview the same way the runtime would after a
-        // successful load. The test is asserting that FE-230 tears these down.
-        await comfyPage.page.evaluate(
-          ({ nodeId, filename }) => {
-            const node = window.app!.graph.getNodeById(nodeId)
-            if (!node) throw new Error(`Node ${nodeId} not found`)
-            const widget = node.widgets?.find((w) => w.name === 'image')
-            if (!widget) throw new Error('image widget missing')
-            widget.value = filename
-            node.imgs = [new Image()]
-          },
-          { nodeId: LOAD_IMAGE_NODE_ID, filename: TARGET_ASSET.name }
-        )
+        // Drive the production drag-and-drop flow to point the Load Image
+        // widget at the asset we are about to delete and populate the preview
+        // cache. FE-230 is asserting that the deletion tears these down.
+        const loadImageNode = (
+          await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+        )[0]
+        const { x, y } = await loadImageNode.getPosition()
+        await comfyPage.dragDrop.dragAndDropFile(DROPPED_FILE, {
+          dropPosition: { x, y },
+          waitForUpload: true
+        })
+        const imageWidget = await loadImageNode.getWidget(0)
+        await expect.poll(() => imageWidget.getValue()).toBe(DROPPED_FILE)
 
         // Re-baseline the change tracker so the deletion-side mutation is the
         // only thing that can flip `isModified` later.
@@ -160,14 +166,7 @@ baseTest.describe(
         await expect(deleteMenuItem).toBeVisible()
         await deleteMenuItem.click()
 
-        const dialog = comfyPage.page.locator('.p-dialog').filter({
-          has: comfyPage.page.getByRole('button', { name: /delete/i })
-        })
-        await expect(dialog).toBeVisible()
-        const confirmDelete = dialog.getByRole('button', { name: /delete/i })
-        await expect(confirmDelete).toBeVisible()
-        await confirmDelete.click()
-        await expect(dialog).toBeHidden()
+        await comfyPage.confirmDialog.click('delete')
 
         // Mocked DELETE was issued.
         await expect
@@ -175,15 +174,7 @@ baseTest.describe(
           .toBe(true)
 
         // Widget value was cleared.
-        await expect
-          .poll(() =>
-            comfyPage.page.evaluate((nodeId) => {
-              const node = window.app!.graph.getNodeById(nodeId)
-              const widget = node?.widgets?.find((w) => w.name === 'image')
-              return widget?.value
-            }, LOAD_IMAGE_NODE_ID)
-          )
-          .toBe('')
+        await expect.poll(() => imageWidget.getValue()).toBe('')
 
         // Preview cache was cleared.
         await expect
@@ -191,7 +182,7 @@ baseTest.describe(
             comfyPage.page.evaluate((nodeId) => {
               const node = window.app!.graph.getNodeById(nodeId)
               return node?.imgs?.length ?? 0
-            }, LOAD_IMAGE_NODE_ID)
+            }, loadImageNode.id)
           )
           .toBe(0)
 
