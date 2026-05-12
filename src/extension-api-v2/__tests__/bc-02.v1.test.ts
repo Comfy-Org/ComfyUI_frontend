@@ -111,7 +111,7 @@ describe('BC.02 v1 contract — node lifecycle: teardown [harness POC]', () => {
 
 // ── Phase B stubs — need eval sandbox + LiteGraph prototype wiring ───────────
 
-describe('BC.02 v1 contract — node lifecycle: teardown [Phase B]', () => {
+describe('BC.02 v1 contract — node lifecycle: teardown [Phase B/C]', () => {
   describe('S2.N4 — node.onRemoved', () => {
     it.todo(
       'onRemoved is called exactly once when a node is removed from the graph via graph.remove(node)'

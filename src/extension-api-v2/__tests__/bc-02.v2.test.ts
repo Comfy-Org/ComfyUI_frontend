@@ -176,7 +176,7 @@ describe('BC.02 v2 contract — node lifecycle: teardown', () => {
 
 // ── Phase B stubs ─────────────────────────────────────────────────────────────
 
-describe('BC.02 v2 contract — node lifecycle: teardown [Phase B]', () => {
+describe('BC.02 v2 contract — node lifecycle: teardown [Phase B/C]', () => {
   describe('NodeExtensionOptions.nodeCreated — via defineNodeExtension', () => {
     it.todo(
       'onNodeRemoved() called inside nodeCreated fires when the node is unmounted by the service'

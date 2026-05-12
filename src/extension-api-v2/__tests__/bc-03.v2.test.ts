@@ -215,7 +215,7 @@ describe('BC.03 v2 contract — node lifecycle: hydration from saved workflows',
 
 // ── Phase B stubs — need LoadedFromWorkflow ECS tag + real configure() wiring ─
 
-describe('BC.03 v2 contract — node lifecycle: hydration [Phase B]', () => {
+describe('BC.03 v2 contract — node lifecycle: hydration [Phase B/C]', () => {
   it.todo(
     'loadedGraphNode fires (not nodeCreated) when a node enters the World with the LoadedFromWorkflow ECS tag component present'
   )

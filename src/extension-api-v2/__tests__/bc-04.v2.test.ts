@@ -97,31 +97,31 @@ describe('BC.04 v2 contract — node interaction: pointer, selection, resize', (
 
   describe("on('mouseDown') — pointer events (S2.N10) — Phase B", () => {
     it.todo(
-      "[Phase B] handle.on('mouseDown', handler) fires when pointer-down occurs within node bounding box"
+      "[Phase B/C] handle.on('mouseDown', handler) fires when pointer-down occurs within node bounding box"
     )
     it.todo(
-      "[Phase B] handler receives event with local x/y coordinates relative to node origin"
+      "[Phase B/C] handler receives event with local x/y coordinates relative to node origin"
     )
     it.todo(
-      "[Phase B] returning true stops LiteGraph default mouse handling"
+      "[Phase B/C] returning true stops LiteGraph default mouse handling"
     )
     it.todo(
-      "[Phase B] listener is auto-removed when node is removed (no leak)"
+      "[Phase B/C] listener is auto-removed when node is removed (no leak)"
     )
   })
 
   describe("on('selected') / on('deselected') — selection focus (S2.N17) — Phase B", () => {
     it.todo(
-      "[Phase B] handle.on('selected', handler) fires when node enters selected state"
+      "[Phase B/C] handle.on('selected', handler) fires when node enters selected state"
     )
     it.todo(
-      "[Phase B] handle.on('deselected', handler) fires when node exits selected state"
+      "[Phase B/C] handle.on('deselected', handler) fires when node exits selected state"
     )
     it.todo(
-      "[Phase B] selected/deselected do not fire for programmatic selection with { silent: true }"
+      "[Phase B/C] selected/deselected do not fire for programmatic selection with { silent: true }"
     )
     it.todo(
-      "[Phase B] isSelected() getter reflects current state at event fire time"
+      "[Phase B/C] isSelected() getter reflects current state at event fire time"
     )
   })
 })

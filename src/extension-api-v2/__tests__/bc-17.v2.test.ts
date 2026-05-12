@@ -179,15 +179,15 @@ describe('BC.17 v2 contract — comfyApp event subscriptions', () => {
 
 describe('BC.17 v2 contract — comfyApp events [Phase B / shell]', () => {
   it.todo(
-    '[Phase B] on("executed") fires when the real WebSocket "executed" message arrives'
+    '[Phase B/C] on("executed") fires when the real WebSocket "executed" message arrives'
   )
   it.todo(
-    '[Phase B] on("progress") fires on each step tick from the real backend'
+    '[Phase B/C] on("progress") fires on each step tick from the real backend'
   )
   it.todo(
-    '[Phase B] on("status") fires when queue depth or running state changes via WebSocket'
+    '[Phase B/C] on("status") fires when queue depth or running state changes via WebSocket'
   )
   it.todo(
-    '[Phase B] on("reconnecting") fires before the first reconnect attempt after connection loss'
+    '[Phase B/C] on("reconnecting") fires before the first reconnect attempt after connection loss'
   )
 })

@@ -162,12 +162,12 @@ describe('BC.16 v2 contract — NodeHandle executed event', () => {
 
 describe('BC.16 v2 contract — NodeHandle executed event [Phase B / shell]', () => {
   it.todo(
-    '[Phase B] NodeHandle.on("executed") fires when the real WebSocket executed message arrives for this node'
+    '[Phase B/C] NodeHandle.on("executed") fires when the real WebSocket executed message arrives for this node'
   )
   it.todo(
-    '[Phase B] handlers registered via on("executed") are automatically removed when the node is removed from the World'
+    '[Phase B/C] handlers registered via on("executed") are automatically removed when the node is removed from the World'
   )
   it.todo(
-    '[Phase B] output.images includes filename, subfolder, and type fields matching the backend response schema'
+    '[Phase B/C] output.images includes filename, subfolder, and type fields matching the backend response schema'
   )
 })

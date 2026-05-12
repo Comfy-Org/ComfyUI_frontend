@@ -218,20 +218,20 @@ describe('BC.07 v2 contract — connection observation', () => {
 
 // ── Phase B stubs — need real ECS World + reactive dispatch ───────────────────
 
-describe('BC.07 v2 contract — connection observation [Phase B]', () => {
+describe('BC.07 v2 contract — connection observation [Phase B/C]', () => {
   it.todo(
-    '[Phase B] node.on("connected") fires when a real link is added to the World via ECS command'
+    '[Phase B/C] node.on("connected") fires when a real link is added to the World via ECS command'
   )
   it.todo(
-    '[Phase B] node.on("disconnected") fires when a link is removed from the World'
+    '[Phase B/C] node.on("disconnected") fires when a link is removed from the World'
   )
   it.todo(
-    '[Phase B] handler registered via on() is removed by scope.stop() (onScopeDispose integration)'
+    '[Phase B/C] handler registered via on() is removed by scope.stop() (onScopeDispose integration)'
   )
   it.todo(
-    '[Phase B] veto/intercept: returning false from connectInput handler prevents the link from being wired (if adopted in Phase B API)'
+    '[Phase B/C] veto/intercept: returning false from connectInput handler prevents the link from being wired (if adopted in Phase B API)'
   )
   it.todo(
-    '[Phase B] type coercion: mutating event type inside a connection handler is reflected in the wired link'
+    '[Phase B/C] type coercion: mutating event type inside a connection handler is reflected in the wired link'
   )
 })

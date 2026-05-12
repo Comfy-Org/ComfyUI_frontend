@@ -205,7 +205,7 @@ describe('BC.41 v2 contract — widget values positional serialization fragility
 
 // ── Phase B stubs ─────────────────────────────────────────────────────────────
 
-describe('BC.41 v2 contract — widget values positional serialization fragility [Phase B]', () => {
+describe('BC.41 v2 contract — widget values positional serialization fragility [Phase B/C]', () => {
   it.todo(
     'runtime calls migrateWidgetValues when loading a workflow that contains a positional widgets_values array'
   )

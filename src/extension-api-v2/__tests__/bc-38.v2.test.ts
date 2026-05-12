@@ -152,7 +152,7 @@ describe('BC.38 v2 contract — canvas mode observation', () => {
 
 // ── Phase B stubs ─────────────────────────────────────────────────────────────
 
-describe('BC.38 v2 contract — canvas mode observation [Phase B]', () => {
+describe('BC.38 v2 contract — canvas mode observation [Phase B/C]', () => {
   it.todo(
     'real comfyApp.on() from @comfyorg/extension-api fires canvasModeChanged when appModeStore transitions'
   )

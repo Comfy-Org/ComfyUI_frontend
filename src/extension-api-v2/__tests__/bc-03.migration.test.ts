@@ -171,7 +171,7 @@ describe('BC.03 migration — node lifecycle: hydration from saved workflows', (
 
 // ── Phase B stubs — need real configure() lifecycle + LoadedFromWorkflow tag ─
 
-describe('BC.03 migration — hydration [Phase B]', () => {
+describe('BC.03 migration — hydration [Phase B/C]', () => {
   it.todo(
     'v2 loadedGraphNode fires at the same point in the LiteGraph configure() lifecycle as v1 onConfigure'
   )
