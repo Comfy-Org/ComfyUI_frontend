@@ -12,6 +12,7 @@
       :selected-workflow-filter="selectedWorkflowFilter"
       :selected-sort-mode="selectedSortMode"
       :has-failed-jobs="hasFailedJobs"
+      :has-cancelled-jobs="hasCancelledJobs"
       @show-assets="$emit('showAssets')"
       @update:selected-job-tab="onUpdateSelectedJobTab"
       @update:selected-workflow-filter="
@@ -65,6 +66,7 @@ defineProps<{
   selectedSortMode: JobSortMode
   displayedJobGroups: JobGroup[]
   hasFailedJobs: boolean
+  hasCancelledJobs: boolean
 }>()
 
 const emit = defineEmits<{

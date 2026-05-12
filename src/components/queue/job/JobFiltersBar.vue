@@ -3,6 +3,7 @@
     <JobFilterTabs
       :selected-job-tab="selectedJobTab"
       :has-failed-jobs="hasFailedJobs"
+      :has-cancelled-jobs="hasCancelledJobs"
       @update:selected-job-tab="$emit('update:selectedJobTab', $event)"
     />
     <JobFilterActions
@@ -28,12 +29,14 @@ const {
   selectedWorkflowFilter,
   selectedSortMode,
   hasFailedJobs,
+  hasCancelledJobs,
   hideShowAssetsAction
 } = defineProps<{
   selectedJobTab: JobTab
   selectedWorkflowFilter: 'all' | 'current'
   selectedSortMode: JobSortMode
   hasFailedJobs: boolean
+  hasCancelledJobs: boolean
   hideShowAssetsAction?: boolean
 }>()
 
