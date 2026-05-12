@@ -2128,15 +2128,39 @@
   },
   "oauth": {
     "consent": {
-      "allow": "Allow",
-      "deny": "Deny",
+      "allow": "Continue",
+      "deny": "Cancel",
       "genericError": "OAuth request failed. Please restart from the client app.",
-      "loading": "Loading OAuth request...",
-      "missingRequest": "This OAuth request is missing. Please restart from the client app.",
+      "loading": "Loading authorization request…",
+      "missingRequest": "This authorization request is missing. Please restart from the client app.",
       "noWorkspaces": "No eligible workspaces are available for this request.",
-      "resourceLabel": "Authorize this app",
-      "scopesTitle": "Requested access",
-      "workspaceTitle": "Choose workspace"
+      "title": "{client} wants access",
+      "subtitle": "Sign in to {resource} to continue",
+      "resourceFallback": "this app",
+      "workspaceLabel": "Workspace",
+      "permissionsHeader": "Permissions",
+      "workspaceHelp": "Permissions apply to this workspace only.",
+      "learnMore": "Learn more",
+      "redirectNotice": "You'll be redirected to",
+      "appTypeNative": "Native app",
+      "appTypeWeb": "Web app",
+      "errorExpired": "This consent request has expired or has already been used. Please restart from the client app.",
+      "errorScopeBroadening": "The previously approved permissions don't cover this request. You'll need to re-authorize with the new permissions.",
+      "errorUnavailable": "This feature isn't available right now. Please contact support if the problem persists."
+    },
+    "scopes": {
+      "mcp:tools:read": {
+        "label": "View available workflow tools"
+      },
+      "mcp:tools:call": {
+        "label": "Run workflows on your behalf"
+      }
+    },
+    "workspace": {
+      "personal": "Personal",
+      "team": "Team",
+      "owner": "Owner",
+      "member": "Member"
     }
   },
   "auth": {
