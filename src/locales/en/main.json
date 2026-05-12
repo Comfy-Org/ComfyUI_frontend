@@ -1307,6 +1307,7 @@
       "totalGenerationTime": "Total generation time",
       "computeHoursUsed": "Compute hours used",
       "failedAfter": "Failed after",
+      "cancelledAfter": "Cancelled after",
       "errorMessage": "Error message",
       "report": "Report",
       "queuePositionValue": "~{count} job ahead of yours | ~{count} jobs ahead of yours",

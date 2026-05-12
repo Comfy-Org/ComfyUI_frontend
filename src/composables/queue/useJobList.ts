@@ -24,7 +24,7 @@ import { buildJobDisplay } from '@/utils/queueDisplay'
 import { jobStateFromTask } from '@/utils/queueUtil'
 
 /** Tabs for job list filtering */
-export const jobTabs = ['All', 'Completed', 'Failed'] as const
+export const jobTabs = ['All', 'Completed', 'Failed', 'Cancelled'] as const
 export type JobTab = (typeof jobTabs)[number]
 
 export const jobSortModes = ['mostRecent', 'totalGenerationTime'] as const
@@ -223,10 +223,23 @@ export function useJobList() {
     tasksWithJobState.value.some(({ state }) => state === 'failed')
   )
 
+  const hasCancelledJobs = computed(() =>
+    tasksWithJobState.value.some(({ state }) => state === 'cancelled')
+  )
+
   watch(
     () => hasFailedJobs.value,
     (hasFailed) => {
       if (!hasFailed && selectedJobTab.value === 'Failed') {
+        selectedJobTab.value = 'All'
+      }
+    }
+  )
+
+  watch(
+    () => hasCancelledJobs.value,
+    (hasCancelled) => {
+      if (!hasCancelled && selectedJobTab.value === 'Cancelled') {
         selectedJobTab.value = 'All'
       }
     }
@@ -238,6 +251,8 @@ export function useJobList() {
       entries = entries.filter(({ state }) => state === 'completed')
     } else if (selectedJobTab.value === 'Failed') {
       entries = entries.filter(({ state }) => state === 'failed')
+    } else if (selectedJobTab.value === 'Cancelled') {
+      entries = entries.filter(({ state }) => state === 'cancelled')
     }
 
     if (selectedWorkflowFilter.value === 'current') {
@@ -340,7 +355,11 @@ export function useJobList() {
     const localeValue = locale.value
     for (const { task, state } of searchableTaskEntries.value) {
       let ts: number | undefined
-      if (state === 'completed' || state === 'failed') {
+      if (
+        state === 'completed' ||
+        state === 'failed' ||
+        state === 'cancelled'
+      ) {
         ts = task.executionEndTimestamp
       } else {
         ts = task.createTime
@@ -385,6 +404,7 @@ export function useJobList() {
     selectedSortMode,
     searchQuery,
     hasFailedJobs,
+    hasCancelledJobs,
     // data sources
     allTasksSorted,
     filteredTasks,

@@ -327,7 +327,10 @@ function isCancelable(job: JobListItem) {
 }
 
 function isFailedDeletable(job: JobListItem) {
-  return job.showClear !== false && job.state === 'failed'
+  return (
+    job.showClear !== false &&
+    (job.state === 'failed' || job.state === 'cancelled')
+  )
 }
 
 function getPreviewOutput(job: JobListItem) {

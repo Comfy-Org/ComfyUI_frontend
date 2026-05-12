@@ -392,6 +392,37 @@ describe('useJobList', () => {
     expect(instance.selectedJobTab.value).toBe('All')
   })
 
+  it('exposes cancelled jobs separately from failed jobs and resets tab when they disappear', async () => {
+    queueStoreMock.historyTasks = [
+      createTask({ jobId: 'c', job: { priority: 3 }, mockState: 'completed' }),
+      createTask({ jobId: 'f', job: { priority: 2 }, mockState: 'failed' }),
+      createTask({ jobId: 'x', job: { priority: 1 }, mockState: 'cancelled' })
+    ]
+
+    const instance = initComposable()
+    await flush()
+
+    expect(instance.hasFailedJobs.value).toBe(true)
+    expect(instance.hasCancelledJobs.value).toBe(true)
+
+    instance.selectedJobTab.value = 'Failed'
+    await flush()
+    expect(instance.filteredTasks.value.map((t) => t.jobId)).toEqual(['f'])
+
+    instance.selectedJobTab.value = 'Cancelled'
+    await flush()
+    expect(instance.filteredTasks.value.map((t) => t.jobId)).toEqual(['x'])
+
+    queueStoreMock.historyTasks = [
+      createTask({ jobId: 'c', job: { priority: 3 }, mockState: 'completed' }),
+      createTask({ jobId: 'f', job: { priority: 2 }, mockState: 'failed' })
+    ]
+    await flush()
+
+    expect(instance.hasCancelledJobs.value).toBe(false)
+    expect(instance.selectedJobTab.value).toBe('All')
+  })
+
   it('filters by active workflow when requested', async () => {
     queueStoreMock.pendingTasks = [
       createTask({

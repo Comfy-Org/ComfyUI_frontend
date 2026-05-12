@@ -333,6 +333,28 @@ const extraRows = computed<DetailRow[]>(() => {
     }
     return rows
   }
+  if (jobState.value === 'cancelled') {
+    const task = taskForJob.value
+    const execMs: number | undefined = task?.executionTime
+    const cancelledAfterValue =
+      execMs !== undefined ? formatElapsedTime(execMs) : ''
+    const computeHoursValue =
+      execMs !== undefined ? (execMs / 3600000).toFixed(3) + ' hours' : ''
+    const rows: DetailRow[] = [
+      { label: t('queue.jobDetails.queuedAt'), value: queuedAtValue.value },
+      {
+        label: t('queue.jobDetails.cancelledAfter'),
+        value: cancelledAfterValue
+      }
+    ]
+    if (isCloud) {
+      rows.push({
+        label: t('queue.jobDetails.computeHoursUsed'),
+        value: computeHoursValue
+      })
+    }
+    return rows
+  }
   return []
 })
 
