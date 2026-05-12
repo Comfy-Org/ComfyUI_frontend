@@ -19,10 +19,6 @@ import { widgetSubtitle } from '@/utils/widgetSubtitleUtil'
 import type { InputCellEntry } from '../cells/InputCell.vue'
 import type { BlockConfig, BlockPos, BlockRow, DropTarget } from './panelTypes'
 
-interface InputEntryWithMeta extends InputCellEntry {
-  isMultiline: boolean
-}
-
 export function useAppPanelLayout() {
   const appModeStore = useAppModeStore()
 
@@ -38,7 +34,7 @@ export function useAppPanelLayout() {
     () => (graphNodes.value = [...(app.rootGraph?.nodes ?? [])])
   )
 
-  const inputEntries = computed<InputEntryWithMeta[]>(() => {
+  const inputEntries = computed<InputCellEntry[]>(() => {
     if (!graphNodes.value) return []
     const nodeDataByNode = new Map<
       LGraphNode,
@@ -121,13 +117,7 @@ export function useAppPanelLayout() {
             if (block.kind === 'input') {
               const entry = entryByBlockId.get(block.id)
               if (!entry) return []
-              return [
-                {
-                  ...block,
-                  entryKey: entry.key,
-                  isMultiline: entry.isMultiline
-                }
-              ]
+              return [{ ...block, entryKey: entry.key }]
             }
             return [block]
           })
@@ -137,14 +127,7 @@ export function useAppPanelLayout() {
     for (const entry of inputEntries.value) {
       const id = `input-${entry.key}`
       if (existingInputIds.has(id)) continue
-      preserved.push([
-        {
-          id,
-          kind: 'input',
-          entryKey: entry.key,
-          isMultiline: entry.isMultiline
-        }
-      ])
+      preserved.push([{ id, kind: 'input', entryKey: entry.key }])
     }
 
     if (!isEqual(preserved, appModeStore.panelRows)) {

@@ -41,7 +41,5 @@ interface InputBlockBase {
   kind: 'input'
   /** `${nodeId}:${widgetName}` — matches InputCellEntry.key */
   entryKey: string
-  /** Sizing hint so the panel gives textareas room to breathe. */
-  isMultiline?: boolean
 }
 export type InputBlock = InputBlockBase

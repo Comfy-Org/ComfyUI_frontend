@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useEventListener, useWindowFocus } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, useTemplateRef, watch } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 
+import { useWorkspacePanZoom } from '@/components/appMode/layout/panels/useWorkspacePanZoom'
 import { useAppMode } from '@/composables/useAppMode'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
@@ -23,66 +23,12 @@ const sidebarOnLeft = computed(
 
 const bgRef = useTemplateRef<HTMLElement>('bgRef')
 
-function handleWheel(e: WheelEvent) {
-  const el = bgRef.value
-  if (!el) return
-  e.preventDefault()
-  appModeStore.zoomAt(
-    e.clientX,
-    e.clientY,
-    e.deltaY,
-    el.getBoundingClientRect()
-  )
-}
-
-const DRAG_THRESHOLD_PX = 5
-let dragStart: { x: number; y: number; pointerId: number } | null = null
-let dragging = false
-
-function handlePointerDown(e: PointerEvent) {
-  // Re-entrance guard: a second pointerdown during an active drag
-  // (multi-touch, second mouse button) would overwrite dragStart and
-  // leak the prior pointer-capture session.
-  if (dragStart !== null) return
-  if (e.button !== 0 && e.button !== 1) return
-  e.preventDefault()
-  dragStart = { x: e.clientX, y: e.clientY, pointerId: e.pointerId }
-}
-
-useEventListener(window, 'pointermove', (e: PointerEvent) => {
-  if (!dragStart) return
-  if (!dragging) {
-    const dx = e.clientX - dragStart.x
-    const dy = e.clientY - dragStart.y
-    if (dx * dx + dy * dy < DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX) return
-    try {
-      bgRef.value?.setPointerCapture(dragStart.pointerId)
-    } catch {
-      // Some browsers reject capture on non-primary pointers.
-    }
-    dragging = true
-  }
-  appModeStore.panBy(e.movementX, e.movementY)
-})
-
-function endDrag() {
-  if (dragStart && dragging) {
-    try {
-      bgRef.value?.releasePointerCapture(dragStart.pointerId)
-    } catch {
-      // pointer may already be released
-    }
-  }
-  dragStart = null
-  dragging = false
-}
-useEventListener(window, 'pointerup', endDrag)
-useEventListener(window, 'pointercancel', endDrag)
-
-// Abandon on blur — pointerup may never arrive after alt-tab.
-const focused = useWindowFocus()
-watch(focused, (nowFocused) => {
-  if (!nowFocused && dragStart !== null) endDrag()
+// Backdrop is the full pan/zoom hit-target; no internal scroll regions
+// to gate on. Abandon on blur because pointerup may never arrive after
+// an alt-tab during a drag.
+const { handleWheel, handlePointerDown } = useWorkspacePanZoom({
+  surfaceRef: bgRef,
+  abandonOnBlur: true
 })
 
 const workspaceTransform = computed(

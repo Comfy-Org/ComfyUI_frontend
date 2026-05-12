@@ -250,6 +250,19 @@ export const useAppModeStore = defineStore('appMode', () => {
   )
 
   // Builder-only writes (inputs, outputs, panelRows reorders).
+  // Builder mode persists everything (inputs, outputs, panel rows
+  // alongside panel preset/collapse/width). App Mode persists only
+  // the preset/collapse/width (rows are builder-only edits).
+  function persistLinearData(patch: (linearData: Partial<LinearData>) => void) {
+    if (ChangeTracker.isLoadingGraph) return
+    const graph = app.rootGraph
+    if (!graph) return
+    const extra = (graph.extra ??= {})
+    const linearData: Partial<LinearData> = (extra.linearData ??= {})
+    patch(linearData)
+    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+  }
+
   watch(
     () =>
       isBuilderMode.value
@@ -260,23 +273,19 @@ export const useAppModeStore = defineStore('appMode', () => {
           }
         : null,
     (data) => {
-      if (!data || ChangeTracker.isLoadingGraph) return
-      const graph = app.rootGraph
-      if (!graph) return
-      const extra = (graph.extra ??= {})
-      const linearData: Partial<LinearData> = (extra.linearData ??= {})
-      linearData.inputs = [...data.inputs]
-      linearData.outputs = [...data.outputs]
-      linearData.layout = {
-        ...(linearData.layout ?? {}),
-        panelRows: data.panelRows.map((row) => row.map((b) => ({ ...b })))
-      }
-      workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+      if (!data) return
+      persistLinearData((linearData) => {
+        linearData.inputs = [...data.inputs]
+        linearData.outputs = [...data.outputs]
+        linearData.layout = {
+          ...(linearData.layout ?? {}),
+          panelRows: data.panelRows.map((row) => row.map((b) => ({ ...b })))
+        }
+      })
     },
     { deep: true }
   )
 
-  // Persist panel layout from both App Mode and Builder.
   watch(
     () => ({
       panelPreset: panelPreset.value,
@@ -284,13 +293,9 @@ export const useAppModeStore = defineStore('appMode', () => {
       panelWidthCells: panelWidthCells.value
     }),
     (layout) => {
-      if (ChangeTracker.isLoadingGraph) return
-      const graph = app.rootGraph
-      if (!graph) return
-      const extra = (graph.extra ??= {})
-      const linearData: Partial<LinearData> = (extra.linearData ??= {})
-      linearData.layout = { ...(linearData.layout ?? {}), ...layout }
-      workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+      persistLinearData((linearData) => {
+        linearData.layout = { ...(linearData.layout ?? {}), ...layout }
+      })
     }
   )
 

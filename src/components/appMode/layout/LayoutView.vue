@@ -1,17 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef, watch, watchEffect } from 'vue'
 import { storeToRefs } from 'pinia'
-import {
-  useElementBounding,
-  useElementSize,
-  useEventListener
-} from '@vueuse/core'
+import { useElementBounding, useElementSize } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import AppChrome from './AppChrome.vue'
 import FloatingPanel from './panels/FloatingPanel.vue'
 import PanelBlockList from './panels/PanelBlockList.vue'
 import { useAppPanelLayout } from './panels/useAppPanelLayout'
+import { useWorkspacePanZoom } from './panels/useWorkspacePanZoom'
 
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import { useOutputWindowStore } from '@/renderer/extensions/linearMode/outputWindowStore'
@@ -163,55 +160,14 @@ watch(
   { flush: 'sync', immediate: true }
 )
 
-function handleWheel(e: WheelEvent) {
-  // Only intercept wheel events that originated inside the workspace
-  // (bgRef + its descendants). Events from the floating panel and the
-  // chrome should bubble naturally so panel content can scroll.
-  const bg = bgRef.value
-  if (!bg || !(e.target instanceof Node) || !bg.contains(e.target)) return
-  e.preventDefault()
-  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-  appModeStore.zoomAt(e.clientX, e.clientY, e.deltaY, rect)
-}
-
-// Threshold guards against swallowing clicks on in-workspace controls.
-const DRAG_THRESHOLD_PX = 5
-let dragStart: { x: number; y: number; pointerId: number } | null = null
-let dragging = false
-
-function handlePointerDown(e: PointerEvent) {
-  if (e.button !== 0 && e.button !== 1) return
-  // Only arm pan-drag from the workspace background. Pointers landing
-  // on the floating panel or chrome should bubble naturally so panel
-  // clicks/scrolls don't get reinterpreted as a workspace pan.
-  const bg = bgRef.value
-  if (!bg || !(e.target instanceof Node) || !bg.contains(e.target)) return
-  dragStart = { x: e.clientX, y: e.clientY, pointerId: e.pointerId }
-}
-
-// Window-level so a drag leaving the workspace keeps tracking.
-useEventListener(window, 'pointermove', (e: PointerEvent) => {
-  if (!dragStart) return
-  if (!dragging) {
-    const dx = e.clientX - dragStart.x
-    const dy = e.clientY - dragStart.y
-    if (dx * dx + dy * dy < DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX) return
-    try {
-      bgRef.value?.setPointerCapture(dragStart.pointerId)
-    } catch {
-      // Some browsers reject capture on non-primary pointers.
-    }
-    dragging = true
-  }
-  appModeStore.panBy(e.movementX, e.movementY)
+// Only arm pan/zoom from inside the workspace background. Events from
+// the floating panel + chrome bubble through so panel clicks/scrolls
+// keep working.
+const { handleWheel, handlePointerDown } = useWorkspacePanZoom({
+  surfaceRef: bgRef,
+  shouldHandle: (target) =>
+    target instanceof Node && bgRef.value?.contains(target) === true
 })
-
-function endDrag() {
-  dragStart = null
-  dragging = false
-}
-useEventListener(window, 'pointerup', endDrag)
-useEventListener(window, 'pointercancel', endDrag)
 
 // translate-before-scale keeps offsets in screen px regardless of zoom.
 const workspaceTransform = computed(

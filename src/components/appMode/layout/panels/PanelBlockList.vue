@@ -102,7 +102,7 @@ useFlipReorder(listEl, { skipKey: () => draggingBlockId.value })
             <div
               v-if="entry"
               class="panel-block__input"
-              :data-multiline="block.isMultiline ? 'true' : 'false'"
+              :data-multiline="entry.isMultiline ? 'true' : 'false'"
             >
               <InputCell :entry :variant />
             </div>

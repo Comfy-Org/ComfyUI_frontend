@@ -1,6 +1,7 @@
 import { acceptHMRUpdate, defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { panelSide } from '@/components/appMode/layout/panels/panelTypes'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useAppModeStore } from '@/stores/appModeStore'
 import type { ResultItemImpl } from '@/stores/queueStore'
@@ -137,8 +138,10 @@ function dashboardSlots(
   }
 
   // Feature anchors on the side opposite the panel so the panel and
-  // newest output don't crowd each other. With no panel, default left.
-  const panelOnLeft = !!insets.panelRect && insets.panelRect.x === 0
+  // newest output don't crowd each other. Read the side from the
+  // typed preset rather than re-deriving it from `panelRect.x === 0`
+  // (which fails on sub-pixel bounding-box rounding).
+  const panelOnLeft = panelSide(useAppModeStore().panelPreset) === 'left'
   const featureOnRight = panelOnLeft
 
   const placements = templatePlacements(

@@ -21,6 +21,9 @@ export interface InputCellEntry {
   /** Type/semantic descriptor shown to the right of the input label.
    *  Computed by `widgetSubtitle()` against the simplified widget. */
   subtitle: string
+  /** True for textarea / custom-text widgets; consumed by panel
+   *  layout to give the block more vertical room. */
+  isMultiline: boolean
 }
 
 export type InputCellVariant = 'app-mode' | 'builder'
