@@ -23,6 +23,9 @@ import {
 const TARGET_ASSET: Asset = STABLE_INPUT_IMAGE
 const LOAD_IMAGE_NODE_ID = 10
 const SEEDED_ASSETS: Asset[] = [STABLE_CHECKPOINT, TARGET_ASSET]
+// MediaAssetCard renders the basename without extension, so card-text
+// matching uses the stripped form.
+const TARGET_CARD_TEXT = TARGET_ASSET.name.replace(/\.[^.]+$/, '')
 
 type AssetMockApi = {
   readonly deleteCalls: ReadonlyArray<string>
@@ -151,7 +154,7 @@ baseTest.describe(
         await sidebar.open()
         await sidebar.switchToImported()
         await sidebar.waitForAssets(1)
-        await sidebar.rightClickAsset(TARGET_ASSET.name)
+        await sidebar.rightClickAsset(TARGET_CARD_TEXT)
 
         const deleteMenuItem = sidebar.contextMenuItem('Delete')
         await expect(deleteMenuItem).toBeVisible()
