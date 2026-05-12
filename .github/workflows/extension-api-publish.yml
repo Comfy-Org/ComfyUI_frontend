@@ -20,7 +20,7 @@ on:
       dry_run:
         description: 'Dry run — build and verify without publishing'
         required: false
-        default: 'true'
+        default: true
         type: boolean
 
 permissions:
@@ -64,7 +64,7 @@ jobs:
           echo "Version check passed: $PKG_VERSION"
 
       - name: Publish to npm (with provenance)
-        if: github.event_name == 'push' || inputs.dry_run == 'false'
+        if: github.event_name == 'push' || !inputs.dry_run
         run: |
           cd packages/extension-api
           npm publish --provenance --access public
@@ -72,7 +72,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Dry-run report
-        if: inputs.dry_run == 'true'
+        if: inputs.dry_run
         run: |
           echo "=== DRY RUN — would publish ==="
           cd packages/extension-api
