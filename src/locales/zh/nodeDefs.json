@@ -953,6 +953,50 @@
       }
     }
   },
+  "ByteDanceSeedreamNodeV2": {
+    "description": "统一的文本生成图像与精确的单句编辑，最高支持4K分辨率。",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_fail_on_partial": {
+        "name": "部分失败时终止"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_max_images": {
+        "name": "最大图像数"
+      },
+      "model_size_preset": {
+        "name": "尺寸预设"
+      },
+      "model_width": {
+        "name": "宽度"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于创建或编辑图像的文本提示。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于生成的种子。"
+      },
+      "watermark": {
+        "name": "水印",
+        "tooltip": "是否在图像上添加“AI生成”水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceTextToVideoNode": {
     "description": "通过API基于提示使用字节跳动模型生成视频",
     "display_name": "字节跳动文生视频",
@@ -3432,6 +3476,37 @@
       }
     }
   },
+  "Flux2ImageNode": {
+    "description": "通过Flux.2 [pro]或Flux.2 [max]，根据提示词和可选参考图像生成图像。",
+    "display_name": "Flux.2 图像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_width": {
+        "name": "宽度"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于图像生成或编辑的提示词"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于生成噪声的随机种子。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux2MaxImageNode": {
     "description": "根据提示词和分辨率同步生成图像。",
     "display_name": "Flux.2 [max] 图像",
@@ -4447,6 +4522,40 @@
       "seed": {
         "name": "seed",
         "tooltip": "用于确定节点是否应重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNodeV2": {
+    "description": "根据文本提示修改已有图像",
+    "display_name": "Grok 图像编辑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_number_of_images": {
+        "name": "图像数量"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于生成图像的文本提示"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
       }
     },
     "outputs": {
@@ -11957,6 +12066,50 @@
       "size": {
         "name": "尺寸",
         "tooltip": "图像尺寸"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV2": {
+    "description": "通过OpenAI的GPT Image端点生成图像。",
+    "display_name": "OpenAI GPT 图像 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_background": {
+        "name": "背景"
+      },
+      "model_custom_height": {
+        "name": "自定义高度"
+      },
+      "model_custom_width": {
+        "name": "自定义宽度"
+      },
+      "model_quality": {
+        "name": "质量"
+      },
+      "model_size": {
+        "name": "尺寸"
+      },
+      "n": {
+        "name": "数量",
+        "tooltip": "要生成的图像数量"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于GPT Image的文本提示"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "后端尚未实现"
       }
     },
     "outputs": {

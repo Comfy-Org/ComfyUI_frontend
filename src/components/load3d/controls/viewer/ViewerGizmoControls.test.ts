@@ -94,13 +94,13 @@ describe('ViewerGizmoControls', () => {
     expect(enabled.value).toBe(false)
   })
 
-  it.each([
+  it.for([
     ['Translate', 'translate'],
     ['Rotate', 'rotate'],
     ['Scale', 'scale']
   ] as const)(
     'updates mode to %s when its toggle item is clicked',
-    async (label, expected) => {
+    async ([label, expected]) => {
       const { user, mode } = renderComponent({
         enabled: true,
         mode: 'translate'

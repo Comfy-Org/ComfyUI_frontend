@@ -263,10 +263,10 @@ describe('useJobMenu', () => {
     expect(copyToClipboardMock).not.toHaveBeenCalled()
   })
 
-  it.each([
+  it.for([
     ['running', interruptMock, deleteItemMock],
     ['initialization', interruptMock, deleteItemMock]
-  ])('cancels %s job via interrupt', async (state) => {
+  ])('cancels %s job via interrupt', async ([state]) => {
     const { cancelJob } = mountJobMenu()
     setCurrentItem(createJobItem({ state: state as JobListItem['state'] }))
 
@@ -417,7 +417,7 @@ describe('useJobMenu', () => {
     }
   ] as const
 
-  it.each(previewCases)(
+  it.for(previewCases)(
     'adds loader node for %s preview output',
     async ({ flags, expectedNode, widget }) => {
       const widgetCallback = vi.fn()
