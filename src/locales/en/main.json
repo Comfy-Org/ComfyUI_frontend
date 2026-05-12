@@ -1469,6 +1469,7 @@
       "generatedOn": "Generated on",
       "totalGenerationTime": "Total generation time",
       "computeHoursUsed": "Compute hours used",
+      "computeHoursValue": "{value} hours",
       "failedAfter": "Failed after",
       "cancelledAfter": "Cancelled after",
       "errorMessage": "Error message",
