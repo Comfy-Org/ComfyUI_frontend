@@ -7,11 +7,11 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { getWidgetDefaultValue, renameWidget } from '@/utils/widgetUtil'
 
-vi.mock('@/core/graph/subgraph/resolvePromotedWidgetSource', () => ({
+vi.mock('@/core/graph/subgraph/resolveConcretePromotedWidget', () => ({
   resolvePromotedWidgetSource: vi.fn()
 }))
 
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 
 const mockedResolve = vi.mocked(resolvePromotedWidgetSource)
 

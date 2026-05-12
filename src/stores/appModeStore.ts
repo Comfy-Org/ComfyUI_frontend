@@ -45,56 +45,58 @@ export const useAppModeStore = defineStore('appMode', () => {
     return !!app.rootGraph?.nodes?.length
   })
 
-  // Prune entries referencing nodes deleted in workflow mode.
-  // Only check node existence, not widgets — dynamic widgets can
-  // hide/show other widgets so a missing widget does not mean stale data.
-  // ADR 0009: also performs the one-shot legacy-tuple migration that
-  // projects pre-ratchet `(sourceNodeId, sourceWidgetName)` selections
-  // through the new host-scoped `(hostNodeLocator, subgraphInputName)`
-  // identity. Failed projections are dropped with `console.warn`.
   function pruneLinearData(data: Partial<LinearData> | undefined): LinearData {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
-
+    const rootGraph = app.rootGraph
+    if (!rootGraph) return { inputs: rawInputs, outputs: rawOutputs }
     return {
-      inputs: app.rootGraph
-        ? rawInputs
-            .map(migrateLegacyInputTuple)
-            .filter((entry): entry is LinearInput => entry !== null)
-            .filter(selectedInputExists)
-        : rawInputs,
-      outputs: app.rootGraph
-        ? rawOutputs.filter((nodeId) => resolveNode(nodeId))
-        : rawOutputs
+      inputs: rawInputs
+        .map((input) => upgradeAndValidateInput(input, rootGraph))
+        .filter((entry): entry is LinearInput => entry !== null),
+      outputs: rawOutputs.filter((nodeId) => resolveNode(nodeId))
     }
   }
 
-  function selectedInputExists([nodeId, widgetName]: LinearInput): boolean {
-    if (typeof nodeId === 'string' && nodeId.includes(':')) {
-      if (typeof app.rootGraph?.getNodeById !== 'function') return true
-      const [, widget] = resolveNodeWidget(nodeId, widgetName)
-      return Boolean(widget)
-    }
-    return Boolean(resolveNode(nodeId))
-  }
-
-  /**
-   * If a legacy tuple references the interior `(sourceNodeId, widgetName)`
-   * of a now-promoted widget, project it through the wrapping host
-   * SubgraphNode's locator + subgraph-input name.
-   */
-  function migrateLegacyInputTuple(input: LinearInput): LinearInput | null {
+  function upgradeAndValidateInput(
+    input: LinearInput,
+    rootGraph: NonNullable<typeof app.rootGraph>
+  ): LinearInput | null {
     const [storedId, widgetName] = input
+
     if (typeof storedId === 'string' && storedId.includes(':')) {
-      // Already in `(hostNodeLocator, subgraphInputName)` form.
-      return input
+      const [, widget] = resolveNodeWidget(storedId, widgetName)
+      return widget ? input : null
     }
 
-    if (directRootWidgetExists(storedId, widgetName)) return input
+    const directNode = rootGraph.getNodeById?.(storedId)
+    if (directNode?.widgets?.some((w) => w.name === widgetName)) return input
 
-    const projection = projectLegacyTupleThroughHost(storedId, widgetName)
-    if (projection) {
-      return [projection.hostLocator, projection.subgraphInputName, input[2]]
+    const matches: LinearInput[] = []
+    for (const node of rootGraph.nodes) {
+      if (!(node instanceof SubgraphNode)) continue
+      for (const inputSlot of node.inputs) {
+        const widget = inputSlot._widget
+        if (!widget || !isPromotedWidgetView(widget)) continue
+        if (
+          widget.sourceNodeId === String(storedId) &&
+          widget.sourceWidgetName === widgetName
+        ) {
+          matches.push([
+            createNodeLocatorId(rootGraph.id, node.id),
+            inputSlot.name,
+            input[2]
+          ])
+        }
+      }
+    }
+    if (matches.length === 1) return matches[0]
+    if (matches.length > 1) {
+      console.warn(
+        '[appModeStore] dropping ambiguous legacy selectedInput tuple',
+        { storedId, widgetName }
+      )
+      return null
     }
 
     if (resolveNode(storedId)) return input
@@ -103,49 +105,6 @@ export const useAppModeStore = defineStore('appMode', () => {
       '[appModeStore] dropping legacy selectedInput tuple — no canonical identity available',
       { storedId, widgetName }
     )
-    return null
-  }
-
-  function directRootWidgetExists(nodeId: NodeId, widgetName: string): boolean {
-    const node = app.rootGraph?.getNodeById?.(nodeId)
-    return Boolean(node?.widgets?.some((widget) => widget.name === widgetName))
-  }
-
-  function projectLegacyTupleThroughHost(
-    legacySourceNodeId: NodeId,
-    legacyWidgetName: string
-  ): { hostLocator: string; subgraphInputName: string } | null {
-    const rootGraph = app.rootGraph
-    if (!rootGraph) return null
-
-    const matches: Array<{ hostLocator: string; subgraphInputName: string }> =
-      []
-
-    for (const node of rootGraph.nodes) {
-      if (!(node instanceof SubgraphNode)) continue
-
-      for (const inputSlot of node.inputs) {
-        const widget = inputSlot._widget
-        if (!widget || !isPromotedWidgetView(widget)) continue
-        if (
-          widget.sourceNodeId === String(legacySourceNodeId) &&
-          widget.sourceWidgetName === legacyWidgetName
-        ) {
-          matches.push({
-            hostLocator: createNodeLocatorId(rootGraph.id, node.id),
-            subgraphInputName: inputSlot.name
-          })
-        }
-      }
-    }
-
-    if (matches.length === 1) return matches[0]
-    if (matches.length > 1) {
-      console.warn(
-        '[appModeStore] dropping ambiguous legacy selectedInput tuple',
-        { storedId: legacySourceNodeId, widgetName: legacyWidgetName }
-      )
-    }
     return null
   }
 
@@ -243,9 +202,6 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   function removeSelectedInput(widget: IBaseWidget, node: { id: NodeId }) {
-    // ADR 0009: promoted widgets identify by `(hostNodeLocator,
-    // subgraphInputName)` so that two host SubgraphNodes wrapping the same
-    // Subgraph definition retain independent selections.
     const rootGraphId = app.rootGraph?.id
     const isPromoted = isPromotedWidgetView(widget)
     const storeId =

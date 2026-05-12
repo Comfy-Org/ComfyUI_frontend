@@ -9,8 +9,10 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
-import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import {
+  resolveConcretePromotedWidget,
+  resolvePromotedWidgetSource
+} from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import type {

@@ -128,10 +128,10 @@ export function usePromotedPreviews(
       const interiorNode = leafHost.subgraph.getNodeById(leaf.sourceNodeId)
       if (!interiorNode) continue
 
-      // Read from both reactive refs to establish Vue dependency
-      // tracking. getNodeImageUrls reads from non-reactive
-      // app.nodeOutputs / app.nodePreviewImages, so without this
-      // access the computed would never re-evaluate.
+      // Read from reactive refs to establish Vue dependency tracking.
+      // getNodeImageUrls reads from non-reactive app.nodeOutputs /
+      // app.nodePreviewImages, so without this access the computed
+      // would never re-evaluate.
       const locatorId = createNodeLocatorId(
         leafHost.subgraph.id,
         leaf.sourceNodeId
@@ -140,9 +140,9 @@ export function usePromotedPreviews(
       const reactivePreviews = nodeOutputStore.nodePreviewImages[locatorId]
       const leafExecutionId = `${leafHostLocator}:${leaf.sourceNodeId}`
       const reactiveExecutionOutputs =
-        nodeOutputStore.nodeOutputsByExecutionId?.[leafExecutionId]
+        nodeOutputStore.getNodeOutputByExecutionId?.(leafExecutionId)
       const reactiveExecutionPreviews =
-        nodeOutputStore.nodePreviewImagesByExecutionId?.[leafExecutionId]
+        nodeOutputStore.getNodePreviewImagesByExecutionId?.(leafExecutionId)
       if (
         !reactiveOutputs?.images?.length &&
         !reactivePreviews?.length &&

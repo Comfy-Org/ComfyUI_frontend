@@ -1,9 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import type { PreviewExposureChainContext } from '@/core/graph/subgraph/preview/previewExposureChain'
+import type {
+  PreviewExposureChainContext,
+  ResolvedPreviewChain
+} from '@/core/graph/subgraph/preview/previewExposureChain'
 import { resolvePreviewExposureChain } from '@/core/graph/subgraph/preview/previewExposureChain'
-import type { ResolvedPreviewChain } from '@/core/graph/subgraph/preview/previewExposureTypes'
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
@@ -14,7 +16,7 @@ const EMPTY_EXPOSURES: readonly PreviewExposure[] = Object.freeze([])
  * Optional resolver passed by callers that want {@link resolveChain} to walk
  * nested subgraph host boundaries.
  */
-export type ResolveNestedHostFn = NonNullable<
+type ResolveNestedHostFn = NonNullable<
   PreviewExposureChainContext['resolveNestedHost']
 >
 

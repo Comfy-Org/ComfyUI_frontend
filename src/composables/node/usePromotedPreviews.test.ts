@@ -17,11 +17,11 @@ import { usePromotedPreviews } from './usePromotedPreviews'
 type MockNodeOutputStore = Pick<
   ReturnType<typeof useNodeOutputStore>,
   | 'nodeOutputs'
-  | 'nodeOutputsByExecutionId'
   | 'nodePreviewImages'
-  | 'nodePreviewImagesByExecutionId'
   | 'getNodeImageUrls'
   | 'getNodeImageUrlsByExecutionId'
+  | 'getNodeOutputByExecutionId'
+  | 'getNodePreviewImagesByExecutionId'
 >
 
 const getNodeImageUrls = vi.hoisted(() =>
@@ -29,6 +29,12 @@ const getNodeImageUrls = vi.hoisted(() =>
 )
 const getNodeImageUrlsByExecutionId = vi.hoisted(() =>
   vi.fn<MockNodeOutputStore['getNodeImageUrlsByExecutionId']>()
+)
+const getNodeOutputByExecutionId = vi.hoisted(() =>
+  vi.fn<MockNodeOutputStore['getNodeOutputByExecutionId']>()
+)
+const getNodePreviewImagesByExecutionId = vi.hoisted(() =>
+  vi.fn<MockNodeOutputStore['getNodePreviewImagesByExecutionId']>()
 )
 const useNodeOutputStoreMock = vi.hoisted(() =>
   vi.fn<() => MockNodeOutputStore>()
@@ -43,15 +49,11 @@ vi.mock('@/stores/nodeOutputStore', () => {
 function createMockNodeOutputStore(): MockNodeOutputStore {
   return {
     nodeOutputs: reactive<MockNodeOutputStore['nodeOutputs']>({}),
-    nodeOutputsByExecutionId: reactive<
-      MockNodeOutputStore['nodeOutputsByExecutionId']
-    >({}),
     nodePreviewImages: reactive<MockNodeOutputStore['nodePreviewImages']>({}),
-    nodePreviewImagesByExecutionId: reactive<
-      MockNodeOutputStore['nodePreviewImagesByExecutionId']
-    >({}),
     getNodeImageUrls,
-    getNodeImageUrlsByExecutionId
+    getNodeImageUrlsByExecutionId,
+    getNodeOutputByExecutionId,
+    getNodePreviewImagesByExecutionId
   }
 }
 
@@ -118,6 +120,8 @@ describe(usePromotedPreviews, () => {
     vi.clearAllMocks()
     getNodeImageUrls.mockReset()
     getNodeImageUrlsByExecutionId.mockReset()
+    getNodeOutputByExecutionId.mockReset()
+    getNodePreviewImagesByExecutionId.mockReset()
 
     nodeOutputStore = createMockNodeOutputStore()
     useNodeOutputStoreMock.mockReturnValue(nodeOutputStore)
@@ -447,12 +451,11 @@ describe(usePromotedPreviews, () => {
       sourcePreviewName: '$$canvas-image-preview'
     })
 
-    nodeOutputStore.nodePreviewImagesByExecutionId[firstLeafExecutionId] = [
-      'blob:first'
-    ]
-    nodeOutputStore.nodePreviewImagesByExecutionId[secondLeafExecutionId] = [
-      'blob:second'
-    ]
+    getNodePreviewImagesByExecutionId.mockImplementation((executionId) => {
+      if (executionId === firstLeafExecutionId) return ['blob:first']
+      if (executionId === secondLeafExecutionId) return ['blob:second']
+      return undefined
+    })
     getNodeImageUrlsByExecutionId.mockImplementation((executionId) => {
       if (executionId === firstLeafExecutionId) return ['blob:first']
       if (executionId === secondLeafExecutionId) return ['blob:second']
