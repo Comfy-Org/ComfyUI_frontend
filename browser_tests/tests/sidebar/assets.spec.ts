@@ -276,8 +276,8 @@ test.describe('Assets sidebar - view mode toggle', () => {
     await tab.openSettingsMenu()
     await tab.listViewOption.click()
 
-    // List view items should now be visible
-    await expect(tab.listViewItems.first()).toBeVisible()
+    // List view should render the existing asset row.
+    await expect(tab.listViewItem('landscape.png')).toBeVisible()
   })
 
   test('Can switch back to grid view', async ({ comfyPage }) => {
@@ -288,7 +288,7 @@ test.describe('Assets sidebar - view mode toggle', () => {
     // Switch to list view
     await tab.openSettingsMenu()
     await tab.listViewOption.click()
-    await expect(tab.listViewItems.first()).toBeVisible()
+    await expect(tab.listViewItem('landscape.png')).toBeVisible()
 
     // Switch back to grid view (settings popover is still open)
     await tab.gridViewOption.click()

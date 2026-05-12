@@ -297,7 +297,6 @@ export class AssetsSidebarTab extends SidebarTab {
   public readonly sortFastestFirst: Locator
   public readonly assetCards: Locator
   public readonly selectedCards: Locator
-  public readonly listViewItems: Locator
   public readonly selectionFooter: Locator
   public readonly selectionCountButton: Locator
   public readonly deselectAllButton: Locator
@@ -337,7 +336,6 @@ export class AssetsSidebarTab extends SidebarTab {
       .getByRole('button')
       .and(this.root.locator('[data-selected]'))
     this.selectedCards = this.root.locator('[data-selected="true"]')
-    this.listViewItems = this.root.getByRole('button', { name: /asset$/i })
     this.selectionFooter = this.root.locator('..').getByRole('toolbar', {
       name: 'Selected asset actions'
     })
@@ -383,20 +381,16 @@ export class AssetsSidebarTab extends SidebarTab {
     )
   }
 
+  listViewItem(name: string) {
+    return this.root.getByRole('button').filter({ hasText: name }).first()
+  }
+
   contextMenuItem(label: string) {
     return this.page.locator('.p-contextmenu').getByText(label)
   }
 
   contextMenuAction(label: string) {
     return this.contextMenuItem(label)
-  }
-
-  async showGenerated() {
-    await this.switchToGenerated()
-  }
-
-  async showImported() {
-    await this.switchToImported()
   }
 
   async search(query: string) {
@@ -427,33 +421,6 @@ export class AssetsSidebarTab extends SidebarTab {
   async runContextMenuAction(assetName: string, actionName: string) {
     await this.openContextMenuForAsset(assetName)
     await this.contextMenuAction(actionName).click()
-  }
-
-  async openAssetPreview(name: string) {
-    const asset = this.asset(name)
-    await asset.hover()
-
-    const zoomButton = asset.getByLabel('Zoom in')
-    if (await zoomButton.isVisible().catch(() => false)) {
-      await zoomButton.click()
-      return
-    }
-
-    await asset.dblclick()
-  }
-
-  async openOutputFolder(name: string) {
-    await this.asset(name)
-      .getByRole('button', { name: 'See more outputs' })
-      .click()
-
-    await this.backToAssetsButton.waitFor({ state: 'visible' })
-  }
-
-  async toggleStack(name: string) {
-    await this.asset(name)
-      .getByRole('button', { name: 'See more outputs' })
-      .click()
   }
 
   async selectAssets(names: string[]) {
