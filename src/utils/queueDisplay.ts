@@ -35,9 +35,9 @@ export const iconForJobState = (state: JobState): string => {
     case 'completed':
       return 'icon-[lucide--check-check]'
     case 'failed':
-      return 'icon-[lucide--alert-circle]'
+      return 'icon-[lucide--circle-alert]'
     case 'cancelled':
-      return 'icon-[lucide--ban]'
+      return 'icon-[lucide--circle-x]'
     default:
       return 'icon-[lucide--circle]'
   }

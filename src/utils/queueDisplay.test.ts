@@ -28,8 +28,8 @@ const taskFor = (overrides: Partial<TaskItemImpl> = {}): TaskItemImpl =>
 
 describe('iconForJobState', () => {
   it('returns a distinct icon for cancelled vs failed', () => {
-    expect(iconForJobState('cancelled')).toBe('icon-[lucide--ban]')
-    expect(iconForJobState('failed')).toBe('icon-[lucide--alert-circle]')
+    expect(iconForJobState('cancelled')).toBe('icon-[lucide--circle-x]')
+    expect(iconForJobState('failed')).toBe('icon-[lucide--circle-alert]')
     expect(iconForJobState('cancelled')).not.toBe(iconForJobState('failed'))
   })
 
