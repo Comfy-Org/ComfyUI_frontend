@@ -277,6 +277,41 @@ describe('flushProxyWidgetMigration', () => {
       expect(created?._widget).toBeDefined()
     })
 
+    it('createSubgraphInput: honors disambiguatingSourceNodeId when source widget name has been deduplicated', () => {
+      // The host's immediate child (inner) carries promoted widgets that
+      // surface two interior "text" widgets, deduplicated to ("text",
+      // "text_1") at this level. The legacy proxyWidgets tuple identifies
+      // the *second* one via its underlying source-node id ("2"). The
+      // migration must pick the widget whose interior identity matches
+      // (sourceNodeId="2", sourceWidgetName="text") — i.e. the one renamed
+      // to "text_1" — not the lexical first widget called "text".
+      const host = buildHost()
+      const inner = addInnerNode(host, 'InnerWithDedupedPromotion', (n) => {
+        const slot1 = n.addInput('text', 'STRING')
+        slot1.widget = { name: 'text' }
+        const w1 = n.addWidget('text', 'text', '11111111111', () => {})
+        Object.assign(w1, { sourceNodeId: '1', sourceWidgetName: 'text' })
+
+        const slot2 = n.addInput('text_1', 'STRING')
+        slot2.widget = { name: 'text_1' }
+        const w2 = n.addWidget('text', 'text_1', '22222222222', () => {})
+        Object.assign(w2, { sourceNodeId: '2', sourceWidgetName: 'text' })
+      })
+
+      host.properties.proxyWidgets = [[String(inner.id), 'text', '2']]
+      const result = flushProxyWidgetMigration({ hostNode: host })
+
+      expect(result).toMatchObject({ repaired: 1, quarantined: 0 })
+      const created = host.subgraph.inputs.at(-1)
+      expect(created?._widget).toBeDefined()
+      // The created SubgraphInput connects to inner's "text_1" slot (the
+      // disambiguated one), not "text".
+      const linkedSlot = inner.inputs.find(
+        (slot) => slot.link === created?.linkIds[0]
+      )
+      expect(linkedSlot?.name).toBe('text_1')
+    })
+
     it('createSubgraphInput: quarantines missingSubgraphInput when source widget has no backing input slot', () => {
       const host = buildHost()
       const inner = addInnerNode(host, 'Inner', (n) => {

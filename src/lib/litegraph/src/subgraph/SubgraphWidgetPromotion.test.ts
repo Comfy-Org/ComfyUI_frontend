@@ -391,14 +391,15 @@ describe('SubgraphWidgetPromotion', () => {
       expect(widgetSourceIds).toContain(keptSamplerNodeId)
     })
 
-    it('quarantines legacy prefixed proxyWidgets that target a deep leaf widget', () => {
-      // ADR 0009: each SubgraphNode is opaque. The legacy
-      // "<nestedId>: <leafId>: <leafWidgetName>" encoding referenced a deep
-      // leaf widget through nested chain traversal. Under the opaque model
-      // the migration cannot resolve that identity at the immediate level,
-      // so the entry is quarantined rather than reconstructed as a
-      // canonical promoted view. Users with this legacy state must
-      // re-promote through each subgraph level explicitly.
+    it('resolves legacy prefixed proxyWidgets via the immediate child PromotedWidgetView identity', () => {
+      // ADR 0009: each SubgraphNode is opaque, so the migration only matches
+      // against what the immediate child surfaces. The legacy
+      // "<nestedId>: <leafId>: <leafWidgetName>" encoding strips down to
+      // {sourceWidgetName: "<leafWidgetName>", disambiguatingSourceNodeId:
+      // "<leafId>"}. The immediate child's PromotedWidgetView already exposes
+      // that interior identity (sourceNodeId/sourceWidgetName), so the
+      // migration can pick the correct widget without reaching past the
+      // child boundary. This preserves user state without violating opacity.
       const rootGraph = createTestRootGraph()
 
       const innerSubgraph = createTestSubgraph({
@@ -444,10 +445,10 @@ describe('SubgraphWidgetPromotion', () => {
         .filter(isPromotedWidgetView)
         .filter((widget) => !widget.name.startsWith('$$'))
 
-      expect(promotedWidgets).toHaveLength(0)
+      expect(promotedWidgets).toHaveLength(1)
+      expect(promotedWidgets[0]?.sourceNodeId).toBe(String(nestedNode.id))
       expect(hostNode.properties.proxyWidgets).toBeUndefined()
-      const quarantine = hostNode.properties.proxyWidgetErrorQuarantine
-      expect(Array.isArray(quarantine) && quarantine.length).toBeGreaterThan(0)
+      expect(hostNode.properties.proxyWidgetErrorQuarantine).toBeUndefined()
     })
 
     it('should preserve promoted widget entries after cloning', () => {

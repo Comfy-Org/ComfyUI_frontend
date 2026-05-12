@@ -26,6 +26,35 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 
+/**
+ * Find a widget on `sourceNode` that matches the legacy proxy entry's source
+ * identity. When the entry carries a `disambiguatingSourceNodeId`, prefer the
+ * `PromotedWidgetView` whose interior identity matches it exactly — this lets
+ * us pick the correct widget after deduplication renamed it (e.g. `text_1`).
+ * Falls back to a name match for non-promoted widgets and legacy data without
+ * a disambiguator.
+ */
+function findSourceWidget(
+  sourceNode: LGraphNode,
+  sourceWidgetName: string,
+  disambiguatingSourceNodeId?: string
+): IBaseWidget | undefined {
+  const widgets = sourceNode.widgets
+  if (!widgets) return undefined
+
+  if (disambiguatingSourceNodeId !== undefined) {
+    const byDisambiguator = widgets.find(
+      (w) =>
+        isPromotedWidgetView(w) &&
+        w.sourceNodeId === disambiguatingSourceNodeId &&
+        w.sourceWidgetName === sourceWidgetName
+    )
+    if (byDisambiguator) return byDisambiguator
+  }
+
+  return widgets.find((w) => w.name === sourceWidgetName)
+}
+
 interface FlushArgs {
   hostNode: SubgraphNode
   hostWidgetValues?: readonly unknown[]
@@ -276,10 +305,15 @@ function classify(
     return { kind: 'quarantine', reason: 'unlinkedSourceWidget' }
   }
 
-  const promotableWidgets = getPromotableWidgets(sourceNode)
-  const sourceWidget = promotableWidgets.find(
-    (w) => w.name === normalized.sourceWidgetName
-  )
+  const sourceWidget =
+    findSourceWidget(
+      sourceNode,
+      normalized.sourceWidgetName,
+      normalized.disambiguatingSourceNodeId
+    ) ??
+    getPromotableWidgets(sourceNode).find(
+      (w) => w.name === normalized.sourceWidgetName
+    )
   if (!sourceWidget) {
     return { kind: 'quarantine', reason: 'missingSourceWidget' }
   }
@@ -377,8 +411,10 @@ function repairCreateSubgraphInput(
     return { ok: false, reason: 'missingSourceNode' }
   }
 
-  const sourceWidget = sourceNode.widgets?.find(
-    (w) => w.name === sourceWidgetName
+  const sourceWidget = findSourceWidget(
+    sourceNode,
+    sourceWidgetName,
+    entry.normalized.disambiguatingSourceNodeId
   )
   if (!sourceWidget) {
     return { ok: false, reason: 'missingSourceWidget' }

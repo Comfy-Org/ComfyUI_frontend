@@ -48,7 +48,7 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         await comfyPage.workflow.loadWorkflow(WORKFLOW)
 
         await comfyExpect(async () => {
-          const widgetValues = await comfyPage.page.evaluate(() => {
+          const state = await comfyPage.page.evaluate(() => {
             const graph = window.app!.canvas.graph!
             const outerNode = graph.getNodeById('4')
             if (
@@ -56,26 +56,53 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
               typeof outerNode.isSubgraphNode !== 'function' ||
               !outerNode.isSubgraphNode()
             ) {
-              return []
+              return null
             }
 
-            const innerSubgraphNode = outerNode.subgraph.getNodeById(3)
-            if (!innerSubgraphNode) return []
+            const dumpWidgets = (widgets: readonly unknown[] | undefined) =>
+              (widgets ?? []).map((w) => {
+                const widget = w as {
+                  name: string
+                  value: unknown
+                  sourceNodeId?: string
+                  sourceWidgetName?: string
+                }
+                return {
+                  name: widget.name,
+                  value: widget.value,
+                  sourceNodeId: widget.sourceNodeId,
+                  sourceWidgetName: widget.sourceWidgetName
+                }
+              })
 
-            return (innerSubgraphNode.widgets ?? []).map((w) => ({
-              name: w.name,
-              value: w.value
-            }))
+            const innerSubgraphNode = outerNode.subgraph.getNodeById(3)
+            return {
+              outer: dumpWidgets(outerNode.widgets),
+              inner: innerSubgraphNode
+                ? dumpWidgets(innerSubgraphNode.widgets)
+                : []
+            }
           })
 
-          const textWidgets = widgetValues.filter((w) =>
+          comfyExpect(state).not.toBeNull()
+          if (!state) return
+
+          // Inner subgraph instance (id=3) exposes BOTH inner CLIP text widgets,
+          // deduplicated by name. Both source values must be reachable.
+          const innerTextWidgets = state.inner.filter((w) =>
             w.name.startsWith('text')
           )
-          comfyExpect(textWidgets).toHaveLength(2)
+          comfyExpect(innerTextWidgets).toHaveLength(2)
+          const innerValues = innerTextWidgets.map((w) => w.value)
+          comfyExpect(innerValues).toContain('11111111111')
+          comfyExpect(innerValues).toContain('22222222222')
 
-          const values = textWidgets.map((w) => w.value)
-          comfyExpect(values).toContain('11111111111')
-          comfyExpect(values).toContain('22222222222')
+          // Outer subgraph node (id=4) promotes a SINGLE widget, disambiguated
+          // by source-node id "2" → must resolve to the inner CLIP id=2 value.
+          comfyExpect(state.outer).toHaveLength(1)
+          const exposed = state.outer[0]
+          comfyExpect(exposed.value).toBe('22222222222')
+          comfyExpect(exposed.sourceNodeId).toBe('3')
         }).toPass({ timeout: 5_000 })
       })
     }
