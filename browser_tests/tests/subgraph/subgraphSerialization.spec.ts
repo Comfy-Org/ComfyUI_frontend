@@ -208,65 +208,44 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
     expect(afterReload.serializedProperties).not.toHaveProperty('proxyWidgets')
   })
 
-  test('Multiple SubgraphNode hosts keep independent migrated widget values', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadGraphData(
-      createPrimitiveFanoutMultiHostWorkflow()
-    )
+  test(
+    'Multiple SubgraphNode hosts keep independent migrated widget values',
+    { tag: ['@vue-nodes'] },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadGraphData(
+        createPrimitiveFanoutMultiHostWorkflow()
+      )
 
-    await expect
-      .poll(() => getPromotedWidgetCount(comfyPage, '2'))
-      .toBeGreaterThan(1)
-    await expect
-      .poll(() => getPromotedWidgetCount(comfyPage, '12'))
-      .toBeGreaterThan(1)
+      // The fixture's proxyWidgets [["1","value"], ["4","value"]] migrates to
+      // two host widgets sharing the source widget name "value":
+      //   index 0 → PrimitiveString.value (string textbox)
+      //   index 1 → PrimitiveNode.value   (number input)
+      // Disambiguate by row order, matching widgets_values order.
+      const expectHostHasIndependentValues = async (
+        hostId: string,
+        stringValue: string,
+        intValue: string
+      ) => {
+        const host = comfyPage.vueNodes.getNodeLocator(hostId)
+        const widgets = host.getByTestId(TestIds.widgets.widget)
+        await expect(widgets).toHaveCount(2)
+        await expect(widgets.nth(0).locator('input').first()).toHaveValue(
+          stringValue
+        )
+        await expect(widgets.nth(1).locator('input').first()).toHaveValue(
+          intValue
+        )
+      }
 
-    const firstHost = await getPrimitiveFanoutSnapshot(comfyPage, '2')
-    const secondHost = await getPrimitiveFanoutSnapshot(comfyPage, '12')
+      await expectHostHasIndependentValues('2', 'first-host', '11')
+      await expectHostHasIndependentValues('12', 'second-host', '22')
 
-    expect(
-      firstHost.hostWidgetValues.find((widget) => widget.sourceNodeId === '1')
-        ?.value
-    ).toBe('first-host')
-    expect(
-      firstHost.hostWidgetValues.find((widget) => widget.sourceNodeId === '1')
-        ?.value
-    ).toBe('first-host')
-    expect(
-      secondHost.hostWidgetValues.find((widget) => widget.sourceNodeId === '1')
-        ?.value
-    ).toBe('second-host')
-    expect(
-      secondHost.hostWidgetValues.find((widget) => widget.sourceNodeId === '1')
-        ?.value
-    ).toBe('second-host')
+      await comfyPage.subgraph.serializeAndReload()
 
-    await comfyPage.subgraph.serializeAndReload()
-
-    const firstAfterReload = await getPrimitiveFanoutSnapshot(comfyPage, '2')
-    const secondAfterReload = await getPrimitiveFanoutSnapshot(comfyPage, '12')
-    expect(
-      firstAfterReload.hostWidgetValues.find(
-        (widget) => widget.sourceNodeId === '1'
-      )?.value
-    ).toBe('first-host')
-    expect(
-      firstAfterReload.hostWidgetValues.find(
-        (widget) => widget.sourceNodeId === '1'
-      )?.value
-    ).toBe('first-host')
-    expect(
-      secondAfterReload.hostWidgetValues.find(
-        (widget) => widget.sourceNodeId === '1'
-      )?.value
-    ).toBe('second-host')
-    expect(
-      secondAfterReload.hostWidgetValues.find(
-        (widget) => widget.sourceNodeId === '1'
-      )?.value
-    ).toBe('second-host')
-  })
+      await expectHostHasIndependentValues('2', 'first-host', '11')
+      await expectHostHasIndependentValues('12', 'second-host', '22')
+    }
+  )
 
   test('Nested preview exposures render through serialized chain resolution', async ({
     comfyPage
