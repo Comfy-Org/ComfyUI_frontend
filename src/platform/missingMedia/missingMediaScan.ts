@@ -87,6 +87,7 @@ export function scanNodeMediaCandidates(
 
   const mediaInfo = MEDIA_NODE_WIDGETS[node.type]
   if (!mediaInfo) return []
+  if (node.isUploading) return []
 
   const executionId = getExecutionIdByNode(rootGraph, node)
   if (!executionId) return []
