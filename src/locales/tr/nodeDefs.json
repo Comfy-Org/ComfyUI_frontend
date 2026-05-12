@@ -953,6 +953,50 @@
       }
     }
   },
+  "ByteDanceSeedreamNodeV2": {
+    "description": "Birleştirilmiş metinden-görüntüye üretim ve 4K çözünürlüğe kadar hassas tek cümle düzenleme.",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_fail_on_partial": {
+        "name": "kısmi başarısızlıkta dur"
+      },
+      "model_height": {
+        "name": "yükseklik"
+      },
+      "model_max_images": {
+        "name": "maksimum_görüntü"
+      },
+      "model_size_preset": {
+        "name": "boyut_önayarı"
+      },
+      "model_width": {
+        "name": "genişlik"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Bir görüntü oluşturmak veya düzenlemek için metin istemi."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Üretim için kullanılacak tohum."
+      },
+      "watermark": {
+        "name": "filigran",
+        "tooltip": "Görüntüye \"Yapay Zeka ile oluşturuldu\" filigranı eklenip eklenmeyeceği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceTextToVideoNode": {
     "description": "Prompt'a dayalı olarak api üzerinden ByteDance modellerini kullanarak video oluştur",
     "display_name": "ByteDance Metinden Videoya",
@@ -3432,6 +3476,37 @@
       }
     }
   },
+  "Flux2ImageNode": {
+    "description": "Bir istem ve isteğe bağlı referans görüntülerden Flux.2 [pro] veya Flux.2 [max] ile görüntüler oluşturun.",
+    "display_name": "Flux.2 Görüntü",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_height": {
+        "name": "yükseklik"
+      },
+      "model_width": {
+        "name": "genişlik"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Görüntü oluşturma veya düzenleme için istem"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Gürültü oluşturmak için kullanılan rastgele tohum."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux2MaxImageNode": {
     "description": "İstem ve çözünürlüğe göre senkron bir şekilde görseller üretir.",
     "display_name": "Flux.2 [max] Görsel",
@@ -4447,6 +4522,40 @@
       "seed": {
         "name": "tohum",
         "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNodeV2": {
+    "description": "Mevcut bir görüntüyü bir metin istemine göre değiştirin",
+    "display_name": "Grok Görüntü Düzenleme",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_aspect_ratio": {
+        "name": "en-boy_oranı"
+      },
+      "model_number_of_images": {
+        "name": "görüntü_sayısı"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Görüntü oluşturmak için kullanılan metin istemi"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirlemek için tohum; gerçek sonuçlar tohumdan bağımsız olarak belirlenemezdir."
       }
     },
     "outputs": {
@@ -11957,6 +12066,50 @@
       "size": {
         "name": "boyut",
         "tooltip": "Görüntü boyutu"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV2": {
+    "description": "OpenAI'nin GPT Görüntü uç noktası ile görüntüler oluşturur.",
+    "display_name": "OpenAI GPT Görüntü 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_background": {
+        "name": "arka_plan"
+      },
+      "model_custom_height": {
+        "name": "özel_yükseklik"
+      },
+      "model_custom_width": {
+        "name": "özel_genişlik"
+      },
+      "model_quality": {
+        "name": "kalite"
+      },
+      "model_size": {
+        "name": "boyut"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Kaç görüntü oluşturulacak"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "GPT Görüntü için metin istemi"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Henüz arka uçta uygulanmadı"
       }
     },
     "outputs": {
