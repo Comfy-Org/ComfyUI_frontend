@@ -8,17 +8,17 @@
  * v1 and v2 runtimes.
  */
 
-export interface V1NodeLike {
+interface V1NodeLike {
   id: number
   type: string
 }
 
-export interface V1Extension {
+interface V1Extension {
   name: string
   nodeCreated?: (node: V1NodeLike) => void
 }
 
-export interface V1App {
+interface V1App {
   registerExtension: (ext: V1Extension) => void
   simulateNodeCreated: (node: V1NodeLike) => void
   readonly totalCreated: number
