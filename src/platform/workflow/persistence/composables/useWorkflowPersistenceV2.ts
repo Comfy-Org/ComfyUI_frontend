@@ -281,8 +281,9 @@ export function useWorkflowPersistenceV2() {
     }
   )
 
-  // Track whether tab state has been properly restored to avoid
-  // overwriting with stale data during initialization
+  // initializeWorkflow() may intentionally return early when a valid tab
+  // pointer exists. Keep tab-state writes disabled until
+  // restoreWorkflowTabsState() has consumed that pointer.
   let tabStateRestored = false
 
   watch(restoreState, ({ paths, activeIndex }) => {

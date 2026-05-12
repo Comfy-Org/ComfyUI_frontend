@@ -20,6 +20,19 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 describe('workflowDraftStoreV2', () => {
+  function failV2IndexWrites() {
+    const originalSetItem = localStorage.setItem.bind(localStorage)
+    return vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementation((key: string, value: string) => {
+        if (key.startsWith('Comfy.Workflow.DraftIndex.v2:')) {
+          throw new DOMException('Quota exceeded', 'QuotaExceededError')
+        }
+
+        return originalSetItem(key, value)
+      })
+  }
+
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     localStorage.clear()
@@ -30,6 +43,8 @@ describe('workflowDraftStoreV2', () => {
   afterEach(() => {
     localStorage.clear()
     sessionStorage.clear()
+    vi.useRealTimers()
+    vi.restoreAllMocks()
   })
 
   describe('saveDraft', () => {
@@ -76,6 +91,32 @@ describe('workflowDraftStoreV2', () => {
       })
     })
 
+    it('uses the same timestamp for V2 and legacy shadow-writes', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2025-01-01T00:00:00Z'))
+      const store = useWorkflowDraftStoreV2()
+      const path = 'workflows/test.json'
+
+      store.saveDraft(path, '{"source":"v2"}', {
+        name: 'test',
+        isTemporary: true
+      })
+
+      const v2Draft = store.getDraft(path)
+      const legacyDraft = useWorkflowDraftStore().getDraft(path)
+      expect(v2Draft?.updatedAt).toBe(Date.now())
+      expect(legacyDraft?.updatedAt).toBe(Date.now())
+
+      useWorkflowDraftStore().saveDraft(path, {
+        data: '{"source":"legacy"}',
+        updatedAt: Date.now(),
+        name: 'test',
+        isTemporary: true
+      })
+
+      expect(store.getDraft(path)?.data).toBe('{"source":"v2"}')
+    })
+
     it('updates existing draft', () => {
       const store = useWorkflowDraftStoreV2()
 
@@ -110,6 +151,40 @@ describe('workflowDraftStoreV2', () => {
 
       expect(result).toBe(true)
       expect(store.getDraft('workflows/test.json')?.data).toBe('{}')
+    })
+
+    it('returns false without shadow-writing legacy when V2 save fails', () => {
+      const store = useWorkflowDraftStoreV2()
+      const path = 'workflows/test.json'
+
+      const setItemSpy = failV2IndexWrites()
+      const result = store.saveDraft(path, '{}', {
+        name: 'test',
+        isTemporary: true
+      })
+      setItemSpy.mockRestore()
+
+      expect(result).toBe(false)
+      expect(store.getDraft(path)).toBeNull()
+      expect(useWorkflowDraftStore().getDraft(path)).toBeUndefined()
+    })
+
+    it('does not cache a draft index entry when storage write fails', () => {
+      const store = useWorkflowDraftStoreV2()
+      store.saveDraft('workflows/old.json', '{"id":"old"}', {
+        name: 'old',
+        isTemporary: true
+      })
+
+      const setItemSpy = failV2IndexWrites()
+      const result = store.saveDraft('workflows/new.json', '{"id":"new"}', {
+        name: 'new',
+        isTemporary: true
+      })
+      setItemSpy.mockRestore()
+
+      expect(result).toBe(false)
+      expect(store.getMostRecentPath()).toBe('workflows/old.json')
     })
 
     it('evicts oldest when over limit', () => {
@@ -183,10 +258,38 @@ describe('workflowDraftStoreV2', () => {
         data: '{"data":"test"}'
       })
     })
+
+    it('does not move legacy shadow data when V2 move fails', () => {
+      const store = useWorkflowDraftStoreV2()
+      const legacyStore = useWorkflowDraftStore()
+
+      store.saveDraft('workflows/old.json', '{"data":"test"}', {
+        name: 'old',
+        isTemporary: true
+      })
+
+      const setItemSpy = failV2IndexWrites()
+      const moved = store.moveDraft(
+        'workflows/old.json',
+        'workflows/new.json',
+        'new'
+      )
+      setItemSpy.mockRestore()
+
+      expect(moved).toBe(false)
+      expect(store.getDraft('workflows/old.json')).toMatchObject({
+        data: '{"data":"test"}'
+      })
+      expect(store.getDraft('workflows/new.json')).toBeNull()
+      expect(legacyStore.getDraft('workflows/old.json')).toMatchObject({
+        data: '{"data":"test"}'
+      })
+      expect(legacyStore.getDraft('workflows/new.json')).toBeUndefined()
+    })
   })
 
   describe('getDraft', () => {
-    it('prefers legacy draft content when it is newer than V2', () => {
+    it('uses legacy fallback content only when it is strictly newer than V2', () => {
       const store = useWorkflowDraftStoreV2()
       const path = 'workflows/test.json'
 
@@ -202,6 +305,39 @@ describe('workflowDraftStoreV2', () => {
       })
 
       expect(store.getDraft(path)?.data).toBe('{"source":"legacy"}')
+    })
+
+    it('does not read or write legacy drafts outside personal workspace', () => {
+      sessionStorage.setItem(
+        'Comfy.Workspace.Current',
+        JSON.stringify({ id: 'workspace-1', type: 'org' })
+      )
+      const store = useWorkflowDraftStoreV2()
+      const legacyStore = useWorkflowDraftStore()
+      const path = 'workflows/test.json'
+
+      store.saveDraft(path, '{"source":"v2"}', {
+        name: 'test',
+        isTemporary: true
+      })
+      legacyStore.saveDraft(path, {
+        data: '{"source":"legacy"}',
+        updatedAt: Date.now() + 1000,
+        name: 'test',
+        isTemporary: true
+      })
+      legacyStore.saveDraft('workflows/legacy-only.json', {
+        data: '{"source":"legacy-only"}',
+        updatedAt: Date.now() + 1000,
+        name: 'legacy-only',
+        isTemporary: true
+      })
+
+      expect(legacyStore.getDraft(path)).toMatchObject({
+        data: '{"source":"legacy"}'
+      })
+      expect(store.getDraft(path)?.data).toBe('{"source":"v2"}')
+      expect(store.getDraft('workflows/legacy-only.json')).toBeNull()
     })
 
     it('returns null when legacy fallback read fails', () => {

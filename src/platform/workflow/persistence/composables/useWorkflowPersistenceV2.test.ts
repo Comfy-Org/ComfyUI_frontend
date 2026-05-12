@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createApp, defineComponent } from 'vue'
+import { createApp, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -389,6 +389,30 @@ describe('useWorkflowPersistenceV2', () => {
       expect(mocks.loadGraphDataMock).not.toHaveBeenCalled()
       expect(loadBlankWorkflowMock).not.toHaveBeenCalled()
       expect(mocks.apiMock.listUserDataFullInfo).not.toHaveBeenCalled()
+    })
+
+    it('does not overwrite stored tab state before tab restore runs', async () => {
+      const workflowStore = useWorkflowStore()
+      writeTabState(['workflows/A.json'], 0)
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      const workflow = await workflowStore
+        .createTemporary('Current.json')
+        .load()
+      workflowStore.attachWorkflow(workflow, 0)
+      workflowStore.activeWorkflow = workflow
+      await nextTick()
+
+      expect(
+        JSON.parse(
+          sessionStorage.getItem('Comfy.Workflow.OpenPaths:test-client')!
+        )
+      ).toMatchObject({
+        paths: ['workflows/A.json'],
+        activeIndex: 0
+      })
     })
 
     it('loads the onboarding blank workflow when persistence is disabled before tutorial completion', async () => {

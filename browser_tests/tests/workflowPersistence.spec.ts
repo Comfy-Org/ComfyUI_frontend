@@ -112,17 +112,21 @@ test.describe('Workflow Persistence', () => {
       await workflowsTab.open()
       await workflowsTab.getPersistedItem('restore-a').dblclick()
       await comfyPage.workflow.waitForWorkflowIdle()
+      const restoreANodeCount = await comfyPage.nodeOps.getNodeCount()
       await workflowsTab.getPersistedItem('restore-b').dblclick()
       await comfyPage.workflow.waitForWorkflowIdle()
 
       await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
+      await expect
+        .poll(() => comfyPage.menu.topbar.getActiveTabName())
+        .toBe('restore-b')
       const tabNamesBeforeReload = await comfyPage.menu.topbar.getTabNames()
       expect(tabNamesBeforeReload).toEqual(
         expect.arrayContaining(['restore-a', 'restore-b'])
       )
+      expect(tabNamesBeforeReload.slice(-2)).toEqual(['restore-a', 'restore-b'])
       const activeTabBeforeReload =
         await comfyPage.menu.topbar.getActiveTabName()
-      expect(activeTabBeforeReload).toBe('restore-b')
 
       await comfyPage.workflow.reloadAndWaitForApp()
 
@@ -133,6 +137,12 @@ test.describe('Workflow Persistence', () => {
         .poll(() => comfyPage.menu.topbar.getActiveTabName())
         .toBe(activeTabBeforeReload)
       await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
+
+      await comfyPage.menu.topbar.getWorkflowTab('restore-a').click()
+      await comfyPage.workflow.waitForWorkflowIdle()
+      await expect
+        .poll(() => comfyPage.nodeOps.getNodeCount())
+        .toBe(restoreANodeCount)
     }
   )
 
