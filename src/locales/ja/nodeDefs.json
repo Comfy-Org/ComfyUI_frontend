@@ -953,6 +953,50 @@
       }
     }
   },
+  "ByteDanceSeedreamNodeV2": {
+    "description": "統合されたテキストから画像生成と、最大4K解像度での正確な単一文編集。",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_fail_on_partial": {
+        "name": "部分的な失敗時に停止"
+      },
+      "model_height": {
+        "name": "高さ"
+      },
+      "model_max_images": {
+        "name": "最大画像数"
+      },
+      "model_size_preset": {
+        "name": "サイズプリセット"
+      },
+      "model_width": {
+        "name": "幅"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像の作成または編集のためのテキストプロンプト。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "生成に使用するシード。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "画像に「AI生成」のウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceTextToVideoNode": {
     "description": "プロンプトに基づきAPI経由でByteDanceモデルを使用して動画を生成",
     "display_name": "ByteDance テキストから動画へ",
@@ -3432,6 +3476,37 @@
       }
     }
   },
+  "Flux2ImageNode": {
+    "description": "Flux.2 [pro] または Flux.2 [max] を使い、プロンプトとオプションの参照画像から画像を生成します。",
+    "display_name": "Flux.2 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_height": {
+        "name": "高さ"
+      },
+      "model_width": {
+        "name": "幅"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像生成または編集のためのプロンプト"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノイズ生成に使用されるランダムシード。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux2MaxImageNode": {
     "description": "プロンプトと解像度に基づいて同期的に画像を生成します。",
     "display_name": "Flux.2 [max] 画像",
@@ -4447,6 +4522,40 @@
       "seed": {
         "name": "シード値",
         "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシード値に関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNodeV2": {
+    "description": "既存の画像をテキストプロンプトに基づいて編集します",
+    "display_name": "Grok Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_number_of_images": {
+        "name": "画像数"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像生成に使用されるテキストプロンプト"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノードを再実行するかどうかを決定するシード；実際の結果はシードに関係なく非決定的です。"
       }
     },
     "outputs": {
@@ -11957,6 +12066,50 @@
       "size": {
         "name": "サイズ",
         "tooltip": "画像サイズ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV2": {
+    "description": "OpenAIのGPT Imageエンドポイントを使って画像を生成します。",
+    "display_name": "OpenAI GPT Image 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_background": {
+        "name": "背景"
+      },
+      "model_custom_height": {
+        "name": "カスタム高さ"
+      },
+      "model_custom_width": {
+        "name": "カスタム幅"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_size": {
+        "name": "サイズ"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "生成する画像の数"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "GPT Image用のテキストプロンプト"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "バックエンドではまだ未実装"
       }
     },
     "outputs": {

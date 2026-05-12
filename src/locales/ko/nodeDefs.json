@@ -953,6 +953,50 @@
       }
     }
   },
+  "ByteDanceSeedreamNodeV2": {
+    "description": "최대 4K 해상도에서 통합 텍스트-이미지 생성 및 정밀한 단일 문장 편집.",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_fail_on_partial": {
+        "name": "부분 실패 시 중단"
+      },
+      "model_height": {
+        "name": "높이"
+      },
+      "model_max_images": {
+        "name": "최대 이미지 수"
+      },
+      "model_size_preset": {
+        "name": "사이즈 프리셋"
+      },
+      "model_width": {
+        "name": "너비"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지를 생성하거나 편집하기 위한 텍스트 프롬프트입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "생성에 사용할 시드입니다."
+      },
+      "watermark": {
+        "name": "워터마크",
+        "tooltip": "이미지에 \"AI 생성됨\" 워터마크를 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceTextToVideoNode": {
     "description": "프롬프트를 기반으로 API를 통해 ByteDance 모델을 사용하여 비디오 생성",
     "display_name": "ByteDance 텍스트-비디오",
@@ -3432,6 +3476,37 @@
       }
     }
   },
+  "Flux2ImageNode": {
+    "description": "프롬프트와 선택적 참조 이미지를 통해 Flux.2 [pro] 또는 Flux.2 [max]로 이미지 생성.",
+    "display_name": "Flux.2 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_height": {
+        "name": "높이"
+      },
+      "model_width": {
+        "name": "너비"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성 또는 편집을 위한 프롬프트"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노이즈 생성을 위한 랜덤 시드입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux2MaxImageNode": {
     "description": "프롬프트와 해상도에 따라 이미지를 동기적으로 생성합니다.",
     "display_name": "Flux.2 [max] 이미지",
@@ -4443,6 +4518,40 @@
       },
       "resolution": {
         "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNodeV2": {
+    "description": "텍스트 프롬프트를 기반으로 기존 이미지를 수정합니다.",
+    "display_name": "Grok 이미지 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_number_of_images": {
+        "name": "이미지 개수"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위해 사용되는 텍스트 프롬프트입니다."
       },
       "seed": {
         "name": "시드",
@@ -11957,6 +12066,50 @@
       "size": {
         "name": "크기",
         "tooltip": "이미지 크기"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV2": {
+    "description": "OpenAI의 GPT 이미지 엔드포인트를 통해 이미지를 생성합니다.",
+    "display_name": "OpenAI GPT 이미지 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_background": {
+        "name": "배경"
+      },
+      "model_custom_height": {
+        "name": "사용자 지정 높이"
+      },
+      "model_custom_width": {
+        "name": "사용자 지정 너비"
+      },
+      "model_quality": {
+        "name": "품질"
+      },
+      "model_size": {
+        "name": "사이즈"
+      },
+      "n": {
+        "name": "개수",
+        "tooltip": "생성할 이미지 수"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "GPT 이미지용 텍스트 프롬프트"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "백엔드에서 아직 구현되지 않음"
       }
     },
     "outputs": {
