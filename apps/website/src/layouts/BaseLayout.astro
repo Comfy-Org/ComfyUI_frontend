@@ -99,6 +99,8 @@ const websiteJsonLd = {
     <script is:inline type="application/ld+json" set:html={escapeJsonLd(websiteJsonLd)} />
     <slot name="head" />
 
+    <slot name="head" />
+
     <!-- Google Tag Manager -->
     {gtmEnabled && (
       <script is:inline define:vars={{ gtmId }}>
