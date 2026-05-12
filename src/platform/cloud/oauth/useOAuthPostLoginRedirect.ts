@@ -7,7 +7,7 @@ import {
   getOAuthRequestId
 } from '@/platform/cloud/oauth/oauthState'
 
-export type OAuthResumeResult =
+type OAuthResumeResult =
   | { kind: 'no-oauth' }
   | { kind: 'resumed' }
   | { kind: 'error'; message: string }
