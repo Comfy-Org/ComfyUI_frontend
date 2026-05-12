@@ -42,7 +42,7 @@ jobs:
           # Check if packages are already available locally
           if ! pnpm list typescript @vue/compiler-sfc >/dev/null 2>&1; then
             echo "Installing TypeScript and Vue compiler globally..."
-            pnpm install -g typescript @vue/compiler-sfc
+            pnpm add -g typescript @vue/compiler-sfc
           else
             echo "TypeScript and Vue compiler already available locally"
           fi
