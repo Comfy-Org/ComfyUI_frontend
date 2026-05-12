@@ -233,10 +233,18 @@ const activePlanIndex = ref(0)
 
         <!-- Features -->
         <div v-if="plan.features.length" class="px-6 py-3">
-          <p class="text-primary-comfy-canvas mb-2 text-sm font-semibold">
-            {{
-              plan.featureIntroKey ? t(plan.featureIntroKey, locale) : '&nbsp;'
-            }}
+          <p
+            v-if="plan.featureIntroKey"
+            class="text-primary-comfy-canvas mb-2 text-sm font-semibold"
+          >
+            {{ t(plan.featureIntroKey, locale) }}
+          </p>
+          <p
+            v-else
+            class="text-primary-comfy-canvas mb-2 text-sm font-semibold"
+            aria-hidden="true"
+          >
+            &nbsp;
           </p>
           <ul class="space-y-2">
             <li
