@@ -417,7 +417,7 @@
   --modal-card-background-hovered: var(--secondary-background-hover);
   --modal-card-border-highlighted: var(--color-ash-400);
   --modal-card-button-surface: var(--color-charcoal-300);
-  --modal-card-placeholder-background: var(--secondary-background);
+  --modal-card-placeholder-background: var(--color-charcoal-700);
   --modal-card-tag-background: var(--color-ash-800);
   --modal-card-tag-foreground: var(--base-foreground);
   --modal-panel-background: var(--color-charcoal-600);
