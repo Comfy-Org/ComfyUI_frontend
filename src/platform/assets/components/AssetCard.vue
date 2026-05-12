@@ -146,18 +146,14 @@ import Button from '@/components/ui/button/Button.vue'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
-import { getAssetCardTitle } from '@/platform/assets/utils/assetMetadataUtils'
+import {
+  getAssetCardTitle,
+  stripModelFilename
+} from '@/platform/assets/utils/assetMetadataUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
-
-function stripModelFilename(name: string): string {
-  const filename = name.split('/').pop() ?? name
-  return filename
-    .replace(/\.(safetensors|ckpt|pt|pth|bin|gguf|sft|onnx)$/i, '')
-    .trim()
-}
 
 const { asset, interactive, focused } = defineProps<{
   asset: AssetDisplayItem
