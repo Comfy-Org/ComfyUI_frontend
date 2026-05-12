@@ -55,10 +55,11 @@ const GENERATED_JOBS: JobEntry[] = [
 test.describe('Assets sidebar actions', () => {
   test.beforeEach(async ({ comfyPage, assetScenario }) => {
     await assetScenario.mockGeneratedHistory(GENERATED_JOBS)
+    await assetScenario.mockImportedFiles([])
     await comfyPage.setup()
   })
 
-  test('shows selection footer actions after selecting an asset', async ({
+  test('shows selection footer actions after selecting a multi-output asset', async ({
     comfyPage
   }) => {
     const tab = comfyPage.menu.assetsTab
@@ -143,7 +144,9 @@ test.describe('Assets sidebar actions', () => {
     await expect(comfyPage.confirmDialog.root).toBeHidden()
     await expect(tab.assetCards).toHaveCount(initialCount - 1)
     await expect(
-      comfyPage.page.locator('.p-toast-message-success')
+      comfyPage.page
+        .getByRole('alert')
+        .filter({ hasText: 'Asset deleted successfully' })
     ).toBeVisible()
   })
 })
