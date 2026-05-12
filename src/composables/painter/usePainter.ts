@@ -412,6 +412,10 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
 
     isDrawing = true
     isDirty.value = true
+    console.warn('[painter] startStroke: isDirty=true', {
+      nodeId,
+      modelValue: modelValue.value
+    })
     snapshotBrush()
     strokeProcessor = new StrokeProcessor(Math.max(1, strokeBrush!.radius / 2))
     strokeProcessor.addPoint(point)
@@ -515,6 +519,9 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
     // combined with a stale `modelValue` would resurrect the previously
     // uploaded mask on the next serialize.
     modelValue.value = ''
+    console.warn('[painter] handleClear: canvas cleared, modelValue=""', {
+      nodeId
+    })
   }
 
   function updateCursorPos(e: PointerEvent) {
@@ -638,7 +645,23 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
 
   async function serializeValue(): Promise<string> {
     const el = canvasEl.value
-    if (!el) return modelValue.value
+    if (!el) {
+      console.warn('[painter] serializeValue: no canvas el', {
+        nodeId,
+        modelValue: modelValue.value
+      })
+      return modelValue.value
+    }
+
+    const pixelEmpty = isCanvasPixelEmpty(el)
+    console.warn('[painter] serializeValue: entry', {
+      nodeId,
+      isDirty: isDirty.value,
+      modelValue: modelValue.value,
+      pixelEmpty,
+      canvasW: el.width,
+      canvasH: el.height
+    })
 
     // Authoritative emptiness check: read actual pixel data instead of
     // relying on the `isDirty` flag, which can desync from canvas content
@@ -647,12 +670,30 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
     // When the canvas is empty, defer to `modelValue` so a workflow-restored
     // mask reference (or a pending image-restore) survives. `handleClear`
     // explicitly resets `modelValue` so a user-initiated clear still yields ''.
-    if (isCanvasPixelEmpty(el)) return modelValue.value
+    if (pixelEmpty) {
+      console.warn(
+        '[painter] serializeValue: canvas pixel-empty → return modelValue',
+        {
+          nodeId,
+          modelValue: modelValue.value
+        }
+      )
+      return modelValue.value
+    }
 
     // Canvas has visible content. If we already uploaded this exact content
     // (no new strokes since last successful upload) and the cached value is
     // valid, reuse it to avoid redundant uploads.
-    if (!isDirty.value && modelValue.value) return modelValue.value
+    if (!isDirty.value && modelValue.value) {
+      console.warn(
+        '[painter] serializeValue: !isDirty && modelValue → reuse cached',
+        {
+          nodeId,
+          modelValue: modelValue.value
+        }
+      )
+      return modelValue.value
+    }
 
     const blob = await new Promise<Blob | null>((resolve) =>
       el.toBlob(resolve, 'image/png')
@@ -706,6 +747,11 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
       : `painter/${data.name} [temp]`
     modelValue.value = result
     isDirty.value = false
+    console.warn('[painter] serializeValue: upload OK', {
+      nodeId,
+      result,
+      isDirtyAfter: isDirty.value
+    })
     return result
   }
 
@@ -732,6 +778,11 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
     const url = api.apiURL('/view?' + params.toString())
     const img = new Image()
     img.crossOrigin = 'anonymous'
+    console.warn('[painter] restoreCanvas: start loading', {
+      nodeId,
+      url,
+      modelValue: modelValue.value
+    })
     img.onload = () => {
       const el = canvasEl.value
       if (!el) return
@@ -739,9 +790,21 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
       canvasHeight.value = img.naturalHeight
       mainCtx = null
       getCtx()?.drawImage(img, 0, 0)
+      const isDirtyBefore = isDirty.value
       isDirty.value = false
+      console.warn(
+        '[painter] restoreCanvas: onload → drawImage + isDirty=false',
+        {
+          nodeId,
+          isDirtyBefore,
+          modelValue: modelValue.value
+        }
+      )
     }
     img.onerror = () => {
+      console.warn('[painter] restoreCanvas: onerror → modelValue=""', {
+        nodeId
+      })
       modelValue.value = ''
     }
     img.src = url
@@ -763,6 +826,10 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
   watch(backgroundColor, syncBackgroundColorToWidget)
 
   function initialize() {
+    console.warn('[painter] mounted / initialize', {
+      nodeId,
+      modelValue: modelValue.value
+    })
     syncCanvasSizeFromWidgets()
     resizeCanvas()
     registerWidgetSerialization()
@@ -774,6 +841,11 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
   onMounted(initialize)
 
   onUnmounted(() => {
+    console.warn('[painter] unmounted', {
+      nodeId,
+      modelValue: modelValue.value,
+      isDirty: isDirty.value
+    })
     if (rafId) {
       cancelAnimationFrame(rafId)
       rafId = null
