@@ -64,10 +64,11 @@ export function useRemoteWidget<
   const { remoteConfig, defaultValue, node, widget } = options
   const descriptor = createDescriptor(remoteConfig)
   const queryClient = getAppQueryClient()
-  const queryKey = remoteOptionKeys.byRoute(descriptor, {
-    userId: useAuthStore().userId ?? null,
-    workspaceId: null
-  })
+  const getQueryKey = () =>
+    remoteOptionKeys.byRoute(descriptor, {
+      userId: useAuthStore().userId ?? null,
+      workspaceId: null
+    })
 
   let isLoaded = false
   let refreshQueued = false
@@ -76,7 +77,7 @@ export function useRemoteWidget<
   const fetchValue = async (): Promise<T> => {
     try {
       const data = await queryClient.fetchQuery({
-        queryKey,
+        queryKey: getQueryKey(),
         queryFn: ({ signal }) => fetchRemoteWidgetData(descriptor, signal),
         staleTime: remoteConfig.refresh,
         retry: (failureCount, error) =>
@@ -86,7 +87,8 @@ export function useRemoteWidget<
       cachedValue = (data ?? defaultValue) as T
       return cachedValue
     } catch (err) {
-      console.error('useRemoteWidget fetch failed', err)
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      console.warn('Remote widget fetch failed:', message)
       cachedValue = (cachedValue ?? defaultValue) as T
       return cachedValue
     }
@@ -120,7 +122,7 @@ export function useRemoteWidget<
 
   function getCachedValue(): T {
     if (cachedValue !== undefined) return cachedValue
-    const fromQuery = queryClient.getQueryData<T>(queryKey)
+    const fromQuery = queryClient.getQueryData<T>(getQueryKey())
     if (fromQuery !== undefined) {
       cachedValue = fromQuery
       return fromQuery
@@ -146,7 +148,7 @@ export function useRemoteWidget<
 
   widget.refresh = function () {
     refreshQueued = true
-    void queryClient.invalidateQueries({ queryKey }).then(() => {
+    void queryClient.invalidateQueries({ queryKey: getQueryKey() }).then(() => {
       getValue()
     })
   }
@@ -192,6 +194,6 @@ export function useRemoteWidget<
     getValue,
     refreshValue: widget.refresh,
     addRefreshButton,
-    queryKey
+    getQueryKey
   }
 }

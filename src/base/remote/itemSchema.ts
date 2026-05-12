@@ -34,10 +34,11 @@ function resolvePreviewUrl(
   baseUrl?: string
 ): string | undefined {
   if (!raw) return undefined
+  const lowered = raw.toLowerCase()
   if (
     ABSOLUTE_URL_REGEX.test(raw) ||
-    raw.startsWith(DATA_URL_PREFIX) ||
-    raw.startsWith(BLOB_URL_PREFIX)
+    lowered.startsWith(DATA_URL_PREFIX) ||
+    lowered.startsWith(BLOB_URL_PREFIX)
   ) {
     return raw
   }

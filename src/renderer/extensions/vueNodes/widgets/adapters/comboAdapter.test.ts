@@ -25,52 +25,45 @@ describe('comboAdapter.extractProps', () => {
 
   it('detects video', () => {
     expect(
-      comboAdapter.extractProps(makeSpec({ video_upload: true } as never))
-        .assetKind
+      comboAdapter.extractProps(makeSpec({ video_upload: true })).assetKind
     ).toBe('video')
   })
 
   it('detects image (image_upload)', () => {
     expect(
-      comboAdapter.extractProps(makeSpec({ image_upload: true } as never))
-        .assetKind
+      comboAdapter.extractProps(makeSpec({ image_upload: true })).assetKind
     ).toBe('image')
   })
 
   it('detects image (animated_image_upload)', () => {
     expect(
-      comboAdapter.extractProps(
-        makeSpec({ animated_image_upload: true } as never)
-      ).assetKind
+      comboAdapter.extractProps(makeSpec({ animated_image_upload: true }))
+        .assetKind
     ).toBe('image')
   })
 
   it('detects audio', () => {
     expect(
-      comboAdapter.extractProps(makeSpec({ audio_upload: true } as never))
-        .assetKind
+      comboAdapter.extractProps(makeSpec({ audio_upload: true })).assetKind
     ).toBe('audio')
   })
 
   it('detects mesh and forces uploadFolder=input', () => {
-    const props = comboAdapter.extractProps(
-      makeSpec({ mesh_upload: true } as never)
-    )
+    const props = comboAdapter.extractProps(makeSpec({ mesh_upload: true }))
     expect(props.assetKind).toBe('mesh')
     expect(props.uploadFolder).toBe('input')
   })
 
   it('respects image_folder for non-mesh', () => {
     const props = comboAdapter.extractProps(
-      makeSpec({ image_upload: true, image_folder: 'output' } as never)
+      makeSpec({ image_upload: true, image_folder: 'output' })
     )
     expect(props.uploadFolder).toBe('output')
   })
 
   it('flags allowUpload when any *_upload is true', () => {
     expect(
-      comboAdapter.extractProps(makeSpec({ image_upload: true } as never))
-        .allowUpload
+      comboAdapter.extractProps(makeSpec({ image_upload: true })).allowUpload
     ).toBe(true)
     expect(comboAdapter.extractProps(makeSpec()).allowUpload).toBe(false)
   })

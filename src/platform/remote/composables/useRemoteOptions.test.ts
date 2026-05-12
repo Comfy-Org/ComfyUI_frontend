@@ -32,7 +32,7 @@ function createTestQueryClient() {
   })
 }
 
-function withSetup<T>(setup: () => T): T {
+function withSetup<T>(setup: () => T): { result: T; cleanup: () => void } {
   let result!: T
   const queryClient = createTestQueryClient()
   const app = createApp({
@@ -43,8 +43,14 @@ function withSetup<T>(setup: () => T): T {
   })
   app.use(createTestingPinia({ createSpy: vi.fn }))
   app.use(VueQueryPlugin, { queryClient })
-  app.mount(document.createElement('div'))
-  return result
+  const container = document.createElement('div')
+  app.mount(container)
+  return {
+    result,
+    cleanup: () => {
+      app.unmount()
+    }
+  }
 }
 
 const desc: RemoteRequestDescriptor = {
@@ -91,14 +97,18 @@ describe('useRemoteOptions', () => {
   it('returns disabled state when descriptor is null', async () => {
     const scope = effectScope()
     let result!: ReturnType<typeof useRemoteOptions>
+    let cleanup = () => {}
     scope.run(() => {
-      result = withSetup(() =>
+      const mounted = withSetup(() =>
         useRemoteOptions({
           descriptor: null
         })
       )
+      result = mounted.result
+      cleanup = mounted.cleanup
     })
     expect(result.isLoading.value).toBe(false)
+    cleanup()
     scope.stop()
   })
 })

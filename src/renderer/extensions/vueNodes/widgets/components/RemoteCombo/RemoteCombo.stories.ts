@@ -1,8 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { QueryClient } from '@tanstack/vue-query'
 import { ref, computed } from 'vue'
 import type { Ref } from 'vue'
-import { createI18n } from 'vue-i18n'
 
 import type { DropdownItemShape } from '@/base/remote/itemSchema'
 
@@ -18,26 +16,6 @@ import Root from './Root.vue'
 import Search from './Search.vue'
 import Trigger from './Trigger.vue'
 import type { RemoteComboContext } from './state'
-
-const messages = {
-  en: {
-    widgets: {
-      remoteCombo: {
-        loading: 'Loading...',
-        loadFailed: 'Failed to load options',
-        noResults: 'No results found',
-        refresh: 'Refresh options',
-        selectAriaLabel: 'Select {field}',
-        searchAriaLabel: 'Search {field}',
-        layoutSwitcherAriaLabel: 'Layout switcher',
-        layoutList: 'List view',
-        layoutGrid: 'Grid view'
-      },
-      uploadSelect: { placeholder: 'Select...' }
-    },
-    g: { search: 'Search' }
-  }
-}
 
 const sampleItems: DropdownItemShape[] = [
   { id: 'voice-1', name: 'Aria', description: 'Soft, warm female voice' },
@@ -98,17 +76,6 @@ const meta: Meta<StoryArgs> = {
     items: sampleItems,
     selected: undefined
   },
-  decorators: [
-    (story) => ({
-      components: { story },
-      setup() {
-        const queryClient = new QueryClient()
-        const i18n = createI18n({ legacy: false, locale: 'en', messages })
-        return { queryClient, i18n }
-      },
-      template: '<story />'
-    })
-  ],
   parameters: {
     docs: {
       description: {
@@ -156,10 +123,7 @@ const renderTemplate = (args: StoryArgs) => ({
       </Root>
       <Refresh :context="ctx" />
     </div>
-  `,
-  provide: {
-    [Symbol.for('vue-i18n')]: undefined
-  }
+  `
 })
 
 export const Default: Story = {
