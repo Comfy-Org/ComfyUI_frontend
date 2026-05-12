@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "description": "Official TypeScript extension API for ComfyUI custom nodes",
   "type": "module",
+  "types": "./build/index.d.ts",
   "exports": {
     ".": "./build/index.js"
   },
-  "types": "./build/index.d.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "tsc --emitDeclarationOnly --outDir build",

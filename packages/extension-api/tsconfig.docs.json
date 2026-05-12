@@ -10,9 +10,7 @@
       "@/*": ["../../src/*"]
     }
   },
-  "include": [
-    "../../src/extension-api/**/*.ts"
-  ],
+  "include": ["../../src/extension-api/**/*.ts"],
   "exclude": [
     "../../src/**/*.test.ts",
     "../../src/**/*.spec.ts",
