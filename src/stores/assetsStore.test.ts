@@ -3,10 +3,14 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
 
-import { useAssetsStore } from '@/stores/assetsStore'
-import { api } from '@/scripts/api'
-import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { assetService } from '@/platform/assets/services/assetService'
+import {
+  USER_MEDIA_ASSETS_CACHE_CATEGORY,
+  USER_MEDIA_ASSETS_CACHE_MAX_AGE_MS
+} from '@/platform/assets/constants/userMediaAssetsBrowse'
+import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { api } from '@/scripts/api'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 // Mock the api module
 vi.mock('@/scripts/api', () => ({
@@ -1119,6 +1123,121 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       expect(() =>
         store.invalidateModelsForCategory('unknown-category')
       ).not.toThrow()
+    })
+  })
+
+  describe('updateUserMediaAssetsForLibrary', () => {
+    beforeEach(() => {
+      vi.mocked(assetService.getAllAssetsByTag).mockResolvedValue([])
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('skips getAllAssetsByTag when warm, inside TTL, and not forced', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'))
+      const store = useAssetsStore()
+
+      await store.updateUserMediaAssetsForLibrary()
+      expect(vi.mocked(assetService.getAllAssetsByTag)).toHaveBeenCalledTimes(3)
+
+      vi.mocked(assetService.getAllAssetsByTag).mockClear()
+      vi.setSystemTime(
+        new Date(
+          new Date('2026-01-01T00:00:00.000Z').getTime() +
+            USER_MEDIA_ASSETS_CACHE_MAX_AGE_MS -
+            1000
+        )
+      )
+
+      await store.updateUserMediaAssetsForLibrary({ force: false })
+      expect(vi.mocked(assetService.getAllAssetsByTag)).not.toHaveBeenCalled()
+    })
+
+    it('fetches when forced even if inside TTL', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-06-01T12:00:00.000Z'))
+      const store = useAssetsStore()
+
+      await store.updateUserMediaAssetsForLibrary()
+      expect(vi.mocked(assetService.getAllAssetsByTag)).toHaveBeenCalledTimes(3)
+
+      vi.mocked(assetService.getAllAssetsByTag).mockClear()
+      vi.setSystemTime(
+        new Date(
+          new Date('2026-06-01T12:00:00.000Z').getTime() +
+            USER_MEDIA_ASSETS_CACHE_MAX_AGE_MS -
+            5000
+        )
+      )
+
+      await store.updateUserMediaAssetsForLibrary({ force: true })
+      expect(vi.mocked(assetService.getAllAssetsByTag)).toHaveBeenCalledTimes(3)
+    })
+
+    it('refetches when outside TTL without force', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      const start = new Date('2026-02-01T10:00:00.000Z')
+      vi.setSystemTime(start)
+      const store = useAssetsStore()
+
+      await store.updateUserMediaAssetsForLibrary()
+      expect(vi.mocked(assetService.getAllAssetsByTag)).toHaveBeenCalledTimes(3)
+
+      vi.mocked(assetService.getAllAssetsByTag).mockClear()
+      vi.setSystemTime(
+        new Date(start.getTime() + USER_MEDIA_ASSETS_CACHE_MAX_AGE_MS + 1000)
+      )
+
+      await store.updateUserMediaAssetsForLibrary({ force: false })
+      expect(vi.mocked(assetService.getAllAssetsByTag)).toHaveBeenCalledTimes(3)
+    })
+
+    it('fetches after invalidateCategory bypasses TTL', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-03-10T08:00:00.000Z'))
+      const store = useAssetsStore()
+
+      await store.updateUserMediaAssetsForLibrary()
+      expect(vi.mocked(assetService.getAllAssetsByTag)).toHaveBeenCalledTimes(3)
+
+      store.invalidateCategory(USER_MEDIA_ASSETS_CACHE_CATEGORY)
+
+      vi.mocked(assetService.getAllAssetsByTag).mockClear()
+      vi.setSystemTime(
+        new Date(
+          new Date('2026-03-10T08:00:00.000Z').getTime() +
+            USER_MEDIA_ASSETS_CACHE_MAX_AGE_MS -
+            5000
+        )
+      )
+
+      await store.updateUserMediaAssetsForLibrary({ force: false })
+      expect(vi.mocked(assetService.getAllAssetsByTag)).toHaveBeenCalledTimes(3)
+    })
+
+    it('refetches merged user media after tag edit touches merge tags', async () => {
+      const store = useAssetsStore()
+      const asset = createMockAsset('um-tag', ['input', 'models'])
+
+      vi.mocked(assetService.getAllAssetsByTag).mockResolvedValue([asset])
+      await store.updateUserMediaAssetsForLibrary()
+
+      vi.mocked(assetService.getAllAssetsByTag).mockClear()
+      vi.mocked(assetService.addAssetTags).mockResolvedValueOnce({
+        added: ['output'],
+        total_tags: ['input', 'models', 'output']
+      })
+
+      await store.updateAssetTags(
+        asset,
+        ['input', 'models', 'output'],
+        USER_MEDIA_ASSETS_CACHE_CATEGORY
+      )
+
+      expect(vi.mocked(assetService.getAllAssetsByTag)).toHaveBeenCalledTimes(3)
     })
   })
 

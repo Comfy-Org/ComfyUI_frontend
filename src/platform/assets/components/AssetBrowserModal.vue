@@ -67,7 +67,7 @@
         :empty-message
         @asset-focus="handleAssetFocus"
         @asset-select="handleAssetSelectAndEmit"
-        @asset-deleted="refreshAssets"
+        @asset-deleted="refreshAssets({ force: true })"
         @asset-show-info="handleShowInfo"
         @click="focusedAsset = null"
       />

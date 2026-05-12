@@ -58,12 +58,13 @@ export function useAssetLibraryBrowserShellState(
     () => isStoreLoading.value && fetchedAssets.value.length === 0
   )
 
-  async function refreshAssets(): Promise<void> {
+  async function refreshAssets(options?: { force?: boolean }) {
+    const force = options?.force ?? false
     if (props.overrideAssets) return
     if (props.nodeType) {
       await assetStore.updateModelsForNodeType(props.nodeType)
     } else if (props.assetType === USER_MEDIA_ASSETS_ASSET_TYPE) {
-      await assetStore.updateUserMediaAssetsForLibrary()
+      await assetStore.updateUserMediaAssetsForLibrary({ force })
     } else if (props.assetType) {
       await assetStore.updateModelsForTag(props.assetType)
     }
@@ -74,8 +75,13 @@ export function useAssetLibraryBrowserShellState(
   const { fetchModelTypes } = useModelTypes()
   void fetchModelTypes()
 
-  const { isUploadButtonEnabled, showUploadDialog } =
-    useModelUpload(refreshAssets)
+  const { isUploadButtonEnabled, showUploadDialog } = useModelUpload(
+    async () => {
+      await refreshAssets({
+        force: props.assetType === USER_MEDIA_ASSETS_ASSET_TYPE
+      })
+    }
+  )
 
   const {
     searchQuery,

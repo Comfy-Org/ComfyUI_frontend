@@ -7,6 +7,7 @@ import { createApp, defineComponent, h, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { USER_MEDIA_ASSETS_CACHE_CATEGORY } from '@/platform/assets/constants/userMediaAssetsBrowse'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
@@ -54,6 +55,7 @@ vi.mock('@/stores/dialogStore', () => ({
 }))
 
 const mockInvalidateModelsForCategory = vi.hoisted(() => vi.fn())
+const mockInvalidateCategory = vi.hoisted(() => vi.fn())
 const mockSetAssetDeleting = vi.hoisted(() => vi.fn())
 const mockUpdateHistory = vi.hoisted(() => vi.fn())
 const mockUpdateInputs = vi.hoisted(() => vi.fn())
@@ -64,6 +66,7 @@ vi.mock('@/stores/assetsStore', () => ({
     updateHistory: mockUpdateHistory,
     updateInputs: mockUpdateInputs,
     invalidateModelsForCategory: mockInvalidateModelsForCategory,
+    invalidateCategory: mockInvalidateCategory,
     hasCategory: mockHasCategory
   })
 }))
@@ -684,6 +687,7 @@ describe('useMediaAssetActions', () => {
       mockGetAssetType.mockReturnValue('input')
       mockDeleteAsset.mockResolvedValue(undefined)
       mockInvalidateModelsForCategory.mockClear()
+      mockInvalidateCategory.mockClear()
       mockSetAssetDeleting.mockClear()
       mockUpdateHistory.mockClear()
       mockUpdateInputs.mockClear()
@@ -716,6 +720,9 @@ describe('useMediaAssetActions', () => {
       expect(mockInvalidateModelsForCategory).toHaveBeenCalledWith(
         'checkpoints'
       )
+      expect(mockInvalidateCategory).not.toHaveBeenCalledWith(
+        USER_MEDIA_ASSETS_CACHE_CATEGORY
+      )
     })
 
     it('should invalidate multiple categories for multiple assets', async () => {
@@ -738,28 +745,40 @@ describe('useMediaAssetActions', () => {
         'checkpoints'
       )
       expect(mockInvalidateModelsForCategory).toHaveBeenCalledWith('loras')
-    })
-
-    it('should not invalidate model cache for non-model assets', async () => {
-      const actions = useMediaAssetActions()
-
-      const inputAsset = createMockAsset({
-        id: 'input-1',
-        name: 'image.png',
-        tags: ['input']
-      })
-
-      mockShowDialog.mockImplementation(
-        ({ props }: { props: { onConfirm: () => Promise<void> } }) => {
-          void props.onConfirm()
-        }
+      expect(mockInvalidateCategory).not.toHaveBeenCalledWith(
+        USER_MEDIA_ASSETS_CACHE_CATEGORY
       )
-
-      await actions.deleteAssets(inputAsset)
-
-      // 'input' tag is excluded, so no cache invalidation
-      expect(mockInvalidateModelsForCategory).not.toHaveBeenCalled()
     })
+
+    it.each([
+      { label: 'input', tags: ['input'] as string[] },
+      { label: 'output', tags: ['output'] as string[] },
+      { label: 'temp', tags: ['temp'] as string[] }
+    ])(
+      'invalidates merged user-media cache when deleting $label-tagged asset',
+      async ({ tags }) => {
+        const actions = useMediaAssetActions()
+
+        const asset = createMockAsset({
+          id: `asset-${tags[0]}`,
+          name: 'media.bin',
+          tags
+        })
+
+        mockShowDialog.mockImplementation(
+          ({ props }: { props: { onConfirm: () => Promise<void> } }) => {
+            void props.onConfirm()
+          }
+        )
+
+        await actions.deleteAssets(asset)
+
+        expect(mockInvalidateModelsForCategory).not.toHaveBeenCalled()
+        expect(mockInvalidateCategory).toHaveBeenCalledWith(
+          USER_MEDIA_ASSETS_CACHE_CATEGORY
+        )
+      }
+    )
 
     it('should only invalidate categories that exist in cache', async () => {
       const actions = useMediaAssetActions()
