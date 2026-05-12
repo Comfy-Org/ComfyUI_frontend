@@ -9,7 +9,15 @@
   "readme": "none",
   "skipErrorChecking": true,
   "githubPages": false,
-  "blockTags": ["@stability", "@packageDocumentation", "@example", "@typeParam", "@returns", "@deprecated", "@remarks"],
+  "blockTags": [
+    "@stability",
+    "@packageDocumentation",
+    "@example",
+    "@typeParam",
+    "@returns",
+    "@deprecated",
+    "@remarks"
+  ],
   "hideGenerator": true,
   "useCodeBlocks": true,
   "flattenOutputFiles": false,

@@ -24,8 +24,8 @@ on:
         type: boolean
 
 permissions:
-  contents: write   # needed to create GitHub Release
-  id-token: write   # needed for npm provenance via OIDC
+  contents: write # needed to create GitHub Release
+  id-token: write # needed for npm provenance via OIDC
 
 jobs:
   publish:
@@ -35,7 +35,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 0  # full history for release notes
+          fetch-depth: 0 # full history for release notes
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
