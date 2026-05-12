@@ -953,6 +953,50 @@
       }
     }
   },
+  "ByteDanceSeedreamNodeV2": {
+    "description": "Geração unificada de texto para imagem e edição precisa de frases únicas em até 4K de resolução.",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_fail_on_partial": {
+        "name": "falhar_em_parcial"
+      },
+      "model_height": {
+        "name": "altura"
+      },
+      "model_max_images": {
+        "name": "máx_imagens"
+      },
+      "model_size_preset": {
+        "name": "predefinição_de_tamanho"
+      },
+      "model_width": {
+        "name": "largura"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto para criar ou editar uma imagem."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente utilizada para a geração."
+      },
+      "watermark": {
+        "name": "marca d'água",
+        "tooltip": "Se deve adicionar uma marca d'água \"Gerado por IA\" à imagem."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceTextToVideoNode": {
     "description": "Gere vídeo usando modelos ByteDance via API com base no prompt",
     "display_name": "ByteDance Texto para Vídeo",
@@ -3432,6 +3476,37 @@
       }
     }
   },
+  "Flux2ImageNode": {
+    "description": "Gere imagens via Flux.2 [pro] ou Flux.2 [max] a partir de um prompt e imagens de referência opcionais.",
+    "display_name": "Flux.2 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_height": {
+        "name": "altura"
+      },
+      "model_width": {
+        "name": "largura"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt para a geração ou edição da imagem"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente aleatória usada para criar o ruído."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux2MaxImageNode": {
     "description": "Gera imagens de forma síncrona com base no prompt e na resolução.",
     "display_name": "Flux.2 [max] Imagem",
@@ -4447,6 +4522,40 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNodeV2": {
+    "description": "Modifique uma imagem existente com base em um prompt de texto",
+    "display_name": "Grok Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_aspect_ratio": {
+        "name": "proporção"
+      },
+      "model_number_of_images": {
+        "name": "número_de_imagens"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "O prompt de texto usado para gerar a imagem"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
       }
     },
     "outputs": {
@@ -11957,6 +12066,50 @@
       "size": {
         "name": "tamanho",
         "tooltip": "Tamanho da imagem"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV2": {
+    "description": "Gera imagens via endpoint GPT Image da OpenAI.",
+    "display_name": "OpenAI GPT Image 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_background": {
+        "name": "fundo"
+      },
+      "model_custom_height": {
+        "name": "altura_personalizada"
+      },
+      "model_custom_width": {
+        "name": "largura_personalizada"
+      },
+      "model_quality": {
+        "name": "qualidade"
+      },
+      "model_size": {
+        "name": "tamanho"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Quantas imagens gerar"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto para o GPT Image"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "ainda não implementado no backend"
       }
     },
     "outputs": {
