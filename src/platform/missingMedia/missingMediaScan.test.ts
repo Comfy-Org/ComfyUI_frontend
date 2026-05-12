@@ -204,7 +204,7 @@ describe('scanNodeMediaCandidates', () => {
     expect(result).toEqual([])
   })
 
-  it.each([
+  it.for([
     {
       nodeType: 'LoadImage',
       widgetName: 'image',
@@ -257,7 +257,7 @@ describe('scanNodeMediaCandidates', () => {
     }
   )
 
-  it.each([
+  it.for([
     {
       nodeType: 'LoadImage',
       widgetName: 'image',
