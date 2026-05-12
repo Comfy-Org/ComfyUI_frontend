@@ -106,7 +106,8 @@ export default defineConfig([
             'vite.electron.config.mts',
             'vite.types.config.mts',
             'packages/extension-api/scripts/build-docs.ts',
-            'packages/extension-api/vite.config.mts'
+            'packages/extension-api/vite.config.mts',
+            'vitest.extension-api.config.mts'
           ]
         }
       }
