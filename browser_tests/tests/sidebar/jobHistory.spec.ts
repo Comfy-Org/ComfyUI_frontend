@@ -1,9 +1,10 @@
-import type { Locator } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 import type { JobEntry } from '@comfyorg/ingest-types'
 
 import { assetScenarioFixture } from '@e2e/fixtures/assetScenarioFixture'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { createMockJob } from '@e2e/fixtures/utils/jobFixtures'
 
 const test = mergeTests(comfyPageFixture, assetScenarioFixture)
@@ -41,32 +42,17 @@ const HISTORY_JOBS: JobEntry[] = [
   })
 ]
 
-async function openOverlayMenu(comfyPage: {
-  page: {
-    getByTestId(id: string): Locator
-    getByLabel(label: string | RegExp): Locator
-  }
-}) {
-  await comfyPage.page.getByTestId('queue-overlay-toggle').click()
+async function openOverlayMenu(comfyPage: ComfyPage) {
+  await comfyPage.page.getByTestId(TestIds.queue.overlayToggle).click()
   await comfyPage.page
+    .getByTestId(TestIds.queue.overlay)
     .getByLabel(/More options/i)
-    .first()
     .click()
 }
 
-async function openDockedJobHistory(comfyPage: {
-  page: {
-    getByTestId(id: string): Locator
-    getByLabel(label: string | RegExp): Locator
-  }
-  menu: {
-    jobHistoryTab: {
-      searchInput: Locator
-    }
-  }
-}) {
+async function openDockedJobHistory(comfyPage: ComfyPage) {
   await openOverlayMenu(comfyPage)
-  await comfyPage.page.getByTestId('docked-job-history-action').click()
+  await comfyPage.page.getByTestId(TestIds.queue.dockedJobHistoryAction).click()
   await expect(comfyPage.menu.jobHistoryTab.searchInput).toBeVisible()
 }
 
@@ -110,12 +96,10 @@ test.describe('Job history sidebar', () => {
     await openDockedJobHistory(comfyPage)
 
     await tab.moreOptionsButton.click()
-    await comfyPage.page.getByTestId('clear-history-action').click()
+    await comfyPage.page.getByTestId(TestIds.queue.clearHistoryAction).click()
 
     await expect(comfyPage.confirmDialog.root).toBeVisible()
-    await comfyPage.confirmDialog.root
-      .getByRole('button', { name: 'Clear' })
-      .click()
+    await comfyPage.confirmDialog.click('clear')
 
     await expect(tab.jobRows).toHaveCount(0)
   })

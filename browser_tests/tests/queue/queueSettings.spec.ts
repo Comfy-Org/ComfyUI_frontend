@@ -57,7 +57,8 @@ test.describe('Queue settings', { tag: '@canvas' }, () => {
 
       test('limit query parameter on /api/jobs reflects the setting', async ({
         comfyPage,
-        getWebSocket
+        getWebSocket,
+        assetScenario
       }) => {
         const TARGET_LIMIT = 6
         await comfyPage.settings.setSetting(
@@ -65,7 +66,11 @@ test.describe('Queue settings', { tag: '@canvas' }, () => {
           TARGET_LIMIT
         )
 
-        const exec = new ExecutionHelper(comfyPage, await getWebSocket())
+        const exec = new ExecutionHelper(
+          comfyPage,
+          await getWebSocket(),
+          assetScenario
+        )
         const request = await captureNextHistoryRequest(comfyPage, exec)
         const url = new URL(request.url())
         expect(url.searchParams.get('limit')).toBe(String(TARGET_LIMIT))
@@ -74,7 +79,8 @@ test.describe('Queue settings', { tag: '@canvas' }, () => {
 
     test('queue panel caps history items to the configured number', async ({
       comfyPage,
-      getWebSocket
+      getWebSocket,
+      assetScenario
     }) => {
       // Add a mock route that returns all jobs regardless of the request's `limit` param
       const overflowJobs = createMockJobs(TOTAL_MOCK_JOBS)
@@ -111,7 +117,11 @@ test.describe('Queue settings', { tag: '@canvas' }, () => {
         MAX_HISTORY_ITEMS_SETTING,
         VISIBLE_LIMIT
       )
-      const exec = new ExecutionHelper(comfyPage, await getWebSocket())
+      const exec = new ExecutionHelper(
+        comfyPage,
+        await getWebSocket(),
+        assetScenario
+      )
       await captureNextHistoryRequest(comfyPage, exec)
 
       await comfyPage.page.getByTestId(TestIds.queue.overlayToggle).click()

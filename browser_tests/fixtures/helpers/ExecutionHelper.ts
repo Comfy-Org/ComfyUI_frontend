@@ -43,11 +43,13 @@ export class ExecutionHelper {
 
   constructor(
     comfyPage: ComfyPage,
-    private readonly ws?: WebSocketRoute
+    private readonly ws?: WebSocketRoute,
+    assetScenario?: AssetScenarioHelper
   ) {
     this.page = comfyPage.page
     this.command = comfyPage.command
-    this.assetScenario = new AssetScenarioHelper(comfyPage.page)
+    this.assetScenario =
+      assetScenario ?? new AssetScenarioHelper(comfyPage.page)
   }
 
   private requireWs(): WebSocketRoute {

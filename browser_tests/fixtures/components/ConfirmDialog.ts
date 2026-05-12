@@ -14,6 +14,7 @@ export class ConfirmDialog {
   public readonly reject: Locator
   public readonly confirm: Locator
   public readonly save: Locator
+  public readonly clear: Locator
 
   constructor(public readonly page: Page) {
     this.root = page.getByRole('dialog')
@@ -22,6 +23,7 @@ export class ConfirmDialog {
     this.reject = this.root.getByRole('button', { name: 'Cancel' })
     this.confirm = this.root.getByRole('button', { name: 'Confirm' })
     this.save = this.root.getByRole('button', { name: 'Save' })
+    this.clear = this.root.getByRole('button', { name: 'Clear' })
     this.noWarnOverwriteToggle = this.root.locator('#doNotAskAgain')
   }
 

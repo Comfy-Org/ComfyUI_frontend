@@ -535,6 +535,7 @@ test.describe('Assets sidebar - bulk actions', () => {
 
 test.describe('Assets sidebar - delete confirmation', () => {
   test.beforeEach(async ({ comfyPage, assetScenario }) => {
+    // mockGeneratedHistory also registers the /api/history delete route.
     await assetScenario.mockGeneratedHistory(SAMPLE_JOBS)
     await assetScenario.mockImportedFiles([])
     await comfyPage.setup()

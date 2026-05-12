@@ -1,6 +1,7 @@
 <template>
   <div
     v-show="isVisible"
+    data-testid="queue-overlay"
     :class="['flex', 'justify-end', 'w-full', 'pointer-events-none']"
   >
     <div

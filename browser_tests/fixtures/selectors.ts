@@ -212,7 +212,9 @@ export const TestIds = {
     currentUserIndicator: 'current-user-indicator'
   },
   queue: {
+    overlay: 'queue-overlay',
     overlayToggle: 'queue-overlay-toggle',
+    dockedJobHistoryAction: 'docked-job-history-action',
     jobDetailsPopover: 'queue-job-details-popover',
     clearHistoryAction: 'clear-history-action',
     jobAssetsList: 'job-assets-list',
