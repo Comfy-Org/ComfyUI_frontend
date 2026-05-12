@@ -201,8 +201,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         return false
       }
 
-      const parsedWorkspace = JSON.parse(workspaceJson)
-      const parseResult = WorkspaceWithRoleSchema.safeParse(parsedWorkspace)
+      const parseResult = WorkspaceWithRoleSchema.safeParse(
+        JSON.parse(workspaceJson)
+      )
 
       if (!parseResult.success) {
         clearSessionStorage()
