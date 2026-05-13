@@ -273,6 +273,46 @@ vi.mock('@/platform/support/config', () => ({
   buildSupportUrl: vi.fn(() => 'https://support.test.com')
 }))
 
+const mockFilterOutputNodes = vi.hoisted(() => vi.fn((): LGraphNode[] => []))
+vi.mock('@/utils/nodeFilterUtil', () => ({
+  filterOutputNodes: mockFilterOutputNodes
+}))
+
+const mockGetExecutionIdsForSelectedNodes = vi.hoisted(() =>
+  vi.fn((): number[] => [])
+)
+const mockGetAllNonIoNodesInSubgraph = vi.hoisted(() =>
+  vi.fn((): LGraphNode[] => [])
+)
+vi.mock('@/utils/graphTraversalUtil', () => ({
+  getAllNonIoNodesInSubgraph: mockGetAllNonIoNodesInSubgraph,
+  getExecutionIdsForSelectedNodes: mockGetExecutionIdsForSelectedNodes
+}))
+
+vi.mock('@/stores/queueStore', () => ({
+  useQueueSettingsStore: vi.fn(() => ({ batchCount: 1 })),
+  useQueueStore: vi.fn(() => ({})),
+  useQueueUIStore: vi.fn(() => ({}))
+}))
+
+const mockLGraphGroupInstance = vi.hoisted(() => ({
+  resizeTo: vi.fn(),
+  recomputeInsideNodes: vi.fn()
+}))
+const MockLGraphGroup = vi.hoisted(
+  () =>
+    function (this: typeof mockLGraphGroupInstance) {
+      Object.assign(this, mockLGraphGroupInstance)
+    }
+)
+vi.mock('@/lib/litegraph/src/litegraph', async () => {
+  const actual = await vi.importActual('@/lib/litegraph/src/litegraph')
+  return {
+    ...actual,
+    LGraphGroup: MockLGraphGroup
+  }
+})
+
 describe('useCoreCommands', () => {
   const createMockNode = (id: number, comfyClass: string): LGraphNode => {
     const baseNode = createMockLGraphNode({ id })
@@ -397,6 +437,10 @@ describe('useCoreCommands', () => {
 
     it('should preserve input/output nodes when clearing subgraph', async () => {
       app.canvas.subgraph = mockSubgraph
+      mockGetAllNonIoNodesInSubgraph.mockReturnValue([
+        mockSubgraph.nodes[2],
+        mockSubgraph.nodes[3]
+      ])
 
       await findCommand('Comfy.ClearWorkflow').function()
 
@@ -598,6 +642,18 @@ describe('useCoreCommands', () => {
         expect.objectContaining({ severity: 'error' })
       )
       expect(app.queuePrompt).not.toHaveBeenCalled()
+    })
+
+    it('should queue selected output nodes when valid selection exists', async () => {
+      const mockNode = createMockLGraphNode({ id: 1 })
+      mockSelectedItems.getSelectedNodes.mockReturnValue([mockNode])
+      mockFilterOutputNodes.mockReturnValue([mockNode])
+      mockGetExecutionIdsForSelectedNodes.mockReturnValue([1])
+
+      await findCommand('Comfy.QueueSelectedOutputNodes').function()
+
+      expect(app.queuePrompt).toHaveBeenCalledWith(0, 1, [1])
+      expect(mockTelemetry.trackWorkflowExecution).toHaveBeenCalled()
     })
   })
 
@@ -914,6 +970,18 @@ describe('useCoreCommands', () => {
       expect(mockToastStore.add).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
+    })
+
+    it('should create group when items are selected', async () => {
+      const mockNode = createMockLGraphNode({ id: 1 })
+      app.canvas.selectedItems = new Set([
+        mockNode
+      ]) as typeof app.canvas.selectedItems
+
+      await findCommand('Comfy.Graph.GroupSelectedNodes').function()
+
+      expect(mockLGraphGroupInstance.resizeTo).toHaveBeenCalled()
+      expect(app.canvas.graph!.add).toHaveBeenCalled()
     })
   })
 
