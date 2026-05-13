@@ -130,14 +130,14 @@ describe('TopBarHeader', () => {
   })
 
   describe('canvas transform buttons', () => {
-    it.each([
+    it.for([
       ['Rotate Left', 'rotateCounterclockwise'],
       ['Rotate Right', 'rotateClockwise'],
       ['Mirror Horizontal', 'mirrorHorizontal'],
       ['Mirror Vertical', 'mirrorVertical']
     ] as const)(
       'should call canvasTransform.%s when %s button is clicked',
-      async (label, method) => {
+      async ([label, method]) => {
         const user = userEvent.setup()
         renderHeader()
 
@@ -147,14 +147,14 @@ describe('TopBarHeader', () => {
       }
     )
 
-    it.each([
+    it.for([
       ['Rotate Left', 'rotateCounterclockwise', 'Rotate left failed:'],
       ['Rotate Right', 'rotateClockwise', 'Rotate right failed:'],
       ['Mirror Horizontal', 'mirrorHorizontal', 'Mirror horizontal failed:'],
       ['Mirror Vertical', 'mirrorVertical', 'Mirror vertical failed:']
     ] as const)(
       'should swallow and log errors from %s',
-      async (label, method, expectedMsg) => {
+      async ([label, method, expectedMsg]) => {
         const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
         mockCanvasTransform[method].mockRejectedValueOnce(new Error('boom'))
         const user = userEvent.setup()

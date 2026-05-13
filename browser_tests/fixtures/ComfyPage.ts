@@ -190,6 +190,9 @@ export class ComfyPage {
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
 
+  /** Whether the current test runs in Vue Nodes mode (initialized from `@vue-nodes` tag). */
+  public isVueNodes = false
+
   /** Test user ID for the current context */
   get id() {
     return this.userIds[comfyPageFixture.info().parallelIndex]
@@ -352,6 +355,12 @@ export class ComfyPage {
     await nextFrame(this.page)
   }
 
+  async idleFrames(count: number) {
+    for (let i = 0; i < count; i++) {
+      await this.nextFrame()
+    }
+  }
+
   async delay(ms: number) {
     return sleep(ms)
   }
@@ -461,6 +470,7 @@ const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 
 export const comfyPageFixture = base.extend<{
   initialFeatureFlags: Record<string, unknown>
+  initialSettings: Record<string, unknown>
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
   comfyFiles: ComfyFiles
@@ -468,6 +478,10 @@ export const comfyPageFixture = base.extend<{
   // Allows configuring feature flags for tests with before initial setup:
   // `test.use({ initialFeatureFlags: { my_flag: true } })`.
   initialFeatureFlags: [{}, { option: true }],
+  // Allows seeding user settings before initial page load:
+  // `test.use({ initialSettings: { 'Comfy.Locale': 'zh' } })`. Merged on top of
+  // the fixture's defaults so per-test values win.
+  initialSettings: [{}, { option: true }],
 
   page: async ({ page, browserName }, use) => {
     if (browserName !== 'chromium' || !COLLECT_COVERAGE) {
@@ -485,7 +499,11 @@ export const comfyPageFixture = base.extend<{
     await mcr.add(coverage)
   },
 
-  comfyPage: async ({ page, request, initialFeatureFlags }, use, testInfo) => {
+  comfyPage: async (
+    { page, request, initialFeatureFlags, initialSettings },
+    use,
+    testInfo
+  ) => {
     const comfyPage = new ComfyPage(page, request)
 
     const { parallelIndex } = testInfo
@@ -494,6 +512,7 @@ export const comfyPageFixture = base.extend<{
     comfyPage.userIds[parallelIndex] = userId
 
     const isVueNodes = testInfo.tags.includes('@vue-nodes')
+    comfyPage.isVueNodes = isVueNodes
 
     try {
       await comfyPage.setupSettings({
@@ -519,7 +538,8 @@ export const comfyPageFixture = base.extend<{
         // Disable errors tab to prevent missing model detection from
         // rendering error indicators on nodes during unrelated tests.
         'Comfy.RightSidePanel.ShowErrorsTab': false,
-        ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true })
+        ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true }),
+        ...initialSettings
       })
     } catch (e) {
       console.error(e)

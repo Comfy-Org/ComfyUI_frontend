@@ -5,6 +5,7 @@ import type { MaybeRefOrGetter, Ref } from 'vue'
 import { t } from '@/i18n'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import {
   filterItemByBaseModels,
   filterItemByOwnership
@@ -72,6 +73,14 @@ interface UseWidgetSelectItemsOptions {
 
 export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   const { modelValue, outputMediaAssets, assetData } = options
+
+  const missingMediaStore = useMissingMediaStore()
+  const missingMediaValues = computed<ReadonlySet<string>>(
+    () =>
+      new Set(
+        missingMediaStore.missingMediaCandidates?.map((c) => c.name) ?? []
+      )
+  )
 
   const filterSelected = ref('all')
   const filterOptions = computed<FilterOption[]>(() => {
@@ -177,12 +186,15 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
     const labelFn = toValue(options.getOptionLabel)
     const kind = toValue(options.assetKind)
-    return values.map((value, index) => ({
-      id: `input-${index}`,
-      preview_url: getMediaUrl(String(value), 'input', kind),
-      name: String(value),
-      label: getDisplayLabel(String(value), labelFn)
-    }))
+    const missing = missingMediaValues.value
+    return values
+      .filter((value) => !missing.has(String(value)))
+      .map((value, index) => ({
+        id: `input-${index}`,
+        preview_url: getMediaUrl(String(value), 'input', kind),
+        name: String(value),
+        label: getDisplayLabel(String(value), labelFn)
+      }))
   })
 
   const outputItems = computed<FormDropdownItem[]>(() => {
@@ -200,6 +212,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       return resolved ?? [asset]
     })
 
+    const missing = missingMediaValues.value
     for (const asset of assets) {
       if (getMediaTypeFromFilename(asset.name) !== targetMediaType) continue
       if (seen.has(asset.id)) continue
@@ -213,6 +226,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
         ? `${subfolder}/${filenameForUrl}`
         : filenameForUrl
       const annotatedPath = `${pathWithSubfolder} [output]`
+      if (missing.has(annotatedPath)) continue
       const displayLabel = `${getAssetDisplayFilename(asset)} [output]`
       items.push({
         id: `output-${asset.id}`,
@@ -233,6 +247,8 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     if (!currentValue) return undefined
     const labelFn = toValue(options.getOptionLabel)
     const kind = toValue(options.assetKind)
+
+    if (missingMediaValues.value.has(currentValue)) return undefined
 
     if (toValue(options.isAssetMode) && assetData) {
       const existsInAssets = assetData.assets.value.some(
