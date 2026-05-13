@@ -67,6 +67,26 @@ describe('BaseWidget store integration', () => {
       expect(widget.disabled).toBe(true)
       expect(widget.advanced).toBe(true)
     })
+
+    // ADR 0010: widget.hidden proxies to options.hidden to ensure
+    // Vue and canvas renderers see the same visibility state
+    it('syncs widget.hidden with options.hidden (ADR 0010)', () => {
+      const widget = createTestWidget(node, { options: { min: 0 } })
+
+      // Initially false
+      expect(widget.hidden).toBe(false)
+      expect(widget.options.hidden).toBeUndefined()
+
+      // Setting widget.hidden writes to options.hidden
+      widget.hidden = true
+      expect(widget.hidden).toBe(true)
+      expect(widget.options.hidden).toBe(true)
+
+      // Setting options.hidden is reflected in widget.hidden
+      widget.options.hidden = false
+      expect(widget.hidden).toBe(false)
+      expect(widget.options.hidden).toBe(false)
+    })
   })
 
   describe('metadata properties after registration', () => {
@@ -136,7 +156,8 @@ describe('BaseWidget store integration', () => {
       expect(state?.value).toBe(100)
       expect(state?.label).toBe('Auto Label')
       expect(state?.disabled).toBe(true)
-      expect(state?.options).toEqual({ min: 0, max: 100 })
+      // hidden is now proxied to options.hidden (ADR 0010)
+      expect(state?.options).toEqual({ min: 0, max: 100, hidden: true })
 
       expect(widget.hidden).toBe(true)
       expect(widget.advanced).toBe(true)
@@ -151,7 +172,8 @@ describe('BaseWidget store integration', () => {
       expect(state?.disabled).toBe(false)
       expect(state?.label).toBeUndefined()
 
-      expect(widget.hidden).toBeUndefined()
+      // hidden now returns false when not set (proxied to options.hidden, ADR 0010)
+      expect(widget.hidden).toBe(false)
       expect(widget.advanced).toBeUndefined()
     })
 
