@@ -52,12 +52,6 @@ export interface PromotedWidgetView extends IBaseWidget {
   ensureHostWidgetState(): void
 }
 
-export function getPromotedWidgetHostStateName(
-  widget: PromotedWidgetView
-): string {
-  return [widget.name, widget.sourceNodeId, widget.sourceWidgetName].join(':')
-}
-
 export function isPromotedWidgetView(
   widget: IBaseWidget
 ): widget is PromotedWidgetView {

@@ -23,18 +23,13 @@ import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
 import { hasWidgetNode } from '@/core/graph/subgraph/widgetNodeTypeGuard'
 import type { WidgetEntityId } from '@/world/entityIds'
 import { widgetEntityId } from '@/world/entityIds'
+import { ensureWidgetState, getWidgetState } from '@/world/widgetValueIO'
 
-import {
-  getPromotedWidgetHostStateName,
-  isPromotedWidgetView
-} from './promotedWidgetTypes'
+import { isPromotedWidgetView } from './promotedWidgetTypes'
 import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidgetTypes'
 
 export type { PromotedWidgetView } from './promotedWidgetTypes'
-export {
-  getPromotedWidgetHostStateName,
-  isPromotedWidgetView
-} from './promotedWidgetTypes'
+export { isPromotedWidgetView } from './promotedWidgetTypes'
 
 interface SubgraphSlotRef {
   name: string
@@ -230,11 +225,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   private getHostWidgetState(): WidgetState | undefined {
-    return useWidgetValueStore().getWidget(
-      this.graphId,
-      this.subgraphNode.id,
-      this.hostWidgetStateName
-    )
+    return getWidgetState(this.entityId)
   }
 
   private setHostWidgetState(value: IBaseWidget['value']): void {
@@ -251,9 +242,9 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
   /**
    * Idempotently register a host-scoped widget state seeded with the current
-   * effective value. Vue rendering reads from this entry (via `safeWidgetMapper`
-   * exposing the host-scoped `storeNodeId`/`storeName` for promoted widgets),
-   * so the entry must exist before first render even if migration has not run.
+   * effective value. Vue rendering reads from this entry keyed by
+   * {@link entityId}, so it must exist before first render even if migration
+   * has not run.
    */
   ensureHostWidgetState(): void {
     if (this.getHostWidgetState()) return
@@ -262,9 +253,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
   private registerHostWidgetState(value: IBaseWidget['value']): void {
     const resolved = this.resolveDeepest()
-    useWidgetValueStore().registerWidget(this.graphId, {
-      nodeId: this.subgraphNode.id,
-      name: this.hostWidgetStateName,
+    ensureWidgetState(this.entityId, {
       type: resolved?.widget.type ?? 'button',
       value,
       // Clone — never share the interior widget's options reference, or
@@ -275,10 +264,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
       serialize: this.serialize,
       disabled: this.computedDisabled
     })
-  }
-
-  private get hostWidgetStateName(): string {
-    return getPromotedWidgetHostStateName(this)
   }
 
   get label(): string | undefined {

@@ -34,7 +34,6 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import {
   createPromotedWidgetView,
-  getPromotedWidgetHostStateName,
   isPromotedWidgetView
 } from '@/core/graph/subgraph/promotedWidgetView'
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
@@ -48,7 +47,7 @@ import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { readWidgetValue } from '@/world/widgetValueIO'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
@@ -1168,16 +1167,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     serialized.properties = serializedProperties
 
-    const widgetStore = useWidgetValueStore()
     const widgetValues = this.inputs.flatMap((input) => {
       const widget = input._widget
       if (!widget || !isPromotedWidgetView(widget)) return []
-      const state = widgetStore.getWidget(
-        rootGraphId,
-        this.id,
-        getPromotedWidgetHostStateName(widget)
-      )
-      return [state && isWidgetValue(state.value) ? state.value : undefined]
+      const value = readWidgetValue(widget.entityId)
+      return [isWidgetValue(value) ? value : undefined]
     })
 
     if (widgetValues.some((value) => value !== undefined)) {

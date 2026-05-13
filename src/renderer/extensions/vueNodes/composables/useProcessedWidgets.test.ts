@@ -13,6 +13,9 @@ import {
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetEntityId } from '@/world/entityIds'
+
+const GRAPH_ID = 'graph-test'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
@@ -41,37 +44,19 @@ const createMockWidget = (
 })
 
 describe('getWidgetIdentity', () => {
-  it('returns stable dedupeIdentity for widgets with storeNodeId', () => {
-    const widget = createMockWidget({
-      storeNodeId: 'subgraph:19',
-      storeName: 'text',
-      slotName: 'text',
-      type: 'text'
-    })
+  it('keys dedupeIdentity by entityId and widget type', () => {
+    const entityId = widgetEntityId(GRAPH_ID, 'subgraph:19', 'text')
+    const widget = createMockWidget({ entityId, name: 'text', type: 'text' })
     const { dedupeIdentity, renderKey } = getWidgetIdentity(widget, '1', 0)
-    expect(dedupeIdentity).toBe('node:19:text:text:text')
+    expect(dedupeIdentity).toBe(`${entityId}:text`)
     expect(renderKey).toBe(dedupeIdentity)
   })
 
-  it('returns transient renderKey for widgets without stable identity', () => {
-    const widget = createMockWidget({
-      nodeId: undefined,
-      storeNodeId: undefined,
-      sourceExecutionId: undefined
-    })
+  it('falls back to a transient renderKey when no entityId is set', () => {
+    const widget = createMockWidget({ entityId: undefined })
     const { dedupeIdentity, renderKey } = getWidgetIdentity(widget, '5', 3)
     expect(dedupeIdentity).toBeUndefined()
-    expect(renderKey).toBe('transient:5:test_widget:test_widget:combo:3')
-  })
-
-  it('uses sourceExecutionId for identity when no nodeId', () => {
-    const widget = createMockWidget({
-      nodeId: undefined,
-      storeNodeId: undefined,
-      sourceExecutionId: '65:18'
-    })
-    const { dedupeIdentity } = getWidgetIdentity(widget, '1', 0)
-    expect(dedupeIdentity).toBe('exec:65:18:test_widget:test_widget:combo')
+    expect(renderKey).toBe('transient:5:test_widget:combo:3')
   })
 })
 
@@ -211,8 +196,7 @@ describe('computeProcessedWidgets borderStyle', () => {
       name: 'text',
       type: 'combo',
       nodeId: 'inner-subgraph:1',
-      storeNodeId: 'inner-subgraph:1',
-      storeName: 'text',
+      entityId: widgetEntityId(GRAPH_ID, 'inner-subgraph:1', 'text'),
       slotName: 'text',
       promotedLabel: 'Text'
     })
@@ -245,8 +229,7 @@ describe('computeProcessedWidgets borderStyle', () => {
       name: 'text',
       type: 'combo',
       nodeId: 'inner-subgraph:1',
-      storeNodeId: 'inner-subgraph:1',
-      storeName: 'text',
+      entityId: widgetEntityId(GRAPH_ID, 'inner-subgraph:1', 'text'),
       slotName: 'text'
     })
 
@@ -306,12 +289,12 @@ describe('computeProcessedWidgets borderStyle', () => {
   })
 
   it('deduplication keeps visible widget over hidden duplicate', () => {
+    const sharedEntityId = widgetEntityId(GRAPH_ID, '1', 'text')
     const hiddenWidget = createMockWidget({
       name: 'text',
       type: 'combo',
       nodeId: '1',
-      storeNodeId: '1',
-      storeName: 'text',
+      entityId: sharedEntityId,
       slotName: 'text',
       options: { hidden: true }
     })
@@ -320,8 +303,7 @@ describe('computeProcessedWidgets borderStyle', () => {
       name: 'text',
       type: 'combo',
       nodeId: '1',
-      storeNodeId: '1',
-      storeName: 'text',
+      entityId: sharedEntityId,
       slotName: 'text'
     })
 

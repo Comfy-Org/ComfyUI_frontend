@@ -12,6 +12,9 @@ import type {
 } from '@/composables/graph/useGraphNodeManager'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetEntityId } from '@/world/entityIds'
+
+const GRAPH_ID = 'graph-test'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
@@ -126,28 +129,35 @@ describe('NodeWidgets', () => {
   })
 
   it('deduplicates widgets with identical render identity while keeping distinct promoted sources', () => {
+    const duplicateEntityId = widgetEntityId(
+      GRAPH_ID,
+      '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
+      'string_a'
+    )
+    const distinctEntityId = widgetEntityId(
+      GRAPH_ID,
+      '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:20',
+      'string_a'
+    )
     const duplicateA = createMockWidget({
       name: 'string_a',
       type: 'text',
       nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
-      storeNodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
-      storeName: 'string_a',
+      entityId: duplicateEntityId,
       slotName: 'string_a'
     })
     const duplicateB = createMockWidget({
       name: 'string_a',
       type: 'text',
       nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
-      storeNodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
-      storeName: 'string_a',
+      entityId: duplicateEntityId,
       slotName: 'string_a'
     })
     const distinct = createMockWidget({
       name: 'string_a',
       type: 'text',
       nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:20',
-      storeNodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:20',
-      storeName: 'string_a',
+      entityId: distinctEntityId,
       slotName: 'string_a'
     })
     const nodeData = createMockNodeData('SubgraphNode', [
@@ -162,12 +172,16 @@ describe('NodeWidgets', () => {
   })
 
   it('prefers a visible duplicate over a hidden duplicate when identities collide', () => {
+    const sharedEntityId = widgetEntityId(
+      GRAPH_ID,
+      '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
+      'string_a'
+    )
     const hiddenDuplicate = createMockWidget({
       name: 'string_a',
       type: 'text',
       nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
-      storeNodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
-      storeName: 'string_a',
+      entityId: sharedEntityId,
       slotName: 'string_a',
       options: { hidden: true }
     })
@@ -175,8 +189,7 @@ describe('NodeWidgets', () => {
       name: 'string_a',
       type: 'text',
       nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
-      storeNodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
-      storeName: 'string_a',
+      entityId: sharedEntityId,
       slotName: 'string_a',
       options: { hidden: false }
     })
@@ -191,20 +204,23 @@ describe('NodeWidgets', () => {
   })
 
   it('does not deduplicate entries that share names but have different widget types', () => {
+    const sharedEntityId = widgetEntityId(
+      GRAPH_ID,
+      '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
+      'string_a'
+    )
     const textWidget = createMockWidget({
       name: 'string_a',
       type: 'text',
       nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
-      storeNodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
-      storeName: 'string_a',
+      entityId: sharedEntityId,
       slotName: 'string_a'
     })
     const comboWidget = createMockWidget({
       name: 'string_a',
       type: 'combo',
       nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
-      storeNodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
-      storeName: 'string_a',
+      entityId: sharedEntityId,
       slotName: 'string_a'
     })
     const nodeData = createMockNodeData('SubgraphNode', [
@@ -220,18 +236,14 @@ describe('NodeWidgets', () => {
   it('keeps unresolved same-name promoted entries distinct by source execution identity', () => {
     const firstTransientEntry = createMockWidget({
       nodeId: undefined,
-      storeNodeId: undefined,
       name: 'string_a',
-      storeName: 'string_a',
       slotName: 'string_a',
       type: 'text',
       sourceExecutionId: '65:18'
     })
     const secondTransientEntry = createMockWidget({
       nodeId: undefined,
-      storeNodeId: undefined,
       name: 'string_a',
-      storeName: 'string_a',
       slotName: 'string_a',
       type: 'text',
       sourceExecutionId: '65:19'
@@ -251,16 +263,14 @@ describe('NodeWidgets', () => {
       name: 'text',
       type: 'text',
       nodeId: 'outer-subgraph:1',
-      storeNodeId: 'outer-subgraph:1',
-      storeName: 'text',
+      entityId: widgetEntityId(GRAPH_ID, 'outer-subgraph:1', 'text'),
       slotName: 'text'
     })
     const secondPromoted = createMockWidget({
       name: 'text',
       type: 'text',
       nodeId: 'outer-subgraph:2',
-      storeNodeId: 'outer-subgraph:2',
-      storeName: 'text',
+      entityId: widgetEntityId(GRAPH_ID, 'outer-subgraph:2', 'text'),
       slotName: 'text'
     })
 

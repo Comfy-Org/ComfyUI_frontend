@@ -7,6 +7,7 @@ import { computed, nextTick, watch } from 'vue'
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { widgetEntityId } from '@/world/entityIds'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -440,8 +441,9 @@ describe('Nested promoted widget mapping', () => {
     expect(mappedWidget?.type).toBe('combo')
     // Promoted widgets read from a host-scoped store entry so per-host values
     // stay independent across SubgraphNode instances sharing the same subgraph.
-    expect(mappedWidget?.storeNodeId).toBe(String(subgraphNodeB.id))
-    expect(mappedWidget?.storeName).toBe('b_input:11:a_input')
+    expect(mappedWidget?.entityId).toBe(
+      widgetEntityId(graph.id, subgraphNodeB.id, 'b_input')
+    )
   })
 
   it('preserves distinct store identity for duplicate-named promoted widgets', () => {
@@ -475,13 +477,15 @@ describe('Nested promoted widget mapping', () => {
     const widgets = nodeData?.widgets
 
     expect(widgets).toHaveLength(2)
-    // Both promoted widgets live on the same host node, so storeNodeId is
-    // shared; storeName encodes the source identity to keep them distinct.
-    expect(widgets?.[0]?.storeNodeId).toBe(String(subgraphNode.id))
-    expect(widgets?.[1]?.storeNodeId).toBe(String(subgraphNode.id))
-    expect(widgets?.[0]?.storeName).toBe(`first_seed:${firstNode.id}:seed`)
-    expect(widgets?.[1]?.storeName).toBe(`second_seed:${secondNode.id}:seed`)
-    expect(widgets?.[0]?.storeName).not.toBe(widgets?.[1]?.storeName)
+    // Both promoted widgets live on the same host node; their entityIds use
+    // the distinct subgraph input names to keep them independent.
+    expect(widgets?.[0]?.entityId).toBe(
+      widgetEntityId(graph.id, subgraphNode.id, 'first_seed')
+    )
+    expect(widgets?.[1]?.entityId).toBe(
+      widgetEntityId(graph.id, subgraphNode.id, 'second_seed')
+    )
+    expect(widgets?.[0]?.entityId).not.toBe(widgets?.[1]?.entityId)
   })
 })
 

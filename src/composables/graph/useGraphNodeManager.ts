@@ -7,10 +7,7 @@ import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
-import {
-  getPromotedWidgetHostStateName,
-  isPromotedWidgetView
-} from '@/core/graph/subgraph/promotedWidgetTypes'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
 import {
   resolveConcretePromotedWidget,
@@ -69,9 +66,7 @@ export interface SafeWidgetData {
    */
   entityId?: WidgetEntityId
   nodeId?: NodeId
-  storeNodeId?: NodeId
   name: string
-  storeName?: string
   type: string
   /** Callback to invoke when widget value changes (wraps LiteGraph callback + triggerDraw) */
   callback?: ((value: unknown) => void) | undefined
@@ -339,23 +334,14 @@ function safeWidgetMapper(
         : undefined
       const name = sourceWidgetName ?? displayName
 
-      // Promoted widgets carry per-host values that the migration writes to a
-      // host-scoped store entry. Vue rendering must read from that same entry
-      // (not the shared interior key) for per-instance independence.
-      let storeNodeId: NodeId | undefined = nodeId
-      let storeName = sourceWidgetName
-      if (isPromotedWidgetView(widget)) {
-        widget.ensureHostWidgetState()
-        storeNodeId = String(node.id)
-        storeName = getPromotedWidgetHostStateName(widget)
-      }
+      // Promoted widgets carry per-host values keyed by `widget.entityId`.
+      // Seed the store entry so Vue rendering can read it on first render.
+      if (isPromotedWidgetView(widget)) widget.ensureHostWidgetState()
 
       return {
         entityId: widget.entityId,
         nodeId,
-        storeNodeId,
         name,
-        storeName,
         type: effectiveWidget.type,
         ...sharedEnhancements,
         callback,

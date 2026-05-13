@@ -1,9 +1,6 @@
 import * as Sentry from '@sentry/vue'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
-import {
-  getPromotedWidgetHostStateName,
-  isPromotedWidgetView
-} from '@/core/graph/subgraph/promotedWidgetTypes'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { t } from '@/i18n'
 import type {
   IContextMenuValue,
@@ -21,7 +18,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { readWidgetValue } from '@/world/widgetValueIO'
 
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
 
@@ -143,10 +140,7 @@ function applySubgraphInputOrder(
   const rows = subgraphNode.subgraph.inputs.map((input, index) => ({
     subgraphInput: input,
     hostInput: subgraphNode.inputs[index],
-    value: getExplicitHostWidgetValue(
-      subgraphNode,
-      subgraphNode.inputs[index]?._widget
-    )
+    value: getExplicitHostWidgetValue(subgraphNode.inputs[index]?._widget)
   }))
 
   const orderedRows = orderedIndices.flatMap((index) => rows[index] ?? [])
@@ -177,18 +171,13 @@ function applySubgraphInputOrder(
 }
 
 function getExplicitHostWidgetValue(
-  subgraphNode: SubgraphNode,
   widget: IBaseWidget | undefined
 ): IBaseWidget['value'] | undefined {
   if (!widget) return undefined
   if (!isPromotedWidgetView(widget)) return widget.value
 
-  const state = useWidgetValueStore().getWidget(
-    subgraphNode.rootGraph.id,
-    subgraphNode.id,
-    getPromotedWidgetHostStateName(widget)
-  )
-  return state && isWidgetValue(state.value) ? state.value : undefined
+  const value = readWidgetValue(widget.entityId)
+  return isWidgetValue(value) ? value : undefined
 }
 
 function isSamePromotedWidget(left: IBaseWidget, right: IBaseWidget): boolean {
