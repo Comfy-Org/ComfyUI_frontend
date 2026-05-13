@@ -143,27 +143,12 @@ export interface NodeModeChangedEvent {
 /**
  * Payload for `node.on('beforeSerialize', handler)`.
  *
- * The node-level equivalent of `WidgetBeforeSerializeEvent`. Replaces both
- * `node.onSerialize` and `nodeType.prototype.serialize` patching patterns
- * (v1 S2.N6, S2.N15 touch-points).
- *
- * Mutate `event.data` in place to append extra fields (replaces `onSerialize`).
- * Call `event.replace(fn)` to wrap the entire serialized object (replaces
- * `prototype.serialize = function(){ const r = orig.call(this); … }`).
+ * @deprecated Node-level serialization control will be removed in v1.0.
+ * Use widget-level `widget.on('beforeSerialize')` instead. Store extension
+ * state in widgets rather than arbitrary node fields.
+ * See ADR-0010 for migration guidance.
  *
  * @stability experimental
- * @example
- * ```ts
- * // Append a field
- * node.on('beforeSerialize', (e) => {
- *   e.data['my_extra'] = computeExtra()
- * })
- *
- * // Wrap the serialized object
- * node.on('beforeSerialize', (e) => {
- *   e.replace((orig) => ({ ...orig, wrapped: true }))
- * })
- * ```
  */
 export interface NodeBeforeSerializeEvent {
   /** Which serialization path triggered this. */
@@ -488,8 +473,9 @@ export interface NodeHandle {
   /**
    * Subscribe to node serialization. Async-capable.
    *
-   * Replaces `nodeType.prototype.onSerialize` and `nodeType.prototype.serialize`
-   * patching patterns. Collapses four v1 serialization surfaces to one.
+   * @deprecated Node-level serialization control will be removed in v1.0.
+   * Use widget-level `widget.on('beforeSerialize')` instead — store extension
+   * state in widgets rather than arbitrary node fields. See ADR-0010.
    *
    * @returns A cleanup function to remove the listener.
    * @stability experimental
