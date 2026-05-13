@@ -20,6 +20,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0008](0008-entity-component-system.md)                    | Entity Component System                    | Proposed | 2026-03-23 |
 | [0010](0010-deprecate-node-level-serialization-control.md) | Deprecate Node-Level Serialization Control | Accepted | 2026-05-12 |
 | [0011](0011-immutability-via-fresh-copies.md)              | Immutability Enforcement via Fresh Copies  | Accepted | 2026-05-12 |
+| [0012](0012-pure-function-loader-pattern.md)               | Pure Function Loader Pattern               | Accepted | 2026-05-12 |
 
 ## Creating a New ADR
 
