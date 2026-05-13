@@ -4,7 +4,6 @@ export enum NodeSourceType {
   Core = 'core',
   CustomNodes = 'custom_nodes',
   Blueprint = 'blueprint',
-  Essentials = 'essentials',
   Unknown = 'unknown'
 }
 export const CORE_NODE_MODULES = ['nodes', 'comfy_extras', 'comfy_api_nodes']
@@ -29,24 +28,12 @@ function shortenNodeName(name: string) {
     .replace(/(-ComfyUI|_ComfyUI|-Comfy|_Comfy)$/, '')
 }
 
-export function getNodeSource(
-  python_module?: string,
-  essentials_category?: string
-): NodeSource {
+export function getNodeSource(python_module?: string): NodeSource {
   if (!python_module) {
     return UNKNOWN_NODE_SOURCE
   }
   const modules = python_module.split('.')
-  if (essentials_category) {
-    const moduleName = modules[1] ?? modules[0] ?? 'essentials'
-    const displayName = shortenNodeName(moduleName.split('@')[0])
-    return {
-      type: NodeSourceType.Essentials,
-      className: 'comfy-essentials',
-      displayText: displayName,
-      badgeText: displayName
-    }
-  } else if (CORE_NODE_MODULES.includes(modules[0])) {
+  if (CORE_NODE_MODULES.includes(modules[0])) {
     return {
       type: NodeSourceType.Core,
       className: 'comfy-core',
@@ -80,10 +67,6 @@ export function getNodeSource(
 
 interface NodeDefLike {
   nodeSource: NodeSource
-}
-
-export function isEssentialNode(node: NodeDefLike): boolean {
-  return node.nodeSource.type === NodeSourceType.Essentials
 }
 
 export function isCustomNode(node: NodeDefLike): boolean {
