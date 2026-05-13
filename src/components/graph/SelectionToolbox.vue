@@ -7,6 +7,7 @@
     <Transition name="slide-up">
       <Panel
         v-if="visible"
+        data-testid="selection-toolbox"
         class="selection-toolbox pointer-events-auto rounded-lg border border-interface-stroke bg-interface-panel-surface"
         :pt="{
           header: 'hidden',

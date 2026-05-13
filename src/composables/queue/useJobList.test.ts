@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { render } from '@testing-library/vue'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { nextTick, reactive, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -184,14 +184,14 @@ const createTask = (
 
 const mountUseJobList = () => {
   let composable: ReturnType<typeof useJobList>
-  const wrapper = mount({
+  const result = render({
     template: '<div />',
     setup() {
       composable = useJobList()
       return {}
     }
   })
-  return { wrapper, composable: composable! }
+  return { ...result, composable: composable! }
 }
 
 const resetStores = () => {
@@ -230,27 +230,27 @@ const flush = async () => {
 }
 
 describe('useJobList', () => {
-  let wrapper: ReturnType<typeof mount> | null = null
+  let unmount: (() => void) | null = null
   let api: ReturnType<typeof useJobList> | null = null
 
   beforeEach(() => {
     vi.resetAllMocks()
     resetStores()
-    wrapper?.unmount()
-    wrapper = null
+    unmount?.()
+    unmount = null
     api = null
   })
 
   afterEach(() => {
-    wrapper?.unmount()
-    wrapper = null
+    unmount?.()
+    unmount = null
     api = null
     vi.useRealTimers()
   })
 
   const initComposable = () => {
     const mounted = mountUseJobList()
-    wrapper = mounted.wrapper
+    unmount = mounted.unmount
     api = mounted.composable
     return api!
   }
@@ -321,8 +321,8 @@ describe('useJobList', () => {
     await flush()
     expect(vi.getTimerCount()).toBeGreaterThan(0)
 
-    wrapper?.unmount()
-    wrapper = null
+    unmount?.()
+    unmount = null
     await flush()
     expect(vi.getTimerCount()).toBe(0)
   })

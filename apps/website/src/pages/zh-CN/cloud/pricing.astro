@@ -1,0 +1,10 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import PriceSection from '../../../components/pricing/PriceSection.vue'
+import WhatsIncludedSection from '../../../components/pricing/WhatsIncludedSection.vue'
+---
+
+<BaseLayout title="定价 — Comfy Cloud">
+  <PriceSection locale="zh-CN" client:load />
+  <WhatsIncludedSection locale="zh-CN" />
+</BaseLayout>

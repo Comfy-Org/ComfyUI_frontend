@@ -4,19 +4,17 @@ import { ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import type {
   FilterOption,
   OwnershipFilterOption,
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import FormSearchInput from '../FormSearchInput.vue'
 import type { LayoutMode, SortOption } from './types'
 
 const { t } = useI18n()
-const overlayProps = useTransformCompatOverlayProps()
 
 defineProps<{
   sortOptions: SortOption[]
@@ -115,6 +113,8 @@ function toggleBaseModelSelection(item: FilterOption) {
 
     <Button
       ref="sortTriggerRef"
+      :aria-label="t('assetBrowser.sortBy')"
+      :title="t('assetBrowser.sortBy')"
       variant="textonly"
       size="icon"
       :class="
@@ -135,7 +135,6 @@ function toggleBaseModelSelection(item: FilterOption) {
       ref="sortPopoverRef"
       :dismissable="true"
       :close-on-escape="true"
-      :append-to="overlayProps.appendTo"
       unstyled
       :pt="{
         root: {
@@ -198,7 +197,6 @@ function toggleBaseModelSelection(item: FilterOption) {
       ref="ownershipPopoverRef"
       :dismissable="true"
       :close-on-escape="true"
-      :append-to="overlayProps.appendTo"
       unstyled
       :pt="{
         root: {
@@ -261,7 +259,6 @@ function toggleBaseModelSelection(item: FilterOption) {
       ref="baseModelPopoverRef"
       :dismissable="true"
       :close-on-escape="true"
-      :append-to="overlayProps.appendTo"
       unstyled
       :pt="{
         root: {
@@ -317,6 +314,8 @@ function toggleBaseModelSelection(item: FilterOption) {
       "
     >
       <Button
+        :aria-label="t('assetBrowser.listView')"
+        :title="t('assetBrowser.listView')"
         variant="textonly"
         size="unset"
         :class="
@@ -330,6 +329,8 @@ function toggleBaseModelSelection(item: FilterOption) {
         <i class="icon-[lucide--list] size-4" />
       </Button>
       <Button
+        :aria-label="t('assetBrowser.gridView')"
+        :title="t('assetBrowser.gridView')"
         variant="textonly"
         size="unset"
         :class="

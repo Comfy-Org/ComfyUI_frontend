@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 
-import { BaseDialog } from './BaseDialog'
+import { BaseDialog } from '@e2e/fixtures/components/BaseDialog'
 
 export class SignInDialog extends BaseDialog {
   readonly emailInput: Locator
@@ -10,6 +10,17 @@ export class SignInDialog extends BaseDialog {
   readonly apiKeyButton: Locator
   readonly termsLink: Locator
   readonly privacyLink: Locator
+  readonly heading: Locator
+  readonly signUpLink: Locator
+  readonly signInLink: Locator
+  readonly signUpEmailInput: Locator
+  readonly signUpPasswordInput: Locator
+  readonly signUpConfirmPasswordInput: Locator
+  readonly signUpButton: Locator
+  readonly apiKeyHeading: Locator
+  readonly apiKeyInput: Locator
+  readonly backButton: Locator
+  readonly dividerText: Locator
 
   constructor(page: Page) {
     super(page)
@@ -22,6 +33,22 @@ export class SignInDialog extends BaseDialog {
     })
     this.termsLink = this.root.getByRole('link', { name: 'Terms of Use' })
     this.privacyLink = this.root.getByRole('link', { name: 'Privacy Policy' })
+    this.heading = this.root.getByRole('heading').first()
+    this.signUpLink = this.root.getByText('Sign up', { exact: true })
+    this.signInLink = this.root.getByText('Sign in', { exact: true })
+    this.signUpEmailInput = this.root.locator('#comfy-org-sign-up-email')
+    this.signUpPasswordInput = this.root.locator('#comfy-org-sign-up-password')
+    this.signUpConfirmPasswordInput = this.root.locator(
+      '#comfy-org-sign-up-confirm-password'
+    )
+    this.signUpButton = this.root.getByRole('button', {
+      name: 'Sign up',
+      exact: true
+    })
+    this.apiKeyHeading = this.root.getByRole('heading', { name: 'API Key' })
+    this.apiKeyInput = this.root.locator('#comfy-org-api-key')
+    this.backButton = this.root.getByRole('button', { name: 'Back' })
+    this.dividerText = this.root.getByText('Or continue with')
   }
 
   async open() {
@@ -31,47 +58,11 @@ export class SignInDialog extends BaseDialog {
     await this.waitForVisible()
   }
 
-  get heading() {
-    return this.root.getByRole('heading').first()
-  }
-
-  get signUpLink() {
-    return this.root.getByText('Sign up', { exact: true })
-  }
-
-  get signInLink() {
-    return this.root.getByText('Sign in', { exact: true })
-  }
-
-  get signUpEmailInput() {
-    return this.root.locator('#comfy-org-sign-up-email')
-  }
-
-  get signUpPasswordInput() {
-    return this.root.locator('#comfy-org-sign-up-password')
-  }
-
-  get signUpConfirmPasswordInput() {
-    return this.root.locator('#comfy-org-sign-up-confirm-password')
-  }
-
-  get signUpButton() {
-    return this.root.getByRole('button', { name: 'Sign up', exact: true })
-  }
-
-  get apiKeyHeading() {
-    return this.root.getByRole('heading', { name: 'API Key' })
-  }
-
-  get apiKeyInput() {
-    return this.root.locator('#comfy-org-api-key')
-  }
-
-  get backButton() {
-    return this.root.getByRole('button', { name: 'Back' })
-  }
-
-  get dividerText() {
-    return this.root.getByText('Or continue with')
+  async openWithResult(): Promise<{ result: Promise<boolean> }> {
+    const result = this.page.evaluate(() =>
+      window.app!.extensionManager.dialog.showSignInDialog()
+    )
+    await this.waitForVisible()
+    return { result }
   }
 }

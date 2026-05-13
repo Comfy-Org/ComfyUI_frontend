@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -20,7 +20,7 @@ function createMockSubgraph(id: string, rootGraph = app.rootGraph): Subgraph {
     nodes: []
   } satisfies MockSubgraph
 
-  return fromAny<Subgraph, unknown>(mockSubgraph)
+  return fromPartial<Subgraph>(mockSubgraph)
 }
 
 vi.mock('@/scripts/app', () => {
@@ -67,6 +67,7 @@ vi.mock('@vueuse/router', () => ({ useRouteHash: vi.fn() }))
 describe('useSubgraphNavigationStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.resetAllMocks()
     app.rootGraph.subgraphs.clear()
     app.canvas.subgraph = undefined
     app.canvas.ds.scale = 1
@@ -74,7 +75,6 @@ describe('useSubgraphNavigationStore', () => {
     app.canvas.ds.state.scale = 1
     app.canvas.ds.state.offset = [0, 0]
     app.graph.getNodeById = vi.fn()
-    vi.resetAllMocks()
   })
 
   it('should not clear navigation stack when workflow internal state changes', async () => {
@@ -82,11 +82,11 @@ describe('useSubgraphNavigationStore', () => {
     const workflowStore = useWorkflowStore()
 
     // Mock a workflow
-    const mockWorkflow = {
+    const mockWorkflow = fromPartial<ComfyWorkflow>({
       path: 'test-workflow.json',
       filename: 'test-workflow.json',
       changeTracker: null
-    } as ComfyWorkflow
+    })
 
     // Set the active workflow (cast to bypass TypeScript check in test)
     workflowStore.activeWorkflow =
@@ -113,15 +113,15 @@ describe('useSubgraphNavigationStore', () => {
     const workflowStore = useWorkflowStore()
     const { findSubgraphPathById } = await import('@/utils/graphTraversalUtil')
 
-    const workflow1 = {
+    const workflow1 = fromPartial<ComfyWorkflow>({
       path: 'workflow1.json',
       filename: 'workflow1.json'
-    } as ComfyWorkflow
+    })
 
-    const workflow2 = {
+    const workflow2 = fromPartial<ComfyWorkflow>({
       path: 'workflow2.json',
       filename: 'workflow2.json'
-    } as ComfyWorkflow
+    })
 
     const sub1 = createMockSubgraph('sub-1')
     const sub2 = createMockSubgraph('sub-2')
@@ -165,10 +165,10 @@ describe('useSubgraphNavigationStore', () => {
     const workflowStore = useWorkflowStore()
     const { findSubgraphPathById } = await import('@/utils/graphTraversalUtil')
 
-    const workflow1 = {
+    const workflow1 = fromPartial<ComfyWorkflow>({
       path: 'workflow1.json',
       filename: 'workflow1.json'
-    } as ComfyWorkflow
+    })
 
     const workflow1Subgraph = createMockSubgraph('sub-1')
 
@@ -185,10 +185,10 @@ describe('useSubgraphNavigationStore', () => {
 
     expect(navigationStore.exportState()).toEqual([workflow1Subgraph.id])
 
-    const workflow2 = {
+    const workflow2 = fromPartial<ComfyWorkflow>({
       path: 'workflow2.json',
       filename: 'workflow2.json'
-    } as ComfyWorkflow
+    })
 
     app.canvas.subgraph = undefined
 
@@ -216,6 +216,32 @@ describe('useSubgraphNavigationStore', () => {
     expect(navigationStore.navigationStack).toEqual([])
   })
 
+  it('should fall back to the active subgraph id when path lookup fails during navigation updates', async () => {
+    const navigationStore = useSubgraphNavigationStore()
+    const workflowStore = useWorkflowStore()
+    const { findSubgraphPathById } = await import('@/utils/graphTraversalUtil')
+
+    const unreachableSubgraph = createMockSubgraph('orphan-subgraph', app.graph)
+
+    app.graph.subgraphs.set(unreachableSubgraph.id, unreachableSubgraph)
+    vi.mocked(findSubgraphPathById).mockReturnValue(null)
+
+    const mockWorkflow = fromPartial<ComfyWorkflow>({
+      path: 'test-workflow.json',
+      filename: 'test-workflow.json'
+    })
+
+    workflowStore.activeWorkflow =
+      mockWorkflow as typeof workflowStore.activeWorkflow
+
+    app.canvas.subgraph = unreachableSubgraph
+    workflowStore.updateActiveGraph()
+    await nextTick()
+
+    expect(navigationStore.exportState()).toEqual([unreachableSubgraph.id])
+    expect(navigationStore.navigationStack).toEqual([unreachableSubgraph])
+  })
+
   it('should clear navigation when activeSubgraph becomes undefined', async () => {
     const navigationStore = useSubgraphNavigationStore()
     const workflowStore = useWorkflowStore()
@@ -228,10 +254,10 @@ describe('useSubgraphNavigationStore', () => {
     app.graph.subgraphs.set('subgraph-1', mockSubgraph)
 
     // First set an active workflow
-    const mockWorkflow = {
+    const mockWorkflow = fromPartial<ComfyWorkflow>({
       path: 'test-workflow.json',
       filename: 'test-workflow.json'
-    } as ComfyWorkflow
+    })
 
     workflowStore.activeWorkflow =
       mockWorkflow as typeof workflowStore.activeWorkflow

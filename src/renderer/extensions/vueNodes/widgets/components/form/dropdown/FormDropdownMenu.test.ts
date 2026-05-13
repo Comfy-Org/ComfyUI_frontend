@@ -1,9 +1,15 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
-import { nextTick } from 'vue'
 
 import FormDropdownMenu from './FormDropdownMenu.vue'
 import type { FormDropdownItem, LayoutMode } from './types'
+
+const VirtualGridStub = {
+  name: 'VirtualGrid',
+  props: ['items', 'maxColumns', 'itemHeight', 'scrollerHeight'],
+  template:
+    '<div data-testid="virtual-grid" :data-items="JSON.stringify(items)" :data-max-columns="maxColumns" />'
+}
 
 function createItem(id: string, name: string): FormDropdownItem {
   return {
@@ -22,107 +28,80 @@ describe('FormDropdownMenu', () => {
     sortOptions: []
   }
 
-  it('renders empty state when no items', async () => {
-    const wrapper = mount(FormDropdownMenu, {
+  const globalConfig = {
+    stubs: {
+      FormDropdownMenuFilter: true,
+      FormDropdownMenuActions: true,
+      VirtualGrid: VirtualGridStub
+    },
+    mocks: {
+      $t: (key: string) => key
+    }
+  }
+
+  it('renders empty state when no items', () => {
+    const { container } = render(FormDropdownMenu, {
       props: {
         ...defaultProps,
         items: []
       },
-      global: {
-        stubs: {
-          FormDropdownMenuFilter: true,
-          FormDropdownMenuActions: true,
-          VirtualGrid: true
-        },
-        mocks: {
-          $t: (key: string) => key
-        }
-      }
+      global: globalConfig
     })
 
-    await nextTick()
-
-    const emptyIcon = wrapper.find('.icon-\\[lucide--circle-off\\]')
-    expect(emptyIcon.exists()).toBe(true)
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const emptyIcon = container.querySelector('[class*="lucide--circle-off"]')
+    expect(emptyIcon).not.toBeNull()
   })
 
-  it('renders VirtualGrid when items exist', async () => {
-    const wrapper = mount(FormDropdownMenu, {
+  it('renders VirtualGrid when items exist', () => {
+    render(FormDropdownMenu, {
       props: defaultProps,
-      global: {
-        stubs: {
-          FormDropdownMenuFilter: true,
-          FormDropdownMenuActions: true,
-          VirtualGrid: true
-        }
-      }
+      global: globalConfig
     })
 
-    await nextTick()
-
-    const virtualGrid = wrapper.findComponent({ name: 'VirtualGrid' })
-    expect(virtualGrid.exists()).toBe(true)
+    expect(screen.getByTestId('virtual-grid')).toBeTruthy()
   })
 
-  it('transforms items to include key property for VirtualGrid', async () => {
+  it('transforms items to include key property for VirtualGrid', () => {
     const items = [createItem('1', 'Item 1'), createItem('2', 'Item 2')]
-    const wrapper = mount(FormDropdownMenu, {
+    render(FormDropdownMenu, {
       props: {
         ...defaultProps,
         items
       },
-      global: {
-        stubs: {
-          FormDropdownMenuFilter: true,
-          FormDropdownMenuActions: true,
-          VirtualGrid: true
-        }
-      }
+      global: globalConfig
     })
 
-    await nextTick()
-
-    const virtualGrid = wrapper.findComponent({ name: 'VirtualGrid' })
-    const virtualItems = virtualGrid.props('items')
+    const virtualGrid = screen.getByTestId('virtual-grid')
+    const virtualItems = JSON.parse(virtualGrid.getAttribute('data-items')!)
 
     expect(virtualItems).toHaveLength(2)
     expect(virtualItems[0]).toHaveProperty('key', '1')
     expect(virtualItems[1]).toHaveProperty('key', '2')
   })
 
-  it('uses single column layout for list modes', async () => {
-    const wrapper = mount(FormDropdownMenu, {
+  it('uses single column layout for list modes', () => {
+    render(FormDropdownMenu, {
       props: {
         ...defaultProps,
         layoutMode: 'list' as LayoutMode
       },
-      global: {
-        stubs: {
-          FormDropdownMenuFilter: true,
-          FormDropdownMenuActions: true,
-          VirtualGrid: true
-        }
-      }
+      global: globalConfig
     })
 
-    await nextTick()
-
-    const virtualGrid = wrapper.findComponent({ name: 'VirtualGrid' })
-    expect(virtualGrid.props('maxColumns')).toBe(1)
+    const virtualGrid = screen.getByTestId('virtual-grid')
+    expect(virtualGrid.getAttribute('data-max-columns')).toBe('1')
   })
 
   it('has data-capture-wheel="true" on the root element', () => {
-    const wrapper = mount(FormDropdownMenu, {
+    const { container } = render(FormDropdownMenu, {
       props: defaultProps,
-      global: {
-        stubs: {
-          FormDropdownMenuFilter: true,
-          FormDropdownMenuActions: true,
-          VirtualGrid: true
-        }
-      }
+      global: globalConfig
     })
 
-    expect(wrapper.attributes('data-capture-wheel')).toBe('true')
+    expect(
+      // eslint-disable-next-line testing-library/no-node-access
+      container.firstElementChild!.getAttribute('data-capture-wheel')
+    ).toBe('true')
   })
 })

@@ -1,3 +1,5 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -5,6 +7,7 @@ import type {
   LGraphCanvas,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { ComfyApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
 import {
@@ -16,6 +19,32 @@ import {
   pasteVideoNodes
 } from '@/composables/usePaste'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+
+const {
+  mockToastStore,
+  mockExtensionService,
+  mockNodeOutputStore,
+  mockWorkspaceWorkflow,
+  mockRefreshMissingModelPipeline
+} = vi.hoisted(() => ({
+  mockToastStore: {
+    addAlert: vi.fn(),
+    add: vi.fn(),
+    remove: vi.fn()
+  },
+  mockExtensionService: {
+    invokeExtensions: vi.fn(),
+    invokeExtensionsAsync: vi.fn()
+  },
+  mockNodeOutputStore: {
+    refreshNodeOutputs: vi.fn()
+  },
+  mockWorkspaceWorkflow: {
+    activeWorkflow: null
+  },
+  mockRefreshMissingModelPipeline: vi.fn()
+}))
 
 vi.mock('@/utils/litegraphUtil', () => ({
   createNode: vi.fn(),
@@ -40,11 +69,26 @@ vi.mock('@/scripts/metadata/parser', () => ({
 }))
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => ({
-    addAlert: vi.fn(),
-    add: vi.fn(),
-    remove: vi.fn()
+  useToastStore: vi.fn(() => mockToastStore)
+}))
+
+vi.mock('@/services/extensionService', () => ({
+  useExtensionService: vi.fn(() => mockExtensionService)
+}))
+
+vi.mock('@/stores/nodeOutputStore', () => ({
+  useNodeOutputStore: vi.fn(() => mockNodeOutputStore)
+}))
+
+vi.mock('@/stores/workspaceStore', () => ({
+  useWorkspaceStore: vi.fn(() => ({
+    workflow: mockWorkspaceWorkflow
   }))
+}))
+
+vi.mock('@/platform/missingModel/missingModelPipeline', () => ({
+  refreshMissingModelPipeline: mockRefreshMissingModelPipeline,
+  runMissingModelPipeline: vi.fn()
 }))
 
 function createMockNode(options: { [K in keyof LGraphNode]?: any } = {}) {
@@ -74,15 +118,95 @@ function createTestFile(name: string, type: string): File {
   return new File([''], name, { type })
 }
 
+function createWorkflowGraphData(): ComfyWorkflowJSON {
+  return {
+    last_node_id: 0,
+    last_link_id: 0,
+    nodes: [],
+    links: [],
+    groups: [],
+    config: {},
+    extra: {},
+    version: 0.4
+  }
+}
+
 describe('ComfyApp', () => {
   let app: ComfyApp
   let mockCanvas: LGraphCanvas
 
   beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
     app.canvas = mockCanvas as LGraphCanvas
+    mockExtensionService.invokeExtensions.mockReturnValue([])
+    mockExtensionService.invokeExtensionsAsync.mockResolvedValue(undefined)
+  })
+
+  describe('refreshComboInNodes', () => {
+    it('shows success toast and removes the pending toast after node defs reload', async () => {
+      app.vueAppReady = true
+      vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue()
+
+      await app.refreshComboInNodes()
+
+      expect(mockToastStore.add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'info' })
+      )
+      expect(mockToastStore.add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
+      expect(mockToastStore.remove).toHaveBeenCalledWith(
+        mockToastStore.add.mock.calls[0][0]
+      )
+    })
+
+    it('shows failure toast, removes the pending toast, and rethrows reload failures', async () => {
+      app.vueAppReady = true
+      const error = new Error('object_info failed')
+      vi.spyOn(app, 'reloadNodeDefs').mockRejectedValue(error)
+
+      await expect(app.refreshComboInNodes()).rejects.toThrow(error)
+
+      expect(mockToastStore.add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+      expect(mockToastStore.remove).toHaveBeenCalledWith(
+        mockToastStore.add.mock.calls[0][0]
+      )
+    })
+  })
+
+  describe('refreshMissingModels', () => {
+    it('delegates to the app-independent missing model refresh pipeline', async () => {
+      const graph = {
+        nodes: [],
+        serialize: vi.fn(() => createWorkflowGraphData())
+      }
+      const result = {
+        missingModels: [],
+        confirmedCandidates: []
+      }
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue()
+      mockRefreshMissingModelPipeline.mockResolvedValue(result)
+
+      await expect(app.refreshMissingModels({ silent: false })).resolves.toBe(
+        result
+      )
+
+      expect(mockRefreshMissingModelPipeline).toHaveBeenCalledWith({
+        graph,
+        reloadNodeDefs: expect.any(Function),
+        missingModelStore: useMissingModelStore(),
+        silent: false
+      })
+
+      await mockRefreshMissingModelPipeline.mock.calls[0][0].reloadNodeDefs()
+      expect(app.reloadNodeDefs).toHaveBeenCalled()
+    })
   })
 
   describe('handleFileList', () => {

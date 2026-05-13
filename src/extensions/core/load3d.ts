@@ -9,7 +9,10 @@ import type {
   CameraState
 } from '@/extensions/core/load3d/interfaces'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
-import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
+import {
+  LOAD3D_NONE_MODEL,
+  SUPPORTED_EXTENSIONS_ACCEPT
+} from '@/extensions/core/load3d/constants'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -19,8 +22,9 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { NodeOutputWith } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
+type Matrix = number[][]
 type Load3dPreviewOutput = NodeOutputWith<{
-  result?: [string?, CameraState?, string?]
+  result?: [string?, CameraState?, string?, Matrix?, Matrix?]
 }>
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
@@ -289,13 +293,9 @@ useExtensionService().registerExtension({
         )
 
         node.addWidget('button', 'clear', 'clear', () => {
-          useLoad3d(node).waitForLoad3d((load3d) => {
-            load3d.clearModel()
-          })
-
           const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
           if (modelWidget) {
-            modelWidget.value = ''
+            modelWidget.value = LOAD3D_NONE_MODEL
           }
         })
 
@@ -496,7 +496,8 @@ useExtensionService().registerExtension({
           const settings = {
             loadFolder: 'output',
             modelWidget: modelWidget,
-            cameraState: cameraState
+            cameraState: cameraState,
+            silentOnNotFound: true
           }
 
           config.configure(settings)
@@ -516,6 +517,8 @@ useExtensionService().registerExtension({
 
           const cameraState = result?.[1]
           const bgImagePath = result?.[2]
+          const extrinsics = result?.[3]
+          const intrinsics = result?.[4]
 
           modelWidget.value = filePath?.replaceAll('\\', '/')
 
@@ -525,13 +528,35 @@ useExtensionService().registerExtension({
             loadFolder: 'output',
             modelWidget: modelWidget,
             cameraState: cameraState,
-            bgImagePath: bgImagePath
+            bgImagePath: bgImagePath,
+            silentOnNotFound: true
           }
 
           config.configure(settings)
 
           if (bgImagePath) {
             load3d.setBackgroundImage(bgImagePath)
+          }
+
+          if (filePath && extrinsics && intrinsics) {
+            // configure(settings) above triggered loadModel for this
+            // execution; capture its generation so that if a newer
+            // execution queues another load before whenLoadIdle resolves,
+            // we don't apply this execution's matrices on top of that
+            // newer model.
+            const targetGeneration = load3d.currentLoadGeneration
+            void load3d
+              .whenLoadIdle()
+              .then(() => {
+                if (load3d.currentLoadGeneration !== targetGeneration) return
+                load3d.setCameraFromMatrices(extrinsics, intrinsics)
+              })
+              .catch((error) => {
+                console.error(
+                  'Failed to apply camera matrices from Preview3D output:',
+                  error
+                )
+              })
           }
         }
       }

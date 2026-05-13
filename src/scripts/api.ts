@@ -638,7 +638,7 @@ export class ComfyApi extends EventTarget {
                 let promptId: string | undefined
 
                 if (
-                  this.getClientFeatureFlags()?.supports_progress_text_metadata
+                  this.serverSupportsFeature('supports_progress_text_metadata')
                 ) {
                   const promptIdLength = rawView.getUint32(offset)
                   offset += 4
@@ -1005,13 +1005,14 @@ export class ComfyApi extends EventTarget {
    * Gets the current state of the queue
    * @returns The currently running and queued items
    */
-  async getQueue(): Promise<{
+  async getQueue(options?: { throwOnError?: boolean }): Promise<{
     Running: JobListItem[]
     Pending: JobListItem[]
   }> {
     try {
       return await fetchQueue(this.fetchApi.bind(this))
     } catch (error) {
+      if (options?.throwOnError) throw error
       console.error('Failed to fetch queue:', error)
       return { Running: [], Pending: [] }
     }

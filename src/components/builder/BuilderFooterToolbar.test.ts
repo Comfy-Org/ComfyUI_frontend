@@ -46,7 +46,7 @@ const mockActiveWorkflow = ref<{
   isTemporary: boolean
   initialMode?: string
   isModified?: boolean
-  changeTracker?: { checkState: () => void }
+  changeTracker?: { captureCanvasState: () => void }
 } | null>({
   isTemporary: true,
   initialMode: 'app'

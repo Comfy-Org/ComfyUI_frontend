@@ -1,5 +1,6 @@
 import type { Component } from 'vue'
 
+import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ExecutionErrorWsMessage, NodeError } from '@/schemas/apiSchema'
 import type { useDialogService } from '@/services/dialogService'
@@ -113,6 +114,7 @@ export interface ExtensionManager {
     get: <T = unknown>(id: string) => T | undefined
     set: <T = unknown>(id: string, value: T) => void
   }
+  workflow: ReturnType<typeof useWorkflowStore>
 
   // Execution error state (read-only)
   lastNodeErrors: Record<NodeId, NodeError> | null

@@ -22,7 +22,14 @@
     >
       <template #dropdownicon>
         <i
-          class="icon-[lucide--chevron-down] size-4 text-component-node-foreground-secondary"
+          :class="
+            cn(
+              'icon-[lucide--chevron-down] size-4',
+              props.widget.options?.disabled
+                ? 'bg-component-node-foreground-secondary'
+                : 'bg-muted-foreground'
+            )
+          "
         />
       </template>
     </SelectPlus>
@@ -38,7 +45,7 @@ import { computed, ref } from 'vue'
 import SelectPlus from '@/components/primevueOverride/SelectPlus.vue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps

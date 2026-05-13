@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { mount } from '@vue/test-utils'
+import { render } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -89,7 +89,7 @@ describe('DomWidgets transition grace characterization', () => {
     const canvas = createCanvas(graphA)
     canvasStore.canvas = canvas
 
-    mount(DomWidgets, {
+    render(DomWidgets, {
       global: {
         stubs: {
           DomWidget: true
@@ -134,7 +134,7 @@ describe('DomWidgets transition grace characterization', () => {
     const canvas = createCanvas(graphB)
     canvasStore.canvas = canvas
 
-    mount(DomWidgets, {
+    render(DomWidgets, {
       global: {
         stubs: {
           DomWidget: true
@@ -160,7 +160,7 @@ describe('DomWidgets transition grace characterization', () => {
     const canvas = createCanvas(graphA)
     canvasStore.canvas = canvas
 
-    mount(DomWidgets, {
+    render(DomWidgets, {
       global: {
         stubs: {
           DomWidget: true

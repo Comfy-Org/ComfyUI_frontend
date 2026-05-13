@@ -64,6 +64,7 @@
         </span>
         <input
           v-model.number="brushSize"
+          data-testid="brush-thickness-input"
           type="number"
           class="border-p-form-field-border-color text-input-text w-16 rounded-md border bg-comfy-menu-bg px-2 py-1 text-center text-sm"
           :min="1"
@@ -164,7 +165,7 @@ import { useI18n } from 'vue-i18n'
 
 import { BrushShape } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import SliderControl from './controls/SliderControl.vue'
 

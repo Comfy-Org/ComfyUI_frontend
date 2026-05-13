@@ -98,6 +98,90 @@ describe('GtmTelemetryProvider', () => {
       })
     })
 
+    it('pushes subscription_success metadata with ecommerce reset', () => {
+      const provider = createInitializedProvider()
+
+      provider.trackMonthlySubscriptionSucceeded({
+        checkout_attempt_id: 'attempt-123',
+        tier: 'creator',
+        cycle: 'yearly',
+        checkout_type: 'new',
+        value: 336,
+        currency: 'USD',
+        ecommerce: {
+          currency: 'USD',
+          value: 336,
+          items: [
+            {
+              item_name: 'creator',
+              item_category: 'subscription',
+              item_variant: 'yearly',
+              price: 336,
+              quantity: 1
+            }
+          ]
+        }
+      })
+
+      const dataLayer = window.dataLayer as Record<string, unknown>[]
+
+      expect(dataLayer[dataLayer.length - 2]).toMatchObject({ ecommerce: null })
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'subscription_success',
+        checkout_attempt_id: 'attempt-123',
+        value: 336
+      })
+    })
+
+    it('does not reset ecommerce when GTM is not initialized', () => {
+      window.__CONFIG__ = {
+        ga_measurement_id: 'G-TEST123'
+      }
+
+      const provider = new GtmTelemetryProvider()
+
+      provider.trackMonthlySubscriptionSucceeded({
+        checkout_attempt_id: 'attempt-123',
+        tier: 'creator',
+        cycle: 'yearly',
+        checkout_type: 'new',
+        value: 336,
+        currency: 'USD',
+        ecommerce: {
+          currency: 'USD',
+          value: 336,
+          items: [
+            {
+              item_name: 'creator',
+              item_category: 'subscription',
+              item_variant: 'yearly',
+              price: 336,
+              quantity: 1
+            }
+          ]
+        }
+      })
+
+      const dataLayer = window.dataLayer as unknown[]
+
+      expect(
+        dataLayer.some(
+          (entry) =>
+            typeof entry === 'object' &&
+            entry !== null &&
+            'ecommerce' in (entry as Record<string, unknown>)
+        )
+      ).toBe(false)
+      expect(
+        dataLayer.some(
+          (entry) =>
+            typeof entry === 'object' &&
+            entry !== null &&
+            (entry as Record<string, unknown>).event === 'subscription_success'
+        )
+      ).toBe(false)
+    })
+
     it('pushes run_workflow with trigger_source', () => {
       const provider = createInitializedProvider()
       provider.trackRunButton({ trigger_source: 'button' })
@@ -121,7 +205,7 @@ describe('GtmTelemetryProvider', () => {
         event: 'execution_error',
         node_type: 'KSampler'
       })
-      expect((entry?.error as string).length).toBe(100)
+      expect(entry!.error as string).toHaveLength(100)
     })
 
     it('pushes select_content for template events', () => {
@@ -230,7 +314,7 @@ describe('GtmTelemetryProvider', () => {
       })
     })
 
-    it('pushes normalized email as user_data before auth event', () => {
+    it('pushes normalized email inside the auth event payload', () => {
       const provider = createInitializedProvider()
 
       provider.trackAuth({
@@ -241,20 +325,21 @@ describe('GtmTelemetryProvider', () => {
       })
 
       const dl = window.dataLayer as Record<string, unknown>[]
-      const userData = dl.find((entry) => 'user_data' in entry)
-      expect(userData).toMatchObject({
-        user_data: { email: 'test@example.com' }
+      const authEvent = dl.find((entry) => entry.event === 'sign_up')
+      expect(authEvent).toMatchObject({
+        event: 'sign_up',
+        method: 'email',
+        user_id: 'uid-123',
+        user_data: {
+          email: 'test@example.com'
+        }
       })
-
-      // Verify user_data is pushed before the sign_up event
-      const userDataIndex = dl.findIndex((entry) => 'user_data' in entry)
-      const signUpIndex = dl.findIndex(
-        (entry) => (entry as Record<string, unknown>).event === 'sign_up'
-      )
-      expect(userDataIndex).toBeLessThan(signUpIndex)
+      expect(
+        dl.some((entry) => 'user_data' in entry && !('event' in entry))
+      ).toBe(false)
     })
 
-    it('does not push user_data when email is absent', () => {
+    it('omits user_data when email is absent', () => {
       const provider = createInitializedProvider()
 
       provider.trackAuth({
@@ -263,9 +348,12 @@ describe('GtmTelemetryProvider', () => {
         user_id: 'uid-456'
       })
 
-      const dl = window.dataLayer as Record<string, unknown>[]
-      const userData = dl.find((entry) => 'user_data' in entry)
-      expect(userData).toBeUndefined()
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'login',
+        method: 'google',
+        user_id: 'uid-456'
+      })
+      expect(lastDataLayerEntry()).not.toHaveProperty('user_data')
     })
 
     it('does not push events when not initialized', () => {

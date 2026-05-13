@@ -179,8 +179,12 @@ export function createMockNodeInputSlot(
   overrides: Partial<INodeInputSlot> = {}
 ): INodeInputSlot {
   return {
+    name: 'input',
+    type: '*',
+    boundingRect: [0, 0, 0, 0],
+    link: null,
     ...overrides
-  } as INodeInputSlot
+  }
 }
 
 /**
@@ -190,8 +194,12 @@ export function createMockNodeOutputSlot(
   overrides: Partial<INodeOutputSlot> = {}
 ): INodeOutputSlot {
   return {
+    name: 'output',
+    type: '*',
+    boundingRect: [0, 0, 0, 0],
+    links: null,
     ...overrides
-  } as INodeOutputSlot
+  }
 }
 
 /**
@@ -256,7 +264,10 @@ export function createMockChangeTracker(
     undoQueue: [],
     redoQueue: [],
     changeCount: 0,
+    captureCanvasState: vi.fn(),
     checkState: vi.fn(),
+    deactivate: vi.fn(),
+    prepareForSave: vi.fn(),
     reset: vi.fn(),
     restore: vi.fn(),
     store: vi.fn(),

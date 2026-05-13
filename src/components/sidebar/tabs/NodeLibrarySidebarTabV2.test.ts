@@ -1,8 +1,9 @@
-import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { render, screen } from '@testing-library/vue'
 
 import NodeLibrarySidebarTabV2 from './NodeLibrarySidebarTabV2.vue'
 
@@ -91,8 +92,8 @@ describe('NodeLibrarySidebarTabV2', () => {
     vi.clearAllMocks()
   })
 
-  function mountComponent() {
-    return mount(NodeLibrarySidebarTabV2, {
+  function renderComponent() {
+    return render(NodeLibrarySidebarTabV2, {
       global: {
         plugins: [createTestingPinia({ stubActions: false }), i18n],
         stubs: {
@@ -103,25 +104,23 @@ describe('NodeLibrarySidebarTabV2', () => {
   }
 
   it('should render with tabs', () => {
-    const wrapper = mountComponent()
+    renderComponent()
 
-    const triggers = wrapper.findAll('[role="tab"]')
+    const triggers = screen.getAllByRole('tab')
     expect(triggers).toHaveLength(3)
   })
 
   it('should render search box', () => {
-    const wrapper = mountComponent()
+    renderComponent()
 
-    expect(wrapper.find('[data-testid="search-box"]').exists()).toBe(true)
+    expect(screen.getByTestId('search-box')).toBeInTheDocument()
   })
 
   it('should render only the selected panel', () => {
-    const wrapper = mountComponent()
+    renderComponent()
 
-    expect(wrapper.find('[data-testid="essential-panel"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="all-panel"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="blueprints-panel"]').exists()).toBe(
-      false
-    )
+    expect(screen.getByTestId('essential-panel')).toBeInTheDocument()
+    expect(screen.queryByTestId('all-panel')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('blueprints-panel')).not.toBeInTheDocument()
   })
 })

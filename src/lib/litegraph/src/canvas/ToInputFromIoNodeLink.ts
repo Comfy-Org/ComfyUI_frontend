@@ -6,7 +6,8 @@ import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/L
 import type {
   INodeInputSlot,
   LinkNetwork,
-  Point
+  Point,
+  SlotIndex
 } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
@@ -19,7 +20,7 @@ import type { RenderLink } from './RenderLink'
 
 export class ToInputFromIoNodeLink implements RenderLink {
   readonly toType = 'input'
-  readonly fromSlotIndex: number
+  readonly fromSlotIndex: SlotIndex
   readonly fromPos: Point
   fromDirection: LinkDirection = LinkDirection.RIGHT
   readonly existingLink?: LLink

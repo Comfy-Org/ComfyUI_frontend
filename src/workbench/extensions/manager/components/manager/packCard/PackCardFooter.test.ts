@@ -1,5 +1,4 @@
-import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
 import { createTestingPinia } from '@pinia/testing'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -45,8 +44,6 @@ vi.mock(
   })
 )
 
-// Remove the mock for injection key since we're importing it directly
-
 const mockNodePack = {
   id: 'test-pack',
   name: 'Test Pack',
@@ -60,14 +57,14 @@ describe('PackCardFooter', () => {
     mockCheckNodeCompatibility.mockReset()
   })
 
-  const mountComponent = (props = {}): VueWrapper => {
+  function renderComponent(props = {}) {
     const i18n = createI18n({
       legacy: false,
       locale: 'en',
       messages: { en: enMessages }
     })
 
-    return mount(PackCardFooter, {
+    return render(PackCardFooter, {
       props: {
         nodePack: mockNodePack,
         ...props
@@ -88,9 +85,9 @@ describe('PackCardFooter', () => {
         hasConflict: false,
         conflicts: []
       })
-      const wrapper = mountComponent()
+      renderComponent()
 
-      expect(wrapper.text()).toContain('1,000')
+      expect(screen.getByText('1,000')).toBeTruthy()
     })
 
     it('shows install button for uninstalled packages', () => {
@@ -100,27 +97,19 @@ describe('PackCardFooter', () => {
         conflicts: []
       })
 
-      const wrapper = mountComponent()
+      renderComponent()
 
-      expect(wrapper.find('[data-testid="pack-install-button"]').exists()).toBe(
-        true
-      )
-      expect(wrapper.find('[data-testid="pack-enable-toggle"]').exists()).toBe(
-        false
-      )
+      expect(screen.getByTestId('pack-install-button')).not.toBeNull()
+      expect(screen.queryByTestId('pack-enable-toggle')).toBeNull()
     })
 
     it('shows enable toggle for installed packages', () => {
       mockIsPackInstalled.mockReturnValue(true)
 
-      const wrapper = mountComponent()
+      renderComponent()
 
-      expect(wrapper.find('[data-testid="pack-enable-toggle"]').exists()).toBe(
-        true
-      )
-      expect(wrapper.find('[data-testid="pack-install-button"]').exists()).toBe(
-        false
-      )
+      expect(screen.getByTestId('pack-enable-toggle')).not.toBeNull()
+      expect(screen.queryByTestId('pack-install-button')).toBeNull()
     })
   })
 
@@ -138,12 +127,11 @@ describe('PackCardFooter', () => {
         ]
       })
 
-      const wrapper = mountComponent()
+      renderComponent()
 
-      const installButton = wrapper.find('[data-testid="pack-install-button"]')
-      expect(installButton.exists()).toBe(true)
-      // The install button should receive has-conflict prop as true
-      expect(installButton.attributes()).toHaveProperty('has-conflict')
+      const installButton = screen.getByTestId('pack-install-button')
+      expect(installButton).toBeTruthy()
+      expect(installButton.hasAttribute('has-conflict')).toBe(true)
     })
 
     it('does not pass conflict info when no conflicts exist', () => {
@@ -153,12 +141,11 @@ describe('PackCardFooter', () => {
         conflicts: []
       })
 
-      const wrapper = mountComponent()
+      renderComponent()
 
-      const installButton = wrapper.find('[data-testid="pack-install-button"]')
-      expect(installButton.exists()).toBe(true)
-      // The install button should receive has-conflict prop as false
-      expect(installButton.attributes()['has-conflict']).toBe('false')
+      const installButton = screen.getByTestId('pack-install-button')
+      expect(installButton).toBeTruthy()
+      expect(installButton.getAttribute('has-conflict')).toBe('false')
     })
   })
 
@@ -166,12 +153,11 @@ describe('PackCardFooter', () => {
     it('does not pass has-conflict prop to enable toggle', () => {
       mockIsPackInstalled.mockReturnValue(true)
 
-      const wrapper = mountComponent()
+      renderComponent()
 
-      const enableToggle = wrapper.find('[data-testid="pack-enable-toggle"]')
-      expect(enableToggle.exists()).toBe(true)
-      // The enable toggle should not receive has-conflict prop (removed in our fix)
-      expect(enableToggle.attributes()).not.toHaveProperty('has-conflict')
+      const enableToggle = screen.getByTestId('pack-enable-toggle')
+      expect(enableToggle).toBeTruthy()
+      expect(enableToggle.hasAttribute('has-conflict')).toBe(false)
     })
   })
 })

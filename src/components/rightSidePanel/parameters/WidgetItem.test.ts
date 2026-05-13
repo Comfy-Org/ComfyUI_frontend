@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
+import { render } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
-import { mount } from '@vue/test-utils'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -14,7 +14,8 @@ const { mockGetInputSpecForWidget, StubWidgetComponent } = vi.hoisted(() => ({
   StubWidgetComponent: {
     name: 'StubWidget',
     props: ['widget', 'modelValue', 'nodeId', 'nodeType'],
-    template: '<div class="stub-widget" />'
+    template:
+      '<div class="stub-widget" :data-widget-options="JSON.stringify(widget?.options)" :data-widget-type="widget?.type" :data-widget-name="widget?.name" :data-widget-value="String(widget?.value)" />'
   }
 }))
 
@@ -132,11 +133,11 @@ function createMockPromotedWidgetView(
   return fromAny<IBaseWidget, unknown>(new MockPromotedWidgetView())
 }
 
-function mountWidgetItem(
+function renderWidgetItem(
   widget: IBaseWidget,
   node: LGraphNode = createMockNode()
 ) {
-  return mount(WidgetItem, {
+  return render(WidgetItem, {
     props: { widget, node },
     global: {
       plugins: [i18n],
@@ -146,6 +147,18 @@ function mountWidgetItem(
       }
     }
   })
+}
+
+function getStubWidget(container: Element) {
+  // eslint-disable-next-line testing-library/no-node-access
+  const el = container.querySelector('.stub-widget')
+  if (!el) throw new Error('stub-widget not found')
+  return {
+    options: JSON.parse(el.getAttribute('data-widget-options') ?? 'null'),
+    type: el.getAttribute('data-widget-type'),
+    name: el.getAttribute('data-widget-name'),
+    value: el.getAttribute('data-widget-value')
+  }
 }
 
 describe('WidgetItem', () => {
@@ -159,10 +172,10 @@ describe('WidgetItem', () => {
       const widget = createMockWidget({
         options: { values: ['a', 'b', 'c'] }
       })
-      const wrapper = mountWidgetItem(widget)
-      const stub = wrapper.findComponent(StubWidgetComponent)
+      const { container } = renderWidgetItem(widget)
+      const stub = getStubWidget(container)
 
-      expect(stub.props('widget').options).toEqual({
+      expect(stub.options).toEqual({
         values: ['a', 'b', 'c']
       })
     })
@@ -172,34 +185,34 @@ describe('WidgetItem', () => {
         values: ['model_a.safetensors', 'model_b.safetensors']
       }
       const widget = createMockPromotedWidgetView(expectedOptions)
-      const wrapper = mountWidgetItem(widget)
-      const stub = wrapper.findComponent(StubWidgetComponent)
+      const { container } = renderWidgetItem(widget)
+      const stub = getStubWidget(container)
 
-      expect(stub.props('widget').options).toEqual(expectedOptions)
+      expect(stub.options).toEqual(expectedOptions)
     })
 
     it('passes type from a PromotedWidgetView to the widget component', () => {
       const widget = createMockPromotedWidgetView()
-      const wrapper = mountWidgetItem(widget)
-      const stub = wrapper.findComponent(StubWidgetComponent)
+      const { container } = renderWidgetItem(widget)
+      const stub = getStubWidget(container)
 
-      expect(stub.props('widget').type).toBe('combo')
+      expect(stub.type).toBe('combo')
     })
 
     it('passes name from a PromotedWidgetView to the widget component', () => {
       const widget = createMockPromotedWidgetView()
-      const wrapper = mountWidgetItem(widget)
-      const stub = wrapper.findComponent(StubWidgetComponent)
+      const { container } = renderWidgetItem(widget)
+      const stub = getStubWidget(container)
 
-      expect(stub.props('widget').name).toBe('ckpt_name')
+      expect(stub.name).toBe('ckpt_name')
     })
 
     it('passes value from a PromotedWidgetView to the widget component', () => {
       const widget = createMockPromotedWidgetView()
-      const wrapper = mountWidgetItem(widget)
-      const stub = wrapper.findComponent(StubWidgetComponent)
+      const { container } = renderWidgetItem(widget)
+      const stub = getStubWidget(container)
 
-      expect(stub.props('widget').value).toBe('model_a.safetensors')
+      expect(stub.value).toBe('model_a.safetensors')
     })
   })
 })

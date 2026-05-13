@@ -4,6 +4,7 @@ import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 
 const ALLOWED_SOURCES = [
   'https://civitai.com/',
+  'https://civitai.red/',
   'https://huggingface.co/',
   'http://localhost:'
 ] as const
@@ -25,7 +26,7 @@ const WHITE_LISTED_URLS: ReadonlySet<string> = new Set([
   'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth'
 ])
 
-interface ModelWithUrl {
+export interface ModelWithUrl {
   name: string
   url: string
   directory: string

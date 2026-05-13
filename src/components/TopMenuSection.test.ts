@@ -1,5 +1,8 @@
+/* eslint-disable testing-library/no-container */
+/* eslint-disable testing-library/no-node-access */
 import { createTestingPinia } from '@pinia/testing'
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import type { MenuItem } from 'primevue/menuitem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, onMounted, ref } from 'vue'
@@ -8,8 +11,6 @@ import { createI18n } from 'vue-i18n'
 
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
-import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
-import LoginButton from '@/components/topbar/LoginButton.vue'
 import type {
   JobListItem,
   JobStatus
@@ -114,8 +115,9 @@ function createWrapper({
     }
   })
 
-  return mount(TopMenuSection, {
-    attachTo,
+  const user = userEvent.setup()
+
+  const renderOptions: Record<string, unknown> = {
     global: {
       plugins: [pinia, i18n],
       stubs: {
@@ -128,7 +130,8 @@ function createWrapper({
         ContextMenu: {
           name: 'ContextMenu',
           props: ['model'],
-          template: '<div />'
+          template:
+            '<div data-testid="context-menu" :data-model="JSON.stringify(model)" />'
         },
         ...stubs
       },
@@ -136,15 +139,23 @@ function createWrapper({
         tooltip: () => {}
       }
     }
-  })
+  }
+
+  if (attachTo) {
+    renderOptions.container = attachTo.appendChild(
+      document.createElement('div')
+    )
+  }
+
+  const { container, unmount } = render(TopMenuSection, renderOptions)
+
+  return { container, unmount, user }
 }
 
-function getLegacyCommandsContainer(
-  wrapper: ReturnType<typeof createWrapper>
-): HTMLElement {
-  const legacyContainer = wrapper.find(
+function getLegacyCommandsContainer(container: Element): HTMLElement {
+  const legacyContainer = container.querySelector(
     '[data-testid="legacy-topbar-container"]'
-  ).element
+  )
   if (!(legacyContainer instanceof HTMLElement)) {
     throw new Error('Expected legacy commands container to be present')
   }
@@ -201,9 +212,11 @@ describe('TopMenuSection', () => {
       })
 
       it('should display CurrentUserButton and not display LoginButton', () => {
-        const wrapper = createLegacyTabBarWrapper()
-        expect(wrapper.findComponent(CurrentUserButton).exists()).toBe(true)
-        expect(wrapper.findComponent(LoginButton).exists()).toBe(false)
+        const { container } = createLegacyTabBarWrapper()
+        expect(
+          container.querySelector('current-user-button-stub')
+        ).not.toBeNull()
+        expect(container.querySelector('login-button-stub')).toBeNull()
       })
     })
 
@@ -215,24 +228,24 @@ describe('TopMenuSection', () => {
       describe('on desktop platform', () => {
         it('should display LoginButton and not display CurrentUserButton', () => {
           mockData.isDesktop = true
-          const wrapper = createLegacyTabBarWrapper()
-          expect(wrapper.findComponent(LoginButton).exists()).toBe(true)
-          expect(wrapper.findComponent(CurrentUserButton).exists()).toBe(false)
+          const { container } = createLegacyTabBarWrapper()
+          expect(container.querySelector('login-button-stub')).not.toBeNull()
+          expect(container.querySelector('current-user-button-stub')).toBeNull()
         })
       })
 
       describe('on web platform', () => {
         it('should not display CurrentUserButton and not display LoginButton', () => {
-          const wrapper = createLegacyTabBarWrapper()
-          expect(wrapper.findComponent(CurrentUserButton).exists()).toBe(false)
-          expect(wrapper.findComponent(LoginButton).exists()).toBe(false)
+          const { container } = createLegacyTabBarWrapper()
+          expect(container.querySelector('current-user-button-stub')).toBeNull()
+          expect(container.querySelector('login-button-stub')).toBeNull()
         })
       })
     })
   })
 
   it('shows the active jobs label with the current count', async () => {
-    const wrapper = createWrapper()
+    createWrapper()
     const queueStore = useQueueStore()
     queueStore.pendingTasks = [createTask('pending-1', 'pending')]
     queueStore.runningTasks = [
@@ -242,19 +255,15 @@ describe('TopMenuSection', () => {
 
     await nextTick()
 
-    const queueButton = wrapper.find('[data-testid="queue-overlay-toggle"]')
-    expect(queueButton.text()).toContain('3 active')
-    expect(wrapper.find('[data-testid="active-jobs-indicator"]').exists()).toBe(
-      true
-    )
+    const queueButton = screen.getByTestId('queue-overlay-toggle')
+    expect(queueButton.textContent).toContain('3 active')
+    expect(screen.getByTestId('active-jobs-indicator')).toBeTruthy()
   })
 
   it('hides the active jobs indicator when no jobs are active', () => {
-    const wrapper = createWrapper()
+    createWrapper()
 
-    expect(wrapper.find('[data-testid="active-jobs-indicator"]').exists()).toBe(
-      false
-    )
+    expect(screen.queryByTestId('active-jobs-indicator')).toBeNull()
   })
 
   it('hides queue progress overlay when QPO V2 is enabled', async () => {
@@ -263,16 +272,12 @@ describe('TopMenuSection', () => {
     vi.mocked(settingStore.get).mockImplementation((key) =>
       key === 'Comfy.Queue.QPOV2' ? true : undefined
     )
-    const wrapper = createWrapper({ pinia })
+    const { container } = createWrapper({ pinia })
 
     await nextTick()
 
-    expect(wrapper.find('[data-testid="queue-overlay-toggle"]').exists()).toBe(
-      true
-    )
-    expect(
-      wrapper.findComponent({ name: 'QueueProgressOverlay' }).exists()
-    ).toBe(false)
+    expect(screen.getByTestId('queue-overlay-toggle')).toBeTruthy()
+    expect(container.querySelector('queue-progress-overlay-stub')).toBeNull()
   })
 
   it('toggles the queue progress overlay when QPO V2 is disabled', async () => {
@@ -281,10 +286,10 @@ describe('TopMenuSection', () => {
     vi.mocked(settingStore.get).mockImplementation((key) =>
       key === 'Comfy.Queue.QPOV2' ? false : undefined
     )
-    const wrapper = createWrapper({ pinia })
+    const { user } = createWrapper({ pinia })
     const commandStore = useCommandStore(pinia)
 
-    await wrapper.find('[data-testid="queue-overlay-toggle"]').trigger('click')
+    await user.click(screen.getByTestId('queue-overlay-toggle'))
 
     expect(commandStore.execute).toHaveBeenCalledWith(
       'Comfy.Queue.ToggleOverlay'
@@ -297,10 +302,10 @@ describe('TopMenuSection', () => {
     vi.mocked(settingStore.get).mockImplementation((key) =>
       key === 'Comfy.Queue.QPOV2' ? true : undefined
     )
-    const wrapper = createWrapper({ pinia })
+    const { user } = createWrapper({ pinia })
     const sidebarTabStore = useSidebarTabStore(pinia)
 
-    await wrapper.find('[data-testid="queue-overlay-toggle"]').trigger('click')
+    await user.click(screen.getByTestId('queue-overlay-toggle'))
 
     expect(sidebarTabStore.activeSidebarTabId).toBe('job-history')
   })
@@ -311,14 +316,14 @@ describe('TopMenuSection', () => {
     vi.mocked(settingStore.get).mockImplementation((key) =>
       key === 'Comfy.Queue.QPOV2' ? true : undefined
     )
-    const wrapper = createWrapper({ pinia })
+    const { user } = createWrapper({ pinia })
     const sidebarTabStore = useSidebarTabStore(pinia)
-    const toggleButton = wrapper.find('[data-testid="queue-overlay-toggle"]')
+    const toggleButton = screen.getByTestId('queue-overlay-toggle')
 
-    await toggleButton.trigger('click')
+    await user.click(toggleButton)
     expect(sidebarTabStore.activeSidebarTabId).toBe('job-history')
 
-    await toggleButton.trigger('click')
+    await user.click(toggleButton)
     expect(sidebarTabStore.activeSidebarTabId).toBe(null)
   })
 
@@ -341,39 +346,39 @@ describe('TopMenuSection', () => {
       const pinia = createTestingPinia({ createSpy: vi.fn })
       configureSettings(pinia, true)
 
-      const wrapper = createWrapper({ pinia })
+      const { container } = createWrapper({ pinia })
 
       await nextTick()
 
       expect(
-        wrapper.findComponent({ name: 'QueueInlineProgressSummary' }).exists()
-      ).toBe(true)
+        container.querySelector('queue-inline-progress-summary-stub')
+      ).not.toBeNull()
     })
 
     it('does not render inline progress summary when QPO V2 is disabled', async () => {
       const pinia = createTestingPinia({ createSpy: vi.fn })
       configureSettings(pinia, false)
 
-      const wrapper = createWrapper({ pinia })
+      const { container } = createWrapper({ pinia })
 
       await nextTick()
 
       expect(
-        wrapper.findComponent({ name: 'QueueInlineProgressSummary' }).exists()
-      ).toBe(false)
+        container.querySelector('queue-inline-progress-summary-stub')
+      ).toBeNull()
     })
 
     it('does not render inline progress summary when run progress bar is disabled', async () => {
       const pinia = createTestingPinia({ createSpy: vi.fn })
       configureSettings(pinia, true, false)
 
-      const wrapper = createWrapper({ pinia })
+      const { container } = createWrapper({ pinia })
 
       await nextTick()
 
       expect(
-        wrapper.findComponent({ name: 'QueueInlineProgressSummary' }).exists()
-      ).toBe(false)
+        container.querySelector('queue-inline-progress-summary-stub')
+      ).toBeNull()
     })
 
     it('teleports inline progress summary when actionbar is floating', async () => {
@@ -387,7 +392,7 @@ describe('TopMenuSection', () => {
 
       const ComfyActionbarStub = createComfyActionbarStub(actionbarTarget)
 
-      const wrapper = createWrapper({
+      const { unmount } = createWrapper({
         pinia,
         attachTo: document.body,
         stubs: {
@@ -401,7 +406,7 @@ describe('TopMenuSection', () => {
 
         expect(actionbarTarget.querySelector('[role="status"]')).not.toBeNull()
       } finally {
-        wrapper.unmount()
+        unmount()
         actionbarTarget.remove()
       }
     })
@@ -424,36 +429,36 @@ describe('TopMenuSection', () => {
       const pinia = createTestingPinia({ createSpy: vi.fn })
       configureSettings(pinia, true)
 
-      const wrapper = createWrapper({ pinia })
+      const { container } = createWrapper({ pinia })
 
       await nextTick()
 
       expect(
-        wrapper.findComponent({ name: 'QueueNotificationBannerHost' }).exists()
-      ).toBe(true)
+        container.querySelector('queue-notification-banner-host-stub')
+      ).not.toBeNull()
     })
 
     it('renders queue notification banners when QPO V2 is disabled', async () => {
       const pinia = createTestingPinia({ createSpy: vi.fn })
       configureSettings(pinia, false)
 
-      const wrapper = createWrapper({ pinia })
+      const { container } = createWrapper({ pinia })
 
       await nextTick()
 
       expect(
-        wrapper.findComponent({ name: 'QueueNotificationBannerHost' }).exists()
-      ).toBe(true)
+        container.querySelector('queue-notification-banner-host-stub')
+      ).not.toBeNull()
     })
 
     it('renders inline summary above banners when both are visible', async () => {
       const pinia = createTestingPinia({ createSpy: vi.fn })
       configureSettings(pinia, true)
-      const wrapper = createWrapper({ pinia })
+      const { container } = createWrapper({ pinia })
 
       await nextTick()
 
-      const html = wrapper.html()
+      const html = container.innerHTML
       const inlineSummaryIndex = html.indexOf(
         'queue-inline-progress-summary-stub'
       )
@@ -477,7 +482,7 @@ describe('TopMenuSection', () => {
 
       const ComfyActionbarStub = createComfyActionbarStub(actionbarTarget)
 
-      const wrapper = createWrapper({
+      const { container, unmount } = createWrapper({
         pinia,
         attachTo: document.body,
         stubs: {
@@ -493,47 +498,49 @@ describe('TopMenuSection', () => {
           actionbarTarget.querySelector('queue-notification-banner-host-stub')
         ).toBeNull()
         expect(
-          wrapper
-            .findComponent({ name: 'QueueNotificationBannerHost' })
-            .exists()
-        ).toBe(true)
+          container.querySelector('queue-notification-banner-host-stub')
+        ).not.toBeNull()
       } finally {
-        wrapper.unmount()
+        unmount()
         actionbarTarget.remove()
       }
     })
   })
 
   it('disables the clear queue context menu item when no queued jobs exist', () => {
-    const wrapper = createWrapper()
-    const menu = wrapper.findComponent({ name: 'ContextMenu' })
-    const model = menu.props('model') as MenuItem[]
+    const { container } = createWrapper()
+    const menuEl = container.querySelector('[data-testid="context-menu"]')
+    const model = JSON.parse(
+      menuEl?.getAttribute('data-model') ?? '[]'
+    ) as MenuItem[]
     expect(model[0]?.label).toBe('Clear queue')
     expect(model[0]?.disabled).toBe(true)
   })
 
   it('enables the clear queue context menu item when queued jobs exist', async () => {
-    const wrapper = createWrapper()
+    const { container } = createWrapper()
     const queueStore = useQueueStore()
     queueStore.pendingTasks = [createTask('pending-1', 'pending')]
 
     await nextTick()
 
-    const menu = wrapper.findComponent({ name: 'ContextMenu' })
-    const model = menu.props('model') as MenuItem[]
+    const menuEl = container.querySelector('[data-testid="context-menu"]')
+    const model = JSON.parse(
+      menuEl?.getAttribute('data-model') ?? '[]'
+    ) as MenuItem[]
     expect(model[0]?.disabled).toBe(false)
   })
 
   it('shows manager red dot only for manager conflicts', async () => {
-    const wrapper = createWrapper()
+    const { container } = createWrapper()
 
     // Release red dot is mocked as true globally for this test file.
-    expect(wrapper.find('span.bg-red-500').exists()).toBe(false)
+    expect(container.querySelector('span.bg-red-500')).toBeNull()
 
     mockData.setShowConflictRedDot(true)
     await nextTick()
 
-    expect(wrapper.find('span.bg-red-500').exists()).toBe(true)
+    expect(container.querySelector('span.bg-red-500')).not.toBeNull()
   })
 
   it('coalesces legacy topbar mutation scans to one check per frame', async () => {
@@ -555,15 +562,19 @@ describe('TopMenuSection', () => {
       return undefined
     })
 
-    const wrapper = createWrapper({ pinia, attachTo: document.body })
+    const { container, unmount } = createWrapper({
+      pinia,
+      attachTo: document.body
+    })
 
     try {
       await nextTick()
 
-      const actionbarContainer = wrapper.find('.actionbar-container')
-      expect(actionbarContainer.classes()).toContain('w-0')
+      const actionbarContainer = container.querySelector('.actionbar-container')
+      expect(actionbarContainer).not.toBeNull()
+      expect(actionbarContainer!.classList).toContain('w-0')
 
-      const legacyContainer = getLegacyCommandsContainer(wrapper)
+      const legacyContainer = getLegacyCommandsContainer(container)
       const querySpy = vi.spyOn(legacyContainer, 'querySelector')
 
       if (rafCallbacks.length > 0) {
@@ -594,9 +605,9 @@ describe('TopMenuSection', () => {
       await nextTick()
 
       expect(querySpy).toHaveBeenCalledTimes(1)
-      expect(actionbarContainer.classes()).toContain('px-2')
+      expect(actionbarContainer!.classList).toContain('px-2')
     } finally {
-      wrapper.unmount()
+      unmount()
       vi.unstubAllGlobals()
     }
   })

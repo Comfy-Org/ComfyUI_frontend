@@ -1,20 +1,20 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
-test.describe(
-  'Subgraph Internal Operations',
-  { tag: ['@slow', '@subgraph'] },
-  () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-      await comfyPage.settings.setSetting(
-        'Comfy.NodeSearchBoxImpl',
-        'v1 (legacy)'
-      )
-    })
+test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+    await comfyPage.settings.setSetting(
+      'Comfy.NodeSearchBoxImpl',
+      'v1 (legacy)'
+    )
+  })
 
-    test('Can copy and paste nodes in subgraph', async ({ comfyPage }) => {
+  test.describe('Subgraph Clipboard Operations', () => {
+    test('Can copy and paste nodes inside a subgraph', async ({
+      comfyPage
+    }) => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
@@ -22,56 +22,61 @@ test.describe(
 
       const initialNodeCount = await comfyPage.subgraph.getNodeCount()
 
-      const nodesInSubgraph = await comfyPage.page.evaluate(() => {
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const nodes = window.app!.canvas.graph!.nodes
+            return nodes?.[0]?.id ?? null
+          })
+        )
+        .not.toBeNull()
+
+      const nodeId = await comfyPage.page.evaluate(() => {
         const nodes = window.app!.canvas.graph!.nodes
-        return nodes?.[0]?.id || null
+        return nodes?.[0]?.id ?? null
       })
 
-      expect(nodesInSubgraph).not.toBeNull()
-
-      const nodeToClone = await comfyPage.nodeOps.getNodeRefById(
-        String(nodesInSubgraph)
-      )
+      const nodeToClone = await comfyPage.nodeOps.getNodeRefById(String(nodeId))
       await nodeToClone.click('title')
-      await comfyPage.nextFrame()
 
-      await comfyPage.page.keyboard.press('Control+c')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('ControlOrMeta+c')
 
-      await comfyPage.page.keyboard.press('Control+v')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('ControlOrMeta+v')
 
-      const finalNodeCount = await comfyPage.subgraph.getNodeCount()
-      expect(finalNodeCount).toBe(initialNodeCount + 1)
+      await expect
+        .poll(() => comfyPage.subgraph.getNodeCount())
+        .toBe(initialNodeCount + 1)
     })
+  })
 
-    test('Can undo and redo operations in subgraph', async ({ comfyPage }) => {
+  test.describe('Subgraph History Operations', () => {
+    test('Can undo and redo operations inside a subgraph', async ({
+      comfyPage
+    }) => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
 
-      // Add a node
       await comfyPage.canvasOps.doubleClick()
       await comfyPage.searchBox.fillAndSelectFirstNode('Note')
       await comfyPage.nextFrame()
 
-      // Get initial node count
       const initialCount = await comfyPage.subgraph.getNodeCount()
 
-      // Undo
       await comfyPage.keyboard.undo()
       await comfyPage.nextFrame()
 
-      const afterUndoCount = await comfyPage.subgraph.getNodeCount()
-      expect(afterUndoCount).toBe(initialCount - 1)
+      await expect
+        .poll(() => comfyPage.subgraph.getNodeCount())
+        .toBe(initialCount - 1)
 
-      // Redo
       await comfyPage.keyboard.redo()
       await comfyPage.nextFrame()
 
-      const afterRedoCount = await comfyPage.subgraph.getNodeCount()
-      expect(afterRedoCount).toBe(initialCount)
+      await expect
+        .poll(() => comfyPage.subgraph.getNodeCount())
+        .toBe(initialCount)
     })
-  }
-)
+  })
+})

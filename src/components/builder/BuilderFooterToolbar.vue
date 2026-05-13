@@ -33,76 +33,91 @@
         {{ t('g.next') }}
         <i class="icon-[lucide--chevron-right]" aria-hidden="true" />
       </Button>
-      <ConnectOutputPopover
-        v-if="!hasOutputs"
-        :is-select-active="isSelectStep"
-        @switch="navigateToStep('builder:outputs')"
-      >
+      <div class="relative min-w-24">
+        <!--
+          Invisible sizers: both labels rendered with matching button padding
+          so the container's intrinsic width equals the wider label.
+          height:0 + overflow:hidden keeps them invisible without affecting height.
+        -->
+        <div class="max-h-0 overflow-y-hidden" aria-hidden="true">
+          <div class="px-4 py-2 text-sm">{{ t('g.save') }}</div>
+          <div class="px-4 py-2 text-sm">{{ t('builderToolbar.saveAs') }}</div>
+        </div>
+        <ConnectOutputPopover
+          v-if="!hasOutputs"
+          class="w-full"
+          :is-select-active="isSelectStep"
+          @switch="navigateToStep('builder:outputs')"
+        >
+          <Button
+            size="lg"
+            class="w-full"
+            :class="disabledSaveClasses"
+            data-testid="builder-save-as-button"
+          >
+            {{ isSaved ? t('g.save') : t('builderToolbar.saveAs') }}
+          </Button>
+        </ConnectOutputPopover>
+        <ButtonGroup
+          v-else-if="isSaved"
+          data-testid="builder-save-group"
+          class="w-full rounded-lg bg-secondary-background has-[[data-save-chevron]:hover]:bg-secondary-background-hover"
+        >
+          <Button
+            size="lg"
+            :disabled="!isModified"
+            class="flex-1"
+            :class="isModified ? activeSaveClasses : disabledSaveClasses"
+            data-testid="builder-save-button"
+            @click="save()"
+          >
+            {{ t('g.save') }}
+          </Button>
+          <DropdownMenuRoot>
+            <DropdownMenuTrigger as-child>
+              <Button
+                size="lg"
+                :aria-label="t('builderToolbar.saveAs')"
+                data-save-chevron
+                data-testid="builder-save-as-chevron"
+                class="w-6 rounded-l-none border-l border-border-default px-0"
+              >
+                <i
+                  class="icon-[lucide--chevron-down] size-4"
+                  aria-hidden="true"
+                />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuContent
+                align="end"
+                :side-offset="4"
+                class="z-1001 min-w-36 rounded-lg border border-border-subtle bg-base-background p-1 shadow-interface"
+              >
+                <DropdownMenuItem as-child @select="saveAs()">
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    class="w-full justify-start font-normal"
+                  >
+                    {{ t('builderToolbar.saveAs') }}
+                  </Button>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenuPortal>
+          </DropdownMenuRoot>
+        </ButtonGroup>
         <Button
+          v-else
           size="lg"
-          :class="cn('w-24', disabledSaveClasses)"
+          class="w-full"
+          :class="activeSaveClasses"
           data-testid="builder-save-as-button"
+          @click="saveAs()"
         >
-          {{ isSaved ? t('g.save') : t('builderToolbar.saveAs') }}
+          {{ t('builderToolbar.saveAs') }}
         </Button>
-      </ConnectOutputPopover>
-      <ButtonGroup
-        v-else-if="isSaved"
-        class="w-24 rounded-lg bg-secondary-background has-[[data-save-chevron]:hover]:bg-secondary-background-hover"
-      >
-        <Button
-          size="lg"
-          :disabled="!isModified"
-          class="flex-1"
-          :class="isModified ? activeSaveClasses : disabledSaveClasses"
-          data-testid="builder-save-button"
-          @click="save()"
-        >
-          {{ t('g.save') }}
-        </Button>
-        <DropdownMenuRoot>
-          <DropdownMenuTrigger as-child>
-            <Button
-              size="lg"
-              :aria-label="t('builderToolbar.saveAs')"
-              data-save-chevron
-              data-testid="builder-save-as-chevron"
-              class="w-6 rounded-l-none border-l border-border-default px-0"
-            >
-              <i
-                class="icon-[lucide--chevron-down] size-4"
-                aria-hidden="true"
-              />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuContent
-              align="end"
-              :side-offset="4"
-              class="z-1001 min-w-36 rounded-lg border border-border-subtle bg-base-background p-1 shadow-interface"
-            >
-              <DropdownMenuItem as-child @select="saveAs()">
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  class="w-full justify-start font-normal"
-                >
-                  {{ t('builderToolbar.saveAs') }}
-                </Button>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenuPortal>
-        </DropdownMenuRoot>
-      </ButtonGroup>
-      <Button
-        v-else
-        size="lg"
-        :class="activeSaveClasses"
-        data-testid="builder-save-as-button"
-        @click="saveAs()"
-      >
-        {{ t('builderToolbar.saveAs') }}
-      </Button>
+      </div>
     </nav>
   </div>
 </template>
@@ -126,8 +141,6 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { cn } from '@/utils/tailwindUtil'
-
 import BuilderOpensAsPopover from './BuilderOpensAsPopover.vue'
 import { setWorkflowDefaultView } from './builderViewOptions'
 import ConnectOutputPopover from './ConnectOutputPopover.vue'

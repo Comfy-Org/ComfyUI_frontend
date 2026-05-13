@@ -25,7 +25,7 @@ export class BaseDialog {
   }
 
   async close(): Promise<void> {
-    await this.closeButton.click({ force: true })
+    await this.closeButton.click()
     await this.waitForHidden()
   }
 }

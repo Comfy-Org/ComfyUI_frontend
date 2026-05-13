@@ -1,4 +1,5 @@
-import { flushPromises, mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -59,6 +60,10 @@ function createDefaultFormData(): ComfyHubPublishFormData {
   }
 }
 
+async function flushPromises() {
+  await new Promise((r) => setTimeout(r, 0))
+}
+
 describe('ComfyHubPublishWizardContent', () => {
   const onPublish = vi.fn()
   const onGoNext = vi.fn()
@@ -78,12 +83,12 @@ describe('ComfyHubPublishWizardContent', () => {
     mockFlags.comfyHubProfileGateEnabled = true
   })
 
-  function createWrapper(
+  function renderComponent(
     overrides: Partial<
       InstanceType<typeof ComfyHubPublishWizardContent>['$props']
     > = {}
   ) {
-    return mount(ComfyHubPublishWizardContent, {
+    return render(ComfyHubPublishWizardContent, {
       props: {
         currentStep: 'finish',
         formData: createDefaultFormData(),
@@ -171,8 +176,8 @@ describe('ComfyHubPublishWizardContent', () => {
     it('calls onPublish when profile exists', async () => {
       mockCheckProfile.mockResolvedValue(true)
 
-      const wrapper = createWrapper()
-      await wrapper.find('[data-testid="publish-btn"]').trigger('click')
+      renderComponent()
+      await userEvent.click(screen.getByTestId('publish-btn'))
       await flushPromises()
 
       expect(mockCheckProfile).toHaveBeenCalledOnce()
@@ -183,8 +188,8 @@ describe('ComfyHubPublishWizardContent', () => {
     it('calls onRequireProfile when no profile exists', async () => {
       mockCheckProfile.mockResolvedValue(false)
 
-      const wrapper = createWrapper()
-      await wrapper.find('[data-testid="publish-btn"]').trigger('click')
+      renderComponent()
+      await userEvent.click(screen.getByTestId('publish-btn'))
       await flushPromises()
 
       expect(onRequireProfile).toHaveBeenCalledOnce()
@@ -195,8 +200,8 @@ describe('ComfyHubPublishWizardContent', () => {
       const error = new Error('Network error')
       mockCheckProfile.mockRejectedValue(error)
 
-      const wrapper = createWrapper()
-      await wrapper.find('[data-testid="publish-btn"]').trigger('click')
+      renderComponent()
+      await userEvent.click(screen.getByTestId('publish-btn'))
       await flushPromises()
 
       expect(mockToastErrorHandler).toHaveBeenCalledWith(error)
@@ -207,8 +212,8 @@ describe('ComfyHubPublishWizardContent', () => {
     it('calls onPublish directly when profile gate is disabled', async () => {
       mockFlags.comfyHubProfileGateEnabled = false
 
-      const wrapper = createWrapper()
-      await wrapper.find('[data-testid="publish-btn"]').trigger('click')
+      renderComponent()
+      await userEvent.click(screen.getByTestId('publish-btn'))
       await flushPromises()
 
       expect(mockCheckProfile).not.toHaveBeenCalled()
@@ -221,11 +226,11 @@ describe('ComfyHubPublishWizardContent', () => {
       const publishDeferred = createDeferred<void>()
       onPublish.mockReturnValue(publishDeferred.promise)
 
-      const wrapper = createWrapper()
-      const publishBtn = wrapper.find('[data-testid="publish-btn"]')
+      renderComponent()
+      const publishBtn = screen.getByTestId('publish-btn')
 
-      await publishBtn.trigger('click')
-      await publishBtn.trigger('click')
+      await userEvent.click(publishBtn)
+      await userEvent.click(publishBtn)
       await flushPromises()
 
       expect(onPublish).toHaveBeenCalledTimes(1)
@@ -238,8 +243,8 @@ describe('ComfyHubPublishWizardContent', () => {
       const publishError = new Error('Publish failed')
       onPublish.mockRejectedValueOnce(publishError)
 
-      const wrapper = createWrapper()
-      await wrapper.find('[data-testid="publish-btn"]').trigger('click')
+      renderComponent()
+      await userEvent.click(screen.getByTestId('publish-btn'))
       await flushPromises()
 
       expect(onPublish).toHaveBeenCalledOnce()
@@ -251,33 +256,33 @@ describe('ComfyHubPublishWizardContent', () => {
       const publishDeferred = createDeferred<void>()
       onPublish.mockReturnValue(publishDeferred.promise)
 
-      const wrapper = createWrapper()
-      const publishBtn = wrapper.find('[data-testid="publish-btn"]')
+      renderComponent()
+      const publishBtn = screen.getByTestId('publish-btn')
 
-      await publishBtn.trigger('click')
+      await userEvent.click(publishBtn)
       await flushPromises()
 
-      const footer = wrapper.find('[data-testid="publish-footer"]')
-      expect(footer.attributes('data-publish-disabled')).toBe('true')
-      expect(footer.attributes('data-is-publishing')).toBe('true')
+      const footer = screen.getByTestId('publish-footer')
+      expect(footer.getAttribute('data-publish-disabled')).toBe('true')
+      expect(footer.getAttribute('data-is-publishing')).toBe('true')
 
       publishDeferred.resolve(undefined)
       await flushPromises()
 
-      expect(footer.attributes('data-is-publishing')).toBe('false')
+      expect(footer.getAttribute('data-is-publishing')).toBe('false')
     })
 
     it('resets guard after publish error so retry is possible', async () => {
       onPublish.mockRejectedValueOnce(new Error('Publish failed'))
 
-      const wrapper = createWrapper()
-      const publishBtn = wrapper.find('[data-testid="publish-btn"]')
+      renderComponent()
+      const publishBtn = screen.getByTestId('publish-btn')
 
-      await publishBtn.trigger('click')
+      await userEvent.click(publishBtn)
       await flushPromises()
 
       onPublish.mockResolvedValueOnce(undefined)
-      await publishBtn.trigger('click')
+      await userEvent.click(publishBtn)
       await flushPromises()
 
       expect(onPublish).toHaveBeenCalledTimes(2)
@@ -287,48 +292,42 @@ describe('ComfyHubPublishWizardContent', () => {
   describe('isPublishDisabled', () => {
     it('disables publish when gate enabled and hasProfile is not true', () => {
       mockHasProfile.value = null
-      const wrapper = createWrapper()
+      renderComponent()
 
-      const footer = wrapper.find('[data-testid="publish-footer"]')
-      expect(footer.attributes('data-publish-disabled')).toBe('true')
+      const footer = screen.getByTestId('publish-footer')
+      expect(footer.getAttribute('data-publish-disabled')).toBe('true')
     })
 
     it('enables publish when gate enabled and hasProfile is true', async () => {
       mockHasProfile.value = true
-      const wrapper = createWrapper()
+      renderComponent()
       await flushPromises()
 
-      const footer = wrapper.find('[data-testid="publish-footer"]')
-      expect(footer.attributes('data-publish-disabled')).toBe('false')
+      const footer = screen.getByTestId('publish-footer')
+      expect(footer.getAttribute('data-publish-disabled')).toBe('false')
     })
 
     it('enables publish when gate is disabled regardless of profile', () => {
       mockFlags.comfyHubProfileGateEnabled = false
       mockHasProfile.value = null
-      const wrapper = createWrapper()
+      renderComponent()
 
-      const footer = wrapper.find('[data-testid="publish-footer"]')
-      expect(footer.attributes('data-publish-disabled')).toBe('false')
+      const footer = screen.getByTestId('publish-footer')
+      expect(footer.getAttribute('data-publish-disabled')).toBe('false')
     })
   })
 
   describe('profileCreation step rendering', () => {
     it('shows profile creation form when on profileCreation step', () => {
-      const wrapper = createWrapper({ currentStep: 'profileCreation' })
-      expect(wrapper.find('[data-testid="publish-gate-flow"]').exists()).toBe(
-        true
-      )
-      expect(wrapper.find('[data-testid="publish-footer"]').exists()).toBe(
-        false
-      )
+      renderComponent({ currentStep: 'profileCreation' })
+      expect(screen.getByTestId('publish-gate-flow')).toBeTruthy()
+      expect(screen.queryByTestId('publish-footer')).not.toBeInTheDocument()
     })
 
     it('shows wizard content when not on profileCreation step', () => {
-      const wrapper = createWrapper({ currentStep: 'finish' })
-      expect(wrapper.find('[data-testid="publish-gate-flow"]').exists()).toBe(
-        false
-      )
-      expect(wrapper.find('[data-testid="publish-footer"]').exists()).toBe(true)
+      renderComponent({ currentStep: 'finish' })
+      expect(screen.queryByTestId('publish-gate-flow')).not.toBeInTheDocument()
+      expect(screen.getByTestId('publish-footer')).toBeTruthy()
     })
   })
 })

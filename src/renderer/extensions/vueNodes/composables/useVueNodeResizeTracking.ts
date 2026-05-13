@@ -8,15 +8,14 @@
  * Supports different element types (nodes, slots, widgets, etc.) with
  * customizable data attributes and update handlers.
  */
-import { getCurrentInstance, onMounted, onUnmounted, toValue, watch } from 'vue'
-import type { MaybeRefOrGetter } from 'vue'
+import { getCurrentInstance, onMounted, onUnmounted, watch } from 'vue'
 
 import { useDocumentVisibility } from '@vueuse/core'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import {
@@ -139,15 +138,6 @@ const resizeObserver = new ResizeObserver((entries) => {
     const nodeId: NodeId | undefined =
       elementType === 'node' ? elementId : undefined
 
-    // Skip collapsed nodes — their DOM height is just the header, and writing
-    // that back to the layout store would overwrite the stored expanded size.
-    if (elementType === 'node' && element.dataset.collapsed != null) {
-      if (nodeId) {
-        nodesNeedingSlotResync.add(nodeId)
-      }
-      continue
-    }
-
     // Use borderBoxSize when available; fall back to contentRect for older engines/tests
     // Border box is the border included FULL wxh DOM value.
     const borderBox = Array.isArray(entry.borderBoxSize)
@@ -158,6 +148,7 @@ const resizeObserver = new ResizeObserver((entries) => {
         }
     const width = Math.max(0, borderBox.inlineSize)
     const height = Math.max(0, borderBox.blockSize)
+
     const nodeLayout = nodeId
       ? layoutStore.getNodeLayoutRef(nodeId).value
       : null
@@ -186,13 +177,26 @@ const resizeObserver = new ResizeObserver((entries) => {
       continue
     }
 
-    // Screen-space rect
-    const rect = element.getBoundingClientRect()
-    const [cx, cy] = conv.clientPosToCanvasPos([rect.left, rect.top])
-    const topLeftCanvas = { x: cx, y: cy }
+    // Use existing position from layout store (source of truth) rather than
+    // converting screen-space getBoundingClientRect() back to canvas coords.
+    // The DOM→canvas conversion depends on the current canvas scale/offset,
+    // which can be stale during graph transitions (e.g. entering a subgraph
+    // before fitView runs), producing corrupted positions.
+    const existingPos = nodeLayout?.position
+    let posX: number
+    let posY: number
+    if (existingPos) {
+      posX = existingPos.x
+      posY = existingPos.y
+    } else {
+      const rect = element.getBoundingClientRect()
+      const [cx, cy] = conv.clientPosToCanvasPos([rect.left, rect.top])
+      posX = cx
+      posY = cy + LiteGraph.NODE_TITLE_HEIGHT
+    }
     const bounds: Bounds = {
-      x: topLeftCanvas.x,
-      y: topLeftCanvas.y + LiteGraph.NODE_TITLE_HEIGHT,
+      x: posX,
+      y: posY,
       width,
       height
     }
@@ -268,10 +272,9 @@ const resizeObserver = new ResizeObserver((entries) => {
  * ```
  */
 export function useVueElementTracking(
-  appIdentifierMaybe: MaybeRefOrGetter<string>,
+  appIdentifier: string,
   trackingType: string
 ) {
-  const appIdentifier = toValue(appIdentifierMaybe)
   onMounted(() => {
     const element = getCurrentInstance()?.proxy?.$el
     if (!(element instanceof HTMLElement) || !appIdentifier) return
@@ -296,6 +299,7 @@ export function useVueElementTracking(
     delete element.dataset[config.dataAttribute]
     cachedNodeMeasurements.delete(element)
     elementsNeedingFreshMeasurement.delete(element)
+    deferredElements.delete(element)
     resizeObserver.unobserve(element)
   })
 }

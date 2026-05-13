@@ -9,11 +9,14 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import {
   scanAllModelCandidates,
+  scanNodeModelCandidates,
   isModelFileName,
   enrichWithEmbeddedMetadata,
   verifyAssetSupportedCandidates,
   MODEL_FILE_EXTENSIONS
 } from '@/platform/missingModel/missingModelScan'
+import activeSubgraphUnmatchedModel from '@/platform/missingModel/__fixtures__/activeSubgraphUnmatchedModel.json' with { type: 'json' }
+import bypassedSubgraphUnmatchedModel from '@/platform/missingModel/__fixtures__/bypassedSubgraphUnmatchedModel.json' with { type: 'json' }
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
@@ -40,7 +43,7 @@ function makeComboWidget(
 }
 
 /** Helper: create an asset widget mock (Cloud combo replacement) */
-function makeAssetWidget(name: string, value: string): IBaseWidget {
+function makeAssetWidget(name: string, value: unknown): IBaseWidget {
   return fromAny<IBaseWidget, unknown>({
     type: 'asset',
     name,
@@ -108,6 +111,180 @@ describe('MODEL_FILE_EXTENSIONS', () => {
   it('should contain standard extensions', () => {
     expect(MODEL_FILE_EXTENSIONS.has('.safetensors')).toBe(true)
     expect(MODEL_FILE_EXTENSIONS.has('.ckpt')).toBe(true)
+  })
+})
+
+describe('scanNodeModelCandidates', () => {
+  it('returns candidates for a node with a missing model combo widget', () => {
+    const graph = makeGraph([])
+    const node = makeNode(1, 'CheckpointLoaderSimple', [
+      makeComboWidget('ckpt_name', 'missing_model.safetensors', [
+        'existing_model.safetensors'
+      ])
+    ])
+
+    const result = scanNodeModelCandidates(graph, node, noAssetSupport)
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toEqual({
+      nodeId: '1',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      isAssetSupported: false,
+      name: 'missing_model.safetensors',
+      isMissing: true
+    })
+  })
+
+  it('returns empty array for node with no widgets', () => {
+    const graph = makeGraph([])
+    const node = makeNode(1, 'EmptyNode', [])
+
+    const result = scanNodeModelCandidates(graph, node, noAssetSupport)
+
+    expect(result).toEqual([])
+  })
+
+  it('returns empty array when executionId is null', () => {
+    const graph = makeGraph([])
+    const node = makeNode(
+      1,
+      'CheckpointLoaderSimple',
+      [makeComboWidget('ckpt_name', 'model.safetensors', [])],
+      ''
+    )
+
+    const result = scanNodeModelCandidates(graph, node, noAssetSupport)
+
+    expect(result).toEqual([])
+  })
+
+  it('enriches candidates with url/hash/directory from node.properties.models', () => {
+    // Regression: bypass/un-bypass cycle previously lost url metadata
+    // because realtime scan only reads widget values. Per-node embedded
+    // metadata in `properties.models` persists across mode toggles, so
+    // the scan now enriches candidates from that source.
+    const graph = makeGraph([])
+    const node = fromAny<LGraphNode, unknown>({
+      id: 1,
+      type: 'CheckpointLoaderSimple',
+      widgets: [
+        makeComboWidget('ckpt_name', 'missing_model.safetensors', [
+          'other_model.safetensors'
+        ])
+      ],
+      properties: {
+        models: [
+          {
+            name: 'missing_model.safetensors',
+            url: 'https://example.com/missing_model',
+            directory: 'checkpoints',
+            hash: 'abc123',
+            hash_type: 'sha256'
+          }
+        ]
+      }
+    })
+
+    const result = scanNodeModelCandidates(graph, node, noAssetSupport)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].url).toBe('https://example.com/missing_model')
+    expect(result[0].directory).toBe('checkpoints')
+    expect(result[0].hash).toBe('abc123')
+    expect(result[0].hashType).toBe('sha256')
+  })
+
+  it('preserves existing candidate fields when enriching (no overwrite)', () => {
+    const graph = makeGraph([])
+    const node = fromAny<LGraphNode, unknown>({
+      id: 1,
+      type: 'CheckpointLoaderSimple',
+      widgets: [makeComboWidget('ckpt_name', 'missing_model.safetensors', [])],
+      properties: {
+        models: [
+          {
+            name: 'missing_model.safetensors',
+            url: 'https://example.com/new_url',
+            directory: 'checkpoints'
+          }
+        ]
+      }
+    })
+
+    const result = scanNodeModelCandidates(
+      graph,
+      node,
+      noAssetSupport,
+      () => 'checkpoints'
+    )
+
+    expect(result).toHaveLength(1)
+    // scanComboWidget already sets directory via getDirectory; enrichment
+    // does not overwrite it.
+    expect(result[0].directory).toBe('checkpoints')
+    // url was not set by scan, so enrichment fills it in.
+    expect(result[0].url).toBe('https://example.com/new_url')
+  })
+
+  it('skips enrichment when candidate and embedded model directories differ', () => {
+    // A node can list the same model name under multiple directories
+    // (e.g. a LoRA present in both `loras` and `loras/subdir`). Name-only
+    // matching would stamp the wrong url/hash onto the candidate, so
+    // enrichment must agree on directory when the candidate already has
+    // one.
+    const graph = makeGraph([])
+    const node = fromAny<LGraphNode, unknown>({
+      id: 1,
+      type: 'CheckpointLoaderSimple',
+      widgets: [
+        makeComboWidget('ckpt_name', 'collision_model.safetensors', [])
+      ],
+      properties: {
+        models: [
+          {
+            name: 'collision_model.safetensors',
+            url: 'https://example.com/wrong_dir_url',
+            directory: 'wrong_dir'
+          }
+        ]
+      }
+    })
+
+    const result = scanNodeModelCandidates(
+      graph,
+      node,
+      noAssetSupport,
+      () => 'checkpoints'
+    )
+
+    expect(result).toHaveLength(1)
+    expect(result[0].directory).toBe('checkpoints')
+    // Directory mismatch — enrichment should not stamp the wrong url.
+    expect(result[0].url).toBeUndefined()
+  })
+
+  it('does not enrich candidates with mismatched model names', () => {
+    const graph = makeGraph([])
+    const node = fromAny<LGraphNode, unknown>({
+      id: 1,
+      type: 'CheckpointLoaderSimple',
+      widgets: [makeComboWidget('ckpt_name', 'missing_model.safetensors', [])],
+      properties: {
+        models: [
+          {
+            name: 'different_model.safetensors',
+            url: 'https://example.com/different',
+            directory: 'checkpoints'
+          }
+        ]
+      }
+    })
+
+    const result = scanNodeModelCandidates(graph, node, noAssetSupport)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].url).toBeUndefined()
   })
 })
 
@@ -374,6 +551,16 @@ describe('scanAllModelCandidates', () => {
     expect(result).toEqual([])
   })
 
+  it('should skip asset widgets with non-string values', () => {
+    const graph = makeGraph([
+      makeNode(1, 'SomeNode', [makeAssetWidget('ckpt_name', 123)])
+    ])
+
+    const result = scanAllModelCandidates(graph, noAssetSupport)
+
+    expect(result).toEqual([])
+  })
+
   it('should scan both combo and asset widgets on the same node', () => {
     const graph = makeGraph([
       makeNode(1, 'DualLoaderNode', [
@@ -388,6 +575,58 @@ describe('scanAllModelCandidates', () => {
     expect(result[0].widgetName).toBe('ckpt_name')
     expect(result[0].isAssetSupported).toBe(true)
     expect(result[1].widgetName).toBe('vae_name')
+  })
+
+  it('skips muted nodes (mode === NEVER)', () => {
+    const mutedNode = fromAny<LGraphNode, unknown>({
+      id: 10,
+      type: 'CheckpointLoaderSimple',
+      widgets: [
+        makeComboWidget('ckpt_name', 'model.safetensors', ['other.safetensors'])
+      ],
+      mode: 2, // LGraphEventMode.NEVER
+      _testExecutionId: '10'
+    })
+
+    const graph = makeGraph([mutedNode])
+    const result = scanAllModelCandidates(graph, noAssetSupport)
+
+    expect(result).toHaveLength(0)
+  })
+
+  it('skips bypassed nodes (mode === BYPASS)', () => {
+    const bypassedNode = fromAny<LGraphNode, unknown>({
+      id: 11,
+      type: 'CheckpointLoaderSimple',
+      widgets: [
+        makeComboWidget('ckpt_name', 'model.safetensors', ['other.safetensors'])
+      ],
+      mode: 4, // LGraphEventMode.BYPASS
+      _testExecutionId: '11'
+    })
+
+    const graph = makeGraph([bypassedNode])
+    const result = scanAllModelCandidates(graph, noAssetSupport)
+
+    expect(result).toHaveLength(0)
+  })
+
+  it('includes active nodes (mode === ALWAYS)', () => {
+    const activeNode = fromAny<LGraphNode, unknown>({
+      id: 12,
+      type: 'CheckpointLoaderSimple',
+      widgets: [
+        makeComboWidget('ckpt_name', 'model.safetensors', ['other.safetensors'])
+      ],
+      mode: 0, // LGraphEventMode.ALWAYS
+      _testExecutionId: '12'
+    })
+
+    const graph = makeGraph([activeNode])
+    const result = scanAllModelCandidates(graph, noAssetSupport)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].isMissing).toBe(true)
   })
 
   it('skips subgraph container nodes whose promoted widgets are already scanned via interior nodes', () => {
@@ -638,6 +877,274 @@ describe('enrichWithEmbeddedMetadata', () => {
 
     expect(result).toHaveLength(0)
   })
+
+  it('skips embedded models from muted nodes', async () => {
+    const candidates: MissingModelCandidate[] = []
+    const graphData = fromPartial<ComfyWorkflowJSON>({
+      last_node_id: 1,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 1,
+          type: 'CheckpointLoaderSimple',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 2, // NEVER (muted)
+          properties: {},
+          widgets_values: { ckpt_name: 'model.safetensors' }
+        }
+      ],
+      links: [],
+      groups: [],
+      config: {},
+      extra: {},
+      version: 0.4,
+      models: [
+        {
+          name: 'model.safetensors',
+          url: 'https://example.com/model',
+          directory: 'checkpoints'
+        }
+      ]
+    })
+
+    const result = await enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      alwaysMissing
+    )
+
+    expect(result).toHaveLength(0)
+  })
+
+  it('drops workflow-level model entries when only referencing nodes are bypassed (other active nodes present)', async () => {
+    // Regression: a previous `hasActiveNodes` check kept workflow-level
+    // models in a mixed graph if ANY active node existed, even when every
+    // node that actually referenced the model was bypassed. The correct
+    // check drops unmatched workflow-level entries since candidates are
+    // derived from active-node widgets.
+    const candidates: MissingModelCandidate[] = []
+    const graphData = fromPartial<ComfyWorkflowJSON>({
+      last_node_id: 2,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 1,
+          type: 'CheckpointLoaderSimple',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 4, // BYPASS — only node referencing the model
+          properties: {},
+          widgets_values: { ckpt_name: 'model.safetensors' }
+        },
+        {
+          id: 2,
+          type: 'KSampler',
+          pos: [200, 0],
+          size: [100, 100],
+          flags: {},
+          order: 1,
+          mode: 0, // ALWAYS — unrelated active node
+          properties: {},
+          widgets_values: {}
+        }
+      ],
+      links: [],
+      groups: [],
+      config: {},
+      extra: {},
+      version: 0.4,
+      models: [
+        {
+          name: 'model.safetensors',
+          url: 'https://example.com/model',
+          directory: 'checkpoints'
+        }
+      ]
+    })
+
+    const result = await enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      alwaysMissing
+    )
+
+    expect(result).toHaveLength(0)
+  })
+
+  it('keeps unmatched node-sourced entries in a mixed graph', async () => {
+    // A node-sourced unmatched entry (sourceNodeType !== '') must survive
+    // the workflow-level filter. This ensures the simplification does not
+    // over-filter legitimate per-node missing models.
+    const candidates = [
+      makeCandidate('node_model.safetensors', { nodeId: '1' })
+    ]
+    const graphData = fromPartial<ComfyWorkflowJSON>({
+      last_node_id: 1,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 1,
+          type: 'CheckpointLoaderSimple',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 0,
+          properties: {
+            models: [
+              {
+                name: 'node_model.safetensors',
+                url: 'https://example.com/node_model',
+                directory: 'checkpoints'
+              }
+            ]
+          },
+          widgets_values: { ckpt_name: 'node_model.safetensors' }
+        }
+      ],
+      links: [],
+      groups: [],
+      config: {},
+      extra: {},
+      version: 0.4,
+      models: []
+    })
+
+    const result = await enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      alwaysMissing
+    )
+
+    expect(result).toHaveLength(1)
+    expect(result[0].name).toBe('node_model.safetensors')
+  })
+
+  it('skips embedded models from bypassed nodes', async () => {
+    const candidates: MissingModelCandidate[] = []
+    const graphData = fromPartial<ComfyWorkflowJSON>({
+      last_node_id: 1,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 1,
+          type: 'CheckpointLoaderSimple',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 4, // BYPASS
+          properties: {},
+          widgets_values: { ckpt_name: 'model.safetensors' }
+        }
+      ],
+      links: [],
+      groups: [],
+      config: {},
+      extra: {},
+      version: 0.4,
+      models: [
+        {
+          name: 'model.safetensors',
+          url: 'https://example.com/model',
+          directory: 'checkpoints'
+        }
+      ]
+    })
+
+    const result = await enrichWithEmbeddedMetadata(
+      candidates,
+      graphData,
+      alwaysMissing
+    )
+
+    expect(result).toHaveLength(0)
+  })
+
+  it('drops workflow-level entries when only reference is in a bypassed subgraph interior', async () => {
+    // Interior properties.models references the workflow-level model
+    // but its widget value does not — forcing the workflow-level entry
+    // down the unmatched path where isModelReferencedByActiveNode
+    // decides. Previously the helper ignored the bypassed container.
+    const result = await enrichWithEmbeddedMetadata(
+      [],
+      fromAny<ComfyWorkflowJSON, unknown>(bypassedSubgraphUnmatchedModel),
+      alwaysMissing
+    )
+
+    expect(result).toHaveLength(0)
+  })
+
+  it('keeps workflow-level entries when reference is in an active subgraph interior', async () => {
+    // Positive control for the bypassed case above: identical fixture
+    // with container mode=0 must still surface the unmatched workflow-
+    // level model. Guards against a regression where the ancestor gate
+    // drops every workflow-level entry regardless of context.
+    const result = await enrichWithEmbeddedMetadata(
+      [],
+      fromAny<ComfyWorkflowJSON, unknown>(activeSubgraphUnmatchedModel),
+      alwaysMissing
+    )
+
+    expect(result).toHaveLength(1)
+    expect(result[0].name).toBe('rare_model.safetensors')
+  })
+
+  it('drops workflow-level entries when interior reference is under a different directory', async () => {
+    // Same name, different directory: the interior's properties.models
+    // entry is not the same asset as the workflow-level entry, so the
+    // fallback helper must not treat it as a reference that keeps the
+    // workflow-level model alive.
+    const graphData = fromPartial<ComfyWorkflowJSON>({
+      last_node_id: 1,
+      last_link_id: 0,
+      nodes: [
+        {
+          id: 1,
+          type: 'CheckpointLoaderSimple',
+          pos: [0, 0],
+          size: [100, 100],
+          flags: {},
+          order: 0,
+          mode: 0,
+          properties: {
+            models: [
+              {
+                name: 'collide_model.safetensors',
+                directory: 'loras'
+              }
+            ]
+          },
+          widgets_values: ['unrelated_widget.safetensors']
+        }
+      ],
+      links: [],
+      groups: [],
+      config: {},
+      extra: {},
+      version: 0.4,
+      models: [
+        {
+          name: 'collide_model.safetensors',
+          url: 'https://example.com/collide',
+          directory: 'checkpoints'
+        }
+      ]
+    })
+
+    const result = await enrichWithEmbeddedMetadata(
+      [],
+      graphData,
+      alwaysMissing
+    )
+
+    expect(result).toHaveLength(0)
+  })
 })
 
 describe('OSS missing model detection (non-Cloud path)', () => {
@@ -865,23 +1372,14 @@ describe('OSS missing model detection (non-Cloud path)', () => {
   })
 })
 
-const {
-  mockUpdateModelsForNodeType,
-  mockIsModelLoading,
-  mockHasMore,
-  mockGetAssets
-} = vi.hoisted(() => ({
+const { mockUpdateModelsForNodeType, mockGetAssets } = vi.hoisted(() => ({
   mockUpdateModelsForNodeType: vi.fn().mockResolvedValue(undefined),
-  mockIsModelLoading: vi.fn().mockReturnValue(false),
-  mockHasMore: vi.fn().mockReturnValue(false),
   mockGetAssets: vi.fn().mockReturnValue([])
 }))
 
 vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({
     updateModelsForNodeType: mockUpdateModelsForNodeType,
-    isModelLoading: mockIsModelLoading,
-    hasMore: mockHasMore,
     getAssets: mockGetAssets
   })
 }))
@@ -914,8 +1412,7 @@ function makeAssetCandidate(
 describe('verifyAssetSupportedCandidates', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockIsModelLoading.mockReturnValue(false)
-    mockHasMore.mockReturnValue(false)
+    mockUpdateModelsForNodeType.mockResolvedValue(undefined)
     mockGetAssets.mockReturnValue([])
   })
 
@@ -931,7 +1428,44 @@ describe('verifyAssetSupportedCandidates', () => {
     )
   })
 
-  it('should resolve isMissing=false when asset with matching hash exists', async () => {
+  it('should match filenames regardless of hash metadata shape', async () => {
+    const hash =
+      '2222222222222222222222222222222222222222222222222222222222222222'
+    const candidates = [
+      makeAssetCandidate('my_model.safetensors', {
+        hash,
+        hashType: 'blake3'
+      }),
+      makeAssetCandidate('other_model.safetensors', {
+        hash: 'abc123',
+        hashType: 'blake3'
+      })
+    ]
+    mockGetAssets.mockReturnValue([
+      {
+        id: '1',
+        name: 'my_model.safetensors',
+        asset_hash: null,
+        metadata: { filename: 'my_model.safetensors' }
+      },
+      {
+        id: '2',
+        name: 'other_model.safetensors',
+        asset_hash: null,
+        metadata: { filename: 'other_model.safetensors' }
+      }
+    ])
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(candidates[0].isMissing).toBe(false)
+    expect(candidates[1].isMissing).toBe(false)
+    expect(mockUpdateModelsForNodeType).toHaveBeenCalledWith(
+      'CheckpointLoaderSimple'
+    )
+  })
+
+  it('should resolve isMissing=false when asset with matching asset_hash exists', async () => {
     const candidates = [
       makeAssetCandidate('model.safetensors', {
         hash: 'abc123',
@@ -1026,6 +1560,55 @@ describe('verifyAssetSupportedCandidates', () => {
       'CheckpointLoaderSimple'
     )
     expect(mockUpdateModelsForNodeType).toHaveBeenCalledWith('LoraLoader')
+  })
+
+  it('should leave candidates unresolved when their node type fails to load', async () => {
+    const candidates = [
+      makeAssetCandidate('checkpoint.safetensors', {
+        nodeType: 'CheckpointLoaderSimple'
+      }),
+      makeAssetCandidate('lora.safetensors', { nodeType: 'LoraLoader' })
+    ]
+    mockUpdateModelsForNodeType.mockImplementation(async (nodeType: string) => {
+      if (nodeType === 'LoraLoader') throw new Error('load failed')
+    })
+    mockGetAssets.mockImplementation((nodeType: string) =>
+      nodeType === 'CheckpointLoaderSimple'
+        ? [
+            {
+              id: '1',
+              name: 'checkpoint.safetensors',
+              asset_hash: null,
+              metadata: { filename: 'checkpoint.safetensors' }
+            }
+          ]
+        : []
+    )
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(candidates[0].isMissing).toBe(false)
+    expect(candidates[1].isMissing).toBeUndefined()
+  })
+
+  it('should leave candidates unresolved when aborted after asset loads settle', async () => {
+    const controller = new AbortController()
+    const candidates = [makeAssetCandidate('model.safetensors')]
+    mockUpdateModelsForNodeType.mockImplementation(async () => {
+      controller.abort()
+    })
+    mockGetAssets.mockReturnValue([
+      {
+        id: '1',
+        name: 'model.safetensors',
+        asset_hash: null,
+        metadata: { filename: 'model.safetensors' }
+      }
+    ])
+
+    await verifyAssetSupportedCandidates(candidates, controller.signal)
+
+    expect(candidates[0].isMissing).toBeUndefined()
   })
 
   it('should match filename with path prefix normalization', async () => {

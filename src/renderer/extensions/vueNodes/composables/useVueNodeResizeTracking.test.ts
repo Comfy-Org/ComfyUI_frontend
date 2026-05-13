@@ -47,7 +47,8 @@ const testState = vi.hoisted(() => ({
 }))
 
 vi.mock('@vueuse/core', () => ({
-  useDocumentVisibility: () => ref<'visible' | 'hidden'>('visible')
+  useDocumentVisibility: () => ref<'visible' | 'hidden'>('visible'),
+  createSharedComposable: <T>(fn: T) => fn
 }))
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
@@ -181,7 +182,9 @@ describe('useVueNodeResizeTracking', () => {
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
-    expect(rectSpy).toHaveBeenCalledTimes(1)
+    // When layout store already has correct position, getBoundingClientRect
+    // is not needed — position is read from the store instead.
+    expect(rectSpy).not.toHaveBeenCalled()
     expect(testState.setSource).not.toHaveBeenCalled()
     expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
     expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
@@ -192,13 +195,13 @@ describe('useVueNodeResizeTracking', () => {
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
-    expect(rectSpy).toHaveBeenCalledTimes(1)
+    expect(rectSpy).not.toHaveBeenCalled()
     expect(testState.setSource).not.toHaveBeenCalled()
     expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
     expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
   })
 
-  it('updates bounds on first observation when size matches but position differs', () => {
+  it('preserves layout store position when size matches but DOM position differs', () => {
     const nodeId = 'test-node'
     const width = 240
     const height = 180
@@ -209,7 +212,6 @@ describe('useVueNodeResizeTracking', () => {
       left: 100,
       top: 200
     })
-    const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
 
     seedNodeLayout({
       nodeId,
@@ -221,20 +223,10 @@ describe('useVueNodeResizeTracking', () => {
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
-    expect(rectSpy).toHaveBeenCalledTimes(1)
-    expect(testState.setSource).toHaveBeenCalledWith(LayoutSource.DOM)
-    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith([
-      {
-        nodeId,
-        bounds: {
-          x: 100,
-          y: 200 + titleHeight,
-          width,
-          height
-        }
-      }
-    ])
-    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
+    // Position from DOM should NOT override layout store position
+    expect(rectSpy).not.toHaveBeenCalled()
+    expect(testState.setSource).not.toHaveBeenCalled()
+    expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
   })
 
   it('updates node bounds + slot layouts when size changes', () => {
@@ -273,18 +265,56 @@ describe('useVueNodeResizeTracking', () => {
     expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
   })
 
-  it('resyncs slot anchors for collapsed nodes without writing bounds', () => {
+  it('writes collapsed dimensions through the normal bounds path', () => {
     const nodeId = 'test-node'
-    const { entry, rectSpy } = createResizeEntry({
+    const collapsedWidth = 200
+    const collapsedHeight = 40
+    const { entry } = createResizeEntry({
       nodeId,
+      width: collapsedWidth,
+      height: collapsedHeight,
+      left: 100,
+      top: 200,
       collapsed: true
     })
+    const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
+
+    // Seed with larger expanded size so the collapsed write is a real change
+    seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
-    expect(rectSpy).not.toHaveBeenCalled()
-    expect(testState.setSource).not.toHaveBeenCalled()
-    expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
+    expect(testState.setSource).toHaveBeenCalledWith(LayoutSource.DOM)
+    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith([
+      {
+        nodeId,
+        bounds: {
+          x: 100,
+          y: 200 + titleHeight,
+          width: collapsedWidth,
+          height: collapsedHeight
+        }
+      }
+    ])
     expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
+  })
+
+  it('updates bounds with expanded dimensions on collapse-to-expand transition', () => {
+    const nodeId = 'test-node'
+
+    // Seed with smaller (collapsed) size so expand triggers a real bounds update
+    seedNodeLayout({ nodeId, left: 100, top: 200, width: 200, height: 10 })
+
+    const { entry } = createResizeEntry({
+      nodeId,
+      width: 240,
+      height: 180,
+      left: 100,
+      top: 200
+    })
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    expect(testState.setSource).toHaveBeenCalledWith(LayoutSource.DOM)
+    expect(testState.batchUpdateNodeBounds).toHaveBeenCalled()
   })
 })

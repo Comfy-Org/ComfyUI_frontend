@@ -525,10 +525,14 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
 
   function handlePointerDown(e: PointerEvent) {
     if (e.button !== 0) return
-    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
     cacheCanvasRect()
     updateCursorPos(e)
     startStroke(e)
+    try {
+      ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    } catch {
+      // setPointerCapture may throw for synthetic events (e.g. in tests)
+    }
   }
 
   let pendingMoveEvent: PointerEvent | null = null
@@ -558,7 +562,11 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
       cancelAnimationFrame(rafId)
       flushPendingStroke()
     }
-    ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
+    try {
+      ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
+    } catch {
+      // releasePointerCapture may throw for synthetic events (e.g. in tests)
+    }
     endStroke()
   }
 

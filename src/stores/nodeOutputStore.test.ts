@@ -32,7 +32,7 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 const createMockNode = (overrides: Record<string, unknown> = {}): LGraphNode =>
-  fromAny<LGraphNode, Record<string, unknown>>({
+  fromAny<LGraphNode, unknown>({
     id: 1,
     type: 'TestNode',
     ...overrides

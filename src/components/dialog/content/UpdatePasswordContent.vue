@@ -1,5 +1,6 @@
 <template>
   <Form
+    data-testid="update-password-dialog"
     class="flex w-96 flex-col gap-6"
     :resolver="zodResolver(updatePasswordSchema)"
     @submit="onSubmit"

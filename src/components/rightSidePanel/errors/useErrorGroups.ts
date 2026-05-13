@@ -4,6 +4,7 @@ import Fuse from 'fuse.js'
 import type { IFuseOptions } from 'fuse.js'
 
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
@@ -29,7 +30,9 @@ import type {
   MissingModelCandidate,
   MissingModelGroup
 } from '@/platform/missingModel/types'
+import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import { groupCandidatesByName } from '@/platform/missingModel/missingModelScan'
+import { groupCandidatesByMediaType } from '@/platform/missingMedia/missingMediaScan'
 import {
   isNodeExecutionId,
   compareExecutionId
@@ -239,6 +242,7 @@ export function useErrorGroups(
   const executionErrorStore = useExecutionErrorStore()
   const missingNodesStore = useMissingNodesErrorStore()
   const missingModelStore = useMissingModelStore()
+  const missingMediaStore = useMissingMediaStore()
   const canvasStore = useCanvasStore()
   const { inferPackFromNodeName } = useComfyRegistryStore()
   const collapseState = reactive<Record<string, boolean>>({})
@@ -635,6 +639,127 @@ export function useErrorGroups(
     ]
   }
 
+  const missingMediaGroups = computed<MissingMediaGroup[]>(() => {
+    const candidates = missingMediaStore.missingMediaCandidates
+    if (!candidates?.length) return []
+    return groupCandidatesByMediaType(candidates)
+  })
+
+  function buildMissingMediaGroups(): ErrorGroup[] {
+    if (!missingMediaGroups.value.length) return []
+    const totalItems = missingMediaGroups.value.reduce(
+      (count, group) => count + group.items.length,
+      0
+    )
+    return [
+      {
+        type: 'missing_media' as const,
+        title: `${t('rightSidePanel.missingMedia.missingMediaTitle')} (${totalItems})`,
+        priority: 3
+      }
+    ]
+  }
+
+  function isAssetErrorInSelection(executionNodeId: string): boolean {
+    const nodeIds = selectedNodeInfo.value.nodeIds
+    if (!nodeIds) return true
+
+    // Try missing node cache first
+    const cachedNode = missingNodeCache.value.get(executionNodeId)
+    if (cachedNode && nodeIds.has(String(cachedNode.id))) return true
+
+    // Resolve from graph for model/media candidates
+    if (app.rootGraph) {
+      const graphNode = getNodeByExecutionId(app.rootGraph, executionNodeId)
+      if (graphNode && nodeIds.has(String(graphNode.id))) return true
+    }
+
+    for (const containerExecId of selectedNodeInfo.value
+      .containerExecutionIds) {
+      if (executionNodeId.startsWith(`${containerExecId}:`)) return true
+    }
+
+    return false
+  }
+
+  const filteredMissingModelGroups = computed(() => {
+    if (!selectedNodeInfo.value.nodeIds) return missingModelGroups.value
+    const candidates = missingModelStore.missingModelCandidates
+    if (!candidates?.length) return []
+    const filtered = candidates.filter(
+      (c) => c.nodeId != null && isAssetErrorInSelection(String(c.nodeId))
+    )
+    if (!filtered.length) return []
+
+    const map = new Map<
+      string | null | typeof UNSUPPORTED,
+      { candidates: MissingModelCandidate[]; isAssetSupported: boolean }
+    >()
+    for (const c of filtered) {
+      const groupKey =
+        c.isAssetSupported || !isCloud ? c.directory || null : UNSUPPORTED
+      const existing = map.get(groupKey)
+      if (existing) {
+        existing.candidates.push(c)
+      } else {
+        map.set(groupKey, {
+          candidates: [c],
+          isAssetSupported: c.isAssetSupported
+        })
+      }
+    }
+    return Array.from(map.entries())
+      .sort(([dirA], [dirB]) => {
+        if (dirA === UNSUPPORTED) return 1
+        if (dirB === UNSUPPORTED) return -1
+        if (dirA === null) return 1
+        if (dirB === null) return -1
+        return dirA.localeCompare(dirB)
+      })
+      .map(([key, { candidates: groupCandidates, isAssetSupported }]) => ({
+        directory: typeof key === 'string' ? key : null,
+        models: groupCandidatesByName(groupCandidates),
+        isAssetSupported
+      }))
+  })
+
+  const filteredMissingMediaGroups = computed(() => {
+    if (!selectedNodeInfo.value.nodeIds) return missingMediaGroups.value
+    const candidates = missingMediaStore.missingMediaCandidates
+    if (!candidates?.length) return []
+    const filtered = candidates.filter(
+      (c) => c.nodeId != null && isAssetErrorInSelection(String(c.nodeId))
+    )
+    if (!filtered.length) return []
+    return groupCandidatesByMediaType(filtered)
+  })
+
+  function buildMissingModelGroupsFiltered(): ErrorGroup[] {
+    if (!filteredMissingModelGroups.value.length) return []
+    return [
+      {
+        type: 'missing_model' as const,
+        title: `${t('rightSidePanel.missingModels.missingModelsTitle')} (${filteredMissingModelGroups.value.reduce((count, group) => count + group.models.length, 0)})`,
+        priority: 2
+      }
+    ]
+  }
+
+  function buildMissingMediaGroupsFiltered(): ErrorGroup[] {
+    if (!filteredMissingMediaGroups.value.length) return []
+    const totalItems = filteredMissingMediaGroups.value.reduce(
+      (count, group) => count + group.items.length,
+      0
+    )
+    return [
+      {
+        type: 'missing_media' as const,
+        title: `${t('rightSidePanel.missingMedia.missingMediaTitle')} (${totalItems})`,
+        priority: 3
+      }
+    ]
+  }
+
   const allErrorGroups = computed<ErrorGroup[]>(() => {
     const groupsMap = new Map<string, GroupEntry>()
 
@@ -645,6 +770,7 @@ export function useErrorGroups(
     return [
       ...buildMissingNodeGroups(),
       ...buildMissingModelGroups(),
+      ...buildMissingMediaGroups(),
       ...toSortedGroups(groupsMap)
     ]
   })
@@ -660,9 +786,18 @@ export function useErrorGroups(
       ? toSortedGroups(regroupByErrorMessage(groupsMap))
       : toSortedGroups(groupsMap)
 
+    const filterByNode = selectedNodeInfo.value.nodeIds !== null
+
+    // Missing nodes are intentionally unfiltered — they represent
+    // pack-level problems relevant regardless of which node is selected.
     return [
       ...buildMissingNodeGroups(),
-      ...buildMissingModelGroups(),
+      ...(filterByNode
+        ? buildMissingModelGroupsFiltered()
+        : buildMissingModelGroups()),
+      ...(filterByNode
+        ? buildMissingMediaGroupsFiltered()
+        : buildMissingMediaGroups()),
       ...executionGroups
     ]
   })
@@ -699,6 +834,9 @@ export function useErrorGroups(
     groupedErrorMessages,
     missingPackGroups,
     missingModelGroups,
+    missingMediaGroups,
+    filteredMissingModelGroups,
+    filteredMissingMediaGroups,
     swapNodeGroups
   }
 }

@@ -43,7 +43,7 @@ import { resolveBlueprintIcon } from '@/constants/essentialsDisplayNames'
 import { ESSENTIALS_ICON_OVERRIDES } from '@/constants/essentialsNodes'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { node } = defineProps<{
   node: RenderedTreeExplorerNode<ComfyNodeDefImpl>

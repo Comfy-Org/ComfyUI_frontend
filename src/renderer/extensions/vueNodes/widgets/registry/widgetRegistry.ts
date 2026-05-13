@@ -63,6 +63,9 @@ const WidgetCurve = defineAsyncComponent(
 const WidgetPainter = defineAsyncComponent(
   () => import('@/components/painter/WidgetPainter.vue')
 )
+const WidgetRange = defineAsyncComponent(
+  () => import('@/components/range/WidgetRange.vue')
+)
 
 export const FOR_TESTING = {
   WidgetButton,
@@ -197,6 +200,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       aliases: ['PAINTER'],
       essential: false
     }
+  ],
+  [
+    'range',
+    {
+      component: WidgetRange,
+      aliases: ['RANGE'],
+      essential: false
+    }
   ]
 ]
 
@@ -234,7 +245,8 @@ const EXPANDING_TYPES = [
   'load3D',
   'curve',
   'painter',
-  'imagecompare'
+  'imagecompare',
+  'range'
 ] as const
 
 export function shouldExpand(type: string): boolean {
