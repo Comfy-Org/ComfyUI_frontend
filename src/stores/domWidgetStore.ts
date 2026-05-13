@@ -20,6 +20,13 @@ export interface DomWidgetState extends PositionConfig {
   widget: Raw<BaseDOMWidget<object | string>>
   visible: boolean
   readonly: boolean
+  /**
+   * Mirrors `widget.computedDisabled` (set by litegraph when a widget input
+   * is connected). The underlying property is non-reactive, so DomWidgets.vue
+   * snapshots it into widgetState each frame and DomWidget.vue watches the
+   * snapshot to refresh opacity/pointer-events.
+   */
+  computedDisabled: boolean
   zIndex: number
   /** If the widget belongs to the current graph/subgraph. */
   active: boolean
@@ -42,6 +49,7 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
       widget: markRaw(widget) as unknown as Raw<BaseDOMWidget<object | string>>,
       visible: true,
       readonly: false,
+      computedDisabled: false,
       zIndex: 0,
       pos: [0, 0],
       size: [0, 0],
