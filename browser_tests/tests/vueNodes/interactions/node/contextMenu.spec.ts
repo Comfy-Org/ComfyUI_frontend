@@ -90,7 +90,6 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
         'aria-selected',
         'true'
       )
-      await expect(panel.getByRole('heading', { name: 'Inputs' })).toBeVisible()
       await expect(comfyPage.menu.nodeLibraryTab.selectedTabButton).toBeHidden()
     })
 

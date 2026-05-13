@@ -124,7 +124,7 @@ export function useMoreOptionsMenu() {
   const {
     selectedItems,
     selectedNodes,
-    nodeDef,
+    canOpenNodeInfoPanel,
     openNodeInfoPanel,
     hasSubgraphs: hasSubgraphsComputed,
     hasImageNode,
@@ -243,7 +243,7 @@ export function useMoreOptionsMenu() {
     options.push({ type: 'divider' })
 
     // Section 4: Node properties (Node Info, Shape, Color)
-    if (nodeDef.value) {
+    if (canOpenNodeInfoPanel.value) {
       options.push(getNodeInfoOption(openNodeInfoPanel))
     }
     if (groupContext) {

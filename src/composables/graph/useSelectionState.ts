@@ -94,8 +94,12 @@ export function useSelectionState() {
   const computeSelectionFlags = (): NodeSelectionState =>
     computeSelectionStatesFromNodes(selectedNodes.value)
 
+  const canOpenNodeInfoPanel = computed(
+    () => Boolean(nodeDef.value) && !rightSidePanelStore.isLegacyMenu
+  )
+
   const openNodeInfoPanel = () => {
-    if (!nodeDef.value) return
+    if (!canOpenNodeInfoPanel.value) return
     rightSidePanelStore.openPanel('info')
   }
 
@@ -103,6 +107,7 @@ export function useSelectionState() {
     selectedItems,
     selectedNodes,
     nodeDef,
+    canOpenNodeInfoPanel,
     openNodeInfoPanel,
     hasAny3DNodeSelected,
     hasAnySelection,

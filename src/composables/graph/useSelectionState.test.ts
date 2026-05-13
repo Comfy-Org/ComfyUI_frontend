@@ -34,18 +34,21 @@ const mockConnection = {
   type: 'connection',
   isNode: false
 }
-const mockNodeDef = new ComfyNodeDefImpl({
-  name: 'TestNode',
-  display_name: 'Test Node',
-  category: 'test',
-  input: {},
-  output: [],
-  output_name: [],
-  output_is_list: [],
-  output_node: false,
-  python_module: 'nodes',
-  description: ''
-})
+
+function createMockNodeDef() {
+  return new ComfyNodeDefImpl({
+    name: 'TestNode',
+    display_name: 'Test Node',
+    category: 'test',
+    input: {},
+    output: [],
+    output_name: [],
+    output_is_list: [],
+    output_node: false,
+    python_module: 'nodes',
+    description: ''
+  })
+}
 
 describe('useSelectionState', () => {
   beforeEach(() => {
@@ -195,25 +198,31 @@ describe('useSelectionState', () => {
       const rightSidePanelStore = useRightSidePanelStore()
       const node = createMockLGraphNode({ id: 8, type: 'TestNode' })
       canvasStore.$state.selectedItems = [node]
-      vi.mocked(nodeDefStore.fromLGraphNode).mockReturnValue(mockNodeDef)
+      vi.mocked(nodeDefStore.fromLGraphNode).mockReturnValue(
+        createMockNodeDef()
+      )
 
-      const { openNodeInfoPanel } = useSelectionState()
+      const { canOpenNodeInfoPanel, openNodeInfoPanel } = useSelectionState()
+      expect(canOpenNodeInfoPanel.value).toBe(true)
       openNodeInfoPanel()
 
       expect(rightSidePanelStore.openPanel).toHaveBeenCalledWith('info')
     })
 
-    test('should not open the right side panel when no node definition exists', () => {
+    test('should not open the right side panel for multiple selected nodes', () => {
       const canvasStore = useCanvasStore()
       const nodeDefStore = useNodeDefStore()
       const rightSidePanelStore = useRightSidePanelStore()
-      const node = createMockLGraphNode({ id: 9, type: 'MissingNode' })
-      canvasStore.$state.selectedItems = [node]
-      vi.mocked(nodeDefStore.fromLGraphNode).mockReturnValue(null)
+      canvasStore.$state.selectedItems = [
+        createMockLGraphNode({ id: 9, type: 'TestNode' }),
+        createMockLGraphNode({ id: 10, type: 'TestNode' })
+      ]
 
-      const { openNodeInfoPanel } = useSelectionState()
+      const { canOpenNodeInfoPanel, openNodeInfoPanel } = useSelectionState()
+      expect(canOpenNodeInfoPanel.value).toBe(false)
       openNodeInfoPanel()
 
+      expect(nodeDefStore.fromLGraphNode).not.toHaveBeenCalled()
       expect(rightSidePanelStore.openPanel).not.toHaveBeenCalled()
     })
   })
