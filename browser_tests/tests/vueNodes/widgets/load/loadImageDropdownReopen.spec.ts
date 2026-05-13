@@ -1,4 +1,3 @@
-import type { Page } from '@playwright/test'
 import { mergeTests } from '@playwright/test'
 
 import { assetApiFixture } from '@e2e/fixtures/assetApiFixture'
@@ -9,15 +8,6 @@ import {
 import { withInputFiles } from '@e2e/fixtures/helpers/AssetHelper'
 
 const test = mergeTests(comfyPageFixture, assetApiFixture)
-
-async function addNode(page: Page, nodeType: string): Promise<string> {
-  return page.evaluate((type) => {
-    const node = window.app!.graph.add(
-      window.LiteGraph!.createNode(type, undefined, {})
-    )
-    return String(node!.id)
-  }, nodeType)
-}
 
 test.describe(
   'LoadImage form dropdown reopen (FE-535)',
@@ -31,25 +21,23 @@ test.describe(
       await assetApi.mock()
 
       await comfyPage.appMode.enableLinearMode()
-      const loadImageId = await addNode(comfyPage.page, 'LoadImage')
+      const loadImage = await comfyPage.nodeOps.addNode('LoadImage')
+      const loadImageId = String(loadImage.id)
       await comfyPage.nextFrame()
       await comfyPage.appMode.enterAppModeWithInputs([[loadImageId, 'image']])
 
-      const widgetList = comfyPage.appMode.linearWidgets
-      await expect(widgetList).toBeVisible()
+      await expect(comfyPage.appMode.linearWidgets).toBeVisible()
 
-      const imageRow = widgetList.locator(
-        'div:has(> div > span:text-is("image"))'
+      const imageRow = comfyPage.appMode.widgets.getWidgetItem(
+        `${loadImageId}:image`
       )
-      const dropdownButton = imageRow.locator('button:has(> span)').first()
+      const dropdownButton = imageRow.getByTestId('form-dropdown-trigger')
 
       await dropdownButton.click()
       const popover = comfyPage.appMode.imagePickerPopover
       await expect(popover).toBeVisible()
 
-      const scrollContainer = popover
-        .locator('[data-capture-wheel] > div')
-        .nth(2)
+      const scrollContainer = popover.getByTestId('form-dropdown-list')
       await expect
         .poll(() => scrollContainer.locator('img').count())
         .toBeGreaterThan(0)

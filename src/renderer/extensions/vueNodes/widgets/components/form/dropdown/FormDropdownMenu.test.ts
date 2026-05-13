@@ -59,7 +59,7 @@ describe('FormDropdownMenu', () => {
       global: globalConfig
     })
 
-    expect(screen.getByTestId('virtual-grid')).toBeTruthy()
+    expect(screen.getByTestId('form-dropdown-list')).toBeTruthy()
   })
 
   it('transforms items to include key property for VirtualGrid', () => {
@@ -72,7 +72,7 @@ describe('FormDropdownMenu', () => {
       global: globalConfig
     })
 
-    const virtualGrid = screen.getByTestId('virtual-grid')
+    const virtualGrid = screen.getByTestId('form-dropdown-list')
     const virtualItems = JSON.parse(virtualGrid.getAttribute('data-items')!)
 
     expect(virtualItems).toHaveLength(2)
@@ -89,7 +89,7 @@ describe('FormDropdownMenu', () => {
       global: globalConfig
     })
 
-    const virtualGrid = screen.getByTestId('virtual-grid')
+    const virtualGrid = screen.getByTestId('form-dropdown-list')
     expect(virtualGrid.getAttribute('data-max-columns')).toBe('1')
   })
 
