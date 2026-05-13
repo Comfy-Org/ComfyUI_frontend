@@ -3,8 +3,8 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as I18n from 'vue-i18n'
 
-import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow';
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow';
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
