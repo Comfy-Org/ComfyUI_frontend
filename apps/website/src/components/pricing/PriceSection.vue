@@ -7,6 +7,7 @@ import { ref } from 'vue'
 import BrandButton from '../common/BrandButton.vue'
 import PricingPlanFeatureList from './PricingPlanFeatureList.vue'
 import PricingTierCard from './PricingTierCard.vue'
+import { SHOW_FREE_TIER } from '../../config/features'
 import { externalLinks, getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
 
@@ -37,21 +38,23 @@ interface PricingPlan {
   isEnterprise?: boolean
 }
 
+const freePlan: PricingPlan = {
+  id: 'free',
+  labelKey: 'pricing.plan.free.label',
+  summaryKey: 'pricing.plan.free.summary',
+  priceKey: 'pricing.plan.free.price',
+  creditsKey: 'pricing.plan.free.credits',
+  estimateKey: 'pricing.plan.free.estimate',
+  ctaKey: 'pricing.plan.free.cta',
+  ctaHref: externalLinks.cloud,
+  features: [
+    { text: 'pricing.plan.free.feature1' },
+    { text: 'pricing.plan.free.feature2' }
+  ]
+}
+
 const plans: PricingPlan[] = [
-  {
-    id: 'free',
-    labelKey: 'pricing.plan.free.label',
-    summaryKey: 'pricing.plan.free.summary',
-    priceKey: 'pricing.plan.free.price',
-    creditsKey: 'pricing.plan.free.credits',
-    estimateKey: 'pricing.plan.free.estimate',
-    ctaKey: 'pricing.plan.free.cta',
-    ctaHref: externalLinks.cloud,
-    features: [
-      { text: 'pricing.plan.free.feature1' },
-      { text: 'pricing.plan.free.feature2' }
-    ]
-  },
+  ...(SHOW_FREE_TIER ? [freePlan] : []),
   {
     id: 'standard',
     labelKey: 'pricing.plan.standard.label',
@@ -61,7 +64,9 @@ const plans: PricingPlan[] = [
     estimateKey: 'pricing.plan.standard.estimate',
     ctaKey: 'pricing.plan.standard.cta',
     ctaHref: subscribeUrl('standard'),
-    featureIntroKey: 'pricing.plan.standard.featureIntro',
+    featureIntroKey: SHOW_FREE_TIER
+      ? 'pricing.plan.standard.featureIntro'
+      : undefined,
     features: [
       { text: 'pricing.plan.standard.feature1' },
       { text: 'pricing.plan.standard.feature2' }
@@ -150,9 +155,14 @@ const activePlanIndex = ref(0)
       </button>
     </div>
 
-    <!-- Desktop: 4-column grid / Mobile: single card -->
+    <!-- Desktop: dynamic grid (3 or 4 columns) / Mobile: single card -->
     <div
-      class="rounded-5xl bg-transparency-white-t4 hidden p-2 lg:grid lg:grid-cols-4 lg:gap-2"
+      :class="
+        cn(
+          'rounded-5xl bg-transparency-white-t4 hidden p-2 lg:grid lg:gap-2',
+          standardPlans.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'
+        )
+      "
     >
       <PricingTierCard v-for="plan in standardPlans" :key="plan.id">
         <!-- Label + badge -->
@@ -223,10 +233,18 @@ const activePlanIndex = ref(0)
 
         <!-- Features -->
         <div v-if="plan.features.length" class="px-6 py-3">
-          <p class="text-primary-comfy-canvas mb-2 text-sm font-semibold">
-            {{
-              plan.featureIntroKey ? t(plan.featureIntroKey, locale) : '&nbsp;'
-            }}
+          <p
+            v-if="plan.featureIntroKey"
+            class="text-primary-comfy-canvas mb-2 text-sm font-semibold"
+          >
+            {{ t(plan.featureIntroKey, locale) }}
+          </p>
+          <p
+            v-else
+            class="text-primary-comfy-canvas mb-2 text-sm font-semibold"
+            aria-hidden="true"
+          >
+            &nbsp;
           </p>
           <ul class="space-y-2">
             <li
