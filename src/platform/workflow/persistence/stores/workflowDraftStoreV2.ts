@@ -229,7 +229,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       if (oldPayload) {
         const written = writePayload(workspaceId, result.newKey, {
           data: oldPayload.data,
-          updatedAt: Date.now()
+          updatedAt: oldPayload.updatedAt
         })
         if (!written) return
 

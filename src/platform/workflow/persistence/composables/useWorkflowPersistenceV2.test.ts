@@ -3,6 +3,8 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as I18n from 'vue-i18n'
 
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow';
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow';
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
@@ -215,6 +217,35 @@ describe('useWorkflowPersistenceV2', () => {
     return { promise, resolve }
   }
 
+  describe('persistCurrentWorkflow', () => {
+    it('does not write a draft for a saved unmodified workflow', async () => {
+      const workflowStore = useWorkflowStore()
+      const draftStore = useWorkflowDraftStoreV2()
+      const workflow = new ComfyWorkflow({
+        path: 'workflows/Saved.json',
+        modified: Date.now(),
+        size: 1
+      })
+      const saveDraftSpy = vi.spyOn(draftStore, 'saveDraft')
+      const removeDraftSpy = vi.spyOn(draftStore, 'removeDraft')
+
+      workflowStore.activeWorkflow = workflow as LoadedComfyWorkflow
+      mocks.state.currentGraph = { nodes: [] }
+
+      useWorkflowPersistenceV2()
+      mocks.state.graphChangedHandler?.()
+      await vi.runAllTimersAsync()
+
+      expect(saveDraftSpy).not.toHaveBeenCalled()
+      expect(removeDraftSpy).toHaveBeenCalledWith(workflow.path)
+      expect(
+        JSON.parse(
+          sessionStorage.getItem('Comfy.Workflow.ActivePath:test-client')!
+        ).path
+      ).toBe(workflow.path)
+    })
+  })
+
   describe('loadPreviousWorkflowFromStorage', () => {
     it('does not restore the active workflow early when open tab state exists', async () => {
       const workflowStore = useWorkflowStore()
@@ -402,6 +433,24 @@ describe('useWorkflowPersistenceV2', () => {
       const { restoreWorkflowTabsState } = useWorkflowPersistenceV2()
       await restoreWorkflowTabsState()
 
+      expect(openWorkflowMock).not.toHaveBeenCalled()
+    })
+
+    it('does not restore tab state with an out-of-range activeIndex', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const openInBackgroundSpy = vi.spyOn(
+        workflowStore,
+        'openWorkflowsInBackground'
+      )
+      const workflowA = workflowStore.createTemporary('WorkflowA.json')
+
+      writeTabState([workflowA.path], 1)
+
+      const { restoreWorkflowTabsState } = useWorkflowPersistenceV2()
+      await restoreWorkflowTabsState()
+
+      expect(openInBackgroundSpy).not.toHaveBeenCalled()
       expect(openWorkflowMock).not.toHaveBeenCalled()
     })
 

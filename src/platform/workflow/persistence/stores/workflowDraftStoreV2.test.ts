@@ -172,6 +172,31 @@ describe('workflowDraftStoreV2', () => {
       expect(newDraft!.name).toBe('new')
       expect(newDraft!.data).toBe('{"data":"test"}')
     })
+
+    it('preserves payload updatedAt when moving a draft', () => {
+      vi.useFakeTimers()
+
+      try {
+        const store = useWorkflowDraftStoreV2()
+
+        vi.setSystemTime(new Date('2026-05-13T00:00:00Z'))
+        store.saveDraft('workflows/old.json', '{"data":"test"}', {
+          name: 'old',
+          isTemporary: true
+        })
+        const originalUpdatedAt =
+          store.getDraft('workflows/old.json')!.updatedAt
+
+        vi.setSystemTime(new Date('2026-05-13T00:05:00Z'))
+        store.moveDraft('workflows/old.json', 'workflows/new.json', 'new')
+
+        expect(store.getDraft('workflows/new.json')!.updatedAt).toBe(
+          originalUpdatedAt
+        )
+      } finally {
+        vi.useRealTimers()
+      }
+    })
   })
 
   describe('getMostRecentPath', () => {
