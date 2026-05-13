@@ -237,6 +237,7 @@
     },
     "login": {
       "andText": "以及",
+      "backToGithubLogin": "改用 Github 註冊",
       "backToLogin": "返回登入",
       "backToSocialLogin": "改用 Google 或 Github 註冊",
       "confirmPasswordLabel": "確認密碼",
@@ -292,7 +293,9 @@
       "title": "需要重新驗證"
     },
     "signOut": {
+      "saveFailed": "由於儲存「{workflow}」失敗，已取消登出。",
       "signOut": "登出",
+      "signOutAnyway": "仍要登出",
       "success": "成功登出",
       "successDetail": "您已成功登出您的帳戶。",
       "unsavedChangesMessage": "您有尚未儲存的變更，登出後這些變更將會遺失。您確定要繼續嗎？",
@@ -461,6 +464,12 @@
       "wantToRun": "想要在本機運行 ComfyUI？"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "請選擇一個選項。",
+        "describeAnswer": "請描述您的答案。",
+        "selectAtLeastOne": "請至少選擇一個選項。"
+      },
+      "intro": "協助我們為您量身打造 ComfyUI 體驗。",
       "options": {
         "familiarity": {
           "advanced": "進階使用者（自訂工作流程）",
@@ -469,45 +478,43 @@
           "new": "ComfyUI 新手（從未使用過）",
           "starting": "剛開始（正在跟隨教學）"
         },
-        "industry": {
-          "architecture": "建築",
-          "education": "教育",
-          "film_tv_animation": "電影、電視與動畫",
-          "fine_art": "美術與插畫",
-          "gaming": "遊戲",
-          "marketing": "行銷與廣告",
+        "intent": {
+          "3d_game": "3D 素材／遊戲素材",
+          "api": "執行工作流程的 API 端點",
+          "apps": "由工作流程簡化的應用程式",
+          "audio": "音訊／音樂",
+          "custom_nodes": "自訂節點",
+          "images": "圖像",
+          "not_sure": "尚未確定",
+          "videos": "影片",
+          "workflows": "自訂工作流程或管線"
+        },
+        "source": {
+          "conference": "研討會或活動",
+          "discord": "Discord／社群",
+          "friend": "朋友或同事",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "電子報或部落格",
           "other": "其他",
-          "otherPlaceholder": "請具體說明",
-          "product_design": "產品與平面設計",
-          "software": "軟體與科技"
+          "reddit": "Reddit",
+          "search": "Google／搜尋引擎",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
         },
-        "making": {
-          "3d": "3D 資產",
-          "audio": "音訊 / 音樂",
-          "custom_nodes": "自訂節點與工作流程",
-          "images": "圖片",
-          "video": "影片與動畫"
-        },
-        "purpose": {
-          "client": "客戶工作（自由接案）",
-          "community": "社群貢獻（節點、工作流程等）",
-          "inhouse": "我的工作場所（公司內部）",
-          "personal": "個人專案／興趣",
-          "research": "學術研究"
+        "usage": {
+          "education": "教育用途（學生或教育者）",
+          "personal": "個人用途",
+          "work": "工作用途"
         }
       },
       "placeholder": "問卷問題佔位符",
-      "questions": {
-        "familiarity": "您對 ComfyUI 的熟悉程度如何？",
-        "industry": "您的主要行業是什麼？",
-        "making": "您計劃製作什麼？",
-        "purpose": "您主要會使用 ComfyUI 來做什麼？"
-      },
       "steps": {
         "familiarity": "您對 ComfyUI 的熟悉程度如何？",
-        "industry": "您的主要行業是什麼？",
-        "making": "您計劃製作什麼內容？",
-        "purpose": "您主要會使用 ComfyUI 來做什麼？"
+        "intent": "您想用 ComfyUI 創作什麼？",
+        "source": "您是從哪裡得知 ComfyUI 的？",
+        "usage": "您打算如何使用 ComfyUI？"
       },
       "title": "雲端問卷"
     }
@@ -522,9 +529,9 @@
   "cloudStart_title": "數秒內開始創作",
   "cloudStart_wantToRun": "想要在本機運行 ComfyUI？",
   "cloudSurvey_steps_familiarity": "您對 ComfyUI 的熟悉程度如何？",
-  "cloudSurvey_steps_industry": "您的主要行業是什麼？",
-  "cloudSurvey_steps_making": "您計劃製作什麼？",
-  "cloudSurvey_steps_purpose": "您主要會使用 ComfyUI 做什麼？",
+  "cloudSurvey_steps_intent": "您想用 ComfyUI 創作什麼？",
+  "cloudSurvey_steps_source": "您是從哪裡得知 ComfyUI 的？",
+  "cloudSurvey_steps_usage": "您打算如何使用 ComfyUI？",
   "cloudWaitlist_contactLink": "此處",
   "cloudWaitlist_questionsText": "有問題？聯絡我們",
   "color": {
@@ -778,6 +785,7 @@
     "AUDIO_ENCODER": "音訊編碼器",
     "AUDIO_ENCODER_OUTPUT": "音訊編碼器輸出",
     "AUDIO_RECORD": "音訊錄製",
+    "BACKGROUND_REMOVAL": "去背",
     "BOOLEAN": "布林值",
     "BOUNDING_BOX": "邊界框",
     "CAMERA_CONTROL": "攝影機控制",
@@ -831,6 +839,7 @@
     "NOISE": "雜訊",
     "OPENAI_CHAT_CONFIG": "OpenAI聊天配置",
     "OPENAI_INPUT_FILES": "OpenAI輸入檔案",
+    "OPTICAL_FLOW": "OPTICAL_FLOW",
     "PHOTOMAKER": "PhotoMaker",
     "PIXVERSE_TEMPLATE": "PIXVERSE 範本",
     "POSE_KEYPOINT": "POSE_KEYPOINT",
@@ -899,8 +908,8 @@
     "resume": "繼續下載"
   },
   "errorDialog": {
-    "accessRestrictedMessage": "Your account is not authorized for this feature.",
-    "accessRestrictedTitle": "Access Restricted",
+    "accessRestrictedMessage": "您的帳戶無權使用此功能。",
+    "accessRestrictedTitle": "存取受限",
     "defaultTitle": "發生錯誤",
     "extensionFileHint": "這可能是由於以下指令碼所致",
     "loadWorkflowTitle": "由於重新載入工作流程資料時發生錯誤，已中止載入",
@@ -2259,7 +2268,6 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "月谷馬雷",
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
@@ -2277,23 +2285,21 @@
     "Vidu": "維度",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
-    "_for_testing": "_for_testing",
     "advanced": "進階",
     "animation": "動畫",
-    "api": "API",
     "api node": "API 節點",
     "attention_experiments": "注意力實驗",
     "audio": "音訊",
+    "background removal": "去背",
     "batch": "批次",
-    "camera": "相機",
     "chroma_radiance": "色度光輝",
     "clip": "CLIP",
+    "color": "顏色",
     "combine": "合併",
     "compositing": "合成",
     "cond pair": "條件配對",
     "cond single": "單一條件",
     "conditioning": "條件設定",
-    "context": "上下文",
     "controlnet": "ControlNet",
     "create": "建立",
     "custom_sampling": "自訂取樣",
@@ -2302,6 +2308,7 @@
     "deprecated": "已棄用",
     "detection": "偵測",
     "edit_models": "編輯模型",
+    "experimental": "實驗性",
     "flux": "Flux",
     "gligen": "GLIGEN",
     "guidance": "引導",
@@ -2317,7 +2324,6 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "mask": "遮罩",
-    "math": "數學",
     "model": "模型",
     "model_merging": "模型合併",
     "model_patches": "模型修補",
@@ -2334,16 +2340,13 @@
     "save": "儲存",
     "schedulers": "排程器",
     "scheduling": "排程",
-    "sd": "SD",
     "sd3": "sd3",
     "shader": "著色器",
     "sigmas": "西格瑪值",
     "stable_cascade": "stable_cascade",
-    "string": "字串",
     "style_model": "風格模型",
     "supir": "supir",
     "text": "文字",
-    "textgen": "文字生成",
     "training": "訓練",
     "transform": "轉換",
     "unet": "UNet",
@@ -3147,6 +3150,7 @@
       "deleteFailedTitle": "刪除失敗",
       "deleted": "工作流程已刪除",
       "dirtyClose": "下列檔案已被修改。您要在關閉前儲存它們嗎？",
+      "dirtyCloseAnyway": "仍要關閉",
       "dirtyCloseHint": "按住 Shift 可直接關閉不提示",
       "dirtyCloseTitle": "儲存變更？",
       "workflowTreeType": {

@@ -96,7 +96,7 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import {
   scanAllMediaCandidates,
-  verifyCloudMediaCandidates
+  verifyMediaCandidates
 } from '@/platform/missingMedia/missingMediaScan'
 
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
@@ -590,6 +590,13 @@ export class ComfyApp {
 
         event.preventDefault()
         event.stopPropagation()
+
+        // graph_mouse is only updated on mousemove, so when files are dragged
+        // in from another window the canvas-space cursor is stale. Sync it
+        // from the drop event so nodes created below land at the cursor.
+        this.canvas.adjustMouseEvent(event)
+        this.canvas.graph_mouse[0] = event.canvasX
+        this.canvas.graph_mouse[1] = event.canvasY
 
         const n = this.dragOverNode
         this.dragOverNode = null
@@ -1508,9 +1515,13 @@ export class ComfyApp {
       return
     }
 
-    if (isCloud) {
+    const pending = candidates.some((c) => c.isMissing === undefined)
+    if (pending) {
       const controller = missingMediaStore.createVerificationAbortController()
-      void verifyCloudMediaCandidates(candidates, controller.signal)
+      void verifyMediaCandidates(candidates, {
+        isCloud,
+        signal: controller.signal
+      })
         .then(() => {
           if (controller.signal.aborted) return
           // Re-check ancestor after async verification (see model pipeline).

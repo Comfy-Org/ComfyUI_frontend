@@ -61,7 +61,6 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
   let baseCanvas: HTMLCanvasElement | null = null
   let baseCtx: CanvasRenderingContext2D | null = null
   let hasBaseSnapshot = false
-  let hasStrokes = false
 
   let dirtyX0 = 0
   let dirtyY0 = 0
@@ -413,7 +412,6 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
 
     isDrawing = true
     isDirty.value = true
-    hasStrokes = true
     snapshotBrush()
     strokeProcessor = new StrokeProcessor(Math.max(1, strokeBrush!.radius / 2))
     strokeProcessor.addPoint(point)
@@ -513,7 +511,7 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
     if (!el || !ctx) return
     ctx.clearRect(0, 0, el.width, el.height)
     isDirty.value = true
-    hasStrokes = false
+    modelValue.value = ''
   }
 
   function updateCursorPos(e: PointerEvent) {
@@ -619,17 +617,11 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
     return { filename, subfolder, type }
   }
 
-  function isCanvasEmpty(): boolean {
-    return !hasStrokes
-  }
-
   async function serializeValue(): Promise<string> {
     const el = canvasEl.value
-    if (!el) return ''
+    if (!el) return modelValue.value
 
-    if (isCanvasEmpty()) return ''
-
-    if (!isDirty.value) return modelValue.value
+    if (!isDirty.value && modelValue.value) return modelValue.value
 
     const blob = await new Promise<Blob | null>((resolve) =>
       el.toBlob(resolve, 'image/png')
@@ -717,7 +709,6 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
       mainCtx = null
       getCtx()?.drawImage(img, 0, 0)
       isDirty.value = false
-      hasStrokes = true
     }
     img.onerror = () => {
       modelValue.value = ''

@@ -9,7 +9,10 @@ import type {
   CameraState
 } from '@/extensions/core/load3d/interfaces'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
-import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
+import {
+  LOAD3D_NONE_MODEL,
+  SUPPORTED_EXTENSIONS_ACCEPT
+} from '@/extensions/core/load3d/constants'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -290,13 +293,9 @@ useExtensionService().registerExtension({
         )
 
         node.addWidget('button', 'clear', 'clear', () => {
-          useLoad3d(node).waitForLoad3d((load3d) => {
-            load3d.clearModel()
-          })
-
           const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
           if (modelWidget) {
-            modelWidget.value = ''
+            modelWidget.value = LOAD3D_NONE_MODEL
           }
         })
 
