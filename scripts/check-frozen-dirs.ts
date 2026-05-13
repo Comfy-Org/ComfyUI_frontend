@@ -27,12 +27,14 @@ function isFrozenImplementationFile(path: string): boolean {
   return true
 }
 
+const supportsColor = !process.env.NO_COLOR && Boolean(process.stdout.isTTY)
+
 function yellow(s: string): string {
-  return `\x1b[33m${s}\x1b[0m`
+  return supportsColor ? `\x1b[33m${s}\x1b[0m` : s
 }
 
 function bold(s: string): string {
-  return `\x1b[1m${s}\x1b[0m`
+  return supportsColor ? `\x1b[1m${s}\x1b[0m` : s
 }
 
 function main() {
