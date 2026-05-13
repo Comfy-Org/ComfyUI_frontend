@@ -46,12 +46,12 @@ describe('assert', () => {
     expect(() => assert(false, 'non-dev error')).not.toThrow()
   })
 
-  it('calls registered reporter in non-DEV mode', () => {
+  it('calls registered reporter in non-DEV mode with formatted message', () => {
     vi.stubEnv('DEV', false)
     const reporter = vi.fn()
     setAssertReporter(reporter)
     assert(false, 'reporter message')
-    expect(reporter).toHaveBeenCalledWith('reporter message')
+    expect(reporter).toHaveBeenCalledWith('[Assertion failed]: reporter message')
   })
 
   it('does not call reporter when condition is true', () => {

@@ -18,17 +18,21 @@ export function setAssertReporter(fn: AssertReporter | null): void {
  * - DEV: throws (surfaces bugs immediately)
  * - Otherwise: delegates to registered reporter (Sentry, toast, etc.)
  */
-export function assert(condition: boolean, message: string): void {
+export function assert(
+  condition: unknown,
+  message: string
+): asserts condition {
   if (condition) return
 
-  console.error(`[Assertion failed]: ${message}`)
+  const formatted = `[Assertion failed]: ${message}`
+  console.error(formatted)
 
   if (import.meta.env.DEV) {
-    throw new Error(`[Assertion failed]: ${message}`)
+    throw new Error(formatted)
   }
 
   try {
-    reporter?.(message)
+    reporter?.(formatted)
   } catch (error) {
     console.error('[Assertion reporter failed]', error)
   }
