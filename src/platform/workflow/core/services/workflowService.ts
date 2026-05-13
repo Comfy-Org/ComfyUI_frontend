@@ -10,6 +10,7 @@ import {
   normalizePendingWarnings,
   updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
+import { createFailedToSaveDraftToast } from '@/platform/workflow/persistence/base/draftToast'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import {
   ComfyWorkflow,
@@ -63,11 +64,7 @@ export const useWorkflowService = () => {
   }
 
   function showFailedToSaveDraftToast() {
-    toastStore.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('toastMessages.failedToSaveDraft')
-    })
+    toastStore.add(createFailedToSaveDraftToast(t))
   }
 
   async function getFilename(defaultName: string): Promise<string | null> {

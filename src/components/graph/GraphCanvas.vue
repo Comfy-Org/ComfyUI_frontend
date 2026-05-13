@@ -557,7 +557,6 @@ onMounted(async () => {
 
   // Restore saved workflow and workflow tabs state
   await workflowPersistence.initializeWorkflow()
-  await workflowPersistence.restoreWorkflowTabsState()
 
   const sharedWorkflowLoadStatus =
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()

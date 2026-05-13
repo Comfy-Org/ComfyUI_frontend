@@ -29,6 +29,7 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
+import { createFailedToSaveDraftToast } from '../base/draftToast'
 import { clearAllV2Storage } from '../base/storageIO'
 import { migrateV1toV2 } from '../migration/migrateV1toV2'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
@@ -38,6 +39,11 @@ import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
+
+interface RestorableTabState {
+  paths: string[]
+  activeIndex: number
+}
 
 export function useWorkflowPersistenceV2() {
   const { t } = useI18n()
@@ -109,11 +115,7 @@ export function useWorkflowPersistenceV2() {
     })
 
     if (!saved) {
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('toastMessages.failedToSaveDraft')
-      })
+      toast.add(createFailedToSaveDraftToast(t))
       return
     }
 
@@ -187,32 +189,26 @@ export function useWorkflowPersistenceV2() {
     }
   }
 
-  const hasRestorableTabState = () => {
+  const getRestorableTabState = (): RestorableTabState | null => {
     const storedTabState = tabState.getOpenPaths()
     const paths = storedTabState?.paths ?? []
     const activeIndex = storedTabState?.activeIndex ?? -1
 
-    return paths.length > 0 && activeIndex >= 0 && activeIndex < paths.length
-  }
-
-  /**
-   * Loads saved workflow metadata needed to resolve stored tab paths.
-   *
-   * This is intentionally called only after a valid persisted tab pointer is
-   * found. It syncs workflow file metadata, not every workflow JSON body.
-   */
-  const loadWorkflowMetadataForTabRestore = async () => {
-    await workflowStore.loadWorkflows()
+    if (paths.length === 0) return null
+    if (activeIndex < 0 || activeIndex >= paths.length) return null
+    return { paths, activeIndex }
   }
 
   const initializeWorkflow = async () => {
     if (!workflowPersistenceEnabled.value) {
       await loadDefaultWorkflow()
+      tabStateRestored = true
       return
     }
 
     try {
-      if (hasRestorableTabState()) {
+      if (getRestorableTabState()) {
+        await restoreWorkflowTabsState()
         return
       }
 
@@ -223,6 +219,8 @@ export function useWorkflowPersistenceV2() {
     } catch (err) {
       console.error('Error loading previous workflow', err)
       await loadDefaultWorkflow()
+    } finally {
+      tabStateRestored = true
     }
   }
 
@@ -281,9 +279,8 @@ export function useWorkflowPersistenceV2() {
     }
   )
 
-  // initializeWorkflow() may intentionally return early when a valid tab
-  // pointer exists. Keep tab-state writes disabled until
-  // restoreWorkflowTabsState() has consumed that pointer.
+  // Keep tab-state writes disabled until initialization has consumed any
+  // stored tab pointer.
   let tabStateRestored = false
 
   watch(restoreState, ({ paths, activeIndex }) => {
@@ -300,24 +297,15 @@ export function useWorkflowPersistenceV2() {
       return
     }
 
-    // Read storage fresh at restore time, not at composable init,
-    // to ensure workspace is properly determined
-    const storedTabState = tabState.getOpenPaths()
-    const storedWorkflows = storedTabState?.paths ?? []
-    const storedActiveIndex = storedTabState?.activeIndex ?? -1
-
-    const isRestorable =
-      storedWorkflows.length > 0 &&
-      storedActiveIndex >= 0 &&
-      storedActiveIndex < storedWorkflows.length
-    if (!isRestorable) {
+    const storedTabState = getRestorableTabState()
+    if (!storedTabState) {
       tabStateRestored = true
       return
     }
 
-    await loadWorkflowMetadataForTabRestore()
+    await workflowStore.loadWorkflows()
 
-    storedWorkflows.forEach((path: string) => {
+    storedTabState.paths.forEach((path: string) => {
       if (workflowStore.getWorkflowByPath(path)) return
       const draft = draftStore.getDraft(path)
       if (!draft?.isTemporary) return
@@ -335,26 +323,25 @@ export function useWorkflowPersistenceV2() {
     })
 
     workflowStore.openWorkflowsInBackground({
-      left: storedWorkflows.slice(0, storedActiveIndex),
-      right: storedWorkflows.slice(storedActiveIndex)
+      left: storedTabState.paths.slice(0, storedTabState.activeIndex),
+      right: storedTabState.paths.slice(storedTabState.activeIndex)
     })
 
-    tabStateRestored = true
-
     // Activate the correct workflow at storedActiveIndex
-    const activePath = storedWorkflows[storedActiveIndex]
+    const activePath = storedTabState.paths[storedTabState.activeIndex]
     const workflow = activePath
       ? workflowStore.getWorkflowByPath(activePath)
       : null
     if (workflow) {
       await useWorkflowService().openWorkflow(workflow)
     }
+
+    tabStateRestored = true
   }
 
   return {
     initializeWorkflow,
     loadSharedWorkflowFromUrlIfPresent,
-    loadTemplateFromUrlIfPresent,
-    restoreWorkflowTabsState
+    loadTemplateFromUrlIfPresent
   }
 }

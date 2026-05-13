@@ -286,6 +286,34 @@ describe('workflowDraftStoreV2', () => {
       })
       expect(legacyStore.getDraft('workflows/new.json')).toBeUndefined()
     })
+
+    it('does not move legacy-only data when V2 source is missing', () => {
+      const store = useWorkflowDraftStoreV2()
+      const legacyStore = useWorkflowDraftStore()
+
+      legacyStore.saveDraft('workflows/old.json', {
+        data: '{"source":"legacy"}',
+        updatedAt: Date.now(),
+        name: 'old',
+        isTemporary: true
+      })
+
+      const moved = store.moveDraft(
+        'workflows/old.json',
+        'workflows/new.json',
+        'new'
+      )
+
+      expect(moved).toBe(false)
+      expect(store.getDraft('workflows/old.json')).toMatchObject({
+        data: '{"source":"legacy"}'
+      })
+      expect(store.getDraft('workflows/new.json')).toBeNull()
+      expect(legacyStore.getDraft('workflows/old.json')).toMatchObject({
+        data: '{"source":"legacy"}'
+      })
+      expect(legacyStore.getDraft('workflows/new.json')).toBeUndefined()
+    })
   })
 
   describe('getDraft', () => {

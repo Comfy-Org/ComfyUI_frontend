@@ -44,6 +44,10 @@ interface DraftMeta {
 }
 
 interface LoadPersistedWorkflowOptions {
+  /**
+   * Forwarded only to the legacy V1 rollback fallback for session/localStorage
+   * graph loads. Remove with the V1 rollback path after 2026-07-15.
+   */
   workflowName: string | null
   preferredPath?: string | null
   fallbackToLatestDraft?: boolean
@@ -109,11 +113,11 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * Saves a draft to V2 and shadow-writes the legacy store for rollback.
    */
   function saveDraft(path: string, data: string, meta: DraftMeta): boolean {
-    const now = Date.now()
-    const savedV2 = saveDraftV2(path, data, meta, now)
+    const snapshot = createDraftSnapshot(data, meta)
+    const savedV2 = saveDraftV2(path, snapshot)
     if (!savedV2) return false
 
-    saveLegacyDraft(path, data, meta, now)
+    saveLegacyDraft(path, snapshot)
     return true
   }
 
@@ -130,10 +134,10 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    */
   function moveDraft(oldPath: string, newPath: string, name: string): boolean {
     const status = moveDraftV2(oldPath, newPath, name)
-    if (status !== 'failed') {
+    if (status === 'moved') {
       moveLegacyDraft(oldPath, newPath, name)
     }
-    return status !== 'failed'
+    return status === 'moved'
   }
 
   /**
@@ -219,12 +223,19 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * Saves a draft (data + metadata) to V2.
    * Loads the index before writing payload, then persists the updated index.
    */
-  function saveDraftV2(
-    path: string,
+  function createDraftSnapshot(
     data: string,
-    meta: DraftMeta,
-    now: number
-  ): boolean {
+    meta: DraftMeta
+  ): WorkflowDraftSnapshot {
+    return {
+      data,
+      updatedAt: Date.now(),
+      name: meta.name,
+      isTemporary: meta.isTemporary
+    }
+  }
+
+  function saveDraftV2(path: string, snapshot: WorkflowDraftSnapshot): boolean {
     if (!isStorageAvailable()) return false
 
     const workspaceId = currentWorkspaceId()
@@ -237,18 +248,22 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
 
     // Write payload before persisting the updated index
     const payloadWritten = writePayload(workspaceId, draftKey, {
-      data,
-      updatedAt: now
+      data: snapshot.data,
+      updatedAt: snapshot.updatedAt
     })
 
     if (!payloadWritten) {
       // Quota exceeded - try eviction loop
-      return handleQuotaExceeded(path, data, meta, now)
+      return handleQuotaExceeded(path, snapshot)
     }
     const { index: newIndex, evicted } = upsertEntry(
       index,
       path,
-      { ...meta, updatedAt: now },
+      {
+        name: snapshot.name,
+        isTemporary: snapshot.isTemporary,
+        updatedAt: snapshot.updatedAt
+      },
       MAX_DRAFTS
     )
 
@@ -270,9 +285,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    */
   function handleQuotaExceeded(
     path: string,
-    data: string,
-    meta: DraftMeta,
-    now: number
+    snapshot: WorkflowDraftSnapshot
   ): boolean {
     const workspaceId = currentWorkspaceId()
     const index = loadIndex()
@@ -298,8 +311,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
 
       // Try writing again
       const success = writePayload(workspaceId, draftKey, {
-        data,
-        updatedAt: now
+        data: snapshot.data,
+        updatedAt: snapshot.updatedAt
       })
 
       if (success) {
@@ -307,7 +320,11 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
         const { index: finalIndex } = upsertEntry(
           currentIndex,
           path,
-          { ...meta, updatedAt: now },
+          {
+            name: snapshot.name,
+            isTemporary: snapshot.isTemporary,
+            updatedAt: snapshot.updatedAt
+          },
           MAX_DRAFTS
         )
         if (!persistIndex(finalIndex)) {
@@ -432,18 +449,9 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
 
   function saveLegacyDraft(
     path: string,
-    data: string,
-    meta: DraftMeta,
-    updatedAt: number
+    snapshot: WorkflowDraftSnapshot
   ): boolean {
     if (!canUseLegacyDraftStore()) return false
-
-    const snapshot: WorkflowDraftSnapshot = {
-      data,
-      updatedAt,
-      name: meta.name,
-      isTemporary: meta.isTemporary
-    }
 
     try {
       useWorkflowDraftStore().saveDraft(path, snapshot)

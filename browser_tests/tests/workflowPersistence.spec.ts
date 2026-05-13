@@ -120,11 +120,10 @@ test.describe('Workflow Persistence', () => {
       await expect
         .poll(() => comfyPage.menu.topbar.getActiveTabName())
         .toBe('restore-b')
-      const tabNamesBeforeReload = await comfyPage.menu.topbar.getTabNames()
-      expect(tabNamesBeforeReload).toEqual(
-        expect.arrayContaining(['restore-a', 'restore-b'])
-      )
-      expect(tabNamesBeforeReload.slice(-2)).toEqual(['restore-a', 'restore-b'])
+      const expectedTabNames = ['restore-a', 'restore-b']
+      await expect
+        .poll(() => comfyPage.menu.topbar.getTabNames())
+        .toEqual(expectedTabNames)
       const activeTabBeforeReload =
         await comfyPage.menu.topbar.getActiveTabName()
 
@@ -132,7 +131,7 @@ test.describe('Workflow Persistence', () => {
 
       await expect
         .poll(() => comfyPage.menu.topbar.getTabNames())
-        .toEqual(tabNamesBeforeReload)
+        .toEqual(expectedTabNames)
       await expect
         .poll(() => comfyPage.menu.topbar.getActiveTabName())
         .toBe(activeTabBeforeReload)
