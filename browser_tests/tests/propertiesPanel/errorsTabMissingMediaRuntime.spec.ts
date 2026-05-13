@@ -21,6 +21,8 @@ const outputHash =
   '147257c95a3e957e0deee73a077cfec89da2d906dd086ca70a2b0c897a9591d6e.png'
 const plainVideoFileName = 'plain_video.mp4'
 const graphDropPosition = { x: 500, y: 300 }
+const missingMediaUploadObservationMs = 1_000
+const missingMediaUploadPollMs = 100
 
 const cloudOutputAsset: Asset = {
   id: 'test-output-hash-001',
@@ -190,7 +192,25 @@ async function expectLoadVideoUploading(comfyPage: ComfyPage) {
 async function expectNoMissingMediaDuringUpload(comfyPage: ComfyPage) {
   await comfyPage.nextFrame()
   await comfyPage.nextFrame()
-  await expect(getErrorOverlay(comfyPage)).toBeHidden()
+
+  let sawErrorOverlay = false
+  const startedAt = Date.now()
+  await expect
+    .poll(
+      async () => {
+        sawErrorOverlay =
+          sawErrorOverlay || (await getErrorOverlay(comfyPage).isVisible())
+        return (
+          !sawErrorOverlay &&
+          Date.now() - startedAt >= missingMediaUploadObservationMs
+        )
+      },
+      {
+        timeout: missingMediaUploadObservationMs + missingMediaUploadPollMs * 5,
+        intervals: [missingMediaUploadPollMs]
+      }
+    )
+    .toBe(true)
 }
 
 function outputHistoryJobs() {
