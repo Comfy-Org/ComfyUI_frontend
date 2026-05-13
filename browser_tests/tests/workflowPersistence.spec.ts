@@ -521,7 +521,6 @@ test.describe('Workflow Persistence', () => {
     const firstNode = (await comfyPage.nodeOps.getFirstNodeRef())!
     const draftSaveStartedAt = Date.now()
     await firstNode.click('collapse')
-    await comfyPage.canvasOps.clickEmptySpace()
     expect(await firstNode.isCollapsed()).toBe(true)
 
     await waitForV2DraftSave(comfyPage, draftSaveStartedAt)
