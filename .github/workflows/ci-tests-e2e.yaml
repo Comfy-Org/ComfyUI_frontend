@@ -293,13 +293,13 @@ jobs:
 
       - name: Read playwright section
         id: section
-        if: hashFiles('playwright-section.md') != ''
+        if: always() && hashFiles('playwright-section.md') != ''
         uses: juliangruber/read-file-action@b549046febe0fe86f8cb4f93c24e284433f9ab58 # v1.1.7
         with:
           path: playwright-section.md
 
       - name: Upsert playwright section into unified report
-        if: steps.section.outputs.content != ''
+        if: always() && steps.section.outputs.content != ''
         uses: ./.github/actions/upsert-comment-section
         with:
           pr-number: ${{ github.event.pull_request.number }}
