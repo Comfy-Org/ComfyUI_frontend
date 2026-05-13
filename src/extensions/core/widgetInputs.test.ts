@@ -476,7 +476,7 @@ describe('PrimitiveNode', () => {
       const node = createPrimitiveNode()
       const targetNode = createTargetNode('seed', 42)
       setupGraphWithLink(node, targetNode)
-      node.widgets = undefined as any
+      node.widgets = undefined
 
       node.onAfterGraphConfigured()
 
@@ -488,7 +488,7 @@ describe('PrimitiveNode', () => {
       const node = createPrimitiveNode()
       const targetNode = createTargetNode('seed', 42)
       setupGraphWithLink(node, targetNode)
-      node.widgets = undefined as any
+      node.widgets = undefined
       node.widgets_values = ['restored_value']
 
       node.onAfterGraphConfigured()
@@ -505,7 +505,7 @@ describe('PrimitiveNode', () => {
         widgets: []
       })
       setupGraphWithLink(node, targetNode)
-      node.widgets = undefined as any
+      node.widgets = undefined
 
       node.onAfterGraphConfigured()
 
@@ -516,8 +516,8 @@ describe('PrimitiveNode', () => {
       const node = createPrimitiveNode()
       node.outputs[0].links = [1]
       node.outputs[0].type = 'INT'
-      ;(node as any).graph = undefined
-      node.widgets = undefined as any
+      node.graph = null
+      node.widgets = undefined
 
       node.onConnectionsChange(2, 0, true)
 
@@ -532,7 +532,7 @@ describe('PrimitiveNode', () => {
         getNodeById: vi.fn(() => undefined)
       } as any
       node.outputs[0].links = [1]
-      node.widgets = undefined as any
+      node.widgets = undefined
 
       node.onAfterGraphConfigured()
 
@@ -546,7 +546,7 @@ describe('PrimitiveNode', () => {
         getNodeById: vi.fn()
       } as any
       node.outputs[0].links = [99]
-      node.widgets = undefined as any
+      node.widgets = undefined
 
       node.onAfterGraphConfigured()
 
@@ -577,7 +577,7 @@ describe('PrimitiveNode', () => {
         widgets: [{ name: 'ckpt_name', value: 'model1.safetensors' }]
       })
       setupGraphWithLink(node, targetNode)
-      node.widgets = undefined as any
+      node.widgets = undefined
 
       node.onAfterGraphConfigured()
 
