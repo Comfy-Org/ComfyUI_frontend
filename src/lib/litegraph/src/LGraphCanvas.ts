@@ -8643,8 +8643,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       callback: LGraphCanvas.onMenuNodeRemove
     })
 
-    node.graph?.onGetNodeMenuOptions?.(options, node)
-
     return options
   }
 
