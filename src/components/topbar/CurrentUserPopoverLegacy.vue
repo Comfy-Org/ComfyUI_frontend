@@ -41,10 +41,16 @@
       <span v-else class="text-base font-semibold text-base-foreground">{{
         formattedBalance
       }}</span>
-      <i
+      <Button
         v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
-        class="mr-auto icon-[lucide--circle-help] cursor-help text-base text-muted-foreground"
-      />
+        variant="muted-textonly"
+        size="icon-sm"
+        class="mr-auto"
+        :aria-label="$t('credits.unified.tooltip')"
+        data-testid="credits-info-button"
+      >
+        <i class="icon-[lucide--circle-help]" />
+      </Button>
       <Button
         v-if="isCloud && isFreeTier"
         variant="gradient"

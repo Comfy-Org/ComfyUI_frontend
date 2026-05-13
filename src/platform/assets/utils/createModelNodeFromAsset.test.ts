@@ -299,7 +299,7 @@ describe('createModelNodeFromAsset', () => {
     beforeEach(() => {
       vi.spyOn(console, 'error').mockImplementation(() => {})
     })
-    it.each([
+    it.for([
       {
         case: 'missing user_metadata with no fallback',
         overrides: { user_metadata: undefined, metadata: undefined, name: '' },
@@ -329,7 +329,7 @@ describe('createModelNodeFromAsset', () => {
         }
       }
     )
-    it.each([
+    it.for([
       {
         case: 'no tags',
         overrides: { tags: undefined },
