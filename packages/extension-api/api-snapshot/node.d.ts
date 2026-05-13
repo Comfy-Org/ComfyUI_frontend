@@ -17,11 +17,22 @@ export type Size = [width: number, height: number]
 /**
  * LiteGraph node execution mode.
  *
- * - `0` — Always execute.
- * - `1` — Never execute (muted).
- * - `2` — Bypass (passthrough).
- * - `3` — Execute once.
- * - `4` — Execute on trigger.
+ * Numeric values match `LGraphEventMode` in the LiteGraph runtime.
+ *
+ * - `0` — `ALWAYS`: execute every run (default).
+ * - `1` — `ON_EVENT`: legacy slot for the dead trigger/action subsystem;
+ *   has no behavioural effect in the current scheduler. Reserved for ABI
+ *   compatibility — do not use in new extensions.
+ * - `2` — `NEVER`: muted; node is skipped during execution.
+ * - `3` — `ON_TRIGGER`: legacy slot for the dead trigger/action subsystem;
+ *   gated behind `LiteGraph.do_add_triggers_slots` (always `false`). Reserved
+ *   for ABI compatibility — do not use in new extensions.
+ * - `4` — `BYPASS`: passthrough; inputs are forwarded to outputs without
+ *   running the node.
+ *
+ * Practical extension code should use `0` (always) or `2` (never/muted) or
+ * `4` (bypass). Slots `1` and `3` are documented for completeness but their
+ * runtime semantics are pending the AUDIT-LG trigger-subsystem cleanup.
  *
  * @stability stable
  */
