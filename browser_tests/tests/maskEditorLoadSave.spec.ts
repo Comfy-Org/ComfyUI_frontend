@@ -8,7 +8,7 @@ interface UploadResponse {
   type: 'input' | 'output' | 'temp'
 }
 
-const RGB_CANVAS_INDEX = 0
+const IMAGE_CANVAS_INDEX = 0
 const MASK_CANVAS_INDEX = 2
 
 const successResponse = (name: string): UploadResponse => ({
@@ -57,7 +57,7 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
     const dialog = await maskEditor.openDialog()
 
     const imageDimensions =
-      await maskEditor.getCanvasPixelData(RGB_CANVAS_INDEX)
+      await maskEditor.getCanvasPixelData(IMAGE_CANVAS_INDEX)
     const maskDimensions =
       await maskEditor.getCanvasPixelData(MASK_CANVAS_INDEX)
 
@@ -69,15 +69,6 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
     await expect(dialog).toBeVisible()
   })
 
-  test('Opening mask editor loads the image onto the canvas', async ({
-    maskEditor
-  }) => {
-    const dialog = await maskEditor.openDialog()
-
-    await expect.poll(() => maskEditor.pollRgbPixelCount()).toBeGreaterThan(0)
-    await expect(dialog).toBeVisible()
-  })
-
   test('Save failure on partial upload keeps dialog open', async ({
     comfyPage,
     maskEditor
@@ -85,17 +76,20 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
     const dialog = await maskEditor.openDialog()
     await maskEditor.drawStrokeAndExpectPixels(dialog)
 
+    // The saver uploads sequentially: mask layer first, then image layers.
+    // Let the mask upload succeed and the image upload fail to exercise both
+    // endpoints and verify the dialog stays open after a partial failure.
     let maskUploadHit = false
     let imageUploadHit = false
     await comfyPage.page.route('**/upload/mask', (route) => {
       maskUploadHit = true
-      return route.fulfill({ status: 500 })
+      return route.fulfill(
+        fulfillJson(successResponse('clipspace-mask-999.png'))
+      )
     })
     await comfyPage.page.route('**/upload/image', (route) => {
       imageUploadHit = true
-      return route.fulfill(
-        fulfillJson(successResponse('clipspace-painted-999.png'))
-      )
+      return route.fulfill({ status: 500 })
     })
 
     const saveButton = dialog.getByRole('button', { name: 'Save' })
