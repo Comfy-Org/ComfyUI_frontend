@@ -1,8 +1,8 @@
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema';
-import type { PreviewExposure } from '@/core/schemas/previewExposureSchema';
+import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
+import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
@@ -39,38 +39,6 @@ export function isNodeProperty(value: unknown): value is NodeProperty {
   return t === 'string' || t === 'number' || t === 'boolean' || t === 'object'
 }
 
-interface RawHostSnapshot {
-  widgetSources: unknown[]
-  previewExposures: unknown
-}
-
-async function readRawHostSnapshot(
-  comfyPage: ComfyPage,
-  nodeId: string
-): Promise<RawHostSnapshot> {
-  return comfyPage.page.evaluate((id) => {
-    const node = window.app!.canvas.graph!.getNodeById(id)
-    const widgetSources = (node?.widgets ?? []).flatMap((widget) => {
-      if (!('sourceNodeId' in widget) || !('sourceWidgetName' in widget))
-        return []
-      return [
-        {
-          sourceNodeId: widget.sourceNodeId,
-          sourceWidgetName: widget.sourceWidgetName
-        }
-      ]
-    })
-    const serialized = window.app!.graph!.serialize()
-    const serializedNode = serialized.nodes.find(
-      (candidate) => String(candidate.id) === String(id)
-    )
-    return {
-      widgetSources,
-      previewExposures: serializedNode?.properties?.previewExposures
-    }
-  }, nodeId)
-}
-
 export async function getPromotedWidgets(
   comfyPage: ComfyPage,
   nodeId: string
@@ -79,8 +47,28 @@ export async function getPromotedWidgets(
   // serialized previewExposures snapshot, since each represents a different
   // category of promoted slot. Validation/typing is done outside page.evaluate
   // using canonical guards/schemas from src/.
-  const { widgetSources, previewExposures } = await readRawHostSnapshot(
-    comfyPage,
+  const { widgetSources, previewExposures } = await comfyPage.page.evaluate(
+    (id) => {
+      const node = window.app!.canvas.graph!.getNodeById(id)
+      const widgetSources = (node?.widgets ?? []).flatMap((widget) => {
+        if (!('sourceNodeId' in widget) || !('sourceWidgetName' in widget))
+          return []
+        return [
+          {
+            sourceNodeId: widget.sourceNodeId,
+            sourceWidgetName: widget.sourceWidgetName
+          }
+        ]
+      })
+      const serialized = window.app!.graph!.serialize()
+      const serializedNode = serialized.nodes.find(
+        (candidate) => String(candidate.id) === String(id)
+      )
+      return {
+        widgetSources,
+        previewExposures: serializedNode?.properties?.previewExposures
+      }
+    },
     nodeId
   )
 
