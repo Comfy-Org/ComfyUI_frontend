@@ -36,6 +36,7 @@ const settings = {
       alwaysTryTypes: true,
       project: [
         './tsconfig.json',
+        './browser_tests/tsconfig.json',
         './apps/*/tsconfig.json',
         './packages/*/tsconfig.json'
       ],
@@ -226,6 +227,37 @@ export default defineConfig([
             'YAML',
             '1.2 MB'
           ]
+        }
+      ]
+    }
+  },
+  {
+    name: 'comfy/no-unsafe-error-assertion',
+    files: [
+      'src/**/*.ts',
+      'src/**/*.tsx',
+      'src/**/*.vue',
+      'apps/*/src/**/*.ts',
+      'apps/*/src/**/*.tsx',
+      'apps/*/src/**/*.vue'
+    ],
+    ignores: ['**/*.test.ts', '**/*.spec.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          // Bans `value as Error` and `value as Error & { ... }`.
+          // Use `error instanceof Error` narrowing or `toError()` from
+          // @/utils/errorUtil instead — see issue #11429.
+          selector: "TSAsExpression TSTypeReference[typeName.name='Error']",
+          message:
+            'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
+        },
+        {
+          // Bans `<Error>value` and `<Error & { ... }>value`.
+          selector: "TSTypeAssertion TSTypeReference[typeName.name='Error']",
+          message:
+            'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
         }
       ]
     }

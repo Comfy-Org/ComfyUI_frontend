@@ -177,7 +177,7 @@ function scanAssetWidget(
   getDirectory: ((nodeType: string) => string | undefined) | undefined
 ): MissingModelCandidate | null {
   const value = widget.value
-  if (!value.trim()) return null
+  if (typeof value !== 'string' || !value.trim()) return null
   if (!isModelFileName(value)) return null
 
   return {
@@ -452,14 +452,14 @@ export async function verifyAssetSupportedCandidates(
 ): Promise<void> {
   if (signal?.aborted) return
 
-  const pendingNodeTypes = new Set<string>()
-  for (const c of candidates) {
-    if (c.isAssetSupported && c.isMissing === undefined) {
-      pendingNodeTypes.add(c.nodeType)
-    }
-  }
+  const pendingCandidates = candidates.filter(
+    (c) => c.isAssetSupported && c.isMissing === undefined
+  )
+  if (pendingCandidates.length === 0) return
 
-  if (pendingNodeTypes.size === 0) return
+  const pendingNodeTypes = new Set(
+    pendingCandidates.map((candidate) => candidate.nodeType)
+  )
 
   const store =
     assetsStore ?? (await import('@/stores/assetsStore')).useAssetsStore()

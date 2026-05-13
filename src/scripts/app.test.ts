@@ -436,4 +436,30 @@ describe('ComfyApp', () => {
       )
     })
   })
+
+  describe('drop handler', () => {
+    it('syncs graph_mouse from the drop event before downstream handlers run', async () => {
+      // graph_mouse is only updated on mousemove, so when files are dragged in
+      // from another window the canvas-space cursor is stale. The drop handler
+      // must derive the position from the drop event itself.
+      const graphMouse: [number, number] = [-999, -999]
+      const adjustMouseEvent = vi.fn((e: DragEvent) => {
+        ;(e as DragEvent & { canvasX: number; canvasY: number }).canvasX = 123
+        ;(e as DragEvent & { canvasX: number; canvasY: number }).canvasY = 456
+      })
+      app.canvas = {
+        ...mockCanvas,
+        graph_mouse: graphMouse,
+        adjustMouseEvent
+      } as unknown as LGraphCanvas
+
+      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+
+      document.dispatchEvent(new DragEvent('drop'))
+      await Promise.resolve()
+
+      expect(adjustMouseEvent).toHaveBeenCalledTimes(1)
+      expect(graphMouse).toEqual([123, 456])
+    })
+  })
 })

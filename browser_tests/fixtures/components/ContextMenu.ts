@@ -20,6 +20,7 @@ export class ContextMenu {
 
   async clickMenuItemExact(name: string): Promise<void> {
     await this.page.getByRole('menuitem', { name, exact: true }).click()
+    await this.waitForHidden()
   }
 
   /**

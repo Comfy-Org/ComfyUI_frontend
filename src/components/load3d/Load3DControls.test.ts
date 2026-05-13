@@ -251,10 +251,10 @@ describe('Load3DControls', () => {
       await user.click(screen.getByRole('button', { name: label }))
     }
 
-    it.each([
+    it.for([
       ['Model', 'model-controls'],
       ['Camera', 'camera-controls']
-    ])('%s category renders only %s', async (label, testId) => {
+    ])('%s category renders only %s', async ([label, testId]) => {
       const { user } = renderControls()
       await selectCategory(user, label)
 
@@ -315,12 +315,12 @@ describe('Load3DControls', () => {
       ).not.toBeInTheDocument()
     })
 
-    it.each([
+    it.for([
       ['Gizmo', 'gizmo-controls', 'canUseGizmo' as const],
       ['Export', 'export-controls', 'canExport' as const]
     ])(
       'hides the %s panel when its capability flips off at runtime',
-      async (label, testId, capabilityProp) => {
+      async ([label, testId, capabilityProp]) => {
         const { user, rerender } = renderControls()
 
         await openMenu(user)

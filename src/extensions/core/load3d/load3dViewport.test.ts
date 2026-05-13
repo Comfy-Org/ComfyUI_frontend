@@ -96,13 +96,13 @@ describe('isLoad3dActive', () => {
     expect(isLoad3dActive({ ...idle, initialRenderDone: false })).toBe(true)
   })
 
-  it.each([
+  it.for([
     ['mouseOnNode'],
     ['mouseOnScene'],
     ['mouseOnViewer'],
     ['recording'],
     ['animationPlaying']
-  ] as const)('is active when %s is true', (flag) => {
+  ] as const)('is active when %s is true', ([flag]) => {
     expect(isLoad3dActive({ ...idle, [flag]: true })).toBe(true)
   })
 })
