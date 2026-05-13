@@ -237,7 +237,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
               :class="
                 cn(dragClass, 'my-2 rounded-lg bg-primary-background/30 p-2')
               "
-              :title="entry.entityId"
+              :title="entry.displayName"
               :sub-title="t('linearMode.builder.unknownWidget')"
               :remove="() => removeSelectedEntityId(entry.entityId)"
             />
