@@ -1330,7 +1330,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const canvas = LGraphCanvas.active_canvas
 
-    let entries: (IContextMenuValue<INodeSlotContextItem> | null)[] = []
+    const entries: (IContextMenuValue<INodeSlotContextItem> | null)[] = []
 
     if (
       LiteGraph.do_add_triggers_slots &&
@@ -1342,10 +1342,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         className: 'event'
       })
     }
-    // add callback for modifying the menu elements onMenuNodeOutputs
-    const retEntries = node.onMenuNodeOutputs?.(entries)
-    if (retEntries) entries = retEntries
-
     if (!entries.length) return
 
     new LiteGraph.ContextMenu<INodeSlotContextItem>(entries, {
@@ -1393,8 +1389,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       graph.beforeChange()
       node.addOutput(v.value[0], v.value[1], v.value[2])
 
-      // a callback to the node when adding a slot
-      node.onNodeOutputAdd?.(v.value)
       canvas.setDirty(true, true)
       graph.afterChange()
     }
@@ -2840,10 +2834,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
               }
             }
 
-            // TODO: Move callbacks to the start of this closure (onInputClick is already correct).
-            pointer.onDoubleClick = () => node.onOutputDblClick?.(i, e)
-            pointer.onClick = () => node.onOutputClick?.(i, e)
-
             return
           }
         }
@@ -2905,12 +2895,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       // Node background
       pointer.onDoubleClick = () => {
         // Double-click
-        // Check if it's a double click on the title bar
-        // Note: pos[1] is the y-coordinate of the node's body
-        // If clicking on node header (title), pos[1] is negative
-        if (pos[1] < 0 && !inCollapse) {
-          node.onNodeTitleDblClick?.(e, pos, this)
-        } else if (node instanceof SubgraphNode) {
+        // Note: pos[1] is the y-coordinate of the node's body.
+        // If clicking on node header (title), pos[1] is negative — skip the
+        // subgraph-open behaviour in that case.
+        if (!(pos[1] < 0 && !inCollapse) && node instanceof SubgraphNode) {
           this.openSubgraph(node.subgraph, node)
         }
 
@@ -3889,25 +3877,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       this.isDragging = false
 
-      const x = e.canvasX
-      const y = e.canvasY
-
       if (!this.linkConnector.isConnecting) {
         this.dirty_canvas = true
-
-        this.node_over?.onMouseUp?.(
-          e,
-          [x - this.node_over.pos[0], y - this.node_over.pos[1]],
-          this
-        )
-        this.node_capturing_input?.onMouseUp?.(
-          e,
-          [
-            x - this.node_capturing_input.pos[0],
-            y - this.node_capturing_input.pos[1]
-          ],
-          this
-        )
       }
     } else if (isMiddleButtonEvent(e)) {
       // middle button
@@ -4050,10 +4021,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           this._autoPan?.updatePointer(this.mouse[0], this.mouse[1])
           this._autoPan?.start()
         }
-      }
-
-      for (const node of Object.values(this.selected_nodes)) {
-        node.onKeyUp?.(e)
       }
     }
 
@@ -5769,10 +5736,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ctx.shadowColor = 'transparent'
     }
 
-    // custom draw collapsed method (draw after shadows because they are affected)
-    if (node.flags.collapsed && node.onDrawCollapsed?.(ctx, this) == true)
-      return
-
     // clip if required (mask)
     const shape = node.renderingShape
     const size = temp_vec2
@@ -6036,9 +5999,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         default_title_color: this.node_title_color,
         low_quality
       })
-
-      // custom title render
-      node.onDrawTitle?.(ctx)
     }
 
     // Draw stroke styles
@@ -8533,15 +8493,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const value = node.properties[pName]
         const info = node.getPropertyInfo(pName)
 
-        // in case the user wants control over the side panel widget
-        if (node.onAddPropertyToPanel?.(pName, panel)) continue
-
         panel.addWidget(info.widget || info.type, pName, value, info, fUpdate)
       }
 
       panel.addSeparator()
-
-      node.onShowCustomPanelInfo?.(panel)
 
       // clear
       panel.footer.innerHTML = ''
