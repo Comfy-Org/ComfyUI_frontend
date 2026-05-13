@@ -51,7 +51,9 @@ describe('assert', () => {
     const reporter = vi.fn()
     setAssertReporter(reporter)
     assert(false, 'reporter message')
-    expect(reporter).toHaveBeenCalledWith('[Assertion failed]: reporter message')
+    expect(reporter).toHaveBeenCalledWith(
+      '[Assertion failed]: reporter message'
+    )
   })
 
   it('does not call reporter when condition is true', () => {

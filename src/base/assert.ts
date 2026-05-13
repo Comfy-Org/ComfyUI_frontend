@@ -18,10 +18,7 @@ export function setAssertReporter(fn: AssertReporter | null): void {
  * - DEV: throws (surfaces bugs immediately)
  * - Otherwise: delegates to registered reporter (Sentry, toast, etc.)
  */
-export function assert(
-  condition: unknown,
-  message: string
-): asserts condition {
+export function assert(condition: unknown, message: string): asserts condition {
   if (condition) return
 
   const formatted = `[Assertion failed]: ${message}`

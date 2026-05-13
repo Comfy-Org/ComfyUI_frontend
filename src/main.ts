@@ -84,14 +84,15 @@ Sentry.init({
         defaultIntegrations: false
       })
 })
+// Assertion reporter receives pre-formatted messages (with "[Assertion failed]: " prefix).
+// Strings here are intentionally not i18n'd: they're developer/nightly diagnostics,
+// not user-facing in stable releases.
 setAssertReporter((message) => {
   if (isDesktop) {
-    Sentry.captureMessage(`[Assertion failed]: ${message}`, {
-      level: 'warning'
-    })
+    Sentry.captureMessage(message, { level: 'warning' })
   }
   if (isNightly) {
-    useToastStore().add({
+    useToastStore(pinia).add({
       severity: 'warn',
       summary: 'Assertion failed',
       detail: message
