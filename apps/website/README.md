@@ -137,7 +137,9 @@ annotation.
 The `Release: Website` workflow uses the GitHub Actions secret to regenerate
 `apps/website/src/data/cloud-nodes.snapshot.json` via
 `.github/actions/cloud-nodes-pull/action.yaml`. The Vercel environment value is
-read at build time by `vercel build` in `ci-vercel-website-preview.yaml`.
+read at build time by `vercel build` in `ci-vercel-website-preview.yaml`; the
+`deploy-production` job hard-fails before `vercel build --prod` if the secret
+is missing.
 
 ### Refreshing the snapshot
 

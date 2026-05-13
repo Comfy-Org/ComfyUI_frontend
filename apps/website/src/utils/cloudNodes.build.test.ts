@@ -66,6 +66,7 @@ describe('loadPacksForBuild', () => {
 
     const packs = await loadPacksForBuild()
     expect(packs).toBe(SNAPSHOT.packs)
+    expect(reportCloudNodesOutcomeMock).toHaveBeenCalledTimes(1)
   })
 
   it('returns snapshot packs when outcome is stale on Vercel preview', async () => {
@@ -78,6 +79,7 @@ describe('loadPacksForBuild', () => {
 
     const packs = await loadPacksForBuild()
     expect(packs).toBe(SNAPSHOT.packs)
+    expect(reportCloudNodesOutcomeMock).toHaveBeenCalledTimes(1)
   })
 
   it('throws when outcome is stale on Vercel production', async () => {
