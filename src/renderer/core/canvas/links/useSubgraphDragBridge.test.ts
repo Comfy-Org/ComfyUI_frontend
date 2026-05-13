@@ -59,6 +59,7 @@ describe('useSubgraphDragBridge', () => {
     const targetNode = new LGraphNode('Target')
     targetNode.id = TARGET_NODE_ID
     targetNode.addInput('prompt', 'STRING')
+    expect(targetNode.inputs[0]).toBeDefined()
     targetNode.inputs[0].widget = { name: 'multiline_prompt' }
     subgraph.add(targetNode)
 
@@ -146,6 +147,103 @@ describe('useSubgraphDragBridge', () => {
     expect(state.candidate?.layout.index).toBe(0)
     expect(state.candidate?.compatible).toBe(true)
     expect(setDirty).toHaveBeenCalled()
+  })
+
+  it('clears candidate when pointer moves away from widget', async () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'prompt', type: 'STRING' }]
+    })
+    const targetNode = new LGraphNode('Target')
+    targetNode.id = TARGET_NODE_ID
+    targetNode.addInput('prompt', 'STRING')
+    expect(targetNode.inputs[0]).toBeDefined()
+    targetNode.inputs[0].widget = { name: 'multiline_prompt' }
+    subgraph.add(targetNode)
+
+    const slotKey = getSlotKey(String(targetNode.id), 0, true)
+    layoutStore.updateSlotLayout(slotKey, {
+      nodeId: String(targetNode.id),
+      index: 0,
+      type: 'input',
+      position: { x: SLOT_POSITION_X, y: SLOT_POSITION_Y },
+      bounds: {
+        x: SLOT_POSITION_X - 10,
+        y: SLOT_POSITION_Y - 10,
+        width: SLOT_BOUNDS_SIZE,
+        height: SLOT_BOUNDS_SIZE
+      }
+    })
+
+    const widgetContainer = document.createElement('div')
+    widgetContainer.className = 'lg-node-widget'
+    widgetContainer.dataset['nodeId'] = String(targetNode.id)
+
+    const hiddenBackingSlot = document.createElement('div')
+    hiddenBackingSlot.dataset['slotKey'] = slotKey
+    widgetContainer.appendChild(hiddenBackingSlot)
+    document.body.appendChild(widgetContainer)
+    domCleanup = () => widgetContainer.remove()
+
+    const elementFromPointMock = vi.spyOn(document, 'elementFromPoint')
+    elementFromPointMock.mockReturnValue(widgetContainer)
+
+    const linkConnector = new LinkConnector(() => undefined)
+    const setDirty = vi.fn()
+
+    const lgCanvas = {
+      linkConnector,
+      getCanvasWindow: () => window
+    } as unknown as LGraphCanvas
+
+    appMock.canvas = {
+      graph: subgraph,
+      linkConnector,
+      setDirty
+    }
+
+    const scope = effectScope()
+    scopeCleanup = () => scope.stop()
+    scope.run(() => {
+      useSubgraphDragBridge()
+    })
+
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = lgCanvas
+    await nextTick()
+
+    const state = useSlotLinkDragUIState().state
+
+    linkConnector.dragNewFromSubgraphInput(
+      subgraph,
+      subgraph.inputNode,
+      subgraph.inputNode.slots[0]
+    )
+
+    // First move: over widget - sets candidate
+    document.dispatchEvent(
+      new PointerEvent('pointermove', {
+        clientX: SLOT_POSITION_X,
+        clientY: SLOT_POSITION_Y
+      })
+    )
+    vi.advanceTimersByTime(RAF_BATCH_DELAY_MS)
+    await nextTick()
+
+    expect(state.candidate).not.toBeNull()
+    expect(state.candidate?.layout.nodeId).toBe(String(targetNode.id))
+
+    // Second move: away from widget - clears candidate (hover changed)
+    elementFromPointMock.mockReturnValue(null)
+    document.dispatchEvent(
+      new PointerEvent('pointermove', {
+        clientX: 0,
+        clientY: 0
+      })
+    )
+    vi.advanceTimersByTime(RAF_BATCH_DELAY_MS)
+    await nextTick()
+
+    expect(state.candidate).toBeNull()
   })
 
   it('marks mismatched input type as incompatible for bridge drag', async () => {
