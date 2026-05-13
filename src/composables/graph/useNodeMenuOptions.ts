@@ -111,10 +111,10 @@ export function useNodeMenuOptions() {
     action: runBranch
   })
 
-  const getNodeInfoOption = (showNodeHelp: () => void): MenuOption => ({
+  const getNodeInfoOption = (openNodeInfoPanel: () => void): MenuOption => ({
     label: t('contextMenu.Node Info'),
     icon: 'icon-[lucide--info]',
-    action: showNodeHelp
+    action: openNodeInfoPanel
   })
 
   return {

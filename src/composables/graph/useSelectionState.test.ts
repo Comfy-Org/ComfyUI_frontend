@@ -3,20 +3,16 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
-import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isImageNode, isLGraphNode } from '@/utils/litegraphUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 import {
   createMockLGraphNode,
   createMockPositionable
 } from '@/utils/__tests__/litegraphTestUtils'
-
-// Mock composables
-vi.mock('@/composables/sidebarTabs/useNodeLibrarySidebarTab', () => ({
-  useNodeLibrarySidebarTab: vi.fn()
-}))
 
 vi.mock('@/utils/litegraphUtil', () => ({
   isLGraphNode: vi.fn(),
@@ -38,6 +34,18 @@ const mockConnection = {
   type: 'connection',
   isNode: false
 }
+const mockNodeDef = new ComfyNodeDefImpl({
+  name: 'TestNode',
+  display_name: 'Test Node',
+  category: 'test',
+  input: {},
+  output: [],
+  output_name: [],
+  output_is_list: [],
+  output_node: false,
+  python_module: 'nodes',
+  description: ''
+})
 
 describe('useSelectionState', () => {
   beforeEach(() => {
@@ -49,14 +57,6 @@ describe('useSelectionState', () => {
         createSpy: vi.fn
       })
     )
-
-    // Setup mock composables
-    vi.mocked(useNodeLibrarySidebarTab).mockReturnValue({
-      id: 'node-library-tab',
-      title: 'Node Library',
-      type: 'custom',
-      render: () => null
-    } as ReturnType<typeof useNodeLibrarySidebarTab>)
 
     // Setup mock utility functions
     vi.mocked(isLGraphNode).mockImplementation((item: unknown) => {
@@ -185,6 +185,36 @@ describe('useSelectionState', () => {
       const { selectedNodes: newSelectedNodes } = useSelectionState()
       const newIsPinned = newSelectedNodes.value.some((n) => n.pinned === true)
       expect(newIsPinned).toBe(false)
+    })
+  })
+
+  describe('Node Info Panel', () => {
+    test('should open the right side info panel for a selected node', () => {
+      const canvasStore = useCanvasStore()
+      const nodeDefStore = useNodeDefStore()
+      const rightSidePanelStore = useRightSidePanelStore()
+      const node = createMockLGraphNode({ id: 8, type: 'TestNode' })
+      canvasStore.$state.selectedItems = [node]
+      vi.mocked(nodeDefStore.fromLGraphNode).mockReturnValue(mockNodeDef)
+
+      const { openNodeInfoPanel } = useSelectionState()
+      openNodeInfoPanel()
+
+      expect(rightSidePanelStore.openPanel).toHaveBeenCalledWith('info')
+    })
+
+    test('should not open the right side panel when no node definition exists', () => {
+      const canvasStore = useCanvasStore()
+      const nodeDefStore = useNodeDefStore()
+      const rightSidePanelStore = useRightSidePanelStore()
+      const node = createMockLGraphNode({ id: 9, type: 'MissingNode' })
+      canvasStore.$state.selectedItems = [node]
+      vi.mocked(nodeDefStore.fromLGraphNode).mockReturnValue(null)
+
+      const { openNodeInfoPanel } = useSelectionState()
+      openNodeInfoPanel()
+
+      expect(rightSidePanelStore.openPanel).not.toHaveBeenCalled()
     })
   })
 })

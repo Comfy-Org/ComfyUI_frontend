@@ -125,7 +125,7 @@ export function useMoreOptionsMenu() {
     selectedItems,
     selectedNodes,
     nodeDef,
-    showNodeHelp,
+    openNodeInfoPanel,
     hasSubgraphs: hasSubgraphsComputed,
     hasImageNode,
     hasOutputNodesSelected,
@@ -244,7 +244,7 @@ export function useMoreOptionsMenu() {
 
     // Section 4: Node properties (Node Info, Shape, Color)
     if (nodeDef.value) {
-      options.push(getNodeInfoOption(showNodeHelp))
+      options.push(getNodeInfoOption(openNodeInfoPanel))
     }
     if (groupContext) {
       options.push(getGroupColorOptions(groupContext, bump))

@@ -20,9 +20,6 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 const rightSidePanelStore = useRightSidePanelStore()
 
-/**
- * Track node info button click and toggle node help.
- */
 const onInfoClick = () => {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'selection_toolbox_node_info_opened'
