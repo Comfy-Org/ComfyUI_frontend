@@ -332,120 +332,138 @@ export class SceneManager implements SceneManagerInterface {
     }
   }
 
-  captureScene(
+  async captureScene(
     width: number,
     height: number
   ): Promise<{ scene: string; mask: string; normal: string }> {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const originalWidth = this.renderer.domElement.width
-        const originalHeight = this.renderer.domElement.height
-        const originalClearColor = this.renderer.getClearColor(
-          new THREE.Color()
-        )
-        const originalClearAlpha = this.renderer.getClearAlpha()
-        const originalOutputColorSpace = this.renderer.outputColorSpace
+    const originalSize = new THREE.Vector2()
+    this.renderer.getSize(originalSize)
+    const originalPixelRatio = this.renderer.getPixelRatio()
+    const originalClearColor = this.renderer.getClearColor(new THREE.Color())
+    const originalClearAlpha = this.renderer.getClearAlpha()
+    const originalOutputColorSpace = this.renderer.outputColorSpace
 
-        this.renderer.setSize(width, height)
-
-        if (this.getActiveCamera() instanceof THREE.PerspectiveCamera) {
-          const perspectiveCamera =
-            this.getActiveCamera() as THREE.PerspectiveCamera
-
-          perspectiveCamera.aspect = width / height
-          perspectiveCamera.updateProjectionMatrix()
-        } else {
-          const orthographicCamera =
-            this.getActiveCamera() as THREE.OrthographicCamera
-
-          const frustumSize = 10
-          const aspect = width / height
-
-          orthographicCamera.left = (-frustumSize * aspect) / 2
-          orthographicCamera.right = (frustumSize * aspect) / 2
-          orthographicCamera.top = frustumSize / 2
-          orthographicCamera.bottom = -frustumSize / 2
-
-          orthographicCamera.updateProjectionMatrix()
-        }
-
-        if (
-          this.backgroundTexture &&
-          this.backgroundMesh &&
-          this.currentBackgroundType === 'image'
-        ) {
-          this.updateBackgroundSize(
-            this.backgroundTexture,
-            this.backgroundMesh,
-            width,
-            height
-          )
-        }
-
-        const originalMaterials = new Map<
-          THREE.Mesh,
-          THREE.Material | THREE.Material[]
-        >()
-
-        this.renderer.clear()
-        this.renderBackground()
-        this.renderer.render(this.scene, this.getActiveCamera())
-        const sceneData = this.renderer.domElement.toDataURL('image/png')
-
-        this.renderer.setClearColor(0x000000, 0)
-        this.renderer.clear()
-        this.renderer.render(this.scene, this.getActiveCamera())
-        const maskData = this.renderer.domElement.toDataURL('image/png')
-
-        this.scene.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            originalMaterials.set(child, child.material)
-
-            child.material = new THREE.MeshNormalMaterial({
-              flatShading: false,
-              side: THREE.DoubleSide,
-              normalScale: new THREE.Vector2(1, 1)
-            })
+    const activeCamera = this.getActiveCamera()
+    const savedCameraParams =
+      activeCamera instanceof THREE.PerspectiveCamera
+        ? { type: 'perspective' as const, aspect: activeCamera.aspect }
+        : {
+            type: 'orthographic' as const,
+            left: (activeCamera as THREE.OrthographicCamera).left,
+            right: (activeCamera as THREE.OrthographicCamera).right,
+            top: (activeCamera as THREE.OrthographicCamera).top,
+            bottom: (activeCamera as THREE.OrthographicCamera).bottom
           }
-        })
 
-        const gridVisible = this.gridHelper.visible
-        this.gridHelper.visible = false
+    const originalMaterials = new Map<
+      THREE.Mesh,
+      THREE.Material | THREE.Material[]
+    >()
+    const tempMaterials: THREE.MeshNormalMaterial[] = []
+    const gridVisible = this.gridHelper.visible
 
-        this.renderer.setClearColor(0x000000, 1)
-        this.renderer.clear()
-        this.renderer.render(this.scene, this.getActiveCamera())
-        const normalData = this.renderer.domElement.toDataURL('image/png')
+    try {
+      // Capture at exactly the requested pixel dimensions, independent of
+      // the current zoom-driven pixel ratio.
+      this.renderer.setPixelRatio(1)
+      this.renderer.setSize(width, height)
 
-        this.scene.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            const originalMaterial = originalMaterials.get(child)
-            if (originalMaterial) {
-              child.material = originalMaterial
-            }
-          }
-        })
+      if (activeCamera instanceof THREE.PerspectiveCamera) {
+        activeCamera.aspect = width / height
+        activeCamera.updateProjectionMatrix()
+      } else {
+        const orthographicCamera = activeCamera as THREE.OrthographicCamera
 
-        this.renderer.setClearColor(0xffffff, 1)
-        this.renderer.clear()
+        const frustumSize = 10
+        const aspect = width / height
 
-        this.gridHelper.visible = gridVisible
+        orthographicCamera.left = (-frustumSize * aspect) / 2
+        orthographicCamera.right = (frustumSize * aspect) / 2
+        orthographicCamera.top = frustumSize / 2
+        orthographicCamera.bottom = -frustumSize / 2
 
-        this.renderer.setClearColor(originalClearColor, originalClearAlpha)
-        this.renderer.setSize(originalWidth, originalHeight)
-        this.renderer.outputColorSpace = originalOutputColorSpace
-
-        this.handleResize(originalWidth, originalHeight)
-
-        resolve({
-          scene: sceneData,
-          mask: maskData,
-          normal: normalData
-        })
-      } catch (error) {
-        reject(error)
+        orthographicCamera.updateProjectionMatrix()
       }
-    })
+
+      if (
+        this.backgroundTexture &&
+        this.backgroundMesh &&
+        this.currentBackgroundType === 'image'
+      ) {
+        this.updateBackgroundSize(
+          this.backgroundTexture,
+          this.backgroundMesh,
+          width,
+          height
+        )
+      }
+
+      this.renderer.clear()
+      this.renderBackground()
+      this.renderer.render(this.scene, activeCamera)
+      const sceneData = this.renderer.domElement.toDataURL('image/png')
+
+      this.renderer.setClearColor(0x000000, 0)
+      this.renderer.clear()
+      this.renderer.render(this.scene, activeCamera)
+      const maskData = this.renderer.domElement.toDataURL('image/png')
+
+      this.scene.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          originalMaterials.set(child, child.material)
+
+          const tempMaterial = new THREE.MeshNormalMaterial({
+            flatShading: false,
+            side: THREE.DoubleSide,
+            normalScale: new THREE.Vector2(1, 1)
+          })
+          tempMaterials.push(tempMaterial)
+          child.material = tempMaterial
+        }
+      })
+
+      this.gridHelper.visible = false
+
+      this.renderer.setClearColor(0x000000, 1)
+      this.renderer.clear()
+      this.renderer.render(this.scene, activeCamera)
+      const normalData = this.renderer.domElement.toDataURL('image/png')
+
+      this.renderer.setClearColor(0xffffff, 1)
+      this.renderer.clear()
+
+      return { scene: sceneData, mask: maskData, normal: normalData }
+    } finally {
+      this.scene.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          const originalMaterial = originalMaterials.get(child)
+          if (originalMaterial) {
+            child.material = originalMaterial
+          }
+        }
+      })
+      for (const mat of tempMaterials) {
+        mat.dispose()
+      }
+      this.gridHelper.visible = gridVisible
+      if (savedCameraParams.type === 'perspective') {
+        const persp = activeCamera as THREE.PerspectiveCamera
+        persp.aspect = savedCameraParams.aspect
+        persp.updateProjectionMatrix()
+      } else {
+        const ortho = activeCamera as THREE.OrthographicCamera
+        ortho.left = savedCameraParams.left
+        ortho.right = savedCameraParams.right
+        ortho.top = savedCameraParams.top
+        ortho.bottom = savedCameraParams.bottom
+        ortho.updateProjectionMatrix()
+      }
+      this.renderer.setClearColor(originalClearColor, originalClearAlpha)
+      this.renderer.setPixelRatio(originalPixelRatio)
+      this.renderer.setSize(originalSize.x, originalSize.y)
+      this.renderer.outputColorSpace = originalOutputColorSpace
+      this.handleResize(originalSize.x, originalSize.y)
+    }
   }
 
   reset(): void {}

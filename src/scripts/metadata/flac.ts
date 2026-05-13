@@ -42,6 +42,8 @@ export function getFromFlacFile(file: File): Promise<Record<string, string>> {
       const arrayBuffer = event.target.result as ArrayBuffer
       r(getFromFlacBuffer(arrayBuffer))
     }
+    reader.onerror = () => r({})
+    reader.onabort = () => r({})
     reader.readAsArrayBuffer(file)
   })
 }

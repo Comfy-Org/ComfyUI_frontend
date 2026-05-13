@@ -36,4 +36,7 @@ jobs:
         uses: ./.github/actions/setup-frontend
 
       - name: Build website
+        env:
+          WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
+          WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
         run: pnpm --filter @comfyorg/website build

@@ -256,6 +256,31 @@ export function isValidUrl(url: string): boolean {
   }
 }
 
+export function joinFilePath(
+  subfolder: string | null | undefined,
+  filename: string | null | undefined
+): string {
+  const normalizedSubfolder = normalizeFilePathSeparators(
+    subfolder ?? ''
+  ).replace(/^\/+|\/+$/g, '')
+  const normalizedFilename = normalizeFilePathSeparators(
+    filename ?? ''
+  ).replace(/^\/+/g, '')
+  if (!normalizedSubfolder) return normalizedFilename
+  if (!normalizedFilename) return normalizedSubfolder
+  return `${normalizedSubfolder}/${normalizedFilename}`
+}
+
+export function getFilePathSeparatorVariants(filepath: string): string[] {
+  const slashPath = normalizeFilePathSeparators(filepath)
+  const backslashPath = slashPath.replace(/\//g, '\\')
+  return slashPath === backslashPath ? [slashPath] : [slashPath, backslashPath]
+}
+
+function normalizeFilePathSeparators(filepath: string): string {
+  return filepath.replace(/[\\/]+/g, '/')
+}
+
 /**
  * Parses a filepath into its filename and subfolder components.
  *
@@ -274,8 +299,7 @@ export function parseFilePath(filepath: string): {
 } {
   if (!filepath?.trim()) return { filename: '', subfolder: '' }
 
-  const normalizedPath = filepath
-    .replace(/[\\/]+/g, '/') // Normalize path separators
+  const normalizedPath = normalizeFilePathSeparators(filepath)
     .replace(/^\//, '') // Remove leading slash
     .replace(/\/$/, '') // Remove trailing slash
 
@@ -557,7 +581,7 @@ const IMAGE_EXTENSIONS = [
   'tiff',
   'svg'
 ] as const
-const VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov', 'avi'] as const
+const VIDEO_EXTENSIONS = ['mp4', 'm4v', 'webm', 'mov', 'avi', 'mkv'] as const
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac'] as const
 const THREE_D_EXTENSIONS = ['obj', 'fbx', 'gltf', 'glb', 'usdz'] as const
 const TEXT_EXTENSIONS = [
@@ -650,4 +674,33 @@ export function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60)
   const secs = Math.floor(seconds % 60)
   return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+/**
+ * Format a number with the given BCP-47 locale.
+ * Returns an em-dash for non-numeric, NaN, or infinite inputs.
+ */
+export function formatLocalizedNumber(
+  value: number | undefined,
+  locale: string
+): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '—'
+  return new Intl.NumberFormat(locale).format(value)
+}
+
+/**
+ * Format an ISO 8601 date string with the given BCP-47 locale using the
+ * `medium` date style (e.g. "Apr 19, 2026"). Returns an em-dash for missing
+ * or unparseable inputs.
+ */
+export function formatLocalizedMediumDate(
+  value: string | undefined,
+  locale: string
+): string {
+  if (!value) return '—'
+  const timestamp = Date.parse(value)
+  if (Number.isNaN(timestamp)) return '—'
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(
+    timestamp
+  )
 }

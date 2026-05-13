@@ -349,7 +349,7 @@ describe('useComboWidget', () => {
     const HASH_FILENAME_2 =
       'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456.jpg'
 
-    it.each([
+    it.for([
       { nodeClass: 'LoadImage', inputName: 'image' },
       { nodeClass: 'LoadVideo', inputName: 'video' },
       { nodeClass: 'LoadAudio', inputName: 'audio' }
