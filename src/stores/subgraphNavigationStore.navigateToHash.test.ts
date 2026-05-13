@@ -171,6 +171,18 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     expect(routerMocks.replace).not.toHaveBeenCalled()
   })
 
+  it('redirects to root even when canvas still references a deleted subgraph (stale-graph guard)', async () => {
+    const stale = makeSubgraph(ids.deletedSubgraph)
+    app.canvas.graph = stale
+    useSubgraphNavigationStore()
+
+    routeHashRef.value = `#${ids.deletedSubgraph}`
+    await flushHashWatcher()
+    await flushHashWatcher()
+
+    expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+  })
+
   it('treats an empty hash as the root graph (no redirect)', async () => {
     app.canvas.graph = fromPartial<LGraph>({ id: ids.root })
     useSubgraphNavigationStore()
