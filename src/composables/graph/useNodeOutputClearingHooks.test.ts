@@ -9,6 +9,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
@@ -161,6 +162,33 @@ describe('installNodeOutputClearingHooks', () => {
 
     expect(app.nodeOutputs[locator]).toBeUndefined()
     expect(trackerCache[locator]).toBeUndefined()
+  })
+
+  it('preserves the tracker cache during workflow tab switch teardown', () => {
+    const graph = new LGraph()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+
+    const node = new LGraphNode('LoadImage')
+    graph.add(node)
+    const locator = String(node.id)
+    seedOutputForLocator(locator)
+
+    const trackerCache: Record<string, unknown> = {
+      [locator]: { images: [{ filename: 'preview.png' }] }
+    }
+    vi.spyOn(useWorkflowStore(), 'activeWorkflow', 'get').mockReturnValue({
+      changeTracker: { nodeOutputs: trackerCache, _restoringState: false }
+    } as never)
+
+    installNodeOutputClearingHooks(graph)
+    ChangeTracker.isLoadingGraph = true
+    try {
+      graph.remove(node)
+    } finally {
+      ChangeTracker.isLoadingGraph = false
+    }
+
+    expect(trackerCache[locator]).toBeDefined()
   })
 
   it('does not throw when the removal hook fires for an already-cleared node', () => {
