@@ -460,7 +460,7 @@ function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
       })
       return widgetId ? createWidgetHandle(widgetId) : undefined
     },
-    widgets() {
+    getWidgets() {
       const container = world.getComponent(nodeId, WidgetComponentContainer)
       return (container?.widgetIds ?? []).map(createWidgetHandle)
     },
