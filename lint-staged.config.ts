@@ -31,7 +31,12 @@ export default {
 }
 
 function formatAndEslint(fileNames: string[]) {
-  const joinedPaths = toJoinedRelativePaths(fileNames)
+  // Exclude package build directories from linting
+  const filtered = fileNames.filter(
+    (f) => !f.includes('/packages/') || !f.includes('/build/')
+  )
+  if (filtered.length === 0) return []
+  const joinedPaths = toJoinedRelativePaths(filtered)
   return [
     `pnpm exec oxfmt --write ${joinedPaths}`,
     `pnpm exec oxlint --fix ${joinedPaths}`,

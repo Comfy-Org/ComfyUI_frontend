@@ -7,10 +7,10 @@
     "README.md"
   ],
   "type": "module",
-  "types": "./build/extension-api/index.d.ts",
+  "types": "./build/index.d.ts",
   "exports": {
     ".": {
-      "types": "./build/extension-api/index.d.ts",
+      "types": "./build/index.d.ts",
       "import": "./build/index.js",
       "default": "./build/index.js"
     }

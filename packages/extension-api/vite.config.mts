@@ -61,34 +61,14 @@ export default defineConfig({
   },
   plugins: [
     dts({
-      // entryRoot = the main app `src/` so the surface entry lands at
-      // `build/extension-api/index.d.ts` and its transitive type-chain
-      // (`@/services/*`, `@/types/*`, `@/world/*`) is emitted at the
-      // matching subdirectories under build/. The package.json `types`
-      // field points at `build/extension-api/index.d.ts` to match.
-      // vite-plugin-dts rewrites `@/*` aliases to relative paths so the
-      // emitted tree resolves without runtime alias support.
-      entryRoot: repoSrc,
+      // Bundle all types into a single index.d.ts. This ensures the package
+      // is self-contained and doesn't reference paths outside build/.
+      rollupTypes: true,
       outDir: resolve(here, 'build'),
       tsconfigPath: resolve(here, 'tsconfig.build.json'),
-      // Pre-existing main app type warnings (inferred type portability,
-      // augmentation timing) are out-of-scope for this build per D17.
-      // Emit declarations even when the underlying type-check has soft
-      // warnings; the surface itself is well-formed and the runtime
-      // contract is verified by the bundled JS smoke test.
       logLevel: 'warn',
-      // Emit the transitive type chain that the surface references via
-      // `@/services/*`, `@/types/*`, `@/world/*`, `@/platform/*`, and
-      // `@/lib/litegraph/*`. The dts plugin rewrites `@/*` imports to
-      // relative paths under build/, so emitting the closure keeps every
-      // `import { … } from '../…'` resolvable. The tsconfig.build.json
-      // `include` defines what TS sees; this list mirrors it.
-      include: [resolve(repoSrc, '**/*.ts')],
-      exclude: [
-        resolve(repoSrc, '**/*.test.ts'),
-        resolve(repoSrc, '**/*.spec.ts'),
-        resolve(repoSrc, '**/*.vue')
-      ]
+      // Only include the extension-api surface, not the entire app
+      include: [resolve(surfaceRoot, '**/*.ts')]
     })
   ]
 })
