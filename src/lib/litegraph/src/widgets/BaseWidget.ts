@@ -96,7 +96,20 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._state.label = value
   }
 
-  hidden?: boolean
+  /**
+   * Whether this widget is hidden from the node UI.
+   * Proxies to `options.hidden` to ensure Vue and canvas renderers agree.
+   * See ADR 0010 (Widget State Categories).
+   */
+  get hidden(): boolean {
+    return (this.options as Record<string, unknown>)?.hidden === true
+  }
+  set hidden(value: boolean) {
+    if (this.options) {
+      ;(this.options as Record<string, unknown>).hidden = value
+    }
+  }
+
   advanced?: boolean
 
   get disabled(): boolean | undefined {
