@@ -56,6 +56,30 @@ test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
       await expect(nodeRef).not.toBeCollapsed()
     })
 
+    test('More Options menu does not surface duplicate LiteGraph Resize / Collapse / Expand entries', async ({
+      comfyPage
+    }) => {
+      const nodeRef = (
+        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      )[0]
+      await comfyPage.nodeOps.selectNodeWithPan(nodeRef)
+
+      const menu = await openMoreOptions(comfyPage)
+
+      await expect(
+        menu.getByText('Minimize Node', { exact: true })
+      ).toBeVisible()
+      await expect(
+        menu.getByRole('menuitem', { name: 'Resize', exact: true })
+      ).toHaveCount(0)
+      await expect(
+        menu.getByRole('menuitem', { name: 'Collapse', exact: true })
+      ).toHaveCount(0)
+      await expect(
+        menu.getByRole('menuitem', { name: 'Expand', exact: true })
+      ).toHaveCount(0)
+    })
+
     test('copy via More Options menu', async ({ comfyPage }) => {
       const nodeRef = (
         await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
