@@ -162,8 +162,20 @@ describe('BC.28 v1 contract — subgraph fan-out via set/get virtual nodes', () 
 
       graph._nodes = [upstreamNode, setNode, getNode, downstreamNode]
       graph.links = {
-        100: { id: 100, origin_id: 1, origin_slot: 0, target_id: 2, target_slot: 0 },
-        101: { id: 101, origin_id: 3, origin_slot: 0, target_id: 4, target_slot: 0 }
+        100: {
+          id: 100,
+          origin_id: 1,
+          origin_slot: 0,
+          target_id: 2,
+          target_slot: 0
+        },
+        101: {
+          id: 101,
+          origin_id: 3,
+          origin_slot: 0,
+          target_id: 4,
+          target_slot: 0
+        }
       }
 
       // graphToPrompt rewriting logic: replace Get→downstream with Set-source→downstream
@@ -218,24 +230,69 @@ describe('BC.28 v1 contract — subgraph fan-out via set/get virtual nodes', () 
     it('multiple Get nodes referencing the same Set name all resolve to the same upstream', () => {
       const graph = createV1Graph()
 
-      const upstream: V1Node = { id: 1, type: 'KSampler', title: 'S', outputs: [{ links: [100] }] }
+      const upstream: V1Node = {
+        id: 1,
+        type: 'KSampler',
+        title: 'S',
+        outputs: [{ links: [100] }]
+      }
       const setNode: V1Node = {
-        id: 2, type: 'SetNode', title: 'shared', inputs: [{ link: 100 }], outputs: []
+        id: 2,
+        type: 'SetNode',
+        title: 'shared',
+        inputs: [{ link: 100 }],
+        outputs: []
       }
       const get1: V1Node = {
-        id: 3, type: 'GetNode', title: 'shared', inputs: [], outputs: [{ links: [101] }]
+        id: 3,
+        type: 'GetNode',
+        title: 'shared',
+        inputs: [],
+        outputs: [{ links: [101] }]
       }
       const get2: V1Node = {
-        id: 4, type: 'GetNode', title: 'shared', inputs: [], outputs: [{ links: [102] }]
+        id: 4,
+        type: 'GetNode',
+        title: 'shared',
+        inputs: [],
+        outputs: [{ links: [102] }]
       }
-      const down1: V1Node = { id: 5, type: 'VAEDecode', title: 'D1', inputs: [{ link: 101 }] }
-      const down2: V1Node = { id: 6, type: 'VAEDecode', title: 'D2', inputs: [{ link: 102 }] }
+      const down1: V1Node = {
+        id: 5,
+        type: 'VAEDecode',
+        title: 'D1',
+        inputs: [{ link: 101 }]
+      }
+      const down2: V1Node = {
+        id: 6,
+        type: 'VAEDecode',
+        title: 'D2',
+        inputs: [{ link: 102 }]
+      }
 
       graph._nodes = [upstream, setNode, get1, get2, down1, down2]
       graph.links = {
-        100: { id: 100, origin_id: 1, origin_slot: 0, target_id: 2, target_slot: 0 },
-        101: { id: 101, origin_id: 3, origin_slot: 0, target_id: 5, target_slot: 0 },
-        102: { id: 102, origin_id: 4, origin_slot: 0, target_id: 6, target_slot: 0 }
+        100: {
+          id: 100,
+          origin_id: 1,
+          origin_slot: 0,
+          target_id: 2,
+          target_slot: 0
+        },
+        101: {
+          id: 101,
+          origin_id: 3,
+          origin_slot: 0,
+          target_id: 5,
+          target_slot: 0
+        },
+        102: {
+          id: 102,
+          origin_id: 4,
+          origin_slot: 0,
+          target_id: 6,
+          target_slot: 0
+        }
       }
 
       // Both Get nodes should resolve to node 1 (upstream)

@@ -1,7 +1,12 @@
 import type { KnipConfig } from 'knip'
 
 const config: KnipConfig = {
-  treatConfigHintsAsErrors: true,
+  // I-TF (#12145): the test framework references symbols that foundation
+  // tags with @publicAPI (e.g. `_setDispatchImplForTesting`,
+  // `NodeExtensionOptions`). With tests present those tags become
+  // "redundant" hints. They are still correct on foundation alone, so
+  // we keep the tag definition and just downgrade hint→warning here.
+  treatConfigHintsAsErrors: false,
   workspaces: {
     '.': {
       entry: [
@@ -102,7 +107,9 @@ const config: KnipConfig = {
     config: ['vite?(.*).config.mts']
   },
   vitest: {
-    config: ['vitest?(.*).config.ts'],
+    // I-TF (#12145) adds vitest.extension-api.config.mts; project uses
+    // "type": "module" so vitest configs use the .mts extension.
+    config: ['vitest?(.*).config.ts', 'vitest?(.*).config.mts'],
     entry: [
       '**/*.{bench,test,test-d,spec}.?(c|m)[jt]s?(x)',
       '**/__mocks__/**/*.[jt]s?(x)'
