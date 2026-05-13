@@ -234,9 +234,17 @@ app.registerExtension({
         }
 
         const handleUpload = async (files: File[]) => {
-          if (files?.length) {
-            const previousValue = audioWidget.value
-            audioWidget.value = files[0].name
+          if (!files?.length) return files
+
+          if (node.isUploading) {
+            useToastStore().addAlert(t('g.uploadAlreadyInProgress'))
+            return []
+          }
+
+          node.isUploading = true
+          const previousValue = audioWidget.value
+          audioWidget.value = files[0].name
+          try {
             const success = await uploadFile(
               audioWidget,
               audioUIWidget,
@@ -246,6 +254,9 @@ app.registerExtension({
             if (!success) {
               audioWidget.value = previousValue
             }
+          } finally {
+            node.isUploading = false
+            node.graph?.setDirtyCanvas(true)
           }
           return files
         }

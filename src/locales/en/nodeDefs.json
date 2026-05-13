@@ -953,6 +953,50 @@
       }
     }
   },
+  "ByteDanceSeedreamNodeV2": {
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "description": "Unified text-to-image generation and precise single-sentence editing at up to 4K resolution.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for creating or editing an image."
+      },
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an \"AI generated\" watermark to the image."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_fail_on_partial": {
+        "name": "fail_on_partial"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_max_images": {
+        "name": "max_images"
+      },
+      "model_size_preset": {
+        "name": "size_preset"
+      },
+      "model_width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceTextToVideoNode": {
     "display_name": "ByteDance Text to Video",
     "description": "Generate video using ByteDance models via api based on prompt",
@@ -3112,6 +3156,26 @@
       }
     }
   },
+  "EmptyHiDreamO1LatentImage": {
+    "display_name": "Empty HiDream-O1 Latent Image",
+    "description": "Empty pixel-space latent for HiDream-O1-Image. The model was trained at ~4 megapixels; lower resolutions go off-distribution and quality regresses noticeably. Trained resolutions: 2048x2048, 2304x1728, 1728x2304, 2560x1440, 1440x2560, 2496x1664, 1664x2496, 3104x1312, 1312x3104, 2304x1792, 1792x2304.",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyHunyuanImageLatent": {
     "display_name": "EmptyHunyuanImageLatent",
     "inputs": {
@@ -3424,6 +3488,37 @@
     "inputs": {
       "sigmas": {
         "name": "sigmas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux2ImageNode": {
+    "display_name": "Flux.2 Image",
+    "description": "Generate images via Flux.2 [pro] or Flux.2 [max] from a prompt and optional reference images.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation or edit"
+      },
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for creating the noise."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_width": {
+        "name": "width"
       }
     },
     "outputs": {
@@ -4455,6 +4550,40 @@
       }
     }
   },
+  "GrokImageEditNodeV2": {
+    "display_name": "Grok Image Edit",
+    "description": "Modify an existing image based on a text prompt",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "The text prompt used to generate the image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_number_of_images": {
+        "name": "number_of_images"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokImageNode": {
     "display_name": "Grok Image",
     "description": "Generate images using Grok based on a text prompt",
@@ -4792,6 +4921,70 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1PatchSeamSmoothing": {
+    "display_name": "HiDream-O1 Patch Seam Smoothing",
+    "description": "Average the model output across multiple shifted patch-grid positions during the late portion of sampling. Cancels seams.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Sampling progress (0=start, 1=end) at which the blend turns ON."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Sampling progress at which the blend turns OFF."
+      },
+      "pattern": {
+        "name": "pattern",
+        "tooltip": "Shift layout. single_shift: one pass at the natural patch grid + others offset. symmetric: all passes off-grid, shifts split around origin."
+      },
+      "passes": {
+        "name": "passes",
+        "tooltip": "Number of passes per gated step. 2/4 = fixed. ramp_*: pass count increases as sampling approaches end (more smoothing where seams are most visible)."
+      },
+      "blend": {
+        "name": "blend",
+        "tooltip": "average: equal-weight mean. window: Hann-windowed weighting favoring each pass away from its patch boundaries. median: per-pixel median, rejects wraparound-outlier passes."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Interpolation between the natural-grid pred (0) and the averaged result (1)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1ReferenceImages": {
+    "display_name": "HiDream-O1 Reference Images",
+    "description": "Attach 1-10 reference images to conditioning, one for edit instructionor multiple for subject-driven personalization.",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Reference images. 1 image = instruction edit; 2-10 images = multi reference."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -5366,6 +5559,9 @@
   "ImageCompositeMasked": {
     "display_name": "Image Composite Masked",
     "inputs": {
+      "destination": {
+        "name": "destination"
+      },
       "source": {
         "name": "source"
       },
@@ -5377,9 +5573,6 @@
       },
       "resize_source": {
         "name": "resize_source"
-      },
-      "destination": {
-        "name": "destination"
       },
       "mask": {
         "name": "mask"
@@ -11545,6 +11738,18 @@
       }
     }
   },
+  "ModelNoiseScale": {
+    "display_name": "ModelNoiseScale",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "noise_scale": {
+        "name": "noise_scale",
+        "tooltip": "Absolute training noise scale. For example HiDream-O1 base: 8.0, dev: 7.5."
+      }
+    }
+  },
   "ModelPatchLoader": {
     "display_name": "ModelPatchLoader",
     "inputs": {
@@ -11957,6 +12162,50 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV2": {
+    "display_name": "OpenAI GPT Image 2",
+    "description": "Generates images via OpenAI's GPT Image endpoint.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for GPT Image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "How many images to generate"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "not implemented yet in backend"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_background": {
+        "name": "background"
+      },
+      "model_custom_height": {
+        "name": "custom_height"
+      },
+      "model_custom_width": {
+        "name": "custom_width"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_size": {
+        "name": "size"
       }
     },
     "outputs": {
@@ -14551,6 +14800,29 @@
     "inputs": {
       "version": {
         "name": "version"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SamplerLCM": {
+    "display_name": "SamplerLCM",
+    "description": "LCM sampler with tunable per-step noise. s_noise is a multiplier on the model's training noise scale",
+    "inputs": {
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "Per-step noise multiplier at the first step (1.0 = match training)."
+      },
+      "s_noise_end": {
+        "name": "s_noise_end",
+        "tooltip": "Per-step noise multiplier at the last step. Set equal to s_noise for a constant schedule."
+      },
+      "noise_clip_std": {
+        "name": "noise_clip_std",
+        "tooltip": "Clamp per-step noise to +/- N*std. 0 disables."
       }
     },
     "outputs": {

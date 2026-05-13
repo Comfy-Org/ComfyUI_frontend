@@ -953,6 +953,50 @@
       }
     }
   },
+  "ByteDanceSeedreamNodeV2": {
+    "description": "Унифицированная генерация изображений по тексту и точное редактирование по одному предложению с разрешением до 4K.",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_fail_on_partial": {
+        "name": "fail_on_partial"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_max_images": {
+        "name": "max_images"
+      },
+      "model_size_preset": {
+        "name": "size_preset"
+      },
+      "model_width": {
+        "name": "width"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый запрос для создания или редактирования изображения."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для генерации."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли водяной знак «AI generated» на изображение."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceTextToVideoNode": {
     "description": "Создать видео с использованием моделей ByteDance через API на основе промпта",
     "display_name": "ByteDance Текст в Видео",
@@ -3112,6 +3156,26 @@
       }
     }
   },
+  "EmptyHiDreamO1LatentImage": {
+    "description": "Пустое латентное пространство пикселей для HiDream-O1-Image. Модель обучалась на разрешении около 4 мегапикселей; при меньших разрешениях качество заметно ухудшается и выходит за пределы распределения. Обученные разрешения: 2048x2048, 2304x1728, 1728x2304, 2560x1440, 1440x2560, 2496x1664, 1664x2496, 3104x1312, 1312x3104, 2304x1792, 1792x2304.",
+    "display_name": "Пустое HiDream-O1 латентное изображение",
+    "inputs": {
+      "batch_size": {
+        "name": "размер_пакета"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyHunyuanImageLatent": {
     "display_name": "EmptyHunyuanImageLatent",
     "inputs": {
@@ -3424,6 +3488,37 @@
     "inputs": {
       "sigmas": {
         "name": "sigmas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux2ImageNode": {
+    "description": "Генерация изображений с помощью Flux.2 [pro] или Flux.2 [max] по текстовому запросу и, при необходимости, референсным изображениям.",
+    "display_name": "Flux.2 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_width": {
+        "name": "width"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Запрос для генерации или редактирования изображения"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Случайный сид, используемый для создания шума."
       }
     },
     "outputs": {
@@ -4455,6 +4550,40 @@
       }
     }
   },
+  "GrokImageEditNodeV2": {
+    "description": "Изменение существующего изображения на основе текстового запроса",
+    "display_name": "Grok Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_number_of_images": {
+        "name": "number_of_images"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый запрос, используемый для генерации изображения"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты не детерминированы независимо от сида."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokImageNode": {
     "description": "Генерировать изображения с помощью Grok на основе текстового запроса",
     "display_name": "Grok Image",
@@ -4792,6 +4921,70 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1PatchSeamSmoothing": {
+    "description": "Усредняет выход модели по нескольким смещённым позициям сетки патчей на поздних этапах сэмплирования. Устраняет швы.",
+    "display_name": "Сглаживание швов патчей HiDream-O1",
+    "inputs": {
+      "blend": {
+        "name": "смешивание",
+        "tooltip": "average: среднее арифметическое. window: взвешивание по окну Ханна, отдавая предпочтение проходам вдали от границ патчей. median: медиана по каждому пикселю, отбрасывает выбросы на границах."
+      },
+      "end_percent": {
+        "name": "конечный_процент",
+        "tooltip": "Прогресс сэмплирования, при котором смешивание выключается."
+      },
+      "model": {
+        "name": "модель"
+      },
+      "passes": {
+        "name": "проходы",
+        "tooltip": "Количество проходов на каждом этапе. 2/4 = фиксировано. ramp_*: количество проходов увеличивается к концу сэмплирования (больше сглаживания там, где швы заметнее)."
+      },
+      "pattern": {
+        "name": "шаблон",
+        "tooltip": "Схема смещения. single_shift: один проход по естественной сетке патчей + другие со смещением. symmetric: все проходы вне сетки, смещения симметричны относительно центра."
+      },
+      "start_percent": {
+        "name": "начальный_процент",
+        "tooltip": "Прогресс сэмплирования (0=начало, 1=конец), при котором включается смешивание."
+      },
+      "strength": {
+        "name": "интенсивность",
+        "tooltip": "Интерполяция между предсказанием по естественной сетке (0) и усреднённым результатом (1)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1ReferenceImages": {
+    "description": "Прикрепите 1-10 референсных изображений для кондиционирования: одно для редактирования по инструкции или несколько для персонализации по объекту.",
+    "display_name": "Референсные изображения HiDream-O1",
+    "inputs": {
+      "images": {
+        "name": "изображения",
+        "tooltip": "Референсные изображения. 1 изображение = редактирование по инструкции; 2-10 изображений = мульти-референс."
+      },
+      "negative": {
+        "name": "отрицательный"
+      },
+      "positive": {
+        "name": "положительный"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "положительный",
+        "tooltip": null
+      },
+      "1": {
+        "name": "отрицательный",
         "tooltip": null
       }
     }
@@ -11545,6 +11738,18 @@
       }
     }
   },
+  "ModelNoiseScale": {
+    "display_name": "Масштаб шума модели",
+    "inputs": {
+      "model": {
+        "name": "модель"
+      },
+      "noise_scale": {
+        "name": "масштаб_шума",
+        "tooltip": "Абсолютный масштаб шума обучения. Например, HiDream-O1 base: 8.0, dev: 7.5."
+      }
+    }
+  },
   "ModelPatchLoader": {
     "display_name": "ModelPatchLoader",
     "inputs": {
@@ -11957,6 +12162,50 @@
       "size": {
         "name": "size",
         "tooltip": "Размер изображения"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV2": {
+    "description": "Генерирует изображения через конечную точку OpenAI GPT Image.",
+    "display_name": "OpenAI GPT Image 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_background": {
+        "name": "background"
+      },
+      "model_custom_height": {
+        "name": "custom_height"
+      },
+      "model_custom_width": {
+        "name": "custom_width"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Сколько изображений сгенерировать"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый запрос для GPT Image"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "еще не реализовано на сервере"
       }
     },
     "outputs": {
@@ -14809,6 +15058,29 @@
     "inputs": {
       "version": {
         "name": "версия"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SamplerLCM": {
+    "description": "LCM-семплер с настраиваемым уровнем шума на каждом шаге. s_noise — это множитель масштаба шума обучения модели",
+    "display_name": "SamplerLCM",
+    "inputs": {
+      "noise_clip_std": {
+        "name": "noise_clip_std",
+        "tooltip": "Ограничить шум на каждом шаге до +/- N*std. 0 — отключить."
+      },
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "Множитель шума на первом шаге (1.0 = соответствует обучению)."
+      },
+      "s_noise_end": {
+        "name": "s_noise_end",
+        "tooltip": "Множитель шума на последнем шаге. Установите равным s_noise для постоянного расписания."
       }
     },
     "outputs": {
