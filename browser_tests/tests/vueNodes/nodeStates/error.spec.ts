@@ -1,9 +1,12 @@
+import { readFileSync } from 'fs'
+
 import { mergeTests } from '@playwright/test'
 
 import {
   comfyExpect as expect,
   comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   cleanupFakeModel,
   dismissErrorOverlay,
@@ -13,6 +16,7 @@ import {
   ExecutionHelper,
   buildKSamplerError
 } from '@e2e/fixtures/helpers/ExecutionHelper'
+import type { NodeError } from '@/schemas/apiSchema'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
@@ -22,6 +26,75 @@ const ERROR_CLASS = /ring-destructive-background/
 const UNKNOWN_NODE_ID = '1'
 const INNER_EXECUTION_ID = '2:1'
 const KSAMPLER_MODEL_INPUT_NAME = 'model'
+const LOAD_IMAGE_INPUT_NAME = 'image'
+const LOAD_IMAGE_UPLOAD_FILE = 'test_upload_image.png'
+
+function buildLoadImageRequiredInputError(): NodeError {
+  return {
+    class_type: 'LoadImage',
+    dependent_outputs: [],
+    errors: [
+      {
+        type: 'required_input_missing',
+        message: `Required input is missing: ${LOAD_IMAGE_INPUT_NAME}`,
+        details: '',
+        extra_info: { input_name: LOAD_IMAGE_INPUT_NAME }
+      }
+    ]
+  }
+}
+
+async function surfaceLoadImageMissingInputError(
+  comfyPage: ComfyPage,
+  loadImageId: string
+): Promise<void> {
+  const exec = new ExecutionHelper(comfyPage)
+  await exec.mockValidationFailure({
+    [loadImageId]: buildLoadImageRequiredInputError()
+  })
+  await comfyPage.runButton.click()
+  await dismissErrorOverlay(comfyPage)
+}
+
+async function selectLoadImageNodeForPaste(
+  comfyPage: ComfyPage,
+  loadImageId: string
+): Promise<void> {
+  await comfyPage.page.evaluate((nodeId) => {
+    const node = window.app!.graph.getNodeById(Number(nodeId))
+    if (!node) throw new Error(`Load Image node ${nodeId} not found`)
+    window.app!.canvas.selectNode(node)
+    window.app!.canvas.current_node = node
+  }, loadImageId)
+}
+
+async function dispatchImagePaste(
+  comfyPage: ComfyPage,
+  fileName: string
+): Promise<void> {
+  const bufferArray = [
+    ...new Uint8Array(readFileSync(comfyPage.assetPath(fileName)))
+  ]
+
+  await comfyPage.page.evaluate(
+    ({ bufferArray, fileName }) => {
+      const file = new File([new Uint8Array(bufferArray)], fileName, {
+        type: 'image/png'
+      })
+      const dataTransfer = new DataTransfer()
+      dataTransfer.items.add(file)
+
+      document.dispatchEvent(
+        new ClipboardEvent('paste', {
+          clipboardData: dataTransfer,
+          bubbles: true,
+          cancelable: true
+        })
+      )
+    },
+    { bufferArray, fileName }
+  )
+}
 
 test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
   test('should display error state when node is missing (node from workflow is not installed)', async ({
@@ -187,6 +260,84 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
           'sampler_name',
           'dpmpp_2m'
         )
+      })
+
+      await expect(innerWrapper).not.toHaveClass(ERROR_CLASS)
+    })
+
+    test('clears error ring when user drops an image file onto Load Image', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+      const loadImageNode = (
+        await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+      )[0]
+      const loadImageId = String(loadImageNode.id)
+      const innerWrapper = comfyPage.vueNodes.getNodeInnerWrapper(loadImageId)
+      const imageWidget = await loadImageNode.getWidgetByName(
+        LOAD_IMAGE_INPUT_NAME
+      )
+
+      await test.step('queue with missing image input to surface the error', async () => {
+        await surfaceLoadImageMissingInputError(comfyPage, loadImageId)
+        await expect(innerWrapper).toHaveClass(ERROR_CLASS)
+      })
+
+      await test.step('drop an image onto the Load Image node', async () => {
+        const dropPosition =
+          await comfyPage.canvasOps.getNodeCenterByTitle('Load Image')
+        if (!dropPosition) {
+          throw new Error('Load Image node center must be available for drop')
+        }
+
+        await comfyPage.dragDrop.dragAndDropFile(LOAD_IMAGE_UPLOAD_FILE, {
+          dropPosition,
+          waitForUpload: true
+        })
+        await expect
+          .poll(() => imageWidget.getValue())
+          .toContain(LOAD_IMAGE_UPLOAD_FILE)
+      })
+
+      await expect(innerWrapper).not.toHaveClass(ERROR_CLASS)
+    })
+
+    test('clears error ring when user pastes an image file onto Load Image', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+      const loadImageNode = (
+        await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+      )[0]
+      const loadImageId = String(loadImageNode.id)
+      const innerWrapper = comfyPage.vueNodes.getNodeInnerWrapper(loadImageId)
+      const imageWidget = await loadImageNode.getWidgetByName(
+        LOAD_IMAGE_INPUT_NAME
+      )
+
+      await test.step('queue with missing image input to surface the error', async () => {
+        await surfaceLoadImageMissingInputError(comfyPage, loadImageId)
+        await expect(innerWrapper).toHaveClass(ERROR_CLASS)
+      })
+
+      await test.step('paste an image while Load Image is selected', async () => {
+        await comfyPage.canvas.focus()
+        await selectLoadImageNodeForPaste(comfyPage, loadImageId)
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(() => window.app!.canvas.current_node?.type)
+          )
+          .toBe('LoadImage')
+
+        const uploadResponse = comfyPage.page.waitForResponse(
+          (resp) => resp.url().includes('/upload/') && resp.status() === 200,
+          { timeout: 10_000 }
+        )
+        await dispatchImagePaste(comfyPage, LOAD_IMAGE_UPLOAD_FILE)
+        await uploadResponse
+        await expect
+          .poll(() => imageWidget.getValue())
+          .toContain(LOAD_IMAGE_UPLOAD_FILE)
       })
 
       await expect(innerWrapper).not.toHaveClass(ERROR_CLASS)
