@@ -16,8 +16,8 @@
         @wheel="canvasInteractions.forwardEventToCanvas"
       >
         <DeleteButton v-if="showDelete" />
-        <VerticalDivider v-if="canOpenNodeInfoPanel && showAnyPrimaryActions" />
-        <InfoButton v-if="canOpenNodeInfoPanel" />
+        <VerticalDivider v-if="canOpenNodeInfo && showAnyPrimaryActions" />
+        <InfoButton v-if="canOpenNodeInfo" />
 
         <ColorPickerButton v-if="showColorPicker" />
         <FrameNodes v-if="showFrameNodes" />
@@ -105,7 +105,7 @@ const {
   isSingleImageNode,
   hasAny3DNodeSelected,
   hasOutputNodesSelected,
-  canOpenNodeInfoPanel
+  canOpenNodeInfo
 } = useSelectionState()
 
 const showColorPicker = computed(() => hasAnySelection.value)

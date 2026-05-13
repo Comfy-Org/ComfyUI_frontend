@@ -74,9 +74,11 @@ test.describe(
       throw new Error('Could not open More Options menu - popover not showing')
     }
 
-    test('hides Node Info from More Options menu in legacy menu mode', async ({
+    test('hides Node Info from More Options menu when the new menu is disabled', async ({
       comfyPage
     }) => {
+      await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
+
       await openMoreOptions(comfyPage)
       const nodeInfoButton = comfyPage.page.getByRole('menuitem', {
         name: 'Node Info'

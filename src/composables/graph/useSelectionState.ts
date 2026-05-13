@@ -95,14 +95,14 @@ export function useSelectionState() {
   const computeSelectionFlags = (): NodeSelectionState =>
     computeSelectionStatesFromNodes(selectedNodes.value)
 
-  const canOpenNodeInfoPanel = computed(
+  const canOpenNodeInfo = computed(
     () =>
       Boolean(nodeDef.value) &&
       settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
   )
 
-  const openNodeInfoPanel = () => {
-    if (!canOpenNodeInfoPanel.value) return false
+  const openNodeInfo = () => {
+    if (!canOpenNodeInfo.value) return false
     rightSidePanelStore.openPanel('info')
     return true
   }
@@ -111,8 +111,8 @@ export function useSelectionState() {
     selectedItems,
     selectedNodes,
     nodeDef,
-    canOpenNodeInfoPanel,
-    openNodeInfoPanel,
+    canOpenNodeInfo,
+    openNodeInfo,
     hasAny3DNodeSelected,
     hasAnySelection,
     hasSingleSelection,

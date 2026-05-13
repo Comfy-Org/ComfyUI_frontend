@@ -35,6 +35,8 @@ const { settingGetMock } = vi.hoisted(() => ({
 }))
 
 const defaultSettingValues: Record<string, unknown> = {
+  'Comfy.UseNewMenu': 'Top',
+  'Comfy.NodeLibrary.NewDesign': true,
   'Comfy.Load3D.3DViewerEnable': true
 }
 
@@ -248,15 +250,40 @@ describe('SelectionToolbox', () => {
       expect(container.querySelector('.info-button')).toBeFalsy()
     })
 
-    it('should not show info button when node info panel is unavailable', () => {
+    it('should not show info button when legacy menu uses the new node library', () => {
       mockSettingValues({
-        'Comfy.UseNewMenu': 'Disabled'
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.NodeLibrary.NewDesign': true
       })
       canvasStore.selectedItems = [createMockPositionable()]
 
       const { container } = renderComponent()
 
       expect(container.querySelector('.info-button')).toBeFalsy()
+    })
+
+    it('should not show info button when legacy menu uses the legacy node library', () => {
+      mockSettingValues({
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.NodeLibrary.NewDesign': false
+      })
+      canvasStore.selectedItems = [createMockPositionable()]
+
+      const { container } = renderComponent()
+
+      expect(container.querySelector('.info-button')).toBeFalsy()
+    })
+
+    it('should show info button when new menu uses the legacy node library', () => {
+      mockSettingValues({
+        'Comfy.UseNewMenu': 'Top',
+        'Comfy.NodeLibrary.NewDesign': false
+      })
+      canvasStore.selectedItems = [createMockPositionable()]
+
+      const { container } = renderComponent()
+
+      expect(container.querySelector('.info-button')).toBeTruthy()
     })
 
     it('should show color picker for all selections', () => {

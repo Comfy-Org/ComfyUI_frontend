@@ -8,14 +8,14 @@ import { createI18n } from 'vue-i18n'
 import InfoButton from '@/components/graph/selectionToolbox/InfoButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 
-const { openNodeInfoPanelMock, trackUiButtonClickedMock } = vi.hoisted(() => ({
-  openNodeInfoPanelMock: vi.fn(),
+const { openNodeInfoMock, trackUiButtonClickedMock } = vi.hoisted(() => ({
+  openNodeInfoMock: vi.fn(),
   trackUiButtonClickedMock: vi.fn()
 }))
 
 vi.mock('@/composables/graph/useSelectionState', () => ({
   useSelectionState: () => ({
-    openNodeInfoPanel: openNodeInfoPanelMock
+    openNodeInfo: openNodeInfoMock
   })
 }))
 
@@ -40,7 +40,7 @@ describe('InfoButton', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    openNodeInfoPanelMock.mockReturnValue(true)
+    openNodeInfoMock.mockReturnValue(true)
   })
 
   const renderComponent = () => {
@@ -63,19 +63,19 @@ describe('InfoButton', () => {
 
     await clickNodeInfoButton()
 
-    expect(openNodeInfoPanelMock).toHaveBeenCalled()
+    expect(openNodeInfoMock).toHaveBeenCalled()
     expect(trackUiButtonClickedMock).toHaveBeenCalledWith({
       button_id: 'selection_toolbox_node_info_opened'
     })
   })
 
   it('should not track the click when the node info panel is unavailable', async () => {
-    openNodeInfoPanelMock.mockReturnValue(false)
+    openNodeInfoMock.mockReturnValue(false)
     renderComponent()
 
     await clickNodeInfoButton()
 
-    expect(openNodeInfoPanelMock).toHaveBeenCalled()
+    expect(openNodeInfoMock).toHaveBeenCalled()
     expect(trackUiButtonClickedMock).not.toHaveBeenCalled()
   })
 })

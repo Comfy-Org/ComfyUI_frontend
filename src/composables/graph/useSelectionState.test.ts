@@ -65,6 +65,7 @@ function mockSettingValues(overrides: Record<string, unknown> = {}) {
   const settingStore = useSettingStore()
   const settingValues: Record<string, unknown> = {
     'Comfy.UseNewMenu': 'Top',
+    'Comfy.NodeLibrary.NewDesign': true,
     'Comfy.Load3D.3DViewerEnable': false,
     ...overrides
   }
@@ -216,14 +217,14 @@ describe('useSelectionState', () => {
     })
   })
 
-  describe('Node Info Panel', () => {
+  describe('Node Info', () => {
     test('should open the right side info panel for a selected node', () => {
       const rightSidePanelStore = useRightSidePanelStore()
       selectSingleNodeWithNodeDef(8)
 
-      const { canOpenNodeInfoPanel, openNodeInfoPanel } = useSelectionState()
-      expect(canOpenNodeInfoPanel.value).toBe(true)
-      openNodeInfoPanel()
+      const { canOpenNodeInfo, openNodeInfo } = useSelectionState()
+      expect(canOpenNodeInfo.value).toBe(true)
+      openNodeInfo()
 
       expect(rightSidePanelStore.openPanel).toHaveBeenCalledWith('info')
     })
@@ -236,24 +237,59 @@ describe('useSelectionState', () => {
         createMockLGraphNode({ id: 10, type: 'TestNode' })
       ]
 
-      const { canOpenNodeInfoPanel, openNodeInfoPanel } = useSelectionState()
-      expect(canOpenNodeInfoPanel.value).toBe(false)
-      openNodeInfoPanel()
+      const { canOpenNodeInfo, openNodeInfo } = useSelectionState()
+      expect(canOpenNodeInfo.value).toBe(false)
+      openNodeInfo()
 
       expect(rightSidePanelStore.openPanel).not.toHaveBeenCalled()
     })
 
-    test('should not open the right side panel in legacy menu mode', () => {
+    test('should open the right side info panel when new menu uses the legacy node library', () => {
       const rightSidePanelStore = useRightSidePanelStore()
-      selectSingleNodeWithNodeDef(11)
       mockSettingValues({
-        'Comfy.UseNewMenu': 'Disabled'
+        'Comfy.UseNewMenu': 'Top',
+        'Comfy.NodeLibrary.NewDesign': false
       })
+      selectSingleNodeWithNodeDef(11)
 
-      const { canOpenNodeInfoPanel, openNodeInfoPanel } = useSelectionState()
-      expect(canOpenNodeInfoPanel.value).toBe(false)
+      const { canOpenNodeInfo, openNodeInfo } = useSelectionState()
+      expect(canOpenNodeInfo.value).toBe(true)
 
-      const didOpen = openNodeInfoPanel()
+      const didOpen = openNodeInfo()
+
+      expect(didOpen).toBe(true)
+      expect(rightSidePanelStore.openPanel).toHaveBeenCalledWith('info')
+    })
+
+    test('should not open node info when legacy menu uses the new node library', () => {
+      const rightSidePanelStore = useRightSidePanelStore()
+      mockSettingValues({
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.NodeLibrary.NewDesign': true
+      })
+      selectSingleNodeWithNodeDef(12)
+
+      const { canOpenNodeInfo, openNodeInfo } = useSelectionState()
+      expect(canOpenNodeInfo.value).toBe(false)
+
+      const didOpen = openNodeInfo()
+
+      expect(didOpen).toBe(false)
+      expect(rightSidePanelStore.openPanel).not.toHaveBeenCalled()
+    })
+
+    test('should not open node info when legacy menu uses the legacy node library', () => {
+      const rightSidePanelStore = useRightSidePanelStore()
+      mockSettingValues({
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.NodeLibrary.NewDesign': false
+      })
+      selectSingleNodeWithNodeDef(13)
+
+      const { canOpenNodeInfo, openNodeInfo } = useSelectionState()
+      expect(canOpenNodeInfo.value).toBe(false)
+
+      const didOpen = openNodeInfo()
 
       expect(didOpen).toBe(false)
       expect(rightSidePanelStore.openPanel).not.toHaveBeenCalled()

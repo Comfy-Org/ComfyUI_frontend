@@ -18,10 +18,10 @@ import Button from '@/components/ui/button/Button.vue'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useTelemetry } from '@/platform/telemetry'
 
-const { openNodeInfoPanel } = useSelectionState()
+const { openNodeInfo } = useSelectionState()
 
 const onInfoClick = () => {
-  if (!openNodeInfoPanel()) return
+  if (!openNodeInfo()) return
 
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'selection_toolbox_node_info_opened'
