@@ -4,6 +4,7 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
 const generateUniqueFilename = (extension = '') =>
   `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}${extension}`
@@ -83,51 +84,77 @@ const waitForTabStatePersistence = async (
   }, minPaths)
 }
 
-const forceActivePathToFirstOpenWorkflow = async (comfyPage: ComfyPage) => {
-  await comfyPage.page.evaluate(() => {
-    let activePathKey: string | null = null
-    let openPathsKey: string | null = null
+const forceStaleActivePathToWorkflow = async (
+  comfyPage: ComfyPage,
+  staleWorkflowName: string,
+  activeWorkflowName: string
+) => {
+  await comfyPage.page.evaluate(
+    ([staleName, activeName]) => {
+      let activePathKey: string | null = null
+      let openPathsKey: string | null = null
 
-    for (let i = 0; i < window.sessionStorage.length; i++) {
-      const key = window.sessionStorage.key(i)
-      if (key?.startsWith('Comfy.Workflow.ActivePath:')) {
-        activePathKey = key
+      for (let i = 0; i < window.sessionStorage.length; i++) {
+        const key = window.sessionStorage.key(i)
+        if (key?.startsWith('Comfy.Workflow.ActivePath:')) {
+          activePathKey = key
+        }
+        if (key?.startsWith('Comfy.Workflow.OpenPaths:')) {
+          openPathsKey = key
+        }
       }
-      if (key?.startsWith('Comfy.Workflow.OpenPaths:')) {
-        openPathsKey = key
+
+      if (!activePathKey || !openPathsKey) {
+        throw new Error('Expected workflow persistence session state to exist')
       }
-    }
 
-    if (!activePathKey || !openPathsKey) {
-      throw new Error('Expected workflow persistence session state to exist')
-    }
+      const activePointerRaw = window.sessionStorage.getItem(activePathKey)
+      const openPointerRaw = window.sessionStorage.getItem(openPathsKey)
+      if (!activePointerRaw || !openPointerRaw) {
+        throw new Error(
+          'Expected workflow persistence session payloads to exist'
+        )
+      }
 
-    const activePointerRaw = window.sessionStorage.getItem(activePathKey)
-    const openPointerRaw = window.sessionStorage.getItem(openPathsKey)
-    if (!activePointerRaw || !openPointerRaw) {
-      throw new Error('Expected workflow persistence session payloads to exist')
-    }
+      const activePointer = JSON.parse(activePointerRaw) as {
+        workspaceId: string
+        path: string
+      }
+      const openPointer = JSON.parse(openPointerRaw) as {
+        workspaceId: string
+        paths: string[]
+        activeIndex: number
+      }
 
-    const activePointer = JSON.parse(activePointerRaw) as {
-      workspaceId: string
-      path: string
-    }
-    const openPointer = JSON.parse(openPointerRaw) as {
-      workspaceId: string
-      paths: string[]
-      activeIndex: number
-    }
+      if (openPointer.paths.length < 2) {
+        throw new Error(
+          'Expected at least two saved workflow paths in tab state'
+        )
+      }
 
-    if (openPointer.paths.length < 2) {
-      throw new Error('Expected at least two saved workflow paths in tab state')
-    }
+      const pathForName = (name: string) => {
+        const path = openPointer.paths.find((candidate) =>
+          candidate.endsWith(`${name}.json`)
+        )
+        if (!path) throw new Error(`Expected tab state path for ${name}`)
+        return path
+      }
 
-    activePointer.path = openPointer.paths[0]
-    openPointer.activeIndex = 1
+      const stalePath = pathForName(staleName)
+      const activePath = pathForName(activeName)
 
-    window.sessionStorage.setItem(activePathKey, JSON.stringify(activePointer))
-    window.sessionStorage.setItem(openPathsKey, JSON.stringify(openPointer))
-  })
+      activePointer.path = stalePath
+      openPointer.paths = [stalePath, activePath]
+      openPointer.activeIndex = 1
+
+      window.sessionStorage.setItem(
+        activePathKey,
+        JSON.stringify(activePointer)
+      )
+      window.sessionStorage.setItem(openPathsKey, JSON.stringify(openPointer))
+    },
+    [staleWorkflowName, activeWorkflowName]
+  )
 }
 
 async function getNodeOutputImageCount(
@@ -516,11 +543,13 @@ test.describe('Workflow Persistence', () => {
     const workflowB = generateUniqueFilename()
 
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+    await fitToViewInstant(comfyPage)
     await comfyPage.menu.topbar.saveWorkflow(workflowA)
 
     const firstNode = (await comfyPage.nodeOps.getFirstNodeRef())!
+    await firstNode.centerOnNode()
     const draftSaveStartedAt = Date.now()
-    await firstNode.click('collapse')
+    await firstNode.toggleCollapse()
     expect(await firstNode.isCollapsed()).toBe(true)
 
     await waitForV2DraftSave(comfyPage, draftSaveStartedAt)
@@ -529,15 +558,16 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.menu.topbar.saveWorkflow(workflowB)
 
     await waitForTabStatePersistence(comfyPage)
-    await forceActivePathToFirstOpenWorkflow(comfyPage)
+    await forceStaleActivePathToWorkflow(comfyPage, workflowA, workflowB)
 
-    await comfyPage.setup({ clearStorage: false })
-    await comfyPage.nextFrame()
+    await comfyPage.workflow.reloadAndWaitForApp()
+    await expect
+      .poll(() => comfyPage.menu.topbar.getActiveTabName())
+      .toBe(workflowB)
 
     const tabs = await comfyPage.menu.topbar.getTabNames()
     expect(tabs).toEqual(expect.arrayContaining([workflowA, workflowB]))
     expect(tabs.indexOf(workflowA)).toBeLessThan(tabs.indexOf(workflowB))
-    expect(await comfyPage.menu.topbar.getActiveTabName()).toBe(workflowB)
 
     await comfyPage.menu.topbar.getWorkflowTab(workflowA).click()
     await comfyPage.nextFrame()
