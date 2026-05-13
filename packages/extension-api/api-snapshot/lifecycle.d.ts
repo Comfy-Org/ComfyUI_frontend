@@ -1,0 +1,154 @@
+import {
+  NodeExtensionOptions,
+  ExtensionOptions,
+  WidgetExtensionOptions
+} from './types'
+/**
+ * Extension lifecycle — `defineExtension`, `defineNodeExtension`, and
+ * the implicit-context lifecycle hooks (`onNodeMounted`, `onNodeRemoved`).
+ *
+ * Design decisions (D10):
+ * - D10a: `currentExtension` global, Vue-style. Hook factories read the slot
+ *   implicitly. Lifecycle hooks must be called synchronously inside `setup()`.
+ * - D10b: Hook firing order = registration order with lexicographic tie-break
+ *   on extension name.
+ * - D10c: `setup()` is synchronous. `async setup` throws in dev, emits
+ *   console.error in prod.
+ * - D10d: The object returned by `setup()` is wrapped with `proxyRefs()` so
+ *   callers read `entity.extensionState['my-ext'].count` without `.value`.
+ *
+ * Entry-point design (D6 Part 1): module-level import only. Extensions do NOT
+ * depend on `window.app` being initialized at registration time.
+ *
+ * @stability stable
+ * @packageDocumentation
+ */
+/**
+ * @publicAPI
+ * Back-compat re-exports of the extension option contracts. Prefer importing
+ * from `@comfyorg/extension-api` (or `@/extension-api`); the
+ * `@/extension-api/lifecycle` path is preserved for downstream code that
+ * imported these types from the original module.
+ */
+export type {
+  NodeExtensionOptions,
+  ExtensionOptions,
+  WidgetExtensionOptions
+} from './types'
+/**
+ * Register a node extension. The runtime calls `nodeCreated` or
+ * `loadedGraphNode` once per node entity matching `nodeTypes`.
+ *
+ * This is the primary entry point for extensions that interact with nodes and
+ * widgets. Import directly from `@comfyorg/extension-api` — no dependency on
+ * `window.app` at module evaluation time (D6 Part 1).
+ *
+ * Hook firing order across multiple extensions on the same entity follows
+ * extension registration order with a lexicographic tie-break on `name` (D10b).
+ *
+ * @stability stable
+ * @publicAPI
+ * @example
+ * ```ts
+ * import { defineNodeExtension } from '@comfyorg/extension-api'
+ *
+ * export default defineNodeExtension({
+ *   name: 'Comfy.PreviewAny',
+ *   nodeTypes: ['PreviewAny'],
+ *
+ *   nodeCreated(node) {
+ *     const preview = node.addWidget('STRING', 'preview', '', {
+ *       multiline: true, readonly: true, serialize: false
+ *     })
+ *     node.on('executed', (e) => {
+ *       preview.setValue(String(e.output['text'] ?? ''))
+ *     })
+ *   }
+ * })
+ * ```
+ */
+export declare function defineNodeExtension(
+  options: NodeExtensionOptions
+): NodeExtensionOptions
+/**
+ * Register an extension for app-wide lifecycle and shell UI contributions.
+ *
+ * Use `defineNodeExtension` for node/widget interactions. Use this for
+ * `init`, `setup`, sidebar tabs, commands, and other app-level concerns.
+ *
+ * @stability stable
+ * @publicAPI
+ * @example
+ * ```ts
+ * import { defineExtension } from '@comfyorg/extension-api'
+ *
+ * export default defineExtension({
+ *   name: 'my-org.my-extension',
+ *   setup() {
+ *     console.log('Extension ready')
+ *   }
+ * })
+ * ```
+ */
+export declare function defineExtension(
+  options: ExtensionOptions
+): ExtensionOptions
+/**
+ * Register a custom widget type. Called once at module load time to declare
+ * a new widget kind.
+ *
+ * @stability experimental
+ * @publicAPI
+ * @example
+ * ```ts
+ * import { defineWidgetExtension } from '@comfyorg/extension-api'
+ *
+ * export default defineWidgetExtension({
+ *   name: 'my-org.color-picker',
+ *   type: 'COLOR_PICKER'
+ * })
+ * ```
+ */
+export declare function defineWidgetExtension(
+  options: WidgetExtensionOptions
+): WidgetExtensionOptions
+export {
+  /**
+   * Register a callback to fire when the node entity is fully mounted to the
+   * graph (the reactive mount watcher has run, the scope is active, and
+   * `setup()` has completed).
+   *
+   * Must be called synchronously inside `nodeCreated` or `loadedGraphNode`.
+   *
+   * @stability experimental
+   * @example
+   * ```ts
+   * nodeCreated(node) {
+   *   onNodeMounted(() => {
+   *     // Safe to access DOM widgets, canvas, etc.
+   *   })
+   * }
+   * ```
+   */
+  onNodeMounted,
+  /**
+   * Register a callback to fire when the node entity is removed from the graph
+   * (NOT on subgraph promotion, which is a DOM-move, not an unmount).
+   *
+   * Replaces `nodeType.prototype.onRemoved` patching (S2.N4 — 7+ repos,
+   * 4.89 blast radius).
+   *
+   * Must be called synchronously inside `nodeCreated` or `loadedGraphNode`.
+   *
+   * @stability experimental
+   * @example
+   * ```ts
+   * nodeCreated(node) {
+   *   onNodeRemoved(() => {
+   *     cleanup()
+   *   })
+   * }
+   * ```
+   */
+  onNodeRemoved
+} from '../services/extension-api-service'
