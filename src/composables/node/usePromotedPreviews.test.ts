@@ -25,37 +25,23 @@ type MockNodeOutputStore = Pick<
   | 'getNodePreviewImagesByExecutionId'
 >
 
-const getNodeImageUrls = vi.hoisted(() =>
-  vi.fn<MockNodeOutputStore['getNodeImageUrls']>()
-)
-const getNodeImageUrlsByExecutionId = vi.hoisted(() =>
-  vi.fn<MockNodeOutputStore['getNodeImageUrlsByExecutionId']>()
-)
-const getNodeOutputByExecutionId = vi.hoisted(() =>
-  vi.fn<MockNodeOutputStore['getNodeOutputByExecutionId']>()
-)
-const getNodePreviewImagesByExecutionId = vi.hoisted(() =>
-  vi.fn<MockNodeOutputStore['getNodePreviewImagesByExecutionId']>()
-)
-const useNodeOutputStoreMock = vi.hoisted(() =>
-  vi.fn<() => MockNodeOutputStore>()
-)
-
 vi.mock('@/stores/nodeOutputStore', () => {
-  return {
-    useNodeOutputStore: useNodeOutputStoreMock
-  }
-})
-
-function createMockNodeOutputStore(): MockNodeOutputStore {
-  return {
+  const store: MockNodeOutputStore = {
     nodeOutputs: reactive<MockNodeOutputStore['nodeOutputs']>({}),
     nodePreviewImages: reactive<MockNodeOutputStore['nodePreviewImages']>({}),
-    getNodeImageUrls,
-    getNodeImageUrlsByExecutionId,
-    getNodeOutputByExecutionId,
-    getNodePreviewImagesByExecutionId
+    getNodeImageUrls: vi.fn(),
+    getNodeImageUrlsByExecutionId: vi.fn(),
+    getNodeOutputByExecutionId: vi.fn(),
+    getNodePreviewImagesByExecutionId: vi.fn()
   }
+  return { useNodeOutputStore: () => store }
+})
+
+function clearMockNodeOutputStore() {
+  const { nodeOutputs, nodePreviewImages } = useNodeOutputStore()
+  for (const key of Object.keys(nodeOutputs)) delete nodeOutputs[key]
+  for (const key of Object.keys(nodePreviewImages))
+    delete nodePreviewImages[key]
 }
 
 function createSetup() {
@@ -129,7 +115,7 @@ function arrangePromotedPreview(options: ArrangeOptions = {}) {
   addInteriorNode(setup, { id, previewMediaType })
   exposePreview(setup, String(id))
   seedOutputs(setup.subgraph.id, [id])
-  getNodeImageUrls.mockReturnValue(urls)
+  vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue(urls)
   return { setup, urls }
 }
 
@@ -137,7 +123,7 @@ describe(usePromotedPreviews, () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.resetAllMocks()
-    useNodeOutputStoreMock.mockReturnValue(createMockNodeOutputStore())
+    clearMockNodeOutputStore()
   })
 
   it('returns empty array for non-SubgraphNode', () => {
@@ -191,7 +177,7 @@ describe(usePromotedPreviews, () => {
 
     const mockUrls = ['/view?filename=output.png']
     seedOutputs(setup.subgraph.id, [10])
-    getNodeImageUrls.mockReturnValue(mockUrls)
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue(mockUrls)
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
 
@@ -245,11 +231,13 @@ describe(usePromotedPreviews, () => {
     exposePreview(setup, '20')
 
     seedOutputs(setup.subgraph.id, [10, 20])
-    getNodeImageUrls.mockImplementation((node: LGraphNode) => {
-      if (node === node10) return ['/view?a=1']
-      if (node === node20) return ['/view?b=2']
-      return undefined
-    })
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation(
+      (node: LGraphNode) => {
+        if (node === node10) return ['/view?a=1']
+        if (node === node20) return ['/view?b=2']
+        return undefined
+      }
+    )
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toHaveLength(2)
@@ -264,7 +252,7 @@ describe(usePromotedPreviews, () => {
 
     const blobUrl = 'blob:http://localhost/glsl-preview'
     seedPreviewImages(setup.subgraph.id, [{ nodeId: 10, urls: [blobUrl] }])
-    getNodeImageUrls.mockReturnValue([blobUrl])
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([blobUrl])
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([
@@ -287,7 +275,7 @@ describe(usePromotedPreviews, () => {
 
     const blobUrl = 'blob:http://localhost/glsl-preview'
     seedPreviewImages(setup.subgraph.id, [{ nodeId: 10, urls: [blobUrl] }])
-    getNodeImageUrls.mockReturnValue([blobUrl])
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([blobUrl])
 
     expect(promotedPreviews.value).toEqual([
       {
@@ -347,8 +335,8 @@ describe(usePromotedPreviews, () => {
 
     const mockUrls = ['/view?filename=leaf.png']
     seedOutputs(innerSetup.subgraph.id, [leafNode.id])
-    getNodeImageUrls.mockImplementation((node: LGraphNode) =>
-      node === leafNode ? mockUrls : []
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation(
+      (node: LGraphNode) => (node === leafNode ? mockUrls : [])
     )
 
     const { promotedPreviews } = usePromotedPreviews(
@@ -392,8 +380,8 @@ describe(usePromotedPreviews, () => {
 
     const mockUrls = ['/view?filename=leaf.png']
     seedOutputs(innerSetup.subgraph.id, [leafNode.id])
-    getNodeImageUrls.mockImplementation((node: LGraphNode) =>
-      node === leafNode ? mockUrls : []
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation(
+      (node: LGraphNode) => (node === leafNode ? mockUrls : [])
     )
 
     const { promotedPreviews } = usePromotedPreviews(
@@ -447,16 +435,21 @@ describe(usePromotedPreviews, () => {
       sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
     })
 
-    getNodePreviewImagesByExecutionId.mockImplementation((executionId) => {
-      if (executionId === firstLeafExecutionId) return ['blob:first']
-      if (executionId === secondLeafExecutionId) return ['blob:second']
-      return undefined
-    })
-    getNodeImageUrlsByExecutionId.mockImplementation((executionId) => {
-      if (executionId === firstLeafExecutionId) return ['blob:first']
-      if (executionId === secondLeafExecutionId) return ['blob:second']
-      return undefined
-    })
+    const outputStore = useNodeOutputStore()
+    vi.mocked(outputStore.getNodePreviewImagesByExecutionId).mockImplementation(
+      (executionId) => {
+        if (executionId === firstLeafExecutionId) return ['blob:first']
+        if (executionId === secondLeafExecutionId) return ['blob:second']
+        return undefined
+      }
+    )
+    vi.mocked(outputStore.getNodeImageUrlsByExecutionId).mockImplementation(
+      (executionId) => {
+        if (executionId === firstLeafExecutionId) return ['blob:first']
+        if (executionId === secondLeafExecutionId) return ['blob:second']
+        return undefined
+      }
+    )
 
     expect(usePromotedPreviews(() => firstHost).promotedPreviews.value).toEqual(
       [
