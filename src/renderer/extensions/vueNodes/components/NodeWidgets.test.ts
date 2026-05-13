@@ -310,10 +310,22 @@ describe('NodeWidgets', () => {
     expect(container.querySelectorAll('.lg-node-widget')).toHaveLength(0)
   })
 
-  it('keeps AppInput ids mapped to node identity for selection', () => {
+  it('forwards canonical entityId to AppInput for selection', () => {
+    const seedAEntityId = widgetEntityId(GRAPH_ID, 'test_node', 'seed_a')
+    const seedBEntityId = widgetEntityId(GRAPH_ID, 'test_node', 'seed_b')
     const nodeData = createMockNodeData('TestNode', [
-      createMockWidget({ nodeId: 'test_node', name: 'seed_a', type: 'text' }),
-      createMockWidget({ nodeId: 'test_node', name: 'seed_b', type: 'text' })
+      createMockWidget({
+        nodeId: 'test_node',
+        name: 'seed_a',
+        type: 'text',
+        entityId: seedAEntityId
+      }),
+      createMockWidget({
+        nodeId: 'test_node',
+        name: 'seed_b',
+        type: 'text',
+        entityId: seedBEntityId
+      })
     ])
 
     const { container } = render(NodeWidgets, {
@@ -329,8 +341,9 @@ describe('NodeWidgets', () => {
         stubs: {
           InputSlot: true,
           AppInput: {
-            props: ['id', 'name', 'enable'],
-            template: '<div class="app-input-stub" :data-id="id"><slot /></div>'
+            props: ['entityId', 'name', 'enable'],
+            template:
+              '<div class="app-input-stub" :data-entity-id="entityId"><slot /></div>'
           }
         },
         mocks: {
@@ -340,9 +353,9 @@ describe('NodeWidgets', () => {
     })
     const appInputElements = container.querySelectorAll('.app-input-stub')
     const ids = Array.from(appInputElements).map((el) =>
-      el.getAttribute('data-id')
+      el.getAttribute('data-entity-id')
     )
 
-    expect(ids).toStrictEqual(['test_node', 'test_node'])
+    expect(ids).toStrictEqual([seedAEntityId, seedBEntityId])
   })
 })
