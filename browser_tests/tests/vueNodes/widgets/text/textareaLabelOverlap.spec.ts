@@ -1,8 +1,8 @@
 import {
   comfyExpect as expect,
   comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
-import type { ComfyPage } from '../../../../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Textarea label overlap', { tag: ['@widget'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -30,15 +30,14 @@ test.describe('Textarea label overlap', { tag: ['@widget'] }, () => {
 
     // The label associated with this textarea must have a non-transparent
     // background so scrolled text does not show through it.
-    const bgColor = await textarea.evaluate((el) => {
-      const label = (el as HTMLTextAreaElement).labels?.[0]
-      return label ? getComputedStyle(label).backgroundColor : ''
-    })
-
-    // 'transparent' or 'rgba(0, 0, 0, 0)' means no background — the bug.
-    expect(
-      bgColor !== 'transparent' && bgColor !== 'rgba(0, 0, 0, 0)',
-      `Expected label to have a solid background color, but got "${bgColor}"`
-    ).toBe(true)
+    // Use expect.poll for retrying assertion in case of async rendering.
+    await expect
+      .poll(() =>
+        textarea.evaluate((el) => {
+          const label = (el as HTMLTextAreaElement).labels?.[0]
+          return label ? getComputedStyle(label).backgroundColor : ''
+        })
+      )
+      .not.toMatch(/^(transparent|rgba\(0,\s*0,\s*0,\s*0\))$/)
   })
 })
