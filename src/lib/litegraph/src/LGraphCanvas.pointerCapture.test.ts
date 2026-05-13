@@ -124,14 +124,21 @@ describe('LGraphCanvas processMouseUp — pointer capture release', () => {
   let graph: LGraph
   let canvas: LGraphCanvas
   let releasePointerCapture: ReturnType<typeof vi.fn>
+  let hasPointerCapture: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
     vi.clearAllMocks()
     graph = new LGraph()
-    ;({ canvas, releasePointerCapture } = createCanvas(graph))
+    ;({ canvas, releasePointerCapture, hasPointerCapture } =
+      createCanvas(graph))
   })
 
-  it('releases capture when a non-primary pointerup arrives with the captured pointerId', () => {
+  it('releases capture and finishes drag zoom when non-primary pointerup arrives with captured pointerId', () => {
+    const finishDragZoomSpy = vi.spyOn(
+      canvas as unknown as { _finishDragZoom: () => void },
+      '_finishDragZoom'
+    )
+
     // Simulate primary pointerdown to set up capture
     const downEvent = makePointerEvent('pointerdown', {
       pointerId: 1,
@@ -151,7 +158,11 @@ describe('LGraphCanvas processMouseUp — pointer capture release', () => {
     })
     canvas.processMouseUp(upEvent)
 
+    // _finishDragZoom must be called to clean up any drag-zoom state
+    expect(finishDragZoomSpy).toHaveBeenCalled()
+
     // Capture must be released — otherwise the canvas holds it forever
+    expect(hasPointerCapture).toHaveBeenCalledWith(1)
     expect(releasePointerCapture).toHaveBeenCalledWith(1)
     expect(canvas.pointer.pointerId).toBeUndefined()
   })
@@ -178,6 +189,11 @@ describe('LGraphCanvas processMouseUp — pointer capture release', () => {
   })
 
   it('processes normally when a primary pointerup arrives', () => {
+    const finishDragZoomSpy = vi.spyOn(
+      canvas as unknown as { _finishDragZoom: () => void },
+      '_finishDragZoom'
+    )
+
     const downEvent = makePointerEvent('pointerdown', {
       pointerId: 1,
       isPrimary: true
@@ -192,7 +208,11 @@ describe('LGraphCanvas processMouseUp — pointer capture release', () => {
     })
     canvas.processMouseUp(upEvent)
 
+    // _finishDragZoom is called for cleanup
+    expect(finishDragZoomSpy).toHaveBeenCalled()
+
     // Normal pointerup releases capture via the standard path
+    expect(hasPointerCapture).toHaveBeenCalledWith(1)
     expect(releasePointerCapture).toHaveBeenCalledWith(1)
     expect(canvas.pointer.pointerId).toBeUndefined()
   })
