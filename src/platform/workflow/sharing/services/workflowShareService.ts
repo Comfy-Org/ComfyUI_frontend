@@ -18,11 +18,6 @@ import {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
-type ImportPublishedAssetsRequestWithOptionalShareId = Omit<
-  ImportPublishedAssetsRequest,
-  'share_id'
-> & { share_id?: string }
-
 class SharedWorkflowLoadError extends Error {
   readonly status: number | null
 
@@ -266,7 +261,7 @@ export function useWorkflowShareService() {
     assetIds: string[],
     shareId?: string
   ): Promise<void> {
-    const body: ImportPublishedAssetsRequestWithOptionalShareId = {
+    const body: ImportPublishedAssetsRequest = {
       published_asset_ids: assetIds,
       ...(shareId ? { share_id: shareId } : {})
     }
