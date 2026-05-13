@@ -586,8 +586,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Tab Bar Layout',
     type: 'hidden',
     defaultValue: 'Default',
-    migrateDeprecatedValue: (value: unknown) =>
-      value === 'Integrated' || value === 'Legacy' ? 'Default' : value
+    migrateDeprecatedValue: () => 'Default'
   },
   {
     id: 'Comfy.Appearance.DisableAnimations',
