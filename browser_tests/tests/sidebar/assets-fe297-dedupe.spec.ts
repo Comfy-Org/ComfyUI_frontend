@@ -95,52 +95,23 @@ test.describe(
         .getByRole('button', { name: 'See more outputs' })
         .click()
       await expect(tab.backToAssetsButton).toBeVisible()
-      await expect(tab.assetCards.first()).toBeVisible()
 
-      // The fix dedupes outputs that share a composite output key BEFORE
-      // they reach `<VirtualGrid items :key="item.key">`. Each AssetItem
-      // becomes one `data-virtual-grid-item` row in the rendered slice,
-      // and the topSpacer/bottomSpacer heights together encode the total
-      // `items.length` because the grid lays rows out at a fixed height.
-      // Counting total rows from spacers + rendered count is independent
-      // of viewport height and Vue's same-key DOM reuse.
-      const totals = await comfyPage.page.evaluate(() => {
-        const scroller = document.querySelector(
-          '.sidebar-content-container [class*="overflow-y-auto"]'
-        ) as HTMLElement | null
-        if (!scroller) return null
-        const items = scroller.querySelectorAll('[data-virtual-grid-item]')
-        const sample = items[0] as HTMLElement | undefined
-        if (!sample) {
-          return { totalRows: 0, renderedRows: 0, labels: [] as string[] }
-        }
-        const rowHeight = sample.getBoundingClientRect().height || 200
-        const spacers = scroller.querySelectorAll(
-          ':scope > div:not([style*="display: grid"])'
-        )
-        let spacerHeight = 0
-        for (const s of Array.from(spacers)) {
-          const h = (s as HTMLElement).getBoundingClientRect().height
-          spacerHeight += h
-        }
-        const totalRows = Math.round(
-          (spacerHeight + items.length * rowHeight) / rowHeight
-        )
-        const labels = Array.from(items)
-          .map(
-            (el) =>
-              el
-                .querySelector('[aria-label$="image asset"]')
-                ?.getAttribute('aria-label') ?? null
-          )
+      // The 5-output stack contains two records colliding on the composite
+      // output key. After dedupe, exactly 4 cards render. Without the fix,
+      // `items.length` stays at 5 and so does the rendered tile count, so
+      // a direct card count discriminates red/green.
+      await expect(tab.assetCards).toHaveCount(EXPECTED_TOTAL_TILES)
+
+      // Defence-in-depth: every rendered card must carry a unique aria-label,
+      // catching residual key-collision-driven DOM reuse if it ever resurfaces.
+      // MediaAssetCard sets `aria-label="<filename> image asset"` on the card
+      // root, which is the element matched by `tab.assetCards`.
+      const labels = await tab.assetCards.evaluateAll((nodes) =>
+        nodes
+          .map((el) => el.getAttribute('aria-label'))
           .filter((v): v is string => v !== null)
-        return { totalRows, renderedRows: items.length, labels }
-      })
-
-      expect(totals).not.toBeNull()
-      expect(totals!.totalRows).toBe(EXPECTED_TOTAL_TILES)
-      // Defence-in-depth: every rendered row must carry a unique label
-      expect(new Set(totals!.labels).size).toBe(totals!.labels.length)
+      )
+      expect(new Set(labels).size).toBe(labels.length)
 
       await testInfo.attach('expanded-folder-view.png', {
         body: await comfyPage.page.screenshot({ fullPage: false }),

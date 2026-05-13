@@ -264,6 +264,29 @@ describe('resolveOutputAssetItems', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
+  it('FE-297: collapses to a single asset when every output shares the same composite key', async () => {
+    const shared = {
+      filename: 'ComfyUI_00001_.png',
+      nodeId: '9',
+      subfolder: ''
+    }
+    const metadata: OutputAssetMetadata = {
+      jobId: 'job-fe-297-all-dup',
+      nodeId: shared.nodeId,
+      subfolder: shared.subfolder,
+      outputCount: 3,
+      allOutputs: [
+        createOutput({ ...shared, url: 'https://example.com/a.png' }),
+        createOutput({ ...shared, url: 'https://example.com/b.png' }),
+        createOutput({ ...shared, url: 'https://example.com/c.png' })
+      ]
+    }
+
+    const results = await resolveOutputAssetItems(metadata)
+
+    expect(results).toHaveLength(1)
+  })
+
   it('keeps root outputs with empty subfolders', async () => {
     const output = createOutput({
       filename: 'root.png',

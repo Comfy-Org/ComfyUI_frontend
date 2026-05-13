@@ -57,6 +57,16 @@ export function getOutputKey({
  * a unique `:key` in VirtualGrid; without this, colliding ids cause Vue to
  * reuse one DOM node for many rows and visibly duplicate one asset on
  * scroll (FE-297).
+ *
+ * The composite key intentionally ignores fields outside the rendered id
+ * (`type`, `mediaType`, `format`, `frame_rate`). Two records that differ
+ * only on those fields are treated as the same identity here because the
+ * downstream `AssetItem.id` would collide regardless — a wider dedupe key
+ * would let the collision propagate to VirtualGrid.
+ *
+ * The kept copy is the first one seen by this function. Callers that reverse
+ * the input array (e.g. `resolveOutputAssetItems`) therefore retain the
+ * last record in the API's original order.
  */
 function mapOutputsToAssetItems({
   jobId,
