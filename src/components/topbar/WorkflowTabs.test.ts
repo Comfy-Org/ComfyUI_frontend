@@ -14,7 +14,6 @@ const distribution = vi.hoisted(() => ({
   isNightly: false
 }))
 
-const tabBarLayout = vi.hoisted(() => ({ value: 'Default' }))
 const overflowObservers = vi.hoisted<
   Array<{
     isOverflowing: { value: boolean }
@@ -82,13 +81,6 @@ vi.mock('primevue/scrollpanel', async () => {
     })
   }
 })
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: (key: string) =>
-      key === 'Comfy.UI.TabBarLayout' ? tabBarLayout.value : undefined
-  })
-}))
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({
@@ -234,7 +226,6 @@ describe('WorkflowTabs feedback button', () => {
     distribution.isCloud = false
     distribution.isDesktop = false
     distribution.isNightly = false
-    tabBarLayout.value = 'Default'
   })
 
   it('opens the feedback dialog tagged with topbar source when clicked', async () => {
@@ -259,38 +250,18 @@ describe('WorkflowTabs feedback button', () => {
       screen.queryByRole('button', { name: 'Feedback' })
     ).not.toBeInTheDocument()
   })
-
-  it('does not render the feedback button when the legacy tab bar is active', () => {
-    distribution.isCloud = true
-    tabBarLayout.value = 'Legacy'
-    renderComponent()
-    expect(
-      screen.queryByRole('button', { name: 'Feedback' })
-    ).not.toBeInTheDocument()
-  })
 })
 
 describe('WorkflowTabs agent entry button', () => {
   beforeEach(() => {
-    tabBarLayout.value = 'Default'
     agentPanelHolder.store.enabled.value = true
     agentPanelHolder.store.isOpen.value = false
     agentPanelHolder.store.toggle.mockClear()
   })
 
   afterEach(() => {
-    tabBarLayout.value = 'Default'
     agentPanelHolder.store.enabled.value = false
     agentPanelHolder.store.isOpen.value = false
-  })
-
-  it('does not render the entry button in the legacy tab bar even with the flag on', () => {
-    tabBarLayout.value = 'Legacy'
-    renderComponent()
-
-    expect(
-      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
-    ).toBeNull()
   })
 
   it('does not render the entry button while the feature flag is off', () => {
