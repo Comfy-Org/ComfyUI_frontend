@@ -73,7 +73,7 @@ import {
   multiClone,
   splitPositionables
 } from './subgraph/subgraphUtils'
-import { Alignment, LGraphEventMode } from './types/globalEnums'
+import { Alignment } from './types/globalEnums'
 import type {
   LGraphTriggerAction,
   LGraphTriggerEvent,
@@ -183,9 +183,6 @@ export class LGraph
 {
   static serialisedSchemaVersion = 1 as const
 
-  static STATUS_STOPPED = 1
-  static STATUS_RUNNING = 2
-
   /** List of LGraph properties that are manually handled by {@link LGraph.configure}. */
   static readonly ConfigureProperties = new Set([
     'nodes',
@@ -224,7 +221,6 @@ export class LGraph
    */
   links: Map<LinkId, LLink> & Record<LinkId, LLink>
   list_of_graphcanvas: LGraphCanvas[] | null
-  status: number = LGraph.STATUS_STOPPED
 
   private _state: LGraphState = {
     lastGroupId: 0,
@@ -249,20 +245,6 @@ export class LGraph
   _nodes_in_order: LGraphNode[] = []
   _nodes_executable: LGraphNode[] | null = null
   _groups: LGraphGroup[] = []
-  iteration: number = 0
-  globaltime: number = 0
-  /** @deprecated Unused */
-  runningtime: number = 0
-  fixedtime: number = 0
-  fixedtime_lapse: number = 0.01
-  elapsed_time: number = 0.01
-  last_update_time: number = 0
-  starttime: number = 0
-  catch_errors: boolean = true
-  execution_timer_id?: number | null
-  errors_in_execution?: boolean
-  /** @deprecated Unused */
-  execution_time!: number
   _last_trigger_time?: number
   filter?: string
   /** Must contain serialisable values, e.g. primitive types */
@@ -368,9 +350,6 @@ export class LGraph
    * Removes all nodes from this graph
    */
   clear(): void {
-    this.stop()
-    this.status = LGraph.STATUS_STOPPED
-
     const graphId = this.id
     if (this.isRootGraph && graphId !== zeroUuid) {
       usePromotionStore().clearGraph(graphId)
@@ -416,25 +395,11 @@ export class LGraph
     // other scene stuff
     this._groups = []
 
-    // iterations
-    this.iteration = 0
-
     // custom data
     this.config = {}
     this.vars = {}
     // to store custom data
     this.extra = {}
-
-    // timing
-    this.globaltime = 0
-    this.runningtime = 0
-    this.fixedtime = 0
-    this.fixedtime_lapse = 0.01
-    this.elapsed_time = 0.01
-    this.last_update_time = 0
-    this.starttime = 0
-
-    this.catch_errors = true
 
     this.nodes_executing = []
     this.nodes_actioning = []
@@ -490,131 +455,6 @@ export class LGraph
       const pos = canvases.indexOf(canvas)
       if (pos !== -1) canvases.splice(pos, 1)
     }
-  }
-
-  /**
-   * @deprecated Will be removed in 0.9
-   * Starts running this graph every interval milliseconds.
-   * @param interval amount of milliseconds between executions, if 0 then it renders to the monitor refresh rate
-   */
-  start(interval?: number): void {
-    if (this.status == LGraph.STATUS_RUNNING) return
-    this.status = LGraph.STATUS_RUNNING
-    this.sendEventToAllNodes('onStart')
-
-    // launch
-    this.starttime = LiteGraph.getTime()
-    this.last_update_time = this.starttime
-    interval ||= 0
-
-    // execute once per frame
-    if (
-      interval == 0 &&
-      typeof window != 'undefined' &&
-      window.requestAnimationFrame
-    ) {
-      const on_frame = () => {
-        if (this.execution_timer_id != -1) return
-
-        window.requestAnimationFrame(on_frame)
-        this.runStep(1, !this.catch_errors)
-      }
-      this.execution_timer_id = -1
-      on_frame()
-    } else {
-      // execute every 'interval' ms
-      // @ts-expect-error - Timer ID type mismatch needs fixing
-      this.execution_timer_id = setInterval(() => {
-        // execute
-        this.runStep(1, !this.catch_errors)
-      }, interval)
-    }
-  }
-
-  /**
-   * @deprecated Will be removed in 0.9
-   * Stops the execution loop of the graph
-   */
-  stop(): void {
-    if (this.status == LGraph.STATUS_STOPPED) return
-
-    this.status = LGraph.STATUS_STOPPED
-    if (this.execution_timer_id != null) {
-      if (this.execution_timer_id != -1) {
-        clearInterval(this.execution_timer_id)
-      }
-      this.execution_timer_id = null
-    }
-
-    this.sendEventToAllNodes('onStop')
-  }
-
-  /**
-   * Run N steps (cycles) of the graph
-   * @param num number of steps to run, default is 1
-   * @param do_not_catch_errors [optional] if you want to try/catch errors
-   * @param limit max number of nodes to execute (used to execute from start to a node)
-   */
-  runStep(num: number, do_not_catch_errors: boolean, limit?: number): void {
-    num = num || 1
-
-    const start = LiteGraph.getTime()
-    this.globaltime = 0.001 * (start - this.starttime)
-
-    const nodes = this._nodes_executable || this._nodes
-    if (!nodes) return
-
-    limit = limit || nodes.length
-
-    if (do_not_catch_errors) {
-      // iterations
-      for (let i = 0; i < num; i++) {
-        for (let j = 0; j < limit; ++j) {
-          const node = nodes[j]
-          // FIXME: Looks like copy/paste broken logic - checks for "on", executes "do"
-          if (node.mode == LGraphEventMode.ALWAYS && node.onExecute) {
-            // wrap node.onExecute();
-            node.doExecute?.()
-          }
-        }
-
-        this.fixedtime += this.fixedtime_lapse
-      }
-    } else {
-      try {
-        // iterations
-        for (let i = 0; i < num; i++) {
-          for (let j = 0; j < limit; ++j) {
-            const node = nodes[j]
-            if (node.mode == LGraphEventMode.ALWAYS) {
-              node.onExecute?.()
-            }
-          }
-
-          this.fixedtime += this.fixedtime_lapse
-        }
-        this.errors_in_execution = false
-      } catch (error) {
-        this.errors_in_execution = true
-        if (LiteGraph.throw_errors) throw error
-
-        if (LiteGraph.debug) console.error('Error during execution:', error)
-        this.stop()
-      }
-    }
-
-    const now = LiteGraph.getTime()
-    let elapsed = now - start
-    if (elapsed == 0) elapsed = 1
-
-    this.execution_time = 0.001 * elapsed
-    this.globaltime += 0.001 * elapsed
-    this.iteration += 1
-    this.elapsed_time = (now - this.last_update_time) * 0.001
-    this.last_update_time = now
-    this.nodes_executing = []
-    this.nodes_actioning = []
-    this.nodes_executedAction = []
   }
 
   /**
@@ -804,72 +644,12 @@ export class LGraph
   }
 
   /**
-   * Returns the amount of time the graph has been running in milliseconds
-   * @returns number of milliseconds the graph has been running
-   */
-  getTime(): number {
-    return this.globaltime
-  }
-
-  /**
-   * Returns the amount of time accumulated using the fixedtime_lapse var.
-   * This is used in context where the time increments should be constant
-   * @returns number of milliseconds the graph has been running
-   */
-  getFixedTime(): number {
-    return this.fixedtime
-  }
-
-  /**
-   * Returns the amount of time it took to compute the latest iteration.
-   * Take into account that this number could be not correct
-   * if the nodes are using graphical actions
-   * @returns number of milliseconds it took the last cycle
-   */
-  getElapsedTime(): number {
-    return this.elapsed_time
-  }
-
-  /**
    * Increments the internal version counter.
    * Currently only read for debug display in {@link LGraphCanvas.renderInfo}.
    * Centralized so a future VersionSystem can intercept, batch, or replace it.
    */
   incrementVersion(): void {
     this._version++
-  }
-
-  /**
-   * @deprecated Will be removed in 0.9
-   * Sends an event to all the nodes, useful to trigger stuff
-   * @param eventname the name of the event (function to be called)
-   * @param params parameters in array format
-   */
-  sendEventToAllNodes(
-    eventname: string,
-    params?: object | object[],
-    mode?: LGraphEventMode
-  ): void {
-    mode = mode || LGraphEventMode.ALWAYS
-
-    const nodes = this._nodes_in_order || this._nodes
-    if (!nodes) return
-
-    for (const node of nodes) {
-      // @ts-expect-error deprecated
-      if (!node[eventname] || node.mode != mode) continue
-      if (params === undefined) {
-        // @ts-expect-error deprecated
-        node[eventname]()
-      } else if (params && params.constructor === Array) {
-        // @ts-expect-error deprecated
-        // eslint-disable-next-line prefer-spread
-        node[eventname].apply(node, params)
-      } else {
-        // @ts-expect-error deprecated
-        node[eventname](params)
-      }
-    }
   }
 
   /**

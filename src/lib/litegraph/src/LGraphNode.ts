@@ -1422,8 +1422,6 @@ export class LGraphNode
       // @ts-expect-error deprecated
       this.graph.nodes_executing[this.id] = false
 
-      // save execution/action ref
-      this.exec_version = this.graph.iteration
       if (options?.action_call) {
         this.action_call = options.action_call
         // @ts-expect-error deprecated

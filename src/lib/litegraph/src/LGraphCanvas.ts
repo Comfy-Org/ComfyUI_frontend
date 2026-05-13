@@ -5422,12 +5422,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     let line = 1
     if (this.graph) {
       ctx.fillText(
-        `T: ${this.graph.globaltime.toFixed(2)}s`,
-        5,
-        lineHeight * line++
-      )
-      ctx.fillText(`I: ${this.graph.iteration}`, 5, lineHeight * line++)
-      ctx.fillText(
         `N: ${this.graph._nodes.length} [${this.visible_nodes.length}]`,
         5,
         lineHeight * line++
