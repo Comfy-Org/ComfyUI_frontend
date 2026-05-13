@@ -424,7 +424,6 @@ describe('useVersionCompatibilityStore', () => {
       expect(store.shouldShowWarning).toBe(true)
       expect(store.packageWarningMessages).toEqual([
         {
-          type: 'packageOutdated',
           name: 'comfyui-workflow-templates',
           installedVersion: '0.9.0',
           requiredVersion: '0.9.5'
@@ -557,6 +556,58 @@ describe('useVersionCompatibilityStore', () => {
       const secondKey = Object.keys(mockDismissalStorage.value)[0]
 
       expect(firstKey).toBe(secondKey)
+    })
+
+    it('should prune expired dismissals when writing a new one', async () => {
+      const mockNow = 10_000_000
+      vi.useFakeTimers()
+      vi.setSystemTime(mockNow)
+
+      mockDismissalStorage.value = {
+        'expired-key': mockNow - 1,
+        'still-valid-key': mockNow + 5000
+      }
+
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '1.25.0',
+          required_frontend_version: '1.25.0'
+        }
+      }
+      mockSystemStatsStore.isInitialized = true
+      await store.checkVersionCompatibility()
+      store.dismissWarning()
+
+      expect(mockDismissalStorage.value).not.toHaveProperty('expired-key')
+      expect(mockDismissalStorage.value).toHaveProperty('still-valid-key')
+      expect(mockDismissalStorage.value).toHaveProperty('1.24.0-1.25.0-1.25.0')
+    })
+
+    it('should allow dismissal when only package warnings are present', async () => {
+      const mockNow = 1000000
+      vi.useFakeTimers()
+      vi.setSystemTime(mockNow)
+
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '',
+          required_frontend_version: '',
+          comfy_package_versions: [
+            {
+              name: 'comfyui-workflow-templates',
+              installed: '0.9.0',
+              required: '0.9.5'
+            }
+          ]
+        }
+      }
+      mockSystemStatsStore.isInitialized = true
+
+      await store.checkVersionCompatibility()
+      expect(store.shouldShowWarning).toBe(true)
+      store.dismissWarning()
+      expect(Object.keys(mockDismissalStorage.value)).toHaveLength(1)
+      expect(store.shouldShowWarning).toBe(false)
     })
   })
 })

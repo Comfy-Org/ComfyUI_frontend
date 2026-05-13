@@ -5,8 +5,13 @@ import { computed } from 'vue'
 
 import config from '@/config'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { ComfyPackageVersion } from '@/schemas/apiSchema'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
+
+interface OutdatedComfyPackage {
+  name: string
+  installed: string
+  required: string
+}
 
 const DISMISSAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
 
@@ -15,7 +20,9 @@ const DISMISSAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
 const FRONTEND_PACKAGE_NAME = 'comfyui-frontend-package'
 
 // Backend reports PEP 440 versions (e.g. "0.3.0.post1", "1.0.0rc1");
-// coerce strips the suffix so we can compare with semver.
+// coerce strips the suffix so we can compare with semver. Note: this means
+// "0.4.0" vs "0.4.0.post1" both coerce to "0.4.0" and compare equal — a
+// post-release alone is not treated as outdated.
 function isOutdated(installed: string, required: string): boolean {
   const installedSemver = coerce(installed)
   const requiredSemver = coerce(required)
@@ -49,14 +56,21 @@ export const useVersionCompatibilityStore = defineStore(
       return false
     })
 
-    const outdatedComfyPackages = computed<ComfyPackageVersion[]>(() => {
+    const outdatedComfyPackages = computed<OutdatedComfyPackage[]>(() => {
       const packages =
         systemStatsStore.systemStats?.system?.comfy_package_versions ?? []
-      return packages.filter((pkg) => {
-        if (pkg.name === FRONTEND_PACKAGE_NAME) return false
-        if (!pkg.installed || !pkg.required) return false
-        return isOutdated(pkg.installed, pkg.required)
-      })
+      const out: OutdatedComfyPackage[] = []
+      for (const pkg of packages) {
+        if (pkg.name === FRONTEND_PACKAGE_NAME) continue
+        if (!pkg.installed || !pkg.required) continue
+        if (!isOutdated(pkg.installed, pkg.required)) continue
+        out.push({
+          name: pkg.name,
+          installed: pkg.installed,
+          required: pkg.required
+        })
+      }
+      return out
     })
 
     const hasVersionMismatch = computed(() => {
@@ -64,11 +78,11 @@ export const useVersionCompatibilityStore = defineStore(
     })
 
     const versionKey = computed(() => {
+      if (!frontendVersion.value) return null
       if (
-        !frontendVersion.value ||
-        !backendVersion.value ||
-        (!requiredFrontendVersion.value &&
-          outdatedComfyPackages.value.length === 0)
+        !backendVersion.value &&
+        !requiredFrontendVersion.value &&
+        outdatedComfyPackages.value.length === 0
       ) {
         return null
       }
@@ -78,8 +92,8 @@ export const useVersionCompatibilityStore = defineStore(
         .sort(
           (a, b) =>
             a.name.localeCompare(b.name) ||
-            (a.installed ?? '').localeCompare(b.installed ?? '') ||
-            (a.required ?? '').localeCompare(b.required ?? '')
+            a.installed.localeCompare(b.installed) ||
+            a.required.localeCompare(b.required)
         )
         .map((pkg) => `${pkg.name}@${pkg.installed}->${pkg.required}`)
         .join(',')
@@ -141,10 +155,9 @@ export const useVersionCompatibilityStore = defineStore(
 
     const packageWarningMessages = computed(() =>
       outdatedComfyPackages.value.map((pkg) => ({
-        type: 'packageOutdated' as const,
         name: pkg.name,
-        installedVersion: pkg.installed ?? '',
-        requiredVersion: pkg.required ?? ''
+        installedVersion: pkg.installed,
+        requiredVersion: pkg.required
       }))
     )
 
@@ -157,11 +170,13 @@ export const useVersionCompatibilityStore = defineStore(
     function dismissWarning() {
       if (!versionKey.value) return
 
-      const dismissUntil = Date.now() + DISMISSAL_DURATION_MS
-      dismissalStorage.value = {
-        ...dismissalStorage.value,
-        [versionKey.value]: dismissUntil
+      const now = Date.now()
+      const pruned: Record<string, number> = {}
+      for (const [key, until] of Object.entries(dismissalStorage.value)) {
+        if (until > now) pruned[key] = until
       }
+      pruned[versionKey.value] = now + DISMISSAL_DURATION_MS
+      dismissalStorage.value = pruned
     }
 
     async function initialize() {

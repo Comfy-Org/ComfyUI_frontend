@@ -490,7 +490,6 @@ export type PromptError = z.infer<typeof zPromptError>
 export type NodeError = z.infer<typeof zNodeError>
 export type Settings = z.infer<typeof zSettings>
 export type DeviceStats = z.infer<typeof zDeviceStats>
-export type ComfyPackageVersion = z.infer<typeof zComfyPackageVersion>
 export type SystemStats = z.infer<typeof zSystemStats>
 export type User = z.infer<typeof zUser>
 export type UserData = z.infer<typeof zUserData>

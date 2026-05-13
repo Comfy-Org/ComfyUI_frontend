@@ -246,13 +246,11 @@ describe('useFrontendVersionMismatchWarning', () => {
     vi.spyOn(versionStore, 'warningMessage', 'get').mockReturnValue(null)
     vi.spyOn(versionStore, 'packageWarningMessages', 'get').mockReturnValue([
       {
-        type: 'packageOutdated',
         name: 'comfyui-workflow-templates',
         installedVersion: '0.9.0',
         requiredVersion: '0.9.5'
       },
       {
-        type: 'packageOutdated',
         name: 'comfyui-embedded-docs',
         installedVersion: '0.4.0',
         requiredVersion: '0.5.0'
