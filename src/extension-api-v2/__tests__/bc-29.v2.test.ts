@@ -59,12 +59,17 @@ describe('BC.29 v2 contract — graph enumeration, mutation, and cross-scope ide
 
       const found = graph.findByType('KSampler')
       expect(found).toHaveLength(2)
-      expect(found.every((n: unknown) => (n as { type: string }).type === 'KSampler')).toBe(true)
+      expect(
+        found.every((n: unknown) => (n as { type: string }).type === 'KSampler')
+      ).toBe(true)
     })
 
     it('comfyApp.graph.addNode(opts) creates and inserts a new node', () => {
       const graph = createMockGraphHandle()
-      const node = graph.addNode({ type: 'TestNode' }) as { type: string; id: number }
+      const node = graph.addNode({ type: 'TestNode' }) as {
+        type: string
+        id: number
+      }
 
       expect(node.type).toBe('TestNode')
       expect(node.id).toBeDefined()
@@ -102,7 +107,9 @@ describe('BC.29 v2 contract — graph enumeration, mutation, and cross-scope ide
       })
 
       it('isNodeLocatorId returns true for valid subgraph node IDs (uuid:localId)', () => {
-        expect(isNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890:123')).toBe(true)
+        expect(
+          isNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890:123')
+        ).toBe(true)
       })
 
       it('isNodeLocatorId returns false for invalid formats', () => {
@@ -113,10 +120,14 @@ describe('BC.29 v2 contract — graph enumeration, mutation, and cross-scope ide
       })
 
       it('parseNodeLocatorId extracts subgraphUuid and localNodeId for subgraph nodes', () => {
-        const result = parseNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
+        const result = parseNodeLocatorId(
+          'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
+        )
 
         expect(result).not.toBeNull()
-        expect(result!.subgraphUuid).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890')
+        expect(result!.subgraphUuid).toBe(
+          'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+        )
         expect(result!.localNodeId).toBe(456)
       })
 
@@ -135,7 +146,10 @@ describe('BC.29 v2 contract — graph enumeration, mutation, and cross-scope ide
 
     describe('NodeLocatorId creation', () => {
       it('createNodeLocatorId produces a colon-delimited string', () => {
-        const id = createNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 123)
+        const id = createNodeLocatorId(
+          'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+          123
+        )
 
         expect(id).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:123')
         expect(isNodeLocatorId(id)).toBe(true)
@@ -208,11 +222,14 @@ describe('BC.29 v2 contract — graph enumeration, mutation, and cross-scope ide
       it('NodeLocatorId is stable across all instances of a subgraph', () => {
         // A locator ID like "uuid:123" identifies the same node definition
         // regardless of which execution path reaches it
-        const locatorId: NodeLocatorId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890:123'
+        const locatorId: NodeLocatorId =
+          'a1b2c3d4-e5f6-7890-abcd-ef1234567890:123'
 
         expect(isNodeLocatorId(locatorId)).toBe(true)
         const parsed = parseNodeLocatorId(locatorId)
-        expect(parsed!.subgraphUuid).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890')
+        expect(parsed!.subgraphUuid).toBe(
+          'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+        )
       })
     })
   })

@@ -112,7 +112,9 @@ describe('BC.29 v1 contract — graph enumeration, mutation, and cross-scope ide
 
   describe('S14.ID1 — cross-subgraph identity helpers', () => {
     it('parseNodeLocatorId(id) splits a locator string into { subgraphUuid, localNodeId } parts', () => {
-      const result = parseNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890:123')
+      const result = parseNodeLocatorId(
+        'a1b2c3d4-e5f6-7890-abcd-ef1234567890:123'
+      )
 
       expect(result).not.toBeNull()
       expect(result!.subgraphUuid).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890')
@@ -120,7 +122,10 @@ describe('BC.29 v1 contract — graph enumeration, mutation, and cross-scope ide
     })
 
     it('createNodeLocatorId(scope, localId) produces a stable colon-delimited locator string', () => {
-      const locator = createNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 456)
+      const locator = createNodeLocatorId(
+        'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        456
+      )
 
       expect(locator).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
     })

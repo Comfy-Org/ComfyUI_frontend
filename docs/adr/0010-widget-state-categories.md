@@ -36,7 +36,7 @@ Properties that cannot change after widget construction:
 
 - `type` — widget type string (e.g., `'INT'`, `'STRING'`, `'COMBO'`)
 - `name` — widget name as declared in `INPUT_TYPES`
-- Presence of constraints (the *fact* that min/max/step exist)
+- Presence of constraints (the _fact_ that min/max/step exist)
 - Default values
 
 Schema comes from the node definition and is frozen at construction time.
@@ -73,8 +73,8 @@ interface WidgetHandle<T> {
 
   // Props: value (modelValue) — ergonomic accessor
   value: T
-  getValue(): T      // alias
-  setValue(v: T): void  // alias
+  getValue(): T // alias
+  setValue(v: T): void // alias
 
   // Props: common — ergonomic accessors
   isHidden(): boolean
@@ -92,13 +92,13 @@ interface WidgetHandle<T> {
 
 The `WidgetHandle` facade maps to ECS components:
 
-| WidgetHandle | ECS Component |
-|--------------|---------------|
-| `name`, `widgetType` | `WidgetComponentSchema` |
-| `value` | `WidgetComponentValue` |
-| `hidden`, `disabled`, `label` | `WidgetComponentDisplay` |
-| `serialize` | `WidgetComponentSerialize` |
-| type-specific options | `WidgetComponentSchema.options` |
+| WidgetHandle                  | ECS Component                   |
+| ----------------------------- | ------------------------------- |
+| `name`, `widgetType`          | `WidgetComponentSchema`         |
+| `value`                       | `WidgetComponentValue`          |
+| `hidden`, `disabled`, `label` | `WidgetComponentDisplay`        |
+| `serialize`                   | `WidgetComponentSerialize`      |
+| type-specific options         | `WidgetComponentSchema.options` |
 
 The 5-component split is an implementation detail. Extensions see only Schema + Props.
 

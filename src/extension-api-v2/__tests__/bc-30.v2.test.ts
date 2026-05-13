@@ -98,7 +98,9 @@ describe('BC.30 v2 contract — graph change tracking, batching, and reactivity 
     })
 
     it('graph._version does not exist on the v2 GraphHandle', () => {
-      const graph = createReactiveGraphHandle() as unknown as { _version?: number }
+      const graph = createReactiveGraphHandle() as unknown as {
+        _version?: number
+      }
 
       expect(graph._version).toBeUndefined()
     })
@@ -232,8 +234,6 @@ describe('BC.30 v2 contract — graph change tracking, batching, and reactivity 
       warnSpy.mockRestore()
     })
 
-    it.todo(
-      '[Phase B] setDirtyCanvas shim is wired into NodeHandle at runtime'
-    )
+    it.todo('[Phase B] setDirtyCanvas shim is wired into NodeHandle at runtime')
   })
 })

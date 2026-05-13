@@ -152,7 +152,10 @@ describe('BC.29 migration — graph enumeration, mutation, and cross-scope ident
     })
 
     it('createNodeLocatorId is the same function in both v1 and v2 (re-exported)', () => {
-      const locator = createNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 456)
+      const locator = createNodeLocatorId(
+        'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        456
+      )
 
       expect(locator).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
       expect(isNodeLocatorId(locator)).toBe(true)
@@ -160,7 +163,9 @@ describe('BC.29 migration — graph enumeration, mutation, and cross-scope ident
 
     it('v2 adds isNodeLocatorId type guard not present in v1 (enhancement)', () => {
       // v2 enhancement: type guard for runtime validation
-      expect(isNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890:123')).toBe(true)
+      expect(isNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890:123')).toBe(
+        true
+      )
       expect(isNodeLocatorId('invalid')).toBe(true) // simple string is valid root node ID
       expect(isNodeLocatorId('not-a-uuid:123')).toBe(false) // invalid uuid format
       expect(isNodeLocatorId(null)).toBe(false)
@@ -171,7 +176,10 @@ describe('BC.29 migration — graph enumeration, mutation, and cross-scope ident
       const v1Style = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' + ':' + '789'
 
       // v2 pattern: use createNodeLocatorId
-      const v2Style = createNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 789)
+      const v2Style = createNodeLocatorId(
+        'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        789
+      )
 
       // Both produce the same result
       expect(v1Style).toBe(v2Style)

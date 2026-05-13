@@ -61,7 +61,10 @@ interface NodeHandle {
     dstSlot: number
   ): LinkHandle | null
   disconnectInput(slotIndex: number): void
-  on(event: 'connectionChange', handler: (e: ConnectionChangeEvent) => void): () => void
+  on(
+    event: 'connectionChange',
+    handler: (e: ConnectionChangeEvent) => void
+  ): () => void
 }
 
 // ── Synthetic implementations ────────────────────────────────────────────────
@@ -105,7 +108,11 @@ function createNodeHandle(
       return internal.type
     },
 
-    connect(srcSlot: number, targetHandle: NodeHandle, dstSlot: number): LinkHandle | null {
+    connect(
+      srcSlot: number,
+      targetHandle: NodeHandle,
+      dstSlot: number
+    ): LinkHandle | null {
       const srcSlotObj = internal.outputs[srcSlot]
       const targetInternal = world.nodes.get(targetHandle.entityId)
       if (!targetInternal) return null
@@ -130,10 +137,20 @@ function createNodeHandle(
           world.links.delete(dstSlotObj.link)
           // Fire connectionChange for disconnect
           internal.connectionListeners.forEach((fn) =>
-            fn({ side: 'output', slotIndex: srcSlot, connected: false, linkId: null })
+            fn({
+              side: 'output',
+              slotIndex: srcSlot,
+              connected: false,
+              linkId: null
+            })
           )
           targetInternal.connectionListeners.forEach((fn) =>
-            fn({ side: 'input', slotIndex: dstSlot, connected: false, linkId: null })
+            fn({
+              side: 'input',
+              slotIndex: dstSlot,
+              connected: false,
+              linkId: null
+            })
           )
         }
         dstSlotObj.link = null
@@ -193,13 +210,22 @@ function createNodeHandle(
       // Fire connectionChange on source
       if (srcNode) {
         srcNode.connectionListeners.forEach((fn) =>
-          fn({ side: 'output', slotIndex: link.origin_slot, connected: false, linkId: null })
+          fn({
+            side: 'output',
+            slotIndex: link.origin_slot,
+            connected: false,
+            linkId: null
+          })
         )
       }
     },
 
-    on(event: 'connectionChange', handler: (e: ConnectionChangeEvent) => void): () => void {
-      if (event !== 'connectionChange') throw new Error(`Unknown event: ${event}`)
+    on(
+      event: 'connectionChange',
+      handler: (e: ConnectionChangeEvent) => void
+    ): () => void {
+      if (event !== 'connectionChange')
+        throw new Error(`Unknown event: ${event}`)
       internal.connectionListeners.push(handler)
       return () => {
         const idx = internal.connectionListeners.indexOf(handler)
@@ -335,7 +361,9 @@ describe('BC.08 v2 contract — programmatic linking', () => {
       )
 
       const initialLinkCount = world.links.size
-      expect(() => srcHandle.connect(0, dstHandle, 0)).toThrow(TypeMismatchError)
+      expect(() => srcHandle.connect(0, dstHandle, 0)).toThrow(
+        TypeMismatchError
+      )
       expect(world.links.size).toBe(initialLinkCount)
     })
 

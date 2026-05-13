@@ -77,7 +77,11 @@ function createMockGraph(): MockGraph {
       if (!srcSlotObj || !dstSlotObj) return null
 
       // Type compatibility check (simplified)
-      if (srcSlotObj.type !== dstSlotObj.type && srcSlotObj.type !== '*' && dstSlotObj.type !== '*') {
+      if (
+        srcSlotObj.type !== dstSlotObj.type &&
+        srcSlotObj.type !== '*' &&
+        dstSlotObj.type !== '*'
+      ) {
         return null
       }
 
@@ -119,7 +123,12 @@ function createMockGraph(): MockGraph {
 }
 
 interface MockNodeWithMethods extends MockNode {
-  connect: (srcSlot: number, targetNode: MockNodeWithMethods, dstSlot: number, graph: MockGraph) => MockLink | null
+  connect: (
+    srcSlot: number,
+    targetNode: MockNodeWithMethods,
+    dstSlot: number,
+    graph: MockGraph
+  ) => MockLink | null
   disconnectInput: (slot: number, graph: MockGraph) => void
 }
 
@@ -136,17 +145,34 @@ function createMockNode(
     outputs: outputs.map((o) => ({ ...o, link: null })),
     onConnectionsChange: undefined,
 
-    connect(srcSlot: number, targetNode: MockNodeWithMethods, dstSlot: number, graph: MockGraph) {
+    connect(
+      srcSlot: number,
+      targetNode: MockNodeWithMethods,
+      dstSlot: number,
+      graph: MockGraph
+    ) {
       const link = graph._createLink(node, srcSlot, targetNode, dstSlot)
 
       if (link) {
         // Fire onConnectionsChange on source node (output side, side=2)
         if (node.onConnectionsChange) {
-          node.onConnectionsChange(2, srcSlot, true, link, node.outputs[srcSlot])
+          node.onConnectionsChange(
+            2,
+            srcSlot,
+            true,
+            link,
+            node.outputs[srcSlot]
+          )
         }
         // Fire onConnectionsChange on target node (input side, side=1)
         if (targetNode.onConnectionsChange) {
-          targetNode.onConnectionsChange(1, dstSlot, true, link, targetNode.inputs[dstSlot])
+          targetNode.onConnectionsChange(
+            1,
+            dstSlot,
+            true,
+            link,
+            targetNode.inputs[dstSlot]
+          )
         }
       }
 
@@ -160,7 +186,9 @@ function createMockNode(
       const link = graph.links.get(slotObj.link)
       if (!link) return
 
-      const srcNode = graph.getNodeById(link.origin_id) as MockNodeWithMethods | undefined
+      const srcNode = graph.getNodeById(link.origin_id) as
+        | MockNodeWithMethods
+        | undefined
 
       graph._removeLink(slotObj.link)
 
@@ -170,7 +198,13 @@ function createMockNode(
       }
       // Fire onConnectionsChange on source node (output side)
       if (srcNode?.onConnectionsChange) {
-        srcNode.onConnectionsChange(2, link.origin_slot, false, null, srcNode.outputs[link.origin_slot])
+        srcNode.onConnectionsChange(
+          2,
+          link.origin_slot,
+          false,
+          null,
+          srcNode.outputs[link.origin_slot]
+        )
       }
     }
   }
@@ -184,8 +218,18 @@ describe('BC.08 v1 contract — programmatic linking', () => {
   describe('S10.D2 — node.connect(srcSlot, targetNode, dstSlot)', () => {
     it('node.connect(srcSlot, targetNode, dstSlot) creates a link between the source output slot and the target input slot', () => {
       const graph = createMockGraph()
-      const srcNode = createMockNode(1, 'KSampler', [], [{ name: 'LATENT', type: 'LATENT' }])
-      const dstNode = createMockNode(2, 'VAEDecode', [{ name: 'samples', type: 'LATENT' }], [])
+      const srcNode = createMockNode(
+        1,
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
+      const dstNode = createMockNode(
+        2,
+        'VAEDecode',
+        [{ name: 'samples', type: 'LATENT' }],
+        []
+      )
 
       graph.add(srcNode)
       graph.add(dstNode)
@@ -201,8 +245,18 @@ describe('BC.08 v1 contract — programmatic linking', () => {
 
     it('connect() returns the newly created link object with a stable numeric id', () => {
       const graph = createMockGraph()
-      const srcNode = createMockNode(1, 'KSampler', [], [{ name: 'LATENT', type: 'LATENT' }])
-      const dstNode = createMockNode(2, 'VAEDecode', [{ name: 'samples', type: 'LATENT' }], [])
+      const srcNode = createMockNode(
+        1,
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
+      const dstNode = createMockNode(
+        2,
+        'VAEDecode',
+        [{ name: 'samples', type: 'LATENT' }],
+        []
+      )
 
       graph.add(srcNode)
       graph.add(dstNode)
@@ -213,7 +267,12 @@ describe('BC.08 v1 contract — programmatic linking', () => {
       expect(link1!.id).toBeGreaterThan(0)
 
       // Second link gets next ID
-      const dstNode2 = createMockNode(3, 'VAEDecode', [{ name: 'samples', type: 'LATENT' }], [])
+      const dstNode2 = createMockNode(
+        3,
+        'VAEDecode',
+        [{ name: 'samples', type: 'LATENT' }],
+        []
+      )
       graph.add(dstNode2)
       const link2 = srcNode.connect(0, dstNode2, 0, graph)
       expect(link2!.id).toBe(link1!.id + 1)
@@ -221,9 +280,24 @@ describe('BC.08 v1 contract — programmatic linking', () => {
 
     it('connect() on an already-occupied input slot replaces the existing link without leaving a dangling reference', () => {
       const graph = createMockGraph()
-      const srcNode1 = createMockNode(1, 'KSampler', [], [{ name: 'LATENT', type: 'LATENT' }])
-      const srcNode2 = createMockNode(2, 'KSampler', [], [{ name: 'LATENT', type: 'LATENT' }])
-      const dstNode = createMockNode(3, 'VAEDecode', [{ name: 'samples', type: 'LATENT' }], [])
+      const srcNode1 = createMockNode(
+        1,
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
+      const srcNode2 = createMockNode(
+        2,
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
+      const dstNode = createMockNode(
+        3,
+        'VAEDecode',
+        [{ name: 'samples', type: 'LATENT' }],
+        []
+      )
 
       graph.add(srcNode1)
       graph.add(srcNode2)
@@ -245,8 +319,18 @@ describe('BC.08 v1 contract — programmatic linking', () => {
 
     it('connect() with a type-incompatible slot pair is rejected and returns null without modifying the graph', () => {
       const graph = createMockGraph()
-      const srcNode = createMockNode(1, 'KSampler', [], [{ name: 'LATENT', type: 'LATENT' }])
-      const dstNode = createMockNode(2, 'SaveImage', [{ name: 'images', type: 'IMAGE' }], [])
+      const srcNode = createMockNode(
+        1,
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
+      const dstNode = createMockNode(
+        2,
+        'SaveImage',
+        [{ name: 'images', type: 'IMAGE' }],
+        []
+      )
 
       graph.add(srcNode)
       graph.add(dstNode)
@@ -262,11 +346,23 @@ describe('BC.08 v1 contract — programmatic linking', () => {
     it('onConnectionsChange fires on both the source and target node after a successful connect() call', () => {
       const graph = createMockGraph()
 
-      const srcCalls: Array<{ side: number; slot: number; connect: boolean }> = []
-      const dstCalls: Array<{ side: number; slot: number; connect: boolean }> = []
+      const srcCalls: Array<{ side: number; slot: number; connect: boolean }> =
+        []
+      const dstCalls: Array<{ side: number; slot: number; connect: boolean }> =
+        []
 
-      const srcNode = createMockNode(1, 'KSampler', [], [{ name: 'LATENT', type: 'LATENT' }])
-      const dstNode = createMockNode(2, 'VAEDecode', [{ name: 'samples', type: 'LATENT' }], [])
+      const srcNode = createMockNode(
+        1,
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
+      const dstNode = createMockNode(
+        2,
+        'VAEDecode',
+        [{ name: 'samples', type: 'LATENT' }],
+        []
+      )
 
       // Set handlers before connect
       srcNode.onConnectionsChange = (side, slot, connect) => {
@@ -291,8 +387,18 @@ describe('BC.08 v1 contract — programmatic linking', () => {
   describe('S10.D2 — node.disconnectInput(slot)', () => {
     it('node.disconnectInput(slot) removes the link on the specified input slot and updates both endpoint nodes', () => {
       const graph = createMockGraph()
-      const srcNode = createMockNode(1, 'KSampler', [], [{ name: 'LATENT', type: 'LATENT' }])
-      const dstNode = createMockNode(2, 'VAEDecode', [{ name: 'samples', type: 'LATENT' }], [])
+      const srcNode = createMockNode(
+        1,
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
+      const dstNode = createMockNode(
+        2,
+        'VAEDecode',
+        [{ name: 'samples', type: 'LATENT' }],
+        []
+      )
 
       graph.add(srcNode)
       graph.add(dstNode)
@@ -309,7 +415,12 @@ describe('BC.08 v1 contract — programmatic linking', () => {
 
     it('disconnectInput() on an empty slot is a no-op and does not throw', () => {
       const graph = createMockGraph()
-      const dstNode = createMockNode(1, 'VAEDecode', [{ name: 'samples', type: 'LATENT' }], [])
+      const dstNode = createMockNode(
+        1,
+        'VAEDecode',
+        [{ name: 'samples', type: 'LATENT' }],
+        []
+      )
 
       graph.add(dstNode)
 
@@ -320,11 +431,23 @@ describe('BC.08 v1 contract — programmatic linking', () => {
     it('onConnectionsChange fires on both the source and target node after disconnectInput() removes a link', () => {
       const graph = createMockGraph()
 
-      const srcCalls: Array<{ side: number; slot: number; connect: boolean }> = []
-      const dstCalls: Array<{ side: number; slot: number; connect: boolean }> = []
+      const srcCalls: Array<{ side: number; slot: number; connect: boolean }> =
+        []
+      const dstCalls: Array<{ side: number; slot: number; connect: boolean }> =
+        []
 
-      const srcNode = createMockNode(1, 'KSampler', [], [{ name: 'LATENT', type: 'LATENT' }])
-      const dstNode = createMockNode(2, 'VAEDecode', [{ name: 'samples', type: 'LATENT' }], [])
+      const srcNode = createMockNode(
+        1,
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
+      const dstNode = createMockNode(
+        2,
+        'VAEDecode',
+        [{ name: 'samples', type: 'LATENT' }],
+        []
+      )
 
       graph.add(srcNode)
       graph.add(dstNode)
@@ -352,8 +475,18 @@ describe('BC.08 v1 contract — programmatic linking', () => {
   describe('S10.D2 — wildcard/any type slot compatibility', () => {
     it('connect() succeeds when source slot type is "*" (wildcard)', () => {
       const graph = createMockGraph()
-      const srcNode = createMockNode(1, 'Reroute', [], [{ name: 'output', type: '*' }])
-      const dstNode = createMockNode(2, 'VAEDecode', [{ name: 'samples', type: 'LATENT' }], [])
+      const srcNode = createMockNode(
+        1,
+        'Reroute',
+        [],
+        [{ name: 'output', type: '*' }]
+      )
+      const dstNode = createMockNode(
+        2,
+        'VAEDecode',
+        [{ name: 'samples', type: 'LATENT' }],
+        []
+      )
 
       graph.add(srcNode)
       graph.add(dstNode)
@@ -364,8 +497,18 @@ describe('BC.08 v1 contract — programmatic linking', () => {
 
     it('connect() succeeds when target slot type is "*" (wildcard)', () => {
       const graph = createMockGraph()
-      const srcNode = createMockNode(1, 'KSampler', [], [{ name: 'LATENT', type: 'LATENT' }])
-      const dstNode = createMockNode(2, 'Reroute', [{ name: 'input', type: '*' }], [])
+      const srcNode = createMockNode(
+        1,
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
+      const dstNode = createMockNode(
+        2,
+        'Reroute',
+        [{ name: 'input', type: '*' }],
+        []
+      )
 
       graph.add(srcNode)
       graph.add(dstNode)

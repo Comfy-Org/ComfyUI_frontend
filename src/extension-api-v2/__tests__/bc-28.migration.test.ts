@@ -102,7 +102,10 @@ describe('BC.28 migration — subgraph fan-out via set/get virtual nodes', () =>
         target_id: number
       }
 
-      function v1GraphToPromptPatch(link: V1Link, resolvedOriginId: number): void {
+      function v1GraphToPromptPatch(
+        link: V1Link,
+        resolvedOriginId: number
+      ): void {
         link.origin_id = resolvedOriginId // Mutation!
       }
 
@@ -157,8 +160,12 @@ describe('BC.28 migration — subgraph fan-out via set/get virtual nodes', () =>
       expect(typeof receivedGraph!.findByType).toBe('function')
       expect(typeof receivedGraph!.getNode).toBe('function')
       // No add, remove, or link mutation methods
-      expect((receivedGraph as unknown as Record<string, unknown>).addNode).toBeUndefined()
-      expect((receivedGraph as unknown as Record<string, unknown>).removeNode).toBeUndefined()
+      expect(
+        (receivedGraph as unknown as Record<string, unknown>).addNode
+      ).toBeUndefined()
+      expect(
+        (receivedGraph as unknown as Record<string, unknown>).removeNode
+      ).toBeUndefined()
     })
 
     it.todo(
@@ -171,7 +178,10 @@ describe('BC.28 migration — subgraph fan-out via set/get virtual nodes', () =>
       // This is documented but not type-checked here (Phase B implementation)
 
       interface AppExtensionContext {
-        on(event: 'beforePrompt', handler: (event: { spec: unknown }) => void): void
+        on(
+          event: 'beforePrompt',
+          handler: (event: { spec: unknown }) => void
+        ): void
       }
 
       // Type-level proof that the bridge API shape exists
@@ -224,7 +234,14 @@ describe('BC.28 migration — subgraph fan-out via set/get virtual nodes', () =>
       const mockGraph: ReadOnlyGraph = {
         findByType: (type) =>
           type === 'SetNode'
-            ? [{ entityId: 'node:set', type: 'SetNode', title: 'myValue', getProperty: () => undefined }]
+            ? [
+                {
+                  entityId: 'node:set',
+                  type: 'SetNode',
+                  title: 'myValue',
+                  getProperty: () => undefined
+                }
+              ]
             : [],
         getNode: () => undefined
       }

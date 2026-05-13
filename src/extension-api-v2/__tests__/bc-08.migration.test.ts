@@ -97,9 +97,16 @@ interface LinkHandleV2 {
 interface NodeHandleV2 {
   readonly entityId: string
   readonly type: string
-  connect(srcSlot: number, targetHandle: NodeHandleV2, dstSlot: number): LinkHandleV2 | null
+  connect(
+    srcSlot: number,
+    targetHandle: NodeHandleV2,
+    dstSlot: number
+  ): LinkHandleV2 | null
   disconnectInput(slotIndex: number): void
-  on(event: 'connectionChange', handler: (e: ConnectionChangeEventV2) => void): () => void
+  on(
+    event: 'connectionChange',
+    handler: (e: ConnectionChangeEventV2) => void
+  ): () => void
 }
 
 // ── V1 Synthetic Implementations ─────────────────────────────────────────────
@@ -192,10 +199,22 @@ function createMockNodeV1(
       const link = graph._createLink(node, srcSlot, targetNode, dstSlot)
       if (link) {
         if (node.onConnectionsChange) {
-          node.onConnectionsChange(2, srcSlot, true, link, node.outputs[srcSlot])
+          node.onConnectionsChange(
+            2,
+            srcSlot,
+            true,
+            link,
+            node.outputs[srcSlot]
+          )
         }
         if (targetNode.onConnectionsChange) {
-          targetNode.onConnectionsChange(1, dstSlot, true, link, targetNode.inputs[dstSlot])
+          targetNode.onConnectionsChange(
+            1,
+            dstSlot,
+            true,
+            link,
+            targetNode.inputs[dstSlot]
+          )
         }
       }
       return link
@@ -208,7 +227,9 @@ function createMockNodeV1(
       const link = graph.links.get(slotObj.link)
       if (!link) return
 
-      const srcNode = graph.getNodeById(link.origin_id) as MockNodeV1WithMethods | undefined
+      const srcNode = graph.getNodeById(link.origin_id) as
+        | MockNodeV1WithMethods
+        | undefined
 
       graph._removeLink(slotObj.link)
 
@@ -216,7 +237,13 @@ function createMockNodeV1(
         node.onConnectionsChange(1, slot, false, null, slotObj)
       }
       if (srcNode?.onConnectionsChange) {
-        srcNode.onConnectionsChange(2, link.origin_slot, false, null, srcNode.outputs[link.origin_slot])
+        srcNode.onConnectionsChange(
+          2,
+          link.origin_slot,
+          false,
+          null,
+          srcNode.outputs[link.origin_slot]
+        )
       }
     }
   }
@@ -338,13 +365,19 @@ function createNodeHandleV2(
 
       if (srcNode) {
         srcNode.connectionListeners.forEach((fn) =>
-          fn({ side: 'output', slotIndex: link.origin_slot, connected: false, linkId: null })
+          fn({
+            side: 'output',
+            slotIndex: link.origin_slot,
+            connected: false,
+            linkId: null
+          })
         )
       }
     },
 
     on(event, handler) {
-      if (event !== 'connectionChange') throw new Error(`Unknown event: ${event}`)
+      if (event !== 'connectionChange')
+        throw new Error(`Unknown event: ${event}`)
       internal.connectionListeners.push(handler)
       return () => {
         const idx = internal.connectionListeners.indexOf(handler)
@@ -363,16 +396,38 @@ describe('BC.08 migration — programmatic linking', () => {
     it('v1 node.connect(srcSlot, targetNode, dstSlot) and v2 NodeHandle.connect(srcSlot, targetHandle, dstSlot) produce identical graph link state', () => {
       // V1
       const graphV1 = createMockGraphV1()
-      const srcV1 = createMockNodeV1(1, 'KSampler', [], [{ name: 'LATENT', type: 'LATENT' }])
-      const dstV1 = createMockNodeV1(2, 'VAEDecode', [{ name: 'samples', type: 'LATENT' }], [])
+      const srcV1 = createMockNodeV1(
+        1,
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
+      const dstV1 = createMockNodeV1(
+        2,
+        'VAEDecode',
+        [{ name: 'samples', type: 'LATENT' }],
+        []
+      )
       graphV1.add(srcV1)
       graphV1.add(dstV1)
       const linkV1 = srcV1.connect(0, dstV1, 0, graphV1)
 
       // V2
       const worldV2 = createMockWorldV2()
-      const srcV2 = createNodeHandleV2(worldV2, 'node-1', 'KSampler', [], [{ name: 'LATENT', type: 'LATENT' }])
-      const dstV2 = createNodeHandleV2(worldV2, 'node-2', 'VAEDecode', [{ name: 'samples', type: 'LATENT' }], [])
+      const srcV2 = createNodeHandleV2(
+        worldV2,
+        'node-1',
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
+      const dstV2 = createNodeHandleV2(
+        worldV2,
+        'node-2',
+        'VAEDecode',
+        [{ name: 'samples', type: 'LATENT' }],
+        []
+      )
       const linkV2 = srcV2.connect(0, dstV2, 0)
 
       // Both create exactly one link
@@ -393,15 +448,37 @@ describe('BC.08 migration — programmatic linking', () => {
     it('link id returned by v2 connect() matches the id on the underlying LGraph link created by an equivalent v1 call', () => {
       // Both should start counting from 1
       const graphV1 = createMockGraphV1()
-      const srcV1 = createMockNodeV1(1, 'KSampler', [], [{ name: 'LATENT', type: 'LATENT' }])
-      const dstV1 = createMockNodeV1(2, 'VAEDecode', [{ name: 'samples', type: 'LATENT' }], [])
+      const srcV1 = createMockNodeV1(
+        1,
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
+      const dstV1 = createMockNodeV1(
+        2,
+        'VAEDecode',
+        [{ name: 'samples', type: 'LATENT' }],
+        []
+      )
       graphV1.add(srcV1)
       graphV1.add(dstV1)
       const linkV1 = srcV1.connect(0, dstV1, 0, graphV1)
 
       const worldV2 = createMockWorldV2()
-      const srcV2 = createNodeHandleV2(worldV2, 'node-1', 'KSampler', [], [{ name: 'LATENT', type: 'LATENT' }])
-      const dstV2 = createNodeHandleV2(worldV2, 'node-2', 'VAEDecode', [{ name: 'samples', type: 'LATENT' }], [])
+      const srcV2 = createNodeHandleV2(
+        worldV2,
+        'node-1',
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
+      const dstV2 = createNodeHandleV2(
+        worldV2,
+        'node-2',
+        'VAEDecode',
+        [{ name: 'samples', type: 'LATENT' }],
+        []
+      )
       const linkV2 = srcV2.connect(0, dstV2, 0)
 
       // Both start from 1
@@ -412,8 +489,18 @@ describe('BC.08 migration — programmatic linking', () => {
     it('v2 connect() with a type-incompatible pair raises a typed error; v1 returns null — callers must handle both forms during migration', () => {
       // V1: returns null
       const graphV1 = createMockGraphV1()
-      const srcV1 = createMockNodeV1(1, 'KSampler', [], [{ name: 'LATENT', type: 'LATENT' }])
-      const dstV1 = createMockNodeV1(2, 'SaveImage', [{ name: 'images', type: 'IMAGE' }], [])
+      const srcV1 = createMockNodeV1(
+        1,
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
+      const dstV1 = createMockNodeV1(
+        2,
+        'SaveImage',
+        [{ name: 'images', type: 'IMAGE' }],
+        []
+      )
       graphV1.add(srcV1)
       graphV1.add(dstV1)
       const linkV1 = srcV1.connect(0, dstV1, 0, graphV1)
@@ -421,8 +508,20 @@ describe('BC.08 migration — programmatic linking', () => {
 
       // V2: throws TypeMismatchError
       const worldV2 = createMockWorldV2()
-      const srcV2 = createNodeHandleV2(worldV2, 'node-1', 'KSampler', [], [{ name: 'LATENT', type: 'LATENT' }])
-      const dstV2 = createNodeHandleV2(worldV2, 'node-2', 'SaveImage', [{ name: 'images', type: 'IMAGE' }], [])
+      const srcV2 = createNodeHandleV2(
+        worldV2,
+        'node-1',
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
+      const dstV2 = createNodeHandleV2(
+        worldV2,
+        'node-2',
+        'SaveImage',
+        [{ name: 'images', type: 'IMAGE' }],
+        []
+      )
       expect(() => srcV2.connect(0, dstV2, 0)).toThrow(TypeMismatchError)
 
       // Both leave graph unchanged
@@ -435,8 +534,18 @@ describe('BC.08 migration — programmatic linking', () => {
     it('v1 node.disconnectInput(slot) and v2 NodeHandle.disconnectInput(slotIndex) both leave the graph with no link on that slot', () => {
       // V1
       const graphV1 = createMockGraphV1()
-      const srcV1 = createMockNodeV1(1, 'KSampler', [], [{ name: 'LATENT', type: 'LATENT' }])
-      const dstV1 = createMockNodeV1(2, 'VAEDecode', [{ name: 'samples', type: 'LATENT' }], [])
+      const srcV1 = createMockNodeV1(
+        1,
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
+      const dstV1 = createMockNodeV1(
+        2,
+        'VAEDecode',
+        [{ name: 'samples', type: 'LATENT' }],
+        []
+      )
       graphV1.add(srcV1)
       graphV1.add(dstV1)
       srcV1.connect(0, dstV1, 0, graphV1)
@@ -447,8 +556,20 @@ describe('BC.08 migration — programmatic linking', () => {
 
       // V2
       const worldV2 = createMockWorldV2()
-      const srcV2 = createNodeHandleV2(worldV2, 'node-1', 'KSampler', [], [{ name: 'LATENT', type: 'LATENT' }])
-      const dstV2 = createNodeHandleV2(worldV2, 'node-2', 'VAEDecode', [{ name: 'samples', type: 'LATENT' }], [])
+      const srcV2 = createNodeHandleV2(
+        worldV2,
+        'node-1',
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
+      const dstV2 = createNodeHandleV2(
+        worldV2,
+        'node-2',
+        'VAEDecode',
+        [{ name: 'samples', type: 'LATENT' }],
+        []
+      )
       srcV2.connect(0, dstV2, 0)
       expect(worldV2.links.size).toBe(1)
       dstV2.disconnectInput(0)
@@ -457,10 +578,21 @@ describe('BC.08 migration — programmatic linking', () => {
 
     it("onConnectionsChange (v1) and on('connectionChange') (v2) both fire for the same disconnect operation with equivalent payload data", () => {
       // V1
-      const v1Calls: Array<{ side: number; slot: number; connect: boolean }> = []
+      const v1Calls: Array<{ side: number; slot: number; connect: boolean }> =
+        []
       const graphV1 = createMockGraphV1()
-      const srcV1 = createMockNodeV1(1, 'KSampler', [], [{ name: 'LATENT', type: 'LATENT' }])
-      const dstV1 = createMockNodeV1(2, 'VAEDecode', [{ name: 'samples', type: 'LATENT' }], [])
+      const srcV1 = createMockNodeV1(
+        1,
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
+      const dstV1 = createMockNodeV1(
+        2,
+        'VAEDecode',
+        [{ name: 'samples', type: 'LATENT' }],
+        []
+      )
       graphV1.add(srcV1)
       graphV1.add(dstV1)
       srcV1.connect(0, dstV1, 0, graphV1)
@@ -470,13 +602,33 @@ describe('BC.08 migration — programmatic linking', () => {
       dstV1.disconnectInput(0, graphV1)
 
       // V2
-      const v2Calls: Array<{ side: string; slotIndex: number; connected: boolean }> = []
+      const v2Calls: Array<{
+        side: string
+        slotIndex: number
+        connected: boolean
+      }> = []
       const worldV2 = createMockWorldV2()
-      const srcV2 = createNodeHandleV2(worldV2, 'node-1', 'KSampler', [], [{ name: 'LATENT', type: 'LATENT' }])
-      const dstV2 = createNodeHandleV2(worldV2, 'node-2', 'VAEDecode', [{ name: 'samples', type: 'LATENT' }], [])
+      const srcV2 = createNodeHandleV2(
+        worldV2,
+        'node-1',
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
+      const dstV2 = createNodeHandleV2(
+        worldV2,
+        'node-2',
+        'VAEDecode',
+        [{ name: 'samples', type: 'LATENT' }],
+        []
+      )
       srcV2.connect(0, dstV2, 0)
       dstV2.on('connectionChange', (e) => {
-        v2Calls.push({ side: e.side, slotIndex: e.slotIndex, connected: e.connected })
+        v2Calls.push({
+          side: e.side,
+          slotIndex: e.slotIndex,
+          connected: e.connected
+        })
       })
       dstV2.disconnectInput(0)
 
@@ -503,8 +655,20 @@ describe('BC.08 migration — programmatic linking', () => {
       // V2 API requires NodeHandle, not raw node reference
       // This test verifies that the v2 API works with NodeHandle
       const worldV2 = createMockWorldV2()
-      const srcV2 = createNodeHandleV2(worldV2, 'node-1', 'KSampler', [], [{ name: 'LATENT', type: 'LATENT' }])
-      const dstV2 = createNodeHandleV2(worldV2, 'node-2', 'VAEDecode', [{ name: 'samples', type: 'LATENT' }], [])
+      const srcV2 = createNodeHandleV2(
+        worldV2,
+        'node-1',
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
+      const dstV2 = createNodeHandleV2(
+        worldV2,
+        'node-2',
+        'VAEDecode',
+        [{ name: 'samples', type: 'LATENT' }],
+        []
+      )
 
       // Connect using NodeHandle (the v2 way)
       const linkHandle = srcV2.connect(0, dstV2, 0)
@@ -520,11 +684,22 @@ describe('BC.08 migration — programmatic linking', () => {
       // V1 uses numeric id, V2 uses string entityId, but they refer to the same entity
 
       const graphV1 = createMockGraphV1()
-      const nodeV1 = createMockNodeV1(42, 'KSampler', [], [{ name: 'LATENT', type: 'LATENT' }])
+      const nodeV1 = createMockNodeV1(
+        42,
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
       graphV1.add(nodeV1)
 
       const worldV2 = createMockWorldV2()
-      const handleV2 = createNodeHandleV2(worldV2, 'node-42', 'KSampler', [], [{ name: 'LATENT', type: 'LATENT' }])
+      const handleV2 = createNodeHandleV2(
+        worldV2,
+        'node-42',
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
 
       // Both represent a KSampler with one LATENT output
       expect(nodeV1.type).toBe('KSampler')
