@@ -3156,6 +3156,26 @@
       }
     }
   },
+  "EmptyHiDreamO1LatentImage": {
+    "description": "فضای پیکسلی نهفته خالی برای HiDream-O1-Image. مدل در حدود ۴ مگاپیکسل آموزش دیده است؛ رزولوشن‌های پایین‌تر از توزیع خارج می‌شوند و کیفیت به طور محسوسی کاهش می‌یابد. رزولوشن‌های آموزش‌دیده: ۲۰۴۸×۲۰۴۸، ۲۳۰۴×۱۷۲۸، ۱۷۲۸×۲۳۰۴، ۲۵۶۰×۱۴۴۰، ۱۴۴۰×۲۵۶۰، ۲۴۹۶×۱۶۶۴، ۱۶۶۴×۲۴۹۶، ۳۱۰۴×۱۳۱۲، ۱۳۱۲×۳۱۰۴، ۲۳۰۴×۱۷۹۲، ۱۷۹۲×۲۳۰۴.",
+    "display_name": "تصویر نهفته خالی HiDream-O1",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyHunyuanImageLatent": {
     "display_name": "تصویر نهفته Hunyuan خالی",
     "inputs": {
@@ -4901,6 +4921,70 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1PatchSeamSmoothing": {
+    "description": "میانگین‌گیری خروجی مدل در چندین موقعیت شبکه پچ جابجا شده در بخش پایانی نمونه‌گیری. درزها را حذف می‌کند.",
+    "display_name": "هموارسازی درز پچ HiDream-O1",
+    "inputs": {
+      "blend": {
+        "name": "ترکیب",
+        "tooltip": "average: میانگین با وزن برابر. window: وزن‌دهی پنجره Hann که هر عبور را از مرز پچ خود دور می‌کند. median: میانه هر پیکسل، عبورهای پرت را حذف می‌کند."
+      },
+      "end_percent": {
+        "name": "درصد پایان",
+        "tooltip": "پیشرفت نمونه‌گیری که در آن ترکیب غیرفعال می‌شود."
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "passes": {
+        "name": "تعداد عبور",
+        "tooltip": "تعداد عبور در هر مرحله. ۲/۴ = ثابت. ramp_*: تعداد عبور با نزدیک شدن نمونه‌گیری به پایان افزایش می‌یابد (هموارسازی بیشتر در جایی که درزها بیشتر دیده می‌شوند)."
+      },
+      "pattern": {
+        "name": "الگو",
+        "tooltip": "طرح جابجایی. single_shift: یک بار در شبکه پچ طبیعی + سایرین با افست. symmetric: همه عبورها خارج از شبکه، جابجایی‌ها حول مبدأ تقسیم می‌شوند."
+      },
+      "start_percent": {
+        "name": "درصد شروع",
+        "tooltip": "پیشرفت نمونه‌گیری (۰=شروع، ۱=پایان) که در آن ترکیب فعال می‌شود."
+      },
+      "strength": {
+        "name": "شدت",
+        "tooltip": "درون‌یابی بین پیش‌بینی شبکه طبیعی (۰) و نتیجه میانگین‌گیری شده (۱)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1ReferenceImages": {
+    "description": "ضمیمه کردن ۱ تا ۱۰ تصویر مرجع به شرط‌دهی؛ یک تصویر برای ویرایش دستور یا چند تصویر برای شخصی‌سازی مبتنی بر سوژه.",
+    "display_name": "تصاویر مرجع HiDream-O1",
+    "inputs": {
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصاویر مرجع. ۱ تصویر = ویرایش دستور؛ ۲ تا ۱۰ تصویر = مرجع چندگانه."
+      },
+      "negative": {
+        "name": "منفی"
+      },
+      "positive": {
+        "name": "مثبت"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
         "tooltip": null
       }
     }
@@ -11654,6 +11738,18 @@
       }
     }
   },
+  "ModelNoiseScale": {
+    "display_name": "ModelNoiseScale",
+    "inputs": {
+      "model": {
+        "name": "مدل"
+      },
+      "noise_scale": {
+        "name": "مقیاس نویز",
+        "tooltip": "مقیاس نویز آموزش مطلق. برای مثال HiDream-O1 base: ۸.۰، dev: ۷.۵."
+      }
+    }
+  },
   "ModelPatchLoader": {
     "display_name": "ModelPatchLoader",
     "inputs": {
@@ -14962,6 +15058,29 @@
     "inputs": {
       "version": {
         "name": "نسخه"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SamplerLCM": {
+    "description": "نمونه‌گیر LCM با نویز قابل تنظیم در هر گام. s_noise ضریب مقیاس نویز آموزش مدل است.",
+    "display_name": "SamplerLCM",
+    "inputs": {
+      "noise_clip_std": {
+        "name": "noise_clip_std",
+        "tooltip": "محدود کردن نویز هر گام به ±N*std. مقدار ۰ غیرفعال می‌کند."
+      },
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "ضریب نویز در هر گام در اولین مرحله (۱.۰ = مطابق آموزش)."
+      },
+      "s_noise_end": {
+        "name": "s_noise_end",
+        "tooltip": "ضریب نویز در هر گام در آخرین مرحله. برای برنامه زمانی ثابت، مقدار را برابر با s_noise قرار دهید."
       }
     },
     "outputs": {

@@ -11,6 +11,7 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { SubgraphEditor } from '@e2e/fixtures/components/SubgraphEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 import { SubgraphSlotReference } from '@e2e/fixtures/utils/litegraphUtils'
@@ -21,7 +22,11 @@ import {
 import type { PromotedWidgetEntry } from '@e2e/fixtures/utils/promotedWidgets'
 
 export class SubgraphHelper {
-  constructor(private readonly comfyPage: ComfyPage) {}
+  public readonly editor: SubgraphEditor
+
+  constructor(private readonly comfyPage: ComfyPage) {
+    this.editor = new SubgraphEditor(comfyPage)
+  }
 
   private get page(): Page {
     return this.comfyPage.page
@@ -332,6 +337,23 @@ export class SubgraphHelper {
       await targetSlot.getPosition()
     )
     await this.comfyPage.nextFrame()
+  }
+
+  async promoteWidget(nodeLocator: Locator, widgetName: string): Promise<void> {
+    const widget = nodeLocator.getByLabel(widgetName, { exact: true })
+    await this.comfyPage.contextMenu
+      .openFor(widget)
+      .then((m) => m.clickMenuItemExact(`Promote Widget: ${widgetName}`))
+  }
+
+  async unpromoteWidget(
+    nodeLocator: Locator,
+    widgetName: string
+  ): Promise<void> {
+    const widget = nodeLocator.getByLabel(widgetName, { exact: true })
+    await this.comfyPage.contextMenu
+      .openFor(widget)
+      .then((m) => m.clickMenuItemExact(`Un-Promote Widget: ${widgetName}`))
   }
 
   async isInSubgraph(): Promise<boolean> {

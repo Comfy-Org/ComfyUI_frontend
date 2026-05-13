@@ -3156,6 +3156,26 @@
       }
     }
   },
+  "EmptyHiDreamO1LatentImage": {
+    "description": "HiDream-O1-Image용 빈 픽셀 공간 latent입니다. 모델은 약 4메가픽셀에서 학습되었습니다. 더 낮은 해상도에서는 분포를 벗어나 품질이 눈에 띄게 저하됩니다. 학습된 해상도: 2048x2048, 2304x1728, 1728x2304, 2560x1440, 1440x2560, 2496x1664, 1664x2496, 3104x1312, 1312x3104, 2304x1792, 1792x2304.",
+    "display_name": "Empty HiDream-O1 Latent Image",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyHunyuanImageLatent": {
     "display_name": "빈 훈위안 이미지 잠재",
     "inputs": {
@@ -4901,6 +4921,70 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1PatchSeamSmoothing": {
+    "description": "샘플링 후반부에 여러 번 이동된 패치 그리드 위치에서 모델 출력을 평균화합니다. 이음새를 제거합니다.",
+    "display_name": "HiDream-O1 Patch Seam Smoothing",
+    "inputs": {
+      "blend": {
+        "name": "blend",
+        "tooltip": "average: 동일 가중치 평균. window: 각 패스가 패치 경계에서 멀어질수록 가중치를 주는 Hann 윈도우 가중치. median: 픽셀별 중앙값, wraparound-outlier 패스는 제외."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "블렌드가 꺼지는 샘플링 진행도."
+      },
+      "model": {
+        "name": "model"
+      },
+      "passes": {
+        "name": "passes",
+        "tooltip": "게이트 단계별 패스 수. 2/4 = 고정. ramp_*: 샘플링이 끝에 가까워질수록 패스 수 증가(이음새가 가장 잘 보이는 곳에서 더 부드럽게 처리)."
+      },
+      "pattern": {
+        "name": "pattern",
+        "tooltip": "이동 레이아웃. single_shift: 자연스러운 패치 그리드에서 한 번, 나머지는 오프셋. symmetric: 모든 패스가 그리드에서 벗어나며, 이동이 원점을 중심으로 분할됨."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "블렌드가 켜지는 샘플링 진행도 (0=시작, 1=끝)."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "자연스러운 그리드 예측(0)과 평균 결과(1) 사이의 보간."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1ReferenceImages": {
+    "description": "컨디셔닝에 1~10개의 참조 이미지를 첨부합니다. 1개는 편집 지시, 여러 개는 주제 기반 개인화에 사용됩니다.",
+    "display_name": "HiDream-O1 Reference Images",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "참조 이미지. 1개 = 편집 지시; 2~10개 = 다중 참조."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -11654,6 +11738,18 @@
       }
     }
   },
+  "ModelNoiseScale": {
+    "display_name": "ModelNoiseScale",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "noise_scale": {
+        "name": "noise_scale",
+        "tooltip": "절대 학습 노이즈 스케일. 예시 HiDream-O1 base: 8.0, dev: 7.5."
+      }
+    }
+  },
   "ModelPatchLoader": {
     "display_name": "모델 패치 로더",
     "inputs": {
@@ -14962,6 +15058,29 @@
     "inputs": {
       "version": {
         "name": "버전"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SamplerLCM": {
+    "description": "조정 가능한 단계별 노이즈를 가진 LCM 샘플러입니다. s_noise는 모델의 학습 노이즈 스케일에 곱해지는 값입니다.",
+    "display_name": "SamplerLCM",
+    "inputs": {
+      "noise_clip_std": {
+        "name": "noise_clip_std",
+        "tooltip": "단계별 노이즈를 +/- N*표준편차로 제한합니다. 0은 비활성화입니다."
+      },
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "첫 번째 단계에서의 단계별 노이즈 배수 (1.0 = 학습과 동일)."
+      },
+      "s_noise_end": {
+        "name": "s_noise_end",
+        "tooltip": "마지막 단계에서의 단계별 노이즈 배수. 일정한 스케줄을 원하면 s_noise와 동일하게 설정하세요."
       }
     },
     "outputs": {

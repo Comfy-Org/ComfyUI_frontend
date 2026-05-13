@@ -41,9 +41,13 @@ const icon = computed(() =>
         className
       )
     "
+    data-testid="subgraph-widget-item"
   >
     <div class="pointer-events-none flex-1">
-      <div class="line-clamp-1 text-xs text-text-secondary">
+      <div
+        class="line-clamp-1 text-xs text-text-secondary"
+        data-testid="subgraph-widget-node-name"
+      >
         {{ nodeTitle }}
       </div>
       <div class="line-clamp-1 text-sm/8" data-testid="subgraph-widget-label">

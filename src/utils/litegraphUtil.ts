@@ -24,6 +24,7 @@ import type {
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { app } from '@/scripts/app'
 import { t } from '@/i18n'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
@@ -58,7 +59,10 @@ export async function createNode(
     newNode.pos = [posX, posY]
     const addedNode = graph.add(newNode) ?? null
 
-    if (addedNode) graph.change()
+    if (addedNode) {
+      useNodeZIndex().bringNodeToFront(addedNode.id)
+      graph.change()
+    }
     return addedNode
   } else {
     useToastStore().addAlert(t('assetBrowser.failedToCreateNode'))
