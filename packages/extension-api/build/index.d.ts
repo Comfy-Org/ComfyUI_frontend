@@ -379,7 +379,7 @@ export declare interface NodeHandle {
      * Returns all widgets on this node as `WidgetHandle` instances.
      *
      */
-    widgets(): readonly WidgetHandle[];
+    getWidgets(): readonly WidgetHandle[];
     /**
      * Adds a new widget to this node.
      *
@@ -397,7 +397,7 @@ export declare interface NodeHandle {
      * The runtime automatically:
      * - Reserves node height for the element (via auto-computeSize integration).
      * - Removes the element from the DOM when the node is removed.
-     * - Includes the widget in `NodeHandle.widgets()`.
+     * - Includes the widget in `NodeHandle.getWidgets()`.
      *
      * Use `WidgetHandle.setHeight(px)` to resize the reservation after initial mount.
      *
