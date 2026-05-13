@@ -1,9 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type {
-  IContextMenuValue,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ContextMenuDivElement } from '@/lib/litegraph/src/interfaces'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
@@ -247,14 +245,19 @@ vi.mock('@/stores/nodeDefStore', () => ({
 }))
 
 function createMockNode(overrides: Record<string, unknown> = {}): LGraphNode {
-  return {
+  const node = new LGraphNode('TestNode')
+  Object.assign(node, {
     id: 1,
     inputs: [],
     graph: null,
-    constructor: { nodeData: { name: 'TestNode' } },
-    getWidgetOnPos: vi.fn(),
-    ...overrides
-  } as unknown as LGraphNode
+    getWidgetOnPos: vi.fn()
+  })
+  Object.assign(node, overrides)
+  // Set static nodeData for tests that check constructor.nodeData
+  ;(node.constructor as { nodeData?: { name: string } }).nodeData = {
+    name: 'TestNode'
+  }
+  return node
 }
 
 function createMockWidget(
