@@ -129,11 +129,14 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   BLUEPRINT_CATEGORY,
   isCustomNode,
-  isEssentialNode,
   NodeSourceType
 } from '@/types/nodeSource'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 import { cn } from '@comfyorg/tailwind-utils'
+
+function isEssentialNode(nodeDef: ComfyNodeDefImpl): boolean {
+  return nodeDef.isCoreNode && nodeDef.essentials_category !== undefined
+}
 
 const sourceCategoryFilters: Record<string, (n: ComfyNodeDefImpl) => boolean> =
   {

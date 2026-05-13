@@ -193,10 +193,7 @@ class NodeOrganizationService {
         else myBlueprints.push(node)
       } else if (node.api_node || node.category?.startsWith('api node')) {
         partnerNodes.push(node)
-      } else if (
-        node.nodeSource.type === NodeSourceType.Core ||
-        node.nodeSource.type === NodeSourceType.Essentials
-      ) {
+      } else if (node.nodeSource.type === NodeSourceType.Core) {
         comfyNodes.push(node)
       } else {
         extensions.push(node)
