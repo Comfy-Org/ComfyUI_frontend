@@ -171,6 +171,13 @@ function firstById<T, Id>(
  * `GraphCanvas.vue` also keys Vue node instances by bare `NodeId`, so
  * collisions could reuse a component across graph changes instead of
  * remounting it.
+ *
+ * @param subgraphs - Serialized subgraph definitions to deduplicate
+ * @param reservedNodeIds - Node IDs already in use by root-level nodes
+ * @param state - Graph state containing the `lastNodeId` counter (mutated)
+ * @param rootNodes - Optional root-level nodes with proxyWidgets to patch
+ *
+ * @internal
  */
 export function deduplicateSubgraphNodeIds(
   subgraphs: ExportedSubgraph[],
@@ -503,6 +510,8 @@ function patchRerouteReferences(
  *
  * Falls back to the original order if no reordering is needed or if the
  * dependency graph contains cycles.
+ *
+ * @internal
  */
 export function topologicalSortSubgraphs(
   subgraphs: ExportedSubgraph[]
