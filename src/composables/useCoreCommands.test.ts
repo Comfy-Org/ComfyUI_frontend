@@ -1118,18 +1118,15 @@ describe('useCoreCommands', () => {
   })
 
   describe('Canvas view commands', () => {
-    const findCmd = (id: string) =>
-      useCoreCommands().find((cmd) => cmd.id === id)!
-
     it('Comfy.Canvas.ResetView delegates to litegraphService.resetView', async () => {
-      await findCmd('Comfy.Canvas.ResetView').function()
+      await findCommand('Comfy.Canvas.ResetView').function()
 
       expect(mockResetView).toHaveBeenCalled()
     })
 
     it('Comfy.Canvas.ZoomIn scales the canvas up by 1.1× and marks it dirty', async () => {
       app.canvas.ds.scale = 1
-      await findCmd('Comfy.Canvas.ZoomIn').function()
+      await findCommand('Comfy.Canvas.ZoomIn').function()
 
       expect(app.canvas.ds.changeScale).toHaveBeenCalledWith(
         1.1,
@@ -1140,7 +1137,7 @@ describe('useCoreCommands', () => {
 
     it('Comfy.Canvas.ZoomOut scales the canvas down by 1/1.1× and marks it dirty', async () => {
       app.canvas.ds.scale = 1
-      await findCmd('Comfy.Canvas.ZoomOut').function()
+      await findCommand('Comfy.Canvas.ZoomOut').function()
 
       expect(app.canvas.ds.changeScale).toHaveBeenCalledWith(
         1 / 1.1,
@@ -1151,25 +1148,20 @@ describe('useCoreCommands', () => {
   })
 
   describe('Workflow lifecycle commands', () => {
-    const findCmd = (id: string) =>
-      useCoreCommands().find((cmd) => cmd.id === id)!
-
     it('Comfy.OpenClipspace delegates to app.openClipspace', async () => {
-      await findCmd('Comfy.OpenClipspace').function()
+      await findCommand('Comfy.OpenClipspace').function()
 
       expect(app.openClipspace).toHaveBeenCalled()
     })
 
     it('Comfy.RefreshNodeDefinitions awaits app.refreshComboInNodes', async () => {
-      await findCmd('Comfy.RefreshNodeDefinitions').function()
+      await findCommand('Comfy.RefreshNodeDefinitions').function()
 
       expect(app.refreshComboInNodes).toHaveBeenCalled()
     })
   })
 
-  describe('Help commands', () => {
-    const findCmd = (id: string) =>
-      useCoreCommands().find((cmd) => cmd.id === id)!
+  describe('Help commands (extended)', () => {
     const { staticUrls } = useExternalLink()
     let openSpy: ReturnType<typeof vi.spyOn>
 
@@ -1180,7 +1172,7 @@ describe('useCoreCommands', () => {
     })
 
     it('Comfy.Help.OpenComfyUIIssues opens the GitHub issues URL and tracks telemetry', async () => {
-      await findCmd('Comfy.Help.OpenComfyUIIssues').function()
+      await findCommand('Comfy.Help.OpenComfyUIIssues').function()
 
       expect(mockTelemetry.trackHelpResourceClicked).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1193,7 +1185,7 @@ describe('useCoreCommands', () => {
     })
 
     it('Comfy.Help.OpenComfyOrgDiscord opens the Discord URL and tracks telemetry', async () => {
-      await findCmd('Comfy.Help.OpenComfyOrgDiscord').function()
+      await findCommand('Comfy.Help.OpenComfyOrgDiscord').function()
 
       expect(mockTelemetry.trackHelpResourceClicked).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1204,7 +1196,7 @@ describe('useCoreCommands', () => {
     })
 
     it('Comfy.Help.AboutComfyUI opens the About dialog', async () => {
-      await findCmd('Comfy.Help.AboutComfyUI').function()
+      await findCommand('Comfy.Help.AboutComfyUI').function()
 
       expect(mockShowAbout).toHaveBeenCalled()
     })
