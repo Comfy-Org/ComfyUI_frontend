@@ -88,10 +88,6 @@ function expectPromotedWidgetView(
   })
 }
 
-function getHostStateName(widget: PromotedWidgetView): string {
-  return [widget.name, widget.sourceNodeId, widget.sourceWidgetName].join(':')
-}
-
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
@@ -618,7 +614,7 @@ describe('SubgraphWidgetPromotion', () => {
       expectPromotedWidgetView(hostWidget)
       useWidgetValueStore().registerWidget(hostNode.rootGraph.id, {
         nodeId: hostNode.id,
-        name: getHostStateName(hostWidget),
+        name: hostWidget.name,
         type: hostWidget.type,
         value: 99,
         options: {}
@@ -978,7 +974,7 @@ describe('SubgraphWidgetPromotion', () => {
           expect(
             useWidgetValueStore()
               .getNodeWidgets(host.rootGraph.id, host.id)
-              .find((entry) => entry.name.startsWith('seed:'))?.value
+              .find((entry) => entry.name === 'seed')?.value
           ).toBe(c.expect.storeSeedValue)
         }
       })
@@ -1080,18 +1076,11 @@ describe('SubgraphWidgetPromotion', () => {
         expectPromotedWidgetView(first)
         expectPromotedWidgetView(second)
         expect(
-          widgetStore.getWidget(
-            reloaded.rootGraph.id,
-            reloaded.id,
-            getHostStateName(first)
-          )
+          widgetStore.getWidget(reloaded.rootGraph.id, reloaded.id, first.name)
         ).toBeUndefined()
         expect(
-          widgetStore.getWidget(
-            reloaded.rootGraph.id,
-            reloaded.id,
-            getHostStateName(second)
-          )?.value
+          widgetStore.getWidget(reloaded.rootGraph.id, reloaded.id, second.name)
+            ?.value
         ).toBe('second host value')
         expect(
           widgetStore.getNodeWidgets(reloaded.rootGraph.id, reloaded.id)
