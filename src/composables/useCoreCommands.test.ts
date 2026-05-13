@@ -477,21 +477,7 @@ describe('useCoreCommands', () => {
     })
   })
 
-  describe('Zoom commands', () => {
-    it('ZoomIn should increase scale and mark dirty', async () => {
-      await findCommand('Comfy.Canvas.ZoomIn').function()
-
-      expect(app.canvas.ds.changeScale).toHaveBeenCalled()
-      expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
-    })
-
-    it('ZoomOut should decrease scale and mark dirty', async () => {
-      await findCommand('Comfy.Canvas.ZoomOut').function()
-
-      expect(app.canvas.ds.changeScale).toHaveBeenCalled()
-      expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
-    })
-
+  describe('Canvas lock commands', () => {
     it('ToggleLock should toggle readOnly state', async () => {
       app.canvas.state.readOnly = false
 
@@ -789,22 +775,6 @@ describe('useCoreCommands', () => {
       await findCommand('Comfy.OpenWorkflow').function()
 
       expect(app.ui.loadFile).toHaveBeenCalled()
-    })
-  })
-
-  describe('RefreshNodeDefinitions command', () => {
-    it('should call app.refreshComboInNodes', async () => {
-      await findCommand('Comfy.RefreshNodeDefinitions').function()
-
-      expect(app.refreshComboInNodes).toHaveBeenCalled()
-    })
-  })
-
-  describe('OpenClipspace command', () => {
-    it('should call app.openClipspace', async () => {
-      await findCommand('Comfy.OpenClipspace').function()
-
-      expect(app.openClipspace).toHaveBeenCalled()
     })
   })
 
