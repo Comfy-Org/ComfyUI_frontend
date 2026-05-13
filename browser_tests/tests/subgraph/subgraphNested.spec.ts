@@ -70,9 +70,10 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
 
         const innerTextboxes = innerNode.getByRole('textbox')
         await comfyExpect(innerTextboxes).toHaveCount(2)
-        const innerValues = await innerTextboxes.evaluateAll((boxes) =>
-          (boxes as HTMLInputElement[]).map((b) => b.value)
-        )
+        const innerValues = await innerTextboxes.evaluateAll<
+          string[],
+          HTMLInputElement
+        >((boxes) => boxes.map((b) => b.value))
         comfyExpect(innerValues).toContain('11111111111')
         comfyExpect(innerValues).toContain('22222222222')
       })
