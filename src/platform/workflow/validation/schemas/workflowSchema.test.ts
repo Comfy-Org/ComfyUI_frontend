@@ -1,5 +1,5 @@
 import fs from 'fs'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { defaultGraph } from '@/scripts/defaultGraph'
@@ -111,50 +111,56 @@ describe('parseComfyWorkflow', () => {
       ])
     })
 
-    it('drops unknown third element instead of rejecting (forward-compat)', async () => {
-      const workflow = JSON.parse(JSON.stringify(defaultGraph))
-      workflow.extra = {
-        linearData: { inputs: [[1, 'prompt', 'invalid']], outputs: [] }
-      }
-      const result = await validateComfyWorkflow(workflow)
-      expect(result).not.toBeNull()
-      expect(result!.extra!.linearData!.inputs).toEqual([[1, 'prompt']])
-    })
-
-    it('coerces legacy raw-number third element to { height }', async () => {
-      const workflow = JSON.parse(JSON.stringify(defaultGraph))
-      workflow.extra = {
-        linearData: { inputs: [[1, 'prompt', 240]], outputs: [] }
-      }
-      const result = await validateComfyWorkflow(workflow)
-      expect(result).not.toBeNull()
-      expect(result!.extra!.linearData!.inputs).toEqual([
-        [1, 'prompt', { height: 240 }]
-      ])
-    })
-
-    it('drops trailing elements beyond the third (forward-compat)', async () => {
+    it('drops entries that do not match the strict union, keeps valid ones', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const workflow = JSON.parse(JSON.stringify(defaultGraph))
       workflow.extra = {
         linearData: {
-          inputs: [[1, 'prompt', { height: 100 }, 'future-field']],
+          inputs: [
+            [1, 'prompt'],
+            [2, 'seed', 'invalid-third-element'],
+            [3, 'cfg', { height: 100 }],
+            [4, 'steps', 240],
+            [5, 'sampler', { height: 80 }, 'future-field'],
+            [6]
+          ],
           outputs: []
         }
       }
       const result = await validateComfyWorkflow(workflow)
       expect(result).not.toBeNull()
       expect(result!.extra!.linearData!.inputs).toEqual([
-        [1, 'prompt', { height: 100 }]
+        [1, 'prompt'],
+        [3, 'cfg', { height: 100 }]
       ])
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('extra.linearData.inputs')
+      )
+      warn.mockRestore()
     })
 
-    it('rejects entry missing required [nodeId, name] prefix', async () => {
+    it('loads the workflow even when every linearData.inputs entry is invalid', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const workflow = JSON.parse(JSON.stringify(defaultGraph))
       workflow.extra = {
-        linearData: { inputs: [[1]], outputs: [] }
+        linearData: { inputs: [[1], 'garbage', null], outputs: [] }
       }
       const result = await validateComfyWorkflow(workflow)
-      expect(result).toBeNull()
+      expect(result).not.toBeNull()
+      expect(result!.extra!.linearData!.inputs).toEqual([])
+      warn.mockRestore()
+    })
+
+    it('does not warn when every entry is valid', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearData: { inputs: [[1, 'prompt']], outputs: [] }
+      }
+      const result = await validateComfyWorkflow(workflow)
+      expect(result).not.toBeNull()
+      expect(warn).not.toHaveBeenCalled()
+      warn.mockRestore()
     })
   })
 
