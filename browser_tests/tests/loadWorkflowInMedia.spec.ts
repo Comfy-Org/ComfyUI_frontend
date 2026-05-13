@@ -75,6 +75,90 @@ test.describe(
       })
     })
 
+    test.describe('Image without workflow', () => {
+      test('places LoadImage at the drop cursor when graph_mouse is stale', async ({
+        comfyPage
+      }) => {
+        await comfyPage.nodeOps.clearGraph()
+        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+
+        await comfyPage.page.evaluate(() => {
+          window.app!.canvas.graph_mouse[0] = -9999
+          window.app!.canvas.graph_mouse[1] = -9999
+        })
+
+        const dropPosition = { x: 480, y: 320 }
+        await comfyPage.dragDrop.dragAndDropFile('image32x32.webp', {
+          dropPosition,
+          waitForUpload: true
+        })
+
+        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+
+        const { nodePos, expectedPos } = await comfyPage.page.evaluate(
+          (drop) => {
+            const canvas = window.app!.canvas
+            const expected = canvas.convertEventToCanvasOffset(
+              new MouseEvent('drop', {
+                clientX: drop.x,
+                clientY: drop.y
+              })
+            ) as [number, number]
+            const node = window.app!.graph.nodes[0]
+            return {
+              nodePos: [node.pos[0], node.pos[1]] as [number, number],
+              expectedPos: expected
+            }
+          },
+          dropPosition
+        )
+
+        expect(nodePos[0]).toBeCloseTo(expectedPos[0], 0)
+        expect(nodePos[1]).toBeCloseTo(expectedPos[1], 0)
+        expect(nodePos[0]).not.toBe(-9999)
+        expect(nodePos[1]).not.toBe(-9999)
+      })
+
+      test('places LoadImage above existing nodes (zIndex)', async ({
+        comfyPage
+      }) => {
+        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+        await comfyPage.vueNodes.waitForNodes()
+
+        const initialNodeIds = await comfyPage.vueNodes.getNodeIds()
+        expect(initialNodeIds.length).toBeGreaterThan(0)
+
+        await comfyPage.dragDrop.dragAndDropFile('image32x32.webp', {
+          dropPosition: { x: 540, y: 380 },
+          waitForUpload: true
+        })
+
+        await expect
+          .poll(() => comfyPage.vueNodes.getNodeCount())
+          .toBe(initialNodeIds.length + 1)
+
+        const newNodeIds = await comfyPage.vueNodes.getNodeIds()
+        const addedNodeId = newNodeIds.find(
+          (id) => !initialNodeIds.includes(id)
+        )
+        expect(addedNodeId).toBeDefined()
+
+        const newNodeZ = await comfyPage.vueNodes
+          .getNodeLocator(addedNodeId!)
+          .evaluate((el) => Number((el as HTMLElement).style.zIndex))
+
+        const existingZIndexes = await comfyPage.vueNodes.nodes.evaluateAll(
+          (els, id) =>
+            els
+              .filter((el) => el.getAttribute('data-node-id') !== id)
+              .map((el) => Number((el as HTMLElement).style.zIndex)),
+          addedNodeId!
+        )
+
+        expect(newNodeZ).toBeGreaterThan(Math.max(0, ...existingZIndexes))
+      })
+    })
+
     test('Load workflow from URL dropped onto Vue node', async ({
       comfyPage
     }) => {

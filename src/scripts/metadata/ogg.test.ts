@@ -1,13 +1,22 @@
 import fs from 'fs'
 import path from 'path'
-import { describe, expect, it, vi, afterEach } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import {
+  EXPECTED_PROMPT,
+  EXPECTED_PROMPT_NAN_COERCED,
+  EXPECTED_WORKFLOW
+} from './__fixtures__/helpers'
 import { getOggMetadata } from './ogg'
-import { EXPECTED_PROMPT, EXPECTED_WORKFLOW } from './__fixtures__/helpers'
+
+const fixturePath = path.resolve(__dirname, '__fixtures__/with_metadata.opus')
+const nanFixturePath = path.resolve(
+  __dirname,
+  '__fixtures__/with_nan_metadata.opus'
+)
 
 const OGG_HEADER_SIZE = 27
 const OGG_MAX_SEGMENT_SIZE = 255
-
-const fixturePath = path.resolve(__dirname, '__fixtures__/with_metadata.opus')
 
 function createOggWithOpusTags(comments: {
   [key: string]: string
@@ -155,6 +164,16 @@ describe('getOggMetadata', () => {
     expect(result.prompt).toEqual(EXPECTED_PROMPT)
   })
 
+  it('parses Python generated prompt with bare NaN/Infinity tokens', async () => {
+    const bytes = fs.readFileSync(nanFixturePath)
+    const file = new File([bytes], 'nan.opus', { type: 'audio/ogg' })
+
+    const result = await getOggMetadata(file)
+
+    expect(result.workflow).toBeUndefined()
+    expect(result.prompt).toEqual(EXPECTED_PROMPT_NAN_COERCED)
+  })
+
   it('resolves undefined fields when the file reading fails', async () => {
     const file = new File([new Uint8Array(16)], 'test.ogg', {
       type: 'audio/ogg'
@@ -240,6 +259,28 @@ describe('getOggMetadata', () => {
 
     expect(result.prompt).toEqual(prompt)
     expect(result.workflow).toEqual(workflow)
+  })
+
+  it('logs and skips when embedded JSON is malformed', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const buffer = createOggWithOpusTags({
+      prompt: '{not json}',
+      workflow: '{also bad}'
+    })
+    const file = new File([buffer], 'malformed.opus', { type: 'audio/ogg' })
+
+    const result = await getOggMetadata(file)
+
+    expect(result.prompt).toBeUndefined()
+    expect(result.workflow).toBeUndefined()
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Failed to parse Ogg prompt metadata',
+      expect.any(SyntaxError)
+    )
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Failed to parse Ogg workflow metadata',
+      expect.any(SyntaxError)
+    )
   })
 
   it('should handle large metadata spanning multiple Ogg pages (over 64KB)', async () => {

@@ -197,5 +197,18 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   ['mediapipe', 'LivePortraitLoadMediaPipeCropper', ''],
 
   // ---- Superprompt text enhancement ----
-  ['superprompt-v1', 'Superprompt', '']
+  ['superprompt-v1', 'Superprompt', ''],
+
+  // ---- ComfyUI core background removal (v0.21+) ----
+  ['background_removal', 'LoadBackgroundRemovalModel', 'bg_removal_name'],
+
+  // ---- ComfyUI core frame interpolation (v0.21+) ----
+  ['frame_interpolation', 'FrameInterpolationModelLoader', 'model_name'],
+
+  // ---- FILM frame interpolation (ComfyUI-Frame-Interpolation) ----
+  ['film', 'FILM VFI', 'ckpt_name'],
+
+  // ---- Ultralytics YOLO detectors (ComfyUI-Impact-Pack) ----
+  ['ultralytics/bbox', 'UltralyticsDetectorProvider', 'model_name'],
+  ['ultralytics/segm', 'UltralyticsDetectorProvider', 'model_name']
 ] as const satisfies ReadonlyArray<readonly [string, string, string]>

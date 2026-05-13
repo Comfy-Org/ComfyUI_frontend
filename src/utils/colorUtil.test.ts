@@ -218,7 +218,7 @@ describe('colorUtil conversions', () => {
   })
 
   describe('parseToRgb edge cases', () => {
-    it.each(['', 'not-a-color', '#GGGGGG', 'cmky(1,2,3,4)'])(
+    it.for(['', 'not-a-color', '#GGGGGG', 'cmky(1,2,3,4)'])(
       'returns black for unrecognized input %s',
       (input) => {
         expect(parseToRgb(input)).toEqual({ r: 0, g: 0, b: 0 })
@@ -309,8 +309,8 @@ describe('colorUtil - adjustColor', () => {
     })
   }
 
-  describe.each(Object.entries(colors))('%s color', (_colorName, color) => {
-    describe.each(formats)('%s format', (format) => {
+  describe.for(Object.entries(colors))('%s color', ([_colorName, color]) => {
+    describe.for(formats)('%s format', (format) => {
       runAdjustColorTests(color, format as ColorFormat)
     })
   })

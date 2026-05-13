@@ -22,7 +22,7 @@ function baseSnapshot(): RolesSnapshot {
             title: 'Design Engineer',
             department: 'Engineering',
             location: 'San Francisco',
-            applyUrl: 'https://jobs.ashbyhq.com/comfy-org/x'
+            jobUrl: 'https://jobs.ashbyhq.com/comfy-org/x'
           }
         ]
       }
@@ -50,7 +50,7 @@ function freshOutcome(droppedCount = 0): FetchOutcome {
               title: 'Design Engineer',
               department: 'Engineering',
               location: 'San Francisco',
-              applyUrl: 'https://jobs.ashbyhq.com/comfy-org/x'
+              jobUrl: 'https://jobs.ashbyhq.com/comfy-org/x'
             }
           ]
         }

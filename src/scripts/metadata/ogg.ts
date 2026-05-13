@@ -1,4 +1,9 @@
 import type { ComfyMetadata } from '@/types/metadataTypes'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 const OGG_HEADER_SIZE = 27 // Base size of the Ogg page header (from magic number to just before segment count)
 const OGG_PAGE_SEGMENTS_OFFSET = 26 // Offset position where the number of segments in the page is stored
@@ -204,15 +209,15 @@ function parseVorbisComments(
       const value = text.substring(separatorIndex + 1)
       if (key === 'prompt') {
         try {
-          result.prompt = JSON.parse(value)
+          result.prompt = parseJsonWithNonFinite<ComfyApiWorkflow>(value)
         } catch (e) {
-          console.warn('Ogg metadata parsing failed for prompt:', e)
+          console.error('Failed to parse Ogg prompt metadata', e)
         }
       } else if (key === 'workflow') {
         try {
-          result.workflow = JSON.parse(value)
+          result.workflow = parseJsonWithNonFinite<ComfyWorkflowJSON>(value)
         } catch (e) {
-          console.warn('Ogg metadata parsing failed for workflow:', e)
+          console.error('Failed to parse Ogg workflow metadata', e)
         }
       }
     }

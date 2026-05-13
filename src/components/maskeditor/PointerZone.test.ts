@@ -63,13 +63,13 @@ describe('PointerZone', () => {
   })
 
   describe('pointer event forwarding', () => {
-    it.each([
+    it.for([
       ['pointerdown', 'handlePointerDown'],
       ['pointermove', 'handlePointerMove'],
       ['pointerup', 'handlePointerUp']
     ] as const)(
       'should forward %s to toolManager.%s',
-      async (eventName, handlerName) => {
+      async ([eventName, handlerName]) => {
         renderZone()
         const zone = getZone()
 
@@ -103,13 +103,13 @@ describe('PointerZone', () => {
   })
 
   describe('touch event forwarding', () => {
-    it.each([
+    it.for([
       ['touchstart', 'handleTouchStart'],
       ['touchmove', 'handleTouchMove'],
       ['touchend', 'handleTouchEnd']
     ] as const)(
       'should forward %s to panZoom.%s',
-      async (eventName, handlerName) => {
+      async ([eventName, handlerName]) => {
         renderZone()
         const zone = getZone()
 
