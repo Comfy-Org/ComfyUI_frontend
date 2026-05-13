@@ -65,7 +65,7 @@ function mockSettingValues(overrides: Record<string, unknown> = {}) {
   const settingStore = useSettingStore()
   const settingValues: Record<string, unknown> = {
     'Comfy.UseNewMenu': 'Top',
-    'Comfy.Load3D.3DViewerEnable': true,
+    'Comfy.Load3D.3DViewerEnable': false,
     ...overrides
   }
 
