@@ -42,7 +42,6 @@ interface MockNode {
 
 interface MockGraph {
   links: Map<number, MockLink>
-  _nextLinkId: number
   add(node: MockNode): void
   getNodeById(id: number): MockNode | undefined
   _createLink(
@@ -63,7 +62,6 @@ function createMockGraph(): MockGraph {
 
   return {
     links,
-    _nextLinkId: nextLinkId,
     add(node: MockNode) {
       nodes.set(node.id, node)
     },
@@ -315,6 +313,32 @@ describe('BC.08 v1 contract — programmatic linking', () => {
       // Old link should be removed from graph
       expect(graph.links.has(link1!.id)).toBe(false)
       expect(graph.links.has(link2!.id)).toBe(true)
+    })
+
+    it('connect() with an out-of-bounds slot index returns null', () => {
+      const graph = createMockGraph()
+      const srcNode = createMockNode(
+        1,
+        'KSampler',
+        [],
+        [{ name: 'LATENT', type: 'LATENT' }]
+      )
+      const dstNode = createMockNode(
+        2,
+        'VAEDecode',
+        [{ name: 'samples', type: 'LATENT' }],
+        []
+      )
+
+      graph.add(srcNode)
+      graph.add(dstNode)
+
+      // Out-of-bounds source slot
+      expect(srcNode.connect(99, dstNode, 0, graph)).toBeNull()
+      // Out-of-bounds target slot
+      expect(srcNode.connect(0, dstNode, 99, graph)).toBeNull()
+      // Graph unchanged
+      expect(graph.links.size).toBe(0)
     })
 
     it('connect() with a type-incompatible slot pair is rejected and returns null without modifying the graph', () => {
