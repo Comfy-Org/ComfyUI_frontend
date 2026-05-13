@@ -3,8 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   NodeSourceType,
   getNodeSource,
-  isCustomNode,
-  isEssentialNode
+  isCustomNode
 } from '../classifiers/nodeSource'
 import type { NodeSource } from '../classifiers/nodeSource'
 
@@ -79,27 +78,14 @@ describe('getNodeSource', () => {
     })
   })
 
-  describe('essentials nodes', () => {
-    it('should identify essentials nodes when essentials_category is set', () => {
-      const result = getNodeSource('nodes.some_module', 'Image')
-      expect(result.type).toBe(NodeSourceType.Essentials)
-      expect(result.className).toBe('comfy-essentials')
-    })
+  it('should return UNKNOWN_NODE_SOURCE for custom_nodes with no pack segment', () => {
+    expect(getNodeSource('custom_nodes').type).toBe(NodeSourceType.Unknown)
+  })
 
-    it('should identify essentials nodes from custom_nodes module', () => {
-      const result = getNodeSource(
-        'custom_nodes.ComfyUI-Example@1.0.0',
-        'Video'
-      )
-      expect(result.type).toBe(NodeSourceType.Essentials)
-      expect(result.className).toBe('comfy-essentials')
-      expect(result.displayText).toBe('Example')
-    })
-
-    it('should not identify nodes without essentials_category as essentials', () => {
-      const result = getNodeSource('nodes.some_module', undefined)
-      expect(result.type).toBe(NodeSourceType.Core)
-    })
+  it('should strip ComfyUI- and -ComfyUI prefixes/suffixes from custom pack names', () => {
+    expect(getNodeSource('custom_nodes.ComfyUI-foo').displayText).toBe('foo')
+    expect(getNodeSource('custom_nodes.bar-ComfyUI').displayText).toBe('bar')
+    expect(getNodeSource('custom_nodes.Comfy_baz').displayText).toBe('baz')
   })
 
   describe('blueprint nodes', () => {
@@ -126,21 +112,6 @@ function makeNode(type: NodeSourceType): { nodeSource: NodeSource } {
   }
 }
 
-describe('isEssentialNode', () => {
-  it('returns true for Essentials nodes', () => {
-    expect(isEssentialNode(makeNode(NodeSourceType.Essentials))).toBe(true)
-  })
-
-  it.for([
-    NodeSourceType.Core,
-    NodeSourceType.CustomNodes,
-    NodeSourceType.Blueprint,
-    NodeSourceType.Unknown
-  ])('returns false for %s nodes', (type) => {
-    expect(isEssentialNode(makeNode(type))).toBe(false)
-  })
-})
-
 describe('isCustomNode', () => {
   it('returns true for CustomNodes', () => {
     expect(isCustomNode(makeNode(NodeSourceType.CustomNodes))).toBe(true)
@@ -148,7 +119,6 @@ describe('isCustomNode', () => {
 
   it.for([
     NodeSourceType.Core,
-    NodeSourceType.Essentials,
     NodeSourceType.Unknown,
     NodeSourceType.Blueprint
   ])('returns false for %s nodes', (type) => {

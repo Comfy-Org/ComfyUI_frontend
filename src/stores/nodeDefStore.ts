@@ -179,8 +179,7 @@ export class ComfyNodeDefImpl
     this.outputs = defV2.outputs
     this.hidden = defV2.hidden
 
-    // Initialize node source
-    this.nodeSource = getNodeSource(obj.python_module, this.essentials_category)
+    this.nodeSource = getNodeSource(obj.python_module)
     this.inputTypes = _.uniq(
       Object.values(this.inputs).flatMap(resolveInputType)
     )
