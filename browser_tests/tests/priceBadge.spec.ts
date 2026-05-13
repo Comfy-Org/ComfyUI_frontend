@@ -3,7 +3,7 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 
-test('@vue-nodes Price badge displays on subgraphs', async ({ comfyPage }) => {
+test('Price badge displays on subgraphs @vue-nodes', async ({ comfyPage }) => {
   const apiNodeName = 'Node With Price Badge'
   await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'v1 (legacy)')
 
@@ -15,6 +15,7 @@ test('@vue-nodes Price badge displays on subgraphs', async ({ comfyPage }) => {
 
   await comfyPage.page.mouse.dblclick(500, 500, { delay: 5 })
   await comfyPage.searchBox.fillAndSelectFirstNode(apiNodeName)
+  await expect(comfyPage.searchBox.input).toBeHidden()
   await expect(apiNode, 'Add partner node').toBeVisible()
   await expect(apiNode.locator(priceBadge), 'Has price badge').toBeVisible()
 
@@ -28,21 +29,12 @@ test('@vue-nodes Price badge displays on subgraphs', async ({ comfyPage }) => {
   await expect(nodePrice, 'subgraphNode has price badge').toBeVisible()
   const initialPrice = Number(await nodePrice.innerText())
 
-  //TODO swap to promotion fixtures once PR lands
-  await comfyPage.page.evaluate(() => {
-    const subgraph = [...graph!.subgraphs.values()][0]
-    const priceWidget = subgraph.nodes[0].widgets![0]
-    priceWidget.value = '2x'
-    priceWidget.callback!('2x')
-  })
-  /*
-  await comfyPage.subgraph.toggleContainedWidgetPromotion(subgraphNode, {
+  await comfyPage.subgraph.editor.togglePromotion(subgraphNode, {
     nodeName: apiNodeName,
     widgetName: 'price',
     toState: true
   })
   await comfyPage.vueNodes.selectComboOption('New Subgraph', 'price', '2x')
-  */
   await expect(nodePrice, 'Price is reactive').toHaveText(
     String(initialPrice * 2)
   )
