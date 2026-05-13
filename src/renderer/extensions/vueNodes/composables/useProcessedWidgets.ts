@@ -51,6 +51,7 @@ interface ProcessedWidget {
   hidden: boolean
   id: string
   name: string
+  slotName?: string
   renderKey: string
   simplified: SimplifiedWidget
   tooltipConfig: TooltipOptions
@@ -346,6 +347,7 @@ export function computeProcessedWidgets({
       hidden: mergedOptions.hidden ?? false,
       id: String(bareWidgetId),
       name: widget.name,
+      slotName: widget.slotName,
       renderKey,
       type: widget.type,
       vueComponent,
@@ -416,7 +418,7 @@ export function useProcessedWidgets(
     const overrides = nodeDataGetter()?.gridOverrides
     return visibleWidgets.value
       .map((w) => {
-        const override = overrides?.[w.name]
+        const override = overrides?.[w.slotName ?? w.name]
         if (override) return override
         return shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
       })

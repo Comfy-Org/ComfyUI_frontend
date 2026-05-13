@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
@@ -5,8 +6,7 @@ import { app } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 
 const PROPERTY_KEY = 'gridOverrides'
-const PROMPT_LABEL =
-  'Grid row size (e.g. 200px, minmax(150px, 300px), 1fr, auto)'
+const DEFAULT_PROMPT_VALUE = '200px'
 
 type GridOverrides = Record<string, string>
 
@@ -17,6 +17,7 @@ function readOverrides(node: LGraphNode): GridOverrides {
 }
 
 function writeOverrides(node: LGraphNode, next: GridOverrides): void {
+  node.properties ??= {}
   if (Object.keys(next).length === 0) {
     delete node.properties[PROPERTY_KEY]
   } else {
@@ -35,7 +36,7 @@ function promptForRowSize(
   current: string,
   onSubmit: (value: string) => void
 ): void {
-  const input = window.prompt(PROMPT_LABEL, current)
+  const input = window.prompt(t('widgetGridOverrides.prompt'), current)
   if (input == null) return
   const trimmed = input.trim()
   if (trimmed.length === 0) return
@@ -66,28 +67,28 @@ function buildWidgetMenuItem(
   const current = overrides[widgetName]
   const label = current
     ? `${widgetName}  →  ${current}`
-    : `${widgetName}  →  (auto)`
+    : `${widgetName}  →  ${t('widgetGridOverrides.auto')}`
 
   return {
     content: label,
     has_submenu: true,
     callback: () => {
-      promptForRowSize(current ?? '200px', (value) =>
+      promptForRowSize(current ?? DEFAULT_PROMPT_VALUE, (value) =>
         setOverride(node, widgetName, value)
       )
     },
     submenu: {
       options: [
         {
-          content: 'Set size…',
+          content: t('widgetGridOverrides.setSize'),
           callback: () => {
-            promptForRowSize(current ?? '200px', (value) =>
+            promptForRowSize(current ?? DEFAULT_PROMPT_VALUE, (value) =>
               setOverride(node, widgetName, value)
             )
           }
         },
         {
-          content: 'Clear override',
+          content: t('widgetGridOverrides.clearOverride'),
           disabled: !current,
           callback: () => clearOverride(node, widgetName)
         }
@@ -111,7 +112,7 @@ useExtensionService().registerExtension({
 
     if (hasAny) {
       widgetItems.push(null, {
-        content: 'Clear all overrides',
+        content: t('widgetGridOverrides.clearAll'),
         callback: () => writeOverrides(node, {})
       })
     }
@@ -119,7 +120,7 @@ useExtensionService().registerExtension({
     return [
       null,
       {
-        content: 'Widget Grid Sizes',
+        content: t('widgetGridOverrides.menuLabel'),
         has_submenu: true,
         callback: () => {},
         submenu: {
