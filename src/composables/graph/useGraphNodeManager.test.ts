@@ -438,13 +438,13 @@ describe('Nested promoted widget mapping', () => {
 
     expect(mappedWidget).toBeDefined()
     expect(mappedWidget?.type).toBe('combo')
-    expect(mappedWidget?.storeName).toBe('picker')
-    expect(mappedWidget?.storeNodeId).toBe(
-      `${subgraphNodeB.subgraph.id}:${innerNode.id}`
-    )
+    // Promoted widgets read from a host-scoped store entry so per-host values
+    // stay independent across SubgraphNode instances sharing the same subgraph.
+    expect(mappedWidget?.storeNodeId).toBe(String(subgraphNodeB.id))
+    expect(mappedWidget?.storeName).toBe('b_input:11:a_input')
   })
 
-  it('preserves distinct storeNodeId for duplicate-named promoted widgets', () => {
+  it('preserves distinct store identity for duplicate-named promoted widgets', () => {
     const subgraph = createTestSubgraph({
       inputs: [
         { name: 'first_seed', type: '*' },
@@ -475,11 +475,13 @@ describe('Nested promoted widget mapping', () => {
     const widgets = nodeData?.widgets
 
     expect(widgets).toHaveLength(2)
-    expect(widgets?.[0]?.storeName).toBe('seed')
-    expect(widgets?.[1]?.storeName).toBe('seed')
-    expect(widgets?.[0]?.storeNodeId).not.toBe(widgets?.[1]?.storeNodeId)
-    expect(widgets?.[0]?.storeNodeId).toBe(`${subgraph.id}:${firstNode.id}`)
-    expect(widgets?.[1]?.storeNodeId).toBe(`${subgraph.id}:${secondNode.id}`)
+    // Both promoted widgets live on the same host node, so storeNodeId is
+    // shared; storeName encodes the source identity to keep them distinct.
+    expect(widgets?.[0]?.storeNodeId).toBe(String(subgraphNode.id))
+    expect(widgets?.[1]?.storeNodeId).toBe(String(subgraphNode.id))
+    expect(widgets?.[0]?.storeName).toBe(`first_seed:${firstNode.id}:seed`)
+    expect(widgets?.[1]?.storeName).toBe(`second_seed:${secondNode.id}:seed`)
+    expect(widgets?.[0]?.storeName).not.toBe(widgets?.[1]?.storeName)
   })
 })
 

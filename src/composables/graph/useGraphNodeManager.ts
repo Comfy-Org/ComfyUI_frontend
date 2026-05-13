@@ -7,7 +7,10 @@ import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import {
+  getPromotedWidgetHostStateName,
+  isPromotedWidgetView
+} from '@/core/graph/subgraph/promotedWidgetTypes'
 import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
 import {
   resolveConcretePromotedWidget,
@@ -322,14 +325,25 @@ function safeWidgetMapper(
         : undefined
       const nodeId =
         subgraphId && localId ? `${subgraphId}:${localId}` : undefined
-      const storeName = isPromotedWidgetView(widget)
+      const sourceWidgetName = isPromotedWidgetView(widget)
         ? (sourceWidget?.name ?? promotedSource?.sourceWidgetName)
         : undefined
-      const name = storeName ?? displayName
+      const name = sourceWidgetName ?? displayName
+
+      // Promoted widgets carry per-host values that the migration writes to a
+      // host-scoped store entry. Vue rendering must read from that same entry
+      // (not the shared interior key) for per-instance independence.
+      let storeNodeId: NodeId | undefined = nodeId
+      let storeName = sourceWidgetName
+      if (isPromotedWidgetView(widget)) {
+        widget.ensureHostWidgetState()
+        storeNodeId = String(node.id)
+        storeName = getPromotedWidgetHostStateName(widget)
+      }
 
       return {
         nodeId,
-        storeNodeId: nodeId,
+        storeNodeId,
         name,
         storeName,
         type: effectiveWidget.type,

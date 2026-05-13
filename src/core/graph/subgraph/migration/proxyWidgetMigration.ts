@@ -62,6 +62,29 @@ function findSourceWidget(
   return widgets.find((w) => w.name === sourceWidgetName)
 }
 
+/**
+ * Resolve the source widget for a normalized proxy entry, falling back to a
+ * promotable-widget name match when the strict `findSourceWidget` lookup
+ * misses. `classify` and `repairCreateSubgraphInput` must agree on this
+ * resolution — otherwise a legacy nested entry can be classified as
+ * repairable but then quarantined at repair time, leaving the host with
+ * fewer rendered widgets than expected.
+ */
+function resolveSourceWidget(
+  sourceNode: LGraphNode,
+  sourceWidgetName: string,
+  disambiguatingSourceNodeId?: string
+): IBaseWidget | undefined {
+  return (
+    findSourceWidget(
+      sourceNode,
+      sourceWidgetName,
+      disambiguatingSourceNodeId
+    ) ??
+    getPromotableWidgets(sourceNode).find((w) => w.name === sourceWidgetName)
+  )
+}
+
 interface FlushArgs {
   hostNode: SubgraphNode
   hostWidgetValues?: readonly unknown[]
@@ -312,15 +335,11 @@ function classify(
     return { kind: 'quarantine', reason: 'unlinkedSourceWidget' }
   }
 
-  const sourceWidget =
-    findSourceWidget(
-      sourceNode,
-      normalized.sourceWidgetName,
-      normalized.disambiguatingSourceNodeId
-    ) ??
-    getPromotableWidgets(sourceNode).find(
-      (w) => w.name === normalized.sourceWidgetName
-    )
+  const sourceWidget = resolveSourceWidget(
+    sourceNode,
+    normalized.sourceWidgetName,
+    normalized.disambiguatingSourceNodeId
+  )
   if (!sourceWidget) {
     return { kind: 'quarantine', reason: 'missingSourceWidget' }
   }
@@ -418,7 +437,7 @@ function repairCreateSubgraphInput(
     return { ok: false, reason: 'missingSourceNode' }
   }
 
-  const sourceWidget = findSourceWidget(
+  const sourceWidget = resolveSourceWidget(
     sourceNode,
     sourceWidgetName,
     entry.normalized.disambiguatingSourceNodeId

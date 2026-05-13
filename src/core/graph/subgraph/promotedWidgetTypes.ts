@@ -37,6 +37,12 @@ export interface PromotedWidgetView extends IBaseWidget {
    * cascading into the shared interior widget. Used during configure/clone.
    */
   hydrateHostValue(value: IBaseWidget['value']): void
+
+  /**
+   * Ensure a host-scoped widget store entry exists, seeded with the current
+   * effective value. Idempotent; safe to call before each Vue render.
+   */
+  ensureHostWidgetState(): void
 }
 
 export function getPromotedWidgetHostStateName(

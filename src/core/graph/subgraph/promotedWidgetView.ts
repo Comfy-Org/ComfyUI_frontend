@@ -234,6 +234,21 @@ class PromotedWidgetView implements IPromotedWidgetView {
       return
     }
 
+    this.registerHostWidgetState(value)
+  }
+
+  /**
+   * Idempotently register a host-scoped widget state seeded with the current
+   * effective value. Vue rendering reads from this entry (via `safeWidgetMapper`
+   * exposing the host-scoped `storeNodeId`/`storeName` for promoted widgets),
+   * so the entry must exist before first render even if migration has not run.
+   */
+  ensureHostWidgetState(): void {
+    if (this.getHostWidgetState()) return
+    this.registerHostWidgetState(this.resolveAtHost()?.widget.value)
+  }
+
+  private registerHostWidgetState(value: IBaseWidget['value']): void {
     const resolved = this.resolveDeepest()
     useWidgetValueStore().registerWidget(this.graphId, {
       nodeId: this.subgraphNode.id,
