@@ -23,6 +23,7 @@ export interface NodeSelectionState {
 export function useSelectionState() {
   const canvasStore = useCanvasStore()
   const nodeDefStore = useNodeDefStore()
+  const settingStore = useSettingStore()
   const rightSidePanelStore = useRightSidePanelStore()
 
   const { selectedItems } = storeToRefs(canvasStore)
@@ -95,12 +96,15 @@ export function useSelectionState() {
     computeSelectionStatesFromNodes(selectedNodes.value)
 
   const canOpenNodeInfoPanel = computed(
-    () => Boolean(nodeDef.value) && !rightSidePanelStore.isLegacyMenu
+    () =>
+      Boolean(nodeDef.value) &&
+      settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
   )
 
   const openNodeInfoPanel = () => {
-    if (!canOpenNodeInfoPanel.value) return
+    if (!canOpenNodeInfoPanel.value) return false
     rightSidePanelStore.openPanel('info')
+    return true
   }
 
   return {

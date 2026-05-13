@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -211,7 +212,6 @@ describe('useSelectionState', () => {
 
     test('should not open the right side panel for multiple selected nodes', () => {
       const canvasStore = useCanvasStore()
-      const nodeDefStore = useNodeDefStore()
       const rightSidePanelStore = useRightSidePanelStore()
       canvasStore.$state.selectedItems = [
         createMockLGraphNode({ id: 9, type: 'TestNode' }),
@@ -222,7 +222,27 @@ describe('useSelectionState', () => {
       expect(canOpenNodeInfoPanel.value).toBe(false)
       openNodeInfoPanel()
 
-      expect(nodeDefStore.fromLGraphNode).not.toHaveBeenCalled()
+      expect(rightSidePanelStore.openPanel).not.toHaveBeenCalled()
+    })
+
+    test('should not open the right side panel in legacy menu mode', () => {
+      const canvasStore = useCanvasStore()
+      const nodeDefStore = useNodeDefStore()
+      const rightSidePanelStore = useRightSidePanelStore()
+      const settingStore = useSettingStore()
+      const node = createMockLGraphNode({ id: 11, type: 'TestNode' })
+      canvasStore.$state.selectedItems = [node]
+      vi.mocked(settingStore.get).mockReturnValue('Disabled')
+      vi.mocked(nodeDefStore.fromLGraphNode).mockReturnValue(
+        createMockNodeDef()
+      )
+
+      const { canOpenNodeInfoPanel, openNodeInfoPanel } = useSelectionState()
+      expect(canOpenNodeInfoPanel.value).toBe(false)
+
+      const didOpen = openNodeInfoPanel()
+
+      expect(didOpen).toBe(false)
       expect(rightSidePanelStore.openPanel).not.toHaveBeenCalled()
     })
   })

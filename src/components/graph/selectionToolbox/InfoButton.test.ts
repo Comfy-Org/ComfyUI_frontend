@@ -9,19 +9,20 @@ import { createI18n } from 'vue-i18n'
 import InfoButton from '@/components/graph/selectionToolbox/InfoButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 
-const { openPanelMock } = vi.hoisted(() => ({
-  openPanelMock: vi.fn()
+const { openNodeInfoPanelMock, trackUiButtonClickedMock } = vi.hoisted(() => ({
+  openNodeInfoPanelMock: vi.fn(),
+  trackUiButtonClickedMock: vi.fn()
 }))
 
-vi.mock('@/stores/workspace/rightSidePanelStore', () => ({
-  useRightSidePanelStore: () => ({
-    openPanel: openPanelMock
+vi.mock('@/composables/graph/useSelectionState', () => ({
+  useSelectionState: () => ({
+    openNodeInfoPanel: openNodeInfoPanelMock
   })
 }))
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
-    trackUiButtonClicked: vi.fn()
+    trackUiButtonClicked: trackUiButtonClickedMock
   })
 }))
 
@@ -41,6 +42,7 @@ describe('InfoButton', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    openNodeInfoPanelMock.mockReturnValue(true)
   })
 
   const renderComponent = () => {
@@ -53,12 +55,26 @@ describe('InfoButton', () => {
     })
   }
 
-  it('should open the info panel on click', async () => {
+  it('should open the node info panel on click', async () => {
     const user = userEvent.setup()
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'Node Info' }))
 
-    expect(openPanelMock).toHaveBeenCalledWith('info')
+    expect(openNodeInfoPanelMock).toHaveBeenCalled()
+    expect(trackUiButtonClickedMock).toHaveBeenCalledWith({
+      button_id: 'selection_toolbox_node_info_opened'
+    })
+  })
+
+  it('should not track the click when the node info panel is unavailable', async () => {
+    const user = userEvent.setup()
+    openNodeInfoPanelMock.mockReturnValue(false)
+    renderComponent()
+
+    await user.click(screen.getByRole('button', { name: 'Node Info' }))
+
+    expect(openNodeInfoPanelMock).toHaveBeenCalled()
+    expect(trackUiButtonClickedMock).not.toHaveBeenCalled()
   })
 })

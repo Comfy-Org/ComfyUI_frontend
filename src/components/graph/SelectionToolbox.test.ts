@@ -29,6 +29,13 @@ function createMockExtensionService(): ReturnType<typeof useExtensionService> {
   >
 }
 
+const { settingGetMock } = vi.hoisted(() => ({
+  settingGetMock: vi.fn((key: string): unknown => {
+    if (key === 'Comfy.Load3D.3DViewerEnable') return true
+    return null
+  })
+}))
+
 // Mock the composables and services
 vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
   useCanvasInteractions: vi.fn(() => ({
@@ -79,10 +86,7 @@ vi.mock('@/utils/nodeFilterUtil', () => ({
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
-    get: vi.fn((key: string) => {
-      if (key === 'Comfy.Load3D.3DViewerEnable') return true
-      return null
-    })
+    get: settingGetMock
   })
 }))
 
@@ -139,6 +143,10 @@ describe('SelectionToolbox', () => {
     canvasStore.canvas = createMockCanvas()
 
     vi.resetAllMocks()
+    settingGetMock.mockImplementation((key: string): unknown => {
+      if (key === 'Comfy.Load3D.3DViewerEnable') return true
+      return null
+    })
   })
 
   function renderComponent(props = {}): { container: Element } {
@@ -228,6 +236,19 @@ describe('SelectionToolbox', () => {
       canvasStore.selectedItems = [createMockPositionable()]
       nodeDefMock = null
       const { container } = renderComponent()
+      expect(container.querySelector('.info-button')).toBeFalsy()
+    })
+
+    it('should not show info button when node info panel is unavailable', () => {
+      settingGetMock.mockImplementation((key: string): unknown => {
+        if (key === 'Comfy.UseNewMenu') return 'Disabled'
+        if (key === 'Comfy.Load3D.3DViewerEnable') return true
+        return null
+      })
+      canvasStore.selectedItems = [createMockPositionable()]
+
+      const { container } = renderComponent()
+
       expect(container.querySelector('.info-button')).toBeFalsy()
     })
 
