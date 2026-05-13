@@ -8,6 +8,11 @@ from .errors import (
     NODE_CLASS_MAPPINGS as errors_class_mappings,
     NODE_DISPLAY_NAME_MAPPINGS as errors_display_name_mappings,
 )
+from .dynamic_combo import (
+    DynamicComboStringOutput,
+    NODE_CLASS_MAPPINGS as dynamic_combo_class_mappings,
+    NODE_DISPLAY_NAME_MAPPINGS as dynamic_combo_display_name_mappings,
+)
 from .inputs import (
     LongComboDropdown,
     NodeWithBooleanInput,
@@ -47,6 +52,7 @@ from .remote import (
 
 NODE_CLASS_MAPPINGS = {
     **errors_class_mappings,
+    **dynamic_combo_class_mappings,
     **inputs_class_mappings,
     **remote_class_mappings,
     **models_class_mappings,
@@ -54,6 +60,7 @@ NODE_CLASS_MAPPINGS = {
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     **errors_display_name_mappings,
+    **dynamic_combo_display_name_mappings,
     **inputs_display_name_mappings,
     **remote_display_name_mappings,
     **models_display_name_mappings,
@@ -61,6 +68,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 
 __all__ = [
     "DeprecatedNode",
+    "DynamicComboStringOutput",
     "DummyPatch",
     "ErrorRaiseNode",
     "ErrorRaiseNodeWithMessage",
