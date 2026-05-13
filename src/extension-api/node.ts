@@ -33,11 +33,21 @@ export type Size = [width: number, height: number]
 /**
  * LiteGraph node execution mode.
  *
- * - `'always'` — Always execute.
- * - `'never'` — Never execute (muted).
- * - `'bypass'` — Bypass (passthrough).
- * - `'once'` — Execute once.
- * - `'onTrigger'` — Execute on trigger.
+ * String values map to the underlying `LGraphEventMode` numeric enum
+ * (`ALWAYS=0`, `ON_EVENT=1`, `NEVER=2`, `ON_TRIGGER=3`, `BYPASS=4`).
+ *
+ * - `'always'` — Execute every run (default).
+ * - `'never'` — Muted; node is skipped during execution.
+ * - `'bypass'` — Passthrough; inputs forwarded to outputs without running.
+ * - `'once'` — Execute once then mute.
+ * - `'onTrigger'` — Legacy ABI-reserved slot for the dead trigger/action
+ *   subsystem; gated behind `LiteGraph.do_add_triggers_slots` (always
+ *   `false`). Has no behavioural effect in the current scheduler. Reserved
+ *   for compatibility — **do not use in new extensions**. Flagged for removal
+ *   by AUDIT-LG.4 / AUDIT-LG.5.
+ *
+ * Cross-ref: research/architecture/audit-litegraph-pruning.md
+ * §AUDIT-LG.4 §AUDIT-LG.5
  */
 export type NodeMode = 'always' | 'never' | 'bypass' | 'once' | 'onTrigger'
 
