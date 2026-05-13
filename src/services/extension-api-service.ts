@@ -607,13 +607,19 @@ export function defineExtension(options: ExtensionOptions): void {
   appExtensions.push(options)
 }
 
-export function defineNodeExtension(options: NodeExtensionOptions): void {
+export function defineNode(options: NodeExtensionOptions): void {
   nodeExtensions.push(options)
 }
 
-export function defineWidgetExtension(options: WidgetExtensionOptions): void {
+export function defineWidget(options: WidgetExtensionOptions): void {
   widgetExtensions.push(options)
 }
+
+/** @deprecated Use `defineNode` instead. Will be removed in v1.0. */
+export const defineNodeExtension = defineNode
+
+/** @deprecated Use `defineWidget` instead. Will be removed in v1.0. */
+export const defineWidgetExtension = defineWidget
 
 /** @internal Test-only: clear all registered extensions and reset state. */
 export function _clearExtensionsForTesting(): void {

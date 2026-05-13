@@ -49,7 +49,7 @@ vi.mock('@/extension-api/lifecycle', () => ({}))
 // ── Import service (after mocks are in place) ────────────────────────────────
 import {
   _clearExtensionsForTesting,
-  defineNodeExtension,
+  defineNode,
   getCurrentScope,
   getScopeRegistry,
   mountExtensionsForNode,
@@ -93,7 +93,7 @@ describe('scope-registry — D12 copy/paste reset semantics', () => {
       // The extension stores a ref so we can mutate it after mount.
       const counters = new Map<NodeEntityId, ReturnType<typeof ref>>()
 
-      defineNodeExtension({
+      defineNode({
         name: 'z-counter',
         nodeCreated(handle) {
           const count = ref(0)
@@ -141,7 +141,7 @@ describe('scope-registry — D12 copy/paste reset semantics', () => {
 
       let setupCallCount = 0
 
-      defineNodeExtension({
+      defineNode({
         name: 'a-setup-counter',
         nodeCreated() {
           setupCallCount++
@@ -175,7 +175,7 @@ describe('scope-registry — D12 copy/paste reset semantics', () => {
       const SOURCE_ID = makeNodeId(3)
       const CLONE_ID = makeNodeId(4)
 
-      defineNodeExtension({
+      defineNode({
         name: 'b-flag',
         nodeCreated() {
           return { flag: ref(true) }
@@ -220,7 +220,7 @@ describe('currentExtension global slot (D10a) + lifecycle hooks (I-SR.2.B3 / I-S
     const NODE_ID = makeNodeId(10)
     let scopeDuringSetup: ReturnType<typeof getCurrentScope> = null
 
-    defineNodeExtension({
+    defineNode({
       name: 'c-slot-check',
       nodeCreated() {
         scopeDuringSetup = getCurrentScope()
@@ -238,7 +238,7 @@ describe('currentExtension global slot (D10a) + lifecycle hooks (I-SR.2.B3 / I-S
   it('getCurrentScope() is restored to null after setup completes', () => {
     const NODE_ID = makeNodeId(11)
 
-    defineNodeExtension({
+    defineNode({
       name: 'd-slot-restore',
       nodeCreated() {
         /* no-op */
@@ -255,7 +255,7 @@ describe('currentExtension global slot (D10a) + lifecycle hooks (I-SR.2.B3 / I-S
     const NODE_ID = makeNodeId(12)
     const removedCb = vi.fn()
 
-    defineNodeExtension({
+    defineNode({
       name: 'e-on-removed',
       nodeCreated() {
         onNodeRemoved(removedCb)
@@ -299,7 +299,7 @@ describe('I-SR.6 — scope lifecycle invariants', () => {
     const NODE_ID = makeNodeId(30)
     let setupCount = 0
 
-    defineNodeExtension({
+    defineNode({
       name: 'h-once',
       nodeCreated() {
         setupCount++
@@ -325,7 +325,7 @@ describe('I-SR.6 — scope lifecycle invariants', () => {
     const removedCb = vi.fn()
     let setupCount = 0
 
-    defineNodeExtension({
+    defineNode({
       name: 'i-promotion',
       nodeCreated() {
         setupCount++
@@ -377,7 +377,7 @@ describe('LoadedFromWorkflow tag routes to correct hook (I-SR.3)', () => {
     const created = vi.fn()
     const loaded = vi.fn()
 
-    defineNodeExtension({
+    defineNode({
       name: 'f-routing',
       nodeCreated: created,
       loadedGraphNode: loaded
@@ -401,7 +401,7 @@ describe('LoadedFromWorkflow tag routes to correct hook (I-SR.3)', () => {
     const created = vi.fn()
     const loaded = vi.fn()
 
-    defineNodeExtension({
+    defineNode({
       name: 'g-routing',
       nodeCreated: created,
       loadedGraphNode: loaded

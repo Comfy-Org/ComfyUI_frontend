@@ -1,5 +1,5 @@
 /**
- * Extension lifecycle — `defineExtension`, `defineNodeExtension`, and
+ * Extension lifecycle — `defineExtension`, `defineNode`, and
  * the implicit-context lifecycle hooks (`onNodeMounted`, `onNodeRemoved`).
  *
  * Key behaviors:
@@ -58,9 +58,9 @@ import type {
  * @publicAPI
  * @example
  * ```ts
- * import { defineNodeExtension } from '@comfyorg/extension-api'
+ * import { defineNode } from '@comfyorg/extension-api'
  *
- * export default defineNodeExtension({
+ * export default defineNode({
  *   name: 'Comfy.PreviewAny',
  *   nodeTypes: ['PreviewAny'],
  *
@@ -75,6 +75,11 @@ import type {
  * })
  * ```
  */
+export declare function defineNode(
+  options: NodeExtensionOptions
+): NodeExtensionOptions
+
+/** @deprecated Use `defineNode` instead. Will be removed in v1.0. */
 export declare function defineNodeExtension(
   options: NodeExtensionOptions
 ): NodeExtensionOptions
@@ -82,7 +87,7 @@ export declare function defineNodeExtension(
 /**
  * Register an extension for app-wide lifecycle and shell UI contributions.
  *
- * Use `defineNodeExtension` for node/widget interactions. Use this for
+ * Use `defineNode` for node/widget interactions. Use this for
  * `init`, `setup`, sidebar tabs, commands, and other app-level concerns.
  *
  * @publicAPI
@@ -109,6 +114,11 @@ export declare function defineExtension(
  * @stability experimental
  * @publicAPI
  */
+export declare function defineWidget(
+  options: WidgetExtensionOptions
+): WidgetExtensionOptions
+
+/** @deprecated Use `defineWidget` instead. Will be removed in v1.0. */
 export declare function defineWidgetExtension(
   options: WidgetExtensionOptions
 ): WidgetExtensionOptions

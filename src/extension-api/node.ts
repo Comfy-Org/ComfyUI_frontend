@@ -192,9 +192,9 @@ export interface NodeBeforeSerializeEvent {
  *
  * @example
  * ```ts
- * import { defineNodeExtension } from '@comfyorg/extension-api'
+ * import { defineNode } from '@comfyorg/extension-api'
  *
- * export default defineNodeExtension({
+ * export default defineNode({
  *   name: 'my-size-enforcer',
  *   nodeTypes: ['MyCustomNode'],
  *

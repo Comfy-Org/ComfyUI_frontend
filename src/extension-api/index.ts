@@ -7,14 +7,14 @@
  * Import directly — no dependency on `window.app` at module evaluation time:
  *
  * ```ts
- * import { defineNodeExtension, defineExtension } from '@comfyorg/extension-api'
+ * import { defineNode, defineExtension } from '@comfyorg/extension-api'
  * ```
  *
  * ## API surface overview
  *
  * | Export | Purpose |
  * |--------|---------|
- * | `defineNodeExtension` | Register a node-scoped extension (the primary entry point) |
+ * | `defineNode` | Register a node-scoped extension (the primary entry point) |
  * | `defineExtension` | Register an app-scoped extension (init, setup, shell UI) |
  * | `onNodeMounted`, `onNodeRemoved` | Implicit-context lifecycle hooks (call inside nodeCreated) |
  * | `NodeHandle` | Controlled access to node state and events |
@@ -57,10 +57,13 @@ export type {
 // ── Registration function implementations ────────────────────────────────────
 // Runtime implementations live in the service; the types above are the
 // public contract. The barrel re-exports the concrete fns from the service
-// so `import { defineNodeExtension } from '@comfyorg/extension-api'` works
+// so `import { defineNode } from '@comfyorg/extension-api'` works
 // at both typecheck and runtime.
 export {
   defineExtension,
+  defineNode,
+  defineWidget,
+  // Deprecated aliases (remove in v1.0)
   defineNodeExtension,
   defineWidgetExtension,
   startExtensionSystem

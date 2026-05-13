@@ -1,6 +1,6 @@
 /**
- * Extension option interfaces — the type contracts for `defineNodeExtension`,
- * `defineExtension`, and `defineWidgetExtension`.
+ * Extension option interfaces — the type contracts for `defineNode`,
+ * `defineExtension`, and `defineWidget`.
  *
  * Lives in its own module so the runtime service (`@/services/extension-api-service`)
  * and the public lifecycle barrel (`@/extension-api/lifecycle`) can both depend on
@@ -15,14 +15,14 @@ import type { NodeHandle } from './node'
 import type { WidgetHandle } from './widget'
 
 /**
- * Options for `defineNodeExtension`. Describes an extension that reacts to
+ * Options for `defineNode`. Describes an extension that reacts to
  * node lifecycle events.
  *
  * @example
  * ```ts
- * import { defineNodeExtension } from '@comfyorg/extension-api'
+ * import { defineNode } from '@comfyorg/extension-api'
  *
- * export default defineNodeExtension({
+ * export default defineNode({
  *   name: 'my-org.my-extension',
  *   nodeTypes: ['KSampler'],
  *
@@ -118,15 +118,15 @@ export interface ExtensionOptions {
 }
 
 /**
- * Options for `defineWidgetExtension`. Describes an extension that provides a
+ * Options for `defineWidget`. Describes an extension that provides a
  * custom widget type with its own DOM rendering.
  *
  * @stability experimental
  * @example
  * ```ts
- * import { defineWidgetExtension } from '@comfyorg/extension-api'
+ * import { defineWidget } from '@comfyorg/extension-api'
  *
- * export default defineWidgetExtension({
+ * export default defineWidget({
  *   name: 'my-org.color-picker',
  *   type: 'COLOR_PICKER',
  *

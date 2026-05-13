@@ -860,7 +860,7 @@ export class ComfyApp {
     void useSubgraphStore().fetchSubgraphs()
     await useExtensionService().loadExtensions()
     // Start the v2 node-extension reactive mount watcher (I-SR.3 / MIG1.E5).
-    // Must run after loadExtensions() so all defineNodeExtension() calls have
+    // Must run after loadExtensions() so all defineNode() calls have
     // pushed into nodeExtensions[] before the first watcher tick.
     startExtensionSystem()
 

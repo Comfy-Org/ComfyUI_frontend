@@ -220,7 +220,7 @@ export const useExtensionService = () => {
               _warnedBeforeRegisterNodeDef.add(ext.name)
               console.warn(
                 `[ComfyUI] Extension "${ext.name}" uses deprecated hook "beforeRegisterNodeDef". ` +
-                  'Use defineNodeExtension({ nodeCreated(handle) { ... } }) with a nodeTypes filter instead. ' +
+                  'Use defineNode({ nodeCreated(handle) { ... } }) with a nodeTypes filter instead. ' +
                   'See https://docs.comfy.org/extensions/api for the v2 API.'
               )
             }
