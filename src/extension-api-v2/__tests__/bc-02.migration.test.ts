@@ -131,7 +131,7 @@ describe('BC.02 migration — node lifecycle: teardown', () => {
       const v1Ticks = vi.fn()
       const v2Ticks = vi.fn()
 
-      let v2Handle: number | undefined
+      let v2Handle: ReturnType<typeof globalThis.setInterval> | undefined
 
       // v1 pattern: manual tracking
       const v1Handle = setInterval(v1Ticks, 100)
