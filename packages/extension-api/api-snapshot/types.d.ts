@@ -1,0 +1,171 @@
+import { NodeHandle } from './node'
+import { WidgetHandle } from './widget'
+/**
+ * Options for `defineNodeExtension`. Describes an extension that reacts to
+ * node lifecycle events.
+ *
+ * @stability stable
+ * @example
+ * ```ts
+ * import { defineNodeExtension } from '@comfyorg/extension-api'
+ *
+ * export default defineNodeExtension({
+ *   name: 'my-org.my-extension',
+ *   nodeTypes: ['KSampler'],
+ *
+ *   nodeCreated(node) {
+ *     node.on('executed', (e) => console.log('done', e.output))
+ *   }
+ * })
+ * ```
+ */
+export interface NodeExtensionOptions {
+  /**
+   * Globally unique extension name. Used for scope registry keying, hook
+   * ordering (D10b lexicographic tie-break), and debug messages.
+   *
+   * Convention: `'org.extension-name'` or `'Comfy.ExtensionName'`.
+   *
+   * @stability stable
+   */
+  name: string
+  /**
+   * Filter to specific `comfyClass` names. When omitted, the extension
+   * receives `nodeCreated` / `loadedGraphNode` for every node type.
+   *
+   * Replaces the v1 `beforeRegisterNodeDef` filtering pattern (DEP1).
+   *
+   * @stability stable
+   * @example
+   * ```ts
+   * nodeTypes: ['KSampler', 'KSamplerAdvanced']
+   * ```
+   */
+  nodeTypes?: string[]
+  /**
+   * Called once per node instance when the node is first created (typed in,
+   * pasted from clipboard, duplicated, or loaded without an existing workflow).
+   *
+   * - Runs inside a Vue `EffectScope`. All `watch` / `computed` / `onNodeMounted`
+   *   calls made here are captured and disposed automatically on node removal.
+   * - Must be synchronous (D10c). Kick off async work inside the body; use
+   *   `loading: ref(true)` for async-dependent state.
+   * - Called only once per entity ID lifetime. Copy/paste creates a fresh entity
+   *   and fires `nodeCreated` again on the new entity (D12 reset-to-fresh).
+   *
+   * @stability stable
+   */
+  nodeCreated?(node: NodeHandle): void
+  /**
+   * Called once per node instance when the node is restored from a saved
+   * workflow. Widget values are already populated when this fires.
+   *
+   * Same rules as `nodeCreated`. Exactly one of `nodeCreated` or
+   * `loadedGraphNode` fires per node entity, never both.
+   *
+   * Replaces the v1 `loadedGraphNode` hook (which had near-zero real usage per
+   * R4-P11) and `nodeType.prototype.onConfigure` patching.
+   *
+   * @stability stable
+   */
+  loadedGraphNode?(node: NodeHandle): void
+}
+/**
+ * Options for the global `defineExtension` entry point. Covers extension-wide
+ * lifecycle and shell UI contributions.
+ *
+ * @stability stable
+ * @example
+ * ```ts
+ * import { defineExtension } from '@comfyorg/extension-api'
+ *
+ * export default defineExtension({
+ *   name: 'my-org.my-extension',
+ *   async setup() {
+ *     // App is ready; register commands, sidebar tabs, etc.
+ *   }
+ * })
+ * ```
+ */
+export interface ExtensionOptions {
+  /**
+   * Globally unique extension name. Matches the format of
+   * `NodeExtensionOptions.name`.
+   *
+   * @stability stable
+   */
+  name: string
+  /**
+   * Declared API version of this extension. Used by the telemetry system to
+   * track v1 → v2 adoption (D6 Phase D gate: "<5% v1 usage before dropping
+   * the v1 bridge"). Set to `'2'` for extensions written against this API.
+   *
+   * Optional in Phase A (no runtime enforcement). The runtime reads this field
+   * via `getExtensionVersionReport()` to produce adoption metrics.
+   *
+   * @stability stable
+   * @example
+   * ```ts
+   * defineExtension({ name: 'my-ext', apiVersion: '2', setup() { … } })
+   * ```
+   */
+  apiVersion?: string
+  /**
+   * Runs once during app initialization (after the app is mounted but before
+   * the first workflow is loaded). Equivalent to the v1 `ComfyExtension.init`.
+   *
+   * @stability stable
+   */
+  init?(): void | Promise<void>
+  /**
+   * Runs once after the app and all core extensions are initialized. Equivalent
+   * to the v1 `ComfyExtension.setup`. Safe to call shell UI registration APIs
+   * (`ExtensionManager`, `CommandManager`) here.
+   *
+   * @stability stable
+   */
+  setup?(): void | Promise<void>
+}
+/**
+ * Options for `defineWidgetExtension`. Describes an extension that provides a
+ * custom widget type with its own DOM rendering.
+ *
+ * @stability experimental
+ * @example
+ * ```ts
+ * import { defineWidgetExtension } from '@comfyorg/extension-api'
+ *
+ * export default defineWidgetExtension({
+ *   name: 'my-org.color-picker',
+ *   type: 'COLOR_PICKER',
+ *
+ *   widgetCreated(widget, node) {
+ *     return {
+ *       // mount color picker DOM
+ *       render(container) {},
+ *       // cleanup
+ *       destroy() {}
+ *     }
+ *   }
+ * })
+ * ```
+ */
+export interface WidgetExtensionOptions {
+  /** Globally unique extension name. */
+  name: string
+  /** Widget type string this extension provides (e.g. `'COLOR_PICKER'`). */
+  type: string
+  /**
+   * Called once per widget instance. Return a `{ render, destroy }` pair for
+   * custom DOM rendering, or `void` for non-visual widgets.
+   *
+   * @stability experimental
+   */
+  widgetCreated?(
+    widget: WidgetHandle,
+    parentNode: NodeHandle | null
+  ): {
+    render(container: HTMLElement): void
+    destroy?(): void
+  } | void
+}

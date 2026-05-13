@@ -82,6 +82,7 @@ export default defineConfig([
       'components.d.ts',
       'coverage/*',
       'dist/*',
+      'packages/extension-api/api-snapshot/**',
       'packages/registry-types/src/comfyRegistryTypes.ts',
       'playwright-report/*',
       'src/extensions/core/*',
