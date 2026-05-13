@@ -1,71 +1,96 @@
+import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+
+import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema';
+import type { PreviewExposure } from '@/core/schemas/previewExposureSchema';
+
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 export type PromotedWidgetEntry = [string, string]
 
-function isPromotedWidgetEntry(entry: unknown): entry is PromotedWidgetEntry {
+function widgetSourceToEntry(
+  source: PromotedWidgetSource
+): PromotedWidgetEntry {
+  return [source.sourceNodeId, source.sourceWidgetName]
+}
+
+function previewExposureToEntry(
+  exposure: PreviewExposure
+): PromotedWidgetEntry {
+  return [exposure.sourceNodeId, exposure.sourcePreviewName]
+}
+
+export function isPromotedWidgetSource(
+  value: unknown
+): value is PromotedWidgetSource {
   return (
-    Array.isArray(entry) &&
-    entry.length === 2 &&
-    typeof entry[0] === 'string' &&
-    typeof entry[1] === 'string'
+    !!value &&
+    typeof value === 'object' &&
+    'sourceNodeId' in value &&
+    'sourceWidgetName' in value &&
+    typeof value.sourceNodeId === 'string' &&
+    typeof value.sourceWidgetName === 'string'
   )
 }
 
-function normalizePromotedWidgets(value: unknown): PromotedWidgetEntry[] {
-  if (!Array.isArray(value)) return []
-  return value.filter(isPromotedWidgetEntry)
+export function isNodeProperty(value: unknown): value is NodeProperty {
+  if (value === null || value === undefined) return false
+  const t = typeof value
+  return t === 'string' || t === 'number' || t === 'boolean' || t === 'object'
+}
+
+interface RawHostSnapshot {
+  widgetSources: unknown[]
+  previewExposures: unknown
+}
+
+async function readRawHostSnapshot(
+  comfyPage: ComfyPage,
+  nodeId: string
+): Promise<RawHostSnapshot> {
+  return comfyPage.page.evaluate((id) => {
+    const node = window.app!.canvas.graph!.getNodeById(id)
+    const widgetSources = (node?.widgets ?? []).flatMap((widget) => {
+      if (!('sourceNodeId' in widget) || !('sourceWidgetName' in widget))
+        return []
+      return [
+        {
+          sourceNodeId: widget.sourceNodeId,
+          sourceWidgetName: widget.sourceWidgetName
+        }
+      ]
+    })
+    const serialized = window.app!.graph!.serialize()
+    const serializedNode = serialized.nodes.find(
+      (candidate) => String(candidate.id) === String(id)
+    )
+    return {
+      widgetSources,
+      previewExposures: serializedNode?.properties?.previewExposures
+    }
+  }, nodeId)
 }
 
 export async function getPromotedWidgets(
   comfyPage: ComfyPage,
   nodeId: string
 ): Promise<PromotedWidgetEntry[]> {
-  const raw = await comfyPage.page.evaluate((id) => {
-    const node = window.app!.canvas.graph!.getNodeById(id)
-    const widgets = node?.widgets ?? []
+  // Read live promoted widget views from the host node and merge with the
+  // serialized previewExposures snapshot, since each represents a different
+  // category of promoted slot. Validation/typing is done outside page.evaluate
+  // using canonical guards/schemas from src/.
+  const { widgetSources, previewExposures } = await readRawHostSnapshot(
+    comfyPage,
+    nodeId
+  )
 
-    // Read the live promoted widget views from the host node instead of the
-    // serialized proxyWidgets snapshot, which can lag behind the current graph
-    // state during promotion and cleanup flows.
-    const widgetEntries = widgets.flatMap((widget) => {
-      if (
-        widget &&
-        typeof widget === 'object' &&
-        'sourceNodeId' in widget &&
-        typeof widget.sourceNodeId === 'string' &&
-        'sourceWidgetName' in widget &&
-        typeof widget.sourceWidgetName === 'string'
-      ) {
-        return [[widget.sourceNodeId, widget.sourceWidgetName]]
-      }
-      return []
-    })
-
-    const serialized = window.app!.graph!.serialize()
-    const serializedNode = serialized.nodes.find(
-      (candidate) => String(candidate.id) === String(id)
-    )
-    const previewExposures = serializedNode?.properties?.previewExposures
-    const previewEntries = Array.isArray(previewExposures)
-      ? previewExposures.flatMap((exposure) => {
-          if (
-            typeof exposure === 'object' &&
-            exposure !== null &&
-            'sourceNodeId' in exposure &&
-            typeof exposure.sourceNodeId === 'string' &&
-            'sourcePreviewName' in exposure &&
-            typeof exposure.sourcePreviewName === 'string'
-          ) {
-            return [[exposure.sourceNodeId, exposure.sourcePreviewName]]
-          }
-          return []
-        })
-      : []
-
-    return [...widgetEntries, ...previewEntries]
-  }, nodeId)
-
-  return normalizePromotedWidgets(raw)
+  const exposures = isNodeProperty(previewExposures)
+    ? parsePreviewExposures(previewExposures)
+    : []
+  return [
+    ...widgetSources.filter(isPromotedWidgetSource).map(widgetSourceToEntry),
+    ...exposures.map(previewExposureToEntry)
+  ]
 }
 
 export async function getPromotedWidgetNames(
