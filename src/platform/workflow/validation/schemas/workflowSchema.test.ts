@@ -111,10 +111,47 @@ describe('parseComfyWorkflow', () => {
       ])
     })
 
-    it('rejects invalid config shape', async () => {
+    it('drops unknown third element instead of rejecting (forward-compat)', async () => {
       const workflow = JSON.parse(JSON.stringify(defaultGraph))
       workflow.extra = {
         linearData: { inputs: [[1, 'prompt', 'invalid']], outputs: [] }
+      }
+      const result = await validateComfyWorkflow(workflow)
+      expect(result).not.toBeNull()
+      expect(result!.extra!.linearData!.inputs).toEqual([[1, 'prompt']])
+    })
+
+    it('coerces legacy raw-number third element to { height }', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearData: { inputs: [[1, 'prompt', 240]], outputs: [] }
+      }
+      const result = await validateComfyWorkflow(workflow)
+      expect(result).not.toBeNull()
+      expect(result!.extra!.linearData!.inputs).toEqual([
+        [1, 'prompt', { height: 240 }]
+      ])
+    })
+
+    it('drops trailing elements beyond the third (forward-compat)', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearData: {
+          inputs: [[1, 'prompt', { height: 100 }, 'future-field']],
+          outputs: []
+        }
+      }
+      const result = await validateComfyWorkflow(workflow)
+      expect(result).not.toBeNull()
+      expect(result!.extra!.linearData!.inputs).toEqual([
+        [1, 'prompt', { height: 100 }]
+      ])
+    })
+
+    it('rejects entry missing required [nodeId, name] prefix', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearData: { inputs: [[1]], outputs: [] }
       }
       const result = await validateComfyWorkflow(workflow)
       expect(result).toBeNull()

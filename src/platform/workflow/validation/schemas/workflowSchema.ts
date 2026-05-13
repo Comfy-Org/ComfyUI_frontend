@@ -282,6 +282,42 @@ const zConfig = z
   })
   .passthrough()
 
+const zLinearInputConfig = z
+  .object({ height: z.number().optional() })
+  .passthrough()
+
+// Permissive parser for a single `linearData.inputs` entry.
+// Stored shapes seen in the wild (legacy clients, forks, future fields):
+//   [nodeId, name]
+//   [nodeId, name, { height? }]
+//   [nodeId, name, <number>]        — legacy: raw height
+//   [nodeId, name, <anything else>] — unknown trailing data
+// Reject only entries that don't start with [nodeId, string]; normalize
+// the rest so a single bad entry doesn't fail the whole workflow load.
+const zLinearInput = z
+  .tuple([zNodeId, z.string()])
+  .rest(z.unknown())
+  .transform(([id, name, ...rest]) => {
+    const third = rest[0]
+    if (third === undefined) return [id, name] as [typeof id, string]
+    const parsed = zLinearInputConfig.safeParse(third)
+    if (parsed.success) {
+      return [id, name, parsed.data] as [
+        typeof id,
+        string,
+        z.infer<typeof zLinearInputConfig>
+      ]
+    }
+    if (typeof third === 'number') {
+      return [id, name, { height: third }] as [
+        typeof id,
+        string,
+        z.infer<typeof zLinearInputConfig>
+      ]
+    }
+    return [id, name] as [typeof id, string]
+  })
+
 const zExtra = z
   .object({
     ds: zDS.optional(),
@@ -294,18 +330,7 @@ const zExtra = z
     linearMode: z.boolean().optional(),
     linearData: z
       .object({
-        inputs: z
-          .array(
-            z.union([
-              z.tuple([
-                zNodeId,
-                z.string(),
-                z.object({ height: z.number().optional() }).passthrough()
-              ]),
-              z.tuple([zNodeId, z.string()])
-            ])
-          )
-          .optional(),
+        inputs: z.array(zLinearInput).optional(),
         outputs: z.array(zNodeId).optional()
       })
       .optional()
