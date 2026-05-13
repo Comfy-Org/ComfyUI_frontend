@@ -44,35 +44,21 @@
  * @packageDocumentation
  */
 
-// ── Registration function types ───────────────────────────────────────────────
-// Sourced from `./types` (not `./lifecycle`) to avoid a circular import:
-// `extension-api-service` consumes these contracts and `lifecycle` re-exports
-// `onNodeMounted`/`onNodeRemoved` from the service.
 export type {
   ExtensionOptions,
   NodeExtensionOptions,
   WidgetExtensionOptions
 } from './types'
 
-// ── Registration function implementations ────────────────────────────────────
-// Runtime implementations live in the service; the types above are the
-// public contract. The barrel re-exports the concrete fns from the service
-// so `import { defineNode } from '@comfyorg/extension-api'` works
-// at both typecheck and runtime.
 export {
   defineExtension,
   defineNode,
   defineWidget,
-  // Deprecated aliases (remove in v1.0)
-  defineNodeExtension,
-  defineWidgetExtension,
   startExtensionSystem
 } from '@/services/extension-api-service'
 
-// ── Implicit-context lifecycle hooks ─────────────────────────────────────────
 export { onNodeMounted, onNodeRemoved } from './lifecycle'
 
-// ── NodeHandle and related types ─────────────────────────────────────────────
 export type {
   NodeHandle,
   NodeEntityId,
@@ -92,7 +78,6 @@ export type {
   NodeBeforeSerializeEvent
 } from './node'
 
-// ── WidgetHandle and related types ────────────────────────────────────────────
 export type {
   WidgetHandle,
   WidgetEntityId,
@@ -105,10 +90,8 @@ export type {
   WidgetBeforeQueueEvent
 } from './widget'
 
-// ── Shared event infrastructure ───────────────────────────────────────────────
 export type { Handler, AsyncHandler, Unsubscribe } from './events'
 
-// ── Shell UI types (sidebar, bottom panel, commands, toasts) ──────────────────
 export type {
   SidebarTabExtension,
   BottomPanelExtension,
@@ -120,7 +103,6 @@ export type {
   CommandManager
 } from './shell'
 
-// ── Identity helpers ──────────────────────────────────────────────────────────
 export type { NodeLocatorId, NodeExecutionId } from './identifiers'
 export {
   isNodeLocatorId,

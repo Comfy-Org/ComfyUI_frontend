@@ -16,7 +16,6 @@
  * @packageDocumentation
  */
 
-// ─── Extension options ───────────────────────────────────────────────────────
 //
 // The option-type contracts live in ./types so that both this module and the
 // runtime service (`@/services/extension-api-service`) can depend on them
@@ -41,8 +40,6 @@ import type {
   ExtensionOptions,
   WidgetExtensionOptions
 } from './types'
-
-// ─── Registration functions ──────────────────────────────────────────────────
 
 /**
  * Register a node extension. The runtime calls `nodeCreated` or
@@ -76,11 +73,6 @@ import type {
  * ```
  */
 export declare function defineNode(
-  options: NodeExtensionOptions
-): NodeExtensionOptions
-
-/** @deprecated Use `defineNode` instead. Will be removed in v1.0. */
-export declare function defineNodeExtension(
   options: NodeExtensionOptions
 ): NodeExtensionOptions
 
@@ -118,12 +110,6 @@ export declare function defineWidget(
   options: WidgetExtensionOptions
 ): WidgetExtensionOptions
 
-/** @deprecated Use `defineWidget` instead. Will be removed in v1.0. */
-export declare function defineWidgetExtension(
-  options: WidgetExtensionOptions
-): WidgetExtensionOptions
-
-// ─── Implicit-context lifecycle hooks ─────────────────────────────────────────
 //
 // **Why setup-scope only?** These hooks use Vue-style implicit context:
 // 1. The runtime sets a global `_currentScope` slot before calling nodeCreated()

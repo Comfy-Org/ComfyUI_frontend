@@ -21,9 +21,4 @@ export type {
 
 export type { NodeExtensionOptions, ExtensionOptions } from '@/extension-api'
 
-export {
-  defineNode,
-  defineExtension,
-  // Deprecated aliases
-  defineNodeExtension
-} from '@/extension-api'
+export { defineNode, defineExtension } from '@/extension-api'

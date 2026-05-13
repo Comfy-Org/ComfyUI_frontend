@@ -37,6 +37,7 @@ const pauseTracking = (): void => {}
 const resetTracking = (): void => {}
 
 import { getWorld } from '@/world/worldInstance'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {
   WidgetComponentContainer,
   WidgetComponentDisplay,
@@ -64,7 +65,6 @@ import type {
   WidgetExtensionOptions
 } from '@/extension-api/types'
 
-// ─── Stub component keys ─────────────────────────────────────────────────────
 // Node-level components (Position, Dimensions, NodeType, etc.) are not yet in
 // the World — they land with Alex's PR #11939 (ECS substrate slice 2).
 // These stubs let the scope registry compile and run today; each will be
@@ -154,7 +154,6 @@ function dispatch(_command: Record<string, unknown>): unknown {
   return undefined
 }
 
-// ─── NodeInstanceScope ───────────────────────────────────────────────────────
 // Mirrors Vue's ComponentInternalInstance + EffectScope pair.
 // One scope per (extension, nodeEntityId). Lifetime = node entity lifetime.
 // Survives DOM moves (graph↔app mode, subgraph promotion) — only destroyed
@@ -180,7 +179,6 @@ export interface NodeInstanceScope {
   readonly scope: EffectScope
 }
 
-// ─── Scope Registry ──────────────────────────────────────────────────────────
 // Key: `${extensionName}:${nodeEntityId}` — unambiguous because NodeEntityId
 // already embeds a `node:` prefix (format: `node:${graphUuid}:${nodeId}`).
 
@@ -216,8 +214,6 @@ function stopScope(extensionName: string, nodeEntityId: NodeEntityId): void {
     scopeRegistry.delete(key)
   }
 }
-
-// ─── WidgetHandle ────────────────────────────────────────────────────────────
 
 function createWidgetHandle(widgetId: WidgetEntityId): WidgetHandle {
   const world = getWorld()
@@ -357,8 +353,6 @@ function createWidgetHandle(widgetId: WidgetEntityId): WidgetHandle {
   }
 }
 
-// ─── NodeHandle ──────────────────────────────────────────────────────────────
-
 function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
   const world = getWorld()
 
@@ -373,10 +367,15 @@ function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
     },
 
     getPosition(): Point {
-      return world.getComponent(nodeId, PositionKey)?.pos ?? [0, 0]
+      // Position is centralized in layoutStore (Yjs CRDT-backed)
+      // See D13 §4 — layoutStore.ts is the source of truth for position/size
+      const layout = layoutStore.getNodeLayoutRef(nodeId).value
+      return layout ? [layout.position.x, layout.position.y] : [0, 0]
     },
     getSize(): Size {
-      return world.getComponent(nodeId, DimensionsKey)?.size ?? [0, 0]
+      // Size is centralized in layoutStore (Yjs CRDT-backed)
+      const layout = layoutStore.getNodeLayoutRef(nodeId).value
+      return layout ? [layout.size.width, layout.size.height] : [0, 0]
     },
     getTitle() {
       return world.getComponent(nodeId, NodeVisualKey)?.title ?? ''
@@ -405,10 +404,35 @@ function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
     },
 
     setPosition(pos: Point) {
-      dispatch({ type: 'MoveNode', nodeId, pos })
+      // Position writes go through layoutStore (Yjs CRDT-backed, operation-logged)
+      // This provides undo/redo support via layoutStore's operation log
+      const ref = layoutStore.getNodeLayoutRef(nodeId)
+      if (ref.value) {
+        ref.value = {
+          ...ref.value,
+          position: { x: pos[0], y: pos[1] },
+          bounds: {
+            ...ref.value.bounds,
+            x: pos[0],
+            y: pos[1]
+          }
+        }
+      }
     },
     setSize(size: Size) {
-      dispatch({ type: 'ResizeNode', nodeId, size })
+      // Size writes go through layoutStore (Yjs CRDT-backed, operation-logged)
+      const ref = layoutStore.getNodeLayoutRef(nodeId)
+      if (ref.value) {
+        ref.value = {
+          ...ref.value,
+          size: { width: size[0], height: size[1] },
+          bounds: {
+            ...ref.value.bounds,
+            width: size[0],
+            height: size[1]
+          }
+        }
+      }
     },
     setTitle(title: string) {
       dispatch({ type: 'SetNodeVisual', nodeId, patch: { title } })
@@ -559,7 +583,6 @@ function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
   }
 }
 
-// ─── currentExtension global slot (D10a) ─────────────────────────────────────
 // Mirrors Vue's currentInstance pattern. Set immediately before invoking
 // nodeCreated/loadedGraphNode, cleared immediately after. Hook factories
 // (onNodeMounted, onNodeRemoved) read this slot — must be called synchronously
@@ -610,8 +633,6 @@ export function onNodeRemoved(fn: () => void): void {
   onScopeDispose(fn)
 }
 
-// ─── Extension Registry ──────────────────────────────────────────────────────
-
 const appExtensions: ExtensionOptions[] = []
 const nodeExtensions: NodeExtensionOptions[] = []
 const widgetExtensions: WidgetExtensionOptions[] = []
@@ -655,12 +676,6 @@ export function defineWidget(options: WidgetExtensionOptions): void {
   scheduleStartupCheck()
 }
 
-/** @deprecated Use `defineNode` instead. Will be removed in v1.0. */
-export const defineNodeExtension = defineNode
-
-/** @deprecated Use `defineWidget` instead. Will be removed in v1.0. */
-export const defineWidgetExtension = defineWidget
-
 /** @internal Test-only: clear all registered extensions and reset state. */
 export function _clearExtensionsForTesting(): void {
   nodeExtensions.length = 0
@@ -669,8 +684,6 @@ export function _clearExtensionsForTesting(): void {
   _extensionSystemStarted = false
   _startupCheckScheduled = false
 }
-
-// ─── Mount / Unmount ─────────────────────────────────────────────────────────
 
 /**
  * Mount extensions for a newly detected node entity.
@@ -774,7 +787,6 @@ export function getScopeRegistry(): ReadonlyMap<
   return scopeRegistry
 }
 
-// ─── Reactive Mount System ───────────────────────────────────────────────────
 // Watches the World for entity creation/removal via world.entitiesWith().
 // The World's component buckets are reactive(Map), so this watch fires
 // whenever NodeType entities are added or removed — no imperative dispatch

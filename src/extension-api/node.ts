@@ -11,8 +11,6 @@
 import type { AsyncHandler, Handler, Unsubscribe } from './events'
 import type { WidgetHandle, WidgetOptions } from './widget'
 
-// ─── Entity ID ──────────────────────────────────────────────────────────────
-
 /**
  * Branded entity ID for nodes. Prevents mixing node IDs with widget IDs
  * at compile time. Re-exported from the world layer so the entire codebase
@@ -21,8 +19,6 @@ import type { WidgetHandle, WidgetOptions } from './widget'
  */
 import type { NodeEntityId } from '@/world/entityIds'
 export type { NodeEntityId }
-
-// ─── Geometry ────────────────────────────────────────────────────────────────
 
 /**
  * A 2D point as `[x, y]`.
@@ -33,8 +29,6 @@ export type Point = [x: number, y: number]
  * A 2D size as `[width, height]`.
  */
 export type Size = [width: number, height: number]
-
-// ─── Enums ───────────────────────────────────────────────────────────────────
 
 /**
  * LiteGraph node execution mode.
@@ -51,8 +45,6 @@ export type NodeMode = 'always' | 'never' | 'bypass' | 'once' | 'onTrigger'
  * Direction of a slot on a node.
  */
 export type SlotDirection = 'input' | 'output'
-
-// ─── Slot info ───────────────────────────────────────────────────────────────
 
 /**
  * Read-only snapshot of a single slot (input or output) on a node.
@@ -72,10 +64,11 @@ export interface SlotInfo {
 
 /**
  * Branded entity ID for slots. Prevents mixing slot IDs with node/widget IDs.
+ *
+ * Phase A uses synthetic content-addressed format: `slot:${nodeId}:${direction}:${index}`.
+ * Phase B will migrate to opaque UUIDs when ECS adds slot entity support.
  */
-export type SlotEntityId = number & { readonly __brand: 'SlotEntityId' }
-
-// ─── Event payloads ─────────────────────────────────────────────────────────
+export type SlotEntityId = string & { readonly __brand: 'SlotEntityId' }
 
 /**
  * Payload for `node.on('executed', handler)`.
@@ -175,8 +168,6 @@ export interface NodeBeforeSerializeEvent {
   replace(fn: (orig: Record<string, unknown>) => Record<string, unknown>): void
 }
 
-// ─── NodeHandle ──────────────────────────────────────────────────────────────
-
 /**
  * Controlled surface for node access. Reads query the ECS World; writes
  * dispatch commands. Events are Vue-reactive watches on World components.
@@ -200,8 +191,6 @@ export interface NodeBeforeSerializeEvent {
  * })
  * ```
  */
-
-// ─── DOM widget options ───────────────────────────────────────────────────────
 
 /**
  * Options for `NodeHandle.addDOMWidget()`.

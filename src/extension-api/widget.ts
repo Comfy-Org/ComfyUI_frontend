@@ -9,8 +9,6 @@
 
 import type { AsyncHandler, Handler, Unsubscribe } from './events'
 
-// ─── Entity ID ──────────────────────────────────────────────────────────────
-
 /**
  * Branded entity ID for widgets. Prevents mixing widget IDs with node IDs
  * at compile time. Re-exported from the world layer so the entire codebase
@@ -19,15 +17,11 @@ import type { AsyncHandler, Handler, Unsubscribe } from './events'
 import type { WidgetEntityId } from '@/world/entityIds'
 export type { WidgetEntityId }
 
-// ─── Widget value ────────────────────────────────────────────────────────────
-
 /**
  * The union of all legal widget scalar values. Complex widgets (DOM, canvas)
  * may return their own serializable shapes.
  */
 export type WidgetValue = string | number | boolean | null
-
-// ─── Event payloads ─────────────────────────────────────────────────────────
 
 /**
  * Payload for `widget.on('valueChange', handler)`.
@@ -218,8 +212,6 @@ export interface WidgetBeforeQueueEvent {
    */
   reject(message: string): void
 }
-
-// ─── WidgetHandle ────────────────────────────────────────────────────────────
 
 /**
  * Controlled surface for widget access. Backed by ECS `WidgetValue` and
@@ -477,8 +469,6 @@ export interface WidgetHandle<T = WidgetValue> {
     handler: Handler<WidgetBeforeQueueEvent>
   ): Unsubscribe
 }
-
-// ─── Widget construction options ─────────────────────────────────────────────
 
 /**
  * Options passed to `node.addWidget()` when creating a new widget.
