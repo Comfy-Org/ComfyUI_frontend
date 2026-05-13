@@ -16,6 +16,7 @@ const TARGET_NODE_ID = 501
 const SLOT_POSITION_X = 220
 const SLOT_POSITION_Y = 140
 const SLOT_BOUNDS_SIZE = 20
+const RAF_BATCH_DELAY_MS = 20
 
 const { appMock } = vi.hoisted(() => ({
   appMock: {
@@ -137,7 +138,7 @@ describe('useSubgraphDragBridge', () => {
         clientY: SLOT_POSITION_Y
       })
     )
-    vi.advanceTimersByTime(20)
+    vi.advanceTimersByTime(RAF_BATCH_DELAY_MS)
     await nextTick()
 
     expect(state.candidate).not.toBeNull()
