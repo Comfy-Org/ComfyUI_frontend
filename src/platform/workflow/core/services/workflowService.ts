@@ -324,8 +324,6 @@ export const useWorkflowService = () => {
       }
     }
 
-    workflowDraftStore.removeDraft(workflow.path)
-
     // If this is the last workflow, create a new default temporary workflow.
     // Route through trySwitch so a rejection from loadGraphData
     // (validation / extension hooks / node-replacement loading) keeps the tab
@@ -339,6 +337,10 @@ export const useWorkflowService = () => {
       const didSwitch = await switchAwayFrom(workflow)
       if (!didSwitch) return false
     }
+
+    // Remove draft only after switch succeeds — keeps draft intact if close is
+    // aborted due to switch failure, so the tab retains its persisted state.
+    workflowDraftStore.removeDraft(workflow.path)
 
     await workflowStore.closeWorkflow(workflow)
     return true

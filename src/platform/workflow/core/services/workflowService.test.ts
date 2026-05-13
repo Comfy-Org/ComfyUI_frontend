@@ -11,6 +11,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -1290,6 +1291,21 @@ describe('useWorkflowService', () => {
 
       expect(result).toBe(false)
       expect(workflowStore.isOpen(active)).toBe(true)
+    })
+
+    it('does not remove draft when switch fails', async () => {
+      const draftStore = useWorkflowDraftStore()
+      const active = createAndRegister('workflows/active.json', 0)
+      createAndRegister('workflows/other.json', 1)
+      workflowStore.activeWorkflow = active as LoadedComfyWorkflow
+
+      vi.mocked(app.loadGraphData).mockRejectedValue(
+        new Error('configure failed')
+      )
+
+      await service.closeWorkflow(active, { warnIfUnsaved: false })
+
+      expect(draftStore.removeDraft).not.toHaveBeenCalled()
     })
 
     it('falls back to default workflow when replacement throws', async () => {
