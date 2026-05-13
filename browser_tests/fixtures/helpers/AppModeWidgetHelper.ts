@@ -5,8 +5,9 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 /**
  * Helper for interacting with widgets rendered in app mode (linear view).
  *
- * Widgets are located by their key (format: "nodeId:widgetName") via the
- * `data-widget-key` attribute on each widget item.
+ * Widgets are located by `nodeId:widgetName` suffix against the
+ * `data-widget-key` attribute, which carries the canonical
+ * `graphId:nodeId:widgetName` WidgetEntityId.
  */
 export class AppModeWidgetHelper {
   constructor(private readonly comfyPage: ComfyPage) {}
@@ -19,9 +20,9 @@ export class AppModeWidgetHelper {
     return this.comfyPage.appMode.linearWidgets
   }
 
-  /** Get a widget item container by its key (e.g. "6:text", "3:seed"). */
+  /** Get a widget item container by its `nodeId:widgetName` suffix. */
   getWidgetItem(key: string): Locator {
-    return this.container.locator(`[data-widget-key="${key}"]`)
+    return this.container.locator(`[data-widget-key$=":${key}"]`)
   }
 
   /** Fill a textarea widget (e.g. CLIP Text Encode prompt). */
