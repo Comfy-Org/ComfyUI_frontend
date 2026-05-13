@@ -14,8 +14,11 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 import { SubgraphSlotReference } from '@e2e/fixtures/utils/litegraphUtils'
-import { isNodeProperty, isPromotedWidgetSource } from '@e2e/fixtures/utils/promotedWidgets';
-import type { PromotedWidgetEntry } from '@e2e/fixtures/utils/promotedWidgets';
+import {
+  isNodeProperty,
+  isPromotedWidgetSource
+} from '@e2e/fixtures/utils/promotedWidgets'
+import type { PromotedWidgetEntry } from '@e2e/fixtures/utils/promotedWidgets'
 
 export class SubgraphHelper {
   constructor(private readonly comfyPage: ComfyPage) {}
