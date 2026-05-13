@@ -37,7 +37,11 @@ interface SubgraphSlotDrawOptions {
   editorAlpha?: number
 }
 
-/** Shared base class for the slots used on Subgraph . */
+/**
+ * Shared base class for the slots used on Subgraph .
+ *
+ * @internal
+ */
 export abstract class SubgraphSlot
   extends SlotBase
   implements SubgraphIO, Hoverable, Serialisable<SubgraphIO>
