@@ -36,6 +36,10 @@ const config: KnipConfig = {
     'packages/ingest-types': {
       project: ['src/**/*.{js,ts}']
     },
+    'packages/extension-api': {
+      // Build output is committed for npm package visibility
+      ignore: ['build/**']
+    },
     'apps/website': {
       entry: ['src/scripts/**/*.ts']
     }
