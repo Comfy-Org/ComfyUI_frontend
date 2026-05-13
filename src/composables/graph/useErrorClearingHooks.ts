@@ -68,18 +68,75 @@ const hookedNodes = new WeakSet<LGraphNode>()
 type OriginalCallbacks = {
   onConnectionsChange: LGraphNode['onConnectionsChange']
   onWidgetChanged: LGraphNode['onWidgetChanged']
+  widgetCallbacks: Map<
+    IBaseWidget,
+    {
+      original: IBaseWidget['callback']
+      hooked: IBaseWidget['callback']
+    }
+  >
 }
 
 const originalCallbacks = new WeakMap<LGraphNode, OriginalCallbacks>()
+
+function clearWidgetRelatedErrors(
+  node: LGraphNode,
+  widget: IBaseWidget,
+  newValue: unknown
+): void {
+  if (!app.rootGraph) return
+  const hostExecId = getExecutionIdByNode(app.rootGraph, node)
+  if (!hostExecId) return
+
+  const execId = resolvePromotedExecId(app.rootGraph, node, widget, hostExecId)
+  const widgetName = isPromotedWidgetView(widget)
+    ? widget.sourceWidgetName
+    : widget.name
+
+  useExecutionErrorStore().clearWidgetRelatedErrors(
+    execId,
+    widget.name,
+    widgetName,
+    newValue,
+    { min: widget.options?.min, max: widget.options?.max }
+  )
+}
+
+function installWidgetCallbackHooks(
+  node: LGraphNode,
+  widgetCallbacks: OriginalCallbacks['widgetCallbacks']
+): void {
+  for (const widget of node.widgets ?? []) {
+    const originalCallback = widget.callback
+    if (!originalCallback) continue
+
+    const hookedCallback = useChainCallback<
+      IBaseWidget,
+      IBaseWidget['callback']
+    >(originalCallback, function (newValue) {
+      if (arguments.length === 0) return
+      clearWidgetRelatedErrors(node, widget, newValue)
+    })
+
+    widget.callback = hookedCallback
+    widgetCallbacks.set(widget, {
+      original: originalCallback,
+      hooked: hookedCallback
+    })
+  }
+}
 
 function installNodeHooks(node: LGraphNode): void {
   if (hookedNodes.has(node)) return
   hookedNodes.add(node)
 
+  const widgetCallbacks: OriginalCallbacks['widgetCallbacks'] = new Map()
   originalCallbacks.set(node, {
     onConnectionsChange: node.onConnectionsChange,
-    onWidgetChanged: node.onWidgetChanged
+    onWidgetChanged: node.onWidgetChanged,
+    widgetCallbacks
   })
+  installWidgetCallbackHooks(node, widgetCallbacks)
 
   node.onConnectionsChange = useChainCallback(
     node.onConnectionsChange,
@@ -99,27 +156,7 @@ function installNodeHooks(node: LGraphNode): void {
     // _name is the LiteGraph callback arg; re-derive from the widget
     // object to handle promoted widgets where sourceWidgetName differs.
     function (_name, newValue, _oldValue, widget) {
-      if (!app.rootGraph) return
-      const hostExecId = getExecutionIdByNode(app.rootGraph, node)
-      if (!hostExecId) return
-
-      const execId = resolvePromotedExecId(
-        app.rootGraph,
-        node,
-        widget,
-        hostExecId
-      )
-      const widgetName = isPromotedWidgetView(widget)
-        ? widget.sourceWidgetName
-        : widget.name
-
-      useExecutionErrorStore().clearWidgetRelatedErrors(
-        execId,
-        widget.name,
-        widgetName,
-        newValue,
-        { min: widget.options?.min, max: widget.options?.max }
-      )
+      clearWidgetRelatedErrors(node, widget, newValue)
     }
   )
 }
@@ -127,6 +164,11 @@ function installNodeHooks(node: LGraphNode): void {
 function restoreNodeHooks(node: LGraphNode): void {
   const originals = originalCallbacks.get(node)
   if (!originals) return
+  for (const [widget, callbacks] of originals.widgetCallbacks) {
+    if (widget.callback === callbacks.hooked) {
+      widget.callback = callbacks.original
+    }
+  }
   node.onConnectionsChange = originals.onConnectionsChange
   node.onWidgetChanged = originals.onWidgetChanged
   originalCallbacks.delete(node)

@@ -21,6 +21,7 @@ import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNod
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 
 beforeEach(() => {
@@ -206,6 +207,65 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     }
 
     node.onWidgetChanged!.call(node, 'steps', 50, 20, node.widgets![0])
+
+    expect(store.lastNodeErrors).not.toBeNull()
+  })
+
+  it('clears missing media when media widget callback fires', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('LoadImage')
+    node.type = 'LoadImage'
+    const widget = node.addWidget(
+      'combo',
+      'image',
+      'missing.png',
+      function noopWidgetCallback() {},
+      { values: [] }
+    )
+    graph.add(node)
+    installErrorClearingHooks(graph)
+
+    const store = useExecutionErrorStore()
+    const mediaStore = useMissingMediaStore()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    seedRequiredInputMissingNodeError(store, String(node.id), 'image')
+    mediaStore.setMissingMedia([
+      {
+        nodeId: String(node.id),
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'missing.png',
+        isMissing: true
+      } satisfies MissingMediaCandidate
+    ])
+
+    widget.value = 'uploaded.png'
+    widget.callback?.('uploaded.png')
+
+    expect(store.lastNodeErrors).toBeNull()
+    expect(mediaStore.missingMediaCandidates).toBeNull()
+  })
+
+  it('does not clear widget errors for valueless callbacks', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    const widget = node.addWidget(
+      'button',
+      'image',
+      '',
+      function noopWidgetCallback() {},
+      {}
+    )
+    graph.add(node)
+    installErrorClearingHooks(graph)
+
+    const store = useExecutionErrorStore()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    seedRequiredInputMissingNodeError(store, String(node.id), 'image')
+
+    const callback = widget.callback as (() => void) | undefined
+    callback?.()
 
     expect(store.lastNodeErrors).not.toBeNull()
   })
