@@ -99,6 +99,31 @@ describe('MP3 metadata', () => {
     expect(result.prompt).toEqual(EXPECTED_PROMPT)
   })
 
+  it('logs and skips when embedded JSON is malformed', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const metadata = `prompt\0{not json}\0workflow\0{also bad}\0`
+    const buf = new Uint8Array(64 + metadata.length)
+    buf[0] = 0xff
+    buf[1] = 0xfb
+    for (let i = 0; i < metadata.length; i++) {
+      buf[16 + i] = metadata.charCodeAt(i)
+    }
+    const file = new File([buf], 'malformed.mp3', { type: 'audio/mpeg' })
+
+    const result = await getMp3Metadata(file)
+
+    expect(result.prompt).toBeUndefined()
+    expect(result.workflow).toBeUndefined()
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Failed to parse MP3 prompt metadata',
+      expect.any(SyntaxError)
+    )
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Failed to parse MP3 workflow metadata',
+      expect.any(SyntaxError)
+    )
+  })
+
   describe('FileReader failure modes', () => {
     const file = new File([new Uint8Array(16)], 'test.mp3')
 

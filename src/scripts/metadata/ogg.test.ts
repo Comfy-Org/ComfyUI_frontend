@@ -67,6 +67,32 @@ describe('OGG/Opus metadata', () => {
     expect(result.prompt).toBeUndefined()
   })
 
+  it('logs and skips when embedded JSON is malformed', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const metadata = `prompt={not json}\0workflow={also bad}\0`
+    const oggs = new TextEncoder().encode('OggS\0')
+    const buf = new Uint8Array(128)
+    buf.set(oggs, 0)
+    for (let i = 0; i < metadata.length; i++) {
+      buf[16 + i] = metadata.charCodeAt(i)
+    }
+    buf.set(oggs, 16 + metadata.length + 8)
+    const file = new File([buf], 'malformed.opus', { type: 'audio/ogg' })
+
+    const result = await getOggMetadata(file)
+
+    expect(result.prompt).toBeUndefined()
+    expect(result.workflow).toBeUndefined()
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Failed to parse Ogg prompt metadata',
+      expect.any(SyntaxError)
+    )
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Failed to parse Ogg workflow metadata',
+      expect.any(SyntaxError)
+    )
+  })
+
   describe('FileReader failure modes', () => {
     const file = new File([new Uint8Array(16)], 'test.ogg')
 
