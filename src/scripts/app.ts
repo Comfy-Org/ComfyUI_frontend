@@ -591,6 +591,13 @@ export class ComfyApp {
         event.preventDefault()
         event.stopPropagation()
 
+        // graph_mouse is only updated on mousemove, so when files are dragged
+        // in from another window the canvas-space cursor is stale. Sync it
+        // from the drop event so nodes created below land at the cursor.
+        this.canvas.adjustMouseEvent(event)
+        this.canvas.graph_mouse[0] = event.canvasX
+        this.canvas.graph_mouse[1] = event.canvasY
+
         const n = this.dragOverNode
         this.dragOverNode = null
         // Node handles file drop, we dont use the built in onDropFile handler as its buggy
