@@ -222,17 +222,15 @@ export const useSubgraphNavigationStore = defineStore(
       const root = app.rootGraph
       const locatorId = newHash?.slice(1) || root.id
       const canvas = canvasStore.getCanvas()
+      if (canvas.graph?.id === locatorId) return
 
       const isRoot = locatorId === root.id
-      if (!isRoot && !isValidSubgraphId(locatorId)) {
-        return redirectToRoot(`invalid subgraph id in hash: ${locatorId}`)
-      }
-
-      const targetGraph = isRoot ? root : root.subgraphs.get(locatorId)
-      if (targetGraph) {
-        if (canvas.graph?.id === targetGraph.id) return
-        return canvas.setGraph(targetGraph)
-      }
+      const targetGraph = isRoot
+        ? root
+        : isValidSubgraphId(locatorId)
+          ? root.subgraphs.get(locatorId)
+          : undefined
+      if (targetGraph) return canvas.setGraph(targetGraph)
 
       //Search all open workflows
       for (const workflow of workflowStore.openWorkflows) {

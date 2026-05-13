@@ -145,16 +145,19 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     expect(app.canvas.setGraph).not.toHaveBeenCalled()
   })
 
-  it('resets canvas to root when navigating from a deleted subgraph (stale canvas)', async () => {
-    const stale = makeSubgraph(ids.deletedSubgraph)
-    app.canvas.graph = stale
+  it('does not redirect when hash is a non-UUID root graph id (e.g. workflow slug)', async () => {
+    const slugRootId = 'test-missing-models-in-subgraph'
+    app.rootGraph.id = slugRootId
+    app.canvas.graph = fromPartial<LGraph>({ id: slugRootId })
     useSubgraphNavigationStore()
 
-    routeHashRef.value = `#${ids.deletedSubgraph}`
+    routeHashRef.value = `#${slugRootId}`
     await flushHashWatcher()
 
-    expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
-    expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
+    expect(routerMocks.replace).not.toHaveBeenCalled()
+    expect(app.canvas.setGraph).not.toHaveBeenCalled()
+
+    app.rootGraph.id = ids.root
   })
 
   it('does not redirect or re-set graph when hash equals current graph', async () => {
