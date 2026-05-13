@@ -5559,6 +5559,9 @@
   "ImageCompositeMasked": {
     "display_name": "Image Composite Masked",
     "inputs": {
+      "destination": {
+        "name": "destination"
+      },
       "source": {
         "name": "source"
       },
@@ -5570,9 +5573,6 @@
       },
       "resize_source": {
         "name": "resize_source"
-      },
-      "destination": {
-        "name": "destination"
       },
       "mask": {
         "name": "mask"
