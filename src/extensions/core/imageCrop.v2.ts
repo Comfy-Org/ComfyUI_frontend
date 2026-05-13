@@ -5,13 +5,13 @@
  * v2: 12 lines, uses NodeHandle — type filtering via nodeTypes option
  */
 
-import { defineNodeExtension } from '@/extension-api'
+import { defineNode, type NodeHandle } from '@/extension-api'
 
-defineNodeExtension({
+defineNode({
   name: 'Comfy.ImageCrop.V2',
   nodeTypes: ['ImageCropV2'],
 
-  nodeCreated(node) {
+  nodeCreated(node: NodeHandle) {
     const [w, h] = node.getSize()
     node.setSize([Math.max(w, 300), Math.max(h, 450)])
   }

@@ -38,7 +38,9 @@ const config: KnipConfig = {
     },
     'packages/extension-api': {
       // Build output is committed for npm package visibility
-      ignore: ['build/**']
+      ignore: ['build/**'],
+      // typedoc is invoked via execSync in scripts/build-docs.ts
+      ignoreDependencies: ['typedoc']
     },
     'apps/website': {
       entry: ['src/scripts/**/*.ts']

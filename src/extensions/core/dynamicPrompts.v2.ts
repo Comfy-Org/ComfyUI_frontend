@@ -5,16 +5,20 @@
  * v2: same logic, uses WidgetHandle instead of raw widget
  */
 
-import { defineNodeExtension } from '@/extension-api'
+import {
+  defineNode,
+  type NodeHandle,
+  type WidgetBeforeSerializeEvent
+} from '@/extension-api'
 import { processDynamicPrompt } from '@/utils/formatUtil'
 
-defineNodeExtension({
+defineNode({
   name: 'Comfy.DynamicPrompts.V2',
 
-  nodeCreated(node) {
-    for (const widget of node.widgets()) {
+  nodeCreated(node: NodeHandle) {
+    for (const widget of node.getWidgets()) {
       if (widget.getOption('dynamicPrompts')) {
-        widget.on('beforeSerialize', (e) => {
+        widget.on('beforeSerialize', (e: WidgetBeforeSerializeEvent) => {
           if (e.context === 'prompt') {
             const value = widget.getValue()
             e.setSerializedValue(
