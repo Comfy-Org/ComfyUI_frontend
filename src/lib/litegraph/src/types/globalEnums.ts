@@ -84,7 +84,6 @@ export enum LGraphEventMode {
   ALWAYS = 0,
   ON_EVENT = 1,
   NEVER = 2,
-  ON_TRIGGER = 3,
   BYPASS = 4
 }
 
