@@ -286,14 +286,18 @@ const zLinearInputConfig = z
   .object({ height: z.number().optional() })
   .passthrough()
 
-// Permissive parser for a single `linearData.inputs` entry.
-// Stored shapes seen in the wild (legacy clients, forks, future fields):
-//   [nodeId, name]
-//   [nodeId, name, { height? }]
-//   [nodeId, name, <number>]        — legacy: raw height
-//   [nodeId, name, <anything else>] — unknown trailing data
-// Reject only entries that don't start with [nodeId, string]; normalize
-// the rest so a single bad entry doesn't fail the whole workflow load.
+/**
+ * Permissive parser for a single `linearData.inputs` entry.
+ *
+ * Stored shapes seen in the wild (legacy clients, forks, future fields):
+ * - `[nodeId, name]`
+ * - `[nodeId, name, { height? }]`
+ * - `[nodeId, name, <number>]` — legacy: raw height
+ * - `[nodeId, name, <anything else>]` — unknown trailing data
+ *
+ * Rejects only entries that don't start with `[nodeId, string]`; normalizes
+ * the rest so a single bad entry doesn't fail the whole workflow load.
+ */
 const zLinearInput = z
   .tuple([zNodeId, z.string()])
   .rest(z.unknown())
