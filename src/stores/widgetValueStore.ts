@@ -50,6 +50,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return `${nodeId}:${widgetName}`
   }
 
+  /**
+   * @deprecated Use `ensureWidgetState(widget.entityId, init)` from
+   * `src/world/widgetValueIO.ts`. Passing a loose `(graphId, nodeId, name)`
+   * triple lets producers and consumers drift; `WidgetEntityId` is branded so
+   * a mismatch becomes a type error.
+   */
   function registerWidget<TValue = unknown>(
     graphId: UUID,
     state: WidgetState<TValue>
@@ -68,6 +74,13 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       .map(([, state]) => state)
   }
 
+  /**
+   * @deprecated Use `getWidgetState(widget.entityId)` or
+   * `readWidgetValue(widget.entityId)` from `src/world/widgetValueIO.ts`.
+   * Passing a loose `(graphId, nodeId, name)` triple lets producers and
+   * consumers drift; `WidgetEntityId` is branded so a mismatch becomes a type
+   * error.
+   */
   function getWidget(
     graphId: UUID,
     nodeId: NodeId,
