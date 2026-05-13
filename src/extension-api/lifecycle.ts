@@ -72,6 +72,11 @@ import type {
  *   }
  * })
  * ```
+ *
+ * @remarks
+ * This is a type-only export (`declare function`) for the npm package surface.
+ * The runtime implementation is in `extension-api-service.ts`. Bundlers that
+ * consume `@comfyorg/extension-api` will resolve to the service implementation.
  */
 export declare function defineNode(
   options: NodeExtensionOptions
@@ -95,6 +100,10 @@ export declare function defineNode(
  *   }
  * })
  * ```
+ *
+ * @remarks
+ * This is a type-only export (`declare function`) for the npm package surface.
+ * The runtime implementation is in `extension-api-service.ts`.
  */
 export declare function defineExtension(
   options: ExtensionOptions
@@ -115,6 +124,10 @@ export declare function defineExtension(
  *   type: 'COLOR_PICKER'
  * })
  * ```
+ *
+ * @remarks
+ * This is a type-only export (`declare function`) for the npm package surface.
+ * The runtime implementation is in `extension-api-service.ts`.
  */
 export declare function defineWidget(
   options: WidgetExtensionOptions
