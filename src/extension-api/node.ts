@@ -146,7 +146,13 @@ export interface NodeModeChangedEvent {
  * @deprecated Node-level serialization control will be removed in v1.0.
  * Use widget-level `widget.on('beforeSerialize')` instead. Store extension
  * state in widgets rather than arbitrary node fields.
- * See ADR-0010 for migration guidance.
+ *
+ * **Why widget-level is better:**
+ * - Widget values are visible at predictable locations in workflow JSON
+ * - Cleaner separation between framework and extension concerns
+ * - Widget serialization hooks support async operations
+ *
+ * See ADR-0010 for full migration guidance.
  *
  * @stability experimental
  */
@@ -476,6 +482,20 @@ export interface NodeHandle {
    * @deprecated Node-level serialization control will be removed in v1.0.
    * Use widget-level `widget.on('beforeSerialize')` instead — store extension
    * state in widgets rather than arbitrary node fields. See ADR-0010.
+   *
+   * **Migration example:**
+   * ```ts
+   * // BEFORE (deprecated)
+   * node.on('beforeSerialize', (e) => {
+   *   e.data['my_extension_state'] = computeState()
+   * })
+   *
+   * // AFTER (recommended)
+   * const stateWidget = node.addWidget('STRING', '_my_state', '', { hidden: true })
+   * stateWidget.on('beforeSerialize', (e) => {
+   *   e.setSerializedValue(JSON.stringify(computeState()))
+   * })
+   * ```
    *
    * @returns A cleanup function to remove the listener.
    * @stability experimental

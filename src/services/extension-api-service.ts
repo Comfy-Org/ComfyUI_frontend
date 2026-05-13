@@ -537,6 +537,19 @@ function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
         // which happens in unmountExtensionsForNode — exactly when the node is removed.
         onScopeDispose(() => fn())
         return () => {} // cleanup handled by scope.stop()
+      } else if (event === 'beforeSerialize') {
+        // DEPRECATED: Node-level serialization control — see ADR-0010.
+        // Emit dev-mode warning, but still register the handler for backward compat.
+        if (import.meta.env.DEV) {
+          console.warn(
+            `[extension-api] node.on('beforeSerialize') is deprecated and will be removed in v1.0. ` +
+              `Use widget.on('beforeSerialize') instead — store extension state in widgets. ` +
+              `See ADR-0010 for migration guidance.`
+          )
+        }
+        dispatch({ type: 'RegisterNodeSerializer', nodeId, serializer: fn })
+        return () =>
+          dispatch({ type: 'UnregisterNodeSerializer', nodeId, serializer: fn })
       }
       if (import.meta.env.DEV) {
         console.warn(`[extension-api] Unknown node event: "${event}"`)
@@ -603,16 +616,43 @@ const appExtensions: ExtensionOptions[] = []
 const nodeExtensions: NodeExtensionOptions[] = []
 const widgetExtensions: WidgetExtensionOptions[] = []
 
+// Dev-mode warning: detect if extensions are registered but system never starts.
+// Uses a one-shot timer scheduled on first registration (ADR-0012 mitigation).
+let _startupCheckScheduled = false
+
+function scheduleStartupCheck(): void {
+  if (_startupCheckScheduled || !import.meta.env.DEV) return
+  _startupCheckScheduled = true
+
+  // Check after 5 seconds — bootstrap should have called startExtensionSystem by then.
+  setTimeout(() => {
+    const hasExtensions =
+      nodeExtensions.length > 0 ||
+      widgetExtensions.length > 0 ||
+      appExtensions.length > 0
+    if (hasExtensions && !_extensionSystemStarted) {
+      console.warn(
+        `[extension-api] Extensions were registered via defineNode/defineWidget/defineExtension ` +
+          `but startExtensionSystem() was never called. Extensions will not be mounted. ` +
+          `Call startExtensionSystem() during app bootstrap.`
+      )
+    }
+  }, 5000)
+}
+
 export function defineExtension(options: ExtensionOptions): void {
   appExtensions.push(options)
+  scheduleStartupCheck()
 }
 
 export function defineNode(options: NodeExtensionOptions): void {
   nodeExtensions.push(options)
+  scheduleStartupCheck()
 }
 
 export function defineWidget(options: WidgetExtensionOptions): void {
   widgetExtensions.push(options)
+  scheduleStartupCheck()
 }
 
 /** @deprecated Use `defineNode` instead. Will be removed in v1.0. */
@@ -627,6 +667,7 @@ export function _clearExtensionsForTesting(): void {
   appExtensions.length = 0
   widgetExtensions.length = 0
   _extensionSystemStarted = false
+  _startupCheckScheduled = false
 }
 
 // ─── Mount / Unmount ─────────────────────────────────────────────────────────
