@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import ImageLightbox from '@/components/common/ImageLightbox.vue'
 import { useClickDragGuard } from '@/composables/useClickDragGuard'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({ inheritAttrs: false })
 
@@ -102,7 +102,7 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
         <div
           :class="
             cn(
-              'flex h-full max-w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-[7px] p-3 text-center text-sm/tight transition-colors',
+              'flex h-full max-w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-lg p-3 text-center text-sm/tight transition-colors',
               isHovered &&
                 !dropIndicator.imageUrl &&
                 'border border-dashed border-component-node-foreground-secondary bg-component-node-widget-background-hovered'

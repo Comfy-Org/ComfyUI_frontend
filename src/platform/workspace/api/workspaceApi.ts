@@ -1,14 +1,19 @@
 import axios from 'axios'
 
 import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import type {
+  WorkspaceId,
+  WorkspaceInviteId
+} from '@/platform/workspace/workspaceTypes'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
+import type { UserId } from '@/types/authTypes'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
 
 interface Workspace {
-  id: string
+  id: WorkspaceId
   name: string
   type: WorkspaceType
   created_at: string
@@ -21,7 +26,7 @@ export interface WorkspaceWithRole extends Workspace {
 }
 
 export interface Member {
-  id: string
+  id: UserId
   name: string
   email: string
   joined_at: string
@@ -45,7 +50,7 @@ export interface ListMembersParams {
 }
 
 export interface PendingInvite {
-  id: string
+  id: WorkspaceInviteId
   email: string
   token: string
   invited_at: string
@@ -61,7 +66,7 @@ interface CreateInviteRequest {
 }
 
 interface AcceptInviteResponse {
-  workspace_id: string
+  workspace_id: WorkspaceId
   workspace_name: string
 }
 
@@ -336,7 +341,7 @@ export const workspaceApi = {
    * PATCH /api/workspaces/:id
    */
   async update(
-    workspaceId: string,
+    workspaceId: WorkspaceId,
     payload: UpdateWorkspacePayload
   ): Promise<WorkspaceWithRole> {
     const headers = await getAuthHeaderOrThrow()
@@ -356,7 +361,7 @@ export const workspaceApi = {
    * Delete a workspace (owner only)
    * DELETE /api/workspaces/:id
    */
-  async delete(workspaceId: string): Promise<void> {
+  async delete(workspaceId: WorkspaceId): Promise<void> {
     const headers = await getAuthHeaderOrThrow()
     try {
       await workspaceApiClient.delete(
@@ -406,7 +411,7 @@ export const workspaceApi = {
    * Remove a member from the workspace.
    * DELETE /api/workspace/members/:userId
    */
-  async removeMember(userId: string): Promise<void> {
+  async removeMember(userId: UserId): Promise<void> {
     const headers = await getAuthHeaderOrThrow()
     try {
       await workspaceApiClient.delete(
@@ -457,7 +462,7 @@ export const workspaceApi = {
    * Revoke a pending invite.
    * DELETE /api/workspace/invites/:inviteId
    */
-  async revokeInvite(inviteId: string): Promise<void> {
+  async revokeInvite(inviteId: WorkspaceInviteId): Promise<void> {
     const headers = await getAuthHeaderOrThrow()
     try {
       await workspaceApiClient.delete(

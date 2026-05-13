@@ -2,6 +2,7 @@
 import type { Locale } from '../../../i18n/translations'
 
 import { t } from '../../../i18n/translations'
+import GlassCard from '../../common/GlassCard.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -12,13 +13,13 @@ const cards = [
     labelKey: 'cloud.audience.creators.label' as const,
     titleKey: 'cloud.audience.creators.title' as const,
     descriptionKey: 'cloud.audience.creators.description' as const,
-    image: '/images/cloud/audience-creator.webp'
+    image: 'https://media.comfy.org/website/cloud/audience-creator.webp'
   },
   {
     labelKey: 'cloud.audience.teams.label' as const,
     titleKey: 'cloud.audience.teams.title' as const,
     descriptionKey: 'cloud.audience.teams.description' as const,
-    image: '/images/cloud/audience-team.webp'
+    image: 'https://media.comfy.org/website/cloud/audience-team.webp'
   }
 ]
 </script>
@@ -35,9 +36,7 @@ const cards = [
       >{{ headingParts[1] }}
     </h2>
 
-    <div
-      class="rounded-5xl bg-transparency-white-t4 mt-12 grid grid-cols-1 gap-6 p-2 lg:mt-20 lg:grid-cols-2"
-    >
+    <GlassCard class="mt-12 grid grid-cols-1 gap-6 lg:mt-20 lg:grid-cols-2">
       <div
         v-for="card in cards"
         :key="card.labelKey"
@@ -69,6 +68,6 @@ const cards = [
           </p>
         </div>
       </div>
-    </div>
+    </GlassCard>
   </section>
 </template>

@@ -2,14 +2,17 @@ import { capitalize } from 'es-toolkit'
 import { computed, ref, shallowRef, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
+import { t } from '@/i18n'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import {
   filterItemByBaseModels,
   filterItemByOwnership
 } from '@/platform/assets/utils/assetFilterUtils'
 import {
   getAssetBaseModels,
+  getAssetDisplayFilename,
   getAssetDisplayName,
   getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
@@ -49,7 +52,7 @@ function getMediaUrl(
   type: 'input' | 'output',
   assetKind: AssetKind | undefined
 ): string {
-  if (!['image', 'video', 'audio', 'mesh'].includes(assetKind ?? '')) return ''
+  if (!['image', 'video', 'audio'].includes(assetKind ?? '')) return ''
   const params = new URLSearchParams({ filename, type })
   appendCloudResParam(params, filename)
   return `/api/view?${params}`
@@ -70,6 +73,14 @@ interface UseWidgetSelectItemsOptions {
 export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   const { modelValue, outputMediaAssets, assetData } = options
 
+  const missingMediaStore = useMissingMediaStore()
+  const missingMediaValues = computed<ReadonlySet<string>>(
+    () =>
+      new Set(
+        missingMediaStore.missingMediaCandidates?.map((c) => c.name) ?? []
+      )
+  )
+
   const filterSelected = ref('all')
   const filterOptions = computed<FilterOption[]>(() => {
     const isAsset = toValue(options.isAssetMode)
@@ -78,9 +89,9 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       return [{ name: capitalize(categoryName), value: 'all' }]
     }
     return [
-      { name: 'All', value: 'all' },
-      { name: 'Inputs', value: 'inputs' },
-      { name: 'Outputs', value: 'outputs' }
+      { name: t('g.all'), value: 'all' },
+      { name: t('sideToolbar.labels.imported'), value: 'inputs' },
+      { name: t('sideToolbar.labels.generated'), value: 'outputs' }
     ]
   })
 
@@ -151,12 +162,15 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
     const labelFn = toValue(options.getOptionLabel)
     const kind = toValue(options.assetKind)
-    return values.map((value, index) => ({
-      id: `input-${index}`,
-      preview_url: getMediaUrl(String(value), 'input', kind),
-      name: String(value),
-      label: getDisplayLabel(String(value), labelFn)
-    }))
+    const missing = missingMediaValues.value
+    return values
+      .filter((value) => !missing.has(String(value)))
+      .map((value, index) => ({
+        id: `input-${index}`,
+        preview_url: getMediaUrl(String(value), 'input', kind),
+        name: String(value),
+        label: getDisplayLabel(String(value), labelFn)
+      }))
   })
 
   const outputItems = computed<FormDropdownItem[]>(() => {
@@ -174,17 +188,29 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       return resolved ?? [asset]
     })
 
+    const missing = missingMediaValues.value
     for (const asset of assets) {
       if (getMediaTypeFromFilename(asset.name) !== targetMediaType) continue
       if (seen.has(asset.id)) continue
       seen.add(asset.id)
-      const annotatedPath = `${asset.name} [output]`
+      const subfolder =
+        kind === 'mesh'
+          ? getOutputAssetMetadata(asset.user_metadata)?.subfolder
+          : undefined
+      const pathWithSubfolder = subfolder
+        ? `${subfolder}/${asset.name}`
+        : asset.name
+      const annotatedPath = `${pathWithSubfolder} [output]`
+      if (missing.has(annotatedPath)) continue
+      const displayLabel = `${getAssetDisplayFilename(asset)} [output]`
       items.push({
         id: `output-${asset.id}`,
         preview_url:
-          asset.preview_url || getMediaUrl(asset.name, 'output', kind),
+          kind === 'mesh'
+            ? ''
+            : asset.preview_url || getMediaUrl(asset.name, 'output', kind),
         name: annotatedPath,
-        label: getDisplayLabel(annotatedPath, labelFn)
+        label: getDisplayLabel(displayLabel, labelFn)
       })
     }
 
@@ -196,6 +222,8 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     if (!currentValue) return undefined
     const labelFn = toValue(options.getOptionLabel)
     const kind = toValue(options.assetKind)
+
+    if (missingMediaValues.value.has(currentValue)) return undefined
 
     if (toValue(options.isAssetMode) && assetData) {
       const existsInAssets = assetData.assets.value.some(

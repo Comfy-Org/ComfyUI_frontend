@@ -2,8 +2,8 @@
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@/utils/tailwindUtil'
-import type { ClassValue } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
+import type { ClassValue } from '@comfyorg/tailwind-utils'
 
 const {
   nodeTitle,

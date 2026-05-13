@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
   ComfyWorkflow,
   LoadedComfyWorkflow
@@ -275,6 +276,12 @@ describe('useWorkflowStore', () => {
     })
 
     it('should prefer a persisted V2 draft when loading a remote workflow', async () => {
+      useSettingStore().settingsById['Comfy.Workflow.Persist'] = {
+        id: 'Comfy.Workflow.Persist',
+        name: 'Persist workflow state',
+        type: 'boolean',
+        defaultValue: true
+      }
       const draftStore = useWorkflowDraftStoreV2()
 
       await syncRemoteWorkflowsWithMeta([

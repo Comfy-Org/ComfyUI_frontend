@@ -1,9 +1,11 @@
 import { defineStore } from 'pinia'
 import { computed, onScopeDispose, ref } from 'vue'
 
+import { t } from '@/i18n'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -20,6 +22,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   const canvasStore = useCanvasStore()
 
   const missingModelCandidates = ref<MissingModelCandidate[] | null>(null)
+  const isRefreshingMissingModels = ref(false)
 
   const hasMissingModels = computed(
     () => !!missingModelCandidates.value?.length
@@ -270,8 +273,33 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     fileSizes.value = {}
   }
 
+  function isAbortError(error: unknown) {
+    return error instanceof Error && error.name === 'AbortError'
+  }
+
+  async function refreshMissingModels() {
+    if (isRefreshingMissingModels.value) return
+
+    isRefreshingMissingModels.value = true
+    try {
+      await app.refreshMissingModels({ silent: true })
+    } catch (error) {
+      if (isAbortError(error)) return
+
+      console.error('Failed to refresh missing models:', error)
+      useToastStore().add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('rightSidePanel.missingModels.refreshFailed')
+      })
+    } finally {
+      isRefreshingMissingModels.value = false
+    }
+  }
+
   return {
     missingModelCandidates,
+    isRefreshingMissingModels,
     hasMissingModels,
     missingModelCount,
     missingModelNodeIds,
@@ -285,6 +313,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     removeMissingModelsByNodeId,
     removeMissingModelsByPrefix,
     clearMissingModels,
+    refreshMissingModels,
     createVerificationAbortController,
 
     hasMissingModelOnNode,

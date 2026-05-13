@@ -4,10 +4,16 @@ import type { Locator, Page } from '@playwright/test'
 export class ToastHelper {
   public readonly visibleToasts: Locator
   public readonly toastErrors: Locator
+  public readonly toastSuccesses: Locator
+  public readonly toastWarnings: Locator
 
   constructor(private readonly page: Page) {
     this.visibleToasts = page.locator('.p-toast-message:visible')
     this.toastErrors = page.locator('.p-toast-message.p-toast-message-error')
+    this.toastSuccesses = page.locator(
+      '.p-toast-message.p-toast-message-success'
+    )
+    this.toastWarnings = page.locator('.p-toast-message.p-toast-message-warn')
   }
 
   async closeToasts(requireCount = 0): Promise<void> {
@@ -27,5 +33,9 @@ export class ToastHelper {
 
     // Assert all toasts are closed
     await expect(this.visibleToasts).toHaveCount(0)
+  }
+
+  async getToastErrorCount(): Promise<number> {
+    return await this.toastErrors.count()
   }
 }

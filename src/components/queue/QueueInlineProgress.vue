@@ -8,12 +8,12 @@
     "
   >
     <div
-      class="pointer-events-none absolute bottom-0 left-0 h-[3px] bg-interface-panel-job-progress-primary transition-[width]"
-      :style="{ width: `${totalPercent}%` }"
+      class="pointer-events-none absolute bottom-0 left-0 bg-interface-panel-job-progress-primary transition-[width]"
+      :style="{ height: '3px', width: `${totalPercent}%` }"
     />
     <div
-      class="pointer-events-none absolute bottom-0 left-0 h-[3px] bg-interface-panel-job-progress-secondary transition-[width]"
-      :style="{ width: `${currentNodePercent}%` }"
+      class="pointer-events-none absolute bottom-0 left-0 bg-interface-panel-job-progress-secondary transition-[width]"
+      :style="{ height: '3px', width: `${currentNodePercent}%` }"
     />
   </div>
 </template>
@@ -22,9 +22,9 @@
 import { computed } from 'vue'
 
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
-const { hidden = false, radiusClass = 'rounded-[7px]' } = defineProps<{
+const { hidden = false, radiusClass = 'rounded-lg' } = defineProps<{
   hidden?: boolean
   radiusClass?: string
 }>()

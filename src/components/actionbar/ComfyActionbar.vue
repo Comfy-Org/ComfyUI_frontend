@@ -80,7 +80,7 @@
     <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
       <QueueInlineProgress
         :hidden="shouldHideInlineProgress"
-        :radius-class="cn(isDocked ? 'rounded-[7px]' : 'rounded-[5px]')"
+        :radius-class="cn(isDocked ? 'rounded-lg' : 'rounded-md')"
         data-testid="queue-inline-progress"
       />
     </Teleport>
@@ -115,7 +115,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import ComfyRunButton from './ComfyRunButton'
 
@@ -426,7 +426,7 @@ const actionbarClass = computed(() =>
     'rounded-md before:-ml-50 before:h-full before:w-50',
     'pointer-events-auto',
     isMouseOverDropZone.value &&
-      'scale-105 border-[3px] opacity-100 shadow-[0_0_20px] shadow-blue-500'
+      'scale-105 border-3 opacity-100 shadow-[0_0_20px] shadow-blue-500'
   )
 )
 const panelClass = computed(() =>

@@ -17,7 +17,7 @@ import type { ContextMenu } from './ContextMenu'
 import { createCursorCache } from './cursorCache'
 import { DragAndScale } from './DragAndScale'
 import type { AnimationOptions } from './DragAndScale'
-import type { LGraph } from './LGraph'
+import type { LGraph, SubgraphId } from './LGraph'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
 import type { NodeId, NodeProperty } from './LGraphNode'
@@ -112,7 +112,6 @@ import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getAllNestedItems } from './utils/collections'
 import { resolveConnectingLinkColor } from './utils/linkColors'
 import { createUuidv4 } from './utils/uuid'
-import type { UUID } from './utils/uuid'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
 
@@ -228,7 +227,7 @@ interface ClipboardPasteResult {
   /** Map: original reroute IDs to newly created reroutes */
   reroutes: Map<RerouteId, Reroute>
   /** Map: original subgraph IDs to newly created subgraphs */
-  subgraphs: Map<UUID, Subgraph>
+  subgraphs: Map<SubgraphId, Subgraph>
 }
 
 /** Options for {@link LGraphCanvas.pasteFromClipboard}. */
@@ -684,6 +683,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   private _visibleReroutes: Set<Reroute> = new Set()
   private _autoPan: AutoPanController | null = null
   private _ghostPointerHandler: ((e: PointerEvent) => void) | null = null
+  private _ghostKeyHandler: ((e: KeyboardEvent) => void) | null = null
 
   dirty_canvas: boolean = true
   dirty_bgcanvas: boolean = true
@@ -1179,7 +1179,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const categories = LiteGraph.getNodeTypesCategories(
         canvas.filter || graph.filter
       ).filter((category) => category.startsWith(base_category))
-      const entries: AddNodeMenu[] = []
+      const categoryEntries: AddNodeMenu[] = []
 
       for (const category of categories) {
         if (!category) continue
@@ -1197,11 +1197,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         // in case it has a namespace like "shader::math/rand" it hides the namespace
         if (name.includes('::')) name = name.split('::', 2)[1]
 
-        const index = entries.findIndex(
+        const index = categoryEntries.findIndex(
           (entry) => entry.value === category_path
         )
         if (index === -1) {
-          entries.push({
+          categoryEntries.push({
             value: category_path,
             content: name,
             has_submenu: true,
@@ -1212,11 +1212,19 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         }
       }
 
+      const compareByContent = (a: AddNodeMenu, b: AddNodeMenu) =>
+        (a.content ?? '').localeCompare(b.content ?? '', undefined, {
+          numeric: true,
+          sensitivity: 'base'
+        })
+      categoryEntries.sort(compareByContent)
+
       const nodes = LiteGraph.getNodeTypesInCategory(
         base_category.slice(0, -1),
         canvas.filter || graph.filter
       )
 
+      const nodeEntries: AddNodeMenu[] = []
       for (const node of nodes) {
         if (node.skip_list) continue
 
@@ -1246,8 +1254,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
         }
 
-        entries.push(entry)
+        nodeEntries.push(entry)
       }
+
+      nodeEntries.sort(compareByContent)
+
+      const entries: AddNodeMenu[] = [...categoryEntries, ...nodeEntries]
 
       new LiteGraph.ContextMenu(entries, { event: e, parentMenu: prev_menu })
     }
@@ -1860,6 +1872,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const { graph } = this
     if (newGraph === graph) return
 
+    // Drop any in-flight ghost so listeners don't outlive the graph it belongs to
+    if (this.state.ghostNodeId != null) this.finalizeGhostPlacement(true)
+
     this.clear()
     newGraph.attachCanvas(this)
 
@@ -2223,6 +2238,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (this.state.ghostNodeId != null) {
       if (e.button === 0) this.finalizeGhostPlacement(false)
       if (e.button === 2) this.finalizeGhostPlacement(true)
+      this.canvas.focus()
       e.stopPropagation()
       e.preventDefault()
       return
@@ -3081,7 +3097,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (oldValue != widget.value) {
       node.onWidgetChanged?.(widget.name, widget.value, oldValue, widget)
       if (!node.graph) throw new NullGraphError()
-      node.graph._version++
+      node.graph.incrementVersion()
     }
 
     // Clean up state var
@@ -3662,6 +3678,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @param dragEvent Optional mouse event for positioning under cursor
    */
   startGhostPlacement(node: LGraphNode, dragEvent?: MouseEvent): void {
+    // Cancel any in-flight ghost so we don't leak its listeners
+    if (this.state.ghostNodeId != null) this.finalizeGhostPlacement(true)
+
     this.emitBeforeChange()
     this.graph?.beforeChange()
 
@@ -3679,6 +3698,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     this.state.ghostNodeId = node.id
+    this.dispatchEvent('litegraph:ghost-placement', {
+      active: true,
+      nodeId: node.id
+    })
 
     this.deselectAll()
     this.select(node)
@@ -3697,6 +3720,19 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       'pointerleave',
       this._ghostPointerHandler
     )
+
+    // Listen on document so cancellation works even when the canvas isnt focused
+    // e.g. the search dialog just closed.
+    // stopPropagation prevents window-level keybindings (like Comfy.Graph.ExitSubgraph on Escape) from firing alongside the cancel.
+    this._ghostKeyHandler = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' && e.key !== 'Delete' && e.key !== 'Backspace') {
+        return
+      }
+      this.finalizeGhostPlacement(true)
+      e.stopPropagation()
+      e.preventDefault()
+    }
+    document.addEventListener('keydown', this._ghostKeyHandler, true)
   }
 
   /**
@@ -3709,6 +3745,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.state.ghostNodeId = null
     this.isDragging = false
+    this.dispatchEvent('litegraph:ghost-placement', {
+      active: false,
+      nodeId
+    })
     this._autoPan?.stop()
     this._autoPan = null
 
@@ -3719,6 +3759,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this._ghostPointerHandler
       )
       this._ghostPointerHandler = null
+    }
+
+    if (this._ghostKeyHandler) {
+      document.removeEventListener('keydown', this._ghostKeyHandler, true)
+      this._ghostKeyHandler = null
     }
 
     const node = this.graph?.getNodeById(nodeId)
@@ -3909,17 +3954,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const { graph } = this
     if (!graph) return
-
-    // Cancel ghost placement
-    if (
-      (e.key === 'Escape' || e.key === 'Delete' || e.key === 'Backspace') &&
-      this.state.ghostNodeId != null
-    ) {
-      this.finalizeGhostPlacement(true)
-      e.stopPropagation()
-      e.preventDefault()
-      return
-    }
 
     let block_default = false
     // @ts-expect-error EventTarget.localName is not in standard types
@@ -4130,7 +4164,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       nodes: new Map<NodeId, LGraphNode>(),
       links: new Map<LinkId, LLink>(),
       reroutes: new Map<RerouteId, Reroute>(),
-      subgraphs: new Map<UUID, Subgraph>()
+      subgraphs: new Map<SubgraphId, Subgraph>()
     }
     const { created, nodes, links, reroutes } = results
 
@@ -7888,7 +7922,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
       node.properties[property] = value
       if (node.graph) {
-        node.graph._version++
+        node.graph.incrementVersion()
       }
       node.onPropertyChanged?.(property, value)
       options.onclose?.()
@@ -9066,7 +9100,7 @@ export function remapClipboardSubgraphNodeIds(
     return nextId
   }
 
-  const subgraphNodeIdMap = new Map<UUID, Map<NodeId, NodeId>>()
+  const subgraphNodeIdMap = new Map<SubgraphId, Map<NodeId, NodeId>>()
   for (const subgraphInfo of parsed.subgraphs ?? []) {
     const remappedIds = new Map<NodeId, NodeId>()
     const interiorNodes = subgraphInfo.nodes ?? []

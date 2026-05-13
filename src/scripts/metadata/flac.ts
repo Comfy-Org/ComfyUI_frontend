@@ -1,4 +1,3 @@
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export function getFromFlacBuffer(buffer: ArrayBuffer): Record<string, string> {
   const dataView = new DataView(buffer)
 
@@ -42,6 +41,8 @@ export function getFromFlacFile(file: File): Promise<Record<string, string>> {
       const arrayBuffer = event.target.result as ArrayBuffer
       r(getFromFlacBuffer(arrayBuffer))
     }
+    reader.onerror = () => r({})
+    reader.onabort = () => r({})
     reader.readAsArrayBuffer(file)
   })
 }

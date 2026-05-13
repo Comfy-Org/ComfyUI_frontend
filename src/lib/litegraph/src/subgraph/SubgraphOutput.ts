@@ -99,7 +99,7 @@ export class SubgraphOutput extends SubgraphSlot {
         }
       }
     }
-    subgraph._version++
+    subgraph.incrementVersion()
 
     node.onConnectionsChange?.(
       NodeSlotType.OUTPUT,
