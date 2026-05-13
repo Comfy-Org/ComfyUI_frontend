@@ -2,20 +2,17 @@
  * Extension lifecycle — `defineExtension`, `defineNodeExtension`, and
  * the implicit-context lifecycle hooks (`onNodeMounted`, `onNodeRemoved`).
  *
- * Design decisions (D10):
- * - D10a: `currentExtension` global, Vue-style. Hook factories read the slot
- *   implicitly. Lifecycle hooks must be called synchronously inside `setup()`.
- * - D10b: Hook firing order = registration order with lexicographic tie-break
+ * Key behaviors:
+ * - Hook firing order = registration order with lexicographic tie-break
  *   on extension name.
- * - D10c: `setup()` is synchronous. `async setup` throws in dev, emits
+ * - `setup()` is synchronous. `async setup` throws in dev, emits
  *   console.error in prod.
- * - D10d: The object returned by `setup()` is wrapped with `proxyRefs()` so
+ * - The object returned by `setup()` is wrapped with `proxyRefs()` so
  *   callers read `entity.extensionState['my-ext'].count` without `.value`.
  *
- * Entry-point design (D6 Part 1): module-level import only. Extensions do NOT
- * depend on `window.app` being initialized at registration time.
+ * Module-level import only. Extensions do NOT depend on `window.app` being
+ * initialized at registration time.
  *
- * @stability stable
  * @packageDocumentation
  */
 

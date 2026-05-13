@@ -6,7 +6,6 @@
  * reference a node across subgraph boundaries or execution runs should use
  * these rather than raw LiteGraph integer node IDs.
  *
- * @stability stable
  * @packageDocumentation
  */
 

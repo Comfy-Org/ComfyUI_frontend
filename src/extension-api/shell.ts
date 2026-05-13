@@ -5,7 +5,6 @@
  * re-export makes all shell types available from the single
  * `@comfyorg/extension-api` package entry point.
  *
- * @stability stable
  * @packageDocumentation
  */
 

@@ -4,14 +4,6 @@
  * All state reads and writes go through this interface. Internal ECS
  * components and World references are never exposed.
  *
- * Design decisions:
- * - First-class fields (every-widget) per D7 Part 1: label, hidden, disabled, serialize
- * - Options bag (type-specific) per D7 Part 1: min/max/step etc. via getOption/setOption
- * - Three-tier persistence model per D7 Part 2: value / options / extensionState
- * - `beforeSerialize` is the single async-allowed event per D5 Part 3 + D10c
- * - `valueChange` is the only shipped event channel in v1 per D5 Part 2
- *
- * @stability stable
  * @packageDocumentation
  */
 
@@ -23,8 +15,6 @@ import type { AsyncHandler, Handler, Unsubscribe } from './events'
  * Branded entity ID for widgets. Prevents mixing widget IDs with node IDs
  * at compile time. Re-exported from the world layer so the entire codebase
  * shares a single brand. The underlying value is `string` in Phase A.
- *
- * @stability stable
  */
 import type { WidgetEntityId } from '@/world/entityIds'
 export type { WidgetEntityId }
@@ -34,8 +24,6 @@ export type { WidgetEntityId }
 /**
  * The union of all legal widget scalar values. Complex widgets (DOM, canvas)
  * may return their own serializable shapes.
- *
- * @stability stable
  */
 export type WidgetValue = string | number | boolean | null
 
@@ -47,7 +35,6 @@ export type WidgetValue = string | number | boolean | null
  * Replaces the v1 `widget.callback` pattern.
  *
  * @typeParam T - The widget's value type.
- * @stability stable
  * @example
  * ```ts
  * widget.on('valueChange', (e) => {
@@ -69,10 +56,9 @@ export interface WidgetValueChangeEvent<T = WidgetValue> {
  * The exact set of observable option keys is type-dependent (e.g. `min`,
  * `max`, `step` for numeric widgets; `multiline` for strings).
  *
- * The data model for "options" vs "first-class fields" is defined in D7.
  * This event covers the options-bag tier (type-specific, not every-widget).
  *
- * @stability experimental — full semantics deferred to D7
+ * @stability experimental
  * @example
  * ```ts
  * widget.on('optionChange', (e) => {
@@ -93,11 +79,10 @@ export interface WidgetOptionChangeEvent {
  * Payload for `widget.on('propertyChange', handler)`.
  *
  * Fires when a first-class every-widget property is mutated — specifically
- * `hidden`, `disabled`, and `serialize` (the non-value first-class fields
- * defined in D7 Part 1). Does NOT fire for `value` changes (use `valueChange`)
- * or for options-bag mutations (use `optionChange`).
+ * `hidden`, `disabled`, and `serialize`. Does NOT fire for `value` changes
+ * (use `valueChange`) or for options-bag mutations (use `optionChange`).
  *
- * @stability experimental — property enumeration finalised in D7
+ * @stability experimental
  * @example
  * ```ts
  * widget.on('propertyChange', (e) => {
@@ -122,7 +107,7 @@ export interface WidgetPropertyChangeEvent {
 /**
  * Payload for `widget.on('beforeSerialize', handler)`.
  *
- * This is the **only async-allowed event** in v1 (per D10c / D5 Part 3).
+ * This is the **only async-allowed event** in the API.
  * Replaces `widget.serializeValue`, `widget.options.serialize = false`, and
  * the v1 `widget.serializeValue = (workflowNode, widgetIndex) => ...` pattern.
  *
@@ -132,7 +117,6 @@ export interface WidgetPropertyChangeEvent {
  * widget's current `getValue()` unchanged.
  *
  * @typeParam T - The widget's value type.
- * @stability stable
  * @example
  * ```ts
  * // Dynamic prompts: replace value at serialize time
@@ -246,7 +230,6 @@ export interface WidgetBeforeQueueEvent {
  * `WidgetEntityId`, so mutations from any source trigger `valueChange`.
  *
  * @typeParam T - The type of `getValue()` / `setValue()`. Defaults to `WidgetValue`.
- * @stability stable
  * @example
  * ```ts
  * import { defineNodeExtension } from '@comfyorg/extension-api'
@@ -254,7 +237,7 @@ export interface WidgetBeforeQueueEvent {
  * export default defineNodeExtension({
  *   name: 'my-extension',
  *   nodeCreated(node) {
- *     const steps = node.widget('steps')
+ *     const steps = node.getWidget('steps')
  *     if (!steps) return
  *
  *     steps.on('valueChange', (e) => console.log('steps =', e.newValue))
@@ -271,7 +254,6 @@ export interface WidgetHandle<T = WidgetValue> {
    * Stable entity identifier for this widget. Branded to prevent mixing with
    * `NodeEntityId` at compile time.
    *
-   * @stability stable
    */
   readonly entityId: WidgetEntityId
 
@@ -279,7 +261,6 @@ export interface WidgetHandle<T = WidgetValue> {
    * The widget's name as registered in `INPUT_TYPES` or `addWidget`. Stable
    * for the lifetime of the node; never changes after creation.
    *
-   * @stability stable
    */
   readonly name: string
 
@@ -287,7 +268,6 @@ export interface WidgetHandle<T = WidgetValue> {
    * The widget's type string (e.g. `'INT'`, `'STRING'`, `'COMBO'`,
    * `'MARKDOWN'`). Read-only invariant set at creation.
    *
-   * @stability stable
    */
   readonly widgetType: string
 
@@ -297,10 +277,9 @@ export interface WidgetHandle<T = WidgetValue> {
    * Returns the widget's current user-edited value.
    *
    * @typeParam T - Narrows the return type when you know the widget type.
-   * @stability stable
    * @example
    * ```ts
-   * const steps = node.widget('steps')!.getValue<number>()
+   * const steps = node.getWidget('steps')!.getValue<number>()
    * ```
    */
   getValue(): T
@@ -309,7 +288,6 @@ export interface WidgetHandle<T = WidgetValue> {
    * Sets the widget's value. Dispatches a `SetWidgetValue` command (undo-able).
    * Triggers `valueChange` handlers on all views.
    *
-   * @stability stable
    */
   setValue(value: T): void
 
@@ -318,14 +296,12 @@ export interface WidgetHandle<T = WidgetValue> {
   /**
    * Returns `true` if the widget is currently hidden from the node UI.
    *
-   * @stability stable
    */
   isHidden(): boolean
 
   /**
    * Show or hide the widget. Dispatches a `SetWidgetHidden` command.
    *
-   * @stability stable
    * @example
    * ```ts
    * toggle.on('valueChange', (e) => {
@@ -340,14 +316,12 @@ export interface WidgetHandle<T = WidgetValue> {
   /**
    * Returns `true` if the widget is disabled (read-only in the UI).
    *
-   * @stability stable
    */
   isDisabled(): boolean
 
   /**
    * Enable or disable the widget.
    *
-   * @stability stable
    */
   setDisabled(disabled: boolean): void
 
@@ -355,11 +329,9 @@ export interface WidgetHandle<T = WidgetValue> {
 
   /**
    * The widget's display label shown to the user. Defaults to the widget name.
-   * Read-only invariant per D6 Part 3 (set at creation, never changes after).
+   * Read-only invariant (set at creation, never changes after).
    *
    * To override at construction, pass `label` to `addWidget()` options.
-   *
-   * @stability stable
    */
   readonly label: string
 
@@ -385,7 +357,6 @@ export interface WidgetHandle<T = WidgetValue> {
    * Returns `true` if this widget is included in workflow and prompt
    * serialization. Defaults to `true` for all widget types.
    *
-   * @stability stable
    */
   isSerializeEnabled(): boolean
 
@@ -395,7 +366,6 @@ export interface WidgetHandle<T = WidgetValue> {
    * prompt payload. Equivalent to the v1 `widget.options.serialize = false`
    * pattern.
    *
-   * @stability stable
    */
   setSerializeEnabled(enabled: boolean): void
 
@@ -409,7 +379,6 @@ export interface WidgetHandle<T = WidgetValue> {
    * Type-specific option names: `min`, `max`, `step` (INT/FLOAT); `multiline`,
    * `dynamicPrompts` (STRING); `image_folder`, `upload_to` (upload widgets).
    *
-   * @stability stable
    * @example
    * ```ts
    * const min = widget.getOption<number>('min') ?? 0
@@ -423,7 +392,6 @@ export interface WidgetHandle<T = WidgetValue> {
    * backend prompt schema unless the extension explicitly opts in via
    * `beforeSerialize`.
    *
-   * @stability stable
    * @example
    * ```ts
    * // Primitive Int/Float per-instance config (replaces node.properties anti-pattern)
@@ -443,7 +411,6 @@ export interface WidgetHandle<T = WidgetValue> {
    * Fires synchronously after the value is committed (per D10c).
    *
    * @returns A cleanup function to remove the listener.
-   * @stability stable
    */
   on(
     event: 'valueChange',
@@ -480,14 +447,13 @@ export interface WidgetHandle<T = WidgetValue> {
   ): Unsubscribe
 
   /**
-   * Subscribe to widget serialization. The only async-allowed event (D10c / D5).
+   * Subscribe to widget serialization. The only async-allowed event.
    *
    * Replaces `widget.serializeValue = fn` and the v1 `widget.options.serialize`
    * flag. The handler may be sync or async; async handlers are awaited before
    * the serialization payload is sent.
    *
    * @returns A cleanup function to remove the listener.
-   * @stability stable
    */
   on(
     event: 'beforeSerialize',
@@ -519,8 +485,6 @@ export interface WidgetHandle<T = WidgetValue> {
  *
  * Type-specific keys (e.g. `min`, `max`, `step` for numeric widgets;
  * `multiline`, `dynamicPrompts` for strings) are passed through as-is.
- *
- * @stability stable
  */
 export interface WidgetOptions {
   /** If `true`, the widget is hidden from the node UI on creation. */

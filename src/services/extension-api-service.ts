@@ -382,7 +382,15 @@ function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
       return world.getComponent(nodeId, NodeVisualKey)?.title ?? ''
     },
     getMode() {
-      return (world.getComponent(nodeId, ExecutionKey)?.mode ?? 0) as NodeMode
+      const numericMode = world.getComponent(nodeId, ExecutionKey)?.mode ?? 0
+      const modeMap: Record<number, NodeMode> = {
+        0: 'always',
+        1: 'never',
+        2: 'bypass',
+        3: 'once',
+        4: 'onTrigger'
+      }
+      return modeMap[numericMode] ?? 'always'
     },
 
     getProperty<T = unknown>(key: string): T | undefined {
@@ -405,14 +413,21 @@ function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
     setTitle(title: string) {
       dispatch({ type: 'SetNodeVisual', nodeId, patch: { title } })
     },
-    setMode(mode) {
-      dispatch({ type: 'SetNodeMode', nodeId, mode })
+    setMode(mode: NodeMode) {
+      const numericModeMap: Record<NodeMode, number> = {
+        always: 0,
+        never: 1,
+        bypass: 2,
+        once: 3,
+        onTrigger: 4
+      }
+      dispatch({ type: 'SetNodeMode', nodeId, mode: numericModeMap[mode] })
     },
     setProperty(key: string, value: unknown) {
       dispatch({ type: 'SetNodeProperty', nodeId, key, value })
     },
 
-    widget(name: string) {
+    getWidget(name: string) {
       const container = world.getComponent(nodeId, WidgetComponentContainer)
       const widgetId = container?.widgetIds.find((id: WidgetEntityId) => {
         // Widget name is embedded in the entity ID format: widget:graphId:nodeId:name

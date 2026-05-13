@@ -5,14 +5,6 @@
  * (undo-able, serializable, validatable). Events are backed by Vue
  * reactivity watching World component changes.
  *
- * Design decisions:
- * - Accessor/method hybrid per D6 Part 3: invariants = readonly, state = methods
- * - Event channel naming per D5: camelCase, action-verb, `before` prefix for pre-mutation
- * - No World/Component/Command types leak through this interface per D3.4
- * - `node.properties` exposed as migration shim (v1 compat) per D7 Part 2
- * - `beforeSerialize` event collapses four v1 serialization surfaces per D7 Part 4
- *
- * @stability stable
  * @packageDocumentation
  */
 
@@ -26,8 +18,6 @@ import type { WidgetHandle, WidgetOptions } from './widget'
  * at compile time. Re-exported from the world layer so the entire codebase
  * shares a single brand. The underlying value is `string` in Phase A
  * (e.g. `node:<graphUuid>:<localId>`).
- *
- * @stability stable
  */
 import type { NodeEntityId } from '@/world/entityIds'
 export type { NodeEntityId }
@@ -36,15 +26,11 @@ export type { NodeEntityId }
 
 /**
  * A 2D point as `[x, y]`.
- *
- * @stability stable
  */
 export type Point = [x: number, y: number]
 
 /**
  * A 2D size as `[width, height]`.
- *
- * @stability stable
  */
 export type Size = [width: number, height: number]
 
@@ -53,20 +39,16 @@ export type Size = [width: number, height: number]
 /**
  * LiteGraph node execution mode.
  *
- * - `0` — Always execute.
- * - `1` — Never execute (muted).
- * - `2` — Bypass (passthrough).
- * - `3` — Execute once.
- * - `4` — Execute on trigger.
- *
- * @stability stable
+ * - `'always'` — Always execute.
+ * - `'never'` — Never execute (muted).
+ * - `'bypass'` — Bypass (passthrough).
+ * - `'once'` — Execute once.
+ * - `'onTrigger'` — Execute on trigger.
  */
-export type NodeMode = 0 | 1 | 2 | 3 | 4
+export type NodeMode = 'always' | 'never' | 'bypass' | 'once' | 'onTrigger'
 
 /**
  * Direction of a slot on a node.
- *
- * @stability stable
  */
 export type SlotDirection = 'input' | 'output'
 
@@ -74,8 +56,6 @@ export type SlotDirection = 'input' | 'output'
 
 /**
  * Read-only snapshot of a single slot (input or output) on a node.
- *
- * @stability stable
  */
 export interface SlotInfo {
   /** Branded entity ID for this slot. */
@@ -92,8 +72,6 @@ export interface SlotInfo {
 
 /**
  * Branded entity ID for slots. Prevents mixing slot IDs with node/widget IDs.
- *
- * @stability stable
  */
 export type SlotEntityId = number & { readonly __brand: 'SlotEntityId' }
 
@@ -104,7 +82,6 @@ export type SlotEntityId = number & { readonly __brand: 'SlotEntityId' }
  *
  * Replaces the v1 `nodeType.prototype.onExecuted` patching pattern.
  *
- * @stability stable
  * @example
  * ```ts
  * node.on('executed', (e) => {
@@ -123,8 +100,6 @@ export interface NodeExecutedEvent {
  *
  * Replaces `nodeType.prototype.onConnectInput` / `onConnectOutput` and
  * `nodeType.prototype.onConnectionsChange` patching.
- *
- * @stability stable
  */
 export interface NodeConnectedEvent {
   /** The local slot that was connected. */
@@ -135,8 +110,6 @@ export interface NodeConnectedEvent {
 
 /**
  * Payload for `node.on('disconnected', handler)`.
- *
- * @stability stable
  */
 export interface NodeDisconnectedEvent {
   /** The local slot that was disconnected. */
@@ -145,8 +118,6 @@ export interface NodeDisconnectedEvent {
 
 /**
  * Payload for `node.on('positionChanged', handler)`.
- *
- * @stability stable
  */
 export interface NodePositionChangedEvent {
   /** The new position. */
@@ -155,8 +126,6 @@ export interface NodePositionChangedEvent {
 
 /**
  * Payload for `node.on('sizeChanged', handler)`.
- *
- * @stability stable
  */
 export interface NodeSizeChangedEvent {
   /** The new size. */
@@ -165,8 +134,6 @@ export interface NodeSizeChangedEvent {
 
 /**
  * Payload for `node.on('modeChanged', handler)`.
- *
- * @stability stable
  */
 export interface NodeModeChangedEvent {
   /** The new execution mode. */
@@ -223,7 +190,6 @@ export interface NodeBeforeSerializeEvent {
  * Controlled surface for node access. Reads query the ECS World; writes
  * dispatch commands. Events are Vue-reactive watches on World components.
  *
- * @stability stable
  * @example
  * ```ts
  * import { defineNodeExtension } from '@comfyorg/extension-api'
@@ -267,7 +233,6 @@ export interface NodeHandle {
    * Stable entity ID for this node. Branded to prevent mixing with
    * `WidgetEntityId` at compile time.
    *
-   * @stability stable
    */
   readonly entityId: NodeEntityId
 
@@ -275,7 +240,6 @@ export interface NodeHandle {
    * The LiteGraph node type string (e.g. `'KSampler'`).
    * Read-only invariant: set at construction, never changes.
    *
-   * @stability stable
    */
   readonly type: string
 
@@ -284,7 +248,6 @@ export interface NodeHandle {
    * Equal to `type` for most nodes; differs for reroute/virtual nodes.
    * Read-only invariant.
    *
-   * @stability stable
    */
   readonly comfyClass: string
 
@@ -293,28 +256,24 @@ export interface NodeHandle {
   /**
    * Returns the node's current canvas position as `[x, y]`.
    *
-   * @stability stable
    */
   getPosition(): Point
 
   /**
    * Moves the node to a new canvas position. Dispatches a `MoveNode` command.
    *
-   * @stability stable
    */
   setPosition(pos: Point): void
 
   /**
    * Returns the node's current size as `[width, height]`.
    *
-   * @stability stable
    */
   getSize(): Size
 
   /**
    * Resizes the node. Dispatches a `ResizeNode` command.
    *
-   * @stability stable
    */
   setSize(size: Size): void
 
@@ -323,21 +282,18 @@ export interface NodeHandle {
   /**
    * Returns the node's display title. Defaults to the node type string.
    *
-   * @stability stable
    */
   getTitle(): string
 
   /**
    * Sets the node's display title. Dispatches a `SetNodeVisual` command.
    *
-   * @stability stable
    */
   setTitle(title: string): void
 
   /**
    * Returns `true` if the node is currently selected on the canvas.
    *
-   * @stability stable
    */
   isSelected(): boolean
 
@@ -346,14 +302,12 @@ export interface NodeHandle {
   /**
    * Returns the node's current execution mode.
    *
-   * @stability stable
    */
   getMode(): NodeMode
 
   /**
    * Sets the node's execution mode. Dispatches a `SetNodeMode` command.
    *
-   * @stability stable
    */
   setMode(mode: NodeMode): void
 
@@ -366,14 +320,12 @@ export interface NodeHandle {
    * `beforeSerialize` events. `node.properties` is kept as a migration shim
    * for v1 extensions that used it for per-instance widget config (e.g. min/max).
    *
-   * @stability stable
    */
   getProperty<T = unknown>(key: string): T | undefined
 
   /**
    * Returns a copy of all per-node-instance properties.
    *
-   * @stability stable
    */
   getProperties(): Record<string, unknown>
 
@@ -383,7 +335,6 @@ export interface NodeHandle {
    * In v2, prefer `widget.setOption(key, value)` for widget-scoped per-instance
    * config (it persists to the `widget_options` sidecar in the workflow JSON).
    *
-   * @stability stable
    */
   setProperty(key: string, value: unknown): void
 
@@ -393,19 +344,17 @@ export interface NodeHandle {
    * Returns a `WidgetHandle` for the named widget, or `undefined` if no such
    * widget exists on this node.
    *
-   * @stability stable
    * @example
    * ```ts
-   * const steps = node.widget('steps')
+   * const steps = node.getWidget('steps')
    * if (steps) steps.setValue(20)
    * ```
    */
-  widget(name: string): WidgetHandle | undefined
+  getWidget(name: string): WidgetHandle | undefined
 
   /**
    * Returns all widgets on this node as `WidgetHandle` instances.
    *
-   * @stability stable
    */
   widgets(): readonly WidgetHandle[]
 
@@ -417,7 +366,6 @@ export interface NodeHandle {
    * @param defaultValue - Initial value.
    * @param options - Optional type-specific options.
    * @returns The new `WidgetHandle`.
-   * @stability stable
    */
   addWidget(
     type: string,
@@ -450,14 +398,12 @@ export interface NodeHandle {
   /**
    * Returns all input slots on this node.
    *
-   * @stability stable
    */
   inputs(): readonly SlotInfo[]
 
   /**
    * Returns all output slots on this node.
    *
-   * @stability stable
    */
   outputs(): readonly SlotInfo[]
 
@@ -468,10 +414,9 @@ export interface NodeHandle {
    *
    * Replaces the v1 `nodeType.prototype.onRemoved` patching pattern.
    * Does NOT fire on subgraph promotion — the node's entity ID is preserved
-   * across promotion (see D9 Phase A notes and D12).
+   * across promotion.
    *
    * @returns A cleanup function to remove the listener.
-   * @stability stable
    */
   on(event: 'removed', handler: Handler<void>): Unsubscribe
 
@@ -482,7 +427,6 @@ export interface NodeHandle {
    * most widely used anti-pattern per R4-P3; 5+ confirmed repos).
    *
    * @returns A cleanup function to remove the listener.
-   * @stability stable
    */
   on(event: 'executed', handler: Handler<NodeExecutedEvent>): Unsubscribe
 
@@ -493,7 +437,6 @@ export interface NodeHandle {
    * patterns. Fires after all widget values are restored from the workflow JSON.
    *
    * @returns A cleanup function to remove the listener.
-   * @stability stable
    */
   on(event: 'configured', handler: Handler<void>): Unsubscribe
 
@@ -505,7 +448,6 @@ export interface NodeHandle {
    * in the wild — this single typed event resolves the confusion).
    *
    * @returns A cleanup function to remove the listener.
-   * @stability stable
    */
   on(event: 'connected', handler: Handler<NodeConnectedEvent>): Unsubscribe
 
@@ -513,7 +455,6 @@ export interface NodeHandle {
    * Subscribe to slot disconnection events.
    *
    * @returns A cleanup function to remove the listener.
-   * @stability stable
    */
   on(
     event: 'disconnected',
@@ -524,7 +465,6 @@ export interface NodeHandle {
    * Subscribe to canvas position changes.
    *
    * @returns A cleanup function to remove the listener.
-   * @stability stable
    */
   on(
     event: 'positionChanged',
@@ -535,7 +475,6 @@ export interface NodeHandle {
    * Subscribe to node size changes.
    *
    * @returns A cleanup function to remove the listener.
-   * @stability stable
    */
   on(event: 'sizeChanged', handler: Handler<NodeSizeChangedEvent>): Unsubscribe
 
@@ -543,7 +482,6 @@ export interface NodeHandle {
    * Subscribe to execution mode changes.
    *
    * @returns A cleanup function to remove the listener.
-   * @stability stable
    */
   on(event: 'modeChanged', handler: Handler<NodeModeChangedEvent>): Unsubscribe
 
@@ -551,7 +489,7 @@ export interface NodeHandle {
    * Subscribe to node serialization. Async-capable.
    *
    * Replaces `nodeType.prototype.onSerialize` and `nodeType.prototype.serialize`
-   * patching patterns. Collapses four v1 serialization surfaces to one (D7 Part 4).
+   * patching patterns. Collapses four v1 serialization surfaces to one.
    *
    * @returns A cleanup function to remove the listener.
    * @stability experimental

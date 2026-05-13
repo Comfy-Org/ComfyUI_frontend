@@ -2,7 +2,7 @@
  * @comfyorg/extension-api — Public Extension API for ComfyUI
  *
  * This barrel is the published package entry point. Every export here is
- * part of the stable public contract that extension authors depend on.
+ * part of the public contract that extension authors depend on.
  *
  * Import directly — no dependency on `window.app` at module evaluation time:
  *
@@ -25,7 +25,7 @@
  * | Shell UI types | `SidebarTabExtension`, `BottomPanelExtension`, `CommandManager`, etc. |
  * | Identity helpers | `NodeLocatorId`, `NodeExecutionId`, parsers, type guards |
  *
- * ## API style (D3.3)
+ * ## API style
  *
  * The public API is **event + getter/setter**, not signals. Vue reactivity is
  * the internal engine; extension authors never import from Vue or use

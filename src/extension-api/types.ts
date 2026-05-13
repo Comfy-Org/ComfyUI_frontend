@@ -8,7 +8,6 @@
  * `defineXxx` functions and the `onNodeMounted` / `onNodeRemoved` hooks that the
  * lifecycle module re-exports).
  *
- * @stability stable
  * @packageDocumentation
  */
 
@@ -19,7 +18,6 @@ import type { WidgetHandle } from './widget'
  * Options for `defineNodeExtension`. Describes an extension that reacts to
  * node lifecycle events.
  *
- * @stability stable
  * @example
  * ```ts
  * import { defineNodeExtension } from '@comfyorg/extension-api'
@@ -37,11 +35,9 @@ import type { WidgetHandle } from './widget'
 export interface NodeExtensionOptions {
   /**
    * Globally unique extension name. Used for scope registry keying, hook
-   * ordering (D10b lexicographic tie-break), and debug messages.
+   * ordering (lexicographic tie-break), and debug messages.
    *
    * Convention: `'org.extension-name'` or `'Comfy.ExtensionName'`.
-   *
-   * @stability stable
    */
   name: string
 
@@ -49,9 +45,8 @@ export interface NodeExtensionOptions {
    * Filter to specific `comfyClass` names. When omitted, the extension
    * receives `nodeCreated` / `loadedGraphNode` for every node type.
    *
-   * Replaces the v1 `beforeRegisterNodeDef` filtering pattern (DEP1).
+   * Replaces the v1 `beforeRegisterNodeDef` filtering pattern.
    *
-   * @stability stable
    * @example
    * ```ts
    * nodeTypes: ['KSampler', 'KSamplerAdvanced']
@@ -65,12 +60,10 @@ export interface NodeExtensionOptions {
    *
    * - Runs inside a Vue `EffectScope`. All `watch` / `computed` / `onNodeMounted`
    *   calls made here are captured and disposed automatically on node removal.
-   * - Must be synchronous (D10c). Kick off async work inside the body; use
+   * - Must be synchronous. Kick off async work inside the body; use
    *   `loading: ref(true)` for async-dependent state.
    * - Called only once per entity ID lifetime. Copy/paste creates a fresh entity
-   *   and fires `nodeCreated` again on the new entity (D12 reset-to-fresh).
-   *
-   * @stability stable
+   *   and fires `nodeCreated` again on the new entity (reset-to-fresh).
    */
   nodeCreated?(node: NodeHandle): void
 
@@ -81,10 +74,8 @@ export interface NodeExtensionOptions {
    * Same rules as `nodeCreated`. Exactly one of `nodeCreated` or
    * `loadedGraphNode` fires per node entity, never both.
    *
-   * Replaces the v1 `loadedGraphNode` hook (which had near-zero real usage per
-   * R4-P11) and `nodeType.prototype.onConfigure` patching.
-   *
-   * @stability stable
+   * Replaces the v1 `loadedGraphNode` hook and `nodeType.prototype.onConfigure`
+   * patching.
    */
   loadedGraphNode?(node: NodeHandle): void
 }
@@ -93,7 +84,6 @@ export interface NodeExtensionOptions {
  * Options for the global `defineExtension` entry point. Covers extension-wide
  * lifecycle and shell UI contributions.
  *
- * @stability stable
  * @example
  * ```ts
  * import { defineExtension } from '@comfyorg/extension-api'
@@ -110,32 +100,12 @@ export interface ExtensionOptions {
   /**
    * Globally unique extension name. Matches the format of
    * `NodeExtensionOptions.name`.
-   *
-   * @stability stable
    */
   name: string
 
   /**
-   * Declared API version of this extension. Used by the telemetry system to
-   * track v1 → v2 adoption (D6 Phase D gate: "<5% v1 usage before dropping
-   * the v1 bridge"). Set to `'2'` for extensions written against this API.
-   *
-   * Optional in Phase A (no runtime enforcement). The runtime reads this field
-   * via `getExtensionVersionReport()` to produce adoption metrics.
-   *
-   * @stability stable
-   * @example
-   * ```ts
-   * defineExtension({ name: 'my-ext', apiVersion: '2', setup() { … } })
-   * ```
-   */
-  apiVersion?: string
-
-  /**
    * Runs once during app initialization (after the app is mounted but before
    * the first workflow is loaded). Equivalent to the v1 `ComfyExtension.init`.
-   *
-   * @stability stable
    */
   init?(): void | Promise<void>
 
@@ -143,8 +113,6 @@ export interface ExtensionOptions {
    * Runs once after the app and all core extensions are initialized. Equivalent
    * to the v1 `ComfyExtension.setup`. Safe to call shell UI registration APIs
    * (`ExtensionManager`, `CommandManager`) here.
-   *
-   * @stability stable
    */
   setup?(): void | Promise<void>
 }
