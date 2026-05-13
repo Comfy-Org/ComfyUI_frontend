@@ -291,6 +291,31 @@ describe('useWorkflowPersistenceV2', () => {
         sessionStorage.getItem('Comfy.Workflow.ActivePath:test-client')
       ).toBeNull()
     })
+
+    it('shows a toast when saving the active workflow draft throws', async () => {
+      const workflowStore = useWorkflowStore()
+      const draftStore = useWorkflowDraftStoreV2()
+      const workflow = await workflowStore
+        .createTemporary('SaveException.json')
+        .load()
+      workflowStore.activeWorkflow = workflow
+      vi.spyOn(draftStore, 'saveDraft').mockImplementation(() => {
+        throw new Error('storage unavailable')
+      })
+
+      mountWorkflowPersistence()
+      mocks.state.graphChangedHandler?.()
+      await vi.advanceTimersByTimeAsync(PERSIST_DEBOUNCE_MS)
+
+      expect(mockToastAdd).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'g.error',
+        detail: 'toastMessages.failedToSaveDraft'
+      })
+      expect(
+        sessionStorage.getItem('Comfy.Workflow.ActivePath:test-client')
+      ).toBeNull()
+    })
   })
 
   describe('loadPreviousWorkflowFromStorage', () => {
@@ -445,6 +470,27 @@ describe('useWorkflowPersistenceV2', () => {
 
       expect(mocks.loadGraphDataMock).toHaveBeenCalled()
       expect(loadBlankWorkflowMock).not.toHaveBeenCalled()
+    })
+
+    it('does not enable tab state writes when default workflow load fails', async () => {
+      mocks.loadGraphDataMock.mockRejectedValueOnce(
+        new Error('default unavailable')
+      )
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await expect(initializeWorkflow()).rejects.toThrow('default unavailable')
+
+      const workflowStore = useWorkflowStore()
+      const workflow = workflowStore.createTemporary('Current.json')
+      workflowStore.attachWorkflow(workflow, 0)
+      workflowStore.activeWorkflow = workflow as NonNullable<
+        typeof workflowStore.activeWorkflow
+      >
+      await nextTick()
+
+      expect(
+        sessionStorage.getItem('Comfy.Workflow.OpenPaths:test-client')
+      ).toBeNull()
     })
   })
 

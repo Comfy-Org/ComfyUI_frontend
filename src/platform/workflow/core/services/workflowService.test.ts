@@ -388,6 +388,7 @@ describe('useWorkflowService', () => {
         { missingNodeTypes: ['CustomNode1'] },
         { loadable: true }
       )
+      workflow.load = vi.fn().mockResolvedValue(workflow as LoadedComfyWorkflow)
 
       const service = useWorkflowService()
 
@@ -401,6 +402,16 @@ describe('useWorkflowService', () => {
       expect(
         useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenCalledTimes(2)
+    })
+
+    it('should pass force through when reloading a loaded workflow', async () => {
+      const workflow = createWorkflow(null, { loadable: true })
+      const load = vi.fn().mockResolvedValue(workflow)
+      workflow.load = load
+
+      await useWorkflowService().openWorkflow(workflow, { force: true })
+
+      expect(load).toHaveBeenCalledWith({ force: true })
     })
   })
 

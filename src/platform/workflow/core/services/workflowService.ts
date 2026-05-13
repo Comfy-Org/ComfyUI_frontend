@@ -250,9 +250,9 @@ export const useWorkflowService = () => {
   ) => {
     if (workflowStore.isActive(workflow) && !options.force) return
 
-    const loadFromRemote = !workflow.isLoaded
+    const loadFromRemote = options.force || !workflow.isLoaded
     if (loadFromRemote) {
-      await workflow.load()
+      await workflow.load({ force: options.force })
     }
 
     await app.loadGraphData(

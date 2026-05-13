@@ -108,11 +108,16 @@ export function useWorkflowPersistenceV2() {
     // Skip if unchanged
     if (workflowJson === lastSavedJsonByPath.value[workflowPath]) return
 
-    // Save to V2 draft store
-    const saved = draftStore.saveDraft(workflowPath, workflowJson, {
-      name: activeWorkflow.key,
-      isTemporary: activeWorkflow.isTemporary
-    })
+    let saved = false
+    try {
+      saved = draftStore.saveDraft(workflowPath, workflowJson, {
+        name: activeWorkflow.key,
+        isTemporary: activeWorkflow.isTemporary
+      })
+    } catch {
+      toast.add(createFailedToSaveDraftToast(t))
+      return
+    }
 
     if (!saved) {
       toast.add(createFailedToSaveDraftToast(t))
@@ -199,6 +204,10 @@ export function useWorkflowPersistenceV2() {
     return { paths, activeIndex }
   }
 
+  // Keep tab-state writes disabled until initialization has consumed any
+  // stored tab pointer.
+  let tabStateRestored = false
+
   const initializeWorkflow = async () => {
     if (!workflowPersistenceEnabled.value) {
       await loadDefaultWorkflow()
@@ -213,15 +222,16 @@ export function useWorkflowPersistenceV2() {
       }
 
       const restored = await loadPreviousWorkflowFromStorage()
-      if (!restored) {
-        await loadDefaultWorkflow()
+      if (restored) {
+        tabStateRestored = true
+        return
       }
     } catch (err) {
       console.error('Error loading previous workflow', err)
-      await loadDefaultWorkflow()
-    } finally {
-      tabStateRestored = true
     }
+
+    await loadDefaultWorkflow()
+    tabStateRestored = true
   }
 
   const loadTemplateFromUrlIfPresent = async () => {
@@ -278,10 +288,6 @@ export function useWorkflowPersistenceV2() {
       return { paths, activeIndex }
     }
   )
-
-  // Keep tab-state writes disabled until initialization has consumed any
-  // stored tab pointer.
-  let tabStateRestored = false
 
   watch(restoreState, ({ paths, activeIndex }) => {
     // Only persist after tab state has been restored to avoid

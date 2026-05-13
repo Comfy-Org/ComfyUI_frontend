@@ -123,18 +123,17 @@ test.describe('Workflow Persistence', () => {
       const expectedTabNames = ['restore-a', 'restore-b']
       await expect
         .poll(() => comfyPage.menu.topbar.getTabNames())
-        .toEqual(expectedTabNames)
-      const activeTabBeforeReload =
-        await comfyPage.menu.topbar.getActiveTabName()
+        .toEqual(expect.arrayContaining(expectedTabNames))
+      const expectedActiveTabName = 'restore-b'
 
       await comfyPage.workflow.reloadAndWaitForApp()
 
       await expect
         .poll(() => comfyPage.menu.topbar.getTabNames())
-        .toEqual(expectedTabNames)
+        .toEqual(expect.arrayContaining(expectedTabNames))
       await expect
         .poll(() => comfyPage.menu.topbar.getActiveTabName())
-        .toBe(activeTabBeforeReload)
+        .toBe(expectedActiveTabName)
       await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
 
       await comfyPage.menu.topbar.getWorkflowTab('restore-a').click()

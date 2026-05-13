@@ -53,8 +53,6 @@ interface LoadPersistedWorkflowOptions {
   fallbackToLatestDraft?: boolean
 }
 
-type DraftMoveStatus = 'moved' | 'missing' | 'failed'
-
 export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   // In-memory cache of the index per workspace (synced with localStorage)
   // Key is workspaceId, value is the cached index
@@ -133,11 +131,11 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * Moves a draft from one path to another in V2 and legacy rollback storage.
    */
   function moveDraft(oldPath: string, newPath: string, name: string): boolean {
-    const status = moveDraftV2(oldPath, newPath, name)
-    if (status === 'moved') {
+    const moved = moveDraftV2(oldPath, newPath, name)
+    if (moved) {
       moveLegacyDraft(oldPath, newPath, name)
     }
-    return status === 'moved'
+    return moved
   }
 
   /**
@@ -355,41 +353,41 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     oldPath: string,
     newPath: string,
     name: string
-  ): DraftMoveStatus {
+  ): boolean {
     const workspaceId = currentWorkspaceId()
     const index = loadIndex()
     const oldEntry = getEntryByPath(index, oldPath)
-    if (!oldEntry) return 'missing'
+    if (!oldEntry) return false
 
     const oldKey = hashPath(oldPath)
     const newKey = hashPath(newPath)
     const newEntry = getEntryByPath(index, newPath)
-    if (oldKey !== newKey && newEntry) return 'failed'
+    if (oldKey !== newKey && newEntry) return false
 
     const result = moveEntry(index, oldPath, newPath, name)
-    if (!result) return 'failed'
+    if (!result) return false
 
     const oldPayload = readPayload(workspaceId, result.oldKey)
     if (!oldPayload) {
       removeDraftV2(oldPath)
-      return 'failed'
+      return false
     }
 
     const written = writePayload(workspaceId, result.newKey, {
       data: oldPayload.data,
       updatedAt: Date.now()
     })
-    if (!written) return 'failed'
+    if (!written) return false
 
     if (!persistIndex(result.index)) {
       deletePayload(workspaceId, result.newKey)
-      return 'failed'
+      return false
     }
 
     if (result.oldKey !== result.newKey) {
       deletePayload(workspaceId, result.oldKey)
     }
-    return 'moved'
+    return true
   }
 
   function getDraftV2(path: string): WorkflowDraftSnapshot | null {
