@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   EXPECTED_PROMPT,
+  EXPECTED_PROMPT_NAN_COERCED,
   EXPECTED_WORKFLOW,
   mockFileReaderAbort,
   mockFileReaderError
@@ -11,6 +12,10 @@ import {
 import { getMp3Metadata } from './mp3'
 
 const fixturePath = path.resolve(__dirname, '__fixtures__/with_metadata.mp3')
+const nanFixturePath = path.resolve(
+  __dirname,
+  '__fixtures__/with_nan_metadata.mp3'
+)
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -61,6 +66,16 @@ describe('MP3 metadata', () => {
     await getMp3Metadata(file)
 
     expect(errorSpy).not.toHaveBeenCalled()
+  })
+
+  it('parses Python generated prompt with bare NaN/Infinity tokens', async () => {
+    const bytes = fs.readFileSync(nanFixturePath)
+    const file = new File([bytes], 'nan.mp3', { type: 'audio/mpeg' })
+
+    const result = await getMp3Metadata(file)
+
+    expect(result.workflow).toBeUndefined()
+    expect(result.prompt).toEqual(EXPECTED_PROMPT_NAN_COERCED)
   })
 
   it('extracts metadata that spans the 4096-byte page boundary', async () => {
