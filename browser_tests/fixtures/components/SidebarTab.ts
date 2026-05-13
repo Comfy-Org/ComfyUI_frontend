@@ -95,6 +95,7 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
   public readonly allTab: Locator
   public readonly blueprintsTab: Locator
   public readonly sortButton: Locator
+  public readonly nodePreview: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'node-library')
@@ -103,6 +104,7 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
     this.allTab = this.getTab('All')
     this.blueprintsTab = this.getTab('Blueprints')
     this.sortButton = this.sidebarContent.getByRole('button', { name: 'Sort' })
+    this.nodePreview = page.getByTestId(TestIds.sidebar.nodePreviewCard)
   }
 
   getTab(name: string) {
