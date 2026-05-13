@@ -86,6 +86,13 @@ type WidgetCallbackHook = {
   get: () => IBaseWidget['callback']
   set: (callback: IBaseWidget['callback']) => void
   getCurrentCallback: () => IBaseWidget['callback']
+  deactivate: () => void
+}
+
+type WidgetHookState = {
+  active: boolean
+  node: LGraphNode | undefined
+  widget: IBaseWidget | undefined
 }
 
 const originalCallbacks = new WeakMap<LGraphNode, OriginalCallbacks>()
@@ -121,24 +128,51 @@ function installWidgetCallbackHook(
   if (widgetCallbacks.has(widget)) return
 
   const originalDescriptor = Object.getOwnPropertyDescriptor(widget, 'callback')
-  const originalCallback = widget.callback
-  let currentCallback = originalCallback
+  let currentCallback = widget.callback
+  let currentHookedCallback: IBaseWidget['callback']
+  let currentHookState: WidgetHookState | undefined
 
-  const hookedCallback: IBaseWidget['callback'] = function (
-    this: IBaseWidget,
-    newValue,
-    ...args
-  ) {
-    const result = currentCallback?.call(this, newValue, ...args)
-    if (newValue !== undefined) {
-      clearWidgetRelatedErrors(node, widget, newValue)
-    }
-    return result
+  function deactivateCurrentHook(): void {
+    if (!currentHookState) return
+    currentHookState.active = false
+    currentHookState.node = undefined
+    currentHookState.widget = undefined
+    currentHookState = undefined
   }
 
-  const get = () => (currentCallback ? hookedCallback : undefined)
+  const createHookedCallback = (
+    callback: IBaseWidget['callback']
+  ): IBaseWidget['callback'] => {
+    deactivateCurrentHook()
+    if (!callback) {
+      currentHookState = undefined
+      return undefined
+    }
+
+    const hookState: WidgetHookState = { active: true, node, widget }
+    currentHookState = hookState
+
+    return function (this: IBaseWidget, newValue, ...args) {
+      const result = callback.call(this, newValue, ...args)
+      // Read node/widget from hookState so deactivation can release them from
+      // externally-held stale wrappers.
+      if (
+        hookState.active &&
+        hookState.node &&
+        hookState.widget &&
+        newValue !== undefined
+      ) {
+        clearWidgetRelatedErrors(hookState.node, hookState.widget, newValue)
+      }
+      return result
+    }
+  }
+
+  currentHookedCallback = createHookedCallback(currentCallback)
+  const get = () => currentHookedCallback
   const set = (callback: IBaseWidget['callback']) => {
     currentCallback = callback
+    currentHookedCallback = createHookedCallback(callback)
   }
 
   Object.defineProperty(widget, 'callback', {
@@ -152,7 +186,8 @@ function installWidgetCallbackHook(
     originalDescriptor,
     get,
     set,
-    getCurrentCallback: () => currentCallback
+    getCurrentCallback: () => currentCallback,
+    deactivate: deactivateCurrentHook
   })
 }
 
@@ -165,10 +200,12 @@ function installWidgetCallbackHooks(
   }
 }
 
-function restoreWidgetCallbackHooks(
+function deactivateAndRestoreWidgetCallbackHooks(
   widgetCallbacks: OriginalCallbacks['widgetCallbacks']
-): void {
+): boolean {
+  let restoredAll = true
   for (const [widget, callbackHook] of widgetCallbacks) {
+    callbackHook.deactivate()
     const currentDescriptor = Object.getOwnPropertyDescriptor(
       widget,
       'callback'
@@ -177,6 +214,7 @@ function restoreWidgetCallbackHooks(
       currentDescriptor?.get !== callbackHook.get ||
       currentDescriptor?.set !== callbackHook.set
     ) {
+      restoredAll = false
       continue
     }
 
@@ -198,6 +236,15 @@ function restoreWidgetCallbackHooks(
       })
     }
   }
+  return restoredAll
+}
+
+function canRestoreNodeCallback<T>(
+  current: T,
+  original: T,
+  hooked: T
+): boolean {
+  return current === hooked || current === original
 }
 
 function installNodeHooks(node: LGraphNode): void {
@@ -211,7 +258,10 @@ function installNodeHooks(node: LGraphNode): void {
     customWidget
   ) {
     const widget = originalAddCustomWidget.call(this, customWidget)
-    installWidgetCallbackHook(node, widget, widgetCallbacks)
+    const ownerWidgetCallbacks = originalCallbacks.get(this)?.widgetCallbacks
+    if (ownerWidgetCallbacks) {
+      installWidgetCallbackHook(this, widget, ownerWidgetCallbacks)
+    }
     return widget
   } as LGraphNode['addCustomWidget']
   const hookedOnConnectionsChange = useChainCallback<
@@ -263,7 +313,32 @@ function installNodeHooks(node: LGraphNode): void {
 function restoreNodeHooks(node: LGraphNode): void {
   const originals = originalCallbacks.get(node)
   if (!originals) return
-  restoreWidgetCallbackHooks(originals.widgetCallbacks)
+
+  // Deactivate widget wrappers before node-level identity checks. Stale
+  // externally-captured wrappers must be neutered even when restore aborts.
+  const allWidgetCallbacksRestored = deactivateAndRestoreWidgetCallbackHooks(
+    originals.widgetCallbacks
+  )
+  const canRestore =
+    allWidgetCallbacksRestored &&
+    canRestoreNodeCallback(
+      node.addCustomWidget,
+      originals.addCustomWidget.original,
+      originals.addCustomWidget.hooked
+    ) &&
+    canRestoreNodeCallback(
+      node.onConnectionsChange,
+      originals.onConnectionsChange.original,
+      originals.onConnectionsChange.hooked
+    ) &&
+    canRestoreNodeCallback(
+      node.onWidgetChanged,
+      originals.onWidgetChanged.original,
+      originals.onWidgetChanged.hooked
+    )
+
+  if (!canRestore) return
+
   if (node.addCustomWidget === originals.addCustomWidget.hooked) {
     node.addCustomWidget = originals.addCustomWidget.original
   }

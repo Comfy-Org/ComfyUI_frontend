@@ -3,6 +3,7 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -351,6 +352,56 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     expect(widget.callback).toBe(assignedCallback)
   })
 
+  it('deactivates stale widget callback wrappers after restore', () => {
+    const { graph, node, widget } = createLoadImageGraph()
+    graph.add(node)
+    installErrorClearingHooks(graph)
+
+    const staleCallback = widget.callback
+    graph.onNodeRemoved!(node)
+
+    const { store } = seedMissingImageError(graph, String(node.id))
+
+    staleCallback?.('uploaded.png')
+
+    expect(store.lastNodeErrors).not.toBeNull()
+  })
+
+  it('deactivates stale widget callback wrappers when node restore aborts', () => {
+    const { graph, node, widget } = createLoadImageGraph()
+    graph.add(node)
+    installErrorClearingHooks(graph)
+
+    const staleCallback = widget.callback
+    node.onWidgetChanged = vi.fn()
+    graph.onNodeRemoved!(node)
+
+    const { store } = seedMissingImageError(graph, String(node.id))
+
+    staleCallback?.('uploaded.png')
+
+    expect(store.lastNodeErrors).not.toBeNull()
+  })
+
+  it('does not recurse when another system chains the hooked widget callback', () => {
+    const originalCallback = vi.fn()
+    const { graph, node, widget } = createLoadImageGraph(originalCallback)
+    graph.add(node)
+    installErrorClearingHooks(graph)
+
+    const chainedCallback = vi.fn()
+    widget.callback = useChainCallback(widget.callback, chainedCallback)
+
+    const { store, mediaStore } = seedMissingImageError(graph, String(node.id))
+
+    expect(() => widget.callback?.('uploaded.png')).not.toThrow()
+
+    expect(originalCallback).toHaveBeenCalledOnce()
+    expect(chainedCallback).toHaveBeenCalledOnce()
+    expect(store.lastNodeErrors).toBeNull()
+    expect(mediaStore.missingMediaCandidates).toBeNull()
+  })
+
   it('clears missing media for widgets added after hook installation', () => {
     const graph = new LGraph()
     const node = new LGraphNode('LoadImage')
@@ -371,11 +422,12 @@ describe('Widget change error clearing via onWidgetChanged', () => {
   it('does not double-wrap widget callbacks when hooks are installed twice', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
+    const originalCallback = vi.fn()
     const widget = node.addWidget(
       'combo',
       'image',
       'missing.png',
-      function noopWidgetCallback() {},
+      originalCallback,
       { values: [] }
     )
     graph.add(node)
@@ -389,6 +441,37 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     widget.callback?.('uploaded.png')
 
     expect(clearSpy).toHaveBeenCalledOnce()
+    expect(originalCallback).toHaveBeenCalledOnce()
+  })
+
+  it('uses the addCustomWidget call receiver for late widget hooks', () => {
+    const graph = new LGraph()
+    const sourceNode = new LGraphNode('LoadImage')
+    sourceNode.type = 'LoadImage'
+    const targetNode = new LGraphNode('LoadImage')
+    targetNode.type = 'LoadImage'
+    graph.add(sourceNode)
+    graph.add(targetNode)
+    installErrorClearingHooks(graph)
+
+    const widget = sourceNode.addCustomWidget.call(targetNode, {
+      type: 'combo',
+      name: 'image',
+      value: 'missing.png',
+      callback: function noopWidgetCallback() {},
+      options: { values: [] },
+      y: 0
+    })
+
+    const { store, mediaStore } = seedMissingImageError(
+      graph,
+      String(targetNode.id)
+    )
+
+    widget.callback?.('uploaded.png')
+
+    expect(store.lastNodeErrors).toBeNull()
+    expect(mediaStore.missingMediaCandidates).toBeNull()
   })
 
   it('uses interior node execution ID for promoted widget error clearing', () => {
@@ -550,7 +633,14 @@ describe('installErrorClearingHooks lifecycle', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     node.addInput('clip', 'CLIP')
-    node.addWidget('number', 'steps', 20, () => undefined, {})
+    const originalWidgetCallback = vi.fn()
+    const widget = node.addWidget(
+      'number',
+      'steps',
+      20,
+      originalWidgetCallback,
+      {}
+    )
     graph.add(node)
 
     installErrorClearingHooks(graph)
@@ -564,6 +654,26 @@ describe('installErrorClearingHooks lifecycle', () => {
 
     expect(node.onConnectionsChange).toBe(laterOnConnectionsChange)
     expect(node.onWidgetChanged).toBe(laterOnWidgetChanged)
+    expect(Object.getOwnPropertyDescriptor(widget, 'callback')?.get).toBe(
+      undefined
+    )
+    expect(widget.callback).toBe(originalWidgetCallback)
+  })
+
+  it('does not reinstall hooks over later node callback wrappers', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addInput('clip', 'CLIP')
+    graph.add(node)
+    installErrorClearingHooks(graph)
+
+    const laterOnConnectionsChange = vi.fn()
+    node.onConnectionsChange = laterOnConnectionsChange
+
+    graph.onNodeRemoved!(node)
+    installErrorClearingHooks(graph)
+
+    expect(node.onConnectionsChange).toBe(laterOnConnectionsChange)
   })
 
   it('does not double-wrap callbacks when installErrorClearingHooks is called twice', () => {

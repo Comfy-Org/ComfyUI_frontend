@@ -37,6 +37,40 @@ async function dispatchFilePaste(
   }, payload)
 }
 
+async function interceptNextFilePaste(
+  page: Page,
+  payload: ReturnType<typeof readFilePayload>
+): Promise<void> {
+  await page.evaluate(({ bufferArray, fileName, fileType }) => {
+    document.addEventListener(
+      'paste',
+      (e: ClipboardEvent) => {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+
+        const file = new File([new Uint8Array(bufferArray)], fileName, {
+          type: fileType
+        })
+        const dataTransfer = new DataTransfer()
+        dataTransfer.items.add(file)
+
+        document.dispatchEvent(
+          new ClipboardEvent('paste', {
+            clipboardData: dataTransfer,
+            bubbles: true,
+            cancelable: true
+          })
+        )
+      },
+      { capture: true, once: true }
+    )
+  }, payload)
+}
+
+type PasteFileOptions = {
+  mode?: 'keyboard' | 'direct'
+}
+
 export class ClipboardHelper {
   constructor(
     private readonly keyboard: KeyboardHelper,
@@ -51,8 +85,17 @@ export class ClipboardHelper {
     await this.keyboard.ctrlSend('KeyV', locator ?? null)
   }
 
-  async pasteFile(filePath: string): Promise<void> {
+  async pasteFile(
+    filePath: string,
+    { mode = 'keyboard' }: PasteFileOptions = {}
+  ): Promise<void> {
     const payload = readFilePayload(filePath)
+
+    if (mode === 'keyboard') {
+      await interceptNextFilePaste(this.page, payload)
+      await this.paste()
+      return
+    }
 
     // Browser clipboard APIs cannot reliably seed arbitrary files in tests.
     // Dispatch the app-level paste event with file clipboardData directly.

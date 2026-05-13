@@ -67,7 +67,7 @@ async function selectLoadImageNodeForPaste(
   }, loadImageId)
 }
 
-async function loadImageErrorTestRefs(comfyPage: ComfyPage) {
+async function setupLoadImageErrorScenario(comfyPage: ComfyPage) {
   await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
   const loadImageNode = (
     await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
@@ -254,7 +254,7 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
       comfyPage
     }) => {
       const { loadImageId, innerWrapper, imageWidget } =
-        await loadImageErrorTestRefs(comfyPage)
+        await setupLoadImageErrorScenario(comfyPage)
 
       await test.step('queue with missing image input to surface the error', async () => {
         await surfaceLoadImageMissingInputError(comfyPage, loadImageId)
@@ -284,7 +284,7 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
       comfyPage
     }) => {
       const { loadImageId, innerWrapper, imageWidget } =
-        await loadImageErrorTestRefs(comfyPage)
+        await setupLoadImageErrorScenario(comfyPage)
 
       await test.step('queue with missing image input to surface the error', async () => {
         await surfaceLoadImageMissingInputError(comfyPage, loadImageId)
@@ -304,7 +304,11 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
           (resp) => resp.url().includes('/upload/') && resp.status() === 200,
           { timeout: 10_000 }
         )
-        await comfyPage.clipboard.pasteFile(assetPath(LOAD_IMAGE_UPLOAD_FILE))
+        // File clipboard contents cannot be seeded reliably in Playwright;
+        // use the direct document paste mode to exercise usePaste.
+        await comfyPage.clipboard.pasteFile(assetPath(LOAD_IMAGE_UPLOAD_FILE), {
+          mode: 'direct'
+        })
         await uploadResponse
         await expect
           .poll(() => imageWidget.getValue())
