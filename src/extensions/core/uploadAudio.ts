@@ -102,7 +102,8 @@ app.registerExtension({
         'SaveAudio',
         'PreviewAudio',
         'SaveAudioMP3',
-        'SaveAudioOpus'
+        'SaveAudioOpus',
+        'SaveAudioAdvanced'
       ].includes(
         // @ts-expect-error fixme ts strict error
         nodeType.prototype.comfyClass
