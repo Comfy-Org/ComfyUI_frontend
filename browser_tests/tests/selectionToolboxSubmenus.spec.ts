@@ -78,8 +78,8 @@ test.describe(
       comfyPage
     }) => {
       await openMoreOptions(comfyPage)
-      const nodeInfoButton = comfyPage.page.getByText('Node Info', {
-        exact: true
+      const nodeInfoButton = comfyPage.page.getByRole('menuitem', {
+        name: 'Node Info'
       })
       await expect(nodeInfoButton).toBeHidden()
     })

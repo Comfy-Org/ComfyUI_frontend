@@ -51,6 +51,16 @@ function createMockNodeDef() {
   })
 }
 
+function selectSingleNodeWithNodeDef(id: number) {
+  const canvasStore = useCanvasStore()
+  const nodeDefStore = useNodeDefStore()
+
+  canvasStore.$state.selectedItems = [
+    createMockLGraphNode({ id, type: 'TestNode' })
+  ]
+  vi.mocked(nodeDefStore.fromLGraphNode).mockReturnValue(createMockNodeDef())
+}
+
 describe('useSelectionState', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -194,14 +204,8 @@ describe('useSelectionState', () => {
 
   describe('Node Info Panel', () => {
     test('should open the right side info panel for a selected node', () => {
-      const canvasStore = useCanvasStore()
-      const nodeDefStore = useNodeDefStore()
       const rightSidePanelStore = useRightSidePanelStore()
-      const node = createMockLGraphNode({ id: 8, type: 'TestNode' })
-      canvasStore.$state.selectedItems = [node]
-      vi.mocked(nodeDefStore.fromLGraphNode).mockReturnValue(
-        createMockNodeDef()
-      )
+      selectSingleNodeWithNodeDef(8)
 
       const { canOpenNodeInfoPanel, openNodeInfoPanel } = useSelectionState()
       expect(canOpenNodeInfoPanel.value).toBe(true)
@@ -226,16 +230,10 @@ describe('useSelectionState', () => {
     })
 
     test('should not open the right side panel in legacy menu mode', () => {
-      const canvasStore = useCanvasStore()
-      const nodeDefStore = useNodeDefStore()
       const rightSidePanelStore = useRightSidePanelStore()
       const settingStore = useSettingStore()
-      const node = createMockLGraphNode({ id: 11, type: 'TestNode' })
-      canvasStore.$state.selectedItems = [node]
+      selectSingleNodeWithNodeDef(11)
       vi.mocked(settingStore.get).mockReturnValue('Disabled')
-      vi.mocked(nodeDefStore.fromLGraphNode).mockReturnValue(
-        createMockNodeDef()
-      )
 
       const { canOpenNodeInfoPanel, openNodeInfoPanel } = useSelectionState()
       expect(canOpenNodeInfoPanel.value).toBe(false)

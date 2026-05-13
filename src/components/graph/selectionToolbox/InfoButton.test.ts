@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -40,7 +39,6 @@ describe('InfoButton', () => {
   })
 
   beforeEach(() => {
-    setActivePinia(createPinia())
     vi.clearAllMocks()
     openNodeInfoPanelMock.mockReturnValue(true)
   })
@@ -55,11 +53,15 @@ describe('InfoButton', () => {
     })
   }
 
-  it('should open the node info panel on click', async () => {
+  const clickNodeInfoButton = async () => {
     const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Node Info' }))
+  }
+
+  it('should open the node info panel on click', async () => {
     renderComponent()
 
-    await user.click(screen.getByRole('button', { name: 'Node Info' }))
+    await clickNodeInfoButton()
 
     expect(openNodeInfoPanelMock).toHaveBeenCalled()
     expect(trackUiButtonClickedMock).toHaveBeenCalledWith({
@@ -68,11 +70,10 @@ describe('InfoButton', () => {
   })
 
   it('should not track the click when the node info panel is unavailable', async () => {
-    const user = userEvent.setup()
     openNodeInfoPanelMock.mockReturnValue(false)
     renderComponent()
 
-    await user.click(screen.getByRole('button', { name: 'Node Info' }))
+    await clickNodeInfoButton()
 
     expect(openNodeInfoPanelMock).toHaveBeenCalled()
     expect(trackUiButtonClickedMock).not.toHaveBeenCalled()

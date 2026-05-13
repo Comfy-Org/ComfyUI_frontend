@@ -1,6 +1,7 @@
 /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+import { createTestingPinia } from '@pinia/testing'
 import { fireEvent, render } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
+import { setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -30,11 +31,22 @@ function createMockExtensionService(): ReturnType<typeof useExtensionService> {
 }
 
 const { settingGetMock } = vi.hoisted(() => ({
-  settingGetMock: vi.fn((key: string): unknown => {
-    if (key === 'Comfy.Load3D.3DViewerEnable') return true
-    return null
-  })
+  settingGetMock: vi.fn()
 }))
+
+const defaultSettingValues: Record<string, unknown> = {
+  'Comfy.Load3D.3DViewerEnable': true
+}
+
+function mockSettingValues(overrides: Record<string, unknown> = {}) {
+  const settingValues = {
+    ...defaultSettingValues,
+    ...overrides
+  }
+  settingGetMock.mockImplementation(
+    (key: string): unknown => settingValues[key] ?? null
+  )
+}
 
 // Mock the composables and services
 vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
@@ -132,7 +144,7 @@ describe('SelectionToolbox', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ createSpy: vi.fn, stubActions: false }))
     canvasStore = useCanvasStore()
     nodeDefMock = {
       type: 'TestNode',
@@ -143,10 +155,7 @@ describe('SelectionToolbox', () => {
     canvasStore.canvas = createMockCanvas()
 
     vi.resetAllMocks()
-    settingGetMock.mockImplementation((key: string): unknown => {
-      if (key === 'Comfy.Load3D.3DViewerEnable') return true
-      return null
-    })
+    mockSettingValues()
   })
 
   function renderComponent(props = {}): { container: Element } {
@@ -240,10 +249,8 @@ describe('SelectionToolbox', () => {
     })
 
     it('should not show info button when node info panel is unavailable', () => {
-      settingGetMock.mockImplementation((key: string): unknown => {
-        if (key === 'Comfy.UseNewMenu') return 'Disabled'
-        if (key === 'Comfy.Load3D.3DViewerEnable') return true
-        return null
+      mockSettingValues({
+        'Comfy.UseNewMenu': 'Disabled'
       })
       canvasStore.selectedItems = [createMockPositionable()]
 
