@@ -261,5 +261,24 @@ describe('useFeatureFlags', () => {
       const { flags } = useFeatureFlags()
       expect(flags.newUserDefaultTemplateTab).toBeUndefined()
     })
+
+    it('newUserDefaultTemplateTab falls through to server feature when remoteConfig is blank', async () => {
+      const { remoteConfig } =
+        await import('@/platform/remoteConfig/remoteConfig')
+      const previous = remoteConfig.value
+      remoteConfig.value = { new_user_default_template_tab: '   ' }
+      vi.mocked(api.getServerFeature).mockImplementation((path) => {
+        if (path === ServerFeatureFlag.NEW_USER_DEFAULT_TEMPLATE_TAB)
+          return 'popular'
+        return undefined
+      })
+
+      try {
+        const { flags } = useFeatureFlags()
+        expect(flags.newUserDefaultTemplateTab).toBe('popular')
+      } finally {
+        remoteConfig.value = previous
+      }
+    })
   })
 })

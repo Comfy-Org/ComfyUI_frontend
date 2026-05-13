@@ -172,9 +172,10 @@ export function useFeatureFlags() {
      * unset so callers fall back to the built-in default.
      */
     get newUserDefaultTemplateTab(): string | undefined {
+      const remote = remoteConfig.value.new_user_default_template_tab?.trim()
       const value = resolveFlag<string | undefined>(
         ServerFeatureFlag.NEW_USER_DEFAULT_TEMPLATE_TAB,
-        remoteConfig.value.new_user_default_template_tab,
+        remote ? remote : undefined,
         undefined
       )
       const normalized = value?.trim()
