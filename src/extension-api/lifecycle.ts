@@ -50,12 +50,11 @@ import type {
  *
  * This is the primary entry point for extensions that interact with nodes and
  * widgets. Import directly from `@comfyorg/extension-api` — no dependency on
- * `window.app` at module evaluation time (D6 Part 1).
+ * `window.app` at module evaluation time.
  *
  * Hook firing order across multiple extensions on the same entity follows
- * extension registration order with a lexicographic tie-break on `name` (D10b).
+ * extension registration order with a lexicographic tie-break on `name`.
  *
- * @stability stable
  * @publicAPI
  * @example
  * ```ts
@@ -86,7 +85,6 @@ export declare function defineNodeExtension(
  * Use `defineNodeExtension` for node/widget interactions. Use this for
  * `init`, `setup`, sidebar tabs, commands, and other app-level concerns.
  *
- * @stability stable
  * @publicAPI
  * @example
  * ```ts
@@ -115,15 +113,22 @@ export declare function defineWidgetExtension(
   options: WidgetExtensionOptions
 ): WidgetExtensionOptions
 
-// ─── Implicit-context lifecycle hooks (D10a) ─────────────────────────────────
+// ─── Implicit-context lifecycle hooks ─────────────────────────────────────────
 //
-// These functions read the _currentScope global slot set by the runtime
-// immediately before invoking nodeCreated()/loadedGraphNode(). They must be
-// called synchronously during setup — calling them after an `await` is a no-op
-// in production and throws in development.
+// **Why setup-scope only?** These hooks use Vue-style implicit context:
+// 1. The runtime sets a global `_currentScope` slot before calling nodeCreated()
+// 2. Hooks read this slot to register callbacks in the correct EffectScope
+// 3. The EffectScope auto-disposes all registered callbacks when the node is removed
 //
-// The ctx.onNodeMounted(fn) form from D6 Part 1 examples is a thin alias on
-// NodeHandle that calls these same functions under the hood.
+// Benefits of this pattern:
+// - Automatic cleanup: no manual unsubscribe needed — scope disposal handles it
+// - Consistent with Vue Composition API patterns (onMounted, onUnmounted, etc.)
+// - Prevents memory leaks: callbacks are garbage-collected with the node
+//
+// The synchronous requirement exists because:
+// - After an `await`, the call stack has unwound and _currentScope is gone
+// - This is the same constraint as Vue's onMounted/onUnmounted hooks
+// - In dev mode, calling after await throws; in prod it's a silent no-op
 
 export {
   /**
@@ -131,7 +136,8 @@ export {
    * graph (the reactive mount watcher has run, the scope is active, and
    * `setup()` has completed).
    *
-   * Must be called synchronously inside `nodeCreated` or `loadedGraphNode`.
+   * Must be called synchronously inside `nodeCreated` or `loadedGraphNode`
+   * (see module comment for rationale — async context loses the implicit scope).
    *
    * @stability experimental
    * @example
@@ -148,10 +154,10 @@ export {
    * Register a callback to fire when the node entity is removed from the graph
    * (NOT on subgraph promotion, which is a DOM-move, not an unmount).
    *
-   * Replaces `nodeType.prototype.onRemoved` patching (S2.N4 — 7+ repos,
-   * 4.89 blast radius).
+   * Replaces `nodeType.prototype.onRemoved` patching.
    *
-   * Must be called synchronously inside `nodeCreated` or `loadedGraphNode`.
+   * Must be called synchronously inside `nodeCreated` or `loadedGraphNode`
+   * (see module comment for rationale — async context loses the implicit scope).
    *
    * @stability experimental
    * @example
