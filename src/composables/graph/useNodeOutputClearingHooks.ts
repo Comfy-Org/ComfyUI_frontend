@@ -3,11 +3,18 @@ import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { getExecutionIdForNodeInGraph } from '@/utils/graphTraversalUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
+function isTabSwitchTeardown(): boolean {
+  const tracker = useWorkflowStore().activeWorkflow?.changeTracker
+  return ChangeTracker.isLoadingGraph && !tracker?._restoringState
+}
+
 function dropTrackerCacheEntry(execId: string) {
+  if (isTabSwitchTeardown()) return
   const tracked = useWorkflowStore().activeWorkflow?.changeTracker?.nodeOutputs
   if (tracked) delete tracked[execId]
 }
