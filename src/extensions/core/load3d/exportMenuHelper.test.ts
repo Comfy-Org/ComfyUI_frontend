@@ -98,13 +98,13 @@ describe('createExportMenuItems', () => {
     )
   })
 
-  it.each([
+  it.for<[label: string, value: string]>([
     ['GLB', 'glb'],
     ['OBJ', 'obj'],
     ['STL', 'stl']
   ])(
     'invokes load3d.exportModel(%s) and shows a success toast when the %s submenu item is clicked',
-    async (label, value) => {
+    async ([label, value]) => {
       const exportModel = vi.fn().mockResolvedValue(undefined)
       const items = createExportMenuItems(makeLoad3d(exportModel))
       ;(items[1]!.callback as (...args: unknown[]) => void)(

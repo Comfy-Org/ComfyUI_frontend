@@ -54,8 +54,8 @@ function createMockNode(): LGraphNode {
   })
 }
 
-function createFile(name = 'test.png'): File {
-  return new File(['data'], name, { type: 'image/png' })
+function createFile(name = 'test.png', type = 'image/png'): File {
+  return new File(['data'], name, { type })
 }
 
 function successResponse(name: string, subfolder?: string) {
@@ -95,15 +95,21 @@ describe('useNodeImageUpload', () => {
     })
   })
 
-  it('sets isUploading true during upload and false after', async () => {
-    mockFetchApi.mockResolvedValueOnce(successResponse('test.png'))
+  it.for([
+    { mediaType: 'image', filename: 'test.png', mimeType: 'image/png' },
+    { mediaType: 'video', filename: 'clip.mp4', mimeType: 'video/mp4' }
+  ])(
+    'sets isUploading true during $mediaType upload and false after',
+    async ({ filename, mimeType }) => {
+      mockFetchApi.mockResolvedValueOnce(successResponse(filename))
 
-    const promise = capturedDragOnDrop([createFile()])
-    expect(node.isUploading).toBe(true)
+      const promise = capturedDragOnDrop([createFile(filename, mimeType)])
+      expect(node.isUploading).toBe(true)
 
-    await promise
-    expect(node.isUploading).toBe(false)
-  })
+      await promise
+      expect(node.isUploading).toBe(false)
+    }
+  )
 
   it('clears node.imgs on upload start', async () => {
     mockFetchApi.mockResolvedValueOnce(successResponse('test.png'))
