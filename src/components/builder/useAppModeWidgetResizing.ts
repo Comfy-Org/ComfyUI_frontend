@@ -1,12 +1,12 @@
 import { onScopeDispose } from 'vue'
 
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputWidgetConfig } from '@/platform/workflow/management/stores/comfyWorkflow'
-import type { WidgetEntityId } from '@/world/entityIds'
 
 const RESIZABLE_SELECTOR = 'textarea, [data-slot="drop-zone-indicator"]'
 
 export function useAppModeWidgetResizing(
-  onResize: (entityId: WidgetEntityId, config: InputWidgetConfig) => void
+  onResize: (widget: IBaseWidget, config: InputWidgetConfig) => void
 ) {
   let pendingHandler: (() => void) | null = null
 
@@ -19,7 +19,7 @@ export function useAppModeWidgetResizing(
 
   onScopeDispose(clearPendingHandler)
 
-  function onPointerDown(entityId: WidgetEntityId, event: PointerEvent) {
+  function onPointerDown(widget: IBaseWidget, event: PointerEvent) {
     const wrapper = event.currentTarget
     const target = event.target
     if (!(wrapper instanceof HTMLElement) || !(target instanceof HTMLElement))
@@ -36,7 +36,7 @@ export function useAppModeWidgetResizing(
       pendingHandler = null
       const height = resizable.offsetHeight
       if (height === startHeight) return
-      onResize(entityId, { height })
+      onResize(widget, { height })
     }
     pendingHandler = handler
     window.addEventListener('pointerup', handler)

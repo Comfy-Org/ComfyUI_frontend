@@ -18,11 +18,31 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { resolveNode, resolveNodeWidget } from '@/utils/litegraphUtil'
 import type { WidgetEntityId } from '@/world/entityIds'
 import { isWidgetEntityId } from '@/world/entityIds'
-import { findWidgetByEntityId } from '@/world/widgetLookup'
+
+/**
+ * Resolve a widget by its canonical {@link WidgetEntityId} within the given
+ * root graph. Identity comparison is purely structural —
+ * `widget.entityId === entityId` — so producers and consumers never disagree
+ * about which widget an id refers to.
+ *
+ * This is the single load-time resolution path; render-time consumers should
+ * project `selectedInputs` through `useResolvedSelectedInputs` instead.
+ */
+function findWidgetByEntityId(
+  rootGraph: LGraph,
+  entityId: WidgetEntityId
+): IBaseWidget | undefined {
+  for (const node of rootGraph.nodes) {
+    const widget = node.widgets?.find((w) => w.entityId === entityId)
+    if (widget) return widget
+  }
+  return undefined
+}
 
 export function nodeTypeValidForApp(type: string) {
   return !['Note', 'MarkdownNote'].includes(type)
@@ -76,8 +96,8 @@ export const useAppModeStore = defineStore('appMode', () => {
 
     // Canonical: storedId is already a WidgetEntityId.
     if (typeof storedId === 'string' && isWidgetEntityId(storedId)) {
-      const found = findWidgetByEntityId(rootGraph, storedId)
-      return found ? buildEntry(storedId, widgetName, config) : null
+      const widget = findWidgetByEntityId(rootGraph, storedId)
+      return widget ? buildEntry(storedId, widgetName, config) : null
     }
 
     // Legacy NodeLocatorId (`graphId:nodeId`) for promoted widgets.
@@ -229,11 +249,10 @@ export const useAppModeStore = defineStore('appMode', () => {
     if (index !== -1) selectedInputs.value.splice(index, 1)
   }
 
-  function updateInputConfig(
-    entityId: WidgetEntityId,
-    config: InputWidgetConfig
-  ) {
-    const entry = selectedInputs.value.find(([id]) => id === entityId)
+  function updateInputConfig(widget: IBaseWidget, config: InputWidgetConfig) {
+    const targetEntityId = widget.entityId
+    if (!targetEntityId) return
+    const entry = selectedInputs.value.find(([id]) => id === targetEntityId)
     if (!entry) return
     entry[2] = { ...entry[2], ...config }
   }

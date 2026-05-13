@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
-import { computed, provide, shallowRef, triggerRef } from 'vue'
+import { computed, provide } from 'vue'
 
 import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
+import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import { useI18n } from 'vue-i18n'
 
 import Popover from '@/components/ui/Popover.vue'
@@ -25,12 +25,9 @@ import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
 import { promptRenameWidget } from '@/utils/widgetUtil'
-import type { WidgetEntityId } from '@/world/entityIds'
-import { findWidgetByEntityId } from '@/world/widgetLookup'
 
 interface WidgetEntry {
   key: string
-  entityId: WidgetEntityId
   persistedHeight: number | undefined
   nodeData: ReturnType<typeof nodeToNodeData> & {
     widgets: NonNullable<ReturnType<typeof nodeToNodeData>['widgets']>
@@ -48,38 +45,24 @@ const executionErrorStore = useExecutionErrorStore()
 const appModeStore = useAppModeStore()
 const maskEditor = useMaskEditor()
 
-const { onPointerDown } = useAppModeWidgetResizing((entityId, config) =>
-  appModeStore.updateInputConfig(entityId, config)
+const { onPointerDown } = useAppModeWidgetResizing((widget, config) =>
+  appModeStore.updateInputConfig(widget, config)
 )
 
 provide(HideLayoutFieldKey, true)
 provide(OverlayAppendToKey, 'body')
 
-const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph.nodes)
-useEventListener(
-  app.rootGraph.events,
-  'configured',
-  () => (graphNodes.value = app.rootGraph.nodes)
-)
-useEventListener(app.rootGraph.events, 'node:slot-label:changed', () =>
-  triggerRef(graphNodes)
-)
+const resolvedInputs = useResolvedSelectedInputs()
 
 const mappedSelections = computed((): WidgetEntry[] => {
-  void graphNodes.value
   const nodeDataByNode = new Map<
     LGraphNode,
     ReturnType<typeof nodeToNodeData>
   >()
 
-  return appModeStore.selectedInputs.flatMap(([entityId, , config]) => {
-    if (typeof entityId !== 'string') return []
-    const found = findWidgetByEntityId(
-      app.rootGraph,
-      entityId as WidgetEntityId
-    )
-    if (!found) return []
-    const [node, widget] = found
+  return resolvedInputs.value.flatMap((entry) => {
+    if (entry.status !== 'resolved') return []
+    const { entityId, node, widget, config } = entry
     if (node.mode !== LGraphEventMode.ALWAYS) return []
 
     if (!nodeDataByNode.has(node)) {
@@ -99,7 +82,6 @@ const mappedSelections = computed((): WidgetEntry[] => {
     return [
       {
         key: entityId,
-        entityId: entityId as WidgetEntityId,
         persistedHeight: config?.height,
         nodeData: {
           ...fullNodeData,
@@ -166,13 +148,7 @@ defineExpose({ handleDragDrop })
 </script>
 <template>
   <div
-    v-for="{
-      key,
-      entityId,
-      persistedHeight,
-      nodeData,
-      action
-    } in mappedSelections"
+    v-for="{ key, persistedHeight, nodeData, action } in mappedSelections"
     :key
     :class="
       cn(
@@ -249,7 +225,7 @@ defineExpose({ handleDragDrop })
         )
       "
       :inert="builderMode || undefined"
-      @pointerdown.capture="(e) => onPointerDown(entityId, e)"
+      @pointerdown.capture="(e) => onPointerDown(action.widget, e)"
     >
       <DropZone
         :on-drag-over="nodeData.onDragOver"

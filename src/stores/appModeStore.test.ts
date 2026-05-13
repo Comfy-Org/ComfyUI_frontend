@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -441,11 +442,13 @@ describe('appModeStore', () => {
   describe('updateInputConfig', () => {
     const entity = 'g:1:prompt' as WidgetEntityId
     const otherEntity = 'g:99:prompt' as WidgetEntityId
+    const widget = fromAny<IBaseWidget, unknown>({ entityId: entity })
+    const otherWidget = fromAny<IBaseWidget, unknown>({ entityId: otherEntity })
 
     it('sets config on an existing input', () => {
       store.selectedInputs.push([entity, 'prompt'])
 
-      store.updateInputConfig(entity, { height: 200 })
+      store.updateInputConfig(widget, { height: 200 })
 
       expect(store.selectedInputs[0][2]).toEqual({ height: 200 })
     })
@@ -453,7 +456,18 @@ describe('appModeStore', () => {
     it('is a no-op when entry is not found', () => {
       store.selectedInputs.push([entity, 'prompt'])
 
-      store.updateInputConfig(otherEntity, { height: 200 })
+      store.updateInputConfig(otherWidget, { height: 200 })
+
+      expect(store.selectedInputs[0][2]).toBeUndefined()
+    })
+
+    it('is a no-op when the widget has no entityId', () => {
+      store.selectedInputs.push([entity, 'prompt'])
+
+      store.updateInputConfig(
+        fromAny<IBaseWidget, unknown>({ entityId: undefined }),
+        { height: 200 }
+      )
 
       expect(store.selectedInputs[0][2]).toBeUndefined()
     })
@@ -463,7 +477,7 @@ describe('appModeStore', () => {
       store.selectedInputs.push([entity, 'prompt'])
       await nextTick()
 
-      store.updateInputConfig(entity, { height: 300 })
+      store.updateInputConfig(widget, { height: 300 })
       await nextTick()
 
       expect(app.rootGraph.extra.linearData).toEqual({
