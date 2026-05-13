@@ -1,6 +1,6 @@
 import { until, useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { gt, valid } from 'semver'
+import { coerce, gt } from 'semver'
 import { computed } from 'vue'
 
 import config from '@/config'
@@ -13,6 +13,15 @@ const DISMISSAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
 // Already covered by the dedicated frontend warning, which uses the
 // running bundle's version rather than the installed pip version.
 const FRONTEND_PACKAGE_NAME = 'comfyui-frontend-package'
+
+// Backend reports PEP 440 versions (e.g. "0.3.0.post1", "1.0.0rc1");
+// coerce strips the suffix so we can compare with semver.
+function isOutdated(installed: string, required: string): boolean {
+  const installedSemver = coerce(installed)
+  const requiredSemver = coerce(required)
+  if (!installedSemver || !requiredSemver) return false
+  return gt(requiredSemver, installedSemver)
+}
 
 export const useVersionCompatibilityStore = defineStore(
   'versionCompatibility',
@@ -30,16 +39,8 @@ export const useVersionCompatibilityStore = defineStore(
     )
 
     const isFrontendOutdated = computed(() => {
-      if (
-        !frontendVersion.value ||
-        !requiredFrontendVersion.value ||
-        !valid(frontendVersion.value) ||
-        !valid(requiredFrontendVersion.value)
-      ) {
-        return false
-      }
-      // Returns true if required version is greater than frontend version
-      return gt(requiredFrontendVersion.value, frontendVersion.value)
+      if (!frontendVersion.value || !requiredFrontendVersion.value) return false
+      return isOutdated(frontendVersion.value, requiredFrontendVersion.value)
     })
 
     const isFrontendNewer = computed(() => {
@@ -54,8 +55,7 @@ export const useVersionCompatibilityStore = defineStore(
       return packages.filter((pkg) => {
         if (pkg.name === FRONTEND_PACKAGE_NAME) return false
         if (!pkg.installed || !pkg.required) return false
-        if (!valid(pkg.installed) || !valid(pkg.required)) return false
-        return gt(pkg.required, pkg.installed)
+        return isOutdated(pkg.installed, pkg.required)
       })
     })
 

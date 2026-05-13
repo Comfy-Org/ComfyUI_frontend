@@ -457,6 +457,34 @@ describe('useVersionCompatibilityStore', () => {
       expect(store.hasVersionMismatch).toBe(false)
     })
 
+    it('should detect outdated PEP 440 versions via coerce', async () => {
+      mockSystemStatsStore.systemStats = {
+        system: {
+          comfyui_version: '1.24.0',
+          required_frontend_version: '1.24.0',
+          comfy_package_versions: [
+            {
+              name: 'comfy-kitchen',
+              installed: '0.3.0.post1',
+              required: '0.4.0rc1'
+            },
+            {
+              name: 'comfy-aimdo',
+              installed: '0.4.0',
+              required: '0.4.0.post1'
+            }
+          ]
+        }
+      }
+      mockSystemStatsStore.isInitialized = true
+
+      await store.checkVersionCompatibility()
+
+      expect(store.outdatedComfyPackages.map((p) => p.name)).toEqual([
+        'comfy-kitchen'
+      ])
+    })
+
     it('should include outdated packages in dismissal key', async () => {
       const mockNow = 1000000
       vi.spyOn(Date, 'now').mockReturnValue(mockNow)
