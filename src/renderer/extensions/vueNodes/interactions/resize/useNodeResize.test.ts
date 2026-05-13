@@ -11,10 +11,11 @@ type ResizeCallback = (
   element: HTMLElement
 ) => void
 
-// Capture pointermove/pointerup handlers registered via useEventListener
+// Capture pointermove/pointerup/pointercancel handlers registered via useEventListener
 const eventHandlers = vi.hoisted(() => ({
   pointermove: null as ((e: PointerEvent) => void) | null,
-  pointerup: null as ((e: PointerEvent) => void) | null
+  pointerup: null as ((e: PointerEvent) => void) | null,
+  pointercancel: null as ((e?: PointerEvent) => void) | null
 }))
 
 vi.mock('@vueuse/core', () => ({
@@ -22,6 +23,8 @@ vi.mock('@vueuse/core', () => ({
     (eventName: string, handler: (...args: unknown[]) => void) => {
       if (eventName === 'pointermove' || eventName === 'pointerup') {
         eventHandlers[eventName] = handler as (e: PointerEvent) => void
+      } else if (eventName === 'pointercancel') {
+        eventHandlers.pointercancel = handler as (e?: PointerEvent) => void
       }
       return vi.fn()
     }
@@ -97,12 +100,21 @@ function createMockNodeElement(
   return element
 }
 
-function createMockHandle(nodeElement: HTMLElement): HTMLElement {
+function createMockHandle(nodeElement: HTMLElement) {
   const handle = document.createElement('div')
   nodeElement.appendChild(handle)
-  handle.setPointerCapture = vi.fn()
-  handle.releasePointerCapture = vi.fn()
-  return handle
+  const capturedPointerIds = new Set<number>()
+  handle.setPointerCapture = vi.fn((id: number) => capturedPointerIds.add(id))
+  handle.releasePointerCapture = vi.fn((id: number) =>
+    capturedPointerIds.delete(id)
+  )
+  handle.hasPointerCapture = vi.fn((id: number) => capturedPointerIds.has(id))
+  return Object.assign(handle, {
+    capturedPointerIds,
+    releasePointerCapture: handle.releasePointerCapture as ReturnType<
+      typeof vi.fn
+    >
+  })
 }
 
 function createPointerEvent(
@@ -159,6 +171,7 @@ describe('useNodeResize', () => {
     vi.clearAllMocks()
     eventHandlers.pointermove = null
     eventHandlers.pointerup = null
+    eventHandlers.pointercancel = null
     snapState.shouldSnap = false
     snapState.applySnapToPosition = (pos) => pos
     snapState.applySnapToSize = (size) => size
@@ -411,6 +424,28 @@ describe('useNodeResize', () => {
       simulateMove(50, 50)
       expect(cb.mock.calls.length).toBe(callsAfterUp)
       expect(el).toBeDefined()
+    })
+
+    it('releases pointer capture on pointercancel', async () => {
+      const { cb, handle: h, startResize } = await setupDynamic(() => 150)
+
+      startResizeAt(startResize, h, 'SE')
+      simulateMove(10, 10)
+
+      // Verify pointer is captured
+      expect(h.capturedPointerIds.has(1)).toBe(true)
+
+      // Fire pointercancel (e.g. OS gesture interrupt)
+      eventHandlers.pointercancel?.()
+
+      // Pointer capture should be released
+      expect(h.releasePointerCapture).toHaveBeenCalledWith(1)
+      expect(h.capturedPointerIds.has(1)).toBe(false)
+
+      // Further moves are ignored — cleanup ran
+      const callsAfterCancel = cb.mock.calls.length
+      simulateMove(50, 50)
+      expect(cb.mock.calls.length).toBe(callsAfterCancel)
     })
 
     it('applies snap-to-grid on SE (size only)', async () => {
