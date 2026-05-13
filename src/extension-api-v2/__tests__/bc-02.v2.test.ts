@@ -182,7 +182,7 @@ describe('BC.02 v2 contract — node lifecycle: teardown', () => {
     it('interval cleared in onScopeDispose does not fire after unmount', () => {
       vi.useFakeTimers()
       const intervalCallback = vi.fn()
-      let handle: number | undefined
+      let handle: ReturnType<typeof globalThis.setInterval> | undefined
 
       const { unmount } = mountNode(() => {
         handle = setInterval(intervalCallback, 100)
