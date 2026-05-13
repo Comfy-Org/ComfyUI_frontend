@@ -61,6 +61,19 @@ function selectSingleNodeWithNodeDef(id: number) {
   vi.mocked(nodeDefStore.fromLGraphNode).mockReturnValue(createMockNodeDef())
 }
 
+function mockSettingValues(overrides: Record<string, unknown> = {}) {
+  const settingStore = useSettingStore()
+  const settingValues: Record<string, unknown> = {
+    'Comfy.UseNewMenu': 'Top',
+    'Comfy.Load3D.3DViewerEnable': true,
+    ...overrides
+  }
+
+  vi.mocked(settingStore.get).mockImplementation(
+    (key: string): unknown => settingValues[key]
+  )
+}
+
 describe('useSelectionState', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -71,6 +84,7 @@ describe('useSelectionState', () => {
         createSpy: vi.fn
       })
     )
+    mockSettingValues()
 
     // Setup mock utility functions
     vi.mocked(isLGraphNode).mockImplementation((item: unknown) => {
@@ -231,9 +245,10 @@ describe('useSelectionState', () => {
 
     test('should not open the right side panel in legacy menu mode', () => {
       const rightSidePanelStore = useRightSidePanelStore()
-      const settingStore = useSettingStore()
       selectSingleNodeWithNodeDef(11)
-      vi.mocked(settingStore.get).mockReturnValue('Disabled')
+      mockSettingValues({
+        'Comfy.UseNewMenu': 'Disabled'
+      })
 
       const { canOpenNodeInfoPanel, openNodeInfoPanel } = useSelectionState()
       expect(canOpenNodeInfoPanel.value).toBe(false)

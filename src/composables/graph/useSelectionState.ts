@@ -61,7 +61,7 @@ export function useSelectionState() {
   )
 
   const hasAny3DNodeSelected = computed(() => {
-    const enable3DViewer = useSettingStore().get('Comfy.Load3D.3DViewerEnable')
+    const enable3DViewer = settingStore.get('Comfy.Load3D.3DViewerEnable')
     return (
       selectedNodes.value.length === 1 &&
       selectedNodes.value.some(isLoad3dNode) &&
