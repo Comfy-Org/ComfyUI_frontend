@@ -105,6 +105,15 @@ export declare function defineExtension(
  *
  * @stability experimental
  * @publicAPI
+ * @example
+ * ```ts
+ * import { defineWidgetExtension } from '@comfyorg/extension-api'
+ *
+ * export default defineWidgetExtension({
+ *   name: 'my-org.color-picker',
+ *   type: 'COLOR_PICKER'
+ * })
+ * ```
  */
 export declare function defineWidget(
   options: WidgetExtensionOptions

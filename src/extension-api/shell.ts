@@ -1,9 +1,10 @@
 /**
  * Shell UI extension types — sidebar tabs, bottom panels, commands, toasts.
  *
- * Moved from `src/types/extensionTypes.ts` with no shape changes. This
- * re-export makes all shell types available from the single
- * `@comfyorg/extension-api` package entry point.
+ * Re-exported from `src/types/extensionTypes.ts` with no shape changes.
+ * The original module remains the source of truth; this barrel makes the
+ * shell types available from the single `@comfyorg/extension-api` package
+ * entry point.
  *
  * @packageDocumentation
  */

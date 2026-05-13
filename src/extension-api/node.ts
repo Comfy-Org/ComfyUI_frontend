@@ -169,6 +169,20 @@ export interface NodeBeforeSerializeEvent {
 }
 
 /**
+ * Options for `NodeHandle.addDOMWidget()`.
+ *
+ * @stability experimental
+ */
+export interface DOMWidgetOptions {
+  /** Unique widget name within this node. */
+  name: string
+  /** The DOM element to embed in the node widget area. */
+  element: HTMLElement
+  /** Reserved height in pixels. Defaults to `element.offsetHeight` at mount time. */
+  height?: number
+}
+
+/**
  * Controlled surface for node access. Reads query the ECS World; writes
  * dispatch commands. Events are Vue-reactive watches on World components.
  *
@@ -191,21 +205,6 @@ export interface NodeBeforeSerializeEvent {
  * })
  * ```
  */
-
-/**
- * Options for `NodeHandle.addDOMWidget()`.
- *
- * @stability experimental
- */
-export interface DOMWidgetOptions {
-  /** Unique widget name within this node. */
-  name: string
-  /** The DOM element to embed in the node widget area. */
-  element: HTMLElement
-  /** Reserved height in pixels. Defaults to `element.offsetHeight` at mount time. */
-  height?: number
-}
-
 export interface NodeHandle {
   // ── IDENTITY ──────────────────────────────────────────────────────────────
 

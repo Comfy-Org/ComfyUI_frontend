@@ -132,8 +132,10 @@ export interface ExtensionOptions {
  *
  *   created(widget, node) {
  *     return {
- *       render(container) { /* mount color picker DOM *\/ },
- *       destroy()        { /* cleanup *\/ }
+ *       // mount color picker DOM
+ *       render(container) {},
+ *       // cleanup
+ *       destroy() {}
  *     }
  *   }
  * })

@@ -241,8 +241,13 @@ function createWidgetHandle(widgetId: WidgetEntityId): WidgetHandle {
     entityId: widgetId,
 
     get name() {
-      // Entity ID format: "widget:graphId:nodeId:name" — the name is the last segment.
-      // TODO(#11939): replace with a dedicated WidgetName component when available.
+      // TODO(#11939): TEMPORARY widget-name parse. Entity ID format is
+      // "widget:graphId:nodeId:name", so the trailing segment after the last
+      // ':' is the name. Replace with a dedicated WidgetNameComponent (or
+      // reuse WidgetComponentSchema.name) once that lands. The `as unknown as
+      // string` cast and the lastIndexOf(':') split should both go away then.
+      // If the id has no ':' (defensive — should not happen with the canonical
+      // format), fall back to the full id rather than an empty string.
       const raw = widgetId as unknown as string
       const lastColon = raw.lastIndexOf(':')
       return lastColon !== -1 ? raw.slice(lastColon + 1) : raw
@@ -333,6 +338,11 @@ function createWidgetHandle(widgetId: WidgetEntityId): WidgetHandle {
         )
       } else if (event === 'optionChange' || event === 'propertyChange') {
         // TODO(#11939): wire through ECS event bus when available
+        if (import.meta.env.DEV) {
+          console.warn(
+            `[extension-api] widget.on("${event}") is not yet wired — Phase B`
+          )
+        }
         dispatch({ type: 'SubscribeWidgetEvent', widgetId, event, handler: fn })
         return () =>
           dispatch({
@@ -342,6 +352,11 @@ function createWidgetHandle(widgetId: WidgetEntityId): WidgetHandle {
             handler: fn
           })
       } else if (event === 'beforeSerialize') {
+        if (import.meta.env.DEV) {
+          console.warn(
+            '[extension-api] widget.on("beforeSerialize") is not yet wired — Phase B'
+          )
+        }
         dispatch({ type: 'RegisterWidgetSerializer', widgetId, serializer: fn })
         return () =>
           dispatch({
@@ -572,6 +587,11 @@ function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
         event === 'configured'
       ) {
         // TODO(#11939): replace with world.onSystemEvent once World interface gains it
+        if (import.meta.env.DEV) {
+          console.warn(
+            `[extension-api] node.on('${event}') is a Phase-A stub — handlers will not fire until the dispatch substrate lands (#11939).`
+          )
+        }
         dispatch({ type: 'SubscribeNodeEvent', nodeId, event, handler: fn })
         return () =>
           dispatch({ type: 'UnsubscribeNodeEvent', nodeId, event, handler: fn })
@@ -826,6 +846,12 @@ export function getScopeRegistry(): ReadonlyMap<
 
 let _extensionSystemStarted = false
 
+/**
+ * Boots the extension system's reactive mount watcher.
+ *
+ * @internal Not part of the public extension author API. Called by app.ts
+ * during initialization. Do not export from the public barrel.
+ */
 export function startExtensionSystem(): void {
   if (_extensionSystemStarted) {
     if (import.meta.env.DEV) {

@@ -322,14 +322,12 @@ describe('I-SR.6 — scope lifecycle invariants', () => {
 
   it('(no-dispose-on-subgraph-promotion) scope survives a non-removal remount; only unmount destroys it', () => {
     const NODE_ID = makeNodeId(31)
-    const removedCb = vi.fn()
     let setupCount = 0
 
     defineNode({
       name: 'i-promotion',
       nodeCreated() {
         setupCount++
-        // Register a removal callback — should NOT fire on re-mount
         // (In real Phase B, onNodeRemoved would be used; here we verify via
         //  setupCount that setup does not re-run, meaning scope was preserved.)
       }
@@ -350,7 +348,6 @@ describe('I-SR.6 — scope lifecycle invariants', () => {
 
     // Scope was NOT disposed — setup did not re-run
     expect(setupCount).toBe(1)
-    expect(removedCb).not.toHaveBeenCalled()
 
     // Only an explicit unmount destroys the scope
     unmountExtensionsForNode(NODE_ID)
