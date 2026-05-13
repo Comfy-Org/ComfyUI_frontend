@@ -667,11 +667,12 @@ test('Properties panel operations @vue-nodes', async ({ comfyPage }) => {
     )
   })
 
-  await editor.togglePromotion(subgraphNode, {
-    nodeName: 'KSampler',
-    widgetName: 'steps',
-    toState: false
-  })
+  // Link-promoted widgets render `icon-link` (disabled toggle) in the editor;
+  // demotion happens via the source-node context menu inside the subgraph.
+  await comfyPage.vueNodes.enterSubgraph('2')
+  const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+  await comfyPage.subgraph.unpromoteWidget(ksampler.root, 'steps')
+  await comfyPage.subgraph.exitViaBreadcrumb()
   await expect(steps, 'Un-promote widget').toBeHidden()
 })
 

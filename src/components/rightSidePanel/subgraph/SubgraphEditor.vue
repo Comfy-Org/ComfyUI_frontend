@@ -127,9 +127,16 @@ const interiorWidgets = computed<WidgetItem[]>(() => {
 const candidateWidgets = computed<WidgetItem[]>(() => {
   const node = activeNode.value
   if (!node) return []
+  // An interior widget is "already promoted" iff some active row's source
+  // identity matches it. PromotedWidgetView carries `sourceNodeId`; preview
+  // exposures are stored as the interior `[node, widget]` tuple directly.
+  const promotedSourceKeys = new Set(
+    activeWidgets.value.map(
+      ([n, w]) => `${getSourceNodeId(w) ?? String(n.id)}:${getWidgetName(w)}`
+    )
+  )
   return interiorWidgets.value.filter(
-    (item: WidgetItem) =>
-      !activeWidgets.value.some((active) => toKey(active) === toKey(item))
+    ([n, w]) => !promotedSourceKeys.has(`${n.id}:${w.name}`)
   )
 })
 const filteredCandidates = computed<WidgetItem[]>(() => {
