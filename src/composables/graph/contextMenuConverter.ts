@@ -427,10 +427,7 @@ export function convertContextMenuToOptions(
           )
         }
       }
-    }
-    // Handle callback (only if not disabled and not a submenu)
-    else if (item.callback && !item.disabled) {
-      // Wrap the callback to match the () => void signature
+    } else if (item.callback && !item.disabled) {
       option.action = () => {
         try {
           void item.callback?.call(
@@ -439,7 +436,7 @@ export function convertContextMenuToOptions(
             {},
             undefined,
             undefined,
-            item
+            node
           )
         } catch (error) {
           console.error('Error executing context menu callback:', error)
