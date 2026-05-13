@@ -58,6 +58,9 @@ export function createV2Runtime(options: V2RuntimeOptions = {}): V2Runtime {
 
   function createHandle(record: NodeRecord): NodeHandle {
     // Minimal NodeHandle stub — only the fields BC tests touch are real.
+    const widgets: Array<{ name: string; entityId: string }> = []
+    let widgetCounter = 0
+
     return {
       entityId: record.entityId,
       get type() {
@@ -75,10 +78,43 @@ export function createV2Runtime(options: V2RuntimeOptions = {}): V2Runtime {
       getProperty: () => undefined,
       getProperties: () => ({}),
       setProperty: () => {},
-      widget: () => undefined,
-      widgets: () => [],
-      addWidget: () => {
-        throw new Error('not implemented in stub')
+      widget: (name: string) => widgets.find((w) => w.name === name),
+      widgets: () => widgets,
+      addWidget: (_type: string, name: string, _defaultValue: unknown) => {
+        const entityId = `widget:${record.entityId}:${++widgetCounter}`
+        const wh = {
+          name,
+          entityId,
+          getValue: () => undefined,
+          setValue: () => {},
+          setOption: () => {},
+          setHidden: () => {},
+          setDisabled: () => {},
+          setHeight: () => {},
+          on: () => () => {},
+          isSerializeEnabled: () => true,
+          setSerializeEnabled: () => {}
+        }
+        widgets.push(wh)
+        return wh
+      },
+      addDOMWidget: (opts: { name: string; element: HTMLElement }) => {
+        const entityId = `widget:${record.entityId}:dom:${++widgetCounter}`
+        const wh = {
+          name: opts.name,
+          entityId,
+          getValue: () => undefined,
+          setValue: () => {},
+          setOption: () => {},
+          setHidden: () => {},
+          setDisabled: () => {},
+          setHeight: () => {},
+          on: () => () => {},
+          isSerializeEnabled: () => true,
+          setSerializeEnabled: () => {}
+        }
+        widgets.push(wh)
+        return wh
       },
       inputs: () => [],
       outputs: () => [],

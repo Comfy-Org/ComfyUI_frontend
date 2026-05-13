@@ -149,6 +149,38 @@ describe('BC.10 v2 contract — widget value subscription', () => {
       widget.setValue('world')
       expect(widget.getValue()).toBe('world')
     })
+
+    it('handler fires when setValue is called with a different object reference (shallow comparison)', () => {
+      const widget = createMockWidgetHandle('data', { x: 1 })
+      const handler = vi.fn()
+
+      widget.on('valueChange', handler)
+      widget.setValue({ x: 1 }) // different reference, same shape
+
+      // shallowRef uses reference equality — different object = fires
+      expect(handler).toHaveBeenCalledOnce()
+    })
+
+    it('handler fires when setValue is called with a different array reference', () => {
+      const widget = createMockWidgetHandle('items', [1, 2, 3])
+      const handler = vi.fn()
+
+      widget.on('valueChange', handler)
+      widget.setValue([1, 2, 3]) // different reference
+
+      expect(handler).toHaveBeenCalledOnce()
+    })
+
+    it('handler does not fire when setValue is called with the same object reference', () => {
+      const obj = { x: 1 }
+      const widget = createMockWidgetHandle('data', obj)
+      const handler = vi.fn()
+
+      widget.on('valueChange', handler)
+      widget.setValue(obj) // same reference
+
+      expect(handler).not.toHaveBeenCalled()
+    })
   })
 
   describe('v2 API surface notes — S2.N14', () => {

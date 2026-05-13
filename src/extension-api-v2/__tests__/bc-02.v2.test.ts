@@ -135,6 +135,47 @@ describe('BC.02 v2 contract — node lifecycle: teardown', () => {
       unmount()
       expect(observed).toEqual(['LTXSparseTrack'])
     })
+
+    it('onScopeDispose callbacks run in FIFO order (first registered fires first)', () => {
+      const order: string[] = []
+
+      const { unmount } = mountNode(() => {
+        onScopeDispose(() => order.push('first-registered'))
+        onScopeDispose(() => order.push('second-registered'))
+        onScopeDispose(() => order.push('third-registered'))
+      })
+
+      unmount()
+
+      // Vue runs onScopeDispose callbacks in registration order (FIFO)
+      expect(order).toEqual([
+        'first-registered',
+        'second-registered',
+        'third-registered'
+      ])
+    })
+
+    it('an error in one cleanup callback stops subsequent callbacks (Vue behavior)', () => {
+      // IMPORTANT: This documents Vue's actual behavior — errors ARE NOT isolated.
+      // Extensions that need error isolation must wrap their cleanup in try/catch.
+      const cbA = vi.fn()
+      const cbB = vi.fn(() => {
+        throw new Error('cleanup B exploded')
+      })
+      const cbC = vi.fn()
+
+      const { unmount } = mountNode(() => {
+        onScopeDispose(cbA) // registered first, runs first
+        onScopeDispose(cbB) // registered second, throws
+        onScopeDispose(cbC) // registered third, never runs
+      })
+
+      // cbA runs first (success), cbB throws, cbC never runs
+      expect(() => unmount()).toThrow('cleanup B exploded')
+      expect(cbA).toHaveBeenCalledOnce() // ran first
+      expect(cbB).toHaveBeenCalledOnce() // threw
+      expect(cbC).not.toHaveBeenCalled() // never reached
+    })
   })
 
   describe('interval / observer teardown pattern', () => {
