@@ -69,11 +69,23 @@ function createNodeEventBus() {
   }
 
   function emitConnected(event: NodeConnectedEvent) {
-    for (const { handler } of [...connectedHandlers]) handler(event)
+    for (const { handler } of [...connectedHandlers]) {
+      try {
+        handler(event)
+      } catch {
+        // Error isolation: one handler throwing should not prevent others from firing
+      }
+    }
   }
 
   function emitDisconnected(event: NodeDisconnectedEvent) {
-    for (const { handler } of [...disconnectedHandlers]) handler(event)
+    for (const { handler } of [...disconnectedHandlers]) {
+      try {
+        handler(event)
+      } catch {
+        // Error isolation: one handler throwing should not prevent others from firing
+      }
+    }
   }
 
   return { on, emitConnected, emitDisconnected }
@@ -214,6 +226,42 @@ describe('BC.07 v2 contract — connection observation', () => {
       unsub()
       bus.emitDisconnected(makeDisconnectedEvent())
       expect(handler).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('handler error isolation', () => {
+    it('a throwing handler does not prevent subsequent handlers from firing', () => {
+      const bus = createNodeEventBus()
+      const handlerA = vi.fn(() => {
+        throw new Error('handler A exploded')
+      })
+      const handlerB = vi.fn()
+      const handlerC = vi.fn()
+
+      bus.on('connected', handlerA)
+      bus.on('connected', handlerB)
+      bus.on('connected', handlerC)
+
+      // Emit should not throw to the caller; handlers B and C should still fire
+      expect(() => bus.emitConnected(makeConnectedEvent())).not.toThrow()
+      expect(handlerA).toHaveBeenCalledOnce()
+      expect(handlerB).toHaveBeenCalledOnce()
+      expect(handlerC).toHaveBeenCalledOnce()
+    })
+
+    it('a throwing disconnected handler does not prevent subsequent handlers from firing', () => {
+      const bus = createNodeEventBus()
+      const handlerA = vi.fn(() => {
+        throw new Error('disconnect handler failed')
+      })
+      const handlerB = vi.fn()
+
+      bus.on('disconnected', handlerA)
+      bus.on('disconnected', handlerB)
+
+      expect(() => bus.emitDisconnected(makeDisconnectedEvent())).not.toThrow()
+      expect(handlerA).toHaveBeenCalledOnce()
+      expect(handlerB).toHaveBeenCalledOnce()
     })
   })
 

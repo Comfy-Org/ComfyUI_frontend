@@ -11,35 +11,61 @@
 // Harness: inline MockNodeHandle — no ECS world needed for type-shape + event tests.
 
 import { describe, expect, it, vi } from 'vitest'
-import type { NodeSizeChangedEvent, Size } from '@/extension-api/node'
+import type {
+  NodeSizeChangedEvent,
+  NodePositionChangedEvent
+} from '@/extension-api/node'
 import type { Unsubscribe } from '@/extension-api/events'
 
 // ── Minimal mock ──────────────────────────────────────────────────────────────
 
-interface SizeChangedEmitter {
+interface NodeEventEmitter {
   on(
     event: 'sizeChanged',
     handler: (e: NodeSizeChangedEvent) => void
   ): Unsubscribe
-  _emitSizeChanged(size: Size): void
+  on(
+    event: 'positionChanged',
+    handler: (e: NodePositionChangedEvent) => void
+  ): Unsubscribe
+  _emitSizeChanged(size: { width: number; height: number }): void
+  _emitPositionChanged(position: { x: number; y: number }): void
 }
 
-function createMockNode(): SizeChangedEmitter {
-  const listeners: Array<(e: NodeSizeChangedEvent) => void> = []
+function createMockNode(): NodeEventEmitter {
+  const sizeListeners: Array<(e: NodeSizeChangedEvent) => void> = []
+  const positionListeners: Array<(e: NodePositionChangedEvent) => void> = []
+
   return {
-    on(
-      _event: 'sizeChanged',
-      handler: (e: NodeSizeChangedEvent) => void
-    ): Unsubscribe {
-      listeners.push(handler)
-      return () => {
-        const idx = listeners.indexOf(handler)
-        if (idx !== -1) listeners.splice(idx, 1)
+    on(event: string, handler: (e: unknown) => void): Unsubscribe {
+      if (event === 'sizeChanged') {
+        sizeListeners.push(handler as (e: NodeSizeChangedEvent) => void)
+        return () => {
+          const idx = sizeListeners.indexOf(
+            handler as (e: NodeSizeChangedEvent) => void
+          )
+          if (idx !== -1) sizeListeners.splice(idx, 1)
+        }
+      } else if (event === 'positionChanged') {
+        positionListeners.push(
+          handler as (e: NodePositionChangedEvent) => void
+        )
+        return () => {
+          const idx = positionListeners.indexOf(
+            handler as (e: NodePositionChangedEvent) => void
+          )
+          if (idx !== -1) positionListeners.splice(idx, 1)
+        }
       }
+      throw new Error(`Unknown event: ${event}`)
     },
-    _emitSizeChanged(size: Size) {
+    _emitSizeChanged(size) {
       const event: NodeSizeChangedEvent = { size }
-      for (const fn of [...listeners]) fn(event)
+      for (const fn of [...sizeListeners]) fn(event)
+    },
+    _emitPositionChanged(position) {
+      const event: NodePositionChangedEvent = { position }
+      for (const fn of [...positionListeners]) fn(event)
     }
   }
 }
@@ -48,24 +74,26 @@ function createMockNode(): SizeChangedEmitter {
 
 describe('BC.04 v2 contract — node interaction: pointer, selection, resize', () => {
   describe("on('sizeChanged') — resize feedback (S2.N19)", () => {
-    it('fires with { size: [width, height] } when node dimensions change', () => {
+    it('fires with { size: { width, height } } when node dimensions change', () => {
       const node = createMockNode()
-      const handler = vi.fn<(e: NodeSizeChangedEvent) => void>()
+      const handler = vi.fn<[NodeSizeChangedEvent], void>()
       node.on('sizeChanged', handler)
-      node._emitSizeChanged([300, 200])
+      node._emitSizeChanged({ width: 300, height: 200 })
       expect(handler).toHaveBeenCalledOnce()
-      expect(handler).toHaveBeenCalledWith({ size: [300, 200] })
+      expect(handler).toHaveBeenCalledWith({
+        size: { width: 300, height: 200 }
+      })
     })
 
     it('fires again on subsequent resize; each call gets the latest size', () => {
       const node = createMockNode()
-      const sizes: Size[] = []
+      const sizes: { width: number; height: number }[] = []
       node.on('sizeChanged', (e) => sizes.push(e.size))
-      node._emitSizeChanged([100, 50])
-      node._emitSizeChanged([200, 80])
+      node._emitSizeChanged({ width: 100, height: 50 })
+      node._emitSizeChanged({ width: 200, height: 80 })
       expect(sizes).toEqual([
-        [100, 50],
-        [200, 80]
+        { width: 100, height: 50 },
+        { width: 200, height: 80 }
       ])
     })
 
@@ -74,7 +102,7 @@ describe('BC.04 v2 contract — node interaction: pointer, selection, resize', (
       const handler = vi.fn()
       const unsub = node.on('sizeChanged', handler)
       unsub()
-      node._emitSizeChanged([300, 200])
+      node._emitSizeChanged({ width: 300, height: 200 })
       expect(handler).not.toHaveBeenCalled()
     })
 
@@ -84,7 +112,7 @@ describe('BC.04 v2 contract — node interaction: pointer, selection, resize', (
         b = vi.fn()
       node.on('sizeChanged', a)
       node.on('sizeChanged', b)
-      node._emitSizeChanged([150, 120])
+      node._emitSizeChanged({ width: 150, height: 120 })
       expect(a).toHaveBeenCalledOnce()
       expect(b).toHaveBeenCalledOnce()
     })
@@ -96,9 +124,84 @@ describe('BC.04 v2 contract — node interaction: pointer, selection, resize', (
       const unsubA = node.on('sizeChanged', a)
       node.on('sizeChanged', b)
       unsubA()
-      node._emitSizeChanged([200, 100])
+      node._emitSizeChanged({ width: 200, height: 100 })
       expect(a).not.toHaveBeenCalled()
       expect(b).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe("on('positionChanged') — move feedback (S2.N17)", () => {
+    it('fires with { position: { x, y } } when node position changes', () => {
+      const node = createMockNode()
+      const handler = vi.fn<[NodePositionChangedEvent], void>()
+      node.on('positionChanged', handler)
+      node._emitPositionChanged({ x: 100, y: 200 })
+      expect(handler).toHaveBeenCalledOnce()
+      expect(handler).toHaveBeenCalledWith({
+        position: { x: 100, y: 200 }
+      })
+    })
+
+    it('fires again on subsequent move; each call gets the latest position', () => {
+      const node = createMockNode()
+      const positions: { x: number; y: number }[] = []
+      node.on('positionChanged', (e) => positions.push(e.position))
+      node._emitPositionChanged({ x: 0, y: 0 })
+      node._emitPositionChanged({ x: 50, y: 100 })
+      node._emitPositionChanged({ x: 200, y: 300 })
+      expect(positions).toEqual([
+        { x: 0, y: 0 },
+        { x: 50, y: 100 },
+        { x: 200, y: 300 }
+      ])
+    })
+
+    it('unsubscribe stops future firings', () => {
+      const node = createMockNode()
+      const handler = vi.fn()
+      const unsub = node.on('positionChanged', handler)
+      unsub()
+      node._emitPositionChanged({ x: 100, y: 100 })
+      expect(handler).not.toHaveBeenCalled()
+    })
+
+    it('multiple listeners all receive the event independently', () => {
+      const node = createMockNode()
+      const a = vi.fn(),
+        b = vi.fn()
+      node.on('positionChanged', a)
+      node.on('positionChanged', b)
+      node._emitPositionChanged({ x: 50, y: 75 })
+      expect(a).toHaveBeenCalledOnce()
+      expect(b).toHaveBeenCalledOnce()
+    })
+
+    it('unsubscribing one listener does not affect others', () => {
+      const node = createMockNode()
+      const a = vi.fn(),
+        b = vi.fn()
+      const unsubA = node.on('positionChanged', a)
+      node.on('positionChanged', b)
+      unsubA()
+      node._emitPositionChanged({ x: 100, y: 100 })
+      expect(a).not.toHaveBeenCalled()
+      expect(b).toHaveBeenCalledOnce()
+    })
+
+    it('sizeChanged and positionChanged are independent events', () => {
+      const node = createMockNode()
+      const sizeFn = vi.fn()
+      const posFn = vi.fn()
+      node.on('sizeChanged', sizeFn)
+      node.on('positionChanged', posFn)
+
+      node._emitSizeChanged({ width: 100, height: 50 })
+      expect(sizeFn).toHaveBeenCalledOnce()
+      expect(posFn).not.toHaveBeenCalled()
+
+      node._emitPositionChanged({ x: 10, y: 20 })
+      expect(sizeFn).toHaveBeenCalledOnce()
+      expect(posFn).toHaveBeenCalledOnce()
     })
   })
 

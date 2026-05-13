@@ -153,9 +153,59 @@ describe('BC.13 v1 contract — per-node serialization interception', () => {
       expect(result.id).toBe(2)
     })
 
-    it.todo(
-      'positional widgets_values in the patched serialize output drifts when a serialize===false widget occupies a slot before the target widget'
-    )
+    it('positional widgets_values in the patched serialize output drifts when a serialize===false widget occupies a slot before the target widget', () => {
+      // Demonstrates how serialize===false widgets cause positional drift between
+      // frontend serialization (all widgets) and backend prompt (only serializable widgets)
+      interface MockWidget {
+        name: string
+        value: unknown
+        options?: { serialize?: boolean }
+      }
+      interface MockNode {
+        id: number
+        type: string
+        widgets: MockWidget[]
+        serialize(): { id: number; type: string; widgets_values: unknown[] }
+      }
+
+      // Create a node with 3 widgets, middle one has serialize===false
+      const node: MockNode = {
+        id: 1,
+        type: 'KSampler',
+        widgets: [
+          { name: 'steps', value: 20 },
+          { name: 'control_after_generate', value: 'fixed', options: { serialize: false } },
+          { name: 'cfg', value: 7.5 }
+        ],
+        serialize() {
+          // v1 serialize includes ALL widgets positionally (including serialize===false)
+          return {
+            id: this.id,
+            type: this.type,
+            widgets_values: this.widgets.map((w) => w.value)
+          }
+        }
+      }
+
+      const serialized = node.serialize()
+
+      // Frontend serialize output: all 3 widgets present
+      expect(serialized.widgets_values).toEqual([20, 'fixed', 7.5])
+      expect(serialized.widgets_values).toHaveLength(3)
+
+      // Simulate what graphToPrompt sends to backend (excludes serialize===false)
+      const backendWidgetsValues = node.widgets
+        .filter((w) => w.options?.serialize !== false)
+        .map((w) => w.value)
+
+      // Backend sees only 2 widgets - positional drift!
+      expect(backendWidgetsValues).toEqual([20, 7.5])
+      expect(backendWidgetsValues).toHaveLength(2)
+
+      // Drift: cfg is at index 2 in frontend, but index 1 in backend
+      expect(serialized.widgets_values[2]).toBe(7.5) // frontend: cfg at index 2
+      expect(backendWidgetsValues[1]).toBe(7.5) // backend: cfg at index 1
+    })
   })
 
   // ── S2.N15 synthetic behavior ────────────────────────────────────────────────
@@ -193,9 +243,45 @@ describe('BC.13 v1 contract — per-node serialization interception', () => {
       'real graphToPrompt integration: onSerialize fires once per graphToPrompt call in the real app'
     )
 
-    it.todo(
-      'positional drift with serialize===false widgets: NaN values written inside onSerialize are silently coerced to null by JSON.stringify'
-    )
+    it('positional drift with serialize===false widgets: NaN values written inside onSerialize are silently coerced to null by JSON.stringify', () => {
+      // Demonstrates that NaN values injected via onSerialize become null after JSON round-trip
+      // This is especially problematic with positional drift from serialize===false widgets
+      interface MockWidget {
+        name: string
+        value: unknown
+        options?: { serialize?: boolean }
+      }
+      const node = {
+        widgets: [
+          { name: 'steps', value: 20 },
+          { name: 'control_after_generate', value: 'fixed', options: { serialize: false } },
+          { name: 'denoise', value: 1.0 }
+        ] as MockWidget[],
+        onSerialize: (data: { widgets_values: unknown[] }) => {
+          // Extension injects NaN via onSerialize (e.g., invalid computation result)
+          data.widgets_values[2] = NaN
+        }
+      }
+
+      // Simulate serialize + onSerialize flow
+      const data = {
+        id: 1,
+        widgets_values: node.widgets.map((w) => w.value)
+      }
+      node.onSerialize(data)
+
+      // Before JSON round-trip: NaN is present
+      expect(Number.isNaN(data.widgets_values[2])).toBe(true)
+
+      // JSON round-trip silently corrupts NaN to null
+      const restored = JSON.parse(JSON.stringify(data)) as typeof data
+      expect(restored.widgets_values[2]).toBeNull()
+
+      // Combined with positional drift: if workflow is restored on a version
+      // without the serialize===false widget, the null lands on wrong widget
+      // Original: [steps=20, control='fixed', denoise=NaN→null]
+      // Without control_after_generate: indices shift, null could corrupt 'steps'
+    })
   })
 
   // ── NaN→null silent corruption ───────────────────────────────────────────────
