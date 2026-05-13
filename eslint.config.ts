@@ -504,6 +504,7 @@ export default defineConfig([
   // browser_tests/fixtures/data and .spec/.test files.
   {
     files: ['src/**/*.{ts,vue}'],
+    ignores: ['src/**/*.test.ts', 'src/**/*.spec.ts', 'src/**/*.stories.ts'],
     rules: {
       'no-restricted-syntax': [
         'warn',
