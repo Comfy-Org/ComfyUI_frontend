@@ -405,11 +405,13 @@ describe('useWorkflowService', () => {
     })
 
     it('should pass force through when reloading a loaded workflow', async () => {
+      const workflowStore = useWorkflowStore()
       const workflow = createWorkflow(null, { loadable: true })
       const load = vi.fn().mockResolvedValue(workflow)
       workflow.load = load
+      workflowStore.activeWorkflow = workflow as LoadedComfyWorkflow
 
-      await useWorkflowService().openWorkflow(workflow, { force: true })
+      await useWorkflowService().reloadCurrentWorkflow()
 
       expect(load).toHaveBeenCalledWith({ force: true })
     })

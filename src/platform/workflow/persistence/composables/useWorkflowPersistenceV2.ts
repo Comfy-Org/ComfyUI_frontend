@@ -91,7 +91,7 @@ export function useWorkflowPersistenceV2() {
 
   watch(workflowPersistenceEnabled, (enabled) => {
     if (!enabled) {
-      draftStore.reset()
+      draftStore.clearIndexCache()
       lastSavedJsonByPath.value = {}
     }
   })

@@ -141,8 +141,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   /**
    * Gets draft data by path, using legacy only as a rollback fallback.
    *
-   * V2 wins equal timestamps because normal shadow-writes use the same
-   * timestamp in both stores.
+   * V2 wins equal timestamps because save and move operations keep the
+   * shadow-written legacy snapshot timestamp aligned with V2.
    */
   function getDraft(path: string): WorkflowDraftSnapshot | null {
     const v2Draft = getDraftV2(path)
@@ -375,7 +375,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
 
     const written = writePayload(workspaceId, result.newKey, {
       data: oldPayload.data,
-      updatedAt: Date.now()
+      updatedAt: oldPayload.updatedAt
     })
     if (!written) return false
 
@@ -522,10 +522,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     }
   }
 
-  /**
-   * Resets the store (clears in-memory cache for current workspace).
-   */
-  function reset(): void {
+  function clearIndexCache(): void {
     const workspaceId = currentWorkspaceId()
     delete indexCacheByWorkspace.value[workspaceId]
   }
@@ -538,6 +535,6 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     markDraftUsed,
     getMostRecentPath,
     loadPersistedWorkflow,
-    reset
+    clearIndexCache
   }
 })

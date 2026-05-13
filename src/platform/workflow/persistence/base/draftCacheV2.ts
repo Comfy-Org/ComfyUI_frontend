@@ -128,8 +128,7 @@ export function moveEntry(
   entries[newKey] = {
     ...oldEntry,
     path: newPath,
-    name: newName,
-    updatedAt: Date.now()
+    name: newName
   }
 
   const order = index.order

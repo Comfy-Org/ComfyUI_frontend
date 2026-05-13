@@ -130,7 +130,7 @@ test.describe('Workflow Persistence', () => {
 
       await expect
         .poll(() => comfyPage.menu.topbar.getTabNames())
-        .toEqual(expect.arrayContaining(expectedTabNames))
+        .toEqual(expectedTabNames)
       await expect
         .poll(() => comfyPage.menu.topbar.getActiveTabName())
         .toBe(expectedActiveTabName)

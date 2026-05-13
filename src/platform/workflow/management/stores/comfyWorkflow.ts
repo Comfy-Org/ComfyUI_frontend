@@ -97,7 +97,9 @@ export class ComfyWorkflow extends UserFile {
   override async load({ force = false }: { force?: boolean } = {}): Promise<
     this & LoadedComfyWorkflow
   > {
-    if (!force && this.isLoaded) return this as this & LoadedComfyWorkflow
+    if (!force && this.isLoaded && this.changeTracker) {
+      return this as this & LoadedComfyWorkflow
+    }
 
     const { useWorkflowDraftStoreV2 } =
       await import('@/platform/workflow/persistence/stores/workflowDraftStoreV2')

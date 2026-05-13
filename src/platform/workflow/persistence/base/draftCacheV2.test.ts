@@ -183,6 +183,7 @@ describe('draftCacheV2', () => {
       expect(result!.index.entries[result!.newKey].path).toBe(
         'workflows/new.json'
       )
+      expect(result!.index.entries[result!.newKey].updatedAt).toBe(1000)
       expect(result!.index.entries[result!.oldKey]).toBeUndefined()
     })
 

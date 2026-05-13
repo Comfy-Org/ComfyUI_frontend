@@ -259,6 +259,26 @@ describe('workflowDraftStoreV2', () => {
       })
     })
 
+    it('preserves the draft timestamp when moving V2 and legacy data', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2025-01-01T00:00:00Z'))
+      const store = useWorkflowDraftStoreV2()
+      const savedAt = Date.now()
+
+      store.saveDraft('workflows/old.json', '{"data":"test"}', {
+        name: 'old',
+        isTemporary: true
+      })
+
+      vi.setSystemTime(new Date('2025-01-01T00:05:00Z'))
+      store.moveDraft('workflows/old.json', 'workflows/new.json', 'new')
+
+      expect(store.getDraft('workflows/new.json')?.updatedAt).toBe(savedAt)
+      expect(
+        useWorkflowDraftStore().getDraft('workflows/new.json')?.updatedAt
+      ).toBe(savedAt)
+    })
+
     it('does not move legacy shadow data when V2 move fails', () => {
       const store = useWorkflowDraftStoreV2()
       const legacyStore = useWorkflowDraftStore()
@@ -571,7 +591,7 @@ describe('workflowDraftStoreV2', () => {
     })
   })
 
-  describe('reset', () => {
+  describe('clearIndexCache', () => {
     it('clears in-memory cache', () => {
       const store = useWorkflowDraftStoreV2()
 
@@ -580,7 +600,7 @@ describe('workflowDraftStoreV2', () => {
         isTemporary: true
       })
 
-      store.reset()
+      store.clearIndexCache()
 
       // Draft should still be loadable from localStorage
       expect(store.getDraft('workflows/test.json')).not.toBeNull()

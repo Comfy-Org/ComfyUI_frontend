@@ -299,14 +299,19 @@ describe('useWorkflowPersistenceV2', () => {
         .createTemporary('SaveException.json')
         .load()
       workflowStore.activeWorkflow = workflow
-      vi.spyOn(draftStore, 'saveDraft').mockImplementation(() => {
-        throw new Error('storage unavailable')
-      })
+      const saveDraftMock = vi
+        .spyOn(draftStore, 'saveDraft')
+        .mockImplementation(() => {
+          throw new Error('storage unavailable')
+        })
 
       mountWorkflowPersistence()
       mocks.state.graphChangedHandler?.()
       await vi.advanceTimersByTimeAsync(PERSIST_DEBOUNCE_MS)
+      mocks.state.graphChangedHandler?.()
+      await vi.advanceTimersByTimeAsync(PERSIST_DEBOUNCE_MS)
 
+      expect(saveDraftMock).toHaveBeenCalledTimes(2)
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'error',
         summary: 'g.error',

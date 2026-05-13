@@ -279,9 +279,9 @@ class StoreResetCommand implements Command<PersistenceModel, PersistenceReal> {
   }
 
   run(model: PersistenceModel, real: PersistenceReal) {
-    // Call reset() directly to clear in-memory cache without recreating Pinia.
+    // Clear in-memory cache without recreating Pinia.
     // This exercises the orphan cleanup path in loadIndex() on next access.
-    real.draftStore.reset()
+    real.draftStore.clearIndexCache()
 
     for (const [path, expected] of model.drafts) {
       const draft = real.draftStore.getDraft(path)
