@@ -41,23 +41,25 @@ export function installNodeOutputClearingHooks(graph: LGraph): () => void {
   const originalOnNodeRemoved = graph.onNodeRemoved
 
   graph.onNodeRemoved = function (node: LGraphNode) {
-    const store = useNodeOutputStore()
-    const { nodeIdToNodeLocatorId } = useWorkflowStore()
-    const locatorId = isSubgraph(graph)
-      ? nodeIdToNodeLocatorId(node.id, graph)
-      : String(node.id)
-    store.removeOutputsByLocatorId(locatorId)
+    try {
+      const store = useNodeOutputStore()
+      const { nodeIdToNodeLocatorId } = useWorkflowStore()
+      const locatorId = isSubgraph(graph)
+        ? nodeIdToNodeLocatorId(node.id, graph)
+        : String(node.id)
+      store.removeOutputsByLocatorId(locatorId)
 
-    const execId = app.rootGraph
-      ? getExecutionIdForNodeInGraph(app.rootGraph, graph, node.id)
-      : String(node.id)
-    dropTrackerCacheEntry(execId)
+      const execId = app.rootGraph
+        ? getExecutionIdForNodeInGraph(app.rootGraph, graph, node.id)
+        : String(node.id)
+      dropTrackerCacheEntry(execId)
 
-    if (node.isSubgraphNode()) {
-      clearInteriorOutputs(node, execId)
+      if (node.isSubgraphNode()) {
+        clearInteriorOutputs(node, execId)
+      }
+    } finally {
+      originalOnNodeRemoved?.call(this, node)
     }
-
-    originalOnNodeRemoved?.call(this, node)
   }
 
   return () => {
