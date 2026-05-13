@@ -8,19 +8,25 @@ test.describe(
   { tag: ['@vue-nodes', '@screenshot'] },
   () => {
     test('does not gain an extra focus outline when Shift is held on a selected node', async ({
-      comfyPage
+      comfyPage,
+      browserName
     }) => {
       test.info().annotations.push({
         type: 'regression',
         description:
-          'Chromium paints a UA :focus-visible outline on a focused element after a bare Shift keypress; the LGraphNode root has tabindex="0", so a selected Vue node gains a second outline. The committed baseline captures the current Chromium rendering with the bug present, so the test passes today as a characterization. When the bug is fixed the rendering will no longer include the UA outline and this baseline will need to be regenerated as part of the fix PR.'
+          'Chromium paints a UA :focus-visible outline on a focused element after a bare Shift keypress; the LGraphNode root has tabindex="0", so a selected Vue node would otherwise gain a second outline. The baseline below captures the desired (no extra UA outline) appearance — remove the test.fixme annotation in the fix PR that suppresses the UA outline so this test runs and verifies it.'
       })
+      test.fixme(
+        browserName === 'chromium',
+        'Chromium paints a UA :focus-visible outline on a focused element after a bare Shift keypress; remove this annotation in the fix PR.'
+      )
 
       await comfyPage.workflow.loadWorkflow('nodes/single_note')
 
       const note = comfyPage.vueNodes.getNodeByTitle('Note').first()
       await note.locator('.lg-node-header').click()
       await expect(note).toHaveClass(/outline-node-component-outline/)
+      await expect(note).toBeFocused()
 
       const box = await note.boundingBox()
       if (!box) throw new Error('Node bounding box not available')
