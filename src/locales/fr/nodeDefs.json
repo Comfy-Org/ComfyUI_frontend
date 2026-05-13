@@ -3156,6 +3156,26 @@
       }
     }
   },
+  "EmptyHiDreamO1LatentImage": {
+    "description": "Latent d’espace pixel vide pour HiDream-O1-Image. Le modèle a été entraîné à environ 4 mégapixels ; des résolutions plus basses sortent de la distribution et la qualité régresse nettement. Résolutions d’entraînement : 2048x2048, 2304x1728, 1728x2304, 2560x1440, 1440x2560, 2496x1664, 1664x2496, 3104x1312, 1312x3104, 2304x1792, 1792x2304.",
+    "display_name": "Image latente HiDream-O1 vide",
+    "inputs": {
+      "batch_size": {
+        "name": "taille_lot"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyHunyuanImageLatent": {
     "display_name": "EmptyHunyuanImageLatent",
     "inputs": {
@@ -4901,6 +4921,70 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1PatchSeamSmoothing": {
+    "description": "Moyenne la sortie du modèle sur plusieurs positions de grille de patch décalées pendant la phase finale de l’échantillonnage. Annule les coutures.",
+    "display_name": "Lissage des coutures de patch HiDream-O1",
+    "inputs": {
+      "blend": {
+        "name": "mélange",
+        "tooltip": "average : moyenne à poids égal. window : pondération fenêtrée de Hann favorisant chaque passage loin de ses bords de patch. median : médiane par pixel, rejette les passages aberrants."
+      },
+      "end_percent": {
+        "name": "pourcentage_fin",
+        "tooltip": "Progression de l’échantillonnage à laquelle le mélange se désactive."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "passes": {
+        "name": "passes",
+        "tooltip": "Nombre de passages par étape contrôlée. 2/4 = fixe. ramp_* : le nombre de passages augmente à mesure que l’échantillonnage approche de la fin (plus de lissage là où les coutures sont les plus visibles)."
+      },
+      "pattern": {
+        "name": "motif",
+        "tooltip": "Disposition du décalage. single_shift : un passage sur la grille de patch naturelle + autres décalés. symmetric : tous les passages hors grille, décalages répartis autour de l’origine."
+      },
+      "start_percent": {
+        "name": "pourcentage_début",
+        "tooltip": "Progression de l’échantillonnage (0=début, 1=fin) à laquelle le mélange s’active."
+      },
+      "strength": {
+        "name": "force",
+        "tooltip": "Interpolation entre la prédiction sur la grille naturelle (0) et le résultat moyenné (1)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1ReferenceImages": {
+    "description": "Ajoutez 1 à 10 images de référence au conditionnement, une pour une instruction d’édition ou plusieurs pour une personnalisation orientée sujet.",
+    "display_name": "Images de référence HiDream-O1",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Images de référence. 1 image = édition par instruction ; 2-10 images = multi-référence."
+      },
+      "negative": {
+        "name": "négatif"
+      },
+      "positive": {
+        "name": "positif"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "négatif",
         "tooltip": null
       }
     }
@@ -11654,6 +11738,18 @@
       }
     }
   },
+  "ModelNoiseScale": {
+    "display_name": "Échelle de bruit du modèle",
+    "inputs": {
+      "model": {
+        "name": "modèle"
+      },
+      "noise_scale": {
+        "name": "échelle_bruit",
+        "tooltip": "Échelle absolue du bruit d’entraînement. Par exemple HiDream-O1 base : 8.0, dev : 7.5."
+      }
+    }
+  },
   "ModelPatchLoader": {
     "display_name": "ModelPatchLoader",
     "inputs": {
@@ -14962,6 +15058,29 @@
     "inputs": {
       "version": {
         "name": "version"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SamplerLCM": {
+    "description": "Échantillonneur LCM avec bruit ajustable à chaque étape. s_noise est un multiplicateur de l'échelle de bruit d'entraînement du modèle.",
+    "display_name": "SamplerLCM",
+    "inputs": {
+      "noise_clip_std": {
+        "name": "noise_clip_std",
+        "tooltip": "Limite le bruit par étape à +/- N*écart-type. 0 pour désactiver."
+      },
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "Multiplicateur de bruit par étape à la première étape (1.0 = correspond à l'entraînement)."
+      },
+      "s_noise_end": {
+        "name": "s_noise_end",
+        "tooltip": "Multiplicateur de bruit par étape à la dernière étape. Identique à s_noise pour un planning constant."
       }
     },
     "outputs": {

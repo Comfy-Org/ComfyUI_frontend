@@ -3156,6 +3156,26 @@
       }
     }
   },
+  "EmptyHiDreamO1LatentImage": {
+    "description": "HiDream-O1-Image 用の空のピクセル空間潜在。モデルは約4メガピクセルでトレーニングされています。解像度が低いと分布外となり、品質が著しく低下します。トレーニング解像度：2048x2048、2304x1728、1728x2304、2560x1440、1440x2560、2496x1664、1664x2496、3104x1312、1312x3104、2304x1792、1792x2304。",
+    "display_name": "Empty HiDream-O1 潜在画像",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyHunyuanImageLatent": {
     "display_name": "EmptyHunyuanImageLatent",
     "inputs": {
@@ -4901,6 +4921,70 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1PatchSeamSmoothing": {
+    "description": "サンプリングの後半で、複数のシフトしたパッチグリッド位置にわたってモデル出力を平均化します。継ぎ目を除去します。",
+    "display_name": "HiDream-O1 パッチ継ぎ目スムージング",
+    "inputs": {
+      "blend": {
+        "name": "ブレンド",
+        "tooltip": "average：等重み平均。window：各パスがパッチ境界から離れるほど重み付けするHannウィンドウ。median：ピクセルごとの中央値、ラップアラウンド外れ値パスを除外。"
+      },
+      "end_percent": {
+        "name": "終了パーセント",
+        "tooltip": "ブレンドがOFFになるサンプリング進行度。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "passes": {
+        "name": "パス数",
+        "tooltip": "ゲートステップごとのパス数。2/4＝固定。ramp_*：サンプリング終了に近づくほどパス数が増加（継ぎ目が目立つ部分でよりスムージング）。"
+      },
+      "pattern": {
+        "name": "パターン",
+        "tooltip": "シフトレイアウト。single_shift：自然なパッチグリッドで1回＋他はオフセット。symmetric：全てのパスがグリッド外、シフトは原点を中心に分割。"
+      },
+      "start_percent": {
+        "name": "開始パーセント",
+        "tooltip": "ブレンドがONになるサンプリング進行度（0=開始、1=終了）。"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "自然グリッド予測（0）と平均化結果（1）の間で補間。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1ReferenceImages": {
+    "description": "1～10枚の参照画像をコンディショニングに添付します。1枚は編集指示用、複数枚は被写体パーソナライズ用。",
+    "display_name": "HiDream-O1 参照画像",
+    "inputs": {
+      "images": {
+        "name": "画像",
+        "tooltip": "参照画像。1枚＝編集指示、2～10枚＝マルチ参照。"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ネガティブ",
         "tooltip": null
       }
     }
@@ -11654,6 +11738,18 @@
       }
     }
   },
+  "ModelNoiseScale": {
+    "display_name": "ModelNoiseScale",
+    "inputs": {
+      "model": {
+        "name": "モデル"
+      },
+      "noise_scale": {
+        "name": "ノイズスケール",
+        "tooltip": "絶対トレーニングノイズスケール。例：HiDream-O1 base：8.0、dev：7.5。"
+      }
+    }
+  },
   "ModelPatchLoader": {
     "display_name": "モデルパッチローダー",
     "inputs": {
@@ -14962,6 +15058,29 @@
     "inputs": {
       "version": {
         "name": "バージョン"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SamplerLCM": {
+    "description": "調整可能なステップごとのノイズを持つLCMサンプラー。s_noiseはモデルの学習ノイズスケールに対する乗数です。",
+    "display_name": "SamplerLCM",
+    "inputs": {
+      "noise_clip_std": {
+        "name": "noise_clip_std",
+        "tooltip": "ステップごとのノイズを±N×標準偏差に制限します。0で無効化。"
+      },
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "最初のステップでのステップごとのノイズ乗数（1.0 = 学習時と同じ）。"
+      },
+      "s_noise_end": {
+        "name": "s_noise_end",
+        "tooltip": "最後のステップでのステップごとのノイズ乗数。一定スケジュールにするにはs_noiseと同じ値に設定してください。"
       }
     },
     "outputs": {
