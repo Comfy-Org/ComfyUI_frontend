@@ -77,7 +77,7 @@
               :placeholder="t('assetBrowser.modelInfo.selectModelType')"
             />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent :style="selectContentStyle">
             <SelectItem
               v-for="option in modelTypes"
               :key="option.value"
@@ -210,6 +210,7 @@
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
+import type { StyleValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
@@ -257,9 +258,10 @@ const accordionClass = cn(
   'border-t border-border-default bg-modal-panel-background'
 )
 
-const { asset, cacheKey } = defineProps<{
+const { asset, cacheKey, selectContentStyle } = defineProps<{
   asset: AssetDisplayItem
   cacheKey?: string
+  selectContentStyle?: StyleValue
 }>()
 
 const assetsStore = useAssetsStore()

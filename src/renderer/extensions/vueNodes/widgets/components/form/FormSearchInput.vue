@@ -9,6 +9,8 @@ const {
   searcher = async () => {},
   updateKey,
   autofocus = false,
+  debounceMs = 250,
+  debounceMaxWaitMs = 1000,
   class: customClass
 } = defineProps<{
   searcher?: (
@@ -17,14 +19,16 @@ const {
   ) => Promise<void>
   updateKey?: MaybeRefOrGetter<unknown>
   autofocus?: boolean
+  debounceMs?: number
+  debounceMaxWaitMs?: number
   class?: HTMLAttributes['class']
 }>()
 
 const searchQuery = defineModel<string>({ default: '' })
 
 const isQuerying = ref(false)
-const debouncedSearchQuery = refDebounced(searchQuery, 250, {
-  maxWait: 1000
+const debouncedSearchQuery = refDebounced(searchQuery, debounceMs, {
+  maxWait: debounceMaxWaitMs
 })
 watch(searchQuery, (value) => {
   isQuerying.value = value !== debouncedSearchQuery.value

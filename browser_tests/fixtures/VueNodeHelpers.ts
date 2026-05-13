@@ -218,12 +218,19 @@ export class VueNodeHelpers {
   }
 
   /**
+   * Locator for the Enter Subgraph footer button.
+   */
+  getSubgraphEnterButton(nodeId?: string): Locator {
+    const root = nodeId ? this.getNodeLocator(nodeId) : this.page
+    return root.getByTestId(TestIds.widgets.subgraphEnterButton).first()
+  }
+
+  /**
    * Enter the subgraph of a node.
    * @param nodeId - The ID of the node to enter the subgraph of. If not provided, the first matched subgraph will be entered.
    */
   async enterSubgraph(nodeId?: string): Promise<void> {
-    const locator = nodeId ? this.getNodeLocator(nodeId) : this.page
-    const editButton = locator.getByTestId(TestIds.widgets.subgraphEnterButton)
+    const editButton = this.getSubgraphEnterButton(nodeId)
 
     // The footer tab button extends below the node body (visible area),
     // but its bounding box center overlaps the node body div.
@@ -238,5 +245,19 @@ export class VueNodeHelpers {
     await editButton.click({
       position: { x: box.width / 2, y: box.height * 0.75 }
     })
+  }
+  async isSlotConnected(slot: Locator) {
+    const key = await slot.getByTestId('slot-dot').getAttribute('data-slot-key')
+    if (!key) return false
+
+    return await this.page.evaluate((key) => {
+      const [nodeId, type, slotId] = key.split('-')
+      const node = app?.canvas?.graph?.getNodeById(nodeId)
+      if (!node) return false
+
+      return type === 'in'
+        ? node.inputs[Number(slotId)]?.link !== null
+        : !!node.outputs[Number(slotId)].links?.length
+    }, key)
   }
 }

@@ -136,7 +136,7 @@ describe('Load3d', () => {
       expect(ctx.forceRender).toHaveBeenCalledOnce()
     })
 
-    it.each(['translate', 'rotate', 'scale'] as const)(
+    it.for(['translate', 'rotate', 'scale'] as const)(
       'setGizmoMode delegates "%s" and forces a render',
       (mode: GizmoMode) => {
         ctx.load3d.setGizmoMode(mode)

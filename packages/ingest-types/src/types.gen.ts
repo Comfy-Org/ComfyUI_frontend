@@ -524,9 +524,18 @@ export type ImportPublishedAssetsRequest = {
    */
   published_asset_ids: Array<string>
   /**
-   * The share ID of the published workflow these assets belong to. Required for authorization.
+   * Optional. Share ID of the published workflow these assets belong to.
+   * When provided (non-null, non-empty): all published_asset_ids must
+   * belong to this share's workflow version; returns
+   * 400/CodeInvalidAssets if the share is not found or any asset does
+   * not belong to it.
+   * When omitted, null, or empty string: no share-scoped validation is
+   * performed and the assets are validated only against global rules
+   * (legacy behaviour, preserved for clients that have not yet adopted
+   * share_id).
+   *
    */
-  share_id: string
+  share_id?: string | null
 }
 
 /**
@@ -2312,9 +2321,15 @@ export type Asset = {
    */
   preview_id?: string | null
   /**
-   * ID of the job/prompt that created this asset, if available
+   * Deprecated: use job_id instead. ID of the prompt that created this asset, if available
+   *
+   * @deprecated
    */
   prompt_id?: string | null
+  /**
+   * ID of the job that created this asset, if available
+   */
+  job_id?: string | null
   /**
    * Timestamp when the asset was created
    */
@@ -3154,9 +3169,15 @@ export type AssetWritable = {
    */
   preview_id?: string | null
   /**
-   * ID of the job/prompt that created this asset, if available
+   * Deprecated: use job_id instead. ID of the prompt that created this asset, if available
+   *
+   * @deprecated
    */
   prompt_id?: string | null
+  /**
+   * ID of the job that created this asset, if available
+   */
+  job_id?: string | null
   /**
    * Timestamp when the asset was created
    */
@@ -4919,10 +4940,6 @@ export type ImportPublishedAssetsErrors = {
    * Unauthorized
    */
   401: ErrorResponse
-  /**
-   * Not found
-   */
-  404: ErrorResponse
   /**
    * Internal server error
    */
