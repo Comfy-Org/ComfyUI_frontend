@@ -349,25 +349,75 @@ describe('usePainter', () => {
   })
 
   describe('serializeValue', () => {
-    it('returns empty string when canvas has no strokes', async () => {
+    it('returns existing modelValue when not dirty (preserves workflow-restored mask reference across WidgetPainter remount)', async () => {
       const maskWidget = makeWidget('mask', '')
       mockWidgets.push(maskWidget)
 
-      mountPainter()
+      mountPainter('test-node', 'painter/existing.png [temp]')
 
       const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
-      expect(result).toBe('')
+      expect(result).toBe('painter/existing.png [temp]')
     })
 
-    it('returns empty string when canvas has no strokes even if modelValue is set', async () => {
+    it('uploads the current canvas when no cached modelValue is present, even if nothing has been painted yet', async () => {
       const maskWidget = makeWidget('mask', '')
       mockWidgets.push(maskWidget)
 
-      const { modelValue } = mountPainter()
-      modelValue.value = 'painter/existing.png [temp]'
+      const fetchApiMock = vi.mocked(api.fetchApi)
+      fetchApiMock.mockResolvedValueOnce({
+        status: 200,
+        json: async () => ({ name: 'uploaded.png' })
+      } as Response)
+
+      const fakeCanvas = {
+        width: 4,
+        height: 4,
+        toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
+      } as unknown as HTMLCanvasElement
+
+      const { canvasEl } = mountPainter('test-node', '')
+      canvasEl.value = fakeCanvas
+      await nextTick()
 
       const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
-      expect(result).toBe('')
+      expect(fetchApiMock).toHaveBeenCalledWith(
+        '/upload/image',
+        expect.objectContaining({ method: 'POST' })
+      )
+      expect(result).toBe('painter/uploaded.png [temp]')
+    })
+
+    it('returns existing modelValue when canvas element is unmounted at serialize time', async () => {
+      const maskWidget = makeWidget('mask', '')
+      mockWidgets.push(maskWidget)
+
+      mountPainter('test-node', 'painter/cached.png [temp]')
+
+      const result = await maskWidget.serializeValue!({} as LGraphNode, 0)
+      expect(result).toBe('painter/cached.png [temp]')
+    })
+
+    it('clears the cached upload reference when the user clears the canvas', () => {
+      const maskWidget = makeWidget('mask', '')
+      mockWidgets.push(maskWidget)
+
+      const fakeCanvas = {
+        width: 4,
+        height: 4,
+        getContext: vi.fn(() => ({
+          clearRect: vi.fn()
+        }))
+      } as unknown as HTMLCanvasElement
+
+      const { painter, canvasEl, modelValue } = mountPainter(
+        'test-node',
+        'painter/old-upload.png [temp]'
+      )
+      canvasEl.value = fakeCanvas
+
+      painter.handleClear()
+
+      expect(modelValue.value).toBe('')
     })
   })
 
