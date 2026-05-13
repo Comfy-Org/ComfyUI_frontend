@@ -64,6 +64,7 @@ describe('useVersionCompatibilityStore', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
+    vi.useRealTimers()
   })
 
   describe('version compatibility detection', () => {
@@ -279,7 +280,8 @@ describe('useVersionCompatibilityStore', () => {
   describe('dismissal persistence', () => {
     it('should save dismissal to reactive storage with expiration', async () => {
       const mockNow = 1000000
-      vi.spyOn(Date, 'now').mockReturnValue(mockNow)
+      vi.useFakeTimers()
+      vi.setSystemTime(mockNow)
 
       mockSystemStatsStore.systemStats = {
         system: {
@@ -487,7 +489,8 @@ describe('useVersionCompatibilityStore', () => {
 
     it('should include outdated packages in dismissal key', async () => {
       const mockNow = 1000000
-      vi.spyOn(Date, 'now').mockReturnValue(mockNow)
+      vi.useFakeTimers()
+      vi.setSystemTime(mockNow)
 
       mockSystemStatsStore.systemStats = {
         system: {
@@ -515,7 +518,8 @@ describe('useVersionCompatibilityStore', () => {
 
     it('should produce the same dismissal key regardless of package order', async () => {
       const mockNow = 1000000
-      vi.spyOn(Date, 'now').mockReturnValue(mockNow)
+      vi.useFakeTimers()
+      vi.setSystemTime(mockNow)
 
       const packageA = {
         name: 'comfy-aimdo',
