@@ -3,7 +3,7 @@
 // Source: research/architecture/widget-serialization-state.md §1a
 // Target: webcamCapture, load3d, uploadAudio, usePainter — async upload widgets
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 
 describe('I-WS.4 perf — hot-path widget serialization', () => {
   describe('(c) hot-path widgets (webcam) do not regress', () => {
@@ -13,7 +13,7 @@ describe('I-WS.4 perf — hot-path widget serialization', () => {
 
       const start = performance.now()
       for (let i = 0; i < iterations; i++) {
-        const _serialized = widget.value
+        void widget.value
       }
       const elapsed = performance.now() - start
 
@@ -27,7 +27,7 @@ describe('I-WS.4 perf — hot-path widget serialization', () => {
 
       const start = performance.now()
       for (let i = 0; i < iterations; i++) {
-        const _serialized = widget.value
+        void widget.value
       }
       const elapsed = performance.now() - start
 
@@ -44,9 +44,7 @@ describe('I-WS.4 perf — hot-path widget serialization', () => {
 
       const start = performance.now()
       for (let i = 0; i < iterations; i++) {
-        const _serialized = widget.serializeValue
-          ? widget.serializeValue(null, 0)
-          : widget.value
+        void (widget.serializeValue ? widget.serializeValue() : widget.value)
       }
       const elapsed = performance.now() - start
 
@@ -132,7 +130,7 @@ describe('I-WS.4 perf — hot-path widget serialization', () => {
       const start = performance.now()
       for (let i = 0; i < iterations; i++) {
         widgets.forEach((w) => {
-          const _v = w.value
+          void w.value
         })
       }
       const elapsed = performance.now() - start
@@ -146,7 +144,8 @@ describe('I-WS.4 perf — hot-path widget serialization', () => {
       const widget = {
         name: 'transform',
         value: 42,
-        serializeValue: (n: unknown, i: number) => `${(n as { id: number })?.id ?? 0}-${i}`
+        serializeValue: (n: unknown, i: number) =>
+          `${(n as { id: number })?.id ?? 0}-${i}`
       }
 
       const start = performance.now()
@@ -165,9 +164,7 @@ describe('I-WS.4 perf — hot-path widget serialization', () => {
       }))
 
       const start = performance.now()
-      const _json = JSON.stringify(
-        widgetValues.map((w) => ({ [w.name]: w.value }))
-      )
+      void JSON.stringify(widgetValues.map((w) => ({ [w.name]: w.value })))
       const elapsed = performance.now() - start
 
       expect(elapsed).toBeLessThan(5)

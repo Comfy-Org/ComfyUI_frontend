@@ -3,7 +3,7 @@
 // Source: research/architecture/widget-serialization-state.md §6
 // Design: I-WS.3 lazy-on-access getter replacing 4 serialization surfaces
 
-import { describe, it, expect, expectTypeOf, vi, beforeEach } from 'vitest'
+import { describe, it, expect, expectTypeOf } from 'vitest'
 import type {
   WidgetHandle,
   WidgetBeforeSerializeEvent,
@@ -36,8 +36,8 @@ describe('I-WS.4 v2 contract — lazy getter serialization', () => {
       type AsyncHandler = (e: WidgetBeforeSerializeEvent) => void | Promise<void>
 
       // Both sync and async must be assignable
-      const syncHandler: AsyncHandler = (_e) => {}
-      const asyncHandler: AsyncHandler = async (_e) => {
+      const syncHandler: AsyncHandler = () => {}
+      const asyncHandler: AsyncHandler = async () => {
         await Promise.resolve()
       }
 

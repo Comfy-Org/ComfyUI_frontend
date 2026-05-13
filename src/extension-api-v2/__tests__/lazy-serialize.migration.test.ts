@@ -4,10 +4,6 @@
 // Design: v1 positional → v2 named-map transition
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import type {
-  WidgetHandle,
-  WidgetBeforeSerializeEvent
-} from '@/extension-api/widget'
 
 describe('I-WS.4 migration — lazy-serialize v1→v2', () => {
   describe('(d) null in numeric widget warning', () => {
@@ -100,7 +96,7 @@ describe('I-WS.4 migration — lazy-serialize v1→v2', () => {
           seed: 42,
           cfg: 0.7,
           sampler_name: 'euler'
-        }
+        } as Record<string, unknown>
       }
 
       // Node def changed: new widget inserted at position 1
@@ -126,7 +122,10 @@ describe('I-WS.4 migration — lazy-serialize v1→v2', () => {
 
     it('v1 compat mode uses positional fallback when named-map unavailable', () => {
       // Old workflow without widgets_values_named
-      const legacyWorkflow = {
+      const legacyWorkflow: {
+        widgets_values: unknown[]
+        widgets_values_named?: Record<string, unknown>
+      } = {
         widgets_values: [42, 0.7, 'euler']
         // No widgets_values_named
       }
@@ -135,8 +134,7 @@ describe('I-WS.4 migration — lazy-serialize v1→v2', () => {
 
       // Fallback: use positional index
       const resolvedValues: Record<string, unknown> = {}
-      const namedMap = (legacyWorkflow as { widgets_values_named?: object })
-        .widgets_values_named
+      const namedMap = legacyWorkflow.widgets_values_named
 
       if (namedMap) {
         // Would use named-map
