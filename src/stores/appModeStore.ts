@@ -22,7 +22,7 @@ import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { resolveNode, resolveNodeWidget } from '@/utils/litegraphUtil'
 import type { WidgetEntityId } from '@/world/entityIds'
-import { isWidgetEntityId } from '@/world/entityIds'
+import { isWidgetEntityId, parseWidgetEntityId } from '@/world/entityIds'
 
 /**
  * Resolve a widget by its canonical {@link WidgetEntityId} within the given
@@ -97,7 +97,15 @@ export const useAppModeStore = defineStore('appMode', () => {
     // Canonical: storedId is already a WidgetEntityId.
     if (typeof storedId === 'string' && isWidgetEntityId(storedId)) {
       const widget = findWidgetByEntityId(rootGraph, storedId)
-      return widget ? buildEntry(storedId, widgetName, config) : null
+      if (widget) return buildEntry(storedId, widgetName, config)
+      // Keep dangling entries whose host node still exists (e.g. dynamic
+      // widgets temporarily not visible) so the UI can surface them as
+      // `status: 'unknown'`. Prune only when the node itself is gone.
+      const { nodeId } = parseWidgetEntityId(storedId)
+      if (rootGraph.getNodeById?.(nodeId)) {
+        return buildEntry(storedId, widgetName, config)
+      }
+      return null
     }
 
     // Legacy NodeLocatorId (`graphId:nodeId`) for promoted widgets.

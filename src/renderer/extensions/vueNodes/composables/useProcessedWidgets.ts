@@ -31,6 +31,7 @@ import {
 } from '@/stores/widgetValueStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import type { WidgetEntityId } from '@/world/entityIds'
 import { getWidgetState } from '@/world/widgetValueIO'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -50,6 +51,7 @@ interface ProcessedWidget {
   hasError: boolean
   hidden: boolean
   id: string
+  entityId?: WidgetEntityId
   name: string
   renderKey: string
   simplified: SimplifiedWidget
@@ -319,6 +321,7 @@ export function computeProcessedWidgets({
       ),
       hidden: mergedOptions.hidden ?? false,
       id: String(bareWidgetId),
+      entityId: widget.entityId,
       name: widget.name,
       renderKey,
       type: widget.type,
