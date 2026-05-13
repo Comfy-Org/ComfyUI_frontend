@@ -1169,25 +1169,22 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     serialized.properties = serializedProperties
 
     const widgetStore = useWidgetValueStore()
-    const widgetValues: TWidgetValue[] = []
-    let hasSerializableValue = false
-
-    for (const input of this.inputs) {
+    const widgetValues = this.inputs.flatMap((input) => {
       const widget = input._widget
-      if (!widget || !isPromotedWidgetView(widget)) continue
+      if (!widget || !isPromotedWidgetView(widget)) return []
       const state = widgetStore.getWidget(
         rootGraphId,
         this.id,
         getPromotedWidgetHostStateName(widget)
       )
-      const value =
-        state && isWidgetValue(state.value) ? state.value : undefined
-      widgetValues.push(value)
-      hasSerializableValue ||= value !== undefined
-    }
+      return [state && isWidgetValue(state.value) ? state.value : undefined]
+    })
 
-    if (hasSerializableValue) serialized.widgets_values = widgetValues
-    else delete serialized.widgets_values
+    if (widgetValues.some((value) => value !== undefined)) {
+      serialized.widgets_values = widgetValues
+    } else {
+      delete serialized.widgets_values
+    }
 
     return serialized
   }

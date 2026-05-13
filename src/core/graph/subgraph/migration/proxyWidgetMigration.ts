@@ -268,32 +268,22 @@ function collectTargetsSkippingDangling(
   primitiveNode: LGraphNode
 ): PrimitiveBypassTargetRef[] {
   const subgraph = hostNode.subgraph
-  const output = primitiveNode.outputs?.[0]
-  const linkIds = output?.links ?? []
-  const targets: PrimitiveBypassTargetRef[] = []
-  for (const linkId of linkIds) {
+  const linkIds = primitiveNode.outputs?.[0]?.links ?? []
+  return linkIds.flatMap((linkId) => {
     const link = subgraph.links.get(linkId)
-    if (!link) continue
-    targets.push({
-      targetNodeId: link.target_id,
-      targetSlot: link.target_slot
-    })
-  }
-  return targets
+    return link
+      ? [{ targetNodeId: link.target_id, targetSlot: link.target_slot }]
+      : []
+  })
 }
 
-function cohortReferencesPrimitive(
+function cohortDuplicatesPrimitive(
   cohort: readonly LegacyProxyEntrySource[],
   primitiveNodeId: string
 ): boolean {
-  let count = 0
-  for (const entry of cohort) {
-    if (entry.sourceNodeId === primitiveNodeId) {
-      count += 1
-      if (count >= 2) return true
-    }
-  }
-  return false
+  return (
+    cohort.filter((entry) => entry.sourceNodeId === primitiveNodeId).length >= 2
+  )
 }
 
 function classify(
@@ -320,7 +310,7 @@ function classify(
 
   if (sourceNode.type === PRIMITIVE_NODE_TYPE) {
     const targets = collectTargetsSkippingDangling(hostNode, sourceNode)
-    const cohortDuplicated = cohortReferencesPrimitive(
+    const cohortDuplicated = cohortDuplicatesPrimitive(
       cohort,
       normalized.sourceNodeId
     )
@@ -382,9 +372,11 @@ function addUniqueSubgraphInput(
   return subgraph.addInput(uniqueName, type)
 }
 
-type RepairValueResult =
-  | { ok: true; subgraphInputName: string }
-  | { ok: false; reason: ProxyWidgetQuarantineReason }
+type Outcome<TOk, TReason = ProxyWidgetQuarantineReason> =
+  | ({ ok: true } & TOk)
+  | { ok: false; reason: TReason }
+
+type RepairValueResult = Outcome<{ subgraphInputName: string }>
 
 function repairValue(
   hostNode: SubgraphNode,
@@ -484,19 +476,18 @@ function repairCreateSubgraphInput(
   return { ok: true, subgraphInputName: newSubgraphInput.name }
 }
 
-type RepairPrimitiveResult =
-  | { ok: true; subgraphInputName: string; reconnectCount: number }
-  | { ok: false; reason: 'primitiveBypassFailed' }
+type RepairPrimitiveResult = Outcome<
+  { subgraphInputName: string; reconnectCount: number },
+  'primitiveBypassFailed'
+>
 
 const PRIMITIVE_FAILED: RepairPrimitiveResult = {
   ok: false,
   reason: 'primitiveBypassFailed'
 }
 
-interface SnapshotLink {
+interface SnapshotLink extends PrimitiveBypassTargetRef {
   primitiveSlot: number
-  targetNodeId: NodeId
-  targetSlot: number
 }
 
 interface CohortValidationOk {
@@ -665,9 +656,10 @@ function repairPrimitive(
   }
 }
 
-type MigratePreviewResult =
-  | { ok: true; previewName: string }
-  | { ok: false; reason: 'missingSourceNode' | 'missingSourceWidget' }
+type MigratePreviewResult = Outcome<
+  { previewName: string },
+  'missingSourceNode' | 'missingSourceWidget'
+>
 
 function migratePreview(
   hostNode: SubgraphNode,
@@ -723,15 +715,11 @@ function quarantineFor(
   const originalEntry: SerializedProxyWidgetTuple = disambiguatingSourceNodeId
     ? [sourceNodeId, sourceWidgetName, disambiguatingSourceNodeId]
     : [sourceNodeId, sourceWidgetName]
-  const result: ProxyWidgetErrorQuarantineEntry = {
+  return makeQuarantineEntry({
     originalEntry,
     reason,
-    attemptedAtVersion: QUARANTINE_VERSION
-  }
-  if (!entry.isHole && entry.hostValue !== undefined) {
-    result.hostValue = entry.hostValue
-  }
-  return result
+    hostValue: entry.isHole ? undefined : entry.hostValue
+  })
 }
 
 function appendQuarantine(
@@ -762,15 +750,11 @@ export function readHostQuarantine(
   )
 }
 
-interface MakeQuarantineEntryArgs {
+export function makeQuarantineEntry(args: {
   originalEntry: SerializedProxyWidgetTuple
   reason: ProxyWidgetQuarantineReason
   hostValue?: TWidgetValue
-}
-
-export function makeQuarantineEntry(
-  args: MakeQuarantineEntryArgs
-): ProxyWidgetErrorQuarantineEntry {
+}): ProxyWidgetErrorQuarantineEntry {
   const entry: ProxyWidgetErrorQuarantineEntry = {
     originalEntry: args.originalEntry,
     reason: args.reason,

@@ -72,24 +72,22 @@ export const useAppModeStore = defineStore('appMode', () => {
     const directNode = rootGraph.getNodeById?.(storedId)
     if (directNode?.widgets?.some((w) => w.name === widgetName)) return input
 
-    const matches: LinearInput[] = []
-    for (const node of rootGraph.nodes) {
-      if (!(node instanceof SubgraphNode)) continue
-      for (const inputSlot of node.inputs) {
+    const matches: LinearInput[] = rootGraph.nodes.flatMap((node) => {
+      if (!(node instanceof SubgraphNode)) return []
+      return node.inputs.flatMap((inputSlot): LinearInput[] => {
         const widget = inputSlot._widget
-        if (!widget || !isPromotedWidgetView(widget)) continue
+        if (!widget || !isPromotedWidgetView(widget)) return []
         if (
-          widget.sourceNodeId === String(storedId) &&
-          widget.sourceWidgetName === widgetName
+          widget.sourceNodeId !== String(storedId) ||
+          widget.sourceWidgetName !== widgetName
         ) {
-          matches.push([
-            createNodeLocatorId(rootGraph.id, node.id),
-            inputSlot.name,
-            input[2]
-          ])
+          return []
         }
-      }
-    }
+        return [
+          [createNodeLocatorId(rootGraph.id, node.id), inputSlot.name, input[2]]
+        ]
+      })
+    })
     if (matches.length === 1) return matches[0]
     if (matches.length > 1) {
       console.warn(
