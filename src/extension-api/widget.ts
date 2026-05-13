@@ -142,7 +142,7 @@ export interface WidgetBeforeSerializeEvent<T = WidgetValue> {
    * - `'prompt'` — user is queueing a run (only prompt-relevant data sent to backend).
    * - `'clone'` — a copy/paste is happening; the framework already populated the
    *   cloned entity's widget value from the source. Override only if the clone should
-   *   differ from the source. (See D12 for scope copy semantics.)
+   *   differ from the source.
    * - `'subgraph-promote'` — the widget is being promoted to a subgraph IO slot.
    */
   readonly context: 'workflow' | 'prompt' | 'clone' | 'subgraph-promote'
@@ -400,7 +400,7 @@ export interface WidgetHandle<T = WidgetValue> {
    * Subscribe to the widget's value changes.
    *
    * Replaces the v1 `widget.callback` pattern.
-   * Fires synchronously after the value is committed (per D10c).
+   * Fires synchronously after the value is committed.
    *
    * @returns A cleanup function to remove the listener.
    */
