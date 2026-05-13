@@ -1,12 +1,12 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '../fixtures/ComfyPage'
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 import {
   getPromotedWidgetNames,
   getPromotedWidgets
-} from '../helpers/promotedWidgets'
+} from '@e2e/fixtures/utils/promotedWidgets'
 
 async function getSubgraphNodeIds(comfyPage: ComfyPage): Promise<string[]> {
   return comfyPage.page.evaluate(() => {

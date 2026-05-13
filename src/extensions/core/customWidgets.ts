@@ -67,15 +67,19 @@ function onCustomComboCreated(this: LGraphNode) {
           v
         ).value = v
 
-        if (store.isHydrating(node.id)) return
+        const hydrating = store.isHydrating(node.id)
 
-        updateCombo()
+        // Allow addOption during hydration so dynamic widgets are created,
+        // but skip updateCombo (deferred to onHydrationComplete).
+        if (!hydrating) updateCombo()
+
         if (!node.widgets) return
         const lastWidget = node.widgets.at(-1)
         if (lastWidget === this) {
           if (v) addOption(node)
           return
         }
+        if (hydrating) return
         if (v || node.widgets.at(-2) !== this || lastWidget?.value) return
         node.widgets.pop()
         node.computeSize(node.size)
