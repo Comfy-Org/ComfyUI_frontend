@@ -41,6 +41,10 @@ describe('loadPacksForBuild', () => {
   })
 
   afterEach(() => {
+    if (savedVercelEnv === undefined) {
+      delete process.env.VERCEL_ENV
+      return
+    }
     process.env.VERCEL_ENV = savedVercelEnv
   })
 
