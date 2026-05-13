@@ -32,6 +32,7 @@ import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
 import { normalizeControlOption } from '@/types/simplifiedWidget'
+import type { WidgetEntityId } from '@/world/entityIds'
 
 import type {
   LGraph,
@@ -59,6 +60,14 @@ export interface WidgetSlotMetadata {
  * Value and metadata (label, hidden, disabled, etc.) are accessed via widgetValueStore.
  */
 export interface SafeWidgetData {
+  /**
+   * Canonical identity for this widget, sourced directly from the underlying
+   * widget instance. Single source of truth for selection, matching, and
+   * comparisons across producers (this mapper) and consumers (linear-mode
+   * sidebar, builder click handler, app-mode selection store). May be
+   * undefined for transient widgets that aren't yet bound to a graph.
+   */
+  entityId?: WidgetEntityId
   nodeId?: NodeId
   storeNodeId?: NodeId
   name: string
@@ -342,6 +351,7 @@ function safeWidgetMapper(
       }
 
       return {
+        entityId: widget.entityId,
         nodeId,
         storeNodeId,
         name,

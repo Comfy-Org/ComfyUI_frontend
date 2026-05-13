@@ -76,6 +76,9 @@ function addPromotedHostInput(
     },
     set value(v: TWidgetValue) {
       widgetValue = v
+    },
+    hydrateHostValue(v: TWidgetValue) {
+      widgetValue = v
     }
   })
   return {
@@ -392,8 +395,11 @@ describe('flushProxyWidgetMigration', () => {
       })
       expect(result.primitiveRepaired).toBe(1)
 
-      const created = host.subgraph.inputs.at(-1)
-      expect(created?._widget?.value).toBe(123)
+      // Host value lands on the host's input mirror (a `PromotedWidgetView`),
+      // not on the shared interior consumer widget. Verifying the host side
+      // is what guarantees per-host value independence.
+      const hostInput = host.inputs.at(-1)
+      expect(hostInput?._widget?.value).toBe(123)
     })
 
     it('seeds value from the primitive widget when no host value is supplied', () => {
@@ -407,8 +413,10 @@ describe('flushProxyWidgetMigration', () => {
       const result = flushProxyWidgetMigration({ hostNode: host })
 
       expect(result.primitiveRepaired).toBe(1)
-      const created = host.subgraph.inputs.at(-1)
-      expect(created?._widget?.value).toBe(11)
+      // With no host value supplied, the host is seeded per-instance from
+      // the primitive's widget value — never by mutating the shared interior.
+      const hostInput = host.inputs.at(-1)
+      expect(hostInput?._widget?.value).toBe(11)
     })
 
     it('quarantines an unlinked primitive node with no fan-out', () => {
@@ -472,6 +480,57 @@ describe('flushProxyWidgetMigration', () => {
           reason: 'primitiveBypassFailed'
         })
       ])
+    })
+
+    it('keeps independent values across two hosts of the same subgraph', () => {
+      // Regression for the multi-host primitive bypass bug: each host's
+      // per-instance value must land in its own host store, never on the
+      // shared interior consumer widget. After both hosts migrate, the
+      // first host must still see its own value (not be stomped by the
+      // second host) and the second host must successfully bypass even
+      // though the primitive's outputs were severed by the first host.
+      const subgraph = createTestSubgraph()
+      const hostA = createTestSubgraphNode(subgraph)
+      const hostB = createTestSubgraphNode(subgraph)
+      hostA.graph!.add(hostA)
+      hostB.graph!.add(hostB)
+
+      const primitive = new LGraphNode('PrimitiveNode')
+      primitive.type = 'PrimitiveNode'
+      primitive.addOutput('value', 'INT')
+      primitive.addWidget('number', 'value', 0, () => {})
+      subgraph.add(primitive)
+
+      const target = new LGraphNode('Target')
+      const slot = target.addInput('value', 'INT')
+      slot.widget = { name: 'value' }
+      target.addWidget('number', 'value', 0, () => {})
+      subgraph.add(target)
+      primitive.connect(0, target, 0)
+
+      hostA.properties.proxyWidgets = [[String(primitive.id), 'value']]
+      hostB.properties.proxyWidgets = [[String(primitive.id), 'value']]
+
+      const resultA = flushProxyWidgetMigration({
+        hostNode: hostA,
+        hostWidgetValues: [11]
+      })
+      const resultB = flushProxyWidgetMigration({
+        hostNode: hostB,
+        hostWidgetValues: [22]
+      })
+
+      expect(resultA).toMatchObject({ primitiveRepaired: 1, quarantined: 0 })
+      // Host B's classify recognises the bypass marker on the primitive and
+      // takes the `alreadyLinked` path, so it counts as `repaired` not
+      // `primitiveRepaired`. Either way, no quarantine.
+      expect(resultB).toMatchObject({ quarantined: 0 })
+      expect(resultB.repaired + resultB.primitiveRepaired).toBe(1)
+
+      const widgetA = hostA.inputs.at(-1)?._widget
+      const widgetB = hostB.inputs.at(-1)?._widget
+      expect(widgetA?.value).toBe(11)
+      expect(widgetB?.value).toBe(22)
     })
   })
 

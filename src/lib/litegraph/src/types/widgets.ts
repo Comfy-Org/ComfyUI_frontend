@@ -1,5 +1,6 @@
 import type { Bounds } from '@/renderer/core/layout/types'
 import type { CurveData } from '@/components/curve/types'
+import type { WidgetEntityId } from '@/world/entityIds'
 
 import type {
   CanvasColour,
@@ -389,6 +390,16 @@ export interface IBaseWidget<
   [symbol: symbol]: boolean
 
   linkedWidgets?: IBaseWidget[]
+
+  /**
+   * Canonical identity for this widget within its root graph. Read-only;
+   * derived from the widget's `(graphId, nodeId, name)` triple. `undefined`
+   * when the widget is not yet bound to a node or detached from any graph.
+   *
+   * Distinct from any DOM-widget UUID (`id`); this is the structured value
+   * key used by the widget value store, the Vue mapper, and migration.
+   */
+  readonly entityId?: WidgetEntityId
 
   name: string
   options: TOptions

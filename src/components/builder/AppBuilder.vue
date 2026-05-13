@@ -8,7 +8,6 @@ import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
 import DraggableList from '@/components/common/DraggableList.vue'
 import IoItem from '@/components/builder/IoItem.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -28,8 +27,8 @@ import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { renameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
-import { resolveNodeWidget } from '@/utils/litegraphUtil'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import type { WidgetEntityId } from '@/world/entityIds'
+import { findWidgetByEntityId } from '@/world/widgetLookup'
 import { cn } from '@comfyorg/tailwind-utils'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
@@ -49,19 +48,20 @@ const hoveringSelectable = ref(false)
 workflowStore.activeWorkflow?.changeTracker?.reset()
 
 const inputsWithState = computed(() =>
-  appModeStore.selectedInputs.map(([nodeId, widgetName]) => {
-    const [node, widget] = resolveNodeWidget(nodeId, widgetName)
-    if (!node || !widget) {
+  appModeStore.selectedInputs.map(([entityId]) => {
+    const found =
+      typeof entityId === 'string'
+        ? findWidgetByEntityId(app.rootGraph, entityId as WidgetEntityId)
+        : undefined
+    if (!found) {
       return {
-        nodeId,
-        widgetName,
+        entityId: entityId as WidgetEntityId,
         subLabel: t('linearMode.builder.unknownWidget')
       }
     }
-
+    const [node, widget] = found
     return {
-      nodeId,
-      widgetName,
+      entityId: entityId as WidgetEntityId,
       label: widget.label,
       subLabel: node.title,
       canRename: true
@@ -75,13 +75,10 @@ const outputsWithState = computed<[NodeId, string][]>(() =>
   ])
 )
 
-function inlineRenameInput(
-  nodeId: NodeId,
-  widgetName: string,
-  newLabel: string
-) {
-  const [node, widget] = resolveNodeWidget(nodeId, widgetName)
-  if (!node || !widget) return
+function inlineRenameInput(entityId: WidgetEntityId, newLabel: string) {
+  const found = findWidgetByEntityId(app.rootGraph, entityId)
+  if (!found) return
+  const [node, widget] = found
   renameWidget(widget, node, newLabel)
 }
 
@@ -103,22 +100,27 @@ function getHovered(
   if (widget || node.constructor.nodeData?.output_node) return [node, widget]
 }
 
-function getBounding(nodeId: NodeId, widgetName?: string) {
+function getNodeBounding(nodeId: NodeId) {
   if (settingStore.get('Comfy.VueNodes.Enabled')) return undefined
-  const [node, widget] = resolveNodeWidget(nodeId, widgetName)
+  const node = app.rootGraph.getNodeById(nodeId)
   if (!node) return
 
   const titleOffset =
     node.title_mode === TitleMode.NORMAL_TITLE ? LiteGraph.NODE_TITLE_HEIGHT : 0
 
-  if (!widgetName)
-    return {
-      width: `${node.size[0]}px`,
-      height: `${node.size[1] + titleOffset}px`,
-      left: `${node.pos[0]}px`,
-      top: `${node.pos[1] - titleOffset}px`
-    }
-  if (!widget) return
+  return {
+    width: `${node.size[0]}px`,
+    height: `${node.size[1] + titleOffset}px`,
+    left: `${node.pos[0]}px`,
+    top: `${node.pos[1] - titleOffset}px`
+  }
+}
+
+function getWidgetBounding(entityId: WidgetEntityId) {
+  if (settingStore.get('Comfy.VueNodes.Enabled')) return undefined
+  const found = findWidgetByEntityId(app.rootGraph, entityId)
+  if (!found) return
+  const [node, widget] = found
 
   const margin = widget instanceof DOMWidgetImpl ? widget.margin : undefined
   const marginX = margin ?? BaseWidget.margin
@@ -158,16 +160,11 @@ function handleClick(e: MouseEvent) {
   }
   if (!isSelectInputsMode.value || widget.options.canvasOnly) return
 
-  const isPromoted = isPromotedWidgetView(widget)
-  const storeId =
-    isPromoted && app.rootGraph?.id
-      ? createNodeLocatorId(app.rootGraph.id, node.id)
-      : node.id
-  const storeName = widget.name
-  const index = appModeStore.selectedInputs.findIndex(
-    ([nodeId, widgetName]) => storeId == nodeId && storeName === widgetName
-  )
-  if (index === -1) appModeStore.selectedInputs.push([storeId, storeName])
+  const entityId = widget.entityId
+  if (!entityId) return
+  const index = appModeStore.selectedInputs.findIndex(([id]) => id === entityId)
+  if (index === -1)
+    appModeStore.selectedInputs.push([entityId, widget.name, undefined])
   else appModeStore.selectedInputs.splice(index, 1)
 }
 
@@ -176,7 +173,7 @@ function nodeToDisplayTuple(
 ): [NodeId, MaybeRef<BoundStyle> | undefined, boolean] {
   return [
     n.id,
-    getBounding(n.id),
+    getNodeBounding(n.id),
     appModeStore.selectedOutputs.some((id) => n.id === id)
   ]
 }
@@ -194,10 +191,15 @@ const renderedOutputs = computed(() => {
 })
 const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
   () =>
-    appModeStore.selectedInputs.map(([nodeId, widgetName]) => [
-      `${nodeId}: ${widgetName}`,
-      getBounding(nodeId, widgetName)
-    ])
+    appModeStore.selectedInputs.flatMap(([entityId]) => {
+      if (typeof entityId !== 'string') return []
+      return [
+        [entityId, getWidgetBounding(entityId as WidgetEntityId)] as [
+          string,
+          MaybeRef<BoundStyle> | undefined
+        ]
+      ]
+    })
 )
 </script>
 <template>
@@ -242,28 +244,19 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
           v-model="appModeStore.selectedInputs"
         >
           <IoItem
-            v-for="{
-              nodeId,
-              widgetName,
-              label,
-              subLabel,
-              canRename
-            } in inputsWithState"
-            :key="`${nodeId}: ${widgetName}`"
+            v-for="{ entityId, label, subLabel, canRename } in inputsWithState"
+            :key="entityId"
             :class="
               cn(dragClass, 'my-2 rounded-lg bg-primary-background/30 p-2')
             "
-            :title="label ?? widgetName"
+            :title="label ?? entityId"
             :sub-title="subLabel"
             :can-rename="canRename"
             :remove="
               () =>
-                remove(
-                  appModeStore.selectedInputs,
-                  ([id, name]) => nodeId == id && widgetName === name
-                )
+                remove(appModeStore.selectedInputs, ([id]) => id === entityId)
             "
-            @rename="inlineRenameInput(nodeId, widgetName, $event)"
+            @rename="inlineRenameInput(entityId, $event)"
           />
         </DraggableList>
       </PropertiesAccordionItem>

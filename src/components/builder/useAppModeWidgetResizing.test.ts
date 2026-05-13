@@ -1,10 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { InputWidgetConfig } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { WidgetEntityId } from '@/world/entityIds'
 
 import { useAppModeWidgetResizing } from './useAppModeWidgetResizing'
+
+const ENTITY_PROMPT = 'g:1:prompt' as WidgetEntityId
+const ENTITY_OTHER = 'g:2:other' as WidgetEntityId
+const ENTITY_IMAGE = 'g:1:image' as WidgetEntityId
 
 function setHeight(el: HTMLElement, height: number) {
   Object.defineProperty(el, 'offsetHeight', {
@@ -28,15 +32,13 @@ function wrapWithTextarea(initialHeight = 100): {
 describe('useAppModeWidgetResizing', () => {
   function setup() {
     const onResize =
-      vi.fn<
-        (nodeId: NodeId, widgetName: string, config: InputWidgetConfig) => void
-      >()
+      vi.fn<(entityId: WidgetEntityId, config: InputWidgetConfig) => void>()
     const { onPointerDown } = useAppModeWidgetResizing(onResize)
 
-    function bind(wrapper: HTMLElement, nodeId: NodeId, widgetName: string) {
+    function bind(wrapper: HTMLElement, entityId: WidgetEntityId) {
       wrapper.addEventListener(
         'pointerdown',
-        (e) => onPointerDown(nodeId, widgetName, e as PointerEvent),
+        (e) => onPointerDown(entityId, e as PointerEvent),
         { capture: true }
       )
     }
@@ -47,19 +49,19 @@ describe('useAppModeWidgetResizing', () => {
   it('persists height when textarea is resized via drag', () => {
     const { bind, onResize } = setup()
     const { wrapper, textarea } = wrapWithTextarea()
-    bind(wrapper, 1 as NodeId, 'prompt')
+    bind(wrapper, ENTITY_PROMPT)
 
     textarea.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     setHeight(textarea, 250)
     window.dispatchEvent(new PointerEvent('pointerup'))
 
-    expect(onResize).toHaveBeenCalledWith(1, 'prompt', { height: 250 })
+    expect(onResize).toHaveBeenCalledWith(ENTITY_PROMPT, { height: 250 })
   })
 
   it('does not persist when no height change occurs (e.g. a click)', () => {
     const { bind, onResize } = setup()
     const { wrapper, textarea } = wrapWithTextarea()
-    bind(wrapper, 1 as NodeId, 'prompt')
+    bind(wrapper, ENTITY_PROMPT)
 
     textarea.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     window.dispatchEvent(new PointerEvent('pointerup'))
@@ -70,7 +72,7 @@ describe('useAppModeWidgetResizing', () => {
   it('persists once per drag gesture; stray pointerup is a no-op', () => {
     const { bind, onResize } = setup()
     const { wrapper, textarea } = wrapWithTextarea()
-    bind(wrapper, 1 as NodeId, 'prompt')
+    bind(wrapper, ENTITY_PROMPT)
 
     textarea.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     setHeight(textarea, 250)
@@ -86,7 +88,7 @@ describe('useAppModeWidgetResizing', () => {
     const button = document.createElement('button')
     wrapper.appendChild(button)
     document.body.appendChild(wrapper)
-    bind(wrapper, 1 as NodeId, 'prompt')
+    bind(wrapper, ENTITY_PROMPT)
 
     button.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     window.dispatchEvent(new PointerEvent('pointerup'))
@@ -104,21 +106,21 @@ describe('useAppModeWidgetResizing', () => {
     wrapper.appendChild(indicator)
     document.body.appendChild(wrapper)
     setHeight(indicator, 100)
-    bind(wrapper, 1 as NodeId, 'image')
+    bind(wrapper, ENTITY_IMAGE)
 
     inner.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     setHeight(indicator, 250)
     window.dispatchEvent(new PointerEvent('pointerup'))
 
-    expect(onResize).toHaveBeenCalledWith(1, 'image', { height: 250 })
+    expect(onResize).toHaveBeenCalledWith(ENTITY_IMAGE, { height: 250 })
   })
 
   it('drops a stale gesture when a new pointerdown starts before pointerup arrives', () => {
     const { bind, onResize } = setup()
     const first = wrapWithTextarea()
     const second = wrapWithTextarea()
-    bind(first.wrapper, 1 as NodeId, 'prompt')
-    bind(second.wrapper, 2 as NodeId, 'other')
+    bind(first.wrapper, ENTITY_PROMPT)
+    bind(second.wrapper, ENTITY_OTHER)
 
     first.textarea.dispatchEvent(
       new PointerEvent('pointerdown', { bubbles: true })
@@ -132,25 +134,25 @@ describe('useAppModeWidgetResizing', () => {
     window.dispatchEvent(new PointerEvent('pointerup'))
 
     expect(onResize).toHaveBeenCalledTimes(1)
-    expect(onResize).toHaveBeenCalledWith(2, 'other', { height: 300 })
+    expect(onResize).toHaveBeenCalledWith(ENTITY_OTHER, { height: 300 })
   })
 
   it('treats pointercancel as the end of a gesture and persists the new height', () => {
     const { bind, onResize } = setup()
     const { wrapper, textarea } = wrapWithTextarea()
-    bind(wrapper, 1 as NodeId, 'prompt')
+    bind(wrapper, ENTITY_PROMPT)
 
     textarea.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     setHeight(textarea, 250)
     window.dispatchEvent(new PointerEvent('pointercancel'))
 
-    expect(onResize).toHaveBeenCalledWith(1, 'prompt', { height: 250 })
+    expect(onResize).toHaveBeenCalledWith(ENTITY_PROMPT, { height: 250 })
   })
 
   it('after pointercancel, a subsequent stray pointerup is a no-op', () => {
     const { bind, onResize } = setup()
     const { wrapper, textarea } = wrapWithTextarea()
-    bind(wrapper, 1 as NodeId, 'prompt')
+    bind(wrapper, ENTITY_PROMPT)
 
     textarea.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     setHeight(textarea, 250)
@@ -159,14 +161,12 @@ describe('useAppModeWidgetResizing', () => {
     window.dispatchEvent(new PointerEvent('pointerup'))
 
     expect(onResize).toHaveBeenCalledTimes(1)
-    expect(onResize).toHaveBeenCalledWith(1, 'prompt', { height: 250 })
+    expect(onResize).toHaveBeenCalledWith(ENTITY_PROMPT, { height: 250 })
   })
 
   it('removes global listeners when the owning scope is disposed mid-gesture', () => {
     const onResize =
-      vi.fn<
-        (nodeId: NodeId, widgetName: string, config: InputWidgetConfig) => void
-      >()
+      vi.fn<(entityId: WidgetEntityId, config: InputWidgetConfig) => void>()
     const scope = effectScope()
     const { onPointerDown } = scope.run(() =>
       useAppModeWidgetResizing(onResize)
@@ -174,7 +174,7 @@ describe('useAppModeWidgetResizing', () => {
     const { wrapper, textarea } = wrapWithTextarea()
     wrapper.addEventListener(
       'pointerdown',
-      (e) => onPointerDown(1 as NodeId, 'prompt', e as PointerEvent),
+      (e) => onPointerDown(ENTITY_PROMPT, e as PointerEvent),
       { capture: true }
     )
 
@@ -199,7 +199,7 @@ describe('useAppModeWidgetResizing', () => {
     outerIndicator.appendChild(wrapper)
     document.body.appendChild(outerIndicator)
     setHeight(outerIndicator, 100)
-    bind(wrapper, 1 as NodeId, 'prompt')
+    bind(wrapper, ENTITY_PROMPT)
 
     inner.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     setHeight(outerIndicator, 250)

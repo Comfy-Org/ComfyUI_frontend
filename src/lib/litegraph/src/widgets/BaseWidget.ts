@@ -19,6 +19,8 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import type { WidgetState } from '@/stores/widgetValueStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetEntityId } from '@/world/entityIds'
+import { widgetEntityId } from '@/world/entityIds'
 
 export interface DrawWidgetOptions {
   /** The width of the node where this widget will be displayed. */
@@ -129,6 +131,23 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
   set value(value: TWidget['value']) {
     this._state.value = value
+  }
+
+  /**
+   * Canonical identity for this widget within its root graph. `undefined`
+   * until {@link setNodeId} has bound the widget to its node, or if the
+   * widget is detached from any graph.
+   *
+   * Single source of truth for widget identity across producers (Vue mapper,
+   * migration, runtime callbacks) and consumers (sidebar, click handlers,
+   * value store). Equality is structural — two widgets share an `entityId`
+   * iff they describe the same `(graph, node, name)` triple.
+   */
+  get entityId(): WidgetEntityId | undefined {
+    const graphId = this.node.graph?.rootGraph.id
+    const nodeId = this._state.nodeId
+    if (!graphId || nodeId === undefined) return undefined
+    return widgetEntityId(graphId, nodeId, this.name)
   }
 
   /**

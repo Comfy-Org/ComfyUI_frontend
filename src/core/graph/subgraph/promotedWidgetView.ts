@@ -21,6 +21,8 @@ import {
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
 import { hasWidgetNode } from '@/core/graph/subgraph/widgetNodeTypeGuard'
+import type { WidgetEntityId } from '@/world/entityIds'
+import { widgetEntityId } from '@/world/entityIds'
 
 import {
   getPromotedWidgetHostStateName,
@@ -126,6 +128,16 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
   get name(): string {
     return this.identityName ?? this.sourceWidgetName
+  }
+
+  /**
+   * Canonical host-scoped identity for this promoted widget. Per ADR 0009,
+   * UI/value identity is `(host node, subgraph input name)`; the interior
+   * source widget is metadata only. Two host instances of the same subgraph
+   * therefore have distinct entity ids and keep independent values.
+   */
+  get entityId(): WidgetEntityId {
+    return widgetEntityId(this.graphId, this.subgraphNode.id, this.name)
   }
 
   get y(): number {

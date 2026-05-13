@@ -1,6 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { WidgetEntityId } from '@/world/entityIds'
 
 export interface ResolvedPromotedWidget {
   node: LGraphNode
@@ -23,6 +24,12 @@ export interface LegacyProxyEntrySource extends PromotedWidgetSource {
 
 export interface PromotedWidgetView extends IBaseWidget {
   readonly node: SubgraphNode
+  /**
+   * Canonical host-scoped identity per ADR 0009: `(host node, subgraph input
+   * name)`. Always defined for promoted widgets — they are owned by their
+   * host and the host is by construction bound to a graph.
+   */
+  readonly entityId: WidgetEntityId
   /**
    * Identity of the immediate interior child whose widget (or input slot, for
    * nested SubgraphNode children) this view exposes. Per ADR 0009 each

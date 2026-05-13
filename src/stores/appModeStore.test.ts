@@ -12,7 +12,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { app } from '@/scripts/app'
 import type { ChangeTracker } from '@/scripts/changeTracker'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import type { WidgetEntityId } from '@/world/entityIds'
 
 const mockEmptyWorkflowDialog = vi.hoisted(() => {
   let lastOptions: { onEnterBuilder: () => void; onDismiss: () => void }
@@ -205,12 +205,22 @@ describe('appModeStore', () => {
   })
 
   describe('loadSelections pruning', () => {
-    function mockNode(id: number) {
-      return { id }
+    const rootGraphId = '11111111-1111-4111-8111-111111111111'
+    const entityPrompt = `${rootGraphId}:1:prompt` as WidgetEntityId
+    const entitySeed = `${rootGraphId}:1:seed` as WidgetEntityId
+
+    function nodeWithWidgets(id: number, widgetNames: string[]) {
+      return fromAny<LGraphNode, unknown>({
+        id,
+        widgets: widgetNames.map((name) => ({
+          name,
+          entityId: `${rootGraphId}:${id}:${name}` as WidgetEntityId
+        }))
+      })
     }
 
     function workflowWithLinearData(
-      inputs: [number, string][],
+      inputs: [string | number, string][],
       outputs: number[]
     ) {
       const workflow = createBuilderWorkflow('app')
@@ -231,10 +241,15 @@ describe('appModeStore', () => {
       return workflow
     }
 
-    it('removes inputs referencing deleted nodes on load', async () => {
-      const node1 = mockNode(1)
-      mockResolveNode.mockImplementation((id) =>
-        id == 1 ? fromAny<LGraphNode, unknown>(node1) : undefined
+    beforeEach(() => {
+      vi.mocked(app.rootGraph).id = rootGraphId
+    })
+
+    it('migrates legacy node-id inputs to entity-id form and drops missing ones', () => {
+      const node1 = nodeWithWidgets(1, ['prompt'])
+      vi.mocked(app.rootGraph).nodes = [node1]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        id == 1 ? node1 : null
       )
 
       store.loadSelections({
@@ -244,28 +259,44 @@ describe('appModeStore', () => {
         ]
       })
 
-      expect(store.selectedInputs).toEqual([[1, 'prompt']])
+      expect(store.selectedInputs).toEqual([[entityPrompt, 'prompt']])
     })
 
     it('preserves config through pruning', () => {
-      const node1 = mockNode(1)
-      mockResolveNode.mockImplementation((id) =>
-        id == 1 ? fromAny<LGraphNode, unknown>(node1) : undefined
+      const node1 = nodeWithWidgets(1, ['prompt'])
+      vi.mocked(app.rootGraph).nodes = [node1]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        id == 1 ? node1 : null
       )
 
       store.loadSelections({
         inputs: [[1, 'prompt', { height: 150 }]]
       })
 
-      expect(store.selectedInputs).toEqual([[1, 'prompt', { height: 150 }]])
+      expect(store.selectedInputs).toEqual([
+        [entityPrompt, 'prompt', { height: 150 }]
+      ])
     })
 
-    it('keeps inputs for existing nodes even if widget is missing', async () => {
-      const node1 = mockNode(1)
-      mockResolveNode.mockImplementation((id) =>
-        id == 1 ? fromAny<LGraphNode, unknown>(node1) : undefined
+    it('passes through entries already in canonical entity-id form', () => {
+      const node1 = nodeWithWidgets(1, ['prompt'])
+      vi.mocked(app.rootGraph).nodes = [node1]
+
+      store.loadSelections({
+        inputs: [[entityPrompt, 'prompt']]
+      })
+
+      expect(store.selectedInputs).toEqual([[entityPrompt, 'prompt']])
+    })
+
+    it('drops legacy entries whose widget no longer exists', () => {
+      const node1 = nodeWithWidgets(1, ['prompt'])
+      vi.mocked(app.rootGraph).nodes = [node1]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        id == 1 ? node1 : null
       )
 
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       store.loadSelections({
         inputs: [
           [1, 'prompt'],
@@ -273,14 +304,12 @@ describe('appModeStore', () => {
         ]
       })
 
-      expect(store.selectedInputs).toEqual([
-        [1, 'prompt'],
-        [1, 'deleted_widget']
-      ])
+      expect(store.selectedInputs).toEqual([[entityPrompt, 'prompt']])
+      warnSpy.mockRestore()
     })
 
-    it('removes outputs referencing deleted nodes on load', async () => {
-      const node1 = mockNode(1)
+    it('removes outputs referencing deleted nodes on load', () => {
+      const node1 = { id: 1 }
       mockResolveNode.mockImplementation((id) =>
         id == 1 ? fromAny<LGraphNode, unknown>(node1) : undefined
       )
@@ -291,9 +320,11 @@ describe('appModeStore', () => {
     })
 
     it('reloads selections on configured event', async () => {
-      const node1 = mockNode(1)
+      const node1 = nodeWithWidgets(1, ['seed'])
 
       // Initially nodes are not resolvable — pruning removes them
+      vi.mocked(app.rootGraph).nodes = []
+      vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
       mockResolveNode.mockReturnValue(undefined)
       const inputs: [number, string][] = [[1, 'seed']]
       workflowStore.activeWorkflow = workflowWithLinearData(inputs, [1])
@@ -304,19 +335,21 @@ describe('appModeStore', () => {
       expect(store.selectedOutputs).toEqual([])
 
       // After graph configures, nodes become resolvable
-      mockResolveNode.mockImplementation((id) =>
-        id == 1 ? fromAny<LGraphNode, unknown>(node1) : undefined
+      vi.mocked(app.rootGraph).nodes = [node1]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        id == 1 ? node1 : null
       )
+      mockResolveNode.mockImplementation((id) => (id == 1 ? node1 : undefined))
       ;(app.rootGraph.events as EventTarget).dispatchEvent(
         new Event('configured')
       )
       await nextTick()
 
-      expect(store.selectedInputs).toEqual([[1, 'seed']])
+      expect(store.selectedInputs).toEqual([[entitySeed, 'seed']])
       expect(store.selectedOutputs).toEqual([1])
     })
 
-    it('hasOutputs is false when all output nodes are deleted', async () => {
+    it('hasOutputs is false when all output nodes are deleted', () => {
       mockResolveNode.mockReturnValue(undefined)
 
       store.loadSelections({ outputs: [10, 20] })
@@ -406,40 +439,35 @@ describe('appModeStore', () => {
   })
 
   describe('updateInputConfig', () => {
-    it('sets config on an existing input', () => {
-      store.selectedInputs.push([1, 'prompt'])
+    const entity = 'g:1:prompt' as WidgetEntityId
+    const otherEntity = 'g:99:prompt' as WidgetEntityId
 
-      store.updateInputConfig(1 as NodeId, 'prompt', { height: 200 })
+    it('sets config on an existing input', () => {
+      store.selectedInputs.push([entity, 'prompt'])
+
+      store.updateInputConfig(entity, { height: 200 })
 
       expect(store.selectedInputs[0][2]).toEqual({ height: 200 })
     })
 
     it('is a no-op when entry is not found', () => {
-      store.selectedInputs.push([1, 'prompt'])
+      store.selectedInputs.push([entity, 'prompt'])
 
-      store.updateInputConfig(99 as NodeId, 'prompt', { height: 200 })
+      store.updateInputConfig(otherEntity, { height: 200 })
 
       expect(store.selectedInputs[0][2]).toBeUndefined()
     })
 
-    it('matches nodeId with loose equality', () => {
-      store.selectedInputs.push(['1', 'prompt'])
-
-      store.updateInputConfig(1 as NodeId, 'prompt', { height: 200 })
-
-      expect(store.selectedInputs[0][2]).toEqual({ height: 200 })
-    })
-
     it('triggers linearData sync watcher', async () => {
       workflowStore.activeWorkflow = createBuilderWorkflow()
-      store.selectedInputs.push([42, 'prompt'])
+      store.selectedInputs.push([entity, 'prompt'])
       await nextTick()
 
-      store.updateInputConfig(42 as NodeId, 'prompt', { height: 300 })
+      store.updateInputConfig(entity, { height: 300 })
       await nextTick()
 
       expect(app.rootGraph.extra.linearData).toEqual({
-        inputs: [[42, 'prompt', { height: 300 }]],
+        inputs: [[entity, 'prompt', { height: 300 }]],
         outputs: []
       })
     })
@@ -509,21 +537,24 @@ describe('appModeStore', () => {
     })
   })
 
-  // ADR 0009: legacy `(sourceNodeId, sourceWidgetName)` selection tuples
-  // for promoted widgets must project through the wrapping host SubgraphNode
-  // into `(hostNodeLocator, subgraphInputName)`. Tuples that cannot be
-  // projected are dropped with `console.warn`.
+  // ADR 0009: selection identity is now a canonical `WidgetEntityId`. Legacy
+  // tuples (plain NodeId, NodeLocatorId) are migrated forward; tuples whose
+  // target widget no longer exists are dropped with `console.warn`.
   describe('legacy selectedInput tuple migration (ADR 0009)', () => {
-    it('migrates legacy promoted widget selected inputs before node-existence passthrough', () => {
-      const rootGraphId = '11111111-1111-4111-8111-111111111111'
+    const rootGraphId = '11111111-1111-4111-8111-111111111111'
+
+    it('migrates legacy `(sourceNodeId, sourceWidgetName)` to the host promoted widget entity id', () => {
       const hostId = 5
       const sourceNodeId = 42
       const subgraphInputName = 'Prompt'
       const sourceWidgetName = 'text'
+      const promotedEntityId =
+        `${rootGraphId}:${hostId}:${subgraphInputName}` as WidgetEntityId
       const hostWidget = {
         name: subgraphInputName,
         sourceNodeId: String(sourceNodeId),
-        sourceWidgetName
+        sourceWidgetName,
+        entityId: promotedEntityId
       }
       const hostNode = Object.assign(Object.create(SubgraphNode.prototype), {
         id: hostId,
@@ -537,11 +568,6 @@ describe('appModeStore', () => {
       vi.mocked(app.rootGraph).getNodeById = vi.fn(
         (id: NodeId | null | undefined) => (id == hostId ? hostNode : null)
       )
-      mockResolveNode.mockImplementation((id) =>
-        id == sourceNodeId
-          ? fromAny<LGraphNode, unknown>({ id: sourceNodeId })
-          : undefined
-      )
 
       const result = store.pruneLinearData({
         inputs: [[sourceNodeId, sourceWidgetName, { height: 120 }]],
@@ -549,27 +575,25 @@ describe('appModeStore', () => {
       })
 
       expect(result.inputs).toEqual([
-        [
-          createNodeLocatorId(rootGraphId, hostId),
-          subgraphInputName,
-          { height: 120 }
-        ]
+        [promotedEntityId, subgraphInputName, { height: 120 }]
       ])
     })
 
     it('keeps a direct root-node widget when its id and name collide with a promoted source', () => {
-      const rootGraphId = '11111111-1111-4111-8111-111111111111'
       const hostId = 5
       const sourceNodeId = 42
       const sourceWidgetName = 'text'
+      const rootEntityId =
+        `${rootGraphId}:${sourceNodeId}:${sourceWidgetName}` as WidgetEntityId
       const rootNode = fromAny<LGraphNode, unknown>({
         id: sourceNodeId,
-        widgets: [{ name: sourceWidgetName }]
+        widgets: [{ name: sourceWidgetName, entityId: rootEntityId }]
       })
       const hostWidget = {
         name: 'Prompt',
         sourceNodeId: String(sourceNodeId),
-        sourceWidgetName
+        sourceWidgetName,
+        entityId: `${rootGraphId}:${hostId}:Prompt` as WidgetEntityId
       }
       const hostNode = Object.assign(Object.create(SubgraphNode.prototype), {
         id: hostId,
@@ -584,9 +608,6 @@ describe('appModeStore', () => {
         (id: NodeId | null | undefined) =>
           id == sourceNodeId ? rootNode : id == hostId ? hostNode : null
       )
-      mockResolveNode.mockImplementation((id) =>
-        id == sourceNodeId ? rootNode : undefined
-      )
 
       const result = store.pruneLinearData({
         inputs: [[sourceNodeId, sourceWidgetName, { height: 120 }]],
@@ -594,13 +615,15 @@ describe('appModeStore', () => {
       })
 
       expect(result.inputs).toEqual([
-        [sourceNodeId, sourceWidgetName, { height: 120 }]
+        [rootEntityId, sourceWidgetName, { height: 120 }]
       ])
     })
 
-    it('warns and drops a tuple whose source node no longer resolves', () => {
+    it('warns and drops a tuple whose target widget no longer resolves', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      mockResolveNode.mockReturnValue(undefined)
+      vi.mocked(app.rootGraph).id = rootGraphId
+      vi.mocked(app.rootGraph).nodes = []
+      vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
 
       const result = store.pruneLinearData({
         inputs: [[42 as NodeId, 'widget-name', { height: 42 }]],
@@ -618,16 +641,20 @@ describe('appModeStore', () => {
       warnSpy.mockRestore()
     })
 
-    it('passes through tuples already in `hostLocator:subgraphInputName` form', () => {
+    it('migrates legacy `hostLocator:subgraphInputName` tuples to entity-id form', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
       const hostId = 5
-      const hostLocator = '11111111-1111-4111-8111-111111111111:5'
+      const hostLocator = `${rootGraphId}:${hostId}`
+      const promotedEntityId =
+        `${rootGraphId}:${hostId}:subgraph_input_name` as WidgetEntityId
       const hostNode = fromAny<LGraphNode, unknown>({
         id: hostId,
         isSubgraphNode: () => true,
-        widgets: [{ name: 'subgraph_input_name' }]
+        widgets: [{ name: 'subgraph_input_name', entityId: promotedEntityId }]
       })
+      vi.mocked(app.rootGraph).id = rootGraphId
+      vi.mocked(app.rootGraph).nodes = [hostNode]
       vi.mocked(app.rootGraph).getNodeById = vi.fn(
         (id: NodeId | null | undefined) => (id == hostId ? hostNode : null)
       )
@@ -637,7 +664,7 @@ describe('appModeStore', () => {
         outputs: []
       })
 
-      expect(result.inputs).toEqual([[hostLocator, 'subgraph_input_name']])
+      expect(result.inputs).toEqual([[promotedEntityId, 'subgraph_input_name']])
       expect(warnSpy).not.toHaveBeenCalled()
       warnSpy.mockRestore()
     })
