@@ -110,59 +110,121 @@ export declare function defineWidget(
   options: WidgetExtensionOptions
 ): WidgetExtensionOptions
 
-//
-// **Why setup-scope only?** These hooks use Vue-style implicit context:
-// 1. The runtime sets a global `_currentScope` slot before calling nodeCreated()
-// 2. Hooks read this slot to register callbacks in the correct EffectScope
-// 3. The EffectScope auto-disposes all registered callbacks when the node is removed
-//
-// Benefits of this pattern:
-// - Automatic cleanup: no manual unsubscribe needed — scope disposal handles it
-// - Consistent with Vue Composition API patterns (onMounted, onUnmounted, etc.)
-// - Prevents memory leaks: callbacks are garbage-collected with the node
-//
-// The synchronous requirement exists because:
-// - After an `await`, the call stack has unwound and _currentScope is gone
-// - This is the same constraint as Vue's onMounted/onUnmounted hooks
-// - In dev mode, calling after await throws; in prod it's a silent no-op
+/**
+ * ## Implicit-Context Lifecycle Hooks
+ *
+ * `onNodeMounted` and `onNodeRemoved` use Vue-style implicit context to
+ * associate callbacks with the current node's cleanup scope. This pattern
+ * provides automatic cleanup without manual unsubscribe bookkeeping.
+ *
+ * ### How it works
+ *
+ * 1. The runtime sets a global scope slot before calling `nodeCreated()`
+ * 2. Lifecycle hooks read this slot to register callbacks in the node's scope
+ * 3. When the node is removed, the scope auto-disposes all registered callbacks
+ *
+ * ### Why synchronous-only?
+ *
+ * These hooks **must** be called synchronously inside `nodeCreated` or
+ * `loadedGraphNode`. After an `await`, the call stack has unwound and the
+ * implicit scope context is gone — the same constraint as Vue's `onMounted`.
+ *
+ * ```ts
+ * // ✅ CORRECT — synchronous call
+ * nodeCreated(node) {
+ *   onNodeMounted(() => console.log('mounted'))
+ * }
+ *
+ * // ❌ WRONG — after await, scope context is lost
+ * async nodeCreated(node) {
+ *   await fetch('/api')
+ *   onNodeMounted(() => {})  // Throws in dev, silent no-op in prod
+ * }
+ * ```
+ *
+ * ### Benefits
+ *
+ * - **Automatic cleanup**: no manual `unsubscribe()` calls needed
+ * - **Memory-safe**: callbacks are garbage-collected with the node
+ * - **Familiar pattern**: mirrors Vue Composition API (`onMounted`, `onUnmounted`)
+ *
+ * @see {@link onNodeMounted} — fires after node is fully mounted
+ * @see {@link onNodeRemoved} — fires before node cleanup (not on subgraph moves)
+ */
 
 export {
   /**
-   * Register a callback to fire when the node entity is fully mounted to the
-   * graph (the reactive mount watcher has run, the scope is active, and
-   * `setup()` has completed).
+   * Register a callback to fire when the node is fully mounted to the graph.
    *
-   * Must be called synchronously inside `nodeCreated` or `loadedGraphNode`
-   * (see module comment for rationale — async context loses the implicit scope).
+   * "Mounted" means: the reactive mount watcher has run, the node's scope is
+   * active, and any `setup()` return value has been captured. Safe to access
+   * DOM widgets, canvas elements, and other post-mount resources.
+   *
+   * **Must be called synchronously** inside `nodeCreated` or `loadedGraphNode`.
+   * Calling after an `await` throws in development and silently no-ops in
+   * production (see module docs for rationale).
    *
    * @stability experimental
    * @example
    * ```ts
-   * nodeCreated(node) {
-   *   onNodeMounted(() => {
-   *     // Safe to access DOM widgets, canvas, etc.
-   *   })
-   * }
+   * import { defineNode, onNodeMounted } from '@comfyorg/extension-api'
+   *
+   * export default defineNode({
+   *   name: 'my-ext',
+   *   nodeTypes: ['MyNode'],
+   *
+   *   nodeCreated(node) {
+   *     // Register mount callback synchronously
+   *     onNodeMounted(() => {
+   *       console.log('Node fully mounted, DOM ready')
+   *       // Safe to query DOM widgets, measure sizes, etc.
+   *     })
+   *
+   *     // Can register multiple callbacks
+   *     onNodeMounted(() => {
+   *       node.setSize([300, 200])  // Resize after mount
+   *     })
+   *   }
+   * })
    * ```
    */
   onNodeMounted,
   /**
-   * Register a callback to fire when the node entity is removed from the graph
-   * (NOT on subgraph promotion, which is a DOM-move, not an unmount).
+   * Register a callback to fire when the node is removed from the graph.
    *
-   * Replaces `nodeType.prototype.onRemoved` patching.
+   * Use for cleanup: close connections, abort fetches, release resources.
+   * Does NOT fire on subgraph promotion (which is a DOM move, not removal) —
+   * the node's entity ID is preserved across promotion.
    *
-   * Must be called synchronously inside `nodeCreated` or `loadedGraphNode`
-   * (see module comment for rationale — async context loses the implicit scope).
+   * Replaces the v1 `nodeType.prototype.onRemoved` patching pattern.
+   *
+   * **Must be called synchronously** inside `nodeCreated` or `loadedGraphNode`.
+   * Calling after an `await` throws in development and silently no-ops in
+   * production (see module docs for rationale).
    *
    * @stability experimental
    * @example
    * ```ts
-   * nodeCreated(node) {
-   *   onNodeRemoved(() => {
-   *     cleanup()
-   *   })
-   * }
+   * import { defineNode, onNodeRemoved } from '@comfyorg/extension-api'
+   *
+   * export default defineNode({
+   *   name: 'my-ext',
+   *   nodeTypes: ['MyNode'],
+   *
+   *   nodeCreated(node) {
+   *     const controller = new AbortController()
+   *
+   *     // Start a long-running fetch
+   *     fetch('/api/stream', { signal: controller.signal })
+   *       .then(res => processStream(res))
+   *
+   *     // Clean up when node is deleted
+   *     onNodeRemoved(() => {
+   *       controller.abort()
+   *       console.log('Cleanup complete')
+   *     })
+   *   }
+   * })
    * ```
    */
   onNodeRemoved
