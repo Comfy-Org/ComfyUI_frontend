@@ -6,6 +6,15 @@ import type { Locator, Page } from '@playwright/test'
 import type { KeyboardHelper } from '@e2e/fixtures/helpers/KeyboardHelper'
 import { getMimeType } from '@e2e/fixtures/utils/mimeTypeUtil'
 
+function readFilePayload(filePath: string) {
+  const buffer = readFileSync(filePath)
+  const bufferArray = [...new Uint8Array(buffer)]
+  const fileName = basename(filePath)
+  const fileType = getMimeType(fileName)
+
+  return { bufferArray, fileName, fileType }
+}
+
 export class ClipboardHelper {
   constructor(
     private readonly keyboard: KeyboardHelper,
@@ -21,42 +30,56 @@ export class ClipboardHelper {
   }
 
   async pasteFile(filePath: string): Promise<void> {
-    const buffer = readFileSync(filePath)
-    const bufferArray = [...new Uint8Array(buffer)]
-    const fileName = basename(filePath)
-    const fileType = getMimeType(fileName)
+    const payload = readFilePayload(filePath)
 
     // Register a one-time capturing-phase listener that intercepts the next
     // paste event and injects file data onto clipboardData.
-    await this.page.evaluate(
-      ({ bufferArray, fileName, fileType }) => {
-        document.addEventListener(
-          'paste',
-          (e: ClipboardEvent) => {
-            e.preventDefault()
-            e.stopImmediatePropagation()
+    await this.page.evaluate(({ bufferArray, fileName, fileType }) => {
+      document.addEventListener(
+        'paste',
+        (e: ClipboardEvent) => {
+          e.preventDefault()
+          e.stopImmediatePropagation()
 
-            const file = new File([new Uint8Array(bufferArray)], fileName, {
-              type: fileType
-            })
-            const dataTransfer = new DataTransfer()
-            dataTransfer.items.add(file)
+          const file = new File([new Uint8Array(bufferArray)], fileName, {
+            type: fileType
+          })
+          const dataTransfer = new DataTransfer()
+          dataTransfer.items.add(file)
 
-            const syntheticEvent = new ClipboardEvent('paste', {
-              clipboardData: dataTransfer,
-              bubbles: true,
-              cancelable: true
-            })
-            document.dispatchEvent(syntheticEvent)
-          },
-          { capture: true, once: true }
-        )
-      },
-      { bufferArray, fileName, fileType }
-    )
+          const syntheticEvent = new ClipboardEvent('paste', {
+            clipboardData: dataTransfer,
+            bubbles: true,
+            cancelable: true
+          })
+          document.dispatchEvent(syntheticEvent)
+        },
+        { capture: true, once: true }
+      )
+    }, payload)
 
     // Trigger a real Ctrl+V keystroke — the capturing listener above will
     // intercept it and re-dispatch with file data attached.
     await this.paste()
+  }
+
+  async dispatchPasteFile(filePath: string): Promise<void> {
+    const payload = readFilePayload(filePath)
+
+    await this.page.evaluate(({ bufferArray, fileName, fileType }) => {
+      const file = new File([new Uint8Array(bufferArray)], fileName, {
+        type: fileType
+      })
+      const dataTransfer = new DataTransfer()
+      dataTransfer.items.add(file)
+
+      document.dispatchEvent(
+        new ClipboardEvent('paste', {
+          clipboardData: dataTransfer,
+          bubbles: true,
+          cancelable: true
+        })
+      )
+    }, payload)
   }
 }

@@ -1,5 +1,3 @@
-import { readFileSync } from 'fs'
-
 import { mergeTests } from '@playwright/test'
 
 import {
@@ -18,6 +16,7 @@ import {
 } from '@e2e/fixtures/helpers/ExecutionHelper'
 import type { NodeError } from '@/schemas/apiSchema'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
@@ -66,34 +65,6 @@ async function selectLoadImageNodeForPaste(
     window.app!.canvas.selectNode(node)
     window.app!.canvas.current_node = node
   }, loadImageId)
-}
-
-async function dispatchImagePaste(
-  comfyPage: ComfyPage,
-  fileName: string
-): Promise<void> {
-  const bufferArray = [
-    ...new Uint8Array(readFileSync(comfyPage.assetPath(fileName)))
-  ]
-
-  await comfyPage.page.evaluate(
-    ({ bufferArray, fileName }) => {
-      const file = new File([new Uint8Array(bufferArray)], fileName, {
-        type: 'image/png'
-      })
-      const dataTransfer = new DataTransfer()
-      dataTransfer.items.add(file)
-
-      document.dispatchEvent(
-        new ClipboardEvent('paste', {
-          clipboardData: dataTransfer,
-          bubbles: true,
-          cancelable: true
-        })
-      )
-    },
-    { bufferArray, fileName }
-  )
 }
 
 test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
@@ -333,7 +304,9 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
           (resp) => resp.url().includes('/upload/') && resp.status() === 200,
           { timeout: 10_000 }
         )
-        await dispatchImagePaste(comfyPage, LOAD_IMAGE_UPLOAD_FILE)
+        await comfyPage.clipboard.dispatchPasteFile(
+          assetPath(LOAD_IMAGE_UPLOAD_FILE)
+        )
         await uploadResponse
         await expect
           .poll(() => imageWidget.getValue())

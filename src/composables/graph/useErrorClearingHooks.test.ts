@@ -240,7 +240,9 @@ describe('Widget change error clearing via onWidgetChanged', () => {
       } satisfies MissingMediaCandidate
     ])
 
-    widget.value = 'uploaded.png'
+    expect(store.lastNodeErrors).not.toBeNull()
+    expect(mediaStore.missingMediaCandidates).toHaveLength(1)
+
     widget.callback?.('uploaded.png')
 
     expect(store.lastNodeErrors).toBeNull()
@@ -268,6 +270,146 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     callback?.()
 
     expect(store.lastNodeErrors).not.toBeNull()
+  })
+
+  it('does not clear widget errors when callback value is explicitly undefined', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    const widget = node.addWidget(
+      'button',
+      'image',
+      '',
+      function noopWidgetCallback() {},
+      {}
+    )
+    graph.add(node)
+    installErrorClearingHooks(graph)
+
+    const store = useExecutionErrorStore()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    seedRequiredInputMissingNodeError(store, String(node.id), 'image')
+
+    widget.callback?.(undefined)
+
+    expect(store.lastNodeErrors).not.toBeNull()
+  })
+
+  it('preserves widget callback return values', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    const originalCallback = vi.fn(() => false)
+    const widget = node.addWidget(
+      'combo',
+      'image',
+      'missing.png',
+      originalCallback,
+      { values: [] }
+    )
+    graph.add(node)
+    installErrorClearingHooks(graph)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+
+    expect(widget.callback?.('uploaded.png')).toBe(false)
+    expect(originalCallback).toHaveBeenCalledOnce()
+  })
+
+  it('clears missing media when widget callback is assigned after hook installation', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('LoadImage')
+    node.type = 'LoadImage'
+    const widget = node.addWidget('combo', 'image', 'missing.png', null, {
+      values: []
+    })
+    graph.add(node)
+    installErrorClearingHooks(graph)
+
+    const assignedCallback = vi.fn()
+    widget.callback = assignedCallback
+
+    const store = useExecutionErrorStore()
+    const mediaStore = useMissingMediaStore()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    seedRequiredInputMissingNodeError(store, String(node.id), 'image')
+    mediaStore.setMissingMedia([
+      {
+        nodeId: String(node.id),
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'missing.png',
+        isMissing: true
+      } satisfies MissingMediaCandidate
+    ])
+
+    widget.callback?.('uploaded.png')
+
+    expect(assignedCallback).toHaveBeenCalledWith('uploaded.png')
+    expect(store.lastNodeErrors).toBeNull()
+    expect(mediaStore.missingMediaCandidates).toBeNull()
+
+    graph.onNodeRemoved!(node)
+
+    expect(widget.callback).toBe(assignedCallback)
+  })
+
+  it('clears missing media for widgets added after hook installation', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('LoadImage')
+    node.type = 'LoadImage'
+    graph.add(node)
+    installErrorClearingHooks(graph)
+
+    const widget = node.addWidget(
+      'combo',
+      'image',
+      'missing.png',
+      function noopWidgetCallback() {},
+      { values: [] }
+    )
+
+    const store = useExecutionErrorStore()
+    const mediaStore = useMissingMediaStore()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    seedRequiredInputMissingNodeError(store, String(node.id), 'image')
+    mediaStore.setMissingMedia([
+      {
+        nodeId: String(node.id),
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'missing.png',
+        isMissing: true
+      } satisfies MissingMediaCandidate
+    ])
+
+    widget.callback?.('uploaded.png')
+
+    expect(store.lastNodeErrors).toBeNull()
+    expect(mediaStore.missingMediaCandidates).toBeNull()
+  })
+
+  it('does not double-wrap widget callbacks when hooks are installed twice', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    const widget = node.addWidget(
+      'combo',
+      'image',
+      'missing.png',
+      function noopWidgetCallback() {},
+      { values: [] }
+    )
+    graph.add(node)
+    installErrorClearingHooks(graph)
+    installErrorClearingHooks(graph)
+
+    const store = useExecutionErrorStore()
+    const clearSpy = vi.spyOn(store, 'clearWidgetRelatedErrors')
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+
+    widget.callback?.('uploaded.png')
+
+    expect(clearSpy).toHaveBeenCalledOnce()
   })
 
   it('uses interior node execution ID for promoted widget error clearing', () => {
@@ -321,6 +463,47 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     )
 
     expect(store.lastNodeErrors).toBeNull()
+  })
+
+  it('clears missing media from a subgraph interior widget callback', () => {
+    const subgraph = createTestSubgraph()
+    const interiorNode = new LGraphNode('LoadImage')
+    interiorNode.type = 'LoadImage'
+    const widget = interiorNode.addWidget(
+      'combo',
+      'image',
+      'missing.png',
+      function noopWidgetCallback() {},
+      { values: [] }
+    )
+    subgraph.add(interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 65 })
+    const rootGraph = subgraphNode.graph as LGraph
+    rootGraph.add(subgraphNode)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    installErrorClearingHooks(rootGraph)
+
+    const store = useExecutionErrorStore()
+    const mediaStore = useMissingMediaStore()
+    const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
+    seedRequiredInputMissingNodeError(store, interiorExecId, 'image')
+    mediaStore.setMissingMedia([
+      {
+        nodeId: interiorExecId,
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'missing.png',
+        isMissing: true
+      } satisfies MissingMediaCandidate
+    ])
+
+    widget.callback?.('uploaded.png')
+
+    expect(store.lastNodeErrors).toBeNull()
+    expect(mediaStore.missingMediaCandidates).toBeNull()
   })
 })
 
@@ -397,6 +580,26 @@ describe('installErrorClearingHooks lifecycle', () => {
     // Original callbacks should be restored
     expect(node.onConnectionsChange).toBe(originalOnConnectionsChange)
     expect(node.onWidgetChanged).toBe(originalOnWidgetChanged)
+  })
+
+  it('keeps later node callback wrappers when a node is removed', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addInput('clip', 'CLIP')
+    node.addWidget('number', 'steps', 20, () => undefined, {})
+    graph.add(node)
+
+    installErrorClearingHooks(graph)
+
+    const laterOnConnectionsChange = vi.fn()
+    const laterOnWidgetChanged = vi.fn()
+    node.onConnectionsChange = laterOnConnectionsChange
+    node.onWidgetChanged = laterOnWidgetChanged
+
+    graph.onNodeRemoved!(node)
+
+    expect(node.onConnectionsChange).toBe(laterOnConnectionsChange)
+    expect(node.onWidgetChanged).toBe(laterOnWidgetChanged)
   })
 
   it('does not double-wrap callbacks when installErrorClearingHooks is called twice', () => {

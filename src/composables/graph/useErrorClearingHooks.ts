@@ -66,15 +66,26 @@ function resolvePromotedExecId(
 const hookedNodes = new WeakSet<LGraphNode>()
 
 type OriginalCallbacks = {
-  onConnectionsChange: LGraphNode['onConnectionsChange']
-  onWidgetChanged: LGraphNode['onWidgetChanged']
-  widgetCallbacks: Map<
-    IBaseWidget,
-    {
-      original: IBaseWidget['callback']
-      hooked: IBaseWidget['callback']
-    }
-  >
+  onConnectionsChange: {
+    original: LGraphNode['onConnectionsChange']
+    hooked: LGraphNode['onConnectionsChange']
+  }
+  onWidgetChanged: {
+    original: LGraphNode['onWidgetChanged']
+    hooked: LGraphNode['onWidgetChanged']
+  }
+  addCustomWidget: {
+    original: LGraphNode['addCustomWidget']
+    hooked: LGraphNode['addCustomWidget']
+  }
+  widgetCallbacks: Map<IBaseWidget, WidgetCallbackHook>
+}
+
+type WidgetCallbackHook = {
+  originalDescriptor: PropertyDescriptor | undefined
+  get: () => IBaseWidget['callback']
+  set: (callback: IBaseWidget['callback']) => void
+  getCurrentCallback: () => IBaseWidget['callback']
 }
 
 const originalCallbacks = new WeakMap<LGraphNode, OriginalCallbacks>()
@@ -102,27 +113,90 @@ function clearWidgetRelatedErrors(
   )
 }
 
+function installWidgetCallbackHook(
+  node: LGraphNode,
+  widget: IBaseWidget,
+  widgetCallbacks: OriginalCallbacks['widgetCallbacks']
+): void {
+  if (widgetCallbacks.has(widget)) return
+
+  const originalDescriptor = Object.getOwnPropertyDescriptor(widget, 'callback')
+  const originalCallback = widget.callback
+  let currentCallback = originalCallback
+
+  const hookedCallback: IBaseWidget['callback'] = function (
+    this: IBaseWidget,
+    newValue,
+    ...args
+  ) {
+    const result = currentCallback?.call(this, newValue, ...args)
+    if (newValue !== undefined) {
+      clearWidgetRelatedErrors(node, widget, newValue)
+    }
+    return result
+  }
+
+  const get = () => (currentCallback ? hookedCallback : undefined)
+  const set = (callback: IBaseWidget['callback']) => {
+    currentCallback = callback
+  }
+
+  Object.defineProperty(widget, 'callback', {
+    configurable: true,
+    enumerable: originalDescriptor?.enumerable ?? true,
+    get,
+    set
+  })
+
+  widgetCallbacks.set(widget, {
+    originalDescriptor,
+    get,
+    set,
+    getCurrentCallback: () => currentCallback
+  })
+}
+
 function installWidgetCallbackHooks(
   node: LGraphNode,
   widgetCallbacks: OriginalCallbacks['widgetCallbacks']
 ): void {
   for (const widget of node.widgets ?? []) {
-    const originalCallback = widget.callback
-    if (!originalCallback) continue
+    installWidgetCallbackHook(node, widget, widgetCallbacks)
+  }
+}
 
-    const hookedCallback = useChainCallback<
-      IBaseWidget,
-      IBaseWidget['callback']
-    >(originalCallback, function (newValue) {
-      if (arguments.length === 0) return
-      clearWidgetRelatedErrors(node, widget, newValue)
-    })
+function restoreWidgetCallbackHooks(
+  widgetCallbacks: OriginalCallbacks['widgetCallbacks']
+): void {
+  for (const [widget, callbackHook] of widgetCallbacks) {
+    const currentDescriptor = Object.getOwnPropertyDescriptor(
+      widget,
+      'callback'
+    )
+    if (
+      currentDescriptor?.get !== callbackHook.get ||
+      currentDescriptor?.set !== callbackHook.set
+    ) {
+      continue
+    }
 
-    widget.callback = hookedCallback
-    widgetCallbacks.set(widget, {
-      original: originalCallback,
-      hooked: hookedCallback
-    })
+    const currentCallback = callbackHook.getCurrentCallback()
+    if (
+      callbackHook.originalDescriptor &&
+      'value' in callbackHook.originalDescriptor
+    ) {
+      Object.defineProperty(widget, 'callback', {
+        ...callbackHook.originalDescriptor,
+        value: currentCallback
+      })
+    } else {
+      Object.defineProperty(widget, 'callback', {
+        configurable: callbackHook.originalDescriptor?.configurable ?? true,
+        enumerable: callbackHook.originalDescriptor?.enumerable ?? true,
+        writable: true,
+        value: currentCallback
+      })
+    }
   }
 }
 
@@ -131,27 +205,31 @@ function installNodeHooks(node: LGraphNode): void {
   hookedNodes.add(node)
 
   const widgetCallbacks: OriginalCallbacks['widgetCallbacks'] = new Map()
-  originalCallbacks.set(node, {
-    onConnectionsChange: node.onConnectionsChange,
-    onWidgetChanged: node.onWidgetChanged,
-    widgetCallbacks
+  const originalAddCustomWidget = node.addCustomWidget
+  const hookedAddCustomWidget: LGraphNode['addCustomWidget'] = function (
+    this: LGraphNode,
+    customWidget
+  ) {
+    const widget = originalAddCustomWidget.call(this, customWidget)
+    installWidgetCallbackHook(node, widget, widgetCallbacks)
+    return widget
+  } as LGraphNode['addCustomWidget']
+  const hookedOnConnectionsChange = useChainCallback<
+    LGraphNode,
+    LGraphNode['onConnectionsChange']
+  >(node.onConnectionsChange, function (type, slotIndex, isConnected) {
+    if (type !== NodeSlotType.INPUT || !isConnected) return
+    if (!app.rootGraph) return
+    const slotName = node.inputs?.[slotIndex]?.name
+    if (!slotName) return
+    const execId = getExecutionIdByNode(app.rootGraph, node)
+    if (!execId) return
+    useExecutionErrorStore().clearSimpleNodeErrors(execId, slotName)
   })
-  installWidgetCallbackHooks(node, widgetCallbacks)
-
-  node.onConnectionsChange = useChainCallback(
-    node.onConnectionsChange,
-    function (type, slotIndex, isConnected) {
-      if (type !== NodeSlotType.INPUT || !isConnected) return
-      if (!app.rootGraph) return
-      const slotName = node.inputs?.[slotIndex]?.name
-      if (!slotName) return
-      const execId = getExecutionIdByNode(app.rootGraph, node)
-      if (!execId) return
-      useExecutionErrorStore().clearSimpleNodeErrors(execId, slotName)
-    }
-  )
-
-  node.onWidgetChanged = useChainCallback(
+  const hookedOnWidgetChanged = useChainCallback<
+    LGraphNode,
+    LGraphNode['onWidgetChanged']
+  >(
     node.onWidgetChanged,
     // _name is the LiteGraph callback arg; re-derive from the widget
     // object to handle promoted widgets where sourceWidgetName differs.
@@ -159,18 +237,42 @@ function installNodeHooks(node: LGraphNode): void {
       clearWidgetRelatedErrors(node, widget, newValue)
     }
   )
+
+  originalCallbacks.set(node, {
+    onConnectionsChange: {
+      original: node.onConnectionsChange,
+      hooked: hookedOnConnectionsChange
+    },
+    onWidgetChanged: {
+      original: node.onWidgetChanged,
+      hooked: hookedOnWidgetChanged
+    },
+    addCustomWidget: {
+      original: originalAddCustomWidget,
+      hooked: hookedAddCustomWidget
+    },
+    widgetCallbacks
+  })
+  installWidgetCallbackHooks(node, widgetCallbacks)
+
+  node.addCustomWidget = hookedAddCustomWidget
+  node.onConnectionsChange = hookedOnConnectionsChange
+  node.onWidgetChanged = hookedOnWidgetChanged
 }
 
 function restoreNodeHooks(node: LGraphNode): void {
   const originals = originalCallbacks.get(node)
   if (!originals) return
-  for (const [widget, callbacks] of originals.widgetCallbacks) {
-    if (widget.callback === callbacks.hooked) {
-      widget.callback = callbacks.original
-    }
+  restoreWidgetCallbackHooks(originals.widgetCallbacks)
+  if (node.addCustomWidget === originals.addCustomWidget.hooked) {
+    node.addCustomWidget = originals.addCustomWidget.original
   }
-  node.onConnectionsChange = originals.onConnectionsChange
-  node.onWidgetChanged = originals.onWidgetChanged
+  if (node.onConnectionsChange === originals.onConnectionsChange.hooked) {
+    node.onConnectionsChange = originals.onConnectionsChange.original
+  }
+  if (node.onWidgetChanged === originals.onWidgetChanged.hooked) {
+    node.onWidgetChanged = originals.onWidgetChanged.original
+  }
   originalCallbacks.delete(node)
   hookedNodes.delete(node)
 }
