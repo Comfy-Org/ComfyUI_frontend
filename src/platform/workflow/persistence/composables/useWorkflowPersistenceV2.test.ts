@@ -107,13 +107,30 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   })
 }))
 
+const preservedQueryMocks = vi.hoisted(() => ({
+  payloads: {} as Record<string, Record<string, string> | undefined>
+}))
+
 vi.mock('@/platform/navigation/preservedQueryManager', () => ({
   hydratePreservedQuery: vi.fn(),
-  mergePreservedQueryIntoQuery: vi.fn(() => null)
+  mergePreservedQueryIntoQuery: vi.fn(
+    (namespace: string, query: Record<string, unknown> = {}) => {
+      const payload = preservedQueryMocks.payloads[namespace]
+      if (!payload) return undefined
+      const next: Record<string, unknown> = { ...query }
+      let changed = false
+      for (const [key, value] of Object.entries(payload)) {
+        if (typeof next[key] === 'string') continue
+        next[key] = value
+        changed = true
+      }
+      return changed ? next : undefined
+    }
+  )
 }))
 
 vi.mock('@/platform/navigation/preservedQueryNamespaces', () => ({
-  PRESERVED_QUERY_NAMESPACES: { TEMPLATE: 'template' }
+  PRESERVED_QUERY_NAMESPACES: { TEMPLATE: 'template', SHARE: 'share' }
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -190,6 +207,7 @@ describe('useWorkflowPersistenceV2', () => {
     loadBlankWorkflowMock.mockReset()
     commandStoreMocks.execute.mockReset()
     routeMocks.query = {}
+    preservedQueryMocks.payloads = {}
   })
 
   afterEach(() => {
@@ -383,6 +401,21 @@ describe('useWorkflowPersistenceV2', () => {
 
     it('does not open templates browser when share param is in URL', async () => {
       routeMocks.query = { share: 'test-share-id' }
+
+      const { initializeWorkflow } = useWorkflowPersistenceV2()
+      await initializeWorkflow()
+
+      expect(loadBlankWorkflowMock).toHaveBeenCalled()
+      expect(commandStoreMocks.execute).not.toHaveBeenCalledWith(
+        'Comfy.BrowseTemplates'
+      )
+    })
+
+    it('does not open templates browser when share intent is preserved across /user-select redirect', async () => {
+      // No-local-user flow: ?share=... was captured into sessionStorage and the
+      // URL query was dropped during the /user-select redirect before
+      // initializeWorkflow() runs.
+      preservedQueryMocks.payloads.share = { share: 'test-share-id' }
 
       const { initializeWorkflow } = useWorkflowPersistenceV2()
       await initializeWorkflow()
