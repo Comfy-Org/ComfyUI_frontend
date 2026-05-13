@@ -130,7 +130,7 @@ export interface ExtensionOptions {
  *   name: 'my-org.color-picker',
  *   type: 'COLOR_PICKER',
  *
- *   widgetCreated(widget, node) {
+ *   created(widget, node) {
  *     return {
  *       render(container) { /* mount color picker DOM *\/ },
  *       destroy()        { /* cleanup *\/ }
@@ -151,7 +151,7 @@ export interface WidgetExtensionOptions {
    *
    * @stability experimental
    */
-  widgetCreated?(
+  created?(
     widget: WidgetHandle,
     parentNode: NodeHandle | null
   ): { render(container: HTMLElement): void; destroy?(): void } | void
