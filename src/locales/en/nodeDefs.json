@@ -3156,6 +3156,26 @@
       }
     }
   },
+  "EmptyHiDreamO1LatentImage": {
+    "display_name": "Empty HiDream-O1 Latent Image",
+    "description": "Empty pixel-space latent for HiDream-O1-Image. The model was trained at ~4 megapixels; lower resolutions go off-distribution and quality regresses noticeably. Trained resolutions: 2048x2048, 2304x1728, 1728x2304, 2560x1440, 1440x2560, 2496x1664, 1664x2496, 3104x1312, 1312x3104, 2304x1792, 1792x2304.",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyHunyuanImageLatent": {
     "display_name": "EmptyHunyuanImageLatent",
     "inputs": {
@@ -4901,6 +4921,70 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1PatchSeamSmoothing": {
+    "display_name": "HiDream-O1 Patch Seam Smoothing",
+    "description": "Average the model output across multiple shifted patch-grid positions during the late portion of sampling. Cancels seams.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Sampling progress (0=start, 1=end) at which the blend turns ON."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Sampling progress at which the blend turns OFF."
+      },
+      "pattern": {
+        "name": "pattern",
+        "tooltip": "Shift layout. single_shift: one pass at the natural patch grid + others offset. symmetric: all passes off-grid, shifts split around origin."
+      },
+      "passes": {
+        "name": "passes",
+        "tooltip": "Number of passes per gated step. 2/4 = fixed. ramp_*: pass count increases as sampling approaches end (more smoothing where seams are most visible)."
+      },
+      "blend": {
+        "name": "blend",
+        "tooltip": "average: equal-weight mean. window: Hann-windowed weighting favoring each pass away from its patch boundaries. median: per-pixel median, rejects wraparound-outlier passes."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Interpolation between the natural-grid pred (0) and the averaged result (1)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1ReferenceImages": {
+    "display_name": "HiDream-O1 Reference Images",
+    "description": "Attach 1-10 reference images to conditioning, one for edit instructionor multiple for subject-driven personalization.",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Reference images. 1 image = instruction edit; 2-10 images = multi reference."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -11654,6 +11738,18 @@
       }
     }
   },
+  "ModelNoiseScale": {
+    "display_name": "ModelNoiseScale",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "noise_scale": {
+        "name": "noise_scale",
+        "tooltip": "Absolute training noise scale. For example HiDream-O1 base: 8.0, dev: 7.5."
+      }
+    }
+  },
   "ModelPatchLoader": {
     "display_name": "ModelPatchLoader",
     "inputs": {
@@ -14704,6 +14800,29 @@
     "inputs": {
       "version": {
         "name": "version"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SamplerLCM": {
+    "display_name": "SamplerLCM",
+    "description": "LCM sampler with tunable per-step noise. s_noise is a multiplier on the model's training noise scale",
+    "inputs": {
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "Per-step noise multiplier at the first step (1.0 = match training)."
+      },
+      "s_noise_end": {
+        "name": "s_noise_end",
+        "tooltip": "Per-step noise multiplier at the last step. Set equal to s_noise for a constant schedule."
+      },
+      "noise_clip_std": {
+        "name": "noise_clip_std",
+        "tooltip": "Clamp per-step noise to +/- N*std. 0 disables."
       }
     },
     "outputs": {

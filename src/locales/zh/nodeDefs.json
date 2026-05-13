@@ -3156,6 +3156,26 @@
       }
     }
   },
+  "EmptyHiDreamO1LatentImage": {
+    "description": "HiDream-O1-Image 的空像素空间潜空间。该模型在约 400 万像素下训练；分辨率过低会导致分布偏移，质量明显下降。训练分辨率：2048x2048、2304x1728、1728x2304、2560x1440、1440x2560、2496x1664、1664x2496、3104x1312、1312x3104、2304x1792、1792x2304。",
+    "display_name": "空 HiDream-O1 潜空间图像",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyHunyuanImageLatent": {
     "display_name": "空Latent图像（Hunyuan）",
     "inputs": {
@@ -4901,6 +4921,70 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1PatchSeamSmoothing": {
+    "description": "在采样后期，将模型输出在多个偏移补丁网格位置上取平均。消除缝隙。",
+    "display_name": "HiDream-O1 补丁缝隙平滑",
+    "inputs": {
+      "blend": {
+        "name": "混合方式",
+        "tooltip": "average：等权重平均。window：Hann 窗加权，远离补丁边界权重更高。median：逐像素中值，剔除环绕异常遍数。"
+      },
+      "end_percent": {
+        "name": "结束百分比",
+        "tooltip": "混合关闭时的采样进度。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "passes": {
+        "name": "遍数",
+        "tooltip": "每步的遍数。2/4 = 固定。ramp_*：采样接近结束时遍数增加（缝隙最明显处更多平滑）。"
+      },
+      "pattern": {
+        "name": "模式",
+        "tooltip": "偏移布局。single_shift：一次自然补丁网格+其他偏移。symmetric：全部偏移，偏移围绕原点对称分布。"
+      },
+      "start_percent": {
+        "name": "起始百分比",
+        "tooltip": "混合开启时的采样进度（0=开始，1=结束）。"
+      },
+      "strength": {
+        "name": "强度",
+        "tooltip": "在自然网格预测（0）与平均结果（1）之间插值。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1ReferenceImages": {
+    "description": "为条件添加 1-10 张参考图像，一张用于编辑指令，多张用于主体个性化。",
+    "display_name": "HiDream-O1 参考图像",
+    "inputs": {
+      "images": {
+        "name": "参考图像",
+        "tooltip": "参考图像。1 张 = 指令编辑；2-10 张 = 多参考。"
+      },
+      "negative": {
+        "name": "负向"
+      },
+      "positive": {
+        "name": "正向"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "name": "负向",
         "tooltip": null
       }
     }
@@ -11654,6 +11738,18 @@
       }
     }
   },
+  "ModelNoiseScale": {
+    "display_name": "模型噪声尺度",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "noise_scale": {
+        "name": "噪声尺度",
+        "tooltip": "绝对训练噪声尺度。例如 HiDream-O1 base: 8.0，dev: 7.5。"
+      }
+    }
+  },
   "ModelPatchLoader": {
     "display_name": "加载模型补丁",
     "inputs": {
@@ -14962,6 +15058,29 @@
     "inputs": {
       "version": {
         "name": "版本"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SamplerLCM": {
+    "description": "具有可调每步噪声的LCM采样器。s_noise是模型训练噪声尺度的倍数",
+    "display_name": "SamplerLCM",
+    "inputs": {
+      "noise_clip_std": {
+        "name": "noise_clip_std",
+        "tooltip": "将每步噪声限制在±N*标准差。0为禁用。"
+      },
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "第一步的每步噪声倍数（1.0 = 匹配训练）。"
+      },
+      "s_noise_end": {
+        "name": "s_noise_end",
+        "tooltip": "最后一步的每步噪声倍数。与s_noise相同则为恒定调度。"
       }
     },
     "outputs": {
