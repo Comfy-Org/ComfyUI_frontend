@@ -67,6 +67,20 @@ async function selectLoadImageNodeForPaste(
   }, loadImageId)
 }
 
+async function loadImageErrorTestRefs(comfyPage: ComfyPage) {
+  await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+  const loadImageNode = (
+    await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+  )[0]
+  const loadImageId = String(loadImageNode.id)
+
+  return {
+    loadImageId,
+    innerWrapper: comfyPage.vueNodes.getNodeInnerWrapper(loadImageId),
+    imageWidget: await loadImageNode.getWidgetByName(LOAD_IMAGE_INPUT_NAME)
+  }
+}
+
 test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
   test('should display error state when node is missing (node from workflow is not installed)', async ({
     comfyPage
@@ -239,15 +253,8 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
     test('clears error ring when user drops an image file onto Load Image', async ({
       comfyPage
     }) => {
-      await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
-      const loadImageNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
-      )[0]
-      const loadImageId = String(loadImageNode.id)
-      const innerWrapper = comfyPage.vueNodes.getNodeInnerWrapper(loadImageId)
-      const imageWidget = await loadImageNode.getWidgetByName(
-        LOAD_IMAGE_INPUT_NAME
-      )
+      const { loadImageId, innerWrapper, imageWidget } =
+        await loadImageErrorTestRefs(comfyPage)
 
       await test.step('queue with missing image input to surface the error', async () => {
         await surfaceLoadImageMissingInputError(comfyPage, loadImageId)
@@ -276,15 +283,8 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
     test('clears error ring when user pastes an image file onto Load Image', async ({
       comfyPage
     }) => {
-      await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
-      const loadImageNode = (
-        await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
-      )[0]
-      const loadImageId = String(loadImageNode.id)
-      const innerWrapper = comfyPage.vueNodes.getNodeInnerWrapper(loadImageId)
-      const imageWidget = await loadImageNode.getWidgetByName(
-        LOAD_IMAGE_INPUT_NAME
-      )
+      const { loadImageId, innerWrapper, imageWidget } =
+        await loadImageErrorTestRefs(comfyPage)
 
       await test.step('queue with missing image input to surface the error', async () => {
         await surfaceLoadImageMissingInputError(comfyPage, loadImageId)
@@ -304,9 +304,7 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
           (resp) => resp.url().includes('/upload/') && resp.status() === 200,
           { timeout: 10_000 }
         )
-        await comfyPage.clipboard.dispatchPasteFile(
-          assetPath(LOAD_IMAGE_UPLOAD_FILE)
-        )
+        await comfyPage.clipboard.pasteFile(assetPath(LOAD_IMAGE_UPLOAD_FILE))
         await uploadResponse
         await expect
           .poll(() => imageWidget.getValue())

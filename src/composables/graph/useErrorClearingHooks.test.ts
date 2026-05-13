@@ -13,6 +13,7 @@ import {
   LGraphEventMode,
   NodeSlotType
 } from '@/lib/litegraph/src/types/globalEnums'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import * as missingModelScan from '@/platform/missingModel/missingModelScan'
@@ -27,6 +28,43 @@ import type { MissingModelCandidate } from '@/platform/missingModel/types'
 beforeEach(() => {
   vi.restoreAllMocks()
 })
+
+function addLoadImageWidget(
+  node: LGraphNode,
+  callback: IBaseWidget['callback'] | null = function noopWidgetCallback() {}
+) {
+  return node.addWidget('combo', 'image', 'missing.png', callback, {
+    values: []
+  })
+}
+
+function createLoadImageGraph(callback?: IBaseWidget['callback'] | null) {
+  const graph = new LGraph()
+  const node = new LGraphNode('LoadImage')
+  node.type = 'LoadImage'
+  const widget = addLoadImageWidget(node, callback)
+
+  return { graph, node, widget }
+}
+
+function seedMissingImageError(graph: LGraph, nodeId: string) {
+  const store = useExecutionErrorStore()
+  const mediaStore = useMissingMediaStore()
+  vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+  seedRequiredInputMissingNodeError(store, nodeId, 'image')
+  mediaStore.setMissingMedia([
+    {
+      nodeId,
+      nodeType: 'LoadImage',
+      widgetName: 'image',
+      mediaType: 'image',
+      name: 'missing.png',
+      isMissing: true
+    } satisfies MissingMediaCandidate
+  ])
+
+  return { store, mediaStore }
+}
 
 describe('Connection error clearing via onConnectionsChange', () => {
   beforeEach(() => {
@@ -212,33 +250,11 @@ describe('Widget change error clearing via onWidgetChanged', () => {
   })
 
   it('clears missing media when media widget callback fires', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('LoadImage')
-    node.type = 'LoadImage'
-    const widget = node.addWidget(
-      'combo',
-      'image',
-      'missing.png',
-      function noopWidgetCallback() {},
-      { values: [] }
-    )
+    const { graph, node, widget } = createLoadImageGraph()
     graph.add(node)
     installErrorClearingHooks(graph)
 
-    const store = useExecutionErrorStore()
-    const mediaStore = useMissingMediaStore()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    seedRequiredInputMissingNodeError(store, String(node.id), 'image')
-    mediaStore.setMissingMedia([
-      {
-        nodeId: String(node.id),
-        nodeType: 'LoadImage',
-        widgetName: 'image',
-        mediaType: 'image',
-        name: 'missing.png',
-        isMissing: true
-      } satisfies MissingMediaCandidate
-    ])
+    const { store, mediaStore } = seedMissingImageError(graph, String(node.id))
 
     expect(store.lastNodeErrors).not.toBeNull()
     expect(mediaStore.missingMediaCandidates).toHaveLength(1)
@@ -315,32 +331,14 @@ describe('Widget change error clearing via onWidgetChanged', () => {
   })
 
   it('clears missing media when widget callback is assigned after hook installation', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('LoadImage')
-    node.type = 'LoadImage'
-    const widget = node.addWidget('combo', 'image', 'missing.png', null, {
-      values: []
-    })
+    const { graph, node, widget } = createLoadImageGraph(null)
     graph.add(node)
     installErrorClearingHooks(graph)
 
     const assignedCallback = vi.fn()
     widget.callback = assignedCallback
 
-    const store = useExecutionErrorStore()
-    const mediaStore = useMissingMediaStore()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    seedRequiredInputMissingNodeError(store, String(node.id), 'image')
-    mediaStore.setMissingMedia([
-      {
-        nodeId: String(node.id),
-        nodeType: 'LoadImage',
-        widgetName: 'image',
-        mediaType: 'image',
-        name: 'missing.png',
-        isMissing: true
-      } satisfies MissingMediaCandidate
-    ])
+    const { store, mediaStore } = seedMissingImageError(graph, String(node.id))
 
     widget.callback?.('uploaded.png')
 
@@ -360,28 +358,9 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     graph.add(node)
     installErrorClearingHooks(graph)
 
-    const widget = node.addWidget(
-      'combo',
-      'image',
-      'missing.png',
-      function noopWidgetCallback() {},
-      { values: [] }
-    )
+    const widget = addLoadImageWidget(node)
 
-    const store = useExecutionErrorStore()
-    const mediaStore = useMissingMediaStore()
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    seedRequiredInputMissingNodeError(store, String(node.id), 'image')
-    mediaStore.setMissingMedia([
-      {
-        nodeId: String(node.id),
-        nodeType: 'LoadImage',
-        widgetName: 'image',
-        mediaType: 'image',
-        name: 'missing.png',
-        isMissing: true
-      } satisfies MissingMediaCandidate
-    ])
+    const { store, mediaStore } = seedMissingImageError(graph, String(node.id))
 
     widget.callback?.('uploaded.png')
 
@@ -469,13 +448,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     const subgraph = createTestSubgraph()
     const interiorNode = new LGraphNode('LoadImage')
     interiorNode.type = 'LoadImage'
-    const widget = interiorNode.addWidget(
-      'combo',
-      'image',
-      'missing.png',
-      function noopWidgetCallback() {},
-      { values: [] }
-    )
+    const widget = addLoadImageWidget(interiorNode)
     subgraph.add(interiorNode)
 
     const subgraphNode = createTestSubgraphNode(subgraph, { id: 65 })
@@ -485,20 +458,11 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
     installErrorClearingHooks(rootGraph)
 
-    const store = useExecutionErrorStore()
-    const mediaStore = useMissingMediaStore()
     const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
-    seedRequiredInputMissingNodeError(store, interiorExecId, 'image')
-    mediaStore.setMissingMedia([
-      {
-        nodeId: interiorExecId,
-        nodeType: 'LoadImage',
-        widgetName: 'image',
-        mediaType: 'image',
-        name: 'missing.png',
-        isMissing: true
-      } satisfies MissingMediaCandidate
-    ])
+    const { store, mediaStore } = seedMissingImageError(
+      rootGraph,
+      interiorExecId
+    )
 
     widget.callback?.('uploaded.png')
 

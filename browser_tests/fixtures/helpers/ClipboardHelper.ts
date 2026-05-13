@@ -15,6 +15,28 @@ function readFilePayload(filePath: string) {
   return { bufferArray, fileName, fileType }
 }
 
+async function dispatchFilePaste(
+  page: Page,
+  payload: ReturnType<typeof readFilePayload>
+): Promise<void> {
+  await page.evaluate(({ bufferArray, fileName, fileType }) => {
+    const file = new File([new Uint8Array(bufferArray)], fileName, {
+      type: fileType
+    })
+    const dataTransfer = new DataTransfer()
+    dataTransfer.items.add(file)
+
+    const target = document.activeElement ?? document
+    target.dispatchEvent(
+      new ClipboardEvent('paste', {
+        clipboardData: dataTransfer,
+        bubbles: true,
+        cancelable: true
+      })
+    )
+  }, payload)
+}
+
 export class ClipboardHelper {
   constructor(
     private readonly keyboard: KeyboardHelper,
@@ -32,54 +54,8 @@ export class ClipboardHelper {
   async pasteFile(filePath: string): Promise<void> {
     const payload = readFilePayload(filePath)
 
-    // Register a one-time capturing-phase listener that intercepts the next
-    // paste event and injects file data onto clipboardData.
-    await this.page.evaluate(({ bufferArray, fileName, fileType }) => {
-      document.addEventListener(
-        'paste',
-        (e: ClipboardEvent) => {
-          e.preventDefault()
-          e.stopImmediatePropagation()
-
-          const file = new File([new Uint8Array(bufferArray)], fileName, {
-            type: fileType
-          })
-          const dataTransfer = new DataTransfer()
-          dataTransfer.items.add(file)
-
-          const syntheticEvent = new ClipboardEvent('paste', {
-            clipboardData: dataTransfer,
-            bubbles: true,
-            cancelable: true
-          })
-          document.dispatchEvent(syntheticEvent)
-        },
-        { capture: true, once: true }
-      )
-    }, payload)
-
-    // Trigger a real Ctrl+V keystroke — the capturing listener above will
-    // intercept it and re-dispatch with file data attached.
-    await this.paste()
-  }
-
-  async dispatchPasteFile(filePath: string): Promise<void> {
-    const payload = readFilePayload(filePath)
-
-    await this.page.evaluate(({ bufferArray, fileName, fileType }) => {
-      const file = new File([new Uint8Array(bufferArray)], fileName, {
-        type: fileType
-      })
-      const dataTransfer = new DataTransfer()
-      dataTransfer.items.add(file)
-
-      document.dispatchEvent(
-        new ClipboardEvent('paste', {
-          clipboardData: dataTransfer,
-          bubbles: true,
-          cancelable: true
-        })
-      )
-    }, payload)
+    // Browser clipboard APIs cannot reliably seed arbitrary files in tests.
+    // Dispatch the app-level paste event with file clipboardData directly.
+    await dispatchFilePaste(this.page, payload)
   }
 }
