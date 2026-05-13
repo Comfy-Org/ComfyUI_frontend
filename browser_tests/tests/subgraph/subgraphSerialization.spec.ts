@@ -1,35 +1,23 @@
-import { readFileSync } from 'fs'
-
 import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyExpect, comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { assetPath } from '@e2e/fixtures/utils/paths'
 import type { PromotedWidgetEntry } from '@e2e/fixtures/utils/promotedWidgets'
 import {
   getPromotedWidgetCount,
   getPromotedWidgetNames,
   getPromotedWidgets
 } from '@e2e/fixtures/utils/promotedWidgets'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 const DUPLICATE_IDS_WORKFLOW = 'subgraphs/subgraph-nested-duplicate-ids'
 const LEGACY_PREFIXED_WORKFLOW =
   'subgraphs/nested-subgraph-legacy-prefixed-proxy-widgets'
-
-interface MutableWorkflowNode {
-  id: number
-  pos?: [number, number]
-  widgets_values?: unknown[]
-  properties?: Record<string, unknown>
-}
-
-type MutableWorkflow = ComfyWorkflowJSON & {
-  last_node_id: number
-  nodes: MutableWorkflowNode[]
-}
+const PRIMITIVE_FANOUT_MULTI_HOST_WORKFLOW =
+  'subgraphs/subgraph-primitive-fanout-multi-host'
+const UNRESOLVABLE_PROXY_WORKFLOW =
+  'subgraphs/subgraph-unresolvable-proxy-widget'
 
 interface HostWidgetSnapshot {
   name: string
@@ -45,45 +33,6 @@ interface PrimitiveFanoutSnapshot {
   primitiveOutputLinks: unknown
   primitiveOriginLinkCount: number
   serializedProperties: Record<string, unknown>
-}
-
-function loadPrimitiveFanoutWorkflow(): MutableWorkflow {
-  return JSON.parse(
-    readFileSync(
-      assetPath('subgraphs/subgraph-with-link-and-proxied-primitive.json'),
-      'utf-8'
-    )
-  ) as MutableWorkflow
-}
-
-function createPrimitiveFanoutMultiHostWorkflow(): ComfyWorkflowJSON {
-  const workflow = loadPrimitiveFanoutWorkflow()
-  const original = workflow.nodes.find((node) => node.id === 2)
-  if (!original) throw new Error('Primitive fanout fixture is missing host 2')
-
-  original.widgets_values = ['first-host', 11]
-  const clone = structuredClone(original)
-  clone.id = 12
-  clone.pos = [900, 409]
-  clone.widgets_values = ['second-host', 22]
-  workflow.nodes.push(clone)
-  workflow.last_node_id = Math.max(workflow.last_node_id, clone.id)
-
-  return workflow
-}
-
-function createUnresolvableProxyWorkflow(): ComfyWorkflowJSON {
-  const workflow = loadPrimitiveFanoutWorkflow()
-  const host = workflow.nodes.find((node) => node.id === 2)
-  if (!host) throw new Error('Primitive fanout fixture is missing host 2')
-
-  host.properties = {
-    ...host.properties,
-    proxyWidgets: [['9999', 'missing_widget']]
-  }
-  host.widgets_values = ['quarantined-host-value']
-
-  return workflow
 }
 
 async function getPrimitiveFanoutSnapshot(
@@ -212,8 +161,8 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
     'Multiple SubgraphNode hosts keep independent migrated widget values',
     { tag: ['@vue-nodes'] },
     async ({ comfyPage }) => {
-      await comfyPage.workflow.loadGraphData(
-        createPrimitiveFanoutMultiHostWorkflow()
+      await comfyPage.workflow.loadWorkflow(
+        PRIMITIVE_FANOUT_MULTI_HOST_WORKFLOW
       )
 
       // The fixture's proxyWidgets [["1","value"], ["4","value"]] migrates to
@@ -247,43 +196,43 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
     }
   )
 
-  test('Nested preview exposures render through serialized chain resolution', async ({
-    comfyPage
-  }) => {
-    test.setTimeout(45_000)
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.workflow.loadWorkflow(
-      'subgraphs/subgraph-with-multiple-promoted-previews'
-    )
-    await comfyPage.vueNodes.waitForNodes()
+  test(
+    'Nested preview exposures render through serialized chain resolution',
+    { tag: ['@vue-nodes'] },
+    async ({ comfyPage }) => {
+      test.setTimeout(45_000)
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-multiple-promoted-previews'
+      )
 
-    const nestedHostProperties = await getSerializedSubgraphNodeProperties(
-      comfyPage,
-      '8'
-    )
-    expect(nestedHostProperties).not.toHaveProperty('proxyWidgets')
-    expect(nestedHostProperties.previewExposures).toEqual([
-      expect.objectContaining({
-        sourceNodeId: '6',
-        sourcePreviewName: '$$canvas-image-preview'
-      })
-    ])
+      const nestedHostProperties = await getSerializedSubgraphNodeProperties(
+        comfyPage,
+        '8'
+      )
+      expect(nestedHostProperties).not.toHaveProperty('proxyWidgets')
+      expect(nestedHostProperties.previewExposures).toEqual([
+        expect.objectContaining({
+          sourceNodeId: '6',
+          sourcePreviewName: '$$canvas-image-preview'
+        })
+      ])
 
-    const nestedSubgraphNode = comfyPage.vueNodes.getNodeLocator('8')
-    await expect(nestedSubgraphNode).toBeVisible()
+      const nestedSubgraphNode = comfyPage.vueNodes.getNodeLocator('8')
+      await expect(nestedSubgraphNode).toBeVisible()
 
-    await expect
-      .poll(() => getPromotedWidgetNames(comfyPage, '8'))
-      .toContain('$$canvas-image-preview')
-    // A host whose only promoted content is a preview exposure has no
-    // node.widgets entries and renders no `.lg-node-widgets` container; the
-    // pseudo-widget surfaces via usePromotedPreviews instead.
-  })
+      await expect
+        .poll(() => getPromotedWidgetNames(comfyPage, '8'))
+        .toContain('$$canvas-image-preview')
+      // A host whose only promoted content is a preview exposure has no
+      // node.widgets entries and renders no `.lg-node-widgets` container; the
+      // pseudo-widget surfaces via usePromotedPreviews instead.
+    }
+  )
 
   test('Legacy unresolvable proxy entry is omitted and quarantined on save', async ({
     comfyPage
   }) => {
-    await comfyPage.workflow.loadGraphData(createUnresolvableProxyWorkflow())
+    await comfyPage.workflow.loadWorkflow(UNRESOLVABLE_PROXY_WORKFLOW)
 
     await expect
       .poll(() => getPromotedWidgetNames(comfyPage, '2'))
@@ -690,24 +639,8 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
    */
   test.describe(
     'Legacy Prefixed proxyWidget Normalization',
-    { tag: ['@subgraph', '@widget'] },
+    { tag: ['@subgraph', '@widget', '@vue-nodes'] },
     () => {
-      let previousVueNodesEnabled: unknown
-
-      test.beforeEach(async ({ comfyPage }) => {
-        previousVueNodesEnabled = await comfyPage.settings.getSetting(
-          'Comfy.VueNodes.Enabled'
-        )
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-      })
-
-      test.afterEach(async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting(
-          'Comfy.VueNodes.Enabled',
-          previousVueNodesEnabled
-        )
-      })
-
       test('Loads without console warnings about failed widget resolution', async ({
         comfyPage
       }) => {
@@ -728,7 +661,6 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow(LEGACY_PREFIXED_WORKFLOW)
-        await comfyPage.vueNodes.waitForNodes()
 
         const outerNode = comfyPage.vueNodes.getNodeLocator('5')
         await expect(outerNode).toBeVisible()
@@ -744,7 +676,6 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow(LEGACY_PREFIXED_WORKFLOW)
-        await comfyPage.vueNodes.waitForNodes()
 
         const outerNode = comfyPage.vueNodes.getNodeLocator('5')
         await expect(outerNode).toBeVisible()
