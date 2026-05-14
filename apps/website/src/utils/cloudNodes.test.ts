@@ -87,6 +87,7 @@ function withSnapshotDir(snapshot: NodesSnapshot | null): URL {
 
 describe('fetchCloudNodesForBuild', () => {
   const savedCloudApiKey = process.env.WEBSITE_CLOUD_API_KEY
+  const savedCloudNodesFixture = process.env.WEBSITE_CLOUD_NODES_FIXTURE
 
   beforeEach(() => {
     resetCloudNodesFetcherForTests()
@@ -94,11 +95,21 @@ describe('fetchCloudNodesForBuild', () => {
     fetchRegistryPacksMock.mockResolvedValue(new Map())
     sanitizeCallSpy.mockReset()
     delete process.env.WEBSITE_CLOUD_API_KEY
+    delete process.env.WEBSITE_CLOUD_NODES_FIXTURE
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
-    process.env.WEBSITE_CLOUD_API_KEY = savedCloudApiKey
+    if (savedCloudApiKey === undefined) {
+      delete process.env.WEBSITE_CLOUD_API_KEY
+    } else {
+      process.env.WEBSITE_CLOUD_API_KEY = savedCloudApiKey
+    }
+    if (savedCloudNodesFixture === undefined) {
+      delete process.env.WEBSITE_CLOUD_NODES_FIXTURE
+    } else {
+      process.env.WEBSITE_CLOUD_NODES_FIXTURE = savedCloudNodesFixture
+    }
   })
 
   it('returns fresh when API succeeds', async () => {
