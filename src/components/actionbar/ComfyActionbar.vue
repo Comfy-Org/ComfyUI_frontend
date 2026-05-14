@@ -80,7 +80,7 @@
     <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
       <QueueInlineProgress
         :hidden="shouldHideInlineProgress"
-        :radius-class="cn(isDocked ? 'rounded-lg' : 'rounded-md')"
+        :radius-class="cn(isDocked ? 'rounded-[7px]' : 'rounded-[5px]')"
         data-testid="queue-inline-progress"
       />
     </Teleport>
@@ -426,7 +426,7 @@ const actionbarClass = computed(() =>
     'rounded-md before:-ml-50 before:h-full before:w-50',
     'pointer-events-auto',
     isMouseOverDropZone.value &&
-      'scale-105 border-3 opacity-100 shadow-[0_0_20px] shadow-blue-500'
+      'scale-105 border-[3px] opacity-100 shadow-[0_0_20px] shadow-blue-500'
   )
 )
 const panelClass = computed(() =>

@@ -58,12 +58,12 @@
         cn(
           'pointer-events-none absolute z-0 border-3 outline-none',
           selectionShapeClass,
+          hasAnyError ? '-inset-[7px]' : '-inset-[3px]',
           isSelected
             ? 'border-node-component-outline'
             : 'border-node-stroke-executing'
         )
       "
-      :style="{ inset: hasAnyError ? '-7px' : '-3px' }"
     />
     <!-- Root Border Overlay -->
     <div

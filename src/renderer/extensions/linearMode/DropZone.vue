@@ -102,7 +102,7 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
         <div
           :class="
             cn(
-              'flex h-full max-w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-lg p-3 text-center text-sm/tight transition-colors',
+              'flex h-full max-w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-[7px] p-3 text-center text-sm/tight transition-colors',
               isHovered &&
                 !dropIndicator.imageUrl &&
                 'border border-dashed border-component-node-foreground-secondary bg-component-node-widget-background-hovered'

@@ -52,7 +52,7 @@
             <span
               v-for="val in tf.values.slice(0, MAX_VISIBLE_DOTS)"
               :key="val"
-              class="-mx-0.5 text-lg leading-none"
+              class="-mx-[2px] text-lg leading-none"
               :style="{ color: getLinkTypeColor(val) }"
               >&bull;</span
             >
