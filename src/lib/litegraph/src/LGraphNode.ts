@@ -3537,7 +3537,10 @@ export class LGraphNode
 
   get collapsible() {
     // Support both correct spelling 'collapsible' and legacy 'collapsable'
-    const nodeClass = this.constructor as any
+    const nodeClass = this.constructor as typeof LGraphNode & {
+      collapsable?: boolean
+      collapsible?: boolean
+    }
     return !this.pinned && (nodeClass.collapsible ?? nodeClass.collapsable) !== false
   }
 
