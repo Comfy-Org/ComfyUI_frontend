@@ -11,13 +11,17 @@
 import type { AsyncHandler, Handler, Unsubscribe } from './events'
 import type { WidgetHandle, WidgetOptions } from './widget'
 
+import type { NodeEntityId } from '@/world/entityIds'
 /**
  * Branded entity ID for nodes. Prevents mixing node IDs with widget IDs
  * at compile time. Re-exported from the world layer so the entire codebase
  * shares a single brand. The underlying value is `string` in Phase A
  * (e.g. `node:<graphUuid>:<localId>`).
+ *
+ * @internal Per D20 — extension authors use `node.id: string` and
+ * `node.equals(other)`. The branded type is reserved for internal package
+ * modules and is intentionally absent from the published barrel.
  */
-import type { NodeEntityId } from '@/world/entityIds'
 export type { NodeEntityId }
 
 /**
@@ -58,18 +62,26 @@ export type SlotDirection = 'input' | 'output'
 
 /**
  * Read-only snapshot of a single slot (input or output) on a node.
+ *
+ * Identity is opaque per D20: use `slot.id` and `slot.equals(other)` for
+ * comparisons; do not parse the string format.
  */
 export interface SlotInfo {
-  /** Branded entity ID for this slot. */
-  readonly entityId: SlotEntityId
+  /** Opaque identifier for this slot. Treat as a string token; do not parse. */
+  readonly id: string
   /** Slot name as declared in `INPUT_TYPES` or `addInput`/`addOutput`. */
   readonly name: string
   /** Slot type string (e.g. `'IMAGE'`, `'LATENT'`, `'*'`). */
   readonly type: string
   /** Whether this is an input or output slot. */
   readonly direction: SlotDirection
-  /** The node this slot belongs to. */
-  readonly nodeEntityId: NodeEntityId
+  /** Opaque identifier of the node this slot belongs to. */
+  readonly nodeId: string
+  /**
+   * Returns `true` if `other` represents the same slot entity as this one.
+   * Equivalent to `this.id === other.id` but the canonical comparator.
+   */
+  equals(other: SlotInfo): boolean
 }
 
 /**
@@ -77,6 +89,10 @@ export interface SlotInfo {
  *
  * Phase A uses synthetic content-addressed format: `slot:${nodeId}:${direction}:${index}`.
  * Phase B will migrate to opaque UUIDs when ECS adds slot entity support.
+ *
+ * @internal Per D20 — extension authors use `slot.id: string` and
+ * `slot.equals(other)`. The branded type is intentionally absent from the
+ * published barrel.
  */
 export type SlotEntityId = string & { readonly __brand: 'SlotEntityId' }
 
@@ -219,11 +235,25 @@ export interface NodeHandle {
   // ── IDENTITY ──────────────────────────────────────────────────────────────
 
   /**
-   * Stable entity ID for this node. Branded to prevent mixing with
-   * `WidgetEntityId` at compile time.
+   * Opaque identifier for this node. Stable for the lifetime of the node
+   * entity. Treat as a string token: do not parse, slice, or compare its
+   * internal structure. Use {@link NodeHandle.equals} to compare with
+   * another handle.
    *
+   * @remarks
+   * Per D20, the underlying value is a branded `NodeEntityId` at runtime
+   * but is narrowed to `string` on the public surface so authors never
+   * need to import a brand to type a local variable.
    */
-  readonly entityId: NodeEntityId
+  readonly id: string
+
+  /**
+   * Returns `true` if `other` represents the same node entity as this one.
+   * Equivalent to `this.id === other.id` but the canonical comparator —
+   * prefer `equals` over manual string comparison so future changes to the
+   * identity scheme remain transparent.
+   */
+  equals(other: NodeHandle): boolean
 
   /**
    * The LiteGraph node type string (e.g. `'KSampler'`).

@@ -52,7 +52,6 @@ import type {
   NodeHandle,
   NodeMode,
   SlotInfo,
-  SlotEntityId as PublicSlotEntityId,
   Point,
   Size,
   DOMWidgetOptions
@@ -238,7 +237,12 @@ function createWidgetHandle(widgetId: WidgetEntityId): WidgetHandle {
   // `on` is implemented as a single polymorphic function; cast satisfies the
   // typed overload signature in the WidgetHandle interface.
   return {
-    entityId: widgetId,
+    // Per D20, public surface narrows the branded WidgetEntityId to string;
+    // the runtime value is unchanged.
+    id: widgetId as unknown as string,
+    equals(other: WidgetHandle): boolean {
+      return this.id === other.id
+    },
 
     get name() {
       // TODO(#11939): TEMPORARY widget-name parse. Entity ID format is
@@ -389,7 +393,12 @@ function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
   const world = getWorld()
 
   return {
-    entityId: nodeId,
+    // Per D20, public surface narrows the branded NodeEntityId to string;
+    // the runtime value is unchanged.
+    id: nodeId as unknown as string,
+    equals(other: NodeHandle): boolean {
+      return this.id === other.id
+    },
 
     get type() {
       return world.getComponent(nodeId, NodeTypeKey)?.type ?? ''
@@ -539,11 +548,14 @@ function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
           SlotIdentityKey
         )
         return {
-          entityId: slotId as unknown as PublicSlotEntityId,
+          id: slotId as unknown as string,
           name: slot?.name ?? '',
           type: slot?.type ?? '',
           direction: 'input' as const,
-          nodeEntityId: nodeId
+          nodeId: nodeId as unknown as string,
+          equals(other: SlotInfo): boolean {
+            return this.id === other.id
+          }
         } satisfies SlotInfo
       })
     },
@@ -555,11 +567,14 @@ function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
           SlotIdentityKey
         )
         return {
-          entityId: slotId as unknown as PublicSlotEntityId,
+          id: slotId as unknown as string,
           name: slot?.name ?? '',
           type: slot?.type ?? '',
           direction: 'output' as const,
-          nodeEntityId: nodeId
+          nodeId: nodeId as unknown as string,
+          equals(other: SlotInfo): boolean {
+            return this.id === other.id
+          }
         } satisfies SlotInfo
       })
     },

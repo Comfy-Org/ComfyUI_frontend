@@ -21,9 +21,18 @@
  * | `WidgetHandle` | Controlled access to widget state and events |
  * | `WidgetBeforeQueueEvent` | Pre-queue validation event — call `reject(msg)` to cancel |
  * | `SlotInfo` | Read-only slot snapshot |
- * | `NodeEntityId`, `WidgetEntityId`, `SlotEntityId` | Branded entity IDs |
  * | Shell UI types | `SidebarTabExtension`, `BottomPanelExtension`, `CommandManager`, etc. |
  * | Identity helpers | `NodeLocatorId`, `NodeExecutionId`, parsers, type guards |
+ *
+ * ## Identity (D20)
+ *
+ * Handles expose `id: string` and `equals(other)` — the 90% case never needs
+ * a branded type. The runtime `*EntityId` brands (`NodeEntityId`,
+ * `WidgetEntityId`, `SlotEntityId`) are an internal storage concern and are
+ * NOT re-exported from this barrel. Protocol-boundary identifiers
+ * (`NodeLocatorId` from workflow JSON, `NodeExecutionId` from websocket
+ * frames) remain public because authors **receive** them from event
+ * payloads.
  *
  * ## API style
  *
@@ -69,8 +78,6 @@ export { onNodeMounted, onNodeRemoved } from './lifecycle'
 
 export type {
   NodeHandle,
-  NodeEntityId,
-  SlotEntityId,
   SlotInfo,
   SlotDirection,
   NodeMode,
@@ -88,7 +95,6 @@ export type {
 
 export type {
   WidgetHandle,
-  WidgetEntityId,
   WidgetValue,
   WidgetOptions,
   WidgetValueChangeEvent,

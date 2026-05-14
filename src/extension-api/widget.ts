@@ -9,12 +9,16 @@
 
 import type { AsyncHandler, Handler, Unsubscribe } from './events'
 
+import type { WidgetEntityId } from '@/world/entityIds'
 /**
  * Branded entity ID for widgets. Prevents mixing widget IDs with node IDs
  * at compile time. Re-exported from the world layer so the entire codebase
  * shares a single brand. The underlying value is `string` in Phase A.
+ *
+ * @internal Per D20 — extension authors use `widget.id: string` and
+ * `widget.equals(other)`. The branded type is reserved for internal package
+ * modules and is intentionally absent from the published barrel.
  */
-import type { WidgetEntityId } from '@/world/entityIds'
 export type { WidgetEntityId }
 
 /**
@@ -243,11 +247,25 @@ export interface WidgetHandle<T = WidgetValue> {
   // ── IDENTITY ───────────────────────────────────────────────────────────────
 
   /**
-   * Stable entity identifier for this widget. Branded to prevent mixing with
-   * `NodeEntityId` at compile time.
+   * Opaque identifier for this widget. Stable for the lifetime of the
+   * widget entity. Treat as a string token: do not parse, slice, or compare
+   * its internal structure. Use {@link WidgetHandle.equals} to compare with
+   * another handle.
    *
+   * @remarks
+   * Per D20, the underlying value is a branded `WidgetEntityId` at runtime
+   * but is narrowed to `string` on the public surface so authors never need
+   * to import a brand to type a local variable.
    */
-  readonly entityId: WidgetEntityId
+  readonly id: string
+
+  /**
+   * Returns `true` if `other` represents the same widget entity as this
+   * one. Equivalent to `this.id === other.id` but the canonical comparator
+   * — prefer `equals` over manual string comparison so future changes to
+   * the identity scheme remain transparent.
+   */
+  equals(other: WidgetHandle): boolean
 
   /**
    * The widget's name as registered in `INPUT_TYPES` or `addWidget`. Stable

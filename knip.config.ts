@@ -99,7 +99,11 @@ const config: KnipConfig = {
     // Public API surface consumed externally by extension authors and the
     // TypeDoc docgen pipeline (PKG2). Mark exports with @publicAPI when they
     // are part of `@comfyorg/extension-api` but not internally referenced.
-    '-publicAPI'
+    '-publicAPI',
+    // Per D20, the three *EntityId brand re-exports in src/extension-api/{node,widget}.ts
+    // are demoted to @internal — they stay available for internal package modules
+    // but are removed from the public barrel and from TypeDoc output.
+    '-internal'
   ]
 }
 

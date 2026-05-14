@@ -97,7 +97,7 @@ describe('scope-registry — D12 copy/paste reset semantics', () => {
         name: 'z-counter',
         nodeCreated(handle) {
           const count = ref(0)
-          counters.set(handle.entityId as NodeEntityId, count)
+          counters.set(handle.id as NodeEntityId, count)
           return { count }
         }
       })
