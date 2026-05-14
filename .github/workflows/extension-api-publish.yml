@@ -41,7 +41,7 @@ jobs:
         uses: ./.github/actions/setup-frontend
 
       - name: Setup npm registry
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           registry-url: 'https://registry.npmjs.org/'
 
@@ -81,7 +81,7 @@ jobs:
 
       - name: Create GitHub Release
         if: github.event_name == 'push'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const tag = context.ref.replace('refs/tags/', '')
