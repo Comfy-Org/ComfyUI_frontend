@@ -10,7 +10,11 @@ import type {
   AssetItem,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
-import { assetService } from '@/platform/assets/services/assetService'
+import {
+  INPUT_TAG,
+  OUTPUT_TAG,
+  assetService
+} from '@/platform/assets/services/assetService'
 import type { PaginationOptions } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
@@ -46,7 +50,7 @@ async function fetchInputFilesFromAPI(): Promise<AssetItem[]> {
  * Fetch input files from cloud service
  */
 async function fetchInputFilesFromCloud(): Promise<AssetItem[]> {
-  return await assetService.getAssetsByTag('input', false, {
+  return await assetService.getAssetsByTag(INPUT_TAG, false, {
     limit: INPUT_LIMIT
   })
 }
@@ -281,7 +285,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
     flatOutputInFlight = (async () => {
       try {
-        const page = await assetService.getAssetsByTag('output', true, {
+        const page = await assetService.getAssetsByTag(OUTPUT_TAG, true, {
           limit: FLAT_OUTPUT_PAGE_SIZE,
           offset: flatOutputOffset.value
         })
