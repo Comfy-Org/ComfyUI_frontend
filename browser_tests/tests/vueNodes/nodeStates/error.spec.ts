@@ -72,6 +72,10 @@ async function selectLoadImageNodeForPaste(
 }
 
 async function setupLoadImageErrorScenario(comfyPage: ComfyPage) {
+  await comfyPage.settings.setSetting(
+    'Comfy.RightSidePanel.ShowErrorsTab',
+    true
+  )
   await comfyPage.setup()
   await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
   const loadImageNode = (
