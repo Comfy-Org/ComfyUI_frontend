@@ -47,9 +47,7 @@ function createMockNode(): NodeEventEmitter {
           if (idx !== -1) sizeListeners.splice(idx, 1)
         }
       } else if (event === 'positionChanged') {
-        positionListeners.push(
-          handler as (e: NodePositionChangedEvent) => void
-        )
+        positionListeners.push(handler as (e: NodePositionChangedEvent) => void)
         return () => {
           const idx = positionListeners.indexOf(
             handler as (e: NodePositionChangedEvent) => void

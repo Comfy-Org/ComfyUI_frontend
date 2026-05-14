@@ -18,7 +18,9 @@ describe('I-WS.4 v2 contract — lazy getter serialization', () => {
 
       expectTypeOf<E['value']>().toEqualTypeOf<WidgetValue>()
       expectTypeOf<E['setSerializedValue']>().toBeFunction()
-      expectTypeOf<E['setSerializedValue']>().parameter(0).toEqualTypeOf<unknown>()
+      expectTypeOf<E['setSerializedValue']>()
+        .parameter(0)
+        .toEqualTypeOf<unknown>()
     })
 
     it('beforeSerialize event provides context discriminant for lazy path selection', () => {
@@ -33,7 +35,9 @@ describe('I-WS.4 v2 contract — lazy getter serialization', () => {
 
     it('lazy getter async support: handler accepts Promise return', () => {
       // Type check: beforeSerialize handler can be async (for upload widgets)
-      type AsyncHandler = (e: WidgetBeforeSerializeEvent) => void | Promise<void>
+      type AsyncHandler = (
+        e: WidgetBeforeSerializeEvent
+      ) => void | Promise<void>
 
       // Both sync and async must be assignable
       const syncHandler: AsyncHandler = () => {}
