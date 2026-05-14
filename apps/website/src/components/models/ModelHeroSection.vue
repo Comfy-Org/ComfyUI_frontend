@@ -56,16 +56,16 @@ const isPartnerNode = directory === 'partner_nodes'
   >
     <div class="flex max-w-2xl flex-1 flex-col gap-6">
       <p
-        class="text-primary-comfy-yellow text-sm font-medium tracking-widest uppercase"
+        class="text-sm font-medium uppercase tracking-widest text-primary-comfy-yellow"
       >
         {{ eyebrow }}
       </p>
 
-      <h1 class="text-primary-comfy-canvas text-4xl font-bold lg:text-6xl">
+      <h1 class="text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
         {{ displayName }} in ComfyUI
       </h1>
 
-      <p class="text-primary-comfy-canvas/60 text-sm">
+      <p class="text-sm text-primary-comfy-canvas/60">
         {{
           t('models.hero.workflowCount').replace(
             '{count}',
@@ -122,7 +122,7 @@ const isPartnerNode = directory === 'partner_nodes'
         </BrandButton>
       </div>
 
-      <div v-if="blogUrl" class="text-primary-comfy-canvas/60 text-sm">
+      <div v-if="blogUrl" class="text-sm text-primary-comfy-canvas/60">
         <a
           :href="blogUrl"
           target="_blank"
