@@ -62,9 +62,7 @@ export default plugin(({ matchComponents }) => {
         try {
           return getDynamicCSSRulesWithStroke(icon, sw)
         } catch (err) {
-          if (icon.includes('--') || icon.includes(':')) {
-            console.warn(err.message)
-          }
+          console.warn(err.message)
           return {}
         }
       }

@@ -82,7 +82,11 @@
       <p
         :id="descId"
         v-tooltip.top="{ value: asset.secondaryText, showDelay: tooltipDelay }"
-        :class="cn('m-0 line-clamp-2 text-sm text-muted-foreground')"
+        :class="
+          cn(
+            'm-0 line-clamp-2 [display:-webkit-box] text-sm text-muted-foreground [-webkit-box-orient:vertical] [-webkit-line-clamp:2]'
+          )
+        "
       >
         {{ asset.secondaryText }}
       </p>

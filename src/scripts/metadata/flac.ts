@@ -1,3 +1,4 @@
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export function getFromFlacBuffer(buffer: ArrayBuffer): Record<string, string> {
   const dataView = new DataView(buffer)
 
