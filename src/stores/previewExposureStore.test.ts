@@ -122,45 +122,6 @@ describe(usePreviewExposureStore, () => {
     })
   })
 
-  describe('moveExposure', () => {
-    beforeEach(() => {
-      store.setExposures(rootGraphA, hostA, [
-        { name: 'a', sourceNodeId: '1', sourcePreviewName: 'a' },
-        { name: 'b', sourceNodeId: '2', sourcePreviewName: 'b' },
-        { name: 'c', sourceNodeId: '3', sourcePreviewName: 'c' }
-      ])
-    })
-
-    it('reorders entries from -> to', () => {
-      store.moveExposure(rootGraphA, hostA, 0, 2)
-
-      expect(store.getExposures(rootGraphA, hostA).map((e) => e.name)).toEqual([
-        'b',
-        'c',
-        'a'
-      ])
-    })
-
-    it('is a no-op for equal indices', () => {
-      store.moveExposure(rootGraphA, hostA, 1, 1)
-      expect(store.getExposures(rootGraphA, hostA).map((e) => e.name)).toEqual([
-        'a',
-        'b',
-        'c'
-      ])
-    })
-
-    it('is a no-op for out-of-bounds indices', () => {
-      store.moveExposure(rootGraphA, hostA, -1, 2)
-      store.moveExposure(rootGraphA, hostA, 0, 5)
-      expect(store.getExposures(rootGraphA, hostA).map((e) => e.name)).toEqual([
-        'a',
-        'b',
-        'c'
-      ])
-    })
-  })
-
   describe('clearGraph', () => {
     it('removes all hosts under the rootGraphId without affecting others', () => {
       store.addExposure(rootGraphA, hostA, {

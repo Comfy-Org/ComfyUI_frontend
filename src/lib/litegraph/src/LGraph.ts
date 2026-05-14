@@ -183,9 +183,16 @@ export class LGraph
   static STATUS_RUNNING = 2
 
   /**
-   * Late-bound migration hook. Set once during app init from the wiring layer
-   * to avoid a circular dependency through PreviewExposureStore. Left undefined
-   * in tests that exercise `configure()` without the migration pipeline.
+   * Late-bound migration hook. Set once during app init from the wiring layer.
+   * The migration code lives in `@/core/graph/subgraph/migration`, which
+   * transitively imports more workbench surface than the litegraph core is
+   * willing to depend on; binding it here lazily keeps LGraph free of those
+   * imports while still letting `configure()` invoke the flush. Left
+   * undefined in tests that exercise `configure()` without the migration
+   * pipeline.
+   *
+   * @internal Wiring hook for the frontend; not part of the public litegraph
+   * API. Custom nodes and extensions must not read or assign this.
    */
   static proxyWidgetMigrationFlush?: (
     hostNode: SubgraphNode,
@@ -198,6 +205,9 @@ export class LGraph
    * Used after configure (workflow load and paste) so older clipboard /
    * workflow data without `properties.previewExposures` still surfaces a
    * preview on the host SubgraphNode. Idempotent.
+   *
+   * @internal Wiring hook for the frontend; not part of the public litegraph
+   * API. Custom nodes and extensions must not read or assign this.
    */
   static autoExposePreviewNodes?: (hostNode: SubgraphNode) => void
 

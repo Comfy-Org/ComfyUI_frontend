@@ -20,9 +20,7 @@ const {
   isShown?: boolean
   class?: ClassValue
 }>()
-defineEmits<{
-  (e: 'toggleVisibility'): void
-}>()
+defineEmits<{ toggleVisibility: [] }>()
 
 const icon = computed(() =>
   isPhysical
