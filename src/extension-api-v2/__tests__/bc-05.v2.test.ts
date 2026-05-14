@@ -41,10 +41,11 @@ import {
   _clearExtensionsForTesting,
   _setDispatchImplForTesting,
   defineNode,
+  getDOMWidgetElement,
   mountExtensionsForNode,
   unmountExtensionsForNode
 } from '@/services/extension-api-service'
-import type { NodeEntityId } from '@/world/entityIds'
+import type { NodeEntityId, WidgetEntityId } from '@/world/entityIds'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -140,13 +141,15 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
       expect(handleName).toBe('preview')
     })
 
-    it('addDOMWidget stores the DOM element reference in the options bag', () => {
+    it('addDOMWidget stores the DOM element in a side table (not in command options, for serializability)', () => {
       const el = makeDiv()
+      let widgetId: WidgetEntityId | undefined
 
       defineNode({
         name: 'bc05.v2.element-stored',
         nodeCreated(handle) {
-          handle.addDOMWidget({ name: 'canvas', element: el })
+          const wh = handle.addDOMWidget({ name: 'canvas', element: el })
+          widgetId = wh.entityId as WidgetEntityId
         }
       })
 
@@ -154,11 +157,16 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
       stubNodeType(id)
       mountExtensionsForNode(id)
 
+      // Element is NOT in the command options (commands must be serializable)
       const createCmd = dispatchedCommands.find(
         (c) => c.type === 'CreateWidget' && c.name === 'canvas'
-      ) as { options: { __domElement: HTMLElement } } | undefined
+      ) as { options: Record<string, unknown> } | undefined
 
-      expect(createCmd?.options.__domElement).toBe(el)
+      expect(createCmd?.options.__domElement).toBeUndefined()
+
+      // Element is stored in side table, retrievable via getDOMWidgetElement()
+      expect(widgetId).toBeDefined()
+      expect(getDOMWidgetElement(widgetId!)).toBe(el)
     })
 
     it('addDOMWidget uses the provided height option rather than offsetHeight when specified', () => {
