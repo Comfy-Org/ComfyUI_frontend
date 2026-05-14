@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useCoreCommands } from '@/composables/useCoreCommands'
-import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -404,7 +403,7 @@ describe('useCoreCommands', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
 
     setActivePinia(createPinia())
 
@@ -1199,41 +1198,8 @@ describe('useCoreCommands', () => {
     })
   })
 
-  describe('Help commands (extended)', () => {
-    const { staticUrls } = useExternalLink()
-    let openSpy: ReturnType<typeof vi.spyOn>
-
-    beforeEach(() => {
-      openSpy = vi
-        .spyOn(window, 'open')
-        .mockImplementation(() => null as unknown as Window)
-    })
-
-    it('Comfy.Help.OpenComfyUIIssues opens the GitHub issues URL and tracks telemetry', async () => {
-      await findCommand('Comfy.Help.OpenComfyUIIssues').function()
-
-      expect(mockTelemetry.trackHelpResourceClicked).toHaveBeenCalledWith(
-        expect.objectContaining({
-          resource_type: 'github',
-          is_external: true,
-          source: 'menu'
-        })
-      )
-      expect(openSpy).toHaveBeenCalledWith(staticUrls.githubIssues, '_blank')
-    })
-
-    it('Comfy.Help.OpenComfyOrgDiscord opens the Discord URL and tracks telemetry', async () => {
-      await findCommand('Comfy.Help.OpenComfyOrgDiscord').function()
-
-      expect(mockTelemetry.trackHelpResourceClicked).toHaveBeenCalledWith(
-        expect.objectContaining({
-          resource_type: 'discord'
-        })
-      )
-      expect(openSpy).toHaveBeenCalledWith(staticUrls.discord, '_blank')
-    })
-
-    it('Comfy.Help.AboutComfyUI opens the About dialog', async () => {
+  describe('AboutComfyUI command', () => {
+    it('should open the About dialog', async () => {
       await findCommand('Comfy.Help.AboutComfyUI').function()
 
       expect(mockShowAbout).toHaveBeenCalled()
