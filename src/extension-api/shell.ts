@@ -8,11 +8,13 @@
  * @packageDocumentation
  */
 
+// VueExtension and CustomExtension are deliberately NOT re-exported per D19 —
+// they are discriminated-union ingredients of SidebarTabExtension /
+// BottomPanelExtension, not author-facing entry points. Internal callers
+// (ExtensionSlot.vue) import them directly from '@/types/extensionTypes'.
 export type {
   SidebarTabExtension,
   BottomPanelExtension,
-  VueExtension,
-  CustomExtension,
   ToastMessageOptions,
   ToastManager,
   ExtensionManager,

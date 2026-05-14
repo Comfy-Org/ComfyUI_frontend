@@ -91,11 +91,12 @@ export type {
 
 export type { Handler, AsyncHandler, Unsubscribe } from './events'
 
+// Per D19 — VueExtension and CustomExtension are discriminated-union
+// ingredients of SidebarTabExtension / BottomPanelExtension and are NOT
+// part of the public surface.
 export type {
   SidebarTabExtension,
   BottomPanelExtension,
-  VueExtension,
-  CustomExtension,
   ToastMessageOptions,
   ToastManager,
   ExtensionManager,

@@ -68,7 +68,15 @@ const config: KnipConfig = {
     // Deprecated stub re-exporting from `@/extension-api`. Will be removed
     // once PKG2 (`@comfyorg/extension-api`) ships and downstream imports
     // migrate to the package path.
-    'src/types/extensionV2.ts'
+    'src/types/extensionV2.ts',
+    // D18 Phase 1 scaffolding — empty registries the loader will populate
+    // in Phase 2 once side-effect registration moves out of
+    // extension-api-service. See decisions/D18-pure-functions-loader-registration.md.
+    'src/services/registries/**',
+    // D18 Phase 1 — brand symbol + isBrandedExtension guard. Currently
+    // consumed only by the define* call sites inside extension-api-service;
+    // the type-guard and getBrandKind are exported for the Phase 2 loader.
+    'src/extension-api/brand.ts'
   ],
   vite: {
     config: ['vite?(.*).config.mts']

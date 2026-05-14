@@ -59,6 +59,7 @@ import type {
 } from '@/extension-api/node'
 import type { WidgetHandle } from '@/extension-api/widget'
 import type { Unsubscribe } from '@/extension-api/events'
+import { stampBrand } from '@/extension-api/brand'
 import type {
   ExtensionOptions,
   NodeExtensionOptions,
@@ -679,10 +680,14 @@ function scheduleStartupCheck(): void {
   }, 5000)
 }
 
+// D18 Phase 1: stamp brand on all define* returns so a future loader can
+// recognise them via `isBrandedExtension(...)`. Side-effect registration
+// remains in place for Phase 1; Phase 2 will remove the push() calls and
+// move registration into the loader (per decisions/D18-pure-functions-loader-registration.md).
 export function defineExtension(options: ExtensionOptions): ExtensionOptions {
   appExtensions.push(options)
   scheduleStartupCheck()
-  return options
+  return stampBrand(options, 'app')
 }
 
 export function defineNode(
@@ -690,7 +695,7 @@ export function defineNode(
 ): NodeExtensionOptions {
   nodeExtensions.push(options)
   scheduleStartupCheck()
-  return options
+  return stampBrand(options, 'node')
 }
 
 export function defineWidget(
@@ -698,7 +703,7 @@ export function defineWidget(
 ): WidgetExtensionOptions {
   widgetExtensions.push(options)
   scheduleStartupCheck()
-  return options
+  return stampBrand(options, 'widget')
 }
 
 /** @internal Test-only: clear all registered extensions and reset state. */
