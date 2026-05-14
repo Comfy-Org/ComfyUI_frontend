@@ -7,7 +7,10 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 type ModifiedWorkflow = Pick<ComfyWorkflow, 'path' | 'isModified'>
 
 const mockAuthStore = vi.hoisted(() => ({
-  logout: vi.fn().mockResolvedValue(undefined)
+  logout: vi.fn().mockResolvedValue(undefined),
+  initiateCreditPurchase: vi
+    .fn()
+    .mockResolvedValue({ checkout_url: 'https://checkout.example.com' })
 }))
 
 const mockToastStore = vi.hoisted(() => ({
@@ -35,8 +38,12 @@ vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
 }))
 
+const mockStartTopupTracking = vi.hoisted(() => vi.fn())
+
 vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: vi.fn(() => undefined)
+  useTelemetry: vi.fn(() => ({
+    startTopupTracking: mockStartTopupTracking
+  }))
 }))
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
@@ -59,9 +66,13 @@ vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() => mockAuthStore)
 }))
 
+const mockCanAccessSubscriptionFeatures = vi.hoisted(() => ({
+  value: false
+}))
+
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
-    isActiveSubscription: { value: false },
+    canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
     isFreeTier: { value: true },
     type: { value: 'free' }
   }))
@@ -191,5 +202,42 @@ describe('useAuthActions.logout', () => {
         denyLabel: 'auth.signOut.signOutAnyway'
       })
     )
+  })
+})
+
+describe('useAuthActions.purchaseCredits', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+    mockCanAccessSubscriptionFeatures.value = false
+  })
+
+  it('returns early when canAccessSubscriptionFeatures is false', async () => {
+    mockCanAccessSubscriptionFeatures.value = false
+
+    const { purchaseCredits } = useAuthActions()
+    await purchaseCredits(10)
+
+    expect(mockAuthStore.initiateCreditPurchase).not.toHaveBeenCalled()
+  })
+
+  it('initiates credit purchase when canAccessSubscriptionFeatures is true', async () => {
+    mockCanAccessSubscriptionFeatures.value = true
+    const mockOpen = vi.spyOn(window, 'open').mockImplementation(() => null)
+
+    const { purchaseCredits } = useAuthActions()
+    await purchaseCredits(10)
+
+    expect(mockAuthStore.initiateCreditPurchase).toHaveBeenCalledWith({
+      amount_micros: 10_000_000,
+      currency: 'usd'
+    })
+    expect(mockStartTopupTracking).toHaveBeenCalled()
+    expect(mockOpen).toHaveBeenCalledWith(
+      'https://checkout.example.com',
+      '_blank'
+    )
+
+    mockOpen.mockRestore()
   })
 })
