@@ -345,6 +345,53 @@ describe('fetchCloudNodesForBuild', () => {
     )
   })
 
+  it('queries every raw-id alias when packs collide on the same slug and picks the first hit', async () => {
+    fetchRegistryPacksMock.mockResolvedValue(
+      new Map<string, unknown>([
+        ['ComfyUI-QwenVL', null],
+        [
+          'ComfyUI_QwenVL',
+          {
+            id: 'ComfyUI_QwenVL',
+            name: 'ComfyUI QwenVL',
+            repository: 'https://github.com/example/ComfyUI_QwenVL'
+          }
+        ]
+      ])
+    )
+
+    const fetchImpl = vi.fn(async () =>
+      response({
+        QwenDash: validNode({
+          name: 'QwenDash',
+          python_module: 'custom_nodes.ComfyUI-QwenVL.nodes'
+        }),
+        QwenUnder: validNode({
+          name: 'QwenUnder',
+          python_module: 'custom_nodes.ComfyUI_QwenVL.nodes'
+        })
+      })
+    )
+    const outcome = await fetchCloudNodesForBuild({
+      apiKey: KEY,
+      baseUrl: BASE_URL,
+      fetchImpl: fetchImpl as typeof fetch
+    })
+
+    expect(outcome.status).toBe('fresh')
+    if (outcome.status !== 'fresh') return
+    expect(outcome.snapshot.packs).toHaveLength(1)
+    expect(outcome.snapshot.packs[0]?.id).toBe('comfyui-qwenvl')
+    expect(outcome.snapshot.packs[0]?.registryId).toBe('ComfyUI_QwenVL')
+    expect(outcome.snapshot.packs[0]?.repoUrl).toBe(
+      'https://github.com/example/ComfyUI_QwenVL'
+    )
+    expect(fetchRegistryPacksMock).toHaveBeenCalledWith(
+      ['ComfyUI-QwenVL', 'ComfyUI_QwenVL'],
+      expect.anything()
+    )
+  })
+
   it('normalizes pack ids when reading a fallback snapshot', async () => {
     const snapshotUrl = withSnapshotDir({
       fetchedAt: '2026-04-01T00:00:00.000Z',

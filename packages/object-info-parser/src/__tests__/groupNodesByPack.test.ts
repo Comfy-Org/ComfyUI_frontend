@@ -92,6 +92,17 @@ describe('groupNodesByPack', () => {
       'QwenA',
       'QwenB'
     ])
+    expect(grouped[0].rawIds).toEqual(['ComfyUI-QwenVL', 'ComfyUI_QwenVL'])
+  })
+
+  it('does not record duplicate aliases when the same raw id appears twice', () => {
+    const grouped = groupNodesByPack({
+      QwenA: makeNodeDef('QwenA', 'custom_nodes.ComfyUI-QwenVL.nodes'),
+      QwenB: makeNodeDef('QwenB', 'custom_nodes.ComfyUI-QwenVL.nodes')
+    })
+
+    expect(grouped).toHaveLength(1)
+    expect(grouped[0].rawIds).toEqual(['ComfyUI-QwenVL'])
   })
 
   it('strips version suffix before slugifying', () => {

@@ -10,6 +10,7 @@ export interface PackedNode {
 export interface NodePack {
   id: string
   rawId: string
+  rawIds: string[]
   displayName: string
   nodes: PackedNode[]
 }
@@ -40,12 +41,16 @@ export function groupNodesByPack(
 
     if (existing) {
       existing.nodes.push(node)
+      if (!existing.rawIds.includes(rawId)) {
+        existing.rawIds.push(rawId)
+      }
       continue
     }
 
     byPackId.set(slug, {
       id: slug,
       rawId,
+      rawIds: [rawId],
       displayName: source.displayText,
       nodes: [node]
     })

@@ -238,12 +238,12 @@ async function parseCloudNodes(
   )
   const grouped = groupNodesByPack(sanitizedDefs)
 
+  const allAliases = grouped.flatMap((pack) => pack.rawIds)
   let registryMap = new Map<string, RegistryPack | null>()
   try {
-    registryMap = await fetchRegistryPacks(
-      grouped.map((pack) => pack.rawId),
-      { fetchImpl: options.fetchImpl }
-    )
+    registryMap = await fetchRegistryPacks(allAliases, {
+      fetchImpl: options.fetchImpl
+    })
   } catch {
     registryMap = new Map()
   }
@@ -253,11 +253,22 @@ async function parseCloudNodes(
       pack.id,
       pack.displayName,
       pack.nodes,
-      registryMap.get(pack.rawId)
+      pickRegistryPack(registryMap, pack.rawIds)
     )
   )
 
   return { kind: 'ok', packs, droppedNodes }
+}
+
+function pickRegistryPack(
+  registryMap: Map<string, RegistryPack | null>,
+  aliases: readonly string[]
+): RegistryPack | null | undefined {
+  for (const alias of aliases) {
+    const hit = registryMap.get(alias)
+    if (hit) return hit
+  }
+  return registryMap.get(aliases[0])
 }
 
 function safeExternalUrl(value: string | undefined): string | undefined {
