@@ -34,6 +34,12 @@ def main():
         print("       Run scripts/build-behavior-categories.py first or copy from workspace", file=sys.stderr)
         sys.exit(1)
 
+    # Skip check if tests directory doesn't exist (tests only in tf branch)
+    if not TESTS_DIR.exists():
+        print(f"SKIP: {TESTS_DIR} not found — compat-floor tests not yet added to this branch")
+        print("      The compat-floor gate only enforces on branches with extension-api-v2 tests.")
+        sys.exit(0)
+
     # Load categories
     with open(BEHAVIOR_CATEGORIES_PATH, "r") as f:
         data = yaml.safe_load(f)
