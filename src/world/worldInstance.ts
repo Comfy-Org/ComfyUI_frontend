@@ -5,12 +5,10 @@ import type { ComponentKey } from './componentKey'
 import type { EntityId } from './entityIds'
 
 /**
- * @publicAPI
- * ECS World contract. Phase A surface; replaced by Alex's PR #11939
- * (ECS substrate slice 2). Consumed externally by the test framework PR
- * (#12145) and Phase B dispatch.
+ * ECS World contract. Internal only — not part of public extension API.
+ * Phase A surface; replaced by Alex's PR #11939 (ECS substrate slice 2).
  */
-export interface World {
+interface World {
   getComponent<TData, TEntity extends EntityId>(
     entityId: TEntity,
     key: ComponentKey<TData, TEntity>

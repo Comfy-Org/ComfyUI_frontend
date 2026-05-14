@@ -154,6 +154,22 @@ function dispatch(_command: Record<string, unknown>): unknown {
   return undefined
 }
 
+// Side table for DOM widget elements. Maps widgetId → HTMLElement.
+// Keeps HTMLElement out of serializable commands (CR-12142-3).
+// Cleanup wired via onScopeDispose in addDOMWidget.
+const domWidgetElements = new Map<WidgetEntityId, HTMLElement>()
+
+/**
+ * @internal
+ * Get the DOM element for a DOM widget. Used by renderer in Phase B.
+ * @knipIgnoreUsedByStackedPR
+ */
+export function getDOMWidgetElement(
+  widgetId: WidgetEntityId
+): HTMLElement | undefined {
+  return domWidgetElements.get(widgetId)
+}
+
 // Mirrors Vue's ComponentInternalInstance + EffectScope pair.
 // One scope per (extension, nodeEntityId). Lifetime = node entity lifetime.
 // Survives DOM moves (graph↔app mode, subgraph promotion) — only destroyed
@@ -478,8 +494,8 @@ function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
 
     addDOMWidget(opts: DOMWidgetOptions) {
       // TODO(#11939): dispatch CreateDOMWidget command once ECS DOM widget component lands.
-      // For Phase A we register a regular widget with type 'DOM' and store the element
-      // reference on the options bag. Auto-cleanup is wired via onScopeDispose.
+      // For Phase A we register a regular widget with type 'DOM'. Element stored in
+      // side table (not command) so commands remain serializable (CR-12142-3).
       const widgetId = dispatch({
         type: 'CreateWidget',
         parentNodeId: nodeId,
@@ -487,12 +503,14 @@ function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
         name: opts.name,
         defaultValue: null,
         options: {
-          __domElement: opts.element,
           __domHeight: opts.height ?? opts.element.offsetHeight
         }
       }) as WidgetEntityId
+      // Store element in side table, not in command (keeps commands serializable)
+      domWidgetElements.set(widgetId, opts.element)
       onScopeDispose(() => {
         opts.element.remove()
+        domWidgetElements.delete(widgetId)
       })
       return createWidgetHandle(widgetId)
     },
@@ -534,17 +552,17 @@ function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
       if (event === 'positionChanged') {
         return watch(
           () => world.getComponent(nodeId, PositionKey)?.pos,
-          (pos) => pos && fn(pos)
+          (pos) => pos && fn({ pos })
         )
       } else if (event === 'sizeChanged') {
         return watch(
           () => world.getComponent(nodeId, DimensionsKey)?.size,
-          (s) => s && fn(s)
+          (size) => size && fn({ size })
         )
       } else if (event === 'modeChanged') {
         return watch(
           () => world.getComponent(nodeId, ExecutionKey)?.mode,
-          (m) => m !== undefined && fn(m)
+          (mode) => mode !== undefined && fn({ mode })
         )
       } else if (
         event === 'executed' ||
@@ -661,19 +679,26 @@ function scheduleStartupCheck(): void {
   }, 5000)
 }
 
-export function defineExtension(options: ExtensionOptions): void {
+export function defineExtension(options: ExtensionOptions): ExtensionOptions {
   appExtensions.push(options)
   scheduleStartupCheck()
+  return options
 }
 
-export function defineNode(options: NodeExtensionOptions): void {
+export function defineNode(
+  options: NodeExtensionOptions
+): NodeExtensionOptions {
   nodeExtensions.push(options)
   scheduleStartupCheck()
+  return options
 }
 
-export function defineWidget(options: WidgetExtensionOptions): void {
+export function defineWidget(
+  options: WidgetExtensionOptions
+): WidgetExtensionOptions {
   widgetExtensions.push(options)
   scheduleStartupCheck()
+  return options
 }
 
 /** @internal Test-only: clear all registered extensions and reset state. */

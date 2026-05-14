@@ -53,8 +53,7 @@ export type {
 export {
   defineExtension,
   defineNode,
-  defineWidget,
-  startExtensionSystem
+  defineWidget
 } from '@/services/extension-api-service'
 
 export { onNodeMounted, onNodeRemoved } from './lifecycle'
