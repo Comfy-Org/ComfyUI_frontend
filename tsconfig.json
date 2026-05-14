@@ -27,6 +27,10 @@
       ],
       "@/utils/networkUtil": [
         "./packages/shared-frontend-utils/src/networkUtil.ts"
+      ],
+      "@/utils/linkFixer": ["./packages/workflow-validation/src/linkRepair.ts"],
+      "@/platform/workflow/validation/schemas/workflowSchema": [
+        "./packages/workflow-validation/src/workflowSchema.ts"
       ]
     },
     "typeRoots": ["src/types", "node_modules/@types", "./node_modules"],

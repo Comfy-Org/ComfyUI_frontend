@@ -91,6 +91,17 @@ const config: StorybookConfig = {
               '/packages/shared-frontend-utils/src/networkUtil.ts'
           },
           {
+            find: '@/utils/linkFixer',
+            replacement:
+              process.cwd() + '/packages/workflow-validation/src/linkRepair.ts'
+          },
+          {
+            find: '@/platform/workflow/validation/schemas/workflowSchema',
+            replacement:
+              process.cwd() +
+              '/packages/workflow-validation/src/workflowSchema.ts'
+          },
+          {
             find: '@',
             replacement: process.cwd() + '/src'
           }
