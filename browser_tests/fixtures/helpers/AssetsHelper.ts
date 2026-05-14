@@ -15,6 +15,7 @@ const jobsListRoutePattern = '**/api/jobs?*'
 const assetsListRoutePattern = /\/api\/assets(?:\?.*)?$/
 const assetExportRoutePattern = '**/api/assets/export'
 const inputFilesRoutePattern = /\/internal\/files\/input(?:\?.*)?$/
+const viewRoutePattern = /\/api\/view(?:\?.*)?$/
 const historyRoutePattern = /\/api\/history$/
 
 /**
@@ -174,6 +175,7 @@ export class AssetsHelper {
     null
   private inputFilesRouteHandler: ((route: Route) => Promise<void>) | null =
     null
+  private viewRouteHandler: ((route: Route) => Promise<void>) | null = null
   private deleteHistoryRouteHandler: ((route: Route) => Promise<void>) | null =
     null
   private generatedJobs: RawJobListItem[] = []
@@ -185,6 +187,18 @@ export class AssetsHelper {
     string,
     (route: Route) => Promise<void>
   >()
+  private readonly inputAssetFiles = new Map<
+    string,
+    { path?: string; body?: Buffer; contentType?: string }
+  >()
+
+  private static buildAssetFileKey(
+    filename: string,
+    type: 'input' | 'output',
+    subfolder: string
+  ): string {
+    return `${type}::${subfolder}::${filename}`
+  }
 
   constructor(private readonly page: Page) {}
 
@@ -356,6 +370,78 @@ export class AssetsHelper {
   }
 
   /**
+   * Intercepts `GET /api/view?filename=...&type=...[&subfolder=...]` and
+   * serves a real file. Matches on `filename` + `type` + `subfolder` to
+   * mirror `getAssetUrl()`; requests that don't match a registered entry
+   * fall through so unrelated preview/image loads keep working.
+   */
+  async mockInputAssetFile(
+    filename: string,
+    file: {
+      path?: string
+      body?: Buffer
+      contentType?: string
+      type?: 'input' | 'output'
+      subfolder?: string
+    }
+  ): Promise<void> {
+    const hasPath = typeof file.path === 'string'
+    const hasBody = file.body !== undefined
+    if (hasPath === hasBody) {
+      throw new Error(
+        'mockInputAssetFile expects exactly one of "path" or "body"'
+      )
+    }
+
+    const type = file.type ?? 'input'
+    const subfolder = file.subfolder ?? ''
+    const key = AssetsHelper.buildAssetFileKey(filename, type, subfolder)
+    this.inputAssetFiles.set(key, {
+      path: file.path,
+      body: file.body,
+      contentType: file.contentType
+    })
+
+    if (this.viewRouteHandler) return
+
+    this.viewRouteHandler = async (route: Route) => {
+      if (route.request().method() !== 'GET') {
+        await route.fallback()
+        return
+      }
+      const url = new URL(route.request().url())
+      const requestedName = url.searchParams.get('filename')
+      const requestedType = url.searchParams.get('type') ?? 'input'
+      const requestedSubfolder = url.searchParams.get('subfolder') ?? ''
+
+      const entry =
+        requestedName &&
+        (requestedType === 'input' || requestedType === 'output')
+          ? this.inputAssetFiles.get(
+              AssetsHelper.buildAssetFileKey(
+                requestedName,
+                requestedType,
+                requestedSubfolder
+              )
+            )
+          : undefined
+
+      if (!entry) {
+        await route.fallback()
+        return
+      }
+
+      await route.fulfill({
+        status: 200,
+        ...(entry.contentType && { contentType: entry.contentType }),
+        ...(entry.path ? { path: entry.path } : { body: entry.body ?? '' })
+      })
+    }
+
+    await this.page.route(viewRoutePattern, this.viewRouteHandler)
+  }
+
+  /**
    * Mock the POST /api/history endpoint used for deleting history items.
    * On receiving a `{ delete: [id] }` payload, removes matching jobs from
    * the in-memory mock state so subsequent /api/jobs fetches reflect the
@@ -396,6 +482,7 @@ export class AssetsHelper {
     this.assetExportRequests = []
     this.assetExportResponse = null
     this.importedFiles = []
+    this.inputAssetFiles.clear()
 
     if (this.jobsRouteHandler) {
       await this.page.unroute(jobsListRoutePattern, this.jobsRouteHandler)
@@ -424,6 +511,11 @@ export class AssetsHelper {
         this.inputFilesRouteHandler
       )
       this.inputFilesRouteHandler = null
+    }
+
+    if (this.viewRouteHandler) {
+      await this.page.unroute(viewRoutePattern, this.viewRouteHandler)
+      this.viewRouteHandler = null
     }
 
     if (this.deleteHistoryRouteHandler) {
