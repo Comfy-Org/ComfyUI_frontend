@@ -2175,8 +2175,8 @@ const translations = {
   // until legal approves a translation; non-engineers can edit these
   // entries directly without a code change.
   'affiliate-terms.effective-date': {
-    en: '[TBD]',
-    'zh-CN': '[TBD]'
+    en: 'May 15, 2026',
+    'zh-CN': 'May 15, 2026'
   },
   'affiliate-terms.1-program-overview.label': {
     en: 'PROGRAM',
