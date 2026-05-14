@@ -252,8 +252,8 @@ test.describe('Cloud notification dialog', () => {
     const dialog = new CloudNotification(comfyPage.page)
     await dialog.open()
 
-    await expect(dialog.root.getByText(/Free Credits/i)).toBeHidden()
-    await expect(dialog.root.getByText(/400/)).toBeHidden()
+    await expect(dialog.root.getByText(/Free Credits/i)).toHaveCount(0)
+    await expect(dialog.root.getByText(/400/)).toHaveCount(0)
   })
 })
 
