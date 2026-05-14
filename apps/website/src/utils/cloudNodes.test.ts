@@ -307,6 +307,51 @@ describe('fetchCloudNodesForBuild', () => {
     expect(outcome.status).toBe('fresh')
   })
 
+  it('falls back to the raw upstream id for registryId when registry lookup misses', async () => {
+    fetchRegistryPacksMock.mockResolvedValue(new Map())
+    const fetchImpl = vi.fn(async () =>
+      response({
+        QwenNode: validNode({
+          name: 'QwenNode',
+          python_module: 'custom_nodes.ComfyUI_QwenVL.nodes'
+        })
+      })
+    )
+    const outcome = await fetchCloudNodesForBuild({
+      apiKey: KEY,
+      baseUrl: BASE_URL,
+      fetchImpl: fetchImpl as typeof fetch
+    })
+
+    expect(outcome.status).toBe('fresh')
+    if (outcome.status !== 'fresh') return
+    expect(outcome.snapshot.packs[0]?.id).toBe('comfyui-qwenvl')
+    expect(outcome.snapshot.packs[0]?.registryId).toBe('ComfyUI_QwenVL')
+  })
+
+  it('falls back to the raw upstream id for registryId when fetchRegistryPacks throws', async () => {
+    fetchRegistryPacksMock.mockImplementation(async () => {
+      throw new Error('registry unreachable')
+    })
+    const fetchImpl = vi.fn(async () =>
+      response({
+        QwenNode: validNode({
+          name: 'QwenNode',
+          python_module: 'custom_nodes.ComfyUI_QwenVL.nodes'
+        })
+      })
+    )
+    const outcome = await fetchCloudNodesForBuild({
+      apiKey: KEY,
+      baseUrl: BASE_URL,
+      fetchImpl: fetchImpl as typeof fetch
+    })
+
+    expect(outcome.status).toBe('fresh')
+    if (outcome.status !== 'fresh') return
+    expect(outcome.snapshot.packs[0]?.registryId).toBe('ComfyUI_QwenVL')
+  })
+
   it('slugifies pack ids while querying the registry with the raw id', async () => {
     fetchRegistryPacksMock.mockResolvedValue(
       new Map([

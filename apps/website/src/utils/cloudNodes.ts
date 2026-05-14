@@ -251,6 +251,7 @@ async function parseCloudNodes(
   const packs = grouped.map((pack) =>
     toDomainPack(
       pack.id,
+      pack.rawIds[0],
       pack.displayName,
       pack.nodes,
       pickRegistryPack(registryMap, pack.rawIds)
@@ -285,6 +286,7 @@ function safeExternalUrl(value: string | undefined): string | undefined {
 
 function toDomainPack(
   packId: string,
+  fallbackRegistryId: string | undefined,
   fallbackDisplayName: string,
   nodes: Array<{
     className: string
@@ -300,7 +302,7 @@ function toDomainPack(
 ): Pack {
   return {
     id: packId,
-    registryId: registryPack?.id,
+    registryId: registryPack?.id ?? fallbackRegistryId,
     displayName: registryPack?.name?.trim() || fallbackDisplayName || packId,
     description: registryPack?.description?.trim() || undefined,
     bannerUrl: safeExternalUrl(registryPack?.banner_url),
