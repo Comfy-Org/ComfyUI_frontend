@@ -35,7 +35,9 @@ export const iconForJobState = (state: JobState): string => {
     case 'completed':
       return 'icon-[lucide--check-check]'
     case 'failed':
-      return 'icon-[lucide--alert-circle]'
+      return 'icon-[lucide--circle-alert]'
+    case 'cancelled':
+      return 'icon-[lucide--circle-x]'
     default:
       return 'icon-[lucide--circle]'
   }
@@ -148,6 +150,14 @@ export const buildJobDisplay = (
       iconName: iconForJobState(state),
       primary: ctx.t('g.failed'),
       secondary: ctx.t('g.failed'),
+      showClear: true
+    }
+  }
+  if (state === 'cancelled') {
+    return {
+      iconName: iconForJobState(state),
+      primary: ctx.t('g.cancelled'),
+      secondary: ctx.t('g.cancelled'),
       showClear: true
     }
   }

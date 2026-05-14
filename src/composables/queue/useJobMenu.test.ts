@@ -864,6 +864,25 @@ describe('useJobMenu', () => {
     expect(queueStoreMock.update).toHaveBeenCalled()
   })
 
+  it('returns cancelled menu entries without error actions or cancel action', async () => {
+    const taskRef = { id: 'task-cancel' }
+    const { jobMenuEntries } = mountJobMenu()
+    setCurrentItem(createJobItem({ state: 'cancelled', taskRef }))
+
+    await nextTick()
+    expect(jobMenuEntries.value.map((entry) => entry.key)).toEqual([
+      'open-workflow',
+      'd1',
+      'copy-id',
+      'd2',
+      'delete'
+    ])
+
+    const deleteEntry = findActionEntry(jobMenuEntries.value, 'delete')
+    await deleteEntry?.onClick?.()
+    expect(queueStoreMock.delete).toHaveBeenCalledWith(taskRef)
+  })
+
   it('returns empty menu when no job selected', async () => {
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(null)

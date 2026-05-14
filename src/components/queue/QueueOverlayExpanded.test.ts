@@ -63,7 +63,8 @@ const defaultProps = {
   selectedWorkflowFilter: 'all' as const,
   selectedSortMode: 'mostRecent' as const,
   displayedJobGroups: [],
-  hasFailedJobs: false
+  hasFailedJobs: false,
+  hasCancelledJobs: false
 }
 
 const stubs = {

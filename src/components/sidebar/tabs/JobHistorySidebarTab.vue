@@ -11,6 +11,7 @@
           <JobFilterTabs
             :selected-job-tab="selectedJobTab"
             :has-failed-jobs="hasFailedJobs"
+            :has-cancelled-jobs="hasCancelledJobs"
             @update:selected-job-tab="onUpdateSelectedJobTab"
           />
         </div>
@@ -123,6 +124,7 @@ const {
   selectedSortMode,
   searchQuery,
   hasFailedJobs,
+  hasCancelledJobs,
   filteredTasks,
   groupedJobItems
 } = useJobList()

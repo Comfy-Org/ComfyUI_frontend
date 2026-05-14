@@ -22,7 +22,7 @@ function buildGroupedJobItems(): JobGroup[] {
 
 const groupedJobItems = computed<JobGroup[]>(buildGroupedJobItems)
 
-export const jobTabs = ['All', 'Completed', 'Failed'] as const
+export const jobTabs = ['All', 'Completed', 'Failed', 'Cancelled'] as const
 export const jobSortModes = ['mostRecent', 'totalGenerationTime'] as const
 
 const selectedJobTab = ref<JobTab>('All')
@@ -41,7 +41,12 @@ function buildHasFailedJobs() {
   return jobItems.value.some((item) => item.state === 'failed')
 }
 
+function buildHasCancelledJobs() {
+  return jobItems.value.some((item) => item.state === 'cancelled')
+}
+
 const hasFailedJobs = computed(buildHasFailedJobs)
+const hasCancelledJobs = computed(buildHasCancelledJobs)
 
 export function setMockJobItems(items: JobListItem[]) {
   jobItems.value = items
@@ -54,6 +59,7 @@ export function useJobList() {
     selectedSortMode,
     searchQuery,
     hasFailedJobs,
+    hasCancelledJobs,
     allTasksSorted,
     filteredTasks,
     jobItems,
