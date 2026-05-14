@@ -7,12 +7,14 @@ import type { ComfyExtension } from '@/types/comfy'
 const {
   registerExtensionMock,
   waitForLoad3dMock,
+  onLoad3dReadyMock,
   configureMock,
   getLoad3dMock,
   toastAddAlertMock
 } = vi.hoisted(() => ({
   registerExtensionMock: vi.fn(),
   waitForLoad3dMock: vi.fn(),
+  onLoad3dReadyMock: vi.fn(),
   configureMock: vi.fn(),
   getLoad3dMock: vi.fn(),
   toastAddAlertMock: vi.fn()
@@ -30,7 +32,10 @@ vi.mock('@/services/load3dService', () => ({
 }))
 
 vi.mock('@/composables/useLoad3d', () => ({
-  useLoad3d: () => ({ waitForLoad3d: waitForLoad3dMock }),
+  useLoad3d: () => ({
+    waitForLoad3d: waitForLoad3dMock,
+    onLoad3dReady: onLoad3dReadyMock
+  }),
   nodeToLoad3dMap: new Map()
 }))
 
@@ -187,6 +192,9 @@ function setupBaseMocks() {
   waitForLoad3dMock.mockImplementation((cb: (load3d: FakeLoad3d) => void) => {
     cb(makeLoad3dMock())
   })
+  onLoad3dReadyMock.mockImplementation((cb: (load3d: FakeLoad3d) => void) => {
+    cb(makeLoad3dMock())
+  })
 }
 
 describe('load3d module registration', () => {
@@ -269,6 +277,30 @@ describe('Comfy.Preview3D.nodeCreated', () => {
       cameraState,
       silentOnNotFound: true
     })
+  })
+
+  it('registers a persistent onLoad3dReady hook so subgraph re-entry rehydrates the model', async () => {
+    const onReadyCallbacks: Array<(load3d: FakeLoad3d) => void> = []
+    onLoad3dReadyMock.mockImplementation((cb: (load3d: FakeLoad3d) => void) => {
+      onReadyCallbacks.push(cb)
+    })
+
+    const { preview3DExt } = await loadExtensionsFresh()
+    const node = makePreview3DNode({
+      properties: { 'Last Time Model File': 'persisted/model.glb' }
+    })
+
+    await preview3DExt.nodeCreated(node)
+    expect(onReadyCallbacks).toHaveLength(1)
+    expect(configureMock).not.toHaveBeenCalled()
+
+    // First mount.
+    onReadyCallbacks[0](makeLoad3dMock())
+    expect(configureMock).toHaveBeenCalledTimes(1)
+
+    // Subgraph exit + re-entry: same callback fires again with a fresh load3d.
+    onReadyCallbacks[0](makeLoad3dMock())
+    expect(configureMock).toHaveBeenCalledTimes(2)
   })
 
   it('persists Last Time Model File and normalizes backslashes after onExecuted', async () => {
