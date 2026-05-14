@@ -249,11 +249,13 @@ export const useModelStore = defineStore('models', () => {
   /**
    * Discards the cache for a single folder and re-loads its contents.
    * Use when on-disk contents of that folder have changed (e.g. after upload).
-   * Falls back to refreshing the folder structure when the folder is unknown.
+   * Falls back to refreshing the whole library when the folder is unknown so
+   * a newly-introduced folder type is picked up without dropping other
+   * folders' loaded contents.
    */
   async function refreshModelFolder(folderName: string) {
     if (!(folderName in modelFolderByName.value)) {
-      await loadModelFolders()
+      await refresh()
       return
     }
     const folder = new ModelFolder(folderName, createGetModelsFunc())
