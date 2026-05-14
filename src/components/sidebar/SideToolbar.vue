@@ -76,6 +76,7 @@ import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsT
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { usePreventFocusLoss } from '@/composables/usePreventFocusLoss'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
@@ -103,6 +104,8 @@ const userStore = useUserStore()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const sideToolbarRef = ref<HTMLElement>()
+usePreventFocusLoss(sideToolbarRef)
+
 const topToolbarRef = ref<HTMLElement>()
 const bottomToolbarRef = ref<HTMLElement>()
 

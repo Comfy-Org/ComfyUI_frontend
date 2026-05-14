@@ -118,6 +118,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
+import { usePreventFocusLoss } from '@/composables/usePreventFocusLoss'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { buildFeedbackTypeformUrl } from '@/platform/support/config'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -161,6 +162,8 @@ function openFeedback() {
 }
 
 const containerRef = ref<HTMLElement | null>(null)
+usePreventFocusLoss(containerRef, '.workflow-tab')
+
 const showOverflowArrows = ref(false)
 const leftArrowEnabled = ref(false)
 const rightArrowEnabled = ref(false)
