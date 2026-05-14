@@ -351,6 +351,7 @@ const zSettings = z.object({
   'Comfy.NodeSearchBoxImpl.ShowCategory': z.boolean(),
   'Comfy.NodeSearchBoxImpl.ShowIdName': z.boolean(),
   'Comfy.NodeSearchBoxImpl.ShowNodeFrequency': z.boolean(),
+  'Comfy.NodeSearchBox.ReplaceCanvasMenu': z.boolean(),
   'Comfy.NodeSuggestions.number': z.number(),
   'Comfy.Node.BypassAllLinksOnDelete': z.boolean(),
   'Comfy.Node.Opacity': z.number(),
