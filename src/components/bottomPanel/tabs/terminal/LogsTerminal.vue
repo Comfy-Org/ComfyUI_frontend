@@ -55,6 +55,13 @@ const terminalCreated = (
     update(logs.entries)
   }
 
+  const resyncLogs = () => {
+    terminal.reset()
+    loadLogEntries().catch((err) => {
+      console.error('Error resyncing logs after reconnect', err)
+    })
+  }
+
   const watchLogs = async () => {
     const { clientId } = storeToRefs(useExecutionStore())
     if (!clientId.value) {
@@ -62,6 +69,7 @@ const terminalCreated = (
     }
     await api.subscribeLogs(true)
     api.addEventListener('logs', logReceived)
+    api.addEventListener('reconnected', resyncLogs)
   }
 
   onMounted(async () => {
@@ -84,6 +92,7 @@ const terminalCreated = (
       await api.subscribeLogs(false)
     }
     api.removeEventListener('logs', logReceived)
+    api.removeEventListener('reconnected', resyncLogs)
   })
 }
 </script>
