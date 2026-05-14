@@ -135,7 +135,7 @@ describe('BC.10 v1 contract — widget value subscription', () => {
     })
 
     it('onWidgetChanged fires for any widget on the node, not only those with an explicit callback', () => {
-      const widgetA = createV1Widget('steps', 20)
+      const __widgetA = createV1Widget('steps', 20)
       const widgetB = createV1Widget('cfg', 7)
       const handler = vi.fn()
       const node = { onWidgetChanged: handler }
@@ -157,8 +157,12 @@ describe('BC.10 v1 contract — widget value subscription', () => {
       ]
       const calls: Array<[string, unknown]> = []
       const node = {
-        onWidgetChanged: (name: string, value: unknown) =>
-          calls.push([name, value])
+        onWidgetChanged: (
+          name: string,
+          value: unknown,
+          _oldValue?: unknown,
+          _widget?: unknown
+        ) => calls.push([name, value])
       }
 
       // Simulate changes to all three widgets

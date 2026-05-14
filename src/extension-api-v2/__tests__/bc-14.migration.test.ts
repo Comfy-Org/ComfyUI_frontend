@@ -194,7 +194,7 @@ describe('BC.14 migration — graphToPrompt interception', () => {
       expect(typeof ext.setup).toBe('function')
       const result = ext.setup!()
       expect(result).toBeInstanceOf(Promise)
-      return result.then(() => {
+      return Promise.resolve(result).then(() => {
         expect(registered).toContain('setup-called')
       })
     })

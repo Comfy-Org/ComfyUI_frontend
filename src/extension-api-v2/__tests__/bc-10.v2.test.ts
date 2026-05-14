@@ -27,7 +27,7 @@ interface MockWidgetHandle {
   setValue(value: unknown): void
   on(
     event: 'valueChange',
-    handler: (e: WidgetValueChangeEvent) => void
+    handler: (e: WidgetValueChangeEvent<unknown>) => void
   ): Unsubscribe
 }
 
@@ -36,7 +36,7 @@ function createMockWidgetHandle(
   initial: unknown = ''
 ): MockWidgetHandle {
   const valueRef = shallowRef(initial)
-  const listeners: Array<(e: WidgetValueChangeEvent) => void> = []
+  const listeners: Array<(e: WidgetValueChangeEvent<unknown>) => void> = []
 
   return {
     name,
@@ -47,12 +47,12 @@ function createMockWidgetHandle(
       const oldValue = valueRef.value
       if (newValue === oldValue) return
       valueRef.value = newValue
-      const event: WidgetValueChangeEvent = { newValue, oldValue }
+      const event: WidgetValueChangeEvent<unknown> = { newValue, oldValue }
       for (const fn of listeners) fn(event)
     },
     on(
       _event: 'valueChange',
-      handler: (e: WidgetValueChangeEvent) => void
+      handler: (e: WidgetValueChangeEvent<unknown>) => void
     ): Unsubscribe {
       listeners.push(handler)
       return () => {
@@ -80,7 +80,7 @@ describe('BC.10 v2 contract — widget value subscription', () => {
 
     it('handler receives the correct oldValue even after multiple sequential changes', () => {
       const widget = createMockWidgetHandle('seed', 0)
-      const received: WidgetValueChangeEvent[] = []
+      const received: WidgetValueChangeEvent<unknown>[] = []
 
       widget.on('valueChange', (e) => received.push(e))
       widget.setValue(1)

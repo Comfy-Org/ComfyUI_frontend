@@ -126,8 +126,11 @@ describe('BC.20 v1 contract — LiteGraph.registerNodeType and isVirtualNode', (
       const LiteGraph = createMockLiteGraph()
       const app = createMockApp(LiteGraph)
 
-      class VirtualNode {}
-      VirtualNode.prototype.isVirtualNode = true
+      class VirtualNode {
+        static isVirtualNode = true
+      }
+      ;(VirtualNode.prototype as { isVirtualNode?: boolean }).isVirtualNode =
+        true
 
       app.registerExtension({
         registerCustomNodes() {
@@ -218,8 +221,11 @@ describe('BC.20 v1 contract — LiteGraph.registerNodeType and isVirtualNode', (
   describe('S8.P1 — virtual node payload suppression (synthetic)', () => {
     it('serializeGraph excludes nodes with isVirtualNode === true from the output', () => {
       class RealNode {}
-      class VirtualNode {}
-      VirtualNode.prototype.isVirtualNode = true
+      class VirtualNode {
+        static isVirtualNode = true
+      }
+      ;(VirtualNode.prototype as { isVirtualNode?: boolean }).isVirtualNode =
+        true
 
       const nodes = [
         {

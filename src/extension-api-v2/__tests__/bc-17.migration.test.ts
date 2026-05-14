@@ -77,7 +77,7 @@ describe('BC.17 migration — execution lifecycle events', () => {
       const v2Received: unknown[] = []
 
       v1Api.addEventListener('executed', ((e: CustomEvent) =>
-        v1Received.push(e.detail)) as EventListener)
+        v1Received.push(e.detail)) as unknown as EventListener)
       v2.on('executed', (e) => v2Received.push(e))
 
       const payload = { nodeId: 'node:g:1', output: { text: ['hello'] } }
@@ -94,7 +94,7 @@ describe('BC.17 migration — execution lifecycle events', () => {
       const v2Payload: unknown[] = []
 
       v1Api.addEventListener('execution_error', ((e: CustomEvent) =>
-        v1Detail.push(e.detail)) as EventListener)
+        v1Detail.push(e.detail)) as unknown as EventListener)
       v2.on('executionError', (e) => v2Payload.push(e))
 
       const payload = { nodeId: 'node:g:7', message: 'CUDA OOM' }

@@ -113,7 +113,7 @@ function serializeWidgets(widgets: Array<WidgetSpec & { value: unknown }>): {
   return { named, warnings }
 }
 
-function deserializeWidgets(
+function _deserializeWidgets(
   named: Record<string, unknown>,
   specs: WidgetSpec[],
   warn: (msg: string) => void

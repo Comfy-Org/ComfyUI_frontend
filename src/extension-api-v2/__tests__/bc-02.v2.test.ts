@@ -96,7 +96,7 @@ describe('BC.02 v2 contract — node lifecycle: teardown', () => {
 
     it('cleanup fires for every node when world.clear() triggers unmount of all nodes', () => {
       const world = createHarnessWorld()
-      const cleanups: (() => void)[] = []
+      const _cleanups: (() => void)[] = []
 
       // Mount 3 nodes, collect their unmount handles
       const handles = [
@@ -142,7 +142,7 @@ describe('BC.02 v2 contract — node lifecycle: teardown', () => {
     it('interval cleared in onScopeDispose does not fire after unmount', () => {
       vi.useFakeTimers()
       const intervalCallback = vi.fn()
-      let handle: ReturnType<typeof setInterval> | undefined
+      let handle: number | undefined
 
       const { unmount } = mountNode(() => {
         handle = setInterval(intervalCallback, 100)

@@ -154,7 +154,7 @@ describe('BC.03 migration — node lifecycle: hydration from saved workflows', (
 
       // Simulate fresh creation: runtime does NOT call onConfigure / loadedGraphNode.
       // (Only nodeCreated / onNodeCreated fire for fresh nodes.)
-      const _freshNodeId = createHarnessWorld().addNode({ type: 'KSampler' })
+      const ___freshNodeId = createHarnessWorld().addNode({ type: 'KSampler' })
 
       // Neither function called — fresh creation path.
       expect(v1ConfigureFn).not.toHaveBeenCalled()

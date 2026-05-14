@@ -63,11 +63,11 @@ describe('BC.12 migration — per-widget serialization transform', () => {
       expectTypeOf<NameField>().toEqualTypeOf<string>()
     })
 
-    it('WidgetHandle.entityId is a branded number — prevents mixing widget IDs with node IDs', () => {
+    it('WidgetHandle.entityId is a branded string — prevents mixing widget IDs with node IDs', () => {
       type EntityId = WidgetHandle['entityId']
-      // Branded: assignable to number but not plain number (structurally number & { __brand })
-      type IsNumber = EntityId extends number ? true : false
-      const branded: IsNumber = true
+      // Branded: assignable to string but not plain string (structurally string & { __brand })
+      type IsString = EntityId extends string ? true : false
+      const branded: IsString = true
       expect(branded).toBe(true)
     })
 
@@ -102,7 +102,7 @@ describe('BC.12 migration — per-widget serialization transform', () => {
   describe('async transform equivalence', () => {
     it("v2 on('beforeSerialize') handler type accepts both sync and async functions", () => {
       // AsyncHandler<T> = (e: T) => void | Promise<void>
-      type Handler = Parameters<WidgetHandle['on']>[1]
+      type __Handler = Parameters<WidgetHandle['on']>[1]
       // The beforeSerialize overload's handler must accept Promise return.
       // We check via the on() overload signature: the second param when event='beforeSerialize'
       // is typed as AsyncHandler<WidgetBeforeSerializeEvent>.

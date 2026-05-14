@@ -12,7 +12,7 @@
 // mouseDown + selected/deselected migration tests are Phase B (API not yet present).
 
 import { describe, expect, it, vi } from 'vitest'
-import type { NodeSizeChangedEvent } from '@/extension-api/node'
+import type { NodeSizeChangedEvent, Size } from '@/extension-api/node'
 import type { Unsubscribe } from '@/extension-api/events'
 
 // ── Shared mock ───────────────────────────────────────────────────────────────
@@ -22,7 +22,7 @@ interface MockNode {
     event: 'sizeChanged',
     handler: (e: NodeSizeChangedEvent) => void
   ): Unsubscribe
-  _emitSizeChanged(size: { width: number; height: number }): void
+  _emitSizeChanged(size: Size): void
 }
 
 function createMockNode(): MockNode {
@@ -38,7 +38,7 @@ function createMockNode(): MockNode {
         if (idx !== -1) listeners.splice(idx, 1)
       }
     },
-    _emitSizeChanged(size) {
+    _emitSizeChanged(size: Size) {
       const event: NodeSizeChangedEvent = { size }
       for (const fn of [...listeners]) fn(event)
     }
@@ -51,22 +51,22 @@ describe('BC.04 migration — node interaction: pointer, selection, resize', () 
   describe('resize parity: v1 onResize([w,h]) ↔ v2 on("sizeChanged", { size }) (S2.N19)', () => {
     it('v2 sizeChanged handler receives same dimensions that v1 onResize received', () => {
       const node = createMockNode()
-      const v2Sizes: { width: number; height: number }[] = []
+      const v2Sizes: Size[] = []
       node.on('sizeChanged', (e) => v2Sizes.push(e.size))
 
       // Simulate the same resize LiteGraph called node.onResize([300, 200]) for
-      node._emitSizeChanged({ width: 300, height: 200 })
+      node._emitSizeChanged([300, 200])
 
-      expect(v2Sizes).toEqual([{ width: 300, height: 200 }])
+      expect(v2Sizes).toEqual([[300, 200]])
     })
 
     it('multiple resize events all reach the v2 handler (parity with repeated v1 onResize calls)', () => {
       const node = createMockNode()
       const widths: number[] = []
-      node.on('sizeChanged', (e) => widths.push(e.size.width))
-      node._emitSizeChanged({ width: 100, height: 50 })
-      node._emitSizeChanged({ width: 200, height: 80 })
-      node._emitSizeChanged({ width: 300, height: 120 })
+      node.on('sizeChanged', (e) => widths.push(e.size[0]))
+      node._emitSizeChanged([100, 50])
+      node._emitSizeChanged([200, 80])
+      node._emitSizeChanged([300, 120])
       expect(widths).toEqual([100, 200, 300])
     })
 
@@ -102,7 +102,7 @@ describe('BC.04 migration — node interaction: pointer, selection, resize', () 
       const handler = vi.fn()
       const unsub = node.on('sizeChanged', handler)
       unsub()
-      node._emitSizeChanged({ width: 100, height: 50 })
+      node._emitSizeChanged([100, 50])
       expect(handler).not.toHaveBeenCalled()
     })
   })

@@ -118,7 +118,7 @@ describe('BC.19 v1 contract — app.queuePrompt monkey-patch', () => {
     })
 
     it('extension can inject a field into a mutable prompt object before calling orig()', async () => {
-      const app = createMockApp()
+      const _app = createMockApp()
       const prompts: Record<string, unknown>[] = []
 
       // Simulate a version of app where queuePrompt receives a prompt object
