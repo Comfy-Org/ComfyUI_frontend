@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { getRoutes } from '../../config/routes'
 import { hasKey, t, translationKeys } from '../../i18n/translations'
 
 const PREFIX = 'affiliate-terms'
@@ -63,5 +64,13 @@ describe('affiliate terms i18n', () => {
       (key) => key.startsWith(PREFIX) && internalRegex.test(key)
     )
     expect(leaks).toEqual([])
+  })
+
+  it('exposes affiliate terms at the canonical /affiliates/terms path regardless of locale', () => {
+    // Guards against re-introducing /zh-CN/affiliates/terms, which would
+    // serve an unreviewed translation of legal-reviewed copy. See the
+    // comment on LOCALE_INVARIANT_ROUTE_KEYS in src/config/routes.ts.
+    expect(getRoutes('en').affiliateTerms).toBe('/affiliates/terms')
+    expect(getRoutes('zh-CN').affiliateTerms).toBe('/affiliates/terms')
   })
 })

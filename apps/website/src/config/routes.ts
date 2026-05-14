@@ -20,11 +20,24 @@ const baseRoutes = {
 
 type Routes = typeof baseRoutes
 
+// Routes that are served only at their canonical path regardless of the
+// active locale. Localized variants of these routes intentionally do not
+// exist, so getRoutes(<non-en>) must not prefix them — emitting
+// /zh-CN/<route> would produce a dead link.
+//
+// affiliateTerms: legal-reviewed English-only document. See the comment
+// header in src/pages/affiliates/terms.astro and the affiliate-terms i18n
+// block in src/i18n/translations.ts for the reasoning.
+const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>(['affiliateTerms'])
+
 export function getRoutes(locale: Locale = 'en'): Routes {
   if (locale === 'en') return baseRoutes
   const prefix = `/${locale}`
   return Object.fromEntries(
-    Object.entries(baseRoutes).map(([k, v]) => [k, `${prefix}${v}`])
+    Object.entries(baseRoutes).map(([k, v]) => [
+      k,
+      LOCALE_INVARIANT_ROUTE_KEYS.has(k as keyof Routes) ? v : `${prefix}${v}`
+    ])
   ) as unknown as Routes
 }
 
