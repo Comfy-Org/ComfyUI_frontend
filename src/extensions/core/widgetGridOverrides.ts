@@ -1,96 +1,104 @@
+import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { app } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
+import { useDialogStore } from '@/stores/dialogStore'
+import {
+  clearAllGridOverrides,
+  clearGridOverride,
+  readGridOverrides,
+  setGridOverride
+} from '@/utils/widgetGridOverrides'
 
-const PROPERTY_KEY = 'gridOverrides'
-const DEFAULT_PROMPT_VALUE = '200px'
-
-type GridOverrides = Record<string, string>
-
-function readOverrides(node: LGraphNode): GridOverrides {
-  const raw = node.properties?.[PROPERTY_KEY]
-  if (!raw || typeof raw !== 'object') return {}
-  return { ...(raw as GridOverrides) }
-}
-
-function writeOverrides(node: LGraphNode, next: GridOverrides): void {
-  node.properties ??= {}
-  if (Object.keys(next).length === 0) {
-    delete node.properties[PROPERTY_KEY]
-  } else {
-    node.properties[PROPERTY_KEY] = next
-  }
-  refreshVueNode(String(node.id))
-  app.canvas?.setDirty(true, true)
-}
+const DEFAULT_SIZE = '200px'
 
 function refreshVueNode(nodeId: string): void {
   const manager = useVueNodeLifecycle().nodeManager.value
   manager?.refreshNode(nodeId)
 }
 
-function promptForRowSize(
-  current: string,
-  onSubmit: (value: string) => void
-): void {
-  const input = window.prompt(t('widgetGridOverrides.prompt'), current)
-  if (input == null) return
-  const trimmed = input.trim()
-  if (trimmed.length === 0) return
-  onSubmit(trimmed)
-}
-
-function setOverride(
+function applyOverrideAndRefresh(
   node: LGraphNode,
   widgetName: string,
   value: string
 ): void {
-  const next = readOverrides(node)
-  next[widgetName] = value
-  writeOverrides(node, next)
+  setGridOverride(node, widgetName, value)
+  refreshVueNode(String(node.id))
+  app.canvas?.setDirty(true, true)
 }
 
-function clearOverride(node: LGraphNode, widgetName: string): void {
-  const next = readOverrides(node)
-  delete next[widgetName]
-  writeOverrides(node, next)
+function removeOverrideAndRefresh(node: LGraphNode, widgetName: string): void {
+  clearGridOverride(node, widgetName)
+  refreshVueNode(String(node.id))
+  app.canvas?.setDirty(true, true)
+}
+
+function removeAllOverridesAndRefresh(node: LGraphNode): void {
+  clearAllGridOverrides(node)
+  refreshVueNode(String(node.id))
+  app.canvas?.setDirty(true, true)
+}
+
+function openSizeDialog(
+  currentValue: string | undefined,
+  onSubmit: (value: string) => void
+): void {
+  useDialogStore().showDialog({
+    key: 'widget-grid-size',
+    title: t('widgetGridOverrides.sizeLabel'),
+    component: PromptDialogContent,
+    props: {
+      message: t('widgetGridOverrides.prompt'),
+      defaultValue: currentValue ?? DEFAULT_SIZE,
+      placeholder: '200px',
+      onConfirm: (value: string) => {
+        const trimmed = value.trim()
+        if (trimmed.length > 0) {
+          onSubmit(trimmed)
+        }
+      }
+    },
+    dialogComponentProps: {
+      modal: true,
+      closable: true,
+      dismissableMask: true
+    }
+  })
 }
 
 function buildWidgetMenuItem(
   node: LGraphNode,
   widgetName: string
 ): IContextMenuValue {
-  const overrides = readOverrides(node)
+  const overrides = readGridOverrides(node) ?? {}
   const current = overrides[widgetName]
   const label = current
     ? `${widgetName}  →  ${current}`
     : `${widgetName}  →  ${t('widgetGridOverrides.auto')}`
 
+  const openSetSize = () => {
+    openSizeDialog(current, (value) =>
+      applyOverrideAndRefresh(node, widgetName, value)
+    )
+  }
+
   return {
     content: label,
     has_submenu: true,
-    callback: () => {
-      promptForRowSize(current ?? DEFAULT_PROMPT_VALUE, (value) =>
-        setOverride(node, widgetName, value)
-      )
-    },
+    callback: openSetSize,
     submenu: {
       options: [
         {
           content: t('widgetGridOverrides.setSize'),
-          callback: () => {
-            promptForRowSize(current ?? DEFAULT_PROMPT_VALUE, (value) =>
-              setOverride(node, widgetName, value)
-            )
-          }
+          callback: openSetSize
         },
         {
           content: t('widgetGridOverrides.clearOverride'),
           disabled: !current,
-          callback: () => clearOverride(node, widgetName)
+          callback: () => removeOverrideAndRefresh(node, widgetName)
         }
       ]
     }
@@ -103,7 +111,7 @@ useExtensionService().registerExtension({
     const widgets = node.widgets ?? []
     if (widgets.length === 0) return []
 
-    const overrides = readOverrides(node)
+    const overrides = readGridOverrides(node) ?? {}
     const hasAny = Object.keys(overrides).length > 0
 
     const widgetItems: (IContextMenuValue | null)[] = widgets.map((widget) =>
@@ -113,7 +121,7 @@ useExtensionService().registerExtension({
     if (hasAny) {
       widgetItems.push(null, {
         content: t('widgetGridOverrides.clearAll'),
-        callback: () => writeOverrides(node, {})
+        callback: () => removeAllOverridesAndRefresh(node)
       })
     }
 

@@ -39,6 +39,10 @@ import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { app } from '@/scripts/app'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
+import type { WidgetGridOverrides } from '@/utils/widgetGridOverrides'
+import { readGridOverrides } from '@/utils/widgetGridOverrides'
+
+export type { WidgetGridOverrides }
 
 export interface WidgetSlotMetadata {
   index: number
@@ -98,13 +102,6 @@ export interface SafeWidgetData {
   /** For promoted widgets, the display label from the subgraph input slot. */
   promotedLabel?: string
 }
-
-/**
- * Maps widget name -> CSS grid-template-rows track value
- * (e.g. '200px', 'minmax(150px, 300px)', '1fr', 'auto').
- * Persisted on `node.properties.gridOverrides`.
- */
-export type WidgetGridOverrides = Record<string, string>
 
 export interface VueNodeData {
   executing: boolean
@@ -529,16 +526,6 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
     shape: node.shape,
     showAdvanced: node.showAdvanced
   }
-}
-
-function readGridOverrides(node: LGraphNode): WidgetGridOverrides | undefined {
-  const raw = node.properties?.gridOverrides
-  if (!raw || typeof raw !== 'object') return undefined
-  const entries = Object.entries(raw as Record<string, unknown>).filter(
-    (entry): entry is [string, string] => typeof entry[1] === 'string'
-  )
-  if (entries.length === 0) return undefined
-  return Object.fromEntries(entries)
 }
 
 export function useGraphNodeManager(graph: LGraph): GraphNodeManager {

@@ -46,6 +46,7 @@ import {
 interface ProcessedWidget {
   advanced: boolean
   handleContextMenu: (e: PointerEvent) => void
+  hasGridOverride: boolean
   hasLayoutSize: boolean
   hasError: boolean
   hidden: boolean
@@ -333,9 +334,13 @@ export function computeProcessedWidgets({
       )
     }
 
+    const widgetKey = widget.slotName ?? widget.name
+    const hasGridOverride = !!nodeData.gridOverrides?.[widgetKey]
+
     result.push({
       advanced: mergedOptions.advanced ?? false,
       handleContextMenu,
+      hasGridOverride,
       hasLayoutSize: widget.hasLayoutSize ?? false,
       hasError: hasWidgetError(
         widget,

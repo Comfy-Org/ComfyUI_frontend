@@ -26,7 +26,12 @@
       <div
         v-if="!widget.hidden && (!widget.advanced || showAdvanced)"
         data-testid="node-widget"
-        class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
+        :class="
+          cn(
+            'lg-node-widget group col-span-full grid grid-cols-subgrid',
+            widget.hasGridOverride ? 'items-center' : 'items-stretch'
+          )
+        "
       >
         <!-- Widget Input Slot Dot -->
         <div
