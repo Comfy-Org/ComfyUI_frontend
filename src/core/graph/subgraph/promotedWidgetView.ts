@@ -241,7 +241,10 @@ class PromotedWidgetView implements IPromotedWidgetView {
    */
   ensureHostWidgetState(): void {
     if (this.getHostWidgetState()) return
-    this.registerHostWidgetState(this.resolveAtHost()?.widget.value)
+    // Seed from the effective promoted value (host → linked → deepest →
+    // interior fallback) instead of the raw interior default, so a restored
+    // promoted value isn't shadowed on first render.
+    this.registerHostWidgetState(this.value)
   }
 
   private registerHostWidgetState(value: IBaseWidget['value']): void {

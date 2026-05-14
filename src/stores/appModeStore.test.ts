@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
@@ -116,6 +116,12 @@ describe('appModeStore', () => {
     workflowStore = useWorkflowStore()
     store = useAppModeStore()
     vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    // Restore any per-test spies (e.g. console.warn) so an assertion failure
+    // can't leak the spy into the next test.
+    vi.restoreAllMocks()
   })
 
   describe('enterBuilder', () => {

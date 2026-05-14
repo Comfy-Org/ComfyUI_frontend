@@ -226,7 +226,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
               :class="
                 cn(dragClass, 'my-2 rounded-lg bg-primary-background/30 p-2')
               "
-              :title="entry.widget.label ?? entry.entityId"
+              :title="entry.widget.label ?? entry.displayName"
               :sub-title="entry.node.title"
               can-rename
               :remove="() => appModeStore.removeSelectedInput(entry.widget)"
