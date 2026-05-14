@@ -735,6 +735,142 @@ const translations = {
     'zh-CN': '免费试用 COMFY CLOUD'
   },
 
+  'cloudNodes.hero.label': {
+    en: 'CLOUD NODES',
+    'zh-CN': '云端节点目录'
+  },
+  'cloudNodes.hero.heading': {
+    en: 'Run your favorite ComfyUI custom nodes on the cloud',
+    'zh-CN': '在云端运行你喜爱的 ComfyUI 自定义节点'
+  },
+  'cloudNodes.hero.body': {
+    en: 'Spin up workflows with hundreds of community-built nodes — detailers, ControlNet preprocessors, animation tools, and quality-of-life utilities — preinstalled on Comfy Cloud and ready to run on managed GPUs.',
+    'zh-CN':
+      '在 Comfy Cloud 托管 GPU 上即开即用，预装数百个社区节点——细节修复、ControlNet 预处理、动画工具与日常便利组件，应有尽有。'
+  },
+  'cloudNodes.section.heading': {
+    en: 'Find a custom-node pack',
+    'zh-CN': '查找自定义节点包'
+  },
+  'cloudNodes.search.placeholder': {
+    en: 'Search packs or nodes',
+    'zh-CN': '搜索节点包或节点名称'
+  },
+  'cloudNodes.sort.downloads': {
+    en: 'Most installed',
+    'zh-CN': '按安装量'
+  },
+  'cloudNodes.sort.mostNodes': {
+    en: 'Most nodes',
+    'zh-CN': '按节点数量'
+  },
+  'cloudNodes.sort.az': {
+    en: 'A → Z',
+    'zh-CN': '按名称 A → Z'
+  },
+  'cloudNodes.sort.recentlyUpdated': {
+    en: 'Recently updated',
+    'zh-CN': '最近更新'
+  },
+  'cloudNodes.search.label': {
+    en: 'Search custom-node packs',
+    'zh-CN': '搜索自定义节点包'
+  },
+  'cloudNodes.sort.label': {
+    en: 'Sort packs',
+    'zh-CN': '排序节点包'
+  },
+  'cloudNodes.list.ariaLabel': {
+    en: 'Custom-node packs supported on Comfy Cloud',
+    'zh-CN': 'Comfy Cloud 支持的自定义节点包'
+  },
+  'cloudNodes.meta.title': {
+    en: 'Custom-node packs on Comfy Cloud — supported by default',
+    'zh-CN': 'Comfy Cloud 自定义节点包合集——开箱即用'
+  },
+  'cloudNodes.meta.description': {
+    en: 'Browse hundreds of ComfyUI custom-node packs preinstalled on Comfy Cloud. Detailers, ControlNet preprocessors, animation tools, samplers, and more — search by pack or by node name.',
+    'zh-CN':
+      '浏览 Comfy Cloud 预装的数百个 ComfyUI 自定义节点包：细节修复、ControlNet 预处理、动画工具、采样器等——按节点包或节点名搜索。'
+  },
+  'cloudNodes.detail.metaTitle': {
+    en: '{pack} on Comfy Cloud',
+    'zh-CN': '{pack}（Comfy Cloud）'
+  },
+  'cloudNodes.detail.metaDescription': {
+    en: '{pack} is preinstalled on Comfy Cloud — {nodeCount} nodes ready to run on managed GPUs. {description}',
+    'zh-CN':
+      '{pack} 已预装于 Comfy Cloud——{nodeCount} 个节点可在托管 GPU 上即时运行。{description}'
+  },
+  'cloudNodes.empty.heading': {
+    en: 'No matching packs',
+    'zh-CN': '未找到匹配的节点包'
+  },
+  'cloudNodes.empty.body': {
+    en: 'Try a different search term or clear your filters.',
+    'zh-CN': '试试其他关键词，或清空筛选条件。'
+  },
+  'cloudNodes.card.nodeCountOne': {
+    en: '{count} node',
+    'zh-CN': '{count} 个节点'
+  },
+  'cloudNodes.card.nodeCountOther': {
+    en: '{count} nodes',
+    'zh-CN': '{count} 个节点'
+  },
+  'cloudNodes.card.viewRepo': {
+    en: 'View repository',
+    'zh-CN': '查看仓库'
+  },
+  'cloudNodes.card.unavailableDescription': {
+    en: 'Description unavailable.',
+    'zh-CN': '暂无描述信息。'
+  },
+  'cloudNodes.card.nodesHeading': {
+    en: 'Included nodes',
+    'zh-CN': '包含节点'
+  },
+  'cloudNodes.detail.back': {
+    en: 'Back to all packs',
+    'zh-CN': '返回所有节点包'
+  },
+  'cloudNodes.detail.publisher': {
+    en: 'Publisher',
+    'zh-CN': '发布者'
+  },
+  'cloudNodes.detail.downloads': {
+    en: 'Downloads',
+    'zh-CN': '下载量'
+  },
+  'cloudNodes.detail.stars': {
+    en: 'GitHub stars',
+    'zh-CN': 'GitHub 星标'
+  },
+  'cloudNodes.detail.latestVersion': {
+    en: 'Latest version',
+    'zh-CN': '最新版本'
+  },
+  'cloudNodes.detail.license': {
+    en: 'License',
+    'zh-CN': '许可证'
+  },
+  'cloudNodes.detail.lastUpdated': {
+    en: 'Last updated',
+    'zh-CN': '最后更新'
+  },
+  'cloudNodes.detail.deprecated': {
+    en: 'Deprecated',
+    'zh-CN': '已弃用'
+  },
+  'cloudNodes.detail.experimental': {
+    en: 'Experimental',
+    'zh-CN': '实验性'
+  },
+  'cloudNodes.detail.nodesHeading': {
+    en: 'Nodes in this pack',
+    'zh-CN': '此节点包中的节点'
+  },
+
   // Cloud – ReasonSection
   'cloud.reason.heading': {
     en: 'Why\nprofessionals\nchoose ',
@@ -1637,6 +1773,7 @@ const translations = {
   'footer.support': { en: 'Support', 'zh-CN': '支持' },
   'footer.sales': { en: 'Sales', 'zh-CN': '销售' },
   'footer.press': { en: 'Press', 'zh-CN': '媒体' },
+  'footer.cloudStatus': { en: 'Cloud Status', 'zh-CN': '云端状态' },
   'footer.blog': { en: 'Blog', 'zh-CN': '博客' },
   'footer.location': {
     en: 'San Francisco, USA',
@@ -3676,6 +3813,60 @@ const translations = {
   'customers.feedback.role3': {
     en: 'Head of AI at Creative Studios',
     'zh-CN': 'Creative Studios AI 负责人'
+  },
+
+  // Models – UI keys
+  'models.hero.eyebrow': {
+    en: 'AI Model',
+    'zh-CN': 'AI 模型'
+  },
+  'models.hero.primaryCta': {
+    en: 'TRY IN COMFY',
+    'zh-CN': '在 Comfy 中试用'
+  },
+  'models.hero.secondaryCta': {
+    en: 'DOWNLOAD MODEL',
+    'zh-CN': '下载模型'
+  },
+  'models.hero.cloudCta': {
+    en: 'RUN ON CLOUD',
+    'zh-CN': '云端运行'
+  },
+  'models.hero.tutorialCta': {
+    en: 'VIEW TUTORIAL',
+    'zh-CN': '查看教程'
+  },
+  'models.hero.blogLink': {
+    en: 'Read blog post',
+    'zh-CN': '阅读博客文章'
+  },
+  'models.hero.workflowCount': {
+    en: '{count} workflows use this model',
+    'zh-CN': '{count} 个工作流使用此模型'
+  },
+  'models.whatIs.heading': {
+    en: 'What is {name}?',
+    'zh-CN': '什么是 {name}？'
+  },
+  'models.whatIs.tutorialLink': {
+    en: 'Read the full tutorial →',
+    'zh-CN': '阅读完整教程 →'
+  },
+  'models.index.title': {
+    en: 'Supported Models',
+    'zh-CN': '支持的模型'
+  },
+  'models.index.subtitle': {
+    en: "Run the world's leading AI models in ComfyUI",
+    'zh-CN': '在 ComfyUI 中运行世界领先的 AI 模型'
+  },
+  'models.breadcrumb.home': {
+    en: 'Home',
+    'zh-CN': '首页'
+  },
+  'models.breadcrumb.models': {
+    en: 'Supported Models',
+    'zh-CN': '支持的模型'
   },
 
   // Payment status pages

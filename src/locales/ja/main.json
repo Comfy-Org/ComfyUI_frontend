@@ -410,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "ローカルで続行",
     "exploreCloud": "クラウドを無料で試す",
-    "feature1Title": "毎月400クレジット無料",
     "feature2Title": "どこでも即時利用可能",
     "feature3Title": "すぐに使えるモデル",
     "feature4Title": "人気カスタムノードパックをプリインストール",
@@ -2254,6 +2253,7 @@
     "": "",
     "3d": "3d",
     "3d_models": "3Dモデル",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",

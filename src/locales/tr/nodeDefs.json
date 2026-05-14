@@ -1615,6 +1615,46 @@
       }
     }
   },
+  "ClaudeNode": {
+    "description": "Anthropic'in Claude modelleriyle metin yanıtları oluşturun. Bir metin istemi girin ve isteğe bağlı olarak çok modlu bağlam için bir veya daha fazla görsel ekleyin.",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "images": {
+        "name": "görseller",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı görsel(ler). En fazla 20 görsel."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Yanıtı oluşturmak için kullanılan Claude modeli."
+      },
+      "model_max_tokens": {
+        "name": "maksimum_token"
+      },
+      "model_temperature": {
+        "name": "sıcaklık"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Model için metin girişi."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      },
+      "system_prompt": {
+        "name": "sistem_istemi",
+        "tooltip": "Modelin davranışını belirleyen temel talimatlar."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ColorToRGBInt": {
     "description": "Bir rengi RGB tam sayı değerine dönüştür.",
     "display_name": "Renkten RGB Tam Sayıya",
@@ -3142,6 +3182,26 @@
     "inputs": {
       "batch_size": {
         "name": "toplu_boyut"
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyHiDreamO1LatentImage": {
+    "description": "HiDream-O1-Image için boş piksel-uzayı latent. Model yaklaşık 4 megapikselde eğitildi; daha düşük çözünürlüklerde dağılım dışına çıkar ve kalite belirgin şekilde düşer. Eğitildiği çözünürlükler: 2048x2048, 2304x1728, 1728x2304, 2560x1440, 1440x2560, 2496x1664, 1664x2496, 3104x1312, 1312x3104, 2304x1792, 1792x2304.",
+    "display_name": "Boş HiDream-O1 Latent Görüntü",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
       },
       "height": {
         "name": "yükseklik"
@@ -4901,6 +4961,70 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1PatchSeamSmoothing": {
+    "description": "Örneklemenin son kısmında model çıktısını birden fazla kaydırılmış yama-ızgara pozisyonunda ortalar. Dikişleri yok eder.",
+    "display_name": "HiDream-O1 Yama Dikiş Yumuşatma",
+    "inputs": {
+      "blend": {
+        "name": "karıştırma",
+        "tooltip": "average: eşit ağırlıklı ortalama. window: her geçişi yama sınırlarından uzaklaştıran Hann-pencereli ağırlıklandırma. median: piksel başına medyan, sarmalayan-aşırı geçişleri reddeder."
+      },
+      "end_percent": {
+        "name": "bitiş_yüzdesi",
+        "tooltip": "Karışımın KAPANDIĞI örnekleme ilerlemesi."
+      },
+      "model": {
+        "name": "model"
+      },
+      "passes": {
+        "name": "geçişler",
+        "tooltip": "Her adımda geçiş sayısı. 2/4 = sabit. ramp_*: örnekleme sona yaklaştıkça geçiş sayısı artar (dikişlerin en görünür olduğu yerde daha fazla yumuşatma)."
+      },
+      "pattern": {
+        "name": "desen",
+        "tooltip": "Kaydırma düzeni. single_shift: doğal yama ızgarasında bir geçiş + diğerleri kaydırılmış. symmetric: tüm geçişler ızgara dışında, kaydırmalar orijin etrafında bölünmüş."
+      },
+      "start_percent": {
+        "name": "başlangıç_yüzdesi",
+        "tooltip": "Karışımın AÇILDIĞI örnekleme ilerlemesi (0=başlangıç, 1=bitiş)."
+      },
+      "strength": {
+        "name": "güç",
+        "tooltip": "Doğal ızgara tahmini (0) ile ortalanmış sonuç (1) arasında enterpolasyon."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1ReferenceImages": {
+    "description": "Koşullandırmaya 1-10 referans görseli ekleyin; biri düzenleme talimatı, birden fazlası ise konuya özel kişiselleştirme için.",
+    "display_name": "HiDream-O1 Referans Görselleri",
+    "inputs": {
+      "images": {
+        "name": "görseller",
+        "tooltip": "Referans görselleri. 1 görsel = düzenleme talimatı; 2-10 görsel = çoklu referans."
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "positive": {
+        "name": "pozitif"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negatif",
         "tooltip": null
       }
     }
@@ -11654,6 +11778,18 @@
       }
     }
   },
+  "ModelNoiseScale": {
+    "display_name": "ModelNoiseScale",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "noise_scale": {
+        "name": "gürültü_ölçeği",
+        "tooltip": "Mutlak eğitim gürültü ölçeği. Örneğin HiDream-O1 base: 8.0, dev: 7.5."
+      }
+    }
+  },
   "ModelPatchLoader": {
     "display_name": "ModelPatchLoader",
     "inputs": {
@@ -14962,6 +15098,29 @@
     "inputs": {
       "version": {
         "name": "sürüm"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SamplerLCM": {
+    "description": "Ayarlanabilir adım başı gürültüye sahip LCM örnekleyici. s_noise, modelin eğitim gürültüsü ölçeğinde bir çarpandır.",
+    "display_name": "SamplerLCM",
+    "inputs": {
+      "noise_clip_std": {
+        "name": "noise_clip_std",
+        "tooltip": "Adım başı gürültüyü +/- N*std ile sınırla. 0 devre dışı bırakır."
+      },
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "İlk adımda adım başı gürültü çarpanı (1.0 = eğitimle aynı)."
+      },
+      "s_noise_end": {
+        "name": "s_noise_end",
+        "tooltip": "Son adımda adım başı gürültü çarpanı. Sabit bir zaman çizelgesi için s_noise ile aynı değeri girin."
       }
     },
     "outputs": {
