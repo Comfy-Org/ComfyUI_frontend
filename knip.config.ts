@@ -97,6 +97,11 @@ const config: KnipConfig = {
     // W6.P4.D — canvas-units canary + escape-hatch annotation example
     // (D-coord-space / A13).
     'src/extensions/core/coordSpaceDemo.v2.ts',
+    // Reviewable .d.ts snapshots of the public surface — checked in for
+    // diff-friendliness in PR reviews. Not imported (the live build emits
+    // its own .d.ts under packages/extension-api/build/). Tracked under
+    // PKG3.D2 / PKG2 hand-written declaration-file rationale.
+    'packages/extension-api/api-snapshot/**',
     // Test framework harness for v2 extension migration. Consumed by
     // colocated *.v2.test.ts / *.migration.test.ts files; knip's vitest
     // entry resolution does not yet see these as test infra. Tracked by
