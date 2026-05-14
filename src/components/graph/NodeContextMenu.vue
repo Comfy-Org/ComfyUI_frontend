@@ -28,22 +28,18 @@
     </template>
   </ContextMenu>
 
-  <!-- Color picker menu (custom with color circles) -->
-  <ColorPickerMenu
+  <SubmenuPopover
     v-if="colorOption"
-    ref="colorPickerMenu"
-    key="color-picker-menu"
+    ref="colorSubmenu"
+    key="color-submenu"
     :option="colorOption"
     @submenu-click="handleSubmenuSelect"
   />
 
-  <!-- Shape picker menu (body-appended popover so it escapes the menu's
-       overflow container; PrimeVue's nested submenu would be clipped when
-       the root menu scrolls.) -->
-  <ColorPickerMenu
+  <SubmenuPopover
     v-if="shapeOption"
-    ref="shapePickerMenu"
-    key="shape-picker-menu"
+    ref="shapeSubmenu"
+    key="shape-submenu"
     :option="shapeOption"
     @submenu-click="handleSubmenuSelect"
   />
@@ -65,7 +61,7 @@ import type {
 } from '@/composables/graph/useMoreOptionsMenu'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
-import ColorPickerMenu from './selectionToolbox/ColorPickerMenu.vue'
+import SubmenuPopover from './selectionToolbox/SubmenuPopover.vue'
 
 interface ExtendedMenuItem extends MenuItem {
   isColorSubmenu?: boolean
@@ -75,8 +71,8 @@ interface ExtendedMenuItem extends MenuItem {
 }
 
 const contextMenu = ref<InstanceType<typeof ContextMenu>>()
-const colorPickerMenu = ref<InstanceType<typeof ColorPickerMenu>>()
-const shapePickerMenu = ref<InstanceType<typeof ColorPickerMenu>>()
+const colorSubmenu = ref<InstanceType<typeof SubmenuPopover>>()
+const shapeSubmenu = ref<InstanceType<typeof SubmenuPopover>>()
 const isOpen = ref(false)
 
 const { menuOptions, bump } = useMoreOptionsMenu()
@@ -261,23 +257,25 @@ defineExpose({ toggle, hide, isOpen, show })
 
 function onItemClick(event: MouseEvent, item: ExtendedMenuItem) {
   if (item.isColorSubmenu) {
-    openSubmenuPopover(event, colorPickerMenu.value)
+    openSubmenuPopover(event, colorSubmenu.value, shapeSubmenu.value)
   } else if (item.isShapeSubmenu) {
-    openSubmenuPopover(event, shapePickerMenu.value)
+    openSubmenuPopover(event, shapeSubmenu.value, colorSubmenu.value)
   }
 }
 
 function openSubmenuPopover(
   event: MouseEvent,
-  menu: InstanceType<typeof ColorPickerMenu> | undefined
+  target: InstanceType<typeof SubmenuPopover> | undefined,
+  other: InstanceType<typeof SubmenuPopover> | undefined
 ) {
-  if (!menu) return
+  if (!target) return
   event.stopPropagation()
   event.preventDefault()
-  const target = Array.from((event.currentTarget as HTMLElement).children).find(
+  other?.hide()
+  const anchor = Array.from((event.currentTarget as HTMLElement).children).find(
     (el) => el.classList.contains('icon-[lucide--chevron-right]')
   ) as HTMLElement
-  menu.toggle(event, target)
+  target.toggle(event, anchor)
 }
 
 function handleSubmenuSelect(subOption: SubMenuOption) {
