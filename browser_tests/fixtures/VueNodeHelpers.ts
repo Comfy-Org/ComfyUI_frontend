@@ -246,4 +246,18 @@ export class VueNodeHelpers {
       position: { x: box.width / 2, y: box.height * 0.75 }
     })
   }
+  async isSlotConnected(slot: Locator) {
+    const key = await slot.getByTestId('slot-dot').getAttribute('data-slot-key')
+    if (!key) return false
+
+    return await this.page.evaluate((key) => {
+      const [nodeId, type, slotId] = key.split('-')
+      const node = app?.canvas?.graph?.getNodeById(nodeId)
+      if (!node) return false
+
+      return type === 'in'
+        ? node.inputs[Number(slotId)]?.link !== null
+        : !!node.outputs[Number(slotId)].links?.length
+    }, key)
+  }
 }
