@@ -4,7 +4,6 @@ import { computed, toValue } from 'vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
-import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
@@ -35,37 +34,15 @@ function getPreviewMediaType(node: LGraphNode): PromotedPreview['type'] {
  * Returns reactive preview media exposed by a host SubgraphNode.
  *
  * Reads from the host-scoped {@link usePreviewExposureStore}, the canonical
- * post-ADR-0009 source for display-only preview promotion.
+ * post-ADR-0009 source for display-only preview promotion. Legacy locator
+ * migration is handled at configure time in `SubgraphNode`, not here — this
+ * read path is pure.
  */
 export function usePromotedPreviews(
   lgraphNode: MaybeRefOrGetter<LGraphNode | null | undefined>
 ) {
   const previewExposureStore = usePreviewExposureStore()
   const nodeOutputStore = useNodeOutputStore()
-
-  /**
-   * Returns the exposures registered under `primaryLocator`. Falls back to
-   * `legacyLocators` (in order); on first hit, copies them onto the primary
-   * key so subsequent reads find them directly.
-   */
-  function loadOrMigrateExposures(
-    rootGraphId: UUID,
-    primaryLocator: string,
-    ...legacyLocators: string[]
-  ): readonly PreviewExposure[] {
-    const primary = previewExposureStore.getExposures(
-      rootGraphId,
-      primaryLocator
-    )
-    if (primary.length) return primary
-    for (const legacy of legacyLocators) {
-      const found = previewExposureStore.getExposures(rootGraphId, legacy)
-      if (!found.length) continue
-      previewExposureStore.setExposures(rootGraphId, primaryLocator, found)
-      return found
-    }
-    return primary
-  }
 
   /**
    * Reads from reactive output sources to establish Vue dependency tracking,
@@ -110,10 +87,9 @@ export function usePromotedPreviews(
 
     const rootGraphId = node.rootGraph.id
     const hostLocator = String(node.id)
-    const exposures = loadOrMigrateExposures(
+    const exposures = previewExposureStore.getExposures(
       rootGraphId,
-      hostLocator,
-      createNodeLocatorId(rootGraphId, node.id)
+      hostLocator
     )
     if (!exposures.length) return []
 
@@ -130,14 +106,18 @@ export function usePromotedPreviews(
       const sourceNode = currentHost?.subgraph.getNodeById(sourceNodeId)
       if (!(sourceNode instanceof SubgraphNode)) return undefined
 
-      const nestedHostLocator = `${currentHostLocator}:${sourceNode.id}`
+      // Prefer path-style exposures so multiple instances of a shared subgraph
+      // definition resolve to per-instance leaves; fall back to the
+      // definition-level key written by `SubgraphNode._hydratePreviewExposures`
+      // so the single-instance case works without explicit per-path setup.
+      const pathLocator = `${currentHostLocator}:${sourceNode.id}`
+      const definitionLocator = String(sourceNode.id)
+      const hasPathExposures =
+        previewExposureStore.getExposures(rootGraphId, pathLocator).length > 0
+      const nestedHostLocator = hasPathExposures
+        ? pathLocator
+        : definitionLocator
       hostNodesByLocator.set(nestedHostLocator, sourceNode)
-      loadOrMigrateExposures(
-        rootGraphId,
-        nestedHostLocator,
-        String(sourceNode.id),
-        createNodeLocatorId(rootGraphId, sourceNode.id)
-      )
       return { rootGraphId, hostNodeLocator: nestedHostLocator }
     }
 

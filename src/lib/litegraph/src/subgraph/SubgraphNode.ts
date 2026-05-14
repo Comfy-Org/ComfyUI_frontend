@@ -39,14 +39,11 @@ import {
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import {
-  CANVAS_IMAGE_PREVIEW_WIDGET,
-  supportsVirtualCanvasImagePreview
-} from '@/composables/node/canvasImagePreviewTypes'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { readWidgetValue } from '@/world/widgetValueIO'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
@@ -679,11 +676,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this._promotedViewManager.clear()
     this.invalidatePromotedViews()
 
-    usePreviewExposureStore().setExposures(
-      this.rootGraph.id,
-      String(this.id),
-      parsePreviewExposures(this.properties.previewExposures)
-    )
+    this._hydratePreviewExposures()
 
     // Check all inputs for connected widgets
     for (const input of this.inputs) {
@@ -702,24 +695,30 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
 
     this.invalidatePromotedViews()
+  }
 
-    for (const node of this.subgraph.nodes) {
-      if (!supportsVirtualCanvasImagePreview(node)) continue
-      const hostLocator = String(this.id)
-      const previewStore = usePreviewExposureStore()
-      const existing = previewStore
-        .getExposures(this.rootGraph.id, hostLocator)
-        .some(
-          (exposure) =>
-            exposure.sourceNodeId === String(node.id) &&
-            exposure.sourcePreviewName === CANVAS_IMAGE_PREVIEW_WIDGET
-        )
-      if (existing) continue
-      previewStore.addExposure(this.rootGraph.id, hostLocator, {
-        sourceNodeId: String(node.id),
-        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
-      })
+  /**
+   * Hydrate the preview-exposure store for this host. Reads from
+   * `properties.previewExposures` (canonical), falling back to legacy
+   * `NodeLocatorId`-keyed entries already in the store and migrating them
+   * onto the canonical execution-path key. Idempotent.
+   */
+  private _hydratePreviewExposures() {
+    const store = usePreviewExposureStore()
+    const rootGraphId = this.rootGraph.id
+    const hostLocator = String(this.id)
+    const fromProperty = parsePreviewExposures(this.properties.previewExposures)
+    if (fromProperty.length) {
+      store.setExposures(rootGraphId, hostLocator, fromProperty)
+      return
     }
+    const legacyKey = createNodeLocatorId(rootGraphId, this.id)
+    const legacy = store.getExposures(rootGraphId, legacyKey)
+    if (legacy.length) {
+      store.setExposures(rootGraphId, hostLocator, [...legacy])
+      return
+    }
+    store.setExposures(rootGraphId, hostLocator, [])
   }
 
   /**

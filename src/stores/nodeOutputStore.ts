@@ -92,7 +92,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const images = outputs.images.filter((image) => image != null)
     if (!images.length) return false
 
-    if (images.some((image) => image.filename?.endsWith('svg'))) return false
+    if (images.some((image) => image.filename?.toLowerCase().endsWith('.svg')))
+      return false
 
     return true
   }

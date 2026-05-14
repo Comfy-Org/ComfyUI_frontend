@@ -18,6 +18,7 @@ import {
 } from '@/core/graph/subgraph/promotionUtils'
 import type { WidgetItem } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
@@ -74,16 +75,38 @@ function getActivePromotedWidgets(node: SubgraphNode): WidgetItem[] {
 
 function getActivePreviewWidgets(node: SubgraphNode): WidgetItem[] {
   const hostLocator = String(node.id)
-  return previewExposureStore
-    .getExposures(node.rootGraph.id, hostLocator)
-    .flatMap((exposure): WidgetItem[] => {
-      const sourceNode = node.subgraph._nodes_by_id[exposure.sourceNodeId]
-      if (!sourceNode) return []
-      const widget = getPromotableWidgets(sourceNode).find(
+  const rootGraphId = node.rootGraph.id
+  const exposures = previewExposureStore.getExposures(rootGraphId, hostLocator)
+  return exposures.flatMap((exposure): WidgetItem[] => {
+    const sourceNode = node.subgraph._nodes_by_id[exposure.sourceNodeId]
+    if (!sourceNode) return []
+    // The exposure itself is the source of truth for "this preview is shown
+    // on the host node". Prefer an existing promotable widget (covers both
+    // real `$$` widgets and virtual ones for PreviewImage/SaveImage/GLSLShader),
+    // otherwise synthesize a label-only widget so the editor still surfaces
+    // the row instead of silently dropping the exposure (#???).
+    const widget =
+      getPromotableWidgets(sourceNode).find(
         (candidate) => candidate.name === exposure.sourcePreviewName
-      )
-      return widget ? [[sourceNode, widget]] : []
-    })
+      ) ?? createExposureLabelWidget(exposure.name, exposure.sourcePreviewName)
+    return [[sourceNode, widget]]
+  })
+}
+
+function createExposureLabelWidget(
+  name: string,
+  sourcePreviewName: string
+): IBaseWidget {
+  return {
+    name,
+    label: sourcePreviewName,
+    type: 'IMAGE_PREVIEW',
+    value: undefined,
+    options: { serialize: false },
+    serialize: false,
+    y: 0,
+    computedDisabled: false
+  } as unknown as IBaseWidget
 }
 
 function updateActiveWidgets(value: WidgetItem[], currentItems: WidgetItem[]) {
@@ -287,6 +310,7 @@ onMounted(() => {
             :widget-name="widget.label || widget.name"
             :is-physical="isItemLinked([node, widget])"
             :is-draggable="!searchQuery"
+            is-shown
             @toggle-visibility="demote([node, widget])"
           />
         </DraggableList>
@@ -294,11 +318,13 @@ onMounted(() => {
           <SubgraphNodeWidget
             v-for="[node, widget] in filteredActivePreviews"
             :key="toKey([node, widget])"
+            :data-nodeid="node.id"
             class="bg-comfy-menu-bg"
             :node-title="node.title"
             :widget-name="widget.label || widget.name"
             :is-physical="isItemLinked([node, widget])"
             :is-draggable="false"
+            is-shown
             @toggle-visibility="demote([node, widget])"
           />
         </div>

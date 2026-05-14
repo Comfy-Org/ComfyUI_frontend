@@ -18,10 +18,9 @@ export function parsePreviewExposures(
   if (property === undefined) return []
 
   try {
-    if (typeof property === 'string') property = JSON.parse(property)
-    const result = previewExposuresPropertySchema.safeParse(
+    const parsed =
       typeof property === 'string' ? JSON.parse(property) : property
-    )
+    const result = previewExposuresPropertySchema.safeParse(parsed)
     if (result.success) return result.data
 
     const error = fromZodError(result.error)

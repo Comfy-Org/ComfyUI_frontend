@@ -19,6 +19,7 @@ export class SubgraphEditor {
 
   async open(subgraphNode: Locator) {
     await new VueNodeFixture(subgraphNode).select()
+    if (await this.root.isVisible()) return
     const menu = await this.comfyPage.contextMenu.openFor(subgraphNode)
     await menu.clickMenuItemExact('Edit Subgraph Widgets')
     await expect(this.root, 'Open Properties Panel').toBeVisible()

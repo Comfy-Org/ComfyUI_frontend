@@ -55,11 +55,11 @@ export type ResolvedSelection =
 export function useResolvedSelectedInputs() {
   const appModeStore = useAppModeStore()
 
-  const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph?.nodes ?? [])
+  const graphNodes = shallowRef<LGraphNode[]>([...(app.rootGraph?.nodes ?? [])])
   useEventListener(
     () => app.rootGraph?.events,
     'configured',
-    () => (graphNodes.value = app.rootGraph?.nodes ?? [])
+    () => (graphNodes.value = [...(app.rootGraph?.nodes ?? [])])
   )
   useEventListener(
     () => app.rootGraph?.events,

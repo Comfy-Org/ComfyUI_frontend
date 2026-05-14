@@ -161,37 +161,6 @@ describe(usePromotedPreviews, () => {
     ])
   })
 
-  it('migrates direct legacy host exposure keys while reading previews', () => {
-    const setup = createSetup()
-    addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
-    const store = usePreviewExposureStore()
-    const rootGraphId = setup.subgraphNode.rootGraph.id
-    store.addExposure(
-      rootGraphId,
-      createNodeLocatorId(rootGraphId, setup.subgraphNode.id),
-      {
-        sourceNodeId: '10',
-        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
-      }
-    )
-
-    const mockUrls = ['/view?filename=output.png']
-    seedOutputs(setup.subgraph.id, [10])
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue(mockUrls)
-
-    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
-
-    expect(promotedPreviews.value).toHaveLength(1)
-    expect(
-      store.getExposures(rootGraphId, String(setup.subgraphNode.id))
-    ).toEqual([
-      expect.objectContaining({
-        sourceNodeId: '10',
-        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
-      })
-    ])
-  })
-
   it.for([
     ['video', '/view?filename=output.webm'],
     ['audio', '/view?filename=output.mp3']
@@ -349,52 +318,6 @@ describe(usePromotedPreviews, () => {
         type: 'image',
         urls: mockUrls
       }
-    ])
-  })
-
-  it('migrates nested legacy host exposure keys while resolving leaf media', () => {
-    const innerSetup = createSetup()
-    const leafNode = addInteriorNode(innerSetup, {
-      id: 10,
-      previewMediaType: 'image'
-    })
-
-    const outerSetup = createSetup()
-    const innerHost = createTestSubgraphNode(innerSetup.subgraph, { id: 20 })
-    outerSetup.subgraph.add(innerHost)
-
-    const rootGraphId = outerSetup.subgraphNode.rootGraph.id
-    const store = usePreviewExposureStore()
-    store.addExposure(
-      rootGraphId,
-      createNodeLocatorId(rootGraphId, innerHost.id),
-      {
-        sourceNodeId: String(leafNode.id),
-        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
-      }
-    )
-    store.addExposure(rootGraphId, String(outerSetup.subgraphNode.id), {
-      sourceNodeId: String(innerHost.id),
-      sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
-    })
-
-    const mockUrls = ['/view?filename=leaf.png']
-    seedOutputs(innerSetup.subgraph.id, [leafNode.id])
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation(
-      (node: LGraphNode) => (node === leafNode ? mockUrls : [])
-    )
-
-    const { promotedPreviews } = usePromotedPreviews(
-      () => outerSetup.subgraphNode
-    )
-    const nestedHostLocator = `${String(outerSetup.subgraphNode.id)}:${innerHost.id}`
-
-    expect(promotedPreviews.value).toHaveLength(1)
-    expect(store.getExposures(rootGraphId, nestedHostLocator)).toEqual([
-      expect.objectContaining({
-        sourceNodeId: '10',
-        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
-      })
     ])
   })
 

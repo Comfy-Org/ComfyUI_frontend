@@ -10,12 +10,14 @@ const {
   widgetName,
   isDraggable = false,
   isPhysical = false,
+  isShown = false,
   class: className
 } = defineProps<{
   nodeTitle: string
   widgetName: string
   isDraggable?: boolean
   isPhysical?: boolean
+  isShown?: boolean
   class?: ClassValue
 }>()
 defineEmits<{
@@ -25,7 +27,7 @@ defineEmits<{
 const icon = computed(() =>
   isPhysical
     ? 'icon-[lucide--link]'
-    : isDraggable
+    : isShown
       ? 'icon-[lucide--eye]'
       : 'icon-[lucide--eye-off]'
 )
