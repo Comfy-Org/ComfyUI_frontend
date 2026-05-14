@@ -1615,6 +1615,46 @@
       }
     }
   },
+  "ClaudeNode": {
+    "description": "إنشاء ردود نصية باستخدام نماذج Claude من Anthropic. قدم مطالبة نصية ويمكنك أيضًا إضافة صورة أو أكثر للسياق متعدد الوسائط.",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "صورة أو صور اختيارية لاستخدامها كسياق للنموذج. حتى ٢٠ صورة."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "نموذج Claude المستخدم لإنشاء الرد."
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "إدخال نصي للنموذج."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "تعليمات أساسية تحدد سلوك النموذج."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ColorToRGBInt": {
     "description": "تحويل لون إلى قيمة عددية لنظام RGB.",
     "display_name": "تحويل اللون إلى قيمة RGB عددية",

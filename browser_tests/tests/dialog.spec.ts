@@ -247,6 +247,14 @@ test.describe('Cloud notification dialog', () => {
     await dialog.back.click()
     await expect(dialog.root).toBeHidden()
   })
+
+  test('Should not advertise free monthly credits', async ({ comfyPage }) => {
+    const dialog = new CloudNotification(comfyPage.page)
+    await dialog.open()
+
+    await expect(dialog.root.getByText(/Free Credits/i)).toHaveCount(0)
+    await expect(dialog.root.getByText(/400/)).toHaveCount(0)
+  })
 })
 
 test('Blueprint overwrite', { tag: ['@subgraph'] }, async ({ comfyPage }) => {

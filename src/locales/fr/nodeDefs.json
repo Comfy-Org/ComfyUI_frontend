@@ -1615,6 +1615,46 @@
       }
     }
   },
+  "ClaudeNode": {
+    "description": "Générez des réponses textuelles avec les modèles Claude d'Anthropic. Fournissez une invite textuelle et éventuellement une ou plusieurs images pour un contexte multimodal.",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Image(s) optionnelle(s) à utiliser comme contexte pour le modèle. Jusqu'à 20 images."
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle Claude utilisé pour générer la réponse."
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_temperature": {
+        "name": "température"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Entrée textuelle pour le modèle."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit la graine."
+      },
+      "system_prompt": {
+        "name": "invite système",
+        "tooltip": "Instructions fondamentales qui dictent le comportement du modèle."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ColorToRGBInt": {
     "description": "Convertir une couleur en une valeur entière RGB.",
     "display_name": "Couleur vers RGB Int",

@@ -130,7 +130,8 @@ function createAudioNode() {
     widgets: [audioWidget, audioUIWidget],
     isUploading: false,
     graph: { setDirtyCanvas: vi.fn() },
-    addWidget: vi.fn(() => uploadWidget)
+    addWidget: vi.fn(() => uploadWidget),
+    onWidgetChanged: vi.fn()
   })
 
   return { audioUIWidget, audioWidget, node, uploadWidget }
@@ -180,6 +181,12 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
     expect(node.isUploading).toBe(false)
     expect(audioWidget.value).toBe('pasted/uploaded.mp3')
     expect(audioWidget.options.values).toContain('pasted/uploaded.mp3')
+    expect(node.onWidgetChanged).toHaveBeenCalledWith(
+      'audio',
+      'pasted/uploaded.mp3',
+      'clip.mp3',
+      audioWidget
+    )
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
   })
 

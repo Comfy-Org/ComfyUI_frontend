@@ -410,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "ادامه به صورت محلی",
     "exploreCloud": "امتحان رایگان فضای ابری",
-    "feature1Title": "۴۰۰ اعتبار رایگان ماهانه",
     "feature2Title": "قابل استفاده در هر مکان، بلافاصله",
     "feature3Title": "مدل‌ها آماده استفاده",
     "feature4Title": "برترین بسته‌های Node سفارشی از پیش نصب‌شده",
@@ -2254,6 +2253,7 @@
     "": "",
     "3d": "سه‌بعدی",
     "3d_models": "مدل‌های سه‌بعدی",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",

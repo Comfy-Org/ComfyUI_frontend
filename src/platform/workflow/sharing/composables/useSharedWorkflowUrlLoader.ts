@@ -161,7 +161,8 @@ export function useSharedWorkflowUrlLoader() {
     if (result.action === 'copy-and-open' && nonOwnedAssets.length > 0) {
       try {
         await workflowShareService.importPublishedAssets(
-          nonOwnedAssets.map((a) => a.id)
+          nonOwnedAssets.map((a) => a.id),
+          payload.shareId
         )
       } catch (importError) {
         console.error(
