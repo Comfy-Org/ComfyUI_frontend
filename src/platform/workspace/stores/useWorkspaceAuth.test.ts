@@ -488,6 +488,54 @@ describe('useWorkspaceAuthStore', () => {
         sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)
       ).toBeNull()
     })
+
+    it('prevents in-flight refreshes from restoring cleared state', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { currentWorkspace, workspaceToken, isAuthenticated, error } =
+        storeToRefs(store)
+
+      await store.switchWorkspace('workspace-123')
+      expect(isAuthenticated.value).toBe(true)
+
+      let resolveRefreshFetch: (value: unknown) => void = () => {}
+      const refreshFetchPromise = new Promise((resolve) => {
+        resolveRefreshFetch = resolve
+      })
+      mockFetch.mockReturnValueOnce(refreshFetchPromise)
+
+      const refreshPromise = store.refreshToken()
+
+      store.clearWorkspaceContext()
+
+      resolveRefreshFetch({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...mockTokenResponse,
+            token: 'restored-token'
+          })
+      })
+      await refreshPromise
+
+      expect(currentWorkspace.value).toBeNull()
+      expect(workspaceToken.value).toBeNull()
+      expect(isAuthenticated.value).toBe(false)
+      expect(error.value).toBeNull()
+      expect(
+        sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
+      ).toBeNull()
+      expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBeNull()
+      expect(
+        sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)
+      ).toBeNull()
+    })
   })
 
   describe('getWorkspaceAuthHeader', () => {
@@ -883,6 +931,67 @@ describe('useWorkspaceAuthStore', () => {
       )
 
       const refreshedExpiry = new Date(Date.now() + 7200 * 1000).toISOString()
+      resolveRefreshFetch({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...mockTokenResponse,
+            token: 'refreshed-workspace-token',
+            expires_at: refreshedExpiry
+          })
+      })
+      await refreshPromise
+
+      expect(currentWorkspace.value).toEqual(mockWorkspaceWithRole)
+      expect(workspaceToken.value).toBe('refreshed-workspace-token')
+      expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBe(
+        'refreshed-workspace-token'
+      )
+      expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)).toBe(
+        expectedExpiresAtMs(refreshedExpiry)
+      )
+    })
+
+    it('allows same-workspace switches to leave in-flight refreshes valid', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+
+      const mockFetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { currentWorkspace, workspaceToken } = storeToRefs(store)
+
+      await store.switchWorkspace('workspace-123')
+
+      let resolveRefreshFetch: (value: unknown) => void = () => {}
+      const refreshFetchPromise = new Promise((resolve) => {
+        resolveRefreshFetch = resolve
+      })
+      mockFetch.mockReturnValueOnce(refreshFetchPromise)
+
+      const refreshPromise = store.refreshToken()
+
+      const sameWorkspaceExpiry = new Date(
+        Date.now() + 7200 * 1000
+      ).toISOString()
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...mockTokenResponse,
+            token: 'same-workspace-token',
+            expires_at: sameWorkspaceExpiry
+          })
+      })
+      await store.switchWorkspace('workspace-123')
+
+      expect(currentWorkspace.value).toEqual(mockWorkspaceWithRole)
+      expect(workspaceToken.value).toBe('same-workspace-token')
+
+      const refreshedExpiry = new Date(Date.now() + 9000 * 1000).toISOString()
       resolveRefreshFetch({
         ok: true,
         json: () =>
