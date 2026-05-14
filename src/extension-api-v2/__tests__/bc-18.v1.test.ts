@@ -77,7 +77,7 @@ describe('BC.18 v1 contract — app.api.fetchApi', () => {
 
     it('concurrent fetchApi calls return independent Response objects', async () => {
       let callCount = 0
-      global.fetch = vi.fn(async (url: RequestInfo | URL) => {
+      global.fetch = vi.fn(async (_url: RequestInfo | URL) => {
         callCount++
         const n = callCount
         return new Response(JSON.stringify({ n }), { status: 200 })

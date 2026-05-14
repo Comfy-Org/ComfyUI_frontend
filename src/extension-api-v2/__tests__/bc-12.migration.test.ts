@@ -102,7 +102,6 @@ describe('BC.12 migration — per-widget serialization transform', () => {
   describe('async transform equivalence', () => {
     it("v2 on('beforeSerialize') handler type accepts both sync and async functions", () => {
       // AsyncHandler<T> = (e: T) => void | Promise<void>
-      type __Handler = Parameters<WidgetHandle['on']>[1]
       // The beforeSerialize overload's handler must accept Promise return.
       // We check via the on() overload signature: the second param when event='beforeSerialize'
       // is typed as AsyncHandler<WidgetBeforeSerializeEvent>.

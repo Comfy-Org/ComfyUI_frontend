@@ -88,7 +88,7 @@ describe('BC.21 v1 contract — Custom widget-type registration', () => {
       const factoryCalls: unknown[][] = []
 
       registry.registerExtension({
-        getCustomWidgets(app) {
+        getCustomWidgets(_app) {
           return {
             TRACKER: (node, inputData, a) => {
               factoryCalls.push([node, inputData, a])

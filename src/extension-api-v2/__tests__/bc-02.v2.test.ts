@@ -96,7 +96,6 @@ describe('BC.02 v2 contract — node lifecycle: teardown', () => {
 
     it('cleanup fires for every node when world.clear() triggers unmount of all nodes', () => {
       const world = createHarnessWorld()
-      const _cleanups: (() => void)[] = []
 
       // Mount 3 nodes, collect their unmount handles
       const handles = [

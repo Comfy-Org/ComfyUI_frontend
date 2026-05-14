@@ -113,26 +113,6 @@ function serializeWidgets(widgets: Array<WidgetSpec & { value: unknown }>): {
   return { named, warnings }
 }
 
-function _deserializeWidgets(
-  named: Record<string, unknown>,
-  specs: WidgetSpec[],
-  warn: (msg: string) => void
-): Record<string, unknown> {
-  const out: Record<string, unknown> = {}
-  for (const spec of specs) {
-    const raw = named[spec.name]
-    if ((spec.type === 'INT' || spec.type === 'FLOAT') && raw === null) {
-      warn(
-        `[ComfyUI] Widget "${spec.name}" loaded null for numeric widget — restoring default (${spec.default})`
-      )
-      out[spec.name] = spec.default
-    } else {
-      out[spec.name] = raw ?? spec.default
-    }
-  }
-  return out
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('BC.13 v2 contract — per-node serialization interception', () => {
