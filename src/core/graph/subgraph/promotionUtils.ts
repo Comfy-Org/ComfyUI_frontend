@@ -383,10 +383,10 @@ export function demoteWidget(
     )
     const linkedInput = hostInput?._subgraphSlot
     if (linkedInput) {
-      // Axiom 3: an external link to the host slot is sacred. Demote retracts
-      // the promotion projection only; the SubgraphInput and any inbound link
-      // outlive the projection. When no external link holds the slot open,
-      // collapse it so demote is a true inverse of promote in the common case.
+      // When an external link holds the host slot open, retract the projection
+      // only — disconnect the interior link so the promoted view stops
+      // resolving, but leave the SubgraphInput and the outer link alive.
+      // Otherwise demote is a true inverse of promote and collapses the slot.
       const hasExternalLink = hostInput.link != null
       if (hasExternalLink) {
         linkedInput.disconnect()
