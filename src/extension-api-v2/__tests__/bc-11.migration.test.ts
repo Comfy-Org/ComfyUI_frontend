@@ -286,7 +286,6 @@ describe('BC.11 migration — widget imperative state writes', () => {
       expect(v1Node.widgets[1].name).toBe('new_widget')
 
       // v2: addWidget uses name key — 'cfg' remains at key 'cfg' regardless of insertion order
-      const _createCmds: Record<string, unknown>[] = []
       defineNode({
         name: 'bc11.mig.no-drift',
         nodeCreated(handle) {

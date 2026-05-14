@@ -135,7 +135,7 @@ describe('BC.10 v1 contract — widget value subscription', () => {
     })
 
     it('onWidgetChanged fires for any widget on the node, not only those with an explicit callback', () => {
-      const __widgetA = createV1Widget('steps', 20)
+      void createV1Widget('steps', 20) // widgetA with callback, not used in test
       const widgetB = createV1Widget('cfg', 7)
       const handler = vi.fn()
       const node = { onWidgetChanged: handler }

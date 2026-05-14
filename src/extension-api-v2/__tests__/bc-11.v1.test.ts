@@ -36,12 +36,6 @@ function createV1ComboWidget(
   return { name, value, callback: undefined, options: { values } }
 }
 
-// Simulate LiteGraph calling widget.callback on user interaction.
-function _simulateUserChange(widget: V1Widget, newValue: unknown): void {
-  widget.value = newValue
-  widget.callback?.(newValue)
-}
-
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('BC.11 v1 contract — widget imperative state writes', () => {

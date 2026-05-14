@@ -30,7 +30,7 @@ describe('BC.03 migration — node lifecycle: hydration from saved workflows', (
       // v1 model: extension patches onConfigure during beforeRegisterNodeDef.
       // We model the patched-prototype invocation as a direct call here.
       const v1Ext = {
-        beforeRegisterNodeDef(nodeType: string) {
+        beforeRegisterNodeDef(_nodeType: string) {
           // Prototype patch: every instance of this type gets onConfigure.
           return {
             onConfigure: (data: { type: string }) => v1Calls.push(data.type)
@@ -154,7 +154,7 @@ describe('BC.03 migration — node lifecycle: hydration from saved workflows', (
 
       // Simulate fresh creation: runtime does NOT call onConfigure / loadedGraphNode.
       // (Only nodeCreated / onNodeCreated fire for fresh nodes.)
-      const ___freshNodeId = createHarnessWorld().addNode({ type: 'KSampler' })
+      void createHarnessWorld().addNode({ type: 'KSampler' })
 
       // Neither function called — fresh creation path.
       expect(v1ConfigureFn).not.toHaveBeenCalled()
