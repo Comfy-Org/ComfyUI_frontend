@@ -1773,6 +1773,7 @@ const translations = {
   'footer.support': { en: 'Support', 'zh-CN': '支持' },
   'footer.sales': { en: 'Sales', 'zh-CN': '销售' },
   'footer.press': { en: 'Press', 'zh-CN': '媒体' },
+  'footer.cloudStatus': { en: 'Cloud Status', 'zh-CN': '云端状态' },
   'footer.blog': { en: 'Blog', 'zh-CN': '博客' },
   'footer.location': {
     en: 'San Francisco, USA',
