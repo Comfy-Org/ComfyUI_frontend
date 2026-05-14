@@ -3530,8 +3530,15 @@ export class LGraphNode
     return !!this.flags.collapsed
   }
 
+  /** @deprecated Use `collapsible` instead */
+  get collapsable(): boolean {
+    return this.collapsible
+  }
+
   get collapsible() {
-    return !this.pinned && this.constructor.collapsable !== false
+    // Support both correct spelling 'collapsible' and legacy 'collapsable'
+    const nodeClass = this.constructor as any
+    return !this.pinned && (nodeClass.collapsible ?? nodeClass.collapsable) !== false
   }
 
   /**

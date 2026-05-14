@@ -64,6 +64,7 @@ export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
   slot_start_y?: number
   widgets_info?: Record<string, unknown>
   collapsable?: boolean
+  collapsible?: boolean
   color?: string
   bgcolor?: string
   shape?: RenderShape
