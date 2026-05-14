@@ -291,8 +291,8 @@ export function useWorkflowPersistenceV2() {
       await workflowStore.loadWorkflows()
     } catch (err) {
       console.error('Error loading workflows for tab restore', err)
-      tabStateRestored = true
       await loadDefaultWorkflow()
+      tabStateRestored = true
       return
     }
 
