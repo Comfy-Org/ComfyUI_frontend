@@ -248,7 +248,7 @@ function toPromotionSource(
 function refreshPromotedWidgetRendering(parents: SubgraphNode[]): void {
   for (const parent of parents) {
     parent.computeSize(parent.size)
-    parent.setDirtyCanvas?.(true, true)
+    parent.setDirtyCanvas(true, true)
   }
   useCanvasStore().canvas?.setDirty(true, true)
 }

@@ -183,9 +183,16 @@ export class LGraph
   static STATUS_RUNNING = 2
 
   /**
-   * Late-bound migration hook. Set once during app init from the wiring layer
-   * to avoid a circular dependency through PreviewExposureStore. Left undefined
-   * in tests that exercise `configure()` without the migration pipeline.
+   * Late-bound migration hook. Set once during app init from the wiring layer.
+   * The migration code lives in `@/core/graph/subgraph/migration`, which
+   * transitively imports more workbench surface than the litegraph core is
+   * willing to depend on; binding it here lazily keeps LGraph free of those
+   * imports while still letting `configure()` invoke the flush. Left
+   * undefined in tests that exercise `configure()` without the migration
+   * pipeline.
+   *
+   * @internal Wiring hook for the frontend; not part of the public litegraph
+   * API. Custom nodes and extensions must not read or assign this.
    */
   static proxyWidgetMigrationFlush?: (
     hostNode: SubgraphNode,
@@ -198,6 +205,9 @@ export class LGraph
    * Used after configure (workflow load and paste) so older clipboard /
    * workflow data without `properties.previewExposures` still surfaces a
    * preview on the host SubgraphNode. Idempotent.
+   *
+   * @internal Wiring hook for the frontend; not part of the public litegraph
+   * API. Custom nodes and extensions must not read or assign this.
    */
   static autoExposePreviewNodes?: (hostNode: SubgraphNode) => void
 
@@ -344,12 +354,6 @@ export class LGraph
     this.state.lastLinkId = value
   }
 
-  onAfterStep?(): void
-  onBeforeStep?(): void
-  onPlayEvent?(): void
-  onStopEvent?(): void
-  onAfterExecute?(): void
-  onExecuteStep?(): void
   onNodeAdded?(node: LGraphNode): void
   onNodeRemoved?(node: LGraphNode): void
   onTrigger?: LGraphTriggerHandler
@@ -521,8 +525,6 @@ export class LGraph
   start(interval?: number): void {
     if (this.status == LGraph.STATUS_RUNNING) return
     this.status = LGraph.STATUS_RUNNING
-
-    this.onPlayEvent?.()
     this.sendEventToAllNodes('onStart')
 
     // launch
@@ -540,9 +542,7 @@ export class LGraph
         if (this.execution_timer_id != -1) return
 
         window.requestAnimationFrame(on_frame)
-        this.onBeforeStep?.()
         this.runStep(1, !this.catch_errors)
-        this.onAfterStep?.()
       }
       this.execution_timer_id = -1
       on_frame()
@@ -551,9 +551,7 @@ export class LGraph
       // @ts-expect-error - Timer ID type mismatch needs fixing
       this.execution_timer_id = setInterval(() => {
         // execute
-        this.onBeforeStep?.()
         this.runStep(1, !this.catch_errors)
-        this.onAfterStep?.()
       }, interval)
     }
   }
@@ -566,9 +564,6 @@ export class LGraph
     if (this.status == LGraph.STATUS_STOPPED) return
 
     this.status = LGraph.STATUS_STOPPED
-
-    this.onStopEvent?.()
-
     if (this.execution_timer_id != null) {
       if (this.execution_timer_id != -1) {
         clearInterval(this.execution_timer_id)
@@ -609,10 +604,7 @@ export class LGraph
         }
 
         this.fixedtime += this.fixedtime_lapse
-        this.onExecuteStep?.()
       }
-
-      this.onAfterExecute?.()
     } else {
       try {
         // iterations
@@ -625,10 +617,7 @@ export class LGraph
           }
 
           this.fixedtime += this.fixedtime_lapse
-          this.onExecuteStep?.()
         }
-
-        this.onAfterExecute?.()
         this.errors_in_execution = false
       } catch (error) {
         this.errors_in_execution = true

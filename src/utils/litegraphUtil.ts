@@ -28,6 +28,8 @@ import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNod
 import { app } from '@/scripts/app'
 import { t } from '@/i18n'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
+import type { WidgetEntityId } from '@/world/entityIds'
+import { widgetEntityId } from '@/world/entityIds'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
 type VideoNode = LGraphNode & {
@@ -368,6 +370,27 @@ export function resolveNodeWidget(
   }
 
   return []
+}
+
+/**
+ * Resolve the canonical {@link WidgetEntityId} for a widget attached to a node.
+ *
+ * Prefers `widget.entityId` (set by `BaseWidget.setNodeId`). Falls back to
+ * deriving `(rootGraphId, node.id, widget.name)` for plain POJO widgets that
+ * third-party extensions push directly onto `node.widgets`, bypassing
+ * `addCustomWidget` and therefore `setNodeId`.
+ *
+ * Returns `undefined` only when there is no root graph (node detached) or the
+ * node has no real id (`-1` placeholder).
+ */
+export function getWidgetEntityIdForNode(
+  node: LGraphNode,
+  widget: IBaseWidget
+): WidgetEntityId | undefined {
+  if (widget.entityId) return widget.entityId
+  const graphId = node.graph?.rootGraph.id
+  if (!graphId || node.id === -1) return undefined
+  return widgetEntityId(graphId, node.id, widget.name)
 }
 
 export function isLoad3dNode(node: LGraphNode) {

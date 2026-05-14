@@ -64,9 +64,9 @@ export function usePromotedPreviews(
     const reactiveOutputs = nodeOutputStore.nodeOutputs[locatorId]
     const reactivePreviews = nodeOutputStore.nodePreviewImages[locatorId]
     const reactiveExecutionOutputs =
-      nodeOutputStore.getNodeOutputByExecutionId?.(leafExecutionId)
+      nodeOutputStore.getNodeOutputByExecutionId(leafExecutionId)
     const reactiveExecutionPreviews =
-      nodeOutputStore.getNodePreviewImagesByExecutionId?.(leafExecutionId)
+      nodeOutputStore.getNodePreviewImagesByExecutionId(leafExecutionId)
     const hasAnySource =
       reactiveOutputs?.images?.length ||
       reactivePreviews?.length ||
@@ -74,7 +74,7 @@ export function usePromotedPreviews(
       reactiveExecutionPreviews?.length
     if (!hasAnySource) return undefined
     return (
-      nodeOutputStore.getNodeImageUrlsByExecutionId?.(
+      nodeOutputStore.getNodeImageUrlsByExecutionId(
         leafExecutionId,
         interiorNode
       ) ?? nodeOutputStore.getNodeImageUrls(interiorNode)

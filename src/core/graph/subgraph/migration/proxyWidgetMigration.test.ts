@@ -125,14 +125,8 @@ describe('flushProxyWidgetMigration', () => {
     it('returns an empty result when no proxyWidgets are present', () => {
       const host = buildHost()
 
-      const result = flushProxyWidgetMigration({ hostNode: host })
+      flushProxyWidgetMigration({ hostNode: host })
 
-      expect(result).toEqual({
-        repaired: 0,
-        primitiveRepaired: 0,
-        previewMigrated: 0,
-        quarantined: 0
-      })
       expect(host.properties.proxyWidgets).toBeUndefined()
     })
 
@@ -140,14 +134,8 @@ describe('flushProxyWidgetMigration', () => {
       const host = buildHost()
       host.properties.proxyWidgets = '{not json}'
 
-      const result = flushProxyWidgetMigration({ hostNode: host })
-
-      expect(result).toEqual({
-        repaired: 0,
-        primitiveRepaired: 0,
-        previewMigrated: 0,
-        quarantined: 0
-      })
+      expect(() => flushProxyWidgetMigration({ hostNode: host })).not.toThrow()
+      expect(host.properties.proxyWidgetErrorQuarantine).toBeUndefined()
     })
   })
 
@@ -166,12 +154,11 @@ describe('flushProxyWidgetMigration', () => {
       })
 
       host.properties.proxyWidgets = [[String(inner.id), 'seed']]
-      const result = flushProxyWidgetMigration({
+      flushProxyWidgetMigration({
         hostNode: host,
         hostWidgetValues: [99]
       })
 
-      expect(result).toMatchObject({ repaired: 1, quarantined: 0 })
       expect(handle.getValue()).toBe(99)
       expect(host.properties.proxyWidgets).toBeUndefined()
     })
@@ -190,12 +177,11 @@ describe('flushProxyWidgetMigration', () => {
       subgraph.inputNode.slots[0].connect(inner.inputs[0], inner)
 
       host.properties.proxyWidgets = [[String(inner.id), 'seed']]
-      const result = flushProxyWidgetMigration({
+      flushProxyWidgetMigration({
         hostNode: host,
         hostWidgetValues: [99]
       })
 
-      expect(result).toMatchObject({ repaired: 1, quarantined: 0 })
       expect(host.widgets[0].value).toBe(99)
       const innerWidget = inner.widgets!.find((w) => w.name === 'seed')!
       expect(innerWidget.value).toBe(0)
@@ -216,12 +202,11 @@ describe('flushProxyWidgetMigration', () => {
 
       host.properties.proxyWidgets = [[String(inner.id), 'seed']]
       const sparse: unknown[] = []
-      const result = flushProxyWidgetMigration({
+      flushProxyWidgetMigration({
         hostNode: host,
         hostWidgetValues: sparse
       })
 
-      expect(result).toMatchObject({ repaired: 1, quarantined: 0 })
       expect(handle.getValue()).toBe(7)
     })
 
@@ -246,12 +231,11 @@ describe('flushProxyWidgetMigration', () => {
       })
 
       host.properties.proxyWidgets = [[String(inner.id), 'seed']]
-      const result = flushProxyWidgetMigration({
+      flushProxyWidgetMigration({
         hostNode: host,
         hostWidgetValues: [99]
       })
 
-      expect(result).toMatchObject({ repaired: 0, quarantined: 1 })
       expect(a.getValue()).toBe(1)
       expect(b.getValue()).toBe(2)
       expect(readHostQuarantine(host)).toEqual([
@@ -272,9 +256,8 @@ describe('flushProxyWidgetMigration', () => {
 
       const inputCountBefore = host.subgraph.inputs.length
       host.properties.proxyWidgets = [[String(inner.id), 'seed']]
-      const result = flushProxyWidgetMigration({ hostNode: host })
+      flushProxyWidgetMigration({ hostNode: host })
 
-      expect(result).toMatchObject({ repaired: 1, quarantined: 0 })
       expect(host.subgraph.inputs).toHaveLength(inputCountBefore + 1)
       const created = host.subgraph.inputs.at(-1)
       expect(created?._widget).toBeDefined()
@@ -302,9 +285,8 @@ describe('flushProxyWidgetMigration', () => {
       })
 
       host.properties.proxyWidgets = [[String(inner.id), 'text', '2']]
-      const result = flushProxyWidgetMigration({ hostNode: host })
+      flushProxyWidgetMigration({ hostNode: host })
 
-      expect(result).toMatchObject({ repaired: 1, quarantined: 0 })
       const created = host.subgraph.inputs.at(-1)
       expect(created?._widget).toBeDefined()
       // The created SubgraphInput connects to inner's "text_1" slot (the
@@ -323,9 +305,8 @@ describe('flushProxyWidgetMigration', () => {
 
       const inputCountBefore = host.subgraph.inputs.length
       host.properties.proxyWidgets = [[String(inner.id), 'seed']]
-      const result = flushProxyWidgetMigration({ hostNode: host })
+      flushProxyWidgetMigration({ hostNode: host })
 
-      expect(result).toMatchObject({ repaired: 0, quarantined: 1 })
       expect(host.subgraph.inputs).toHaveLength(inputCountBefore)
       expect(readHostQuarantine(host)).toEqual([
         expect.objectContaining({
@@ -345,13 +326,8 @@ describe('flushProxyWidgetMigration', () => {
 
       const inputCountBefore = host.subgraph.inputs.length
       host.properties.proxyWidgets = [[String(primitive.id), 'value']]
-      const result = flushProxyWidgetMigration({ hostNode: host })
+      flushProxyWidgetMigration({ hostNode: host })
 
-      expect(result).toMatchObject({
-        primitiveRepaired: 1,
-        repaired: 0,
-        quarantined: 0
-      })
       expect(host.subgraph.inputs).toHaveLength(inputCountBefore + 1)
       for (const target of targets) {
         const slot = target.inputs[0]
@@ -371,9 +347,8 @@ describe('flushProxyWidgetMigration', () => {
         [String(primitive.id), 'value'],
         [String(primitive.id), 'value']
       ]
-      const result = flushProxyWidgetMigration({ hostNode: host })
+      flushProxyWidgetMigration({ hostNode: host })
 
-      expect(result).toMatchObject({ primitiveRepaired: 1, quarantined: 0 })
       for (const target of targets) {
         const slot = target.inputs[0]
         const link = host.subgraph.links.get(slot.link!)
@@ -389,11 +364,10 @@ describe('flushProxyWidgetMigration', () => {
       })
 
       host.properties.proxyWidgets = [[String(primitive.id), 'value']]
-      const result = flushProxyWidgetMigration({
+      flushProxyWidgetMigration({
         hostNode: host,
         hostWidgetValues: [123]
       })
-      expect(result.primitiveRepaired).toBe(1)
 
       // Host value lands on the host's input mirror (a `PromotedWidgetView`),
       // not on the shared interior consumer widget. Verifying the host side
@@ -410,9 +384,8 @@ describe('flushProxyWidgetMigration', () => {
       })
 
       host.properties.proxyWidgets = [[String(primitive.id), 'value']]
-      const result = flushProxyWidgetMigration({ hostNode: host })
+      flushProxyWidgetMigration({ hostNode: host })
 
-      expect(result.primitiveRepaired).toBe(1)
       // With no host value supplied, the host is seeded per-instance from
       // the primitive's widget value — never by mutating the shared interior.
       const hostInput = host.inputs.at(-1)
@@ -427,9 +400,8 @@ describe('flushProxyWidgetMigration', () => {
       host.subgraph.add(primitive)
 
       host.properties.proxyWidgets = [[String(primitive.id), 'value']]
-      const result = flushProxyWidgetMigration({ hostNode: host })
+      flushProxyWidgetMigration({ hostNode: host })
 
-      expect(result).toMatchObject({ primitiveRepaired: 0, quarantined: 1 })
       expect(readHostQuarantine(host)).toEqual([
         expect.objectContaining({
           originalEntry: [String(primitive.id), 'value'],
@@ -447,9 +419,8 @@ describe('flushProxyWidgetMigration', () => {
 
       const inputCountBefore = host.subgraph.inputs.length
       host.properties.proxyWidgets = [[String(primitive.id), 'value']]
-      const result = flushProxyWidgetMigration({ hostNode: host })
+      flushProxyWidgetMigration({ hostNode: host })
 
-      expect(result).toMatchObject({ primitiveRepaired: 0, quarantined: 1 })
       expect(host.subgraph.inputs).toHaveLength(inputCountBefore)
       expect(readHostQuarantine(host)).toEqual([
         expect.objectContaining({
@@ -471,9 +442,8 @@ describe('flushProxyWidgetMigration', () => {
       ]
 
       host.properties.proxyWidgets = [[String(primitive.id), 'value']]
-      const result = flushProxyWidgetMigration({ hostNode: host })
+      flushProxyWidgetMigration({ hostNode: host })
 
-      expect(result).toMatchObject({ primitiveRepaired: 0, quarantined: 1 })
       expect(readHostQuarantine(host)).toEqual([
         expect.objectContaining({
           originalEntry: [String(primitive.id), 'value'],
@@ -511,21 +481,20 @@ describe('flushProxyWidgetMigration', () => {
       hostA.properties.proxyWidgets = [[String(primitive.id), 'value']]
       hostB.properties.proxyWidgets = [[String(primitive.id), 'value']]
 
-      const resultA = flushProxyWidgetMigration({
+      flushProxyWidgetMigration({
         hostNode: hostA,
         hostWidgetValues: [11]
       })
-      const resultB = flushProxyWidgetMigration({
+      flushProxyWidgetMigration({
         hostNode: hostB,
         hostWidgetValues: [22]
       })
 
-      expect(resultA).toMatchObject({ primitiveRepaired: 1, quarantined: 0 })
       // Host B's classify recognises the bypass marker on the primitive and
-      // takes the `alreadyLinked` path, so it counts as `repaired` not
-      // `primitiveRepaired`. Either way, no quarantine.
-      expect(resultB).toMatchObject({ quarantined: 0 })
-      expect(resultB.repaired + resultB.primitiveRepaired).toBe(1)
+      // takes the `alreadyLinked` path. Either way, no quarantine, and each
+      // host gets an independent value.
+      expect(hostA.properties.proxyWidgetErrorQuarantine).toBeUndefined()
+      expect(hostB.properties.proxyWidgetErrorQuarantine).toBeUndefined()
 
       const widgetA = hostA.inputs.at(-1)?._widget
       const widgetB = hostB.inputs.at(-1)?._widget
@@ -544,9 +513,8 @@ describe('flushProxyWidgetMigration', () => {
       host.properties.proxyWidgets = [
         [String(inner.id), '$$canvas-image-preview']
       ]
-      const result = flushProxyWidgetMigration({ hostNode: host })
+      flushProxyWidgetMigration({ hostNode: host })
 
-      expect(result).toMatchObject({ previewMigrated: 1, quarantined: 0 })
       const exposures = usePreviewExposureStore().getExposures(
         host.rootGraph.id,
         String(host.id)
@@ -565,9 +533,8 @@ describe('flushProxyWidgetMigration', () => {
       })
 
       host.properties.proxyWidgets = [[String(inner.id), 'videopreview']]
-      const result = flushProxyWidgetMigration({ hostNode: host })
+      flushProxyWidgetMigration({ hostNode: host })
 
-      expect(result).toMatchObject({ previewMigrated: 1, quarantined: 0 })
       const exposures = usePreviewExposureStore().getExposures(
         host.rootGraph.id,
         String(host.id)
@@ -599,9 +566,8 @@ describe('flushProxyWidgetMigration', () => {
       host.properties.proxyWidgets = [
         [String(innerB.id), '$$canvas-image-preview']
       ]
-      const result = flushProxyWidgetMigration({ hostNode: host })
+      flushProxyWidgetMigration({ hostNode: host })
 
-      expect(result).toMatchObject({ previewMigrated: 1, quarantined: 0 })
       const exposures = store.getExposures(host.rootGraph.id, locator)
       expect(exposures).toHaveLength(2)
       const newExposure = exposures.find(
@@ -626,9 +592,8 @@ describe('flushProxyWidgetMigration', () => {
       host.properties.proxyWidgets = [
         [String(inner.id), '$$canvas-image-preview']
       ]
-      const result = flushProxyWidgetMigration({ hostNode: host })
+      flushProxyWidgetMigration({ hostNode: host })
 
-      expect(result).toMatchObject({ previewMigrated: 1, quarantined: 0 })
       expect(store.getExposures(host.rootGraph.id, locator)).toHaveLength(1)
     })
   })
@@ -638,9 +603,8 @@ describe('flushProxyWidgetMigration', () => {
       const host = buildHost()
       host.properties.proxyWidgets = [['9999', 'seed']]
 
-      const result = flushProxyWidgetMigration({ hostNode: host })
+      flushProxyWidgetMigration({ hostNode: host })
 
-      expect(result).toMatchObject({ quarantined: 1 })
       expect(readHostQuarantine(host)).toEqual([
         {
           originalEntry: ['9999', 'seed'],
@@ -655,9 +619,8 @@ describe('flushProxyWidgetMigration', () => {
       const inner = addInnerNode(host, 'Inner')
       host.properties.proxyWidgets = [[String(inner.id), 'nonexistent']]
 
-      const result = flushProxyWidgetMigration({ hostNode: host })
+      flushProxyWidgetMigration({ hostNode: host })
 
-      expect(result).toMatchObject({ quarantined: 1 })
       expect(readHostQuarantine(host)).toEqual([
         expect.objectContaining({
           originalEntry: [String(inner.id), 'nonexistent'],
@@ -740,21 +703,17 @@ describe('flushProxyWidgetMigration', () => {
         [String(inner.id), '$$canvas-image-preview']
       ]
 
-      const first = flushProxyWidgetMigration({ hostNode: host })
-      expect(first.previewMigrated).toBe(1)
+      flushProxyWidgetMigration({ hostNode: host })
 
       const exposuresAfterFirst = usePreviewExposureStore()
         .getExposures(host.rootGraph.id, String(host.id))
         .map((e) => ({ ...e }))
+      expect(exposuresAfterFirst).toHaveLength(1)
 
-      const second = flushProxyWidgetMigration({ hostNode: host })
+      flushProxyWidgetMigration({ hostNode: host })
 
-      expect(second).toEqual({
-        repaired: 0,
-        primitiveRepaired: 0,
-        previewMigrated: 0,
-        quarantined: 0
-      })
+      // Re-running the flush is idempotent: no new exposures, no quarantine.
+      expect(host.properties.proxyWidgetErrorQuarantine).toBeUndefined()
       expect(
         usePreviewExposureStore().getExposures(
           host.rootGraph.id,
@@ -779,16 +738,11 @@ describe('flushProxyWidgetMigration', () => {
         [String(inner.id), 'seed'],
         [String(inner.id), '$$canvas-image-preview']
       ]
-      const result = flushProxyWidgetMigration({
+      flushProxyWidgetMigration({
         hostNode: host,
         hostWidgetValues: [99]
       })
 
-      expect(result).toMatchObject({
-        repaired: 1,
-        previewMigrated: 1,
-        quarantined: 0
-      })
       expect(host.subgraph.inputs).toHaveLength(subgraphInputCountBefore + 1)
       expect(host.subgraph.inputs.find((i) => i.name === 'seed')).toBeDefined()
       const exposures = usePreviewExposureStore().getExposures(
@@ -816,12 +770,11 @@ describe('flushProxyWidgetMigration', () => {
       ]
       const sparse: unknown[] = []
       sparse[1] = 'second-value'
-      const result = flushProxyWidgetMigration({
+      flushProxyWidgetMigration({
         hostNode: host,
         hostWidgetValues: sparse
       })
 
-      expect(result).toMatchObject({ repaired: 2, quarantined: 0 })
       expect(host.subgraph.inputs.find((i) => i.name === 'a')).toBeDefined()
       expect(host.subgraph.inputs.find((i) => i.name === 'b')).toBeDefined()
     })

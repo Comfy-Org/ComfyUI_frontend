@@ -109,14 +109,16 @@ jobs:
           if [ ! -s coverage/playwright/coverage.lcov ]; then
             echo "No coverage data; generating placeholder report."
             mkdir -p coverage/html
-            echo '<html><body><h1>No E2E coverage data available for this run.</h1></body></html>' > coverage/html/index.html
+            WORKFLOW_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}"
+            echo "<html><body><h1>No E2E coverage data available for this run.</h1><p><a href=\"${WORKFLOW_URL}\">View workflow run</a></p></body></html>" > coverage/html/index.html
             exit 0
           fi
           genhtml coverage/playwright/coverage.lcov \
             -o coverage/html \
             --title "ComfyUI E2E Coverage" \
             --no-function-coverage \
-            --precision 1
+            --precision 1 \
+            --ignore-errors source
 
       - name: Upload HTML report artifact
         if: steps.coverage-shards.outputs.has-coverage == 'true'
@@ -130,7 +132,8 @@ jobs:
     needs: merge
     if: >
       github.event.workflow_run.head_branch == 'main' &&
-      needs.merge.outputs.has-coverage == 'true'
+      needs.merge.outputs.has-coverage == 'true' &&
+      github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
     permissions:
       pages: write

@@ -1615,6 +1615,46 @@
       }
     }
   },
+  "ClaudeNode": {
+    "description": "使用Anthropic的Claude模型生成文本回复。提供文本提示，并可选提供一张或多张图像用于多模态上下文。",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "可选图像，作为模型的上下文使用。最多支持20张图像。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于生成回复的Claude模型。"
+      },
+      "model_max_tokens": {
+        "name": "最大tokens数"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "输入到模型的文本。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed用于控制节点是否重新运行；无论seed如何，结果都是非确定性的。"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "决定模型行为的基础指令。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ColorToRGBInt": {
     "description": "将颜色转换为RGB整数值。",
     "display_name": "颜色转RGB整数",

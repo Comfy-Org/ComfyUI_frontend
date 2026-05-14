@@ -410,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "Continuar Localmente",
     "exploreCloud": "Experimente a Nuvem Gratuitamente",
-    "feature1Title": "400 Créditos Grátis por Mês",
     "feature2Title": "Funciona em Qualquer Lugar, Instantaneamente",
     "feature3Title": "Modelos Prontos para Usar",
     "feature4Title": "Principais Pacotes de Nodes Personalizados Pré-instalados",
@@ -2254,6 +2253,7 @@
     "": "",
     "3d": "3d",
     "3d_models": "modelos_3d",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",

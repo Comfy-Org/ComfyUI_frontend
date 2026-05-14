@@ -410,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "Continuer localement",
     "exploreCloud": "Essayer le cloud gratuitement",
-    "feature1Title": "400 crédits gratuits par mois",
     "feature2Title": "Fonctionne partout, instantanément",
     "feature3Title": "Modèles prêts à l’emploi",
     "feature4Title": "Packs de nœuds personnalisés préinstallés",
@@ -2254,6 +2253,7 @@
     "": "",
     "3d": "3d",
     "3d_models": "modèles_3d",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",

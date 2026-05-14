@@ -1615,6 +1615,46 @@
       }
     }
   },
+  "ClaudeNode": {
+    "description": "تولید پاسخ متنی با مدل‌های Claude از Anthropic. یک پرامپت متنی وارد کنید و در صورت نیاز یک یا چند تصویر برای زمینه چندرسانه‌ای ارائه دهید.",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصویر(ها)ی اختیاری برای استفاده به عنوان زمینه برای مدل. تا ۲۰ تصویر."
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل Claude که برای تولید پاسخ استفاده می‌شود."
+      },
+      "model_max_tokens": {
+        "name": "حداکثر توکن‌ها"
+      },
+      "model_temperature": {
+        "name": "دمای مدل"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "ورودی متنی برای مدل."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "دستورالعمل‌های پایه‌ای که رفتار مدل را تعیین می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ColorToRGBInt": {
     "description": "تبدیل یک رنگ به مقدار صحیح RGB.",
     "display_name": "تبدیل رنگ به مقدار صحیح RGB",

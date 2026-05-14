@@ -42,6 +42,11 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     return exposures.value.get(rootGraphId)?.get(hostNodeLocator)
   }
 
+  /**
+   * Returns the live internal array (typed `readonly` to discourage mutation).
+   * Defensive `Object.freeze` at the four insert sites would close this if
+   * a caller ever casts away the readonly modifier; deferred until needed.
+   */
   function getExposures(
     rootGraphId: UUID,
     hostNodeLocator: string
@@ -93,31 +98,6 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     setExposures(rootGraphId, hostNodeLocator, next)
   }
 
-  function moveExposure(
-    rootGraphId: UUID,
-    hostNodeLocator: string,
-    fromIndex: number,
-    toIndex: number
-  ): void {
-    const hosts = exposures.value.get(rootGraphId)
-    const current = hosts?.get(hostNodeLocator)
-    if (!hosts || !current?.length) return
-
-    if (
-      fromIndex < 0 ||
-      fromIndex >= current.length ||
-      toIndex < 0 ||
-      toIndex >= current.length ||
-      fromIndex === toIndex
-    )
-      return
-
-    const next = [...current]
-    const [entry] = next.splice(fromIndex, 1)
-    next.splice(toIndex, 0, entry)
-    hosts.set(hostNodeLocator, next)
-  }
-
   function clearGraph(rootGraphId: UUID): void {
     exposures.value.delete(rootGraphId)
   }
@@ -148,7 +128,6 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     setExposures,
     addExposure,
     removeExposure,
-    moveExposure,
     clearGraph,
     resolveChain
   }

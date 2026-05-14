@@ -271,11 +271,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this._cacheVersion++
   }
 
-  private _mutateInputs(fn: () => void): void {
-    fn()
-    this.invalidatePromotedViews()
-  }
-
   private _makePromotionViewKey(
     inputKey: string,
     sourceNodeId: string,
@@ -349,12 +344,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
             )
           return
         }
-        let input!: INodeInputSlot & Partial<ISubgraphInput>
-        this._mutateInputs(() => {
-          input = this.addInput(name, type, {
-            _subgraphSlot: subgraphInput
-          })
+        const input = this.addInput(name, type, {
+          _subgraphSlot: subgraphInput
         })
+        this.invalidatePromotedViews()
 
         this._addSubgraphInputListeners(subgraphInput, input)
       },
@@ -367,7 +360,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const widget = e.detail.input._widget
         if (widget) this.ensureWidgetRemoved(widget)
 
-        this._mutateInputs(() => this.removeInput(e.detail.index))
+        this.removeInput(e.detail.index)
+        this.invalidatePromotedViews()
         this.setDirtyCanvas(true, true)
       },
       { signal }
@@ -597,29 +591,28 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       }
     }
 
-    this._mutateInputs(() => {
-      this.inputs.length = 0
-      this.inputs.push(
-        ...this.subgraph.inputNode.slots.map((slot) =>
-          Object.assign(
-            new NodeInputSlot(
-              {
-                name: slot.name,
-                localized_name: slot.localized_name,
-                label: slot.label,
-                shape: this.getSlotShape(slot),
-                type: slot.type,
-                link: null
-              },
-              this
-            ),
+    this.inputs.length = 0
+    this.inputs.push(
+      ...this.subgraph.inputNode.slots.map((slot) =>
+        Object.assign(
+          new NodeInputSlot(
             {
-              _subgraphSlot: slot
-            }
-          )
+              name: slot.name,
+              localized_name: slot.localized_name,
+              label: slot.label,
+              shape: this.getSlotShape(slot),
+              type: slot.type,
+              link: null
+            },
+            this
+          ),
+          {
+            _subgraphSlot: slot
+          }
         )
       )
-    })
+    )
+    this.invalidatePromotedViews()
 
     this.outputs.length = 0
     this.outputs.push(
@@ -669,10 +662,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     // Prune inputs that don't map to any subgraph slot definition.
     // This prevents stale/duplicate serialized inputs from persisting (#9977).
-    this._mutateInputs(() => {
-      this.inputs = this.inputs.filter((input) => input._subgraphSlot)
-    })
-
+    this.inputs = this.inputs.filter((input) => input._subgraphSlot)
     this._promotedViewManager.clear()
     this.invalidatePromotedViews()
 
@@ -693,8 +683,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       this._addSubgraphInputListeners(subgraphInput, input)
       this._resolveInputWidget(subgraphInput, input)
     }
-
-    this.invalidatePromotedViews()
   }
 
   /**

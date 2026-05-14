@@ -27,7 +27,6 @@ export interface DrawWidgetOptions {
   width: number
   /** Synonym for "low quality". */
   showText?: boolean
-  suppressPromotedOutline?: boolean
   /** Transient image source for preview widgets rendered on behalf of another node (e.g. subgraph promotion). */
   previewImages?: HTMLImageElement[]
 }
@@ -223,7 +222,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     }
   }
 
-  getOutlineColor(_suppressPromotedOutline = false) {
+  getOutlineColor() {
     return this.advanced
       ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR
       : LiteGraph.WIDGET_OUTLINE_COLOR
@@ -287,13 +286,13 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    */
   protected drawWidgetShape(
     ctx: CanvasRenderingContext2D,
-    { width, showText, suppressPromotedOutline }: DrawWidgetOptions
+    { width, showText }: DrawWidgetOptions
   ): void {
     const { height, y } = this
     const { margin } = BaseWidget
 
     ctx.textAlign = 'left'
-    ctx.strokeStyle = this.getOutlineColor(suppressPromotedOutline)
+    ctx.strokeStyle = this.getOutlineColor()
     ctx.fillStyle = this.background_color
     ctx.beginPath()
 
@@ -314,7 +313,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    */
   protected drawVueOnlyWarning(
     ctx: CanvasRenderingContext2D,
-    { width, suppressPromotedOutline }: DrawWidgetOptions,
+    { width }: DrawWidgetOptions,
     label: string
   ): void {
     const { y, height } = this
@@ -324,7 +323,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     ctx.fillStyle = this.background_color
     ctx.fillRect(15, y, width - 30, height)
 
-    ctx.strokeStyle = this.getOutlineColor(suppressPromotedOutline)
+    ctx.strokeStyle = this.getOutlineColor()
     ctx.strokeRect(15, y, width - 30, height)
 
     ctx.fillStyle = this.text_color

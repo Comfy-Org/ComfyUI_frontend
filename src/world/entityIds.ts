@@ -1,4 +1,10 @@
+// TODO: NodeId will become a branded EntityId owned by src/world/. Once that
+// migration lands, drop this disable.
+// eslint-disable-next-line import-x/no-restricted-paths
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+// TODO: Move UUID to src/utils/ (or src/world/) — it's a primitive string
+// brand with no litegraph coupling. Once moved, drop this disable.
+// eslint-disable-next-line import-x/no-restricted-paths
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
 import type { Brand } from './brand'

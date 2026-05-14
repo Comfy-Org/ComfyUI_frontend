@@ -29,6 +29,7 @@ import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
 import { normalizeControlOption } from '@/types/simplifiedWidget'
+import { getWidgetEntityIdForNode } from '@/utils/litegraphUtil'
 import type { WidgetEntityId } from '@/world/entityIds'
 
 import type {
@@ -339,7 +340,7 @@ function safeWidgetMapper(
       if (isPromotedWidgetView(widget)) widget.ensureHostWidgetState()
 
       return {
-        entityId: widget.entityId,
+        entityId: getWidgetEntityIdForNode(node, widget),
         nodeId,
         name,
         type: effectiveWidget.type,
