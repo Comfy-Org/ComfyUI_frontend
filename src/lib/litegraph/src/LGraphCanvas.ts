@@ -3307,11 +3307,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (result != null) this.dirty_canvas = result
       }
     }
+    const isSubgraphIOLink =
+      linkConnector.isConnecting &&
+      Number(linkConnector.renderLinks.at(0)?.node?.id ?? 0) < 0
 
     // get node over
-    const node = LiteGraph.vueNodesMode
-      ? null
-      : graph.getNodeOnPos(x, y, this.visible_nodes)
+    const node =
+      LiteGraph.vueNodesMode && !isSubgraphIOLink
+        ? null
+        : graph.getNodeOnPos(x, y, this.visible_nodes)
 
     const dragRect = this.dragging_rectangle
     if (dragRect) {
@@ -3454,7 +3458,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
                   highlightInput = node.inputs[inputId]
                 }
 
-                if (highlightInput) {
+                if (highlightInput && !LiteGraph.vueNodesMode) {
                   const widget = node.getWidgetFromSlot(highlightInput)
                   if (widget) linkConnector.overWidget = widget
                 }
