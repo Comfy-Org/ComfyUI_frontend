@@ -6,7 +6,6 @@ import { nextTick, ref } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
@@ -14,6 +13,11 @@ const ids = vi.hoisted(() => ({
   root: '00000000-0000-4000-8000-000000000000',
   validSubgraph: '11111111-1111-4111-8111-111111111111',
   deletedSubgraph: '22222222-2222-4222-8222-222222222222'
+}))
+
+const workflowStoreState = vi.hoisted(() => ({
+  openWorkflows: [] as unknown[],
+  activeSubgraph: undefined as unknown
 }))
 
 const routerMocks = vi.hoisted(() => ({
@@ -89,6 +93,10 @@ vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: () => workflowServiceMocks
 }))
 
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: () => workflowStoreState
+}))
+
 function makeSubgraph(id: string): Subgraph {
   return fromPartial<Subgraph>({
     id,
@@ -108,9 +116,12 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
+    app.rootGraph.id = ids.root
     app.rootGraph.subgraphs.clear()
     app.canvas.subgraph = undefined
     app.canvas.graph = app.rootGraph
+    workflowStoreState.openWorkflows = []
+    workflowStoreState.activeSubgraph = undefined
     routeHashRef.value = ''
   })
 
@@ -156,8 +167,6 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
 
     expect(routerMocks.replace).not.toHaveBeenCalled()
     expect(app.canvas.setGraph).not.toHaveBeenCalled()
-
-    app.rootGraph.id = ids.root
   })
 
   it('does not redirect or re-set graph when hash equals current graph', async () => {
@@ -181,11 +190,29 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     await flushHashWatcher()
 
     expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+    expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
   })
 
-  it('treats an empty hash as the root graph (no redirect)', async () => {
-    app.canvas.graph = fromPartial<LGraph>({ id: ids.root })
+  it('recovers canvas to root even if router.replace rejects during redirect', async () => {
+    routerMocks.replace.mockRejectedValueOnce(new Error('navigation aborted'))
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const stale = makeSubgraph(ids.deletedSubgraph)
+    app.canvas.graph = stale
     useSubgraphNavigationStore()
+
+    routeHashRef.value = `#${ids.deletedSubgraph}`
+    await flushHashWatcher()
+    await flushHashWatcher()
+
+    expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
+    warnSpy.mockRestore()
+  })
+
+  it('redirects to root when the empty-hash transition cannot resolve the locator', async () => {
+    routeHashRef.value = `#${ids.deletedSubgraph}`
+    useSubgraphNavigationStore()
+    await flushHashWatcher()
+    routerMocks.replace.mockClear()
 
     routeHashRef.value = ''
     await flushHashWatcher()
@@ -195,10 +222,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
 
   it('redirects to root when a workflow loads but the target subgraph is still missing', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const workflowStore = useWorkflowStore() as unknown as {
-      openWorkflows: ComfyWorkflow[]
-    }
-    workflowStore.openWorkflows = [
+    workflowStoreState.openWorkflows = [
       fromPartial<ComfyWorkflow>({
         path: 'phantom-workflow.json',
         filename: 'phantom-workflow.json',
@@ -219,6 +243,35 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining('subgraph not found after workflow load')
+    )
+    warnSpy.mockRestore()
+  })
+
+  it('redirects to root when openWorkflow rejects', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    workflowServiceMocks.openWorkflow.mockRejectedValueOnce(
+      new Error('load failed')
+    )
+    workflowStoreState.openWorkflows = [
+      fromPartial<ComfyWorkflow>({
+        path: 'broken-workflow.json',
+        filename: 'broken-workflow.json',
+        activeState: {
+          id: ids.deletedSubgraph,
+          definitions: { subgraphs: [] }
+        }
+      })
+    ]
+
+    useSubgraphNavigationStore()
+
+    routeHashRef.value = `#${ids.deletedSubgraph}`
+    await flushHashWatcher()
+    await flushHashWatcher()
+
+    expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('workflow load failed')
     )
     warnSpy.mockRestore()
   })

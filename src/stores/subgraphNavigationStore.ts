@@ -201,21 +201,41 @@ export const useSubgraphNavigationStore = defineStore(
       { flush: 'sync' }
     )
 
-    //Allow navigation with forward/back buttons
-    let blockHashUpdate = false
+    //Allow navigation with forward/back buttons. Use a counter so that
+    //nested/overlapping async navigations don't release suppression early.
+    let blockHashUpdateDepth = 0
     let initialLoad = true
+
+    async function withHashUpdateBlocked<T>(op: () => Promise<T>): Promise<T> {
+      blockHashUpdateDepth++
+      try {
+        return await op()
+      } finally {
+        blockHashUpdateDepth--
+      }
+    }
+
+    function ensureCanvasOnRoot() {
+      const root = app.rootGraph
+      const canvas = canvasStore.getCanvas()
+      if (canvas.graph?.id !== root.id) canvas.setGraph(root)
+    }
 
     async function redirectToRoot(reason: string) {
       const root = app.rootGraph
-      const canvas = canvasStore.getCanvas()
       console.warn(`[subgraphNavigation] ${reason}; redirecting to root graph`)
       try {
-        blockHashUpdate = true
-        await router.replace('#' + root.id)
+        await withHashUpdateBlocked(() => router.replace('#' + root.id))
+      } catch (err) {
+        //Router failures shouldn't strand the canvas on a deleted subgraph;
+        //we still need to recover even when the URL update is rejected.
+        console.warn(
+          '[subgraphNavigation] router.replace rejected during recovery',
+          err
+        )
       } finally {
-        blockHashUpdate = false
+        ensureCanvasOnRoot()
       }
-      if (canvas.graph?.id !== root.id) canvas.setGraph(root)
     }
 
     async function navigateToHash(newHash: string) {
@@ -243,20 +263,25 @@ export const useSubgraphNavigationStore = defineStore(
           if (graph.id !== locatorId) continue
           //This will trigger a navigation, which can break forward history
           try {
-            blockHashUpdate = true
-            await useWorkflowService().openWorkflow(workflow)
-          } finally {
-            blockHashUpdate = false
+            await withHashUpdateBlocked(() =>
+              useWorkflowService().openWorkflow(workflow)
+            )
+          } catch (err) {
+            console.warn(
+              '[subgraphNavigation] openWorkflow rejected during recovery',
+              err
+            )
+            return redirectToRoot('workflow load failed')
           }
-          const targetGraph =
+          const loadedGraph =
             app.rootGraph.id === locatorId
               ? app.rootGraph
               : app.rootGraph.subgraphs.get(locatorId)
-          if (!targetGraph) {
+          if (!loadedGraph) {
             return redirectToRoot('subgraph not found after workflow load')
           }
-
-          return canvas.setGraph(targetGraph)
+          if (canvas.graph?.id === loadedGraph.id) return
+          return canvas.setGraph(loadedGraph)
         }
       }
 
@@ -264,7 +289,7 @@ export const useSubgraphNavigationStore = defineStore(
     }
 
     async function updateHash() {
-      if (blockHashUpdate) return
+      if (blockHashUpdateDepth > 0) return
       if (initialLoad) {
         initialLoad = false
         if (!routeHash.value) return

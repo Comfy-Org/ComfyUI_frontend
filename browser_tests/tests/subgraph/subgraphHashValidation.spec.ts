@@ -1,12 +1,23 @@
+import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+
+async function expectCanvasOnRootGraph(comfyPage: { page: Page }) {
+  const state = await comfyPage.page.evaluate(() => ({
+    rootId: window.app!.rootGraph.id,
+    canvasGraphId: window.app!.canvas.graph?.id,
+    hash: window.location.hash
+  }))
+  expect(state.canvasGraphId).toBe(state.rootId)
+  expect(state.hash).toBe(`#${state.rootId}`)
+}
 
 test.describe(
   'Subgraph hash validation (FE-559)',
   { tag: ['@subgraph'] },
   () => {
-    test('redirects to root when navigating to a non-existent subgraph hash', async ({
+    test('redirects URL and canvas to root for a non-existent subgraph hash', async ({
       comfyPage
     }) => {
       const rootId = await comfyPage.page.evaluate(
@@ -22,9 +33,10 @@ test.describe(
       await expect
         .poll(() => comfyPage.page.evaluate(() => window.location.hash))
         .toBe(`#${rootId}`)
+      await expectCanvasOnRootGraph(comfyPage)
     })
 
-    test('redirects to root when hash is malformed (not a UUID)', async ({
+    test('redirects URL and canvas to root when hash is malformed', async ({
       comfyPage
     }) => {
       const rootId = await comfyPage.page.evaluate(
@@ -38,6 +50,7 @@ test.describe(
       await expect
         .poll(() => comfyPage.page.evaluate(() => window.location.hash))
         .toBe(`#${rootId}`)
+      await expectCanvasOnRootGraph(comfyPage)
     })
   }
 )
