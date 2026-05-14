@@ -62,7 +62,7 @@
 
 <script setup lang="ts">
 import SelectButton from 'primevue/selectbutton'
-import { computed, ref, useId, watch } from 'vue'
+import { ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ColorCustomizationSelector from '@/components/common/ColorCustomizationSelector.vue'
@@ -79,21 +79,16 @@ import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 
 const { t } = useI18n()
 
-const props = defineProps<{
-  modelValue: boolean
+const { initialIcon, initialColor } = defineProps<{
   initialIcon?: string
   initialColor?: string
 }>()
 
+const visible = defineModel<boolean>({ default: false })
+
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: boolean): void
   (e: 'confirm', icon: string, color: string): void
 }>()
-
-const visible = computed({
-  get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
-})
 
 const titleId = useId()
 
@@ -139,16 +134,12 @@ const defaultIcon = iconOptions.find(
 )
 
 const selectedIcon = ref(defaultIcon ?? iconOptions[0])
-const finalColor = ref(
-  props.initialColor || nodeBookmarkStore.defaultBookmarkColor
-)
+const finalColor = ref(initialColor || nodeBookmarkStore.defaultBookmarkColor)
 
 const resetCustomization = () => {
   selectedIcon.value =
-    iconOptions.find((option) => option.value === props.initialIcon) ??
-    iconOptions[0]
-  finalColor.value =
-    props.initialColor || nodeBookmarkStore.defaultBookmarkColor
+    iconOptions.find((option) => option.value === initialIcon) ?? iconOptions[0]
+  finalColor.value = initialColor || nodeBookmarkStore.defaultBookmarkColor
 }
 
 const confirmCustomization = () => {
@@ -157,8 +148,8 @@ const confirmCustomization = () => {
 }
 
 watch(
-  () => props.modelValue,
-  (newValue: boolean) => {
+  visible,
+  (newValue) => {
     if (newValue) {
       resetCustomization()
     }
