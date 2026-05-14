@@ -42,6 +42,7 @@ import {
   getExecutionIdFromNodeData,
   getLocatorIdFromNodeData
 } from '@/utils/graphTraversalUtil'
+import { isValidGridTrack } from '@/utils/widgetGridOverrides'
 
 interface ProcessedWidget {
   advanced: boolean
@@ -424,7 +425,7 @@ export function useProcessedWidgets(
     return visibleWidgets.value
       .map((w) => {
         const override = overrides?.[w.slotName ?? w.name]
-        if (override) return override
+        if (override && isValidGridTrack(override)) return override
         return shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
       })
       .join(' ')

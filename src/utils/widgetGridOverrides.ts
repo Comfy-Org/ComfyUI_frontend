@@ -2,6 +2,19 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 const GRID_OVERRIDES_PROPERTY_KEY = 'gridOverrides'
 
+const gridTrackValidityCache = new Map<string, boolean>()
+
+export function isValidGridTrack(value: string): boolean {
+  const cached = gridTrackValidityCache.get(value)
+  if (cached !== undefined) return cached
+  const valid =
+    typeof CSS !== 'undefined' &&
+    typeof CSS.supports === 'function' &&
+    CSS.supports('grid-template-rows', value)
+  gridTrackValidityCache.set(value, valid)
+  return valid
+}
+
 /**
  * Maps widget name -> CSS grid-template-rows track value
  * (e.g. '200px', 'minmax(150px, 300px)', '1fr', 'auto').
@@ -25,12 +38,12 @@ function writeGridOverrides(
   node: LGraphNode,
   overrides: WidgetGridOverrides
 ): void {
-  node.properties ??= {}
   if (Object.keys(overrides).length === 0) {
-    delete node.properties[GRID_OVERRIDES_PROPERTY_KEY]
-  } else {
-    node.properties[GRID_OVERRIDES_PROPERTY_KEY] = overrides
+    if (node.properties) delete node.properties[GRID_OVERRIDES_PROPERTY_KEY]
+    return
   }
+  node.properties ??= {}
+  node.properties[GRID_OVERRIDES_PROPERTY_KEY] = overrides
 }
 
 export function setGridOverride(
