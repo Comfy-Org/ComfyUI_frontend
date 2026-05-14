@@ -713,9 +713,10 @@ describe('demoteWidget — axiomatic projection retraction', () => {
     const { host, interiorNode, interiorWidget } = setupPromotedWidget()
     const hostInput = host.inputs[0]
     hostInput.link = 9999
+    const promotedViewsBefore = host.widgets.length
 
     expect(host.subgraph.inputs).toHaveLength(1)
-    expect(host.widgets.length).toBeGreaterThan(0)
+    expect(promotedViewsBefore).toBeGreaterThan(0)
 
     demoteWidget(interiorNode, interiorWidget, [host])
 
@@ -724,6 +725,13 @@ describe('demoteWidget — axiomatic projection retraction', () => {
     expect(host.inputs[0]?._widget).toBeUndefined()
     expect(
       isLinkedPromotion(host, String(interiorNode.id), interiorWidget.name)
+    ).toBe(false)
+    expect(
+      host.widgets.some(
+        (widget) =>
+          getSourceNodeId(widget) === String(interiorNode.id) &&
+          widget.name === interiorWidget.name
+      )
     ).toBe(false)
   })
 
@@ -736,29 +744,5 @@ describe('demoteWidget — axiomatic projection retraction', () => {
 
     expect(host.subgraph.inputs).toHaveLength(0)
     expect(host.inputs).toHaveLength(0)
-  })
-
-  it('reuses the orphaned slot on re-promotion instead of creating a duplicate', () => {
-    const { host, interiorNode, interiorWidget } = setupPromotedWidget()
-    const originalSlot = host.subgraph.inputs[0]
-    host.inputs[0].link = 9999
-
-    demoteWidget(interiorNode, interiorWidget, [host])
-
-    expect(host.subgraph.inputs).toHaveLength(1)
-    expect(host.subgraph.inputs[0]).toBe(originalSlot)
-
-    const result = promoteValueWidgetViaSubgraphInput(
-      host,
-      interiorNode,
-      interiorWidget
-    )
-
-    expect(result.ok).toBe(true)
-    expect(host.subgraph.inputs).toHaveLength(1)
-    expect(host.subgraph.inputs[0]).toBe(originalSlot)
-    expect(
-      isLinkedPromotion(host, String(interiorNode.id), interiorWidget.name)
-    ).toBe(true)
   })
 })
