@@ -28,10 +28,8 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
-import type {
-  IBaseWidget,
-  TWidgetValue
-} from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import {
   createPromotedWidgetView,
   isPromotedWidgetView
@@ -65,14 +63,6 @@ type LinkedPromotionEntry = PromotedWidgetSource & {
 // Pre-rasterize the SVG to a bitmap canvas to avoid Firefox re-processing
 // the SVG's internal stylesheet on every ctx.drawImage() call per frame.
 const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
-
-function isWidgetValue(value: unknown): value is TWidgetValue {
-  if (value === undefined) return true
-  if (typeof value === 'string') return true
-  if (typeof value === 'number') return true
-  if (typeof value === 'boolean') return true
-  return value !== null && typeof value === 'object'
-}
 
 /**
  * An instance of a {@link Subgraph}, displayed as a node on the containing (parent) graph.
@@ -1153,6 +1143,24 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
 
     serialized.properties = serializedProperties
+
+    // Per ADR 0009, host SubgraphNodes only carry promoted widgets — non-
+    // promoted host widgets would be silently dropped here. Surface the
+    // unexpected case in dev so a future custom subclass that adds bare
+    // widgets isn't ignored without a trace.
+    if (
+      import.meta.env?.DEV &&
+      this.widgets.some((w) => !isPromotedWidgetView(w))
+    ) {
+      console.warn(
+        `SubgraphNode ${this.id}: serialize() drops non-promoted host widgets ` +
+          `(${this.widgets
+            .filter((w) => !isPromotedWidgetView(w))
+            .map((w) => w.name)
+            .join(', ')}); ` +
+          'expected only PromotedWidgetView instances per ADR 0009.'
+      )
+    }
 
     const widgetValues = this.inputs.flatMap((input) => {
       const widget = input._widget

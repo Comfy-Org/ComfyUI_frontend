@@ -76,6 +76,7 @@ import type {
   LGraphTriggerHandler,
   LGraphTriggerParam
 } from './types/graphTriggers'
+import { LGraphTriggerActions } from './types/graphTriggers'
 import type {
   ExportedSubgraph,
   ExposedWidget,
@@ -95,6 +96,9 @@ export type {
   LGraphTriggerAction,
   LGraphTriggerParam
 } from './types/graphTriggers'
+
+/** Runtime allowlist for {@link LGraph.trigger}, derived from {@link LGraphTriggerActions}. */
+const validTriggerActions = new Set<LGraphTriggerAction>(LGraphTriggerActions)
 
 export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
 
@@ -1362,13 +1366,7 @@ export class LGraph
   ): void
   trigger(action: string, param: unknown): void
   trigger(action: string, param: unknown) {
-    const validEventTypes = new Set<LGraphTriggerAction>([
-      'node:slot-links:changed',
-      'node:slot-errors:changed',
-      'node:property:changed',
-      'node:slot-label:changed'
-    ])
-    if (!validEventTypes.has(action as LGraphTriggerAction)) return
+    if (!validTriggerActions.has(action as LGraphTriggerAction)) return
     if (!param || typeof param !== 'object') return
 
     this.onTrigger?.({ type: action, ...param } as LGraphTriggerEvent)

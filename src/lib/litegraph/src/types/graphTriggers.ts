@@ -35,7 +35,20 @@ export type LGraphTriggerEvent =
   | NodeSlotLinksChangedEvent
   | NodeSlotLabelChangedEvent
 
-export type LGraphTriggerAction = LGraphTriggerEvent['type']
+/**
+ * Single source of truth for actions accepted by `LGraph.trigger()`.
+ * Both the runtime allowlist (`LGraphTriggerActions`) and the static type
+ * (`LGraphTriggerAction`) derive from this tuple — adding a new action is
+ * a one-place change. Keep in lockstep with {@link LGraphTriggerEvent}.
+ */
+export const LGraphTriggerActions = [
+  'node:property:changed',
+  'node:slot-errors:changed',
+  'node:slot-links:changed',
+  'node:slot-label:changed'
+] as const satisfies readonly LGraphTriggerEvent['type'][]
+
+export type LGraphTriggerAction = (typeof LGraphTriggerActions)[number]
 
 export type LGraphTriggerParam<A extends LGraphTriggerAction> = Extract<
   LGraphTriggerEvent,

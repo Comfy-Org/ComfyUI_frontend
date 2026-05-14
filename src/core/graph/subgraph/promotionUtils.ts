@@ -2,12 +2,11 @@ import * as Sentry from '@sentry/vue'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { t } from '@/i18n'
-import type {
-  IContextMenuValue,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
@@ -24,14 +23,6 @@ type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
 
 export type WidgetItem = [LGraphNode, IBaseWidget]
 export { CANVAS_IMAGE_PREVIEW_WIDGET }
-
-function isWidgetValue(value: unknown): value is IBaseWidget['value'] {
-  if (value === undefined) return true
-  if (typeof value === 'string') return true
-  if (typeof value === 'number') return true
-  if (typeof value === 'boolean') return true
-  return value !== null && typeof value === 'object'
-}
 
 export function getWidgetName(w: IBaseWidget): string {
   return isPromotedWidgetView(w) ? w.sourceWidgetName : w.name
@@ -335,28 +326,23 @@ export function promoteWidget(
   parents: SubgraphNode[]
 ) {
   const source = toPromotionSource(node, widget)
+  // Both downstream helpers (`promotePreviewViaExposure`,
+  // `promoteValueWidgetViaSubgraphInput`) require the full `LGraphNode`
+  // shape — a `Pick<...>` won't do. Narrow once with `instanceof` rather
+  // than re-checking each call site with property guards + casts.
+  if (!(node instanceof LGraphNode)) return
   for (const parent of parents) {
     if (isPreviewPseudoWidget(widget)) {
-      promotePreviewViaExposure(
-        parent,
-        node as LGraphNode,
-        source.sourceWidgetName
-      )
+      promotePreviewViaExposure(parent, node, source.sourceWidgetName)
       continue
     }
-    if ('getSlotFromWidget' in node) {
-      const result = promoteValueWidgetViaSubgraphInput(
-        parent,
-        node as LGraphNode,
-        widget
-      )
-      if (!result.ok) {
-        Sentry.addBreadcrumb({
-          category: 'subgraph',
-          level: 'warning',
-          message: `Failed to promote widget "${source.sourceWidgetName}" on node ${node.id}: ${result.reason}`
-        })
-      }
+    const result = promoteValueWidgetViaSubgraphInput(parent, node, widget)
+    if (!result.ok) {
+      Sentry.addBreadcrumb({
+        category: 'subgraph',
+        level: 'warning',
+        message: `Failed to promote widget "${source.sourceWidgetName}" on node ${node.id}: ${result.reason}`
+      })
     }
   }
   refreshPromotedWidgetRendering(parents)

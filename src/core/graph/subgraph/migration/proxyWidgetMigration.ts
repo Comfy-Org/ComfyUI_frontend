@@ -24,6 +24,7 @@ import type {
   IBaseWidget,
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
+import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 
 /**
@@ -206,7 +207,12 @@ function pickHostValue(
   ) {
     return { value: undefined, isHole: true }
   }
-  return { value: hostWidgetValues[index] as TWidgetValue, isHole: false }
+  // Narrow rather than cast: a slot whose payload isn't a `TWidgetValue`
+  // (e.g. a function or `null` from corrupted serialization) is treated as
+  // a hole so the migration falls back to seeding from the source widget.
+  const raw = hostWidgetValues[index]
+  if (!isWidgetValue(raw)) return { value: undefined, isHole: true }
+  return { value: raw, isHole: false }
 }
 
 function findHostInputForLinkedSource(

@@ -41,16 +41,10 @@ const activeNode = computed(() => {
   return undefined
 })
 
-const activeWidgets = computed<WidgetItem[]>({
-  get() {
-    const node = activeNode.value
-    if (!node) return []
-
-    return [...getActivePromotedWidgets(node), ...getActivePreviewWidgets(node)]
-  },
-  set(value: WidgetItem[]) {
-    updateActiveWidgets(value, activeWidgets.value)
-  }
+const activeWidgets = computed<WidgetItem[]>(() => {
+  const node = activeNode.value
+  if (!node) return []
+  return [...getActivePromotedWidgets(node), ...getActivePreviewWidgets(node)]
 })
 
 const activePromotedWidgets = computed<WidgetItem[]>({

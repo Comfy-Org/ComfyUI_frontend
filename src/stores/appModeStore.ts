@@ -267,9 +267,14 @@ export const useAppModeStore = defineStore('appMode', () => {
   function updateInputConfig(widget: IBaseWidget, config: InputWidgetConfig) {
     const targetEntityId = widget.entityId
     if (!targetEntityId) return
-    const entry = selectedInputs.value.find(([id]) => id === targetEntityId)
-    if (!entry) return
-    entry[2] = { ...entry[2], ...config }
+    const index = selectedInputs.value.findIndex(
+      ([id]) => id === targetEntityId
+    )
+    if (index === -1) return
+    // Replace the tuple rather than mutating its `[2]` slot in place so
+    // reactive consumers that key off entry identity see the change.
+    const [id, type, options] = selectedInputs.value[index]
+    selectedInputs.value.splice(index, 1, [id, type, { ...options, ...config }])
   }
 
   return {
