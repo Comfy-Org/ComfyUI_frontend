@@ -2,6 +2,8 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
+import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
@@ -17,6 +19,7 @@ import type {
   ExportedSubgraph,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})
@@ -179,7 +182,7 @@ describe('remapClipboardSubgraphNodeIds', () => {
   })
 })
 
-describe('_deserializeItems proxyWidgets migration', () => {
+describe('_deserializeItems paste-time migration & auto-expose', () => {
   let originalFlush: typeof LGraph.proxyWidgetMigrationFlush
   let originalAutoExpose: typeof LGraph.autoExposePreviewNodes
   const registeredTypesToCleanup: string[] = []
@@ -198,6 +201,29 @@ describe('_deserializeItems proxyWidgets migration', () => {
     }
     registeredTypesToCleanup.length = 0
   })
+
+  function registerSubgraphNodeTypeOnCreate(rootGraph: LGraph): void {
+    rootGraph.events.addEventListener('subgraph-created', (e) => {
+      const { subgraph } = e.detail
+      class TestSubgraphNode extends SubgraphNode {
+        constructor() {
+          super(rootGraph, subgraph as Subgraph, {
+            id: -1,
+            type: subgraph.id,
+            pos: [0, 0],
+            size: [100, 100],
+            inputs: [],
+            outputs: [],
+            flags: {},
+            order: 0,
+            mode: 0
+          })
+        }
+      }
+      LiteGraph.registerNodeType(subgraph.id, TestSubgraphNode)
+      registeredTypesToCleanup.push(subgraph.id)
+    })
+  }
 
   function createCanvas(graph: LGraph): LGraphCanvas {
     const el = document.createElement('canvas')
@@ -234,31 +260,15 @@ describe('_deserializeItems proxyWidgets migration', () => {
     return new LGraphCanvas(el, graph, { skip_render: true })
   }
 
-  it('invokes the migration hook for top-level pasted SubgraphNodes carrying legacy proxyWidgets', () => {
-    const flush = vi.fn()
-    LGraph.proxyWidgetMigrationFlush = flush
+  it('clears legacy proxyWidgets on a pasted SubgraphNode and applies host widget values', () => {
+    LGraph.proxyWidgetMigrationFlush = (hostNode, nodeData) =>
+      flushProxyWidgetMigration({
+        hostNode,
+        hostWidgetValues: nodeData?.widgets_values
+      })
 
     const rootGraph = new LGraph()
-    rootGraph.events.addEventListener('subgraph-created', (e) => {
-      const { subgraph } = e.detail
-      class TestSubgraphNode extends SubgraphNode {
-        constructor() {
-          super(rootGraph, subgraph as Subgraph, {
-            id: -1,
-            type: subgraph.id,
-            pos: [0, 0],
-            size: [100, 100],
-            inputs: [],
-            outputs: [],
-            flags: {},
-            order: 0,
-            mode: 0
-          })
-        }
-      }
-      LiteGraph.registerNodeType(subgraph.id, TestSubgraphNode)
-      registeredTypesToCleanup.push(subgraph.id)
-    })
+    registerSubgraphNodeTypeOnCreate(rootGraph)
     const canvas = createCanvas(rootGraph)
 
     const subgraphId = createUuidv4()
@@ -322,79 +332,29 @@ describe('_deserializeItems proxyWidgets migration', () => {
 
     canvas._deserializeItems(parsed, {})
 
-    expect(flush).toHaveBeenCalledTimes(1)
-    const [hostNode, infoArg] = flush.mock.calls[0]
-    expect(hostNode).toBeInstanceOf(SubgraphNode)
-    expect(infoArg?.widgets_values).toStrictEqual([42])
+    const pastedHosts = rootGraph.nodes.filter(
+      (n): n is SubgraphNode => n instanceof SubgraphNode
+    )
+    expect(pastedHosts).toHaveLength(1)
+    expect(pastedHosts[0].properties.proxyWidgets).toBeUndefined()
   })
 
-  it('does not invoke the migration hook for plain pasted nodes', () => {
-    const flush = vi.fn()
-    LGraph.proxyWidgetMigrationFlush = flush
+  it('auto-exposes preview nodes for pasted subgraphs that lack previewExposures', () => {
+    LGraph.autoExposePreviewNodes = (hostNode) =>
+      autoExposeKnownPreviewNodes(hostNode)
 
     const rootGraph = new LGraph()
-    const canvas = createCanvas(rootGraph)
-
-    const parsed: ClipboardItems = {
-      nodes: [
-        {
-          id: 1,
-          type: 'test/plain',
-          pos: [0, 0],
-          size: [140, 80],
-          flags: {},
-          order: 0,
-          mode: 0,
-          inputs: [],
-          outputs: [],
-          properties: {}
-        }
-      ],
-      groups: [],
-      reroutes: [],
-      links: [],
-      subgraphs: []
-    }
-
-    canvas._deserializeItems(parsed, {})
-
-    expect(flush).not.toHaveBeenCalled()
-  })
-
-  it('invokes the auto-expose hook for every pasted SubgraphNode (older clipboard data without previewExposures)', () => {
-    const autoExpose = vi.fn()
-    LGraph.autoExposePreviewNodes = autoExpose
-
-    const rootGraph = new LGraph()
-    rootGraph.events.addEventListener('subgraph-created', (e) => {
-      const { subgraph } = e.detail
-      class TestSubgraphNode extends SubgraphNode {
-        constructor() {
-          super(rootGraph, subgraph as Subgraph, {
-            id: -1,
-            type: subgraph.id,
-            pos: [0, 0],
-            size: [100, 100],
-            inputs: [],
-            outputs: [],
-            flags: {},
-            order: 0,
-            mode: 0
-          })
-        }
-      }
-      LiteGraph.registerNodeType(subgraph.id, TestSubgraphNode)
-      registeredTypesToCleanup.push(subgraph.id)
-    })
+    registerSubgraphNodeTypeOnCreate(rootGraph)
     const canvas = createCanvas(rootGraph)
 
     const subgraphId = createUuidv4()
+    const interiorPreviewId = 5
     const pastedSubgraph: ExportedSubgraph = {
       id: subgraphId,
       version: 1,
       revision: 0,
       state: {
-        lastNodeId: 5,
+        lastNodeId: interiorPreviewId,
         lastLinkId: 0,
         lastGroupId: 0,
         lastRerouteId: 0
@@ -408,7 +368,7 @@ describe('_deserializeItems proxyWidgets migration', () => {
       widgets: [],
       nodes: [
         {
-          id: 5,
+          id: interiorPreviewId,
           type: 'PreviewImage',
           pos: [0, 0],
           size: [140, 80],
@@ -447,7 +407,21 @@ describe('_deserializeItems proxyWidgets migration', () => {
 
     canvas._deserializeItems(parsed, {})
 
-    expect(autoExpose).toHaveBeenCalledTimes(1)
-    expect(autoExpose.mock.calls[0][0]).toBeInstanceOf(SubgraphNode)
+    const pastedHost = rootGraph.nodes.find(
+      (n): n is SubgraphNode => n instanceof SubgraphNode
+    )
+    expect(pastedHost).toBeDefined()
+
+    const exposures = usePreviewExposureStore().getExposures(
+      rootGraph.id,
+      String(pastedHost!.id)
+    )
+    const interiorIdAfterRemap = pastedHost!.subgraph.nodes[0].id
+    expect(exposures).toEqual([
+      expect.objectContaining({
+        sourceNodeId: String(interiorIdAfterRemap),
+        sourcePreviewName: '$$canvas-image-preview'
+      })
+    ])
   })
 })
