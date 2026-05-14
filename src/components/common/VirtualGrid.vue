@@ -18,22 +18,16 @@
 </template>
 
 <script setup lang="ts" generic="T">
-import { useElementSize, useScroll, whenever } from '@vueuse/core'
-import { clamp, debounce } from 'es-toolkit/compat'
+import { useVirtualizer } from '@tanstack/vue-virtual'
+import { useElementSize, whenever } from '@vueuse/core'
+import { debounce } from 'es-toolkit/compat'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { CSSProperties } from 'vue'
-
-type GridState = {
-  start: number
-  end: number
-  isNearEnd: boolean
-}
 
 const {
   items,
   gridStyle,
   bufferRows = 1,
-  scrollThrottle = 64,
   resizeDebounce = 64,
   defaultItemHeight = 200,
   defaultItemWidth = 200,
@@ -42,7 +36,6 @@ const {
   items: (T & { key: string })[]
   gridStyle: CSSProperties
   bufferRows?: number
-  scrollThrottle?: number
   resizeDebounce?: number
   defaultItemHeight?: number
   defaultItemWidth?: number
@@ -51,7 +44,8 @@ const {
 
 const emit = defineEmits<{
   /**
-   * Emitted when `bufferRows` (or fewer) rows remaining between scrollY and grid bottom.
+   * Edge-triggered when the rendered window reaches within `bufferRows`
+   * rows of the grid's last item.
    */
   'approach-end': []
 }>()
@@ -60,10 +54,14 @@ const itemHeight = ref(defaultItemHeight)
 const itemWidth = ref(defaultItemWidth)
 const container = ref<HTMLElement | null>(null)
 const { width, height } = useElementSize(container)
-const { y: scrollY } = useScroll(container, {
-  throttle: scrollThrottle,
-  eventListenerOptions: { passive: true }
-})
+
+// Suppress range computation while the container is unmounted/zero-sized.
+// Without this, cols collapses to 1 during the brief width=0 mount window,
+// which makes a small list look near-end and emits a spurious approach-end
+// that double-loads paginated consumers (ManagerDialog).
+const isValidGrid = computed(
+  () => width.value > 0 && height.value > 0 && items.length > 0
+)
 
 const cols = computed(() => {
   if (maxColumns !== Infinity) return maxColumns
@@ -78,39 +76,57 @@ const mergedGridStyle = computed<CSSProperties>(() => {
   }
 })
 
-const viewRows = computed(() => Math.ceil(height.value / itemHeight.value))
-const offsetRows = computed(() => Math.floor(scrollY.value / itemHeight.value))
-const isValidGrid = computed(() => height.value && width.value && items?.length)
+const rowCount = computed(() => Math.ceil(items.length / cols.value))
+
+const virtualizer = useVirtualizer({
+  get count() {
+    return rowCount.value
+  },
+  estimateSize: () => itemHeight.value,
+  getScrollElement: () => container.value,
+  overscan: bufferRows
+})
+
+const virtualRows = computed(() => virtualizer.value.getVirtualItems())
+const totalSize = computed(() => virtualizer.value.getTotalSize())
+
+type GridState = {
+  start: number
+  end: number
+  isNearEnd: boolean
+}
 
 const state = computed<GridState>(() => {
-  const fromRow = offsetRows.value - bufferRows
-  const toRow = offsetRows.value + bufferRows + viewRows.value
+  const rows = virtualRows.value
+  if (!isValidGrid.value || rows.length === 0) {
+    return { start: 0, end: 0, isNearEnd: false }
+  }
+  const firstRow = rows[0]
+  const lastRow = rows[rows.length - 1]
+  const start = firstRow.index * cols.value
+  const end = Math.min(items.length, (lastRow.index + 1) * cols.value)
 
-  const fromCol = fromRow * cols.value
-  const toCol = toRow * cols.value
+  const toCol = (lastRow.index + 1) * cols.value
   const remainingCol = items.length - toCol
   const hasMoreToRender = remainingCol >= 0
+  const isNearEnd = hasMoreToRender && remainingCol <= cols.value * bufferRows
 
-  return {
-    start: clamp(fromCol, 0, items?.length),
-    end: clamp(toCol, fromCol, items?.length),
-    isNearEnd: hasMoreToRender && remainingCol <= cols.value * bufferRows
-  }
+  return { start, end, isNearEnd }
 })
+
 const renderedItems = computed(() =>
   isValidGrid.value ? items.slice(state.value.start, state.value.end) : []
 )
 
-function rowsToHeight(itemsCount: number): string {
-  const rows = Math.ceil(itemsCount / cols.value)
-  return `${rows * itemHeight.value}px`
-}
 const topSpacerStyle = computed<CSSProperties>(() => ({
-  height: rowsToHeight(state.value.start)
+  height: `${virtualRows.value[0]?.start ?? 0}px`
 }))
-const bottomSpacerStyle = computed<CSSProperties>(() => ({
-  height: rowsToHeight(items.length - state.value.end)
-}))
+const bottomSpacerStyle = computed<CSSProperties>(() => {
+  const rows = virtualRows.value
+  if (rows.length === 0) return { height: '0px' }
+  const lastEnd = rows[rows.length - 1].end
+  return { height: `${Math.max(0, totalSize.value - lastEnd)}px` }
+})
 
 whenever(
   () => state.value.isNearEnd,
@@ -120,22 +136,24 @@ whenever(
 )
 
 function updateItemSize(): void {
-  if (container.value) {
-    const firstItem = container.value.querySelector('[data-virtual-grid-item]')
-
-    if (!firstItem?.clientHeight || !firstItem?.clientWidth) return
-
-    if (itemHeight.value !== firstItem.clientHeight) {
-      itemHeight.value = firstItem.clientHeight
-    }
-    if (itemWidth.value !== firstItem.clientWidth) {
-      itemWidth.value = firstItem.clientWidth
-    }
+  if (!container.value) return
+  const firstItem = container.value.querySelector('[data-virtual-grid-item]')
+  if (!firstItem?.clientHeight || !firstItem?.clientWidth) return
+  if (itemHeight.value !== firstItem.clientHeight) {
+    itemHeight.value = firstItem.clientHeight
+  }
+  if (itemWidth.value !== firstItem.clientWidth) {
+    itemWidth.value = firstItem.clientWidth
   }
 }
 const onResize = debounce(updateItemSize, resizeDebounce)
-watch([width, height], onResize, { flush: 'post' })
+
+watch(width, onResize, { flush: 'post' })
 whenever(() => items, updateItemSize, { flush: 'post' })
+watch(itemHeight, () => {
+  virtualizer.value.measure()
+})
+
 onBeforeUnmount(() => {
   onResize.cancel()
 })
