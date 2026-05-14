@@ -101,12 +101,13 @@ vi.mock('@/stores/authStore', () => ({
   }))
 }))
 
-// Mock the useSubscription composable
-const mockFetchStatus = vi.fn().mockResolvedValue(undefined)
+// Mock the useSubscription composable with hoisted refs for per-test manipulation
+const mockCanAccessSubscriptionFeatures = ref(true)
 const mockIsFreeTier = ref(false)
+const mockFetchStatus = vi.fn().mockResolvedValue(undefined)
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: vi.fn(() => ({
-    canAccessSubscriptionFeatures: ref(true),
+    canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
     isFreeTier: mockIsFreeTier,
     subscriptionTierName: ref('Creator'),
     subscriptionTier: ref('CREATOR'),
@@ -190,6 +191,7 @@ describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockIsCloud.value = true
+    mockCanAccessSubscriptionFeatures.value = true
     mockIsFreeTier.value = false
     mockAuthStoreState.balance = {
       amount_micros: 100_000,
@@ -435,6 +437,44 @@ describe('CurrentUserPopoverLegacy', () => {
         screen.getByTestId('upgrade-to-add-credits-button')
       ).toBeInTheDocument()
       expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('canAccessSubscriptionFeatures is false', () => {
+    beforeEach(() => {
+      mockCanAccessSubscriptionFeatures.value = false
+    })
+
+    it('hides credits section when canAccessSubscriptionFeatures is false', () => {
+      renderComponent()
+      // Credits help button is inside the credits section
+      expect(
+        screen.queryByTestId('credits-info-button')
+      ).not.toBeInTheDocument()
+    })
+
+    it('hides partner nodes menu item when canAccessSubscriptionFeatures is false', () => {
+      renderComponent()
+      expect(
+        screen.queryByTestId('partner-nodes-menu-item')
+      ).not.toBeInTheDocument()
+    })
+
+    it('hides manage plan menu item when canAccessSubscriptionFeatures is false', () => {
+      renderComponent()
+      expect(
+        screen.queryByTestId('manage-plan-menu-item')
+      ).not.toBeInTheDocument()
+    })
+
+    it('still shows logout menu item when canAccessSubscriptionFeatures is false', () => {
+      renderComponent()
+      expect(screen.getByTestId('logout-menu-item')).toBeInTheDocument()
+    })
+
+    it('still shows user settings menu item when canAccessSubscriptionFeatures is false', () => {
+      renderComponent()
+      expect(screen.getByTestId('user-settings-menu-item')).toBeInTheDocument()
     })
   })
 
