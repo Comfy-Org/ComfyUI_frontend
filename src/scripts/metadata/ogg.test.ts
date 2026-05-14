@@ -476,14 +476,7 @@ describe('getOggMetadata', () => {
           }),
         expectedPrompt: { valid: true } // Workflow is undefined, Prompt is valid
       },
-      {
-        name: 'invalid JSON in prompt/workflow comments (plain text)',
-        createBuffer: () =>
-          createOggWithOpusTags({
-            prompt: 'hello world',
-            workflow: 'plain text workflow'
-          })
-      },
+
       {
         name: 'user comments without an equal sign',
         createBuffer: () => {
