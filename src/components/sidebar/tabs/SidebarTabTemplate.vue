@@ -13,10 +13,13 @@
         :pt="sidebarPt"
       >
         <template #start>
-          <span class="truncate font-bold" :title="props.title">
-            {{ props.title }}
-          </span>
-          <slot name="alt-title" />
+          <div class="flex max-w-full min-w-0 items-center gap-2">
+            <span class="truncate font-bold" :title="props.title">
+              {{ props.title }}
+            </span>
+            <slot name="title-append" />
+            <slot name="alt-title" />
+          </div>
         </template>
         <template #end>
           <div

@@ -10,6 +10,11 @@ import type {
   AssetItem,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
+import {
+  USER_MEDIA_ASSETS_CACHE_CATEGORY,
+  USER_MEDIA_ASSETS_CACHE_MAX_AGE_MS,
+  userMediaMergedCacheNeedsRefreshAfterTagEdit
+} from '@/platform/assets/constants/userMediaAssetsBrowse'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { PaginationOptions } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
@@ -311,6 +316,8 @@ export const useAssetsStore = defineStore('assets', () => {
     hasMore: boolean
     isLoading: boolean
     error?: Error
+    /** Set when {@link USER_MEDIA_ASSETS_CACHE_CATEGORY} load succeeds; used for TTL skip. */
+    lastFetchedAt?: number
   }
 
   /**
@@ -548,6 +555,85 @@ export const useAssetsStore = defineStore('assets', () => {
       }
 
       /**
+       * Loads merged user media (input, output, temp) for the user-media
+       * browser modal. Each tag is fully paginated via the asset API.
+       * Model assets use the dedicated model library flow instead.
+       *
+       * When `force` is false, skips the network if the cache is warm and inside
+       * {@link USER_MEDIA_ASSETS_CACHE_MAX_AGE_MS}. Use `force: true` after mutations.
+       */
+      async function updateUserMediaAssetsForLibrary(options?: {
+        force?: boolean
+      }): Promise<void> {
+        const force = options?.force ?? false
+        const category = USER_MEDIA_ASSETS_CACHE_CATEGORY
+
+        while (pendingPromiseByCategory.has(category)) {
+          await pendingPromiseByCategory.get(category)!
+        }
+
+        if (!force) {
+          const committed = modelStateByCategory.value.get(category)
+          const lastAt = committed?.lastFetchedAt
+          if (
+            committed &&
+            committed.assets.size > 0 &&
+            lastAt != null &&
+            Date.now() - lastAt < USER_MEDIA_ASSETS_CACHE_MAX_AGE_MS
+          ) {
+            return
+          }
+        }
+
+        const existingState = modelStateByCategory.value.get(category)
+        const state = createState(existingState?.assets)
+        state.isLoading = true
+        state.hasMore = false
+        pendingRequestByCategory.set(category, state)
+        modelStateByCategory.value.set(category, state)
+
+        const promise = (async () => {
+          try {
+            const tags = ['input', 'output', 'temp'] as const
+            const settled = await Promise.allSettled(
+              tags.map((tag) =>
+                assetService.getAllAssetsByTag(tag, true, {
+                  limit: MODEL_BATCH_SIZE
+                })
+              )
+            )
+
+            const merged = new Map<string, AssetItem>()
+            for (const result of settled) {
+              if (result.status === 'fulfilled') {
+                for (const asset of result.value) {
+                  merged.set(asset.id, asset)
+                }
+              }
+            }
+
+            state.assets = new Map(merged)
+            state.offset = merged.size
+            state.isLoading = false
+            state.lastFetchedAt = Date.now()
+            assetsArrayCache.delete(category)
+          } catch (err) {
+            if (!isStale(category, state)) {
+              console.error(`Error loading merged assets for ${category}:`, err)
+              state.error = err instanceof Error ? err : new Error(String(err))
+              state.isLoading = false
+            }
+          } finally {
+            pendingRequestByCategory.delete(category)
+            pendingPromiseByCategory.delete(category)
+          }
+        })()
+
+        pendingPromiseByCategory.set(category, promise)
+        await promise
+      }
+
+      /**
        * Invalidate the cache for a specific category.
        * Forces a refetch on next access.
        * @param category The category to invalidate (e.g., 'checkpoints', 'loras')
@@ -601,7 +687,7 @@ export const useAssetsStore = defineStore('assets', () => {
         asset: AssetItem,
         userMetadata: Record<string, unknown>,
         cacheKey?: string
-      ) {
+      ): Promise<boolean> {
         const originalMetadata = asset.user_metadata
         updateAssetInCache(asset.id, { user_metadata: userMetadata }, cacheKey)
 
@@ -610,6 +696,13 @@ export const useAssetsStore = defineStore('assets', () => {
             user_metadata: userMetadata
           })
           updateAssetInCache(asset.id, updatedAsset, cacheKey)
+          if (
+            cacheKey &&
+            resolveCategory(cacheKey) === USER_MEDIA_ASSETS_CACHE_CATEGORY
+          ) {
+            await updateUserMediaAssetsForLibrary({ force: true })
+          }
+          return true
         } catch (error) {
           console.error('Failed to update asset metadata:', error)
           updateAssetInCache(
@@ -617,6 +710,7 @@ export const useAssetsStore = defineStore('assets', () => {
             { user_metadata: originalMetadata },
             cacheKey
           )
+          return false
         }
       }
 
@@ -658,6 +752,15 @@ export const useAssetsStore = defineStore('assets', () => {
           const finalTags = (addResult ?? removeResult)?.total_tags
           if (finalTags) {
             updateAssetInCache(asset.id, { tags: finalTags }, cacheKey)
+          }
+          if (
+            userMediaMergedCacheNeedsRefreshAfterTagEdit(
+              cacheKey,
+              tagsToAdd,
+              tagsToRemove
+            )
+          ) {
+            await updateUserMediaAssetsForLibrary({ force: true })
           }
         } catch (error) {
           console.error('Failed to update asset tags:', error)
@@ -712,6 +815,7 @@ export const useAssetsStore = defineStore('assets', () => {
         hasCategory,
         updateModelsForNodeType,
         updateModelsForTag,
+        updateUserMediaAssetsForLibrary,
         invalidateCategory,
         updateAssetMetadata,
         updateAssetTags,
@@ -730,7 +834,10 @@ export const useAssetsStore = defineStore('assets', () => {
       updateModelsForNodeType: async () => {},
       invalidateCategory: () => {},
       updateModelsForTag: async () => {},
-      updateAssetMetadata: async () => {},
+      updateUserMediaAssetsForLibrary: async (_options?: {
+        force?: boolean
+      }) => {},
+      updateAssetMetadata: async (): Promise<boolean> => true,
       updateAssetTags: async () => {},
       invalidateModelsForCategory: () => {}
     }
@@ -745,6 +852,7 @@ export const useAssetsStore = defineStore('assets', () => {
     hasCategory,
     updateModelsForNodeType,
     updateModelsForTag,
+    updateUserMediaAssetsForLibrary,
     invalidateCategory,
     updateAssetMetadata,
     updateAssetTags,
@@ -825,6 +933,7 @@ export const useAssetsStore = defineStore('assets', () => {
     // Model assets - actions
     updateModelsForNodeType,
     updateModelsForTag,
+    updateUserMediaAssetsForLibrary,
     invalidateCategory,
     updateAssetMetadata,
     updateAssetTags,

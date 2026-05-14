@@ -23,12 +23,14 @@ vi.mock('@/stores/assetsStore', () => {
   )
   const updateModelsForNodeType = vi.fn()
   const updateModelsForTag = vi.fn()
+  const updateUserMediaAssetsForLibrary = vi.fn()
   return {
     useAssetsStore: () => ({
       getAssets,
       isModelLoading,
       updateModelsForNodeType,
-      updateModelsForTag
+      updateModelsForTag,
+      updateUserMediaAssetsForLibrary
     })
   }
 })

@@ -6,6 +6,10 @@ import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationD
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
+import {
+  USER_MEDIA_ASSETS_CACHE_CATEGORY,
+  assetTouchesUserMediaMergeTags
+} from '@/platform/assets/constants/userMediaAssetsBrowse'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
@@ -13,10 +17,10 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
 import { getAssetUrl } from '../utils/assetUrlUtil'
@@ -718,6 +722,15 @@ export function useMediaAssetActions() {
 
               for (const category of modelCategories) {
                 assetsStore.invalidateModelsForCategory(category)
+              }
+
+              const deletedUserMediaMerge = assetArray.some(
+                (a, index) =>
+                  results[index].status === 'fulfilled' &&
+                  assetTouchesUserMediaMergeTags(a.tags)
+              )
+              if (deletedUserMediaMerge) {
+                assetsStore.invalidateCategory(USER_MEDIA_ASSETS_CACHE_CATEGORY)
               }
 
               // Show appropriate feedback based on results

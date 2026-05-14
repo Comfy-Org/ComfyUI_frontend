@@ -15,6 +15,7 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => {
     const translations: Record<string, string> = {
       'assetBrowser.allModels': 'All Models',
+      'assetBrowser.allAssets': 'All Assets',
       'assetBrowser.imported': 'Imported',
       'assetBrowser.byType': 'By type',
       'assetBrowser.assets': 'Assets',
@@ -739,6 +740,25 @@ describe('useAssetBrowser', () => {
           ]
         }
       ])
+    })
+
+    it('uses All Assets label when mixedAssetLibrary is true', () => {
+      const assets = [createApiAsset({ tags: ['models', 'checkpoints'] })]
+      const { navItems, contentTitle, selectedNavItem } = useAssetBrowser(
+        ref(assets),
+        { mixedAssetLibrary: true }
+      )
+
+      expect(navItems.value[0]).toMatchObject({
+        id: 'all',
+        label: 'All Assets'
+      })
+      expect(
+        navItems.value.some((item) => 'id' in item && item.id === 'imported')
+      ).toBe(false)
+      expect(contentTitle.value).toBe('All Assets')
+      selectedNavItem.value = 'checkpoints'
+      expect(contentTitle.value).toBe('Checkpoints')
     })
 
     it('computes content title from selected nav item', () => {

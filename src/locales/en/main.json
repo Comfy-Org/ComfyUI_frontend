@@ -2919,8 +2919,20 @@
   "cloudSurvey_steps_familiarity": "How familiar are you with ComfyUI?",
   "cloudSurvey_steps_intent": "What do you want to create with ComfyUI?",
   "cloudSurvey_steps_source": "Where did you hear about ComfyUI?",
+  "assetLibraryExplorer": {
+    "viewAll": "View all",
+    "userMediaAssetsModalTitle": "Media Assets"
+  },
+  "assets": {
+    "enableApi": {
+      "title": "Enable Asset API",
+      "message": "The Asset API is currently disabled. Would you like to enable it?"
+    },
+    "fallbackAlt": "Asset"
+  },
   "assetBrowser": {
     "allCategory": "All {category}",
+    "allAssets": "All Assets",
     "allModels": "All Models",
     "byType": "By type",
     "emptyImported": {
@@ -3051,6 +3063,9 @@
       "assetCard": "{name} - {type} asset",
       "loadingAsset": "Loading asset"
     },
+    "assetInfo": {
+      "title": "Asset Info"
+    },
     "modelInfo": {
       "title": "Model Info",
       "selectModelPrompt": "Select a model to see its information",
@@ -3073,7 +3088,26 @@
       "triggerPhrases": "Trigger Phrases",
       "description": "Description",
       "descriptionNotSet": "No description set",
-      "descriptionPlaceholder": "Add a description for this model..."
+      "descriptionPlaceholder": "Add a description for this model...",
+      "customMetadata": "Custom Metadata",
+      "customMetadataHint": "Add your own fields.",
+      "customMetadataInvalidBucket": "Custom metadata is in an unsupported shape and cannot be edited here.",
+      "customMetadataReadOnlyValue": "Read-only",
+      "noCustomMetadata": "No custom metadata",
+      "addCustomMetadataField": "Add field",
+      "saveMetadataFailed": "Could not save metadata. Try again.",
+      "deleteMetadataField": "Delete custom metadata field",
+      "removeDraftField": "Remove draft field",
+      "metadataKeyPlaceholder": "field_name",
+      "metadataTypeString": "Text",
+      "metadataTypeNumber": "Num",
+      "metadataTypeBoolean": "Bool",
+      "customMetadataKeyError": {
+        "empty": "Key cannot be empty",
+        "invalid_format": "Use letters, numbers, or underscore; start with a letter or _",
+        "max_length": "Key is too long",
+        "duplicate": "This key is already used"
+      }
     },
     "media": {
       "threeDModelPlaceholder": "3D Model",

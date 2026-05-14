@@ -19,8 +19,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
-import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
+import { useBrowseModelAssetLibrary } from '@/platform/assets/composables/useBrowseModelAssetLibrary'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { buildSupportUrl } from '@/platform/support/config'
 import { useTelemetry } from '@/platform/telemetry'
@@ -80,6 +79,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const colorPaletteStore = useColorPaletteStore()
   const authActions = useAuthActions()
   const toastStore = useToastStore()
+  const browseModelAssetLibrary = useBrowseModelAssetLibrary()
   const canvasStore = useCanvasStore()
   const executionStore = useExecutionStore()
   const telemetry = useTelemetry()
@@ -1284,36 +1284,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Experimental: Browse Model Assets',
       versionAdded: '1.28.3',
       function: async () => {
-        if (!useSettingStore().get('Comfy.Assets.UseAssetAPI')) {
-          const confirmed = await dialogService.confirm({
-            title: 'Enable Asset API',
-            message:
-              'The Asset API is currently disabled. Would you like to enable it?',
-            type: 'default'
-          })
-
-          if (!confirmed) return
-
-          const settingStore = useSettingStore()
-          await settingStore.set('Comfy.Assets.UseAssetAPI', true)
-          await workflowService.reloadCurrentWorkflow()
-        }
-        const assetBrowserDialog = useAssetBrowserDialog()
-        await assetBrowserDialog.browse({
-          assetType: 'models',
-          title: t('sideToolbar.modelLibrary'),
-          onAssetSelected: (asset) => {
-            const result = createModelNodeFromAsset(asset)
-            if (!result.success) {
-              toastStore.add({
-                severity: 'error',
-                summary: t('g.error'),
-                detail: t('assetBrowser.failedToCreateNode')
-              })
-              console.error('Node creation failed:', result.error)
-            }
-          }
-        })
+        await browseModelAssetLibrary.openBrowseModelLibrary()
       }
     },
     {

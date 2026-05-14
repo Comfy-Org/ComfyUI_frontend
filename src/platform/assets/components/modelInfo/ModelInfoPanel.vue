@@ -143,6 +143,20 @@
     <PropertiesAccordionItem :class="accordionClass">
       <template #label>
         <span class="font-inter text-xs uppercase select-none">
+          {{ t('assetBrowser.modelInfo.customMetadata') }}
+        </span>
+      </template>
+      <AssetUserMetadataEditor
+        :merged-metadata="displayedUserMetadata"
+        :is-immutable="isImmutable"
+        :save-failed="metadataSaveFailed"
+        @queue-custom-change="queueCustomMetadataChange"
+      />
+    </PropertiesAccordionItem>
+
+    <PropertiesAccordionItem :class="accordionClass">
+      <template #label>
+        <span class="font-inter text-xs uppercase select-none">
           {{ t('assetBrowser.modelInfo.modelDescription') }}
         </span>
       </template>
@@ -209,8 +223,10 @@
 
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
-import { computed, ref, useTemplateRef, watch } from 'vue'
-import type { StyleValue } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue';
+import type { StyleValue } from 'vue';
+
+import AssetUserMetadataEditor from '@/platform/assets/components/modelInfo/AssetUserMetadataEditor.vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
@@ -242,6 +258,7 @@ import {
   getAssetUserDescription,
   getSourceName
 } from '@/platform/assets/utils/assetMetadataUtils'
+import { mergeUserMetadataForAssetPut } from '@/platform/assets/utils/assetUserMetadataEditorUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -268,6 +285,11 @@ const assetsStore = useAssetsStore()
 const { modelTypes } = useModelTypes()
 
 const pendingUpdates = ref<AssetUserMetadata>({})
+const pendingCustomPrimitiveUpdates = ref<
+  Record<string, string | number | boolean>
+>({})
+const pendingCustomDeletes = ref<Set<string>>(new Set())
+const metadataSaveFailed = ref(false)
 const pendingModelType = ref<string | undefined>(undefined)
 const isEditingDisplayName = ref(false)
 
@@ -282,10 +304,28 @@ const sourceName = computed(() =>
 const description = computed(() => getAssetDescription(asset))
 const triggerPhrases = computed(() => getAssetTriggerPhrases(asset))
 
+const displayedUserMetadata = computed(() =>
+  mergeUserMetadataForAssetPut(
+    asset.user_metadata,
+    pendingUpdates.value,
+    pendingCustomPrimitiveUpdates.value,
+    pendingCustomDeletes.value
+  )
+)
+
 watch(
   () => asset.user_metadata,
   () => {
     pendingUpdates.value = {}
+    pendingCustomPrimitiveUpdates.value = {}
+    pendingCustomDeletes.value = new Set()
+  }
+)
+
+watch(
+  () => asset.id,
+  () => {
+    metadataSaveFailed.value = false
   }
 )
 
@@ -296,17 +336,46 @@ watch(
   }
 )
 
-const debouncedFlushMetadata = useDebounceFn(() => {
+async function flushMetadataNow() {
   if (isImmutable.value) return
-  assetsStore.updateAssetMetadata(
-    asset,
-    { ...(asset.user_metadata ?? {}), ...pendingUpdates.value },
-    cacheKey
+  const next = mergeUserMetadataForAssetPut(
+    asset.user_metadata,
+    pendingUpdates.value,
+    pendingCustomPrimitiveUpdates.value,
+    pendingCustomDeletes.value
   )
+  const ok = await assetsStore.updateAssetMetadata(asset, next, cacheKey)
+  if (ok) {
+    metadataSaveFailed.value = false
+  } else {
+    metadataSaveFailed.value = true
+  }
+}
+
+const debouncedFlushMetadata = useDebounceFn(() => {
+  void flushMetadataNow()
 }, 500)
 
 function queueMetadataUpdate(updates: AssetUserMetadata) {
   pendingUpdates.value = { ...pendingUpdates.value, ...updates }
+  debouncedFlushMetadata()
+}
+
+function queueCustomMetadataChange(
+  patch: Record<string, string | number | boolean>,
+  deleteKeys: string[]
+) {
+  if (isImmutable.value) return
+  let patches = { ...pendingCustomPrimitiveUpdates.value }
+  let deletes = new Set(pendingCustomDeletes.value)
+  for (const k of deleteKeys) {
+    deletes = new Set([...deletes, k])
+    const { [k]: _omit, ...rest } = patches
+    patches = rest
+  }
+  patches = { ...patches, ...patch }
+  pendingCustomDeletes.value = deletes
+  pendingCustomPrimitiveUpdates.value = patches
   debouncedFlushMetadata()
 }
 
