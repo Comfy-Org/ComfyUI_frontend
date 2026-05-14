@@ -11,7 +11,7 @@
 // Harness: inline MockNodeHandle — no ECS world needed for type-shape + event tests.
 
 import { describe, expect, it, vi } from 'vitest'
-import type { NodeSizeChangedEvent } from '@/extension-api/node'
+import type { NodeSizeChangedEvent, Size } from '@/extension-api/node'
 import type { Unsubscribe } from '@/extension-api/events'
 
 // ── Minimal mock ──────────────────────────────────────────────────────────────
@@ -21,7 +21,7 @@ interface SizeChangedEmitter {
     event: 'sizeChanged',
     handler: (e: NodeSizeChangedEvent) => void
   ): Unsubscribe
-  _emitSizeChanged(size: { width: number; height: number }): void
+  _emitSizeChanged(size: Size): void
 }
 
 function createMockNode(): SizeChangedEmitter {
@@ -37,7 +37,7 @@ function createMockNode(): SizeChangedEmitter {
         if (idx !== -1) listeners.splice(idx, 1)
       }
     },
-    _emitSizeChanged(size) {
+    _emitSizeChanged(size: Size) {
       const event: NodeSizeChangedEvent = { size }
       for (const fn of [...listeners]) fn(event)
     }
@@ -48,26 +48,24 @@ function createMockNode(): SizeChangedEmitter {
 
 describe('BC.04 v2 contract — node interaction: pointer, selection, resize', () => {
   describe("on('sizeChanged') — resize feedback (S2.N19)", () => {
-    it('fires with { size: { width, height } } when node dimensions change', () => {
+    it('fires with { size: [width, height] } when node dimensions change', () => {
       const node = createMockNode()
-      const handler = vi.fn<[NodeSizeChangedEvent], void>()
+      const handler = vi.fn<(e: NodeSizeChangedEvent) => void>()
       node.on('sizeChanged', handler)
-      node._emitSizeChanged({ width: 300, height: 200 })
+      node._emitSizeChanged([300, 200])
       expect(handler).toHaveBeenCalledOnce()
-      expect(handler).toHaveBeenCalledWith({
-        size: { width: 300, height: 200 }
-      })
+      expect(handler).toHaveBeenCalledWith({ size: [300, 200] })
     })
 
     it('fires again on subsequent resize; each call gets the latest size', () => {
       const node = createMockNode()
-      const sizes: { width: number; height: number }[] = []
+      const sizes: Size[] = []
       node.on('sizeChanged', (e) => sizes.push(e.size))
-      node._emitSizeChanged({ width: 100, height: 50 })
-      node._emitSizeChanged({ width: 200, height: 80 })
+      node._emitSizeChanged([100, 50])
+      node._emitSizeChanged([200, 80])
       expect(sizes).toEqual([
-        { width: 100, height: 50 },
-        { width: 200, height: 80 }
+        [100, 50],
+        [200, 80]
       ])
     })
 
@@ -76,7 +74,7 @@ describe('BC.04 v2 contract — node interaction: pointer, selection, resize', (
       const handler = vi.fn()
       const unsub = node.on('sizeChanged', handler)
       unsub()
-      node._emitSizeChanged({ width: 300, height: 200 })
+      node._emitSizeChanged([300, 200])
       expect(handler).not.toHaveBeenCalled()
     })
 
@@ -86,7 +84,7 @@ describe('BC.04 v2 contract — node interaction: pointer, selection, resize', (
         b = vi.fn()
       node.on('sizeChanged', a)
       node.on('sizeChanged', b)
-      node._emitSizeChanged({ width: 150, height: 120 })
+      node._emitSizeChanged([150, 120])
       expect(a).toHaveBeenCalledOnce()
       expect(b).toHaveBeenCalledOnce()
     })
@@ -98,7 +96,7 @@ describe('BC.04 v2 contract — node interaction: pointer, selection, resize', (
       const unsubA = node.on('sizeChanged', a)
       node.on('sizeChanged', b)
       unsubA()
-      node._emitSizeChanged({ width: 200, height: 100 })
+      node._emitSizeChanged([200, 100])
       expect(a).not.toHaveBeenCalled()
       expect(b).toHaveBeenCalledOnce()
     })

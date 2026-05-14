@@ -5,6 +5,7 @@
 // v2 replacement: WidgetHandle.setValue(v), WidgetHandle.setOption(key,v), NodeHandle.addWidget(opts)
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { WidgetHandle } from '@/extension-api/widget'
 
 // ── Mock world (same pattern as bc-01.v2.test.ts) ────────────────────────────
 
@@ -88,7 +89,7 @@ describe('BC.11 v2 contract — widget imperative state writes', () => {
 
   describe('WidgetHandle.setValue(v) — controlled value write (S4.W4)', () => {
     it('WidgetHandle.setValue(v) dispatches a SetWidgetValue command with the correct value', () => {
-      let widgetHandle: { setValue: (v: unknown) => void } | undefined
+      let widgetHandle: WidgetHandle | undefined
 
       defineNode({
         name: 'bc11.v2.set-value',

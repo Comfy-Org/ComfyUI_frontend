@@ -80,7 +80,10 @@ function makeV2NodeManager() {
         await fn(event)
       }
 
-      return replacer ? replacer(data) : data
+      if (replacer !== null) {
+        return (replacer as (orig: Record<string, unknown>) => Record<string, unknown>)(data)
+      }
+      return data
     }
   }
 }

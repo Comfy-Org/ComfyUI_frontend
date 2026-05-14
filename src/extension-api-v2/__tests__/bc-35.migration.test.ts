@@ -201,7 +201,7 @@ describe('BC.35 migration — pre-queue widget validation', () => {
       // v1: two patches — second clobbers first's validation if not careful
       const v1App = makeV1App()
       const extAValidation = vi.fn(() => null) // ext-A passes
-      const extBValidation = vi.fn((): string | null => 'B rejects')
+      const __extBValidation = vi.fn((): string | null => 'B rejects')
 
       // v1: each patcher wraps the previous — but if ext-B directly replaces
       // without calling through, ext-A's validation is lost.

@@ -37,7 +37,7 @@ function createV1ComboWidget(
 }
 
 // Simulate LiteGraph calling widget.callback on user interaction.
-function simulateUserChange(widget: V1Widget, newValue: unknown): void {
+function _simulateUserChange(widget: V1Widget, newValue: unknown): void {
   widget.value = newValue
   widget.callback?.(newValue)
 }

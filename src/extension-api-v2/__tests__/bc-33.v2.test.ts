@@ -53,6 +53,7 @@ interface WidgetHandle {
 
 interface AppEvents {
   domWidgetCreated: WidgetHandle
+  [key: string]: unknown
 }
 
 function makeWidget(overrides: Partial<WidgetHandle> = {}): WidgetHandle {

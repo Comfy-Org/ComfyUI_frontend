@@ -67,7 +67,7 @@ describe('BC.16 migration — per-node execution output', () => {
         if (data.text) v1Texts.push(data.text)
       }
       v2.on('executed', (e) => {
-        if (e.output.text) v2Texts.push(e.output.text)
+        if (e.output.text) v2Texts.push(e.output.text as string[])
       })
 
       const payload = { text: ['Generated text output'], images: [] }
@@ -87,7 +87,7 @@ describe('BC.16 migration — per-node execution output', () => {
         v1ImageCount = data.images?.length ?? 0
       }
       v2.on('executed', (e) => {
-        v2ImageCount = e.output.images?.length ?? 0
+        v2ImageCount = (e.output.images as unknown[] | undefined)?.length ?? 0
       })
 
       const images = [{ filename: 'a.png', subfolder: '', type: 'output' }]

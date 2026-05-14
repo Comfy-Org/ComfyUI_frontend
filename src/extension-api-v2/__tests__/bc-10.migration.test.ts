@@ -35,13 +35,13 @@ interface MockWidgetHandle {
   setValue(value: unknown): void
   on(
     event: 'valueChange',
-    handler: (e: WidgetValueChangeEvent) => void
+    handler: (e: WidgetValueChangeEvent<unknown>) => void
   ): Unsubscribe
 }
 
 function createDualWidget(name: string, initial: unknown = '') {
   const valueRef = shallowRef(initial)
-  const v2Listeners: Array<(e: WidgetValueChangeEvent) => void> = []
+  const v2Listeners: Array<(e: WidgetValueChangeEvent<unknown>) => void> = []
 
   // v1 shape
   const v1: V1Widget = { name, value: initial }
@@ -58,12 +58,12 @@ function createDualWidget(name: string, initial: unknown = '') {
       valueRef.value = newValue
       v1.value = newValue
       // Fire v2 listeners
-      const event: WidgetValueChangeEvent = { newValue, oldValue }
+      const event: WidgetValueChangeEvent<unknown> = { newValue, oldValue }
       for (const fn of v2Listeners) fn(event)
     },
     on(
       _event: 'valueChange',
-      handler: (e: WidgetValueChangeEvent) => void
+      handler: (e: WidgetValueChangeEvent<unknown>) => void
     ): Unsubscribe {
       v2Listeners.push(handler)
       return () => {
@@ -95,7 +95,7 @@ describe('BC.10 migration — widget value subscription', () => {
     it('v1 callback and v2 valueChange handler both fire with the new value for the same interaction', () => {
       const { v1, v2, simulateV1Change } = createDualWidget('steps', 20)
       const v1Received: unknown[] = []
-      const v2Received: WidgetValueChangeEvent[] = []
+      const v2Received: WidgetValueChangeEvent<unknown>[] = []
 
       v1.callback = (val) => v1Received.push(val)
       v2.on('valueChange', (e) => v2Received.push(e))
@@ -110,7 +110,7 @@ describe('BC.10 migration — widget value subscription', () => {
     it('v2 payload is { newValue, oldValue } — v1 payload is positional args; both carry the same new value', () => {
       const { v1, v2, simulateV1Change } = createDualWidget('cfg', 7)
       let v1Value: unknown
-      let v2Event: WidgetValueChangeEvent | undefined
+      let v2Event: WidgetValueChangeEvent<unknown> | undefined
 
       v1.callback = (val) => {
         v1Value = val
@@ -164,7 +164,7 @@ describe('BC.10 migration — widget value subscription', () => {
     it('v1 onWidgetChanged and v2 per-widget valueChange both fire for the same widget change', () => {
       const { v1, v2, simulateV1Change } = createDualWidget('steps', 20)
       const v1NodeCalls: Array<{ name: string; value: unknown }> = []
-      const v2Calls: WidgetValueChangeEvent[] = []
+      const v2Calls: WidgetValueChangeEvent<unknown>[] = []
 
       const node = {
         onWidgetChanged: (name: string, value: unknown) =>

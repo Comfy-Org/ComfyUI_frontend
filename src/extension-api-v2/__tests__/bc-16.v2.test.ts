@@ -129,7 +129,8 @@ describe('BC.16 v2 contract — NodeHandle executed event', () => {
       const bus = createExecutedBus()
       const texts: string[] = []
       bus.on('executed', (e) => {
-        for (const t of e.output.text ?? []) texts.push(t)
+        for (const t of (e.output.text as string[] | undefined) ?? [])
+          texts.push(t)
       })
       bus.emit(
         makeExecutedEvent({ output: { text: ['alpha', 'beta'], images: [] } })

@@ -157,11 +157,11 @@ describe('BC.19 migration — workflow execution trigger', () => {
       const v2Calls: number[] = []
 
       // v1: each assignment replaces
-      v1.queuePrompt = async (p) => {
+      v1.queuePrompt = async (_p) => {
         v1Calls.push(1)
         return
       }
-      v1.queuePrompt = async (p) => {
+      v1.queuePrompt = async (_p) => {
         v1Calls.push(2)
         return
       }

@@ -23,7 +23,7 @@ import type { NodeHandle } from '@/extension-api/node'
 
 function makeWidgetHandle(overrides: Partial<WidgetHandle> = {}): WidgetHandle {
   return {
-    entityId: 1 as WidgetHandle['entityId'],
+    entityId: 'widget:1' as WidgetHandle['entityId'],
     name: 'steps',
     widgetType: 'INT',
     label: 'Steps',
