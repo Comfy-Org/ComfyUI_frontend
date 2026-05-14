@@ -1345,7 +1345,7 @@ export class LGraph
   }
 
   // used for undo, called before any change is made to the graph
-  beforeChange(info?: LGraphNode): void {
+  beforeChange(_info?: LGraphNode): void {
     this.canvasAction((c) => c.onBeforeChange?.(this))
   }
 
