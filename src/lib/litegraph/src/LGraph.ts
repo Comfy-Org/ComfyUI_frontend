@@ -192,6 +192,15 @@ export class LGraph
     nodeData: ISerialisedNode | undefined
   ) => void
 
+  /**
+   * Late-bound hook that re-derives preview-exposure entries for any
+   * interior node known to support a virtual preview (PreviewImage, etc.).
+   * Used after configure (workflow load and paste) so older clipboard /
+   * workflow data without `properties.previewExposures` still surfaces a
+   * preview on the host SubgraphNode. Idempotent.
+   */
+  static autoExposePreviewNodes?: (hostNode: SubgraphNode) => void
+
   /** List of LGraph properties that are manually handled by {@link LGraph.configure}. */
   static readonly ConfigureProperties = new Set([
     'nodes',
@@ -2665,27 +2674,27 @@ export class LGraph
       this.updateExecutionOrder()
 
       // ADR 0009: forward-ratchet legacy properties.proxyWidgets on each
-      // host SubgraphNode. Late-bound hook (registered in app init) so the
-      // LGraph layer doesn't pull in the PreviewExposureStore at module
-      // load — that would create a circular dependency.
+      // host SubgraphNode and auto-derive preview exposures for known
+      // preview-aware interior node types. Late-bound hooks (registered in
+      // app init) so the LGraph layer doesn't pull in the PreviewExposureStore
+      // at module load — that would create a circular dependency.
       for (const node of this._nodes) {
         if (!(node instanceof SubgraphNode)) continue
-        if (node.properties?.proxyWidgets === undefined) continue
-        const nodeData = nodeDataMap.get(node.id)
-        if (LGraph.proxyWidgetMigrationFlush) {
-          LGraph.proxyWidgetMigrationFlush(node, nodeData)
-        } else if (
-          node.properties.proxyWidgets !== undefined &&
-          (import.meta.env.DEV || import.meta.env.MODE === 'test')
-        ) {
-          console.warn(
-            '[SubgraphNode] Legacy proxyWidgets were not migrated because no migration flush hook is wired',
-            {
-              hostNodeId: node.id,
-              proxyWidgets: node.properties.proxyWidgets
-            }
-          )
+        if (node.properties?.proxyWidgets !== undefined) {
+          const nodeData = nodeDataMap.get(node.id)
+          if (LGraph.proxyWidgetMigrationFlush) {
+            LGraph.proxyWidgetMigrationFlush(node, nodeData)
+          } else if (import.meta.env.DEV || import.meta.env.MODE === 'test') {
+            console.warn(
+              '[SubgraphNode] Legacy proxyWidgets were not migrated because no migration flush hook is wired',
+              {
+                hostNodeId: node.id,
+                proxyWidgets: node.properties.proxyWidgets
+              }
+            )
+          }
         }
+        LGraph.autoExposePreviewNodes?.(node)
       }
 
       this.onConfigure?.(data)

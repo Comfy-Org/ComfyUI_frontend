@@ -13,6 +13,7 @@ import { VueFire, VueFireAuth } from 'vuefire'
 
 import { getFirebaseConfig } from '@/config/firebase'
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
+import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
   configValueOrDefault,
@@ -117,6 +118,13 @@ LGraph.proxyWidgetMigrationFlush = (hostNode, nodeData) =>
     hostNode,
     hostWidgetValues: nodeData?.widgets_values
   })
+
+// ADR 0009: re-derive preview exposures for known preview-aware interior
+// nodes after configure (workflow load and paste). Older clipboard /
+// workflow data may lack `properties.previewExposures`; this hook restores
+// the canvas-image-preview entries idempotently.
+LGraph.autoExposePreviewNodes = (hostNode) =>
+  autoExposeKnownPreviewNodes(hostNode)
 
 const bootstrapStore = useBootstrapStore(pinia)
 void bootstrapStore.startStoreBootstrap()

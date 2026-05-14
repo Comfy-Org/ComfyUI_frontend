@@ -531,7 +531,18 @@ function nodeWidgets(n: LGraphNode): WidgetItem[] {
   return getPromotableWidgets(n).map((w: IBaseWidget) => [n, w])
 }
 
-export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
+/**
+ * Idempotently add preview-exposure entries for interior nodes that either
+ * already have a `$$`-style pseudo-widget or are known-preview core node types
+ * (PreviewImage, etc.). Safe to call repeatedly on the same host;
+ * `promotePreviewViaExposure` deduplicates against existing entries.
+ *
+ * This is the shared preview-promotion path used by both
+ * {@link promoteRecommendedWidgets} (subgraph-converted) and the paste flow
+ * — older clipboard data may lack `properties.previewExposures`, so paste
+ * needs to re-derive them from interior content.
+ */
+export function autoExposeKnownPreviewNodes(subgraphNode: SubgraphNode): void {
   const { updatePreviews } = useLitegraphService()
   const interiorNodes = subgraphNode.subgraph.nodes
   for (const node of interiorNodes) {
@@ -566,6 +577,11 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
     // updatePreviews when node outputs are first loaded.
     requestAnimationFrame(() => updatePreviews(node, promotePreviewWidget))
   }
+}
+
+export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
+  autoExposeKnownPreviewNodes(subgraphNode)
+  const interiorNodes = subgraphNode.subgraph.nodes
   const filteredWidgets: WidgetItem[] = interiorNodes
     .flatMap(nodeWidgets)
     .filter(isRecommendedWidget)

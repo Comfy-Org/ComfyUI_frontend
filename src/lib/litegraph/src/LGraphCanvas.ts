@@ -84,6 +84,7 @@ import {
 } from './measure'
 import { NodeInputSlot } from './node/NodeInputSlot'
 import type { Subgraph } from './subgraph/Subgraph'
+import { topologicalSortSubgraphs } from './subgraph/subgraphDeduplication'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphNode } from './subgraph/SubgraphNode'
@@ -4189,7 +4190,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const subgraph = graph.createSubgraph(info)
       results.subgraphs.set(info.id, subgraph)
     }
-    for (const info of parsed.subgraphs)
+    // Configure leaf-first so a SubgraphNode's referenced subgraph definition
+    // already has its `_nodes`/inputs populated by the time the host node is
+    // created and migration source-resolution runs.
+    const configureOrder = topologicalSortSubgraphs(parsed.subgraphs)
+    for (const info of configureOrder)
       results.subgraphs.get(info.id)?.configure(info)
 
     // Groups
@@ -4215,6 +4220,22 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       graph.add(node)
       node.configure(info)
+
+      // ADR 0009: forward-ratchet legacy `properties.proxyWidgets` and
+      // re-derive preview exposures for known preview-aware interior nodes
+      // on each top-level pasted SubgraphNode. Nested SubgraphNodes inside
+      // pasted subgraph definitions are handled by `LGraph.configure` when
+      // the subgraph itself is configured above; this branch covers hosts
+      // at the paste destination root that bypass that path.
+      if (node instanceof SubgraphNode) {
+        if (
+          node.properties?.proxyWidgets !== undefined &&
+          LiteGraph.LGraph.proxyWidgetMigrationFlush
+        ) {
+          LiteGraph.LGraph.proxyWidgetMigrationFlush(node, info)
+        }
+        LiteGraph.LGraph.autoExposePreviewNodes?.(node)
+      }
 
       created.push(node)
     }
@@ -9076,11 +9097,32 @@ function remapProxyWidgets(
   }
 }
 
+function remapPreviewExposures(
+  info: ISerialisedNode,
+  remappedIds: Map<NodeId, NodeId> | undefined
+) {
+  if (!remappedIds || remappedIds.size === 0) return
+
+  const previewExposures = info.properties?.previewExposures
+  if (!Array.isArray(previewExposures)) return
+
+  for (const entry of previewExposures) {
+    if (!entry || typeof entry !== 'object') continue
+    const sourceNodeId = (entry as { sourceNodeId?: unknown }).sourceNodeId
+    if (typeof sourceNodeId !== 'string' || sourceNodeId === '-1') continue
+
+    const remappedNodeId = remapNodeId(sourceNodeId, remappedIds)
+    if (remappedNodeId !== undefined)
+      (entry as { sourceNodeId: string }).sourceNodeId = String(remappedNodeId)
+  }
+}
+
 /**
  * Remaps pasted subgraph interior node IDs that would collide with existing
- * node IDs in the root graph. Also patches subgraph link node IDs and legacy
- * SubgraphNode `properties.proxyWidgets` references so migration input stays
- * aligned with remapped interior IDs until the ADR 0009 flush consumes it.
+ * node IDs in the root graph. Also patches subgraph link node IDs, legacy
+ * SubgraphNode `properties.proxyWidgets` references, and ADR 0009
+ * `properties.previewExposures` references so promoted-widget migration and
+ * preview-exposure hydration both resolve to the remapped interior IDs.
  */
 export function remapClipboardSubgraphNodeIds(
   parsed: ClipboardItems,
@@ -9135,6 +9177,8 @@ export function remapClipboardSubgraphNodeIds(
 
   for (const nodeInfo of allNodeInfo) {
     if (typeof nodeInfo.type !== 'string') continue
-    remapProxyWidgets(nodeInfo, subgraphNodeIdMap.get(nodeInfo.type))
+    const remappedIds = subgraphNodeIdMap.get(nodeInfo.type)
+    remapProxyWidgets(nodeInfo, remappedIds)
+    remapPreviewExposures(nodeInfo, remappedIds)
   }
 }
