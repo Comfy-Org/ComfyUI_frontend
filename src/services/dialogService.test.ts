@@ -5,12 +5,14 @@ const {
   mockCanAccessSubscriptionFeatures,
   mockIsFreeTier,
   mockBillingType,
-  mockShowDialog
+  mockShowDialog,
+  mockSubscriptionDialogShow
 } = vi.hoisted(() => ({
   mockCanAccessSubscriptionFeatures: { value: true },
   mockIsFreeTier: { value: false },
   mockBillingType: { value: 'legacy' as 'legacy' | 'workspace' },
-  mockShowDialog: vi.fn()
+  mockShowDialog: vi.fn(),
+  mockSubscriptionDialogShow: vi.fn()
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -42,6 +44,28 @@ vi.mock('@/platform/distribution/types', () => ({
   isCloud: true
 }))
 
+vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
+  useSubscription: () => ({
+    isFreeTier: { value: false }
+  })
+}))
+
+vi.mock(
+  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+  () => ({
+    useSubscriptionDialog: () => ({
+      showPricingTable: vi.fn(),
+      show: mockSubscriptionDialogShow
+    })
+  })
+)
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({
+    isInPersonalWorkspace: { value: true }
+  })
+}))
+
 describe('dialogService', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -49,6 +73,14 @@ describe('dialogService', () => {
     mockCanAccessSubscriptionFeatures.value = true
     mockIsFreeTier.value = false
     mockBillingType.value = 'legacy'
+    // Set up window.__CONFIG__ for subscription_required check
+    ;(
+      globalThis as unknown as {
+        __CONFIG__: { subscription_required: boolean }
+      }
+    ).__CONFIG__ = {
+      subscription_required: true
+    }
   })
 
   describe('showTopUpCreditsDialog', () => {
@@ -103,6 +135,52 @@ describe('dialogService', () => {
           props: { isInsufficientCredits: true }
         })
       )
+    })
+
+    it('shows subscription dialog when canAccessSubscriptionFeatures is false', async () => {
+      mockCanAccessSubscriptionFeatures.value = false
+      mockIsFreeTier.value = false
+
+      const { useDialogService } = await import('./dialogService')
+      const dialogService = useDialogService()
+
+      await dialogService.showTopUpCreditsDialog()
+
+      expect(mockSubscriptionDialogShow).toHaveBeenCalled()
+      expect(mockShowDialog).not.toHaveBeenCalledWith(
+        expect.objectContaining({ key: 'top-up-credits' })
+      )
+    })
+
+    it('shows subscription dialog when isFreeTier is true', async () => {
+      mockCanAccessSubscriptionFeatures.value = true
+      mockIsFreeTier.value = true
+
+      const { useDialogService } = await import('./dialogService')
+      const dialogService = useDialogService()
+
+      await dialogService.showTopUpCreditsDialog()
+
+      expect(mockSubscriptionDialogShow).toHaveBeenCalled()
+      expect(mockShowDialog).not.toHaveBeenCalledWith(
+        expect.objectContaining({ key: 'top-up-credits' })
+      )
+    })
+
+    it('passes out_of_credits reason to subscription dialog when isInsufficientCredits', async () => {
+      mockCanAccessSubscriptionFeatures.value = false
+      mockIsFreeTier.value = false
+
+      const { useDialogService } = await import('./dialogService')
+      const dialogService = useDialogService()
+
+      await dialogService.showTopUpCreditsDialog({
+        isInsufficientCredits: true
+      })
+
+      expect(mockSubscriptionDialogShow).toHaveBeenCalledWith({
+        reason: 'out_of_credits'
+      })
     })
   })
 })
