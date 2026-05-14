@@ -5404,7 +5404,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   renderInfo(ctx: CanvasRenderingContext2D, x: number, y: number): void {
     const lineHeight = 13
-    const lineCount = (this.graph ? 5 : 1) + (this.info_text ? 1 : 0)
+    const lineCount = (this.graph ? 3 : 1) + (this.info_text ? 1 : 0)
     x = x || 10
     y =
       y ||
