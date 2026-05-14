@@ -174,7 +174,11 @@ describe('BC.13 v1 contract — per-node serialization interception', () => {
         type: 'KSampler',
         widgets: [
           { name: 'steps', value: 20 },
-          { name: 'control_after_generate', value: 'fixed', options: { serialize: false } },
+          {
+            name: 'control_after_generate',
+            value: 'fixed',
+            options: { serialize: false }
+          },
           { name: 'cfg', value: 7.5 }
         ],
         serialize() {
@@ -254,7 +258,11 @@ describe('BC.13 v1 contract — per-node serialization interception', () => {
       const node = {
         widgets: [
           { name: 'steps', value: 20 },
-          { name: 'control_after_generate', value: 'fixed', options: { serialize: false } },
+          {
+            name: 'control_after_generate',
+            value: 'fixed',
+            options: { serialize: false }
+          },
           { name: 'denoise', value: 1.0 }
         ] as MockWidget[],
         onSerialize: (data: { widgets_values: unknown[] }) => {

@@ -4,7 +4,10 @@
 // Cross-ref: S4.W3 (widget.serializeValue assignment), BC.12
 
 import { describe, it, expect, vi } from 'vitest'
-import { loadEvidenceSnippet, countEvidenceExcerpts } from '@/extension-api-v2/harness'
+import {
+  loadEvidenceSnippet,
+  countEvidenceExcerpts
+} from '@/extension-api-v2/harness'
 
 // v1 widget shape with serializeValue
 interface V1Widget {
