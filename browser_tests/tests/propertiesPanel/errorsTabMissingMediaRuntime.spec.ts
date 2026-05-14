@@ -8,15 +8,15 @@ import {
 } from '@e2e/fixtures/assetApiFixture'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { jobsApiMockFixture } from '@e2e/fixtures/jobsApiMockFixture'
-import { TestIds } from '@e2e/fixtures/selectors'
 import {
-  createMockJob,
-  createMockJobRecords
-} from '@e2e/fixtures/utils/jobFixtures'
+  createRouteMockJob,
+  jobsRouteFixture
+} from '@e2e/fixtures/jobsRouteFixture'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 
-const ossTest = mergeTests(comfyPageFixture, jobsApiMockFixture)
+const ossTest = mergeTests(comfyPageFixture, jobsRouteFixture)
 const outputHash =
   '147257c95a3e957e0deee73a077cfec89da2d906dd086ca70a2b0c897a9591d6e.png'
 const plainVideoFileName = 'plain_video.mp4'
@@ -213,9 +213,9 @@ async function expectNoMissingMediaDuringUpload(comfyPage: ComfyPage) {
     .toBe(true)
 }
 
-function outputHistoryJobs() {
-  return createMockJobRecords([
-    createMockJob({
+function outputHistoryJobs(): RawJobListItem[] {
+  return [
+    createRouteMockJob({
       id: 'history-output-image',
       preview_output: {
         filename: 'ComfyUI_00001_.png',
@@ -225,7 +225,7 @@ function outputHistoryJobs() {
         mediaType: 'images'
       }
     }),
-    createMockJob({
+    createRouteMockJob({
       id: 'history-output-video',
       preview_output: {
         filename: 'clip.mp4',
@@ -235,7 +235,7 @@ function outputHistoryJobs() {
         mediaType: 'video'
       }
     }),
-    createMockJob({
+    createRouteMockJob({
       id: 'history-output-audio',
       preview_output: {
         filename: 'sound.wav',
@@ -245,7 +245,7 @@ function outputHistoryJobs() {
         mediaType: 'audio'
       }
     })
-  ])
+  ]
 }
 
 ossTest.describe(
@@ -258,8 +258,9 @@ ossTest.describe(
 
     ossTest(
       'resolves annotated output media from job history',
-      async ({ comfyPage, jobsApi }) => {
-        await jobsApi.mockJobs(outputHistoryJobs())
+      async ({ comfyPage, jobsRoutes }) => {
+        await jobsRoutes.mockJobsHistory(outputHistoryJobs())
+        await jobsRoutes.mockJobsQueue([])
 
         await comfyPage.workflow.loadWorkflow(
           'missing/missing_media_output_annotations'
