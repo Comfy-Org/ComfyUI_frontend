@@ -87,12 +87,15 @@ const terminalCreated = (
     loading.value = false
   })
 
-  onUnmounted(async () => {
-    if (api.clientId) {
-      await api.subscribeLogs(false)
-    }
+  onUnmounted(() => {
     api.removeEventListener('logs', logReceived)
     api.removeEventListener('reconnected', resyncLogs)
+
+    if (!api.clientId) return
+
+    api.subscribeLogs(false).catch((err) => {
+      console.error('Error unsubscribing from logs', err)
+    })
   })
 }
 </script>
