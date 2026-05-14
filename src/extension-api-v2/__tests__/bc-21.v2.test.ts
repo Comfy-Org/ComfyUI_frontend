@@ -1,15 +1,15 @@
 // Category: BC.21 — Custom widget-type registration
 // DB cross-ref: S1.H2
 // blast_radius: 4.32 — compat-floor: MUST pass before v2 ships
-// v2 replacement: defineWidgetExtension({ type: 'MY_WIDGET', widgetCreated(widget, parentNode) { ... } })
+// v2 replacement: defineWidgetExtension({ type: 'MY_WIDGET', created(widget, parentNode) { ... } })
 //
 // Phase A findings (from lifecycle.ts inspection):
 // WidgetExtensionOptions has:
 //   - name: string
 //   - type: string  (widget type key, e.g. 'COLOR_PICKER')
-//   - widgetCreated?(widget: WidgetHandle, parentNode: NodeHandle | null): { render, destroy? } | void
+//   - created?(widget: WidgetHandle, parentNode: NodeHandle | null): { render, destroy? } | void
 //
-// Note: stub name in the original file used 'widgetType'/'create' — actual interface uses 'type'/'widgetCreated'.
+// Note: stub name in the original file used 'widgetType'/'create' — actual interface uses 'type'/'created'.
 // Tests here use the real interface fields.
 //
 // I-TF.8 — BC.21 v2 wired assertions.
@@ -70,7 +70,7 @@ function createWidgetExtensionRegistry() {
 
 describe('BC.21 v2 contract — custom widget-type registration', () => {
   describe('WidgetExtensionOptions shape', () => {
-    it('WidgetExtensionOptions requires name and type; widgetCreated is optional', () => {
+    it('WidgetExtensionOptions requires name and type; created is optional', () => {
       // Compiles → shape is correct.
       const opts: WidgetExtensionOptions = {
         name: 'bc21.test.color-picker',
@@ -78,33 +78,33 @@ describe('BC.21 v2 contract — custom widget-type registration', () => {
       }
       expect(opts.name).toBe('bc21.test.color-picker')
       expect(opts.type).toBe('COLOR_PICKER')
-      expect(opts.widgetCreated).toBeUndefined()
+      expect(opts.created).toBeUndefined()
     })
 
-    it('WidgetExtensionOptions with widgetCreated returning render/destroy pair is valid', () => {
+    it('WidgetExtensionOptions with created returning render/destroy pair is valid', () => {
       const opts: WidgetExtensionOptions = {
         name: 'bc21.test.canvas-widget',
         type: 'CANVAS_DRAW',
-        widgetCreated(_widget, _parentNode) {
+        created(_widget, _parentNode) {
           return {
             render(_container: HTMLElement) {},
             destroy() {}
           }
         }
       }
-      expect(typeof opts.widgetCreated).toBe('function')
+      expect(typeof opts.created).toBe('function')
     })
 
-    it('WidgetExtensionOptions with widgetCreated returning void is valid (non-visual widget)', () => {
+    it('WidgetExtensionOptions with created returning void is valid (non-visual widget)', () => {
       const opts: WidgetExtensionOptions = {
         name: 'bc21.test.non-visual',
         type: 'HIDDEN_STATE',
-        widgetCreated(_widget, _parentNode) {
+        created(_widget, _parentNode) {
           // non-visual: no render needed
           return undefined
         }
       }
-      expect(opts.widgetCreated).toBeDefined()
+      expect(opts.created).toBeDefined()
     })
   })
 
@@ -132,8 +132,8 @@ describe('BC.21 v2 contract — custom widget-type registration', () => {
     })
   })
 
-  describe('widgetCreated invocation contract', () => {
-    it('widgetCreated receives a WidgetHandle and a NodeHandle (or null for orphan widgets)', () => {
+  describe('created invocation contract', () => {
+    it('created receives a WidgetHandle and a NodeHandle (or null for orphan widgets)', () => {
       const capturedArgs: Array<{
         widget: WidgetHandle
         parentNode: NodeHandle | null
@@ -142,7 +142,7 @@ describe('BC.21 v2 contract — custom widget-type registration', () => {
       const opts: WidgetExtensionOptions = {
         name: 'bc21.test.invocation',
         type: 'CAPTURE_PICKER',
-        widgetCreated(widget, parentNode) {
+        created(widget, parentNode) {
           capturedArgs.push({
             widget,
             parentNode: parentNode as NodeHandle | null
@@ -156,54 +156,54 @@ describe('BC.21 v2 contract — custom widget-type registration', () => {
       })
       const parentNode = makeNodeHandle() as NodeHandle
 
-      opts.widgetCreated!(widget, parentNode)
+      opts.created!(widget, parentNode)
 
       expect(capturedArgs).toHaveLength(1)
       expect(capturedArgs[0].widget.name).toBe('my-picker')
       expect(capturedArgs[0].parentNode).toBe(parentNode)
     })
 
-    it('widgetCreated called with null parentNode for orphan widgets does not throw', () => {
+    it('created called with null parentNode for orphan widgets does not throw', () => {
       const opts: WidgetExtensionOptions = {
         name: 'bc21.test.null-parent',
         type: 'ORPHAN_WIDGET',
-        widgetCreated(_widget, parentNode) {
+        created(_widget, parentNode) {
           expect(parentNode).toBeNull()
         }
       }
 
       const widget = makeWidgetHandle()
-      expect(() => opts.widgetCreated!(widget, null)).not.toThrow()
+      expect(() => opts.created!(widget, null)).not.toThrow()
     })
 
-    it('render() function returned by widgetCreated is called with an HTMLElement container', () => {
+    it('render() function returned by created is called with an HTMLElement container', () => {
       const renderFn = vi.fn()
       const opts: WidgetExtensionOptions = {
         name: 'bc21.test.render',
         type: 'RENDERED_WIDGET',
-        widgetCreated() {
+        created() {
           return { render: renderFn }
         }
       }
 
-      const result = opts.widgetCreated!(makeWidgetHandle(), null)
+      const result = opts.created!(makeWidgetHandle(), null)
       expect(result).toBeDefined()
       const container = document.createElement('div')
       ;(result as { render: (el: HTMLElement) => void }).render(container)
       expect(renderFn).toHaveBeenCalledWith(container)
     })
 
-    it('destroy() returned by widgetCreated is invoked on widget removal', () => {
+    it('destroy() returned by created is invoked on widget removal', () => {
       const destroyFn = vi.fn()
       const opts: WidgetExtensionOptions = {
         name: 'bc21.test.destroy',
         type: 'DESTROYABLE_WIDGET',
-        widgetCreated() {
+        created() {
           return { render() {}, destroy: destroyFn }
         }
       }
 
-      const result = opts.widgetCreated!(makeWidgetHandle(), null) as {
+      const result = opts.created!(makeWidgetHandle(), null) as {
         render(): void
         destroy?(): void
       }
@@ -214,15 +214,15 @@ describe('BC.21 v2 contract — custom widget-type registration', () => {
 
   describe('[gap] getCustomWidgets / registration-before-nodeCreated timing', () => {
     it.todo(
-      '[gap] No defineWidgetExtension runtime exists yet — widgetCreated is not called by the Phase A runtime. ' +
-        'Phase B: wire defineWidgetExtension into extensionV2Service so widgetCreated fires for each matching widget instance.'
+      '[gap] No defineWidgetExtension runtime exists yet — created is not called by the Phase A runtime. ' +
+        'Phase B: wire defineWidgetExtension into extensionV2Service so created fires for each matching widget instance.'
     )
     it.todo(
       '[gap] Widget type registered via defineWidgetExtension should appear in NodeHandle.widgets() after node creation. ' +
         'Phase B required — needs real ECS WidgetComponentSchema.'
     )
     it.todo(
-      '[gap] Widget extension scope cleanup: widgetCreated destroy() called when extension is disposed. ' +
+      '[gap] Widget extension scope cleanup: created destroy() called when extension is disposed. ' +
         'Phase B required — EffectScope wiring for widget extension lifetime.'
     )
   })

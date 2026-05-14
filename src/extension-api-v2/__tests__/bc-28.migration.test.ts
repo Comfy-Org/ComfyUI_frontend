@@ -3,7 +3,7 @@
 // Exemplar: https://github.com/kijai/ComfyUI-KJNodes/blob/main/web/js/setgetnodes.js#L1406
 // blast_radius: 4.97
 // compat-floor: blast_radius ≥ 2.0
-// migration: isVirtualNode=true + graphToPrompt monkey-patch → defineNodeExtension({ virtual: true, resolveConnections })
+// migration: isVirtualNode=true + graphToPrompt monkey-patch → defineNode({ virtual: true, resolveConnections })
 // Decision: I-UWF.5 (2026-05-08) — S8.P1 → virtual: true (mechanical rename); S9.SG1 → add resolveConnections.
 // Classified uwf-resolved per I-PG.B2 — UWF Phase 3 is the migration path.
 
@@ -12,7 +12,7 @@ import { describe, it } from 'vitest'
 describe('BC.28 migration — subgraph fan-out via set/get virtual nodes', () => {
   describe('S8.P1 — isVirtualNode flag migration', () => {
     it.todo(
-      'v1 class-level isVirtualNode=true is replaced by defineNodeExtension({ virtual: true, resolveConnections })'
+      'v1 class-level isVirtualNode=true is replaced by defineNode({ virtual: true, resolveConnections })'
     )
     it.todo(
       'v2 compat shim recognizes isVirtualNode=true on a registered class and emits a migration warning'

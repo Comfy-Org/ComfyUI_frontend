@@ -2,7 +2,7 @@
 // DB cross-ref: S2.N4
 // Exemplar: https://github.com/Lightricks/ComfyUI-LTXVideo/blob/main/web/js/sparse_track_editor.js#L137
 // compat-floor: blast_radius 5.20 ≥ 2.0 — MUST pass before v2 ships
-// Migration: v1 node.onRemoved assignment → v2 defineNodeExtension({ onRemoved(handle) })
+// Migration: v1 node.onRemoved assignment → v2 defineNode({ onRemoved(handle) })
 //
 // These tests prove that v1 and v2 teardown produce identical outcomes on the
 // same sequence of graph operations. "Identical" means:

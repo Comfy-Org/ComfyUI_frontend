@@ -1,9 +1,9 @@
 // Category: BC.21 — Custom widget-type registration
 // DB cross-ref: S1.H2
 // blast_radius: 4.32 — compat-floor: MUST pass before v2 ships
-// Migration: v1 getCustomWidgets({ app }) factory → v2 defineWidgetExtension({ type, widgetCreated })
+// Migration: v1 getCustomWidgets({ app }) factory → v2 defineWidgetExtension({ type, created })
 //
-// Phase A: registration shape and widgetCreated contract equivalence.
+// Phase A: registration shape and created contract equivalence.
 // Runtime wiring (widgets appear in node after creation) is Phase B.
 //
 // I-TF.8 — BC.21 migration wired assertions.
@@ -103,16 +103,16 @@ describe('BC.21 migration — custom widget-type registration', () => {
     })
   })
 
-  describe('widgetCreated callback contract', () => {
-    it('v2 widgetCreated fires once per widget instance, matching v1 factory invocation semantics', () => {
+  describe('created callback contract', () => {
+    it('v2 created fires once per widget instance, matching v1 factory invocation semantics', () => {
       const v2Created = vi.fn()
       const opts: WidgetExtensionOptions = {
         name: 'bc21.mig.per-instance',
         type: 'COUNTER_WIDGET',
-        widgetCreated: v2Created
+        created: v2Created
       }
 
-      // Simulate runtime calling widgetCreated for 3 widget instances of this type.
+      // Simulate runtime calling created for 3 widget instances of this type.
       const stubs = [1, 2, 3].map((i) => ({
         entityId: i as WidgetExtensionOptions['name'] extends string
           ? number
@@ -121,25 +121,25 @@ describe('BC.21 migration — custom widget-type registration', () => {
         widgetType: 'COUNTER_WIDGET'
       }))
       for (const stub of stubs) {
-        opts.widgetCreated!(stub as never, null)
+        opts.created!(stub as never, null)
       }
 
       expect(v2Created).toHaveBeenCalledTimes(3)
     })
 
-    it('v2 widgetCreated returning { render, destroy } has equivalent lifecycle to v1 render + cleanup', () => {
+    it('v2 created returning { render, destroy } has equivalent lifecycle to v1 render + cleanup', () => {
       const renderFn = vi.fn()
       const destroyFn = vi.fn()
 
       const opts: WidgetExtensionOptions = {
         name: 'bc21.mig.lifecycle',
         type: 'LIFECYCLE_WIDGET',
-        widgetCreated() {
+        created() {
           return { render: renderFn, destroy: destroyFn }
         }
       }
 
-      const result = opts.widgetCreated!(
+      const result = opts.created!(
         { entityId: 1, name: 'w', widgetType: 'LIFECYCLE_WIDGET' } as never,
         null
       ) as { render(el: HTMLElement): void; destroy?(): void }
@@ -155,8 +155,8 @@ describe('BC.21 migration — custom widget-type registration', () => {
 
   describe('[gap] runtime wiring — Phase B', () => {
     it.todo(
-      '[gap] v2 widgetCreated is not yet called by the Phase A runtime — no live EffectScope wiring for widget extensions. ' +
-        'Phase B: wire defineWidgetExtension into the extension service so widgetCreated fires for each live widget instance.'
+      '[gap] v2 created is not yet called by the Phase A runtime — no live EffectScope wiring for widget extensions. ' +
+        'Phase B: wire defineWidgetExtension into the extension service so created fires for each live widget instance.'
     )
     it.todo(
       '[gap] v1 getCustomWidgets fires during extension setup (app ready); v2 defineWidgetExtension should register before nodeCreated fires. ' +

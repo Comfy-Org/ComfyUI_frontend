@@ -113,11 +113,11 @@ function createV2NodeBus() {
 
 function makeSlot(name: string, dir: SlotDirection) {
   return {
-    entityId: 1 as unknown as SlotEntityId,
+    entityId: 1 as unknown as unknown as SlotEntityId,
     name,
     type: 'IMAGE',
     direction: dir,
-    nodeEntityId: 1 as unknown as NodeEntityId
+    nodeEntityId: 1 as unknown as unknown as NodeEntityId
   } as const
 }
 

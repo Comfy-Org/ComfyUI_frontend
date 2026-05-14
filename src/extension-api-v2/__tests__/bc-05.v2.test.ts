@@ -40,7 +40,7 @@ vi.mock('@/extension-api/lifecycle', () => emptyMockFactory())
 import {
   _clearExtensionsForTesting,
   _setDispatchImplForTesting,
-  defineNodeExtension,
+  defineNode,
   mountExtensionsForNode,
   unmountExtensionsForNode
 } from '@/services/extension-api-service'
@@ -49,7 +49,7 @@ import type { NodeEntityId } from '@/world/entityIds'
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function makeNodeId(n: number): NodeEntityId {
-  return `node:graph-uuid-bc05:${n}` as NodeEntityId
+  return `node:graph-uuid-bc05:${n}` as unknown as NodeEntityId
 }
 
 function stubNodeType(id: NodeEntityId, comfyClass = 'TestNode') {
@@ -100,7 +100,7 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
     it('addDOMWidget dispatches a CreateWidget command with type "DOM" and the given name', () => {
       const el = makeDiv()
 
-      defineNodeExtension({
+      defineNode({
         name: 'bc05.v2.register',
         nodeCreated(handle) {
           handle.addDOMWidget({ name: 'myEditor', element: el })
@@ -122,7 +122,7 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
     it('addDOMWidget returns a WidgetHandle with the correct name', () => {
       let handleName: string | undefined
 
-      defineNodeExtension({
+      defineNode({
         name: 'bc05.v2.handle-name',
         nodeCreated(handle) {
           const wh = handle.addDOMWidget({
@@ -143,7 +143,7 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
     it('addDOMWidget stores the DOM element reference in the options bag', () => {
       const el = makeDiv()
 
-      defineNodeExtension({
+      defineNode({
         name: 'bc05.v2.element-stored',
         nodeCreated(handle) {
           handle.addDOMWidget({ name: 'canvas', element: el })
@@ -165,7 +165,7 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
       const el = makeDiv(120) // offsetHeight = 120
       const customHeight = 250
 
-      defineNodeExtension({
+      defineNode({
         name: 'bc05.v2.custom-height',
         nodeCreated(handle) {
           handle.addDOMWidget({
@@ -190,7 +190,7 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
     it('addDOMWidget falls back to element.offsetHeight when no height option is given', () => {
       const el = makeDiv(88)
 
-      defineNodeExtension({
+      defineNode({
         name: 'bc05.v2.fallback-height',
         nodeCreated(handle) {
           handle.addDOMWidget({ name: 'preview', element: el })
@@ -213,7 +213,7 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
       document.body.appendChild(el)
       expect(document.body.contains(el)).toBe(true)
 
-      defineNodeExtension({
+      defineNode({
         name: 'bc05.v2.auto-cleanup',
         nodeCreated(handle) {
           handle.addDOMWidget({ name: 'widget', element: el })
@@ -233,7 +233,7 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
 
   describe('WidgetHandle geometry — setHeight (replaces S2.N11 computeSize override)', () => {
     it('WidgetHandle.setHeight dispatches a SetWidgetOption command with key "__domHeight"', () => {
-      defineNodeExtension({
+      defineNode({
         name: 'bc05.v2.set-height',
         nodeCreated(handle) {
           const wh = handle.addDOMWidget({
@@ -259,7 +259,7 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
     })
 
     it('multiple addDOMWidget calls each produce independent CreateWidget commands', () => {
-      defineNodeExtension({
+      defineNode({
         name: 'bc05.v2.multi-widget',
         nodeCreated(handle) {
           handle.addDOMWidget({ name: 'widgetA', element: makeDiv(50) })

@@ -1,7 +1,7 @@
 // Category: BC.01 — Node lifecycle: creation
 // DB cross-ref: S2.N1, S2.N8
 // compat-floor: blast_radius 4.48 ≥ 2.0 — MUST pass before v2 ships
-// Migration: v1 nodeCreated(node) + beforeRegisterNodeDef → v2 defineNodeExtension({ nodeCreated(handle) })
+// Migration: v1 nodeCreated(node) + beforeRegisterNodeDef → v2 defineNode({ nodeCreated(handle) })
 //
 // Phase A strategy: test behavioral equivalence between v1 and v2 patterns
 // using local stubs. Real ECS dispatch (Phase B) is marked it.todo.

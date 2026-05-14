@@ -2,7 +2,7 @@
 // DB cross-ref: S2.N1, S2.N8
 // Exemplar: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/src/extensions/core/saveImageExtraOutput.ts#L31
 // compat-floor: blast_radius 4.48 ≥ 2.0 — MUST pass before v2 ships
-// v2 replacement: defineNodeExtension({ nodeCreated(handle) { ... } })
+// v2 replacement: defineNode({ nodeCreated(handle) { ... } })
 // Note: v2 nodeCreated receives a NodeHandle, not a raw LGraphNode. VueNode mount
 //       timing guarantee is unchanged — defer to onNodeMounted for Vue-backed state.
 //
@@ -27,7 +27,7 @@ const createTestRuntime = () => createV2Runtime({ idPrefix: 'graph-test' })
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('BC.01 v2 contract — node lifecycle: creation', () => {
-  describe('NodeExtensionOptions shape — defineNodeExtension API', () => {
+  describe('NodeExtensionOptions shape — defineNode API', () => {
     it('NodeExtensionOptions accepts a nodeCreated callback with NodeHandle parameter', () => {
       // Type-level proof: this compiles = the contract is correctly shaped.
       const options: NodeExtensionOptions = {
@@ -82,7 +82,7 @@ describe('BC.01 v2 contract — node lifecycle: creation', () => {
       rt.register({
         name: 'bc01.entity-id',
         nodeCreated(h) {
-          capturedId = h.entityId as NodeEntityId
+          capturedId = h.entityId as unknown as NodeEntityId
         }
       })
       const id = rt.addNode('TestNode')

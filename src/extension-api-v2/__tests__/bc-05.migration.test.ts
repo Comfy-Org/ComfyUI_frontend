@@ -40,7 +40,7 @@ vi.mock('@/extension-api/lifecycle', () => emptyMockFactory())
 import {
   _clearExtensionsForTesting,
   _setDispatchImplForTesting,
-  defineNodeExtension,
+  defineNode,
   mountExtensionsForNode,
   unmountExtensionsForNode
 } from '@/services/extension-api-service'
@@ -97,7 +97,7 @@ function createV1Node(id: number, type = 'TestNode'): V1Node {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function makeNodeId(n: number): NodeEntityId {
-  return `node:graph-uuid-bc05-mig:${n}` as NodeEntityId
+  return `node:graph-uuid-bc05-mig:${n}` as unknown as NodeEntityId
 }
 
 function stubNodeType(id: NodeEntityId, comfyClass = 'TestNode') {
@@ -154,7 +154,7 @@ describe('BC.05 migration — custom DOM widgets and node sizing', () => {
 
       // v2 pattern
       const registeredNames: string[] = []
-      defineNodeExtension({
+      defineNode({
         name: 'bc05.mig.register-parity',
         nodeCreated(handle) {
           const wh = handle.addDOMWidget({ name: 'editor', element: el })
@@ -180,7 +180,7 @@ describe('BC.05 migration — custom DOM widgets and node sizing', () => {
       const v1Height = v1Node.domWidgets[0].height
 
       // v2: explicit height option
-      defineNodeExtension({
+      defineNode({
         name: 'bc05.mig.height-parity',
         nodeCreated(handle) {
           handle.addDOMWidget({
@@ -209,7 +209,7 @@ describe('BC.05 migration — custom DOM widgets and node sizing', () => {
       const v1Count = v1Node.domWidgets.length
 
       // v2 pattern
-      defineNodeExtension({
+      defineNode({
         name: 'bc05.mig.multi-count',
         nodeCreated(handle) {
           handle.addDOMWidget({ name: 'widgetA', element: makeDiv(50) })
@@ -240,7 +240,7 @@ describe('BC.05 migration — custom DOM widgets and node sizing', () => {
       expect(v1Node.computeSizeOverridden).toBe(true)
 
       // v2: no computeSize — just setHeight on the WidgetHandle
-      defineNodeExtension({
+      defineNode({
         name: 'bc05.mig.no-compute-size',
         nodeCreated(handle) {
           const wh = handle.addDOMWidget({ name: 'widget', element: el })
@@ -282,7 +282,7 @@ describe('BC.05 migration — custom DOM widgets and node sizing', () => {
       expect(document.body.contains(el)).toBe(true)
 
       // v2 pattern: auto-cleanup on scope dispose (via onScopeDispose in addDOMWidget)
-      defineNodeExtension({
+      defineNode({
         name: 'bc05.mig.auto-cleanup',
         nodeCreated(handle) {
           handle.addDOMWidget({ name: 'widget', element: el })
@@ -303,7 +303,7 @@ describe('BC.05 migration — custom DOM widgets and node sizing', () => {
       document.body.appendChild(registeredEl)
       document.body.appendChild(unrelatedEl)
 
-      defineNodeExtension({
+      defineNode({
         name: 'bc05.mig.scoped-cleanup',
         nodeCreated(handle) {
           handle.addDOMWidget({ name: 'registered', element: registeredEl })

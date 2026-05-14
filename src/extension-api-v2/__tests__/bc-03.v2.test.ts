@@ -1,7 +1,7 @@
 // Category: BC.03 — Node lifecycle: hydration from saved workflows
 // DB cross-ref: S1.H1, S2.N7
 // compat-floor: blast_radius 4.91 ≥ 2.0 — MUST pass before v2 ships
-// v2 replacement: defineNodeExtension({ loadedGraphNode(handle) { ... } })
+// v2 replacement: defineNode({ loadedGraphNode(handle) { ... } })
 //
 // Phase A harness: loadedGraphNode(handle) is called explicitly after addNode()
 // with a `fromWorkflow: true` flag to distinguish hydration from fresh creation.

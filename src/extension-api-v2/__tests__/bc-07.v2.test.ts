@@ -82,10 +82,10 @@ function createNodeEventBus() {
 // ── Fixture helpers ───────────────────────────────────────────────────────────
 
 function makeSlotId(n: number) {
-  return n as unknown as SlotEntityId
+  return n as unknown as unknown as SlotEntityId
 }
 function makeNodeId(n: number) {
-  return n as unknown as NodeEntityId
+  return n as unknown as unknown as NodeEntityId
 }
 
 function makeSlot(name: string, dir: SlotDirection, nodeId = makeNodeId(1)) {

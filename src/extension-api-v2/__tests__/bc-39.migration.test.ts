@@ -10,7 +10,7 @@ import { describe, it } from 'vitest'
 describe('BC.39 migration — subgraph boundary event propagation', () => {
   describe('opt-in migration path', () => {
     it.todo(
-      'extensions add subgraphCompatible: true to their defineNodeExtension call to enable boundary propagation'
+      'extensions add subgraphCompatible: true to their defineNode call to enable boundary propagation'
     )
     it.todo(
       'extensions without subgraphCompatible: true continue to exhibit v1 broken behavior — no silent upgrade'

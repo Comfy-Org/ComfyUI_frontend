@@ -40,7 +40,7 @@ vi.mock('@/extension-api/lifecycle', () => emptyMockFactory())
 import {
   _clearExtensionsForTesting,
   _setDispatchImplForTesting,
-  defineNodeExtension,
+  defineNode,
   mountExtensionsForNode,
   unmountExtensionsForNode
 } from '@/services/extension-api-service'
@@ -49,7 +49,7 @@ import type { NodeEntityId } from '@/world/entityIds'
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function makeNodeId(n: number): NodeEntityId {
-  return `node:graph-uuid-bc11:${n}` as NodeEntityId
+  return `node:graph-uuid-bc11:${n}` as unknown as NodeEntityId
 }
 
 function stubNodeType(id: NodeEntityId, comfyClass = 'TestNode') {
@@ -90,7 +90,7 @@ describe('BC.11 v2 contract — widget imperative state writes', () => {
     it('WidgetHandle.setValue(v) dispatches a SetWidgetValue command with the correct value', () => {
       let widgetHandle: { setValue: (v: unknown) => void } | undefined
 
-      defineNodeExtension({
+      defineNode({
         name: 'bc11.v2.set-value',
         nodeCreated(handle) {
           const wh = handle.addWidget('INT', 'steps', 20, {})
@@ -113,7 +113,7 @@ describe('BC.11 v2 contract — widget imperative state writes', () => {
     it('setValue dispatches with the widgetId matching the created widget', () => {
       const capturedWidgetId: string[] = []
 
-      defineNodeExtension({
+      defineNode({
         name: 'bc11.v2.set-value-id',
         nodeCreated(handle) {
           const wh = handle.addWidget('FLOAT', 'cfg', 7.0, {})
@@ -136,7 +136,7 @@ describe('BC.11 v2 contract — widget imperative state writes', () => {
     })
 
     it('successive setValue calls each dispatch a separate SetWidgetValue command', () => {
-      defineNodeExtension({
+      defineNode({
         name: 'bc11.v2.multi-set-value',
         nodeCreated(handle) {
           const wh = handle.addWidget('INT', 'seed', 0, {})
@@ -160,7 +160,7 @@ describe('BC.11 v2 contract — widget imperative state writes', () => {
 
   describe('WidgetHandle.setHidden / setDisabled — display state writes (S4.W4)', () => {
     it('WidgetHandle.setHidden(true) dispatches SetWidgetOption with key "hidden" = true', () => {
-      defineNodeExtension({
+      defineNode({
         name: 'bc11.v2.set-hidden',
         nodeCreated(handle) {
           const wh = handle.addWidget('BOOLEAN', 'show_advanced', false, {})
@@ -180,7 +180,7 @@ describe('BC.11 v2 contract — widget imperative state writes', () => {
     })
 
     it('WidgetHandle.setDisabled(true) dispatches SetWidgetOption with key "disabled" = true', () => {
-      defineNodeExtension({
+      defineNode({
         name: 'bc11.v2.set-disabled',
         nodeCreated(handle) {
           const wh = handle.addWidget('STRING', 'lora_name', '', {})
@@ -204,7 +204,7 @@ describe('BC.11 v2 contract — widget imperative state writes', () => {
 
   describe('WidgetHandle.setOption — COMBO and generic option replacement (S4.W5)', () => {
     it('setOption dispatches a SetWidgetOption command with the given key and value', () => {
-      defineNodeExtension({
+      defineNode({
         name: 'bc11.v2.set-option',
         nodeCreated(handle) {
           const wh = handle.addWidget('COMBO', 'sampler_name', 'euler', {
@@ -227,7 +227,7 @@ describe('BC.11 v2 contract — widget imperative state writes', () => {
     })
 
     it('multiple setOption calls each produce separate SetWidgetOption commands', () => {
-      defineNodeExtension({
+      defineNode({
         name: 'bc11.v2.multi-option',
         nodeCreated(handle) {
           const wh = handle.addWidget('STRING', 'label', '', {})
@@ -253,7 +253,7 @@ describe('BC.11 v2 contract — widget imperative state writes', () => {
     it('addWidget dispatches a CreateWidget command and returns a handle with the given name', () => {
       let handleName: string | undefined
 
-      defineNodeExtension({
+      defineNode({
         name: 'bc11.v2.add-widget',
         nodeCreated(handle) {
           const wh = handle.addWidget('INT', 'steps', 20, {})
@@ -273,7 +273,7 @@ describe('BC.11 v2 contract — widget imperative state writes', () => {
     })
 
     it('addWidget for each of two distinct widgets produces two independent CreateWidget commands', () => {
-      defineNodeExtension({
+      defineNode({
         name: 'bc11.v2.add-two-widgets',
         nodeCreated(handle) {
           handle.addWidget('INT', 'steps', 20, {})
@@ -295,7 +295,7 @@ describe('BC.11 v2 contract — widget imperative state writes', () => {
     })
 
     it('addWidget carries the defaultValue in the CreateWidget command', () => {
-      defineNodeExtension({
+      defineNode({
         name: 'bc11.v2.add-widget-default',
         nodeCreated(handle) {
           handle.addWidget('INT', 'seed', 42, {})
