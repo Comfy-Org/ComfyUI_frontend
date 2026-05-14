@@ -20,7 +20,11 @@ import { ChangeTracker } from '@/scripts/changeTracker'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { resolveNode, resolveNodeWidget } from '@/utils/litegraphUtil'
+import {
+  getWidgetEntityIdForNode,
+  resolveNode,
+  resolveNodeWidget
+} from '@/utils/litegraphUtil'
 import type { WidgetEntityId } from '@/world/entityIds'
 import { isWidgetEntityId, parseWidgetEntityId } from '@/world/entityIds'
 
@@ -38,7 +42,9 @@ function findWidgetByEntityId(
   entityId: WidgetEntityId
 ): IBaseWidget | undefined {
   for (const node of rootGraph.nodes) {
-    const widget = node.widgets?.find((w) => w.entityId === entityId)
+    const widget = node.widgets?.find(
+      (w) => getWidgetEntityIdForNode(node, w) === entityId
+    )
     if (widget) return widget
   }
   return undefined
@@ -118,8 +124,9 @@ export const useAppModeStore = defineStore('appMode', () => {
     // Legacy plain NodeId on root graph.
     const directNode = rootGraph.getNodeById?.(storedId)
     const directWidget = directNode?.widgets?.find((w) => w.name === widgetName)
-    if (directWidget?.entityId) {
-      return buildEntry(directWidget.entityId, widgetName, config)
+    if (directNode && directWidget) {
+      const derivedId = getWidgetEntityIdForNode(directNode, directWidget)
+      if (derivedId) return buildEntry(derivedId, widgetName, config)
     }
 
     // Legacy plain NodeId for an interior source widget — promoted on a host.
