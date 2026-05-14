@@ -66,12 +66,13 @@
   color: var(--base-foreground) !important;
   border-color: var(--border-default) !important;
 }
-.ck-style select:focus,
-.ck-style input:focus,
-.ck-style textarea:focus {
+.ck-style select:focus-visible,
+.ck-style input:focus-visible,
+.ck-style textarea:focus-visible {
   border-color: var(--primary-background) !important;
-  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.1) !important;
-  outline: none !important;
+  box-shadow: 0 0 0 2px var(--primary-background) !important;
+  outline: 2px solid transparent !important;
+  outline-offset: 2px !important;
 }
 .ck-style ::placeholder {
   color: var(--muted-foreground) !important;
@@ -123,7 +124,7 @@
 .ck-pause-subscription-details b {
   color: var(--base-foreground) !important;
 }
-.active-discount-disclaimer {
+#ck-app .active-discount-disclaimer {
   color: var(--muted-foreground) !important;
   background-color: var(--secondary-background) !important;
 }
