@@ -3790,7 +3790,6 @@
   "cloudNotification": {
     "title": "Run ComfyUI in the Cloud",
     "message": "From setup to creation in seconds. Popular models, extensions, and powerful GPUs — ready when you are.",
-    "feature1Title": "400 Free Credits Monthly",
     "feature2Title": "Works Anywhere, Instantly",
     "feature3Title": "Models Ready to Use",
     "feature4Title": "Top Custom Node Packs Pre-installed",
