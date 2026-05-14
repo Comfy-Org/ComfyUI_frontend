@@ -66,6 +66,9 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   })
 }))
 
+// Import once at top level
+import { useDialogService } from './dialogService'
+
 describe('dialogService', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -89,9 +92,7 @@ describe('dialogService', () => {
       mockIsFreeTier.value = false
       mockBillingType.value = 'legacy'
 
-      const { useDialogService } = await import('./dialogService')
       const dialogService = useDialogService()
-
       await dialogService.showTopUpCreditsDialog()
 
       expect(mockShowDialog).toHaveBeenCalledWith(
@@ -106,9 +107,7 @@ describe('dialogService', () => {
       mockIsFreeTier.value = false
       mockBillingType.value = 'workspace'
 
-      const { useDialogService } = await import('./dialogService')
       const dialogService = useDialogService()
-
       await dialogService.showTopUpCreditsDialog()
 
       expect(mockShowDialog).toHaveBeenCalledWith(
@@ -122,9 +121,7 @@ describe('dialogService', () => {
       mockCanAccessSubscriptionFeatures.value = true
       mockIsFreeTier.value = false
 
-      const { useDialogService } = await import('./dialogService')
       const dialogService = useDialogService()
-
       await dialogService.showTopUpCreditsDialog({
         isInsufficientCredits: true
       })
@@ -141,9 +138,7 @@ describe('dialogService', () => {
       mockCanAccessSubscriptionFeatures.value = false
       mockIsFreeTier.value = false
 
-      const { useDialogService } = await import('./dialogService')
       const dialogService = useDialogService()
-
       await dialogService.showTopUpCreditsDialog()
 
       expect(mockSubscriptionDialogShow).toHaveBeenCalled()
@@ -156,9 +151,7 @@ describe('dialogService', () => {
       mockCanAccessSubscriptionFeatures.value = true
       mockIsFreeTier.value = true
 
-      const { useDialogService } = await import('./dialogService')
       const dialogService = useDialogService()
-
       await dialogService.showTopUpCreditsDialog()
 
       expect(mockSubscriptionDialogShow).toHaveBeenCalled()
@@ -171,9 +164,7 @@ describe('dialogService', () => {
       mockCanAccessSubscriptionFeatures.value = false
       mockIsFreeTier.value = false
 
-      const { useDialogService } = await import('./dialogService')
       const dialogService = useDialogService()
-
       await dialogService.showTopUpCreditsDialog({
         isInsufficientCredits: true
       })

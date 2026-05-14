@@ -7,10 +7,14 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
 
-// Mock pinia
-vi.mock('pinia', () => ({
-  storeToRefs: vi.fn((store) => store)
-}))
+// Mock pinia - preserve actual exports to avoid missing defineStore
+vi.mock('pinia', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...(actual as object),
+    storeToRefs: vi.fn((store) => store)
+  }
+})
 
 const mockCanAccessSubscriptionFeatures = ref(true)
 const mockIsFreeTier = ref(false)

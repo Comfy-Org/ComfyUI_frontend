@@ -7,10 +7,14 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import LinearControls from './LinearControls.vue'
 
-// Mock all dependencies
-vi.mock('pinia', () => ({
-  storeToRefs: vi.fn((store) => store)
-}))
+// Mock all dependencies - preserve actual exports to avoid missing defineStore
+vi.mock('pinia', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...(actual as object),
+    storeToRefs: vi.fn((store) => store)
+  }
+})
 
 const mockCanAccessSubscriptionFeatures = ref(true)
 vi.mock('@/composables/billing/useBillingContext', () => ({
