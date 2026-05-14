@@ -904,6 +904,7 @@
         "alphabetical": "A-Z",
         "alphabeticalDesc": "Sort alphabetically within groups"
       },
+      "noMatchingNodes": "No nodes match \"{query}\"",
       "sections": {
         "favorites": "Bookmarks",
         "favoriteNode": "Bookmark Node",
