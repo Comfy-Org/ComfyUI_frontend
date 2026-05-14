@@ -1615,6 +1615,46 @@
       }
     }
   },
+  "ClaudeNode": {
+    "description": "Anthropic の Claude モデルでテキスト応答を生成します。テキストプロンプトを入力し、必要に応じてマルチモーダルコンテキスト用に1枚以上の画像を追加できます。",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "モデルのコンテキストとして使用するオプションの画像（最大20枚まで）。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "応答生成に使用する Claude モデル。"
+      },
+      "model_max_tokens": {
+        "name": "最大トークン数"
+      },
+      "model_temperature": {
+        "name": "温度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "モデルへのテキスト入力。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "system_prompt": {
+        "name": "システムプロンプト",
+        "tooltip": "モデルの挙動を指示する基本的な指示文。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ColorToRGBInt": {
     "description": "カラーをRGB整数値に変換します。",
     "display_name": "カラーをRGB整数に変換",

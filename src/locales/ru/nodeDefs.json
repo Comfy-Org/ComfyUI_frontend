@@ -1615,6 +1615,46 @@
       }
     }
   },
+  "ClaudeNode": {
+    "description": "Генерируйте текстовые ответы с помощью моделей Claude от Anthropic. Введите текстовый запрос и при необходимости одно или несколько изображений для мультимодального контекста.",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Необязательные изображения для использования в качестве контекста для модели. До 20 изображений."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель Claude, используемая для генерации ответа."
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый ввод для модели."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет тем, должен ли узел выполняться повторно; результаты всегда недетерминированы, независимо от значения seed."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Базовые инструкции, определяющие поведение модели."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ColorToRGBInt": {
     "description": "Преобразовать цвет в целочисленное значение RGB.",
     "display_name": "Преобразование цвета в RGB Int",

@@ -1615,6 +1615,46 @@
       }
     }
   },
+  "ClaudeNode": {
+    "description": "Anthropic의 Claude 모델로 텍스트 응답을 생성합니다. 텍스트 프롬프트를 제공하고, 선택적으로 하나 이상의 이미지를 멀티모달 컨텍스트로 사용할 수 있습니다.",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "images": {
+        "name": "이미지",
+        "tooltip": "모델의 컨텍스트로 사용할 선택적 이미지(최대 20장)입니다."
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "응답을 생성하는 데 사용되는 Claude 모델입니다."
+      },
+      "model_max_tokens": {
+        "name": "최대 토큰"
+      },
+      "model_temperature": {
+        "name": "온도"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "모델에 입력할 텍스트입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행되어야 하는지 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "system_prompt": {
+        "name": "시스템 프롬프트",
+        "tooltip": "모델의 동작을 지시하는 기본 지침입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ColorToRGBInt": {
     "description": "색상을 RGB 정수 값으로 변환합니다.",
     "display_name": "색상을 RGB 정수로 변환",

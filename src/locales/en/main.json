@@ -1676,6 +1676,7 @@
     "model_merging": "model_merging",
     "model_patches": "model_patches",
     "chroma_radiance": "chroma_radiance",
+    "Anthropic": "Anthropic",
     "attention_experiments": "attention_experiments",
     "flux": "flux",
     "kandinsky5": "kandinsky5",
