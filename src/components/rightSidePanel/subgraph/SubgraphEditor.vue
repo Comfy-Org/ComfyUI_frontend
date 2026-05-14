@@ -52,7 +52,13 @@ function refreshPromotedWidgets() {
 watch(activeNode, refreshPromotedWidgets, { immediate: true })
 useEventListener(
   () => activeNode.value?.subgraph.events,
-  ['widget-promoted', 'widget-demoted', 'input-added', 'removing-input'],
+  [
+    'widget-promoted',
+    'widget-demoted',
+    'input-added',
+    'removing-input',
+    'inputs-reordered'
+  ],
   refreshPromotedWidgets
 )
 
@@ -136,11 +142,6 @@ function updateActiveWidgets(value: WidgetItem[], currentItems: WidgetItem[]) {
       node,
       value.map(([, widget]) => widget)
     )
-    // `reorderSubgraphInputsByWidgetOrder` doesn't dispatch a dedicated
-    // event yet; refresh the snapshot directly. If/when an
-    // `inputs-reordered` event lands upstream, this call can drop in
-    // favor of the listener above.
-    refreshPromotedWidgets()
   }
   refreshPromotedWidgetRendering()
 }

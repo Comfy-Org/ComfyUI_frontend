@@ -1,3 +1,4 @@
+import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
@@ -29,6 +30,22 @@ export interface SubgraphEventMap extends LGraphEventMap {
   'removing-output': {
     output: SubgraphOutput
     index: number
+  }
+
+  /**
+   * Fires after `subgraph.inputs` order is rewritten by an input-reorder
+   * helper (e.g. `reorderSubgraphInputsByName`,
+   * `reorderSubgraphInputsByWidgetOrder`, `reorderSubgraphInputAtIndex`).
+   *
+   * Dispatched after `invalidatePromotedViews()`, the link `origin_slot`
+   * reindex, and the value-restore pass — listeners see fully consistent
+   * state. No-op reorders (where the order didn't actually change) do not
+   * dispatch.
+   */
+  'inputs-reordered': {
+    subgraph: Subgraph
+    oldOrder: readonly string[]
+    newOrder: readonly string[]
   }
 
   'renaming-input': {

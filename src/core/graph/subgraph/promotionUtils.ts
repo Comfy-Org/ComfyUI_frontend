@@ -128,6 +128,8 @@ function applySubgraphInputOrder(
   subgraphNode: SubgraphNode,
   orderedIndices: readonly number[]
 ): void {
+  const oldOrder = subgraphNode.subgraph.inputs.map((input) => input.id)
+
   const rows = subgraphNode.subgraph.inputs.map((input, index) => ({
     subgraphInput: input,
     hostInput: subgraphNode.inputs[index],
@@ -158,6 +160,18 @@ function applySubgraphInputOrder(
   for (const row of orderedRows) {
     const widget = row.hostInput?._widget
     if (widget && row.value !== undefined) widget.value = row.value
+  }
+
+  const newOrder = subgraphNode.subgraph.inputs.map((input) => input.id)
+  if (
+    oldOrder.length !== newOrder.length ||
+    oldOrder.some((id, i) => id !== newOrder[i])
+  ) {
+    subgraphNode.subgraph.events.dispatch('inputs-reordered', {
+      subgraph: subgraphNode.subgraph,
+      oldOrder,
+      newOrder
+    })
   }
 }
 
