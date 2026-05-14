@@ -486,7 +486,7 @@ test.describe('Workflow Persistence', () => {
     const draftSaveStartedAt = Date.now()
     await firstNode.toggleCollapse()
     expect(await firstNode.isCollapsed()).toBe(true)
-    await comfyPage.workflow.waitForDraftPersistedSince(draftSaveStartedAt)
+    await comfyPage.workflow.waitForDraftIndexUpdatedSince(draftSaveStartedAt)
 
     await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
     await comfyPage.menu.topbar.saveWorkflow(workflowB)

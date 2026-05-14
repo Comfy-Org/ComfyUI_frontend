@@ -200,6 +200,8 @@ export function useWorkflowPersistenceV2() {
 
     try {
       if (getRestorableTabState()) {
+        // GraphCanvas calls restoreWorkflowTabsState next; skip the single-workflow
+        // fallback here so the saved tab order and active index drive startup.
         return
       }
 

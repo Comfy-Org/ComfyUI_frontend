@@ -68,8 +68,9 @@ export class WorkflowHelper {
     )
   }
 
-  async waitForDraftPersistedSince(since: number) {
-    await this.comfyPage.page.waitForFunction((savedSince) => {
+  /** Waits for V2 draft index recency, not payload content freshness. */
+  async waitForDraftIndexUpdatedSince(updatedSince: number) {
+    await this.comfyPage.page.waitForFunction((indexUpdatedSince) => {
       for (let i = 0; i < window.localStorage.length; i++) {
         const key = window.localStorage.key(i)
         if (!key?.startsWith('Comfy.Workflow.DraftIndex.v2:')) continue
@@ -81,7 +82,7 @@ export class WorkflowHelper {
           const index = JSON.parse(json)
           if (
             typeof index.updatedAt === 'number' &&
-            index.updatedAt >= savedSince
+            index.updatedAt >= indexUpdatedSince
           ) {
             return true
           }
@@ -91,7 +92,7 @@ export class WorkflowHelper {
       }
 
       return false
-    }, since)
+    }, updatedSince)
   }
 
   /**

@@ -79,6 +79,11 @@ vi.mock('@/services/dialogService', () => ({
   })
 }))
 
+vi.mock('@/i18n', () => ({
+  st: (key: string) => key,
+  t: (key: string) => key
+}))
+
 vi.mock('@/scripts/app', () => ({
   app: {
     canvas: { ds: { offset: [0, 0], scale: 1 } },
@@ -352,8 +357,8 @@ describe('useWorkflowService', () => {
       expect(addToastSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to save workflow draft'
+          summary: 'g.error',
+          detail: 'toastMessages.failedToSaveDraft'
         })
       )
     })
