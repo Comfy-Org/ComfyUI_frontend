@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, shallowRef, watch } from 'vue'
 
 import DraggableList from '@/components/common/DraggableList.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -33,13 +34,27 @@ const canvasStore = useCanvasStore()
 const previewExposureStore = usePreviewExposureStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const { searchQuery } = storeToRefs(rightSidePanelStore)
-const inputOrderVersion = ref(0)
 
 const activeNode = computed(() => {
   const node = canvasStore.selectedItems[0]
   if (node instanceof SubgraphNode) return node
   return undefined
 })
+
+// `SubgraphNode.widgets` is a synthetic, non-reactive getter backed by
+// `_getPromotedViews()`/`invalidatePromotedViews()`. Snapshot it into a
+// `shallowRef` so Vue has a real reactive source, and refresh on the
+// subgraph events that mutate promoted-widget order or membership.
+const promotedWidgets = shallowRef<readonly IBaseWidget[]>([])
+function refreshPromotedWidgets() {
+  promotedWidgets.value = activeNode.value?.widgets ?? []
+}
+watch(activeNode, refreshPromotedWidgets, { immediate: true })
+useEventListener(
+  () => activeNode.value?.subgraph.events,
+  ['widget-promoted', 'widget-demoted', 'input-added', 'removing-input'],
+  refreshPromotedWidgets
+)
 
 const activeWidgets = computed<WidgetItem[]>(() => {
   const node = activeNode.value
@@ -58,8 +73,7 @@ const activePromotedWidgets = computed<WidgetItem[]>({
 })
 
 function getActivePromotedWidgets(node: SubgraphNode): WidgetItem[] {
-  void inputOrderVersion.value
-  return node.widgets.flatMap((widget): WidgetItem[] => {
+  return promotedWidgets.value.flatMap((widget): WidgetItem[] => {
     if (!isPromotedWidgetView(widget)) return []
     const sourceNode = node.subgraph._nodes_by_id[widget.sourceNodeId]
     if (!sourceNode) return []
@@ -122,7 +136,11 @@ function updateActiveWidgets(value: WidgetItem[], currentItems: WidgetItem[]) {
       node,
       value.map(([, widget]) => widget)
     )
-    inputOrderVersion.value += 1
+    // `reorderSubgraphInputsByWidgetOrder` doesn't dispatch a dedicated
+    // event yet; refresh the snapshot directly. If/when an
+    // `inputs-reordered` event lands upstream, this call can drop in
+    // favor of the listener above.
+    refreshPromotedWidgets()
   }
   refreshPromotedWidgetRendering()
 }

@@ -89,6 +89,26 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return getWidgetStateMap(graphId).get(makeKey(nodeId, widgetName))
   }
 
+  /**
+   * Write a new value to an already-registered widget. Returns `true` if the
+   * widget was registered and updated, `false` if no such state exists.
+   *
+   * Prefer `writeWidgetValue(widget.entityId, value)` from
+   * `src/world/widgetValueIO.ts`, which delegates here. Direct callers must
+   * pass a matching `(graphId, nodeId, name)` triple.
+   */
+  function setValue(
+    graphId: UUID,
+    nodeId: NodeId,
+    widgetName: string,
+    value: WidgetState['value']
+  ): boolean {
+    const state = getWidgetStateMap(graphId).get(makeKey(nodeId, widgetName))
+    if (!state) return false
+    state.value = value
+    return true
+  }
+
   function clearGraph(graphId: UUID): void {
     graphWidgetStates.value.delete(graphId)
   }
@@ -96,6 +116,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   return {
     registerWidget,
     getWidget,
+    setValue,
     getNodeWidgets,
     clearGraph
   }
