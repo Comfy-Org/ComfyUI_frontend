@@ -1,8 +1,8 @@
-name: "CI: E2E Coverage"
+name: 'CI: E2E Coverage'
 
 on:
   workflow_run:
-    workflows: ["CI: Tests E2E"]
+    workflows: ['CI: Tests E2E']
     types:
       - completed
 
