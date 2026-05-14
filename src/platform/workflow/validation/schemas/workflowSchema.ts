@@ -282,44 +282,6 @@ const zConfig = z
   })
   .passthrough()
 
-const zLinearInputConfig = z
-  .object({ height: z.number().optional() })
-  .passthrough()
-
-/** Canonical `linearData.inputs` entry shape. Strict — no tolerance here. */
-const zLinearInput = z.union([
-  z.tuple([zNodeId, z.string(), zLinearInputConfig]),
-  z.tuple([zNodeId, z.string()])
-])
-
-/**
- * Array combinator that drops entries failing the item schema instead of
- * rejecting the whole array. Item schema stays strict (spec); tolerance
- * lives here at the container so the same policy applies uniformly to any
- * `extra.*` array field without per-field consumer logic.
- *
- * Reserved for non-essential metadata in `extra.*`. Execution-critical
- * arrays (`nodes`, `links`, `widget_values`) must use `z.array` directly so
- * malformed entries fail loudly.
- */
-function tolerantArray<T extends z.ZodTypeAny>(itemSchema: T, label: string) {
-  return z.array(z.unknown()).transform((items): z.infer<T>[] => {
-    const valid: z.infer<T>[] = []
-    let dropped = 0
-    for (const item of items) {
-      const result = itemSchema.safeParse(item)
-      if (result.success) valid.push(result.data)
-      else dropped++
-    }
-    if (dropped > 0) {
-      console.warn(
-        `[workflowSchema] dropped ${dropped} invalid entr${dropped === 1 ? 'y' : 'ies'} in ${label}`
-      )
-    }
-    return valid
-  })
-}
-
 const zExtra = z
   .object({
     ds: zDS.optional(),
@@ -332,10 +294,18 @@ const zExtra = z
     linearMode: z.boolean().optional(),
     linearData: z
       .object({
-        inputs: tolerantArray(
-          zLinearInput,
-          'extra.linearData.inputs'
-        ).optional(),
+        inputs: z
+          .array(
+            z.union([
+              z.tuple([
+                zNodeId,
+                z.string(),
+                z.object({ height: z.number().optional() }).passthrough()
+              ]),
+              z.tuple([zNodeId, z.string()])
+            ])
+          )
+          .optional(),
         outputs: z.array(zNodeId).optional()
       })
       .optional()
