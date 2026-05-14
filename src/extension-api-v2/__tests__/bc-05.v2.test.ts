@@ -149,7 +149,7 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
         name: 'bc05.v2.element-stored',
         nodeCreated(handle) {
           const wh = handle.addDOMWidget({ name: 'canvas', element: el })
-          widgetId = wh.entityId as WidgetEntityId
+          widgetId = wh.id as WidgetEntityId
         }
       })
 

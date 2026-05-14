@@ -41,11 +41,11 @@ function makeSlotInfo(
   direction: 'input' | 'output'
 ): SlotInfo {
   return {
-    entityId: 1 as unknown as SlotEntityId,
+    id: 1 as unknown as SlotEntityId,
     name,
     type,
     direction,
-    nodeEntityId: 1 as unknown as NodeEntityId
+    nodeId: 1 as unknown as NodeEntityId
   }
 }
 

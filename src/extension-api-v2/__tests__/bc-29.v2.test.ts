@@ -119,6 +119,43 @@ describe('BC.29 v2 contract — graph enumeration, mutation, and cross-scope ide
         expect(isNodeLocatorId('invalid-uuid:123')).toBe(false)
       })
 
+      it('isNodeLocatorId returns false for malformed UUIDs (wrong segment lengths)', () => {
+        // UUID format is 8-4-4-4-12 hex chars
+        // Too short in last segment (11 chars instead of 12)
+        expect(isNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef123456789:123')).toBe(
+          false
+        )
+        // Too long in first segment (9 chars instead of 8)
+        expect(
+          isNodeLocatorId('a1b2c3d4e-e5f6-7890-abcd-ef1234567890:123')
+        ).toBe(false)
+        // Missing segment (only 3 dashes instead of 4)
+        expect(isNodeLocatorId('a1b2c3d4-e5f6-7890-ef1234567890:123')).toBe(
+          false
+        )
+        // Empty segment
+        expect(isNodeLocatorId('a1b2c3d4--7890-abcd-ef1234567890:123')).toBe(
+          false
+        )
+      })
+
+      it('isNodeLocatorId returns false for UUID with invalid characters', () => {
+        // 'g' is not a valid hex character
+        expect(
+          isNodeLocatorId('g1b2c3d4-e5f6-7890-abcd-ef1234567890:123')
+        ).toBe(false)
+        // spaces
+        expect(
+          isNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef12345 7890:123')
+        ).toBe(false)
+      })
+
+      it('isNodeLocatorId returns false for empty localId after colon', () => {
+        expect(isNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890:')).toBe(
+          false
+        )
+      })
+
       it('parseNodeLocatorId extracts subgraphUuid and localNodeId for subgraph nodes', () => {
         const result = parseNodeLocatorId(
           'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
@@ -141,6 +178,25 @@ describe('BC.29 v2 contract — graph enumeration, mutation, and cross-scope ide
 
       it('parseNodeLocatorId returns null for invalid inputs', () => {
         expect(parseNodeLocatorId('invalid-uuid:123')).toBeNull()
+      })
+
+      it('parseNodeLocatorId returns null for malformed UUIDs', () => {
+        // Wrong segment length
+        expect(
+          parseNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef123456789:123')
+        ).toBeNull()
+        // Missing segment
+        expect(
+          parseNodeLocatorId('a1b2c3d4-e5f6-7890-ef1234567890:123')
+        ).toBeNull()
+        // Invalid hex char
+        expect(
+          parseNodeLocatorId('g1b2c3d4-e5f6-7890-abcd-ef1234567890:123')
+        ).toBeNull()
+        // Empty localId
+        expect(
+          parseNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890:')
+        ).toBeNull()
       })
     })
 

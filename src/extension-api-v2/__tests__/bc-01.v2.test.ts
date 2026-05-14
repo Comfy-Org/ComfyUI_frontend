@@ -75,14 +75,14 @@ describe('BC.01 v2 contract — node lifecycle: creation', () => {
       expect(calls).toHaveLength(1)
     })
 
-    it('NodeHandle.entityId matches the node being created', () => {
+    it('NodeHandle.id matches the node being created', () => {
       const rt = createTestRuntime()
       let capturedId: NodeEntityId | undefined
 
       rt.register({
         name: 'bc01.entity-id',
         nodeCreated(h) {
-          capturedId = h.entityId as unknown as NodeEntityId
+          capturedId = h.id as unknown as NodeEntityId
         }
       })
       const id = rt.addNode('TestNode')

@@ -20,11 +20,11 @@ import type { NodeHandle, SlotInfo } from '@/extension-api/node'
 
 function makeSlotInfo(overrides: Partial<SlotInfo> = {}): SlotInfo {
   return {
-    entityId: 'slot:1' as SlotInfo['entityId'],
+    id: 'slot:1' as SlotInfo['id'],
     name: 'input_0',
     type: 'LATENT',
     direction: 'input',
-    nodeEntityId: 'node:10' as SlotInfo['nodeEntityId'],
+    nodeId: 'node:10' as SlotInfo['nodeId'],
     ...overrides
   }
 }
@@ -50,7 +50,7 @@ describe('BC.09 v2 contract — dynamic slot and output mutation', () => {
           name: 'mask',
           type: 'MASK',
           direction: 'input',
-          entityId: 'slot:2' as SlotInfo['entityId']
+          id: 'slot:2' as SlotInfo['id']
         })
       ]
       const handle = makeNodeHandleWithSlots(slots, [])
@@ -69,11 +69,11 @@ describe('BC.09 v2 contract — dynamic slot and output mutation', () => {
     })
 
     it('each SlotInfo has the required fields: entityId, name, type, direction, nodeEntityId', () => {
-      const nodeId = 'node:42' as SlotInfo['nodeEntityId']
+      const nodeId = 'node:42' as SlotInfo['nodeId']
       const slot = makeSlotInfo({
         name: 'latent',
         type: 'LATENT',
-        nodeEntityId: nodeId
+        nodeId: nodeId
       })
       const handle = makeNodeHandleWithSlots([slot], [])
 
@@ -91,7 +91,7 @@ describe('BC.09 v2 contract — dynamic slot and output mutation', () => {
         makeSlotInfo({
           name: 'b',
           direction: 'input',
-          entityId: 'slot:2' as SlotInfo['entityId']
+          id: 'slot:2' as SlotInfo['id']
         })
       ]
       const handle = makeNodeHandleWithSlots(slots, [])
@@ -119,7 +119,7 @@ describe('BC.09 v2 contract — dynamic slot and output mutation', () => {
           name: 'IMAGE',
           type: 'IMAGE',
           direction: 'output',
-          entityId: 'slot:2' as SlotInfo['entityId']
+          id: 'slot:2' as SlotInfo['id']
         })
       ]
       const handle = makeNodeHandleWithSlots([], slots)
@@ -141,7 +141,7 @@ describe('BC.09 v2 contract — dynamic slot and output mutation', () => {
         makeSlotInfo({
           name: 'out2',
           direction: 'output',
-          entityId: 'slot:2' as SlotInfo['entityId']
+          id: 'slot:2' as SlotInfo['id']
         })
       ]
       const handle = makeNodeHandleWithSlots([], slots)
@@ -156,7 +156,7 @@ describe('BC.09 v2 contract — dynamic slot and output mutation', () => {
       const outSlot = {
         ...shared,
         direction: 'output' as const,
-        entityId: 'slot:2' as SlotInfo['entityId']
+        id: 'slot:2' as SlotInfo['id']
       }
       const handle = makeNodeHandleWithSlots([inSlot], [outSlot])
 

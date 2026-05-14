@@ -32,7 +32,7 @@ function makeNodeHandle(
 ): NodeHandle & { _props: Record<string, unknown> } {
   const props: Record<string, unknown> = { ...initialProperties }
   return {
-    entityId: 1 as unknown as NodeEntityId,
+    id: 1 as unknown as NodeEntityId,
     type: 'TestNode',
     comfyClass: 'TestNode',
     getPosition: () => [0, 0],

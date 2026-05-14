@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest'
 // v1 pattern: extensions used MutationObserver on document.body to detect new
 // widget DOM elements and infer their type from class names.
 
-type WidgetHandle = { entityId: string; name: string; type: string }
+type WidgetHandle = { id: string; name: string; type: string }
 type Unsubscribe = () => void
 
 function makeMutationObserverWorkaround() {
@@ -106,7 +106,7 @@ describe('BC.33 migration — cross-extension DOM widget creation observation', 
       const v2Results: string[] = []
       v2.on('domWidgetCreated', (w) => v2Results.push(w.type))
 
-      v2._emit({ entityId: 'w:1', name: 'cfg', type: 'Slider' })
+      v2._emit({ id: 'w:1', name: 'cfg', type: 'Slider' })
       expect(v2Results).toEqual(['Slider'])
 
       // v2 never needs to inspect DOM class names to determine widget type
@@ -120,7 +120,7 @@ describe('BC.33 migration — cross-extension DOM widget creation observation', 
       v2.on('domWidgetCreated', () => order.push('handler'))
 
       order.push('before-emit')
-      v2._emit({ entityId: 'w:1', name: 'x', type: 'InputText' })
+      v2._emit({ id: 'w:1', name: 'x', type: 'InputText' })
       order.push('after-emit')
 
       // handler fires synchronously between before and after
@@ -136,7 +136,7 @@ describe('BC.33 migration — cross-extension DOM widget creation observation', 
       const poller = makePollingWorkaround(() => widgetList)
       poller.start((w) => pollFound.push(w))
 
-      widgetList.push({ entityId: 'w:1', name: 'seed', type: 'INT' })
+      widgetList.push({ id: 'w:1', name: 'seed', type: 'INT' })
 
       await new Promise((r) => setTimeout(r, 150))
       poller.stop()
@@ -147,7 +147,7 @@ describe('BC.33 migration — cross-extension DOM widget creation observation', 
       const eventFound: WidgetHandle[] = []
       v2.on('domWidgetCreated', (w) => eventFound.push(w))
 
-      v2._emit({ entityId: 'w:1', name: 'seed', type: 'INT' })
+      v2._emit({ id: 'w:1', name: 'seed', type: 'INT' })
       expect(eventFound).toHaveLength(1) // immediate, no timeout needed
     })
 
@@ -157,14 +157,14 @@ describe('BC.33 migration — cross-extension DOM widget creation observation', 
       const duplicates: string[] = []
 
       v2.on('domWidgetCreated', (w) => {
-        if (seen.has(w.entityId)) duplicates.push(w.entityId)
-        seen.add(w.entityId)
+        if (seen.has(w.id)) duplicates.push(w.id)
+        seen.add(w.id)
       })
 
       // Runtime emits once per creation — test that duplicates don't occur
-      v2._emit({ entityId: 'w:unique-1', name: 'a', type: 'Slider' })
-      v2._emit({ entityId: 'w:unique-2', name: 'b', type: 'Slider' })
-      v2._emit({ entityId: 'w:unique-3', name: 'c', type: 'Slider' })
+      v2._emit({ id: 'w:unique-1', name: 'a', type: 'Slider' })
+      v2._emit({ id: 'w:unique-2', name: 'b', type: 'Slider' })
+      v2._emit({ id: 'w:unique-3', name: 'c', type: 'Slider' })
 
       expect(duplicates).toHaveLength(0)
       expect(v2.emitCount()).toBe(3) // each emit is distinct
@@ -181,7 +181,7 @@ describe('BC.33 migration — cross-extension DOM widget creation observation', 
       // Extension deliberately does NOT register a listener
       // (simulates an extension that hasn't migrated yet)
 
-      v2._emit({ entityId: 'w:1', name: 'x', type: 'Select' })
+      v2._emit({ id: 'w:1', name: 'x', type: 'Select' })
 
       // Nothing received — opt-in required
       expect(received).toHaveLength(0)

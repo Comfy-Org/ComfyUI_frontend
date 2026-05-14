@@ -31,7 +31,7 @@ interface ResolvedEdge {
 }
 
 interface ReadOnlyNode {
-  readonly entityId: string
+  readonly id: string
   readonly type: string
   readonly title: string
   getProperty<T>(key: string): T | undefined
@@ -148,7 +148,7 @@ describe('BC.28 migration — subgraph fan-out via set/get virtual nodes', () =>
       }
 
       const mockNode: ReadOnlyNode = {
-        entityId: 'node:1',
+        id: 'node:1',
         type: 'GetNode',
         title: 'Test',
         getProperty: () => undefined
@@ -225,8 +225,8 @@ describe('BC.28 migration — subgraph fan-out via set/get virtual nodes', () =>
 
         return [
           {
-            from: { nodeId: matching.entityId, slotIndex: 0 },
-            to: { nodeId: node.entityId, slotIndex: 0 }
+            from: { nodeId: matching.id, slotIndex: 0 },
+            to: { nodeId: node.id, slotIndex: 0 }
           }
         ]
       }
@@ -236,7 +236,7 @@ describe('BC.28 migration — subgraph fan-out via set/get virtual nodes', () =>
           type === 'SetNode'
             ? [
                 {
-                  entityId: 'node:set',
+                  id: 'node:set',
                   type: 'SetNode',
                   title: 'myValue',
                   getProperty: () => undefined
@@ -247,7 +247,7 @@ describe('BC.28 migration — subgraph fan-out via set/get virtual nodes', () =>
       }
 
       const mockGetNode: ReadOnlyNode = {
-        entityId: 'node:get',
+        id: 'node:get',
         type: 'GetNode',
         title: 'myValue',
         getProperty: () => undefined

@@ -82,7 +82,7 @@ interface ConnectionChangeEventV2 {
 }
 
 interface MockNodeInternalV2 {
-  entityId: string
+  id: string
   type: string
   inputs: MockSlotV2[]
   outputs: MockSlotV2[]
@@ -95,7 +95,7 @@ interface LinkHandleV2 {
 }
 
 interface NodeHandleV2 {
-  readonly entityId: string
+  readonly id: string
   readonly type: string
   connect(
     srcSlot: number,
@@ -270,23 +270,23 @@ function createMockWorldV2(): MockWorldV2 {
 
 function createNodeHandleV2(
   world: MockWorldV2,
-  entityId: string,
+  id: string,
   type: string,
   inputs: Array<{ name: string; type: string }>,
   outputs: Array<{ name: string; type: string }>
 ): NodeHandleV2 {
   const internal: MockNodeInternalV2 = {
-    entityId,
+    id,
     type,
     inputs: inputs.map((i) => ({ ...i, link: null })),
     outputs: outputs.map((o) => ({ ...o, link: null })),
     connectionListeners: []
   }
-  world.nodes.set(entityId, internal)
+  world.nodes.set(id, internal)
 
   const handle: NodeHandleV2 = {
-    get entityId() {
-      return internal.entityId
+    get id() {
+      return internal.id
     },
     get type() {
       return internal.type
@@ -294,7 +294,7 @@ function createNodeHandleV2(
 
     connect(srcSlot, targetHandle, dstSlot) {
       const srcSlotObj = internal.outputs[srcSlot]
-      const targetInternal = world.nodes.get(targetHandle.entityId)
+      const targetInternal = world.nodes.get(targetHandle.id)
       if (!targetInternal) return null
 
       const dstSlotObj = targetInternal.inputs[dstSlot]
@@ -320,9 +320,9 @@ function createNodeHandleV2(
       const linkId = world._nextLinkId++
       const link: MockLinkV2 = {
         id: linkId,
-        origin_id: internal.entityId,
+        origin_id: internal.id,
         origin_slot: srcSlot,
-        target_id: targetInternal.entityId,
+        target_id: targetInternal.id,
         target_slot: dstSlot
       }
       world.links.set(linkId, link)

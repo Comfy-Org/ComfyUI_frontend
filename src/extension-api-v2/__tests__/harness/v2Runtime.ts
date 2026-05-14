@@ -20,7 +20,7 @@ import type { NodeHandle } from '@/extension-api/node'
 import type { NodeEntityId } from '@/world/entityIds'
 
 interface NodeRecord {
-  entityId: NodeEntityId
+  id: NodeEntityId
   comfyClass: string
 }
 
@@ -52,17 +52,20 @@ export function createV2Runtime(options: V2RuntimeOptions = {}): V2Runtime {
 
   function addNode(comfyClass: string): NodeEntityId {
     const id = makeNodeId()
-    nodes.set(id, { entityId: id, comfyClass })
+    nodes.set(id, { id: id, comfyClass })
     return id
   }
 
   function createHandle(record: NodeRecord): NodeHandle {
     // Minimal NodeHandle stub — only the fields BC tests touch are real.
-    const widgets: Array<{ name: string; entityId: string }> = []
+    const widgets: Array<{ name: string; id: string }> = []
     let widgetCounter = 0
 
     return {
-      entityId: record.entityId,
+      id: record.id as unknown as string,
+      equals(other: NodeHandle): boolean {
+        return this.id === other.id
+      },
       get type() {
         return record.comfyClass
       },
@@ -81,10 +84,13 @@ export function createV2Runtime(options: V2RuntimeOptions = {}): V2Runtime {
       widget: (name: string) => widgets.find((w) => w.name === name),
       widgets: () => widgets,
       addWidget: (_type: string, name: string, _defaultValue: unknown) => {
-        const entityId = `widget:${record.entityId}:${++widgetCounter}`
+        const id = `widget:${record.id}:${++widgetCounter}`
         const wh = {
           name,
-          entityId,
+          id,
+          equals(other: { id: string }): boolean {
+            return this.id === other.id
+          },
           getValue: () => undefined,
           setValue: () => {},
           setOption: () => {},
@@ -99,10 +105,13 @@ export function createV2Runtime(options: V2RuntimeOptions = {}): V2Runtime {
         return wh
       },
       addDOMWidget: (opts: { name: string; element: HTMLElement }) => {
-        const entityId = `widget:${record.entityId}:dom:${++widgetCounter}`
+        const id = `widget:${record.id}:dom:${++widgetCounter}`
         const wh = {
           name: opts.name,
-          entityId,
+          id,
+          equals(other: { id: string }): boolean {
+            return this.id === other.id
+          },
           getValue: () => undefined,
           setValue: () => {},
           setOption: () => {},

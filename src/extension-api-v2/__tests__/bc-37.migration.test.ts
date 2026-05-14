@@ -37,7 +37,7 @@ function makeV1WaitForLoad3d(getRef: () => VueComponentRef | null) {
 
 // ── V2 NodeHandle.on('mounted') simulation ────────────────────────────────────
 
-function makeV2NodeHandle(entityId: string) {
+function makeV2NodeHandle(id: string) {
   const handlers: Array<() => void> = []
   let mounted = false
   let vueRef: VueComponentRef | null = null
@@ -196,7 +196,7 @@ describe('BC.37 migration — VueNode bridge timing (deferred mount access)', ()
       // LiteGraph-side operations are safe here (handled by the node itself
       // before the Vue component mounts). For the purpose of this migration test,
       // we verify the node handle exists and is operable before mounting.
-      expect(node.entityId).toBe('node:litegraph:1')
+      expect(node.id).toBe('node:litegraph:1')
       expect(node.handlerCount()).toBe(0) // no mounted listeners yet
 
       // Only after 'mounted' do we access Vue-side state

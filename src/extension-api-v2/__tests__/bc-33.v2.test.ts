@@ -40,12 +40,12 @@ function makeEventBus<Events extends Record<string, unknown>>() {
 // ── Widget + Node handle stubs ────────────────────────────────────────────────
 
 interface NodeHandle {
-  entityId: string
+  id: string
   type: string
 }
 
 interface WidgetHandle {
-  entityId: string
+  id: string
   name: string
   type: string
   parentNode: NodeHandle | null
@@ -58,10 +58,10 @@ interface AppEvents {
 
 function makeWidget(overrides: Partial<WidgetHandle> = {}): WidgetHandle {
   return {
-    entityId: 'widget:test:1',
+    id: 'widget:test:1',
     name: 'slider_value',
     type: 'Slider',
-    parentNode: { entityId: 'node:test:1', type: 'KSampler' },
+    parentNode: { id: 'node:test:1', type: 'KSampler' },
     ...overrides
   }
 }
@@ -80,8 +80,8 @@ describe('BC.33 v2 contract — cross-extension DOM widget creation observation'
       const received: WidgetHandle[] = []
       app.on('domWidgetCreated', (w) => received.push(w))
 
-      const w1 = makeWidget({ entityId: 'widget:1', name: 'alpha' })
-      const w2 = makeWidget({ entityId: 'widget:2', name: 'beta' })
+      const w1 = makeWidget({ id: 'widget:1', name: 'alpha' })
+      const w2 = makeWidget({ id: 'widget:2', name: 'beta' })
       app.emit('domWidgetCreated', w1)
       app.emit('domWidgetCreated', w2)
 
@@ -99,7 +99,7 @@ describe('BC.33 v2 contract — cross-extension DOM widget creation observation'
       const widget = makeWidget({
         name: 'cfg',
         type: 'Slider',
-        parentNode: { entityId: 'node:test:99', type: 'KSampler' }
+        parentNode: { id: 'node:test:99', type: 'KSampler' }
       })
       app.emit('domWidgetCreated', widget)
 
@@ -116,22 +116,22 @@ describe('BC.33 v2 contract — cross-extension DOM widget creation observation'
 
       // ext-B creates a widget and the runtime emits the event
       const extBWidget = makeWidget({
-        entityId: 'widget:ext-b:1',
+        id: 'widget:ext-b:1',
         name: 'ext_b_param'
       })
       app.emit('domWidgetCreated', extBWidget) // runtime emits after ext-B creates it
 
       expect(extA_received).toHaveLength(1)
-      expect(extA_received[0].entityId).toBe('widget:ext-b:1')
+      expect(extA_received[0].id).toBe('widget:ext-b:1')
     })
 
     it('listener registered before any node is created receives events for all subsequently created DOM widgets', () => {
       const log: string[] = []
-      app.on('domWidgetCreated', (w) => log.push(w.entityId)) // registered early
+      app.on('domWidgetCreated', (w) => log.push(w.id)) // registered early
 
       // Widgets created later
       for (let i = 1; i <= 5; i++) {
-        app.emit('domWidgetCreated', makeWidget({ entityId: `widget:${i}` }))
+        app.emit('domWidgetCreated', makeWidget({ id: `widget:${i}` }))
       }
 
       expect(log).toHaveLength(5)

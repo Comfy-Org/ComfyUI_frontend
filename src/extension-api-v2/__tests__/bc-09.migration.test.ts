@@ -76,11 +76,11 @@ function makeSlotInfo(
   direction: 'input' | 'output'
 ): SlotInfo {
   return {
-    entityId: ((Math.random() * 1e9) | 0) as unknown as unknown as SlotEntityId,
+    id: ((Math.random() * 1e9) | 0) as unknown as unknown as SlotEntityId,
     name,
     type,
     direction,
-    nodeEntityId: 1 as unknown as unknown as NodeEntityId
+    nodeId: 1 as unknown as unknown as NodeEntityId
   }
 }
 

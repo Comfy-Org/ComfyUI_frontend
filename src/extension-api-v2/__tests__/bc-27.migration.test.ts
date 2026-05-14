@@ -45,11 +45,11 @@ function makeSlotInfo(
   dir: 'input' | 'output'
 ): SlotInfo {
   return {
-    entityId: 1 as unknown as SlotEntityId,
+    id: 1 as unknown as SlotEntityId,
     name,
     type,
     direction: dir,
-    nodeEntityId: 1 as unknown as NodeEntityId
+    nodeId: 1 as unknown as NodeEntityId
   }
 }
 
@@ -124,7 +124,7 @@ describe('BC.27 [migration] — S9.R1: reroute manipulation', () => {
 
 describe('BC.27 [migration] — S9.L1: link access', () => {
   it.todo(
-    'S9.L1 Phase B — v1 graph.links[id].origin_id → v2 LinkHandle.srcNode.entityId'
+    'S9.L1 Phase B — v1 graph.links[id].origin_id → v2 LinkHandle.srcNode.id'
   )
 
   it.todo(

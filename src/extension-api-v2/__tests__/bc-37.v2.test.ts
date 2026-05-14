@@ -26,7 +26,7 @@ interface VueComponentRef {
   someVueProp: string | null
 }
 
-function makeNodeHandle(entityId: string) {
+function makeNodeHandle(id: string) {
   const mountHandlers: MountHandler[] = []
   let mounted = false
   let destroyed = false

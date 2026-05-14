@@ -102,11 +102,11 @@ function makeNodeId(n: number) {
 
 function makeSlot(name: string, dir: SlotDirection, nodeId = makeNodeId(1)) {
   return {
-    entityId: makeSlotId((Math.random() * 1e9) | 0),
+    id: makeSlotId((Math.random() * 1e9) | 0),
     name,
     type: 'IMAGE',
     direction: dir,
-    nodeEntityId: nodeId
+    nodeId: nodeId
   } as const
 }
 
