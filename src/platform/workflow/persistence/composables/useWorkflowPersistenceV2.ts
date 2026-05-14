@@ -180,6 +180,18 @@ export function useWorkflowPersistenceV2() {
     }
   }
 
+  const getRestorableTabState = () => {
+    const storedTabState = tabState.getOpenPaths()
+    const paths = storedTabState?.paths ?? []
+    const activeIndex = storedTabState?.activeIndex ?? -1
+
+    if (paths.length === 0 || activeIndex < 0 || activeIndex >= paths.length) {
+      return null
+    }
+
+    return { paths, activeIndex }
+  }
+
   const initializeWorkflow = async () => {
     if (!workflowPersistenceEnabled.value) {
       await loadDefaultWorkflow()
@@ -187,6 +199,11 @@ export function useWorkflowPersistenceV2() {
     }
 
     try {
+      if (getRestorableTabState()) {
+        return
+      }
+
+      await workflowStore.loadWorkflows()
       const restored = await loadPreviousWorkflowFromStorage()
       if (!restored) {
         await loadDefaultWorkflow()
@@ -270,17 +287,22 @@ export function useWorkflowPersistenceV2() {
       return
     }
 
-    // Read storage fresh at restore time, not at composable init,
-    // to ensure workspace is properly determined
-    const storedTabState = tabState.getOpenPaths()
-    const storedWorkflows = storedTabState?.paths ?? []
-    const storedActiveIndex = storedTabState?.activeIndex ?? -1
+    try {
+      await workflowStore.loadWorkflows()
+    } catch (err) {
+      console.error('Error loading workflows for tab restore', err)
+      tabStateRestored = true
+      await loadDefaultWorkflow()
+      return
+    }
 
-    const isRestorable = storedWorkflows.length > 0 && storedActiveIndex >= 0
-    if (!isRestorable) {
+    const restorableTabState = getRestorableTabState()
+    if (!restorableTabState) {
       tabStateRestored = true
       return
     }
+    const { paths: storedWorkflows, activeIndex: storedActiveIndex } =
+      restorableTabState
 
     storedWorkflows.forEach((path: string) => {
       if (workflowStore.getWorkflowByPath(path)) return

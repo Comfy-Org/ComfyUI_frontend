@@ -60,7 +60,9 @@ const config: KnipConfig = {
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js',
     // Devtools extensions, included dynamically
-    'tools/devtools/web/**'
+    'tools/devtools/web/**',
+    // Legacy V1 draft store kept for rollback until the storage sunset
+    'src/platform/workflow/persistence/stores/workflowDraftStore.ts'
   ],
   vite: {
     config: ['vite?(.*).config.mts']

@@ -62,10 +62,36 @@ export class WorkflowHelper {
 
   async waitForDraftPersisted() {
     await this.comfyPage.page.waitForFunction(() =>
-      Object.keys(localStorage).some((k) =>
-        k.startsWith('Comfy.Workflow.Draft.v2:')
+      Object.keys(localStorage).some((key) =>
+        key.startsWith('Comfy.Workflow.Draft.v2:')
       )
     )
+  }
+
+  async waitForDraftPersistedSince(since: number) {
+    await this.comfyPage.page.waitForFunction((savedSince) => {
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const key = window.localStorage.key(i)
+        if (!key?.startsWith('Comfy.Workflow.DraftIndex.v2:')) continue
+
+        const json = window.localStorage.getItem(key)
+        if (!json) continue
+
+        try {
+          const index = JSON.parse(json)
+          if (
+            typeof index.updatedAt === 'number' &&
+            index.updatedAt >= savedSince
+          ) {
+            return true
+          }
+        } catch {
+          // Ignore malformed storage while waiting for persistence.
+        }
+      }
+
+      return false
+    }, since)
   }
 
   /**

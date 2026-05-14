@@ -27,6 +27,10 @@ interface LoadPersistedWorkflowOptions {
   fallbackToLatestDraft?: boolean
 }
 
+/**
+ * @deprecated Runtime draft persistence uses `useWorkflowDraftStoreV2`.
+ * Kept for legacy V1 draft rollback until the storage sunset.
+ */
 export const useWorkflowDraftStore = defineStore('workflowDraft', () => {
   const storedDrafts = useStorage<Record<string, WorkflowDraftSnapshot>>(
     DRAFTS_STORAGE_KEY,

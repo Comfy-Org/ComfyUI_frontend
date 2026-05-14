@@ -5,6 +5,7 @@ export interface WorkflowDraftSnapshot {
   isTemporary: boolean
 }
 
+/** @knipIgnoreUsedByStackedPR */
 export interface DraftCacheState {
   drafts: Record<string, WorkflowDraftSnapshot>
   order: string[]
