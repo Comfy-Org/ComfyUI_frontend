@@ -1,7 +1,6 @@
-import { ref } from 'vue'
-
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 
+import './embed-theme.css'
 import type {
   ChurnkeyHandlerResult,
   ChurnkeyInitConfig,
@@ -9,7 +8,17 @@ import type {
 } from './types'
 
 function readAppId(): string {
-  return (import.meta.env.VITE_CHURNKEY_APP_ID ?? '') as string
+  return __CHURNKEY_APP_ID__
+}
+
+/**
+ * Thrown when the backend's `/billing/churnkey/auth` endpoint is missing.
+ */
+export class ChurnkeyAuthUnavailableError extends Error {
+  constructor() {
+    super('Churnkey auth endpoint not available')
+    this.name = 'ChurnkeyAuthUnavailableError'
+  }
 }
 
 interface ChurnkeyShowOptions {
@@ -19,23 +28,16 @@ interface ChurnkeyShowOptions {
   ) => Promise<ChurnkeyHandlerResult>
   onClose?: (results: ChurnkeySessionResults) => void
   onCancel?: (surveyResponse: string) => void
+  customerAttributes?: Record<string, string | number>
 }
 
 export function useChurnkey() {
-  const isReady = ref(typeof window !== 'undefined' && !!window.churnkey?.init)
-  const error = ref<string | null>(null)
-
-  const isConfigured = !!readAppId()
+  const appId = readAppId()
+  const isConfigured = !!appId
 
   async function show(options: ChurnkeyShowOptions): Promise<void> {
-    error.value = null
-
-    const appId = readAppId()
-
     if (!appId) {
-      throw new Error(
-        'Churnkey is not configured (missing VITE_CHURNKEY_APP_ID)'
-      )
+      throw new Error('Churnkey is not configured (missing CHURNKEY_APP_ID)')
     }
 
     if (typeof window === 'undefined' || !window.churnkey?.init) {
@@ -43,6 +45,9 @@ export function useChurnkey() {
     }
 
     const auth = await workspaceApi.getChurnkeyAuth()
+    if (auth === null) {
+      throw new ChurnkeyAuthUnavailableError()
+    }
 
     const config: ChurnkeyInitConfig = {
       appId,
@@ -52,6 +57,7 @@ export function useChurnkey() {
       provider: 'stripe',
       mode: auth.mode,
       record: true,
+      customerAttributes: options.customerAttributes,
       handleCancel: (_customer, surveyResponse, freeformFeedback) =>
         options.handleCancel(surveyResponse, freeformFeedback),
       onCancel: (_customer, surveyResponse) =>
@@ -59,14 +65,11 @@ export function useChurnkey() {
       onClose: (results) => options.onClose?.(results)
     }
 
-    window.churnkey.init('show', config as unknown as Record<string, unknown>)
-    isReady.value = true
+    window.churnkey.init('show', config)
   }
 
   return {
     isConfigured,
-    isReady,
-    error,
     show
   }
 }

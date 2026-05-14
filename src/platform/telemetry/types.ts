@@ -364,8 +364,13 @@ interface EcommerceMetadata {
 }
 
 export interface CancellationFlowClosedMetadata {
-  outcome: 'canceled' | 'reconsidered' | 'unknown'
+  outcome: 'canceled' | 'reconsidered' | 'discounted' | 'paused' | 'unknown'
   survey_response?: string
+  failure_reason?:
+    | 'auth_unavailable'
+    | 'embed_not_loaded'
+    | 'cancel_api_failed'
+    | 'unexpected'
 }
 
 export interface SubscriptionSuccessMetadata extends Record<string, unknown> {

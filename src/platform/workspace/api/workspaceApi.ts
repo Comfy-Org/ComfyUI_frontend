@@ -702,11 +702,10 @@ export const workspaceApi = {
   /**
    * Get Churnkey auth credentials (customer ID + HMAC) for the active workspace.
    * GET /api/billing/churnkey/auth
-   *
    * Used by the cancellation flow to launch the Churnkey embedded modal.
    * The HMAC must be signed server-side; never derive it on the client.
    */
-  async getChurnkeyAuth(): Promise<ChurnkeyAuthResponse> {
+  async getChurnkeyAuth(): Promise<ChurnkeyAuthResponse | null> {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<ChurnkeyAuthResponse>(
@@ -715,6 +714,9 @@ export const workspaceApi = {
       )
       return response.data
     } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 404) {
+        return null
+      }
       handleAxiosError(err)
     }
   },

@@ -30,8 +30,8 @@ const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
 const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
 
-// Churnkey cancellation flow embed (cloud distribution only)
-const VITE_CHURNKEY_APP_ID = process.env.VITE_CHURNKEY_APP_ID || ''
+// Churnkey cancellation flow embed (cloud distribution only).
+const CHURNKEY_APP_ID = process.env.CHURNKEY_APP_ID || ''
 
 // Open Graph / Twitter Meta Tags Constants
 const VITE_OG_URL = 'https://cloud.comfy.org'
@@ -315,9 +315,9 @@ export default defineConfig({
       name: 'inject-churnkey',
       transformIndexHtml(html) {
         if (DISTRIBUTION !== 'cloud') return html
-        if (!VITE_CHURNKEY_APP_ID) return html
+        if (!CHURNKEY_APP_ID) return html
 
-        const safeAppId = encodeURIComponent(VITE_CHURNKEY_APP_ID)
+        const safeAppId = encodeURIComponent(CHURNKEY_APP_ID)
         const scriptUrl = `https://assets.churnkey.co/js/app.js?appId=${safeAppId}`
         const loaderScript = `!function(){if(!window.churnkey||!window.churnkey.created){window.churnkey={created:!0};var a=document.createElement("script");a.src=${JSON.stringify(scriptUrl)};a.async=!0;var b=document.getElementsByTagName("script")[0];b.parentNode.insertBefore(a,b)}}();`
 
@@ -651,6 +651,7 @@ export default defineConfig({
     __SENTRY_DSN__: JSON.stringify(process.env.SENTRY_DSN || ''),
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
+    __CHURNKEY_APP_ID__: JSON.stringify(CHURNKEY_APP_ID),
     __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',
     __DISTRIBUTION__: JSON.stringify(DISTRIBUTION),
     __IS_NIGHTLY__: JSON.stringify(IS_NIGHTLY)

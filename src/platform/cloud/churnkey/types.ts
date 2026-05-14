@@ -12,7 +12,7 @@ export interface ChurnkeyHandlerResult {
 export interface ChurnkeyInitConfig {
   appId: string
   authHash: string
-  customerId?: string
+  customerId: string
   subscriptionId?: string
   provider: ChurnkeyProvider
   mode: ChurnkeyMode
@@ -36,6 +36,6 @@ export interface ChurnkeyInitConfig {
 }
 
 export interface ChurnkeySessionResults {
-  status?: 'canceled' | 'discounted' | 'paused' | 'closed' | string
+  status?: 'canceled' | 'discounted' | 'paused' | 'closed'
   [key: string]: unknown
 }

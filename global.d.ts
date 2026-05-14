@@ -4,6 +4,7 @@ declare const __SENTRY_ENABLED__: boolean
 declare const __SENTRY_DSN__: string
 declare const __ALGOLIA_APP_ID__: string
 declare const __ALGOLIA_API_KEY__: string
+declare const __CHURNKEY_APP_ID__: string
 declare const __USE_PROD_CONFIG__: boolean
 
 interface ImpactQueueFunction {
@@ -31,7 +32,7 @@ interface GtagFunction {
 
 interface ChurnkeyWindow {
   created?: boolean
-  init: (action: 'show' | 'restart', config: Record<string, unknown>) => void
+  init: (action: 'show' | 'restart', config: object) => void
   hide?: () => void
   clearState?: () => void
 }

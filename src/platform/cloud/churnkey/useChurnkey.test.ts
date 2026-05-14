@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useChurnkey } from './useChurnkey'
+import { ChurnkeyAuthUnavailableError, useChurnkey } from './useChurnkey'
 
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: {
@@ -10,13 +10,22 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
 
 const { workspaceApi } = await import('@/platform/workspace/api/workspaceApi')
 
+type GlobalWithChurnkey = typeof globalThis & {
+  __CHURNKEY_APP_ID__: string
+}
+const globalWithChurnkey = globalThis as GlobalWithChurnkey
+
 describe('useChurnkey', () => {
+  let originalAppId: string
+
   beforeEach(() => {
-    vi.stubEnv('VITE_CHURNKEY_APP_ID', 'app-test-123')
+    originalAppId = globalWithChurnkey.__CHURNKEY_APP_ID__
+    globalWithChurnkey.__CHURNKEY_APP_ID__ = 'app-test-123'
+    vi.mocked(workspaceApi.getChurnkeyAuth).mockReset()
   })
 
   afterEach(() => {
-    vi.unstubAllEnvs()
+    globalWithChurnkey.__CHURNKEY_APP_ID__ = originalAppId
     vi.restoreAllMocks()
     delete (window as { churnkey?: unknown }).churnkey
   })
@@ -43,7 +52,11 @@ describe('useChurnkey', () => {
     const onClose = vi.fn()
 
     const { show } = useChurnkey()
-    await show({ handleCancel, onClose })
+    await show({
+      handleCancel,
+      onClose,
+      customerAttributes: { tier: 'PRO', cycle: 'MONTHLY' }
+    })
 
     expect(init).toHaveBeenCalledTimes(1)
     const [action, config] = init.mock.calls[0]
@@ -54,7 +67,8 @@ describe('useChurnkey', () => {
       customerId: 'cus_123',
       subscriptionId: 'sub_456',
       provider: 'stripe',
-      mode: 'test'
+      mode: 'test',
+      customerAttributes: { tier: 'PRO', cycle: 'MONTHLY' }
     })
 
     await config.handleCancel('cus_123', 'too_expensive', 'feedback')
@@ -64,9 +78,19 @@ describe('useChurnkey', () => {
     expect(onClose).toHaveBeenCalledWith({ status: 'closed' })
   })
 
-  it('returns isConfigured=false when VITE_CHURNKEY_APP_ID is unset', () => {
-    vi.stubEnv('VITE_CHURNKEY_APP_ID', '')
+  it('returns isConfigured=false when CHURNKEY_APP_ID is unset', () => {
+    globalWithChurnkey.__CHURNKEY_APP_ID__ = ''
     const churnkey = useChurnkey()
     expect(churnkey.isConfigured).toBe(false)
+  })
+
+  it('throws ChurnkeyAuthUnavailableError when getChurnkeyAuth returns null', async () => {
+    ;(window as { churnkey?: unknown }).churnkey = { init: vi.fn() }
+    vi.mocked(workspaceApi.getChurnkeyAuth).mockResolvedValue(null)
+
+    const { show } = useChurnkey()
+    await expect(
+      show({ handleCancel: async () => ({ message: 'ok' }) })
+    ).rejects.toBeInstanceOf(ChurnkeyAuthUnavailableError)
   })
 })

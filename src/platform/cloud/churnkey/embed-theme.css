@@ -1,0 +1,184 @@
+#ck-app .ck-modal-container {
+  z-index: 10000 !important;
+}
+
+.ck-style,
+.ck-style * {
+  font-family: inherit !important;
+}
+
+.ck-background-overlay,
+#ck-cf-modal-overlay {
+  background: rgb(0 0 0 / 0.7) !important;
+}
+
+.ck-style {
+  --color-brand-black: var(--base-foreground);
+}
+
+.ck-modal,
+#ck-cf-modal {
+  background: var(--base-background) !important;
+  border: 1px solid var(--border-default) !important;
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5) !important;
+  border-radius: 16px !important;
+}
+
+.ck-step,
+.ck-survey-step,
+.ck-confirm-step,
+.ck-freeform-step,
+.ck-pause-step,
+.ck-discount-step,
+.ck-contact-step,
+.ck-redirect-step,
+.ck-complete-step,
+.ck-progress-step,
+.ck-error-step {
+  background: var(--base-background) !important;
+}
+
+.ck-step-header {
+  background: var(--base-background) !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+}
+.ck-step-header-text {
+  color: var(--base-foreground) !important;
+}
+.ck-step-description-text,
+.ck-description,
+.ck-style .subtitle {
+  color: var(--muted-foreground) !important;
+}
+.ck-step-body {
+  background: var(--base-background) !important;
+  color: var(--muted-foreground) !important;
+}
+.ck-step-footer {
+  background: var(--base-background) !important;
+  border-top: 1px solid var(--border-subtle) !important;
+}
+
+.ck-style select,
+.ck-style input,
+.ck-style textarea {
+  background-color: var(--secondary-background) !important;
+  color: var(--base-foreground) !important;
+  border-color: var(--border-default) !important;
+}
+.ck-style select:focus,
+.ck-style input:focus,
+.ck-style textarea:focus {
+  border-color: var(--primary-background) !important;
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.1) !important;
+  outline: none !important;
+}
+.ck-style ::placeholder {
+  color: var(--muted-foreground) !important;
+  opacity: 0.6 !important;
+}
+.ck-style option {
+  background-color: var(--secondary-background) !important;
+  color: var(--base-foreground) !important;
+}
+
+.ck-style .text-gray-900,
+.ck-style .text-gray-800 {
+  color: var(--base-foreground) !important;
+}
+.ck-style .text-gray-700,
+.ck-style .text-gray-600,
+.ck-style .text-gray-500 {
+  color: var(--muted-foreground) !important;
+}
+.ck-style .text-brand-black {
+  color: var(--base-foreground) !important;
+}
+.ck-style .border-gray-100,
+.ck-style .border-gray-200,
+.ck-style .border-gray-300 {
+  border-color: var(--border-default) !important;
+}
+.ck-style .bg-gray-100,
+.ck-style .bg-gray-200,
+.ck-style .bg-gray-300 {
+  background-color: var(--secondary-background) !important;
+}
+.ck-style .text-opacity-60,
+.ck-style .text-opacity-80,
+.ck-style .text-opacity-90 {
+  --tw-text-opacity: 1 !important;
+}
+
+.ck-style [class*='bg-client-primary-light'] {
+  background-color: var(--secondary-background) !important;
+}
+.ck-style .bg-opacity-5 {
+  --tw-bg-opacity: 1 !important;
+}
+.ck-pause-subscription-details {
+  border-color: var(--border-default) !important;
+  color: var(--muted-foreground) !important;
+}
+.ck-pause-subscription-details b {
+  color: var(--base-foreground) !important;
+}
+.active-discount-disclaimer {
+  color: var(--muted-foreground) !important;
+  background-color: var(--secondary-background) !important;
+}
+.ck-step-body li,
+.ck-step-body label {
+  color: var(--muted-foreground) !important;
+}
+
+.ck-style .h-14.rounded-t-lg {
+  background-color: var(--secondary-background) !important;
+}
+.ck-style .bg-client-primary {
+  background-color: var(--primary-background) !important;
+}
+.ck-style .text-client-primary,
+.ck-style .text-client-primary-light {
+  color: var(--muted-foreground) !important;
+}
+.ck-style .text-client-primary-middle {
+  color: var(--muted-foreground) !important;
+  opacity: 0.4 !important;
+}
+.ck-style .border-client-primary {
+  border-color: var(--primary-background) !important;
+}
+.ck-style .border-client-primary-light {
+  border-color: var(--border-default) !important;
+}
+
+.ck-style .ck-primary-button {
+  background: var(--primary-background) !important;
+  color: var(--base-foreground) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+}
+.ck-style .ck-primary-button:hover {
+  background: var(--primary-background-hover) !important;
+}
+.ck-style .ck-black-primary-button {
+  background: var(--primary-background) !important;
+  color: var(--base-foreground) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: 8px !important;
+}
+.ck-style .ck-black-primary-button:hover {
+  background: var(--primary-background-hover) !important;
+}
+.ck-style .ck-gray-primary-button {
+  background: var(--secondary-background) !important;
+  color: var(--muted-foreground) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: 8px !important;
+}
+.ck-style .ck-text-button,
+.ck-style .ck-black-text-button {
+  color: var(--muted-foreground) !important;
+}
