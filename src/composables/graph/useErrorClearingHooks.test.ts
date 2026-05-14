@@ -21,6 +21,7 @@ import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNod
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 
 beforeEach(() => {
@@ -208,6 +209,47 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     node.onWidgetChanged!.call(node, 'steps', 50, 20, node.widgets![0])
 
     expect(store.lastNodeErrors).not.toBeNull()
+  })
+
+  it('clears missing media when an upload emits onWidgetChanged', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('LoadImage')
+    node.type = 'LoadImage'
+    const widget = node.addWidget(
+      'combo',
+      'image',
+      'missing.png',
+      () => undefined,
+      { values: [] }
+    )
+    graph.add(node)
+    installErrorClearingHooks(graph)
+
+    const store = useExecutionErrorStore()
+    const mediaStore = useMissingMediaStore()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    seedRequiredInputMissingNodeError(store, String(node.id), 'image')
+    mediaStore.setMissingMedia([
+      {
+        nodeId: String(node.id),
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'missing.png',
+        isMissing: true
+      } satisfies MissingMediaCandidate
+    ])
+
+    node.onWidgetChanged!.call(
+      node,
+      'image',
+      'uploaded.png',
+      'missing.png',
+      widget
+    )
+
+    expect(store.lastNodeErrors).toBeNull()
+    expect(mediaStore.missingMediaCandidates).toBeNull()
   })
 
   it('uses interior node execution ID for promoted widget error clearing', () => {
