@@ -58,16 +58,44 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     expect(newCount).toBe(initialCount - 1)
   })
 
-  test('info button opens properties panel', async ({ comfyPage }) => {
+  test('info button opens the right-side info tab in new menu mode', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', true)
+    await comfyPage.settings.setSetting('Comfy.RightSidePanel.IsOpen', false)
+
     const nodeRef = (await comfyPage.nodeOps.getNodeRefsByTitle('KSampler'))[0]
     await selectNodeWithPan(comfyPage, nodeRef)
+    await expect(comfyPage.menu.propertiesPanel.root).toBeHidden()
 
     const infoButton = comfyPage.page.getByTestId('info-button')
     await expect(infoButton).toBeVisible()
-    await infoButton.click({ force: true })
-    await comfyPage.nextFrame()
+    await infoButton.click()
 
-    await expect(comfyPage.page.getByTestId('properties-panel')).toBeVisible()
+    const panel = comfyPage.menu.propertiesPanel.root
+    await expect(panel).toBeVisible()
+    await expect(panel.getByTestId('panel-tab-info')).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+    await expect(panel).toContainText('KSampler')
+    await expect(comfyPage.menu.nodeLibraryTab.selectedTabButton).toBeHidden()
+  })
+
+  test('info button is hidden when the new menu is disabled', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+    await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
+
+    const nodeRef = (await comfyPage.nodeOps.getNodeRefsByTitle('KSampler'))[0]
+    await selectNodeWithPan(comfyPage, nodeRef)
+
+    await expect(comfyPage.selectionToolbox).toBeVisible()
+    await expect(
+      comfyPage.selectionToolbox.getByTestId('info-button')
+    ).toBeHidden()
   })
 
   test('convert-to-subgraph button visible with multi-select', async ({
