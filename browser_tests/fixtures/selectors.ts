@@ -8,6 +8,7 @@ export const TestIds = {
     toolbar: 'side-toolbar',
     nodeLibrary: 'node-library-tree',
     nodeLibrarySearch: 'node-library-search',
+    nodePreviewCard: 'node-preview-card',
     workflows: 'workflows-sidebar',
     modeToggle: 'mode-toggle'
   },
