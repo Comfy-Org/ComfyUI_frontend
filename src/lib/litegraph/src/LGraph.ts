@@ -173,8 +173,10 @@ export interface BaseLGraph {
 }
 
 /**
- * LGraph is the class that contain a full graph. We instantiate one and add nodes to it, and then we can run the execution loop.
- * supported callbacks:
+ * LGraph contains a full graph. Instantiate it, add nodes/groups, and use it
+ * for editing, traversal, and serialisation.
+ *
+ * Supported callbacks:
  * + onNodeAdded: when a new node is added to the graph
  * + onNodeRemoved: when a node inside this graph is removed
  */
