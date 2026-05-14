@@ -80,14 +80,16 @@ test.describe(
       throw new Error('Could not open More Options menu - popover not showing')
     }
 
-    test('opens Node Info from More Options menu', async ({ comfyPage }) => {
+    test('hides Node Info from More Options menu when the new menu is disabled', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
+
       await openMoreOptions(comfyPage)
-      const nodeInfoButton = comfyPage.page.getByText('Node Info', {
-        exact: true
+      const nodeInfoButton = comfyPage.page.getByRole('menuitem', {
+        name: 'Node Info'
       })
-      await expect(nodeInfoButton).toBeVisible()
-      await nodeInfoButton.click()
-      await comfyPage.nextFrame()
+      await expect(nodeInfoButton).toBeHidden()
     })
 
     test('changes node shape via Shape submenu', async ({ comfyPage }) => {

@@ -83,6 +83,24 @@ test.describe('Vue Node Context Menu', () => {
       await expect(renamedNode).toBeVisible()
     })
 
+    test('should open node info in the right side panel via context menu', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting('Comfy.RightSidePanel.IsOpen', false)
+      await expect(comfyPage.menu.propertiesPanel.root).toBeHidden()
+
+      await openContextMenu(comfyPage, 'KSampler')
+      await clickExactMenuItem(comfyPage, 'Node Info')
+
+      const panel = comfyPage.menu.propertiesPanel.root
+      await expect(panel).toBeVisible()
+      await expect(panel.getByTestId('panel-tab-info')).toHaveAttribute(
+        'aria-selected',
+        'true'
+      )
+      await expect(comfyPage.menu.nodeLibraryTab.selectedTabButton).toBeHidden()
+    })
+
     test('should copy and paste node via context menu', async ({
       comfyPage
     }) => {
