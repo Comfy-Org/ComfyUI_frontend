@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-05-12T16:10:34.114Z",
+  "fetchedAt": "2026-05-14T14:47:42.884Z",
   "departments": [
     {
       "name": "DESIGN",
@@ -135,6 +135,13 @@
           "department": "Marketing",
           "location": "San Francisco",
           "jobUrl": "https://jobs.ashbyhq.com/comfy-org/89d3ff75-2055-4e92-9c69-81feff55627c"
+        },
+        {
+          "id": "e11f8b9e58dbea81",
+          "title": "Creative Producer",
+          "department": "Marketing",
+          "location": "San Francisco",
+          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/7be2d690-7a2b-4ebf-b1c4-6907b273d3d9"
         }
       ]
     },
