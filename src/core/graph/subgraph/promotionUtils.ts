@@ -272,6 +272,15 @@ export function promoteValueWidgetViaSubgraphInput(
   const sourceSlot = sourceNode.getSlotFromWidget(sourceWidget)
   if (!sourceSlot) return { ok: false, reason: 'missingSourceSlot' }
 
+  // Axiom 3 (ADR 0009 §sibling theorem): an external link to a host slot is
+  // independent of the promotion projection. After a projection-retracting
+  // demote, the SubgraphInput slot and its inbound link survive. Re-promoting
+  // the same source widget must reuse that slot rather than creating a
+  // duplicate.
+  if (rebindOrphanedSubgraphInput(subgraphNode, sourceWidget)) {
+    return { ok: true }
+  }
+
   const existingNames = subgraphNode.subgraph.inputs.map((input) => input.name)
   const inputName = nextUniqueName(sourceWidgetName, existingNames)
   const subgraphInput = subgraphNode.subgraph.addInput(
@@ -285,6 +294,28 @@ export function promoteValueWidgetViaSubgraphInput(
   }
 
   return { ok: true }
+}
+
+/**
+ * Re-attach the promoted widget projection to an existing SubgraphInput whose
+ * link still terminates at `sourceWidget`. Returns true when an orphaned slot
+ * was adopted, false when no matching slot exists.
+ *
+ * This is the inverse of the projection-retracting demote path: it lets
+ * re-promotion converge on a single canonical slot per source widget instead
+ * of fanning out duplicate inputs each time the user toggles promotion.
+ */
+function rebindOrphanedSubgraphInput(
+  subgraphNode: SubgraphNode,
+  sourceWidget: IBaseWidget
+): boolean {
+  const hasOrphanedSlot = subgraphNode.subgraph.inputs.some((subgraphInput) =>
+    subgraphInput.getConnectedWidgets().includes(sourceWidget)
+  )
+  if (!hasOrphanedSlot) return false
+
+  subgraphNode.rebuildInputWidgetBindings()
+  return true
 }
 
 function promotePreviewViaExposure(
@@ -383,7 +414,16 @@ export function demoteWidget(
     )
     const linkedInput = hostInput?._subgraphSlot
     if (linkedInput) {
-      parent.subgraph.removeInput(linkedInput)
+      // Axiom 3: an external link to the host slot is sacred. Demote retracts
+      // the promotion projection only; the SubgraphInput and any inbound link
+      // outlive the projection. When no external link holds the slot open,
+      // collapse it so demote is a true inverse of promote in the common case.
+      const hasExternalLink = hostInput.link != null
+      if (hasExternalLink && hostInput._widget) {
+        parent.ensureWidgetRemoved(hostInput._widget)
+      } else {
+        parent.subgraph.removeInput(linkedInput)
+      }
       continue
     }
 

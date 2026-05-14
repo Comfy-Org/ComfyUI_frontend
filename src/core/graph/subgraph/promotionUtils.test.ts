@@ -23,6 +23,7 @@ vi.mock('@/services/litegraphService', () => ({
 
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
+  demoteWidget,
   getPromotableWidgets,
   getSourceNodeId,
   hasUnpromotedWidgets,
@@ -677,5 +678,87 @@ describe('reorderSubgraphInputsByWidgetOrder', () => {
       'second value',
       'first value'
     ])
+  })
+})
+
+describe('demoteWidget — axiomatic projection retraction', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.restoreAllMocks()
+  })
+
+  function setupPromotedWidget() {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('TestNode')
+    host.subgraph.add(interiorNode)
+    const interiorInput = interiorNode.addInput('value', 'STRING')
+    const interiorWidget = interiorNode.addWidget(
+      'text',
+      'value',
+      'initial',
+      () => {}
+    )
+    interiorInput.widget = { name: interiorWidget.name }
+    const result = promoteValueWidgetViaSubgraphInput(
+      host,
+      interiorNode,
+      interiorWidget
+    )
+    expect(result.ok).toBe(true)
+    return { host, interiorNode, interiorWidget }
+  }
+
+  it('drops projection but keeps slot and external link when host slot is externally connected', () => {
+    const { host, interiorNode, interiorWidget } = setupPromotedWidget()
+    const hostInput = host.inputs[0]
+    hostInput.link = 9999
+
+    expect(host.subgraph.inputs).toHaveLength(1)
+    expect(host.widgets.length).toBeGreaterThan(0)
+
+    demoteWidget(interiorNode, interiorWidget, [host])
+
+    expect(host.subgraph.inputs).toHaveLength(1)
+    expect(host.inputs[0]?.link).toBe(9999)
+    expect(host.inputs[0]?._widget).toBeUndefined()
+    expect(
+      isLinkedPromotion(host, String(interiorNode.id), interiorWidget.name)
+    ).toBe(false)
+  })
+
+  it('removes the slot entirely when host slot has no external link', () => {
+    const { host, interiorNode, interiorWidget } = setupPromotedWidget()
+
+    expect(host.subgraph.inputs).toHaveLength(1)
+
+    demoteWidget(interiorNode, interiorWidget, [host])
+
+    expect(host.subgraph.inputs).toHaveLength(0)
+    expect(host.inputs).toHaveLength(0)
+  })
+
+  it('reuses the orphaned slot on re-promotion instead of creating a duplicate', () => {
+    const { host, interiorNode, interiorWidget } = setupPromotedWidget()
+    const originalSlot = host.subgraph.inputs[0]
+    host.inputs[0].link = 9999
+
+    demoteWidget(interiorNode, interiorWidget, [host])
+
+    expect(host.subgraph.inputs).toHaveLength(1)
+    expect(host.subgraph.inputs[0]).toBe(originalSlot)
+
+    const result = promoteValueWidgetViaSubgraphInput(
+      host,
+      interiorNode,
+      interiorWidget
+    )
+
+    expect(result.ok).toBe(true)
+    expect(host.subgraph.inputs).toHaveLength(1)
+    expect(host.subgraph.inputs[0]).toBe(originalSlot)
+    expect(
+      isLinkedPromotion(host, String(interiorNode.id), interiorWidget.name)
+    ).toBe(true)
   })
 })
