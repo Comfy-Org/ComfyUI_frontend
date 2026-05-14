@@ -11,7 +11,7 @@ app.registerExtension({
   registerCustomNodes() {
     class NoteNode extends LGraphNode {
       static override category: string
-      static collapsable: boolean
+      static collapsible: boolean
       static title_mode: number
 
       groupcolor = LGraphCanvas.node_colors.yellow.groupcolor
@@ -45,7 +45,7 @@ app.registerExtension({
       Object.assign(NoteNode, {
         title_mode: LiteGraph.NORMAL_TITLE,
         title: 'Note',
-        collapsable: true
+        collapsible: true
       })
     )
 
