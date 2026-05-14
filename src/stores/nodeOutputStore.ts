@@ -14,7 +14,10 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { clone } from '@/scripts/utils'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
-import { parseFilePath } from '@/utils/formatUtil'
+import {
+  getNonPreviewableImageExtension,
+  parseFilePath
+} from '@/utils/formatUtil'
 import {
   isAnimatedOutput,
   isVideoNode,
@@ -95,6 +98,16 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     // If svg images, return false
     if (outputs.images.some((image) => image.filename?.endsWith('svg')))
+      return false
+
+    // If any image is in a format the browser cannot render (e.g. EXR), the
+    // backend's `/view?preview=...` path would try to decode it with PIL and
+    // fail; skip the preview param so the original file is served instead.
+    if (
+      outputs.images.some((image) =>
+        getNonPreviewableImageExtension(image.filename)
+      )
+    )
       return false
 
     return true

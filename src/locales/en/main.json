@@ -120,6 +120,7 @@
     "imageFailedToLoad": "Image failed to load",
     "imageDoesNotExist": "Image does not exist",
     "unknownFile": "Unknown file",
+    "previewNotAvailable": "Preview not available",
     "reconnecting": "Reconnecting",
     "reconnected": "Reconnected",
     "disconnectedFromBackend": "Disconnected from backend. Check if the server is running.",

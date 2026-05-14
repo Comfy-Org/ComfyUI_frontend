@@ -35,7 +35,8 @@ const i18n = createI18n({
         unknownFile: 'Unknown file',
         loading: 'Loading',
         viewGrid: 'Grid view',
-        galleryThumbnail: 'Gallery thumbnail'
+        galleryThumbnail: 'Gallery thumbnail',
+        previewNotAvailable: 'Preview not available'
       }
     }
   }
@@ -584,6 +585,112 @@ describe('ImagePreview', () => {
 
       expect(container.querySelector('.image-preview')).toBeInTheDocument()
       screen.getByRole('img')
+    })
+  })
+
+  describe('non-previewable formats (EXR)', () => {
+    const exrUrl = '/api/view?filename=render.exr&type=output'
+
+    it('renders a placeholder instead of <img> for an .exr output', () => {
+      renderImagePreview({ imageUrls: [exrUrl] })
+
+      expect(screen.queryByTestId('main-image')).not.toBeInTheDocument()
+      const placeholder = screen.getByTestId('image-preview-placeholder')
+      expect(placeholder).toBeInTheDocument()
+      expect(placeholder).toHaveTextContent('EXR')
+      expect(placeholder).toHaveTextContent('Preview not available')
+      expect(placeholder).toHaveTextContent('render.exr')
+    })
+
+    it('keeps the download button available for placeholders', () => {
+      renderImagePreview({ imageUrls: [exrUrl] })
+
+      expect(
+        screen.getByRole('button', { name: 'Download image' })
+      ).toBeInTheDocument()
+    })
+
+    it('hides the mask/edit button for placeholders', () => {
+      renderImagePreview({ imageUrls: [exrUrl] })
+
+      expect(
+        screen.queryByRole('button', { name: 'Edit or mask image' })
+      ).not.toBeInTheDocument()
+    })
+
+    it('does not show the dimensions/loading footer for placeholders', () => {
+      renderImagePreview({ imageUrls: [exrUrl] })
+
+      expect(screen.queryByText('Calculating dimensions')).toBeNull()
+      expect(screen.queryByText(/Loading/)).toBeNull()
+      expect(screen.queryByTestId('error-loading-image')).toBeNull()
+    })
+
+    it('downloads the original file URL when the download button is clicked', async () => {
+      renderImagePreview({ imageUrls: [exrUrl] })
+      const user = userEvent.setup()
+
+      await user.click(screen.getByRole('button', { name: 'Download image' }))
+
+      expect(downloadFile).toHaveBeenCalledWith(exrUrl)
+    })
+
+    it('renders a placeholder for each .exr thumbnail in grid view', () => {
+      const { container } = renderImagePreview({
+        imageUrls: [
+          '/api/view?filename=a.exr&type=output',
+          '/api/view?filename=b.exr&type=output'
+        ]
+      })
+
+      const placeholders = screen.getAllByTestId('image-preview-placeholder')
+      expect(placeholders).toHaveLength(2)
+      expect(container.querySelectorAll('img')).toHaveLength(0)
+    })
+
+    it('mixes placeholders and real images correctly', () => {
+      const { container } = renderImagePreview({
+        imageUrls: [
+          '/api/view?filename=a.png&type=output',
+          '/api/view?filename=b.exr&type=output'
+        ]
+      })
+
+      expect(screen.getAllByTestId('image-preview-placeholder')).toHaveLength(1)
+      expect(container.querySelectorAll('img')).toHaveLength(1)
+    })
+
+    it('cancels a pending delayed-loader when switching from a real image to a placeholder', async () => {
+      vi.useFakeTimers()
+      const user = userEvent.setup({
+        advanceTimers: vi.advanceTimersByTime
+      })
+      try {
+        const { container } = renderImagePreview({
+          imageUrls: [
+            '/api/view?filename=a.png&type=output',
+            '/api/view?filename=b.exr&type=output'
+          ]
+        })
+        await switchToGallery(user)
+        await fireEvent.load(screen.getByTestId('main-image'))
+        await nextTick()
+
+        const dots = screen.getAllByRole('button', { name: /View image/ })
+        await user.click(dots[1])
+        await nextTick()
+        await vi.advanceTimersByTimeAsync(300)
+        await nextTick()
+
+        expect(
+          container.querySelector('[aria-busy="true"]')
+        ).not.toBeInTheDocument()
+        expect(
+          screen.getByTestId('image-preview-placeholder')
+        ).toBeInTheDocument()
+      } finally {
+        vi.useRealTimers()
+      }
     })
   })
 })

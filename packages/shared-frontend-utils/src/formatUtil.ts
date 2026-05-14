@@ -589,6 +589,8 @@ const IMAGE_EXTENSIONS = [
   'tiff',
   'svg'
 ] as const
+// Image-family extensions that browsers cannot render via `<img>`.
+const NON_PREVIEWABLE_IMAGE_EXTENSIONS = ['exr'] as const
 const VIDEO_EXTENSIONS = ['mp4', 'm4v', 'webm', 'mov', 'avi', 'mkv'] as const
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac'] as const
 const THREE_D_EXTENSIONS = ['obj', 'fbx', 'gltf', 'glb', 'usdz'] as const
@@ -675,6 +677,24 @@ export function isPreviewableMediaType(mediaType: MediaType): boolean {
     mediaType === 'audio' ||
     mediaType === '3D'
   )
+}
+
+/**
+ * Returns the lowercased file extension for an image known to be unrenderable
+ * by `<img>`, or null otherwise. Returned value is suitable as a short format
+ * badge label (e.g. "exr").
+ */
+export function getNonPreviewableImageExtension(
+  filename: string | null | undefined
+): string | null {
+  if (!filename) return null
+  const ext = filename.split('.').pop()?.toLowerCase()
+  if (!ext) return null
+  return NON_PREVIEWABLE_IMAGE_EXTENSIONS.includes(
+    ext as (typeof NON_PREVIEWABLE_IMAGE_EXTENSIONS)[number]
+  )
+    ? ext
+    : null
 }
 
 export function formatTime(seconds: number): string {

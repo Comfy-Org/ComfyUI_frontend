@@ -8,6 +8,7 @@ import {
   getFilePathSeparatorVariants,
   getFilenameDetails,
   getMediaTypeFromFilename,
+  getNonPreviewableImageExtension,
   getPathDetails,
   highlightQuery,
   isCivitaiModelUrl,
@@ -421,6 +422,28 @@ describe('formatUtil', () => {
     it('returns false for text/other', () => {
       expect(isPreviewableMediaType('text')).toBe(false)
       expect(isPreviewableMediaType('other')).toBe(false)
+    })
+  })
+
+  describe('getNonPreviewableImageExtension', () => {
+    it('returns the extension for non-previewable image formats', () => {
+      expect(getNonPreviewableImageExtension('render.exr')).toBe('exr')
+      expect(getNonPreviewableImageExtension('RENDER.EXR')).toBe('exr')
+      expect(getNonPreviewableImageExtension('path/to/file.exr')).toBe('exr')
+    })
+
+    it('returns null for previewable image formats and other types', () => {
+      expect(getNonPreviewableImageExtension('photo.png')).toBeNull()
+      expect(getNonPreviewableImageExtension('photo.jpg')).toBeNull()
+      expect(getNonPreviewableImageExtension('clip.webp')).toBeNull()
+      expect(getNonPreviewableImageExtension('video.mp4')).toBeNull()
+    })
+
+    it('returns null for empty, missing, or extensionless inputs', () => {
+      expect(getNonPreviewableImageExtension('')).toBeNull()
+      expect(getNonPreviewableImageExtension(null)).toBeNull()
+      expect(getNonPreviewableImageExtension(undefined)).toBeNull()
+      expect(getNonPreviewableImageExtension('noextension')).toBeNull()
     })
   })
 

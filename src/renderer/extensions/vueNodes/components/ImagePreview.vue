@@ -12,20 +12,28 @@
       :style="{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }"
     >
       <button
-        v-for="(url, index) in imageUrls"
+        v-for="(item, index) in imageItems"
         :key="index"
         class="focus-visible:ring-ring relative cursor-pointer overflow-hidden rounded-sm border-0 bg-transparent p-0 focus-visible:ring-2 focus-visible:outline-none"
         :aria-label="
           $t('g.viewImageOfTotal', {
             index: index + 1,
-            total: imageUrls.length
+            total: imageItems.length
           })
         "
         @pointerdown="trackPointerStart"
         @click="handleGridThumbnailClick($event, index)"
       >
+        <ImagePreviewPlaceholder
+          v-if="item.placeholderFormat"
+          :format="item.placeholderFormat"
+          :filename="item.filename"
+          variant="thumbnail"
+          class="pointer-events-none size-full"
+        />
         <img
-          :src="url"
+          v-else
+          :src="item.url"
           :alt="`${$t('g.galleryThumbnail')} ${index + 1}`"
           draggable="false"
           class="pointer-events-none size-full object-contain"
@@ -44,9 +52,17 @@
       :aria-label="$t('g.imagePreview')"
       :aria-busy="showLoader"
     >
+      <!-- Placeholder for non-previewable formats (e.g. EXR) -->
+      <ImagePreviewPlaceholder
+        v-if="currentPlaceholderFormat"
+        :format="currentPlaceholderFormat"
+        :filename="getImageFilename(currentImageUrl)"
+        variant="gallery"
+        class="pointer-events-none absolute inset-0"
+      />
       <!-- Error State -->
       <div
-        v-if="imageError"
+        v-else-if="imageError"
         role="alert"
         class="flex size-full flex-1 flex-col items-center justify-around self-center py-8 text-center text-base-foreground"
       >
@@ -59,12 +75,15 @@
         </p>
       </div>
       <!-- Loading State -->
-      <div v-if="showLoader && !imageError" class="size-full">
+      <div
+        v-if="!currentPlaceholderFormat && showLoader && !imageError"
+        class="size-full"
+      >
         <Skeleton class="size-full rounded-sm" />
       </div>
       <!-- Main Image -->
       <img
-        v-if="!imageError"
+        v-if="!currentPlaceholderFormat && !imageError"
         data-testid="main-image"
         :src="currentImageUrl"
         :alt="imageAltText"
@@ -80,7 +99,7 @@
       >
         <!-- Mask/Edit Button -->
         <button
-          v-if="!hasMultipleImages && !imageError"
+          v-if="!hasMultipleImages && !imageError && !currentPlaceholderFormat"
           :class="actionButtonClass"
           :title="$t('g.editOrMaskImage')"
           :aria-label="$t('g.editOrMaskImage')"
@@ -91,7 +110,7 @@
 
         <!-- Download Button -->
         <button
-          v-if="!imageError"
+          v-if="!imageError || currentPlaceholderFormat"
           :class="actionButtonClass"
           :title="$t('g.downloadImage')"
           :aria-label="$t('g.downloadImage')"
@@ -115,7 +134,7 @@
 
     <!-- Image Dimensions (gallery mode only) -->
     <div
-      v-if="viewMode === 'gallery'"
+      v-if="viewMode === 'gallery' && !currentPlaceholderFormat"
       class="pt-2 text-center text-xs text-base-foreground"
     >
       <span
@@ -150,14 +169,14 @@
 
       <!-- Navigation Dots -->
       <button
-        v-for="(_, index) in imageUrls"
+        v-for="(_, index) in imageItems"
         :key="index"
         :class="getNavigationDotClass(index)"
         :aria-current="index === currentIndex ? 'true' : undefined"
         :aria-label="
           $t('g.viewImageOfTotal', {
             index: index + 1,
-            total: imageUrls.length
+            total: imageItems.length
           })
         "
         @click="setCurrentIndex(index)"
@@ -175,7 +194,9 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import ImagePreviewPlaceholder from '@/renderer/extensions/vueNodes/components/ImagePreviewPlaceholder.vue'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { getNonPreviewableImageExtension } from '@/utils/formatUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -218,7 +239,34 @@ const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   { immediate: false }
 )
 
+function parseFilenameFromUrl(url: string): string | undefined {
+  if (!url) return undefined
+  try {
+    return (
+      new URL(url, window.location.origin).searchParams.get('filename') ??
+      undefined
+    )
+  } catch {
+    return undefined
+  }
+}
+
+const imageItems = computed(() =>
+  imageUrls.map((url) => {
+    const filename = parseFilenameFromUrl(url)
+    return {
+      url,
+      filename,
+      placeholderFormat:
+        getNonPreviewableImageExtension(filename)?.toUpperCase()
+    }
+  })
+)
+
 const currentImageUrl = computed(() => imageUrls[currentIndex.value] ?? '')
+const currentPlaceholderFormat = computed(
+  () => imageItems.value[currentIndex.value]?.placeholderFormat
+)
 const hasMultipleImages = computed(() => imageUrls.length > 1)
 const imageAltText = computed(() =>
   t('g.viewImageOfTotal', {
@@ -254,7 +302,12 @@ watch(
 
     viewMode.value = defaultViewMode(newUrls)
     imageError.value = false
-    if (newUrls.length > 0) startDelayedLoader()
+    if (newUrls.length > 0 && !currentPlaceholderFormat.value) {
+      startDelayedLoader()
+    } else {
+      stopDelayedLoader()
+      showLoader.value = false
+    }
   },
   { immediate: true }
 )
@@ -306,7 +359,12 @@ function setCurrentIndex(index: number) {
     const urlChanged = imageUrls[index] !== currentImageUrl.value
     currentIndex.value = index
     imageError.value = false
-    if (urlChanged) startDelayedLoader()
+    if (currentPlaceholderFormat.value) {
+      stopDelayedLoader()
+      showLoader.value = false
+    } else if (urlChanged) {
+      startDelayedLoader()
+    }
   }
 }
 
@@ -379,10 +437,6 @@ function handleKeyDown(event: KeyboardEvent) {
 
 function getImageFilename(url: string): string {
   if (!url) return t('g.imageDoesNotExist')
-  try {
-    return new URL(url).searchParams.get('filename') || t('g.unknownFile')
-  } catch {
-    return t('g.imageDoesNotExist')
-  }
+  return parseFilenameFromUrl(url) || t('g.unknownFile')
 }
 </script>
