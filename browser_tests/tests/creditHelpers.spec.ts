@@ -90,7 +90,7 @@ testWithMockedObjectInfo.describe(
     })
 
     testWithMockedObjectInfo(
-      'shows USD pricing badge in node search',
+      'shows API node indicator in node search results',
       async ({ comfyPage }) => {
         await comfyPage.canvasOps.doubleClick()
         await expect(comfyPage.searchBoxV2.input).toBeVisible()
@@ -101,13 +101,10 @@ testWithMockedObjectInfo.describe(
           .first()
         await expect(result).toBeVisible()
 
-        const badge = result
-          .getByTestId('badge-pill')
-          .filter({ has: comfyPage.page.locator('i[class*="comfy--credits"]') })
-        await expect(badge).toBeVisible()
-        await expect
-          .poll(async () => (await badge.textContent())?.trim() ?? '')
-          .toContain('10.6')
+        // In search results with showDescription=true, the component icon is shown
+        // (not the pricing badge). Verify the API node indicator is present.
+        const apiIndicator = result.locator('i[class*="lucide--component"]')
+        await expect(apiIndicator).toBeVisible()
       }
     )
 
@@ -115,7 +112,12 @@ testWithMockedObjectInfo.describe(
       'shows pricing badge in VueNodes node header',
       async ({ comfyPage }) => {
         await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-        await comfyPage.vueNodes.waitForNodes()
+        await comfyPage.settings.setSetting(
+          'Comfy.NodeBadge.ShowApiPricing',
+          true
+        )
+
+        await comfyPage.nodeOps.clearGraph()
 
         const nodeId = await comfyPage.page.evaluate(() => {
           const node = window.LiteGraph!.createNode('TestCreditApiNodeUsd')
@@ -123,54 +125,91 @@ testWithMockedObjectInfo.describe(
           return node!.id
         })
 
+        await comfyPage.vueNodes.waitForNodes(1)
+
         const header = comfyPage.page.locator(
           `[data-testid="node-header-${nodeId}"]`
         )
         await expect(header).toBeVisible()
-        const priceBadge = header.locator(
+
+        // CreditBadge uses icon-[lucide--component] for the credits icon
+        const creditsBadge = header.locator('i[class*="lucide--component"]')
+        await expect(creditsBadge).toBeVisible()
+
+        // Verify the badge text contains expected credit amount (10.6 credits for $0.05)
+        const badgeContainer = header.locator(
           'span:has(> i[class*="lucide--component"])'
         )
         await expect
-          .poll(async () => (await priceBadge.textContent())?.trim() ?? '')
+          .poll(async () => (await badgeContainer.textContent())?.trim() ?? '')
           .toContain('10.6')
       }
     )
 
     testWithMockedObjectInfo(
-      'shows range and list pricing formats in node search',
+      'shows range pricing in VueNodes node header',
       async ({ comfyPage }) => {
-        await comfyPage.canvasOps.doubleClick()
-        await expect(comfyPage.searchBoxV2.input).toBeVisible()
+        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+        await comfyPage.settings.setSetting(
+          'Comfy.NodeBadge.ShowApiPricing',
+          true
+        )
 
-        await comfyPage.searchBoxV2.input.fill('TestCreditApiNode')
+        await comfyPage.nodeOps.clearGraph()
 
-        const rangeResult = comfyPage.searchBoxV2.results
-          .filter({ hasText: 'Test Credit API Node Range' })
-          .first()
-        const listResult = comfyPage.searchBoxV2.results
-          .filter({ hasText: 'Test Credit API Node List' })
-          .first()
+        const nodeId = await comfyPage.page.evaluate(() => {
+          const node = window.LiteGraph!.createNode('TestCreditApiNodeRange')
+          window.app!.graph.add(node!)
+          return node!.id
+        })
 
-        await expect(rangeResult).toBeVisible()
-        await expect(listResult).toBeVisible()
+        await comfyPage.vueNodes.waitForNodes(1)
 
-        const creditsBadgeFilter = {
-          has: comfyPage.page.locator('i[class*="comfy--credits"]')
-        }
-        const rangeBadge = rangeResult
-          .getByTestId('badge-pill')
-          .filter(creditsBadgeFilter)
-        const listBadge = listResult
-          .getByTestId('badge-pill')
-          .filter(creditsBadgeFilter)
+        const header = comfyPage.page.locator(
+          `[data-testid="node-header-${nodeId}"]`
+        )
+        await expect(header).toBeVisible()
 
-        await expect(rangeBadge).toBeVisible()
-        await expect(listBadge).toBeVisible()
+        // Verify range format (2.1-21.1 credits for $0.01-$0.10)
+        const badgeContainer = header.locator(
+          'span:has(> i[class*="lucide--component"])'
+        )
         await expect
-          .poll(async () => (await rangeBadge.textContent())?.trim() ?? '')
+          .poll(async () => (await badgeContainer.textContent())?.trim() ?? '')
           .toContain('2.1-21.1')
+      }
+    )
+
+    testWithMockedObjectInfo(
+      'shows list pricing in VueNodes node header',
+      async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+        await comfyPage.settings.setSetting(
+          'Comfy.NodeBadge.ShowApiPricing',
+          true
+        )
+
+        await comfyPage.nodeOps.clearGraph()
+
+        const nodeId = await comfyPage.page.evaluate(() => {
+          const node = window.LiteGraph!.createNode('TestCreditApiNodeList')
+          window.app!.graph.add(node!)
+          return node!.id
+        })
+
+        await comfyPage.vueNodes.waitForNodes(1)
+
+        const header = comfyPage.page.locator(
+          `[data-testid="node-header-${nodeId}"]`
+        )
+        await expect(header).toBeVisible()
+
+        // Verify list format (4.2/10.6 credits for [$0.02, $0.05])
+        const badgeContainer = header.locator(
+          'span:has(> i[class*="lucide--component"])'
+        )
         await expect
-          .poll(async () => (await listBadge.textContent())?.trim() ?? '')
+          .poll(async () => (await badgeContainer.textContent())?.trim() ?? '')
           .toContain('4.2/10.6')
       }
     )
