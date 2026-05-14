@@ -51,4 +51,56 @@ describe('groupNodesByPack', () => {
       grouped.find((pack) => pack.id === 'comfyui-controlnet-aux')?.nodes
     ).toHaveLength(1)
   })
+
+  it('slugifies pack ids to lowercase, hyphen-only URL slugs', () => {
+    const grouped = groupNodesByPack({
+      A: makeNodeDef('A', 'custom_nodes.ComfyUI-Crystools.nodes'),
+      B: makeNodeDef('B', 'custom_nodes.basic_data_handling.nodes'),
+      C: makeNodeDef('C', 'custom_nodes.ComfyUI_yanc.nodes')
+    })
+
+    expect(grouped.map((pack) => pack.id)).toEqual([
+      'basic-data-handling',
+      'comfyui-crystools',
+      'comfyui-yanc'
+    ])
+  })
+
+  it('preserves the raw upstream id for registry lookups', () => {
+    const grouped = groupNodesByPack({
+      A: makeNodeDef('A', 'custom_nodes.ComfyUI-Crystools.nodes'),
+      B: makeNodeDef('B', 'custom_nodes.basic_data_handling.nodes')
+    })
+
+    expect(grouped.find((pack) => pack.id === 'comfyui-crystools')?.rawId).toBe(
+      'ComfyUI-Crystools'
+    )
+    expect(
+      grouped.find((pack) => pack.id === 'basic-data-handling')?.rawId
+    ).toBe('basic_data_handling')
+  })
+
+  it('merges packs whose raw ids slugify to the same URL slug', () => {
+    const grouped = groupNodesByPack({
+      QwenA: makeNodeDef('QwenA', 'custom_nodes.ComfyUI-QwenVL.nodes'),
+      QwenB: makeNodeDef('QwenB', 'custom_nodes.ComfyUI_QwenVL.nodes')
+    })
+
+    expect(grouped).toHaveLength(1)
+    expect(grouped[0].id).toBe('comfyui-qwenvl')
+    expect(grouped[0].nodes.map((n) => n.className).sort()).toEqual([
+      'QwenA',
+      'QwenB'
+    ])
+  })
+
+  it('strips version suffix before slugifying', () => {
+    const grouped = groupNodesByPack({
+      A: makeNodeDef('A', 'custom_nodes.ComfyUI_yanc@1_0_3.nodes')
+    })
+
+    expect(grouped).toHaveLength(1)
+    expect(grouped[0].id).toBe('comfyui-yanc')
+    expect(grouped[0].rawId).toBe('ComfyUI_yanc')
+  })
 })

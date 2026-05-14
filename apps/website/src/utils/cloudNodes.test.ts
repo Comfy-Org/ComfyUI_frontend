@@ -306,4 +306,112 @@ describe('fetchCloudNodesForBuild', () => {
     })
     expect(outcome.status).toBe('fresh')
   })
+
+  it('slugifies pack ids while querying the registry with the raw id', async () => {
+    fetchRegistryPacksMock.mockResolvedValue(
+      new Map([
+        [
+          'ComfyUI_QwenVL',
+          {
+            id: 'ComfyUI_QwenVL',
+            name: 'ComfyUI QwenVL',
+            repository: 'https://github.com/example/ComfyUI_QwenVL'
+          }
+        ]
+      ])
+    )
+
+    const fetchImpl = vi.fn(async () =>
+      response({
+        QwenNode: validNode({
+          name: 'QwenNode',
+          python_module: 'custom_nodes.ComfyUI_QwenVL.nodes'
+        })
+      })
+    )
+    const outcome = await fetchCloudNodesForBuild({
+      apiKey: KEY,
+      baseUrl: BASE_URL,
+      fetchImpl: fetchImpl as typeof fetch
+    })
+
+    expect(outcome.status).toBe('fresh')
+    if (outcome.status !== 'fresh') return
+    expect(outcome.snapshot.packs[0]?.id).toBe('comfyui-qwenvl')
+    expect(outcome.snapshot.packs[0]?.registryId).toBe('ComfyUI_QwenVL')
+    expect(fetchRegistryPacksMock).toHaveBeenCalledWith(
+      ['ComfyUI_QwenVL'],
+      expect.anything()
+    )
+  })
+
+  it('normalizes pack ids when reading a fallback snapshot', async () => {
+    const snapshotUrl = withSnapshotDir({
+      fetchedAt: '2026-04-01T00:00:00.000Z',
+      packs: [
+        {
+          id: 'ComfyUI-Crystools',
+          displayName: 'ComfyUI-Crystools',
+          nodes: [
+            {
+              name: 'CrystoolsNode',
+              displayName: 'Crystools Node',
+              category: 'x'
+            }
+          ]
+        },
+        {
+          id: 'basic_data_handling',
+          displayName: 'basic_data_handling',
+          nodes: [
+            { name: 'BasicNode', displayName: 'Basic Node', category: 'x' }
+          ]
+        }
+      ]
+    })
+
+    const outcome = await fetchCloudNodesForBuild({
+      snapshotUrl,
+      fetchImpl: vi.fn() as unknown as typeof fetch
+    })
+    expect(outcome.status).toBe('stale')
+    if (outcome.status !== 'stale') return
+    expect(outcome.snapshot.packs.map((p) => p.id)).toEqual([
+      'comfyui-crystools',
+      'basic-data-handling'
+    ])
+    rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
+  })
+
+  it('merges packs in the fallback snapshot whose ids slugify to the same value', async () => {
+    const snapshotUrl = withSnapshotDir({
+      fetchedAt: '2026-04-01T00:00:00.000Z',
+      packs: [
+        {
+          id: 'ComfyUI-QwenVL',
+          displayName: 'ComfyUI QwenVL',
+          nodes: [{ name: 'A', displayName: 'A', category: 'x' }]
+        },
+        {
+          id: 'ComfyUI_QwenVL',
+          displayName: 'ComfyUI QwenVL',
+          nodes: [{ name: 'B', displayName: 'B', category: 'x' }]
+        }
+      ]
+    })
+
+    const outcome = await fetchCloudNodesForBuild({
+      snapshotUrl,
+      fetchImpl: vi.fn() as unknown as typeof fetch
+    })
+    expect(outcome.status).toBe('stale')
+    if (outcome.status !== 'stale') return
+    expect(outcome.snapshot.packs).toHaveLength(1)
+    expect(outcome.snapshot.packs[0]?.id).toBe('comfyui-qwenvl')
+    expect(outcome.snapshot.packs[0]?.nodes.map((n) => n.name).sort()).toEqual([
+      'A',
+      'B'
+    ])
+    rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
+  })
 })

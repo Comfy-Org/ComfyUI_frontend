@@ -4,7 +4,9 @@ import type { FetchOutcome } from './cloudNodes'
 import type { NodesSnapshot } from '../data/cloudNodes'
 
 const fetchCloudNodesMock = vi.hoisted(() =>
-  vi.fn<() => Promise<FetchOutcome>>()
+  vi.fn<
+    (options?: { snapshotUrl?: URL; apiKey?: string }) => Promise<FetchOutcome>
+  >()
 )
 const reportCloudNodesOutcomeMock = vi.hoisted(() => vi.fn())
 
@@ -33,19 +35,26 @@ const SNAPSHOT: NodesSnapshot = {
 
 describe('loadPacksForBuild', () => {
   const savedVercelEnv = process.env.VERCEL_ENV
+  const savedFixture = process.env.WEBSITE_CLOUD_NODES_FIXTURE
 
   beforeEach(() => {
     fetchCloudNodesMock.mockReset()
     reportCloudNodesOutcomeMock.mockReset()
     delete process.env.VERCEL_ENV
+    delete process.env.WEBSITE_CLOUD_NODES_FIXTURE
   })
 
   afterEach(() => {
     if (savedVercelEnv === undefined) {
       delete process.env.VERCEL_ENV
-      return
+    } else {
+      process.env.VERCEL_ENV = savedVercelEnv
     }
-    process.env.VERCEL_ENV = savedVercelEnv
+    if (savedFixture === undefined) {
+      delete process.env.WEBSITE_CLOUD_NODES_FIXTURE
+    } else {
+      process.env.WEBSITE_CLOUD_NODES_FIXTURE = savedFixture
+    }
   })
 
   it('returns packs when fetch is fresh', async () => {
@@ -124,5 +133,51 @@ describe('loadPacksForBuild', () => {
 
     await expect(loadPacksForBuild()).rejects.toThrow()
     expect(reportCloudNodesOutcomeMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('forwards WEBSITE_CLOUD_NODES_FIXTURE as snapshotUrl with an empty api key', async () => {
+    process.env.WEBSITE_CLOUD_NODES_FIXTURE =
+      'e2e/fixtures/cloud-nodes.fixture.json'
+    fetchCloudNodesMock.mockResolvedValue({
+      status: 'stale',
+      snapshot: SNAPSHOT,
+      reason: 'missing WEBSITE_CLOUD_API_KEY'
+    })
+
+    await loadPacksForBuild()
+    const call = fetchCloudNodesMock.mock.calls[0]?.[0]
+    expect(call?.snapshotUrl).toBeInstanceOf(URL)
+    expect(call?.snapshotUrl?.protocol).toBe('file:')
+    expect(call?.snapshotUrl?.pathname).toMatch(
+      /apps\/website\/e2e\/fixtures\/cloud-nodes\.fixture\.json$/
+    )
+    expect(call?.apiKey).toBe('')
+  })
+
+  it('accepts an absolute path for WEBSITE_CLOUD_NODES_FIXTURE', async () => {
+    process.env.WEBSITE_CLOUD_NODES_FIXTURE = '/etc/cloud-nodes.fixture.json'
+    fetchCloudNodesMock.mockResolvedValue({
+      status: 'stale',
+      snapshot: SNAPSHOT,
+      reason: 'missing WEBSITE_CLOUD_API_KEY'
+    })
+
+    await loadPacksForBuild()
+    const call = fetchCloudNodesMock.mock.calls[0]?.[0]
+    expect(call?.snapshotUrl?.pathname).toBe('/etc/cloud-nodes.fixture.json')
+  })
+
+  it('does not throw on stale-in-production when the fixture override is set', async () => {
+    process.env.VERCEL_ENV = 'production'
+    process.env.WEBSITE_CLOUD_NODES_FIXTURE =
+      'e2e/fixtures/cloud-nodes.fixture.json'
+    fetchCloudNodesMock.mockResolvedValue({
+      status: 'stale',
+      snapshot: SNAPSHOT,
+      reason: 'missing WEBSITE_CLOUD_API_KEY'
+    })
+
+    const packs = await loadPacksForBuild()
+    expect(packs).toBe(SNAPSHOT.packs)
   })
 })

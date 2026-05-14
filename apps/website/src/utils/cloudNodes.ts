@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import {
   groupNodesByPack,
   sanitizeUserContent,
+  slugifyPackId,
   validateComfyNodeDef
 } from '@comfyorg/object-info-parser'
 
@@ -240,7 +241,7 @@ async function parseCloudNodes(
   let registryMap = new Map<string, RegistryPack | null>()
   try {
     registryMap = await fetchRegistryPacks(
-      grouped.map((pack) => pack.id),
+      grouped.map((pack) => pack.rawId),
       { fetchImpl: options.fetchImpl }
     )
   } catch {
@@ -252,7 +253,7 @@ async function parseCloudNodes(
       pack.id,
       pack.displayName,
       pack.nodes,
-      registryMap.get(pack.id)
+      registryMap.get(pack.rawId)
     )
   )
 
@@ -338,16 +339,33 @@ async function readSnapshot(
   snapshotUrl: URL | undefined
 ): Promise<NodesSnapshot | null> {
   if (!snapshotUrl) {
-    return isNodesSnapshot(bundledSnapshot) ? bundledSnapshot : null
+    return isNodesSnapshot(bundledSnapshot)
+      ? normalizeSnapshotIds(bundledSnapshot)
+      : null
   }
   try {
     const text = await readFile(snapshotUrl, 'utf8')
     const parsed: unknown = JSON.parse(text)
-    if (isNodesSnapshot(parsed)) return parsed
+    if (isNodesSnapshot(parsed)) return normalizeSnapshotIds(parsed)
     return null
   } catch {
     return null
   }
+}
+
+function normalizeSnapshotIds(snapshot: NodesSnapshot): NodesSnapshot {
+  const bySlug = new Map<string, Pack>()
+  for (const pack of snapshot.packs) {
+    const slug = slugifyPackId(pack.id)
+    if (!slug) continue
+    const existing = bySlug.get(slug)
+    if (existing) {
+      existing.nodes = [...existing.nodes, ...pack.nodes]
+      continue
+    }
+    bySlug.set(slug, { ...pack, id: slug })
+  }
+  return { ...snapshot, packs: [...bySlug.values()] }
 }
 
 function defaultSleep(ms: number): Promise<void> {
