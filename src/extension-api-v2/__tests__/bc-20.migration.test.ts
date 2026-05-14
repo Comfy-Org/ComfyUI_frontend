@@ -71,7 +71,7 @@ function createV2Runtime() {
     const handle = {
       type: comfyClass,
       comfyClass,
-      entityId: `node:test:${id}`
+      id: `node:test:${id}`
     } as Parameters<NonNullable<NodeExtensionOptions['nodeCreated']>>[0]
     const sorted = [...extensions].sort((a, b) => a.name.localeCompare(b.name))
     for (const ext of sorted) {

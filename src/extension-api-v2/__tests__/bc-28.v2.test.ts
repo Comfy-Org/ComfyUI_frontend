@@ -23,7 +23,7 @@ interface ResolvedEdge {
 }
 
 interface ReadOnlyNode {
-  readonly entityId: string
+  readonly id: string
   readonly type: string
   readonly title: string
   getProperty<T>(key: string): T | undefined
@@ -57,7 +57,7 @@ function createMockReadOnlyGraph(): ReadOnlyGraph {
       return nodes.filter((n) => n.type === type)
     },
     getNode(id: string) {
-      return nodes.find((n) => n.entityId === id)
+      return nodes.find((n) => n.id === id)
     }
   }
 }
@@ -69,7 +69,7 @@ function createMockReadOnlyNode(
   props: Record<string, unknown> = {}
 ): ReadOnlyNode {
   return {
-    entityId: id,
+    id: id,
     type,
     title,
     getProperty<T>(key: string): T | undefined {
@@ -147,7 +147,7 @@ describe('BC.28 v2 contract — subgraph fan-out via set/get virtual nodes', () 
 
       options.resolveConnections(mockNode, createMockReadOnlyGraph())
 
-      expect(receivedNode!.entityId).toBe('node:1')
+      expect(receivedNode!.id).toBe('node:1')
       expect(receivedNode!.type).toBe('SetNode')
       expect(receivedNode!.title).toBe('MySet')
       expect(receivedNode!.getProperty<string>('channel')).toBe('alpha')
@@ -222,10 +222,10 @@ describe('BC.28 v2 contract — subgraph fan-out via set/get virtual nodes', () 
         virtual: true,
         resolveConnections(node: ReadOnlyNode, graph: ReadOnlyGraph) {
           // Type system prevents mutation:
-          // - node.entityId is readonly
+          // - node.id is readonly
           // - graph has no add/remove methods
           // Runtime enforcement (dev mode throwing) is Phase B
-          void node.entityId
+          void node.id
           void graph.findByType
           return []
         }

@@ -129,7 +129,7 @@ describe('BC.11 migration — widget imperative state writes', () => {
         name: 'bc11.mig.set-value',
         nodeCreated(handle) {
           const wh = handle.addWidget('INT', 'steps', 20, {})
-          v2WidgetId = wh.entityId as string
+          v2WidgetId = wh.id as string
           wh.setValue(30)
         }
       })

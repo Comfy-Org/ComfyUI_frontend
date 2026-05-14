@@ -33,7 +33,7 @@ interface MockWorld {
 }
 
 interface MockNodeInternal {
-  entityId: string
+  id: string
   type: string
   inputs: MockSlot[]
   outputs: MockSlot[]
@@ -53,7 +53,7 @@ interface LinkHandle {
 }
 
 interface NodeHandle {
-  readonly entityId: string
+  readonly id: string
   readonly type: string
   connect(
     srcSlot: number,
@@ -86,7 +86,7 @@ function createMockWorld(): MockWorld {
 
 function createNodeHandle(
   world: MockWorld,
-  entityId: string,
+  id: string,
   type: string,
   inputs: Array<{ name: string; type: string }>,
   outputs: Array<{ name: string; type: string }>
@@ -102,7 +102,7 @@ function createNodeHandle(
 
   const handle: NodeHandle = {
     get entityId() {
-      return internal.entityId
+      return internal.id
     },
     get type() {
       return internal.type
@@ -114,7 +114,7 @@ function createNodeHandle(
       dstSlot: number
     ): LinkHandle | null {
       const srcSlotObj = internal.outputs[srcSlot]
-      const targetInternal = world.nodes.get(targetHandle.entityId)
+      const targetInternal = world.nodes.get(targetHandle.id)
       if (!targetInternal) return null
 
       const dstSlotObj = targetInternal.inputs[dstSlot]
@@ -160,9 +160,9 @@ function createNodeHandle(
       const linkId = world._nextLinkId++
       const link: MockLink = {
         id: linkId,
-        origin_id: internal.entityId,
+        origin_id: internal.id,
         origin_slot: srcSlot,
-        target_id: targetInternal.entityId,
+        target_id: targetInternal.id,
         target_slot: dstSlot
       }
       world.links.set(linkId, link)

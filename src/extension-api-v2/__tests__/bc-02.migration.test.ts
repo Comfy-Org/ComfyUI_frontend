@@ -114,7 +114,7 @@ describe('BC.02 migration — node lifecycle: teardown', () => {
 
       // Remove all in sequence
       for (const node of nodes) {
-        app.graph.remove(node.entityId)
+        app.graph.remove(node.id)
         node.onRemoved()
         node.v2.unmount()
       }
@@ -223,14 +223,14 @@ describe('BC.02 migration — node lifecycle: teardown', () => {
       const v2Counts = { NodeA: 0, NodeB: 0 }
 
       const nodeA = {
-        entityId: app.graph.add({ type: 'NodeA' }),
+        id: app.graph.add({ type: 'NodeA' }),
         onRemoved: () => v1Counts.NodeA++,
         v2: mountV2(() => {
           onScopeDispose(() => v2Counts.NodeA++)
         })
       }
       const nodeB = {
-        entityId: app.graph.add({ type: 'NodeB' }),
+        id: app.graph.add({ type: 'NodeB' }),
         onRemoved: () => v1Counts.NodeB++,
         v2: mountV2(() => {
           onScopeDispose(() => v2Counts.NodeB++)

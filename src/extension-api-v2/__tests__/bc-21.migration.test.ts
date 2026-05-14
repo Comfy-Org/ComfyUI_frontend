@@ -114,9 +114,7 @@ describe('BC.21 migration — custom widget-type registration', () => {
 
       // Simulate runtime calling created for 3 widget instances of this type.
       const stubs = [1, 2, 3].map((i) => ({
-        entityId: i as WidgetExtensionOptions['name'] extends string
-          ? number
-          : never,
+        id: i as WidgetExtensionOptions['name'] extends string ? number : never,
         name: `counter_${i}`,
         widgetType: 'COUNTER_WIDGET'
       }))
@@ -140,7 +138,7 @@ describe('BC.21 migration — custom widget-type registration', () => {
       }
 
       const result = opts.created!(
-        { entityId: 1, name: 'w', widgetType: 'LIFECYCLE_WIDGET' } as never,
+        { id: 1, name: 'w', widgetType: 'LIFECYCLE_WIDGET' } as never,
         null
       ) as { render(el: HTMLElement): void; destroy?(): void }
 

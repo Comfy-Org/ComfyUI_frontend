@@ -17,17 +17,17 @@ interface ReactiveGraphHandle {
   readonly nodeCount: { readonly value: number }
 
   /** Add a node (triggers reactivity) */
-  addNode(opts: { type: string }): { entityId: string; type: string }
+  addNode(opts: { type: string }): { id: string; type: string }
 
   /** Remove a node (triggers reactivity) */
-  removeNode(handle: { entityId: string }): void
+  removeNode(handle: { id: string }): void
 
   /** Batch multiple mutations — watchers only see final state */
   batchUpdate(fn: () => void): void
 }
 
 function createReactiveGraphHandle(): ReactiveGraphHandle {
-  const nodes = new Map<string, { entityId: string; type: string }>()
+  const nodes = new Map<string, { id: string; type: string }>()
   const _nodeCount = ref(0)
   let batchDepth = 0
   let nextId = 1
@@ -38,16 +38,16 @@ function createReactiveGraphHandle(): ReactiveGraphHandle {
     },
 
     addNode(opts: { type: string }) {
-      const handle = { entityId: `node:${nextId++}`, type: opts.type }
-      nodes.set(handle.entityId, handle)
+      const handle = { id: `node:${nextId++}`, type: opts.type }
+      nodes.set(handle.id, handle)
       if (batchDepth === 0) {
         _nodeCount.value = nodes.size
       }
       return handle
     },
 
-    removeNode(handle: { entityId: string }) {
-      nodes.delete(handle.entityId)
+    removeNode(handle: { id: string }) {
+      nodes.delete(handle.id)
       if (batchDepth === 0) {
         _nodeCount.value = nodes.size
       }

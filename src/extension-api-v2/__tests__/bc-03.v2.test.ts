@@ -42,7 +42,7 @@ describe('BC.03 v2 contract — node lifecycle: hydration from saved workflows',
       const handle = {
         type: record.type,
         comfyClass: record.comfyClass,
-        entityId: record.entityId,
+        id: record.id,
         title: record.title,
         properties: record.properties
       }
@@ -59,7 +59,7 @@ describe('BC.03 v2 contract — node lifecycle: hydration from saved workflows',
       expect(capturedHandles).toHaveLength(1)
       const received = capturedHandles[0] as typeof handle
       expect(received.type).toBe('KSampler')
-      expect(received.entityId).toBe(entityId)
+      expect(received.id).toBe(entityId)
     })
 
     it('widget values are present on the handle when loadedGraphNode fires', () => {
@@ -103,7 +103,7 @@ describe('BC.03 v2 contract — node lifecycle: hydration from saved workflows',
       const record = world.findNode(entityId)!
 
       // Simulate fresh creation: only nodeCreated fires.
-      ext.nodeCreated({ type: record.type, entityId: record.entityId })
+      ext.nodeCreated({ type: record.type, id: record.id })
 
       expect(createdFn).toHaveBeenCalledOnce()
       expect(loadedFn).not.toHaveBeenCalled()
@@ -125,7 +125,7 @@ describe('BC.03 v2 contract — node lifecycle: hydration from saved workflows',
       const record = world.findNode(entityId)!
 
       // Simulate workflow load: only loadedGraphNode fires.
-      ext.loadedGraphNode({ type: record.type, entityId: record.entityId })
+      ext.loadedGraphNode({ type: record.type, id: record.id })
 
       expect(loadedFn).toHaveBeenCalledOnce()
       expect(createdFn).not.toHaveBeenCalled()
@@ -141,8 +141,8 @@ describe('BC.03 v2 contract — node lifecycle: hydration from saved workflows',
 
       const ext = {
         name: 'test.ordering',
-        loadedGraphNode(handle: { entityId: number }) {
-          nodeFoundDuringHook = world.findNode(handle.entityId) !== undefined
+        loadedGraphNode(handle: { id: number }) {
+          nodeFoundDuringHook = world.findNode(handle.id) !== undefined
         }
       }
 
@@ -170,13 +170,13 @@ describe('BC.03 v2 contract — node lifecycle: hydration from saved workflows',
       // Simulate filtered dispatch: runtime only calls loadedGraphNode for matching types.
       for (const record of world.allNodes()) {
         if (ext.nodeTypes.includes(record.type)) {
-          ext.loadedGraphNode({ type: record.type, entityId: record.entityId })
+          ext.loadedGraphNode({ type: record.type, id: record.id })
         }
       }
 
       expect(loadedFn).toHaveBeenCalledOnce()
-      const handle = loadedFn.mock.calls[0][0] as { entityId: number }
-      expect(handle.entityId).toBe(kSamplerId)
+      const handle = loadedFn.mock.calls[0][0] as { id: number }
+      expect(handle.id).toBe(kSamplerId)
     })
 
     it('loadedGraphNode fires for every workflow-loaded node when nodeTypes is omitted', () => {
@@ -195,7 +195,7 @@ describe('BC.03 v2 contract — node lifecycle: hydration from saved workflows',
 
       // Simulate unfiltered dispatch.
       for (const record of world.allNodes()) {
-        ext.loadedGraphNode({ type: record.type, entityId: record.entityId })
+        ext.loadedGraphNode({ type: record.type, id: record.id })
       }
 
       expect(loadedFn).toHaveBeenCalledTimes(3)

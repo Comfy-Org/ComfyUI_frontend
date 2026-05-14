@@ -36,7 +36,7 @@ function createV1Graph() {
 
 // ── v2 mock: comfyApp.graph with typed handles ──────────────────────────────
 interface V2NodeHandle {
-  entityId: string
+  id: string
   type: string
 }
 
@@ -48,7 +48,7 @@ function createV2Graph() {
       return nodes.filter((n) => n.type === type)
     },
     addNode(opts: { type: string }): V2NodeHandle {
-      const handle = { entityId: `node:${nextId++}`, type: opts.type }
+      const handle = { id: `node:${nextId++}`, type: opts.type }
       nodes.push(handle)
       return handle
     },
@@ -74,7 +74,7 @@ describe('BC.29 migration — graph enumeration, mutation, and cross-scope ident
 
       // v2: NodeHandle with branded entityId
       const v2Results = v2Graph.findByType('KSampler')
-      expect(v2Results[0].entityId).toMatch(/^node:/)
+      expect(v2Results[0].id).toMatch(/^node:/)
     })
 
     it('v2 findByType call count matches v1 findNodesByType for equivalent operations', () => {
@@ -133,7 +133,7 @@ describe('BC.29 migration — graph enumeration, mutation, and cross-scope ident
       const handle = v2Graph.addNode({ type: 'NewNode' })
 
       expect(handle.type).toBe('NewNode')
-      expect(handle.entityId).toBeDefined()
+      expect(handle.id).toBeDefined()
     })
 
     it.todo(

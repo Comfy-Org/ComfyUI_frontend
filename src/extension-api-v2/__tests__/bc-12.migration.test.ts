@@ -63,8 +63,8 @@ describe('BC.12 migration — per-widget serialization transform', () => {
       expectTypeOf<NameField>().toEqualTypeOf<string>()
     })
 
-    it('WidgetHandle.entityId is a branded string — prevents mixing widget IDs with node IDs', () => {
-      type EntityId = WidgetHandle['entityId']
+    it('WidgetHandle.id is a branded string — prevents mixing widget IDs with node IDs', () => {
+      type EntityId = WidgetHandle['id']
       // Branded: assignable to string but not plain string (structurally string & { __brand })
       type IsString = EntityId extends string ? true : false
       const branded: IsString = true

@@ -37,17 +37,17 @@ describe('BC.02 v1 contract — node lifecycle: teardown [harness POC]', () => {
       const cleanupFn = vi.fn()
       const node = {
         type: 'LTXVideo',
-        entityId: app.graph.add({ type: 'LTXVideo' }),
+        id: app.graph.add({ type: 'LTXVideo' }),
         onRemoved: cleanupFn
       }
 
-      expect(world.findNode(node.entityId)).toBeDefined()
+      expect(world.findNode(node.id)).toBeDefined()
 
       // Simulate the LiteGraph removal sequence (Phase A: explicit call).
-      app.graph.remove(node.entityId)
+      app.graph.remove(node.id)
       node.onRemoved()
 
-      expect(world.findNode(node.entityId)).toBeUndefined()
+      expect(world.findNode(node.id)).toBeUndefined()
       expect(cleanupFn).toHaveBeenCalledOnce()
     })
 

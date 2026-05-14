@@ -118,7 +118,7 @@ describe('BC.11 v2 contract — widget imperative state writes', () => {
         name: 'bc11.v2.set-value-id',
         nodeCreated(handle) {
           const wh = handle.addWidget('FLOAT', 'cfg', 7.0, {})
-          capturedWidgetId.push(wh.entityId as string)
+          capturedWidgetId.push(wh.id as string)
           wh.setValue(8.5)
         }
       })
