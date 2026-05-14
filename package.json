@@ -51,7 +51,6 @@
     "test:extension-api:watch": "vitest --config vitest.extension-api.config.mts",
     "test:extension-api:coverage": "vitest run --config vitest.extension-api.config.mts --coverage",
     "test:unit": "nx run test",
-    "test:extension-api": "[ -f vitest.extension-api.config.mts ] && vitest run --config vitest.extension-api.config.mts || echo 'SKIP: vitest.extension-api.config.mts not found'",
     "typecheck": "vue-tsc --noEmit",
     "typecheck:browser": "vue-tsc --project browser_tests/tsconfig.json",
     "typecheck:desktop": "nx run @comfyorg/desktop-ui:typecheck",
