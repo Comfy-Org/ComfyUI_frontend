@@ -4,6 +4,9 @@ import './clipspace'
 import './contextMenuFilter'
 import './customWidgets'
 import './dynamicPrompts'
+// v1 and v2 conversions are loaded side-by-side during the migration window
+// (D6 parallel paths). v2 extensions register under distinct names
+// (e.g. `Comfy.DynamicPrompts.V2`), so no idempotent guard is needed.
 import './dynamicPrompts.v2'
 import './editAttention'
 import './electronAdapter'
