@@ -461,4 +461,82 @@ describe('fetchCloudNodesForBuild', () => {
     ])
     rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
   })
+
+  it('preserves optional metadata from later aliases when snapshot packs collide on slug', async () => {
+    const snapshotUrl = withSnapshotDir({
+      fetchedAt: '2026-04-01T00:00:00.000Z',
+      packs: [
+        {
+          id: 'ComfyUI-QwenVL',
+          displayName: 'ComfyUI QwenVL',
+          nodes: [{ name: 'A', displayName: 'A', category: 'x' }]
+        },
+        {
+          id: 'ComfyUI_QwenVL',
+          displayName: 'ComfyUI QwenVL',
+          registryId: 'ComfyUI_QwenVL',
+          description: 'rich description from the underscore variant',
+          repoUrl: 'https://github.com/example/ComfyUI_QwenVL',
+          publisher: { id: 'qwen-team', name: 'Qwen Team' },
+          downloads: 1234,
+          githubStars: 7,
+          license: 'MIT',
+          nodes: [{ name: 'B', displayName: 'B', category: 'x' }]
+        }
+      ]
+    })
+
+    const outcome = await fetchCloudNodesForBuild({
+      snapshotUrl,
+      fetchImpl: vi.fn() as unknown as typeof fetch
+    })
+    expect(outcome.status).toBe('stale')
+    if (outcome.status !== 'stale') return
+    const merged = outcome.snapshot.packs[0]
+    expect(merged?.id).toBe('comfyui-qwenvl')
+    expect(merged?.registryId).toBe('ComfyUI_QwenVL')
+    expect(merged?.description).toBe(
+      'rich description from the underscore variant'
+    )
+    expect(merged?.repoUrl).toBe('https://github.com/example/ComfyUI_QwenVL')
+    expect(merged?.publisher).toEqual({ id: 'qwen-team', name: 'Qwen Team' })
+    expect(merged?.downloads).toBe(1234)
+    expect(merged?.githubStars).toBe(7)
+    expect(merged?.license).toBe('MIT')
+    rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
+  })
+
+  it('does not overwrite metadata already present on the first slug-collided pack', async () => {
+    const snapshotUrl = withSnapshotDir({
+      fetchedAt: '2026-04-01T00:00:00.000Z',
+      packs: [
+        {
+          id: 'ComfyUI-QwenVL',
+          displayName: 'first wins',
+          registryId: 'ComfyUI-QwenVL',
+          repoUrl: 'https://github.com/example/ComfyUI-QwenVL',
+          nodes: [{ name: 'A', displayName: 'A', category: 'x' }]
+        },
+        {
+          id: 'ComfyUI_QwenVL',
+          displayName: 'second loses',
+          registryId: 'ComfyUI_QwenVL',
+          repoUrl: 'https://github.com/example/ComfyUI_QwenVL',
+          nodes: [{ name: 'B', displayName: 'B', category: 'x' }]
+        }
+      ]
+    })
+
+    const outcome = await fetchCloudNodesForBuild({
+      snapshotUrl,
+      fetchImpl: vi.fn() as unknown as typeof fetch
+    })
+    expect(outcome.status).toBe('stale')
+    if (outcome.status !== 'stale') return
+    const merged = outcome.snapshot.packs[0]
+    expect(merged?.displayName).toBe('first wins')
+    expect(merged?.registryId).toBe('ComfyUI-QwenVL')
+    expect(merged?.repoUrl).toBe('https://github.com/example/ComfyUI-QwenVL')
+    rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
+  })
 })

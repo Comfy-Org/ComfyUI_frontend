@@ -371,12 +371,24 @@ function normalizeSnapshotIds(snapshot: NodesSnapshot): NodesSnapshot {
     if (!slug) continue
     const existing = bySlug.get(slug)
     if (existing) {
-      existing.nodes = [...existing.nodes, ...pack.nodes]
+      bySlug.set(slug, mergeCollidedPacks(existing, pack))
       continue
     }
     bySlug.set(slug, { ...pack, id: slug })
   }
   return { ...snapshot, packs: [...bySlug.values()] }
+}
+
+function mergeCollidedPacks(first: Pack, next: Pack): Pack {
+  const merged: Pack = { ...first, nodes: [...first.nodes, ...next.nodes] }
+  for (const [key, value] of Object.entries(next) as [keyof Pack, unknown][]) {
+    if (key === 'id' || key === 'nodes') continue
+    if (value === undefined || value === null) continue
+    if (merged[key] === undefined || merged[key] === null) {
+      ;(merged as Record<keyof Pack, unknown>)[key] = value
+    }
+  }
+  return merged
 }
 
 function defaultSleep(ms: number): Promise<void> {
