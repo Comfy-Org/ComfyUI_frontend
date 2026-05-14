@@ -81,7 +81,9 @@ function makeV2NodeManager() {
       }
 
       if (replacer !== null) {
-        return (replacer as (orig: Record<string, unknown>) => Record<string, unknown>)(data)
+        return (
+          replacer as (orig: Record<string, unknown>) => Record<string, unknown>
+        )(data)
       }
       return data
     }

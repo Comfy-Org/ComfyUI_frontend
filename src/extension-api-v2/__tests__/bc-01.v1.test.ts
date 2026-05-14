@@ -84,8 +84,12 @@ describe('BC.01 v1 contract — node lifecycle: creation', () => {
       const fakeNode = { id: 3, type: 'VAEDecode' }
       const callOrder: string[] = []
 
-      const extA = { nodeCreated: vi.fn((_node: unknown) => callOrder.push('A')) }
-      const extB = { nodeCreated: vi.fn((_node: unknown) => callOrder.push('B')) }
+      const extA = {
+        nodeCreated: vi.fn((_node: unknown) => callOrder.push('A'))
+      }
+      const extB = {
+        nodeCreated: vi.fn((_node: unknown) => callOrder.push('B'))
+      }
 
       // Simulate the app dispatching nodeCreated to all registered extensions
       for (const ext of [extA, extB]) {
