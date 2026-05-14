@@ -2,7 +2,7 @@
 // DB cross-ref: S2.N4
 // Exemplar: https://github.com/Lightricks/ComfyUI-LTXVideo/blob/main/web/js/sparse_track_editor.js#L137
 // compat-floor: blast_radius 5.20 ≥ 2.0 — MUST pass before v2 ships
-// v2 replacement: defineNodeExtension({ onRemoved(handle) { ... } })
+// v2 replacement: defineNode({ onRemoved(handle) { ... } })
 //
 // Phase A harness note: The full extension service (`extensionV2Service.ts`)
 // cannot be imported here — it depends on `@/ecs/world` which doesn't exist
@@ -187,7 +187,7 @@ describe('BC.02 v2 contract — node lifecycle: teardown', () => {
 // ── Phase B stubs ─────────────────────────────────────────────────────────────
 
 describe('BC.02 v2 contract — node lifecycle: teardown [Phase B/C]', () => {
-  describe('NodeExtensionOptions.nodeCreated — via defineNodeExtension', () => {
+  describe('NodeExtensionOptions.nodeCreated — via defineNode', () => {
     it.todo(
       'onNodeRemoved() called inside nodeCreated fires when the node is unmounted by the service'
     )

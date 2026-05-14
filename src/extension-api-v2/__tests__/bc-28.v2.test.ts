@@ -3,7 +3,7 @@
 // Exemplar: https://github.com/kijai/ComfyUI-KJNodes/blob/main/web/js/setgetnodes.js#L1406
 // blast_radius: 4.97
 // compat-floor: blast_radius ≥ 2.0
-// v2 contract: defineNodeExtension({ virtual: true, resolveConnections(node, graph) → ResolvedEdges })
+// v2 contract: defineNode({ virtual: true, resolveConnections(node, graph) → ResolvedEdges })
 // Decision: I-UWF.5 (2026-05-08) — Option (b) accepted. Phase B only.
 // resolveConnections is pure; runtime materializes edges at save time (UWF Phase 3).
 
@@ -12,7 +12,7 @@ import { describe, it } from 'vitest'
 describe('BC.28 v2 contract — subgraph fan-out via set/get virtual nodes', () => {
   describe('S9.SG1 — virtual: true declaration', () => {
     it.todo(
-      'defineNodeExtension({ virtual: true }) excludes the node from spec.edges in the serialized prompt'
+      'defineNode({ virtual: true }) excludes the node from spec.edges in the serialized prompt'
     )
     it.todo(
       'virtual nodes do not appear in the serialized workflow output keyed by node id'

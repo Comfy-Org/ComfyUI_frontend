@@ -40,7 +40,7 @@ vi.mock('@/extension-api/lifecycle', () => emptyMockFactory())
 import {
   _clearExtensionsForTesting,
   _setDispatchImplForTesting,
-  defineNodeExtension,
+  defineNode,
   mountExtensionsForNode,
   unmountExtensionsForNode
 } from '@/services/extension-api-service'
@@ -79,7 +79,7 @@ function createV1Node(widgets: V1Widget[] = []): V1Node {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function makeNodeId(n: number): NodeEntityId {
-  return `node:graph-uuid-bc11-mig:${n}` as NodeEntityId
+  return `node:graph-uuid-bc11-mig:${n}` as unknown as NodeEntityId
 }
 
 function stubNodeType(id: NodeEntityId, comfyClass = 'TestNode') {
@@ -125,7 +125,7 @@ describe('BC.11 migration — widget imperative state writes', () => {
 
       // v2: dispatch-based setValue
       let v2WidgetId: string | undefined
-      defineNodeExtension({
+      defineNode({
         name: 'bc11.mig.set-value',
         nodeCreated(handle) {
           const wh = handle.addWidget('INT', 'steps', 20, {})
@@ -159,7 +159,7 @@ describe('BC.11 migration — widget imperative state writes', () => {
       expect(v1CommandsAfter - v1CommandsBefore).toBe(0)
 
       // v2: always dispatches
-      defineNodeExtension({
+      defineNode({
         name: 'bc11.mig.set-value-dispatch',
         nodeCreated(handle) {
           const wh = handle.addWidget('FLOAT', 'cfg', 7.0, {})
@@ -188,7 +188,7 @@ describe('BC.11 migration — widget imperative state writes', () => {
       expect(v1Widget.options!.values).toEqual(newValues)
 
       // v2: setOption dispatch
-      defineNodeExtension({
+      defineNode({
         name: 'bc11.mig.set-options',
         nodeCreated(handle) {
           const wh = handle.addWidget('COMBO', 'sampler', 'euler', {
@@ -225,7 +225,7 @@ describe('BC.11 migration — widget imperative state writes', () => {
       expect(v1WidgetA.options!.values).toEqual(['karras', 'exponential'])
 
       // v2: same independence via named widget identity
-      defineNodeExtension({
+      defineNode({
         name: 'bc11.mig.option-independence',
         nodeCreated(handle) {
           const whA = handle.addWidget('COMBO', 'schedulerA', 'karras', {
@@ -259,7 +259,7 @@ describe('BC.11 migration — widget imperative state writes', () => {
 
       // v2: addWidget dispatch
       const v2Names: string[] = []
-      defineNodeExtension({
+      defineNode({
         name: 'bc11.mig.add-widget',
         nodeCreated(handle) {
           const wh = handle.addWidget('STRING', 'dynamic_lora', '', {})
@@ -287,7 +287,7 @@ describe('BC.11 migration — widget imperative state writes', () => {
 
       // v2: addWidget uses name key — 'cfg' remains at key 'cfg' regardless of insertion order
       const createCmds: Record<string, unknown>[] = []
-      defineNodeExtension({
+      defineNode({
         name: 'bc11.mig.no-drift',
         nodeCreated(handle) {
           handle.addWidget('INT', 'steps', 20, {})
@@ -310,7 +310,7 @@ describe('BC.11 migration — widget imperative state writes', () => {
     })
 
     it('v2 addWidget returns a WidgetHandle that can immediately call setValue — no index lookup needed', () => {
-      defineNodeExtension({
+      defineNode({
         name: 'bc11.mig.immediate-set',
         nodeCreated(handle) {
           const wh = handle.addWidget('INT', 'strength', 0, {})
@@ -336,7 +336,7 @@ describe('BC.11 migration — widget imperative state writes', () => {
 
       // v2: handle returned from addWidget — no index
       let whName: string | undefined
-      defineNodeExtension({
+      defineNode({
         name: 'bc11.mig.handle-returned',
         nodeCreated(handle) {
           const wh = handle.addWidget('STRING', 'added', '', {})

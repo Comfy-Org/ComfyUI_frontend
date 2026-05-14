@@ -6,7 +6,7 @@
 // Phase A findings (from lifecycle.ts inspection):
 // - NodeExtensionOptions does NOT yet have `virtual: true` or `resolveConnections` fields.
 //   These are planned for Phase B per D6 §Q5 decision.
-// - What IS testable today: NodeExtensionOptions shape, defineNodeExtension registration,
+// - What IS testable today: NodeExtensionOptions shape, defineNode registration,
 //   type-scoped filtering (nodeTypes:[]), and the documented gap.
 //
 // I-TF.8 — BC.20 v2 wired assertions.
@@ -150,11 +150,11 @@ describe('BC.20 v2 contract — custom node-type registration', () => {
   })
 
   describe('WidgetExtensionOptions shape — custom widget type', () => {
-    it('WidgetExtensionOptions accepts name, type, widgetCreated', () => {
+    it('WidgetExtensionOptions accepts name, type, created', () => {
       const opts: WidgetExtensionOptions = {
         name: 'bc20.test.color-picker',
         type: 'COLOR_PICKER',
-        widgetCreated(_widget, _parentNode) {
+        created(_widget, _parentNode) {
           return {
             render(_container: HTMLElement) {},
             destroy() {}
@@ -162,7 +162,7 @@ describe('BC.20 v2 contract — custom node-type registration', () => {
         }
       }
       expect(opts.type).toBe('COLOR_PICKER')
-      expect(typeof opts.widgetCreated).toBe('function')
+      expect(typeof opts.created).toBe('function')
     })
 
     it('WidgetExtensionOptions.type is the unique widget type key', () => {

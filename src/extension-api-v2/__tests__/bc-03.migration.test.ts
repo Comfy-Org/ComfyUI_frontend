@@ -1,11 +1,11 @@
 // Category: BC.03 — Node lifecycle: hydration from saved workflows
 // DB cross-ref: S1.H1, S2.N7
 // compat-floor: blast_radius 4.91 ≥ 2.0 — MUST pass before v2 ships
-// Migration: v1 node.onConfigure / beforeRegisterNodeDef → v2 defineNodeExtension({ loadedGraphNode(handle) })
+// Migration: v1 node.onConfigure / beforeRegisterNodeDef → v2 defineNode({ loadedGraphNode(handle) })
 //
 // Key rename: the v1 surface is `node.onConfigure = function(data) { ... }`
 // patched prototype-level. The v2 replacement is `loadedGraphNode(handle)` in
-// `defineNodeExtension`. The argument shape changes: v1 receives the raw
+// `defineNode`. The argument shape changes: v1 receives the raw
 // serialized node object (data); v2 receives a typed NodeHandle (widget values
 // already applied by the runtime before the hook fires).
 

@@ -36,7 +36,7 @@ function makeLegacyNode(initial: Record<string, unknown> = {}): LegacyNode {
 
 function makeV2Node(legacy: LegacyNode): NodeHandle & { _legacy: LegacyNode } {
   return {
-    entityId: 1 as NodeEntityId,
+    entityId: 1 as unknown as NodeEntityId,
     type: 'TestNode',
     comfyClass: 'TestNode',
     getPosition: () => [0, 0],

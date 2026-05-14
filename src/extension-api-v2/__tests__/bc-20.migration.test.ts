@@ -226,7 +226,7 @@ describe('BC.20 migration — custom and virtual node registration', () => {
         'Phase B required — resolveConnections not yet on NodeExtensionOptions.'
     )
     it.todo(
-      '[gap] canvas rendering of a virtual node registered via v2 defineNodeExtension is identical to v1 LiteGraph.registerNodeType. ' +
+      '[gap] canvas rendering of a virtual node registered via v2 defineNode is identical to v1 LiteGraph.registerNodeType. ' +
         'Phase B required — canvas render system not in harness.'
     )
   })

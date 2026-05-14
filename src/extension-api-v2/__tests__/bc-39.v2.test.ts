@@ -11,7 +11,7 @@ import { describe, it } from 'vitest'
 describe('BC.39 v2 contract — subgraph boundary event propagation', () => {
   describe('subgraphCompatible flag', () => {
     it.todo(
-      'defineNodeExtension({ subgraphCompatible: true }) opts the node into boundary propagation'
+      'defineNode({ subgraphCompatible: true }) opts the node into boundary propagation'
     )
     it.todo(
       'nodes without subgraphCompatible: true retain v1 behavior (fire on internal node only)'
