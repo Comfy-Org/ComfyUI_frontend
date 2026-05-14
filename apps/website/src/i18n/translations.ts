@@ -2171,9 +2171,15 @@ const translations = {
   },
 
   // ── Affiliate Program Terms ───────────────────────────────────────
-  // Legal-final-pending-signoff. zh-CN copy intentionally mirrors en
-  // until legal approves a translation; non-engineers can edit these
-  // entries directly without a code change.
+  // Legal-reviewed copy — ENGLISH ONLY. There is no /zh-CN/affiliates/terms
+  // route, and the `'zh-CN'` values below intentionally duplicate `en`
+  // verbatim only to satisfy the translations dictionary's required
+  // Record<Locale, string> shape. Do NOT translate these into Chinese:
+  // shipping an unreviewed translation as the active terms exposes us to
+  // liability from the translation diverging from the legal-approved
+  // English source. If a translated terms page is ever needed, add a
+  // separate `/affiliates/terms/<locale>` route only after legal signs
+  // off on that specific translation as the authoritative version.
   'affiliate-terms.effective-date': {
     en: 'May 15, 2026',
     'zh-CN': 'May 15, 2026'
