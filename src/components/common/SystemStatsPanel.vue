@@ -93,9 +93,20 @@ const localColumns: ColumnDef[] = [
   { field: 'embedded_python', headerKey: 'g.systemStatsEmbeddedPython' },
   { field: 'pytorch_version', headerKey: 'g.systemStatsPyTorchVersion' },
   { field: 'argv', headerKey: 'g.systemStatsArguments' },
-  { field: 'ram_total', headerKey: 'g.systemStatsRAMTotal', formatNumber: formatSize },
-  { field: 'ram_free', headerKey: 'g.systemStatsRAMFree', formatNumber: formatSize },
-  { field: 'installed_templates_version', headerKey: 'g.systemStatsTemplatesVersion' }
+  {
+    field: 'ram_total',
+    headerKey: 'g.systemStatsRAMTotal',
+    formatNumber: formatSize
+  },
+  {
+    field: 'ram_free',
+    headerKey: 'g.systemStatsRAMFree',
+    formatNumber: formatSize
+  },
+  {
+    field: 'installed_templates_version',
+    headerKey: 'g.systemStatsTemplatesVersion'
+  }
 ]
 
 /** Columns for cloud distribution */
@@ -112,7 +123,10 @@ const cloudColumns: ColumnDef[] = [
     getValue: () => frontendCommit,
     format: formatCommitHash
   },
-  { field: 'workflow_templates_version', headerKey: 'g.systemStatsTemplatesVersion' }
+  {
+    field: 'workflow_templates_version',
+    headerKey: 'g.systemStatsTemplatesVersion'
+  }
 ]
 
 const systemColumns = computed(() => (isCloud ? cloudColumns : localColumns))
