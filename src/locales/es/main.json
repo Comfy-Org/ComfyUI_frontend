@@ -913,7 +913,8 @@
     "extensionFileHint": "Esto puede deberse al siguiente script",
     "loadWorkflowTitle": "La carga se interrumpió debido a un error al recargar los datos del flujo de trabajo",
     "noStackTrace": "No hay seguimiento de pila disponible",
-    "promptExecutionError": "La ejecución del prompt falló"
+    "promptExecutionError": "La ejecución del prompt falló",
+    "queueOpenWorkflowFailedTitle": "No se pudo abrir el flujo de trabajo"
   },
   "errorOverlay": {
     "errorCount": "{count} ERROR | {count} ERRORES",
@@ -1041,6 +1042,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "Logo de ComfyOrg",
+    "comfyPackageOutdated": "La versión instalada de {name} ({installedVersion}) es inferior a la versión requerida ({requiredVersion}).",
     "comingSoon": "Próximamente",
     "command": "Comando",
     "commandProhibited": "El comando {command} está prohibido. Contacta a un administrador para más información.",
