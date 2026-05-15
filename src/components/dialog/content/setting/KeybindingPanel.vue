@@ -106,34 +106,10 @@
               :pt="{ bodyCell: 'p-1 min-h-8' }"
             >
               <template #body="slotProps">
-                <div
-                  v-if="slotProps.data.keybindings.length > 0"
-                  class="flex items-center gap-1"
-                >
-                  <template
-                    v-for="(binding, idx) in (
-                      slotProps.data as ICommandData
-                    ).keybindings.slice(0, 2)"
-                    :key="binding.combo.serialize()"
-                  >
-                    <span v-if="idx > 0" class="text-muted-foreground">,</span>
-                    <KeyComboDisplay
-                      :key-combo="binding.combo"
-                      :is-modified="slotProps.data.isModified"
-                    />
-                  </template>
-                  <span
-                    v-if="slotProps.data.keybindings.length > 2"
-                    class="rounded-sm px-1.5 py-0.5 text-xs text-muted-foreground"
-                  >
-                    {{
-                      $t('g.nMoreKeybindings', {
-                        count: slotProps.data.keybindings.length - 2
-                      })
-                    }}
-                  </span>
-                </div>
-                <span v-else>-</span>
+                <KeybindingList
+                  :keybindings="slotProps.data.keybindings"
+                  :is-modified="slotProps.data.isModified"
+                />
               </template>
             </Column>
             <Column
@@ -147,9 +123,15 @@
                 }}</span>
               </template>
             </Column>
-            <Column field="actions" header="" :pt="{ bodyCell: 'p-1 min-h-8' }">
+            <Column
+              field="actions"
+              header=""
+              :pt="{ bodyCell: 'p-1 min-h-8 whitespace-nowrap' }"
+            >
               <template #body="slotProps">
-                <div class="actions flex flex-row justify-end">
+                <div
+                  class="actions flex flex-row justify-end whitespace-nowrap"
+                >
                   <Button
                     v-if="slotProps.data.keybindings.length === 1"
                     v-tooltip="$t('g.edit')"
@@ -330,6 +312,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
+import KeybindingList from './keybinding/KeybindingList.vue'
 import KeybindingPresetToolbar from './keybinding/KeybindingPresetToolbar.vue'
 import KeyComboDisplay from './keybinding/KeyComboDisplay.vue'
 
