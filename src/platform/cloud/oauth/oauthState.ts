@@ -18,8 +18,28 @@ function readStoredOAuthRequestId(): string | null {
 }
 
 export function captureOAuthRequestId(query: LocationQuery): string | null {
-  const value = readQueryString(query.oauth_request_id)
-  if (!value || !isOAuthRequestId(value)) return null
+  // The router guard calls this on every navigation. We can't unconditionally
+  // clear on absence — the OAuth return-trip from a social-login provider
+  // (Google / GitHub) arrives at /login with `code` + `state` in the query
+  // but no `oauth_request_id`, and we need the previously-captured value to
+  // survive that hop.
+  //
+  // We DO clear on an explicitly invalid value (present but malformed): that
+  // shape is either a stale deep-link or probing, and a stale Comfy.OAuthRequestId
+  // contaminating later flows is worse than dropping the bad input.
+  const raw = query.oauth_request_id
+  const value = readQueryString(raw)
+  if (!value) {
+    if (raw !== undefined) {
+      // Present but non-string (e.g. repeated `?oauth_request_id=a&oauth_request_id=b`).
+      sessionStorage.removeItem(OAUTH_REQUEST_ID_STORAGE_KEY)
+    }
+    return null
+  }
+  if (!isOAuthRequestId(value)) {
+    sessionStorage.removeItem(OAUTH_REQUEST_ID_STORAGE_KEY)
+    return null
+  }
 
   sessionStorage.setItem(OAUTH_REQUEST_ID_STORAGE_KEY, value)
   return value
