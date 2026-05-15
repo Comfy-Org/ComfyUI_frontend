@@ -913,7 +913,8 @@
     "extensionFileHint": "これは次のスクリプトが原因かもしれません",
     "loadWorkflowTitle": "ワークフローデータの再読み込みエラーにより、読み込みが中止されました",
     "noStackTrace": "スタックトレースは利用できません",
-    "promptExecutionError": "プロンプトの実行に失敗しました"
+    "promptExecutionError": "プロンプトの実行に失敗しました",
+    "queueOpenWorkflowFailedTitle": "ワークフローのオープンに失敗しました"
   },
   "errorOverlay": {
     "errorCount": "{count} 件のエラー",
@@ -1041,6 +1042,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrgロゴ",
+    "comfyPackageOutdated": "インストールされている{name}のバージョン{installedVersion}は、必要なバージョン{requiredVersion}よりも低いです。",
     "comingSoon": "近日公開",
     "command": "コマンド",
     "commandProhibited": "コマンド {command} は禁止されています。詳細は管理者にお問い合わせください。",

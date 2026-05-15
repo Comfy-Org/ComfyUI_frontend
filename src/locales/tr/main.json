@@ -913,7 +913,8 @@
     "extensionFileHint": "Bu, aşağıdaki komut dosyasından kaynaklanıyor olabilir",
     "loadWorkflowTitle": "İş akışı verileri yeniden yüklenirken hata nedeniyle yükleme iptal edildi",
     "noStackTrace": "Yığın izi mevcut değil",
-    "promptExecutionError": "İstem yürütmesi başarısız oldu"
+    "promptExecutionError": "İstem yürütmesi başarısız oldu",
+    "queueOpenWorkflowFailedTitle": "İş Akışı Açılamadı"
   },
   "errorOverlay": {
     "errorCount": "{count} HATA | {count} HATA",
@@ -1041,6 +1042,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrg Logosu",
+    "comfyPackageOutdated": "Yüklü {name} sürümü ({installedVersion}), gerekli sürümden ({requiredVersion}) daha eski.",
     "comingSoon": "Çok Yakında",
     "command": "Komut",
     "commandProhibited": "{command} komutu yasak. Daha fazla bilgi için bir yöneticiyle iletişime geçin.",
