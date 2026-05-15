@@ -9,6 +9,8 @@ type ViewManagerEntry = PromotedWidgetSource & {
  *
  * Keeps object identity stable by key while preserving the current
  * promotion order and deduplicating duplicate entries by first occurrence.
+ *
+ * @internal
  */
 export class PromotedWidgetViewManager<TView> {
   private viewCache = new Map<string, TView>()

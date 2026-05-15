@@ -28,6 +28,8 @@ interface DeduplicationResult {
  * @param reservedNodeIds - Node IDs already in use by root-level nodes
  * @param state - Graph state containing the `lastNodeId` counter (mutated)
  * @param rootNodes - Optional root-level nodes with proxyWidgets to patch
+ *
+ * @internal
  */
 export function deduplicateSubgraphNodeIds(
   subgraphs: ExportedSubgraph[],
@@ -148,6 +150,8 @@ function patchPromotedWidgets(
  *
  * Falls back to the original order if no reordering is needed or if the
  * dependency graph contains cycles.
+ *
+ * @internal
  */
 export function topologicalSortSubgraphs(
   subgraphs: ExportedSubgraph[]
