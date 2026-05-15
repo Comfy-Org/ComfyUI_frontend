@@ -182,7 +182,7 @@ type SelectWidgetOptions = NonNullable<Props['widget']['options']> & {
   filterPlaceholder?: string
 }
 
-const props = defineProps<Props>()
+const { widget } = defineProps<Props>()
 
 const MAX_VISIBLE_OPTIONS = 7
 
@@ -195,8 +195,8 @@ function resolveValues(values: unknown): string[] {
 }
 
 const modelValue = defineModel<string | undefined>({
-  default(props: Props) {
-    const values = props.widget.options?.values
+  default(modelProps: Props) {
+    const values = modelProps.widget.options?.values
     const resolved = typeof values === 'function' ? values() : values
     const firstValue = Array.isArray(resolved)
       ? resolved.find((value) => value !== null && value !== undefined)
@@ -215,7 +215,7 @@ const { handleFocusOutside, handleViewportPointerDown } =
 const transformCompatProps = useTransformCompatOverlayProps()
 
 const widgetOptions = computed(
-  () => props.widget.options as SelectWidgetOptions | undefined
+  () => widget.options as SelectWidgetOptions | undefined
 )
 
 const portalTarget = computed(() => {
