@@ -660,7 +660,8 @@ test(
       await comfyPage.canvas.hover({ position: await seedIOSlot.getPosition() })
 
       const rawClip = await comfyPage.subgraph.getInputBounds()
-      const clip = { ...rawClip, ...comfyPage.canvasOps.toAbsolute(rawClip) }
+      const absolutePos = await comfyPage.canvasOps.toAbsolute(rawClip)
+      const clip = { ...rawClip, ...absolutePos }
       await expect(comfyPage.page).toHaveScreenshot('vue-io-highlight.png', {
         clip
       })
