@@ -94,6 +94,19 @@ export function useSelectedLiteGraphItems() {
   }
 
   /**
+   * True iff every selected (top-level) node is already in the given mode.
+   * Mirrors the predicate inside {@link toggleSelectedNodesMode} so callers
+   * (e.g. context-menu labels) can preview what the toggle will do.
+   */
+  const areAllSelectedNodesInMode = (mode: LGraphEventMode): boolean => {
+    const selectedNodes = app.canvas.selected_nodes
+    if (!selectedNodes) return false
+    const selectedNodeArray = Object.values(selectedNodes)
+    if (selectedNodeArray.length === 0) return false
+    return selectedNodeArray.every((node) => node.mode === mode)
+  }
+
+  /**
    * Toggle the execution mode of all selected nodes
    *
    * - If any nodes are not already the specified node mode → all are set to specified mode
@@ -105,15 +118,10 @@ export function useSelectedLiteGraphItems() {
     const selectedNodes = app.canvas.selected_nodes
     if (!selectedNodes) return
 
-    // Convert selected_nodes object to array
-    const selectedNodeArray: LGraphNode[] = []
-    for (const i in selectedNodes) {
-      selectedNodeArray.push(selectedNodes[i])
-    }
-    const allNodesMatch = !selectedNodeArray.some(
-      (selectedNode) => selectedNode.mode !== mode
-    )
-    const newModeForSelectedNode = allNodesMatch ? LGraphEventMode.ALWAYS : mode
+    const selectedNodeArray = Object.values(selectedNodes)
+    const newModeForSelectedNode = areAllSelectedNodesInMode(mode)
+      ? LGraphEventMode.ALWAYS
+      : mode
 
     for (const selectedNode of selectedNodeArray)
       selectedNode.mode = newModeForSelectedNode
@@ -126,6 +134,7 @@ export function useSelectedLiteGraphItems() {
     hasSelectableItems,
     hasMultipleSelectableItems,
     getSelectedNodes,
-    toggleSelectedNodesMode
+    toggleSelectedNodesMode,
+    areAllSelectedNodesInMode
   }
 }
