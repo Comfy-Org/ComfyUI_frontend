@@ -98,6 +98,16 @@ class PromotedWidgetView implements IPromotedWidgetView {
   private _boundSlot?: SubgraphSlotRef
   private _boundSlotVersion = -1
 
+  /**
+   * Last value written into the host widget state by an auto-seed call
+   * ({@link ensureHostWidgetState}). When the persisted host state still
+   * matches this value, the user has not modified it; we are free to
+   * re-seed it from a freshly resolved interior value if the interior
+   * has since been hydrated. Cleared whenever the host state is written
+   * by a non-seed path (user edit, migration replay).
+   */
+  private _lastAutoSeededValue?: IBaseWidget['value']
+
   constructor(
     private readonly subgraphNode: SubgraphNode,
     nodeId: string,
@@ -227,10 +237,12 @@ class PromotedWidgetView implements IPromotedWidgetView {
     const state = this.getHostWidgetState()
     if (state) {
       state.value = value
+      this._lastAutoSeededValue = undefined
       return
     }
 
     this.registerHostWidgetState(value)
+    this._lastAutoSeededValue = undefined
   }
 
   /**
@@ -238,13 +250,45 @@ class PromotedWidgetView implements IPromotedWidgetView {
    * effective value. Vue rendering reads from this entry keyed by
    * {@link entityId}, so it must exist before first render even if migration
    * has not run.
+   *
+   * The first render can run before the subgraph interior nodes have
+   * finished hydrating their serialized `widgets_values`, leaving the host
+   * entry seeded with a stale interior default. Re-seed on later calls
+   * whenever the persisted host value still matches our last auto-seed
+   * (the user has not edited it) and a fresh interior fallback differs.
    */
   ensureHostWidgetState(): void {
-    if (this.getHostWidgetState()) return
-    // Seed from the effective promoted value (host → linked → deepest →
-    // interior fallback) instead of the raw interior default, so a restored
-    // promoted value isn't shadowed on first render.
-    this.registerHostWidgetState(this.value)
+    const fallback = this.fallbackEffectiveValue()
+    const existing = this.getHostWidgetState()
+
+    if (existing) {
+      if (
+        this._lastAutoSeededValue !== undefined &&
+        existing.value === this._lastAutoSeededValue &&
+        isWidgetValue(fallback) &&
+        fallback !== existing.value
+      ) {
+        existing.value = fallback
+        this._lastAutoSeededValue = fallback
+      }
+      return
+    }
+
+    this.registerHostWidgetState(fallback)
+    this._lastAutoSeededValue = fallback
+  }
+
+  /**
+   * Resolve the effective value for this promoted widget by traversing the
+   * fallback chain (linked interior state → deepest widget state → live
+   * interior value), bypassing the host's own state. Used by
+   * {@link ensureHostWidgetState} so re-seeding is not a no-op when the
+   * host state is the one holding a stale value.
+   */
+  private fallbackEffectiveValue(): IBaseWidget['value'] {
+    const state = this.getWidgetState()
+    if (state && isWidgetValue(state.value)) return state.value
+    return this.resolveAtHost()?.widget.value
   }
 
   private registerHostWidgetState(value: IBaseWidget['value']): void {
