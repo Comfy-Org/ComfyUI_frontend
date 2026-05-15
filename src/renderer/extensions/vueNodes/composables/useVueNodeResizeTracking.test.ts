@@ -78,6 +78,31 @@ vi.mock('./useSlotElementTracking', () => ({
   syncNodeSlotLayoutsFromDOM: testState.syncNodeSlotLayoutsFromDOM
 }))
 
+const rafBatchState = vi.hoisted(() => ({
+  pending: null as (() => void) | null,
+  flush: () => {}
+}))
+
+vi.mock('@/utils/rafBatch', () => ({
+  createRafBatch: (run: () => void) => {
+    rafBatchState.flush = () => {
+      if (!rafBatchState.pending) return
+      rafBatchState.pending = null
+      run()
+    }
+    return {
+      schedule: () => {
+        rafBatchState.pending = run
+      },
+      cancel: () => {
+        rafBatchState.pending = null
+      },
+      flush: rafBatchState.flush,
+      isScheduled: () => rafBatchState.pending != null
+    }
+  }
+}))
+
 import './useVueNodeResizeTracking'
 
 function createResizeEntry(options?: {
@@ -165,6 +190,7 @@ describe('useVueNodeResizeTracking', () => {
     resizeObserverState.observe.mockReset()
     resizeObserverState.unobserve.mockReset()
     resizeObserverState.disconnect.mockReset()
+    rafBatchState.pending = null
   })
 
   it('skips repeated no-op resize entries after first measurement', () => {
@@ -184,6 +210,7 @@ describe('useVueNodeResizeTracking', () => {
     seedNodeLayout({ nodeId, left, top, width, height })
 
     resizeObserverState.callback?.([entry], createObserverMock())
+    rafBatchState.flush()
 
     // When layout store already has correct position, getBoundingClientRect
     // is not needed — position is read from the store instead.
@@ -197,6 +224,7 @@ describe('useVueNodeResizeTracking', () => {
     testState.syncNodeSlotLayoutsFromDOM.mockReset()
 
     resizeObserverState.callback?.([entry], createObserverMock())
+    rafBatchState.flush()
 
     expect(rectSpy).not.toHaveBeenCalled()
     expect(testState.setSource).not.toHaveBeenCalled()
@@ -225,6 +253,7 @@ describe('useVueNodeResizeTracking', () => {
     })
 
     resizeObserverState.callback?.([entry], createObserverMock())
+    rafBatchState.flush()
 
     // Position from DOM should NOT override layout store position
     expect(rectSpy).not.toHaveBeenCalled()
@@ -252,6 +281,7 @@ describe('useVueNodeResizeTracking', () => {
     })
 
     resizeObserverState.callback?.([entry], createObserverMock())
+    rafBatchState.flush()
 
     expect(testState.setSource).toHaveBeenCalledWith(LayoutSource.DOM)
     expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith([
@@ -286,6 +316,7 @@ describe('useVueNodeResizeTracking', () => {
     seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
 
     resizeObserverState.callback?.([entry], createObserverMock())
+    rafBatchState.flush()
 
     expect(testState.setSource).toHaveBeenCalledWith(LayoutSource.DOM)
     expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith([
@@ -316,6 +347,7 @@ describe('useVueNodeResizeTracking', () => {
       top: 200
     })
     resizeObserverState.callback?.([entry], createObserverMock())
+    rafBatchState.flush()
 
     expect(testState.setSource).toHaveBeenCalledWith(LayoutSource.DOM)
     expect(testState.batchUpdateNodeBounds).toHaveBeenCalled()
@@ -335,10 +367,76 @@ describe('useVueNodeResizeTracking', () => {
     } satisfies ResizeEntryLike
 
     resizeObserverState.callback?.([entry], createObserverMock())
+    rafBatchState.flush()
 
     expect(testState.scheduleSlotLayoutSync).toHaveBeenCalledWith(parentNodeId)
     expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
     expect(testState.setSource).not.toHaveBeenCalled()
     expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
+  })
+
+  it('defers layoutStore writes until the next animation frame', () => {
+    const nodeId = 'test-node'
+    const { entry } = createResizeEntry({
+      nodeId,
+      width: 300,
+      height: 200,
+      left: 100,
+      top: 200
+    })
+    seedNodeLayout({ nodeId, left: 100, top: 200, width: 220, height: 140 })
+
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
+    expect(testState.setSource).not.toHaveBeenCalled()
+
+    rafBatchState.flush()
+
+    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledTimes(1)
+    expect(testState.setSource).toHaveBeenCalledWith(LayoutSource.DOM)
+  })
+
+  it('coalesces successive resizes for the same node into one write per frame', () => {
+    const nodeId = 'test-node'
+    const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
+    seedNodeLayout({ nodeId, left: 100, top: 200, width: 220, height: 140 })
+
+    const intermediate = createResizeEntry({
+      nodeId,
+      width: 240,
+      height: 160,
+      left: 100,
+      top: 200
+    })
+    const final = createResizeEntry({
+      nodeId,
+      width: 260,
+      height: 180,
+      left: 100,
+      top: 200
+    })
+    final.entry.target = intermediate.entry.target
+
+    resizeObserverState.callback?.([intermediate.entry], createObserverMock())
+    resizeObserverState.callback?.([final.entry], createObserverMock())
+
+    expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
+
+    rafBatchState.flush()
+
+    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledTimes(1)
+    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith([
+      {
+        nodeId,
+        bounds: {
+          x: 100,
+          y: 200 + titleHeight,
+          width: 260,
+          height: 180
+        }
+      }
+    ])
+    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledTimes(1)
   })
 })
