@@ -6,6 +6,7 @@ import type {
   ResolvedPreviewChain
 } from '@/core/graph/subgraph/preview/previewExposureChain'
 import { resolvePreviewExposureChain } from '@/core/graph/subgraph/preview/previewExposureChain'
+import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
@@ -103,6 +104,21 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
   }
 
   /**
+   * Returns the host's exposures translated into the {@link PromotedWidgetSource}
+   * shape consumed by `resolveSubgraphPseudoWidgetCache`. Centralising this
+   * mapping keeps the exposure → promotion translation policy next to the store.
+   */
+  function getExposuresAsPromotionShape(
+    rootGraphId: UUID,
+    hostNodeLocator: string
+  ): PromotedWidgetSource[] {
+    return getExposures(rootGraphId, hostNodeLocator).map((exposure) => ({
+      sourceNodeId: exposure.sourceNodeId,
+      sourceWidgetName: exposure.sourcePreviewName
+    }))
+  }
+
+  /**
    * Resolve the chain of exposures from a host down to the originating source
    * preview, optionally walking through nested subgraph hosts.
    *
@@ -125,6 +141,7 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
 
   return {
     getExposures,
+    getExposuresAsPromotionShape,
     setExposures,
     addExposure,
     removeExposure,

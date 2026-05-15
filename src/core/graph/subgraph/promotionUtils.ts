@@ -46,7 +46,7 @@ export function isLinkedPromotion(
 
 /** Find the host input on `subgraphNode` whose `_widget` is the
  * `PromotedWidgetView` for `(sourceNodeId, sourceWidgetName)`. */
-function findHostInputForPromotion(
+export function findHostInputForPromotion(
   subgraphNode: SubgraphNode,
   sourceNodeId: string,
   sourceWidgetName: string
@@ -194,11 +194,6 @@ function isSamePromotedWidget(left: IBaseWidget, right: IBaseWidget): boolean {
   )
 }
 
-export function getSourceNodeId(w: IBaseWidget): string | undefined {
-  if (!isPromotedWidgetView(w)) return undefined
-  return w.sourceNodeId
-}
-
 function isPreviewExposed(
   subgraphNode: SubgraphNode,
   source: PromotedWidgetSource
@@ -213,24 +208,21 @@ function isPreviewExposed(
     )
 }
 
-function isPromotedOnParent(
-  subgraphNode: SubgraphNode,
-  widget: IBaseWidget,
-  source: PromotedWidgetSource
-): boolean {
-  if (isPreviewPseudoWidget(widget))
-    return isPreviewExposed(subgraphNode, source)
-  return isLinkedPromotion(
-    subgraphNode,
-    source.sourceNodeId,
-    source.sourceWidgetName
-  )
-}
-
+/**
+ * Returns true if the widget identified by `source` is already exposed on
+ * `subgraphNode` — either as a linked promotion (subgraph input) or as a
+ * preview exposure. When `widget` is provided and is a preview pseudo-widget,
+ * only the preview-exposure path is consulted (callers asking about a preview
+ * widget should not pick up an unrelated linked promotion with the same
+ * source identity).
+ */
 export function isWidgetPromotedOnSubgraphNode(
   subgraphNode: SubgraphNode,
-  source: PromotedWidgetSource
+  source: PromotedWidgetSource,
+  widget?: IBaseWidget
 ): boolean {
+  if (widget && isPreviewPseudoWidget(widget))
+    return isPreviewExposed(subgraphNode, source)
   return (
     isLinkedPromotion(
       subgraphNode,
@@ -450,7 +442,7 @@ export function addWidgetPromotionOptions(
   const parents = getParentNodes()
   const source = toPromotionSource(node, widget)
   const promotableParents = parents.filter(
-    (parent) => !isPromotedOnParent(parent, widget, source)
+    (parent) => !isWidgetPromotedOnSubgraphNode(parent, source, widget)
   )
   if (promotableParents.length > 0)
     options.unshift({
@@ -485,7 +477,7 @@ export function tryToggleWidgetPromotion() {
   if (!parents.length || !widget) return
   const source = toPromotionSource(node, widget)
   const promotableParents = parents.filter(
-    (parent) => !isPromotedOnParent(parent, widget, source)
+    (parent) => !isWidgetPromotedOnSubgraphNode(parent, source, widget)
   )
   if (promotableParents.length > 0)
     promoteWidget(node, widget, promotableParents)
@@ -660,10 +652,14 @@ export function hasUnpromotedWidgets(subgraphNode: SubgraphNode): boolean {
     getPromotableWidgets(interiorNode).some(
       (widget) =>
         !widget.computedDisabled &&
-        !isPromotedOnParent(subgraphNode, widget, {
-          sourceNodeId: String(interiorNode.id),
-          sourceWidgetName: widget.name
-        })
+        !isWidgetPromotedOnSubgraphNode(
+          subgraphNode,
+          {
+            sourceNodeId: String(interiorNode.id),
+            sourceWidgetName: widget.name
+          },
+          widget
+        )
     )
   )
 }

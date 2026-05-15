@@ -117,3 +117,31 @@ export async function getPromotedWidgetCountByName(
   const promotedWidgets = await getPromotedWidgets(comfyPage, nodeId)
   return promotedWidgets.filter(([, name]) => name === widgetName).length
 }
+
+/**
+ * Returns promoted widget entries for every subgraph host node in the current
+ * canvas graph, sorted by numeric host id. Delegates to {@link getPromotedWidgets}
+ * per host so all merge/validation logic lives in one place.
+ */
+export async function getAllHostPromotedWidgets(
+  comfyPage: ComfyPage
+): Promise<{ hostNodeId: string; promotedWidgets: PromotedWidgetEntry[] }[]> {
+  const hostNodeIds = await comfyPage.page.evaluate(() => {
+    const graph = window.app!.canvas.graph!
+    return graph._nodes
+      .filter(
+        (node) =>
+          typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
+      )
+      .map((node) => String(node.id))
+  })
+
+  const entries = await Promise.all(
+    hostNodeIds.map(async (hostNodeId) => ({
+      hostNodeId,
+      promotedWidgets: await getPromotedWidgets(comfyPage, hostNodeId)
+    }))
+  )
+
+  return entries.sort((a, b) => Number(a.hostNodeId) - Number(b.hostNodeId))
+}

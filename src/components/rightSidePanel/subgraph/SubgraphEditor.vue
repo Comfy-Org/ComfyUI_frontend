@@ -9,7 +9,6 @@ import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   demoteWidget,
   getPromotableWidgets,
-  getSourceNodeId,
   getWidgetName,
   isLinkedPromotion,
   isRecommendedWidget,
@@ -168,7 +167,8 @@ const candidateWidgets = computed<WidgetItem[]>(() => {
   // exposures are stored as the interior `[node, widget]` tuple directly.
   const promotedSourceKeys = new Set(
     activeWidgets.value.map(
-      ([n, w]) => `${getSourceNodeId(w) ?? String(n.id)}:${getWidgetName(w)}`
+      ([n, w]) =>
+        `${isPromotedWidgetView(w) ? w.sourceNodeId : String(n.id)}:${getWidgetName(w)}`
     )
   )
   return interiorWidgets.value.filter(
@@ -231,10 +231,10 @@ function isItemLinked([node, widget]: WidgetItem): boolean {
 }
 
 function toKey(item: WidgetItem) {
-  const sid = getSourceNodeId(item[1])
-  return sid
-    ? `${item[0].id}: ${item[1].name}:${sid}`
-    : `${item[0].id}: ${item[1].name}`
+  const widget = item[1]
+  return isPromotedWidgetView(widget)
+    ? `${item[0].id}: ${widget.name}:${widget.sourceNodeId}`
+    : `${item[0].id}: ${widget.name}`
 }
 function nodeWidgets(n: LGraphNode): WidgetItem[] {
   return getPromotableWidgets(n).map((w) => [n, w])

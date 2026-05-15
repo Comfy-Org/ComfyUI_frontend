@@ -1,9 +1,9 @@
 import { z } from 'zod'
-import { fromZodError } from 'zod-validation-error'
 
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 
+import { parseNodePropertyArray } from './parseNodePropertyArray'
 import { serializedProxyWidgetTupleSchema } from './promotionSchema'
 
 export const proxyWidgetQuarantineReasonSchema = z.enum([
@@ -37,20 +37,9 @@ export type ProxyWidgetErrorQuarantineEntry = Omit<
 export function parseProxyWidgetErrorQuarantine(
   property: NodeProperty | undefined
 ): ProxyWidgetErrorQuarantineEntry[] {
-  if (property === undefined) return []
-
-  try {
-    const result = proxyWidgetErrorQuarantinePropertySchema.safeParse(
-      typeof property === 'string' ? JSON.parse(property) : property
-    )
-    if (result.success) return result.data as ProxyWidgetErrorQuarantineEntry[]
-
-    const error = fromZodError(result.error)
-    console.warn(
-      `Invalid assignment for properties.proxyWidgetErrorQuarantine:\n${error}`
-    )
-  } catch (e) {
-    console.warn('Failed to parse properties.proxyWidgetErrorQuarantine:', e)
-  }
-  return []
+  return parseNodePropertyArray(
+    property,
+    proxyWidgetErrorQuarantinePropertySchema,
+    'properties.proxyWidgetErrorQuarantine'
+  ) as ProxyWidgetErrorQuarantineEntry[]
 }
