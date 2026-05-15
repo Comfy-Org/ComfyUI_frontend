@@ -482,7 +482,16 @@ describe('appModeStore', () => {
   })
 
   describe('pruneLinearData during graph loading', () => {
-    it('preserves all entries when ChangeTracker.isLoadingGraph is true', () => {
+    it('still upgrades legacy inputs but defers output pruning when ChangeTracker.isLoadingGraph is true', () => {
+      // `LGraph.configure` populates all nodes before dispatching `configured`,
+      // so input upgrade can safely run during loading. Outputs pruning is
+      // deferred so a transiently-missing node is not silently dropped.
+      const node1 = nodeWithWidgets(1, ['seed'])
+      vi.mocked(app.rootGraph).id = rootGraphId
+      vi.mocked(app.rootGraph).nodes = [node1]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        id == 1 ? node1 : null
+      )
       ChangeTracker.isLoadingGraph = true
 
       store.loadSelections({
@@ -493,10 +502,7 @@ describe('appModeStore', () => {
         outputs: [1, 999]
       })
 
-      expect(store.selectedInputs).toEqual([
-        [1, 'seed'],
-        [999, 'steps']
-      ])
+      expect(store.selectedInputs).toEqual([[entitySeed, 'seed']])
       expect(store.selectedOutputs).toEqual([1, 999])
     })
 

@@ -77,14 +77,27 @@ export const useAppModeStore = defineStore('appMode', () => {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
     const rootGraph = app.rootGraph
-    if (!rootGraph || ChangeTracker.isLoadingGraph) {
+    if (!rootGraph) {
       return { inputs: rawInputs, outputs: rawOutputs }
     }
+    // Inputs always upgrade: `configured` fires after `LGraph.configure()` has
+    // populated all nodes (LGraph.ts: dispatch in finally block), so legacy
+    // tuples can be canonicalized even when `isLoadingGraph` is still true.
+    // Without this, test-injected legacy `[nodeId, name]` tuples (and any
+    // pre-WidgetEntityId persisted data) stay raw and get filtered out by
+    // `useResolvedSelectedInputs`'s `isWidgetEntityId` guard, leaving the
+    // app-mode widget list empty.
+    //
+    // Outputs pruning is deferred during loading: a transiently-missing node
+    // (e.g. mid-reconfigure) would otherwise be silently dropped. Once the
+    // load completes the next prune will trim any genuinely stale entries.
     return {
       inputs: rawInputs
         .map((input) => upgradeAndValidateInput(input, rootGraph))
         .filter((entry): entry is LinearInput => entry !== null),
-      outputs: rawOutputs.filter((nodeId) => resolveNode(nodeId))
+      outputs: ChangeTracker.isLoadingGraph
+        ? rawOutputs
+        : rawOutputs.filter((nodeId) => resolveNode(nodeId))
     }
   }
 
