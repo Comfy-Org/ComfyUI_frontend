@@ -1,6 +1,10 @@
 import type { WebSocketRoute } from '@playwright/test'
 
-import type { NodeError, PromptResponse } from '@/schemas/apiSchema'
+import type {
+  NodeError,
+  NodeProgressState,
+  PromptResponse
+} from '@/schemas/apiSchema'
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
@@ -226,6 +230,16 @@ export class ExecutionHelper {
       JSON.stringify({
         type: 'progress',
         data: { prompt_id: jobId, node: nodeId, value, max }
+      })
+    )
+  }
+
+  /** Send `progress_state` WS event with per-node execution state. */
+  progressState(jobId: string, nodes: Record<string, NodeProgressState>): void {
+    this.requireWs().send(
+      JSON.stringify({
+        type: 'progress_state',
+        data: { prompt_id: jobId, nodes }
       })
     )
   }

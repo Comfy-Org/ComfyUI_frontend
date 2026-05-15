@@ -84,6 +84,7 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
+import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
 import { rescanAndSurfaceMissingNodes } from '@/platform/nodeReplacement/missingNodeScan'
 import {
@@ -96,7 +97,7 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import {
   scanAllMediaCandidates,
-  verifyCloudMediaCandidates
+  verifyMediaCandidates
 } from '@/platform/missingMedia/missingMediaScan'
 
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
@@ -591,6 +592,13 @@ export class ComfyApp {
         event.preventDefault()
         event.stopPropagation()
 
+        // graph_mouse is only updated on mousemove, so when files are dragged
+        // in from another window the canvas-space cursor is stale. Sync it
+        // from the drop event so nodes created below land at the cursor.
+        this.canvas.adjustMouseEvent(event)
+        this.canvas.graph_mouse[0] = event.canvasX
+        this.canvas.graph_mouse[1] = event.canvasY
+
         const n = this.dragOverNode
         this.dragOverNode = null
         // Node handles file drop, we dont use the built in onDropFile handler as its buggy
@@ -1084,7 +1092,7 @@ export class ComfyApp {
       }
 
       // Check for old clipboard format
-      const data = JSON.parse(template.data)
+      const data = parseJsonWithNonFinite<{ reroutes?: unknown }>(template.data)
       if (!data.reroutes) {
         deserialiseAndCreate(template.data, app.canvas)
       } else {
@@ -1508,9 +1516,13 @@ export class ComfyApp {
       return
     }
 
-    if (isCloud) {
+    const pending = candidates.some((c) => c.isMissing === undefined)
+    if (pending) {
       const controller = missingMediaStore.createVerificationAbortController()
-      void verifyCloudMediaCandidates(candidates, controller.signal)
+      void verifyMediaCandidates(candidates, {
+        isCloud,
+        signal: controller.signal
+      })
         .then(() => {
           if (controller.signal.aborted) return
           // Re-check ancestor after async verification (see model pipeline).
@@ -1792,7 +1804,9 @@ export class ComfyApp {
       let workflowObj: ComfyWorkflowJSON | undefined = undefined
       try {
         workflowObj =
-          typeof workflow === 'string' ? JSON.parse(workflow) : workflow
+          typeof workflow === 'string'
+            ? parseJsonWithNonFinite<ComfyWorkflowJSON>(workflow)
+            : (workflow as ComfyWorkflowJSON)
 
         // Only load workflow if parsing succeeded AND validation passed
         if (
@@ -1821,7 +1835,9 @@ export class ComfyApp {
     if (prompt) {
       try {
         const promptObj =
-          typeof prompt === 'string' ? JSON.parse(prompt) : prompt
+          typeof prompt === 'string'
+            ? parseJsonWithNonFinite<ComfyApiWorkflow>(prompt)
+            : prompt
         if (this.isApiJson(promptObj)) {
           this.loadApiJson(promptObj, fileName)
           return

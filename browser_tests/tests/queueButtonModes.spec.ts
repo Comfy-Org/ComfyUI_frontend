@@ -3,62 +3,42 @@ import { expect } from '@playwright/test'
 import type { PromptResponse } from '@/schemas/apiSchema'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
+
+const queueModeLabels = ['Run', 'Run (On Change)', 'Run (Instant)']
+const runOnChangeLabel = queueModeLabels[1]
 
 test.describe('Queue button modes', { tag: '@ui' }, () => {
   test('Run button is visible in topbar', async ({ comfyPage }) => {
-    await expect(comfyPage.runButton).toBeVisible()
+    await expect(comfyPage.actionbar.queueButton.primaryButton).toBeVisible()
   })
 
   test('Queue mode trigger menu is visible', async ({ comfyPage }) => {
-    const trigger = comfyPage.page.getByTestId(
-      TestIds.topbar.queueModeMenuTrigger
-    )
-    await expect(trigger).toBeVisible()
+    await expect(comfyPage.actionbar.queueButton.dropdownButton).toBeVisible()
   })
 
   test('Clicking queue mode trigger opens mode menu', async ({ comfyPage }) => {
-    const trigger = comfyPage.page.getByTestId(
-      TestIds.topbar.queueModeMenuTrigger
-    )
-    await trigger.click()
+    const options = await comfyPage.actionbar.queueButton.openOptions()
 
-    const menu = comfyPage.page.getByRole('menu')
-    await expect(menu).toBeVisible()
+    await expect(options.menu).toBeVisible()
   })
 
   test('Queue mode menu shows available modes', async ({ comfyPage }) => {
-    const trigger = comfyPage.page.getByTestId(
-      TestIds.topbar.queueModeMenuTrigger
-    )
-    await trigger.click()
+    const options = await comfyPage.actionbar.queueButton.openOptions()
 
-    const menu = comfyPage.page.getByRole('menu')
-    await expect(menu).toBeVisible()
-
-    const items = menu.getByRole('menuitem')
-    await expect(items).toHaveCount(3)
-    await expect(items.nth(0)).toHaveText('Run')
-    await expect(items.nth(1)).toHaveText('Run (On Change)')
-    await expect(items.nth(2)).toHaveText('Run (Instant)')
+    await expect(options.menu).toBeVisible()
+    await expect(options.modeItems).toHaveText(queueModeLabels)
   })
 
   test('Selecting a non-default mode updates the Run button label', async ({
     comfyPage
   }) => {
-    const trigger = comfyPage.page.getByTestId(
-      TestIds.topbar.queueModeMenuTrigger
-    )
-    await trigger.click()
+    const queueButton = comfyPage.actionbar.queueButton
+    const options = await queueButton.openOptions()
 
-    const menu = comfyPage.page.getByRole('menu')
-    await expect(menu).toBeVisible()
+    await expect(options.menu).toBeVisible()
+    await options.selectMode(runOnChangeLabel)
 
-    // Select "Run (On Change)" — a non-default mode so we observe a real change
-    const onChangeItem = menu.getByRole('menuitem').nth(1)
-    await onChangeItem.click()
-
-    await expect(comfyPage.runButton).toContainText('Run (On Change)')
+    await expect(queueButton.primaryButton).toContainText(runOnChangeLabel)
   })
 
   test('Run button sends prompt when clicked', async ({ comfyPage }) => {
@@ -76,7 +56,7 @@ test.describe('Queue button modes', { tag: '@ui' }, () => {
       })
     })
 
-    await comfyPage.runButton.click()
+    await comfyPage.actionbar.queueButton.primaryButton.click()
 
     await expect.poll(() => promptQueued).toBe(true)
   })
