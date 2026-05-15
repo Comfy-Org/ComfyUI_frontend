@@ -209,6 +209,50 @@ test.describe('Workflows sidebar', () => {
       .toBe('ok')
   })
 
+  test('Exported workflow metadata tracks serialized widget values', async ({
+    comfyPage
+  }) => {
+    test.info().annotations.push({
+      type: 'regression',
+      description:
+        'PR #10703 - graphToPrompt should sync widget serializeValue output to workflow metadata'
+    })
+
+    await comfyPage.workflow.loadWorkflow('default')
+
+    const snapshots = await comfyPage.page.evaluate(async () => {
+      const node = window.app!.graph.getNodeById(3)
+      const seedWidget = node?.widgets?.find((widget) => widget.name === 'seed')
+      if (!seedWidget) throw new Error('KSampler seed widget not found')
+
+      const seeds = [1001, 2002, 3003]
+      let callCount = 0
+      seedWidget.serializeValue = () => seeds[callCount++]
+
+      const results: Array<{
+        apiSeed: unknown
+        workflowSeed: unknown
+      }> = []
+
+      for (let i = 0; i < seeds.length; i++) {
+        const { output, workflow } = await window.app!.graphToPrompt()
+        const workflowNode = workflow.nodes.find((node) => node.id === 3)
+        results.push({
+          apiSeed: output['3'].inputs.seed,
+          workflowSeed: workflowNode?.widgets_values?.[0]
+        })
+      }
+
+      return results
+    })
+
+    expect(snapshots).toEqual([
+      { apiSeed: 1001, workflowSeed: 1001 },
+      { apiSeed: 2002, workflowSeed: 2002 },
+      { apiSeed: 3003, workflowSeed: 3003 }
+    ])
+  })
+
   test('Can export same workflow with different locales', async ({
     comfyPage
   }) => {
