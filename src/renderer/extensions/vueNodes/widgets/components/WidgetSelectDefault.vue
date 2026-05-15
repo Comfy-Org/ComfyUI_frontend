@@ -26,7 +26,7 @@
             :class="
               cn(
                 WidgetInputBaseClass,
-                'flex h-7 w-full min-w-0 cursor-pointer items-center overflow-hidden text-xs outline-none hover:bg-component-node-widget-background-hovered disabled:cursor-default disabled:opacity-50 disabled:hover:bg-component-node-widget-background',
+                'flex h-7 w-full min-w-0 cursor-pointer items-center overflow-hidden outline-none hover:bg-component-node-widget-background-hovered disabled:cursor-default disabled:opacity-50 disabled:hover:bg-component-node-widget-background',
                 isInvalid && 'ring-1 ring-destructive-background'
               )
             "
@@ -34,7 +34,7 @@
             <span
               :class="
                 cn(
-                  'min-w-[4ch] flex-1 truncate pr-3 pl-2 text-left',
+                  'min-w-[4ch] flex-1 truncate pr-3 pl-1 text-left',
                   $slots.default && 'mr-5'
                 )
               "
@@ -47,7 +47,7 @@
               <i
                 :class="
                   cn(
-                    'icon-[lucide--chevron-down] size-4 translate-x-0.5',
+                    'icon-[lucide--chevron-down] size-4 translate-x-1.5',
                     disabled
                       ? 'bg-component-node-foreground-secondary'
                       : 'bg-muted-foreground'
@@ -97,7 +97,7 @@
           <div
             data-testid="widget-select-default-viewport"
             role="presentation"
-            class="flex max-h-56 min-w-full scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent scrollbar-gutter-stable flex-col gap-1 overflow-y-auto p-1 text-xs"
+            class="scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent scrollbar-gutter-stable flex max-h-56 min-w-full flex-col gap-1 overflow-y-auto p-1 text-xs"
             :style="viewportStyle"
             @pointerdown.capture.self="handleViewportPointerDown"
           >
