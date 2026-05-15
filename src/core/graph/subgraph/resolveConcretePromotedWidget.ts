@@ -41,9 +41,8 @@ function traversePromotedWidgetChain(
       return { status: 'failure', failure: 'missing-node' }
     }
 
-    const sourceWidget = findWidgetByIdentity(
-      sourceNode.widgets,
-      currentWidgetName
+    const sourceWidget = sourceNode.widgets?.find(
+      (entry) => entry.name === currentWidgetName
     )
     if (!sourceWidget) {
       return { status: 'failure', failure: 'missing-widget' }
@@ -68,13 +67,6 @@ function traversePromotedWidgetChain(
   return { status: 'failure', failure: 'max-depth-exceeded' }
 }
 
-function findWidgetByIdentity(
-  widgets: IBaseWidget[] | undefined,
-  widgetName: string
-): IBaseWidget | undefined {
-  return widgets?.find((entry) => entry.name === widgetName)
-}
-
 export function resolvePromotedWidgetAtHost(
   hostNode: SubgraphNode,
   nodeId: string,
@@ -83,7 +75,7 @@ export function resolvePromotedWidgetAtHost(
   const node = hostNode.subgraph.getNodeById(nodeId)
   if (!node) return undefined
 
-  const widget = findWidgetByIdentity(node.widgets, widgetName)
+  const widget = node.widgets?.find((entry) => entry.name === widgetName)
   if (!widget) return undefined
 
   return { node, widget }

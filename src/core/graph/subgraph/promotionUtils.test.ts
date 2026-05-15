@@ -9,7 +9,12 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+
+function widgetSourceNodeId(w: IBaseWidget): string | undefined {
+  return isPromotedWidgetView(w) ? w.sourceNodeId : undefined
+}
 
 type TestPromotedWidget = IBaseWidget & {
   sourceNodeId: string
@@ -24,7 +29,6 @@ vi.mock('@/services/litegraphService', () => ({
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   getPromotableWidgets,
-  getSourceNodeId,
   hasUnpromotedWidgets,
   isLinkedPromotion,
   isPreviewPseudoWidget,
@@ -604,7 +608,7 @@ describe('reorderSubgraphInputAtIndex', () => {
 
     reorderSubgraphInputAtIndex(host, 0, 1)
 
-    expect(host.widgets.map((widget) => getSourceNodeId(widget))).toEqual([
+    expect(host.widgets.map((widget) => widgetSourceNodeId(widget))).toEqual([
       String(secondNode.id),
       String(firstNode.id)
     ])
@@ -669,7 +673,7 @@ describe('reorderSubgraphInputsByWidgetOrder', () => {
 
     reorderSubgraphInputsByWidgetOrder(host, [host.widgets[1], host.widgets[0]])
 
-    expect(host.widgets.map((widget) => getSourceNodeId(widget))).toEqual([
+    expect(host.widgets.map((widget) => widgetSourceNodeId(widget))).toEqual([
       String(secondNode.id),
       String(firstNode.id)
     ])

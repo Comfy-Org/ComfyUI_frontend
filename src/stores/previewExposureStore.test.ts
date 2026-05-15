@@ -122,6 +122,28 @@ describe(usePreviewExposureStore, () => {
     })
   })
 
+  describe('getExposuresAsPromotionShape', () => {
+    it('returns an empty array for unknown host', () => {
+      expect(store.getExposuresAsPromotionShape(rootGraphA, hostA)).toEqual([])
+    })
+
+    it('maps each exposure to {sourceNodeId, sourceWidgetName} preserving order', () => {
+      store.addExposure(rootGraphA, hostA, {
+        sourceNodeId: '42',
+        sourcePreviewName: 'preview'
+      })
+      store.addExposure(rootGraphA, hostA, {
+        sourceNodeId: '43',
+        sourcePreviewName: 'preview'
+      })
+
+      expect(store.getExposuresAsPromotionShape(rootGraphA, hostA)).toEqual([
+        { sourceNodeId: '42', sourceWidgetName: 'preview' },
+        { sourceNodeId: '43', sourceWidgetName: 'preview' }
+      ])
+    })
+  })
+
   describe('clearGraph', () => {
     it('removes all hosts under the rootGraphId without affecting others', () => {
       store.addExposure(rootGraphA, hostA, {

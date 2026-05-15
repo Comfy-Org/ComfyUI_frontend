@@ -91,10 +91,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   private _promotedViewManager =
     new PromotedWidgetViewManager<PromotedWidgetView>()
   private _cacheVersion = 0
-  private _linkedEntriesCache?: {
-    version: number
-    entries: LinkedPromotionEntry[]
-  }
   private _promotedViewsCache?: {
     version: number
     views: PromotedWidgetView[]
@@ -142,10 +138,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
   }
 
-  private _getLinkedPromotionEntries(cache = true): LinkedPromotionEntry[] {
-    const cached = this._linkedEntriesCache
-    if (cache && cached?.version === this._cacheVersion) return cached.entries
-
+  private _getLinkedPromotionEntries(): LinkedPromotionEntry[] {
     const linkedEntries: LinkedPromotionEntry[] = []
 
     for (const input of this.inputs) {
@@ -199,12 +192,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       seenEntryKeys.add(entryKey)
       return true
     })
-
-    if (cache)
-      this._linkedEntriesCache = {
-        version: this._cacheVersion,
-        entries: deduplicatedEntries
-      }
 
     return deduplicatedEntries
   }
@@ -830,10 +817,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       widget: view,
       subgraphNode: this
     })
-  }
-
-  override onAdded(_graph: LGraph): void {
-    this.invalidatePromotedViews()
   }
 
   /**
