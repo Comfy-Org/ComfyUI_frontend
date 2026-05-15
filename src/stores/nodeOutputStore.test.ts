@@ -317,6 +317,17 @@ describe('nodeOutputStore getPreviewParam', () => {
     expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
   })
 
+  it('should return empty string if outputs.images mixes EXR and previewable formats', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode()
+    const outputs = createMockOutputs([
+      { filename: 'image.png' },
+      { filename: 'render.exr' }
+    ])
+    expect(store.getPreviewParam(node, outputs)).toBe('')
+    expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
+  })
+
   it('should return format param for standard image outputs', () => {
     const store = useNodeOutputStore()
     const node = createMockNode()
