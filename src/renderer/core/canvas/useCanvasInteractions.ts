@@ -1,25 +1,10 @@
 import { computed } from 'vue'
 
 import { isMiddlePointerInput } from '@/base/pointerUtils'
+import { isCanvasGestureWheel } from '@/base/wheelGestures'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-
-/**
- * Wheel events whose browser default would break the editing experience.
- * On macOS trackpads:
- *   - `ctrl/meta + wheel` (pinch-zoom) triggers page-level zoom, which
- *     pushes fixed-position UI (e.g. ComfyActionbar) off-screen with no
- *     recovery short of a page reload.
- *   - Horizontal-dominant wheel (two-finger horizontal swipe) triggers
- *     back/forward navigation, which leaves the workflow.
- * Components that intercept wheel events should suppress the default for
- * these gestures even when they otherwise let the browser scroll natively.
- */
-export const isCanvasGestureWheel = (event: WheelEvent): boolean =>
-  event.ctrlKey ||
-  event.metaKey ||
-  Math.abs(event.deltaX) > Math.abs(event.deltaY)
 
 /**
  * Composable for handling canvas interactions from Vue components.
@@ -75,6 +60,9 @@ export function useCanvasInteractions() {
 
     // In standard mode, only canvas gestures (zoom/pan) are forwarded;
     // vertical wheel falls through so the document/widget scrolls normally.
+    // The re-check is intentional and NOT redundant with shouldForwardWheelEvent:
+    // that function also returns true for unfocused vertical wheel (its
+    // `!wheelCapturedByFocusedElement` branch), which here must stay native.
     if (isStandardNavMode.value) {
       if (isCanvasGestureWheel(event)) forwardEventToCanvas(event)
       return

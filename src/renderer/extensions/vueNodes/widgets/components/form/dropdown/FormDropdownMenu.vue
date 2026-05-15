@@ -3,7 +3,7 @@ import type { CSSProperties } from 'vue'
 import { computed } from 'vue'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
-import { isCanvasGestureWheel } from '@/renderer/core/canvas/useCanvasInteractions'
+import { isCanvasGestureWheel } from '@/base/wheelGestures'
 
 import type {
   FilterOption,
@@ -111,6 +111,7 @@ const onWheel = (event: WheelEvent) => {
   <div
     class="flex h-[640px] w-103 flex-col rounded-lg bg-component-node-background pt-4 outline -outline-offset-1 outline-node-component-border"
     data-capture-wheel="true"
+    data-testid="form-dropdown-menu"
     @wheel="onWheel"
   >
     <FormDropdownMenuFilter

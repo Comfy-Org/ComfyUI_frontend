@@ -232,7 +232,7 @@ describe('useCanvasInteractions', () => {
 
     /** Regression: trackpad pinch-zoom inside a focused textarea must not
      *  fall through to browser page zoom in non-standard navigation modes. */
-    it.each(['legacy', 'custom'])(
+    it.for(['legacy', 'custom'])(
       'should forward ctrl+wheel to canvas when capture element IS focused in %s mode',
       (mode) => {
         const { get } = useSettingStore()
@@ -283,7 +283,7 @@ describe('useCanvasInteractions', () => {
 
     /** Regression: trackpad two-finger horizontal swipes inside a focused
      *  textarea must not fall through to browser back/forward navigation. */
-    it.each(['standard', 'legacy', 'custom'])(
+    it.for(['standard', 'legacy', 'custom'])(
       'should forward horizontal-dominant wheel to canvas when capture element IS focused in %s mode',
       (mode) => {
         const { get } = useSettingStore()
