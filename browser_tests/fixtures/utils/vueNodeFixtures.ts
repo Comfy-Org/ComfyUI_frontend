@@ -14,6 +14,8 @@ export class VueNodeFixture {
   public readonly collapseIcon: Locator
   public readonly root: Locator
   public readonly widgets: Locator
+  public readonly imagePreview: Locator
+  public readonly content: Locator
 
   constructor(private readonly locator: Locator) {
     this.header = locator.locator('[data-testid^="node-header-"]')
@@ -25,6 +27,8 @@ export class VueNodeFixture {
     this.collapseIcon = this.collapseButton.locator('i')
     this.root = locator
     this.widgets = this.locator.locator('.lg-node-widget')
+    this.imagePreview = locator.locator('.image-preview')
+    this.content = locator.locator('.lg-node-content')
   }
 
   async getTitle(): Promise<string> {
@@ -35,6 +39,10 @@ export class VueNodeFixture {
     await this.header.dblclick()
     await this.titleEditor.expectVisible()
     await this.titleEditor.setTitle(value)
+  }
+
+  async select() {
+    await this.header.click()
   }
 
   async toggleCollapse(): Promise<void> {
@@ -57,5 +65,16 @@ export class VueNodeFixture {
 
   boundingBox(): ReturnType<Locator['boundingBox']> {
     return this.locator.boundingBox()
+  }
+
+  getSlot(nameOrLocator: string | Locator) {
+    const slotLocators = this.root
+      .getByTestId('node-widget')
+      .or(this.root.locator('.lg-slot'))
+    const filteredLocator =
+      typeof nameOrLocator === 'string'
+        ? slotLocators.filter({ hasText: nameOrLocator })
+        : slotLocators.filter({ has: nameOrLocator })
+    return filteredLocator.getByTestId('slot-dot').locator('..')
   }
 }

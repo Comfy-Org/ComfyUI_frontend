@@ -68,7 +68,7 @@ const isOpen = ref(false)
         type="button"
         :class="
           cn(
-            'flex h-8 w-full items-center overflow-clip rounded-lg border border-transparent bg-node-component-surface pr-2 outline-none hover:bg-component-node-widget-background-hovered',
+            'flex h-8 w-full items-center overflow-clip rounded-lg border border-transparent bg-component-node-widget-background pr-2 outline-none hover:bg-component-node-widget-background-hovered',
             isOpen && 'border-node-stroke',
             $props.class
           )
@@ -91,7 +91,7 @@ const isOpen = ref(false)
           </div>
         </div>
         <div
-          class="flex flex-1 items-center justify-between pl-1 text-xs text-node-component-slot-text"
+          class="flex flex-1 items-center justify-between pl-1 text-xs text-component-node-foreground"
         >
           <template v-if="displayMode === 'hex'">
             <span>{{ displayHex }}</span>

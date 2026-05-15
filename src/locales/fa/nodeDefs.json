@@ -953,6 +953,50 @@
       }
     }
   },
+  "ByteDanceSeedreamNodeV2": {
+    "description": "تولید تصویر از متن و ویرایش دقیق جمله‌ای با وضوح تا ۴K به صورت یکپارچه.",
+    "display_name": "ByteDance Seedream ۴.۵ و ۵.۰",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_fail_on_partial": {
+        "name": "fail_on_partial"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_max_images": {
+        "name": "max_images"
+      },
+      "model_size_preset": {
+        "name": "size_preset"
+      },
+      "model_width": {
+        "name": "width"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "پرامپت متنی برای ایجاد یا ویرایش تصویر."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed مورد استفاده برای تولید."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "آیا واترمارک «تولید شده توسط هوش مصنوعی» به تصویر اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceTextToVideoNode": {
     "description": "تولید ویدیو با استفاده از مدل‌های ByteDance از طریق API بر اساس پرامپت",
     "display_name": "تبدیل متن به ویدیو ByteDance",
@@ -1571,6 +1615,46 @@
       }
     }
   },
+  "ClaudeNode": {
+    "description": "تولید پاسخ متنی با مدل‌های Claude از Anthropic. یک پرامپت متنی وارد کنید و در صورت نیاز یک یا چند تصویر برای زمینه چندرسانه‌ای ارائه دهید.",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصویر(ها)ی اختیاری برای استفاده به عنوان زمینه برای مدل. تا ۲۰ تصویر."
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل Claude که برای تولید پاسخ استفاده می‌شود."
+      },
+      "model_max_tokens": {
+        "name": "حداکثر توکن‌ها"
+      },
+      "model_temperature": {
+        "name": "دمای مدل"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "ورودی متنی برای مدل."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "دستورالعمل‌های پایه‌ای که رفتار مدل را تعیین می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ColorToRGBInt": {
     "description": "تبدیل یک رنگ به مقدار صحیح RGB.",
     "display_name": "تبدیل رنگ به مقدار صحیح RGB",
@@ -1688,6 +1772,10 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "بولین",
         "tooltip": null
       }
     }
@@ -3108,6 +3196,26 @@
       }
     }
   },
+  "EmptyHiDreamO1LatentImage": {
+    "description": "فضای پیکسلی نهفته خالی برای HiDream-O1-Image. مدل در حدود ۴ مگاپیکسل آموزش دیده است؛ رزولوشن‌های پایین‌تر از توزیع خارج می‌شوند و کیفیت به طور محسوسی کاهش می‌یابد. رزولوشن‌های آموزش‌دیده: ۲۰۴۸×۲۰۴۸، ۲۳۰۴×۱۷۲۸، ۱۷۲۸×۲۳۰۴، ۲۵۶۰×۱۴۴۰، ۱۴۴۰×۲۵۶۰، ۲۴۹۶×۱۶۶۴، ۱۶۶۴×۲۴۹۶، ۳۱۰۴×۱۳۱۲، ۱۳۱۲×۳۱۰۴، ۲۳۰۴×۱۷۹۲، ۱۷۹۲×۲۳۰۴.",
+    "display_name": "تصویر نهفته خالی HiDream-O1",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyHunyuanImageLatent": {
     "display_name": "تصویر نهفته Hunyuan خالی",
     "inputs": {
@@ -3420,6 +3528,37 @@
     "inputs": {
       "sigmas": {
         "name": "سیگماها"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux2ImageNode": {
+    "description": "تولید تصویر با استفاده از Flux.2 [pro] یا Flux.2 [max] از طریق پرامپت و تصاویر مرجع اختیاری.",
+    "display_name": "Flux.2 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_width": {
+        "name": "width"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "پرامپت برای تولید یا ویرایش تصویر"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed تصادفی برای ایجاد نویز."
       }
     },
     "outputs": {
@@ -4451,6 +4590,40 @@
       }
     }
   },
+  "GrokImageEditNodeV2": {
+    "description": "ویرایش یک تصویر موجود بر اساس پرامپت متنی",
+    "display_name": "Grok Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_number_of_images": {
+        "name": "number_of_images"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "پرامپت متنی برای تولید تصویر"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed برای تعیین اجرای مجدد node؛ نتایج واقعی صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokImageNode": {
     "description": "تولید تصویر با استفاده از Grok بر اساس یک متن راهنما",
     "display_name": "تصویر Grok",
@@ -4788,6 +4961,70 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1PatchSeamSmoothing": {
+    "description": "میانگین‌گیری خروجی مدل در چندین موقعیت شبکه پچ جابجا شده در بخش پایانی نمونه‌گیری. درزها را حذف می‌کند.",
+    "display_name": "هموارسازی درز پچ HiDream-O1",
+    "inputs": {
+      "blend": {
+        "name": "ترکیب",
+        "tooltip": "average: میانگین با وزن برابر. window: وزن‌دهی پنجره Hann که هر عبور را از مرز پچ خود دور می‌کند. median: میانه هر پیکسل، عبورهای پرت را حذف می‌کند."
+      },
+      "end_percent": {
+        "name": "درصد پایان",
+        "tooltip": "پیشرفت نمونه‌گیری که در آن ترکیب غیرفعال می‌شود."
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "passes": {
+        "name": "تعداد عبور",
+        "tooltip": "تعداد عبور در هر مرحله. ۲/۴ = ثابت. ramp_*: تعداد عبور با نزدیک شدن نمونه‌گیری به پایان افزایش می‌یابد (هموارسازی بیشتر در جایی که درزها بیشتر دیده می‌شوند)."
+      },
+      "pattern": {
+        "name": "الگو",
+        "tooltip": "طرح جابجایی. single_shift: یک بار در شبکه پچ طبیعی + سایرین با افست. symmetric: همه عبورها خارج از شبکه، جابجایی‌ها حول مبدأ تقسیم می‌شوند."
+      },
+      "start_percent": {
+        "name": "درصد شروع",
+        "tooltip": "پیشرفت نمونه‌گیری (۰=شروع، ۱=پایان) که در آن ترکیب فعال می‌شود."
+      },
+      "strength": {
+        "name": "شدت",
+        "tooltip": "درون‌یابی بین پیش‌بینی شبکه طبیعی (۰) و نتیجه میانگین‌گیری شده (۱)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1ReferenceImages": {
+    "description": "ضمیمه کردن ۱ تا ۱۰ تصویر مرجع به شرط‌دهی؛ یک تصویر برای ویرایش دستور یا چند تصویر برای شخصی‌سازی مبتنی بر سوژه.",
+    "display_name": "تصاویر مرجع HiDream-O1",
+    "inputs": {
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصاویر مرجع. ۱ تصویر = ویرایش دستور؛ ۲ تا ۱۰ تصویر = مرجع چندگانه."
+      },
+      "negative": {
+        "name": "منفی"
+      },
+      "positive": {
+        "name": "مثبت"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
         "tooltip": null
       }
     }
@@ -11541,6 +11778,18 @@
       }
     }
   },
+  "ModelNoiseScale": {
+    "display_name": "ModelNoiseScale",
+    "inputs": {
+      "model": {
+        "name": "مدل"
+      },
+      "noise_scale": {
+        "name": "مقیاس نویز",
+        "tooltip": "مقیاس نویز آموزش مطلق. برای مثال HiDream-O1 base: ۸.۰، dev: ۷.۵."
+      }
+    }
+  },
   "ModelPatchLoader": {
     "display_name": "ModelPatchLoader",
     "inputs": {
@@ -11953,6 +12202,50 @@
       "size": {
         "name": "size",
         "tooltip": "اندازه تصویر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV2": {
+    "description": "تولید تصویر از طریق سرویس GPT Image شرکت OpenAI.",
+    "display_name": "OpenAI GPT Image ۲",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_background": {
+        "name": "background"
+      },
+      "model_custom_height": {
+        "name": "custom_height"
+      },
+      "model_custom_width": {
+        "name": "custom_width"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "تعداد تصاویری که باید تولید شود"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "پرامپت متنی برای GPT Image"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "در backend هنوز پیاده‌سازی نشده است"
       }
     },
     "outputs": {
@@ -14813,6 +15106,29 @@
       }
     }
   },
+  "SamplerLCM": {
+    "description": "نمونه‌گیر LCM با نویز قابل تنظیم در هر گام. s_noise ضریب مقیاس نویز آموزش مدل است.",
+    "display_name": "SamplerLCM",
+    "inputs": {
+      "noise_clip_std": {
+        "name": "noise_clip_std",
+        "tooltip": "محدود کردن نویز هر گام به ±N*std. مقدار ۰ غیرفعال می‌کند."
+      },
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "ضریب نویز در هر گام در اولین مرحله (۱.۰ = مطابق آموزش)."
+      },
+      "s_noise_end": {
+        "name": "s_noise_end",
+        "tooltip": "ضریب نویز در هر گام در آخرین مرحله. برای برنامه زمانی ثابت، مقدار را برابر با s_noise قرار دهید."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SamplerLCMUpscale": {
     "display_name": "SamplerLCMUpscale",
     "inputs": {
@@ -17421,7 +17737,8 @@
         "name": "PBR"
       },
       "quad": {
-        "name": "چهارضلعی"
+        "name": "چهارضلعی",
+        "tooltip": "این پارامتر منسوخ شده است و هیچ تأثیری ندارد."
       },
       "texture": {
         "name": "تکسچر"
@@ -19386,6 +19703,156 @@
     "outputs": {
       "0": {
         "tooltip": "مدل با پنجره‌های زمینه اعمال‌شده در هنگام نمونه‌گیری."
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_inject_scale": {
+        "name": "audio_inject_scale",
+        "tooltip": "مقیاس ویژگی‌های صوتی هنگام تزریق به مدل ویدیو."
+      },
+      "video_frames": {
+        "name": "video_frames"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio_encoder_output",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps_string",
+        "tooltip": "نرخ فریم بر ثانیه (fps) محاسبه‌شده بر اساس طول صوت و تعداد فریم‌های ویدیو. در prompt استفاده می‌شود."
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "صوت برای محاسبه تعداد کل فریم‌های خروجی و استخراج صوت بخش."
+      },
+      "images": {
+        "name": "images"
+      },
+      "segment_index": {
+        "name": "segment_index",
+        "tooltip": "این بخش کدام است (۰ برای اول، ۱ برای دوم و ...)"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "طول این بخش (معمولاً ۱۴۹ فریم)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "دنباله keyframe با padding"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "ماسک نشان‌دهنده فریم‌های معتبر"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "بخش صوتی برای این بخش ویدیو"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "صوت برای برش هر بخش خروجی."
+      },
+      "images": {
+        "name": "images"
+      },
+      "num_segments": {
+        "name": "num_segments",
+        "tooltip": "تعداد بخش‌های padding که به صورت لیست خروجی داده می‌شود."
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "طول هر بخش (معمولاً ۱۴۹ فریم)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "دنباله‌های keyframe با padding"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "ماسک‌ها برای نشان دادن فریم‌های معتبر"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "بخش صوتی برای هر بخش ویدیو"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "audio_encoder_output": {
+        "name": "خروجی رمزگذار صوتی"
+      },
+      "clip_vision_output": {
+        "name": "خروجی بینایی clip",
+        "tooltip": "بردارهای بینایی CLIP برای اولین فریم."
+      },
+      "clip_vision_output_ref": {
+        "name": "خروجی مرجع بینایی clip",
+        "tooltip": "بردارهای بینایی CLIP برای تصویر مرجع."
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول",
+        "tooltip": "تعداد فریم‌های ویدئوی تولیدشده. برای WanDancer باید ۱۴۹ باقی بماند."
+      },
+      "mask": {
+        "name": "ماسک",
+        "tooltip": "ماسک شرطی‌سازی تصویر برای تصویر(ها)ی شروع. سفید حفظ می‌شود، سیاه تولید می‌شود. برای تولیدات محلی استفاده می‌شود."
+      },
+      "negative": {
+        "name": "منفی"
+      },
+      "positive": {
+        "name": "مثبت"
+      },
+      "start_image": {
+        "name": "تصویر شروع",
+        "tooltip": "تصویر(ها)ی اولیه برای رمزگذاری؛ می‌تواند هر تعداد فریم باشد."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
+        "tooltip": null
+      },
+      "2": {
+        "name": "لاتنت",
+        "tooltip": "لاتنت خالی."
       }
     }
   },
