@@ -126,6 +126,16 @@ export class ContextMenu<TValue = unknown> {
         },
         eventOptions
       )
+      document.addEventListener(
+        'keydown',
+        (e) => {
+          if (e.key !== 'Escape' || e.ctrlKey || e.altKey || e.metaKey) return
+          this.close()
+          e.preventDefault()
+          e.stopPropagation()
+        },
+        eventOptions
+      )
     }
 
     // this prevents the default context browser menu to open in case this menu was created when pressing right button
@@ -218,6 +228,14 @@ export class ContextMenu<TValue = unknown> {
 
     if (LiteGraph.context_menu_scaling && options.scale) {
       root.style.transform = `scale(${Math.round(options.scale * 4) * 0.25})`
+    }
+
+    if (!parent) {
+      document.dispatchEvent(
+        new CustomEvent('litegraph:contextmenu', {
+          detail: { type: 'open', menu: this }
+        })
+      )
     }
   }
 
@@ -402,6 +420,13 @@ export class ContextMenu<TValue = unknown> {
       }
     }
     this.current_submenu?.close(e, true)
+    if (!this.parentMenu) {
+      document.dispatchEvent(
+        new CustomEvent('litegraph:contextmenu', {
+          detail: { type: 'close', menu: this }
+        })
+      )
+    }
   }
 
   /** @deprecated Likely unused, however code search was inconclusive (too many results to check by hand). */
