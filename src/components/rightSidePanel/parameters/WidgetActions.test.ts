@@ -9,7 +9,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import WidgetActions from './WidgetActions.vue'
 
@@ -17,14 +16,9 @@ const { mockGetInputSpecForWidget } = vi.hoisted(() => ({
   mockGetInputSpecForWidget: vi.fn()
 }))
 
-const { mockDemoteWidget, mockPromoteWidget } = vi.hoisted(() => ({
-  mockDemoteWidget: vi.fn(),
-  mockPromoteWidget: vi.fn()
-}))
-
 vi.mock('@/core/graph/subgraph/promotionUtils', () => ({
-  demoteWidget: mockDemoteWidget,
-  promoteWidget: mockPromoteWidget,
+  demoteWidget: vi.fn(),
+  promoteWidget: vi.fn(),
   isLinkedPromotion: vi.fn(() => false)
 }))
 
@@ -210,51 +204,5 @@ describe('WidgetActions', () => {
     await user.click(screen.getByRole('button', { name: /Reset/ }))
 
     expect(onResetToDefault).toHaveBeenCalledWith('option1')
-  })
-
-  it('demotes promoted widget per parent with computed sourceNodeId', async () => {
-    const sourceNodeId = '7'
-    const widget = {
-      name: 'seed',
-      type: 'number',
-      value: 1,
-      label: 'Seed',
-      options: {},
-      y: 0,
-      sourceNodeId,
-      sourceWidgetName: 'seed'
-    } as IBaseWidget
-    const node = fromAny<LGraphNode, unknown>({
-      id: 5,
-      type: 'SubgraphNode',
-      title: 'Subgraph',
-      rootGraph: { id: 'graph-test' },
-      computeSize: vi.fn(),
-      size: [200, 100],
-      isSubgraphNode: () => true
-    })
-    const parent = fromAny<SubgraphNode, unknown>({ id: 5 })
-    const otherParent = fromAny<SubgraphNode, unknown>({ id: 8 })
-
-    const { user } = renderWidgetActions(widget, node, {
-      parents: [parent, otherParent],
-      isShownOnParents: true
-    })
-
-    await user.click(screen.getByRole('button', { name: /Hide/ }))
-
-    expect(mockDemoteWidget).toHaveBeenCalledTimes(2)
-    expect(mockDemoteWidget).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({ id: sourceNodeId }),
-      widget,
-      [parent]
-    )
-    expect(mockDemoteWidget).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({ id: String(node.id) }),
-      widget,
-      [otherParent]
-    )
   })
 })

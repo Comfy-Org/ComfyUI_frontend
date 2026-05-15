@@ -4,6 +4,7 @@ import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
@@ -35,14 +36,6 @@ interface SubgraphSlotRef {
   name: string
   label?: string
   displayName?: string
-}
-
-function isWidgetValue(value: unknown): value is IBaseWidget['value'] {
-  if (value === undefined) return true
-  if (typeof value === 'string') return true
-  if (typeof value === 'number') return true
-  if (typeof value === 'boolean') return true
-  return value !== null && typeof value === 'object'
 }
 
 function isValueControlWidget(widget: IBaseWidget): boolean {
@@ -248,7 +241,10 @@ class PromotedWidgetView implements IPromotedWidgetView {
    */
   ensureHostWidgetState(): void {
     if (this.getHostWidgetState()) return
-    this.registerHostWidgetState(this.resolveAtHost()?.widget.value)
+    // Seed from the effective promoted value (host → linked → deepest →
+    // interior fallback) instead of the raw interior default, so a restored
+    // promoted value isn't shadowed on first render.
+    this.registerHostWidgetState(this.value)
   }
 
   private registerHostWidgetState(value: IBaseWidget['value']): void {
@@ -426,13 +422,10 @@ class PromotedWidgetView implements IPromotedWidgetView {
     this.resolveAtHost()?.widget.callback?.(value, canvas, node, pos, e)
   }
 
-  beforeQueued(): void {
-    // Source widgets linked through subgraph inputs are inert for prompt
-    // serialization.  Control-after-generate is applied to the promoted host
-    // value in afterQueued so the next prompt uses the updated SubgraphNode
-    // value, not the linked source value.
-  }
-
+  // No beforeQueued: source widgets linked through subgraph inputs are inert
+  // for prompt serialization. Control-after-generate is applied to the
+  // promoted host value in afterQueued so the next prompt uses the updated
+  // SubgraphNode value, not the linked source value.
   afterQueued(): void {
     this.applyValueControlToHost()
   }

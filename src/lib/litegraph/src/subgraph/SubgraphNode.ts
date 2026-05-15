@@ -28,10 +28,8 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
-import type {
-  IBaseWidget,
-  TWidgetValue
-} from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import {
   createPromotedWidgetView,
   isPromotedWidgetView
@@ -66,14 +64,6 @@ type LinkedPromotionEntry = PromotedWidgetSource & {
 // the SVG's internal stylesheet on every ctx.drawImage() call per frame.
 const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
 
-function isWidgetValue(value: unknown): value is TWidgetValue {
-  if (value === undefined) return true
-  if (typeof value === 'string') return true
-  if (typeof value === 'number') return true
-  if (typeof value === 'boolean') return true
-  return value !== null && typeof value === 'object'
-}
-
 /**
  * An instance of a {@link Subgraph}, displayed as a node on the containing (parent) graph.
  */
@@ -101,10 +91,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   private _promotedViewManager =
     new PromotedWidgetViewManager<PromotedWidgetView>()
   private _cacheVersion = 0
-  private _linkedEntriesCache?: {
-    version: number
-    entries: LinkedPromotionEntry[]
-  }
   private _promotedViewsCache?: {
     version: number
     views: PromotedWidgetView[]
@@ -152,10 +138,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
   }
 
-  private _getLinkedPromotionEntries(cache = true): LinkedPromotionEntry[] {
-    const cached = this._linkedEntriesCache
-    if (cache && cached?.version === this._cacheVersion) return cached.entries
-
+  private _getLinkedPromotionEntries(): LinkedPromotionEntry[] {
     const linkedEntries: LinkedPromotionEntry[] = []
 
     for (const input of this.inputs) {
@@ -209,12 +192,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       seenEntryKeys.add(entryKey)
       return true
     })
-
-    if (cache)
-      this._linkedEntriesCache = {
-        version: this._cacheVersion,
-        entries: deduplicatedEntries
-      }
 
     return deduplicatedEntries
   }
@@ -842,10 +819,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     })
   }
 
-  override onAdded(_graph: LGraph): void {
-    this.invalidatePromotedViews()
-  }
-
   /**
    * Ensures the subgraph slot is in the params before adding the input as normal.
    * @param name The name of the input slot.
@@ -1153,6 +1126,24 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
 
     serialized.properties = serializedProperties
+
+    // Per ADR 0009, host SubgraphNodes only carry promoted widgets — non-
+    // promoted host widgets would be silently dropped here. Surface the
+    // unexpected case in dev so a future custom subclass that adds bare
+    // widgets isn't ignored without a trace.
+    if (
+      import.meta.env?.DEV &&
+      this.widgets.some((w) => !isPromotedWidgetView(w))
+    ) {
+      console.warn(
+        `SubgraphNode ${this.id}: serialize() drops non-promoted host widgets ` +
+          `(${this.widgets
+            .filter((w) => !isPromotedWidgetView(w))
+            .map((w) => w.name)
+            .join(', ')}); ` +
+          'expected only PromotedWidgetView instances per ADR 0009.'
+      )
+    }
 
     const widgetValues = this.inputs.flatMap((input) => {
       const widget = input._widget

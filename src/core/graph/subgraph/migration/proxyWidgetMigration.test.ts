@@ -18,6 +18,7 @@ import {
 
 import {
   flushProxyWidgetMigration,
+  normalizeLegacyProxyWidgetEntry,
   readHostQuarantine
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
@@ -827,6 +828,96 @@ describe('flushProxyWidgetMigration', () => {
           sourcePreviewName: '$$canvas-image-preview'
         })
       ])
+    })
+  })
+})
+
+describe('normalizeLegacyProxyWidgetEntry', () => {
+  function createHostWithInnerWidget(widgetName: string) {
+    const subgraph = createTestSubgraph()
+    const innerNode = new LGraphNode('InnerNode')
+    const input = innerNode.addInput('value', 'number')
+    innerNode.addWidget('number', widgetName, 0, () => {})
+    input.widget = { name: widgetName }
+    subgraph.add(innerNode)
+
+    const hostNode = createTestSubgraphNode(subgraph)
+    hostNode.graph!.add(hostNode)
+
+    return { innerNode, hostNode }
+  }
+
+  it('returns entry unchanged when it already resolves', () => {
+    const { hostNode, innerNode } = createHostWithInnerWidget('seed')
+
+    const result = normalizeLegacyProxyWidgetEntry(
+      hostNode,
+      String(innerNode.id),
+      'seed'
+    )
+
+    expect(result).toEqual({
+      sourceNodeId: String(innerNode.id),
+      sourceWidgetName: 'seed'
+    })
+  })
+
+  it('returns entry unchanged with disambiguator when it already resolves', () => {
+    const { hostNode, innerNode } = createHostWithInnerWidget('seed')
+
+    const result = normalizeLegacyProxyWidgetEntry(
+      hostNode,
+      String(innerNode.id),
+      'seed',
+      String(innerNode.id)
+    )
+
+    expect(result).toEqual({
+      sourceNodeId: String(innerNode.id),
+      sourceWidgetName: 'seed',
+      disambiguatingSourceNodeId: String(innerNode.id)
+    })
+  })
+
+  it('strips a single legacy prefix from widget name', () => {
+    const innerSubgraph = createTestSubgraph()
+    const samplerNode = new LGraphNode('Sampler')
+    const samplerInput = samplerNode.addInput('seed', 'number')
+    samplerNode.addWidget('number', 'noise_seed', 42, () => {})
+    samplerInput.widget = { name: 'noise_seed' }
+    innerSubgraph.add(samplerNode)
+
+    const hostNode = createTestSubgraphNode(innerSubgraph)
+    hostNode.graph!.add(hostNode)
+
+    const prefixedName = `${samplerNode.id}: noise_seed`
+    const result = normalizeLegacyProxyWidgetEntry(
+      hostNode,
+      String(samplerNode.id),
+      prefixedName
+    )
+
+    expect(result.sourceWidgetName).toBe('noise_seed')
+    expect(result.disambiguatingSourceNodeId).toBe(String(samplerNode.id))
+  })
+
+  it('strips legacy prefix and surfaces it as disambiguator even when the bare name does not resolve', () => {
+    // ADR 0009: each SubgraphNode is opaque, so legacy nested
+    // disambiguator-based lookup no longer reaches deep widgets. The
+    // prefix is preserved as `disambiguatingSourceNodeId` lookup metadata
+    // for migration tooling.
+    const { hostNode, innerNode } = createHostWithInnerWidget('seed')
+
+    const result = normalizeLegacyProxyWidgetEntry(
+      hostNode,
+      String(innerNode.id),
+      '999: nonexistent_widget'
+    )
+
+    expect(result).toEqual({
+      sourceNodeId: String(innerNode.id),
+      sourceWidgetName: 'nonexistent_widget',
+      disambiguatingSourceNodeId: '999'
     })
   })
 })

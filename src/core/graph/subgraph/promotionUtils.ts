@@ -2,12 +2,11 @@ import * as Sentry from '@sentry/vue'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { t } from '@/i18n'
-import type {
-  IContextMenuValue,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets.ts'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
@@ -24,14 +23,6 @@ type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
 
 export type WidgetItem = [LGraphNode, IBaseWidget]
 export { CANVAS_IMAGE_PREVIEW_WIDGET }
-
-function isWidgetValue(value: unknown): value is IBaseWidget['value'] {
-  if (value === undefined) return true
-  if (typeof value === 'string') return true
-  if (typeof value === 'number') return true
-  if (typeof value === 'boolean') return true
-  return value !== null && typeof value === 'object'
-}
 
 export function getWidgetName(w: IBaseWidget): string {
   return isPromotedWidgetView(w) ? w.sourceWidgetName : w.name
@@ -55,7 +46,7 @@ export function isLinkedPromotion(
 
 /** Find the host input on `subgraphNode` whose `_widget` is the
  * `PromotedWidgetView` for `(sourceNodeId, sourceWidgetName)`. */
-function findHostInputForPromotion(
+export function findHostInputForPromotion(
   subgraphNode: SubgraphNode,
   sourceNodeId: string,
   sourceWidgetName: string
@@ -137,6 +128,8 @@ function applySubgraphInputOrder(
   subgraphNode: SubgraphNode,
   orderedIndices: readonly number[]
 ): void {
+  const oldOrder = subgraphNode.subgraph.inputs.map((input) => input.id)
+
   const rows = subgraphNode.subgraph.inputs.map((input, index) => ({
     subgraphInput: input,
     hostInput: subgraphNode.inputs[index],
@@ -168,6 +161,18 @@ function applySubgraphInputOrder(
     const widget = row.hostInput?._widget
     if (widget && row.value !== undefined) widget.value = row.value
   }
+
+  const newOrder = subgraphNode.subgraph.inputs.map((input) => input.id)
+  if (
+    oldOrder.length !== newOrder.length ||
+    oldOrder.some((id, i) => id !== newOrder[i])
+  ) {
+    subgraphNode.subgraph.events.dispatch('inputs-reordered', {
+      subgraph: subgraphNode.subgraph,
+      oldOrder,
+      newOrder
+    })
+  }
 }
 
 function getExplicitHostWidgetValue(
@@ -189,11 +194,6 @@ function isSamePromotedWidget(left: IBaseWidget, right: IBaseWidget): boolean {
   )
 }
 
-export function getSourceNodeId(w: IBaseWidget): string | undefined {
-  if (!isPromotedWidgetView(w)) return undefined
-  return w.sourceNodeId
-}
-
 function isPreviewExposed(
   subgraphNode: SubgraphNode,
   source: PromotedWidgetSource
@@ -208,24 +208,21 @@ function isPreviewExposed(
     )
 }
 
-function isPromotedOnParent(
-  subgraphNode: SubgraphNode,
-  widget: IBaseWidget,
-  source: PromotedWidgetSource
-): boolean {
-  if (isPreviewPseudoWidget(widget))
-    return isPreviewExposed(subgraphNode, source)
-  return isLinkedPromotion(
-    subgraphNode,
-    source.sourceNodeId,
-    source.sourceWidgetName
-  )
-}
-
+/**
+ * Returns true if the widget identified by `source` is already exposed on
+ * `subgraphNode` — either as a linked promotion (subgraph input) or as a
+ * preview exposure. When `widget` is provided and is a preview pseudo-widget,
+ * only the preview-exposure path is consulted (callers asking about a preview
+ * widget should not pick up an unrelated linked promotion with the same
+ * source identity).
+ */
 export function isWidgetPromotedOnSubgraphNode(
   subgraphNode: SubgraphNode,
-  source: PromotedWidgetSource
+  source: PromotedWidgetSource,
+  widget?: IBaseWidget
 ): boolean {
+  if (widget && isPreviewPseudoWidget(widget))
+    return isPreviewExposed(subgraphNode, source)
   return (
     isLinkedPromotion(
       subgraphNode,
@@ -335,28 +332,23 @@ export function promoteWidget(
   parents: SubgraphNode[]
 ) {
   const source = toPromotionSource(node, widget)
+  // Both downstream helpers (`promotePreviewViaExposure`,
+  // `promoteValueWidgetViaSubgraphInput`) require the full `LGraphNode`
+  // shape — a `Pick<...>` won't do. Narrow once with `instanceof` rather
+  // than re-checking each call site with property guards + casts.
+  if (!(node instanceof LGraphNode)) return
   for (const parent of parents) {
     if (isPreviewPseudoWidget(widget)) {
-      promotePreviewViaExposure(
-        parent,
-        node as LGraphNode,
-        source.sourceWidgetName
-      )
+      promotePreviewViaExposure(parent, node, source.sourceWidgetName)
       continue
     }
-    if ('getSlotFromWidget' in node) {
-      const result = promoteValueWidgetViaSubgraphInput(
-        parent,
-        node as LGraphNode,
-        widget
-      )
-      if (!result.ok) {
-        Sentry.addBreadcrumb({
-          category: 'subgraph',
-          level: 'warning',
-          message: `Failed to promote widget "${source.sourceWidgetName}" on node ${node.id}: ${result.reason}`
-        })
-      }
+    const result = promoteValueWidgetViaSubgraphInput(parent, node, widget)
+    if (!result.ok) {
+      Sentry.addBreadcrumb({
+        category: 'subgraph',
+        level: 'warning',
+        message: `Failed to promote widget "${source.sourceWidgetName}" on node ${node.id}: ${result.reason}`
+      })
     }
   }
   refreshPromotedWidgetRendering(parents)
@@ -450,7 +442,7 @@ export function addWidgetPromotionOptions(
   const parents = getParentNodes()
   const source = toPromotionSource(node, widget)
   const promotableParents = parents.filter(
-    (parent) => !isPromotedOnParent(parent, widget, source)
+    (parent) => !isWidgetPromotedOnSubgraphNode(parent, source, widget)
   )
   if (promotableParents.length > 0)
     options.unshift({
@@ -485,7 +477,7 @@ export function tryToggleWidgetPromotion() {
   if (!parents.length || !widget) return
   const source = toPromotionSource(node, widget)
   const promotableParents = parents.filter(
-    (parent) => !isPromotedOnParent(parent, widget, source)
+    (parent) => !isWidgetPromotedOnSubgraphNode(parent, source, widget)
   )
   if (promotableParents.length > 0)
     promoteWidget(node, widget, promotableParents)
@@ -660,10 +652,14 @@ export function hasUnpromotedWidgets(subgraphNode: SubgraphNode): boolean {
     getPromotableWidgets(interiorNode).some(
       (widget) =>
         !widget.computedDisabled &&
-        !isPromotedOnParent(subgraphNode, widget, {
-          sourceNodeId: String(interiorNode.id),
-          sourceWidgetName: widget.name
-        })
+        !isWidgetPromotedOnSubgraphNode(
+          subgraphNode,
+          {
+            sourceNodeId: String(interiorNode.id),
+            sourceWidgetName: widget.name
+          },
+          widget
+        )
     )
   )
 }

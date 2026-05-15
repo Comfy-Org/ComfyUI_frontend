@@ -49,10 +49,8 @@ export function writeWidgetValue(
   entityId: WidgetEntityId,
   value: WidgetState['value']
 ): boolean {
-  const state = getWidgetState(entityId)
-  if (!state) return false
-  state.value = value
-  return true
+  const { graphId, nodeId, name } = parseWidgetEntityId(entityId)
+  return useWidgetValueStore().setValue(graphId, nodeId, name, value)
 }
 
 /**

@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/vue'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import {
@@ -14,6 +15,12 @@ import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import SubgraphEditor from './SubgraphEditor.vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
+import type DraggableList from '@/components/common/DraggableList.vue'
+
+type DraggableListProps = ComponentProps<typeof DraggableList>
+type WidgetItem =
+  DraggableListProps['modelValue'] extends Array<infer T> ? T : never
 
 vi.mock('@/services/litegraphService', () => ({
   useLitegraphService: () => ({ updatePreviews: vi.fn() })
@@ -104,5 +111,75 @@ describe('SubgraphEditor', () => {
     expect(
       within(shown).getAllByTestId('subgraph-widget-drag-handle')
     ).toHaveLength(2)
+  })
+
+  it('updates rendered order when promoted widgets are reordered', async () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const firstNode = new LGraphNode('FirstNode')
+    const secondNode = new LGraphNode('SecondNode')
+    subgraph.add(firstNode)
+    subgraph.add(secondNode)
+
+    const firstInput = firstNode.addInput('first', 'STRING')
+    const firstWidget = firstNode.addWidget('text', 'first', '', () => {})
+    firstInput.widget = { name: firstWidget.name }
+    const secondInput = secondNode.addInput('second', 'STRING')
+    const secondWidget = secondNode.addWidget('text', 'second', '', () => {})
+    secondInput.widget = { name: secondWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
+    promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
+    useCanvasStore().selectedItems = [host]
+
+    let listSetter: ((value: WidgetItem[]) => void) | undefined
+    const draggableListStub = {
+      props: ['modelValue'],
+      emits: ['update:modelValue'],
+      setup(
+        _: unknown,
+        {
+          emit,
+          slots
+        }: {
+          emit: (event: string, ...args: unknown[]) => void
+          slots: { default?: (props: { dragClass: string }) => unknown }
+        }
+      ) {
+        listSetter = (value) => emit('update:modelValue', value)
+        return () => slots.default?.({ dragClass: 'draggable-item' })
+      }
+    }
+    render(SubgraphEditor, {
+      container: document.body.appendChild(document.createElement('div')),
+      global: {
+        plugins: [i18n],
+        stubs: { DraggableList: draggableListStub }
+      }
+    })
+    await nextTick()
+
+    const shown = screen.getByTestId('subgraph-editor-shown-section')
+    expect(
+      within(shown)
+        .getAllByTestId('subgraph-widget-label')
+        .map((el) => el.textContent?.trim())
+    ).toEqual(['first', 'second'])
+
+    // Reverse the order via the DraggableList v-model setter; this exercises
+    // the `reorderSubgraphInputsByWidgetOrder` path that previously relied on
+    // a manual `inputOrderVersion` bump for the sidebar to re-render.
+    const promotedWidgets = host.widgets.filter((w) => 'sourceNodeId' in w)
+    const reversed: WidgetItem[] = [
+      [secondNode, promotedWidgets[1]] as WidgetItem,
+      [firstNode, promotedWidgets[0]] as WidgetItem
+    ]
+    listSetter?.(reversed)
+    await nextTick()
+
+    expect(
+      within(shown)
+        .getAllByTestId('subgraph-widget-label')
+        .map((el) => el.textContent?.trim())
+    ).toEqual(['second', 'first'])
   })
 })

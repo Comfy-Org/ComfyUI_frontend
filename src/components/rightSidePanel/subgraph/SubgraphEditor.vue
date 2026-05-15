@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, shallowRef, watch } from 'vue'
 
 import DraggableList from '@/components/common/DraggableList.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -8,7 +9,6 @@ import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   demoteWidget,
   getPromotableWidgets,
-  getSourceNodeId,
   getWidgetName,
   isLinkedPromotion,
   isRecommendedWidget,
@@ -21,7 +21,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
+import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -33,7 +33,6 @@ const canvasStore = useCanvasStore()
 const previewExposureStore = usePreviewExposureStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const { searchQuery } = storeToRefs(rightSidePanelStore)
-const inputOrderVersion = ref(0)
 
 const activeNode = computed(() => {
   const node = canvasStore.selectedItems[0]
@@ -41,16 +40,31 @@ const activeNode = computed(() => {
   return undefined
 })
 
-const activeWidgets = computed<WidgetItem[]>({
-  get() {
-    const node = activeNode.value
-    if (!node) return []
+// `SubgraphNode.widgets` is a synthetic, non-reactive getter backed by
+// `_getPromotedViews()`/`invalidatePromotedViews()`. Snapshot it into a
+// `shallowRef` so Vue has a real reactive source, and refresh on the
+// subgraph events that mutate promoted-widget order or membership.
+const promotedWidgets = shallowRef<readonly IBaseWidget[]>([])
+function refreshPromotedWidgets() {
+  promotedWidgets.value = activeNode.value?.widgets ?? []
+}
+watch(activeNode, refreshPromotedWidgets, { immediate: true })
+useEventListener(
+  () => activeNode.value?.subgraph.events,
+  [
+    'widget-promoted',
+    'widget-demoted',
+    'input-added',
+    'removing-input',
+    'inputs-reordered'
+  ],
+  refreshPromotedWidgets
+)
 
-    return [...getActivePromotedWidgets(node), ...getActivePreviewWidgets(node)]
-  },
-  set(value: WidgetItem[]) {
-    updateActiveWidgets(value, activeWidgets.value)
-  }
+const activeWidgets = computed<WidgetItem[]>(() => {
+  const node = activeNode.value
+  if (!node) return []
+  return [...getActivePromotedWidgets(node), ...getActivePreviewWidgets(node)]
 })
 
 const activePromotedWidgets = computed<WidgetItem[]>({
@@ -64,8 +78,7 @@ const activePromotedWidgets = computed<WidgetItem[]>({
 })
 
 function getActivePromotedWidgets(node: SubgraphNode): WidgetItem[] {
-  void inputOrderVersion.value
-  return node.widgets.flatMap((widget): WidgetItem[] => {
+  return promotedWidgets.value.flatMap((widget): WidgetItem[] => {
     if (!isPromotedWidgetView(widget)) return []
     const sourceNode = node.subgraph._nodes_by_id[widget.sourceNodeId]
     if (!sourceNode) return []
@@ -128,7 +141,6 @@ function updateActiveWidgets(value: WidgetItem[], currentItems: WidgetItem[]) {
       node,
       value.map(([, widget]) => widget)
     )
-    inputOrderVersion.value += 1
   }
   refreshPromotedWidgetRendering()
 }
@@ -155,7 +167,8 @@ const candidateWidgets = computed<WidgetItem[]>(() => {
   // exposures are stored as the interior `[node, widget]` tuple directly.
   const promotedSourceKeys = new Set(
     activeWidgets.value.map(
-      ([n, w]) => `${getSourceNodeId(w) ?? String(n.id)}:${getWidgetName(w)}`
+      ([n, w]) =>
+        `${isPromotedWidgetView(w) ? w.sourceNodeId : String(n.id)}:${getWidgetName(w)}`
     )
   )
   return interiorWidgets.value.filter(
@@ -218,10 +231,10 @@ function isItemLinked([node, widget]: WidgetItem): boolean {
 }
 
 function toKey(item: WidgetItem) {
-  const sid = getSourceNodeId(item[1])
-  return sid
-    ? `${item[0].id}: ${item[1].name}:${sid}`
-    : `${item[0].id}: ${item[1].name}`
+  const widget = item[1]
+  return isPromotedWidgetView(widget)
+    ? `${item[0].id}: ${widget.name}:${widget.sourceNodeId}`
+    : `${item[0].id}: ${widget.name}`
 }
 function nodeWidgets(n: LGraphNode): WidgetItem[] {
   return getPromotableWidgets(n).map((w) => [n, w])
@@ -267,7 +280,7 @@ onMounted(() => {
 <template>
   <div v-if="activeNode" class="subgraph-edit-section flex h-full flex-col">
     <div class="flex gap-2 border-b border-interface-stroke px-4 pt-1 pb-4">
-      <FormSearchInput v-model="searchQuery" />
+      <AsyncSearchInput v-model="searchQuery" />
     </div>
 
     <div class="flex-1">

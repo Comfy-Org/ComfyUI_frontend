@@ -376,6 +376,21 @@ export type TWidgetType = IWidget['type']
 export type TWidgetValue = IWidget['value']
 
 /**
+ * Runtime type guard for {@link TWidgetValue}. Accepts any value shape that a
+ * widget can legally hold: primitives (`string`, `number`, `boolean`),
+ * non-null objects (arrays, plain objects), or `undefined`. Rejects `null` and
+ * functions. Used at serialization / migration boundaries that consume
+ * `unknown` payloads (e.g. `widgets_values`).
+ */
+export function isWidgetValue(value: unknown): value is TWidgetValue {
+  if (value === undefined) return true
+  if (typeof value === 'string') return true
+  if (typeof value === 'number') return true
+  if (typeof value === 'boolean') return true
+  return value !== null && typeof value === 'object'
+}
+
+/**
  * The base type for all widgets.  Should not be implemented directly.
  * @template TValue The type of value this widget holds.
  * @template TType A string designating the type of widget, e.g. "toggle" or "string".

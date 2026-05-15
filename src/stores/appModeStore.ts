@@ -77,7 +77,9 @@ export const useAppModeStore = defineStore('appMode', () => {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
     const rootGraph = app.rootGraph
-    if (!rootGraph) return { inputs: rawInputs, outputs: rawOutputs }
+    if (!rootGraph || ChangeTracker.isLoadingGraph) {
+      return { inputs: rawInputs, outputs: rawOutputs }
+    }
     return {
       inputs: rawInputs
         .map((input) => upgradeAndValidateInput(input, rootGraph))
@@ -172,7 +174,10 @@ export const useAppModeStore = defineStore('appMode', () => {
     const { activeWorkflow } = workflowStore
     if (!activeWorkflow) return
 
-    loadSelections(activeWorkflow.changeTracker?.activeState?.extra?.linearData)
+    const source =
+      activeWorkflow.changeTracker?.activeState?.extra?.linearData ??
+      activeWorkflow.initialState?.extra?.linearData
+    loadSelections(source)
   }
 
   useEventListener(
@@ -267,9 +272,14 @@ export const useAppModeStore = defineStore('appMode', () => {
   function updateInputConfig(widget: IBaseWidget, config: InputWidgetConfig) {
     const targetEntityId = widget.entityId
     if (!targetEntityId) return
-    const entry = selectedInputs.value.find(([id]) => id === targetEntityId)
-    if (!entry) return
-    entry[2] = { ...entry[2], ...config }
+    const index = selectedInputs.value.findIndex(
+      ([id]) => id === targetEntityId
+    )
+    if (index === -1) return
+    // Replace the tuple rather than mutating its `[2]` slot in place so
+    // reactive consumers that key off entry identity see the change.
+    const [id, type, options] = selectedInputs.value[index]
+    selectedInputs.value.splice(index, 1, [id, type, { ...options, ...config }])
   }
 
   return {
