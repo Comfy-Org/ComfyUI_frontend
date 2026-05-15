@@ -1283,16 +1283,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     let entries: (IContextMenuValue<INodeSlotContextItem> | null)[] = []
 
-    if (
-      LiteGraph.do_add_triggers_slots &&
-      node.findOutputSlot('onExecuted') == -1
-    ) {
-      entries.push({
-        content: 'On Executed',
-        value: ['onExecuted', LiteGraph.EVENT, { nameLocked: true }],
-        className: 'event'
-      })
-    }
     // add callback for modifying the menu elements onMenuNodeOutputs
     const retEntries = node.onMenuNodeOutputs?.(entries)
     if (retEntries) entries = retEntries
@@ -5022,9 +5012,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (
       this.dirty_bgcanvas ||
       force_bgcanvas ||
-      this.always_render_background ||
-      (this.graph?._last_trigger_time &&
-        now - this.graph._last_trigger_time < 1000)
+      this.always_render_background
     ) {
       this.drawBackCanvas()
     }
@@ -5906,12 +5894,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     node.drawProgressBar(ctx)
-
-    // these counter helps in conditioning drawing based on if the node has been executed or an action occurred
-    if (node.execute_triggered != null && node.execute_triggered > 0)
-      node.execute_triggered--
-    if (node.action_triggered != null && node.action_triggered > 0)
-      node.action_triggered--
   }
 
   /**
@@ -5985,7 +5967,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const visibleReroutes: Reroute[] = []
 
-    const now = LiteGraph.getTime()
     const { visible_area } = this
     margin_area[0] = visible_area[0] - 20
     margin_area[1] = visible_area[1] - 20
@@ -6050,7 +6031,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           startPos,
           endPos,
           visibleReroutes,
-          now,
           output.dir,
           input.dir
         )
@@ -6079,7 +6059,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             output.pos,
             endPos,
             visibleReroutes,
-            now,
             input.dir,
             input.dir
           )
@@ -6106,7 +6085,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           startPos,
           input.pos,
           visibleReroutes,
-          now,
           output.dir,
           input.dir
         )
@@ -6114,7 +6092,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     if (graph.floatingLinks.size > 0) {
-      this._renderFloatingLinks(ctx, graph, visibleReroutes, now)
+      this._renderFloatingLinks(ctx, graph, visibleReroutes)
     }
 
     const rerouteSet = this._visibleReroutes
@@ -6160,8 +6138,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   private _renderFloatingLinks(
     ctx: CanvasRenderingContext2D,
     graph: LGraph,
-    visibleReroutes: Reroute[],
-    now: number
+    visibleReroutes: Reroute[]
   ) {
     // Render floating links with 3/4 current alpha
     const { globalAlpha } = ctx
@@ -6192,7 +6169,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           startPos,
           endPos,
           visibleReroutes,
-          now,
           LinkDirection.CENTER,
           endDirection,
           true
@@ -6214,7 +6190,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           startPos,
           endPos,
           visibleReroutes,
-          now,
           startDirection,
           LinkDirection.CENTER,
           true
@@ -6230,7 +6205,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     startPos: Point,
     endPos: Point,
     visibleReroutes: Reroute[],
-    now: number,
     startDirection?: LinkDirection,
     endDirection?: LinkDirection,
     disabled: boolean = false
@@ -6351,25 +6325,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       )
     }
     renderedPaths.add(link)
-
-    // event triggered rendered on top
-    if (link?._last_time && now - link._last_time < 1000) {
-      const f = 2.0 - (now - link._last_time) * 0.002
-      const tmp = ctx.globalAlpha
-      ctx.globalAlpha = tmp * f
-      this.renderLink(
-        ctx,
-        startPos,
-        endPos,
-        link,
-        true,
-        f,
-        'white',
-        start_dir,
-        end_dir
-      )
-      ctx.globalAlpha = tmp
-    }
   }
 
   /**
