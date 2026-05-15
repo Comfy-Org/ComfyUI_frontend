@@ -533,6 +533,85 @@ The selection toolbox will display the command button when items are selected:
 
 </details>
 
+<details id='extension-api-topbar-badges'>
+  <summary>Topbar Badges API</summary>
+
+Extensions can add status badges to the top bar with different variants and tooltips.
+
+```js
+app.registerExtension({
+  name: 'TestExtension1',
+  topbarBadges: [
+    {
+      text: 'Nightly',
+      label: 'BETA',
+      variant: 'warning', // 'info' | 'warning' | 'error'
+      icon: 'pi pi-exclamation-triangle',
+      tooltip: 'You are using a nightly build'
+    }
+  ]
+})
+```
+
+Variants:
+
+- `info`: Default informational badge (white label, gray background)
+- `warning`: Warning badge (orange theme, higher emphasis)
+- `error`: Error/alert badge (red theme, highest emphasis)
+
+</details>
+
+<details id='extension-api-action-bar-buttons'>
+  <summary>Action Bar Buttons API</summary>
+
+Extensions can add clickable buttons to the action bar with icons, labels, and tooltips.
+
+```js
+app.registerExtension({
+  name: 'TestExtension1',
+  actionBarButtons: [
+    {
+      icon: 'icon-[lucide--message-circle-question-mark]',
+      label: 'Feedback',
+      tooltip: 'Send feedback about ComfyUI',
+      class: 'custom-button-class', // Optional CSS classes
+      onClick: () => {
+        // Button click handler
+        alert('Feedback clicked!')
+      }
+    }
+  ]
+})
+```
+
+The buttons appear in the action bar alongside other controls.
+
+</details>
+
+<details id='extension-api-markdown-renderer'>
+  <summary>Markdown Rendering API</summary>
+
+Extensions can render markdown to sanitized HTML using the built-in markdown renderer.
+
+```js
+// Render markdown with GitHub Flavored Markdown support
+const html = app.extensionManager.renderMarkdownToHtml(
+  '# Hello\n\nThis is **bold** text',
+  'https://example.com' // Optional base URL for relative links
+)
+
+// The output is sanitized with DOMPurify for XSS protection
+document.getElementById('content').innerHTML = html
+```
+
+Features:
+
+- GitHub Flavored Markdown (GFM) support via marked
+- Automatic XSS sanitization via DOMPurify
+- Optional base URL for resolving relative links
+
+</details>
+
 ## Contributing
 
 We welcome contributions to ComfyUI Frontend! Please see our [Contributing Guide](CONTRIBUTING.md) for:

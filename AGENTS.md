@@ -26,16 +26,33 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 - Public assets: `public/`
 - Build output: `dist/`
 - Configs
-  - `vite.config.mts`
-  - `playwright.config.ts`
-  - `eslint.config.ts`
-  - `.oxfmtrc.json`
-  - `.oxlintrc.json`
-  - etc.
+  - `vite.config.mts` - Main build config
+  - `vite.electron.config.mts` - Electron dev server config
+  - `vite.types.config.mts` - Type definitions build config
+  - `playwright.config.ts` - E2E test config
+  - `playwright.i18n.config.ts` - i18n collection test config
+  - `eslint.config.ts` - ESLint configuration
+  - `.oxfmtrc.json` - Formatter settings
+  - `.oxlintrc.json` - Linter settings
+  - `tsconfig.json` - TypeScript configuration (multiple per package)
 
 ## Monorepo Architecture
 
-The project uses **Nx** for build orchestration and task management
+The project uses **Nx** for build orchestration and task management.
+
+### Structure
+
+- **Apps:**
+  - `apps/desktop-ui/` - Desktop application (Electron)
+  - `apps/website/` - Marketing/documentation website
+- **Packages:**
+  - `packages/design-system/` - Shared design tokens and components
+  - `packages/ingest-types/` - Auto-generated types from cloud API OpenAPI spec
+  - `packages/registry-types/` - Auto-generated types from registry API OpenAPI spec
+  - `packages/shared-frontend-utils/` - Common utilities
+  - `packages/tailwind-utils/` - Tailwind CSS utilities
+
+Each app and package has its own `tsconfig.json`, `vitest.config.ts`, and build configuration.
 
 ## Package Manager
 
@@ -43,17 +60,55 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 
 ## Build, Test, and Development Commands
 
-- `pnpm dev`: Start Vite dev server.
+### Development
+
+- `pnpm dev`: Start Vite dev server
 - `pnpm dev:cloud`: Dev server connected to cloud backend (testcloud.comfy.org)
 - `pnpm dev:electron`: Dev server with Electron API mocks
+- `pnpm dev:desktop`: Desktop UI dev server
+- `pnpm dev:no-vue`: Dev server with Vue plugins disabled
+
+### Build
+
 - `pnpm build`: Type-check then production build to `dist/`
+- `pnpm build:cloud`: Production build with cloud distribution
+- `pnpm build:desktop`: Build desktop UI variant
+- `pnpm build:types`: Generate type definitions library
+- `pnpm build:analyze`: Production build with bundle analyzer
 - `pnpm preview`: Preview the production build locally
+
+### Testing
+
 - `pnpm test:unit`: Run Vitest unit tests
 - `pnpm test:browser:local`: Run Playwright E2E tests (`browser_tests/`)
-- `pnpm lint` / `pnpm lint:fix`: Lint (ESLint)
+- `pnpm test:coverage`: Run unit tests with coverage report
+
+### Code Quality
+
+- `pnpm lint` / `pnpm lint:fix`: Lint (ESLint + oxlint)
+- `pnpm lint:desktop`: Lint desktop app
 - `pnpm format` / `pnpm format:check`: oxfmt
 - `pnpm typecheck`: Vue TSC type checking
+- `pnpm typecheck:browser`: Type-check browser tests
+- `pnpm typecheck:desktop`: Type-check desktop UI
+- `pnpm knip`: Check for unused exports and dependencies
+
+### Storybook
+
 - `pnpm storybook`: Start Storybook development server
+- `pnpm storybook:desktop`: Start Storybook for desktop UI
+- `pnpm build-storybook`: Build static Storybook
+
+### Internationalization
+
+- `pnpm collect-i18n`: Collect i18n strings using Playwright
+- `pnpm locale`: Lobe i18n CLI command
+
+### Analysis & Utilities
+
+- `pnpm size:collect` / `pnpm size:report`: Bundle size analysis
+- `pnpm json-schema`: Generate JSON schema from TypeScript types
+- `pnpm zipdist`: Create distribution zip file
 
 ## Development Workflow
 
@@ -245,6 +300,8 @@ See @docs/testing/\*.md for detailed patterns.
 All architectural decisions are documented in `docs/adr/`. Code changes must be consistent with accepted ADRs. Proposed ADRs indicate design direction and should be treated as guidance. See `.agents/checks/adr-compliance.md` for automated validation rules.
 
 ### Entity Architecture Constraints (ADR 0003 + ADR 0008)
+
+**Note:** ADR 0003 (CRDT-based layout) and ADR 0008 (Entity Component System) are currently marked as "Proposed" but represent the target architecture. The codebase is in active migration from the legacy OOP patterns to these new patterns. New code should follow these constraints; legacy code will be refactored incrementally.
 
 1. **Command pattern for all mutations**: Every entity state change must be a serializable, idempotent, deterministic command — replayable, undoable, and transmittable over CRDT. No imperative fire-and-forget mutation APIs. Systems produce command batches, not direct side effects.
 2. **Centralized registries and ECS-style access**: Entity data lives in the World (centralized registry), queried via `world.getComponent(entityId, ComponentType)`. Do not add new instance properties/methods to entity classes. Do not use OOP inheritance for entity modeling.
