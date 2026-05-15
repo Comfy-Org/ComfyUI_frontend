@@ -77,7 +77,9 @@ export const useAppModeStore = defineStore('appMode', () => {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
     const rootGraph = app.rootGraph
-    if (!rootGraph) return { inputs: rawInputs, outputs: rawOutputs }
+    if (!rootGraph || ChangeTracker.isLoadingGraph) {
+      return { inputs: rawInputs, outputs: rawOutputs }
+    }
     return {
       inputs: rawInputs
         .map((input) => upgradeAndValidateInput(input, rootGraph))
@@ -172,7 +174,10 @@ export const useAppModeStore = defineStore('appMode', () => {
     const { activeWorkflow } = workflowStore
     if (!activeWorkflow) return
 
-    loadSelections(activeWorkflow.changeTracker?.activeState?.extra?.linearData)
+    const source =
+      activeWorkflow.changeTracker?.activeState?.extra?.linearData ??
+      activeWorkflow.initialState?.extra?.linearData
+    loadSelections(source)
   }
 
   useEventListener(
