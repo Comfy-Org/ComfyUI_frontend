@@ -186,22 +186,35 @@ const { widget } = defineProps<Props>()
 
 const MAX_VISIBLE_OPTIONS = 7
 
+function resolveRawValues(values: unknown): unknown[] {
+  try {
+    const resolved = typeof values === 'function' ? values() : values
+    return Array.isArray(resolved) ? resolved : []
+  } catch (error) {
+    console.error('[WidgetSelectDefault] Failed to resolve options', error)
+    return []
+  }
+}
+
 function resolveValues(values: unknown): string[] {
-  const resolved = typeof values === 'function' ? values() : values
-  if (!Array.isArray(resolved)) return []
-  return resolved
+  return resolveRawValues(values)
     .filter((value) => value !== null && value !== undefined)
     .map((value) => String(value))
 }
 
 const modelValue = defineModel<string | undefined>({
   default(modelProps: Props) {
-    const values = modelProps.widget.options?.values
-    const resolved = typeof values === 'function' ? values() : values
-    const firstValue = Array.isArray(resolved)
-      ? resolved.find((value) => value !== null && value !== undefined)
-      : undefined
-    return firstValue === undefined ? '' : String(firstValue)
+    try {
+      const values = modelProps.widget.options?.values
+      const resolved = typeof values === 'function' ? values() : values
+      const firstValue = Array.isArray(resolved)
+        ? resolved.find((value) => value !== null && value !== undefined)
+        : undefined
+      return firstValue === undefined ? '' : String(firstValue)
+    } catch (error) {
+      console.error('[WidgetSelectDefault] Failed to resolve options', error)
+      return ''
+    }
   }
 })
 

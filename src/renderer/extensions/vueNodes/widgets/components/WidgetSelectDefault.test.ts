@@ -117,6 +117,31 @@ describe('WidgetSelectDefault', () => {
       expect(optionLabels()).toEqual(['a', 'b', 'c'])
     })
 
+    it('falls back to empty options when function values throw', async () => {
+      const error = new Error('failed to load values')
+      const values = vi.fn(() => {
+        throw error
+      })
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+
+      try {
+        const { user } = renderComponent(createWidget(values))
+
+        await openDropdown(user)
+
+        expect(optionLabels()).toEqual([])
+        expect(screen.getByRole('status')).toHaveTextContent('No results found')
+        expect(consoleError).toHaveBeenCalledWith(
+          '[WidgetSelectDefault] Failed to resolve options',
+          error
+        )
+      } finally {
+        consoleError.mockRestore()
+      }
+    })
+
     it('re-evaluates function values when opened', async () => {
       let items = ['x', 'y']
       const { user } = renderComponent(createWidget(() => items))

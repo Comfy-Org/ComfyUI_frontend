@@ -107,14 +107,17 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
     viewport: Locator
   ) {
     const canvasViewportBefore = await getCanvasViewport(comfyPage)
-    const scrollBefore = await viewport.evaluate((el) => el.scrollTop)
+    await viewport.evaluate((el) => {
+      el.scrollTop = 0
+    })
+    const scrollBefore = 0
     const box = await getViewportBox(viewport)
 
     await comfyPage.page.mouse.move(
       box.x + box.width / 2,
       box.y + Math.min(box.height / 2, 40)
     )
-    await comfyPage.page.mouse.wheel(0, 500)
+    await comfyPage.page.mouse.wheel(0, 120)
 
     await expect
       .poll(() => viewport.evaluate((el) => el.scrollTop))
