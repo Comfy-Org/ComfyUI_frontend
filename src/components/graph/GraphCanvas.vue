@@ -299,7 +299,14 @@ watch(
 )
 
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
-watch(bottomPanelVisible, () => {
+// Mirror the splitter's rendered condition: the bottom panel is hidden when
+// focusMode is on, regardless of bottomPanelVisible (see
+// LiteGraphCanvasSplitterOverlay.vue). Watching the composite means entering
+// or leaving focus mode while the panel is open also triggers the redraw.
+const bottomPanelRendered = computed(
+  () => bottomPanelVisible.value && !workspaceStore.focusMode
+)
+watch(bottomPanelRendered, () => {
   // The splitter resizes the canvas container, which triggers the canvas
   // ResizeObserver and (eventually) the per-node Vue ResizeObservers. Force a
   // slot/link redraw once the splitter has settled so links stay aligned with
