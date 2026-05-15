@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Locator } from '@playwright/test'
 
@@ -16,7 +17,7 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
     await samplerCombo.click()
 
     const viewport = comfyPage.page.getByTestId(
-      'widget-select-default-viewport'
+      TestIds.widgets.selectDefaultViewport
     )
     await expect(viewport).toBeVisible()
 
@@ -27,9 +28,9 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
     comfyPage: ComfyPage,
     viewport: Locator
   ) {
-    const box = await getViewportBox(viewport)
+    const { x, y } = await getScrollbarPressPoint(viewport)
 
-    await comfyPage.page.mouse.move(box.x + box.width - 2, box.y + 20)
+    await comfyPage.page.mouse.move(x, y)
     await comfyPage.page.mouse.down()
     await expect(viewport).toBeVisible()
     await comfyPage.page.mouse.up()
@@ -51,6 +52,54 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
     }
 
     return box
+  }
+
+  async function getScrollbarPressPoint(viewport: Locator) {
+    await expect
+      .poll(() =>
+        viewport.evaluate(
+          (element) => element.scrollHeight > element.clientHeight
+        )
+      )
+      .toBe(true)
+
+    return viewport.evaluate((element) => {
+      const viewportElement = element as HTMLElement
+      const rect = viewportElement.getBoundingClientRect()
+      const scrollbarWidth =
+        viewportElement.offsetWidth - viewportElement.clientWidth
+      const scrollbarInset = scrollbarWidth > 0 ? scrollbarWidth / 2 : 2
+
+      return {
+        x: rect.right - scrollbarInset,
+        y: rect.top + Math.min(rect.height / 2, 20)
+      }
+    })
+  }
+
+  async function getMixedGraphSamplerCombos(comfyPage: ComfyPage) {
+    await comfyPage.workflow.loadWorkflow('groups/mixed_graph_items')
+    await comfyPage.vueNodes.waitForNodes(3)
+
+    const nodes = comfyPage.vueNodes.getNodeByTitle('KSampler')
+    await expect(nodes).toHaveCount(3)
+
+    return {
+      firstSamplerCombo: nodes
+        .nth(0)
+        .getByRole('combobox', { name: 'sampler_name', exact: true }),
+      secondSamplerCombo: nodes
+        .nth(2)
+        .getByRole('combobox', { name: 'sampler_name', exact: true })
+    }
+  }
+
+  async function getActiveWidgetSelectViewport(comfyPage: ComfyPage) {
+    const viewport = comfyPage.page.getByTestId(
+      TestIds.widgets.selectDefaultViewport
+    )
+    await expect(viewport).toBeVisible()
+    return viewport
   }
 
   async function expectWheelScrollsDropdownWithoutMovingCanvas(
@@ -140,27 +189,36 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
     await expectWheelScrollsDropdownWithoutMovingCanvas(comfyPage, viewport)
   })
 
+  test('closes the previous dropdown when another node widget opens', async ({
+    comfyPage
+  }) => {
+    const { firstSamplerCombo, secondSamplerCombo } =
+      await getMixedGraphSamplerCombos(comfyPage)
+
+    await firstSamplerCombo.click()
+    const viewport = await getActiveWidgetSelectViewport(comfyPage)
+
+    await pressDropdownScrollbar(comfyPage, viewport)
+    await expect(viewport).toBeVisible()
+
+    await secondSamplerCombo.click()
+    await expect(
+      comfyPage.page.getByTestId(TestIds.widgets.selectDefaultViewport)
+    ).toHaveCount(1)
+    await expect(
+      comfyPage.page.getByTestId(TestIds.widgets.selectDefaultViewport)
+    ).toBeVisible()
+  })
+
   test('preserves dropdown scroll capture when switching between node widgets', async ({
     comfyPage
   }) => {
-    await comfyPage.workflow.loadWorkflow('groups/mixed_graph_items')
-    await comfyPage.vueNodes.waitForNodes(2)
-
-    const nodes = comfyPage.vueNodes.getNodeByTitle('KSampler')
-    await expect(nodes).toHaveCount(3)
-    const firstSamplerCombo = nodes
-      .nth(0)
-      .getByRole('combobox', { name: 'sampler_name', exact: true })
-    const secondSamplerCombo = nodes
-      .nth(1)
-      .getByRole('combobox', { name: 'sampler_name', exact: true })
+    const { firstSamplerCombo, secondSamplerCombo } =
+      await getMixedGraphSamplerCombos(comfyPage)
 
     await firstSamplerCombo.click()
+    const viewport = await getActiveWidgetSelectViewport(comfyPage)
 
-    const viewport = comfyPage.page.getByTestId(
-      'widget-select-default-viewport'
-    )
-    await expect(viewport).toBeVisible()
     await expectWheelScrollsDropdownWithoutMovingCanvas(comfyPage, viewport)
 
     await pressDropdownScrollbar(comfyPage, viewport)
@@ -170,13 +228,10 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
 
     await secondSamplerCombo.click()
     await expect(
-      comfyPage.page.getByTestId('widget-select-default-viewport')
+      comfyPage.page.getByTestId(TestIds.widgets.selectDefaultViewport)
     ).toHaveCount(1)
 
-    const secondViewport = comfyPage.page.getByTestId(
-      'widget-select-default-viewport'
-    )
-    await expect(secondViewport).toBeVisible()
+    const secondViewport = await getActiveWidgetSelectViewport(comfyPage)
 
     await expectWheelScrollsDropdownWithoutMovingCanvas(
       comfyPage,

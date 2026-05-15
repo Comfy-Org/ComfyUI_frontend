@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/vue'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
@@ -127,17 +127,18 @@ describe('WidgetSelectDefault', () => {
       expect(optionLabels()).toEqual(['x', 'y', 'z'])
     })
 
-    it('re-evaluates function values when searched', async () => {
+    it('does not re-evaluate function values on each search keystroke', async () => {
       let items = ['alpha', 'bravo', 'charlie', 'delta', 'echo']
-      const { user } = renderComponent(createWidget(() => items))
+      const values = vi.fn(() => items)
+      const { user } = renderComponent(createWidget(values))
 
       await openDropdown(user)
+      values.mockClear()
       items = ['alpha', 'bravo', 'charlie', 'delta', 'zeta']
       await user.type(screen.getByRole('combobox', { name: 'Search' }), 'z')
 
-      await waitFor(() => {
-        expect(optionLabels()).toEqual(['zeta'])
-      })
+      expect(values).not.toHaveBeenCalled()
+      expect(optionLabels()).toEqual([])
     })
 
     it('does not remap array option labels on each search keystroke', async () => {
@@ -204,6 +205,48 @@ describe('WidgetSelectDefault', () => {
       await user.keyboard('{ArrowDown}{Enter}')
 
       expect(onUpdate).toHaveBeenCalledWith('alpine')
+    })
+
+    it('does not emit a blank value when Escape closes the dropdown', async () => {
+      const { onUpdate, user } = renderComponent(
+        createWidget(['alpha', 'bravo', 'charlie', 'delta', 'echo']),
+        'alpha'
+      )
+
+      await openDropdown(user)
+      await user.keyboard('{Escape}')
+
+      expect(onUpdate).not.toHaveBeenCalledWith('')
+    })
+  })
+
+  describe('focus restore behavior', () => {
+    it('keeps the search focused when viewport pointerdown causes focus outside', async () => {
+      const { user } = renderComponent(
+        createWidget(['alpha', 'bravo', 'charlie', 'delta', 'echo'])
+      )
+      const outsideButton = document.createElement('button')
+      document.body.append(outsideButton)
+
+      try {
+        await openDropdown(user)
+        const searchInput = screen.getByRole('combobox', { name: 'Search' })
+        const viewport = screen.getByTestId('widget-select-default-viewport')
+
+        // user-event does not model the raw viewport pointerdown that triggers
+        // this Reka focus-outside interaction.
+        // eslint-disable-next-line testing-library/prefer-user-event
+        await fireEvent.pointerDown(viewport)
+        outsideButton.focus()
+        await fireEvent.focusIn(outsideButton)
+
+        await waitFor(() => {
+          expect(searchInput).toHaveFocus()
+        })
+        expect(viewport).toBeVisible()
+      } finally {
+        outsideButton.remove()
+      }
     })
   })
 

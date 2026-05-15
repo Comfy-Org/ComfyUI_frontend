@@ -157,11 +157,11 @@ import {
   ComboboxRoot,
   ComboboxTrigger
 } from 'reka-ui'
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
-import { useComboboxFocusRestore } from '@/renderer/extensions/vueNodes/widgets/composables/useComboboxFocusRestore'
+import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -210,7 +210,7 @@ const optionsRefreshKey = ref(0)
 const isOpen = ref(false)
 const searchInputContainerRef = ref<HTMLElement>()
 const { handleFocusOutside, handleViewportPointerDown } =
-  useComboboxFocusRestore(searchInputContainerRef)
+  useRestoreFocusOnViewportPointer(focusSearchInput)
 
 const transformCompatProps = useTransformCompatOverlayProps()
 
@@ -235,16 +235,12 @@ function refreshOptions() {
   optionsRefreshKey.value++
 }
 
-function refreshFunctionOptions() {
-  if (typeof widgetOptions.value?.values === 'function') refreshOptions()
-}
-
 function getOptionLabel(value: string) {
   const labeler = widgetOptions.value?.getOptionLabel
   if (!labeler) return value
 
   try {
-    return labeler(value) ?? value
+    return labeler(value) || value
   } catch (error) {
     console.error('[WidgetSelectDefault] Failed to map option label', error)
     return value
@@ -302,11 +298,20 @@ const selectedLabel = computed(() => {
 })
 
 function selectOption(value: string | undefined) {
-  if (value === undefined) return
+  if (value === undefined || value === '') return
 
   modelValue.value = value
   searchQuery.value = ''
   isOpen.value = false
+}
+
+function focusSearchInput() {
+  const input =
+    searchInputContainerRef.value?.querySelector<HTMLInputElement>('input')
+  if (!input) return false
+
+  input.focus({ preventScroll: true })
+  return true
 }
 
 function handleOpenChange(open: boolean) {
@@ -318,6 +323,4 @@ function handleOpenChange(open: boolean) {
     searchQuery.value = ''
   }
 }
-
-watch(searchQuery, refreshFunctionOptions)
 </script>
