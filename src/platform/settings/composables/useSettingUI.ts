@@ -327,7 +327,7 @@ export function useSettingUI(
   // Sidebar structure when team workspaces is disabled (legacy)
   const legacyMenuTreeNodes = computed<SettingTreeNode[]>(() => [
     // Account settings - show different panels based on distribution and auth state
-    {
+    translateCategory({
       key: 'account',
       label: 'Account',
       children: [
@@ -343,15 +343,15 @@ export function useSettingUI(
           ? [creditsPanel.node]
           : [])
       ].map(translateCategory)
-    },
+    }),
     // Normal settings stored in the settingStore
-    {
+    translateCategory({
       key: 'settings',
       label: 'Application Settings',
       children: settingCategories.value.map(translateCategory)
-    },
+    }),
     // Special settings such as about, keybinding, extension, server-config
-    {
+    translateCategory({
       key: 'specialSettings',
       label: 'Special Settings',
       children: [
@@ -360,7 +360,7 @@ export function useSettingUI(
         aboutPanel.node,
         ...(isDesktop ? [serverConfigPanel.node] : [])
       ].map(translateCategory)
-    }
+    })
   ])
 
   const groupedMenuTreeNodes = computed<SettingTreeNode[]>(() =>

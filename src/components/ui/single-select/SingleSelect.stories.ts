@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
@@ -24,7 +25,7 @@ const meta: Meta<typeof SingleSelect> = {
     loading: { control: 'boolean' }
   },
   args: {
-    label: 'Category',
+    label: t('g.category'),
     size: 'lg',
     invalid: false,
     loading: false,

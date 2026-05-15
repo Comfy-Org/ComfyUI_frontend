@@ -5,9 +5,9 @@ import Load3d from '@/extensions/core/load3d/Load3d'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 const EXPORT_FORMATS = [
-  { label: 'GLB', value: 'glb' },
-  { label: 'OBJ', value: 'obj' },
-  { label: 'STL', value: 'stl' }
+  { label: t('g.glb'), value: 'glb' },
+  { label: t('g.obj'), value: 'obj' },
+  { label: t('g.stl'), value: 'stl' }
 ] as const
 
 /**

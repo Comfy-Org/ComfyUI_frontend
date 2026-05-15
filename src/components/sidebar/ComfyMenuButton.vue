@@ -202,7 +202,7 @@ const extraMenuItems = computed(() => [
   },
   {
     key: 'nodes-2.0-toggle',
-    label: 'Nodes 2.0'
+    label: t('g.nodes_2_0')
   },
   { separator: true },
   {

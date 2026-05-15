@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import { markRaw } from 'vue'
 
 import ModelLibrarySidebarTab from '@/components/sidebar/tabs/ModelLibrarySidebarTab.vue'
@@ -11,7 +12,7 @@ export const useModelLibrarySidebarTab = (): SidebarTabExtension => {
     icon: 'icon-[comfy--ai-model]',
     title: 'sideToolbar.modelLibrary',
     tooltip: 'sideToolbar.modelLibrary',
-    label: 'sideToolbar.labels.models',
+    label: t('g.sidetoolbar_labels_models'),
     component: markRaw(ModelLibrarySidebarTab),
     type: 'vue',
     iconBadge: () => {

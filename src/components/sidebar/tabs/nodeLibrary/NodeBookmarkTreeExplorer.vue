@@ -86,7 +86,7 @@ const bookmarkedRoot = computed<TreeNode>(() => {
   return props.filteredNodeDefs.length
     ? filterTree(nodeBookmarkStore.bookmarkedRoot) || {
         key: 'root',
-        label: 'Root',
+        label: t('g.root'),
         children: []
       }
     : nodeBookmarkStore.bookmarkedRoot

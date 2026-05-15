@@ -102,7 +102,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
     commands: [
       {
         id: 'Comfy-Desktop.Folders.OpenLogsFolder',
-        label: 'Open Logs Folder',
+        label: t('g.open_logs_folder'),
         icon: 'pi pi-folder-open',
         function() {
           electronAPI.openLogsFolder()
@@ -110,7 +110,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
       },
       {
         id: 'Comfy-Desktop.Folders.OpenModelsFolder',
-        label: 'Open Models Folder',
+        label: t('g.open_models_folder'),
         icon: 'pi pi-folder-open',
         function() {
           electronAPI.openModelsFolder()
@@ -118,7 +118,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
       },
       {
         id: 'Comfy-Desktop.Folders.OpenOutputsFolder',
-        label: 'Open Outputs Folder',
+        label: t('g.open_outputs_folder'),
         icon: 'pi pi-folder-open',
         function() {
           electronAPI.openOutputsFolder()
@@ -126,7 +126,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
       },
       {
         id: 'Comfy-Desktop.Folders.OpenInputsFolder',
-        label: 'Open Inputs Folder',
+        label: t('g.open_inputs_folder'),
         icon: 'pi pi-folder-open',
         function() {
           electronAPI.openInputsFolder()
@@ -134,7 +134,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
       },
       {
         id: 'Comfy-Desktop.Folders.OpenCustomNodesFolder',
-        label: 'Open Custom Nodes Folder',
+        label: t('g.open_custom_nodes_folder'),
         icon: 'pi pi-folder-open',
         function() {
           electronAPI.openCustomNodesFolder()
@@ -142,7 +142,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
       },
       {
         id: 'Comfy-Desktop.Folders.OpenModelConfig',
-        label: 'Open extra_model_paths.yaml',
+        label: t('g.open_extra_model_paths_yaml'),
         icon: 'pi pi-file',
         function() {
           electronAPI.openModelConfig()
@@ -150,7 +150,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
       },
       {
         id: 'Comfy-Desktop.OpenDevTools',
-        label: 'Open DevTools',
+        label: t('g.open_devtools'),
         icon: 'pi pi-code',
         function() {
           electronAPI.openDevTools()
@@ -158,7 +158,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
       },
       {
         id: 'Comfy-Desktop.OpenUserGuide',
-        label: 'Desktop User Guide',
+        label: t('g.desktop_user_guide'),
         icon: 'pi pi-book',
         function() {
           window.open(
@@ -172,7 +172,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
       },
       {
         id: 'Comfy-Desktop.CheckForUpdates',
-        label: 'Check for Updates',
+        label: t('g.check_for_updates'),
         icon: 'pi pi-sync',
         async function() {
           try {
@@ -220,7 +220,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
       },
       {
         id: 'Comfy-Desktop.Reinstall',
-        label: 'Reinstall',
+        label: t('g.reinstall'),
         icon: 'pi pi-refresh',
         async function() {
           const proceed = await useDialogService().confirm({
@@ -234,7 +234,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
       },
       {
         id: 'Comfy-Desktop.Restart',
-        label: 'Restart',
+        label: t('g.restart'),
         icon: 'pi pi-refresh',
         function() {
           electronAPI.restartApp()
@@ -242,7 +242,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
       },
       {
         id: 'Comfy-Desktop.Quit',
-        label: 'Quit',
+        label: t('g.quit'),
         icon: 'pi pi-sign-out',
         async function() {
           // Confirm if unsaved workflows are open
@@ -299,7 +299,7 @@ import { electronAPI as getElectronAPI } from '@/utils/envUtil'
 
     aboutPageBadges: [
       {
-        label: 'ComfyUI_desktop v' + desktopAppVersion,
+        label: t('g.comfyui_desktop_v') + desktopAppVersion,
         url: staticUrls.githubElectron,
         icon: 'pi pi-github'
       }

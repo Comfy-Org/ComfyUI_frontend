@@ -508,25 +508,25 @@ const navItems = computed<(NavItemData | NavGroupData)[]>(() => {
     return [
       {
         id: 'skeleton-all',
-        label: 'All Templates',
+        label: t('g.all_templates'),
         icon: 'icon-[lucide--layout-grid]'
       },
       {
         id: 'skeleton-basics',
-        label: 'Basics',
+        label: t('g.basics'),
         icon: 'icon-[lucide--graduation-cap]'
       },
       {
         title: 'Generation Type',
         items: [
-          { id: 'skeleton-1', label: '...', icon: 'icon-[lucide--loader-2]' },
-          { id: 'skeleton-2', label: '...', icon: 'icon-[lucide--loader-2]' }
+          { id: 'skeleton-1', label: t('g.'), icon: 'icon-[lucide--loader-2]' },
+          { id: 'skeleton-2', label: t('g.'), icon: 'icon-[lucide--loader-2]' }
         ]
       },
       {
         title: 'Closed Source Models',
         items: [
-          { id: 'skeleton-3', label: '...', icon: 'icon-[lucide--loader-2]' }
+          { id: 'skeleton-3', label: t('g.'), icon: 'icon-[lucide--loader-2]' }
         ]
       }
     ]

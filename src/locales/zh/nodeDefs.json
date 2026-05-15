@@ -2528,7 +2528,7 @@
   },
   "CropByBBoxes": {
     "description": "根据提供的边界框，从输入图像批量中裁剪并调整区域大小。",
-    "display_name": "CropByBBoxes",
+    "display_name": "按边界框裁剪",
     "inputs": {
       "bboxes": {
         "name": "bboxes"
@@ -2731,7 +2731,7 @@
   },
   "EasyCache": {
     "description": "原生 EasyCache 实现。",
-    "display_name": "EasyCache",
+    "display_name": "简易缓存",
     "inputs": {
       "end_percent": {
         "name": "结束位置",
@@ -3059,7 +3059,7 @@
     }
   },
   "EmptyARVideoLatent": {
-    "display_name": "EmptyARVideoLatent",
+    "display_name": "空AR视频Latent",
     "inputs": {
       "batch_size": {
         "name": "batch_size"
@@ -4034,7 +4034,7 @@
     }
   },
   "FreeU_V2": {
-    "display_name": "FreeU_V2",
+    "display_name": "FreeU V2",
     "inputs": {
       "b1": {
         "name": "b1"

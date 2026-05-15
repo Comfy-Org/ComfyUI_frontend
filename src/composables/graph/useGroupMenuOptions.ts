@@ -22,7 +22,7 @@ export function useGroupMenuOptions() {
   const { shapeOptions, colorOptions, isLightTheme } = useNodeCustomization()
 
   const getFitGroupToNodesOption = (groupContext: LGraphGroup): MenuOption => ({
-    label: 'Fit Group To Nodes',
+    label: t('g.fit_group_to_nodes'),
     icon: 'icon-[lucide--move-diagonal-2]',
     action: () => {
       try {

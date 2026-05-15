@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import { markRaw } from 'vue'
 
 import AssetsSidebarTab from '@/components/sidebar/tabs/AssetsSidebarTab.vue'
@@ -11,7 +12,7 @@ export const useAssetsSidebarTab = (): SidebarTabExtension => {
     icon: 'icon-[comfy--image-ai-edit]',
     title: 'sideToolbar.assets',
     tooltip: 'sideToolbar.assets',
-    label: 'sideToolbar.labels.assets',
+    label: t('g.sidetoolbar_labels_assets'),
     component: markRaw(AssetsSidebarTab),
     type: 'vue',
     iconBadge: () => {

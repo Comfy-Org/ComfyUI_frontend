@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import ChartLine from './ChartLine.vue'
@@ -21,12 +22,12 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   args: {
-    ariaLabel: 'Line chart example',
+    ariaLabel: t('g.line_chart_example_aria'),
     data: {
       labels: ['A', 'B', 'C', 'D'],
       datasets: [
         {
-          label: 'LineName1',
+          label: t('g.linename1'),
           data: [10, 45, 25, 80],
           borderColor: '#4ade80',
           borderDash: [5, 5],
@@ -41,12 +42,12 @@ export const Default: Story = {
 
 export const MultipleLines: Story = {
   args: {
-    ariaLabel: 'Line chart with multiple lines',
+    ariaLabel: t('g.line_chart_multiple_lines_aria'),
     data: {
       labels: ['A', 'B', 'C', 'D'],
       datasets: [
         {
-          label: 'LineName1',
+          label: t('g.linename1'),
           data: [10, 45, 25, 80],
           borderColor: '#4ade80',
           borderDash: [5, 5],
@@ -55,7 +56,7 @@ export const MultipleLines: Story = {
           tension: 0.4
         },
         {
-          label: 'LineName2',
+          label: t('g.linename2'),
           data: [80, 60, 40, 10],
           borderColor: '#ff8000',
           fill: true,
@@ -63,7 +64,7 @@ export const MultipleLines: Story = {
           tension: 0.4
         },
         {
-          label: 'LineName3',
+          label: t('g.linename3'),
           data: [60, 70, 35, 40],
           borderColor: '#ef4444',
           fill: true,

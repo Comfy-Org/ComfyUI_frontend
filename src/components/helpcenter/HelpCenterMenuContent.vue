@@ -345,7 +345,7 @@ const menuItems = computed<MenuItem[]>(() => {
       key: 'discord',
       type: 'item',
       icon: 'pi pi-discord',
-      label: 'Discord',
+      label: t('g.discord'),
       showExternalIcon: true,
       action: () => {
         trackResourceClick('discord', true)

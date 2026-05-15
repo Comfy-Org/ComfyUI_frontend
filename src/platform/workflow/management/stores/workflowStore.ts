@@ -26,6 +26,7 @@ import {
   parseNodeExecutionId,
   parseNodeLocatorId
 } from '@/types/nodeIdentification'
+import { t } from '@/i18n'
 import { generateUUID, getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
@@ -296,31 +297,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
    */
   const createTemporary = (path?: string, workflowData?: ComfyWorkflowJSON) => {
     const fullPath = getUnconflictedPath(
-      ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
+      ComfyWorkflow.basePath + (path ?? t('workflow.unsavedFilename'))
     )
-
-    const normalizedWorkflowData = workflowData
-      ? ensureWorkflowId(workflowData)
-      : undefined
-
-    // Try to reuse an existing loaded workflow with the same filename
-    // that is not stored in the workflows directory
-    if (path && normalizedWorkflowData) {
-      const existingWorkflow = workflows.value.find(
-        (w) => w.fullFilename === path
-      )
-      if (
-        existingWorkflow?.changeTracker &&
-        !existingWorkflow.directory.startsWith(
-          ComfyWorkflow.basePath.slice(0, -1)
-        )
-      ) {
-        existingWorkflow.changeTracker.reset(normalizedWorkflowData)
-        return existingWorkflow
-      }
-    }
-
-    return createNewWorkflow(fullPath, normalizedWorkflowData)
+    return createNewWorkflow(fullPath, workflowData)
   }
 
   /**
@@ -331,7 +310,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     workflowData?: ComfyWorkflowJSON
   ): ComfyWorkflow => {
     const fullPath = getUnconflictedPath(
-      ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
+      ComfyWorkflow.basePath + (path ?? t('workflow.unsavedFilename'))
     )
     return createNewWorkflow(fullPath, workflowData)
   }
