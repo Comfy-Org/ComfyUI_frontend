@@ -6,6 +6,7 @@ import { shallowRef } from 'vue'
 
 import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
+import { createRafBatch } from '@/utils/rafBatch'
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -1056,10 +1057,16 @@ export class ComfyApp {
 
     this.rootGraph.start()
 
-    // Ensure the canvas fills the window
+    // Coalesce ResizeObserver bursts during splitter / window drags into one
+    // resize per frame to stop redundant draw(true, true) calls and the link
+    // overlay redraw lag they cause.
+    const scheduleCanvasResize = createRafBatch(() => {
+      const canvasEl = this.canvasElRef.value
+      if (canvasEl) this.resizeCanvas(canvasEl)
+    })
     useResizeObserver(this.canvasElRef, ([canvasEl]) => {
       if (canvasEl.target instanceof HTMLCanvasElement) {
-        this.resizeCanvas(canvasEl.target)
+        scheduleCanvasResize.schedule()
       }
     })
 
