@@ -117,6 +117,13 @@ function addMultilineWidget(
       const isLikelyTrackpad =
         Math.abs(deltaX) > 0 || Math.abs(deltaY) < TRACKPAD_DETECTION_THRESHOLD
 
+      // Vertical scrolling in scrollable text should stay inside the textarea,
+      // even at its top/bottom boundary where the canvas also listens for wheel.
+      if (!isHorizontal && canScrollY) {
+        event.stopPropagation()
+        return
+      }
+
       // Trackpad gestures: when enabled, trackpad panning goes to canvas
       if (gesturesEnabled && isLikelyTrackpad) {
         event.preventDefault()
@@ -130,12 +137,6 @@ function addMultilineWidget(
         event.preventDefault()
         event.stopPropagation()
         app.canvas.processMouseWheel(event)
-        return
-      }
-
-      // Vertical scrolling when gestures disabled: let textarea scroll if scrollable
-      if (canScrollY) {
-        event.stopPropagation()
         return
       }
 

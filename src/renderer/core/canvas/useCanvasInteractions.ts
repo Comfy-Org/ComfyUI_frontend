@@ -5,6 +5,49 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 
+const TEXT_WHEEL_CAPTURE_SELECTOR = 'textarea, [role="textarea"]'
+
+function getWheelCaptureElement(event: WheelEvent): HTMLElement | null {
+  const target = event.target as HTMLElement | null
+  const captureElement = target?.closest('[data-capture-wheel="true"]')
+
+  return captureElement instanceof HTMLElement ? captureElement : null
+}
+
+function getTextWheelCaptureElement(event: WheelEvent): HTMLElement | null {
+  const target = event.target as HTMLElement | null
+  const captureElement = getWheelCaptureElement(event)
+  const textCaptureElement = target?.closest(TEXT_WHEEL_CAPTURE_SELECTOR)
+
+  if (
+    textCaptureElement instanceof HTMLElement &&
+    captureElement?.contains(textCaptureElement)
+  ) {
+    return textCaptureElement
+  }
+
+  return captureElement?.matches(TEXT_WHEEL_CAPTURE_SELECTOR)
+    ? captureElement
+    : null
+}
+
+function isVerticalWheel(event: WheelEvent): boolean {
+  return (
+    Math.abs(event.deltaY) > 0 &&
+    Math.abs(event.deltaY) >= Math.abs(event.deltaX)
+  )
+}
+
+function textCapturesVerticalScroll(event: WheelEvent): boolean {
+  const textCaptureElement = getTextWheelCaptureElement(event)
+
+  return !!(
+    textCaptureElement &&
+    isVerticalWheel(event) &&
+    textCaptureElement.scrollHeight > textCaptureElement.clientHeight
+  )
+}
+
 /**
  * Composable for handling canvas interactions from Vue components.
  * This provides a unified way to forward events to the LiteGraph canvas.
@@ -32,17 +75,23 @@ export function useCanvasInteractions() {
    *
    * This allows two-finger panning to continue over inputs until the user has
    * actively focused the widget, at which point the widget can consume scroll.
+   * Text inputs are handled by scrollability so short text still pans the canvas.
    */
   const wheelCapturedByFocusedElement = (event: WheelEvent): boolean => {
-    const target = event.target as HTMLElement | null
-    const captureElement = target?.closest('[data-capture-wheel="true"]')
+    const captureElement = getWheelCaptureElement(event)
     const active = document.activeElement as Element | null
 
-    return !!(captureElement && active && captureElement.contains(active))
+    return !!(
+      captureElement &&
+      !getTextWheelCaptureElement(event) &&
+      active &&
+      captureElement.contains(active)
+    )
   }
 
   const shouldForwardWheelEvent = (event: WheelEvent): boolean =>
-    !wheelCapturedByFocusedElement(event) ||
+    (!textCapturesVerticalScroll(event) &&
+      !wheelCapturedByFocusedElement(event)) ||
     (isStandardNavMode.value && (event.ctrlKey || event.metaKey))
 
   /**
