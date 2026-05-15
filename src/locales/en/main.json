@@ -4011,4 +4011,52 @@
   "workflow": {
     "unsavedFilename": "Unsaved Workflow.json"
   }
+},
+  "modelTypeNames": {
+    "checkpoints": "Checkpoints",
+    "loras": "LoRA",
+    "vae": "VAE",
+    "text_encoders": "Text Encoders",
+    "diffusion_models": "Diffusion Models",
+    "clip_vision": "CLIP Vision",
+    "style_models": "Style Models",
+    "embeddings": "Embeddings",
+    "diffusers": "Diffusers",
+    "vae_approx": "VAE Approx",
+    "controlnet": "ControlNet",
+    "gligen": "GLIGEN",
+    "upscale_models": "Upscale Models",
+    "latent_upscale_models": "Latent Upscale Models",
+    "hypernetworks": "Hypernetworks",
+    "photomaker": "PhotoMaker",
+    "classifiers": "Classifiers",
+    "model_patches": "Model Patches",
+    "audio_encoders": "Audio Encoders",
+    "frame_interpolation": "Frame Interpolation",
+    "download_model_base": "Model Download Directory",
+    "ipadapter": "IP-Adapter",
+    "sams": "SAM",
+    "animatediff_motion_lora": "AnimateDiff Motion LoRA",
+    "animatediff_models": "AnimateDiff Models",
+    "sam2": "SAM 2",
+    "insightface": "InsightFace",
+    "unet": "UNet",
+    "configs": "Configs"
+  },
+  "modelTypeDescriptions": {
+    "checkpoints": "Base model files such as Stable Diffusion, the core of image generation",
+    "loras": "Low-rank adaptation models for fine-tuning style, character, pose, etc.",
+    "vae": "Variational autoencoder for image encoding/decoding, affects color and detail",
+    "text_encoders": "Text encoder models that convert prompts into AI-understandable vectors",
+    "diffusion_models": "Diffusion model files for the denoising process",
+    "clip_vision": "Vision understanding model for image prompt reverse and style reference",
+    "style_models": "Style models for controlling the style of generated images",
+    "embeddings": "Text embedding files for Textual Inversion and similar techniques",
+    "controlnet": "Control network models for precise control over composition, pose, depth, etc.",
+    "upscale_models": "Image upscaling models for improving image resolution",
+    "vae_approx": "VAE approximation models for quick preview encoding/decoding",
+    "hypernetworks": "Hypernetwork models, a lightweight fine-tuning method",
+    "gligen": "Spatial positioning generation models for controlling object positions",
+    "unet": "UNet architecture model, the core denoising network of diffusion models"
+  }
 }
