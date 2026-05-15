@@ -404,6 +404,23 @@ describe('assetMetadataUtils', () => {
       expect(getAssetExtensionLabel(asset)).toBe('PNG')
     })
 
+    it('falls back to display_name when asset.name is a content hash (Cloud case)', () => {
+      const asset = {
+        ...mockAsset,
+        name: 'blake3:abcdef',
+        display_name: 'ComfyUI_00001_.png'
+      }
+      expect(getAssetExtensionLabel(asset)).toBe('PNG')
+    })
+
+    it('strips path prefixes before resolving the extension', () => {
+      const asset = {
+        ...mockAsset,
+        name: 'subdir.v2/cover.jpg'
+      }
+      expect(getAssetExtensionLabel(asset)).toBe('JPG')
+    })
+
     it('returns an empty string when no filename source has an extension', () => {
       expect(
         getAssetExtensionLabel({ ...mockAsset, name: 'no-extension' })

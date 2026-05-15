@@ -1,5 +1,5 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { getFilenameDetails, isCivitaiUrl } from '@/utils/formatUtil'
+import { getPathDetails, isCivitaiUrl } from '@/utils/formatUtil'
 
 /**
  * Type-safe utilities for extracting metadata from assets.
@@ -201,17 +201,14 @@ export function getAssetCardTitle(asset: AssetItem): string {
 
 /**
  * Returns the asset's file extension formatted for display in metadata lines,
- * e.g. `PNG`, `MP4`, `GLB`. Uses the canonical filename (with the
- * user/metadata filename as a fallback) so that user-edited display names
- * without an extension still produce a sensible label.
+ * e.g. `PNG`, `MP4`, `GLB`. Resolves the filename via
+ * {@link getAssetDisplayFilename} (covering the Cloud hash case where the
+ * extension lives on `display_name`) and uses {@link getPathDetails} so
+ * path-like values still resolve to the basename's suffix.
  *
  * Returns an empty string when no extension can be determined.
  */
 export function getAssetExtensionLabel(asset: AssetItem): string {
-  const candidates = [asset.name, getAssetFilename(asset)]
-  for (const candidate of candidates) {
-    const suffix = getFilenameDetails(candidate).suffix
-    if (suffix) return suffix.toUpperCase()
-  }
-  return ''
+  const suffix = getPathDetails(getAssetDisplayFilename(asset)).suffix
+  return suffix ? suffix.toUpperCase() : ''
 }
