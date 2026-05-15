@@ -62,12 +62,12 @@ const materialMode = defineModel<MaterialMode>('materialMode')
 
 const upDirectionOptions = [
   { label: t('load3d.upDirections.original'), value: 'original' },
-  { label: t('g.x'), value: '-x' },
-  { label: t('g.x'), value: '+x' },
-  { label: t('g.y'), value: '-y' },
-  { label: t('g.y'), value: '+y' },
-  { label: t('g.z'), value: '-z' },
-  { label: t('g.z'), value: '+z' }
+  { label: '-X', value: '-x' },
+  { label: '+X', value: '+x' },
+  { label: '-Y', value: '-y' },
+  { label: '+Y', value: '+y' },
+  { label: '-Z', value: '-z' },
+  { label: '+Z', value: '+z' }
 ]
 
 const materialModeOptions = computed(() =>
