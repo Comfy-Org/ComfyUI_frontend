@@ -14,7 +14,10 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { submitSurvey } from '@/platform/cloud/onboarding/auth'
+import {
+  getSurveyCompletedStatus,
+  submitSurvey
+} from '@/platform/cloud/onboarding/auth'
 import { isCloud } from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
@@ -37,12 +40,17 @@ onMounted(async () => {
     await router.replace({ name: 'cloud-user-check' })
     return
   }
-  // Don't re-check survey status here. The router gate and UserCheckView
-  // are the source of truth — re-checking would treat a transient 5xx as
-  // "already completed" and bounce a new user away from /cloud/survey
-  // during signup, the same false-positive class this PR is meant to fix.
-  if (isCloud) {
-    useTelemetry()?.trackSurvey('opened')
+  try {
+    const surveyCompleted = await getSurveyCompletedStatus()
+    if (surveyCompleted) {
+      await router.replace({ name: 'cloud-user-check' })
+      return
+    }
+    if (isCloud) {
+      useTelemetry()?.trackSurvey('opened')
+    }
+  } catch (error) {
+    console.error('Failed to check survey status:', error)
   }
 })
 

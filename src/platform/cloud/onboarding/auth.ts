@@ -11,20 +11,6 @@ interface UserCloudStatus {
 const ONBOARDING_SURVEY_KEY = 'onboarding_survey'
 
 /**
- * Thrown when /settings/{key} returns 401/403. Callers can branch on
- * `error instanceof SurveyAuthError` instead of pattern-matching error
- * messages — see router.ts and CloudSurveyView.vue for the consumers.
- */
-export class SurveyAuthError extends Error {
-  readonly status: number
-  constructor(status: number, statusText: string) {
-    super(`Survey status auth error: ${status} ${statusText}`)
-    this.name = 'SurveyAuthError'
-    this.status = status
-  }
-}
-
-/**
  * Helper function to capture API errors with Sentry
  */
 function captureApiError(
@@ -101,22 +87,6 @@ export async function getUserCloudStatus(): Promise<UserCloudStatus> {
   }
 }
 
-/**
- * Returns whether the user has completed the onboarding survey.
- *
- * Resolution rules (prefer false negatives over false positives — i.e. rather
- * miss a survey prompt than redirect a working customer to /cloud/survey):
- *   - 200 with non-empty `value`           → true  (definitely completed)
- *   - 200 with empty `value`               → false (definitely not completed)
- *   - 404                                  → true  (key absent; could be a
- *       genuinely new user OR a customer whose Settings JSON pre-dates the
- *       survey. We can't distinguish on the wire and prefer the safer default.
- *       New users still get the survey via the onboarding signup flow itself.)
- *   - 401 / 403                            → throws (auth issue, not a survey
- *       signal — propagate so the auth layer handles it)
- *   - 5xx / network error                  → true  (backend hiccup — don't
- *       bounce the user on a transient blip)
- */
 export async function getSurveyCompletedStatus(): Promise<boolean> {
   try {
     const response = await api.fetchApi(`/settings/${ONBOARDING_SURVEY_KEY}`, {
@@ -125,29 +95,37 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
         'Content-Type': 'application/json'
       }
     })
-
-    if (response.ok) {
-      const data = await response.json()
-      // 200: definitive signal. Empty value = never completed.
-      return !isEmpty(data.value)
+    if (!response.ok) {
+      // Ambiguous response (404/5xx/etc). Treat as completed to avoid
+      // bouncing working customers to /cloud/survey on transient hiccups.
+      // Real "not completed" only comes from a 200 with empty value.
+      Sentry.addBreadcrumb({
+        category: 'auth',
+        message: 'Survey status check returned non-ok response',
+        level: 'info',
+        data: {
+          status: response.status,
+          endpoint: `/settings/${ONBOARDING_SURVEY_KEY}`
+        }
+      })
+      return true
     }
-
-    if (response.status === 401 || response.status === 403) {
-      // Auth failure - propagate so the auth layer can handle. Returning
-      // false here would let an expired token masquerade as "no survey" and
-      // bounce the user to /cloud/survey on every transient 401.
-      throw new SurveyAuthError(response.status, response.statusText)
-    }
-
-    // 404 / 5xx / other: ambiguous. Treat as completed to avoid false
-    // positives — rather miss a survey than bounce a paying customer.
-    return true
+    const data = await response.json()
+    // Check if data exists and is not empty
+    return !isEmpty(data.value)
   } catch (error) {
-    // Re-throw auth errors so callers can branch on them; everything else
-    // (network failure, parse failure, etc) is treated as "completed".
-    if (error instanceof SurveyAuthError) {
-      throw error
-    }
+    // Network/parse failure — same policy as ambiguous HTTP responses.
+    Sentry.captureException(error, {
+      tags: {
+        api_endpoint: '/settings/{key}',
+        error_type: 'network_error'
+      },
+      extra: {
+        route_template: '/settings/{key}',
+        route_actual: `/settings/${ONBOARDING_SURVEY_KEY}`
+      },
+      level: 'warning'
+    })
     return true
   }
 }
