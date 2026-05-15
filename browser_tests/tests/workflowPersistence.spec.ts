@@ -33,6 +33,20 @@ async function getWidgetValueSnapshot(
   })
 }
 
+async function getWidgetSnapshotForFirstNode(
+  comfyPage: ComfyPage
+): Promise<Array<{ name: string; value: unknown }>> {
+  return await comfyPage.page.evaluate(() => {
+    const firstNode = window.app!.graph.nodes[0]
+    return (
+      firstNode?.widgets?.map((widget) => ({
+        name: widget.name,
+        value: widget.value
+      })) ?? []
+    )
+  })
+}
+
 async function getLinkCount(comfyPage: ComfyPage): Promise<number> {
   return await comfyPage.page.evaluate(() => {
     return window.app!.graph.links
@@ -188,6 +202,82 @@ test.describe('Workflow Persistence', () => {
     await expect
       .poll(() => getWidgetValueSnapshot(comfyPage))
       .toEqual(widgetValuesBefore)
+  })
+
+  test('Plain seed INT inputs do not gain control widgets across workflow tab switches', async ({
+    comfyPage
+  }) => {
+    test.info().annotations.push({
+      type: 'regression',
+      description:
+        'Issue #7468 — plain INT inputs named seed should not get control_after_generate widgets'
+    })
+
+    const tab = comfyPage.menu.workflowsTab
+    await tab.open()
+
+    await comfyPage.workflow.loadWorkflow('widgets/seed_widget')
+    await comfyPage.workflow.waitForWorkflowIdle()
+    await comfyPage.nextFrame()
+
+    await comfyPage.menu.topbar.saveWorkflow('plain-seed-widget-test')
+
+    await expect
+      .poll(() => getWidgetSnapshotForFirstNode(comfyPage))
+      .toEqual([{ name: 'seed', value: 0 }])
+
+    await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+    await comfyPage.workflow.waitForWorkflowIdle()
+
+    await tab.switchToWorkflow('plain-seed-widget-test')
+    await comfyPage.workflow.waitForWorkflowIdle()
+
+    await expect
+      .poll(() => getWidgetSnapshotForFirstNode(comfyPage))
+      .toEqual([{ name: 'seed', value: 0 }])
+  })
+
+  test('Core seed widgets keep explicit control widgets across workflow tab switches', async ({
+    comfyPage
+  }) => {
+    test.info().annotations.push({
+      type: 'regression',
+      description:
+        'Issue #7468 — nodes that explicitly opt into control_after_generate should keep that widget'
+    })
+
+    const tab = comfyPage.menu.workflowsTab
+    await tab.open()
+
+    await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+    await comfyPage.workflow.waitForWorkflowIdle()
+    await comfyPage.nextFrame()
+
+    await comfyPage.menu.topbar.saveWorkflow('ksampler-control-widget-test')
+
+    await expect
+      .poll(() => getWidgetSnapshotForFirstNode(comfyPage))
+      .toEqual(
+        expect.arrayContaining([
+          { name: 'seed', value: 156680208700286 },
+          { name: 'control_after_generate', value: 'randomize' }
+        ])
+      )
+
+    await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+    await comfyPage.workflow.waitForWorkflowIdle()
+
+    await tab.switchToWorkflow('ksampler-control-widget-test')
+    await comfyPage.workflow.waitForWorkflowIdle()
+
+    await expect
+      .poll(() => getWidgetSnapshotForFirstNode(comfyPage))
+      .toEqual(
+        expect.arrayContaining([
+          { name: 'seed', value: 156680208700286 },
+          { name: 'control_after_generate', value: 'randomize' }
+        ])
+      )
   })
 
   test('API format workflow with missing node types partially loads', async ({
