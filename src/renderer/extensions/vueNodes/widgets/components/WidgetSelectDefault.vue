@@ -34,7 +34,7 @@
             <span
               :class="
                 cn(
-                  'min-w-[4ch] flex-1 truncate px-3 text-left',
+                  'min-w-[4ch] flex-1 truncate pr-3 pl-2 text-left',
                   $slots.default && 'mr-5'
                 )
               "
@@ -47,7 +47,7 @@
               <i
                 :class="
                   cn(
-                    'icon-[lucide--chevron-down] size-4',
+                    'icon-[lucide--chevron-down] size-4 translate-x-0.5',
                     disabled
                       ? 'bg-component-node-foreground-secondary'
                       : 'bg-muted-foreground'
