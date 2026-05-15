@@ -2049,9 +2049,6 @@ const translations = {
   },
 
   // ── Terms of Service ──────────────────────────────────────────────
-  // NOTE: zh-CN values mirror English pending translation by legal/i18n
-  // team. The legal-approved copy was provided in English only; do not
-  // auto-translate or modify substance.
   'tos.effectiveDateLabel': {
     en: 'Effective Date',
     'zh-CN': 'Effective Date'
