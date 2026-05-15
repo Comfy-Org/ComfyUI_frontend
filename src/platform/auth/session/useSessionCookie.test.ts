@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockGetIdToken = vi.fn()
+const originalFetch = globalThis.fetch
 
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: true
@@ -33,6 +34,12 @@ describe('useSessionCookie', () => {
     vi.restoreAllMocks()
     mockGetIdToken.mockReset()
     globalThis.fetch = vi.fn()
+  })
+
+  afterEach(() => {
+    // Restore the global fetch so a leaked mock doesn't bleed into later
+    // tests that depend on real fetch semantics.
+    globalThis.fetch = originalFetch
   })
 
   it('createSessionOrThrow posts the Firebase token and awaits success', async () => {
