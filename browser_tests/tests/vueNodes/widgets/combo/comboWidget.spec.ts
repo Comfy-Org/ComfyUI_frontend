@@ -5,7 +5,7 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Locator } from '@playwright/test'
 
-test.describe('Vue Combo Widget', { tag: '@vue-nodes' }, () => {
+test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
   async function openSamplerDropdown(comfyPage: ComfyPage) {
     await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
 
@@ -27,10 +27,7 @@ test.describe('Vue Combo Widget', { tag: '@vue-nodes' }, () => {
     comfyPage: ComfyPage,
     viewport: Locator
   ) {
-    const box = await viewport.boundingBox()
-    if (!box) {
-      throw new Error('Widget select viewport is not visible')
-    }
+    const box = await getViewportBox(viewport)
 
     await comfyPage.page.mouse.move(box.x + box.width - 2, box.y + 20)
     await comfyPage.page.mouse.down()
@@ -45,14 +42,29 @@ test.describe('Vue Combo Widget', { tag: '@vue-nodes' }, () => {
     }))
   }
 
+  async function getViewportBox(viewport: Locator) {
+    await expect.poll(() => viewport.boundingBox()).not.toBeNull()
+
+    const box = await viewport.boundingBox()
+    if (!box) {
+      throw new Error('Widget select viewport is not visible')
+    }
+
+    return box
+  }
+
   async function expectWheelScrollsDropdownWithoutMovingCanvas(
     comfyPage: ComfyPage,
     viewport: Locator
   ) {
     const canvasViewportBefore = await getCanvasViewport(comfyPage)
     const scrollBefore = await viewport.evaluate((el) => el.scrollTop)
+    const box = await getViewportBox(viewport)
 
-    await viewport.hover()
+    await comfyPage.page.mouse.move(
+      box.x + box.width / 2,
+      box.y + Math.min(box.height / 2, 40)
+    )
     await comfyPage.page.mouse.wheel(0, 500)
 
     await expect
@@ -135,11 +147,12 @@ test.describe('Vue Combo Widget', { tag: '@vue-nodes' }, () => {
     await comfyPage.vueNodes.waitForNodes(2)
 
     const nodes = comfyPage.vueNodes.getNodeByTitle('KSampler')
+    await expect(nodes).toHaveCount(3)
     const firstSamplerCombo = nodes
       .nth(0)
       .getByRole('combobox', { name: 'sampler_name', exact: true })
     const secondSamplerCombo = nodes
-      .nth(2)
+      .nth(1)
       .getByRole('combobox', { name: 'sampler_name', exact: true })
 
     await firstSamplerCombo.click()

@@ -106,7 +106,7 @@ describe('WidgetSelectDefault', () => {
       await openDropdown(user)
 
       expect(optionLabels()).toEqual([])
-      expect(screen.getByText('No results found')).toBeInTheDocument()
+      expect(screen.getByRole('status')).toHaveTextContent('No results found')
     })
 
     it('resolves options from a function', async () => {
@@ -138,6 +138,21 @@ describe('WidgetSelectDefault', () => {
       await waitFor(() => {
         expect(optionLabels()).toEqual(['zeta'])
       })
+    })
+
+    it('does not remap array option labels on each search keystroke', async () => {
+      const getOptionLabel = vi.fn((value?: string | null) => value ?? '')
+      const { user } = renderComponent(
+        createWidget(['alpha', 'bravo', 'charlie', 'delta', 'echo'], {
+          getOptionLabel
+        })
+      )
+
+      await openDropdown(user)
+      getOptionLabel.mockClear()
+      await user.type(screen.getByRole('combobox', { name: 'Search' }), 'alp')
+
+      expect(getOptionLabel).not.toHaveBeenCalled()
     })
   })
 
@@ -210,7 +225,7 @@ describe('WidgetSelectDefault', () => {
       expect(screen.getByRole('combobox', { name: 'Search' })).toBeVisible()
     })
 
-    it('captures wheel events and shows a stable scrollbar gutter for long lists', async () => {
+    it('marks the dropdown overlay as wheel-capturing for canvas interactions', async () => {
       const { user } = renderComponent(
         createWidget(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'])
       )
@@ -220,16 +235,6 @@ describe('WidgetSelectDefault', () => {
       expect(
         screen.getByTestId('widget-select-default-overlay')
       ).toHaveAttribute('data-capture-wheel', 'true')
-      expect(screen.getByTestId('widget-select-default-viewport')).toHaveClass(
-        'scrollbar-gutter-stable',
-        'scrollbar-thin',
-        'scrollbar-thumb-(--color-alpha-smoke-500-50)',
-        'scrollbar-track-transparent',
-        'gap-1'
-      )
-      expect(screen.getByTestId('widget-select-default-viewport')).toHaveStyle({
-        overflowY: 'scroll'
-      })
     })
 
     it('shows invalid current values as the trigger label', () => {

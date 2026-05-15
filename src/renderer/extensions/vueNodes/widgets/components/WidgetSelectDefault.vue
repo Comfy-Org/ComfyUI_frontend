@@ -15,7 +15,8 @@
           <button
             type="button"
             role="combobox"
-            :aria-label="widget.name"
+            aria-haspopup="listbox"
+            :aria-label="widget.label || widget.name"
             :aria-invalid="isInvalid || undefined"
             :aria-expanded="isOpen"
             :disabled
@@ -128,6 +129,8 @@
 
             <div
               v-if="filteredOptions.length === 0"
+              role="status"
+              aria-live="polite"
               class="p-2 text-xs text-muted-foreground"
             >
               {{ $t('g.noResultsFound') }}
@@ -154,11 +157,11 @@ import {
   ComboboxRoot,
   ComboboxTrigger
 } from 'reka-ui'
-import type { FocusOutsideEvent } from 'reka-ui'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
+import { useComboboxFocusRestore } from '@/renderer/extensions/vueNodes/widgets/composables/useComboboxFocusRestore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -203,11 +206,11 @@ const modelValue = defineModel<string | undefined>({
 })
 
 const searchQuery = ref('')
-const refreshTrigger = ref(0)
+const optionsRefreshKey = ref(0)
 const isOpen = ref(false)
 const searchInputContainerRef = ref<HTMLElement>()
-const shouldRestoreFocusOnFocusOutside = ref(false)
-let clearViewportPointerDownTimer: number | undefined
+const { handleFocusOutside, handleViewportPointerDown } =
+  useComboboxFocusRestore(searchInputContainerRef)
 
 const transformCompatProps = useTransformCompatOverlayProps()
 
@@ -229,7 +232,11 @@ const filterPlaceholder = computed(
 )
 
 function refreshOptions() {
-  refreshTrigger.value++
+  optionsRefreshKey.value++
+}
+
+function refreshFunctionOptions() {
+  if (typeof widgetOptions.value?.values === 'function') refreshOptions()
 }
 
 function getOptionLabel(value: string) {
@@ -237,7 +244,7 @@ function getOptionLabel(value: string) {
   if (!labeler) return value
 
   try {
-    return labeler(value) || value
+    return labeler(value) ?? value
   } catch (error) {
     console.error('[WidgetSelectDefault] Failed to map option label', error)
     return value
@@ -245,7 +252,7 @@ function getOptionLabel(value: string) {
 }
 
 const normalizedOptions = computed<SelectOption[]>(() => {
-  void refreshTrigger.value
+  void optionsRefreshKey.value
 
   return resolveValues(widgetOptions.value?.values).map((value, index) => ({
     key: `${value}-${index}`,
@@ -295,44 +302,12 @@ const selectedLabel = computed(() => {
 })
 
 function selectOption(value: string | undefined) {
+  if (value === undefined) return
+
   modelValue.value = value
   searchQuery.value = ''
   isOpen.value = false
 }
-
-function focusSearchInput() {
-  searchInputContainerRef.value
-    ?.querySelector<HTMLInputElement>('input')
-    ?.focus({ preventScroll: true })
-}
-
-function clearViewportPointerDown() {
-  shouldRestoreFocusOnFocusOutside.value = false
-  window.clearTimeout(clearViewportPointerDownTimer)
-  clearViewportPointerDownTimer = undefined
-  window.removeEventListener('pointerup', clearViewportPointerDown)
-  window.removeEventListener('pointercancel', clearViewportPointerDown)
-}
-
-function handleViewportPointerDown() {
-  clearViewportPointerDown()
-  shouldRestoreFocusOnFocusOutside.value = true
-  clearViewportPointerDownTimer = window.setTimeout(clearViewportPointerDown, 0)
-  window.addEventListener('pointerup', clearViewportPointerDown, { once: true })
-  window.addEventListener('pointercancel', clearViewportPointerDown, {
-    once: true
-  })
-}
-
-function handleFocusOutside(event: FocusOutsideEvent) {
-  if (!shouldRestoreFocusOnFocusOutside.value) return
-
-  event.preventDefault()
-  focusSearchInput()
-  clearViewportPointerDown()
-}
-
-onBeforeUnmount(clearViewportPointerDown)
 
 function handleOpenChange(open: boolean) {
   isOpen.value = open
@@ -344,7 +319,5 @@ function handleOpenChange(open: boolean) {
   }
 }
 
-watch(searchQuery, () => {
-  refreshOptions()
-})
+watch(searchQuery, refreshFunctionOptions)
 </script>

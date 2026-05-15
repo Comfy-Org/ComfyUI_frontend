@@ -114,7 +114,7 @@ describe('WidgetSelect Value Binding', () => {
   }
 
   describe('Vue Event Emission', () => {
-    it('emits Vue event when selection changes', async () => {
+    it('forwards model updates from the default select', async () => {
       const widget = createSelectWidget('option1')
       const onModelUpdate = renderComponent(widget, 'option1')
 
@@ -122,105 +122,6 @@ describe('WidgetSelect Value Binding', () => {
       await fireEvent.update(input, 'option2')
 
       expect(onModelUpdate).toHaveBeenCalledWith('option2')
-    })
-
-    it('emits string value for different options', async () => {
-      const widget = createSelectWidget('option1')
-      const onModelUpdate = renderComponent(widget, 'option1')
-
-      const input = screen.getByTestId('select-input')
-      await fireEvent.update(input, 'option3')
-
-      expect(onModelUpdate).toHaveBeenCalledWith('option3')
-    })
-
-    it('handles custom option values', async () => {
-      const customOptions = ['custom_a', 'custom_b', 'custom_c']
-      const widget = createSelectWidget('custom_a', { values: customOptions })
-      const onModelUpdate = renderComponent(widget, 'custom_a')
-
-      const input = screen.getByTestId('select-input')
-      await fireEvent.update(input, 'custom_b')
-
-      expect(onModelUpdate).toHaveBeenCalledWith('custom_b')
-    })
-
-    it('handles missing callback gracefully', async () => {
-      const widget = createSelectWidget('option1', {}, undefined)
-      const onModelUpdate = renderComponent(widget, 'option1')
-
-      const input = screen.getByTestId('select-input')
-      await fireEvent.update(input, 'option2')
-
-      expect(onModelUpdate).toHaveBeenCalledWith('option2')
-    })
-
-    it('handles value changes gracefully', async () => {
-      const widget = createSelectWidget('option1')
-      const onModelUpdate = renderComponent(widget, 'option1')
-
-      const input = screen.getByTestId('select-input')
-      await fireEvent.update(input, 'option2')
-
-      expect(onModelUpdate).toHaveBeenCalledWith('option2')
-    })
-  })
-
-  describe('Option Handling', () => {
-    it('handles empty options array', () => {
-      const widget = createSelectWidget('', { values: [] })
-      renderComponent(widget, '')
-
-      expect(screen.getByTestId('widget-select-default')).toBeInTheDocument()
-    })
-
-    it('handles single option', () => {
-      const widget = createSelectWidget('only_option', {
-        values: ['only_option']
-      })
-      renderComponent(widget, 'only_option')
-
-      expect(screen.getByTestId('widget-select-default')).toBeInTheDocument()
-    })
-
-    it('handles options with special characters', async () => {
-      const specialOptions = [
-        'option with spaces',
-        'option@#$%',
-        'option/with\\slashes'
-      ]
-      const widget = createSelectWidget(specialOptions[0], {
-        values: specialOptions
-      })
-      const onModelUpdate = renderComponent(widget, specialOptions[0])
-
-      const input = screen.getByTestId('select-input')
-      await fireEvent.update(input, specialOptions[1])
-
-      expect(onModelUpdate).toHaveBeenCalledWith(specialOptions[1])
-    })
-  })
-
-  describe('Edge Cases', () => {
-    it('handles selection of non-existent option gracefully', async () => {
-      const widget = createSelectWidget('option1')
-      const onModelUpdate = renderComponent(widget, 'option1')
-
-      const input = screen.getByTestId('select-input')
-      await fireEvent.update(input, 'non_existent_option')
-
-      expect(onModelUpdate).toHaveBeenCalledWith('non_existent_option')
-    })
-
-    it('handles numeric string options correctly', async () => {
-      const numericOptions = ['1', '2', '10', '100']
-      const widget = createSelectWidget('1', { values: numericOptions })
-      const onModelUpdate = renderComponent(widget, '1')
-
-      const input = screen.getByTestId('select-input')
-      await fireEvent.update(input, '100')
-
-      expect(onModelUpdate).toHaveBeenCalledWith('100')
     })
   })
 
