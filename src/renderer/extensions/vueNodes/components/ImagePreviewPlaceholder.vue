@@ -34,7 +34,7 @@
       </p>
       <p
         v-if="filename"
-        class="line-clamp-2 max-w-full text-2xs break-all text-base-foreground/60"
+        class="line-clamp-2 max-w-full text-xs break-all text-base-foreground"
       >
         {{ filename }}
       </p>
