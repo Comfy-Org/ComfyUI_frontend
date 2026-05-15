@@ -11,6 +11,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import type { BillingPortalTargetTier } from '@/stores/authStore'
@@ -81,6 +82,18 @@ export const useAuthActions = () => {
     }
 
     await authStore.logout()
+
+    // Clear the survey gate so the next user signing in on the same tab
+    // gets a fresh evaluation. `window.location.href` below preserves
+    // sessionStorage, so without this an account switch silently skips the
+    // survey gate for the new user.
+    try {
+      sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.SURVEY_GATE_EVALUATED)
+    } catch {
+      // sessionStorage unavailable (sandboxed iframe / strict private mode);
+      // the tab is being navigated away anyway.
+    }
+
     toastStore.add({
       severity: 'success',
       summary: t('auth.signOut.success'),

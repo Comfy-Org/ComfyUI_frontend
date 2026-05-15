@@ -11,6 +11,20 @@ interface UserCloudStatus {
 const ONBOARDING_SURVEY_KEY = 'onboarding_survey'
 
 /**
+ * Thrown when /settings/{key} returns 401/403. Callers can branch on
+ * `error instanceof SurveyAuthError` instead of pattern-matching error
+ * messages — see router.ts and CloudSurveyView.vue for the consumers.
+ */
+export class SurveyAuthError extends Error {
+  readonly status: number
+  constructor(status: number, statusText: string) {
+    super(`Survey status auth error: ${status} ${statusText}`)
+    this.name = 'SurveyAuthError'
+    this.status = status
+  }
+}
+
+/**
  * Helper function to capture API errors with Sentry
  */
 function captureApiError(
@@ -122,47 +136,18 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
       // Auth failure - propagate so the auth layer can handle. Returning
       // false here would let an expired token masquerade as "no survey" and
       // bounce the user to /cloud/survey on every transient 401.
-      throw new Error(
-        `Survey status auth error: ${response.status} ${response.statusText}`
-      )
+      throw new SurveyAuthError(response.status, response.statusText)
     }
 
     // 404 / 5xx / other: ambiguous. Treat as completed to avoid false
-    // positives. The Sentry breadcrumb is so we can audit if this fires
-    // often enough to suggest a backend regression.
-    Sentry.addBreadcrumb({
-      category: 'auth',
-      message: 'Survey status check returned non-ok response',
-      level: 'info',
-      data: {
-        status: response.status,
-        endpoint: `/settings/${ONBOARDING_SURVEY_KEY}`,
-        treated_as: 'completed'
-      }
-    })
+    // positives — rather miss a survey than bounce a paying customer.
     return true
   } catch (error) {
-    // Re-throw auth errors so callers can branch on them; everything else is
-    // treated as "completed" (network failure, parse failure, etc).
-    if (
-      error instanceof Error &&
-      error.message.startsWith('Survey status auth error:')
-    ) {
+    // Re-throw auth errors so callers can branch on them; everything else
+    // (network failure, parse failure, etc) is treated as "completed".
+    if (error instanceof SurveyAuthError) {
       throw error
     }
-
-    Sentry.captureException(error, {
-      tags: {
-        api_endpoint: '/settings/{key}',
-        error_type: 'network_error'
-      },
-      extra: {
-        route_template: '/settings/{key}',
-        route_actual: `/settings/${ONBOARDING_SURVEY_KEY}`,
-        treated_as: 'completed'
-      },
-      level: 'warning'
-    })
     return true
   }
 }

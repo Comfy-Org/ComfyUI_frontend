@@ -1,4 +1,3 @@
-import * as Sentry from '@sentry/vue'
 import { until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
@@ -11,6 +10,7 @@ import type { RouteLocationNormalized } from 'vue-router'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import { useUserStore } from '@/stores/userStore'
@@ -23,7 +23,26 @@ import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQuery
 // browser-tab session, don't re-evaluate it on subsequent navigations.
 // sessionStorage survives `window.location.reload()` in the same tab but
 // is fresh for new tabs — exactly the semantics we want.
-const SURVEY_GATE_SESSION_KEY = 'comfy.survey_gate_evaluated_this_session'
+const SURVEY_GATE_SESSION_KEY = WORKSPACE_STORAGE_KEYS.SURVEY_GATE_EVALUATED
+
+// sessionStorage can throw SecurityError in sandboxed iframes and some
+// private-browsing contexts. Failing closed (re-evaluate the gate) is safe;
+// failing open would block navigation entirely.
+function readSurveyGateFlag(): boolean {
+  try {
+    return sessionStorage.getItem(SURVEY_GATE_SESSION_KEY) !== null
+  } catch {
+    return false
+  }
+}
+
+function writeSurveyGateFlag(): void {
+  try {
+    sessionStorage.setItem(SURVEY_GATE_SESSION_KEY, '1')
+  } catch {
+    // Ignore — re-evaluating on the next nav is acceptable.
+  }
+}
 
 const cloudOnboardingRoutes = isCloud
   ? (await import('./platform/cloud/onboarding/onboardingCloudRoutes'))
@@ -227,11 +246,11 @@ if (isCloud) {
       if (!flags.onboardingSurveyEnabled) {
         return next()
       }
-      if (sessionStorage.getItem(SURVEY_GATE_SESSION_KEY)) {
+      if (readSurveyGateFlag()) {
         return next()
       }
       // Import auth functions dynamically to avoid circular dependency
-      const { getSurveyCompletedStatus } =
+      const { getSurveyCompletedStatus, SurveyAuthError } =
         await import('@/platform/cloud/onboarding/auth')
       try {
         // Check user's actual status
@@ -242,31 +261,27 @@ if (isCloud) {
         // next /cloud-user-check call sees a completed survey on its own
         // server round-trip; this flag only suppresses re-evaluation of
         // the *same* request on subsequent navigations within this tab.
-        sessionStorage.setItem(SURVEY_GATE_SESSION_KEY, '1')
+        writeSurveyGateFlag()
 
         // Survey is required for all users (when feature flag enabled).
         // getSurveyCompletedStatus returns true for ambiguous responses
         // (404/5xx/network) so this branch only fires on a definitive
         // "user has no survey saved" signal — see auth.ts for the policy.
         if (!surveyCompleted) {
-          Sentry.addBreadcrumb({
-            category: 'navigation',
-            message: 'survey gate → /cloud/survey',
-            level: 'info',
-            data: {
-              from_path: _from.fullPath,
-              from_name: String(_from.name ?? ''),
-              initial_load: _from.name === undefined
-            }
-          })
           return next({ name: 'cloud-survey' })
         }
       } catch (error) {
-        // Most likely an auth error from getSurveyCompletedStatus.
         // Don't bounce to /cloud-user-check — that re-runs the same checks
         // and can produce a redirect loop. Let the user proceed; the auth
         // layer will handle re-authentication on the next API call.
-        sessionStorage.setItem(SURVEY_GATE_SESSION_KEY, '1')
+        //
+        // Do NOT mark the gate as evaluated on a SurveyAuthError. Once
+        // re-auth succeeds, the next navigation will re-check and reach a
+        // definitive answer. Marking here would silently disable the gate
+        // for the whole tab session on a single transient 401.
+        if (!(error instanceof SurveyAuthError)) {
+          writeSurveyGateFlag()
+        }
         console.error('Failed to check survey status:', error)
       }
     }
