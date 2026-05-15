@@ -23,7 +23,7 @@ import { DraggableList } from '@/scripts/ui/draggableList'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
-import { searchWidgets } from '../shared'
+import { isPanelHiddenWidget, searchWidgets } from '../shared'
 import type { NodeWidgetsList } from '../shared'
 import SectionWidgets from './SectionWidgets.vue'
 
@@ -107,7 +107,7 @@ const widgetsList = computed((): NodeWidgetsList => {
       }
       return w.name === sourceWidgetName
     })
-    if (widget) {
+    if (widget && !isPanelHiddenWidget(widget)) {
       result.push({ node, widget })
     }
   }
@@ -120,7 +120,7 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
   const allInteriorWidgets = interiorNodes.flatMap((interiorNode) => {
     const { widgets = [] } = interiorNode
     return widgets
-      .filter((w) => !w.computedDisabled)
+      .filter((w) => !w.computedDisabled && !isPanelHiddenWidget(w))
       .map((widget) => ({ node: interiorNode, widget }))
   })
 
