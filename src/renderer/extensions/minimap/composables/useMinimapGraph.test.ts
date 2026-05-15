@@ -37,8 +37,11 @@ describe('useMinimapGraph', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
+    const linksMap = new Map([[1, createMockLLink({ id: 1 })]])
     mockGraph = createMockLGraph({
       id: 'test-graph-123',
+      _version: 0,
+      _links: linksMap,
       _nodes: [
         createMockLGraphNode({ id: '1', pos: [100, 100], size: [150, 80] }),
         createMockLGraphNode({ id: '2', pos: [300, 200], size: [120, 60] })
@@ -199,22 +202,51 @@ describe('useMinimapGraph', () => {
     expect(graphManager.updateFlags.value.nodes).toBe(true)
   })
 
-  it('should detect connection changes', () => {
+  it('should detect connection changes via graph version', () => {
     const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     // Cache initial state
     graphManager.checkForChanges()
 
-    // Change connections
-    mockGraph.links = createMockLinks([
-      createMockLLink({ id: 1 }),
-      createMockLLink({ id: 2 })
-    ])
+    // Increment graph version (simulates add/remove node/link)
+    mockGraph._version++
 
     const hasChanges = graphManager.checkForChanges()
     expect(hasChanges).toBe(true)
     expect(graphManager.updateFlags.value.connections).toBe(true)
+  })
+
+  it('should detect connection changes via link count', () => {
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    // Cache initial state
+    graphManager.checkForChanges()
+
+    // Add a link to the backing Map
+    const newLink = createMockLLink({ id: 2 })
+    mockGraph._links.set(2, newLink)
+
+    const hasChanges = graphManager.checkForChanges()
+    expect(hasChanges).toBe(true)
+    expect(graphManager.updateFlags.value.connections).toBe(true)
+  })
+
+  it('should not detect connection changes when version and count unchanged', () => {
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    // Cache initial state
+    graphManager.checkForChanges()
+
+    // Reset flags
+    graphManager.updateFlags.value.connections = false
+
+    // No changes to version or link count
+    const hasChanges = graphManager.checkForChanges()
+    expect(hasChanges).toBe(false)
+    expect(graphManager.updateFlags.value.connections).toBe(false)
   })
 
   it('should handle node removal in callbacks', () => {
