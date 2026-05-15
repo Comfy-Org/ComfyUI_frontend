@@ -245,6 +245,22 @@ describe('useSelectedLiteGraphItems', () => {
       expect(node2.mode).toBe(LGraphEventMode.NEVER)
     })
 
+    it('areAllSelectedNodesInMode returns true only when every selected node matches', () => {
+      const { areAllSelectedNodesInMode } = useSelectedLiteGraphItems()
+      const bypassed1 = { id: 1, mode: LGraphEventMode.BYPASS } as LGraphNode
+      const bypassed2 = { id: 2, mode: LGraphEventMode.BYPASS } as LGraphNode
+      const active = { id: 3, mode: LGraphEventMode.ALWAYS } as LGraphNode
+
+      app.canvas.selected_nodes = { '0': bypassed1, '1': bypassed2 }
+      expect(areAllSelectedNodesInMode(LGraphEventMode.BYPASS)).toBe(true)
+
+      app.canvas.selected_nodes = { '0': bypassed1, '1': active }
+      expect(areAllSelectedNodesInMode(LGraphEventMode.BYPASS)).toBe(false)
+
+      app.canvas.selected_nodes = {}
+      expect(areAllSelectedNodesInMode(LGraphEventMode.BYPASS)).toBe(false)
+    })
+
     it('toggleSelectedNodesMode should set mode to ALWAYS when already in target mode', () => {
       const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
       const node = { id: 1, mode: LGraphEventMode.BYPASS } as LGraphNode
