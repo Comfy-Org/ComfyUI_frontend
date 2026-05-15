@@ -913,7 +913,8 @@
     "extensionFileHint": "這可能是由於以下指令碼所致",
     "loadWorkflowTitle": "由於重新載入工作流程資料時發生錯誤，已中止載入",
     "noStackTrace": "沒有可用的堆疊追蹤",
-    "promptExecutionError": "提示執行失敗"
+    "promptExecutionError": "提示執行失敗",
+    "queueOpenWorkflowFailedTitle": "開啟工作流程失敗"
   },
   "errorOverlay": {
     "errorCount": "{count} 個錯誤",
@@ -1041,6 +1042,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrg 標誌",
+    "comfyPackageOutdated": "已安裝的 {name} 版本 {installedVersion} 低於所需版本 {requiredVersion}。",
     "comingSoon": "即將推出",
     "command": "指令",
     "commandProhibited": "指令 {command} 已被禁止。如需更多資訊，請聯絡管理員。",
