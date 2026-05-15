@@ -67,13 +67,16 @@ export const Circle: Story = {
 export const AllSeveritiesLabel: Story = {
   render: () => ({
     components: { Badge },
+    setup() {
+      return { t }
+    },
     template: `
       <div class="flex items-center gap-2">
-        <Badge label="NEW" severity="default" />
-        <Badge label="NEW" severity="secondary" />
-        <Badge label="NEW" severity="warn" />
-        <Badge label="NEW" severity="danger" />
-        <Badge label="NEW" severity="contrast" />
+        <Badge :label="t('g.new')" severity="default" />
+        <Badge :label="t('g.new')" severity="secondary" />
+        <Badge :label="t('g.new')" severity="warn" />
+        <Badge :label="t('g.new')" severity="danger" />
+        <Badge :label="t('g.new')" severity="contrast" />
       </div>
     `
   })
@@ -97,19 +100,22 @@ export const AllSeveritiesDot: Story = {
 export const AllVariants: Story = {
   render: () => ({
     components: { Badge },
+    setup() {
+      return { t }
+    },
     template: `
       <div class="flex items-center gap-4">
         <div class="flex flex-col items-center gap-1">
-          <Badge label="NEW" variant="label" />
-          <span class="text-xs text-muted-foreground">label</span>
+          <Badge :label="t('g.new')" variant="label" />
+          <span class="text-xs text-muted-foreground">{{ t('g.variant_label') }}</span>
         </div>
         <div class="flex flex-col items-center gap-1">
           <Badge variant="dot" severity="danger" />
-          <span class="text-xs text-muted-foreground">dot</span>
+          <span class="text-xs text-muted-foreground">{{ t('g.variant_dot') }}</span>
         </div>
         <div class="flex flex-col items-center gap-1">
           <Badge label="5" variant="circle" />
-          <span class="text-xs text-muted-foreground">circle</span>
+          <span class="text-xs text-muted-foreground">{{ t('g.variant_circle') }}</span>
         </div>
       </div>
     `
