@@ -68,6 +68,21 @@ describe('getSurveyCompletedStatus', () => {
     await expect(getSurveyCompletedStatus()).resolves.toBe(true)
   })
 
+  // 401/403 fall under the same "ambiguous => treat as completed" policy.
+  // The dedicated auth layer handles re-authentication on the next API
+  // call; this function deliberately does not try to disambiguate auth
+  // failures from other non-OK responses. Locking with tests so the
+  // policy can't drift back to a "throw on auth error" branch.
+  test('401 → true (auth layer handles re-auth on next call)', async () => {
+    fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 401 }))
+    await expect(getSurveyCompletedStatus()).resolves.toBe(true)
+  })
+
+  test('403 → true (auth layer handles re-auth on next call)', async () => {
+    fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 403 }))
+    await expect(getSurveyCompletedStatus()).resolves.toBe(true)
+  })
+
   test('network rejection → true (do not bounce on network error)', async () => {
     fetchApi.mockRejectedValueOnce(new TypeError('Network request failed'))
     await expect(getSurveyCompletedStatus()).resolves.toBe(true)
