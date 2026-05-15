@@ -3,6 +3,7 @@ import type { CSSProperties } from 'vue'
 import { computed } from 'vue'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import { isCanvasGestureWheel } from '@/base/wheelGestures'
 
 import type {
   FilterOption,
@@ -93,12 +94,25 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
     key: String(item.id)
   }))
 )
+
+/**
+ * The dropdown content is teleported to `document.body` by PrimeVue Popover,
+ * detaching it from the LGraphNode subtree where the canvas wheel guard lives.
+ * Suppress only the destructive browser defaults (page zoom on pinch and
+ * back/forward on horizontal swipe); regular vertical scrolling still
+ * scrolls the dropdown's own content.
+ */
+const onWheel = (event: WheelEvent) => {
+  if (isCanvasGestureWheel(event)) event.preventDefault()
+}
 </script>
 
 <template>
   <div
     class="flex h-[640px] w-103 flex-col rounded-lg bg-component-node-background pt-4 outline -outline-offset-1 outline-node-component-border"
     data-capture-wheel="true"
+    data-testid="form-dropdown-menu"
+    @wheel="onWheel"
   >
     <FormDropdownMenuFilter
       v-if="filterOptions.length > 0"
