@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
@@ -12,10 +12,21 @@ import {
   getAssetFilename,
   getAssetModelType,
   getAssetSourceUrl,
+  getAssetStoredFilename,
   getAssetTriggerPhrases,
   getAssetUserDescription,
   getSourceName
 } from '@/platform/assets/utils/assetMetadataUtils'
+
+const { isCloudRef } = vi.hoisted(() => ({
+  isCloudRef: { value: true }
+}))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return isCloudRef.value
+  }
+}))
 
 describe('assetMetadataUtils', () => {
   const mockAsset: AssetItem = {
@@ -292,6 +303,28 @@ describe('assetMetadataUtils', () => {
 
     it('should return empty string when no metadata', () => {
       expect(getAssetUserDescription(mockAsset)).toBe('')
+    })
+  })
+
+  describe('getAssetStoredFilename', () => {
+    afterEach(() => {
+      isCloudRef.value = true
+    })
+
+    it('returns asset_hash on cloud when present', () => {
+      isCloudRef.value = true
+      expect(getAssetStoredFilename(mockAsset)).toBe('hash123')
+    })
+
+    it('falls back to name on cloud when asset_hash is missing', () => {
+      isCloudRef.value = true
+      const asset = { ...mockAsset, asset_hash: undefined }
+      expect(getAssetStoredFilename(asset)).toBe('test-model')
+    })
+
+    it('returns name on OSS regardless of asset_hash', () => {
+      isCloudRef.value = false
+      expect(getAssetStoredFilename(mockAsset)).toBe('test-model')
     })
   })
 
