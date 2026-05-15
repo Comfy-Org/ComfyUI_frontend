@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -47,10 +47,18 @@ const testState = vi.hoisted(() => ({
   scheduleSlotLayoutSync: vi.fn()
 }))
 
-vi.mock('@vueuse/core', () => ({
-  useDocumentVisibility: () => ref<'visible' | 'hidden'>('visible'),
-  createSharedComposable: <T>(fn: T) => fn
+const visibilityState = vi.hoisted(() => ({
+  ref: null as Ref<'visible' | 'hidden'> | null
 }))
+
+vi.mock('@vueuse/core', async () => {
+  const { ref: vueRef } = await import('vue')
+  visibilityState.ref = vueRef<'visible' | 'hidden'>('visible')
+  return {
+    useDocumentVisibility: () => visibilityState.ref,
+    createSharedComposable: <T>(fn: T) => fn
+  }
+})
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
@@ -191,6 +199,7 @@ describe('useVueNodeResizeTracking', () => {
     resizeObserverState.unobserve.mockReset()
     resizeObserverState.disconnect.mockReset()
     rafBatchState.pending = null
+    if (visibilityState.ref) visibilityState.ref.value = 'visible'
   })
 
   it('skips repeated no-op resize entries after first measurement', () => {
@@ -438,5 +447,37 @@ describe('useVueNodeResizeTracking', () => {
       }
     ])
     expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledTimes(1)
+  })
+
+  it('re-defers pending measurements when the tab becomes hidden before flush', async () => {
+    const nodeId = 'test-node'
+    const { entry } = createResizeEntry({
+      nodeId,
+      width: 300,
+      height: 200,
+      left: 100,
+      top: 200
+    })
+    document.body.appendChild(entry.target)
+    seedNodeLayout({ nodeId, left: 100, top: 200, width: 220, height: 140 })
+
+    try {
+      resizeObserverState.callback?.([entry], createObserverMock())
+      expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
+
+      visibilityState.ref!.value = 'hidden'
+      await nextTick()
+
+      rafBatchState.flush()
+      expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
+      expect(resizeObserverState.unobserve).toHaveBeenCalledWith(entry.target)
+
+      visibilityState.ref!.value = 'visible'
+      await nextTick()
+
+      expect(resizeObserverState.observe).toHaveBeenCalledWith(entry.target)
+    } finally {
+      entry.target.remove()
+    }
   })
 })

@@ -88,19 +88,6 @@ function markElementForFreshMeasurement(element: HTMLElement) {
   cachedNodeMeasurements.delete(element)
 }
 
-watch(visibility, (state) => {
-  if (state !== 'visible' || deferredElements.size === 0) return
-
-  // Re-observe deferred elements to trigger fresh measurements
-  for (const element of deferredElements) {
-    if (element.isConnected) {
-      markElementForFreshMeasurement(element)
-      resizeObserver.observe(element)
-    }
-  }
-  deferredElements.clear()
-})
-
 interface PendingMeasurement {
   width: number
   height: number
@@ -116,6 +103,38 @@ const rafBatch = createRafBatch(() => {
   flushPendingMeasurements()
 })
 
+function deferElementsForHiddenTab(elements: Iterable<HTMLElement>) {
+  for (const element of elements) {
+    deferredElements.add(element)
+    markElementForFreshMeasurement(element)
+    resizeObserver.unobserve(element)
+  }
+}
+
+watch(visibility, (state) => {
+  // Tab is hidden mid-flight: a scheduled RAF would be suspended by the
+  // browser and only resume on re-show, at which point flushPendingMeasurements
+  // would see visibility === 'visible' and write stale bounds. Re-defer
+  // anything pending immediately so it gets a fresh measurement on revisit.
+  if (state === 'hidden') {
+    if (pendingMeasurements.size === 0) return
+    deferElementsForHiddenTab(pendingMeasurements.keys())
+    pendingMeasurements.clear()
+    rafBatch.cancel()
+    return
+  }
+
+  if (deferredElements.size === 0) return
+
+  for (const element of deferredElements) {
+    if (element.isConnected) {
+      markElementForFreshMeasurement(element)
+      resizeObserver.observe(element)
+    }
+  }
+  deferredElements.clear()
+})
+
 function flushPendingMeasurements() {
   if (pendingMeasurements.size === 0) return
 
@@ -124,14 +143,10 @@ function flushPendingMeasurements() {
     return
   }
 
-  // Skip measurements when tab is hidden — bounding rects are unreliable.
-  // Re-defer the elements so they get a fresh measurement on revisit.
+  // RO callbacks that fired while the tab was visible can still land in the
+  // flush after a hidden→visible flip if scheduling raced. Re-defer.
   if (visibility.value === 'hidden') {
-    for (const element of pendingMeasurements.keys()) {
-      deferredElements.add(element)
-      markElementForFreshMeasurement(element)
-      resizeObserver.unobserve(element)
-    }
+    deferElementsForHiddenTab(pendingMeasurements.keys())
     pendingMeasurements.clear()
     return
   }
