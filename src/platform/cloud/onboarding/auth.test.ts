@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
-import {
-  SurveyAuthError,
-  getSurveyCompletedStatus
-} from './auth'
+import { SurveyAuthError, getSurveyCompletedStatus } from './auth'
 
 const fetchApi = vi.fn()
 
@@ -116,7 +113,11 @@ describe('getSurveyCompletedStatus', () => {
 
   test('503 → true (transient backend hiccup, do not bounce)', async () => {
     fetchApi.mockResolvedValueOnce(
-      mockResponse({ ok: false, status: 503, statusText: 'Service Unavailable' })
+      mockResponse({
+        ok: false,
+        status: 503,
+        statusText: 'Service Unavailable'
+      })
     )
     await expect(getSurveyCompletedStatus()).resolves.toBe(true)
   })
