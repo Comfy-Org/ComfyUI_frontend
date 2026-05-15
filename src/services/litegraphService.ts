@@ -721,8 +721,8 @@ export const useLitegraphService = () => {
 
       options.push({
         content: areAllSelectedNodesInMode(LGraphEventMode.BYPASS)
-          ? 'Remove Bypass'
-          : 'Bypass',
+          ? t('contextMenu.Remove Bypass')
+          : t('contextMenu.Bypass'),
         callback: () => {
           toggleSelectedNodesMode(LGraphEventMode.BYPASS)
           canvas.setDirty(true, true)
