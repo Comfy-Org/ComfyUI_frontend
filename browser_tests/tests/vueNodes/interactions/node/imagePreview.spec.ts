@@ -21,9 +21,8 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
     })
 
     const nodeId = String(loadImageNode.id)
-    const imagePreview = comfyPage.vueNodes
-      .getNodeLocator(nodeId)
-      .locator('.image-preview')
+    const { imagePreview } =
+      await comfyPage.vueNodes.getFixtureByTitle('Load Image')
 
     await expect(imagePreview).toBeVisible()
     await expect(imagePreview.locator('img')).toBeVisible({ timeout: 30_000 })
@@ -42,6 +41,25 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
     await comfyPage.page.getByLabel('Edit or mask image').click()
 
     await expect(comfyPage.page.locator('.mask-editor-dialog')).toBeVisible()
+  })
+
+  test('hides mask and download buttons when image is missing', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow(
+      'widgets/load_image_widget_missing_file'
+    )
+
+    const { imagePreview } =
+      await comfyPage.vueNodes.getFixtureByTitle('Load Image')
+
+    await expect(imagePreview).toBeVisible()
+    await expect(imagePreview.getByTestId('error-loading-image')).toBeVisible()
+
+    await imagePreview.getByRole('region').hover()
+
+    await expect(imagePreview.getByLabel('Edit or mask image')).toHaveCount(0)
+    await expect(imagePreview.getByLabel('Download image')).toHaveCount(0)
   })
 
   test('shows image context menu options', async ({ comfyPage }) => {
