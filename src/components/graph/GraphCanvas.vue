@@ -181,6 +181,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useAppMode } from '@/composables/useAppMode'
@@ -296,6 +297,18 @@ watch(
     layoutStore.setPendingSlotSync(true)
   }
 )
+
+const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
+watch(bottomPanelVisible, () => {
+  // The splitter resizes the canvas container, which triggers the canvas
+  // ResizeObserver and (eventually) the per-node Vue ResizeObservers. Force a
+  // slot/link redraw once the splitter has settled so links stay aligned with
+  // slot connectors even if any RO callback was missed or measured stale
+  // viewport state during the transition.
+  if (!canvasStore.canvas) return
+  requestSlotLayoutSyncForAllNodes()
+  canvasStore.canvas.setDirty(true, true)
+})
 
 function onLinkOverlayReady(el: HTMLCanvasElement) {
   if (!canvasStore.canvas) return
