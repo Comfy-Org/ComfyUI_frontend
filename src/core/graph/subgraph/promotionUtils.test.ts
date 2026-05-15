@@ -733,7 +733,7 @@ describe('demoteWidget — axiomatic projection retraction', () => {
     expect(
       host.widgets.some(
         (widget) =>
-          getSourceNodeId(widget) === String(interiorNode.id) &&
+          widgetSourceNodeId(widget) === String(interiorNode.id) &&
           widget.name === interiorWidget.name
       )
     ).toBe(false)
