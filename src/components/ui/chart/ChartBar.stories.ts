@@ -22,7 +22,7 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   args: {
-    ariaLabel: 'Bar chart example',
+    ariaLabel: t('g.bar_chart_example_aria'),
     data: {
       labels: ['A', 'B', 'C', 'D'],
       datasets: [
@@ -38,7 +38,7 @@ export const Default: Story = {
 
 export const MultipleDatasets: Story = {
   args: {
-    ariaLabel: 'Bar chart with multiple datasets',
+    ariaLabel: t('g.bar_chart_multiple_datasets_aria'),
     data: {
       labels: ['A', 'B', 'C', 'D'],
       datasets: [
