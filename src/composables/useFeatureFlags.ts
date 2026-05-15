@@ -131,7 +131,7 @@ export function useFeatureFlags() {
         remoteConfig.value.node_library_essentials_enabled ??
         api.getServerFeature(
           ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
-          false
+          true
         )
       )
     },
