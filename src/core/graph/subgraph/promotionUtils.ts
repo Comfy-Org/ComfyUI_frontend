@@ -375,7 +375,16 @@ export function demoteWidget(
     )
     const linkedInput = hostInput?._subgraphSlot
     if (linkedInput) {
-      parent.subgraph.removeInput(linkedInput)
+      // When an external link holds the host slot open, retract the projection
+      // only — disconnect the interior link so the promoted view stops
+      // resolving, but leave the SubgraphInput and the outer link alive.
+      // Otherwise demote is a true inverse of promote and collapses the slot.
+      const hasExternalLink = hostInput.link != null
+      if (hasExternalLink) {
+        linkedInput.disconnect()
+      } else {
+        parent.subgraph.removeInput(linkedInput)
+      }
       continue
     }
 
