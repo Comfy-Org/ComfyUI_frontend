@@ -1,87 +1,137 @@
 import { t } from '@/i18n'
-import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { computed, provide, ref } from 'vue'
+import type { Meta
+, StoryObj } from '@storybook/vue3-vite'
+impo
+rt { computed, provide, ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
-import MoreButton from '@/components/button/MoreButton.vue'
-import CardBottom from '@/components/card/CardBottom.vue'
-import CardContainer from '@/components/card/CardContainer.vue'
-import CardTop from '@/components/card/CardTop.vue'
-import Tag from '@/components/chip/Tag.vue'
-import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
-import type { NavGroupData, NavItemData } from '@/types/navTypes'
-import { OnCloseKey } from '@/types/widgetTypes'
-import { createGridStyle } from '@/utils/gridUtil'
+imp
+ort Button from '@/components/ui/button/Butto
+n.vue'
+import MoreButton from '@/components/b
+utton/MoreButton.vue'
+import CardBottom from 
+'@/components/card/CardBottom.vue'
+import Car
+dContainer from '@/components/card/CardContai
+ner.vue'
+import CardTop from '@/components/ca
+rd/CardTop.vue'
+import Tag from '@/components
+/chip/Tag.vue'
+import MultiSelect from '@/com
+ponents/ui/multi-select/MultiSelect.vue'
+impo
+rt SearchInput from '@/components/ui/search-i
+nput/SearchInput.vue'
+import SingleSelect fro
+m '@/components/ui/single-select/SingleSelect
+.vue'
+import type { NavGroupData, NavItemData
+ } from '@/types/navTypes'
+import { OnCloseKe
+y } from '@/types/widgetTypes'
+import { creat
+eGridStyle } from '@/utils/gridUtil'
 
-import LeftSidePanel from '../panel/LeftSidePanel.vue'
-import BaseModalLayout from './BaseModalLayout.vue'
+import 
+LeftSidePanel from '../panel/LeftSidePanel.vu
+e'
+import BaseModalLayout from './BaseModalLa
+yout.vue'
 
 interface StoryArgs {
-  contentTitle: string
+  contentTit
+le: string
   hasLeftPanel: boolean
-  hasRightPanel: boolean
+  hasRight
+Panel: boolean
   hasHeader: boolean
-  hasContentFilter: boolean
-  hasHeaderRightArea: boolean
+  hasCont
+entFilter: boolean
+  hasHeaderRightArea: bool
+ean
   cardCount: number
 }
 
-const meta: Meta<StoryArgs> = {
-  title: 'Components/Widget/Layout/BaseModalLayout',
+const meta: Meta<S
+toryArgs> = {
+  title: 'Components/Widget/Lay
+out/BaseModalLayout',
   argTypes: {
-    contentTitle: {
+    conte
+ntTitle: {
       control: 'text',
-      description: 'Title shown when no left panel is present'
+      descr
+iption: 'Title shown when no left panel is pr
+esent'
     },
     hasLeftPanel: {
-      control: 'boolean',
-      description: 'Toggle left panel visibility'
+      contr
+ol: 'boolean',
+      description: 'Toggle lef
+t panel visibility'
     },
-    hasRightPanel: {
+    hasRightPanel:
+ {
       control: 'boolean',
-      description: 'Toggle right panel visibility'
+      descriptio
+n: 'Toggle right panel visibility'
     },
-    hasHeader: {
+   
+ hasHeader: {
       control: 'boolean',
-      description: 'Toggle header visibility'
-    },
+     
+ description: 'Toggle header visibility'
+    
+},
     hasContentFilter: {
-      control: 'boolean',
-      description: 'Toggle content filter visibility'
+      control: 'bo
+olean',
+      description: 'Toggle content fi
+lter visibility'
     },
-    hasHeaderRightArea: {
+    hasHeaderRightAre
+a: {
       control: 'boolean',
-      description: 'Toggle header right area visibility'
-    },
+      descript
+ion: 'Toggle header right area visibility'
+  
+  },
     cardCount: {
-      control: { type: 'range', min: 0, max: 50, step: 1 },
-      description: 'Number of cards to display in content'
+      control: { type: 
+'range', min: 0, max: 50, step: 1 },
+      de
+scription: 'Number of cards to display in con
+tent'
     }
   }
 }
 
 export default meta
-type Story = StoryObj<typeof meta>
+type S
+tory = StoryObj<typeof meta>
 
-const createStoryTemplate = (args: StoryArgs) => ({
-  components: {
+const createSto
+ryTemplate = (args: StoryArgs) => ({
+  compon
+ents: {
     BaseModalLayout,
-    LeftSidePanel,
+    LeftSidePane
+l,
     SearchInput,
     MultiSelect,
-    SingleSelect,
+    Sing
+leSelect,
     Button,
     MoreButton,
-    CardContainer,
+    Car
+dContainer,
     CardTop,
     CardBottom,
-    Tag
+    
+Tag
   },
   setup() {
-    const t = (k: string) => k
-
     const onClose = () => {
       // OnClose handler for story
     }
@@ -94,7 +144,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
         icon: 'icon-[lucide--folder]'
       },
       {
-        title: 'TAGS',
+        title: t('g.tags'),
         items: [
           {
             id: 'tag-sd15',
@@ -114,7 +164,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
         ]
       },
       {
-        title: 'CATEGORIES',
+        title: t('g.categories'),
         items: [
           {
             id: 'cat-models',
@@ -129,422 +179,700 @@ const createStoryTemplate = (args: StoryArgs) => ({
         ]
       }
     ])
-    const selectedNavItem = ref<string | null>('installed')
+    c
+onst selectedNavItem = ref<string | null>('in
+stalled')
 
-    const searchQuery = ref<string>('')
+    const searchQuery = ref<string
+>('')
 
     const frameworkOptions = ref([
-      { name: 'Vue', value: 'vue' },
-      { name: 'React', value: 'react' },
-      { name: 'Angular', value: 'angular' },
-      { name: 'Svelte', value: 'svelte' }
+   
+   { name: 'Vue', value: 'vue' },
+      { nam
+e: 'React', value: 'react' },
+      { name: '
+Angular', value: 'angular' },
+      { name: '
+Svelte', value: 'svelte' }
     ])
-    const projectOptions = ref([
-      { name: 'Project A', value: 'proj-a' },
-      { name: 'Project B', value: 'proj-b' },
-      { name: 'Project C', value: 'proj-c' }
+    const p
+rojectOptions = ref([
+      { name: 'Project 
+A', value: 'proj-a' },
+      { name: 'Project
+ B', value: 'proj-b' },
+      { name: 'Projec
+t C', value: 'proj-c' }
     ])
-    const sortOptions = ref([
-      { name: 'Popular', value: 'popular' },
-      { name: 'Latest', value: 'latest' },
-      { name: 'A → Z', value: 'az' }
+    const sort
+Options = ref([
+      { name: 'Popular', valu
+e: 'popular' },
+      { name: 'Latest', value
+: 'latest' },
+      { name: 'A → Z', value:
+ 'az' }
     ])
 
-    const selectedFrameworks = ref<string[]>([])
-    const selectedProjects = ref<string[]>([])
-    const selectedSort = ref<string>('popular')
+    const selectedFrameworks 
+= ref<string[]>([])
+    const selectedProject
+s = ref<string[]>([])
+    const selectedSort 
+= ref<string>('popular')
 
-    const gridStyle = computed(() => createGridStyle())
+    const gridStyle
+ = computed(() => createGridStyle())
 
-    return {
+    ret
+urn {
       args,
       t,
-      tempNavigation,
+      tempNavigati
+on,
       selectedNavItem,
       searchQuery,
+
       frameworkOptions,
-      projectOptions,
+      projectOptions
+,
       sortOptions,
-      selectedFrameworks,
+      selectedFrameworks
+,
       selectedProjects,
       selectedSort,
+
       gridStyle
     }
   },
   template: `
-    <div>
-      <BaseModalLayout v-if="!args.hasRightPanel" :content-title="args.contentTitle || 'Content Title'">
-        <!-- Left Panel Header Title -->
-        <template v-if="args.hasLeftPanel" #leftPanelHeaderTitle>
-          <i class="icon-[lucide--puzzle] size-4 text-neutral" />
-          <span class="text-neutral text-base">Title</span>
-        </template>
+   
+ <div>
+      <BaseModalLayout v-if="!args.has
+RightPanel" :content-title="args.contentTitle
+ || 'Content Title'">
+        <!-- Left Panel
+ Header Title -->
+        <template v-if="arg
+s.hasLeftPanel" #leftPanelHeaderTitle>
+      
+    <i class="icon-[lucide--puzzle] size-4 te
+xt-neutral" />
+          <span class="text-ne
+utral text-base">Title</span>
+        </templ
+ate>
 
         <!-- Left Panel -->
-        <template v-if="args.hasLeftPanel" #leftPanel>
-          <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation" />
-        </template>
+        <te
+mplate v-if="args.hasLeftPanel" #leftPanel>
+ 
+         <LeftSidePanel v-model="selectedNavI
+tem" :nav-items="tempNavigation" />
+        <
+/template>
 
         <!-- Header -->
-        <template v-if="args.hasHeader" #header>
-          <SearchInput
-            class="max-w-[384px]"
+        <
+template v-if="args.hasHeader" #header>
+     
+     <SearchInput
+            class="max-w-[3
+84px]"
             size="lg"
+            :mod
+elValue="searchQuery"
+            @update:mod
+elValue="searchQuery = $event"
+          />
+ 
+       </template>
+
+        <!-- Header Right
+ Area -->
+        <template v-if="args.hasHea
+derRightArea" #header-right-area>
+          <
+div class="flex gap-2">
+            <Button v
+ariant="primary" @click="() => {}">
+         
+       <i class="icon-[lucide--upload] size-3
+" />
+              <span> Upload Model </span
+>
+            </Button>
+
+            <MoreBut
+ton>
+              <template #default="{ clos
+e }">
+                <Button
+               
+   variant="secondary"
+                  labe
+l="Settings"
+                  @click="() => 
+{ close() }"
+                >
+              
+    <template #icon>
+                    <i c
+lass="icon-[lucide--download] size-3" />
+    
+              </template>
+                </B
+utton>
+
+                <Button
+             
+     variant="primary"
+                  labe
+l="Profile"
+                  @click="() => {
+ close() }"
+                >
+               
+   <template #icon>
+                    <i cl
+ass="icon-[lucide--scroll] size-3" />
+       
+           </template>
+                </Butt
+on>
+              </template>
+            </M
+oreButton>
+          </div>
+        </templat
+e>
+
+        <!-- Content Filter -->
+        <
+template v-if="args.hasContentFilter" #conten
+tFilter>
+          <div class="relative px-6 
+py-4 flex gap-2">
+            <MultiSelect
+  
+            v-model="selectedFrameworks"
+    
+          label="Select Frameworks"
+         
+     :options="frameworkOptions"
+            
+  :has-search-box="true"
+              :show-
+selected-count="true"
+              :has-clea
+r-button="true"
+            />
+            <M
+ultiSelect
+              v-model="selectedPro
+jects"
+              label="Select Projects"
+
+              :options="projectOptions"
+     
+       />
+            <SingleSelect
+         
+     v-model="selectedSort"
+              lab
+el="Sorting Type"
+              :options="sor
+tOptions"
+              class="w-[135px]"
+   
+         >
+              <template #icon>
+   
+             <i class="icon-[lucide--filter] 
+size-3" />
+              </template>
+        
+    </SingleSelect>
+          </div>
+        
+</template>
+
+        <!-- Content -->
+       
+ <template #content>
+          <div :style="g
+ridStyle">
+            <CardContainer
+       
+       v-for="i in args.cardCount"
+          
+    :key="i"
+              ratio="square"
+   
+         >
+              <template #top>
+    
+            <CardTop ratio="landscape">
+     
+             <template #default>
+            
+        <div class="w-full h-full bg-blue-500
+"></div>
+                  </template>
+      
+            <template #top-right>
+           
+         <Button size="icon" class="!bg-white
+ !text-neutral-900" @click="() => {}">
+      
+                <i class="icon-[lucide--info]
+ size-4" />
+                    </Button>
+   
+               </template>
+                  
+<template #bottom-right>
+                    
+<Tag label="png" />
+                    <Tag 
+label="1.2 MB" />
+                    <Tag la
+bel="LoRA">
+                      <template #
+icon>
+                        <i class="icon-
+[lucide--folder] size-3" />
+                 
+     </template>
+                    </Tag>
+ 
+                 </template>
+                
+</CardTop>
+              </template>
+        
+      <template #bottom>
+                <Car
+dBottom />
+              </template>
+        
+    </CardContainer>
+          </div>
+       
+ </template>
+      </BaseModalLayout>
+
+      
+<BaseModalLayout v-else :content-title="args.
+contentTitle || 'Content Title'">
+        <!-
+- Same content but WITH right panel -->
+     
+   <!-- Left Panel Header Title -->
+        <
+template v-if="args.hasLeftPanel" #leftPanelH
+eaderTitle>
+          <i class="icon-[lucide-
+-puzzle] size-4 text-neutral" />
+          <s
+pan class="text-neutral text-base">Title</spa
+n>
+        </template>
+
+        <!-- Left Pan
+el -->
+        <template v-if="args.hasLeftPa
+nel" #leftPanel>
+          <LeftSidePanel v-m
+odel="selectedNavItem" :nav-items="tempNaviga
+tion" />
+        </template>
+
+        <!-- He
+ader -->
+        <template v-if="args.hasHead
+er" #header>
+          <SearchInput
+         
+   class="max-w-[384px]"
+            size="lg
+"
             :modelValue="searchQuery"
-            @update:modelValue="searchQuery = $event"
+     
+       @update:modelValue="searchQuery = $eve
+nt"
           />
         </template>
 
-        <!-- Header Right Area -->
-        <template v-if="args.hasHeaderRightArea" #header-right-area>
+       
+ <!-- Header Right Area -->
+        <template
+ v-if="args.hasHeaderRightArea" #header-right
+-area>
           <div class="flex gap-2">
-            <Button variant="primary" @click="() => {}">
-                <i class="icon-[lucide--upload] size-3" />
-              <span> Upload Model </span>
+   
+         <Button variant="primary" @click="()
+ => {}">
+                <i class="icon-[luci
+de--upload] size-3" />
+                <span>
+Upload Model</span>
             </Button>
 
-            <MoreButton>
-              <template #default="{ close }">
-                <Button
+  
+          <MoreButton>
+              <templat
+e #default="{ close }">
+                <Butt
+on
                   variant="secondary"
-                  label="Settings"
-                  @click="() => { close() }"
-                >
-                  <template #icon>
-                    <i class="icon-[lucide--download] size-3" />
-                  </template>
-                </Button>
+    
+              @click="() => { close() }"
+    
+            >
+                    <i class="i
+con-[lucide--download] size-3" />
+           
+         <span>Settings</span>
+              
+  </Button>
 
                 <Button
-                  variant="primary"
-                  label="Profile"
-                  @click="() => { close() }"
+        
+          variant="primary"
+                 
+ @click="() => { close() }"
                 >
-                  <template #icon>
-                    <i class="icon-[lucide--scroll] size-3" />
-                  </template>
+
+                    <i class="icon-[lucide--
+scroll] size-3" />
+                    <span>
+Profile</span>
                 </Button>
-              </template>
-            </MoreButton>
+    
+          </template>
+            </MoreButto
+n>
           </div>
         </template>
 
-        <!-- Content Filter -->
-        <template v-if="args.hasContentFilter" #contentFilter>
-          <div class="relative px-6 py-4 flex gap-2">
+    
+    <!-- Content Filter -->
+        <template
+ v-if="args.hasContentFilter" #contentFilter>
+
+          <div class="relative px-6 py-4 fle
+x gap-2">
             <MultiSelect
-              v-model="selectedFrameworks"
-              label="Select Frameworks"
-              :options="frameworkOptions"
-              :has-search-box="true"
-              :show-selected-count="true"
-              :has-clear-button="true"
+          
+    v-model="selectedFrameworks"
+            
+  label="Select Frameworks"
+              :op
+tions="frameworkOptions"
             />
-            <MultiSelect
-              v-model="selectedProjects"
-              label="Select Projects"
-              :options="projectOptions"
+     
+       <MultiSelect
+              v-model="se
+lectedProjects"
+              label="Select P
+rojects"
+              :options="projectOptio
+ns"
             />
             <SingleSelect
+
               v-model="selectedSort"
-              label="Sorting Type"
-              :options="sortOptions"
-              class="w-[135px]"
+        
+      label="Sorting Type"
+              :opt
+ions="sortOptions"
+              class="w-[13
+5px]"
             >
-              <template #icon>
-                <i class="icon-[lucide--filter] size-3" />
+              <template #
+icon>
+                <i class="icon-[lucide-
+-filter] size-3" />
               </template>
+
             </SingleSelect>
           </div>
+
         </template>
 
-        <!-- Content -->
+        <!-- Content --
+>
         <template #content>
-          <div :style="gridStyle">
-            <CardContainer
+          <div 
+:style="gridStyle">
+            <CardContaine
+r
               v-for="i in args.cardCount"
-              :key="i"
-              ratio="square"
+ 
+             :key="i"
+              ratio="sq
+uare"
             >
-              <template #top>
-                <CardTop ratio="landscape">
+              <template #
+top>
+                <CardTop ratio="landscap
+e">
                   <template #default>
-                    <div class="w-full h-full bg-blue-500"></div>
-                  </template>
+   
+                 <div class="w-full h-full bg
+-blue-500"></div>
+                  </templat
+e>
                   <template #top-right>
-                    <Button size="icon" class="!bg-white !text-neutral-900" @click="() => {}">
-                      <i class="icon-[lucide--info] size-4" />
-                    </Button>
+  
+                  <Button size="icon" class="
+!bg-white !text-neutral-900" @click="() => {}
+">
+                      <i class="icon-[luci
+de--info] size-4" />
+                    </Bu
+tton>
                   </template>
-                  <template #bottom-right>
-                    <Tag label="png" />
-                    <Tag label="1.2 MB" />
-                    <Tag label="LoRA">
-                      <template #icon>
-                        <i class="icon-[lucide--folder] size-3" />
-                      </template>
-                    </Tag>
-                  </template>
-                </CardTop>
+         
+         <template #bottom-right>
+           
+         <Tag label="png" />
+                
+    <Tag label="1.2 MB" />
+                  
+  <Tag label="LoRA">
+                      <t
+emplate #icon>
+                        <i cla
+ss="icon-[lucide--folder] size-3" />
+        
               </template>
+                   
+ </Tag>
+                  </template>
+       
+         </CardTop>
+              </template>
+
               <template #bottom>
-                <CardBottom />
+           
+     <CardBottom />
               </template>
+
             </CardContainer>
-          </div>
-        </template>
-      </BaseModalLayout>
-
-      <BaseModalLayout v-else :content-title="args.contentTitle || 'Content Title'">
-        <!-- Same content but WITH right panel -->
-        <!-- Left Panel Header Title -->
-        <template v-if="args.hasLeftPanel" #leftPanelHeaderTitle>
-          <i class="icon-[lucide--puzzle] size-4 text-neutral" />
-          <span class="text-neutral text-base">Title</span>
+          </div
+>
         </template>
 
-        <!-- Left Panel -->
-        <template v-if="args.hasLeftPanel" #leftPanel>
-          <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation" />
+        <!-- Right Pan
+el - Only when hasRightPanel is true -->
+    
+    <template #rightPanel>
+          <div cla
+ss="size-full bg-modal-panel-background pr-6 
+pb-8 pl-4"></div>
         </template>
-
-        <!-- Header -->
-        <template v-if="args.hasHeader" #header>
-          <SearchInput
-            class="max-w-[384px]"
-            size="lg"
-            :modelValue="searchQuery"
-            @update:modelValue="searchQuery = $event"
-          />
-        </template>
-
-        <!-- Header Right Area -->
-        <template v-if="args.hasHeaderRightArea" #header-right-area>
-          <div class="flex gap-2">
-            <Button variant="primary" @click="() => {}">
-                <i class="icon-[lucide--upload] size-3" />
-                <span>Upload Model</span>
-            </Button>
-
-            <MoreButton>
-              <template #default="{ close }">
-                <Button
-                  variant="secondary"
-                  @click="() => { close() }"
-                >
-                    <i class="icon-[lucide--download] size-3" />
-                    <span>Settings</span>
-                </Button>
-
-                <Button
-                  variant="primary"
-                  @click="() => { close() }"
-                >
-                    <i class="icon-[lucide--scroll] size-3" />
-                    <span>Profile</span>
-                </Button>
-              </template>
-            </MoreButton>
-          </div>
-        </template>
-
-        <!-- Content Filter -->
-        <template v-if="args.hasContentFilter" #contentFilter>
-          <div class="relative px-6 py-4 flex gap-2">
-            <MultiSelect
-              v-model="selectedFrameworks"
-              label="Select Frameworks"
-              :options="frameworkOptions"
-            />
-            <MultiSelect
-              v-model="selectedProjects"
-              label="Select Projects"
-              :options="projectOptions"
-            />
-            <SingleSelect
-              v-model="selectedSort"
-              label="Sorting Type"
-              :options="sortOptions"
-              class="w-[135px]"
-            >
-              <template #icon>
-                <i class="icon-[lucide--filter] size-3" />
-              </template>
-            </SingleSelect>
-          </div>
-        </template>
-
-        <!-- Content -->
-        <template #content>
-          <div :style="gridStyle">
-            <CardContainer
-              v-for="i in args.cardCount"
-              :key="i"
-              ratio="square"
-            >
-              <template #top>
-                <CardTop ratio="landscape">
-                  <template #default>
-                    <div class="w-full h-full bg-blue-500"></div>
-                  </template>
-                  <template #top-right>
-                    <Button size="icon" class="!bg-white !text-neutral-900" @click="() => {}">
-                      <i class="icon-[lucide--info] size-4" />
-                    </Button>
-                  </template>
-                  <template #bottom-right>
-                    <Tag label="png" />
-                    <Tag label="1.2 MB" />
-                    <Tag label="LoRA">
-                      <template #icon>
-                        <i class="icon-[lucide--folder] size-3" />
-                      </template>
-                    </Tag>
-                  </template>
-                </CardTop>
-              </template>
-              <template #bottom>
-                <CardBottom />
-              </template>
-            </CardContainer>
-          </div>
-        </template>
-
-        <!-- Right Panel - Only when hasRightPanel is true -->
-        <template #rightPanel>
-          <div class="size-full bg-modal-panel-background pr-6 pb-8 pl-4"></div>
-        </template>
-      </BaseModalLayout>
+      <
+/BaseModalLayout>
     </div>
   `
 })
 
-export const Default: Story = {
-  render: (args: StoryArgs) => createStoryTemplate(args),
-  args: {
+export c
+onst Default: Story = {
+  render: (args: Stor
+yArgs) => createStoryTemplate(args),
+  args: 
+{
     contentTitle: 'Content Title',
-    hasLeftPanel: true,
+    hasL
+eftPanel: true,
     hasRightPanel: true,
-    hasHeader: true,
+    
+hasHeader: true,
     hasContentFilter: true,
+
     hasHeaderRightArea: true,
-    cardCount: 12
+    cardCount: 
+12
   }
 }
 
 export const BothPanels: Story = {
-  render: (args: StoryArgs) => createStoryTemplate(args),
+
+  render: (args: StoryArgs) => createStoryTem
+plate(args),
   args: {
-    contentTitle: 'Content Title',
+    contentTitle: 'Con
+tent Title',
     hasLeftPanel: true,
-    hasRightPanel: true,
+    hasR
+ightPanel: true,
     hasHeader: true,
-    hasContentFilter: true,
-    hasHeaderRightArea: true,
+    has
+ContentFilter: true,
+    hasHeaderRightArea: 
+true,
     cardCount: 12
   }
 }
 
-export const LeftPanelOnly: Story = {
-  render: (args: StoryArgs) => createStoryTemplate(args),
-  args: {
+export const L
+eftPanelOnly: Story = {
+  render: (args: Stor
+yArgs) => createStoryTemplate(args),
+  args: 
+{
     contentTitle: 'Content Title',
-    hasLeftPanel: true,
+    hasL
+eftPanel: true,
     hasRightPanel: false,
-    hasHeader: true,
+   
+ hasHeader: true,
     hasContentFilter: true,
+
     hasHeaderRightArea: true,
+    cardCount:
+ 12
+  }
+}
+
+export const RightPanelOnly: Story
+ = {
+  render: (args: StoryArgs) => createSto
+ryTemplate(args),
+  args: {
+    contentTitle:
+ 'Content Title',
+    hasLeftPanel: false,
+  
+  hasRightPanel: true,
+    hasHeader: true,
+ 
+   hasContentFilter: true,
+    hasHeaderRight
+Area: true,
     cardCount: 12
   }
 }
 
-export const RightPanelOnly: Story = {
-  render: (args: StoryArgs) => createStoryTemplate(args),
-  args: {
+export c
+onst NoPanels: Story = {
+  render: (args: Sto
+ryArgs) => createStoryTemplate(args),
+  args:
+ {
     contentTitle: 'Content Title',
-    hasLeftPanel: false,
-    hasRightPanel: true,
-    hasHeader: true,
-    hasContentFilter: true,
+    has
+LeftPanel: false,
+    hasRightPanel: false,
+ 
+   hasHeader: true,
+    hasContentFilter: tru
+e,
     hasHeaderRightArea: true,
-    cardCount: 12
+    cardCoun
+t: 12
   }
 }
 
-export const NoPanels: Story = {
-  render: (args: StoryArgs) => createStoryTemplate(args),
+export const MinimalLayout: Stor
+y = {
+  render: (args: StoryArgs) => createSt
+oryTemplate(args),
   args: {
-    contentTitle: 'Content Title',
+    contentTitle
+: 'Simple Content',
     hasLeftPanel: false,
-    hasRightPanel: false,
-    hasHeader: true,
-    hasContentFilter: true,
-    hasHeaderRightArea: true,
-    cardCount: 12
-  }
-}
 
-export const MinimalLayout: Story = {
-  render: (args: StoryArgs) => createStoryTemplate(args),
-  args: {
-    contentTitle: 'Simple Content',
-    hasLeftPanel: false,
     hasRightPanel: false,
-    hasHeader: false,
+    hasHeader: fals
+e,
     hasContentFilter: false,
-    hasHeaderRightArea: false,
+    hasHeader
+RightArea: false,
     cardCount: 6
   }
 }
 
-export const NoContent: Story = {
-  render: (args: StoryArgs) => createStoryTemplate(args),
-  args: {
+exp
+ort const NoContent: Story = {
+  render: (arg
+s: StoryArgs) => createStoryTemplate(args),
+ 
+ args: {
     contentTitle: 'Empty State',
-    hasLeftPanel: true,
+   
+ hasLeftPanel: true,
     hasRightPanel: true,
+
     hasHeader: true,
-    hasContentFilter: true,
+    hasContentFilter: t
+rue,
     hasHeaderRightArea: true,
-    cardCount: 0
+    cardCo
+unt: 0
   }
 }
 
-export const HeaderOnly: Story = {
-  render: (args: StoryArgs) => createStoryTemplate(args),
+export const HeaderOnly: Story 
+= {
+  render: (args: StoryArgs) => createStor
+yTemplate(args),
   args: {
-    contentTitle: 'Header Layout',
+    contentTitle: 
+'Header Layout',
     hasLeftPanel: false,
-    hasRightPanel: false,
+   
+ hasRightPanel: false,
     hasHeader: true,
-    hasContentFilter: false,
-    hasHeaderRightArea: true,
+ 
+   hasContentFilter: false,
+    hasHeaderRigh
+tArea: true,
     cardCount: 8
   }
 }
 
-export const FilterOnly: Story = {
-  render: (args: StoryArgs) => createStoryTemplate(args),
-  args: {
+export c
+onst FilterOnly: Story = {
+  render: (args: S
+toryArgs) => createStoryTemplate(args),
+  arg
+s: {
     contentTitle: 'Filter Layout',
-    hasLeftPanel: false,
+    h
+asLeftPanel: false,
     hasRightPanel: false,
+
     hasHeader: false,
-    hasContentFilter: true,
+    hasContentFilter: 
+true,
     hasHeaderRightArea: false,
-    cardCount: 8
+    card
+Count: 8
   }
 }
 
-export const MaxContent: Story = {
-  render: (args: StoryArgs) => createStoryTemplate(args),
+export const MaxContent: Stor
+y = {
+  render: (args: StoryArgs) => createSt
+oryTemplate(args),
   args: {
-    contentTitle: 'Full Content',
+    contentTitle
+: 'Full Content',
     hasLeftPanel: true,
-    hasRightPanel: true,
+   
+ hasRightPanel: true,
     hasHeader: true,
-    hasContentFilter: true,
-    hasHeaderRightArea: true,
+  
+  hasContentFilter: true,
+    hasHeaderRightA
+rea: true,
     cardCount: 50
   }
 }
+
+
