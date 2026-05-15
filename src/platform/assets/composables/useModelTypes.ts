@@ -23,7 +23,7 @@ function formatDisplayName(folderName: string): string {
 /**
  * Descriptions for model folders - shown as tooltips
  */
-export function getModelFolderDescription(folderName: string): string {
+function getModelFolderDescription(folderName: string): string {
   const key = `modelTypeDescriptions.${folderName}`
   const translated = t(key)
   if (translated !== key) return translated
