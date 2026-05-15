@@ -410,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "로컬에서 계속하기",
     "exploreCloud": "클라우드 무료 체험",
-    "feature1Title": "매월 400 크레딧 무료 제공",
     "feature2Title": "어디서나 즉시 사용 가능",
     "feature3Title": "즉시 사용 가능한 모델",
     "feature4Title": "최고의 커스텀 노드 팩 사전 설치",
@@ -914,7 +913,8 @@
     "extensionFileHint": "다음 스크립트 때문일 수 있습니다",
     "loadWorkflowTitle": "워크플로 데이터를 다시 로드하는 중 오류로 인해 로드가 중단되었습니다",
     "noStackTrace": "스택 추적을 사용할 수 없습니다",
-    "promptExecutionError": "프롬프트 실행 실패"
+    "promptExecutionError": "프롬프트 실행 실패",
+    "queueOpenWorkflowFailedTitle": "워크플로우 열기에 실패했습니다"
   },
   "errorOverlay": {
     "errorCount": "{count}개 오류",
@@ -1042,6 +1042,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrg 로고",
+    "comfyPackageOutdated": "설치된 {name} 버전 {installedVersion}이(가) 필요한 버전 {requiredVersion}보다 낮습니다.",
     "comingSoon": "곧 출시 예정",
     "command": "명령",
     "commandProhibited": "{command}는 금지된 명령입니다. 자세한 정보는 관리자에게 문의하십시오.",
@@ -2254,6 +2255,7 @@
     "": "",
     "3d": "3d",
     "3d_models": "3D 모델",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",

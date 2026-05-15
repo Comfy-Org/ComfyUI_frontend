@@ -45,7 +45,7 @@ describe('getCommonTierBenefits', () => {
     expect(benefits.some((b) => b.key === 'monthlyCredits')).toBe(false)
   })
 
-  it.each(['free', 'standard', 'creator', 'pro', 'founder'] as const)(
+  it.for(['free', 'standard', 'creator', 'pro', 'founder'] as const)(
     'includes a tier-scoped maxDuration metric for %s',
     (tier) => {
       const benefits = getCommonTierBenefits(tier, translate, formatNumber)
@@ -70,7 +70,7 @@ describe('getCommonTierBenefits', () => {
     })
   })
 
-  it.each(['standard', 'creator', 'pro', 'founder'] as const)(
+  it.for(['standard', 'creator', 'pro', 'founder'] as const)(
     'adds the addCredits benefit for %s tier',
     (tier) => {
       const benefits = getCommonTierBenefits(tier, translate, formatNumber)
@@ -83,7 +83,7 @@ describe('getCommonTierBenefits', () => {
     expect(freeBenefits.some((b) => b.key === 'addCredits')).toBe(false)
   })
 
-  it.each(['creator', 'pro'] as const)(
+  it.for(['creator', 'pro'] as const)(
     'includes customLoRAs for %s tier',
     (tier) => {
       const benefits = getCommonTierBenefits(tier, translate, formatNumber)
@@ -91,7 +91,7 @@ describe('getCommonTierBenefits', () => {
     }
   )
 
-  it.each(['free', 'standard', 'founder'] as const)(
+  it.for(['free', 'standard', 'founder'] as const)(
     'omits customLoRAs for %s tier',
     (tier) => {
       const benefits = getCommonTierBenefits(tier, translate, formatNumber)

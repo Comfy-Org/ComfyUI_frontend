@@ -410,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "Continuer localement",
     "exploreCloud": "Essayer le cloud gratuitement",
-    "feature1Title": "400 crédits gratuits par mois",
     "feature2Title": "Fonctionne partout, instantanément",
     "feature3Title": "Modèles prêts à l’emploi",
     "feature4Title": "Packs de nœuds personnalisés préinstallés",
@@ -914,7 +913,8 @@
     "extensionFileHint": "Cela peut être dû au script suivant",
     "loadWorkflowTitle": "Chargement interrompu en raison d'une erreur de rechargement des données de workflow",
     "noStackTrace": "Aucune trace de pile disponible",
-    "promptExecutionError": "L'exécution de l'invite a échoué"
+    "promptExecutionError": "L'exécution de l'invite a échoué",
+    "queueOpenWorkflowFailedTitle": "Échec de l'ouverture du workflow"
   },
   "errorOverlay": {
     "errorCount": "{count} ERREUR | {count} ERREURS",
@@ -1042,6 +1042,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "Logo ComfyOrg",
+    "comfyPackageOutdated": "La version installée de {name} ({installedVersion}) est inférieure à la version requise ({requiredVersion}).",
     "comingSoon": "Bientôt disponible",
     "command": "Commande",
     "commandProhibited": "La commande {command} est interdite. Contactez un administrateur pour plus d'informations.",
@@ -2254,6 +2255,7 @@
     "": "",
     "3d": "3d",
     "3d_models": "modèles_3d",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",

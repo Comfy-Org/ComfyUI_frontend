@@ -7,7 +7,7 @@ import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseTog
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
+import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
@@ -78,7 +78,7 @@ async function searcher(query: string) {
   <div
     class="flex items-center border-b border-interface-stroke px-4 pt-1 pb-4"
   >
-    <FormSearchInput
+    <AsyncSearchInput
       v-model="searchQuery"
       :searcher
       :update-key="widgetsSectionDataList"

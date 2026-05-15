@@ -410,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "Продолжить локально",
     "exploreCloud": "Попробовать облако бесплатно",
-    "feature1Title": "400 бесплатных кредитов в месяц",
     "feature2Title": "Работает везде и мгновенно",
     "feature3Title": "Модели готовы к использованию",
     "feature4Title": "Лучшие пользовательские пакеты узлов предустановлены",
@@ -914,7 +913,8 @@
     "extensionFileHint": "Это может быть связано со следующим скриптом",
     "loadWorkflowTitle": "Загрузка прервана из-за ошибки при перезагрузке данных рабочего процесса",
     "noStackTrace": "Стек вызовов недоступен",
-    "promptExecutionError": "Ошибка выполнения запроса"
+    "promptExecutionError": "Ошибка выполнения запроса",
+    "queueOpenWorkflowFailedTitle": "Не удалось открыть рабочий процесс"
   },
   "errorOverlay": {
     "errorCount": "{count} ОШИБОК | {count} ОШИБКА | {count} ОШИБКИ",
@@ -1042,6 +1042,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "Логотип ComfyOrg",
+    "comfyPackageOutdated": "Установленная версия {name} ({installedVersion}) ниже требуемой версии ({requiredVersion}).",
     "comingSoon": "Скоро будет",
     "command": "Команда",
     "commandProhibited": "Команда {command} запрещена. Свяжитесь с администратором для получения дополнительной информации.",
@@ -2254,6 +2255,7 @@
     "": "",
     "3d": "3d",
     "3d_models": "3d_модели",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",

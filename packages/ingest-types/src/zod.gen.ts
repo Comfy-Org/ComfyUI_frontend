@@ -310,8 +310,8 @@ export const zImportPublishedAssetsResponse = z.object({
  * Request body for importing assets from a published workflow.
  */
 export const zImportPublishedAssetsRequest = z.object({
-  published_asset_ids: z.array(z.string().min(1).max(64)).max(1000),
-  share_id: z.string().min(1).max(64)
+  published_asset_ids: z.array(z.string()),
+  share_id: z.string().nullish()
 })
 
 /**
@@ -1372,6 +1372,7 @@ export const zAsset = z.object({
   preview_url: z.string().url().optional(),
   preview_id: z.string().uuid().nullish(),
   prompt_id: z.string().uuid().nullish(),
+  job_id: z.string().uuid().nullish(),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
   last_access_time: z.string().datetime().optional(),
@@ -1813,6 +1814,7 @@ export const zAssetWritable = z.object({
   preview_url: z.string().url().optional(),
   preview_id: z.string().uuid().nullish(),
   prompt_id: z.string().uuid().nullish(),
+  job_id: z.string().uuid().nullish(),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
   last_access_time: z.string().datetime().optional(),
