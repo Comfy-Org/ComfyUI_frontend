@@ -22,7 +22,7 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   args: {
-    ariaLabel: 'Line chart example',
+    ariaLabel: t('g.line_chart_example_aria'),
     data: {
       labels: ['A', 'B', 'C', 'D'],
       datasets: [
@@ -42,7 +42,7 @@ export const Default: Story = {
 
 export const MultipleLines: Story = {
   args: {
-    ariaLabel: 'Line chart with multiple lines',
+    ariaLabel: t('g.line_chart_multiple_lines_aria'),
     data: {
       labels: ['A', 'B', 'C', 'D'],
       datasets: [
