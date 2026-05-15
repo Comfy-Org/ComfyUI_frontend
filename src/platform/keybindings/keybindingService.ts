@@ -7,12 +7,14 @@ import { CORE_KEYBINDINGS } from './defaults'
 import { KeyComboImpl } from './keyCombo'
 import { KeybindingImpl } from './keybinding'
 import { useKeybindingStore } from './keybindingStore'
+import { useRaisedSurfaceStore } from './raisedSurfaceStore'
 
 export function useKeybindingService() {
   const keybindingStore = useKeybindingStore()
   const commandStore = useCommandStore()
   const settingStore = useSettingStore()
   const dialogStore = useDialogStore()
+  const raisedSurfaceStore = useRaisedSurfaceStore()
 
   async function keybindHandler(event: KeyboardEvent) {
     const keyCombo = KeyComboImpl.fromEvent(event)
@@ -50,7 +52,10 @@ export function useKeybindingService() {
         !event.altKey &&
         !event.metaKey
       ) {
-        if (dialogStore.dialogStack.length > 0) {
+        if (
+          raisedSurfaceStore.isAnyOpen ||
+          dialogStore.dialogStack.length > 0
+        ) {
           return
         }
       }
