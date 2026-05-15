@@ -95,6 +95,7 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
   public readonly allTab: Locator
   public readonly blueprintsTab: Locator
   public readonly sortButton: Locator
+  public readonly nodePreview: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'node-library')
@@ -103,6 +104,7 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
     this.allTab = this.getTab('All')
     this.blueprintsTab = this.getTab('Blueprints')
     this.sortButton = this.sidebarContent.getByRole('button', { name: 'Sort' })
+    this.nodePreview = page.getByTestId(TestIds.sidebar.nodePreviewCard)
   }
 
   getTab(name: string) {
@@ -384,11 +386,14 @@ export class AssetsSidebarTab extends SidebarTab {
     return this.page.locator('.p-contextmenu').getByText(label)
   }
 
-  override async open() {
+  override async open({ waitForAssets = true } = {}) {
     // Remove any toast notifications that may overlay the sidebar button
     await this.dismissToasts()
     await super.open()
     await this.generatedTab.waitFor({ state: 'visible' })
+    if (waitForAssets) {
+      await this.waitForAssets()
+    }
   }
 
   /** Dismiss all visible toast notifications by clicking their close buttons. */

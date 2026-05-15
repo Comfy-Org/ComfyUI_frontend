@@ -1,10 +1,10 @@
 <!-- A generalized form item for rendering in a form. -->
 <template>
-  <div class="flex flex-row items-center gap-2">
+  <div class="flex min-h-8 flex-row items-center gap-2">
     <div class="form-label flex grow items-center">
       <span
         :id="`${props.id}-label`"
-        class="text-muted"
+        class="text-sm text-muted"
         :class="props.labelClass"
       >
         <slot name="name-prefix" />
