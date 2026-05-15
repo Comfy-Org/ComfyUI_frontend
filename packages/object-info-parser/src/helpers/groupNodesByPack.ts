@@ -15,6 +15,21 @@ export interface NodePack {
   nodes: PackedNode[]
 }
 
+/**
+ * Group custom Comfy node definitions into packs keyed by a slugified pack identifier.
+ *
+ * Processes the provided node definitions, selects those identified as custom nodes, extracts
+ * a raw pack identifier from each definition's `python_module`, converts it to a slug, and
+ * aggregates nodes that share the same slug into a single `NodePack`.
+ *
+ * @param defs - Map of class name to `ComfyNodeDef` objects to be grouped
+ * @returns An array of `NodePack` objects sorted by `id` (ascending). Each `NodePack` includes:
+ * - `id`: the slugified pack identifier
+ * - `rawId`: the raw identifier extracted from a representative node's `python_module`
+ * - `rawIds`: all distinct raw identifiers that were mapped to the same slug
+ * - `displayName`: display text taken from the node source metadata
+ * - `nodes`: the list of packed node entries (`{ className, def }`)
+ */
 export function groupNodesByPack(
   defs: Record<string, ComfyNodeDef>
 ): NodePack[] {

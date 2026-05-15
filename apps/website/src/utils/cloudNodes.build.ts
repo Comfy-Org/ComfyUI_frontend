@@ -12,10 +12,20 @@ const REFRESH_HINT =
 
 const WEBSITE_PACKAGE_ROOT = fileURLToPath(new URL('../..', import.meta.url))
 
+/**
+ * Determine whether the current build is a production Vercel deployment.
+ *
+ * @returns `true` if `process.env.VERCEL_ENV` is exactly `'production'`, `false` otherwise.
+ */
 function isProductionBuild(): boolean {
   return process.env.VERCEL_ENV === 'production'
 }
 
+/**
+ * Produces a file:// URL pointing to a local fixture snapshot when WEBSITE_CLOUD_NODES_FIXTURE is set.
+ *
+ * @returns A `URL` for the resolved fixture path, or `undefined` if the environment variable is not set.
+ */
 function fixtureSnapshotUrl(): URL | undefined {
   const fixturePath = process.env.WEBSITE_CLOUD_NODES_FIXTURE
   if (!fixturePath) return undefined
@@ -28,22 +38,9 @@ function fixtureSnapshotUrl(): URL | undefined {
 /**
  * Resolve the list of packs to render at build time.
  *
- * Used by both the index page and the per-pack detail pages so that the
- * static index and the static detail routes are always derived from the
- * same source. `fetchCloudNodesForBuild` is memoized on a module-level
- * `inflight` promise, so repeated calls in the same build process share a
- * single network round-trip and the same outcome.
+ * The same resolved snapshot is used to derive both the site index and per-pack detail routes so static pages share a single source of truth. In production builds a stale snapshot causes the build to fail unless a local fixture override is provided via the `WEBSITE_CLOUD_NODES_FIXTURE` environment variable, which forces use of the on-disk snapshot instead of the live cloud API.
  *
- * Production builds (VERCEL_ENV=production) fail hard on a stale outcome
- * to prevent silently shipping out-of-date snapshot data. Preview and
- * local builds continue to use the committed snapshot.
- *
- * Setting `WEBSITE_CLOUD_NODES_FIXTURE=<path>` overrides the bundled
- * snapshot with a fixture file on disk. This is used by the e2e build
- * step in CI so Playwright assertions can be written against deterministic
- * pack content instead of whatever the upstream registry happens to expose
- * at the moment of the test run. The override never fires the live cloud
- * API; the fixture path goes straight to the snapshot-fallback branch.
+ * @returns The array of `Pack` objects from the resolved snapshot to render at build time.
  */
 export async function loadPacksForBuild(): Promise<Pack[]> {
   const snapshotUrl = fixtureSnapshotUrl()
