@@ -3,12 +3,15 @@ import { describe, expect, it } from 'vitest'
 import {
   appendWorkflowJsonExt,
   ensureWorkflowSuffix,
+  formatLocalizedMediumDate,
+  formatLocalizedNumber,
   getFilePathSeparatorVariants,
   getFilenameDetails,
   getMediaTypeFromFilename,
   getPathDetails,
   highlightQuery,
   isCivitaiModelUrl,
+  isCivitaiUrl,
   isPreviewableMediaType,
   joinFilePath,
   truncateFilename
@@ -85,9 +88,11 @@ describe('formatUtil', () => {
     describe('video files', () => {
       it('should identify video extensions correctly', () => {
         expect(getMediaTypeFromFilename('video.mp4')).toBe('video')
+        expect(getMediaTypeFromFilename('apple.m4v')).toBe('video')
         expect(getMediaTypeFromFilename('clip.webm')).toBe('video')
         expect(getMediaTypeFromFilename('movie.mov')).toBe('video')
         expect(getMediaTypeFromFilename('film.avi')).toBe('video')
+        expect(getMediaTypeFromFilename('episode.mkv')).toBe('video')
       })
     })
 
@@ -419,11 +424,54 @@ describe('formatUtil', () => {
     })
   })
 
+  describe('isCivitaiUrl', () => {
+    it.for([
+      { url: 'https://civitai.com/models/123', expected: true },
+      { url: 'https://civitai.red/models/123', expected: true },
+      { url: 'https://sub.civitai.com/models/123', expected: true },
+      { url: 'https://sub.civitai.red/models/123', expected: true },
+      { url: 'https://example.com/model', expected: false },
+      { url: 'not-a-url', expected: false }
+    ])('$url → $expected', ({ url, expected }) => {
+      expect(isCivitaiUrl(url)).toBe(expected)
+    })
+  })
+
   describe('isCivitaiModelUrl', () => {
     it('recognizes civitai.red model URLs', () => {
       expect(
         isCivitaiModelUrl('https://civitai.red/api/download/models/123456')
       ).toBe(true)
+    })
+  })
+
+  describe('formatLocalizedNumber', () => {
+    it('formats numbers using the given locale', () => {
+      expect(formatLocalizedNumber(2618646, 'en')).toBe('2,618,646')
+      expect(formatLocalizedNumber(2618646, 'de')).toBe('2.618.646')
+    })
+
+    it('returns an em-dash for undefined / NaN / Infinity', () => {
+      expect(formatLocalizedNumber(undefined, 'en')).toBe('—')
+      expect(formatLocalizedNumber(Number.NaN, 'en')).toBe('—')
+      expect(formatLocalizedNumber(Number.POSITIVE_INFINITY, 'en')).toBe('—')
+    })
+
+    it('formats zero as "0"', () => {
+      expect(formatLocalizedNumber(0, 'en')).toBe('0')
+    })
+  })
+
+  describe('formatLocalizedMediumDate', () => {
+    it('formats an ISO date with the medium style', () => {
+      expect(formatLocalizedMediumDate('2026-04-19T00:00:00Z', 'en')).toMatch(
+        /Apr \d{1,2}, 2026/
+      )
+    })
+
+    it('returns an em-dash for undefined or unparseable input', () => {
+      expect(formatLocalizedMediumDate(undefined, 'en')).toBe('—')
+      expect(formatLocalizedMediumDate('not a date', 'en')).toBe('—')
     })
   })
 })

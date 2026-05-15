@@ -120,4 +120,13 @@ test.describe('Node library sidebar V2', () => {
     await expect(options.first()).toBeVisible()
     await expect.poll(() => options.count()).toBeGreaterThanOrEqual(2)
   })
+
+  test('Blueprint previews include description', async ({ comfyPage }) => {
+    const tab = comfyPage.menu.nodeLibraryTabV2
+    await tab.blueprintsTab.click()
+
+    await tab.getNode('test blueprint').hover()
+    await expect(tab.nodePreview, 'Preview displays on hover').toBeVisible()
+    await expect(tab.nodePreview).toContainText('Inverts the image')
+  })
 })

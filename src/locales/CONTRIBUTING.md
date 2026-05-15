@@ -35,47 +35,13 @@ module.exports = defineConfig({
 })
 ```
 
-#### 1.2 Update `src/platform/settings/constants/coreSettings.ts`
+#### 1.2 Update `src/locales/localeConfig.ts`
 
-Add your language to the dropdown options:
-
-```typescript
-{
-  id: 'Comfy.Locale',
-  name: 'Language',
-  type: 'combo',
-  options: [
-    { value: 'en', text: 'English' },
-    { value: 'zh', text: '中文' },
-    { value: 'zh-TW', text: '繁體中文 (台灣)' }, // Add your language here
-    { value: 'ru', text: 'Русский' },
-    { value: 'ja', text: '日本語' },
-    { value: 'ko', text: '한국어' },
-    { value: 'fr', text: 'Français' },
-    { value: 'es', text: 'Español' }
-  ],
-  defaultValue: () => navigator.language.split('-')[0] || 'en'
-},
-```
-
-#### 1.3 Update `src/i18n.ts`
-
-Add imports for your new language files:
+Add your language to the shared runtime locale definition. This feeds the
+settings dropdown, supported-locale resolution, and lazy locale loading:
 
 ```typescript
-// Add these imports (replace zh-TW with your language code)
-import zhTWCommands from './locales/zh-TW/commands.json'
-import zhTW from './locales/zh-TW/main.json'
-import zhTWNodes from './locales/zh-TW/nodeDefs.json'
-import zhTWSettings from './locales/zh-TW/settings.json'
-
-// Add to the messages object
-const messages = {
-  en: buildLocale(en, enNodes, enCommands, enSettings),
-  zh: buildLocale(zh, zhNodes, zhCommands, zhSettings),
-  'zh-TW': buildLocale(zhTW, zhTWNodes, zhTWCommands, zhTWSettings) // Add this line
-  // ... other languages
-}
+'zh-TW': { text: '繁體中文', loaders: loadersFor('zh-TW') }
 ```
 
 ### Step 2: Generate Translation Files
@@ -168,7 +134,7 @@ Each language has 4 translation files:
 
 ### Issue: Language not appearing in dropdown
 
-**Solution**: Check that the language code in `coreSettings.ts` matches your other files exactly
+**Solution**: Check that the language code in `src/locales/localeConfig.ts` matches your other files exactly
 
 ### Issue: Rate limits during local translation
 

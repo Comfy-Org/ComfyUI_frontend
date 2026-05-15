@@ -410,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "ادامه به صورت محلی",
     "exploreCloud": "امتحان رایگان فضای ابری",
-    "feature1Title": "۴۰۰ اعتبار رایگان ماهانه",
     "feature2Title": "قابل استفاده در هر مکان، بلافاصله",
     "feature3Title": "مدل‌ها آماده استفاده",
     "feature4Title": "برترین بسته‌های Node سفارشی از پیش نصب‌شده",
@@ -914,7 +913,8 @@
     "extensionFileHint": "این ممکن است به دلیل اسکریپت زیر باشد",
     "loadWorkflowTitle": "بارگذاری به دلیل خطا در بارگذاری مجدد داده‌های workflow متوقف شد",
     "noStackTrace": "هیچ stacktraceی موجود نیست",
-    "promptExecutionError": "اجرای prompt با شکست مواجه شد"
+    "promptExecutionError": "اجرای prompt با شکست مواجه شد",
+    "queueOpenWorkflowFailedTitle": "باز کردن workflow با خطا مواجه شد"
   },
   "errorOverlay": {
     "errorCount": "{count} خطا",
@@ -1042,6 +1042,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "لوگوی ComfyOrg",
+    "comfyPackageOutdated": "نسخه نصب‌شده {name} با شماره {installedVersion} پایین‌تر از نسخه مورد نیاز {requiredVersion} است.",
     "comingSoon": "به‌زودی",
     "command": "دستور",
     "commandProhibited": "دستور {command} مجاز نیست. برای اطلاعات بیشتر با مدیر تماس بگیرید.",
@@ -2254,6 +2255,7 @@
     "": "",
     "3d": "سه‌بعدی",
     "3d_models": "مدل‌های سه‌بعدی",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",

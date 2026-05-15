@@ -410,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "المتابعة محليًا",
     "exploreCloud": "جرّب السحابة مجانًا",
-    "feature1Title": "٤٠٠ رصيد مجاني شهريًا",
     "feature2Title": "يعمل في أي مكان، فورًا",
     "feature3Title": "نماذج جاهزة للاستخدام",
     "feature4Title": "أفضل حزم العقد المخصصة مثبتة مسبقًا",
@@ -914,7 +913,8 @@
     "extensionFileHint": "قد يكون السبب هو السكربت التالي",
     "loadWorkflowTitle": "تم إلغاء التحميل بسبب خطأ في إعادة تحميل بيانات سير العمل",
     "noStackTrace": "لا توجد تتبع للمكدس متاحة",
-    "promptExecutionError": "فشل تنفيذ الطلب"
+    "promptExecutionError": "فشل تنفيذ الطلب",
+    "queueOpenWorkflowFailedTitle": "فشل في فتح سير العمل"
   },
   "errorOverlay": {
     "errorCount": "{count} خطأ | {count} أخطاء",
@@ -1042,6 +1042,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "شعار ComfyOrg",
+    "comfyPackageOutdated": "إصدار {name} المثبت ({installedVersion}) أقل من الإصدار المطلوب ({requiredVersion}).",
     "comingSoon": "قريباً",
     "command": "أمر",
     "commandProhibited": "الأمر {command} محظور. يرجى التواصل مع المسؤول لمزيد من المعلومات.",
@@ -2254,6 +2255,7 @@
     "": "",
     "3d": "ثلاثي الأبعاد",
     "3d_models": "نماذج ثلاثية الأبعاد",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "بايت دانس",
