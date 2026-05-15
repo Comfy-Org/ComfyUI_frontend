@@ -112,19 +112,11 @@ interface PendingMeasurement {
 // the canvas RO has had a chance to update lgCanvas.ds. This prevents
 // transient off-screen position writes from stale DOM→canvas conversion.
 const pendingMeasurements = new Map<HTMLElement, PendingMeasurement>()
-const pendingWidgetsGridNodeIds = new Set<NodeId>()
 const rafBatch = createRafBatch(() => {
   flushPendingMeasurements()
 })
 
 function flushPendingMeasurements() {
-  if (pendingWidgetsGridNodeIds.size > 0) {
-    for (const nodeId of pendingWidgetsGridNodeIds) {
-      scheduleSlotLayoutSync(nodeId)
-    }
-    pendingWidgetsGridNodeIds.clear()
-  }
-
   if (pendingMeasurements.size === 0) return
 
   if (useCanvasStore().linearMode) {
@@ -286,10 +278,10 @@ const resizeObserver = new ResizeObserver((entries) => {
     const element = entry.target
 
     // Signal-only widgets-grid resize - route the parent node through the
-    // slot-layout pipeline and skip bounds processing entirely.
+    // slot-layout pipeline (already RAF-batched) and skip bounds processing.
     const widgetsGridParentNodeId = element.dataset.widgetsGridNodeId
     if (widgetsGridParentNodeId) {
-      pendingWidgetsGridNodeIds.add(widgetsGridParentNodeId as NodeId)
+      scheduleSlotLayoutSync(widgetsGridParentNodeId as NodeId)
       continue
     }
 
@@ -308,7 +300,7 @@ const resizeObserver = new ResizeObserver((entries) => {
     })
   }
 
-  if (pendingMeasurements.size > 0 || pendingWidgetsGridNodeIds.size > 0) {
+  if (pendingMeasurements.size > 0) {
     rafBatch.schedule()
   }
 })
