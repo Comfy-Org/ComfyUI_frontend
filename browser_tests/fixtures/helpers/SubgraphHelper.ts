@@ -8,12 +8,17 @@ import type {
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
+import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
+
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { SubgraphEditor } from '@e2e/fixtures/components/SubgraphEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 import { SubgraphSlotReference } from '@e2e/fixtures/utils/litegraphUtils'
-import { getAllHostPromotedWidgets } from '@e2e/fixtures/utils/promotedWidgets'
+import {
+  isNodeProperty,
+  isPromotedWidgetSource
+} from '@e2e/fixtures/utils/promotedWidgets'
 import type { PromotedWidgetEntry } from '@e2e/fixtures/utils/promotedWidgets'
 
 export class SubgraphHelper {
@@ -415,7 +420,62 @@ export class SubgraphHelper {
   async getHostPromotedTupleSnapshot(): Promise<
     { hostNodeId: string; promotedWidgets: PromotedWidgetEntry[] }[]
   > {
-    return getAllHostPromotedWidgets(this.comfyPage)
+    const rawHosts = await this.page.evaluate(() => {
+      const graph = window.app!.canvas.graph!
+      const serialized = window.app!.graph!.serialize()
+      return graph._nodes
+        .filter(
+          (node) =>
+            typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
+        )
+        .map((node) => {
+          const widgetSources = (node.widgets ?? []).flatMap((widget) => {
+            if (!('sourceNodeId' in widget) || !('sourceWidgetName' in widget))
+              return []
+            return [
+              {
+                sourceNodeId: widget.sourceNodeId,
+                sourceWidgetName: widget.sourceWidgetName
+              }
+            ]
+          })
+          const serializedNode = serialized.nodes.find(
+            (candidate) => String(candidate.id) === String(node.id)
+          )
+          return {
+            hostNodeId: String(node.id),
+            widgetSources,
+            previewExposures: serializedNode?.properties?.previewExposures
+          }
+        })
+    })
+
+    return rawHosts
+      .map(({ hostNodeId, widgetSources, previewExposures }) => {
+        const exposures = isNodeProperty(previewExposures)
+          ? parsePreviewExposures(previewExposures)
+          : []
+        return {
+          hostNodeId,
+          promotedWidgets: [
+            ...widgetSources
+              .filter(isPromotedWidgetSource)
+              .map(
+                (source): PromotedWidgetEntry => [
+                  source.sourceNodeId,
+                  source.sourceWidgetName
+                ]
+              ),
+            ...exposures.map(
+              (exposure): PromotedWidgetEntry => [
+                exposure.sourceNodeId,
+                exposure.sourcePreviewName
+              ]
+            )
+          ]
+        }
+      })
+      .sort((a, b) => Number(a.hostNodeId) - Number(b.hostNodeId))
   }
 
   /** Reads from `window.app.canvas.graph` (viewed root or nested subgraph). */

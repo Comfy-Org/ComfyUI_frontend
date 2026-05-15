@@ -422,10 +422,13 @@ class PromotedWidgetView implements IPromotedWidgetView {
     this.resolveAtHost()?.widget.callback?.(value, canvas, node, pos, e)
   }
 
-  // No beforeQueued: source widgets linked through subgraph inputs are inert
-  // for prompt serialization. Control-after-generate is applied to the
-  // promoted host value in afterQueued so the next prompt uses the updated
-  // SubgraphNode value, not the linked source value.
+  beforeQueued(): void {
+    // Source widgets linked through subgraph inputs are inert for prompt
+    // serialization.  Control-after-generate is applied to the promoted host
+    // value in afterQueued so the next prompt uses the updated SubgraphNode
+    // value, not the linked source value.
+  }
+
   afterQueued(): void {
     this.applyValueControlToHost()
   }

@@ -13,6 +13,15 @@ export interface PromotedWidgetSource {
   sourceWidgetName: string
 }
 
+/**
+ * Legacy proxyWidget tuple shape carried through migration. The optional
+ * `disambiguatingSourceNodeId` is read from legacy `properties.proxyWidgets`
+ * payloads only — canonical runtime state never sets it. See ADR 0009.
+ */
+export interface LegacyProxyEntrySource extends PromotedWidgetSource {
+  disambiguatingSourceNodeId?: string
+}
+
 export interface PromotedWidgetView extends IBaseWidget {
   readonly node: SubgraphNode
   /**

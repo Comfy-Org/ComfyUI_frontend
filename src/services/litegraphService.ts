@@ -188,10 +188,12 @@ export const useLitegraphService = () => {
 
   function getPseudoWidgetPreviewTargets(node: SubgraphNode): LGraphNode[] {
     const hostLocator = String(node.id)
-    const promotions = usePreviewExposureStore().getExposuresAsPromotionShape(
-      node.rootGraph.id,
-      hostLocator
-    )
+    const promotions = usePreviewExposureStore()
+      .getExposures(node.rootGraph.id, hostLocator)
+      .map((exposure) => ({
+        sourceNodeId: exposure.sourceNodeId,
+        sourceWidgetName: exposure.sourcePreviewName
+      }))
     const resolved = resolveSubgraphPseudoWidgetCache({
       cache: subgraphPseudoWidgetCache.get(node) ?? null,
       promotions,

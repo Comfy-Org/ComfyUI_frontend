@@ -109,14 +109,11 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return isImageOutputs(node, outputs) ? app.getPreviewFormatParam() : ''
   }
 
-  /**
-   * Builds `/view`-style image URLs for a node's outputs. Returns undefined
-   * when there are no images so callers can fall back to preview blobs.
-   */
-  function buildImageUrls(
-    node: LGraphNode,
-    outputs: ExecutedWsMessage['output'] | undefined
-  ): string[] | undefined {
+  function getNodeImageUrls(node: LGraphNode): string[] | undefined {
+    const previews = getNodePreviews(node)
+    if (previews?.length) return previews
+
+    const outputs = getNodeOutputs(node)
     if (!outputs?.images?.length) return
 
     const rand = app.getRandParam()
@@ -128,13 +125,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
         const params = new URLSearchParams(image)
         return api.apiURL(`/view?${params}${previewParam}${rand}`)
       })
-  }
-
-  function getNodeImageUrls(node: LGraphNode): string[] | undefined {
-    const previews = getNodePreviews(node)
-    if (previews?.length) return previews
-
-    return buildImageUrls(node, getNodeOutputs(node))
   }
 
   function getNodeOutputByExecutionId(
@@ -160,7 +150,18 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const previews = getNodePreviewImagesByExecutionId(executionId)
     if (previews?.length) return previews
 
-    return buildImageUrls(node, getNodeOutputByExecutionId(executionId))
+    const outputs = getNodeOutputByExecutionId(executionId)
+    if (!outputs?.images?.length) return
+
+    const rand = app.getRandParam()
+    const previewParam = getPreviewParam(node, outputs)
+
+    return outputs.images
+      .filter((image) => image != null)
+      .map((image) => {
+        const params = new URLSearchParams(image)
+        return api.apiURL(`/view?${params}${previewParam}${rand}`)
+      })
   }
 
   /**

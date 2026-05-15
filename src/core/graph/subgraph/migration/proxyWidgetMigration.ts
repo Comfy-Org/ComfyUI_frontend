@@ -1,13 +1,12 @@
 import { isEqual } from 'es-toolkit/compat'
 
+import { normalizeLegacyProxyWidgetEntry } from '@/core/graph/subgraph/legacyProxyWidgetNormalization'
+import type { LegacyProxyEntrySource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
-  findHostInputForPromotion,
   getPromotableWidgets,
   isPreviewPseudoWidget
 } from '@/core/graph/subgraph/promotionUtils'
-import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
 import type {
@@ -29,101 +28,22 @@ import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 
 /**
- * Legacy proxyWidget tuple shape carried through migration. The optional
- * `disambiguatingSourceNodeId` is read from legacy `properties.proxyWidgets`
- * payloads only — canonical runtime state never sets it. See ADR 0009.
+ * Find a widget on `sourceNode` that matches the legacy proxy entry's source
+ * identity. When the entry carries a `disambiguatingSourceNodeId`, prefer the
+ * `PromotedWidgetView` whose interior identity matches it exactly — this lets
+ * us pick the correct widget after deduplication renamed it (e.g. `text_1`).
+ * Falls back to a name match for non-promoted widgets and legacy data without
+ * a disambiguator.
  */
-interface LegacyProxyEntrySource extends PromotedWidgetSource {
-  disambiguatingSourceNodeId?: string
-}
-
-const LEGACY_PROXY_WIDGET_PREFIX_PATTERN = /^\s*(\d+)\s*:\s*(.+)$/
-
-interface StrippedPrefix {
-  sourceWidgetName: string
-  /** Deepest legacy `n: ` prefix removed from the original widget name. */
-  deepestPrefixId?: string
-}
-
-function stripLegacyPrefixes(sourceWidgetName: string): StrippedPrefix {
-  let remaining = sourceWidgetName
-  let deepestPrefixId: string | undefined
-  while (true) {
-    const match = LEGACY_PROXY_WIDGET_PREFIX_PATTERN.exec(remaining)
-    if (!match) return { sourceWidgetName: remaining, deepestPrefixId }
-    deepestPrefixId = match[1]
-    remaining = match[2]
-  }
-}
-
-function canResolveLegacyProxy(
-  hostNode: SubgraphNode,
-  sourceNodeId: string,
-  widgetName: string
-): boolean {
-  return (
-    resolveConcretePromotedWidget(hostNode, sourceNodeId, widgetName).status ===
-    'resolved'
-  )
-}
-
-/**
- * Normalize a legacy `proxyWidgets` entry.
- *
- * Under ADR 0009 each `SubgraphNode` is opaque, so the canonical state never
- * resolves through deep nested identities. This helper still recognizes the
- * legacy `"<id>: <name>"` prefix encoding and surfaces the deepest prefix as
- * `disambiguatingSourceNodeId` so migration tooling can preserve it as
- * lookup metadata. The bare entry is returned unchanged when it already
- * resolves at the immediate level.
- */
-export function normalizeLegacyProxyWidgetEntry(
-  hostNode: SubgraphNode,
-  sourceNodeId: string,
-  sourceWidgetName: string,
-  disambiguatingSourceNodeId?: string
-): LegacyProxyEntrySource {
-  if (canResolveLegacyProxy(hostNode, sourceNodeId, sourceWidgetName)) {
-    return {
-      sourceNodeId,
-      sourceWidgetName,
-      ...(disambiguatingSourceNodeId && { disambiguatingSourceNodeId })
-    }
-  }
-
-  const stripped = stripLegacyPrefixes(sourceWidgetName)
-  const patchDisambiguatingSourceNodeId =
-    stripped.deepestPrefixId ?? disambiguatingSourceNodeId
-
-  return {
-    sourceNodeId,
-    sourceWidgetName: stripped.sourceWidgetName,
-    ...(patchDisambiguatingSourceNodeId && {
-      disambiguatingSourceNodeId: patchDisambiguatingSourceNodeId
-    })
-  }
-}
-
-/**
- * Resolve the source widget for a normalized proxy entry. When the entry
- * carries a `disambiguatingSourceNodeId`, prefer the `PromotedWidgetView`
- * whose interior identity matches exactly — this lets us pick the correct
- * widget after deduplication renamed it (e.g. `text_1`). Otherwise match by
- * name, falling back to `getPromotableWidgets` (which surfaces virtual
- * preview widgets that aren't on `node.widgets`).
- *
- * `classify` and `repairCreateSubgraphInput` both call this — they must
- * agree on the resolved widget, otherwise a legacy nested entry can be
- * classified as repairable but quarantined at repair time, leaving the host
- * with fewer rendered widgets than expected.
- */
-function resolveSourceWidget(
+function findSourceWidget(
   sourceNode: LGraphNode,
   sourceWidgetName: string,
   disambiguatingSourceNodeId?: string
 ): IBaseWidget | undefined {
   const widgets = sourceNode.widgets
-  if (widgets && disambiguatingSourceNodeId !== undefined) {
+  if (!widgets) return undefined
+
+  if (disambiguatingSourceNodeId !== undefined) {
     const byDisambiguator = widgets.find(
       (w) =>
         isPromotedWidgetView(w) &&
@@ -135,14 +55,33 @@ function resolveSourceWidget(
     // widgets with the same name. Returning a sibling PromotedWidgetView
     // bound to a different interior node would silently re-introduce the
     // cross-binding bug the disambiguator exists to prevent.
-    const byName = widgets.find(
+    return widgets.find(
       (w) => !isPromotedWidgetView(w) && w.name === sourceWidgetName
     )
-    if (byName) return byName
   }
 
+  return widgets.find((w) => w.name === sourceWidgetName)
+}
+
+/**
+ * Resolve the source widget for a normalized proxy entry, falling back to a
+ * promotable-widget name match when the strict `findSourceWidget` lookup
+ * misses. `classify` and `repairCreateSubgraphInput` must agree on this
+ * resolution — otherwise a legacy nested entry can be classified as
+ * repairable but then quarantined at repair time, leaving the host with
+ * fewer rendered widgets than expected.
+ */
+function resolveSourceWidget(
+  sourceNode: LGraphNode,
+  sourceWidgetName: string,
+  disambiguatingSourceNodeId?: string
+): IBaseWidget | undefined {
   return (
-    widgets?.find((w) => w.name === sourceWidgetName) ??
+    findSourceWidget(
+      sourceNode,
+      sourceWidgetName,
+      disambiguatingSourceNodeId
+    ) ??
     getPromotableWidgets(sourceNode).find((w) => w.name === sourceWidgetName)
   )
 }
@@ -276,6 +215,29 @@ function pickHostValue(
   return { value: raw, isHole: false }
 }
 
+function findHostInputForLinkedSource(
+  hostNode: SubgraphNode,
+  sourceNodeId: string,
+  sourceWidgetName: string,
+  subgraphInputName?: string
+): INodeInputSlot | 'ambiguous' | undefined {
+  const candidates = subgraphInputName
+    ? hostNode.inputs.filter((input) => input.name === subgraphInputName)
+    : hostNode.inputs
+  const matches = candidates.filter((input) => {
+    const widget = input._widget
+    return (
+      !!widget &&
+      isPromotedWidgetView(widget) &&
+      widget.sourceNodeId === sourceNodeId &&
+      widget.sourceWidgetName === sourceWidgetName
+    )
+  })
+  if (matches.length === 0) return undefined
+  if (matches.length === 1) return matches[0]
+  return 'ambiguous'
+}
+
 function collectTargetsStrict(
   hostNode: SubgraphNode,
   primitiveNode: LGraphNode
@@ -323,28 +285,15 @@ function classify(
   normalized: LegacyProxyEntrySource,
   cohort: readonly LegacyProxyEntrySource[]
 ): Plan {
-  const linkedInput = findHostInputForPromotion(
+  const linkedInput = findHostInputForLinkedSource(
     hostNode,
     normalized.sourceNodeId,
     normalized.sourceWidgetName
   )
+  if (linkedInput === 'ambiguous') {
+    return { kind: 'quarantine', reason: 'ambiguousSubgraphInput' }
+  }
   if (linkedInput) {
-    // ADR 0009 expects a single host input per source identity. Detect the
-    // legacy/corruption case where multiple inputs share the same source so
-    // we quarantine instead of silently picking one and stomping its value.
-    const ambiguous =
-      hostNode.inputs.filter((input) => {
-        const w = input._widget
-        return (
-          !!w &&
-          isPromotedWidgetView(w) &&
-          w.sourceNodeId === normalized.sourceNodeId &&
-          w.sourceWidgetName === normalized.sourceWidgetName
-        )
-      }).length > 1
-    if (ambiguous) {
-      return { kind: 'quarantine', reason: 'ambiguousSubgraphInput' }
-    }
     return { kind: 'alreadyLinked', subgraphInputName: linkedInput.name }
   }
 
