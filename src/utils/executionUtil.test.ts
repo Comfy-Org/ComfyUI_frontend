@@ -6,6 +6,9 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { graphToPrompt } from './executionUtil'
 
+/**
+ * Casts a serialized node's widget values for indexed assertions.
+ */
 function widgetValues(node: { widgets_values?: unknown }): unknown[] {
   return node.widgets_values as unknown[]
 }
@@ -15,6 +18,9 @@ describe('graphToPrompt', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
+  /**
+   * Creates a graph node with serialized widgets for graphToPrompt tests.
+   */
   function createNodeWithWidgets(
     graph: LGraph,
     title: string,
