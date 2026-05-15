@@ -3946,8 +3946,7 @@
   },
   "workflow": {
     "unsavedFilename": "未保存的工作流.json"
-  }
-},
+  },
   "modelTypeNames": {
     "checkpoints": "基础模型 (Checkpoints)",
     "loras": "微调模型 (LoRA)",
