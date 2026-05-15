@@ -687,7 +687,12 @@
       "nvidiaDescription": "Use your NVIDIA GPU with CUDA acceleration for the best performance.",
       "amdDescription": "Use your AMD GPU with ROCm™ acceleration for the best performance.",
       "cpuDescription": "Use CPU mode for compatibility when GPU acceleration is not available",
-      "manualDescription": "Configure ComfyUI manually for advanced setups or unsupported hardware"
+      "manualDescription": "Configure ComfyUI manually for advanced setups or unsupported hardware",
+      "appleMetal": "Apple Metal",
+      "nvidia": "NVIDIA",
+      "amd": "AMD",
+      "cpu": "CPU",
+      "manualInstall": "Manual Install"
     },
     "locationPicker": {
       "title": "Choose where to install ComfyUI",
@@ -1756,7 +1761,8 @@
     "Veo": "Veo",
     "Vidu": "Vidu",
     "WaveSpeed": "WaveSpeed",
-    "zimage": "zimage"
+    "zimage": "zimage",
+    "string": "string"
   },
   "dataTypes": {
     "*": "*",
