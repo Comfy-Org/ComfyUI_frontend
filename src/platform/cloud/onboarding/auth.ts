@@ -87,6 +87,22 @@ export async function getUserCloudStatus(): Promise<UserCloudStatus> {
   }
 }
 
+/**
+ * Returns whether the user has completed the onboarding survey.
+ *
+ * Resolution rules (prefer false negatives over false positives — i.e. rather
+ * miss a survey prompt than redirect a working customer to /cloud/survey):
+ *   - 200 with non-empty `value`           → true  (definitely completed)
+ *   - 200 with empty `value`               → false (definitely not completed)
+ *   - 404                                  → true  (key absent; could be a
+ *       genuinely new user OR a customer whose Settings JSON pre-dates the
+ *       survey. We can't distinguish on the wire and prefer the safer default.
+ *       New users still get the survey via the onboarding signup flow itself.)
+ *   - 401 / 403                            → throws (auth issue, not a survey
+ *       signal — propagate so the auth layer handles it)
+ *   - 5xx / network error                  → true  (backend hiccup — don't
+ *       bounce the user on a transient blip)
+ */
 export async function getSurveyCompletedStatus(): Promise<boolean> {
   try {
     const response = await api.fetchApi(`/settings/${ONBOARDING_SURVEY_KEY}`, {
@@ -95,24 +111,46 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
         'Content-Type': 'application/json'
       }
     })
-    if (!response.ok) {
-      // Not an error case - survey not completed is a valid state
-      Sentry.addBreadcrumb({
-        category: 'auth',
-        message: 'Survey status check returned non-ok response',
-        level: 'info',
-        data: {
-          status: response.status,
-          endpoint: `/settings/${ONBOARDING_SURVEY_KEY}`
-        }
-      })
-      return false
+
+    if (response.ok) {
+      const data = await response.json()
+      // 200: definitive signal. Empty value = never completed.
+      return !isEmpty(data.value)
     }
-    const data = await response.json()
-    // Check if data exists and is not empty
-    return !isEmpty(data.value)
+
+    if (response.status === 401 || response.status === 403) {
+      // Auth failure - propagate so the auth layer can handle. Returning
+      // false here would let an expired token masquerade as "no survey" and
+      // bounce the user to /cloud/survey on every transient 401.
+      throw new Error(
+        `Survey status auth error: ${response.status} ${response.statusText}`
+      )
+    }
+
+    // 404 / 5xx / other: ambiguous. Treat as completed to avoid false
+    // positives. The Sentry breadcrumb is so we can audit if this fires
+    // often enough to suggest a backend regression.
+    Sentry.addBreadcrumb({
+      category: 'auth',
+      message: 'Survey status check returned non-ok response',
+      level: 'info',
+      data: {
+        status: response.status,
+        endpoint: `/settings/${ONBOARDING_SURVEY_KEY}`,
+        treated_as: 'completed'
+      }
+    })
+    return true
   } catch (error) {
-    // Network error - still capture it as it's not thrown from above
+    // Re-throw auth errors so callers can branch on them; everything else is
+    // treated as "completed" (network failure, parse failure, etc).
+    if (
+      error instanceof Error &&
+      error.message.startsWith('Survey status auth error:')
+    ) {
+      throw error
+    }
+
     Sentry.captureException(error, {
       tags: {
         api_endpoint: '/settings/{key}',
@@ -120,11 +158,12 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
       },
       extra: {
         route_template: '/settings/{key}',
-        route_actual: `/settings/${ONBOARDING_SURVEY_KEY}`
+        route_actual: `/settings/${ONBOARDING_SURVEY_KEY}`,
+        treated_as: 'completed'
       },
       level: 'warning'
     })
-    return false
+    return true
   }
 }
 

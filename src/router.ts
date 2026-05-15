@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/vue'
 import { until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
@@ -17,6 +18,12 @@ import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+
+// Tab-scoped flag: once we've evaluated the onboarding-survey gate for a
+// browser-tab session, don't re-evaluate it on subsequent navigations.
+// sessionStorage survives `window.location.reload()` in the same tab but
+// is fresh for new tabs — exactly the semantics we want.
+const SURVEY_GATE_SESSION_KEY = 'comfy.survey_gate_evaluated_this_session'
 
 const cloudOnboardingRoutes = isCloud
   ? (await import('./platform/cloud/onboarding/onboardingCloudRoutes'))
@@ -207,9 +214,20 @@ if (isCloud) {
     }
 
     // User is logged in - check if they need onboarding (when enabled)
-    // For root path, check actual user status to handle waitlisted users
+    // For root path, check actual user status to handle waitlisted users.
+    //
+    // The survey gate is intentionally gated once per browser-tab session.
+    // sessionStorage persists across `window.location.reload()` in the same
+    // tab, so background reloads (token refresh races, GraphCanvas's 401
+    // recovery, the remote-config 10-minute poll, etc.) cannot re-bounce a
+    // working user mid-session. A fresh tab gets a fresh check, which
+    // matches the intent of showing the survey to first-time and existing-
+    // but-never-prompted users.
     if (!isDesktop && isLoggedIn && to.path === '/') {
       if (!flags.onboardingSurveyEnabled) {
+        return next()
+      }
+      if (sessionStorage.getItem(SURVEY_GATE_SESSION_KEY)) {
         return next()
       }
       // Import auth functions dynamically to avoid circular dependency
@@ -219,14 +237,37 @@ if (isCloud) {
         // Check user's actual status
         const surveyCompleted = await getSurveyCompletedStatus()
 
-        // Survey is required for all users (when feature flag enabled)
+        // Mark this session as gate-evaluated regardless of outcome.
+        // If we redirect to /cloud/survey, the user fills it out and the
+        // next /cloud-user-check call sees a completed survey on its own
+        // server round-trip; this flag only suppresses re-evaluation of
+        // the *same* request on subsequent navigations within this tab.
+        sessionStorage.setItem(SURVEY_GATE_SESSION_KEY, '1')
+
+        // Survey is required for all users (when feature flag enabled).
+        // getSurveyCompletedStatus returns true for ambiguous responses
+        // (404/5xx/network) so this branch only fires on a definitive
+        // "user has no survey saved" signal — see auth.ts for the policy.
         if (!surveyCompleted) {
+          Sentry.addBreadcrumb({
+            category: 'navigation',
+            message: 'survey gate → /cloud/survey',
+            level: 'info',
+            data: {
+              from_path: _from.fullPath,
+              from_name: String(_from.name ?? ''),
+              initial_load: _from.name === undefined
+            }
+          })
           return next({ name: 'cloud-survey' })
         }
       } catch (error) {
-        console.error('Failed to check user status:', error)
-        // On error, redirect to user-check as fallback
-        return next({ name: 'cloud-user-check' })
+        // Most likely an auth error from getSurveyCompletedStatus.
+        // Don't bounce to /cloud-user-check — that re-runs the same checks
+        // and can produce a redirect loop. Let the user proceed; the auth
+        // layer will handle re-authentication on the next API call.
+        sessionStorage.setItem(SURVEY_GATE_SESSION_KEY, '1')
+        console.error('Failed to check survey status:', error)
       }
     }
 
