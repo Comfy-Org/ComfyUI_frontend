@@ -225,7 +225,7 @@ describe('WidgetSelectDefault', () => {
         'scrollbar-thin',
         'scrollbar-thumb-(--color-alpha-smoke-500-50)',
         'scrollbar-track-transparent',
-        'gap-0.5'
+        'gap-1'
       )
       expect(screen.getByTestId('widget-select-default-viewport')).toHaveStyle({
         overflowY: 'scroll'

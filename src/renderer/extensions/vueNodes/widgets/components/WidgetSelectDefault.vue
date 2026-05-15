@@ -64,18 +64,20 @@
           data-capture-wheel="true"
           data-testid="widget-select-default-overlay"
           position="popper"
-          :side-offset="4"
+          :side-offset="1"
           align="start"
           :class="
             cn(
-              'z-3000 mt-1 overflow-hidden rounded-lg border border-solid border-border-default bg-base-background p-0 text-base-foreground shadow-md',
+              'z-3000 overflow-hidden rounded-lg border border-solid border-border-default bg-base-background p-0 text-base-foreground shadow-md',
               'min-w-(--reka-combobox-trigger-width)'
             )
           "
           @keydown.escape.stop="handleOpenChange(false)"
+          @focus-outside="handleFocusOutside"
         >
           <div
             v-if="isFilterable"
+            ref="searchInputContainerRef"
             class="m-1 flex items-center gap-2 rounded-md border border-solid border-border-default px-2 py-1.5 transition-colors focus-within:border-primary-background"
           >
             <i
@@ -94,8 +96,9 @@
           <div
             data-testid="widget-select-default-viewport"
             role="presentation"
-            class="scrollbar-gutter-stable scrollbar-thin scrollbar-thumb-(--color-alpha-smoke-500-50) scrollbar-track-transparent flex max-h-56 min-w-full flex-col gap-0.5 overflow-y-auto p-1 text-xs"
+            class="scrollbar-gutter-stable scrollbar-thin scrollbar-thumb-(--color-alpha-smoke-500-50) scrollbar-track-transparent flex max-h-56 min-w-full flex-col gap-1 overflow-y-auto p-1 text-xs"
             :style="viewportStyle"
+            @pointerdown.capture.self="handleViewportPointerDown"
           >
             <ComboboxItem
               v-for="option in filteredOptions"
@@ -104,7 +107,7 @@
               :text-value="option.label"
               :class="
                 cn(
-                  'relative flex min-h-7 cursor-pointer items-center justify-between gap-3 rounded-sm px-2 py-1.5 outline-none select-none',
+                  'relative flex min-h-7 cursor-pointer items-center justify-between gap-3 rounded-sm p-2 outline-none select-none',
                   'hover:bg-secondary-background data-highlighted:bg-secondary-background',
                   'data-[state=checked]:bg-primary-background/20 data-[state=checked]:hover:bg-primary-background/20 data-[state=checked]:data-highlighted:bg-primary-background/30'
                 )
@@ -151,7 +154,8 @@ import {
   ComboboxRoot,
   ComboboxTrigger
 } from 'reka-ui'
-import { computed, ref, watch } from 'vue'
+import type { FocusOutsideEvent } from 'reka-ui'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
@@ -201,6 +205,9 @@ const modelValue = defineModel<string | undefined>({
 const searchQuery = ref('')
 const refreshTrigger = ref(0)
 const isOpen = ref(false)
+const searchInputContainerRef = ref<HTMLElement>()
+const shouldRestoreFocusOnFocusOutside = ref(false)
+let clearViewportPointerDownTimer: number | undefined
 
 const transformCompatProps = useTransformCompatOverlayProps()
 
@@ -292,6 +299,40 @@ function selectOption(value: string | undefined) {
   searchQuery.value = ''
   isOpen.value = false
 }
+
+function focusSearchInput() {
+  searchInputContainerRef.value
+    ?.querySelector<HTMLInputElement>('input')
+    ?.focus({ preventScroll: true })
+}
+
+function clearViewportPointerDown() {
+  shouldRestoreFocusOnFocusOutside.value = false
+  window.clearTimeout(clearViewportPointerDownTimer)
+  clearViewportPointerDownTimer = undefined
+  window.removeEventListener('pointerup', clearViewportPointerDown)
+  window.removeEventListener('pointercancel', clearViewportPointerDown)
+}
+
+function handleViewportPointerDown() {
+  clearViewportPointerDown()
+  shouldRestoreFocusOnFocusOutside.value = true
+  clearViewportPointerDownTimer = window.setTimeout(clearViewportPointerDown, 0)
+  window.addEventListener('pointerup', clearViewportPointerDown, { once: true })
+  window.addEventListener('pointercancel', clearViewportPointerDown, {
+    once: true
+  })
+}
+
+function handleFocusOutside(event: FocusOutsideEvent) {
+  if (!shouldRestoreFocusOnFocusOutside.value) return
+
+  event.preventDefault()
+  focusSearchInput()
+  clearViewportPointerDown()
+}
+
+onBeforeUnmount(clearViewportPointerDown)
 
 function handleOpenChange(open: boolean) {
   isOpen.value = open

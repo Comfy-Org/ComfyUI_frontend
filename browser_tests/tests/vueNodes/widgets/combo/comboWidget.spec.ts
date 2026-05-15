@@ -2,9 +2,11 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { Locator } from '@playwright/test'
 
 test.describe('Vue Combo Widget', { tag: '@vue-nodes' }, () => {
-  test('opens a dropdown that lists sampler options', async ({ comfyPage }) => {
+  async function openSamplerDropdown(comfyPage: ComfyPage) {
     await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
 
     const samplerCombo = comfyPage.vueNodes
@@ -12,6 +14,57 @@ test.describe('Vue Combo Widget', { tag: '@vue-nodes' }, () => {
       .getByRole('combobox', { name: 'sampler_name', exact: true })
 
     await samplerCombo.click()
+
+    const viewport = comfyPage.page.getByTestId(
+      'widget-select-default-viewport'
+    )
+    await expect(viewport).toBeVisible()
+
+    return viewport
+  }
+
+  async function pressDropdownScrollbar(
+    comfyPage: ComfyPage,
+    viewport: Locator
+  ) {
+    const box = await viewport.boundingBox()
+    if (!box) {
+      throw new Error('Widget select viewport is not visible')
+    }
+
+    await comfyPage.page.mouse.move(box.x + box.width - 2, box.y + 20)
+    await comfyPage.page.mouse.down()
+    await expect(viewport).toBeVisible()
+    await comfyPage.page.mouse.up()
+  }
+
+  async function getCanvasViewport(comfyPage: ComfyPage) {
+    return comfyPage.page.evaluate(() => ({
+      scale: window.app!.canvas.ds.scale,
+      offset: [...window.app!.canvas.ds.offset]
+    }))
+  }
+
+  async function expectWheelScrollsDropdownWithoutMovingCanvas(
+    comfyPage: ComfyPage,
+    viewport: Locator
+  ) {
+    const canvasViewportBefore = await getCanvasViewport(comfyPage)
+    const scrollBefore = await viewport.evaluate((el) => el.scrollTop)
+
+    await viewport.hover()
+    await comfyPage.page.mouse.wheel(0, 500)
+
+    await expect
+      .poll(() => viewport.evaluate((el) => el.scrollTop))
+      .toBeGreaterThan(scrollBefore)
+
+    const canvasViewportAfter = await getCanvasViewport(comfyPage)
+    expect(canvasViewportAfter).toEqual(canvasViewportBefore)
+  }
+
+  test('opens a dropdown that lists sampler options', async ({ comfyPage }) => {
+    await openSamplerDropdown(comfyPage)
 
     // The option list should include at least a few known samplers
     await expect(
@@ -43,34 +96,87 @@ test.describe('Vue Combo Widget', { tag: '@vue-nodes' }, () => {
   test('mouse wheel scrolls the dropdown list instead of zooming the canvas', async ({
     comfyPage
   }) => {
-    await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
+    const viewport = await openSamplerDropdown(comfyPage)
 
-    const samplerCombo = comfyPage.vueNodes
-      .getNodeByTitle('KSampler')
+    await expectWheelScrollsDropdownWithoutMovingCanvas(comfyPage, viewport)
+  })
+
+  test('keeps the dropdown open when the scrollbar is pressed', async ({
+    comfyPage
+  }) => {
+    const viewport = await openSamplerDropdown(comfyPage)
+
+    await pressDropdownScrollbar(comfyPage, viewport)
+    await expect(viewport).toBeVisible()
+  })
+
+  test('closes the dropdown when clicking outside', async ({ comfyPage }) => {
+    const viewport = await openSamplerDropdown(comfyPage)
+
+    await comfyPage.page.mouse.click(10, 10)
+
+    await expect(viewport).toBeHidden()
+  })
+
+  test('keeps wheel scrolling captured after the scrollbar is pressed', async ({
+    comfyPage
+  }) => {
+    const viewport = await openSamplerDropdown(comfyPage)
+
+    await pressDropdownScrollbar(comfyPage, viewport)
+
+    await expectWheelScrollsDropdownWithoutMovingCanvas(comfyPage, viewport)
+  })
+
+  test('preserves dropdown scroll capture when switching between node widgets', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('groups/mixed_graph_items')
+    await comfyPage.vueNodes.waitForNodes(2)
+
+    const nodes = comfyPage.vueNodes.getNodeByTitle('KSampler')
+    const firstSamplerCombo = nodes
+      .nth(0)
+      .getByRole('combobox', { name: 'sampler_name', exact: true })
+    const secondSamplerCombo = nodes
+      .nth(2)
       .getByRole('combobox', { name: 'sampler_name', exact: true })
 
-    await samplerCombo.click()
+    await firstSamplerCombo.click()
 
     const viewport = comfyPage.page.getByTestId(
       'widget-select-default-viewport'
     )
     await expect(viewport).toBeVisible()
+    await expectWheelScrollsDropdownWithoutMovingCanvas(comfyPage, viewport)
 
-    const scaleBefore = await comfyPage.page.evaluate(
-      () => window.app!.canvas.ds.scale
+    await pressDropdownScrollbar(comfyPage, viewport)
+    await expect(viewport).toBeVisible()
+
+    await expectWheelScrollsDropdownWithoutMovingCanvas(comfyPage, viewport)
+
+    await secondSamplerCombo.click()
+    await expect(
+      comfyPage.page.getByTestId('widget-select-default-viewport')
+    ).toHaveCount(1)
+
+    const secondViewport = comfyPage.page.getByTestId(
+      'widget-select-default-viewport'
+    )
+    await expect(secondViewport).toBeVisible()
+
+    await expectWheelScrollsDropdownWithoutMovingCanvas(
+      comfyPage,
+      secondViewport
     )
 
-    await viewport.hover()
-    await comfyPage.page.mouse.wheel(0, 500)
+    await pressDropdownScrollbar(comfyPage, secondViewport)
+    await expect(secondViewport).toBeVisible()
 
-    await expect
-      .poll(() => viewport.evaluate((el) => el.scrollTop))
-      .toBeGreaterThan(0)
-
-    const scaleAfter = await comfyPage.page.evaluate(
-      () => window.app!.canvas.ds.scale
+    await expectWheelScrollsDropdownWithoutMovingCanvas(
+      comfyPage,
+      secondViewport
     )
-    expect(scaleAfter).toBe(scaleBefore)
   })
 
   test('persists the selected combo value across a serialize and reload round-trip', async ({
