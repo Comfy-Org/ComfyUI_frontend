@@ -40,6 +40,39 @@ test.describe('Vue Combo Widget', { tag: '@vue-nodes' }, () => {
     await expect(samplerCombo).toContainText('dpmpp_2m')
   })
 
+  test('mouse wheel scrolls the dropdown list instead of zooming the canvas', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
+
+    const samplerCombo = comfyPage.vueNodes
+      .getNodeByTitle('KSampler')
+      .getByRole('combobox', { name: 'sampler_name', exact: true })
+
+    await samplerCombo.click()
+
+    const viewport = comfyPage.page.getByTestId(
+      'widget-select-default-viewport'
+    )
+    await expect(viewport).toBeVisible()
+
+    const scaleBefore = await comfyPage.page.evaluate(
+      () => window.app!.canvas.ds.scale
+    )
+
+    await viewport.hover()
+    await comfyPage.page.mouse.wheel(0, 500)
+
+    await expect
+      .poll(() => viewport.evaluate((el) => el.scrollTop))
+      .toBeGreaterThan(0)
+
+    const scaleAfter = await comfyPage.page.evaluate(
+      () => window.app!.canvas.ds.scale
+    )
+    expect(scaleAfter).toBe(scaleBefore)
+  })
+
   test('persists the selected combo value across a serialize and reload round-trip', async ({
     comfyPage
   }) => {

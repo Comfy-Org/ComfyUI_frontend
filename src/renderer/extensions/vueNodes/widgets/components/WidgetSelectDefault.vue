@@ -1,38 +1,139 @@
 <template>
   <WidgetLayoutField :widget>
-    <SelectPlus
-      v-model="modelValue"
-      :invalid
-      :filter="selectOptions.length > 4"
-      auto-filter-focus
-      :options="selectOptions"
-      v-bind="combinedProps"
-      :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
-      :aria-label="widget.name"
-      size="small"
-      :pt="{
-        option: 'text-xs',
-        dropdown: 'w-8',
-        label: cn('min-w-[4ch] truncate', $slots.default && 'mr-5'),
-        overlay: 'w-fit min-w-full'
-      }"
-      data-capture-wheel="true"
-      @show="refreshOptions"
-      @filter="refreshOptions"
+    <ComboboxRoot
+      v-model:open="isOpen"
+      :model-value="comboboxValue"
+      :disabled
+      ignore-filter
+      selection-behavior="replace"
+      :reset-search-term-on-select="false"
+      @update:model-value="selectOption"
+      @update:open="handleOpenChange"
     >
-      <template #dropdownicon>
-        <i
+      <ComboboxAnchor as-child>
+        <ComboboxTrigger as-child>
+          <button
+            type="button"
+            role="combobox"
+            :aria-label="widget.name"
+            :aria-invalid="isInvalid || undefined"
+            :aria-expanded="isOpen"
+            :disabled
+            tabindex="0"
+            data-capture-wheel="true"
+            data-testid="widget-select-default-trigger"
+            :class="
+              cn(
+                WidgetInputBaseClass,
+                'flex h-7 w-full min-w-0 cursor-pointer items-center overflow-hidden text-xs outline-none hover:bg-component-node-widget-background-hovered disabled:cursor-default disabled:opacity-50 disabled:hover:bg-component-node-widget-background',
+                isInvalid && 'ring-1 ring-destructive-background'
+              )
+            "
+          >
+            <span
+              :class="
+                cn(
+                  'min-w-[4ch] flex-1 truncate px-3 text-left',
+                  $slots.default && 'mr-5'
+                )
+              "
+            >
+              {{ selectedLabel || placeholder || '\u00a0' }}
+            </span>
+            <span
+              class="flex h-full w-8 shrink-0 items-center justify-center rounded-r-lg"
+            >
+              <i
+                :class="
+                  cn(
+                    'icon-[lucide--chevron-down] size-4',
+                    disabled
+                      ? 'bg-component-node-foreground-secondary'
+                      : 'bg-muted-foreground'
+                  )
+                "
+                aria-hidden="true"
+              />
+            </span>
+          </button>
+        </ComboboxTrigger>
+      </ComboboxAnchor>
+
+      <ComboboxPortal :to="portalTarget" :disabled="isPortalDisabled">
+        <ComboboxContent
+          data-capture-wheel="true"
+          data-testid="widget-select-default-overlay"
+          position="popper"
+          :side-offset="4"
+          align="start"
           :class="
             cn(
-              'icon-[lucide--chevron-down] size-4',
-              props.widget.options?.disabled
-                ? 'bg-component-node-foreground-secondary'
-                : 'bg-muted-foreground'
+              'z-3000 mt-1 overflow-hidden rounded-lg border border-solid border-border-default bg-base-background p-0 text-base-foreground shadow-md',
+              'min-w-(--reka-combobox-trigger-width)'
             )
           "
-        />
-      </template>
-    </SelectPlus>
+          @keydown.escape.stop="handleOpenChange(false)"
+        >
+          <div
+            v-if="isFilterable"
+            class="m-1 flex items-center gap-2 rounded-md border border-solid border-border-default px-2 py-1.5 transition-colors focus-within:border-primary-background"
+          >
+            <i
+              class="icon-[lucide--search] shrink-0 text-sm text-muted-foreground"
+              aria-hidden="true"
+            />
+            <ComboboxInput
+              v-model="searchQuery"
+              :placeholder="filterPlaceholder"
+              auto-focus
+              :aria-label="$t('g.search')"
+              class="w-full border-none bg-transparent text-xs outline-none"
+            />
+          </div>
+
+          <div
+            data-testid="widget-select-default-viewport"
+            role="presentation"
+            class="scrollbar-gutter-stable scrollbar-thin scrollbar-thumb-(--color-alpha-smoke-500-50) scrollbar-track-transparent flex max-h-56 min-w-full flex-col gap-0.5 overflow-y-auto p-1 text-xs"
+            :style="viewportStyle"
+          >
+            <ComboboxItem
+              v-for="option in filteredOptions"
+              :key="option.key"
+              :value="option.value"
+              :text-value="option.label"
+              :class="
+                cn(
+                  'relative flex min-h-7 cursor-pointer items-center justify-between gap-3 rounded-sm px-2 py-1.5 outline-none select-none',
+                  'hover:bg-secondary-background data-highlighted:bg-secondary-background',
+                  'data-[state=checked]:bg-primary-background/20 data-[state=checked]:hover:bg-primary-background/20 data-[state=checked]:data-highlighted:bg-primary-background/30'
+                )
+              "
+            >
+              <span class="truncate">
+                {{ option.label }}
+              </span>
+              <ComboboxItemIndicator
+                class="flex shrink-0 items-center justify-center"
+              >
+                <i
+                  class="icon-[lucide--check] size-3.5 text-base-foreground"
+                  aria-hidden="true"
+                />
+              </ComboboxItemIndicator>
+            </ComboboxItem>
+
+            <div
+              v-if="filteredOptions.length === 0"
+              class="p-2 text-xs text-muted-foreground"
+            >
+              {{ $t('g.noResultsFound') }}
+            </div>
+          </div>
+        </ComboboxContent>
+      </ComboboxPortal>
+    </ComboboxRoot>
+
     <div class="absolute top-5 right-8 flex h-4 w-7 -translate-y-4/5">
       <slot />
     </div>
@@ -40,16 +141,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import {
+  ComboboxAnchor,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxItemIndicator,
+  ComboboxPortal,
+  ComboboxRoot,
+  ComboboxTrigger
+} from 'reka-ui'
+import { computed, ref, watch } from 'vue'
+import type { CSSProperties } from 'vue'
 
-import SelectPlus from '@/components/primevueOverride/SelectPlus.vue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'
-import {
-  PANEL_EXCLUDED_PROPS,
-  filterWidgetProps
-} from '@/utils/widgetPropFilter'
 
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
@@ -58,40 +165,145 @@ interface Props {
   widget: SimplifiedWidget<string | undefined>
 }
 
+interface SelectOption {
+  key: string
+  label: string
+  value: string
+}
+
+type SelectWidgetOptions = NonNullable<Props['widget']['options']> & {
+  filterPlaceholder?: string
+}
+
 const props = defineProps<Props>()
 
+const MAX_VISIBLE_OPTIONS = 7
+
 function resolveValues(values: unknown): string[] {
-  if (typeof values === 'function') return values()
-  if (Array.isArray(values)) return values
-  return []
+  const resolved = typeof values === 'function' ? values() : values
+  if (!Array.isArray(resolved)) return []
+  return resolved
+    .filter((value) => value !== null && value !== undefined)
+    .map((value) => String(value))
 }
 
 const modelValue = defineModel<string | undefined>({
   default(props: Props) {
     const values = props.widget.options?.values
     const resolved = typeof values === 'function' ? values() : values
-    return Array.isArray(resolved) ? (resolved[0] ?? '') : ''
+    const firstValue = Array.isArray(resolved)
+      ? resolved.find((value) => value !== null && value !== undefined)
+      : undefined
+    return firstValue === undefined ? '' : String(firstValue)
   }
 })
 
-// Transform compatibility props for overlay positioning
+const searchQuery = ref('')
+const refreshTrigger = ref(0)
+const isOpen = ref(false)
+
 const transformCompatProps = useTransformCompatOverlayProps()
 
-const refreshTrigger = ref(0)
+const widgetOptions = computed(
+  () => props.widget.options as SelectWidgetOptions | undefined
+)
+
+const portalTarget = computed(() => {
+  const appendTo = transformCompatProps.value.appendTo
+  return appendTo === 'self' ? undefined : appendTo
+})
+
+const isPortalDisabled = computed(() => !portalTarget.value)
+
+const disabled = computed(() => Boolean(widgetOptions.value?.disabled))
+const placeholder = computed(() => widgetOptions.value?.placeholder ?? '')
+const filterPlaceholder = computed(
+  () => widgetOptions.value?.filterPlaceholder ?? placeholder.value
+)
+
 function refreshOptions() {
   refreshTrigger.value++
 }
-const selectOptions = computed(() => {
+
+function getOptionLabel(value: string) {
+  const labeler = widgetOptions.value?.getOptionLabel
+  if (!labeler) return value
+
+  try {
+    return labeler(value) || value
+  } catch (error) {
+    console.error('[WidgetSelectDefault] Failed to map option label', error)
+    return value
+  }
+}
+
+const normalizedOptions = computed<SelectOption[]>(() => {
   void refreshTrigger.value
-  return resolveValues(props.widget.options?.values)
+
+  return resolveValues(widgetOptions.value?.values).map((value, index) => ({
+    key: `${value}-${index}`,
+    label: getOptionLabel(value),
+    value
+  }))
 })
-const invalid = computed(
-  () => !!modelValue.value && !selectOptions.value.includes(modelValue.value)
+
+const isFilterable = computed(() => normalizedOptions.value.length > 4)
+
+const filteredOptions = computed(() => {
+  if (!isFilterable.value) return normalizedOptions.value
+
+  const query = searchQuery.value.trim().toLocaleLowerCase()
+  if (!query) return normalizedOptions.value
+
+  return normalizedOptions.value.filter(
+    (option) =>
+      option.value.toLocaleLowerCase().includes(query) ||
+      option.label.toLocaleLowerCase().includes(query)
+  )
+})
+
+const viewportStyle = computed<CSSProperties>(() => ({
+  overflowY:
+    filteredOptions.value.length > MAX_VISIBLE_OPTIONS ? 'scroll' : 'auto',
+  scrollbarGutter: 'stable'
+}))
+
+const selectedOption = computed(() =>
+  normalizedOptions.value.find((option) => option.value === modelValue.value)
 )
 
-const combinedProps = computed(() => ({
-  ...filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS),
-  ...transformCompatProps.value,
-  ...(invalid.value ? { placeholder: `${modelValue.value}` } : {})
-}))
+const comboboxValue = computed(() => modelValue.value ?? '')
+
+const isInvalid = computed(
+  () =>
+    modelValue.value !== undefined &&
+    modelValue.value !== '' &&
+    !selectedOption.value
+)
+
+const selectedLabel = computed(() => {
+  if (selectedOption.value) return selectedOption.value.label
+  if (isInvalid.value) return String(modelValue.value)
+  return ''
+})
+
+function selectOption(value: string | undefined) {
+  modelValue.value = value
+  searchQuery.value = ''
+  isOpen.value = false
+}
+
+function handleOpenChange(open: boolean) {
+  isOpen.value = open
+
+  if (open) {
+    refreshOptions()
+  } else {
+    searchQuery.value = ''
+  }
+}
+
+watch(searchQuery, () => {
+  refreshOptions()
+})
 </script>

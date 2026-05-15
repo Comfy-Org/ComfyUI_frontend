@@ -1,7 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen, fireEvent } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
-import type { SelectProps } from 'primevue/select'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -57,7 +55,7 @@ const WidgetSelectDefaultStub = defineComponent({
 })
 
 const globalConfig = {
-  plugins: [PrimeVue, createTestingPinia(), i18n],
+  plugins: [createTestingPinia(), i18n],
   stubs: {
     WidgetSelectDropdown: WidgetSelectDropdownStub,
     WidgetSelectDefault: WidgetSelectDefaultStub,
@@ -74,11 +72,14 @@ describe('WidgetSelect Value Binding', () => {
     vi.clearAllMocks()
   })
 
+  type SelectWidgetOptions = {
+    values?: string[]
+    return_index?: boolean
+  }
+
   const createSelectWidget = (
     value: string = 'option1',
-    options: Partial<
-      SelectProps & { values?: string[]; return_index?: boolean }
-    > = {},
+    options: SelectWidgetOptions = {},
     callback?: (value: string | undefined) => void,
     spec?: ComboInputSpec
   ) =>
