@@ -53,6 +53,7 @@ const AssetsListItemStub = defineComponent({
     class="assets-list-item-stub"
     :data-preview-url="previewUrl"
     :data-is-video-preview="isVideoPreview"
+    :data-secondary-text="secondaryText"
     data-testid="assets-list-item"
   ><button data-testid="preview-click-trigger" @click="$emit('preview-click')" /><slot /></div>`
 })
@@ -170,5 +171,51 @@ describe('AssetsSidebarListView', () => {
     await fireEvent.dblClick(stub)
 
     expect(onPreviewAsset).toHaveBeenCalledWith(imageAsset)
+  })
+
+  describe('secondary text', () => {
+    function getSecondaryText(container: Element): string {
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- reading rendered prop via stub attribute
+      const stub = container.querySelector('[data-testid="assets-list-item"]')
+      return stub?.getAttribute('data-secondary-text') ?? ''
+    }
+
+    it('renders just the extension when no size or duration is available', () => {
+      const asset = buildAsset('extension-only', 'photo.png')
+      const { container } = renderListView([buildOutputItem(asset)])
+      expect(getSecondaryText(container)).toBe('PNG')
+    })
+
+    it('prepends the extension to the formatted size when no duration is available', () => {
+      const asset = {
+        ...buildAsset('with-size', 'note.txt'),
+        size: 2048
+      } satisfies AssetItem
+      const { container } = renderListView([buildOutputItem(asset)])
+      expect(getSecondaryText(container)).toBe('TXT 2 KB')
+    })
+
+    it('prepends the extension to the execution time when present in metadata', () => {
+      const asset = {
+        ...buildAsset('with-exec-time', 'clip.mp4'),
+        user_metadata: {
+          jobId: 'job-1',
+          nodeId: '7',
+          subfolder: '',
+          executionTimeInSeconds: 1.234
+        }
+      } satisfies AssetItem
+      const { container } = renderListView([buildOutputItem(asset)])
+      expect(getSecondaryText(container)).toBe('MP4 1.23s')
+    })
+
+    it('prepends the extension to the duration when no execution time is present', () => {
+      const asset = {
+        ...buildAsset('with-duration', 'song.mp3'),
+        user_metadata: { duration: 65000 }
+      } satisfies AssetItem
+      const { container } = renderListView([buildOutputItem(asset)])
+      expect(getSecondaryText(container)).toBe('MP3 1m 5s')
+    })
   })
 })
