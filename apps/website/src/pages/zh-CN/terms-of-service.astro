@@ -1,0 +1,18 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import ContentSection from '../../components/common/ContentSection.vue'
+import HeroSection from '../../components/legal/HeroSection.vue'
+import { t } from '../../i18n/translations'
+---
+
+<BaseLayout
+  title="服务条款 — Comfy"
+  description="ComfyUI 及相关 Comfy 服务的服务条款。"
+  noindex
+>
+  <HeroSection title="服务条款" />
+  <p class="text-primary-warm-gray mt-2 text-center text-sm">
+    {t('tos.effectiveDateLabel', 'en')}: {t('tos.effectiveDate', 'en')}
+  </p>
+  <ContentSection prefix="tos" locale="en" client:load />
+</BaseLayout>

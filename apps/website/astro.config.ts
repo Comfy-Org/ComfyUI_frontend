@@ -28,11 +28,7 @@ export default defineConfig({
     '/cloud/enterprise-case-studies/comfyui-at-architectural-scale-how-moment-factory-reimagined-3d-projection-mapping':
       '/customers/moment-factory/',
     '/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui':
-      '/customers/series-entertainment/',
-    // The Chinese ToS is unavailable while the 2026-05-13 legal-approved
-    // copy is in English only; route Chinese visitors to the English
-    // page until an official zh-CN translation lands.
-    '/zh-CN/terms-of-service': '/terms-of-service'
+      '/customers/series-entertainment/'
   },
   build: {
     assets: '_website'
