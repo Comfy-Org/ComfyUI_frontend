@@ -146,6 +146,7 @@ export const TestIds = {
     increment: 'increment',
     domWidgetTextarea: 'dom-widget-textarea',
     subgraphEnterButton: 'subgraph-enter-button',
+    selectDefaultSearchInput: 'widget-select-default-search-input',
     selectDefaultViewport: 'widget-select-default-viewport'
   },
   linear: {
