@@ -143,6 +143,12 @@ function getAssetPreviewUrl(asset: AssetItem): string {
   return ''
 }
 
+/**
+ * Builds the description line shown beneath an asset's name. Composed as
+ * `<EXT> <timing|size>` with a single space separator, preferring
+ * execution time → duration → file size for the trailing detail. Either
+ * half may be omitted (returns the other, or an empty string).
+ */
 function getAssetSecondaryText(asset: AssetItem): string {
   const extensionLabel = getAssetExtensionLabel(asset)
   const parts: string[] = []

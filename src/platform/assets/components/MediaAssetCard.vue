@@ -282,7 +282,12 @@ const formattedDuration = computed(() => {
   return formatDuration(Number(duration))
 })
 
-// Get metadata info based on file kind
+/**
+ * Composes the card's description line as `<EXT> <detail>`, where the
+ * trailing detail is the image's pixel dimensions (when loaded locally)
+ * or the file size for video/audio/3D assets. Either half may be
+ * omitted; the result is an empty string when nothing is available.
+ */
 const metaInfo = computed(() => {
   if (!asset) return ''
   const extensionLabel = getAssetExtensionLabel(asset)
