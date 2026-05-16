@@ -1380,9 +1380,6 @@ export class LGraphNode
 
   changeMode(modeTo: number): boolean {
     switch (modeTo) {
-      case LGraphEventMode.ON_EVENT:
-        break
-
       case LGraphEventMode.ON_TRIGGER:
         this.addOnTriggerInput()
         this.addOnExecutedOutput()
@@ -1399,7 +1396,8 @@ export class LGraphNode
         break
 
       default:
-        return false
+        // Numeric default-accept: any caller-supplied numeric mode (including
+        // the deprecated slot 1 / ON_EVENT) falls through and is assigned.
         break
     }
     this.mode = modeTo

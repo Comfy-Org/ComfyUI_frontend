@@ -122,7 +122,9 @@ export class LiteGraphGlobal {
   /** use with node_box_coloured_by_mode */
   NODE_MODES_COLORS = ['#666', '#422', '#333', '#224', '#626']
   ALWAYS = LGraphEventMode.ALWAYS
-  ON_EVENT = LGraphEventMode.ON_EVENT
+  // ON_EVENT is registered as a deprecation getter in the constructor — see
+  // Object.defineProperty call below. The numeric slot (1) is preserved for
+  // v2 ABI; the symbol will be removed in release N+1.
   NEVER = LGraphEventMode.NEVER
   ON_TRIGGER = LGraphEventMode.ON_TRIGGER
 
@@ -372,6 +374,15 @@ export class LiteGraphGlobal {
 
   constructor() {
     Object.defineProperty(this, 'Classes', { writable: false })
+    Object.defineProperty(this, 'ON_EVENT', {
+      get() {
+        console.warn(
+          'LiteGraph.ON_EVENT is deprecated; numeric slot 1 is preserved for v2 ABI but the symbol will be removed in release N+1. ON_EVENT is a no-op mode — use NEVER to mute a node.'
+        )
+        return 1
+      },
+      configurable: true
+    })
   }
 
   Classes = {
