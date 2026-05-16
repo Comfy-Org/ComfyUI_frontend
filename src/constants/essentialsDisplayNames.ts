@@ -112,6 +112,7 @@ export function resolveBlueprintIcon(nodeName: string): string | undefined {
 /**
  * Extracts the provider/model suffix from a blueprint name for disambiguation.
  * E.g. `SubgraphBlueprint.text_to_image_flux_1` → `"Flux 1"`
+ * @knipIgnoreUsedByStackedPR
  */
 export function resolveBlueprintSuffix(nodeName: string): string | undefined {
   if (!nodeName.startsWith(BLUEPRINT_PREFIX)) return undefined

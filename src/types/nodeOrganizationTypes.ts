@@ -47,14 +47,16 @@ export interface NodeOrganizationOptions {
 
 export type NodeCategoryId =
   | 'blueprints'
-  | 'partnerNodes'
   | 'comfyNodes'
+  | 'essentialNodes'
+  | 'partnerNodes'
   | 'extensions'
 
 export const NODE_CATEGORY_LABELS: Record<NodeCategoryId, string> = {
   blueprints: 'sideToolbar.nodeLibraryTab.sections.subgraphBlueprints',
-  partnerNodes: 'sideToolbar.nodeLibraryTab.sections.partnerNodes',
   comfyNodes: 'sideToolbar.nodeLibraryTab.sections.comfyNodes',
+  essentialNodes: 'sideToolbar.nodeLibraryTab.sections.essentialNodes',
+  partnerNodes: 'sideToolbar.nodeLibraryTab.sections.partnerNodes',
   extensions: 'sideToolbar.nodeLibraryTab.sections.extensions'
 }
 

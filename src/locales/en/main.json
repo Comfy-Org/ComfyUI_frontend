@@ -877,14 +877,15 @@
     "newBlankWorkflow": "Create a new blank workflow",
     "nodeLibraryTab": {
       "essentials": "Essentials",
-      "allNodes": "All",
+      "allNodes": "All nodes",
       "blueprints": "Blueprints",
       "custom": "Custom",
       "filter": "Filter",
       "filterOptions": {
         "blueprints": "Blueprints",
-        "partnerNodes": "Partner Nodes",
         "comfyNodes": "Comfy Nodes",
+        "essentialNodes": "Essential Nodes",
+        "partnerNodes": "Partner Nodes",
         "extensions": "Extensions"
       },
       "groupBy": "Group By",
@@ -912,8 +913,9 @@
         "subgraphBlueprints": "Subgraph Blueprints",
         "myBlueprints": "My Blueprints",
         "comfyBlueprints": "Comfy Blueprints",
-        "partnerNodes": "Partner Nodes",
         "comfyNodes": "Comfy Nodes",
+        "essentialNodes": "Essential Nodes",
+        "partnerNodes": "Partner Nodes",
         "extensions": "Extensions"
       },
       "noBookmarkedNodes": "No bookmarks yet"
@@ -3751,7 +3753,23 @@
     "imageToVideo": "Image to video",
     "poseToVideo": "Pose to video",
     "cannyToVideo": "Canny to video",
-    "depthToVideo": "Depth to video"
+    "depthToVideo": "Depth to video",
+    "jumpTo": "Jump to",
+    "devPicker": {
+      "subgroupGap": "Subgroup gap",
+      "sectionColor": "Section color",
+      "subsectionColor": "Subsection color",
+      "sectionSize": "Section size",
+      "subsectionSize": "Subsection size",
+      "tileColumns": "Tile columns",
+      "jumpToMenu": "Jump to menu",
+      "collapsible": "Collapsible",
+      "on": "On",
+      "off": "Off"
+    }
+  },
+  "homePlaceholder": {
+    "teamComfy": "Team Comfy"
   },
   "builderToolbar": {
     "label": "App Builder",

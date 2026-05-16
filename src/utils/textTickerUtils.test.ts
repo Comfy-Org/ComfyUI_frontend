@@ -49,10 +49,12 @@ describe('splitTextAtWordBoundary', () => {
     ])
   })
 
-  it('handles ratio near zero', () => {
+  it('falls back to first space when estimate is before any whitespace', () => {
+    // ratio 0.1 → estimate at char 2; no space at/before index 2.
+    // Falls back to text.indexOf(' ') = 4 → split after "Load".
     expect(splitTextAtWordBoundary('Load Checkpoint Loader', 0.1)).toEqual([
-      'Load Checkpoint Loader',
-      ''
+      'Load',
+      'Checkpoint Loader'
     ])
   })
 })

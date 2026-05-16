@@ -54,6 +54,10 @@ const config: KnipConfig = {
     '.github/workflows/ci-oss-assets-validation.yaml',
     // Pending integration in stacked PR
     'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
+    // Reference-only draft PR — kept for re-enabling
+    'src/components/sidebar/tabs/nodeLibrary/EssentialsGapPicker.vue',
+    'src/components/sidebar/tabs/nodeLibrary/BlueprintsPanel.vue',
+    'src/views/HomeView.vue',
     // Marketing media tooling — adopted by pages in a follow-up PR
     'apps/website/src/components/common/SiteVideo.vue',
     'apps/website/src/utils/marketingImage.ts',

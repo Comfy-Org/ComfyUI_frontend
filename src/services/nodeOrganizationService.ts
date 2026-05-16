@@ -176,6 +176,10 @@ class NodeOrganizationService {
   }
 
   private organizeEssentials(nodes: ComfyNodeDefImpl[]): NodeSection[] {
+    return [{ tree: this.buildEssentialsTree(nodes) }]
+  }
+
+  private buildEssentialsTree(nodes: ComfyNodeDefImpl[]): TreeNode {
     const categoryByNode = new Map<ComfyNodeDefImpl, EssentialsCategory>()
     const essentialNodes = nodes.filter((node) => {
       const category = resolveEssentialsCategory(node)
@@ -188,7 +192,7 @@ class NodeOrganizationService {
       pathExtractor: (node) => [categoryByNode.get(node)!, node.name]
     })
     this.sortEssentialsTree(tree)
-    return [{ tree }]
+    return tree
   }
 
   private sortEssentialsTree(tree: TreeNode): void {
@@ -240,6 +244,7 @@ class NodeOrganizationService {
       comfyBlueprints,
       partnerNodes,
       comfyNodes,
+      essentialNodes,
       extensions
     } = this.classifyNodes(nodes)
 
@@ -254,6 +259,20 @@ class NodeOrganizationService {
     if (blueprintTree.children?.length) {
       sections.push({ category: 'blueprints', tree: blueprintTree })
     }
+    if (essentialNodes.length > 0) {
+      const essentialsTree = this.buildEssentialsTree(essentialNodes)
+      if (essentialsTree.children?.length) {
+        sections.push({ category: 'essentialNodes', tree: essentialsTree })
+      }
+    }
+    if (comfyNodes.length > 0) {
+      sections.push({
+        category: 'comfyNodes',
+        tree: buildNodeDefTree(comfyNodes, {
+          pathExtractor: categoryPathExtractor
+        })
+      })
+    }
     if (partnerNodes.length > 0) {
       sections.push({
         category: 'partnerNodes',
@@ -262,14 +281,6 @@ class NodeOrganizationService {
             pathExtractor: categoryPathExtractor
           })
         )
-      })
-    }
-    if (comfyNodes.length > 0) {
-      sections.push({
-        category: 'comfyNodes',
-        tree: buildNodeDefTree(comfyNodes, {
-          pathExtractor: categoryPathExtractor
-        })
       })
     }
     if (extensions.length > 0) {
@@ -303,12 +314,14 @@ class NodeOrganizationService {
     comfyBlueprints: ComfyNodeDefImpl[]
     partnerNodes: ComfyNodeDefImpl[]
     comfyNodes: ComfyNodeDefImpl[]
+    essentialNodes: ComfyNodeDefImpl[]
     extensions: ComfyNodeDefImpl[]
   } {
     const myBlueprints: ComfyNodeDefImpl[] = []
     const comfyBlueprints: ComfyNodeDefImpl[] = []
     const partnerNodes: ComfyNodeDefImpl[] = []
     const comfyNodes: ComfyNodeDefImpl[] = []
+    const essentialNodes: ComfyNodeDefImpl[] = []
     const extensions: ComfyNodeDefImpl[] = []
 
     for (const node of nodes) {
@@ -321,7 +334,8 @@ class NodeOrganizationService {
         node.nodeSource.type === NodeSourceType.Core ||
         node.nodeSource.type === NodeSourceType.Essentials
       ) {
-        comfyNodes.push(node)
+        if (resolveEssentialsCategory(node)) essentialNodes.push(node)
+        else comfyNodes.push(node)
       } else {
         extensions.push(node)
       }
@@ -332,6 +346,7 @@ class NodeOrganizationService {
       comfyBlueprints,
       partnerNodes,
       comfyNodes,
+      essentialNodes,
       extensions
     }
   }
