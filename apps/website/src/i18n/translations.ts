@@ -2617,9 +2617,9 @@ const translations = {
     'zh-CN': 'Notices.'
   },
   'tos.miscellaneous.block.15': {
-    en: 'Any notice required or permitted to be given hereunder will be given in writing by personal delivery, certified mail, return receipt requested, or by overnight delivery. Notices to you may be sent to the email address provided by you when you created your account with Comfy. Notices to Comfy must be sent to the following: [Address].',
+    en: 'Any notice required or permitted to be given hereunder will be given in writing by personal delivery, certified mail, return receipt requested, or by overnight delivery. Notices to you may be sent to the email address provided by you when you created your account with Comfy. Notices to Comfy must be sent to the following: 201 Spear Street, Ste 17, San Francisco, CA 94105.',
     'zh-CN':
-      'Any notice required or permitted to be given hereunder will be given in writing by personal delivery, certified mail, return receipt requested, or by overnight delivery. Notices to you may be sent to the email address provided by you when you created your account with Comfy. Notices to Comfy must be sent to the following: [Address].'
+      'Any notice required or permitted to be given hereunder will be given in writing by personal delivery, certified mail, return receipt requested, or by overnight delivery. Notices to you may be sent to the email address provided by you when you created your account with Comfy. Notices to Comfy must be sent to the following: 201 Spear Street, Ste 17, San Francisco, CA 94105.'
   },
   'tos.miscellaneous.block.16.heading': {
     en: 'Entire Agreement.',
