@@ -337,29 +337,34 @@ useExtensionService().registerExtension({
 
     await nextTick()
 
-    useLoad3d(node).waitForLoad3d((load3d) => {
+    useLoad3d(node).onLoad3dReady((load3d) => {
+      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+      const width = node.widgets?.find((w) => w.name === 'width')
+      const height = node.widgets?.find((w) => w.name === 'height')
+      if (!modelWidget || !width || !height) return
+
       const cameraConfig = node.properties['Camera Config'] as
         | CameraConfig
         | undefined
       const cameraState = cameraConfig?.state
 
       const config = new Load3DConfiguration(load3d, node.properties)
+      config.configure({
+        loadFolder: 'input',
+        modelWidget,
+        cameraState,
+        width,
+        height
+      })
+    })
 
+    useLoad3d(node).waitForLoad3d(() => {
       const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
       const width = node.widgets?.find((w) => w.name === 'width')
       const height = node.widgets?.find((w) => w.name === 'height')
       const sceneWidget = node.widgets?.find((w) => w.name === 'image')
 
       if (modelWidget && width && height && sceneWidget) {
-        const settings = {
-          loadFolder: 'input',
-          modelWidget: modelWidget,
-          cameraState: cameraState,
-          width: width,
-          height: height
-        }
-        config.configure(settings)
-
         sceneWidget.serializeValue = async () => {
           const currentLoad3d = nodeToLoad3dMap.get(node)
           if (!currentLoad3d) {
@@ -477,32 +482,35 @@ useExtensionService().registerExtension({
 
     const onExecuted = node.onExecuted
 
+    useLoad3d(node).onLoad3dReady((load3d) => {
+      const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+      if (!modelWidget) return
+
+      const lastTimeModelFile = node.properties['Last Time Model File']
+      if (!lastTimeModelFile) return
+
+      modelWidget.value = lastTimeModelFile
+
+      const cameraConfig = node.properties['Camera Config'] as
+        | CameraConfig
+        | undefined
+      const cameraState = cameraConfig?.state
+
+      const config = new Load3DConfiguration(load3d, node.properties)
+      config.configure({
+        loadFolder: 'output',
+        modelWidget,
+        cameraState,
+        silentOnNotFound: true
+      })
+    })
+
     useLoad3d(node).waitForLoad3d((load3d) => {
       const config = new Load3DConfiguration(load3d, node.properties)
 
       const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
 
       if (modelWidget) {
-        const lastTimeModelFile = node.properties['Last Time Model File']
-
-        if (lastTimeModelFile) {
-          modelWidget.value = lastTimeModelFile
-
-          const cameraConfig = node.properties['Camera Config'] as
-            | CameraConfig
-            | undefined
-          const cameraState = cameraConfig?.state
-
-          const settings = {
-            loadFolder: 'output',
-            modelWidget: modelWidget,
-            cameraState: cameraState,
-            silentOnNotFound: true
-          }
-
-          config.configure(settings)
-        }
-
         node.onExecuted = function (output: Load3dPreviewOutput) {
           onExecuted?.call(this, output)
 

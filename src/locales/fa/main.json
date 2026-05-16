@@ -913,7 +913,8 @@
     "extensionFileHint": "این ممکن است به دلیل اسکریپت زیر باشد",
     "loadWorkflowTitle": "بارگذاری به دلیل خطا در بارگذاری مجدد داده‌های workflow متوقف شد",
     "noStackTrace": "هیچ stacktraceی موجود نیست",
-    "promptExecutionError": "اجرای prompt با شکست مواجه شد"
+    "promptExecutionError": "اجرای prompt با شکست مواجه شد",
+    "queueOpenWorkflowFailedTitle": "باز کردن workflow با خطا مواجه شد"
   },
   "errorOverlay": {
     "errorCount": "{count} خطا",
@@ -1041,6 +1042,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "لوگوی ComfyOrg",
+    "comfyPackageOutdated": "نسخه نصب‌شده {name} با شماره {installedVersion} پایین‌تر از نسخه مورد نیاز {requiredVersion} است.",
     "comingSoon": "به‌زودی",
     "command": "دستور",
     "commandProhibited": "دستور {command} مجاز نیست. برای اطلاعات بیشتر با مدیر تماس بگیرید.",

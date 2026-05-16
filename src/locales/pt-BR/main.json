@@ -913,7 +913,8 @@
     "extensionFileHint": "Isso pode ser devido ao seguinte script",
     "loadWorkflowTitle": "Carregamento abortado devido a erro ao recarregar os dados do fluxo de trabalho",
     "noStackTrace": "Nenhum stacktrace disponível",
-    "promptExecutionError": "Falha na execução do prompt"
+    "promptExecutionError": "Falha na execução do prompt",
+    "queueOpenWorkflowFailedTitle": "Falha ao abrir o workflow"
   },
   "errorOverlay": {
     "errorCount": "{count} ERRO | {count} ERROS",
@@ -1041,6 +1042,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "Logo do ComfyOrg",
+    "comfyPackageOutdated": "A versão instalada de {name} ({installedVersion}) é inferior à versão necessária ({requiredVersion}).",
     "comingSoon": "Em breve",
     "command": "Comando",
     "commandProhibited": "O comando {command} é proibido. Entre em contato com um administrador para mais informações.",
