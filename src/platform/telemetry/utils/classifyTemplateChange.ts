@@ -23,6 +23,22 @@ export type LiveNodeLookup = Map<string | number, LiveNodeInfo>
 
 type WidgetKind = 'seed' | 'prompt' | 'other'
 
+type NormalizedLink = readonly [
+  src: string | number | undefined,
+  srcSlot: number | undefined,
+  dst: string | number | undefined,
+  dstSlot: number | undefined,
+  dataType: string | undefined
+]
+
+type LinkObjectShape = {
+  origin_id?: string | number
+  origin_slot?: number
+  target_id?: string | number
+  target_slot?: number
+  type?: string
+}
+
 function widgetKind(widget: LiveWidgetInfo | undefined): WidgetKind {
   const name = widget?.name
   if (!name) return 'other'
@@ -41,6 +57,59 @@ function nodesById(
   return map
 }
 
+function normalizeLink(link: unknown): NormalizedLink | undefined {
+  if (Array.isArray(link)) {
+    const [, src, srcSlot, dst, dstSlot, dataType] = link as [
+      unknown,
+      string | number | undefined,
+      number | undefined,
+      string | number | undefined,
+      number | undefined,
+      string | undefined
+    ]
+    return [src, srcSlot, dst, dstSlot, dataType]
+  }
+  if (link && typeof link === 'object') {
+    const obj = link as LinkObjectShape
+    return [
+      obj.origin_id,
+      obj.origin_slot,
+      obj.target_id,
+      obj.target_slot,
+      obj.type
+    ]
+  }
+  return undefined
+}
+
+function normalizeLinks(
+  links: ComfyWorkflowJSON['links'] | undefined
+): string[] {
+  const result: string[] = []
+  for (const link of links ?? []) {
+    const normalized = normalizeLink(link)
+    if (normalized) result.push(JSON.stringify(normalized))
+  }
+  return result.sort()
+}
+
+function linksDiffer(
+  baseline: ComfyWorkflowJSON,
+  current: ComfyWorkflowJSON
+): boolean {
+  return !isEqual(normalizeLinks(baseline.links), normalizeLinks(current.links))
+}
+
+function subgraphDefinitionsDiffer(
+  baseline: ComfyWorkflowJSON,
+  current: ComfyWorkflowJSON
+): boolean {
+  const a = (baseline as { definitions?: unknown }).definitions
+  const b = (current as { definitions?: unknown }).definitions
+  if (a === undefined && b === undefined) return false
+  return !isEqual(a, b)
+}
+
 function structurallyDifferent(
   baselineNode: ComfyNode,
   currentNode: ComfyNode
@@ -50,38 +119,6 @@ function structurallyDifferent(
   if (!isEqual(baselineNode.outputs ?? [], currentNode.outputs ?? []))
     return true
   return false
-}
-
-function linksDiffer(
-  baseline: ComfyWorkflowJSON,
-  current: ComfyWorkflowJSON
-): boolean {
-  const baselineLinks = (baseline.links ?? []).map((link) => {
-    const [, src, srcSlot, dst, dstSlot, dataType] = link as unknown as [
-      unknown,
-      unknown,
-      unknown,
-      unknown,
-      unknown,
-      unknown
-    ]
-    return [src, srcSlot, dst, dstSlot, dataType]
-  })
-  const currentLinks = (current.links ?? []).map((link) => {
-    const [, src, srcSlot, dst, dstSlot, dataType] = link as unknown as [
-      unknown,
-      unknown,
-      unknown,
-      unknown,
-      unknown,
-      unknown
-    ]
-    return [src, srcSlot, dst, dstSlot, dataType]
-  })
-  return !isEqual(
-    baselineLinks.map((l) => JSON.stringify(l)).sort(),
-    currentLinks.map((l) => JSON.stringify(l)).sort()
-  )
 }
 
 function combine(
@@ -99,6 +136,8 @@ export function classifyTemplateChange(
   current: ComfyWorkflowJSON,
   liveNodes: LiveNodeLookup
 ): TemplateChangeType {
+  if (subgraphDefinitionsDiffer(baseline, current)) return 'structural'
+
   const baselineNodes = nodesById(baseline)
   const currentNodes = nodesById(current)
 

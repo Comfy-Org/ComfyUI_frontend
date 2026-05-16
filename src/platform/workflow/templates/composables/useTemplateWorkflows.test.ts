@@ -49,6 +49,16 @@ vi.mock('@/stores/dialogStore', () => ({
   }))
 }))
 
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: () => ({
+    activeWorkflow: { changeTracker: { activeState: { nodes: [], links: [] } } }
+  })
+}))
+
+vi.mock('@/platform/telemetry/utils/templateBaselineStore', () => ({
+  setTemplateBaseline: vi.fn()
+}))
+
 // Mock fetch
 global.fetch = vi.fn()
 

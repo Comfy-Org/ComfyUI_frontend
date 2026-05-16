@@ -2,7 +2,7 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 
 const baselineByWorkflowName = new Map<string, ComfyWorkflowJSON>()
 
-const MAX_BASELINES = 32
+export const MAX_BASELINES = 32
 
 function clone(workflow: ComfyWorkflowJSON): ComfyWorkflowJSON {
   return JSON.parse(JSON.stringify(workflow)) as ComfyWorkflowJSON
@@ -14,10 +14,9 @@ export function setTemplateBaseline(
 ): void {
   if (!workflowName) return
 
-  if (
-    baselineByWorkflowName.size >= MAX_BASELINES &&
-    !baselineByWorkflowName.has(workflowName)
-  ) {
+  if (baselineByWorkflowName.has(workflowName)) {
+    baselineByWorkflowName.delete(workflowName)
+  } else if (baselineByWorkflowName.size >= MAX_BASELINES) {
     const oldestKey = baselineByWorkflowName.keys().next().value
     if (oldestKey !== undefined) baselineByWorkflowName.delete(oldestKey)
   }
@@ -28,7 +27,8 @@ export function setTemplateBaseline(
 export function getTemplateBaseline(
   workflowName: string
 ): ComfyWorkflowJSON | undefined {
-  return baselineByWorkflowName.get(workflowName)
+  const baseline = baselineByWorkflowName.get(workflowName)
+  return baseline ? clone(baseline) : undefined
 }
 
 export function clearTemplateBaselines(): void {

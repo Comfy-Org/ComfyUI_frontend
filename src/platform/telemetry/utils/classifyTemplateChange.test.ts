@@ -305,4 +305,140 @@ describe('classifyTemplateChange', () => {
 
     expect(result).toBe('unchanged')
   })
+
+  it('handles v1 object-shaped links without throwing', () => {
+    const baseline = {
+      nodes: [
+        { id: 1, type: 'A' },
+        { id: 2, type: 'B' }
+      ],
+      links: [
+        {
+          id: 1,
+          origin_id: 1,
+          origin_slot: 0,
+          target_id: 2,
+          target_slot: 0,
+          type: 'IMAGE'
+        }
+      ],
+      groups: [],
+      version: 1
+    } as unknown as ComfyWorkflowJSON
+
+    const current = {
+      nodes: [
+        { id: 1, type: 'A' },
+        { id: 2, type: 'B' }
+      ],
+      links: [
+        {
+          id: 1,
+          origin_id: 1,
+          origin_slot: 0,
+          target_id: 2,
+          target_slot: 0,
+          type: 'IMAGE'
+        }
+      ],
+      groups: [],
+      version: 1
+    } as unknown as ComfyWorkflowJSON
+
+    const result = classifyTemplateChange(
+      baseline,
+      current,
+      liveNodes([
+        [1, []],
+        [2, []]
+      ])
+    )
+
+    expect(result).toBe('unchanged')
+  })
+
+  it('detects link removal across the v1 object shape as structural', () => {
+    const baseline = {
+      nodes: [
+        { id: 1, type: 'A' },
+        { id: 2, type: 'B' }
+      ],
+      links: [
+        {
+          id: 1,
+          origin_id: 1,
+          origin_slot: 0,
+          target_id: 2,
+          target_slot: 0,
+          type: 'IMAGE'
+        }
+      ],
+      groups: [],
+      version: 1
+    } as unknown as ComfyWorkflowJSON
+
+    const current = {
+      nodes: [
+        { id: 1, type: 'A' },
+        { id: 2, type: 'B' }
+      ],
+      links: [],
+      groups: [],
+      version: 1
+    } as unknown as ComfyWorkflowJSON
+
+    const result = classifyTemplateChange(
+      baseline,
+      current,
+      liveNodes([
+        [1, []],
+        [2, []]
+      ])
+    )
+
+    expect(result).toBe('structural')
+  })
+
+  it('classifies edits inside subgraph definitions as structural', () => {
+    const baseline = {
+      nodes: [{ id: 1, type: 'Subgraph' }],
+      links: [],
+      groups: [],
+      version: 1,
+      definitions: {
+        subgraphs: [
+          {
+            id: 'sg-1',
+            nodes: [{ id: 10, type: 'KSampler', widgets_values: [42] }]
+          }
+        ]
+      }
+    } as unknown as ComfyWorkflowJSON
+
+    const current = {
+      nodes: [{ id: 1, type: 'Subgraph' }],
+      links: [],
+      groups: [],
+      version: 1,
+      definitions: {
+        subgraphs: [
+          {
+            id: 'sg-1',
+            nodes: [
+              { id: 10, type: 'KSampler', widgets_values: [42] },
+              { id: 11, type: 'LoadImage', widgets_values: [] }
+            ]
+          }
+        ]
+      }
+    } as unknown as ComfyWorkflowJSON
+
+    const result = classifyTemplateChange(
+      baseline,
+      current,
+      liveNodes([[1, []]])
+    )
+
+    expect(result).toBe('structural')
+  })
 })
