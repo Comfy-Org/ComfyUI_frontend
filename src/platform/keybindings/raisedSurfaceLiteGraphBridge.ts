@@ -9,7 +9,7 @@ interface LiteGraphContextMenuEventDetail {
 
 export function useLiteGraphContextMenuTracking(): void {
   const store = useRaisedSurfaceStore()
-  const idsByMenu = new WeakMap<object, symbol>()
+  const idsByMenu = new Map<object, symbol>()
 
   const handler = (event: Event) => {
     const detail = (event as CustomEvent<LiteGraphContextMenuEventDetail>)
@@ -28,5 +28,7 @@ export function useLiteGraphContextMenuTracking(): void {
   document.addEventListener('litegraph:contextmenu', handler)
   onScopeDispose(() => {
     document.removeEventListener('litegraph:contextmenu', handler)
+    for (const id of idsByMenu.values()) store.close(id)
+    idsByMenu.clear()
   })
 }

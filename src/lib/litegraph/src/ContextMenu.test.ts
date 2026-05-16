@@ -5,20 +5,23 @@ import { ContextMenu } from '@/lib/litegraph/src/ContextMenu'
 describe('ContextMenu lifecycle events', () => {
   let listener: (event: Event) => void
   let calls: Event[]
+  let menus: ContextMenu[]
 
   beforeEach(() => {
     document.body.innerHTML = ''
     calls = []
+    menus = []
     listener = (event) => calls.push(event)
     document.addEventListener('litegraph:contextmenu', listener)
   })
 
   afterEach(() => {
+    for (const menu of menus) menu.close()
     document.removeEventListener('litegraph:contextmenu', listener)
   })
 
   it('dispatches an "open" event when a top-level menu is constructed', () => {
-    new ContextMenu(['Item A', 'Item B'], {})
+    menus.push(new ContextMenu(['Item A', 'Item B'], {}))
 
     expect(calls).toHaveLength(1)
     const detail = (calls[0] as CustomEvent).detail
@@ -39,6 +42,7 @@ describe('ContextMenu lifecycle events', () => {
 
   it('does not dispatch lifecycle events for submenus', () => {
     const parent = new ContextMenu(['Item A'], {})
+    menus.push(parent)
     calls.length = 0
 
     new ContextMenu(['Sub Item'], { parentMenu: parent })
