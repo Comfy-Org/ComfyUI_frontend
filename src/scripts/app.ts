@@ -84,6 +84,7 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
+import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
 import { rescanAndSurfaceMissingNodes } from '@/platform/nodeReplacement/missingNodeScan'
 import {
@@ -1091,7 +1092,7 @@ export class ComfyApp {
       }
 
       // Check for old clipboard format
-      const data = JSON.parse(template.data)
+      const data = parseJsonWithNonFinite<{ reroutes?: unknown }>(template.data)
       if (!data.reroutes) {
         deserialiseAndCreate(template.data, app.canvas)
       } else {
@@ -1631,6 +1632,7 @@ export class ComfyApp {
                   executionStore.storeJob({
                     id: res.prompt_id,
                     nodes: Object.keys(p.output),
+                    promptOutput: p.output,
                     workflow: queuedWorkflow
                   })
                 }
@@ -1802,7 +1804,9 @@ export class ComfyApp {
       let workflowObj: ComfyWorkflowJSON | undefined = undefined
       try {
         workflowObj =
-          typeof workflow === 'string' ? JSON.parse(workflow) : workflow
+          typeof workflow === 'string'
+            ? parseJsonWithNonFinite<ComfyWorkflowJSON>(workflow)
+            : (workflow as ComfyWorkflowJSON)
 
         // Only load workflow if parsing succeeded AND validation passed
         if (
@@ -1831,7 +1835,9 @@ export class ComfyApp {
     if (prompt) {
       try {
         const promptObj =
-          typeof prompt === 'string' ? JSON.parse(prompt) : prompt
+          typeof prompt === 'string'
+            ? parseJsonWithNonFinite<ComfyApiWorkflow>(prompt)
+            : prompt
         if (this.isApiJson(promptObj)) {
           this.loadApiJson(promptObj, fileName)
           return

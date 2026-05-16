@@ -141,6 +141,21 @@ describe('PointerZone', () => {
         y: 45
       })
     })
+
+    it('should preventDefault on wheel to block browser zoom on ctrl+wheel', () => {
+      renderZone()
+      const zone = getZone()
+
+      const event = new WheelEvent('wheel', {
+        bubbles: true,
+        cancelable: true,
+        deltaY: -1,
+        ctrlKey: true
+      })
+      zone.dispatchEvent(event)
+
+      expect(event.defaultPrevented).toBe(true)
+    })
   })
 
   describe('isPanning watcher', () => {
