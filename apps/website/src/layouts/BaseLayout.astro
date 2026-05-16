@@ -14,6 +14,7 @@ interface Props {
   keywords?: string[]
   ogImage?: string
   noindex?: boolean
+  contentLocale?: Locale
 }
 
 const {
@@ -22,6 +23,7 @@ const {
   keywords,
   ogImage = 'https://media.comfy.org/website/comfy.webp',
   noindex = false,
+  contentLocale,
 } = Astro.props
 
 const keywordsContent = keywords && keywords.length > 0 ? keywords.join(', ') : undefined
@@ -31,6 +33,7 @@ const canonicalURL = new URL(Astro.url.pathname, siteBase)
 const ogImageURL = new URL(ogImage, siteBase)
 const rawLocale = Astro.currentLocale ?? 'en'
 const locale: Locale = rawLocale === 'zh-CN' ? 'zh-CN' : 'en'
+const documentLang: Locale = contentLocale ?? locale
 const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
 const githubStars = rawStars ? formatStarCount(rawStars) : ''
 
@@ -62,7 +65,7 @@ const websiteJsonLd = {
 ---
 
 <!doctype html>
-<html lang={locale} class="overflow-x-clip">
+<html lang={documentLang} class="overflow-x-clip">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -84,7 +87,7 @@ const websiteJsonLd = {
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:url" content={canonicalURL.href} />
-    <meta property="og:locale" content={locale} />
+    <meta property="og:locale" content={documentLang} />
     <meta property="og:site_name" content="Comfy" />
 
     <!-- Twitter -->
