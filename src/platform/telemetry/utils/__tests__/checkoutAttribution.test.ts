@@ -15,6 +15,7 @@ describe('getCheckoutAttribution', () => {
     }
     window.gtag = undefined
     window.ire = undefined
+    window.Rewardful = undefined
     window.history.pushState({}, '', '/')
   })
 
@@ -227,5 +228,48 @@ describe('getCheckoutAttribution', () => {
     const attribution = await getCheckoutAttribution()
 
     expect(attribution.im_ref).toBeUndefined()
+  })
+
+  it('captures Rewardful referral from window.Rewardful', async () => {
+    window.Rewardful = {
+      referral: 'rwd-abc-123'
+    }
+
+    const attribution = await getCheckoutAttribution()
+
+    expect(attribution.rewardful_referral).toBe('rwd-abc-123')
+  })
+
+  it('returns undefined Rewardful referral when window.Rewardful is absent', async () => {
+    const attribution = await getCheckoutAttribution()
+
+    expect(attribution.rewardful_referral).toBeUndefined()
+  })
+
+  it('returns undefined Rewardful referral when window.Rewardful.referral is empty', async () => {
+    window.Rewardful = { referral: '' }
+
+    const attribution = await getCheckoutAttribution()
+
+    expect(attribution.rewardful_referral).toBeUndefined()
+  })
+
+  it('captures Rewardful referral alongside Impact attribution', async () => {
+    window.history.pushState(
+      {},
+      '',
+      '/?im_ref=impact-url-id&utm_source=affiliate'
+    )
+    window.Rewardful = {
+      referral: 'rwd-xyz-789'
+    }
+
+    const attribution = await getCheckoutAttribution()
+
+    expect(attribution).toMatchObject({
+      im_ref: 'impact-url-id',
+      utm_source: 'affiliate',
+      rewardful_referral: 'rwd-xyz-789'
+    })
   })
 })
