@@ -213,7 +213,7 @@ export class ContextMenu<TValue = unknown> {
         left = rect.left + rect.width
       }
 
-      const body_rect = document.body.getBoundingClientRect()
+      const body_rect = ownerDocument.body.getBoundingClientRect()
       const root_rect = root.getBoundingClientRect()
       if (body_rect.height == 0)
         console.error(
