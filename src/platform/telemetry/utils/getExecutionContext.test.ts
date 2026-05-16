@@ -4,10 +4,16 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 const hoisted = vi.hoisted(() => ({
   mockNodeDefsByName: {} as Record<string, unknown>,
-  mockNodes: [] as Pick<LGraphNode, 'type' | 'isSubgraphNode'>[],
+  mockNodes: [] as Array<
+    Pick<LGraphNode, 'type' | 'isSubgraphNode'> & {
+      id?: number | string
+      widgets?: Array<{ name?: string; type?: string }>
+    }
+  >,
   mockActiveWorkflow: null as null | {
     filename: string
     fullFilename: string
+    changeTracker?: { activeState?: unknown }
   },
   mockKnownTemplateNames: new Set<string>(),
   mockTemplateByName: null as null | { sourceModule?: string }
@@ -65,6 +71,12 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 import { getExecutionContext } from './getExecutionContext'
+import {
+  clearTemplateBaselines,
+  setTemplateBaseline
+} from './templateBaselineStore'
+
+type WorkflowJSON = Parameters<typeof setTemplateBaseline>[1]
 
 describe('getExecutionContext', () => {
   beforeEach(() => {
@@ -76,6 +88,7 @@ describe('getExecutionContext', () => {
     hoisted.mockActiveWorkflow = null
     hoisted.mockKnownTemplateNames = new Set()
     hoisted.mockTemplateByName = null
+    clearTemplateBaselines()
   })
 
   it('returns has_toolkit_nodes false when no toolkit nodes are present', () => {
@@ -210,6 +223,114 @@ describe('getExecutionContext', () => {
       const context = getExecutionContext()
 
       expect(context.is_template).toBe(false)
+    })
+  })
+
+  describe('template_change_type', () => {
+    function setUpTemplateWorkflow(
+      name: string,
+      activeState: WorkflowJSON,
+      liveNodes: Array<{
+        id: number
+        type: string
+        widgets?: Array<{ name?: string; type?: string }>
+      }>
+    ) {
+      hoisted.mockKnownTemplateNames = new Set([name])
+      hoisted.mockTemplateByName = { sourceModule: 'default' }
+      hoisted.mockActiveWorkflow = {
+        filename: name,
+        fullFilename: `${name}.json`,
+        changeTracker: { activeState }
+      }
+      for (const node of liveNodes) {
+        hoisted.mockNodes.push({
+          ...node,
+          isSubgraphNode: (() => false) as LGraphNode['isSubgraphNode']
+        } as never)
+      }
+    }
+
+    it('is omitted when no baseline was captured for the template', () => {
+      setUpTemplateWorkflow(
+        'flux-dev',
+        {
+          nodes: [{ id: 1, type: 'KSampler', widgets_values: [42] }],
+          links: []
+        } as unknown as WorkflowJSON,
+        [{ id: 1, type: 'KSampler', widgets: [{ name: 'seed' }] }]
+      )
+
+      const context = getExecutionContext()
+
+      expect(context.is_template).toBe(true)
+      expect(context.template_change_type).toBeUndefined()
+    })
+
+    it('reports unchanged when baseline matches current state', () => {
+      const baseline = {
+        nodes: [{ id: 1, type: 'KSampler', widgets_values: [42] }],
+        links: []
+      } as unknown as WorkflowJSON
+      setTemplateBaseline('flux-dev', baseline)
+      setUpTemplateWorkflow('flux-dev', baseline, [
+        { id: 1, type: 'KSampler', widgets: [{ name: 'seed' }] }
+      ])
+
+      const context = getExecutionContext()
+
+      expect(context.template_change_type).toBe('unchanged')
+    })
+
+    it('reports seed_only when only the seed widget value differs', () => {
+      const baseline = {
+        nodes: [{ id: 1, type: 'KSampler', widgets_values: [42, 20] }],
+        links: []
+      } as unknown as WorkflowJSON
+      setTemplateBaseline('flux-dev', baseline)
+      setUpTemplateWorkflow(
+        'flux-dev',
+        {
+          nodes: [{ id: 1, type: 'KSampler', widgets_values: [99, 20] }],
+          links: []
+        } as unknown as WorkflowJSON,
+        [
+          {
+            id: 1,
+            type: 'KSampler',
+            widgets: [{ name: 'seed' }, { name: 'steps' }]
+          }
+        ]
+      )
+
+      const context = getExecutionContext()
+
+      expect(context.template_change_type).toBe('seed_only')
+    })
+
+    it('reports structural when nodes were added', () => {
+      setTemplateBaseline('flux-dev', {
+        nodes: [{ id: 1, type: 'KSampler', widgets_values: [42] }],
+        links: []
+      } as unknown as WorkflowJSON)
+      setUpTemplateWorkflow(
+        'flux-dev',
+        {
+          nodes: [
+            { id: 1, type: 'KSampler', widgets_values: [42] },
+            { id: 2, type: 'LoadImage', widgets_values: [] }
+          ],
+          links: []
+        } as unknown as WorkflowJSON,
+        [
+          { id: 1, type: 'KSampler', widgets: [{ name: 'seed' }] },
+          { id: 2, type: 'LoadImage', widgets: [] }
+        ]
+      )
+
+      const context = getExecutionContext()
+
+      expect(context.template_change_type).toBe('structural')
     })
   })
 })
