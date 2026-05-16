@@ -5,6 +5,13 @@ on:
     - cron: '0 9 * * 1'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   discover:
     runs-on: ubuntu-latest
@@ -121,3 +128,4 @@ jobs:
       - name: No new models found
         if: steps.compare.outputs.new_count == '0'
         run: echo "No new models found — nothing to do."
+

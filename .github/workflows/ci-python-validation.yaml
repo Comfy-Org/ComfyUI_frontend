@@ -10,6 +10,13 @@ on:
     paths:
       - 'tools/devtools/**'
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   syntax:
     runs-on: ubuntu-latest
@@ -25,3 +32,4 @@ jobs:
 
       - name: Validate Python syntax
         run: python3 -m compileall -q tools/devtools
+

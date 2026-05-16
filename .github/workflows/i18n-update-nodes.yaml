@@ -9,6 +9,14 @@ on:
         type: string
         default: 'manual'
 
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   update-locales:
     runs-on: ubuntu-latest
@@ -52,3 +60,4 @@ jobs:
           branch: update-locales-node-defs-${{ github.event.inputs.trigger_type }}-${{ github.run_id }}
           base: main
           labels: dependencies
+

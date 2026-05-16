@@ -11,6 +11,13 @@ on:
     paths:
       - '**/*.sh'
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   shell-lint:
     runs-on: ubuntu-latest
@@ -24,3 +31,4 @@ jobs:
 
       - name: Run shellcheck
         run: bash ./scripts/cicd/check-shell.sh
+
