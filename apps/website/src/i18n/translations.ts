@@ -2181,8 +2181,8 @@ const translations = {
   // separate `/affiliates/terms/<locale>` route only after legal signs
   // off on that specific translation as the authoritative version.
   'affiliate-terms.effective-date': {
-    en: 'May 15, 2026',
-    'zh-CN': 'May 15, 2026'
+    en: 'May 16, 2026',
+    'zh-CN': 'May 16, 2026'
   },
   'affiliate-terms.1-program-overview.label': {
     en: 'PROGRAM',
