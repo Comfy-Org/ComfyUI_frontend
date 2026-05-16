@@ -3,12 +3,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyExtension } from '@/types/comfy'
 
-const { registerExtensionMock, waitForLoad3dMock, configureForSaveMeshMock } =
-  vi.hoisted(() => ({
-    registerExtensionMock: vi.fn(),
-    waitForLoad3dMock: vi.fn(),
-    configureForSaveMeshMock: vi.fn()
-  }))
+const {
+  registerExtensionMock,
+  waitForLoad3dMock,
+  onLoad3dReadyMock,
+  configureForSaveMeshMock
+} = vi.hoisted(() => ({
+  registerExtensionMock: vi.fn(),
+  waitForLoad3dMock: vi.fn(),
+  onLoad3dReadyMock: vi.fn(),
+  configureForSaveMeshMock: vi.fn()
+}))
 
 vi.mock('@/services/extensionService', () => ({
   useExtensionService: () => ({ registerExtension: registerExtensionMock })
@@ -19,7 +24,10 @@ vi.mock('@/services/load3dService', () => ({
 }))
 
 vi.mock('@/composables/useLoad3d', () => ({
-  useLoad3d: () => ({ waitForLoad3d: waitForLoad3dMock })
+  useLoad3d: () => ({
+    waitForLoad3d: waitForLoad3dMock,
+    onLoad3dReady: onLoad3dReadyMock
+  })
 }))
 
 vi.mock('@/extensions/core/load3d/Load3DConfiguration', () => ({
@@ -74,11 +82,15 @@ function makeNode(
 describe('saveMesh', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    const fakeLoad3d = () => ({
+      whenLoadIdle: () => Promise.resolve(),
+      captureThumbnail: vi.fn()
+    })
     waitForLoad3dMock.mockImplementation((cb: (load3d: unknown) => void) => {
-      cb({
-        whenLoadIdle: () => Promise.resolve(),
-        captureThumbnail: vi.fn()
-      })
+      cb(fakeLoad3d())
+    })
+    onLoad3dReadyMock.mockImplementation((cb: (load3d: unknown) => void) => {
+      cb(fakeLoad3d())
     })
   })
 
@@ -128,6 +140,33 @@ describe('saveMesh', () => {
     expect(node.widgets?.find((w) => w.name === 'image')?.value).toBe(
       'sub/model.glb'
     )
+  })
+
+  it('registers a persistent onLoad3dReady hook so subgraph re-entry rehydrates the model', async () => {
+    const onReadyCallbacks: Array<(load3d: unknown) => void> = []
+    onLoad3dReadyMock.mockImplementation((cb: (load3d: unknown) => void) => {
+      onReadyCallbacks.push(cb)
+    })
+
+    const ext = await loadSaveMeshExtensionFresh()
+    const node = makeNode({
+      properties: {
+        'Last Time Model File': 'sub/model.glb',
+        'Last Time Model Folder': 'output'
+      }
+    })
+
+    await ext.nodeCreated(node)
+    expect(onReadyCallbacks).toHaveLength(1)
+    expect(configureForSaveMeshMock).not.toHaveBeenCalled()
+
+    const fakeLoad3d = { whenLoadIdle: () => Promise.resolve() }
+
+    onReadyCallbacks[0](fakeLoad3d)
+    expect(configureForSaveMeshMock).toHaveBeenCalledTimes(1)
+
+    onReadyCallbacks[0]({ whenLoadIdle: () => Promise.resolve() })
+    expect(configureForSaveMeshMock).toHaveBeenCalledTimes(2)
   })
 
   it('defaults the load folder to output when only the file path is persisted', async () => {

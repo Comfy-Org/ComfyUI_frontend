@@ -81,7 +81,7 @@ useExtensionService().registerExtension({
 
     await nextTick()
 
-    useLoad3d(node).waitForLoad3d((load3d) => {
+    useLoad3d(node).onLoad3dReady((load3d) => {
       if (!load3d) return
 
       const modelWidget = node.widgets?.find((w) => w.name === 'image')
@@ -96,15 +96,14 @@ useExtensionService().registerExtension({
           | 'output'
           | undefined) ?? 'output'
 
-      if (lastTimeModelFile) {
-        modelWidget.value = lastTimeModelFile
+      if (!lastTimeModelFile) return
 
-        const config = new Load3DConfiguration(load3d, node.properties)
+      modelWidget.value = lastTimeModelFile
 
-        config.configureForSaveMesh(lastTimeModelFolder, lastTimeModelFile, {
-          silentOnNotFound: true
-        })
-      }
+      const config = new Load3DConfiguration(load3d, node.properties)
+      config.configureForSaveMesh(lastTimeModelFolder, lastTimeModelFile, {
+        silentOnNotFound: true
+      })
     })
 
     const onExecuted = node.onExecuted
