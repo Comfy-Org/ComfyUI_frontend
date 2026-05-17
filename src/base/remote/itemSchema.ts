@@ -7,6 +7,14 @@ export interface DropdownItemShape {
   preview_url?: string
 }
 
+/**
+ * User-facing label for a dropdown item. Falls back to id when name
+ * is missing or empty, so trigger/list rows never render blank.
+ */
+export function displayName(item: DropdownItemShape): string {
+  return item.name || item.id
+}
+
 export function getByPath(obj: unknown, path: string): unknown {
   return path.split('.').reduce((acc: unknown, key: string) => {
     if (acc == null) return undefined
