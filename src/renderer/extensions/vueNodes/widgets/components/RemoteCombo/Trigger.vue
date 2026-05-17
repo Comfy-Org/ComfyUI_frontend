@@ -5,6 +5,8 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { displayName } from '@/base/remote/itemSchema'
+
 import { triggerVariants } from './remoteCombo.variants'
 import type { TriggerVariants } from './remoteCombo.variants'
 import { RemoteComboKey } from './state'
@@ -31,7 +33,7 @@ const displayLabel = computed(() => {
   const id = ctx.selectedValue.value
   if (!id) return props.placeholder ?? t('widgets.uploadSelect.placeholder')
   const item = ctx.items.value.find((i) => i.id === id)
-  return item?.name ?? id
+  return item ? displayName(item) : id
 })
 
 const computedBorder = computed<TriggerVariants['border']>(() => {

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   buildSearchText,
+  displayName,
   extractItems,
   getByPath,
   mapToDropdownItem,
@@ -339,5 +340,15 @@ describe('mapToDropdownItem preview_url normalization', () => {
       { previewBaseUrl: 'https://api.comfy.org' }
     )
     expect(item.preview_url).toBeUndefined()
+  })
+})
+
+describe('displayName', () => {
+  it('returns name when present', () => {
+    expect(displayName({ id: 'abc', name: 'Cool Asset' })).toBe('Cool Asset')
+  })
+
+  it('falls back to id when name is empty string', () => {
+    expect(displayName({ id: 'abc-123', name: '' })).toBe('abc-123')
   })
 })

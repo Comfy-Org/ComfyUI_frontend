@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { displayName } from '@/base/remote/itemSchema'
 import type { DropdownItemShape } from '@/base/remote/itemSchema'
 
 import { itemVariants } from './remoteCombo.variants'
@@ -27,6 +28,7 @@ const { t } = useI18n()
 
 const isSelected = computed(() => ctx.selectedValue.value === props.item.id)
 const hasPreview = computed(() => !!props.item.preview_url)
+const label = computed(() => displayName(props.item))
 
 const audioEl = useTemplateRef<HTMLAudioElement>('audioEl')
 const isPlaying = ref(false)
@@ -60,7 +62,7 @@ function handleAudioEnded() {
       <template v-if="hasPreview && ctx.previewType.value === 'image'">
         <img
           :src="item.preview_url"
-          :alt="item.name"
+          :alt="label"
           class="size-10 shrink-0 rounded-sm object-cover"
           loading="lazy"
           decoding="async"
@@ -69,11 +71,11 @@ function handleAudioEnded() {
       <template v-else-if="hasPreview && ctx.previewType.value === 'video'">
         <video
           :src="item.preview_url"
+          :aria-label="label"
           class="size-10 shrink-0 rounded-sm object-cover"
           preload="metadata"
           muted
           playsinline
-          aria-hidden="true"
         />
       </template>
       <template v-else-if="hasPreview && ctx.previewType.value === 'audio'">
@@ -108,7 +110,7 @@ function handleAudioEnded() {
         </button>
       </template>
       <div class="flex flex-1 flex-col gap-0.5 overflow-hidden">
-        <span class="truncate">{{ item.name }}</span>
+        <span class="truncate">{{ label }}</span>
         <span
           v-if="item.description"
           class="truncate text-[10px] text-muted-foreground"
