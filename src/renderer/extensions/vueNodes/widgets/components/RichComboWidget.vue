@@ -2,10 +2,7 @@
 import { computed } from 'vue'
 
 import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type {
-  RemoteComboConfig,
-  RemoteItemSchema
-} from '@/schemas/nodeDefSchema'
+import type { RemoteComboConfig } from '@/schemas/nodeDefSchema'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import RemoteComboContent from './RemoteCombo/Content.vue'
@@ -18,7 +15,6 @@ import RemoteComboRefresh from './RemoteCombo/Refresh.vue'
 import RemoteComboRoot from './RemoteCombo/Root.vue'
 import RemoteComboSearch from './RemoteCombo/Search.vue'
 import RemoteComboTrigger from './RemoteCombo/Trigger.vue'
-import { RemoteComboKey } from './RemoteCombo/state'
 import type { RemoteComboContext } from './RemoteCombo/state'
 import { useRemoteCombo } from '../composables/useRemoteCombo'
 
@@ -37,9 +33,6 @@ const comboSpec = computed(() => {
 
 const remoteConfig = computed<RemoteComboConfig | undefined>(
   () => comboSpec.value?.remote_combo
-)
-const itemSchema = computed<RemoteItemSchema | undefined>(
-  () => remoteConfig.value?.item_schema
 )
 
 const fieldLabel = computed(() => widget.label ?? widget.name)
@@ -61,7 +54,8 @@ const context: RemoteComboContext = {
   errorMessage: combo.errorMessage,
   refresh: combo.refresh,
   select: combo.select,
-  fieldLabel: combo.fieldLabel
+  fieldLabel: combo.fieldLabel,
+  previewType: combo.previewType
 }
 
 const showRefreshButton = computed(
@@ -69,9 +63,6 @@ const showRefreshButton = computed(
 )
 
 const isDisabled = computed(() => widget.options?.disabled === true)
-const previewType = computed(() => itemSchema.value?.preview_type ?? 'image')
-void previewType.value
-void RemoteComboKey
 </script>
 
 <template>
