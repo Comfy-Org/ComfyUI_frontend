@@ -60,7 +60,8 @@ function makeContext(args: StoryArgs): RemoteComboContext {
       selectedValue.value = id
       isOpen.value = false
     },
-    fieldLabel: computed(() => 'voice')
+    fieldLabel: computed(() => 'voice'),
+    previewType: computed(() => 'image' as const)
   }
 }
 

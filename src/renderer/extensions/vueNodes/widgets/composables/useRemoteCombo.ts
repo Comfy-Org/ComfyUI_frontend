@@ -14,6 +14,8 @@ import { useRemoteOptions } from '@/platform/remote/composables/useRemoteOptions
 import type { RemoteRequestDescriptor } from '@/platform/remote/schema/remoteRequestSchema'
 import type { RemoteComboConfig } from '@/schemas/nodeDefSchema'
 
+import type { RemoteComboPreviewType } from '../components/RemoteCombo/state'
+
 interface UseRemoteComboArgs {
   config: MaybeRefOrGetter<RemoteComboConfig | undefined | null>
   modelValue: Ref<string | undefined>
@@ -33,6 +35,7 @@ interface UseRemoteComboResult {
   select: (id: string) => void
   selectedValue: Ref<string | undefined>
   fieldLabel: ComputedRef<string>
+  previewType: ComputedRef<RemoteComboPreviewType>
 }
 
 export function useRemoteCombo(args: UseRemoteComboArgs): UseRemoteComboResult {
@@ -110,6 +113,9 @@ export function useRemoteCombo(args: UseRemoteComboArgs): UseRemoteComboResult {
   })
 
   const fieldLabel = computed(() => toValue(args.fieldLabel) ?? '')
+  const previewType = computed<RemoteComboPreviewType>(
+    () => toValue(args.config)?.item_schema?.preview_type ?? 'image'
+  )
 
   function applyAutoSelect(config: RemoteComboConfig) {
     if (args.modelValue.value) return
@@ -151,6 +157,7 @@ export function useRemoteCombo(args: UseRemoteComboArgs): UseRemoteComboResult {
     refresh,
     select,
     selectedValue: args.modelValue,
-    fieldLabel
+    fieldLabel,
+    previewType
   }
 }
