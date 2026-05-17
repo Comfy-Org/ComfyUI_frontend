@@ -9,6 +9,7 @@ import { remoteOptionKeys } from '@/platform/remote/queryKeys'
 import type { RemoteRequestDescriptor } from '@/platform/remote/schema/remoteRequestSchema'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
 const MAX_RETRIES = 5
@@ -67,7 +68,8 @@ export function useRemoteWidget<
   const getQueryKey = () =>
     remoteOptionKeys.byRoute(descriptor, {
       userId: useAuthStore().userId ?? null,
-      workspaceId: null
+      workspaceId: null,
+      apiKeyBucket: useApiKeyAuthStore().getApiKey() ? 'apikey' : 'anon'
     })
 
   let isLoaded = false
