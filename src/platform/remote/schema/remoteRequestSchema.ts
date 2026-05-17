@@ -10,7 +10,10 @@ export interface RemoteRequestDescriptor {
   maxRetries?: number
 }
 
+export type RemoteAuthBucket = 'apikey' | 'anon'
+
 export interface RemoteAuthScope {
   userId?: string | null
   workspaceId?: string | null
+  apiKeyBucket?: RemoteAuthBucket | null
 }

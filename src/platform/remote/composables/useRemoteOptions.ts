@@ -11,6 +11,7 @@ import type {
   RemoteRequestDescriptor
 } from '@/platform/remote/schema/remoteRequestSchema'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
 const DEFAULT_TIMEOUT_MS = 30_000
@@ -68,10 +69,12 @@ export function useRemoteOptions<T = unknown>(
   const queryClient = useQueryClient()
   const authStore = useAuthStore()
   const workspaceStore = useWorkspaceAuthStore()
+  const apiKeyStore = useApiKeyAuthStore()
 
   const scope = computed<RemoteAuthScope>(() => ({
     userId: authStore.userId ?? null,
-    workspaceId: workspaceStore.currentWorkspace?.id ?? null
+    workspaceId: workspaceStore.currentWorkspace?.id ?? null,
+    apiKeyBucket: apiKeyStore.getApiKey() ? 'apikey' : 'anon'
   }))
 
   const queryKey = computed(() => {

@@ -94,6 +94,20 @@ describe('useRemoteOptions', () => {
     expect(JSON.stringify(a)).not.toBe(JSON.stringify(b))
   })
 
+  it('partitions anonymous from api-key sessions even when userId/workspaceId match', () => {
+    const anon = remoteOptionKeys.byRoute(desc, {
+      userId: null,
+      workspaceId: null,
+      apiKeyBucket: 'anon'
+    })
+    const apikey = remoteOptionKeys.byRoute(desc, {
+      userId: null,
+      workspaceId: null,
+      apiKeyBucket: 'apikey'
+    })
+    expect(JSON.stringify(anon)).not.toBe(JSON.stringify(apikey))
+  })
+
   it('returns disabled state when descriptor is null', async () => {
     const scope = effectScope()
     let result!: ReturnType<typeof useRemoteOptions>
