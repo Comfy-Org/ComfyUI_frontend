@@ -18,6 +18,8 @@ if (!ctx) {
 }
 
 const { t } = useI18n()
+
+const emptyDisplayValue = () => ''
 </script>
 
 <template>
@@ -28,6 +30,7 @@ const { t } = useI18n()
     />
     <ComboboxInput
       v-model="ctx.searchQuery.value"
+      :display-value="emptyDisplayValue"
       :placeholder="placeholder ?? t('g.search')"
       class="w-full border-none bg-transparent text-xs text-base-foreground outline-none placeholder:text-muted-foreground"
       :aria-label="
