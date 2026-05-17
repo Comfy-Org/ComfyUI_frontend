@@ -27,6 +27,7 @@ const { t } = useI18n()
       aria-hidden="true"
     />
     <ComboboxInput
+      v-model="ctx.searchQuery.value"
       :placeholder="placeholder ?? t('g.search')"
       class="w-full border-none bg-transparent text-xs text-base-foreground outline-none placeholder:text-muted-foreground"
       :aria-label="
