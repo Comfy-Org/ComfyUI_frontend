@@ -65,7 +65,7 @@ const context: RemoteComboContext = {
 }
 
 const showRefreshButton = computed(
-  () => remoteConfig.value?.refresh_button !== false
+  () => !!remoteConfig.value && remoteConfig.value.refresh_button !== false
 )
 
 const isDisabled = computed(() => widget.options?.disabled === true)
