@@ -23,6 +23,7 @@ import {
   isSizeEqual
 } from '@/renderer/core/layout/utils/geometry'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
+import { createRafBatch } from '@/utils/rafBatch'
 
 import {
   scheduleSlotLayoutSync,
@@ -87,10 +88,44 @@ function markElementForFreshMeasurement(element: HTMLElement) {
   cachedNodeMeasurements.delete(element)
 }
 
-watch(visibility, (state) => {
-  if (state !== 'visible' || deferredElements.size === 0) return
+interface PendingMeasurement {
+  width: number
+  height: number
+}
 
-  // Re-observe deferred elements to trigger fresh measurements
+// RAF-batched pending measurements keyed by element. Coalesces multiple RO
+// callbacks fired during the same frame (e.g. while a splitter is animated
+// open) into a single layoutStore write, and defers measurement until after
+// the canvas RO has had a chance to update lgCanvas.ds. This prevents
+// transient off-screen position writes from stale DOM→canvas conversion.
+const pendingMeasurements = new Map<HTMLElement, PendingMeasurement>()
+const rafBatch = createRafBatch(() => {
+  flushPendingMeasurements()
+})
+
+function deferElementsForHiddenTab(elements: Iterable<HTMLElement>) {
+  for (const element of elements) {
+    deferredElements.add(element)
+    markElementForFreshMeasurement(element)
+    resizeObserver.unobserve(element)
+  }
+}
+
+watch(visibility, (state) => {
+  // Tab is hidden mid-flight: a scheduled RAF would be suspended by the
+  // browser and only resume on re-show, at which point flushPendingMeasurements
+  // would see visibility === 'visible' and write stale bounds. Re-defer
+  // anything pending immediately so it gets a fresh measurement on revisit.
+  if (state === 'hidden') {
+    if (pendingMeasurements.size === 0) return
+    deferElementsForHiddenTab(pendingMeasurements.keys())
+    pendingMeasurements.clear()
+    rafBatch.cancel()
+    return
+  }
+
+  if (deferredElements.size === 0) return
+
   for (const element of deferredElements) {
     if (element.isConnected) {
       markElementForFreshMeasurement(element)
@@ -100,19 +135,19 @@ watch(visibility, (state) => {
   deferredElements.clear()
 })
 
-// Single ResizeObserver instance for all Vue elements
-const resizeObserver = new ResizeObserver((entries) => {
-  if (useCanvasStore().linearMode) return
+function flushPendingMeasurements() {
+  if (pendingMeasurements.size === 0) return
 
-  // Skip measurements when tab is hidden — bounding rects are unreliable
+  if (useCanvasStore().linearMode) {
+    pendingMeasurements.clear()
+    return
+  }
+
+  // RO callbacks that fired while the tab was visible can still land in the
+  // flush after a hidden→visible flip if scheduling raced. Re-defer.
   if (visibility.value === 'hidden') {
-    for (const entry of entries) {
-      if (entry.target instanceof HTMLElement) {
-        deferredElements.add(entry.target)
-        markElementForFreshMeasurement(entry.target)
-        resizeObserver.unobserve(entry.target)
-      }
-    }
+    deferElementsForHiddenTab(pendingMeasurements.keys())
+    pendingMeasurements.clear()
     return
   }
 
@@ -123,18 +158,7 @@ const resizeObserver = new ResizeObserver((entries) => {
   // Track nodes whose slots should be resynced after node size changes
   const nodesNeedingSlotResync = new Set<NodeId>()
 
-  for (const entry of entries) {
-    if (!(entry.target instanceof HTMLElement)) continue
-    const element = entry.target
-
-    // Signal-only widgets-grid resize - route the parent node through the
-    // slot-layout pipeline and skip bounds processing entirely.
-    const widgetsGridParentNodeId = element.dataset.widgetsGridNodeId
-    if (widgetsGridParentNodeId) {
-      scheduleSlotLayoutSync(widgetsGridParentNodeId as NodeId)
-      continue
-    }
-
+  for (const [element, measurement] of pendingMeasurements) {
     // Find which type this element belongs to
     let elementType: string | undefined
     let elementId: string | undefined
@@ -152,16 +176,7 @@ const resizeObserver = new ResizeObserver((entries) => {
     const nodeId: NodeId | undefined =
       elementType === 'node' ? elementId : undefined
 
-    // Use borderBoxSize when available; fall back to contentRect for older engines/tests
-    // Border box is the border included FULL wxh DOM value.
-    const borderBox = Array.isArray(entry.borderBoxSize)
-      ? entry.borderBoxSize[0]
-      : {
-          inlineSize: entry.contentRect.width,
-          blockSize: entry.contentRect.height
-        }
-    const width = Math.max(0, borderBox.inlineSize)
-    const height = Math.max(0, borderBox.blockSize)
+    const { width, height } = measurement
 
     const nodeLayout = nodeId
       ? layoutStore.getNodeLayoutRef(nodeId).value
@@ -244,6 +259,8 @@ const resizeObserver = new ResizeObserver((entries) => {
     }
   }
 
+  pendingMeasurements.clear()
+
   if (updatesByType.size === 0 && nodesNeedingSlotResync.size === 0) return
 
   if (updatesByType.size > 0) {
@@ -261,6 +278,45 @@ const resizeObserver = new ResizeObserver((entries) => {
     for (const nodeId of nodesNeedingSlotResync) {
       syncNodeSlotLayoutsFromDOM(nodeId)
     }
+  }
+}
+
+// Single ResizeObserver instance for all Vue elements
+const resizeObserver = new ResizeObserver((entries) => {
+  if (useCanvasStore().linearMode) {
+    pendingMeasurements.clear()
+    return
+  }
+
+  for (const entry of entries) {
+    if (!(entry.target instanceof HTMLElement)) continue
+    const element = entry.target
+
+    // Signal-only widgets-grid resize - route the parent node through the
+    // slot-layout pipeline (already RAF-batched) and skip bounds processing.
+    const widgetsGridParentNodeId = element.dataset.widgetsGridNodeId
+    if (widgetsGridParentNodeId) {
+      scheduleSlotLayoutSync(widgetsGridParentNodeId as NodeId)
+      continue
+    }
+
+    // Use borderBoxSize when available; fall back to contentRect for older
+    // engines/tests. Border box is the full w×h DOM value including border.
+    const borderBox = Array.isArray(entry.borderBoxSize)
+      ? entry.borderBoxSize[0]
+      : {
+          inlineSize: entry.contentRect.width,
+          blockSize: entry.contentRect.height
+        }
+
+    pendingMeasurements.set(element, {
+      width: Math.max(0, borderBox.inlineSize),
+      height: Math.max(0, borderBox.blockSize)
+    })
+  }
+
+  if (pendingMeasurements.size > 0) {
+    rafBatch.schedule()
   }
 })
 
