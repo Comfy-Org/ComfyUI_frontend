@@ -20,6 +20,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
 import { getAssetUrl } from '../utils/assetUrlUtil'
+import { renditionFor } from '../utils/assetRenditions'
 import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
 import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
 import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
@@ -125,7 +126,9 @@ export function useMediaAssetActions() {
     try {
       targetAssets.forEach((asset) => {
         const filename = getAssetDisplayName(asset)
-        const downloadUrl = asset.preview_url || getAssetUrl(asset)
+        // Download the canonical asset, never a transcoded preview rendition.
+        const downloadUrl =
+          renditionFor(asset, 'download') ?? getAssetUrl(asset)
         downloadFile(downloadUrl, filename)
       })
 
