@@ -12,7 +12,10 @@
       data-testid="terminal-loading-spinner"
       class="relative inset-0 z-10 flex h-full items-center justify-center"
     />
-    <BaseTerminal v-show="!loading" @created="terminalCreated" />
+    <BaseTerminal
+      v-show="!loading && !errorMessage"
+      @created="terminalCreated"
+    />
   </div>
 </template>
 
