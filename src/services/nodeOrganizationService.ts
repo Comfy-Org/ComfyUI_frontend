@@ -1,9 +1,11 @@
-import { resolveBlueprintEssentialsCategory } from '@/constants/essentialsDisplayNames'
-import type { EssentialsCategory } from '@/constants/essentialsNodes'
+import { resolveBlueprintEssentialsPath } from '@/constants/essentialsDisplayNames'
+import type { EssentialsPath } from '@/constants/essentialsNodes'
 import {
-  ESSENTIALS_CATEGORY_CANONICAL,
-  ESSENTIALS_CATEGORY_RANK,
-  ESSENTIALS_NODE_RANK
+  ESSENTIALS_NODE_PATH_MAP,
+  ESSENTIALS_NODE_RANK,
+  ESSENTIALS_SECTION_RANK,
+  ESSENTIALS_SUBGROUP_RANK,
+  resolveBackendEssentialsPath
 } from '@/constants/essentialsNodes'
 import { t } from '@/i18n'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -22,19 +24,18 @@ import { sortedTree, unwrapTreeRoot } from '@/utils/treeUtil'
 const DEFAULT_ICON = 'pi pi-sort'
 const UNKNOWN_RANK = Number.MAX_SAFE_INTEGER
 
-function resolveEssentialsCategory(
+function resolveEssentialsPath(
   nodeDef: ComfyNodeDefImpl
-): EssentialsCategory | undefined {
+): EssentialsPath | undefined {
   if (!nodeDef.isCoreNode) return undefined
 
-  if (nodeDef.essentials_category) {
-    return (
-      ESSENTIALS_CATEGORY_CANONICAL.get(
-        nodeDef.essentials_category.toLowerCase()
-      ) ?? (nodeDef.essentials_category as EssentialsCategory)
-    )
-  }
-  return resolveBlueprintEssentialsCategory(nodeDef.name)
+  const known = ESSENTIALS_NODE_PATH_MAP.get(nodeDef.name)
+  if (known) return known
+
+  const blueprintPath = resolveBlueprintEssentialsPath(nodeDef.name)
+  if (blueprintPath) return blueprintPath
+
+  return resolveBackendEssentialsPath(nodeDef.essentials_category)
 }
 
 function sortByKnownOrder<T>(
@@ -180,16 +181,19 @@ class NodeOrganizationService {
   }
 
   private buildEssentialsTree(nodes: ComfyNodeDefImpl[]): TreeNode {
-    const categoryByNode = new Map<ComfyNodeDefImpl, EssentialsCategory>()
+    const pathByNode = new Map<ComfyNodeDefImpl, EssentialsPath>()
     const essentialNodes = nodes.filter((node) => {
-      const category = resolveEssentialsCategory(node)
-      if (!category) return false
-      categoryByNode.set(node, category)
+      const path = resolveEssentialsPath(node)
+      if (!path) return false
+      pathByNode.set(node, path)
       return true
     })
 
     const tree = buildNodeDefTree(essentialNodes, {
-      pathExtractor: (node) => [categoryByNode.get(node)!, node.name]
+      pathExtractor: (node) => {
+        const { section, subgroup } = pathByNode.get(node)!
+        return subgroup ? [section, subgroup, node.name] : [section, node.name]
+      }
     })
     this.sortEssentialsTree(tree)
     return tree
@@ -201,17 +205,38 @@ class NodeOrganizationService {
     sortByKnownOrder(
       tree.children,
       (node) => node.label,
-      ESSENTIALS_CATEGORY_RANK
+      ESSENTIALS_SECTION_RANK
     )
 
-    for (const folder of tree.children) {
-      if (!folder.children) continue
-      const rankMap = ESSENTIALS_NODE_RANK[folder.label as EssentialsCategory]
-      if (!rankMap) continue
+    for (const sectionNode of tree.children) {
+      if (!sectionNode.children) continue
+      const subgroupRank = ESSENTIALS_SUBGROUP_RANK.get(sectionNode.label ?? '')
+
+      // Sort subgroup folders (leaf node entries get a fallback rank so they
+      // still come after named subgroups).
       sortByKnownOrder(
-        folder.children,
-        (node) => node.data?.name ?? node.label,
-        rankMap
+        sectionNode.children,
+        (node) => (node.children ? node.label : undefined),
+        subgroupRank ?? new Map()
+      )
+
+      for (const child of sectionNode.children) {
+        // Folder = subgroup; sort its leaves by node rank.
+        if (child.children) {
+          sortByKnownOrder(
+            child.children,
+            (node) => node.data?.name ?? node.label,
+            ESSENTIALS_NODE_RANK
+          )
+        }
+      }
+
+      // Leaves at the section level (flat sections like Inputs & Outputs)
+      // are sorted in-place by node rank below.
+      sortByKnownOrder(
+        sectionNode.children,
+        (node) => (node.children ? undefined : (node.data?.name ?? node.label)),
+        ESSENTIALS_NODE_RANK
       )
     }
   }
@@ -334,7 +359,7 @@ class NodeOrganizationService {
         node.nodeSource.type === NodeSourceType.Core ||
         node.nodeSource.type === NodeSourceType.Essentials
       ) {
-        if (resolveEssentialsCategory(node)) essentialNodes.push(node)
+        if (resolveEssentialsPath(node)) essentialNodes.push(node)
         else comfyNodes.push(node)
       } else {
         extensions.push(node)

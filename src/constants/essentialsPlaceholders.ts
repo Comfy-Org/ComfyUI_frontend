@@ -187,11 +187,6 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
             label: 'Anthropic Claude',
             iconUrl: '/assets/images/brand-logos/claude-color.svg'
           },
-          {
-            label: 'Generate Text',
-            icon: comfyIcon('text-generation'),
-            nodeName: 'OpenAIChatNode'
-          },
           { label: 'Text Enhancer', icon: comfyIcon('text-prompt-enhance') },
           { label: 'Image Captioner', icon: comfyIcon('image-captioning') },
           { label: 'Video Captioner', icon: comfyIcon('video-captioning') }
