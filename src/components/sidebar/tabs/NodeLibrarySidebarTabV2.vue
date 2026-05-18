@@ -29,6 +29,59 @@
                 />
               </div>
               <div class="flex shrink-0 items-center gap-2">
+                <DropdownMenuRoot v-if="selectedTab === 'all'">
+                  <DropdownMenuTrigger as-child>
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      :aria-label="$t('sideToolbar.nodeLibraryTab.filter')"
+                    >
+                      <i class="icon-[lucide--list-filter] size-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuContent
+                      class="z-9999 min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
+                      align="end"
+                      :side-offset="4"
+                    >
+                      <DropdownMenuCheckboxItem
+                        :model-value="allCategoriesSelected"
+                        class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                        @select.prevent
+                        @update:model-value="selectAllCategories"
+                      >
+                        <span class="flex-1">{{ $t('g.all') }}</span>
+                        <span class="size-4 shrink-0">
+                          <DropdownMenuItemIndicator>
+                            <i class="icon-[lucide--check] size-4" />
+                          </DropdownMenuItemIndicator>
+                        </span>
+                      </DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem
+                        v-for="category in filterableCategories"
+                        :key="category"
+                        :model-value="filterOptions[category]"
+                        class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                        @select.prevent
+                        @update:model-value="
+                          setCategoryFilter(category, $event)
+                        "
+                      >
+                        <span class="flex-1">{{
+                          $t(
+                            `sideToolbar.nodeLibraryTab.filterOptions.${category}`
+                          )
+                        }}</span>
+                        <span class="size-4 shrink-0">
+                          <DropdownMenuItemIndicator>
+                            <i class="icon-[lucide--check] size-4" />
+                          </DropdownMenuItemIndicator>
+                        </span>
+                      </DropdownMenuCheckboxItem>
+                    </DropdownMenuContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuRoot>
                 <DropdownMenuRoot>
                   <DropdownMenuTrigger as-child>
                     <Button
@@ -203,42 +256,6 @@
                     </DropdownMenuContent>
                   </DropdownMenuPortal>
                 </DropdownMenuRoot>
-                <DropdownMenuRoot v-if="selectedTab === 'all'">
-                  <DropdownMenuTrigger as-child>
-                    <Button
-                      variant="secondary"
-                      size="icon"
-                      :aria-label="$t('sideToolbar.nodeLibraryTab.filter')"
-                    >
-                      <i class="icon-[lucide--list-filter] size-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuPortal>
-                    <DropdownMenuContent
-                      class="z-9999 min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
-                      align="end"
-                      :side-offset="4"
-                    >
-                      <DropdownMenuCheckboxItem
-                        v-for="category in filterableCategories"
-                        :key="category"
-                        v-model="filterOptions[category]"
-                        class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
-                      >
-                        <span class="flex-1">{{
-                          $t(
-                            `sideToolbar.nodeLibraryTab.filterOptions.${category}`
-                          )
-                        }}</span>
-                        <span class="size-4 shrink-0">
-                          <DropdownMenuItemIndicator>
-                            <i class="icon-[lucide--check] size-4" />
-                          </DropdownMenuItemIndicator>
-                        </span>
-                      </DropdownMenuCheckboxItem>
-                    </DropdownMenuContent>
-                  </DropdownMenuPortal>
-                </DropdownMenuRoot>
               </div>
             </div>
           </div>
@@ -380,11 +397,47 @@ const filterableCategories: NodeCategoryId[] = [
 ]
 
 const filterOptions = ref<Record<NodeCategoryId, boolean>>({
-  blueprints: true,
-  essentialNodes: true,
-  comfyNodes: true,
-  partnerNodes: true,
-  extensions: true
+  blueprints: false,
+  essentialNodes: false,
+  comfyNodes: false,
+  partnerNodes: false,
+  extensions: false
+})
+
+const allCategoriesSelected = ref(true)
+
+function clearAllCategoryFilters() {
+  for (const category of filterableCategories) {
+    filterOptions.value[category] = false
+  }
+}
+
+function selectAllCategories() {
+  clearAllCategoryFilters()
+  allCategoriesSelected.value = true
+}
+
+function setCategoryFilter(category: NodeCategoryId, enabled: boolean) {
+  if (allCategoriesSelected.value) {
+    clearAllCategoryFilters()
+    allCategoriesSelected.value = false
+  }
+  filterOptions.value[category] = enabled
+  const allChecked = filterableCategories.every((c) => filterOptions.value[c])
+  const anyChecked = filterableCategories.some((c) => filterOptions.value[c])
+  if (allChecked || !anyChecked) {
+    selectAllCategories()
+  }
+}
+
+const effectiveFilterOptions = computed<Record<NodeCategoryId, boolean>>(() => {
+  if (allCategoriesSelected.value) {
+    return filterableCategories.reduce(
+      (acc, c) => ({ ...acc, [c]: true }),
+      {} as Record<NodeCategoryId, boolean>
+    )
+  }
+  return filterOptions.value
 })
 
 const { t } = useI18n()
@@ -495,7 +548,8 @@ function renderSections(
 const renderedSections = computed(() =>
   renderSections(
     sections.value,
-    (section) => !section.category || filterOptions.value[section.category]
+    (section) =>
+      !section.category || effectiveFilterOptions.value[section.category]
   )
 )
 
