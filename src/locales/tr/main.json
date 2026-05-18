@@ -410,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "Yerelde Devam Et",
     "exploreCloud": "Bulutu Ücretsiz Dene",
-    "feature1Title": "Aylık 400 Ücretsiz Kredi",
     "feature2Title": "Her Yerde, Anında Çalışır",
     "feature3Title": "Kullanıma Hazır Modeller",
     "feature4Title": "En İyi Özel Node Paketleri Önceden Yüklü",
@@ -816,6 +815,7 @@
     "HISTOGRAM": "HİSTOGRAM",
     "HOOKS": "Kancalar",
     "HOOK_KEYFRAMES": "Kanca_anahtar_kareleri",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "GÖRÜNTÜ",
     "IMAGECOMPARE": "GÖRSELKARŞILAŞTIR",
     "INT": "TAMSAYI",
@@ -836,6 +836,8 @@
     "MODEL": "MODEL",
     "MODEL_PATCH": "MODEL_YAMASI",
     "MODEL_TASK_ID": "MODEL_GÖREV_ID",
+    "MOGE_GEOMETRY": "MOGE_GEOMETRY",
+    "MOGE_MODEL": "MOGE_MODEL",
     "NOISE": "GÜRÜLTÜ",
     "OPENAI_CHAT_CONFIG": "OPENAI_SOHBET_YAPILANDIRMASI",
     "OPENAI_INPUT_FILES": "OPENAI_GİRİŞ_DOSYALARI",
@@ -914,7 +916,8 @@
     "extensionFileHint": "Bu, aşağıdaki komut dosyasından kaynaklanıyor olabilir",
     "loadWorkflowTitle": "İş akışı verileri yeniden yüklenirken hata nedeniyle yükleme iptal edildi",
     "noStackTrace": "Yığın izi mevcut değil",
-    "promptExecutionError": "İstem yürütmesi başarısız oldu"
+    "promptExecutionError": "İstem yürütmesi başarısız oldu",
+    "queueOpenWorkflowFailedTitle": "İş Akışı Açılamadı"
   },
   "errorOverlay": {
     "errorCount": "{count} HATA | {count} HATA",
@@ -1042,6 +1045,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrg Logosu",
+    "comfyPackageOutdated": "Yüklü {name} sürümü ({installedVersion}), gerekli sürümden ({requiredVersion}) daha eski.",
     "comingSoon": "Çok Yakında",
     "command": "Komut",
     "commandProhibited": "{command} komutu yasak. Daha fazla bilgi için bir yöneticiyle iletişime geçin.",
@@ -2254,6 +2258,7 @@
     "": "",
     "3d": "3d",
     "3d_models": "3d_modeller",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
@@ -2310,6 +2315,7 @@
     "edit_models": "modelleri_düzenle",
     "experimental": "deneysel",
     "flux": "flux",
+    "geometry_estimation": "geometri_tahmini",
     "gligen": "gligen",
     "guidance": "rehberlik",
     "guiders": "rehberler",

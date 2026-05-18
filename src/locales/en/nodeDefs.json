@@ -953,6 +953,50 @@
       }
     }
   },
+  "ByteDanceSeedreamNodeV2": {
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "description": "Unified text-to-image generation and precise single-sentence editing at up to 4K resolution.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for creating or editing an image."
+      },
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an \"AI generated\" watermark to the image."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_fail_on_partial": {
+        "name": "fail_on_partial"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_max_images": {
+        "name": "max_images"
+      },
+      "model_size_preset": {
+        "name": "size_preset"
+      },
+      "model_width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceTextToVideoNode": {
     "display_name": "ByteDance Text to Video",
     "description": "Generate video using ByteDance models via api based on prompt",
@@ -1184,6 +1228,46 @@
       "nerf_tile_size": {
         "name": "nerf_tile_size",
         "tooltip": "Allows overriding the default NeRF tile size. -1 means use the default (32). 0 means use non-tiling mode (may require a lot of VRAM)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClaudeNode": {
+    "display_name": "Anthropic Claude",
+    "description": "Generate text responses with Anthropic's Claude models. Provide a text prompt and optionally one or more images for multimodal context.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text input to the model."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The Claude model used to generate the response."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Optional image(s) to use as context for the model. Up to 20 images."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Foundational instructions that dictate the model's behavior."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_temperature": {
+        "name": "temperature"
       }
     },
     "outputs": {
@@ -1688,6 +1772,10 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "BOOL",
         "tooltip": null
       }
     }
@@ -3108,6 +3196,26 @@
       }
     }
   },
+  "EmptyHiDreamO1LatentImage": {
+    "display_name": "Empty HiDream-O1 Latent Image",
+    "description": "Empty pixel-space latent for HiDream-O1-Image. The model was trained at ~4 megapixels; lower resolutions go off-distribution and quality regresses noticeably. Trained resolutions: 2048x2048, 2304x1728, 1728x2304, 2560x1440, 1440x2560, 2496x1664, 1664x2496, 3104x1312, 1312x3104, 2304x1792, 1792x2304.",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyHunyuanImageLatent": {
     "display_name": "EmptyHunyuanImageLatent",
     "inputs": {
@@ -3420,6 +3528,37 @@
     "inputs": {
       "sigmas": {
         "name": "sigmas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux2ImageNode": {
+    "display_name": "Flux.2 Image",
+    "description": "Generate images via Flux.2 [pro] or Flux.2 [max] from a prompt and optional reference images.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt for the image generation or edit"
+      },
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for creating the noise."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_width": {
+        "name": "width"
       }
     },
     "outputs": {
@@ -4257,6 +4396,22 @@
       }
     }
   },
+  "GetICLoRAParameters": {
+    "display_name": "Get IC-LoRA Parameters",
+    "description": "Extracts IC-LoRA parameters from the safetensors metadata of a LoRA-loaded model and outputs them for LTXVAddGuide (eg. reference_downscale_factor).",
+    "inputs": {
+      "iclora_model": {
+        "name": "iclora_model",
+        "tooltip": "Direct output from a LoRA Loader for the specific IC-LoRA from which to extract the metadata."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iclora_parameters",
+        "tooltip": "IC-LoRA parameters extracted from the LoRA metadata (eg. reference_downscale_factor). Connect to LTXVAddGuide if the LoRA requires special handling of the guides."
+      }
+    }
+  },
   "GetImageSize": {
     "display_name": "Get Image Size",
     "description": "Returns width and height of the image, and passes it through unchanged.",
@@ -4443,6 +4598,40 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNodeV2": {
+    "display_name": "Grok Image Edit",
+    "description": "Modify an existing image based on a text prompt",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "The text prompt used to generate the image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_number_of_images": {
+        "name": "number_of_images"
+      },
+      "model_resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -4788,6 +4977,70 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1PatchSeamSmoothing": {
+    "display_name": "HiDream-O1 Patch Seam Smoothing",
+    "description": "Average the model output across multiple shifted patch-grid positions during the late portion of sampling. Cancels seams.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Sampling progress (0=start, 1=end) at which the blend turns ON."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Sampling progress at which the blend turns OFF."
+      },
+      "pattern": {
+        "name": "pattern",
+        "tooltip": "Shift layout. single_shift: one pass at the natural patch grid + others offset. symmetric: all passes off-grid, shifts split around origin."
+      },
+      "passes": {
+        "name": "passes",
+        "tooltip": "Number of passes per gated step. 2/4 = fixed. ramp_*: pass count increases as sampling approaches end (more smoothing where seams are most visible)."
+      },
+      "blend": {
+        "name": "blend",
+        "tooltip": "average: equal-weight mean. window: Hann-windowed weighting favoring each pass away from its patch boundaries. median: per-pixel median, rejects wraparound-outlier passes."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Interpolation between the natural-grid pred (0) and the averaged result (1)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1ReferenceImages": {
+    "display_name": "HiDream-O1 Reference Images",
+    "description": "Attach 1-10 reference images to conditioning, one for edit instructionor multiple for subject-driven personalization.",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Reference images. 1 image = instruction edit; 2-10 images = multi reference."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -5362,6 +5615,9 @@
   "ImageCompositeMasked": {
     "display_name": "Image Composite Masked",
     "inputs": {
+      "destination": {
+        "name": "destination"
+      },
       "source": {
         "name": "source"
       },
@@ -5373,9 +5629,6 @@
       },
       "resize_source": {
         "name": "resize_source"
-      },
-      "destination": {
-        "name": "destination"
       },
       "mask": {
         "name": "mask"
@@ -7728,6 +7981,19 @@
       }
     }
   },
+  "LoadMoGeModel": {
+    "display_name": "Load MoGe Model",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadTrainingDataset": {
     "display_name": "Load Training Dataset",
     "inputs": {
@@ -7990,6 +8256,10 @@
       },
       "strength": {
         "name": "strength"
+      },
+      "iclora_parameters": {
+        "name": "iclora_parameters",
+        "tooltip": "Optional IC-LoRA parameters from a Get IC-LoRA Parameters node. Used for adjusting guide processing as required by certain IC-LoRAs (eg. those with a reference_downscale_factor > 1). When chained, each LTXVAddGuide uses only the parameters connected to it."
       }
     },
     "outputs": {
@@ -11541,6 +11811,18 @@
       }
     }
   },
+  "ModelNoiseScale": {
+    "display_name": "ModelNoiseScale",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "noise_scale": {
+        "name": "noise_scale",
+        "tooltip": "Absolute training noise scale. For example HiDream-O1 base: 8.0, dev: 7.5."
+      }
+    }
+  },
   "ModelPatchLoader": {
     "display_name": "ModelPatchLoader",
     "inputs": {
@@ -11680,6 +11962,122 @@
       },
       "filename_prefix": {
         "name": "filename_prefix"
+      }
+    }
+  },
+  "MoGeInference": {
+    "display_name": "MoGe Inference",
+    "inputs": {
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "0 = fastest, 9 = most detail."
+      },
+      "fov_x_degrees": {
+        "name": "fov_x_degrees",
+        "tooltip": "Horizontal field of view of the source camera. Sets the focal length used to unproject the depth map into 3D. 0 = auto-recover from the predicted points."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Images per inference call. Lower if you OOM on a long video / image set."
+      },
+      "force_projection": {
+        "name": "force_projection"
+      },
+      "apply_mask": {
+        "name": "apply_mask",
+        "tooltip": "Set masked-out (sky / invalid) pixels to inf in points and depth so meshing culls them. Disable to keep the raw predicted geometry everywhere; the mask is still returned separately."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePanoramaInference": {
+    "display_name": "MoGe Panorama Inference",
+    "inputs": {
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Equirectangular panorama (any aspect)."
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "Per-view detail (0 = fastest, 9 = most detailed)."
+      },
+      "split_resolution": {
+        "name": "split_resolution",
+        "tooltip": "Resolution of each perspective split."
+      },
+      "merge_resolution": {
+        "name": "merge_resolution",
+        "tooltip": "Long-side resolution of the merged equirect distance map."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Views per inference batch (12 splits total)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePointMapToMesh": {
+    "display_name": "MoGe Point Map to Mesh",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "Which image of a batched MoGe geometry to mesh. Per-image vertex counts differ, so batches can't be stacked into a single MESH."
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "Vertex stride; 1 = full resolution."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "Drop pixels whose 3x3 depth span exceeds this fraction. 0 = off."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Carry the source image through as the baseColor texture."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeRender": {
+    "display_name": "MoGe Render",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "DirectX vs OpenGL controls the normal-map green-channel convention. DirectX: green = -Y down (Unreal). OpenGL: green = +Y up (Blender, Substance, Unity, glTF)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -11953,6 +12351,50 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV2": {
+    "display_name": "OpenAI GPT Image 2",
+    "description": "Generates images via OpenAI's GPT Image endpoint.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for GPT Image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "How many images to generate"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "not implemented yet in backend"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_background": {
+        "name": "background"
+      },
+      "model_custom_height": {
+        "name": "custom_height"
+      },
+      "model_custom_width": {
+        "name": "custom_width"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_size": {
+        "name": "size"
       }
     },
     "outputs": {
@@ -14547,6 +14989,29 @@
     "inputs": {
       "version": {
         "name": "version"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SamplerLCM": {
+    "display_name": "SamplerLCM",
+    "description": "LCM sampler with tunable per-step noise. s_noise is a multiplier on the model's training noise scale",
+    "inputs": {
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "Per-step noise multiplier at the first step (1.0 = match training)."
+      },
+      "s_noise_end": {
+        "name": "s_noise_end",
+        "tooltip": "Per-step noise multiplier at the last step. Set equal to s_noise for a constant schedule."
+      },
+      "noise_clip_std": {
+        "name": "noise_clip_std",
+        "tooltip": "Clamp per-step noise to +/- N*std. 0 disables."
       }
     },
     "outputs": {
@@ -17430,7 +17895,8 @@
         "name": "face_limit"
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "This parameter is deprecated and does nothing."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -19425,6 +19891,156 @@
     "outputs": {
       "0": {
         "tooltip": "The model with context windows applied during sampling."
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "video_frames": {
+        "name": "video_frames"
+      },
+      "audio_inject_scale": {
+        "name": "audio_inject_scale",
+        "tooltip": "The scale for the audio features when injected into the video model."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio_encoder_output",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps_string",
+        "tooltip": "The calculated fps based on the audio length and the number of video frames. Used in the prompt."
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "images": {
+        "name": "images"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "Length of this segment (usually 149 frames)"
+      },
+      "segment_index": {
+        "name": "segment_index",
+        "tooltip": "Which segment this is (0 for first, 1 for second, etc.)"
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio to calculate total output frames from and extract segment audio."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "Padded keyframe sequence"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "Mask indicating valid frames"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "Audio segment for this video segment"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "images": {
+        "name": "images"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "Length of each segment (usually 149 frames)"
+      },
+      "num_segments": {
+        "name": "num_segments",
+        "tooltip": "How many padded segments to emit as lists."
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio to slice for each emitted segment."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "Padded keyframe sequences"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "Masks indicating valid frames"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "Audio segment for each video segment"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "The number of frames in the generated video. Should stay 149 for WanDancer."
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "The CLIP vision embeds for the first frame."
+      },
+      "clip_vision_output_ref": {
+        "name": "clip_vision_output_ref",
+        "tooltip": "The CLIP vision embeds for the reference image."
+      },
+      "start_image": {
+        "name": "start_image",
+        "tooltip": "The initial image(s) to be encoded, can be any number of frames."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "Image conditioning mask for the start image(s). White is kept, black is generated. Used for the local generations."
+      },
+      "audio_encoder_output": {
+        "name": "audio_encoder_output"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Empty latent."
       }
     }
   },
