@@ -384,7 +384,7 @@ describe('usePainter', () => {
         '/upload/image',
         expect.objectContaining({ method: 'POST' })
       )
-      expect(result).toBe('painter/uploaded.png [temp]')
+      expect(result).toBe('uploaded.png [input]')
     })
 
     it('returns existing modelValue when canvas element is unmounted at serialize time', async () => {
