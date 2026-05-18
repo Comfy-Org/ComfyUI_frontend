@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createApp, defineComponent, h } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { useOAuthPostLoginRedirect } from '@/platform/cloud/oauth/useOAuthPostLoginRedirect'
 
@@ -15,14 +17,30 @@ vi.mock('@/platform/auth/session/useSessionCookie', () => ({
   useSessionCookie: () => ({ createSessionOrThrow })
 }))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) =>
-      key === 'oauth.consent.sessionError'
-        ? 'Failed to establish session. Please try again.'
-        : key
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} }
+})
+
+function mountRedirect() {
+  let api: ReturnType<typeof useOAuthPostLoginRedirect> | undefined
+
+  const Child = defineComponent({
+    setup() {
+      api = useOAuthPostLoginRedirect()
+      return () => null
+    }
   })
-}))
+
+  const host = document.createElement('div')
+  const app = createApp(defineComponent({ setup: () => () => h(Child) }))
+  app.use(i18n)
+  app.mount(host)
+
+  if (!api) throw new Error('useOAuthPostLoginRedirect was not initialized')
+  return { api, unmount: () => app.unmount() }
+}
 
 describe('useOAuthPostLoginRedirect', () => {
   beforeEach(() => {
@@ -32,9 +50,9 @@ describe('useOAuthPostLoginRedirect', () => {
   })
 
   it('returns no-oauth when neither query nor sessionStorage holds a request id', async () => {
-    const { resumeOAuthIfNeeded } = useOAuthPostLoginRedirect()
+    const { api } = mountRedirect()
 
-    const result = await resumeOAuthIfNeeded({})
+    const result = await api.resumeOAuthIfNeeded({})
 
     expect(result).toEqual({ kind: 'no-oauth' })
     expect(createSessionOrThrow).not.toHaveBeenCalled()
@@ -42,9 +60,9 @@ describe('useOAuthPostLoginRedirect', () => {
   })
 
   it('establishes session and navigates to consent when oauth_request_id is in the query', async () => {
-    const { resumeOAuthIfNeeded } = useOAuthPostLoginRedirect()
+    const { api } = mountRedirect()
 
-    const result = await resumeOAuthIfNeeded({
+    const result = await api.resumeOAuthIfNeeded({
       oauth_request_id: VALID_REQUEST_ID
     })
 
@@ -58,9 +76,9 @@ describe('useOAuthPostLoginRedirect', () => {
 
   it('resumes using a stashed sessionStorage id when the query is empty (multi-step flows)', async () => {
     sessionStorage.setItem('Comfy.OAuthRequestId', VALID_REQUEST_ID)
-    const { resumeOAuthIfNeeded } = useOAuthPostLoginRedirect()
+    const { api } = mountRedirect()
 
-    const result = await resumeOAuthIfNeeded({})
+    const result = await api.resumeOAuthIfNeeded({})
 
     expect(result).toEqual({ kind: 'resumed' })
     expect(routerPush).toHaveBeenCalledWith({
@@ -71,9 +89,9 @@ describe('useOAuthPostLoginRedirect', () => {
 
   it('returns an error with the thrown message when session creation fails', async () => {
     createSessionOrThrow.mockRejectedValue(new Error('Unauthorized'))
-    const { resumeOAuthIfNeeded } = useOAuthPostLoginRedirect()
+    const { api } = mountRedirect()
 
-    const result = await resumeOAuthIfNeeded({
+    const result = await api.resumeOAuthIfNeeded({
       oauth_request_id: VALID_REQUEST_ID
     })
 
@@ -81,18 +99,20 @@ describe('useOAuthPostLoginRedirect', () => {
     expect(routerPush).not.toHaveBeenCalled()
   })
 
-  it('falls back to a generic message when session creation rejects with a non-Error value', async () => {
+  it('falls back to the i18n key when session creation rejects with a non-Error value', async () => {
     createSessionOrThrow.mockRejectedValue('boom')
-    const { resumeOAuthIfNeeded } = useOAuthPostLoginRedirect()
+    const { api } = mountRedirect()
 
-    const result = await resumeOAuthIfNeeded({
+    const result = await api.resumeOAuthIfNeeded({
       oauth_request_id: VALID_REQUEST_ID
     })
 
-    expect(result.kind).toBe('error')
-    if (result.kind === 'error') {
-      expect(result.message).toMatch(/try again/i)
-    }
+    // Empty messages → useI18n returns the key itself, which is what we
+    // assert on (per docs/testing/vitest-patterns.md).
+    expect(result).toEqual({
+      kind: 'error',
+      message: 'oauth.consent.sessionError'
+    })
     expect(routerPush).not.toHaveBeenCalled()
   })
 })

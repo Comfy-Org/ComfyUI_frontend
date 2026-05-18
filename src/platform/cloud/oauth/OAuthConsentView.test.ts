@@ -1,11 +1,26 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import OAuthConsentView from '@/platform/cloud/oauth/OAuthConsentView.vue'
 import { OAuthApiError } from '@/platform/cloud/oauth/oauthApi'
+import type * as oauthApi from '@/platform/cloud/oauth/oauthApi'
 import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
+
+const submitOAuthConsentDecision = vi.fn()
+
+vi.mock('@/platform/cloud/oauth/oauthApi', async () => {
+  const actual = await vi.importActual<typeof oauthApi>(
+    '@/platform/cloud/oauth/oauthApi'
+  )
+  return {
+    ...actual,
+    submitOAuthConsentDecision: (
+      ...args: Parameters<typeof actual.submitOAuthConsentDecision>
+    ) => submitOAuthConsentDecision(...args)
+  }
+})
 
 const i18n = createI18n({
   legacy: false,
@@ -28,7 +43,6 @@ const i18n = createI18n({
           workspaceLabel: 'Workspace',
           permissionsHeader: 'Permissions',
           workspaceHelp: 'Permissions apply to this workspace only.',
-          learnMore: 'Learn more',
           redirectNotice: "You'll be redirected to",
           appTypeNative: 'Native app',
           appTypeWeb: 'Web app',
@@ -48,7 +62,6 @@ const i18n = createI18n({
         },
         workspace: {
           personal: 'Personal',
-          team: 'Team',
           owner: 'Owner',
           member: 'Member'
         }
@@ -81,19 +94,19 @@ const challenge: OAuthConsentChallenge = {
   ]
 }
 
-const renderConsent = (
-  overrides: Partial<OAuthConsentChallenge> = {},
-  submitDecision = vi.fn()
-) =>
+const renderConsent = (overrides: Partial<OAuthConsentChallenge> = {}) =>
   render(OAuthConsentView, {
     global: { plugins: [i18n] },
     props: {
-      initialChallenge: { ...challenge, ...overrides },
-      submitDecision
+      initialChallenge: { ...challenge, ...overrides }
     }
   })
 
 describe('OAuthConsentView', () => {
+  beforeEach(() => {
+    submitOAuthConsentDecision.mockReset().mockResolvedValue(undefined)
+  })
+
   it('renders title, subtitle, and scope checklist', () => {
     renderConsent()
 
@@ -133,21 +146,20 @@ describe('OAuthConsentView', () => {
   })
 
   it('hides the application-type badge for legacy seeded clients', () => {
-    renderConsent({ client_application_type: '' })
+    renderConsent({ client_application_type: undefined })
     expect(screen.queryByText('Native app')).not.toBeInTheDocument()
     expect(screen.queryByText('Web app')).not.toBeInTheDocument()
   })
 
   it('preselects the only workspace and submits with it', async () => {
     const user = userEvent.setup()
-    const submitDecision = vi.fn()
-    renderConsent({ workspaces: [challenge.workspaces[0]] }, submitDecision)
+    renderConsent({ workspaces: [challenge.workspaces[0]] })
 
     // Single-workspace path: Allow is enabled and submission carries the
     // sole workspace_id.
     await user.click(screen.getByRole('button', { name: 'Continue' }))
 
-    expect(submitDecision).toHaveBeenCalledWith({
+    expect(submitOAuthConsentDecision).toHaveBeenCalledWith({
       oauthRequestId: '550e8400-e29b-41d4-a716-446655440000',
       csrfToken: 'csrf-token',
       decision: 'allow',
@@ -163,12 +175,11 @@ describe('OAuthConsentView', () => {
 
   it('submits deny when the user cancels', async () => {
     const user = userEvent.setup()
-    const submitDecision = vi.fn()
-    renderConsent({ workspaces: [challenge.workspaces[0]] }, submitDecision)
+    renderConsent({ workspaces: [challenge.workspaces[0]] })
 
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
-    expect(submitDecision).toHaveBeenCalledWith(
+    expect(submitOAuthConsentDecision).toHaveBeenCalledWith(
       expect.objectContaining({
         decision: 'deny',
         workspaceId: 'personal-workspace'
@@ -176,12 +187,18 @@ describe('OAuthConsentView', () => {
     )
   })
 
+  it('disables both buttons when no workspaces are available', () => {
+    renderConsent({ workspaces: [] })
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled()
+  })
+
   it('maps OAuthApiError(400) to the expired-request message', async () => {
-    const submitDecision = vi
-      .fn()
-      .mockRejectedValue(new OAuthApiError('expired', 400))
+    submitOAuthConsentDecision.mockRejectedValue(
+      new OAuthApiError('expired', 400)
+    )
     const user = userEvent.setup()
-    renderConsent({ workspaces: [challenge.workspaces[0]] }, submitDecision)
+    renderConsent({ workspaces: [challenge.workspaces[0]] })
 
     await user.click(screen.getByRole('button', { name: 'Continue' }))
 
@@ -195,11 +212,11 @@ describe('OAuthConsentView', () => {
   })
 
   it('maps OAuthApiError(403) to the scope-broadening re-prompt message', async () => {
-    const submitDecision = vi
-      .fn()
-      .mockRejectedValue(new OAuthApiError('scope broadening', 403))
+    submitOAuthConsentDecision.mockRejectedValue(
+      new OAuthApiError('scope broadening', 403)
+    )
     const user = userEvent.setup()
-    renderConsent({ workspaces: [challenge.workspaces[0]] }, submitDecision)
+    renderConsent({ workspaces: [challenge.workspaces[0]] })
 
     await user.click(screen.getByRole('button', { name: 'Continue' }))
 
@@ -213,11 +230,11 @@ describe('OAuthConsentView', () => {
   })
 
   it('maps OAuthApiError(404) to the feature-unavailable message', async () => {
-    const submitDecision = vi
-      .fn()
-      .mockRejectedValue(new OAuthApiError('disabled', 404))
+    submitOAuthConsentDecision.mockRejectedValue(
+      new OAuthApiError('disabled', 404)
+    )
     const user = userEvent.setup()
-    renderConsent({ workspaces: [challenge.workspaces[0]] }, submitDecision)
+    renderConsent({ workspaces: [challenge.workspaces[0]] })
 
     await user.click(screen.getByRole('button', { name: 'Continue' }))
 

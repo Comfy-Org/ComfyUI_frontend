@@ -34,10 +34,8 @@ const meta: Meta<typeof OAuthConsentView> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const noopSubmit = async () => {}
-
 export const TwoWorkspaces: Story = {
-  args: { initialChallenge: baseChallenge, submitDecision: noopSubmit }
+  args: { initialChallenge: baseChallenge }
 }
 
 export const SingleWorkspace: Story = {
@@ -45,8 +43,7 @@ export const SingleWorkspace: Story = {
     initialChallenge: {
       ...baseChallenge,
       workspaces: [baseChallenge.workspaces[0]]
-    },
-    submitDecision: noopSubmit
+    }
   }
 }
 
@@ -70,8 +67,7 @@ export const ManyWorkspaces: Story = {
           role: 'member'
         }
       ]
-    },
-    submitDecision: noopSubmit
+    }
   }
 }
 
@@ -80,8 +76,7 @@ export const UnknownScope: Story = {
     initialChallenge: {
       ...baseChallenge,
       scopes: ['mcp:tools:read', 'mcp:tools:call', 'mcp:billing:read']
-    },
-    submitDecision: noopSubmit
+    }
   }
 }
 
@@ -90,8 +85,7 @@ export const ClaudeDesktop: Story = {
     initialChallenge: {
       ...baseChallenge,
       client_display_name: 'Claude Desktop'
-    },
-    submitDecision: noopSubmit
+    }
   }
 }
 
@@ -102,16 +96,17 @@ export const WebClient: Story = {
       client_display_name: 'Comfy Studio',
       client_application_type: 'web',
       redirect_uri: 'https://studio.example.com/oauth/cb'
-    },
-    submitDecision: noopSubmit
+    }
   }
 }
 
 export const LegacyClientNoBadge: Story = {
   args: {
-    // Pre-DCR seeded clients have application_type="" — UI should hide
+    // Pre-DCR seeded clients have no application_type — UI should hide
     // the badge entirely rather than guess.
-    initialChallenge: { ...baseChallenge, client_application_type: '' },
-    submitDecision: noopSubmit
+    initialChallenge: {
+      ...baseChallenge,
+      client_application_type: undefined
+    }
   }
 }

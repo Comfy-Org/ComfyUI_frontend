@@ -2143,7 +2143,6 @@
       "workspaceLabel": "Workspace",
       "permissionsHeader": "Permissions",
       "workspaceHelp": "Permissions apply to this workspace only.",
-      "learnMore": "Learn more",
       "redirectNotice": "You'll be redirected to",
       "appTypeNative": "Native app",
       "appTypeWeb": "Web app",
@@ -2163,7 +2162,6 @@
     },
     "workspace": {
       "personal": "Personal",
-      "team": "Team",
       "owner": "Owner",
       "member": "Member"
     }

@@ -49,10 +49,6 @@ export function getOAuthRequestId(): string | null {
   return readStoredOAuthRequestId()
 }
 
-export function hasOAuthRequestId(): boolean {
-  return getOAuthRequestId() !== null
-}
-
 export function clearOAuthRequestId(): void {
   sessionStorage.removeItem(OAUTH_REQUEST_ID_STORAGE_KEY)
 }

@@ -2,14 +2,14 @@
   <main class="mx-auto flex min-h-screen max-w-md flex-col justify-center p-6">
     <section
       v-if="challenge"
-      class="flex flex-col gap-6 rounded-2xl border border-solid border-muted bg-(--p-content-background) p-6 shadow-sm"
+      class="flex flex-col gap-6 rounded-2xl border border-solid border-muted bg-secondary-background p-6 shadow-sm"
     >
       <header class="flex flex-col items-center gap-3 pt-2 text-center">
         <div
           class="flex size-12 items-center justify-center rounded-2xl bg-secondary-background"
         >
           <i
-            class="pi pi-key text-xl text-base-foreground"
+            class="icon-[lucide--key] size-5 text-base-foreground"
             aria-hidden="true"
           />
         </div>
@@ -44,48 +44,45 @@
         >
           {{ t('oauth.consent.noWorkspaces') }}
         </div>
-        <ul
+        <RadioGroupRoot
           v-else
-          role="radiogroup"
+          v-model="selectedWorkspaceId"
           :aria-label="t('oauth.consent.workspaceLabel')"
           class="m-0 flex scrollbar-custom max-h-72 list-none flex-col gap-1 overflow-y-auto p-0"
         >
-          <li v-for="workspace in challenge.workspaces" :key="workspace.id">
-            <button
-              type="button"
-              role="radio"
-              :aria-checked="selectedWorkspaceId === workspace.id"
-              :class="
-                cn(
-                  'flex w-full cursor-pointer items-center gap-3 rounded-md border-none bg-transparent px-3 py-2 text-left transition-colors',
-                  'hover:bg-secondary-background-hover',
-                  'focus-visible:ring-ring focus-visible:ring-1 focus-visible:outline-none',
-                  selectedWorkspaceId === workspace.id &&
-                    'bg-secondary-background'
-                )
-              "
-              @click="selectedWorkspaceId = workspace.id"
-            >
-              <WorkspaceProfilePic
-                class="size-8 shrink-0 text-sm"
-                :workspace-name="workspace.name"
-              />
-              <div class="flex min-w-0 flex-1 flex-col">
-                <span class="truncate text-sm text-base-foreground">
-                  {{ workspace.name }}
-                </span>
-                <span class="text-xs text-muted-foreground">
-                  {{ workspaceSecondaryLabel(workspace) }}
-                </span>
-              </div>
-              <i
-                v-if="selectedWorkspaceId === workspace.id"
-                class="pi pi-check shrink-0 text-sm text-base-foreground"
-                aria-hidden="true"
-              />
-            </button>
-          </li>
-        </ul>
+          <RadioGroupItem
+            v-for="workspace in challenge.workspaces"
+            :key="workspace.id"
+            :value="workspace.id"
+            :class="
+              cn(
+                'flex w-full cursor-pointer items-center gap-3 rounded-md border-none bg-transparent px-3 py-2 text-left transition-colors',
+                'hover:bg-secondary-background-hover',
+                'focus-visible:ring-ring focus-visible:ring-1 focus-visible:outline-none',
+                selectedWorkspaceId === workspace.id &&
+                  'bg-secondary-background'
+              )
+            "
+          >
+            <WorkspaceProfilePic
+              class="size-8 shrink-0 text-sm"
+              :workspace-name="workspace.name"
+            />
+            <div class="flex min-w-0 flex-1 flex-col">
+              <span class="truncate text-sm text-base-foreground">
+                {{ workspace.name }}
+              </span>
+              <span class="text-xs text-muted-foreground">
+                {{ workspaceSecondaryLabel(workspace) }}
+              </span>
+            </div>
+            <i
+              v-if="selectedWorkspaceId === workspace.id"
+              class="icon-[lucide--check] size-4 shrink-0 text-base-foreground"
+              aria-hidden="true"
+            />
+          </RadioGroupItem>
+        </RadioGroupRoot>
         <p class="m-0 text-xs text-muted">
           {{ t('oauth.consent.workspaceHelp') }}
         </p>
@@ -102,7 +99,7 @@
             class="flex items-center gap-2"
           >
             <i
-              class="pi pi-check shrink-0 text-sm text-primary-background"
+              class="icon-[lucide--check] size-4 shrink-0 text-primary-background"
               aria-hidden="true"
             />
             <span class="text-sm">
@@ -140,8 +137,8 @@
           variant="primary"
           size="lg"
           class="w-full"
-          :loading="isSubmitting && lastDecision === 'allow'"
-          :disabled="isSubmitting || !canSubmit"
+          :loading="submitting === 'allow'"
+          :disabled="isSubmitting || !selectedWorkspaceIsValid"
           @click="submit('allow')"
         >
           {{ t('oauth.consent.allow') }}
@@ -150,8 +147,8 @@
           variant="secondary"
           size="lg"
           class="w-full"
-          :loading="isSubmitting && lastDecision === 'deny'"
-          :disabled="isSubmitting"
+          :loading="submitting === 'deny'"
+          :disabled="isSubmitting || challenge.workspaces.length === 0"
           @click="submit('deny')"
         >
           {{ t('oauth.consent.deny') }}
@@ -173,6 +170,8 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { RadioGroupItem, RadioGroupRoot } from 'reka-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
@@ -185,7 +184,6 @@ import {
 } from '@/platform/cloud/oauth/oauthApi'
 import type {
   OAuthConsentChallenge,
-  OAuthConsentDecision,
   OAuthWorkspace
 } from '@/platform/cloud/oauth/oauthApi'
 import {
@@ -193,25 +191,27 @@ import {
   getOAuthRequestId
 } from '@/platform/cloud/oauth/oauthState'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
-import { cn } from '@comfyorg/tailwind-utils'
 
-const { initialChallenge, submitDecision = submitOAuthConsentDecision } =
-  defineProps<{
-    initialChallenge?: OAuthConsentChallenge
-    submitDecision?: OAuthConsentDecision
-  }>()
+const { initialChallenge } = defineProps<{
+  initialChallenge?: OAuthConsentChallenge
+}>()
 
 const { t, te } = useI18n()
 const route = useRoute()
+
+function getDefaultWorkspaceId(
+  source: OAuthConsentChallenge | undefined
+): string | undefined {
+  return source?.workspaces.length === 1 ? source.workspaces[0].id : undefined
+}
+
 const challenge = ref<OAuthConsentChallenge | null>(initialChallenge ?? null)
 const selectedWorkspaceId = ref<string | undefined>(
-  initialChallenge?.workspaces.length === 1
-    ? initialChallenge.workspaces[0].id
-    : undefined
+  getDefaultWorkspaceId(initialChallenge)
 )
 const errorMessage = ref('')
-const isSubmitting = ref(false)
-const lastDecision = ref<'allow' | 'deny' | null>(null)
+const submitting = ref<'allow' | 'deny' | null>(null)
+const isSubmitting = computed(() => submitting.value !== null)
 
 const resourceName = computed(
   () =>
@@ -222,10 +222,16 @@ const resourceName = computed(
 const appTypeBadge = computed(() => {
   const appType = challenge.value?.client_application_type
   if (appType === 'native') {
-    return { label: t('oauth.consent.appTypeNative'), icon: 'pi pi-desktop' }
+    return {
+      label: t('oauth.consent.appTypeNative'),
+      icon: 'icon-[lucide--monitor] size-3'
+    }
   }
   if (appType === 'web') {
-    return { label: t('oauth.consent.appTypeWeb'), icon: 'pi pi-globe' }
+    return {
+      label: t('oauth.consent.appTypeWeb'),
+      icon: 'icon-[lucide--globe] size-3'
+    }
   }
   return null
 })
@@ -239,37 +245,24 @@ const selectedWorkspaceIsValid = computed(() =>
   )
 )
 
-const canSubmit = computed(() => selectedWorkspaceIsValid.value)
-
 function scopeLabel(scope: string): string {
   const key = `oauth.scopes.${scope}.label`
   return te(key) ? t(key) : scope
 }
 
-function labelFor(value: string): string {
-  const key = `oauth.workspace.${value}`
-  return te(key) ? t(key) : value
-}
-
 // Row's secondary label: personal workspaces show "Personal" (role is
 // always implicit owner); team workspaces show the role ("Owner"/"Member").
 function workspaceSecondaryLabel(workspace: OAuthWorkspace): string {
-  return workspace.type === 'personal'
-    ? labelFor('personal')
-    : labelFor(workspace.role)
+  if (workspace.type === 'personal') return t('oauth.workspace.personal')
+  return workspace.role === 'owner'
+    ? t('oauth.workspace.owner')
+    : t('oauth.workspace.member')
 }
 
 function requestIdFromRoute(): string | null {
   return typeof route.query.oauth_request_id === 'string'
     ? route.query.oauth_request_id
     : getOAuthRequestId()
-}
-
-function initializeWorkspaceSelection(nextChallenge: OAuthConsentChallenge) {
-  selectedWorkspaceId.value =
-    nextChallenge.workspaces.length === 1
-      ? nextChallenge.workspaces[0].id
-      : undefined
 }
 
 async function loadChallenge() {
@@ -281,7 +274,7 @@ async function loadChallenge() {
   try {
     const next = await fetchOAuthConsentChallenge(oauthRequestId)
     challenge.value = next
-    initializeWorkspaceSelection(next)
+    selectedWorkspaceId.value = getDefaultWorkspaceId(next)
   } catch (error) {
     errorMessage.value = messageForError(error)
   }
@@ -301,25 +294,26 @@ function messageForError(error: unknown): string {
 async function submit(decision: 'allow' | 'deny') {
   if (!challenge.value) return
   if (decision === 'allow' && !selectedWorkspaceIsValid.value) return
+  // Cloud requires workspace_id on both allow and deny. A deny with no
+  // workspaces is disabled in the template, so a workspace is guaranteed.
+  const workspaceId =
+    selectedWorkspaceId.value ?? challenge.value.workspaces[0]?.id
+  if (!workspaceId) return
 
   errorMessage.value = ''
-  isSubmitting.value = true
-  lastDecision.value = decision
+  submitting.value = decision
   try {
-    await submitDecision({
+    await submitOAuthConsentDecision({
       oauthRequestId: challenge.value.oauth_request_id,
       csrfToken: challenge.value.csrf_token,
       decision,
-      // Cloud requires workspace_id on both allow and deny.
-      workspaceId:
-        selectedWorkspaceId.value ?? challenge.value.workspaces[0]?.id ?? ''
+      workspaceId
     })
     clearOAuthRequestId()
   } catch (error) {
     errorMessage.value = messageForError(error)
   } finally {
-    isSubmitting.value = false
-    lastDecision.value = null
+    submitting.value = null
   }
 }
 

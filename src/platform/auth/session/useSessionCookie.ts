@@ -23,8 +23,9 @@ export const useSessionCookie = () => {
   }
 
   const readSessionError = async (response: Response): Promise<string> => {
-    const errorData = await response.json().catch(() => ({}))
-    return errorData.message || response.statusText
+    const errorData: unknown = await response.json().catch(() => null)
+    const message = (errorData as { message?: unknown } | null)?.message
+    return typeof message === 'string' ? message : response.statusText
   }
 
   const getFirebaseSessionHeaderOrThrow = async (): Promise<
@@ -105,8 +106,8 @@ export const useSessionCookie = () => {
    * Called on logout.
    */
   const deleteSession = async (): Promise<void> => {
-    clearOAuthRequestId()
     if (!isCloud) return
+    clearOAuthRequestId()
 
     try {
       const response = await fetch(api.apiURL('/auth/session'), {
@@ -115,10 +116,9 @@ export const useSessionCookie = () => {
       })
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
         console.warn(
           'Failed to delete session cookie:',
-          errorData.message || response.statusText
+          await readSessionError(response)
         )
       }
     } catch (error) {

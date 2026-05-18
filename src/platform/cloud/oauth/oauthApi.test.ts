@@ -220,6 +220,23 @@ describe('submitOAuthConsentDecision', () => {
     ).rejects.toThrow('redirect_url')
   })
 
+  it('rejects an unsafe redirect_url scheme', async () => {
+    // Defense in depth: even though the cloud backend is trusted, never
+    // hand the browser off to a non-http(s) URL.
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      okResponse({ redirect_url: 'javascript:alert(1)' })
+    )
+
+    await expect(
+      submitOAuthConsentDecision({
+        oauthRequestId: validChallenge.oauth_request_id,
+        csrfToken: validChallenge.csrf_token,
+        decision: 'allow',
+        workspaceId: 'personal-workspace'
+      })
+    ).rejects.toThrow('unsafe scheme')
+  })
+
   it('sends the expected JSON body', async () => {
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')

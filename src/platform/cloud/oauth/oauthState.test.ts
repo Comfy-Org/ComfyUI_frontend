@@ -3,8 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   captureOAuthRequestId,
   clearOAuthRequestId,
-  getOAuthRequestId,
-  hasOAuthRequestId
+  getOAuthRequestId
 } from '@/platform/cloud/oauth/oauthState'
 
 describe('oauthState', () => {
@@ -20,7 +19,6 @@ describe('oauthState', () => {
     })
 
     expect(getOAuthRequestId()).toBe('550e8400-e29b-41d4-a716-446655440000')
-    expect(hasOAuthRequestId()).toBe(true)
     expect(sessionStorage.getItem('Comfy.OAuthRequestId')).toBe(
       '550e8400-e29b-41d4-a716-446655440000'
     )

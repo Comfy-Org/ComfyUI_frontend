@@ -1,10 +1,10 @@
 import type { RouteRecordRaw } from 'vue-router'
 
-import {
-  captureOAuthRequestId,
-  getOAuthRequestId
-} from '@/platform/cloud/oauth/oauthState'
+import { getOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 
+// `oauth_request_id` capture lives in the global router.beforeEach guard
+// (src/router.ts), which runs before any per-route beforeEnter. Per-route
+// guards read it back via getOAuthRequestId().
 function oauthConsentRedirect() {
   const oauthRequestId = getOAuthRequestId()
   return oauthRequestId
@@ -27,7 +27,6 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         component: () =>
           import('@/platform/cloud/onboarding/CloudLoginView.vue'),
         beforeEnter: async (to, _from, next) => {
-          captureOAuthRequestId(to.query)
           // Only redirect if not explicitly switching accounts
           if (!to.query.switchAccount) {
             const { useCurrentUser } =
@@ -47,7 +46,6 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         component: () =>
           import('@/platform/cloud/onboarding/CloudSignupView.vue'),
         beforeEnter: async (to, _from, next) => {
-          captureOAuthRequestId(to.query)
           if (!to.query.switchAccount) {
             const { useCurrentUser } =
               await import('@/composables/auth/useCurrentUser')
