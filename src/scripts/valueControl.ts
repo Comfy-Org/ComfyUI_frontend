@@ -3,12 +3,50 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
 
-export type ValueControlMode =
+type ValueControlMode =
   | 'fixed'
   | 'increment'
   | 'increment-wrap'
   | 'decrement'
   | 'randomize'
+
+/**
+ * Single production entry point for a value-control cycle. Given a target
+ * widget and its linked siblings, discovers the control widget and combo
+ * filter, applies partial-execution gating, and returns the next value to
+ * commit, or `undefined` when no change should be applied.
+ *
+ * Caller decides HOW to commit (direct assign vs `hydrateHostValue`) and
+ * WHEN to run it (beforeQueued vs afterQueued). Centralising sibling
+ * discovery + gating here keeps the legacy direct-attach flow and promoted
+ * subgraph flow from drifting on filter forwarding or partial-execution
+ * handling.
+ */
+export function nextValueForLinkedTarget(params: {
+  target: IBaseWidget
+  linkedWidgets: IBaseWidget[] | undefined
+  nodeId: unknown
+  isPartialExecution: boolean | undefined
+}): IBaseWidget['value'] | undefined {
+  if (params.isPartialExecution) return undefined
+  const linked = params.linkedWidgets
+  if (!linked) return undefined
+
+  const controlWidget = linked.find(isValueControlWidget)
+  if (!controlWidget) return undefined
+
+  const comboFilter = linked.find(
+    (w) => w !== controlWidget && w.type === 'string'
+  )
+  const filterValue =
+    typeof comboFilter?.value === 'string' ? comboFilter.value : undefined
+
+  const mode = controlWidget.value as ValueControlMode
+  return computeNextControlledValue(params.target, mode, {
+    comboFilter: filterValue,
+    nodeId: params.nodeId
+  })
+}
 
 const SAFE_INTEGER_MAX = 1125899906842624
 const SAFE_INTEGER_MIN = -1125899906842624
@@ -77,7 +115,12 @@ function computeNextComboValue(
   mode: ValueControlMode,
   { comboFilter, nodeId }: { comboFilter?: string; nodeId?: unknown }
 ): IBaseWidget['value'] | undefined {
-  const allValues = (target.options.values ?? []) as readonly string[]
+  const rawValues = target.options.values
+  if (!Array.isArray(rawValues)) return undefined
+
+  const allValues = rawValues.filter(
+    (value): value is string => typeof value === 'string'
+  )
   const check = buildComboFilter(comboFilter, nodeId)
   const values = check ? allValues.filter(check) : allValues
 

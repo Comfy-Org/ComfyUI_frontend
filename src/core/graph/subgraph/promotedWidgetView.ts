@@ -9,11 +9,7 @@ import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { t } from '@/i18n'
-import type { ValueControlMode } from '@/scripts/valueControl'
-import {
-  computeNextControlledValue,
-  isValueControlWidget
-} from '@/scripts/valueControl'
+import { nextValueForLinkedTarget } from '@/scripts/valueControl'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import {
   stripGraphPrefix,
@@ -463,24 +459,25 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   // No beforeQueued: source widgets linked through subgraph inputs are inert
-  // for prompt serialization. Control-after-generate is applied to the
-  // promoted host value in afterQueued so the next prompt uses the updated
-  // SubgraphNode value, not the linked source value.
-  afterQueued(): void {
-    this.applyValueControlToHost()
+  // for prompt serialization (per ADR 0009). Control-after-generate is
+  // applied to the promoted host value in afterQueued so the next prompt
+  // uses the updated SubgraphNode value, not the linked source value. The
+  // BEFORE/AFTER setting is intentionally not honored here for the same
+  // reason — mutating the source `beforeQueued` would not reach the prompt.
+  afterQueued({
+    isPartialExecution
+  }: { isPartialExecution?: boolean } = {}): void {
+    this.applyValueControlToHost(isPartialExecution)
   }
 
-  private applyValueControlToHost(): void {
+  private applyValueControlToHost(isPartialExecution?: boolean): void {
     const resolved = this.resolveAtHost()
-    const controlWidget =
-      resolved?.widget.linkedWidgets?.find(isValueControlWidget)
-    if (!controlWidget) return
-
-    const mode = controlWidget.value as ValueControlMode
-    const next = computeNextControlledValue(
-      this as unknown as IBaseWidget,
-      mode
-    )
+    const next = nextValueForLinkedTarget({
+      target: this,
+      linkedWidgets: resolved?.widget.linkedWidgets,
+      nodeId: this.subgraphNode.id,
+      isPartialExecution
+    })
     if (next === undefined) return
 
     this.hydrateHostValue(next)

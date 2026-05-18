@@ -5,8 +5,7 @@ import type {
   IComboWidget,
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
-import type { ValueControlMode } from './valueControl'
-import { computeNextControlledValue } from './valueControl'
+import { nextValueForLinkedTarget } from './valueControl'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { dynamicWidgets } from '@/core/graph/widgets/dynamicWidgets'
 import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
@@ -178,7 +177,7 @@ export function addValueControlWidgets(
     widgets.push(comboFilter)
   }
 
-  const applyWidgetControl = () => {
+  function applyWidgetControl(isPartialExecution: boolean | undefined) {
     if (
       node.inputs?.some(
         (input) =>
@@ -187,10 +186,11 @@ export function addValueControlWidgets(
     )
       return
 
-    const mode = valueControl.value as ValueControlMode
-    const next = computeNextControlledValue(targetWidget, mode, {
-      comboFilter: comboFilter?.value,
-      nodeId: node.id
+    const next = nextValueForLinkedTarget({
+      target: targetWidget,
+      linkedWidgets: targetWidget.linkedWidgets,
+      nodeId: node.id,
+      isPartialExecution
     })
     if (next === undefined) return
 
@@ -199,18 +199,18 @@ export function addValueControlWidgets(
   }
 
   valueControl.beforeQueued = ({ isPartialExecution } = {}) => {
-    if (!isPartialExecution && controlValueRunBefore()) {
+    if (controlValueRunBefore()) {
       // Don't run on first execution
       if (valueControl[HAS_EXECUTED]) {
-        applyWidgetControl()
+        applyWidgetControl(isPartialExecution)
       }
     }
     valueControl[HAS_EXECUTED] = true
   }
 
   valueControl.afterQueued = ({ isPartialExecution } = {}) => {
-    if (!isPartialExecution && !controlValueRunBefore()) {
-      applyWidgetControl()
+    if (!controlValueRunBefore()) {
+      applyWidgetControl(isPartialExecution)
     }
   }
 
