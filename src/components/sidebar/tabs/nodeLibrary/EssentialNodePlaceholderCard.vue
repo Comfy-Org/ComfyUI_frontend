@@ -1,8 +1,17 @@
 <template>
   <div
-    class="group @container relative flex aspect-square w-full cursor-default flex-col items-center justify-center gap-2 rounded-lg bg-secondary-background pt-3 pb-2 transition-colors duration-150 select-none hover:bg-secondary-background-hover"
+    :class="
+      cn(
+        'group @container relative flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-lg bg-secondary-background pt-3 pb-2 transition-colors duration-150 select-none hover:bg-secondary-background-hover',
+        nodeDef ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
+      )
+    "
+    :draggable="nodeDef != null"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
+    @click="handleClick"
+    @dragstart="handleDragStart"
+    @dragend="handleDragEnd"
   >
     <div
       v-if="tile.iconUrl && tile.tintable"
@@ -23,6 +32,7 @@
       :src="tile.iconUrl"
       :alt="tile.label"
       :class="cn(iconSizeClass, 'object-contain')"
+      draggable="false"
     />
     <i v-else :class="cn(tile.icon, iconSizeClass, 'text-muted-foreground')" />
     <TextTickerMultiLine
@@ -37,7 +47,7 @@
     </TextTickerMultiLine>
   </div>
 
-  <Teleport v-if="isHovered" to="body">
+  <Teleport v-if="showPopover" to="body">
     <div :ref="(el) => (popoverRef = el as HTMLElement)" :style="popoverStyle">
       <EssentialNodePlaceholderPopover :tile="tile" />
     </div>
@@ -49,6 +59,8 @@ import { computed, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import TextTickerMultiLine from '@/components/common/TextTickerMultiLine.vue'
+import { useEssentialTileNodeDef } from '@/composables/useEssentialTileNodeDef'
+import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import type { EssentialPlaceholderTile } from '@/constants/essentialsPlaceholders'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -71,7 +83,11 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
 
+const nodeDef = useEssentialTileNodeDef(() => tile)
+const { isDragging, startDrag, handleNativeDrop } = useNodeDragToCanvas()
+
 const isHovered = ref(false)
+const showPopover = computed(() => isHovered.value && !isDragging.value)
 const popoverRef = ref<HTMLElement | null>(null)
 const popoverStyle = ref<CSSProperties>({
   position: 'fixed',
@@ -123,5 +139,46 @@ function handleMouseEnter(e: MouseEvent) {
 
 function handleMouseLeave() {
   isHovered.value = false
+}
+
+function createEmptyDragImage(): HTMLElement {
+  const el = document.createElement('div')
+  el.style.position = 'absolute'
+  el.style.left = '-9999px'
+  el.style.top = '-9999px'
+  el.style.width = '1px'
+  el.style.height = '1px'
+  return el
+}
+
+function handleClick() {
+  if (!nodeDef.value) return
+  startDrag(nodeDef.value, 'click')
+  isHovered.value = false
+}
+
+function handleDragStart(e: DragEvent) {
+  if (!nodeDef.value) {
+    e.preventDefault()
+    return
+  }
+  isHovered.value = false
+  startDrag(nodeDef.value, 'native')
+
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'copy'
+    e.dataTransfer.setData('application/x-comfy-node', nodeDef.value.name)
+
+    const dragImage = createEmptyDragImage()
+    document.body.appendChild(dragImage)
+    e.dataTransfer.setDragImage(dragImage, 0, 0)
+    requestAnimationFrame(() => {
+      document.body.removeChild(dragImage)
+    })
+  }
+}
+
+function handleDragEnd(e: DragEvent) {
+  handleNativeDrop(e.clientX, e.clientY)
 }
 </script>
