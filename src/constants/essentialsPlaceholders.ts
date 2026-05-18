@@ -366,7 +366,10 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
         key: 'video-transform',
         label: 'Video Transform',
         media: 'video',
-        tiles: [{ label: 'Upscale Video', icon: comfyIcon('video-upscale') }]
+        tiles: [
+          { label: 'Trim Video', icon: comfyIcon('video-trim') },
+          { label: 'Upscale Video', icon: comfyIcon('video-upscale') }
+        ]
       },
       {
         key: 'video-compose',
