@@ -656,7 +656,7 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
       throw new Error(err)
     }
 
-    let data: { name: string }
+    let data: { name?: string }
     try {
       data = await resp.json()
     } catch (e) {
@@ -666,6 +666,15 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
       })
       toastStore.addAlert(err)
       throw new Error(err, { cause: e })
+    }
+
+    if (!data?.name) {
+      const err = t('painter.uploadError', {
+        status: resp.status,
+        statusText: "missing 'name' in response"
+      })
+      toastStore.addAlert(err)
+      throw new Error(err)
     }
 
     const result = `${data.name} [input]`

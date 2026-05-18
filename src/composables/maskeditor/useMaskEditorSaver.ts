@@ -235,20 +235,28 @@ export function useMaskEditorSaver() {
       throw new Error(`Failed to upload: ${layer.ref.filename}`)
     }
 
+    let data: { name?: string; subfolder?: string; type?: string }
     try {
-      const data = await response.json()
-      if (data?.name) {
-        return {
-          filename: data.name,
-          subfolder: data.subfolder || '',
-          type: data.type || 'input'
-        }
-      }
+      data = await response.json()
     } catch (error) {
-      console.warn('[MaskEditorSaver] Failed to parse upload response:', error)
+      throw new Error(
+        `Invalid upload response for ${layer.ref.filename}: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      )
     }
 
-    return layer.ref
+    if (!data?.name) {
+      throw new Error(
+        `Upload response missing 'name' for ${layer.ref.filename}`
+      )
+    }
+
+    return {
+      filename: data.name,
+      subfolder: data.subfolder || '',
+      type: data.type || 'input'
+    }
   }
 
   async function updateNodePreview(
