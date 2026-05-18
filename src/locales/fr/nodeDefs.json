@@ -953,6 +953,50 @@
       }
     }
   },
+  "ByteDanceSeedreamNodeV2": {
+    "description": "Génération d'image à partir de texte unifiée et édition précise d'une seule phrase jusqu'à une résolution 4K.",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_fail_on_partial": {
+        "name": "échec_sur_partiel"
+      },
+      "model_height": {
+        "name": "hauteur"
+      },
+      "model_max_images": {
+        "name": "images_max"
+      },
+      "model_size_preset": {
+        "name": "préréglage_taille"
+      },
+      "model_width": {
+        "name": "largeur"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Invite textuelle pour créer ou éditer une image."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine à utiliser pour la génération."
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Ajouter ou non un filigrane « Généré par IA » à l’image."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceTextToVideoNode": {
     "description": "Générer une vidéo en utilisant les modèles ByteDance via l'API basée sur l'invite",
     "display_name": "ByteDance Texte vers Vidéo",
@@ -1563,6 +1607,46 @@
       "start_sigma": {
         "name": "sigma_début",
         "tooltip": "Premier sigma pour lequel ces options seront actives."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClaudeNode": {
+    "description": "Générez des réponses textuelles avec les modèles Claude d'Anthropic. Fournissez une invite textuelle et éventuellement une ou plusieurs images pour un contexte multimodal.",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Image(s) optionnelle(s) à utiliser comme contexte pour le modèle. Jusqu'à 20 images."
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle Claude utilisé pour générer la réponse."
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_temperature": {
+        "name": "température"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Entrée textuelle pour le modèle."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit la graine."
+      },
+      "system_prompt": {
+        "name": "invite système",
+        "tooltip": "Instructions fondamentales qui dictent le comportement du modèle."
       }
     },
     "outputs": {
@@ -3112,6 +3196,26 @@
       }
     }
   },
+  "EmptyHiDreamO1LatentImage": {
+    "description": "Latent d’espace pixel vide pour HiDream-O1-Image. Le modèle a été entraîné à environ 4 mégapixels ; des résolutions plus basses sortent de la distribution et la qualité régresse nettement. Résolutions d’entraînement : 2048x2048, 2304x1728, 1728x2304, 2560x1440, 1440x2560, 2496x1664, 1664x2496, 3104x1312, 1312x3104, 2304x1792, 1792x2304.",
+    "display_name": "Image latente HiDream-O1 vide",
+    "inputs": {
+      "batch_size": {
+        "name": "taille_lot"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyHunyuanImageLatent": {
     "display_name": "EmptyHunyuanImageLatent",
     "inputs": {
@@ -3424,6 +3528,37 @@
     "inputs": {
       "sigmas": {
         "name": "sigmas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux2ImageNode": {
+    "description": "Générez des images via Flux.2 [pro] ou Flux.2 [max] à partir d’un prompt et d’images de référence optionnelles.",
+    "display_name": "Flux.2 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_height": {
+        "name": "hauteur"
+      },
+      "model_width": {
+        "name": "largeur"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt pour la génération ou l’édition d’image"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine aléatoire utilisée pour créer le bruit."
       }
     },
     "outputs": {
@@ -4369,6 +4504,22 @@
       }
     }
   },
+  "GetICLoRAParameters": {
+    "description": "Extrait les paramètres IC-LoRA des métadonnées safetensors d’un modèle LoRA chargé et les transmet à LTXVAddGuide (ex. reference_downscale_factor).",
+    "display_name": "Obtenir les paramètres IC-LoRA",
+    "inputs": {
+      "iclora_model": {
+        "name": "iclora_model",
+        "tooltip": "Sortie directe d’un LoRA Loader pour l’IC-LoRA spécifique dont on souhaite extraire les métadonnées."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iclora_parameters",
+        "tooltip": "Paramètres IC-LoRA extraits des métadonnées LoRA (ex. reference_downscale_factor). Connectez à LTXVAddGuide si le LoRA nécessite un traitement spécial des guides."
+      }
+    }
+  },
   "GetImageSize": {
     "description": "Retourne la largeur et la hauteur de l'image, et la transmet inchangée.",
     "display_name": "Obtenir la taille de l'image",
@@ -4447,6 +4598,40 @@
       "seed": {
         "name": "graine",
         "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels sont non déterministes, quelle que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNodeV2": {
+    "description": "Modifiez une image existante à partir d’un prompt textuel",
+    "display_name": "Grok Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_aspect_ratio": {
+        "name": "ratio_d’aspect"
+      },
+      "model_number_of_images": {
+        "name": "nombre_d’images"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Le prompt textuel utilisé pour générer l’image"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels sont non déterministes quel que soit la graine."
       }
     },
     "outputs": {
@@ -4792,6 +4977,70 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1PatchSeamSmoothing": {
+    "description": "Moyenne la sortie du modèle sur plusieurs positions de grille de patch décalées pendant la phase finale de l’échantillonnage. Annule les coutures.",
+    "display_name": "Lissage des coutures de patch HiDream-O1",
+    "inputs": {
+      "blend": {
+        "name": "mélange",
+        "tooltip": "average : moyenne à poids égal. window : pondération fenêtrée de Hann favorisant chaque passage loin de ses bords de patch. median : médiane par pixel, rejette les passages aberrants."
+      },
+      "end_percent": {
+        "name": "pourcentage_fin",
+        "tooltip": "Progression de l’échantillonnage à laquelle le mélange se désactive."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "passes": {
+        "name": "passes",
+        "tooltip": "Nombre de passages par étape contrôlée. 2/4 = fixe. ramp_* : le nombre de passages augmente à mesure que l’échantillonnage approche de la fin (plus de lissage là où les coutures sont les plus visibles)."
+      },
+      "pattern": {
+        "name": "motif",
+        "tooltip": "Disposition du décalage. single_shift : un passage sur la grille de patch naturelle + autres décalés. symmetric : tous les passages hors grille, décalages répartis autour de l’origine."
+      },
+      "start_percent": {
+        "name": "pourcentage_début",
+        "tooltip": "Progression de l’échantillonnage (0=début, 1=fin) à laquelle le mélange s’active."
+      },
+      "strength": {
+        "name": "force",
+        "tooltip": "Interpolation entre la prédiction sur la grille naturelle (0) et le résultat moyenné (1)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1ReferenceImages": {
+    "description": "Ajoutez 1 à 10 images de référence au conditionnement, une pour une instruction d’édition ou plusieurs pour une personnalisation orientée sujet.",
+    "display_name": "Images de référence HiDream-O1",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Images de référence. 1 image = édition par instruction ; 2-10 images = multi-référence."
+      },
+      "negative": {
+        "name": "négatif"
+      },
+      "positive": {
+        "name": "positif"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "négatif",
         "tooltip": null
       }
     }
@@ -7150,6 +7399,10 @@
         "name": "indice_de_l'image",
         "tooltip": "Indice de l'image pour commencer le conditionnement. Pour les images uniques ou les vidéos de 1 à 8 images, toute valeur d'indice de l'image est acceptable. Pour les vidéos de 9 images ou plus, l'indice de l'image doit être divisible par 8, sinon il sera arrondi à la baisse au multiple de 8 le plus proche. Les valeurs négatives sont comptées à partir de la fin de la vidéo."
       },
+      "iclora_parameters": {
+        "name": "iclora_parameters",
+        "tooltip": "Paramètres IC-LoRA optionnels provenant d’un nœud Get IC-LoRA Parameters. Utilisé pour ajuster le traitement des guides selon les besoins de certains IC-LoRA (ex. ceux avec un reference_downscale_factor > 1). Lorsqu’ils sont chaînés, chaque LTXVAddGuide utilise uniquement les paramètres qui lui sont connectés."
+      },
       "image": {
         "name": "image",
         "tooltip": "Image ou vidéo pour conditionner la vidéo latente. Doit être 8*n + 1 images. Si la vidéo n'est pas 8*n + 1 images, elle sera coupée au plus proche 8*n + 1 images."
@@ -8142,6 +8395,19 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadMoGeModel": {
+    "display_name": "Charger le modèle MoGe",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9465,6 +9731,122 @@
       "seed": {
         "name": "graine",
         "tooltip": "La graine aléatoire utilisée pour créer le bruit."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeInference": {
+    "display_name": "Inférence MoGe",
+    "inputs": {
+      "apply_mask": {
+        "name": "apply_mask",
+        "tooltip": "Définit les pixels masqués (ciel / invalides) à inf dans les points et la profondeur pour que le maillage les ignore. Désactivez pour conserver la géométrie prédite brute partout ; le masque est tout de même renvoyé séparément."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Images par appel d’inférence. Diminuez si vous manquez de mémoire sur une longue vidéo ou un grand ensemble d’images."
+      },
+      "force_projection": {
+        "name": "force_projection"
+      },
+      "fov_x_degrees": {
+        "name": "fov_x_degrees",
+        "tooltip": "Champ de vision horizontal de la caméra source. Définit la longueur focale utilisée pour déprojetter la carte de profondeur en 3D. 0 = récupération automatique à partir des points prédits."
+      },
+      "image": {
+        "name": "image"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "0 = plus rapide, 9 = plus de détails."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePanoramaInference": {
+    "display_name": "Inférence panorama MoGe",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Vues par lot d’inférence (12 découpes au total)."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Panorama équirectangulaire (n’importe quel format d’image)."
+      },
+      "merge_resolution": {
+        "name": "merge_resolution",
+        "tooltip": "Résolution du côté long de la carte de distances fusionnée."
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "Détail par vue (0 = plus rapide, 9 = plus détaillé)."
+      },
+      "split_resolution": {
+        "name": "split_resolution",
+        "tooltip": "Résolution de chaque découpe perspective."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePointMapToMesh": {
+    "display_name": "MoGe Point Map vers Mesh",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "Quelle image de la géométrie MoGe groupée convertir en mesh. Le nombre de sommets diffère selon l’image, donc les lots ne peuvent pas être fusionnés en un seul MESH."
+      },
+      "decimation": {
+        "name": "décimation",
+        "tooltip": "Pas de sommets ; 1 = résolution complète."
+      },
+      "discontinuity_threshold": {
+        "name": "seuil_de_discontinuité",
+        "tooltip": "Supprimer les pixels dont l’étendue de profondeur 3x3 dépasse cette fraction. 0 = désactivé."
+      },
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Transmettre l’image source comme texture baseColor."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeRender": {
+    "display_name": "MoGe Render",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "output": {
+        "name": "sortie",
+        "tooltip": "DirectX vs OpenGL contrôle la convention du canal vert de la normal map. DirectX : vert = -Y vers le bas (Unreal). OpenGL : vert = +Y vers le haut (Blender, Substance, Unity, glTF)."
       }
     },
     "outputs": {
@@ -11545,6 +11927,18 @@
       }
     }
   },
+  "ModelNoiseScale": {
+    "display_name": "Échelle de bruit du modèle",
+    "inputs": {
+      "model": {
+        "name": "modèle"
+      },
+      "noise_scale": {
+        "name": "échelle_bruit",
+        "tooltip": "Échelle absolue du bruit d’entraînement. Par exemple HiDream-O1 base : 8.0, dev : 7.5."
+      }
+    }
+  },
   "ModelPatchLoader": {
     "display_name": "ModelPatchLoader",
     "inputs": {
@@ -11957,6 +12351,50 @@
       "size": {
         "name": "taille",
         "tooltip": "Taille de l'image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV2": {
+    "description": "Génère des images via l’API GPT Image d’OpenAI.",
+    "display_name": "OpenAI GPT Image 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_background": {
+        "name": "arrière-plan"
+      },
+      "model_custom_height": {
+        "name": "hauteur_personnalisée"
+      },
+      "model_custom_width": {
+        "name": "largeur_personnalisée"
+      },
+      "model_quality": {
+        "name": "qualité"
+      },
+      "model_size": {
+        "name": "taille"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Combien d’images générer"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt textuel pour GPT Image"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "non implémenté côté serveur pour le moment"
       }
     },
     "outputs": {
@@ -14809,6 +15247,29 @@
     "inputs": {
       "version": {
         "name": "version"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SamplerLCM": {
+    "description": "Échantillonneur LCM avec bruit ajustable à chaque étape. s_noise est un multiplicateur de l'échelle de bruit d'entraînement du modèle.",
+    "display_name": "SamplerLCM",
+    "inputs": {
+      "noise_clip_std": {
+        "name": "noise_clip_std",
+        "tooltip": "Limite le bruit par étape à +/- N*écart-type. 0 pour désactiver."
+      },
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "Multiplicateur de bruit par étape à la première étape (1.0 = correspond à l'entraînement)."
+      },
+      "s_noise_end": {
+        "name": "s_noise_end",
+        "tooltip": "Multiplicateur de bruit par étape à la dernière étape. Identique à s_noise pour un planning constant."
       }
     },
     "outputs": {

@@ -24,7 +24,10 @@ import {
 } from '@/renderer/core/layout/utils/geometry'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 
-import { syncNodeSlotLayoutsFromDOM } from './useSlotElementTracking'
+import {
+  scheduleSlotLayoutSync,
+  syncNodeSlotLayoutsFromDOM
+} from './useSlotElementTracking'
 
 /**
  * Generic update item for element bounds tracking
@@ -47,14 +50,14 @@ interface CachedNodeMeasurement {
 interface ElementTrackingConfig {
   /** Data attribute name (e.g., 'nodeId') */
   dataAttribute: string
-  /** Handler for processing bounds updates */
-  updateHandler: (updates: ElementBoundsUpdate[]) => void
+  /** Handler for processing bounds updates. Omit for signal-only entries. */
+  updateHandler?: (updates: ElementBoundsUpdate[]) => void
 }
 
 /**
  * Registry of tracking configurations by element type
  */
-const trackingConfigs: Map<string, ElementTrackingConfig> = new Map([
+const trackingConfigs = new Map<string, ElementTrackingConfig>([
   [
     'node',
     {
@@ -67,7 +70,10 @@ const trackingConfigs: Map<string, ElementTrackingConfig> = new Map([
         layoutStore.batchUpdateNodeBounds(nodeUpdates)
       }
     }
-  ]
+  ],
+  // Signal-only: outer node stays at its persisted min-h floor during
+  // widget hydration, so the inner grid's RO is the only slot-drift signal.
+  ['widgets-grid', { dataAttribute: 'widgetsGridNodeId' }]
 ])
 
 // Elements whose ResizeObserver fired while the tab was hidden
@@ -120,6 +126,14 @@ const resizeObserver = new ResizeObserver((entries) => {
   for (const entry of entries) {
     if (!(entry.target instanceof HTMLElement)) continue
     const element = entry.target
+
+    // Signal-only widgets-grid resize - route the parent node through the
+    // slot-layout pipeline and skip bounds processing entirely.
+    const widgetsGridParentNodeId = element.dataset.widgetsGridNodeId
+    if (widgetsGridParentNodeId) {
+      scheduleSlotLayoutSync(widgetsGridParentNodeId as NodeId)
+      continue
+    }
 
     // Find which type this element belongs to
     let elementType: string | undefined
@@ -238,7 +252,7 @@ const resizeObserver = new ResizeObserver((entries) => {
     // Flush per-type
     for (const [type, updates] of updatesByType) {
       const config = trackingConfigs.get(type)
-      if (config && updates.length) config.updateHandler(updates)
+      if (config?.updateHandler && updates.length) config.updateHandler(updates)
     }
   }
 

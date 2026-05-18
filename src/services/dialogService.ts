@@ -99,6 +99,8 @@ export const useDialogService = () => {
       component: ErrorDialogContent,
       props,
       dialogComponentProps: {
+        renderer: 'reka',
+        size: 'lg',
         onClose: () => {
           useTelemetry()?.trackUiButtonClicked({
             button_id: 'error_dialog_closed'
@@ -163,6 +165,8 @@ export const useDialogService = () => {
       component: ErrorDialogContent,
       props,
       dialogComponentProps: {
+        renderer: 'reka',
+        size: 'lg',
         onClose: () => {
           useTelemetry()?.trackUiButtonClicked({
             button_id: 'error_dialog_closed'
