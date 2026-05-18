@@ -20,9 +20,7 @@
               e.preventDefault()
           "
           @pointer-down-outside="
-            (e) =>
-              item.dialogComponentProps.dismissableMask === false &&
-              e.preventDefault()
+            (e) => onRekaPointerDownOutside(item.dialogComponentProps, e)
           "
           @mousedown="() => dialogStore.riseDialog({ key: item.key })"
         >
@@ -115,6 +113,7 @@ import DialogMaximize from '@/components/ui/dialog/DialogMaximize.vue'
 import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import { onRekaPointerDownOutside } from '@/components/dialog/rekaPrimeVueBridge'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
