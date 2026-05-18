@@ -56,7 +56,7 @@ import type {
   Size,
   DOMWidgetOptions
 } from '@/extension-api/node'
-import type { WidgetHandle } from '@/extension-api/widget'
+import type { WidgetHandle, WidgetOptions } from '@/extension-api/widget'
 import type { Unsubscribe } from '@/extension-api/events'
 import { stampBrand } from '@/extension-api/brand'
 import type {
@@ -314,6 +314,25 @@ function createWidgetHandle(widgetId: WidgetEntityId): WidgetHandle {
       })
     },
 
+    // D-immutability-enforcement (Hybrid C): read-only snapshot of options
+    // bag. Public type is Readonly<WidgetOptions> — TS-ERR on any assignment.
+    // Mutate via setOption(key, value).
+    get options() {
+      const opts =
+        world.getComponent(widgetId, WidgetComponentSchema)?.options ?? {}
+      return opts as Readonly<WidgetOptions>
+    },
+    // D-immutability-enforcement (Hybrid C): accessor only — no setter. v2
+    // migration target is on('beforeSerialize') per D5.
+    get serializeValue() {
+      const schema = world.getComponent(widgetId, WidgetComponentSchema)
+      const fn = (schema?.options as Record<string, unknown> | undefined)?.[
+        'serializeValue'
+      ]
+      return typeof fn === 'function'
+        ? (fn as (...args: unknown[]) => unknown)
+        : undefined
+    },
     getOption<K = unknown>(key: string): K | undefined {
       const opts = world.getComponent(widgetId, WidgetComponentSchema)?.options
       return (opts as Record<string, unknown> | undefined)?.[key] as
@@ -410,13 +429,20 @@ function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
     getPosition(): Point {
       // Position is centralized in layoutStore (Yjs CRDT-backed)
       // See D13 §4 — layoutStore.ts is the source of truth for position/size
+      // D-immutability-enforcement: Point is a readonly tuple, so the literal
+      // must be widened via `as const`.
       const layout = layoutStore.getNodeLayoutRef(nodeId).value
-      return layout ? [layout.position.x, layout.position.y] : [0, 0]
+      return layout
+        ? ([layout.position.x, layout.position.y] as const)
+        : ([0, 0] as const)
     },
     getSize(): Size {
       // Size is centralized in layoutStore (Yjs CRDT-backed)
+      // D-immutability-enforcement: Size is a readonly tuple, see getPosition.
       const layout = layoutStore.getNodeLayoutRef(nodeId).value
-      return layout ? [layout.size.width, layout.size.height] : [0, 0]
+      return layout
+        ? ([layout.size.width, layout.size.height] as const)
+        : ([0, 0] as const)
     },
     getTitle() {
       return world.getComponent(nodeId, NodeVisualKey)?.title ?? ''
@@ -540,7 +566,7 @@ function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
       return createWidgetHandle(widgetId)
     },
 
-    inputs() {
+    getInputs() {
       const conn = world.getComponent(nodeId, ConnectivityKey)
       return (conn?.inputSlotIds ?? []).map((slotId: SlotEntityId) => {
         const slot = world.getComponent(
@@ -559,7 +585,7 @@ function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
         } satisfies SlotInfo
       })
     },
-    outputs() {
+    getOutputs() {
       const conn = world.getComponent(nodeId, ConnectivityKey)
       return (conn?.outputSlotIds ?? []).map((slotId: SlotEntityId) => {
         const slot = world.getComponent(
@@ -577,6 +603,14 @@ function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
           }
         } satisfies SlotInfo
       })
+    },
+    /** @deprecated D-immutability-enforcement: use getInputs(). */
+    inputs() {
+      return this.getInputs()
+    },
+    /** @deprecated D-immutability-enforcement: use getOutputs(). */
+    outputs() {
+      return this.getOutputs()
     },
 
     on: ((event: string, fn: (...args: unknown[]) => unknown): Unsubscribe => {

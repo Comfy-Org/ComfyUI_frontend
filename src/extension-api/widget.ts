@@ -382,6 +382,39 @@ export interface WidgetHandle<T = WidgetValue> {
   // ── OPTIONS BAG — type-specific overrides ─────────────────────────────────
 
   /**
+   * Read-only snapshot of the full options bag for this widget.
+   *
+   * **Immutable per D-immutability-enforcement (Hybrid C).** The returned
+   * object is `Readonly<WidgetOptions>` — `widget.options.min = 0`,
+   * `widget.options = {...}`, and `widget.options.values = [...]` all raise
+   * TypeScript errors at compile time. To mutate, use
+   * {@link WidgetHandle.setOption} per-key. Bulk `setOptions(opts)` is
+   * tracked under W6.P8.UNMIGRATABLE / D-widget-converge.
+   *
+   * Note: this is an accessor pair on the v2 surface. Reading is free; the
+   * setter intentionally does not exist on the public type. v1 patterns like
+   * `widget.options.serialize = false` should migrate to
+   * {@link WidgetHandle.setSerializeEnabled}; `widget.options.values = [...]`
+   * (combo refresh) migrates to a future `setValues` mutator (W6.P3).
+   *
+   * @example
+   * ```ts
+   * // ❌ TS-ERR — every option write raises a compile-time error
+   * widget.options.min = 0
+   * widget.options = { min: 0, max: 100 }
+   * widget.options.serialize = false
+   *
+   * // ✅ Read freely
+   * const min = widget.options.min ?? 0
+   *
+   * // ✅ Mutate via typed setters
+   * widget.setOption('min', 0)
+   * widget.setSerializeEnabled(false)
+   * ```
+   */
+  readonly options: Readonly<WidgetOptions>
+
+  /**
    * Returns the per-instance override for `key`, or the class-default value
    * from `INPUT_TYPES` if no override has been set, or `undefined` if the key
    * is unknown for this widget type.
@@ -411,6 +444,39 @@ export interface WidgetHandle<T = WidgetValue> {
    * ```
    */
   setOption(key: string, value: unknown): void
+
+  // ── SERIALIZE VALUE — read-only accessor; D5 is the write path ───────────
+
+  /**
+   * The widget's current `serializeValue` function (or `undefined` if none is
+   * registered).
+   *
+   * **Accessor-only per D-immutability-enforcement (Hybrid C).** The setter
+   * intentionally does not exist on the public type — assignment
+   * (`widget.serializeValue = fn`) raises a TypeScript error. The v2
+   * migration target is the {@link WidgetHandle.on | `on('beforeSerialize', fn)`}
+   * event (per D5), which is typed, async-capable, and composable across
+   * multiple extensions on the same widget.
+   *
+   * @deprecated v1 callers reading `widget.serializeValue` to invoke the
+   * function directly should subscribe to `'beforeSerialize'` instead. This
+   * read-only accessor exists for debugging / introspection only and may be
+   * removed once the v1 surface is fully retired.
+   *
+   * @example
+   * ```ts
+   * // ❌ TS-ERR — direct assignment no longer compiles
+   * widget.serializeValue = () => 'static value'
+   *
+   * // ✅ Subscribe to the typed event (D5)
+   * widget.on('beforeSerialize', (e) => {
+   *   if (e.context === 'prompt') e.setSerializedValue('static value')
+   * })
+   * ```
+   *
+   * @stability experimental
+   */
+  readonly serializeValue: ((...args: unknown[]) => unknown) | undefined
 
   // ── EVENTS ────────────────────────────────────────────────────────────────
 

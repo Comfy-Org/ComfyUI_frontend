@@ -26,13 +26,21 @@ export type { NodeEntityId }
 
 /**
  * A 2D point as `[x, y]`.
+ *
+ * **Immutable tuple per D-immutability-enforcement (Hybrid C).** Attempts to
+ * mutate via `node.getPosition()[0] = X` raise a TypeScript error. Use
+ * {@link NodeHandle.setPosition} to move the node.
  */
-export type Point = [x: number, y: number]
+export type Point = readonly [x: number, y: number]
 
 /**
  * A 2D size as `[width, height]`.
+ *
+ * **Immutable tuple per D-immutability-enforcement (Hybrid C).** Attempts to
+ * mutate via `node.getSize()[0] = X` raise a TypeScript error. Use
+ * {@link NodeHandle.setSize} to resize the node.
  */
-export type Size = [width: number, height: number]
+export type Size = readonly [width: number, height: number]
 
 /**
  * LiteGraph node execution mode.
@@ -374,8 +382,25 @@ export interface NodeHandle {
   /**
    * Returns all widgets on this node as `WidgetHandle` instances.
    *
+   * **Immutable view per D-immutability-enforcement (Hybrid C).** The returned
+   * array cannot be mutated (`push`, `splice`, `length =`, index assignment
+   * all raise TS errors). Each `WidgetHandle` is also surface-frozen — use
+   * the `WidgetHandle` setter methods (`setValue`, `setHidden`, etc.) to
+   * mutate widget state. To add or remove widgets, use
+   * {@link NodeHandle.addWidget} / future `removeWidget` (W6.P8.UNMIGRATABLE).
+   *
+   * @example
+   * ```ts
+   * // ❌ TS-ERR — readonly array; v1 patterns no longer compile
+   * node.getWidgets().push(newWidget)
+   * node.getWidgets()[0] = newWidget
+   *
+   * // ✅ Iterate / read freely
+   * for (const w of node.getWidgets()) console.log(w.name)
+   * const labels = node.getWidgets().map((w) => w.label)
+   * ```
    */
-  getWidgets(): readonly WidgetHandle[]
+  getWidgets(): ReadonlyArray<Readonly<WidgetHandle>>
 
   /**
    * Adds a new widget to this node.
@@ -417,14 +442,47 @@ export interface NodeHandle {
   /**
    * Returns all input slots on this node.
    *
+   * **Immutable view per D-immutability-enforcement (Hybrid C).** The returned
+   * array and each slot are `Readonly` — `node.getInputs().push(...)`,
+   * `node.getInputs()[i] = X`, and `node.getInputs()[i].name = "x"` all raise
+   * TypeScript errors at compile time. Per-slot mutators (`setInputName`,
+   * `replaceInput`, bulk field setters) are tracked under
+   * W6.P8.UNMIGRATABLE / D-input-output-shape.
+   *
+   * @example
+   * ```ts
+   * // ❌ TS-ERR — readonly array; v1 patterns no longer compile
+   * node.getInputs().push({ name: 'x', type: 'INT' })
+   * node.getInputs()[0].name = 'renamed'
+   *
+   * // ✅ Read / iterate freely
+   * const types = node.getInputs().map((s) => s.type)
+   * ```
    */
-  inputs(): readonly SlotInfo[]
+  getInputs(): ReadonlyArray<Readonly<SlotInfo>>
 
   /**
    * Returns all output slots on this node.
    *
+   * **Immutable view per D-immutability-enforcement (Hybrid C).** Same
+   * read-only semantics as {@link NodeHandle.getInputs}. Per-slot mutators
+   * tracked under W6.P8.UNMIGRATABLE / D-input-output-shape.
    */
-  outputs(): readonly SlotInfo[]
+  getOutputs(): ReadonlyArray<Readonly<SlotInfo>>
+
+  /**
+   * @deprecated Use {@link NodeHandle.getInputs} instead. Renamed to align
+   * with the `getX()` accessor convention (D11/D-immutability-enforcement).
+   * Will be removed in v1.0.
+   */
+  inputs(): ReadonlyArray<Readonly<SlotInfo>>
+
+  /**
+   * @deprecated Use {@link NodeHandle.getOutputs} instead. Renamed to align
+   * with the `getX()` accessor convention (D11/D-immutability-enforcement).
+   * Will be removed in v1.0.
+   */
+  outputs(): ReadonlyArray<Readonly<SlotInfo>>
 
   // ── EVENTS ────────────────────────────────────────────────────────────────
 
