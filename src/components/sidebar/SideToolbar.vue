@@ -14,7 +14,7 @@
     <div
       :class="
         isOverflowing
-          ? 'side-tool-bar-container overflow-y-auto'
+          ? 'side-tool-bar-container scrollbar-custom'
           : 'flex h-full flex-col'
       "
     >

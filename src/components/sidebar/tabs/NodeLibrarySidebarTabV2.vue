@@ -1,7 +1,7 @@
 <template>
   <SidebarTabTemplate :title="$t('sideToolbar.nodes')">
     <template #header>
-      <SidebarTopArea bottom-divider>
+      <SidebarTopArea>
         <SearchInput
           ref="searchBoxRef"
           v-model="searchQuery"
@@ -106,7 +106,7 @@
           </DropdownMenuRoot>
         </template>
       </SidebarTopArea>
-      <div class="border-b border-comfy-input p-2 2xl:px-4">
+      <div class="px-2 pb-2 2xl:px-4">
         <TabList v-model="selectedTab">
           <Tab v-for="tab in tabs" :key="tab.value" :value="tab.value">
             {{ tab.label }}
@@ -117,7 +117,7 @@
     <template #body>
       <NodeDragPreview />
       <div class="flex h-full flex-col">
-        <div class="min-h-0 flex-1 overflow-y-auto py-2">
+        <div class="min-h-0 flex-1">
           <TabPanel
             v-if="flags.nodeLibraryEssentialsEnabled"
             :model-value="selectedTab"

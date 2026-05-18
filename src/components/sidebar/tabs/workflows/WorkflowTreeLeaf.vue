@@ -2,6 +2,7 @@
   <TreeExplorerTreeNode :node="node">
     <template #actions>
       <Button
+        class="mr-0.5"
         variant="muted-textonly"
         size="icon-sm"
         :aria-label="$t('icon.bookmark')"

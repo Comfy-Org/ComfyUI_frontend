@@ -25,4 +25,13 @@ describe('LiteGraphCanvasSplitterOverlay', () => {
       /class="[^"]*graph-canvas-panel[^"]*overflow-visible/
     )
   })
+
+  it('main splitter does not clip sidebar panel corners', () => {
+    const filePath = resolve(__dirname, 'LiteGraphCanvasSplitterOverlay.vue')
+    const source = readFileSync(filePath, 'utf-8')
+
+    expect(source).toMatch(
+      /class="[^"]*pointer-events-none[^"]*flex-1[^"]*overflow-hidden[^"]*rounded-none/
+    )
+  })
 })

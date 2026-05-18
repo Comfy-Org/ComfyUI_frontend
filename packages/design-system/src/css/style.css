@@ -600,8 +600,8 @@
 @utility scrollbar-custom {
   overflow-y: auto;
   /* Firefox */
-  scrollbar-width: thin;
-  scrollbar-color: var(--dialog-surface) transparent;
+  scrollbar-width: auto;
+  scrollbar-color: var(--border-default) transparent;
 
   /* WebKit */
   &::-webkit-scrollbar {
@@ -613,12 +613,12 @@
     background: transparent;
   }
   &::-webkit-scrollbar-thumb {
-    background: var(--dialog-surface);
+    background: var(--border-default);
     border-radius: 9999px;
     border: 2px solid transparent;
   }
   &::-webkit-scrollbar-thumb:hover {
-    background: var(--dialog-surface);
+    background: var(--muted-foreground);
   }
   &::-webkit-scrollbar-corner {
     background: transparent;

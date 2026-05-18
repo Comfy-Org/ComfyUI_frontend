@@ -2,15 +2,6 @@
   <SidebarTabTemplate :title="$t('sideToolbar.modelLibrary')">
     <template #tool-buttons>
       <Button
-        v-tooltip.bottom="$t('g.refresh')"
-        variant="muted-textonly"
-        size="icon"
-        :aria-label="$t('g.refresh')"
-        @click="modelStore.refresh"
-      >
-        <i class="icon-[lucide--refresh-cw] size-4" />
-      </Button>
-      <Button
         v-tooltip.bottom="$t('g.loadAllFolders')"
         variant="muted-textonly"
         size="icon"
@@ -18,6 +9,15 @@
         @click="modelStore.loadModels"
       >
         <i class="icon-[lucide--cloud-download] size-4" />
+      </Button>
+      <Button
+        v-tooltip.bottom="$t('g.refresh')"
+        variant="muted-textonly"
+        size="icon"
+        :aria-label="$t('g.refresh')"
+        @click="modelStore.refresh"
+      >
+        <i class="icon-[lucide--refresh-cw] size-4" />
       </Button>
     </template>
     <template #header>
@@ -36,11 +36,9 @@
     </template>
     <template #body>
       <ElectronDownloadItems v-if="isDesktop" />
-
-      <Divider type="dashed" class="m-2" />
       <TreeExplorer
         v-model:expanded-keys="expandedKeys"
-        class="model-lib-tree-explorer"
+        class="model-lib-tree-explorer pt-2 pb-3"
         :root="renderedRoot"
       >
         <template #node="{ node }">
@@ -53,7 +51,6 @@
 </template>
 
 <script setup lang="ts">
-import { Divider } from 'primevue'
 import { computed, nextTick, onMounted, ref, toRef, watch } from 'vue'
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
