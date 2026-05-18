@@ -24,6 +24,7 @@ const terminalMock = vi.hoisted(() => ({
   dispose: vi.fn(),
   write: vi.fn(),
   reset: vi.fn(),
+  scrollToBottom: vi.fn(),
   onSelectionChange: vi.fn(() => ({ dispose: vi.fn() })),
   hasSelection: vi.fn(() => false),
   getSelection: vi.fn(() => ''),
@@ -75,7 +76,7 @@ describe('LogsTerminal', () => {
     vi.clearAllMocks()
   })
 
-  it('resyncs logs when the api dispatches "reconnected"', async () => {
+  it('resyncs logs, re-subscribes, and scrolls to bottom on "reconnected"', async () => {
     renderLogsTerminal()
 
     await vi.waitFor(() => {
@@ -85,9 +86,14 @@ describe('LogsTerminal', () => {
 
     apiMock.dispatchEvent(new CustomEvent('reconnected'))
 
+    // Backend loses its per-client log subscription on restart, so the
+    // terminal must reset + refetch + re-subscribe + snap to the new tail.
     await vi.waitFor(() => {
       expect(terminalMock.reset).toHaveBeenCalledTimes(1)
       expect(apiMock.getRawLogs).toHaveBeenCalledTimes(2)
+      expect(terminalMock.scrollToBottom).toHaveBeenCalledTimes(1)
+      expect(apiMock.subscribeLogs).toHaveBeenCalledTimes(2)
+      expect(apiMock.subscribeLogs).toHaveBeenLastCalledWith(true)
     })
   })
 

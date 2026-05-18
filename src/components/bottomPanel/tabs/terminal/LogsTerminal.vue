@@ -55,11 +55,21 @@ const terminalCreated = (
     update(logs.entries)
   }
 
-  const resyncLogs = () => {
+  const resyncLogs = async () => {
     terminal.reset()
-    loadLogEntries().catch((err) => {
+    try {
+      await loadLogEntries()
+      terminal.scrollToBottom()
+      // Backend lost the per-client log subscription across the restart;
+      // re-subscribe so new runtime logs stream over the fresh WebSocket.
+      await api.subscribeLogs(true)
+    } catch (err) {
       console.error('Error resyncing logs after reconnect', err)
-    })
+    }
+  }
+
+  const handleReconnected = () => {
+    void resyncLogs()
   }
 
   const watchLogs = async () => {
@@ -69,7 +79,7 @@ const terminalCreated = (
     }
     await api.subscribeLogs(true)
     api.addEventListener('logs', logReceived)
-    api.addEventListener('reconnected', resyncLogs)
+    api.addEventListener('reconnected', handleReconnected)
   }
 
   onMounted(async () => {
@@ -89,7 +99,7 @@ const terminalCreated = (
 
   onUnmounted(() => {
     api.removeEventListener('logs', logReceived)
-    api.removeEventListener('reconnected', resyncLogs)
+    api.removeEventListener('reconnected', handleReconnected)
 
     if (!api.clientId) return
 
