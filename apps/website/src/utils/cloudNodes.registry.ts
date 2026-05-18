@@ -8,34 +8,47 @@ const BATCH_SIZE = 50
 
 export type RegistryPack = components['schemas']['Node']
 
+function nullToUndefined<T>(value: T | null | undefined): T | undefined {
+  return value ?? undefined
+}
+
+const optionalString = z.string().nullish().transform(nullToUndefined)
+const optionalNumber = z.number().nullish().transform(nullToUndefined)
+const optionalStringArray = z
+  .array(z.string())
+  .nullish()
+  .transform(nullToUndefined)
+
 const RegistryPackSchema = z
   .object({
-    id: z.string().optional(),
-    name: z.string().optional(),
-    description: z.string().optional(),
-    icon: z.string().optional(),
-    banner_url: z.string().optional(),
-    repository: z.string().optional(),
-    license: z.string().optional(),
-    downloads: z.number().optional(),
-    github_stars: z.number().optional(),
-    created_at: z.string().optional(),
-    supported_os: z.array(z.string()).optional(),
-    supported_accelerators: z.array(z.string()).optional(),
+    id: optionalString,
+    name: optionalString,
+    description: optionalString,
+    icon: optionalString,
+    banner_url: optionalString,
+    repository: optionalString,
+    license: optionalString,
+    downloads: optionalNumber,
+    github_stars: optionalNumber,
+    created_at: optionalString,
+    supported_os: optionalStringArray,
+    supported_accelerators: optionalStringArray,
     publisher: z
       .object({
-        id: z.string().optional(),
-        name: z.string().optional()
+        id: optionalString,
+        name: optionalString
       })
       .passthrough()
-      .optional(),
+      .nullish()
+      .transform(nullToUndefined),
     latest_version: z
       .object({
-        version: z.string().optional(),
-        createdAt: z.string().optional()
+        version: optionalString,
+        createdAt: optionalString
       })
       .passthrough()
-      .optional()
+      .nullish()
+      .transform(nullToUndefined)
   })
   .passthrough()
 
@@ -141,6 +154,7 @@ async function fetchBatch(
   timeoutMs: number
 ): Promise<BatchResponse> {
   const params = new URLSearchParams()
+  params.set('limit', String(packIds.length))
   for (const packId of packIds) {
     params.append('node_id', packId)
   }

@@ -1615,6 +1615,46 @@
       }
     }
   },
+  "ClaudeNode": {
+    "description": "Anthropic'in Claude modelleriyle metin yanıtları oluşturun. Bir metin istemi girin ve isteğe bağlı olarak çok modlu bağlam için bir veya daha fazla görsel ekleyin.",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "images": {
+        "name": "görseller",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı görsel(ler). En fazla 20 görsel."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Yanıtı oluşturmak için kullanılan Claude modeli."
+      },
+      "model_max_tokens": {
+        "name": "maksimum_token"
+      },
+      "model_temperature": {
+        "name": "sıcaklık"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Model için metin girişi."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      },
+      "system_prompt": {
+        "name": "sistem_istemi",
+        "tooltip": "Modelin davranışını belirleyen temel talimatlar."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ColorToRGBInt": {
     "description": "Bir rengi RGB tam sayı değerine dönüştür.",
     "display_name": "Renkten RGB Tam Sayıya",
@@ -4461,6 +4501,22 @@
       "1": {
         "name": "iz_uzunluğu",
         "tooltip": null
+      }
+    }
+  },
+  "GetICLoRAParameters": {
+    "description": "Bir LoRA yüklü modelin safetensors meta verilerinden IC-LoRA parametrelerini çıkarır ve LTXVAddGuide için çıktılar (örn. reference_downscale_factor).",
+    "display_name": "IC-LoRA Parametrelerini Al",
+    "inputs": {
+      "iclora_model": {
+        "name": "iclora_model",
+        "tooltip": "Meta verilerin çıkarılacağı belirli IC-LoRA için bir LoRA Loader'dan doğrudan çıktı."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iclora_parameters",
+        "tooltip": "LoRA meta verilerinden çıkarılan IC-LoRA parametreleri (örn. reference_downscale_factor). LoRA rehberlerinin özel işlenmesi gerekiyorsa LTXVAddGuide'a bağlayın."
       }
     }
   },
@@ -7343,6 +7399,10 @@
         "name": "kare_indeksi",
         "tooltip": "Koşullandırmanın başlayacağı kare indeksi. Tek kareli görüntüler veya 1-8 kareli videolar için herhangi bir kare_indeksi değeri kabul edilebilir. 9+ kareli videolar için kare_indeksi 8'e bölünebilir olmalıdır, aksi takdirde en yakın 8'in katına yuvarlanacaktır. Negatif değerler videonun sonundan sayılır."
       },
+      "iclora_parameters": {
+        "name": "iclora_parameters",
+        "tooltip": "Get IC-LoRA Parameters düğümünden isteğe bağlı IC-LoRA parametreleri. Belirli IC-LoRA'lar tarafından gerektirilirse rehber işleme ayarlamaları için kullanılır (örn. reference_downscale_factor > 1 olanlar). Zincirlenirse, her LTXVAddGuide yalnızca kendisine bağlı parametreleri kullanır."
+      },
       "image": {
         "name": "görüntü",
         "tooltip": "Gizli videoyu koşullandırmak için görüntü veya video. 8*n + 1 kare olmalıdır. Video 8*n + 1 kare değilse, en yakın 8*n + 1 kareye kırpılacaktır."
@@ -8335,6 +8395,19 @@
     "inputs": {
       "latent": {
         "name": "gizli"
+      }
+    }
+  },
+  "LoadMoGeModel": {
+    "display_name": "MoGe Modelini Yükle",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9658,6 +9731,122 @@
       "seed": {
         "name": "tohum",
         "tooltip": "Gürültüyü oluşturmak için kullanılan rastgele tohum."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeInference": {
+    "display_name": "MoGe Çıkarımı",
+    "inputs": {
+      "apply_mask": {
+        "name": "apply_mask",
+        "tooltip": "Maskelenmiş (gökyüzü/geçersiz) pikselleri nokta ve derinlikte sonsuz yapar, böylece meshleme onları hariç tutar. Ham tahmin edilen geometrinin her yerde kalmasını istiyorsanız devre dışı bırakın; maske yine de ayrı olarak döndürülür."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Her çıkarım çağrısında işlenecek görsel sayısı. Uzun video/görsel setlerinde OOM yaşarsanız azaltın."
+      },
+      "force_projection": {
+        "name": "force_projection"
+      },
+      "fov_x_degrees": {
+        "name": "fov_x_degrees",
+        "tooltip": "Kaynak kameranın yatay görüş açısı. Derinlik haritasını 3B'ye geri projekte etmek için odak uzaklığını ayarlar. 0 = tahmin edilen noktalardan otomatik kurtarılır."
+      },
+      "image": {
+        "name": "image"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "0 = en hızlı, 9 = en detaylı."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePanoramaInference": {
+    "display_name": "MoGe Panorama Çıkarımı",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Her çıkarım toplu işleminde işlenecek görünüm sayısı (toplam 12 bölme)."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Equirectangular panorama (herhangi bir en-boy oranı)."
+      },
+      "merge_resolution": {
+        "name": "merge_resolution",
+        "tooltip": "Birleştirilmiş equirect mesafe haritasının uzun kenar çözünürlüğü."
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "Her görünüm için detay seviyesi (0 = en hızlı, 9 = en detaylı)."
+      },
+      "split_resolution": {
+        "name": "split_resolution",
+        "tooltip": "Her perspektif bölmesinin çözünürlüğü."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePointMapToMesh": {
+    "display_name": "MoGe Nokta Haritasından Mesh'e",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "Mesh'e dönüştürülecek toplu MoGe geometrisinin hangi görseli. Görsel başına tepe noktası sayısı farklıdır, bu nedenle toplular tek bir MESH olarak birleştirilemez."
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "Tepe noktası aralığı; 1 = tam çözünürlük."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "3x3 derinlik aralığı bu oranı aşan pikselleri at. 0 = kapalı."
+      },
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Kaynak görseli baseColor dokusu olarak aktar."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeRender": {
+    "display_name": "MoGe Render",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "DirectX ve OpenGL, normal haritası yeşil kanal kuralını belirler. DirectX: yeşil = -Y aşağı (Unreal). OpenGL: yeşil = +Y yukarı (Blender, Substance, Unity, glTF)."
       }
     },
     "outputs": {

@@ -55,6 +55,10 @@ vi.mock('vue-i18n', () => ({
         const p = params as Record<string, string>
         return `Frontend version ${p.frontendVersion} may not be compatible with backend version ${p.backendVersion}.`
       }
+      if (key === 'g.comfyPackageOutdated' && params) {
+        const p = params as Record<string, string>
+        return `Installed ${p.name} version ${p.installedVersion} is lower than the required version ${p.requiredVersion}.`
+      }
       return key
     }
   }),
@@ -232,5 +236,38 @@ describe('useFrontendVersionMismatchWarning', () => {
 
     // Should only have been called once
     expect(addAlertSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('should emit a separate alert for each outdated comfy package', () => {
+    const toastStore = useToastStore()
+    const versionStore = useVersionCompatibilityStore()
+    const addAlertSpy = vi.spyOn(toastStore, 'addAlert')
+
+    vi.spyOn(versionStore, 'warningMessage', 'get').mockReturnValue(null)
+    vi.spyOn(versionStore, 'packageWarningMessages', 'get').mockReturnValue([
+      {
+        name: 'comfyui-workflow-templates',
+        installedVersion: '0.9.0',
+        requiredVersion: '0.9.5'
+      },
+      {
+        name: 'comfyui-embedded-docs',
+        installedVersion: '0.4.0',
+        requiredVersion: '0.5.0'
+      }
+    ])
+
+    const { showWarning } = useFrontendVersionMismatchWarning()
+    showWarning()
+
+    expect(addAlertSpy).toHaveBeenCalledTimes(2)
+    expect(addAlertSpy).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Installed comfyui-workflow-templates version 0.9.0'
+      )
+    )
+    expect(addAlertSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Installed comfyui-embedded-docs version 0.4.0')
+    )
   })
 })

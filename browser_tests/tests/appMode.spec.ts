@@ -3,6 +3,7 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('App mode usage', () => {
   test('Drag and Drop', async ({ comfyPage, comfyFiles }) => {
@@ -97,8 +98,9 @@ test.describe('App mode usage', () => {
     })
     await sampler.click()
 
-    await comfyPage.page.getByRole('searchbox').fill('uni')
-    await comfyPage.page.keyboard.press('ArrowDown')
+    await comfyPage.page
+      .getByTestId(TestIds.widgets.selectDefaultSearchInput)
+      .fill('uni')
     await comfyPage.page.keyboard.press('Enter')
     await expect(sampler).toHaveText('uni_pc')
 

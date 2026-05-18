@@ -1615,6 +1615,46 @@
       }
     }
   },
+  "ClaudeNode": {
+    "description": "使用 Anthropic 的 Claude 模型生成文字回應。請提供文字提示，並可選擇性加入一張或多張圖片作為多模態上下文。",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "可選的圖片作為模型上下文使用。最多可加入 20 張圖片。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用於生成回應的 Claude 模型。"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "輸入給模型的文字內容。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制此節點是否重新執行；無論 seed 為何，結果皆為非確定性。"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "決定模型行為的基礎指令。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ColorToRGBInt": {
     "description": "將顏色轉換為 RGB 整數值。",
     "display_name": "顏色轉為 RGB 整數值",
@@ -4461,6 +4501,22 @@
       "1": {
         "name": "track_length",
         "tooltip": null
+      }
+    }
+  },
+  "GetICLoRAParameters": {
+    "description": "從已載入 LoRA 模型的 safetensors 中提取 IC-LoRA 參數，並將其輸出給 LTXVAddGuide（例如 reference_downscale_factor）。",
+    "display_name": "取得 IC-LoRA 參數",
+    "inputs": {
+      "iclora_model": {
+        "name": "iclora_model",
+        "tooltip": "從 LoRA 載入器直接輸出的特定 IC-LoRA，用於提取中繼資料。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iclora_parameters",
+        "tooltip": "從 LoRA 中繼資料中提取的 IC-LoRA 參數（例如 reference_downscale_factor）。若 LoRA 需要特殊 guide 處理，請連接至 LTXVAddGuide。"
       }
     }
   },
@@ -7343,6 +7399,10 @@
         "name": "起始幀索引",
         "tooltip": "開始條件化的幀索引。對於單幀影像或 1-8 幀的影片，任何 frame_idx 值皆可。對於 9 幀以上的影片，frame_idx 必須能被 8 整除，否則會自動向下取至最接近的 8 的倍數。負值則從影片結尾倒數計算。"
       },
+      "iclora_parameters": {
+        "name": "iclora_parameters",
+        "tooltip": "來自 Get IC-LoRA Parameters 節點的可選 IC-LoRA 參數。用於根據特定 IC-LoRA（例如 reference_downscale_factor > 1）調整 guide 處理。串接時，每個 LTXVAddGuide 僅使用連接到它的參數。"
+      },
       "image": {
         "name": "影像",
         "tooltip": "用於條件化 latent 視訊的影像或影片。必須為 8*n + 1 幀。如果影片不是 8*n + 1 幀，將會裁切至最接近的 8*n + 1 幀。"
@@ -8335,6 +8395,19 @@
     "inputs": {
       "latent": {
         "name": "潛在空間"
+      }
+    }
+  },
+  "LoadMoGeModel": {
+    "display_name": "載入 MoGe 模型",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9658,6 +9731,122 @@
       "seed": {
         "name": "種子",
         "tooltip": "用於產生雜訊的隨機種子。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeInference": {
+    "display_name": "MoGe 推論",
+    "inputs": {
+      "apply_mask": {
+        "name": "apply_mask",
+        "tooltip": "將遮罩區域（天空／無效像素）在點雲和深度圖中設為 inf，以便網格化時排除。若停用則保留所有預測幾何，遮罩仍會單獨返回。"
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "每次推論的圖像數量。如果處理長影片或大量圖像時記憶體不足，請降低此值。"
+      },
+      "force_projection": {
+        "name": "force_projection"
+      },
+      "fov_x_degrees": {
+        "name": "fov_x_degrees",
+        "tooltip": "來源相機的水平視角。設定用於將深度圖反投影到 3D 的焦距。0 = 自動從預測點回推。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "0 = 最快，9 = 最細緻。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePanoramaInference": {
+    "display_name": "MoGe 全景推論",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "每批推論的視角數（共 12 個分割）。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "等距矩形全景圖（任意長寬比）。"
+      },
+      "merge_resolution": {
+        "name": "merge_resolution",
+        "tooltip": "合併後等距深度圖的長邊解析度。"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "每視角細緻度（0 = 最快，9 = 最細緻）。"
+      },
+      "split_resolution": {
+        "name": "split_resolution",
+        "tooltip": "每個視角分割的解析度。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePointMapToMesh": {
+    "display_name": "MoGe 點雲轉網格",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "要轉換為網格的 MoGe 幾何批次中的哪一張影像。每張影像的頂點數不同，因此批次無法合併為單一網格（MESH）。"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "頂點間隔；1 代表完整解析度。"
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "若 3x3 深度範圍超過此比例，則捨棄該像素。0 代表關閉。"
+      },
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "將來源影像作為 baseColor 紋理帶入。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeRender": {
+    "display_name": "MoGe 渲染",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "DirectX 與 OpenGL 控制法線貼圖綠色通道的慣例。DirectX：綠色 = -Y 向下（Unreal）。OpenGL：綠色 = +Y 向上（Blender、Substance、Unity、glTF）。"
       }
     },
     "outputs": {
