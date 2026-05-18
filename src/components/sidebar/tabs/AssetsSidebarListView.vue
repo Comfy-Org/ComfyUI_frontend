@@ -116,7 +116,7 @@ const hoveredAssetId = ref<string | null>(null)
 const listGridStyle = {
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 1fr)',
-  padding: '0 0.5rem',
+  padding: '0.5rem 0.5rem 0.75rem',
   gap: '0.5rem'
 }
 
