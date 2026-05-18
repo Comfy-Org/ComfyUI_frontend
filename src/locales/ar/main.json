@@ -237,6 +237,7 @@
     },
     "login": {
       "andText": "و",
+      "backToGithubLogin": "سجّل باستخدام Github بدلاً من ذلك",
       "backToLogin": "العودة إلى تسجيل الدخول",
       "backToSocialLogin": "سجّل باستخدام Google أو Github بدلاً من ذلك",
       "confirmPasswordLabel": "تأكيد كلمة المرور",
@@ -292,7 +293,9 @@
       "title": "إعادة المصادقة مطلوبة"
     },
     "signOut": {
+      "saveFailed": "تم إلغاء تسجيل الخروج بسبب فشل حفظ \"{workflow}\".",
       "signOut": "تسجيل الخروج",
+      "signOutAnyway": "تسجيل الخروج على أي حال",
       "success": "تم تسجيل الخروج بنجاح",
       "successDetail": "لقد تم تسجيل خروجك من حسابك.",
       "unsavedChangesMessage": "لديك تغييرات غير محفوظة ستفقد عند تسجيل الخروج. هل ترغب في المتابعة؟",
@@ -407,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "المتابعة محليًا",
     "exploreCloud": "جرّب السحابة مجانًا",
-    "feature1Title": "٤٠٠ رصيد مجاني شهريًا",
     "feature2Title": "يعمل في أي مكان، فورًا",
     "feature3Title": "نماذج جاهزة للاستخدام",
     "feature4Title": "أفضل حزم العقد المخصصة مثبتة مسبقًا",
@@ -461,6 +463,12 @@
       "wantToRun": "هل تريد تشغيل ComfyUI محليًا بدلاً من ذلك؟"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "يرجى اختيار خيار.",
+        "describeAnswer": "يرجى وصف إجابتك.",
+        "selectAtLeastOne": "يرجى اختيار خيار واحد على الأقل."
+      },
+      "intro": "ساعدنا في تخصيص تجربتك مع ComfyUI.",
       "options": {
         "familiarity": {
           "advanced": "مستخدم متقدم (سير عمل مخصصة)",
@@ -469,45 +477,43 @@
           "new": "جديد في ComfyUI (لم أستخدمه من قبل)",
           "starting": "في البداية فقط (أتابع الدروس التعليمية)"
         },
-        "industry": {
-          "architecture": "الهندسة المعمارية",
-          "education": "التعليم",
-          "film_tv_animation": "الأفلام والتلفزيون والرسوم المتحركة",
-          "fine_art": "الفنون الجميلة والرسوم التوضيحية",
-          "gaming": "الألعاب",
-          "marketing": "التسويق والإعلان",
+        "intent": {
+          "3d_game": "أصول ثلاثية الأبعاد / أصول ألعاب",
+          "api": "نقاط نهاية API لتشغيل مسارات العمل",
+          "apps": "تطبيقات مبسطة من مسارات العمل",
+          "audio": "صوت / موسيقى",
+          "custom_nodes": "عُقد مخصصة",
+          "images": "صور",
+          "not_sure": "لست متأكداً",
+          "videos": "فيديوهات",
+          "workflows": "مسارات عمل أو خطوط معالجة مخصصة"
+        },
+        "source": {
+          "conference": "مؤتمر أو فعالية",
+          "discord": "ديسكورد / مجتمع",
+          "friend": "صديق أو زميل",
+          "github": "GitHub",
+          "instagram": "إنستغرام",
+          "linkedin": "لينكدإن",
+          "newsletter": "النشرة البريدية أو مدونة",
           "other": "أخرى",
-          "otherPlaceholder": "يرجى التحديد",
-          "product_design": "تصميم المنتجات والرسوم",
-          "software": "البرمجيات والتكنولوجيا"
+          "reddit": "ريديت",
+          "search": "جوجل / بحث",
+          "twitter": "تويتر / X",
+          "youtube": "يوتيوب"
         },
-        "making": {
-          "3d": "الأصول ثلاثية الأبعاد",
-          "audio": "الصوت / الموسيقى",
-          "custom_nodes": "العُقد وسير العمل المخصصة",
-          "images": "الصور",
-          "video": "الفيديو والرسوم المتحركة"
-        },
-        "purpose": {
-          "client": "العمل للعملاء (العمل الحر)",
-          "community": "مساهمات مجتمعية (عُقد، سير عمل، إلخ)",
-          "inhouse": "مكان عملي الخاص (داخلي)",
-          "personal": "مشاريع شخصية / هواية",
-          "research": "البحث الأكاديمي"
+        "usage": {
+          "education": "تعليمي (طالب أو معلم)",
+          "personal": "استخدام شخصي",
+          "work": "عمل"
         }
       },
       "placeholder": "نص بديل لأسئلة الاستبيان",
-      "questions": {
-        "familiarity": "ما مدى معرفتك بـ ComfyUI؟",
-        "industry": "ما هي صناعتك الأساسية؟",
-        "making": "ماذا تخطط لصنعه؟",
-        "purpose": "ما الاستخدام الأساسي الذي تخطط لـ ComfyUI من أجله؟"
-      },
       "steps": {
         "familiarity": "ما مدى معرفتك بـ ComfyUI؟",
-        "industry": "ما هي صناعتك الأساسية؟",
-        "making": "ماذا تخطط لصنعه؟",
-        "purpose": "ما الاستخدام الأساسي الذي ستستخدم ComfyUI من أجله؟"
+        "intent": "ما الذي ترغب في إنشائه باستخدام ComfyUI؟",
+        "source": "من أين سمعت عن ComfyUI؟",
+        "usage": "كيف تخطط لاستخدام ComfyUI؟"
       },
       "title": "استبيان السحابة"
     }
@@ -522,9 +528,9 @@
   "cloudStart_title": "ابدأ الإبداع في ثوانٍ",
   "cloudStart_wantToRun": "هل تريد تشغيل ComfyUI محليًا بدلاً من ذلك؟",
   "cloudSurvey_steps_familiarity": "ما مدى معرفتك بـ ComfyUI؟",
-  "cloudSurvey_steps_industry": "ما مجال عملك الأساسي؟",
-  "cloudSurvey_steps_making": "ماذا تخطط لصنعه؟",
-  "cloudSurvey_steps_purpose": "ما الاستخدام الأساسي الذي تخطط لـ ComfyUI من أجله؟",
+  "cloudSurvey_steps_intent": "ما الذي ترغب في إنشائه باستخدام ComfyUI؟",
+  "cloudSurvey_steps_source": "من أين سمعت عن ComfyUI؟",
+  "cloudSurvey_steps_usage": "كيف تخطط لاستخدام ComfyUI؟",
   "cloudWaitlist_contactLink": "هنا",
   "cloudWaitlist_questionsText": "أسئلة؟ اتصل بنا",
   "color": {
@@ -778,6 +784,7 @@
     "AUDIO_ENCODER": "مُشَفِّر الصوت",
     "AUDIO_ENCODER_OUTPUT": "مخرجات مُشَفِّر الصوت",
     "AUDIO_RECORD": "تسجيل صوتي",
+    "BACKGROUND_REMOVAL": "إزالة الخلفية",
     "BOOLEAN": "منطقي",
     "BOUNDING_BOX": "مربع التحديد",
     "CAMERA_CONTROL": "تحكم الكاميرا",
@@ -808,6 +815,7 @@
     "HISTOGRAM": "مخطط بياني",
     "HOOKS": "معالجات",
     "HOOK_KEYFRAMES": "مفاتيح المعالجات",
+    "IC_LORA_PARAMETERS": "معاملات IC_LORA",
     "IMAGE": "صورة",
     "IMAGECOMPARE": "مقارنة الصور",
     "INT": "عدد صحيح",
@@ -828,9 +836,12 @@
     "MODEL": "نموذج",
     "MODEL_PATCH": "ترقيع النموذج",
     "MODEL_TASK_ID": "معرّف مهمة النموذج",
+    "MOGE_GEOMETRY": "هندسة MOGE",
+    "MOGE_MODEL": "نموذج MOGE",
     "NOISE": "ضجيج",
     "OPENAI_CHAT_CONFIG": "إعدادات محادثة أوبن إيه آي",
     "OPENAI_INPUT_FILES": "ملفات إدخال أوبن إيه آي",
+    "OPTICAL_FLOW": "التدفق البصري",
     "PHOTOMAKER": "صانع الصور",
     "PIXVERSE_TEMPLATE": "قالب PixVerse",
     "POSE_KEYPOINT": "نقطة مفتاحية للوضعية",
@@ -905,7 +916,8 @@
     "extensionFileHint": "قد يكون السبب هو السكربت التالي",
     "loadWorkflowTitle": "تم إلغاء التحميل بسبب خطأ في إعادة تحميل بيانات سير العمل",
     "noStackTrace": "لا توجد تتبع للمكدس متاحة",
-    "promptExecutionError": "فشل تنفيذ الطلب"
+    "promptExecutionError": "فشل تنفيذ الطلب",
+    "queueOpenWorkflowFailedTitle": "فشل في فتح سير العمل"
   },
   "errorOverlay": {
     "errorCount": "{count} خطأ | {count} أخطاء",
@@ -1017,6 +1029,7 @@
     "cancel": "إلغاء",
     "cancelled": "أُلغي",
     "capture": "التقاط",
+    "categories": "الفئات",
     "category": "الفئة",
     "changeKeybinding": "تغيير اختصار المفتاح",
     "chart": "مخطط",
@@ -1032,6 +1045,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "شعار ComfyOrg",
+    "comfyPackageOutdated": "إصدار {name} المثبت ({installedVersion}) أقل من الإصدار المطلوب ({requiredVersion}).",
     "comingSoon": "قريباً",
     "command": "أمر",
     "commandProhibited": "الأمر {command} محظور. يرجى التواصل مع المسؤول لمزيد من المعلومات.",
@@ -2244,6 +2258,7 @@
     "": "",
     "3d": "ثلاثي الأبعاد",
     "3d_models": "نماذج ثلاثية الأبعاد",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "بايت دانس",
@@ -2258,7 +2273,6 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "مون فالي ماري",
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
@@ -2276,23 +2290,21 @@
     "Vidu": "فيدو",
     "Wan": "وان",
     "WaveSpeed": "WaveSpeed",
-    "_for_testing": "_للاختبار",
     "advanced": "متقدم",
     "animation": "الرسوم المتحركة",
-    "api": "API",
     "api node": "عقدة API",
     "attention_experiments": "تجارب الانتباه",
     "audio": "صوت",
+    "background removal": "إزالة الخلفية",
     "batch": "دفعة",
-    "camera": "كاميرا",
     "chroma_radiance": "تألق اللون",
     "clip": "clip",
+    "color": "لون",
     "combine": "دمج",
     "compositing": "التركيب",
     "cond pair": "زوج شرطي",
     "cond single": "شرط فردي",
     "conditioning": "التكييف",
-    "context": "سياق",
     "controlnet": "كونترول نت",
     "create": "إنشاء",
     "custom_sampling": "تجميع مخصص",
@@ -2301,7 +2313,9 @@
     "deprecated": "مهمل",
     "detection": "الكشف",
     "edit_models": "تحرير النماذج",
+    "experimental": "تجريبي",
     "flux": "تدفق",
+    "geometry_estimation": "تقدير الهندسة",
     "gligen": "gligen",
     "guidance": "التوجيه",
     "guiders": "الموجهات",
@@ -2316,7 +2330,6 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "mask": "قناع",
-    "math": "رياضيات",
     "model": "نموذج",
     "model_merging": "دمج النماذج",
     "model_patches": "تصحيحات النموذج",
@@ -2333,16 +2346,13 @@
     "save": "حفظ",
     "schedulers": "الجدولة",
     "scheduling": "الجدولة",
-    "sd": "sd",
     "sd3": "sd3",
     "shader": "shader",
     "sigmas": "سيجمات",
     "stable_cascade": "سلسلة ثابتة",
-    "string": "سلسلة نصية",
     "style_model": "نموذج النمط",
     "supir": "supir",
     "text": "نص",
-    "textgen": "textgen",
     "training": "تدريب",
     "transform": "تحويل",
     "unet": "unet",
@@ -3146,6 +3156,7 @@
       "deleteFailedTitle": "فشل الحذف",
       "deleted": "تم حذف سير العمل",
       "dirtyClose": "تم تعديل الملفات أدناه. هل تريد حفظها قبل الإغلاق؟",
+      "dirtyCloseAnyway": "إغلاق على أي حال",
       "dirtyCloseHint": "اضغط Shift للإغلاق بدون تنبيه",
       "dirtyCloseTitle": "حفظ التغييرات؟",
       "workflowTreeType": {

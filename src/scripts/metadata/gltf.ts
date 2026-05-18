@@ -11,6 +11,7 @@ import {
   type GltfJsonData,
   GltfSizeBytes
 } from '@/types/metadataTypes'
+import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 const MAX_READ_BYTES = 1 << 20
 
@@ -81,19 +82,17 @@ const extractJsonChunkData = (buffer: ArrayBuffer): Uint8Array | null => {
   return new Uint8Array(buffer, chunkLocation.start, chunkLocation.length)
 }
 
-const parseJson = (text: string): ReturnType<typeof JSON.parse> | null => {
+const parseJson = <T = unknown>(text: string): T | null => {
   try {
-    return JSON.parse(text)
+    return parseJsonWithNonFinite<T>(text)
   } catch {
     return null
   }
 }
 
-const parseJsonBytes = (
-  bytes: Uint8Array
-): ReturnType<typeof JSON.parse> | null => {
+const parseJsonBytes = <T = unknown>(bytes: Uint8Array): T | null => {
   const jsonString = byteArrayToString(bytes)
-  return parseJson(jsonString)
+  return parseJson<T>(jsonString)
 }
 
 const parseMetadataValue = (
@@ -102,10 +101,7 @@ const parseMetadataValue = (
   if (typeof value !== 'string')
     return value as ComfyWorkflowJSON | ComfyApiWorkflow
 
-  const parsed = parseJson(value)
-  if (!parsed) return undefined
-
-  return parsed as ComfyWorkflowJSON | ComfyApiWorkflow
+  return parseJson<ComfyWorkflowJSON | ComfyApiWorkflow>(value) ?? undefined
 }
 
 const extractComfyMetadata = (jsonData: GltfJsonData): ComfyMetadata => {
@@ -136,7 +132,7 @@ const processGltfFileBuffer = (buffer: ArrayBuffer): ComfyMetadata => {
   const jsonChunk = extractJsonChunkData(buffer)
   if (!jsonChunk) return {}
 
-  const parsedJson = parseJsonBytes(jsonChunk)
+  const parsedJson = parseJsonBytes<GltfJsonData>(jsonChunk)
   if (!parsedJson) return {}
 
   return extractComfyMetadata(parsedJson)
@@ -165,6 +161,7 @@ export function getGltfBinaryMetadata(file: File): Promise<ComfyMetadata> {
       }
     }
     reader.onerror = () => resolve({})
+    reader.onabort = () => resolve({})
     reader.readAsArrayBuffer(file.slice(0, bytesToRead))
   })
 }

@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useIntersectionObserver, useTemplateRefsList } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import {
+  useEventListener,
+  useIntersectionObserver,
+  useTemplateRefsList
+} from '@vueuse/core'
+import { computed, onMounted, ref } from 'vue'
 
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
@@ -40,13 +44,25 @@ const activeSection = ref(sections[0]?.id ?? '')
 
 const sectionRefs = useTemplateRefsList<HTMLElement>()
 let isScrolling = false
+let scrollSafetyTimer: ReturnType<typeof setTimeout> | undefined
 
 const HEADER_OFFSET = -144
+const BOTTOM_THRESHOLD_PX = 4
+const SCROLL_SAFETY_MS = 1500
+
+function clearScrollLock() {
+  isScrolling = false
+  if (scrollSafetyTimer !== undefined) {
+    clearTimeout(scrollSafetyTimer)
+    scrollSafetyTimer = undefined
+  }
+}
 
 useIntersectionObserver(
   sectionRefs,
   (entries) => {
     if (isScrolling) return
+    if (isAtBottom()) return
     let best: IntersectionObserverEntry | null = null
     for (const entry of entries) {
       if (!entry.isIntersecting) continue
@@ -58,22 +74,39 @@ useIntersectionObserver(
   { rootMargin: '-20% 0px -60% 0px' }
 )
 
+function isAtBottom(): boolean {
+  const scrollBottom = window.scrollY + window.innerHeight
+  return (
+    scrollBottom >= document.documentElement.scrollHeight - BOTTOM_THRESHOLD_PX
+  )
+}
+
+function activateLastIfAtBottom() {
+  if (isScrolling) return
+  if (!isAtBottom()) return
+  const lastId = sections[sections.length - 1]?.id
+  if (lastId) activeSection.value = lastId
+}
+
+onMounted(activateLastIfAtBottom)
+useEventListener('scroll', activateLastIfAtBottom, { passive: true })
+
 function scrollToSection(id: string) {
   activeSection.value = id
+  clearScrollLock()
   isScrolling = true
+  scrollSafetyTimer = setTimeout(clearScrollLock, SCROLL_SAFETY_MS)
   const el = document.getElementById(id)
   if (el) {
     scrollTo(el, {
       offset: HEADER_OFFSET,
       duration: 0.8,
       immediate: prefersReducedMotion(),
-      onComplete: () => {
-        isScrolling = false
-      }
+      onComplete: clearScrollLock
     })
     return
   }
-  isScrolling = false
+  clearScrollLock()
 }
 </script>
 

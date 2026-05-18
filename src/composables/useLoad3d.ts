@@ -1,6 +1,6 @@
 import type { MaybeRef } from 'vue'
 
-import { toRef } from '@vueuse/core'
+import { toRef, useDebounceFn } from '@vueuse/core'
 import { getActivePinia } from 'pinia'
 import { ref, toRaw, watch } from 'vue'
 
@@ -31,6 +31,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useLoad3dService } from '@/services/load3dService'
@@ -38,11 +39,44 @@ import { useLoad3dService } from '@/services/load3dService'
 type Load3dReadyCallback = (load3d: Load3d) => void
 export const nodeToLoad3dMap = new Map<LGraphNode, Load3d>()
 const pendingCallbacks = new Map<LGraphNode, Load3dReadyCallback[]>()
+const persistentReadyCallbacks = new Map<LGraphNode, Load3dReadyCallback[]>()
+
+const nodesWithCleanup = new WeakSet<LGraphNode>()
+
+const ensureNodeCleanupChained = (node: LGraphNode): void => {
+  if (nodesWithCleanup.has(node)) return
+  nodesWithCleanup.add(node)
+  node.onRemoved = useChainCallback(node.onRemoved, () => {
+    useLoad3dService().removeLoad3d(node)
+    pendingCallbacks.delete(node)
+    persistentReadyCallbacks.delete(node)
+  })
+}
+
+const invokeReadyCallback = (
+  callback: Load3dReadyCallback,
+  instance: Load3d
+): void => {
+  try {
+    callback(instance)
+  } catch (error) {
+    console.error('Load3d ready callback failed:', error)
+  }
+}
 
 export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const nodeRef = toRef(nodeOrRef)
   let load3d: Load3d | null = null
   let isFirstModelLoad = true
+
+  const debouncedHandleResize = useDebounceFn(() => {
+    load3d?.handleResize()
+  }, 150)
+
+  watch(
+    () => (getActivePinia() ? useCanvasStore().appScalePercentage : 0),
+    debouncedHandleResize
+  )
 
   const sceneConfig = ref<SceneConfig>({
     showGrid: true,
@@ -97,6 +131,15 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const isPreview = ref(false)
   const isSplatModel = ref(false)
   const isPlyModel = ref(false)
+  const canFitToViewer = ref(true)
+  const canUseGizmo = ref(true)
+  const canUseLighting = ref(true)
+  const canExport = ref(true)
+  const materialModes = ref<readonly MaterialMode[]>([
+    'original',
+    'normal',
+    'wireframe'
+  ])
 
   const initializeLoad3d = async (containerRef: HTMLElement) => {
     const rawNode = toRaw(nodeRef.value)
@@ -123,6 +166,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
                 height: heightWidget.value as number
               })
             : undefined,
+        getZoomScale: () => app.canvas?.ds?.scale ?? 1,
         onContextMenu: (event) => {
           const menuOptions = app.canvas.getNodeMenuOptions(node)
           new LiteGraph.ContextMenu(menuOptions, {
@@ -157,10 +201,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         }
       )
 
-      node.onRemoved = useChainCallback(node.onRemoved, () => {
-        useLoad3dService().removeLoad3d(node)
-        pendingCallbacks.delete(node)
-      })
+      ensureNodeCleanupChained(node)
 
       nodeToLoad3dMap.set(node, load3d)
 
@@ -168,11 +209,16 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
       if (callbacks && load3d) {
         callbacks.forEach((callback) => {
-          if (load3d) {
-            callback(load3d)
-          }
+          if (load3d) invokeReadyCallback(callback, load3d)
         })
         pendingCallbacks.delete(node)
+      }
+
+      const persistent = persistentReadyCallbacks.get(node)
+      if (persistent && load3d) {
+        persistent.forEach((callback) => {
+          if (load3d) invokeReadyCallback(callback, load3d)
+        })
       }
 
       handleEvents('add')
@@ -331,8 +377,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     const existingInstance = nodeToLoad3dMap.get(node)
 
     if (existingInstance) {
-      callback(existingInstance)
-
+      invokeReadyCallback(callback, existingInstance)
       return
     }
 
@@ -341,6 +386,23 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
 
     pendingCallbacks.get(node)!.push(callback)
+    ensureNodeCleanupChained(node)
+  }
+
+  const onLoad3dReady = (callback: Load3dReadyCallback) => {
+    const rawNode = toRaw(nodeRef.value)
+    if (!rawNode) return
+
+    const node = rawNode as LGraphNode
+
+    if (!persistentReadyCallbacks.has(node)) {
+      persistentReadyCallbacks.set(node, [])
+    }
+    persistentReadyCallbacks.get(node)!.push(callback)
+    ensureNodeCleanupChained(node)
+
+    const existingInstance = nodeToLoad3dMap.get(node)
+    if (existingInstance) invokeReadyCallback(callback, existingInstance)
   }
 
   watch(
@@ -785,27 +847,37 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       loading.value = false
       isSplatModel.value = load3d?.isSplatModel() ?? false
       isPlyModel.value = load3d?.isPlyModel() ?? false
+      const caps = load3d?.getCurrentModelCapabilities()
+      canFitToViewer.value = caps?.fitToViewer ?? true
+      canUseGizmo.value = caps?.gizmoTransform ?? true
+      canUseLighting.value = caps?.lighting ?? true
+      canExport.value = caps?.exportable ?? true
+      materialModes.value = caps?.materialModes ?? [
+        'original',
+        'normal',
+        'wireframe'
+      ]
       hasSkeleton.value = load3d?.hasSkeleton() ?? false
       applyGizmoConfigToLoad3d()
       isFirstModelLoad = false
+    },
+    modelReady: () => {
+      if (!load3d || !isAssetPreviewSupported()) return
 
-      if (load3d && isAssetPreviewSupported()) {
-        const node = nodeRef.value
+      const node = nodeRef.value
+      const modelWidget = node?.widgets?.find(
+        (w) => w.name === 'model_file' || w.name === 'image'
+      )
+      const value = modelWidget?.value
+      if (typeof value !== 'string' || !value) return
 
-        const modelWidget = node?.widgets?.find(
-          (w) => w.name === 'model_file' || w.name === 'image'
-        )
-        const value = modelWidget?.value
-        if (typeof value === 'string' && value) {
-          const filename = value.trim().replace(/\s*\[output\]$/, '')
-          const modelName = Load3dUtils.splitFilePath(filename)[1]
-          load3d
-            .captureThumbnail(256, 256)
-            .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
-            .then((blob) => persistThumbnail(modelName, blob))
-            .catch(() => {})
-        }
-      }
+      const filename = value.trim().replace(/\s*\[output\]$/, '')
+      const modelName = Load3dUtils.splitFilePath(filename)[1]
+      load3d
+        .captureThumbnail(256, 256)
+        .then((dataUrl) => fetch(dataUrl).then((r) => r.blob()))
+        .then((blob) => persistThumbnail(modelName, blob))
+        .catch(() => {})
     },
     skeletonVisibilityChange: (value: boolean) => {
       modelConfig.value.showSkeleton = value
@@ -881,9 +953,13 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   }
 
   const handleFitToViewer = () => {
-    if (load3d) {
-      load3d.fitToViewer()
-    }
+    if (!load3d) return
+    load3d.fitToViewer()
+
+    if (!modelConfig.value.gizmo) return
+    const transform = load3d.getGizmoTransform()
+    modelConfig.value.gizmo.position = transform.position
+    modelConfig.value.gizmo.scale = transform.scale
   }
 
   const handleResetGizmoTransform = () => {
@@ -925,6 +1001,11 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     isPreview,
     isSplatModel,
     isPlyModel,
+    canFitToViewer,
+    canUseGizmo,
+    canUseLighting,
+    canExport,
+    materialModes,
     hasSkeleton,
     hasRecording,
     recordingDuration,
@@ -940,6 +1021,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     // Methods
     initializeLoad3d,
     waitForLoad3d,
+    onLoad3dReady,
     handleMouseEnter,
     handleMouseLeave,
     handleStartRecording,

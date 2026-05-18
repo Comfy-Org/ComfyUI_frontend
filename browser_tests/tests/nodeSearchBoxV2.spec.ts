@@ -125,4 +125,151 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       })
     })
   })
+
+  test.describe('Category sidebar', () => {
+    test('Sidebar toggle hides and shows the category sidebar', async ({
+      comfyPage
+    }) => {
+      const { searchBoxV2 } = comfyPage
+      await searchBoxV2.open()
+
+      const samplingCategory = searchBoxV2.categoryButton('sampling')
+      await expect(samplingCategory).toBeVisible()
+      await expect(searchBoxV2.sidebarToggle).toHaveAttribute(
+        'aria-expanded',
+        'true'
+      )
+
+      await searchBoxV2.sidebarToggle.click()
+      await expect(searchBoxV2.sidebarToggle).toHaveAttribute(
+        'aria-expanded',
+        'false'
+      )
+      await expect(samplingCategory).toBeHidden()
+
+      await searchBoxV2.sidebarToggle.click()
+      await expect(searchBoxV2.sidebarToggle).toHaveAttribute(
+        'aria-expanded',
+        'true'
+      )
+      await expect(samplingCategory).toBeVisible()
+    })
+
+    test('Filter bar scrolls horizontally while the sidebar toggle stays pinned', async ({
+      comfyPage
+    }) => {
+      const { searchBoxV2 } = comfyPage
+      // Narrow viewport so the chips overflow the filter bar
+      await comfyPage.page.setViewportSize({ width: 360, height: 800 })
+      await searchBoxV2.open()
+
+      const scrollEl = searchBoxV2.filterChipsScroll
+      const dims = await scrollEl.evaluate((el) => ({
+        scrollWidth: el.scrollWidth,
+        clientWidth: el.clientWidth
+      }))
+      expect(dims.scrollWidth).toBeGreaterThan(dims.clientWidth)
+
+      await scrollEl.evaluate((el) => {
+        el.scrollLeft = el.scrollWidth
+      })
+
+      // The toggle lives outside the scroll container, so even when the
+      // chips scroll hundreds of px it must remain visible in the viewport.
+      await expect(searchBoxV2.sidebarToggle).toBeInViewport()
+    })
+
+    test('@mobile Sidebar is collapsed by default on mobile', async ({
+      comfyPage
+    }) => {
+      const { searchBoxV2 } = comfyPage
+      await searchBoxV2.open()
+
+      await expect(searchBoxV2.sidebarToggle).toHaveAttribute(
+        'aria-expanded',
+        'false'
+      )
+      await expect(searchBoxV2.categoryButton('sampling')).toBeHidden()
+    })
+
+    test('@mobile Clicking outside the sidebar closes it', async ({
+      comfyPage
+    }) => {
+      const { searchBoxV2 } = comfyPage
+      await searchBoxV2.open()
+
+      await searchBoxV2.sidebarToggle.click()
+      await expect(searchBoxV2.sidebarToggle).toHaveAttribute(
+        'aria-expanded',
+        'true'
+      )
+      await expect(searchBoxV2.categoryButton('sampling')).toBeVisible()
+      await expect(searchBoxV2.sidebarBackdrop).toBeVisible()
+
+      // The backdrop spans the full content area, but the sidebar (z-20)
+      // covers its left ~208px (w-52). Click past that to land on the
+      // backdrop rather than the sidebar.
+      await searchBoxV2.sidebarBackdrop.click({ position: { x: 240, y: 40 } })
+
+      await expect(searchBoxV2.sidebarToggle).toHaveAttribute(
+        'aria-expanded',
+        'false'
+      )
+      await expect(searchBoxV2.categoryButton('sampling')).toBeHidden()
+      await expect(searchBoxV2.sidebarBackdrop).toBeHidden()
+    })
+
+    test('@mobile Focusing the search input closes the sidebar', async ({
+      comfyPage
+    }) => {
+      const { searchBoxV2 } = comfyPage
+      await searchBoxV2.open()
+
+      await searchBoxV2.sidebarToggle.click()
+      await expect(searchBoxV2.sidebarToggle).toHaveAttribute(
+        'aria-expanded',
+        'true'
+      )
+
+      await searchBoxV2.input.focus()
+
+      await expect(searchBoxV2.sidebarToggle).toHaveAttribute(
+        'aria-expanded',
+        'false'
+      )
+    })
+
+    test('Sidebar state across mobile/desktop resizes', async ({
+      comfyPage
+    }) => {
+      const { searchBoxV2 } = comfyPage
+      const switchToDesktop = () =>
+        comfyPage.page.setViewportSize({ width: 1280, height: 800 })
+      const switchToMobile = () =>
+        comfyPage.page.setViewportSize({ width: 360, height: 800 })
+      const expectExpanded = (value: 'true' | 'false') =>
+        expect(searchBoxV2.sidebarToggle).toHaveAttribute(
+          'aria-expanded',
+          value
+        )
+
+      await switchToDesktop()
+      await searchBoxV2.open()
+      await expectExpanded('true')
+
+      await switchToMobile()
+      await expectExpanded('false')
+
+      await searchBoxV2.sidebarToggle.click()
+      await switchToDesktop()
+      await expectExpanded('true')
+
+      await searchBoxV2.sidebarToggle.click()
+      await switchToMobile()
+      await expectExpanded('false')
+
+      await switchToDesktop()
+      await expectExpanded('false')
+    })
+  })
 })

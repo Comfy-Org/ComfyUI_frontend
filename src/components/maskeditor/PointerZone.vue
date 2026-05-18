@@ -11,7 +11,7 @@
     @touchstart="handleTouchStart"
     @touchmove="handleTouchMove"
     @touchend="handleTouchEnd"
-    @wheel="handleWheel"
+    @wheel.prevent="handleWheel"
     @contextmenu.prevent
   />
 </template>

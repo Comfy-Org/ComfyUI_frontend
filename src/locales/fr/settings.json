@@ -272,6 +272,10 @@
       "v1 (legacy)": "v1 (héritage)"
     }
   },
+  "Comfy_NodeSearchBoxImpl_FollowCursor": {
+    "name": "Les nœuds ajoutés suivent le curseur",
+    "tooltip": "Lorsque cette option est activée, les nœuds ajoutés depuis la boîte de recherche suivent le curseur jusqu'à ce qu'ils soient placés par un clic. S'applique uniquement à l'implémentation par défaut."
+  },
   "Comfy_NodeSearchBoxImpl_NodePreview": {
     "name": "Aperçu du nœud",
     "tooltip": "S'applique uniquement à l'implémentation par défaut"

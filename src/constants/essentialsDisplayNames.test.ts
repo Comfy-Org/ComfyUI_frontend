@@ -8,7 +8,7 @@ import { resolveEssentialsDisplayName } from '@/constants/essentialsDisplayNames
 
 describe('resolveEssentialsDisplayName', () => {
   describe('exact name matches', () => {
-    it.each([
+    it.for([
       ['LoadImage', 'essentials.loadImage'],
       ['SaveImage', 'essentials.saveImage'],
       ['PrimitiveStringMultiline', 'essentials.text'],
@@ -22,26 +22,26 @@ describe('resolveEssentialsDisplayName', () => {
       ['Video Slice', 'essentials.extractFrame'],
       ['KlingLipSyncAudioToVideoNode', 'essentials.lipsync'],
       ['KlingLipSyncTextToVideoNode', 'essentials.lipsync']
-    ])('%s -> %s', (name, expected) => {
+    ])('%s -> %s', ([name, expected]) => {
       expect(resolveEssentialsDisplayName({ name })).toBe(expected)
     })
   })
 
   describe('3D API node alternatives', () => {
-    it.each([
+    it.for([
       ['TencentTextToModelNode', 'essentials.textTo3DModel'],
       ['MeshyTextToModelNode', 'essentials.textTo3DModel'],
       ['TripoTextToModelNode', 'essentials.textTo3DModel'],
       ['TencentImageToModelNode', 'essentials.imageTo3DModel'],
       ['MeshyImageToModelNode', 'essentials.imageTo3DModel'],
       ['TripoImageToModelNode', 'essentials.imageTo3DModel']
-    ])('%s -> %s', (name, expected) => {
+    ])('%s -> %s', ([name, expected]) => {
       expect(resolveEssentialsDisplayName({ name })).toBe(expected)
     })
   })
 
   describe('blueprint prefix matches', () => {
-    it.each([
+    it.for([
       [
         'SubgraphBlueprint.text_to_image_flux_schnell.json',
         'essentials.textToImage'
@@ -82,7 +82,7 @@ describe('resolveEssentialsDisplayName', () => {
         'SubgraphBlueprint.image_outpainting_qwen_image_instantx.json',
         'essentials.outpaintImage'
       ]
-    ])('%s -> %s', (name, expected) => {
+    ])('%s -> %s', ([name, expected]) => {
       expect(resolveEssentialsDisplayName({ name })).toBe(expected)
     })
   })

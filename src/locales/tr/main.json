@@ -237,6 +237,7 @@
     },
     "login": {
       "andText": "ve",
+      "backToGithubLogin": "Bunun yerine Github ile kaydol",
       "backToLogin": "Girişe dön",
       "backToSocialLogin": "Bunun yerine Google veya Github ile kaydolun",
       "confirmPasswordLabel": "Şifreyi Onayla",
@@ -292,7 +293,9 @@
       "title": "Yeniden Kimlik Doğrulama Gerekli"
     },
     "signOut": {
+      "saveFailed": "\"{workflow}\" kaydedilemediği için çıkış iptal edildi.",
       "signOut": "Çıkış Yap",
+      "signOutAnyway": "Yine de çıkış yap",
       "success": "Başarıyla çıkış yapıldı",
       "successDetail": "Hesabınızdan başarıyla çıkış yaptınız.",
       "unsavedChangesMessage": "Oturumu kapattığınızda kaydedilmemiş değişiklikleriniz kaybolacak. Devam etmek istiyor musunuz?",
@@ -407,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "Yerelde Devam Et",
     "exploreCloud": "Bulutu Ücretsiz Dene",
-    "feature1Title": "Aylık 400 Ücretsiz Kredi",
     "feature2Title": "Her Yerde, Anında Çalışır",
     "feature3Title": "Kullanıma Hazır Modeller",
     "feature4Title": "En İyi Özel Node Paketleri Önceden Yüklü",
@@ -461,6 +463,12 @@
       "wantToRun": "ComfyUI'ı yerel olarak çalıştırmak mı istiyorsunuz?"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "Lütfen bir seçenek seçin.",
+        "describeAnswer": "Lütfen cevabınızı açıklayın.",
+        "selectAtLeastOne": "Lütfen en az bir seçenek seçin."
+      },
+      "intro": "ComfyUI deneyiminizi size özel hale getirmemize yardımcı olun.",
       "options": {
         "familiarity": {
           "advanced": "İleri seviye kullanıcı (özel iş akışları)",
@@ -469,45 +477,43 @@
           "new": "ComfyUI'a yeni (daha önce hiç kullanmadım)",
           "starting": "Yeni başlıyorum (eğitimleri takip ediyorum)"
         },
-        "industry": {
-          "architecture": "Mimarlık",
-          "education": "Eğitim",
-          "film_tv_animation": "Film, TV ve animasyon",
-          "fine_art": "Güzel sanatlar ve illüstrasyon",
-          "gaming": "Oyun",
-          "marketing": "Pazarlama ve reklamcılık",
-          "other": "Diğer",
-          "otherPlaceholder": "Lütfen belirtin",
-          "product_design": "Ürün ve grafik tasarımı",
-          "software": "Yazılım ve teknoloji"
-        },
-        "making": {
-          "3d": "3D varlıklar",
+        "intent": {
+          "3d_game": "3D varlıklar / oyun varlıkları",
+          "api": "İş akışlarını çalıştırmak için API uç noktaları",
+          "apps": "İş akışlarından basitleştirilmiş uygulamalar",
           "audio": "Ses / müzik",
-          "custom_nodes": "Özel düğümler ve iş akışları",
+          "custom_nodes": "Özel node'lar",
           "images": "Görseller",
-          "video": "Video ve animasyon"
+          "not_sure": "Emin değilim",
+          "videos": "Videolar",
+          "workflows": "Özel iş akışları veya boru hatları"
         },
-        "purpose": {
-          "client": "Müşteri işleri (serbest çalışma)",
-          "community": "Topluluk katkıları (düğümler, iş akışları vb.)",
-          "inhouse": "Kendi işyerim (şirket içi)",
-          "personal": "Kişisel projeler / hobi",
-          "research": "Akademik araştırma"
+        "source": {
+          "conference": "Konferans veya etkinlik",
+          "discord": "Discord / topluluk",
+          "friend": "Arkadaş veya iş arkadaşı",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "Bülten veya blog",
+          "other": "Diğer",
+          "reddit": "Reddit",
+          "search": "Google / arama",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
+        },
+        "usage": {
+          "education": "Eğitim (öğrenci veya eğitmen)",
+          "personal": "Kişisel kullanım",
+          "work": "İş"
         }
       },
       "placeholder": "Anket soruları yer tutucusu",
-      "questions": {
-        "familiarity": "ComfyUI'a ne kadar aşinasınız?",
-        "industry": "Birincil sektörünüz nedir?",
-        "making": "Ne yapmayı planlıyorsunuz?",
-        "purpose": "ComfyUI'ı öncelikle ne için kullanacaksınız?"
-      },
       "steps": {
         "familiarity": "ComfyUI'a ne kadar aşinasınız?",
-        "industry": "Birincil sektörünüz nedir?",
-        "making": "Ne yapmayı planlıyorsunuz?",
-        "purpose": "ComfyUI'ı öncelikle ne için kullanacaksınız?"
+        "intent": "ComfyUI ile ne oluşturmak istiyorsunuz?",
+        "source": "ComfyUI'yi nereden duydunuz?",
+        "usage": "ComfyUI'yi nasıl kullanmayı planlıyorsunuz?"
       },
       "title": "Bulut Anketi"
     }
@@ -522,9 +528,9 @@
   "cloudStart_title": "saniyeler içinde oluşturmaya başlayın",
   "cloudStart_wantToRun": "ComfyUI'ı yerel olarak çalıştırmak mı istiyorsunuz?",
   "cloudSurvey_steps_familiarity": "ComfyUI'ya ne kadar aşinasınız?",
-  "cloudSurvey_steps_industry": "Birincil sektörünüz nedir?",
-  "cloudSurvey_steps_making": "Ne yapmayı planlıyorsunuz?",
-  "cloudSurvey_steps_purpose": "ComfyUI'yı öncelikle ne için kullanacaksınız?",
+  "cloudSurvey_steps_intent": "ComfyUI ile ne oluşturmak istiyorsunuz?",
+  "cloudSurvey_steps_source": "ComfyUI'yi nereden duydunuz?",
+  "cloudSurvey_steps_usage": "ComfyUI'yi nasıl kullanmayı planlıyorsunuz?",
   "cloudWaitlist_contactLink": "burada",
   "cloudWaitlist_questionsText": "Sorularınız mı var? Bize ulaşın",
   "color": {
@@ -778,6 +784,7 @@
     "AUDIO_ENCODER": "SES_KODLAYICI",
     "AUDIO_ENCODER_OUTPUT": "SES_KODLAYICI_ÇIKIŞI",
     "AUDIO_RECORD": "SES_KAYDI",
+    "BACKGROUND_REMOVAL": "ARKA_PLAN_KALDIRMA",
     "BOOLEAN": "BOOLEAN",
     "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "KAMERA_KONTROL",
@@ -808,6 +815,7 @@
     "HISTOGRAM": "HİSTOGRAM",
     "HOOKS": "Kancalar",
     "HOOK_KEYFRAMES": "Kanca_anahtar_kareleri",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "GÖRÜNTÜ",
     "IMAGECOMPARE": "GÖRSELKARŞILAŞTIR",
     "INT": "TAMSAYI",
@@ -828,9 +836,12 @@
     "MODEL": "MODEL",
     "MODEL_PATCH": "MODEL_YAMASI",
     "MODEL_TASK_ID": "MODEL_GÖREV_ID",
+    "MOGE_GEOMETRY": "MOGE_GEOMETRY",
+    "MOGE_MODEL": "MOGE_MODEL",
     "NOISE": "GÜRÜLTÜ",
     "OPENAI_CHAT_CONFIG": "OPENAI_SOHBET_YAPILANDIRMASI",
     "OPENAI_INPUT_FILES": "OPENAI_GİRİŞ_DOSYALARI",
+    "OPTICAL_FLOW": "OPTICAL_FLOW",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "PIXVERSE_ŞABLONU",
     "POSE_KEYPOINT": "POZ ANAHTAR NOKTASI",
@@ -905,7 +916,8 @@
     "extensionFileHint": "Bu, aşağıdaki komut dosyasından kaynaklanıyor olabilir",
     "loadWorkflowTitle": "İş akışı verileri yeniden yüklenirken hata nedeniyle yükleme iptal edildi",
     "noStackTrace": "Yığın izi mevcut değil",
-    "promptExecutionError": "İstem yürütmesi başarısız oldu"
+    "promptExecutionError": "İstem yürütmesi başarısız oldu",
+    "queueOpenWorkflowFailedTitle": "İş Akışı Açılamadı"
   },
   "errorOverlay": {
     "errorCount": "{count} HATA | {count} HATA",
@@ -1017,6 +1029,7 @@
     "cancel": "İptal",
     "cancelled": "İptal Edildi",
     "capture": "yakala",
+    "categories": "Kategoriler",
     "category": "Kategori",
     "changeKeybinding": "Kısayol tuşunu değiştir",
     "chart": "Grafik",
@@ -1032,6 +1045,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrg Logosu",
+    "comfyPackageOutdated": "Yüklü {name} sürümü ({installedVersion}), gerekli sürümden ({requiredVersion}) daha eski.",
     "comingSoon": "Çok Yakında",
     "command": "Komut",
     "commandProhibited": "{command} komutu yasak. Daha fazla bilgi için bir yöneticiyle iletişime geçin.",
@@ -2244,6 +2258,7 @@
     "": "",
     "3d": "3d",
     "3d_models": "3d_modeller",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
@@ -2258,7 +2273,6 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
@@ -2276,23 +2290,21 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
-    "_for_testing": "_test_için",
     "advanced": "gelişmiş",
     "animation": "animasyon",
-    "api": "api",
     "api node": "api düğümü",
     "attention_experiments": "dikkat_deneyleri",
     "audio": "ses",
+    "background removal": "arka plan kaldırma",
     "batch": "toplu",
-    "camera": "kamera",
     "chroma_radiance": "chroma_radiance",
     "clip": "klip",
+    "color": "renk",
     "combine": "birleştir",
     "compositing": "birleştirme",
     "cond pair": "çift koşul",
     "cond single": "tek koşul",
     "conditioning": "koşullandırma",
-    "context": "bağlam",
     "controlnet": "controlnet",
     "create": "oluştur",
     "custom_sampling": "özel_örnekleme",
@@ -2301,7 +2313,9 @@
     "deprecated": "kullanımdan kaldırılmış",
     "detection": "tespit",
     "edit_models": "modelleri_düzenle",
+    "experimental": "deneysel",
     "flux": "flux",
+    "geometry_estimation": "geometri_tahmini",
     "gligen": "gligen",
     "guidance": "rehberlik",
     "guiders": "rehberler",
@@ -2316,7 +2330,6 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "mask": "maske",
-    "math": "matematik",
     "model": "model",
     "model_merging": "model_birleştirme",
     "model_patches": "model_yamaları",
@@ -2333,16 +2346,13 @@
     "save": "kaydet",
     "schedulers": "zamanlayıcılar",
     "scheduling": "zamanlama",
-    "sd": "sd",
     "sd3": "sd3",
     "shader": "shader",
     "sigmas": "sigmalar",
     "stable_cascade": "stabil_çağlayan",
-    "string": "dize",
     "style_model": "stil_modeli",
     "supir": "supir",
     "text": "metin",
-    "textgen": "textgen",
     "training": "eğitim",
     "transform": "dönüştür",
     "unet": "unet",
@@ -3146,6 +3156,7 @@
       "deleteFailedTitle": "Silme başarısız oldu",
       "deleted": "İş akışı silindi",
       "dirtyClose": "Aşağıdaki dosyalar değiştirildi. Kapatmadan önce bunları kaydetmek ister misiniz?",
+      "dirtyCloseAnyway": "Yine de kapat",
       "dirtyCloseHint": "Sormadan kapatmak için Shift tuşunu basılı tutun",
       "dirtyCloseTitle": "Değişiklikler Kaydedilsin mi?",
       "workflowTreeType": {

@@ -11,7 +11,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
+import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import type { ValidFavoritedWidget } from '@/stores/workspace/favoritedWidgetsStore'
@@ -119,7 +119,7 @@ function onCollapseUpdate() {
   <div
     class="flex items-center border-b border-interface-stroke px-4 pt-1 pb-4"
   >
-    <FormSearchInput
+    <AsyncSearchInput
       v-model="searchQuery"
       :searcher
       :update-key="favoritedWidgets"

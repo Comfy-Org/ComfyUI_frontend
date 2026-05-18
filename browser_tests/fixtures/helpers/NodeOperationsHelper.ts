@@ -18,9 +18,7 @@ export class NodeOperationsHelper {
   public readonly promptDialogInput: Locator
 
   constructor(private comfyPage: ComfyPage) {
-    this.promptDialogInput = this.page.locator(
-      '.p-dialog-content input[type="text"]'
-    )
+    this.promptDialogInput = this.page.getByRole('dialog').getByRole('textbox')
   }
 
   private get page() {

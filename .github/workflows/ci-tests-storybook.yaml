@@ -8,10 +8,29 @@ on:
     branches: [main]
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      storybook-changes: ${{ steps.changes.outputs.storybook-changes }}
+      app-frontend-changes: ${{ steps.changes.outputs.app-frontend-changes }}
+      packages-changes: ${{ steps.changes.outputs.packages-changes }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
   # Post starting comment for non-forked PRs
   comment-on-pr-start:
+    needs: changes
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+    if: |
+      github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.fork == false
+      && (needs.changes.outputs.storybook-changes == 'true'
+          || needs.changes.outputs.app-frontend-changes == 'true'
+          || needs.changes.outputs.packages-changes == 'true')
     permissions:
       pull-requests: write
     steps:
@@ -30,8 +49,13 @@ jobs:
 
   # Build Storybook for all PRs (free Cloudflare deployment)
   storybook-build:
+    needs: changes
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: |
+      github.event_name == 'pull_request'
+      && (needs.changes.outputs.storybook-changes == 'true'
+          || needs.changes.outputs.app-frontend-changes == 'true'
+          || needs.changes.outputs.packages-changes == 'true')
     outputs:
       conclusion: ${{ steps.job-status.outputs.conclusion }}
       workflow-url: ${{ steps.workflow-url.outputs.url }}
@@ -67,8 +91,15 @@ jobs:
 
   # Chromatic deployment only for version-bump-* branches or manual triggers
   chromatic-deployment:
+    needs: changes
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && startsWith(github.head_ref, 'version-bump-'))
+    if: |
+      github.event_name == 'workflow_dispatch'
+      || (github.event_name == 'pull_request'
+          && startsWith(github.head_ref, 'version-bump-')
+          && (needs.changes.outputs.storybook-changes == 'true'
+              || needs.changes.outputs.app-frontend-changes == 'true'
+              || needs.changes.outputs.packages-changes == 'true'))
     outputs:
       conclusion: ${{ steps.job-status.outputs.conclusion }}
       workflow-url: ${{ steps.workflow-url.outputs.url }}
@@ -107,9 +138,15 @@ jobs:
 
   # Deploy and comment for non-forked PRs only
   deploy-and-comment:
-    needs: [storybook-build]
+    needs: [changes, storybook-build]
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false && always()
+    if: |
+      always()
+      && github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.fork == false
+      && (needs.changes.outputs.storybook-changes == 'true'
+          || needs.changes.outputs.app-frontend-changes == 'true'
+          || needs.changes.outputs.packages-changes == 'true')
     permissions:
       pull-requests: write
       contents: read

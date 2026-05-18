@@ -209,7 +209,7 @@ const dotClasses = computed(() => {
       return 'bg-gold-600'
     case 'info':
     default:
-      return 'bg-slate-100'
+      return 'bg-text-secondary'
   }
 })
 

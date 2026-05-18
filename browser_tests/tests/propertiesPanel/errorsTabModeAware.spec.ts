@@ -6,7 +6,7 @@ import {
   cleanupFakeModel,
   openErrorsTab,
   loadWorkflowAndOpenErrorsTab
-} from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
+} from '@e2e/fixtures/helpers/ErrorsTabHelper'
 
 test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {

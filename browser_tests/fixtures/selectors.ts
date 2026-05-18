@@ -8,6 +8,7 @@ export const TestIds = {
     toolbar: 'side-toolbar',
     nodeLibrary: 'node-library-tree',
     nodeLibrarySearch: 'node-library-search',
+    nodePreviewCard: 'node-preview-card',
     workflows: 'workflows-sidebar',
     modeToggle: 'mode-toggle'
   },
@@ -64,6 +65,7 @@ export const TestIds = {
     missingModelRefresh: 'missing-model-refresh',
     missingModelImportUnsupported: 'missing-model-import-unsupported',
     missingMediaGroup: 'error-group-missing-media',
+    swapNodesGroup: 'error-group-swap-nodes',
     missingMediaRow: 'missing-media-row',
     missingMediaUploadDropzone: 'missing-media-upload-dropzone',
     missingMediaLibrarySelect: 'missing-media-library-select',
@@ -89,7 +91,10 @@ export const TestIds = {
     subscribeButton: 'topbar-subscribe-button',
     loginButton: 'login-button',
     loginButtonPopover: 'login-button-popover',
-    loginButtonPopoverLearnMore: 'login-button-popover-learn-more'
+    loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
+    workflowTabs: 'topbar-workflow-tabs',
+    integratedTabBarActions: 'integrated-tab-bar-actions',
+    actionBarButtons: 'action-bar-buttons'
   },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'
@@ -99,20 +104,23 @@ export const TestIds = {
     errorsTab: 'panel-tab-errors'
   },
   subgraphEditor: {
-    toggle: 'subgraph-editor-toggle',
-    shownSection: 'subgraph-editor-shown-section',
     hiddenSection: 'subgraph-editor-hidden-section',
-    widgetToggle: 'subgraph-widget-toggle',
-    widgetLabel: 'subgraph-widget-label',
-    iconLink: 'icon-link',
     iconEye: 'icon-eye',
-    widgetActionsMenuButton: 'widget-actions-menu-button'
+    iconLink: 'icon-link',
+    nodeName: 'subgraph-widget-node-name',
+    shownSection: 'subgraph-editor-shown-section',
+    toggle: 'subgraph-editor-toggle',
+    widgetActionsMenuButton: 'widget-actions-menu-button',
+    widgetItem: 'subgraph-widget-item',
+    widgetLabel: 'subgraph-widget-label',
+    widgetToggle: 'subgraph-widget-toggle'
   },
   node: {
     titleInput: 'node-title-input',
     pinIndicator: 'node-pin-indicator',
     innerWrapper: 'node-inner-wrapper',
-    mainImage: 'main-image'
+    mainImage: 'main-image',
+    slotConnectionDot: 'slot-connection-dot'
   },
   selectionToolbox: {
     root: 'selection-toolbox',
@@ -137,7 +145,17 @@ export const TestIds = {
     decrement: 'decrement',
     increment: 'increment',
     domWidgetTextarea: 'dom-widget-textarea',
-    subgraphEnterButton: 'subgraph-enter-button'
+    subgraphEnterButton: 'subgraph-enter-button',
+    selectDefaultSearchInput: 'widget-select-default-search-input',
+    selectDefaultViewport: 'widget-select-default-viewport'
+  },
+  linear: {
+    centerPanel: 'linear-center-panel',
+    mobile: 'linear-mobile',
+    mobileNavigation: 'linear-mobile-navigation',
+    mobileWorkflows: 'linear-mobile-workflows',
+    outputInfo: 'linear-output-info',
+    widgetContainer: 'linear-widgets'
   },
   builder: {
     footerNav: 'builder-footer-nav',
@@ -209,7 +227,10 @@ export const TestIds = {
   },
   queue: {
     overlayToggle: 'queue-overlay-toggle',
-    clearHistoryAction: 'clear-history-action'
+    jobDetailsPopover: 'queue-job-details-popover',
+    clearHistoryAction: 'clear-history-action',
+    jobAssetsList: 'job-assets-list',
+    notificationBanner: 'queue-notification-banner'
   },
   errors: {
     imageLoadError: 'error-loading-image',
@@ -260,6 +281,9 @@ export const TestIds = {
     chipDelete: 'chip-delete',
     noResults: 'no-results',
     nodeIdBadge: 'node-id-badge',
+    sidebarToggle: 'toggle-category-sidebar',
+    sidebarBackdrop: 'sidebar-backdrop',
+    filterChipsScroll: 'filter-chips-scroll',
     category: (id: string) => `category-${id}`,
     rootCategory: (id: string) => `search-category-${id}`,
     typeFilter: (key: 'input' | 'output') => `search-filter-${key}`

@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import type { DetachedWindowAPI } from 'happy-dom'
 import { setActivePinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
 
@@ -35,3 +36,12 @@ export const testI18n = createI18n({
   locale: 'en',
   messages: { en: enMessages }
 })
+
+export function setViewport(viewport: { width: number; height: number }) {
+  const happyDOM = (window as unknown as { happyDOM?: DetachedWindowAPI })
+    .happyDOM
+  if (!happyDOM) {
+    throw new Error('window.happyDOM is unavailable to set viewport')
+  }
+  happyDOM.setViewport(viewport)
+}
