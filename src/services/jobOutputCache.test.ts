@@ -9,9 +9,9 @@ import type {
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   findActiveIndex,
+  getInspectionTargetsForTask,
   getJobDetail,
-  getJobWorkflow,
-  getOutputsForTask
+  getJobWorkflow
 } from '@/services/jobOutputCache'
 import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
@@ -29,16 +29,18 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-function createResultItem(url: string, supportsPreview = true): ResultItemImpl {
+function createResultItem(
+  filename: string,
+  mediaType: string = 'images'
+): ResultItemImpl {
   const item = new ResultItemImpl({
-    filename: url,
+    filename,
     subfolder: '',
     type: 'output',
     nodeId: 'node-1',
-    mediaType: supportsPreview ? 'images' : 'unknown'
+    mediaType
   })
-  Object.defineProperty(item, 'url', { get: () => url })
-  Object.defineProperty(item, 'supportsPreview', { get: () => supportsPreview })
+  Object.defineProperty(item, 'url', { get: () => filename })
   return item
 }
 
@@ -101,21 +103,46 @@ describe('jobOutputCache', () => {
     })
   })
 
-  describe('getOutputsForTask', () => {
-    it('returns previewable outputs directly when no lazy load needed', async () => {
-      const outputs = [createResultItem('p-1'), createResultItem('p-2')]
+  describe('getInspectionTargetsForTask', () => {
+    it('returns inspection targets directly when no lazy load needed', async () => {
+      const outputs = [createResultItem('p-1.png'), createResultItem('p-2.png')]
       const task = createTask(undefined, outputs, 1)
 
-      const result = await getOutputsForTask(task)
+      const result = await getInspectionTargetsForTask(task)
 
-      expect(result).toEqual(outputs)
+      expect(result).toEqual([
+        { kind: 'lightbox', output: outputs[0] },
+        { kind: 'lightbox', output: outputs[1] }
+      ])
+    })
+
+    it('routes loadable 3D outputs without treating all 3D as inspection targets', async () => {
+      const loadable3D = new ResultItemImpl({
+        filename: 'scan.ply',
+        subfolder: '',
+        type: 'output',
+        nodeId: 'node-1',
+        mediaType: '3D'
+      })
+      const nonLoadable3D = new ResultItemImpl({
+        filename: 'asset.usdz',
+        subfolder: '',
+        type: 'output',
+        nodeId: 'node-1',
+        mediaType: 'images'
+      })
+      const task = createTask(undefined, [loadable3D, nonLoadable3D], 1)
+
+      const result = await getInspectionTargetsForTask(task)
+
+      expect(result).toEqual([{ kind: 'load3d', output: loadable3D }])
     })
 
     it('lazy loads when outputsCount > 1', async () => {
-      const previewOutput = createResultItem('preview')
+      const previewOutput = createResultItem('preview.png')
       const fullOutputs = [
-        createResultItem('full-1'),
-        createResultItem('full-2')
+        createResultItem('full-1.png'),
+        createResultItem('full-2.png')
       ]
 
       const job = createMockJob(uniqueId('task'), 3)
@@ -123,31 +150,31 @@ describe('jobOutputCache', () => {
       const loadedTask = new TaskItemImpl(job, {}, fullOutputs)
       task.loadFullOutputs = vi.fn().mockResolvedValue(loadedTask)
 
-      const result = await getOutputsForTask(task)
+      const result = await getInspectionTargetsForTask(task)
 
-      expect(result).toEqual(fullOutputs)
+      expect(result?.map((target) => target.output)).toEqual(fullOutputs)
       expect(task.loadFullOutputs).toHaveBeenCalled()
     })
 
     it('caches loaded tasks', async () => {
-      const fullOutputs = [createResultItem('full-1')]
+      const fullOutputs = [createResultItem('full-1.png')]
 
       const job = createMockJob(uniqueId('task'), 3)
-      const task = new TaskItemImpl(job, {}, [createResultItem('preview')])
+      const task = new TaskItemImpl(job, {}, [createResultItem('preview.png')])
       const loadedTask = new TaskItemImpl(job, {}, fullOutputs)
       task.loadFullOutputs = vi.fn().mockResolvedValue(loadedTask)
 
       // First call should load
-      await getOutputsForTask(task)
+      await getInspectionTargetsForTask(task)
       expect(task.loadFullOutputs).toHaveBeenCalledTimes(1)
 
       // Second call should use cache
-      await getOutputsForTask(task)
+      await getInspectionTargetsForTask(task)
       expect(task.loadFullOutputs).toHaveBeenCalledTimes(1)
     })
 
-    it('falls back to preview outputs on load error', async () => {
-      const previewOutput = createResultItem('preview')
+    it('falls back to current outputs on load error', async () => {
+      const previewOutput = createResultItem('preview.png')
 
       const job = createMockJob(uniqueId('task'), 3)
       const task = new TaskItemImpl(job, {}, [previewOutput])
@@ -155,23 +182,27 @@ describe('jobOutputCache', () => {
         .fn()
         .mockRejectedValue(new Error('Network error'))
 
-      const result = await getOutputsForTask(task)
+      const result = await getInspectionTargetsForTask(task)
 
-      expect(result).toEqual([previewOutput])
+      expect(result?.map((target) => target.output)).toEqual([previewOutput])
     })
 
     it('returns null when request is superseded', async () => {
       const job1 = createMockJob(uniqueId('task'), 3)
       const job2 = createMockJob(uniqueId('task'), 3)
 
-      const task1 = new TaskItemImpl(job1, {}, [createResultItem('preview-1')])
-      const task2 = new TaskItemImpl(job2, {}, [createResultItem('preview-2')])
+      const task1 = new TaskItemImpl(job1, {}, [
+        createResultItem('preview-1.png')
+      ])
+      const task2 = new TaskItemImpl(job2, {}, [
+        createResultItem('preview-2.png')
+      ])
 
       const loadedTask1 = new TaskItemImpl(job1, {}, [
-        createResultItem('full-1')
+        createResultItem('full-1.png')
       ])
       const loadedTask2 = new TaskItemImpl(job2, {}, [
-        createResultItem('full-2')
+        createResultItem('full-2.png')
       ])
 
       // Task1 loads slowly, task2 loads quickly
@@ -184,14 +215,16 @@ describe('jobOutputCache', () => {
       task2.loadFullOutputs = vi.fn().mockResolvedValue(loadedTask2)
 
       // Start task1, then immediately start task2
-      const promise1 = getOutputsForTask(task1)
-      const promise2 = getOutputsForTask(task2)
+      const promise1 = getInspectionTargetsForTask(task1)
+      const promise2 = getInspectionTargetsForTask(task2)
 
       const [result1, result2] = await Promise.all([promise1, promise2])
 
       // Task2 should succeed, task1 should return null (superseded)
       expect(result1).toBeNull()
-      expect(result2).toEqual([createResultItem('full-2')])
+      expect(result2?.map((target) => target.output.filename)).toEqual([
+        'full-2.png'
+      ])
     })
   })
 

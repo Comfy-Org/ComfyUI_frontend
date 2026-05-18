@@ -150,9 +150,9 @@ import {
   formatDuration,
   formatSize,
   getFilenameDetails,
-  getMediaTypeFromFilename,
-  isPreviewableMediaType
+  getMediaTypeFromFilename
 } from '@/utils/formatUtil'
+import { getInspectionKindForFilename } from '@/utils/inspectionTarget'
 
 import { getAssetType } from '../composables/media/assetMappers'
 import { getAssetUrl } from '../utils/assetUrlUtil'
@@ -228,7 +228,7 @@ const previewKind = computed((): PreviewKind => {
   return getMediaTypeFromFilename(asset?.name || '')
 })
 
-const canInspect = computed(() => isPreviewableMediaType(fileKind.value))
+const canInspect = computed(() => !!getInspectionKindForFilename(asset?.name))
 
 // Get filename without extension
 const fileName = computed(() => {

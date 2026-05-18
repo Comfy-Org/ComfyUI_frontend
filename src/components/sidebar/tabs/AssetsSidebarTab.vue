@@ -189,7 +189,6 @@
     ref="contextMenuRef"
     :asset="contextMenuAsset"
     :asset-type="contextMenuAssetType"
-    :file-kind="contextMenuFileKind"
     :show-delete-button="shouldShowDeleteButton"
     :selected-assets="selectedAssets"
     :is-bulk-mode="isBulkMode"
@@ -214,15 +213,7 @@ import {
   useTimeoutFn
 } from '@vueuse/core'
 import { useToast } from 'primevue/usetoast'
-import {
-  computed,
-  defineAsyncComponent,
-  nextTick,
-  onMounted,
-  onUnmounted,
-  ref,
-  watch
-} from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -242,27 +233,21 @@ import { useAssetSelection } from '@/platform/assets/composables/useAssetSelecti
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
+import { useLoad3dViewerDialog } from '@/composables/useLoad3dViewerDialog'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
-import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
-import { useDialogStore } from '@/stores/dialogStore'
 import { ResultItemImpl } from '@/stores/queueStore'
-import {
-  formatDuration,
-  getMediaTypeFromFilename,
-  isPreviewableMediaType
-} from '@/utils/formatUtil'
+import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { getInspectionKindForFilename } from '@/utils/inspectionTarget'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const Load3dViewerContent = defineAsyncComponent(
-  () => import('@/components/load3d/Load3dViewerContent.vue')
-)
-
 const { t } = useI18n()
+const { openLoad3dViewer } = useLoad3dViewerDialog()
 
 const emit = defineEmits<{ assetSelected: [asset: AssetItem] }>()
 
@@ -289,10 +274,6 @@ const shouldShowDeleteButton = computed(() => {
 
 const contextMenuAssetType = computed(() =>
   contextMenuAsset.value ? getAssetType(contextMenuAsset.value.tags) : 'input'
-)
-
-const contextMenuFileKind = computed<MediaKind>(() =>
-  getMediaTypeFromFilename(contextMenuAsset.value?.name ?? '')
 )
 
 const shouldShowOutputCount = (item: AssetItem): boolean => {
@@ -420,9 +401,9 @@ const visibleAssets = computed(() => {
   return listViewSelectableAssets.value
 })
 
-const previewableVisibleAssets = computed(() =>
-  visibleAssets.value.filter((asset) =>
-    isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
+const lightboxVisibleAssets = computed(() =>
+  visibleAssets.value.filter(
+    (asset) => getInspectionKindForFilename(asset.name) === 'lightbox'
   )
 )
 
@@ -451,7 +432,7 @@ watch(visibleAssets, (newAssets) => {
   // so selection stays consistent with what this view can act on.
   reconcileSelection(newAssets)
   if (currentGalleryAssetId.value && galleryActiveIndex.value !== -1) {
-    const newIndex = previewableVisibleAssets.value.findIndex(
+    const newIndex = lightboxVisibleAssets.value.findIndex(
       (asset) => asset.id === currentGalleryAssetId.value
     )
     galleryActiveIndex.value = newIndex
@@ -465,7 +446,7 @@ watch(galleryActiveIndex, (index) => {
 })
 
 const galleryItems = computed(() => {
-  return previewableVisibleAssets.value.map((asset) => {
+  return lightboxVisibleAssets.value.map((asset) => {
     const mediaType = getMediaTypeFromFilename(asset.name)
     const resultItem = new ResultItemImpl({
       filename: asset.name,
@@ -570,32 +551,20 @@ const handleDeleteSelected = async () => {
 }
 
 const handleZoomClick = (asset: AssetItem) => {
-  const mediaType = getMediaTypeFromFilename(asset.name)
-  if (!isPreviewableMediaType(mediaType)) {
-    return
-  }
+  const inspectionKind = getInspectionKindForFilename(asset.name)
 
-  if (mediaType === '3D') {
-    const dialogStore = useDialogStore()
-    dialogStore.showDialog({
-      key: 'asset-3d-viewer',
+  if (inspectionKind === 'load3d') {
+    openLoad3dViewer({
       title: getAssetDisplayName(asset),
-      component: Load3dViewerContent,
-      props: {
-        modelUrl: asset.preview_url || ''
-      },
-      dialogComponentProps: {
-        style: 'width: 80vw; height: 80vh;',
-        maximizable: true
-      }
+      modelUrl: asset.preview_url || getAssetUrl(asset)
     })
     return
   }
 
+  if (inspectionKind !== 'lightbox') return
+
   currentGalleryAssetId.value = asset.id
-  const index = previewableVisibleAssets.value.findIndex(
-    (a) => a.id === asset.id
-  )
+  const index = lightboxVisibleAssets.value.findIndex((a) => a.id === asset.id)
   if (index !== -1) {
     galleryActiveIndex.value = index
   }

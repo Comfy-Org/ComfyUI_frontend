@@ -64,15 +64,18 @@ import { useQueueClearHistoryDialog } from '@/composables/queue/useQueueClearHis
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useLoad3dViewerDialog } from '@/composables/useLoad3dViewerDialog'
 import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
 import { isCloud } from '@/platform/distribution/types'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { api } from '@/scripts/api'
+import { getInspectionTargetsForTask } from '@/services/jobOutputCache'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { getPreferredInspectionTarget } from '@/utils/inspectionTarget'
 
 type OverlayState = 'hidden' | 'active' | 'expanded'
 
@@ -92,6 +95,7 @@ const executionStore = useExecutionStore()
 const sidebarTabStore = useSidebarTabStore()
 const assetsStore = useAssetsStore()
 const assetSelectionStore = useAssetSelectionStore()
+const { openLoad3dViewer } = useLoad3dViewerDialog()
 const { showQueueClearHistoryDialog } = useQueueClearHistoryDialog()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { trackFeatureUsed } = useSurveyFeatureTracking('queue-progress-overlay')
@@ -244,8 +248,7 @@ const openAssetsSidebar = () => {
 const focusAssetInSidebar = async (item: JobListItem) => {
   const task = item.taskRef
   const jobId = task?.jobId
-  const preview = task?.previewOutput
-  if (!jobId || !preview) return
+  if (!jobId) return
 
   const assetId = String(jobId)
   openAssetsSidebar()
@@ -264,7 +267,24 @@ const focusAssetInSidebar = async (item: JobListItem) => {
 const inspectJobAsset = wrapWithErrorHandlingAsync(
   async (item: JobListItem) => {
     trackFeatureUsed()
-    await openResultGallery(item)
+    const task = item.taskRef
+    if (!task) return
+
+    const targets = await getInspectionTargetsForTask(task)
+    if (targets === null) return
+
+    const target = getPreferredInspectionTarget(targets)
+    if (!target) return
+
+    if (target.kind === 'load3d') {
+      openLoad3dViewer({
+        title: item.title,
+        modelUrl: target.output.url
+      })
+    } else {
+      await openResultGallery(item)
+    }
+
     await focusAssetInSidebar(item)
   }
 )

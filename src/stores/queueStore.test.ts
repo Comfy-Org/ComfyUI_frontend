@@ -190,6 +190,48 @@ describe('TaskItemImpl', () => {
     })
   })
 
+  describe('3D media classification', () => {
+    it('surfaces loadable 3D outputs for display', () => {
+      const taskItem = new TaskItemImpl(createHistoryJob(0, 'job-id'), {
+        'node-1': {
+          '3D': [
+            {
+              filename: 'scan.ply',
+              type: 'output',
+              subfolder: ''
+            }
+          ]
+        }
+      })
+
+      const output = taskItem.flatOutputs[0]
+
+      expect(output.is3D).toBe(true)
+      expect(output.supportsPreview).toBe(true)
+      expect(taskItem.previewOutput).toBe(output)
+    })
+
+    it('surfaces non-loadable 3D outputs for display', () => {
+      const taskItem = new TaskItemImpl(createHistoryJob(0, 'job-id'), {
+        'node-1': {
+          images: [
+            {
+              filename: 'asset.usdz',
+              type: 'output',
+              subfolder: ''
+            }
+          ]
+        }
+      })
+
+      const output = taskItem.flatOutputs[0]
+
+      expect(output.is3D).toBe(true)
+      expect(output.supportsPreview).toBe(true)
+      expect(taskItem.previewOutput).toBe(output)
+    })
+  })
+
   it.skip('should parse text outputs', () => {
     const job: JobListItem = {
       ...createHistoryJob(0, 'text-job'),

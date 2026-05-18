@@ -151,15 +151,21 @@ vi.mock('vue-i18n', () => {
 })
 
 type TestPreviewOutput = {
+  filename: string
+  type: string
   url: string
   previewUrl: string
   isImage: boolean
   isVideo: boolean
+  isAudio: boolean
+  is3D: boolean
 }
 
 type TestTaskRef = {
   workflowId?: string
   previewOutput?: TestPreviewOutput
+  flatOutputs: TestPreviewOutput[]
+  outputsCount?: number
 }
 
 type TestJobListItem = Omit<JobListItem, 'taskRef'> & {
@@ -176,16 +182,42 @@ const createPreviewOutput = (
 ): TestPreviewOutput => {
   const url = `/api/view/${filename}`
   return {
+    filename,
+    type: 'output',
     url,
     previewUrl: mediaType === 'images' ? `${url}?res=512` : url,
     isImage: mediaType === 'images',
-    isVideo: mediaType === 'video'
+    isVideo: mediaType === 'video',
+    isAudio: mediaType === 'audio',
+    is3D: [
+      'glb',
+      'gltf',
+      'obj',
+      'fbx',
+      'stl',
+      'spz',
+      'splat',
+      'ply',
+      'ksplat',
+      'usdz'
+    ].some((extension) => filename.endsWith(`.${extension}`))
   }
 }
 
-const createTaskRef = (preview?: TestPreviewOutput): TestTaskRef => ({
+const createTaskRef = (
+  preview?: TestPreviewOutput,
+  inspectionOutput: TestPreviewOutput | null = preview ?? null
+): TestTaskRef => ({
   workflowId: 'workflow-1',
-  ...(preview && { previewOutput: preview })
+  ...(preview && { previewOutput: preview }),
+  flatOutputs:
+    inspectionOutput && inspectionOutput !== preview
+      ? [preview, inspectionOutput].filter(
+          (output): output is TestPreviewOutput => !!output
+        )
+      : preview
+        ? [preview]
+        : []
 })
 
 const buildJob = (
@@ -368,10 +400,28 @@ describe('JobAssetsList', () => {
     expect(onViewItem).not.toHaveBeenCalled()
   })
 
-  it('emits viewItem from the View button for completed jobs without preview output', async () => {
+  it('does not emit viewItem for completed jobs without an inspection target', async () => {
     const job = buildJob({
       iconImageUrl: undefined,
-      taskRef: createTaskRef()
+      taskRef: createTaskRef(createPreviewOutput('job-1.usdz', 'model'), null)
+    })
+    const onViewItem = vi.fn()
+    const { container } = renderJobAssetsList({ jobs: [job], onViewItem })
+
+    const jobRow = container.querySelector(`[data-job-id="${job.id}"]`)!
+    await fireEvent.mouseEnter(jobRow)
+
+    expect(screen.queryByText('menuLabels.View')).not.toBeInTheDocument()
+    await nextTick()
+
+    expect(onViewItem).not.toHaveBeenCalled()
+  })
+
+  it('emits viewItem from the View button for completed jobs with an inspection target', async () => {
+    const inspectionTarget = createPreviewOutput('job-1.ply', 'model')
+    const job = buildJob({
+      iconImageUrl: undefined,
+      taskRef: createTaskRef(undefined, inspectionTarget)
     })
     const onViewItem = vi.fn()
     const { container } = renderJobAssetsList({ jobs: [job], onViewItem })

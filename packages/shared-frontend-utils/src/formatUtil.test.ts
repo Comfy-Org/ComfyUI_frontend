@@ -12,7 +12,6 @@ import {
   highlightQuery,
   isCivitaiModelUrl,
   isCivitaiUrl,
-  isPreviewableMediaType,
   joinFilePath,
   truncateFilename
 } from './formatUtil'
@@ -111,6 +110,11 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('scene.fbx')).toBe('3D')
         expect(getMediaTypeFromFilename('asset.gltf')).toBe('3D')
         expect(getMediaTypeFromFilename('binary.glb')).toBe('3D')
+        expect(getMediaTypeFromFilename('scan.ply')).toBe('3D')
+        expect(getMediaTypeFromFilename('mesh.stl')).toBe('3D')
+        expect(getMediaTypeFromFilename('pointcloud.spz')).toBe('3D')
+        expect(getMediaTypeFromFilename('scene.splat')).toBe('3D')
+        expect(getMediaTypeFromFilename('scene.ksplat')).toBe('3D')
         expect(getMediaTypeFromFilename('apple.usdz')).toBe('3D')
       })
     })
@@ -407,20 +411,6 @@ describe('formatUtil', () => {
       expect(ensureWorkflowSuffix('file.APP.JSON', 'app.json')).toBe(
         'file.app.json'
       )
-    })
-  })
-
-  describe('isPreviewableMediaType', () => {
-    it('returns true for image/video/audio/3D', () => {
-      expect(isPreviewableMediaType('image')).toBe(true)
-      expect(isPreviewableMediaType('video')).toBe(true)
-      expect(isPreviewableMediaType('audio')).toBe(true)
-      expect(isPreviewableMediaType('3D')).toBe(true)
-    })
-
-    it('returns false for text/other', () => {
-      expect(isPreviewableMediaType('text')).toBe(false)
-      expect(isPreviewableMediaType('other')).toBe(false)
     })
   })
 

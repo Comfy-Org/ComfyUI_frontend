@@ -21,8 +21,12 @@ vi.mock('@/platform/workflow/utils/workflowExtractionUtil', () => ({
   supportsWorkflowMetadata: () => true
 }))
 
-vi.mock('@/utils/formatUtil', () => ({
-  isPreviewableMediaType: () => true
+const getInspectionKindForFilenameMock = vi.hoisted(() =>
+  vi.fn<() => 'lightbox' | 'load3d' | null>(() => 'lightbox')
+)
+
+vi.mock('@/utils/inspectionTarget', () => ({
+  getInspectionKindForFilename: getInspectionKindForFilenameMock
 }))
 
 vi.mock('@/utils/loaderNodeUtil', () => ({
@@ -118,7 +122,7 @@ function mountComponent() {
         return { menuRef, asset, onHide }
       },
       template:
-        '<MediaAssetContextMenu ref="menuRef" :asset="asset" asset-type="output" file-kind="image" @hide="onHide" />'
+        '<MediaAssetContextMenu ref="menuRef" :asset="asset" asset-type="output" @hide="onHide" />'
     }),
     {
       global: {
@@ -195,6 +199,20 @@ describe('MediaAssetContextMenu', () => {
     })
 
     expect(mediaAssetActions.downloadAssets).toHaveBeenCalledWith([asset])
+
+    unmount()
+  })
+
+  it('hides Inspect when the filename has no inspection target', async () => {
+    getInspectionKindForFilenameMock.mockReturnValueOnce(null)
+    const { container, unmount } = mountComponent()
+    await showMenu(container)
+
+    expect(
+      capturedMenu.model.some(
+        (item) => item.label === 'mediaAsset.actions.inspect'
+      )
+    ).toBe(false)
 
     unmount()
   })

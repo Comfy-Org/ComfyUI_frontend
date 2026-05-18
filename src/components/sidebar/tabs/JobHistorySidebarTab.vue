@@ -71,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import JobFilterActions from '@/components/queue/job/JobFilterActions.vue'
@@ -86,24 +86,22 @@ import type { JobListItem, JobTab } from '@/composables/queue/useJobList'
 import { useQueueClearHistoryDialog } from '@/composables/queue/useQueueClearHistoryDialog'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useLoad3dViewerDialog } from '@/composables/useLoad3dViewerDialog'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
+import { getInspectionTargetsForTask } from '@/services/jobOutputCache'
 import { useCommandStore } from '@/stores/commandStore'
-import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
-
-const Load3dViewerContent = defineAsyncComponent(
-  () => import('@/components/load3d/Load3dViewerContent.vue')
-)
+import { getPreferredInspectionTarget } from '@/utils/inspectionTarget'
 
 const { t, n } = useI18n()
 const commandStore = useCommandStore()
-const dialogStore = useDialogStore()
 const executionStore = useExecutionStore()
 const queueStore = useQueueStore()
+const { openLoad3dViewer } = useLoad3dViewerDialog()
 const { showQueueClearHistoryDialog } = useQueueClearHistoryDialog()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { trackFeatureUsed } = useSurveyFeatureTracking('queue-progress-overlay')
@@ -175,20 +173,19 @@ const {
 
 const onViewItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
   trackFeatureUsed()
-  const previewOutput = item.taskRef?.previewOutput
+  const task = item.taskRef
+  if (!task) return
 
-  if (previewOutput?.is3D) {
-    dialogStore.showDialog({
-      key: 'asset-3d-viewer',
+  const targets = await getInspectionTargetsForTask(task)
+  if (targets === null) return
+
+  const target = getPreferredInspectionTarget(targets)
+  if (!target) return
+
+  if (target.kind === 'load3d') {
+    openLoad3dViewer({
       title: item.title,
-      component: Load3dViewerContent,
-      props: {
-        modelUrl: previewOutput.url || ''
-      },
-      dialogComponentProps: {
-        style: 'width: 80vw; height: 80vh;',
-        maximizable: true
-      }
+      modelUrl: target.output.url
     })
     return
   }

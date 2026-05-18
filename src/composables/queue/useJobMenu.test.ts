@@ -144,6 +144,11 @@ vi.mock('@/utils/formatUtil', () => ({
     appendJsonExtMock(...args)
 }))
 
+const canAttemptTaskInspectionMock = vi.hoisted(() => vi.fn(() => false))
+vi.mock('@/utils/inspectionTarget', () => ({
+  canAttemptTaskInspection: canAttemptTaskInspectionMock
+}))
+
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
@@ -210,6 +215,7 @@ describe('useJobMenu', () => {
     }
     // Default: no workflow available via lazy loading
     getJobWorkflowMock.mockResolvedValue(undefined)
+    canAttemptTaskInspectionMock.mockReturnValue(false)
   })
 
   const setCurrentItem = (item: JobListItem | null) => {
@@ -739,6 +745,7 @@ describe('useJobMenu', () => {
 
   it('provides completed menu structure with delete option', async () => {
     const inspectSpy = vi.fn()
+    canAttemptTaskInspectionMock.mockReturnValue(true)
     const { jobMenuEntries } = mountJobMenu(inspectSpy)
     setCurrentItem(
       createJobItem({
@@ -774,6 +781,29 @@ describe('useJobMenu', () => {
     const inspectEntry = findActionEntry(jobMenuEntries.value, 'inspect-asset')
     await inspectEntry?.onClick?.()
     expect(inspectSpy).toHaveBeenCalledWith(currentItem.value)
+  })
+
+  it('disables inspect when completed asset has no inspection target', async () => {
+    const inspectSpy = vi.fn()
+    const { jobMenuEntries } = mountJobMenu(inspectSpy)
+    setCurrentItem(
+      createJobItem({
+        state: 'completed',
+        taskRef: { previewOutput: {} }
+      })
+    )
+
+    await nextTick()
+
+    expect(
+      findActionEntry(jobMenuEntries.value, 'inspect-asset')?.disabled
+    ).toBe(true)
+    expect(
+      findActionEntry(jobMenuEntries.value, 'add-to-current')?.disabled
+    ).toBe(false)
+    expect(findActionEntry(jobMenuEntries.value, 'download')?.disabled).toBe(
+      false
+    )
   })
 
   it('omits inspect handler when callback missing', async () => {

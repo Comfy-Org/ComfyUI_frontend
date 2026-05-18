@@ -67,7 +67,7 @@
                   <i class="icon-[lucide--trash-2] size-4" />
                 </Button>
                 <Button
-                  v-else-if="row.job.state === 'completed'"
+                  v-else-if="canInspectCompletedAsset(row.job)"
                   variant="textonly"
                   size="sm"
                   @click.stop="emitCompletedViewItem(row.job)"
@@ -115,6 +115,7 @@ import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { iconForJobState } from '@/utils/queueDisplay'
 import { isActiveJobState } from '@/utils/queueUtil'
+import { canAttemptTaskInspection } from '@/utils/inspectionTarget'
 
 import { buildVirtualJobRows } from './buildVirtualJobRows'
 import type { VirtualJobRow } from './buildVirtualJobRows'
@@ -346,12 +347,16 @@ function isVideoPreviewJob(job: JobListItem) {
   return job.state === 'completed' && !!getPreviewOutput(job)?.isVideo
 }
 
-function isPreviewableCompletedJob(job: JobListItem) {
-  return job.state === 'completed' && !!getPreviewOutput(job)
+function canInspectCompletedAsset(job: JobListItem) {
+  return (
+    job.state === 'completed' &&
+    !!job.taskRef &&
+    canAttemptTaskInspection(job.taskRef)
+  )
 }
 
 function emitViewItem(job: JobListItem) {
-  if (isPreviewableCompletedJob(job)) {
+  if (canInspectCompletedAsset(job)) {
     resetActiveDetails()
     emit('viewItem', job)
   }

@@ -1,5 +1,6 @@
 import { default as DOMPurify } from 'dompurify'
 import type { operations } from '@comfyorg/registry-types'
+import { isThreeDMediaExtension } from '@comfyorg/shared-frontend-utils/mediaExtensions'
 
 export function formatCamelCase(str: string): string {
   // Check if the string is camel case
@@ -591,7 +592,6 @@ const IMAGE_EXTENSIONS = [
 ] as const
 const VIDEO_EXTENSIONS = ['mp4', 'm4v', 'webm', 'mov', 'avi', 'mkv'] as const
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac'] as const
-const THREE_D_EXTENSIONS = ['obj', 'fbx', 'gltf', 'glb', 'usdz'] as const
 const TEXT_EXTENSIONS = [
   'txt',
   'md',
@@ -611,7 +611,6 @@ export type MediaType = (typeof MEDIA_TYPES)[number]
 type ImageExtension = (typeof IMAGE_EXTENSIONS)[number]
 type VideoExtension = (typeof VIDEO_EXTENSIONS)[number]
 type AudioExtension = (typeof AUDIO_EXTENSIONS)[number]
-type ThreeDExtension = (typeof THREE_D_EXTENSIONS)[number]
 type TextExtension = (typeof TEXT_EXTENSIONS)[number]
 
 /**
@@ -655,26 +654,22 @@ export function getMediaTypeFromFilename(
   filename: string | null | undefined
 ): MediaType {
   if (!filename) return 'other'
-  const ext = filename.split('.').pop()?.toLowerCase()
+  const ext = getFileExtension(filename)
   if (!ext) return 'other'
 
   // Type-safe array includes check using type assertion
   if (IMAGE_EXTENSIONS.includes(ext as ImageExtension)) return 'image'
   if (VIDEO_EXTENSIONS.includes(ext as VideoExtension)) return 'video'
   if (AUDIO_EXTENSIONS.includes(ext as AudioExtension)) return 'audio'
-  if (THREE_D_EXTENSIONS.includes(ext as ThreeDExtension)) return '3D'
+  if (isThreeDMediaExtension(ext)) return '3D'
   if (TEXT_EXTENSIONS.includes(ext as TextExtension)) return 'text'
 
   return 'other'
 }
 
-export function isPreviewableMediaType(mediaType: MediaType): boolean {
-  return (
-    mediaType === 'image' ||
-    mediaType === 'video' ||
-    mediaType === 'audio' ||
-    mediaType === '3D'
-  )
+function getFileExtension(filename: string | null | undefined): string | null {
+  if (!filename) return null
+  return filename.split('.').pop()?.toLowerCase() ?? null
 }
 
 export function formatTime(seconds: number): string {

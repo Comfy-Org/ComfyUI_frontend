@@ -1,8 +1,16 @@
 import { ref, shallowRef } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
-import { findActiveIndex, getOutputsForTask } from '@/services/jobOutputCache'
+import {
+  findActiveIndex,
+  getInspectionTargetsForTask
+} from '@/services/jobOutputCache'
 import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+import {
+  getInspectionTarget,
+  getLightboxOutputs,
+  getPreferredInspectionTarget
+} from '@/utils/inspectionTarget'
 
 /**
  * Manages result gallery state and activation for queue items.
@@ -16,19 +24,35 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
     if (!tasks.length) return
 
     const targetTask = item.taskRef
-    const targetOutputs = targetTask
-      ? await getOutputsForTask(targetTask)
+    const targets = targetTask
+      ? await getInspectionTargetsForTask(targetTask)
       : null
 
-    // Request was superseded by a newer one
-    if (targetOutputs === null && targetTask) return
+    if (targetTask) {
+      // Request was superseded by a newer one
+      if (targets === null) return
 
-    // Use target's outputs if available, otherwise fall back to all previews
-    const items = targetOutputs?.length
-      ? targetOutputs
-      : tasks
-          .map((t) => t.previewOutput)
-          .filter((o): o is ResultItemImpl => !!o)
+      const targetOutputs = getLightboxOutputs(targets)
+      if (!targetOutputs.length) return
+
+      galleryItems.value = targetOutputs
+      const preferredTarget = getPreferredInspectionTarget(
+        targets.filter((target) => target.kind === 'lightbox')
+      )
+      galleryActiveIndex.value = findActiveIndex(
+        targetOutputs,
+        preferredTarget?.output.url
+      )
+      return
+    }
+
+    const items = tasks.flatMap((task) => {
+      const preview = task.previewOutput
+      if (!preview) return []
+
+      const target = getInspectionTarget(preview)
+      return target?.kind === 'lightbox' ? [target.output] : []
+    })
 
     if (!items.length) return
 

@@ -3,7 +3,7 @@
  * @module services/jobOutputCache
  *
  * Centralizes job output and detail caching with LRU eviction.
- * Provides helpers for working with previewable outputs and workflows.
+ * Provides helpers for working with output inspection targets and workflows.
  */
 
 import QuickLRU from '@alloc/quick-lru'
@@ -16,6 +16,8 @@ import { api } from '@/scripts/api'
 import { ResultItemImpl } from '@/stores/queueStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
+import { getInspectionTargets } from '@/utils/inspectionTarget'
+import type { InspectionTarget } from '@/utils/inspectionTarget'
 
 const MAX_TASK_CACHE_SIZE = 50
 const MAX_JOB_DETAIL_CACHE_SIZE = 50
@@ -39,13 +41,9 @@ export function findActiveIndex(
   return ResultItemImpl.findByUrl(items, url)
 }
 
-/**
- * Gets previewable outputs for a task, with lazy loading, caching, and request deduping.
- * Returns null if a newer request superseded this one while loading.
- */
-export async function getOutputsForTask(
+async function getTaskWithFullOutputs(
   task: TaskItemImpl
-): Promise<ResultItemImpl[] | null> {
+): Promise<TaskItemImpl | null> {
   const requestId = String(task.jobId)
   latestTaskRequestId = requestId
 
@@ -53,12 +51,12 @@ export async function getOutputsForTask(
   const needsLazyLoad = outputsCount > 1
 
   if (!needsLazyLoad) {
-    return [...task.previewableOutputs]
+    return task
   }
 
   const cached = taskCache.get(requestId)
   if (cached) {
-    return [...cached.previewableOutputs]
+    return cached
   }
 
   try {
@@ -70,11 +68,22 @@ export async function getOutputsForTask(
     }
 
     taskCache.set(requestId, loadedTask)
-    return [...loadedTask.previewableOutputs]
+    return loadedTask
   } catch (error) {
-    console.warn('Failed to load full outputs, using preview:', error)
-    return [...task.previewableOutputs]
+    console.warn('Failed to load full outputs, using current outputs:', error)
+    return task
   }
+}
+
+/**
+ * Gets inspection targets for a task, with lazy loading, caching, and request
+ * deduping. Returns null if a newer request superseded this one while loading.
+ */
+export async function getInspectionTargetsForTask(
+  task: TaskItemImpl
+): Promise<InspectionTarget[] | null> {
+  const sourceTask = await getTaskWithFullOutputs(task)
+  return sourceTask ? getInspectionTargets(sourceTask.flatOutputs) : null
 }
 
 function getPreviewableOutputs(outputs?: TaskOutput): ResultItemImpl[] {

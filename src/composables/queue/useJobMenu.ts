@@ -22,6 +22,7 @@ import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { appendJsonExt } from '@/utils/formatUtil'
+import { canAttemptTaskInspection } from '@/utils/inspectionTarget'
 
 export type MenuEntry =
   | {
@@ -249,13 +250,16 @@ export function useJobMenu(
     const state = item?.state
     if (!state) return []
     const hasPreviewAsset = !!item?.taskRef?.previewOutput
+    const canInspectAsset = item?.taskRef
+      ? canAttemptTaskInspection(item.taskRef)
+      : false
     if (state === 'completed') {
       return [
         {
           key: 'inspect-asset',
           label: st('queue.jobMenu.inspectAsset', 'Inspect asset'),
           icon: 'icon-[lucide--zoom-in]',
-          disabled: !hasPreviewAsset || !onInspectAsset,
+          disabled: !canInspectAsset || !onInspectAsset,
           onClick: onInspectAsset
             ? () => {
                 const item = currentMenuItem()
