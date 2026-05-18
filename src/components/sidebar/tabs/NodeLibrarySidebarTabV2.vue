@@ -4,137 +4,57 @@
       <NodeDragPreview />
       <div class="flex h-full flex-col">
         <div
+          ref="scrollContainerRef"
           class="min-h-0 flex-1 scrollbar-gutter-stable overflow-y-auto overscroll-none"
         >
-          <div class="px-4 pt-4 pb-2 font-bold">
-            {{ $t('sideToolbar.nodes') }}
-          </div>
-          <div class="px-4 pt-2 pb-0">
-            <TabList v-model="selectedTab">
-              <Tab v-for="tab in tabs" :key="tab.value" :value="tab.value">
-                {{ tab.label }}
-              </Tab>
-            </TabList>
-          </div>
           <div
-            class="sticky top-0 z-20 border-b border-border-default bg-comfy-menu-bg py-2"
+            class="sticky z-20 bg-comfy-menu-bg transition-[top] duration-200 ease-out"
+            :style="{ top: `${headerTop}px` }"
           >
-            <div class="flex items-center gap-2 px-4 py-2">
-              <div class="min-w-0 flex-1">
-                <SearchInput
-                  ref="searchBoxRef"
-                  v-model="searchQuery"
-                  :placeholder="$t('g.search') + '...'"
-                  @search="handleSearch"
-                />
+            <div ref="titleTabsRef">
+              <div class="px-4 pt-4 pb-2 font-bold">
+                {{ $t('sideToolbar.nodes') }}
               </div>
-              <div class="flex shrink-0 items-center gap-2">
-                <DropdownMenuRoot v-if="selectedTab === 'all'">
-                  <DropdownMenuTrigger as-child>
-                    <Button
-                      variant="secondary"
-                      size="icon"
-                      :aria-label="$t('sideToolbar.nodeLibraryTab.filter')"
-                    >
-                      <i class="icon-[lucide--list-filter] size-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuPortal>
-                    <DropdownMenuContent
-                      class="z-9999 min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
-                      align="end"
-                      :side-offset="4"
-                    >
-                      <DropdownMenuCheckboxItem
-                        :model-value="allCategoriesSelected"
-                        class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
-                        @select.prevent
-                        @update:model-value="selectAllCategories"
+              <div class="px-4 pt-2 pb-0">
+                <TabList v-model="selectedTab">
+                  <Tab v-for="tab in tabs" :key="tab.value" :value="tab.value">
+                    {{ tab.label }}
+                  </Tab>
+                </TabList>
+              </div>
+            </div>
+            <div class="border-b border-border-default bg-comfy-menu-bg py-2">
+              <div class="flex items-center gap-2 px-4 py-2">
+                <div class="min-w-0 flex-1">
+                  <SearchInput
+                    ref="searchBoxRef"
+                    v-model="searchQuery"
+                    :placeholder="$t('g.search') + '...'"
+                    @search="handleSearch"
+                  />
+                </div>
+                <div class="flex shrink-0 items-center gap-2">
+                  <DropdownMenuRoot v-if="selectedTab === 'all'">
+                    <DropdownMenuTrigger as-child>
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        :aria-label="$t('sideToolbar.nodeLibraryTab.filter')"
                       >
-                        <span class="flex-1">{{ $t('g.all') }}</span>
-                        <span class="size-4 shrink-0">
-                          <DropdownMenuItemIndicator>
-                            <i class="icon-[lucide--check] size-4" />
-                          </DropdownMenuItemIndicator>
-                        </span>
-                      </DropdownMenuCheckboxItem>
-                      <DropdownMenuCheckboxItem
-                        v-for="category in filterableCategories"
-                        :key="category"
-                        :model-value="filterOptions[category]"
-                        class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
-                        @select.prevent
-                        @update:model-value="
-                          setCategoryFilter(category, $event)
-                        "
+                        <i class="icon-[lucide--list-filter] size-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuPortal>
+                      <DropdownMenuContent
+                        class="z-9999 min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
+                        align="end"
+                        :side-offset="4"
                       >
-                        <span class="flex-1">{{
-                          $t(
-                            `sideToolbar.nodeLibraryTab.filterOptions.${category}`
-                          )
-                        }}</span>
-                        <span class="size-4 shrink-0">
-                          <DropdownMenuItemIndicator>
-                            <i class="icon-[lucide--check] size-4" />
-                          </DropdownMenuItemIndicator>
-                        </span>
-                      </DropdownMenuCheckboxItem>
-                    </DropdownMenuContent>
-                  </DropdownMenuPortal>
-                </DropdownMenuRoot>
-                <DropdownMenuRoot>
-                  <DropdownMenuTrigger as-child>
-                    <Button
-                      variant="secondary"
-                      size="icon"
-                      :aria-label="
-                        selectedTab === 'essentials'
-                          ? $t('sideToolbar.nodeLibraryTab.filter')
-                          : $t('g.sort')
-                      "
-                    >
-                      <i
-                        :class="
-                          cn(
-                            'size-4',
-                            selectedTab === 'essentials'
-                              ? 'icon-[lucide--list-filter]'
-                              : 'icon-[lucide--settings-2]'
-                          )
-                        "
-                      />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuPortal>
-                    <DropdownMenuContent
-                      class="z-9999 min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
-                      align="end"
-                      :side-offset="4"
-                    >
-                      <DropdownMenuRadioGroup
-                        v-if="selectedTab !== 'essentials'"
-                        v-model="sortOrder"
-                      >
-                        <DropdownMenuRadioItem
-                          v-for="option in sortingOptions"
-                          :key="option.id"
-                          :value="option.id"
-                          class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
-                        >
-                          <span class="flex-1">{{ $t(option.label) }}</span>
-                          <span class="size-4 shrink-0">
-                            <DropdownMenuItemIndicator>
-                              <i class="icon-[lucide--check] size-4" />
-                            </DropdownMenuItemIndicator>
-                          </span>
-                        </DropdownMenuRadioItem>
-                      </DropdownMenuRadioGroup>
-                      <template v-if="selectedTab === 'essentials'">
                         <DropdownMenuCheckboxItem
-                          :model-value="allMediaSelected"
+                          :model-value="allCategoriesSelected"
                           class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
                           @select.prevent
-                          @update:model-value="selectAllMedia"
+                          @update:model-value="selectAllCategories"
                         >
                           <span class="flex-1">{{ $t('g.all') }}</span>
                           <span class="size-4 shrink-0">
@@ -144,89 +64,175 @@
                           </span>
                         </DropdownMenuCheckboxItem>
                         <DropdownMenuCheckboxItem
-                          v-for="media in ESSENTIALS_MEDIA_TYPES"
-                          :key="media"
-                          :model-value="mediaFilters[media]"
+                          v-for="category in filterableCategories"
+                          :key="category"
+                          :model-value="filterOptions[category]"
                           class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
                           @select.prevent
-                          @update:model-value="setMediaFilter(media, $event)"
+                          @update:model-value="
+                            setCategoryFilter(category, $event)
+                          "
                         >
-                          <span class="flex-1">
-                            {{ ESSENTIALS_MEDIA_LABELS[media] }}
-                          </span>
+                          <span class="flex-1">{{
+                            $t(
+                              `sideToolbar.nodeLibraryTab.filterOptions.${category}`
+                            )
+                          }}</span>
                           <span class="size-4 shrink-0">
                             <DropdownMenuItemIndicator>
                               <i class="icon-[lucide--check] size-4" />
                             </DropdownMenuItemIndicator>
                           </span>
                         </DropdownMenuCheckboxItem>
-                      </template>
-                    </DropdownMenuContent>
-                  </DropdownMenuPortal>
-                </DropdownMenuRoot>
-                <DropdownMenuRoot v-if="selectedTab === 'essentials'">
-                  <DropdownMenuTrigger as-child>
-                    <Button
-                      variant="secondary"
-                      size="icon"
-                      :aria-label="$t('essentials.jumpTo')"
-                    >
-                      <i class="icon-[lucide--list-tree] size-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuPortal>
-                    <DropdownMenuContent
-                      class="z-9999 flex min-w-44 flex-col gap-1 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
-                      align="start"
-                      :side-offset="4"
-                    >
-                      <DropdownMenuLabel
-                        class="px-2 py-1.5 text-xs font-bold tracking-wide text-muted-foreground uppercase"
+                      </DropdownMenuContent>
+                    </DropdownMenuPortal>
+                  </DropdownMenuRoot>
+                  <DropdownMenuRoot>
+                    <DropdownMenuTrigger as-child>
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        :aria-label="
+                          selectedTab === 'essentials'
+                            ? $t('sideToolbar.nodeLibraryTab.filter')
+                            : $t('g.sort')
+                        "
                       >
-                        {{ $t('essentials.jumpTo') }}
-                      </DropdownMenuLabel>
-                      <template
-                        v-for="section in ESSENTIAL_PLACEHOLDER_SECTIONS"
-                        :key="section.key"
+                        <i
+                          :class="
+                            cn(
+                              'size-4',
+                              selectedTab === 'essentials'
+                                ? 'icon-[lucide--list-filter]'
+                                : 'icon-[lucide--settings-2]'
+                            )
+                          "
+                        />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuPortal>
+                      <DropdownMenuContent
+                        class="z-9999 min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
+                        align="end"
+                        :side-offset="4"
                       >
-                        <DropdownMenuSub v-if="section.subgroups">
-                          <DropdownMenuSubTrigger
-                            class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input data-[state=open]:bg-comfy-input"
-                          >
-                            <span class="flex-1">{{ section.label }}</span>
-                            <i
-                              class="icon-[lucide--chevron-right] size-4 text-muted-foreground"
-                            />
-                          </DropdownMenuSubTrigger>
-                          <DropdownMenuPortal>
-                            <DropdownMenuSubContent
-                              class="z-9999 flex min-w-44 flex-col gap-1 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
-                              :side-offset="8"
-                            >
-                              <DropdownMenuItem
-                                v-for="subgroup in section.subgroups"
-                                :key="subgroup.key"
-                                class="cursor-pointer rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
-                                @select="
-                                  jumpToSubgroup(section.key, subgroup.key)
-                                "
-                              >
-                                {{ subgroup.label }}
-                              </DropdownMenuItem>
-                            </DropdownMenuSubContent>
-                          </DropdownMenuPortal>
-                        </DropdownMenuSub>
-                        <DropdownMenuItem
-                          v-else
-                          class="cursor-pointer rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
-                          @select="jumpToSection(section.key)"
+                        <DropdownMenuRadioGroup
+                          v-if="selectedTab !== 'essentials'"
+                          v-model="sortOrder"
                         >
-                          {{ section.label }}
-                        </DropdownMenuItem>
-                      </template>
-                    </DropdownMenuContent>
-                  </DropdownMenuPortal>
-                </DropdownMenuRoot>
+                          <DropdownMenuRadioItem
+                            v-for="option in sortingOptions"
+                            :key="option.id"
+                            :value="option.id"
+                            class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                          >
+                            <span class="flex-1">{{ $t(option.label) }}</span>
+                            <span class="size-4 shrink-0">
+                              <DropdownMenuItemIndicator>
+                                <i class="icon-[lucide--check] size-4" />
+                              </DropdownMenuItemIndicator>
+                            </span>
+                          </DropdownMenuRadioItem>
+                        </DropdownMenuRadioGroup>
+                        <template v-if="selectedTab === 'essentials'">
+                          <DropdownMenuCheckboxItem
+                            :model-value="allMediaSelected"
+                            class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                            @select.prevent
+                            @update:model-value="selectAllMedia"
+                          >
+                            <span class="flex-1">{{ $t('g.all') }}</span>
+                            <span class="size-4 shrink-0">
+                              <DropdownMenuItemIndicator>
+                                <i class="icon-[lucide--check] size-4" />
+                              </DropdownMenuItemIndicator>
+                            </span>
+                          </DropdownMenuCheckboxItem>
+                          <DropdownMenuCheckboxItem
+                            v-for="media in ESSENTIALS_MEDIA_TYPES"
+                            :key="media"
+                            :model-value="mediaFilters[media]"
+                            class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                            @select.prevent
+                            @update:model-value="setMediaFilter(media, $event)"
+                          >
+                            <span class="flex-1">
+                              {{ ESSENTIALS_MEDIA_LABELS[media] }}
+                            </span>
+                            <span class="size-4 shrink-0">
+                              <DropdownMenuItemIndicator>
+                                <i class="icon-[lucide--check] size-4" />
+                              </DropdownMenuItemIndicator>
+                            </span>
+                          </DropdownMenuCheckboxItem>
+                        </template>
+                      </DropdownMenuContent>
+                    </DropdownMenuPortal>
+                  </DropdownMenuRoot>
+                  <DropdownMenuRoot v-if="selectedTab === 'essentials'">
+                    <DropdownMenuTrigger as-child>
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        :aria-label="$t('essentials.jumpTo')"
+                      >
+                        <i class="icon-[lucide--list-tree] size-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuPortal>
+                      <DropdownMenuContent
+                        class="z-9999 flex min-w-44 flex-col gap-1 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
+                        align="start"
+                        :side-offset="4"
+                      >
+                        <DropdownMenuLabel
+                          class="px-2 py-1.5 text-xs font-bold tracking-wide text-muted-foreground uppercase"
+                        >
+                          {{ $t('essentials.jumpTo') }}
+                        </DropdownMenuLabel>
+                        <template
+                          v-for="section in ESSENTIAL_PLACEHOLDER_SECTIONS"
+                          :key="section.key"
+                        >
+                          <DropdownMenuSub v-if="section.subgroups">
+                            <DropdownMenuSubTrigger
+                              class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input data-[state=open]:bg-comfy-input"
+                            >
+                              <span class="flex-1">{{ section.label }}</span>
+                              <i
+                                class="icon-[lucide--chevron-right] size-4 text-muted-foreground"
+                              />
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuPortal>
+                              <DropdownMenuSubContent
+                                class="z-9999 flex min-w-44 flex-col gap-1 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
+                                :side-offset="8"
+                              >
+                                <DropdownMenuItem
+                                  v-for="subgroup in section.subgroups"
+                                  :key="subgroup.key"
+                                  class="cursor-pointer rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                                  @select="
+                                    jumpToSubgroup(section.key, subgroup.key)
+                                  "
+                                >
+                                  {{ subgroup.label }}
+                                </DropdownMenuItem>
+                              </DropdownMenuSubContent>
+                            </DropdownMenuPortal>
+                          </DropdownMenuSub>
+                          <DropdownMenuItem
+                            v-else
+                            class="cursor-pointer rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                            @select="jumpToSection(section.key)"
+                          >
+                            {{ section.label }}
+                          </DropdownMenuItem>
+                        </template>
+                      </DropdownMenuContent>
+                    </DropdownMenuPortal>
+                  </DropdownMenuRoot>
+                </div>
               </div>
             </div>
           </div>
@@ -259,7 +265,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useLocalStorage } from '@vueuse/core'
+import { useEventListener, useLocalStorage } from '@vueuse/core'
 import {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
@@ -321,6 +327,28 @@ import SidebarTabTemplate from './SidebarTabTemplate.vue'
 const { flags } = useFeatureFlags()
 const { mediaFilters, setMediaFilter, allMediaSelected, selectAllMedia } =
   useEssentialsFilters()
+
+const scrollContainerRef = ref<HTMLElement | null>(null)
+const titleTabsRef = ref<HTMLElement | null>(null)
+const headerTop = ref(0)
+const lastScrollY = ref(0)
+const SCROLL_THRESHOLD = 4
+
+useEventListener(scrollContainerRef, 'scroll', () => {
+  const el = scrollContainerRef.value
+  if (!el) return
+  const y = el.scrollTop
+  const h = titleTabsRef.value?.offsetHeight ?? 0
+  const delta = y - lastScrollY.value
+  if (y <= 0) {
+    headerTop.value = 0
+  } else if (delta > SCROLL_THRESHOLD && y > h) {
+    headerTop.value = -h
+  } else if (delta < -SCROLL_THRESHOLD) {
+    headerTop.value = 0
+  }
+  lastScrollY.value = y
+})
 
 const selectedTab = useLocalStorage<TabId>(
   'Comfy.NodeLibrary.Tab',
