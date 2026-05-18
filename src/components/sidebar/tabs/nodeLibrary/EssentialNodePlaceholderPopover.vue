@@ -17,12 +17,16 @@ const { tile } = defineProps<{
   tile: EssentialPlaceholderTile
 }>()
 
+const BLUEPRINT_PREFIX = 'SubgraphBlueprint.'
+
 const nodeDefStore = useNodeDefStore()
 const nodeDef = computed(() => {
-  if (tile.nodeName) {
-    const match = nodeDefStore.nodeDefsByName[tile.nodeName]
-    if (match) return match
-  }
-  return nodeDefStore.visibleNodeDefs[0]
+  if (!tile.nodeName) return undefined
+  const byName = nodeDefStore.allNodeDefsByName[tile.nodeName]
+  if (byName) return byName
+  const target = tile.nodeName.startsWith(BLUEPRINT_PREFIX)
+    ? tile.nodeName.slice(BLUEPRINT_PREFIX.length)
+    : tile.nodeName
+  return nodeDefStore.nodeDefs.find((d) => d.display_name === target)
 })
 </script>
