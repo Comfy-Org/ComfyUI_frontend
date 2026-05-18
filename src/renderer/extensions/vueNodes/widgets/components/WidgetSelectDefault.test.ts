@@ -204,6 +204,21 @@ describe('WidgetSelectDefault', () => {
       expect(onUpdate).toHaveBeenCalledWith('b')
     })
 
+    it('allows selecting an explicit empty string option', async () => {
+      const { onUpdate, user } = renderComponent(
+        createWidget(['filled', ''], {
+          getOptionLabel: (value?: string | null) =>
+            value === '' ? 'Empty option' : value
+        }),
+        'filled'
+      )
+
+      await openDropdown(user)
+      await user.click(screen.getByRole('option', { name: 'Empty option' }))
+
+      expect(onUpdate).toHaveBeenCalledWith('')
+    })
+
     it('selects the top filtered result when Enter is pressed after typing', async () => {
       const { onUpdate, user } = renderComponent(
         createWidget(['alpha', 'bravo', 'charlie', 'delta', 'echo']),
@@ -235,6 +250,21 @@ describe('WidgetSelectDefault', () => {
     it('does not emit a blank value when Escape closes the dropdown', async () => {
       const { onUpdate, user } = renderComponent(
         createWidget(['alpha', 'bravo', 'charlie', 'delta', 'echo']),
+        'alpha'
+      )
+
+      await openDropdown(user)
+      await user.keyboard('{Escape}')
+
+      expect(onUpdate).not.toHaveBeenCalledWith('')
+    })
+
+    it('does not select an empty string option when Escape closes the dropdown', async () => {
+      const { onUpdate, user } = renderComponent(
+        createWidget(['alpha', ''], {
+          getOptionLabel: (value?: string | null) =>
+            value === '' ? 'Empty option' : value
+        }),
         'alpha'
       )
 

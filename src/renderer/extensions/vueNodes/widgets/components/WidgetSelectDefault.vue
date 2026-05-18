@@ -98,14 +98,14 @@
           <div
             data-testid="widget-select-default-viewport"
             role="presentation"
-            class="flex max-h-56 min-w-full scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent scrollbar-gutter-stable flex-col gap-1 overflow-y-auto p-1 text-xs"
+            class="scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent scrollbar-gutter-stable flex max-h-56 min-w-full flex-col gap-1 overflow-y-auto p-1 text-xs"
             :style="viewportStyle"
             @pointerdown.capture.self="handleViewportPointerDown"
           >
             <ComboboxItem
               v-for="option in filteredOptions"
               :key="option.key"
-              :value="option.value"
+              :value="option.comboboxValue"
               :text-value="option.label"
               :class="
                 cn(
@@ -174,6 +174,7 @@ interface Props {
 }
 
 interface SelectOption {
+  comboboxValue: string
   key: string
   label: string
   value: string
@@ -185,7 +186,22 @@ type SelectWidgetOptions = NonNullable<Props['widget']['options']> & {
 
 const { widget } = defineProps<Props>()
 
+// Reka reserves an empty string value for clearing the combobox. Encode values
+// internally so custom-node combo options can still use '' like PrimeVue/legacy.
+const COMBOBOX_VALUE_PREFIX = 'widget-select-value:'
 const MAX_VISIBLE_OPTIONS = 7
+
+function toComboboxValue(value: string) {
+  return `${COMBOBOX_VALUE_PREFIX}${value}`
+}
+
+function fromComboboxValue(value: string | undefined) {
+  if (value === undefined || !value.startsWith(COMBOBOX_VALUE_PREFIX)) {
+    return undefined
+  }
+
+  return value.slice(COMBOBOX_VALUE_PREFIX.length)
+}
 
 function resolveRawValues(values: unknown): unknown[] {
   try {
@@ -265,11 +281,16 @@ const normalizedOptions = computed<SelectOption[]>(() => {
   void optionsRefreshKey.value
 
   return resolveValues(widgetOptions.value?.values).map((value, index) => ({
+    comboboxValue: toComboboxValue(value),
     key: `${value}-${index}`,
     label: getOptionLabel(value),
     value
   }))
 })
+
+const knownOptionValues = computed(
+  () => new Set(normalizedOptions.value.map((option) => option.value))
+)
 
 const isFilterable = computed(() => normalizedOptions.value.length > 4)
 
@@ -296,7 +317,12 @@ const selectedOption = computed(() =>
   normalizedOptions.value.find((option) => option.value === modelValue.value)
 )
 
-const comboboxValue = computed(() => modelValue.value ?? '')
+const comboboxValue = computed(() => {
+  const value = modelValue.value
+  if (value === undefined || !knownOptionValues.value.has(value)) return ''
+
+  return toComboboxValue(value)
+})
 
 const isInvalid = computed(
   () =>
@@ -311,8 +337,9 @@ const selectedLabel = computed(() => {
   return ''
 })
 
-function selectOption(value: string | undefined) {
-  if (value === undefined || value === '') return
+function selectOption(rekaValue: string | undefined) {
+  const value = fromComboboxValue(rekaValue)
+  if (value === undefined || !knownOptionValues.value.has(value)) return
 
   modelValue.value = value
   searchQuery.value = ''
