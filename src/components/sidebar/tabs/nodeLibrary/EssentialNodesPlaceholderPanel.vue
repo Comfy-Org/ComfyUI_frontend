@@ -25,7 +25,7 @@
               :tile="tile"
             />
           </div>
-          <div v-else class="flex flex-col gap-8">
+          <div v-else class="flex flex-col gap-12">
             <div
               v-for="subgroup in section.subgroups?.filter(
                 (s) => mediaFilters[s.media]
@@ -34,11 +34,8 @@
               :key="subgroup.key"
               class="scroll-mt-[121px] last:pb-4"
             >
-              <div
-                class="text-foreground flex h-[15px] items-center gap-3 text-sm leading-[15px] font-normal"
-              >
-                <span>{{ subgroup.label }}</span>
-                <div class="h-px flex-1 bg-border-default opacity-50" />
+              <div class="text-foreground text-sm leading-[15px] font-normal">
+                {{ subgroup.label }}
               </div>
               <div
                 class="mt-4 grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2"

@@ -25,7 +25,7 @@
 @source inline("icon-[comfy--{load-3d,save-3d,image-inpaint,image-outpaint,image-to-layers,image-vectorize,video-edit,video-inpaint,text-generation,text-prompt-enhance,image-captioning,video-captioning,text-to-audio,voice-clone,text-to-3d,image-to-3d,image-pose,image-canny,image-depth,image-normal-map,video-canny,video-depth,video-normal-map,image-upscale,image-collage,image-compare,frames-to-video,chromatic-aberration,grain,glow,image-sharpen,image-shader,brightness-contrast,dial,channels,image-select-object-segmentation,image-remove-background,video-upscale,video-stitch,video-split-screen,video-extract-frame,video-interpolation,video-trim,video-select-object-segmentation,3d-upscale,3d-decomp}]");
 
 /* Safelist dynamic lucide icons used by essentials placeholder tiles */
-@source inline("icon-s1.5-[lucide--{image-up,image-down,text,mic-vocal,speech,crop,sliders-horizontal,chart-spline}]");
+@source inline("icon-s1.5-[lucide--{image-up,image-down,text,mic-vocal,speech,crop,sliders-horizontal,chart-spline,package-open}]");
 
 /* Safelist gap classes used by the essentials subgroup gap picker */
 @source inline("gap-{6,8,10}");

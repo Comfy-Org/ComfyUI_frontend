@@ -234,25 +234,11 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
         label: 'Image',
         media: 'image',
         tiles: [
-          { label: 'Extract Pose', icon: comfyIcon('image-pose') },
           {
             label: 'Extract Canny Edge',
             icon: comfyIcon('image-canny'),
             nodeName: 'Canny'
-          },
-          { label: 'Extract Depth Map', icon: comfyIcon('image-depth') },
-          { label: 'Extract Normal Map', icon: comfyIcon('image-normal-map') }
-        ]
-      },
-      {
-        key: 'control-video',
-        label: 'Video',
-        media: 'video',
-        tiles: [
-          { label: 'Extract Pose', icon: comfyIcon('image-pose') },
-          { label: 'Extract Canny Edge', icon: comfyIcon('video-canny') },
-          { label: 'Extract Depth Map', icon: comfyIcon('video-depth') },
-          { label: 'Extract Normal Map', icon: comfyIcon('video-normal-map') }
+          }
         ]
       }
     ]
@@ -405,7 +391,7 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
         label: '3D Transform',
         media: '3d',
         tiles: [
-          { label: 'Upscale 3D Model', icon: comfyIcon('3d-upscale') },
+          { label: 'UV Unwrapping', icon: lucideIcon('package-open') },
           { label: 'Decompose 3D Model', icon: comfyIcon('3d-decomp') }
         ]
       }
