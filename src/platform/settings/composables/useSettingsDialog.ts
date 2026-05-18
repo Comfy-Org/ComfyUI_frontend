@@ -32,6 +32,12 @@ export function useSettingsDialog() {
       },
       dialogComponentProps: {
         renderer: 'reka',
+        // Settings hosts nested PrimeVue dialogs (Edit Keybinding, Overwrite
+        // confirm, etc.) that teleport to body. Reka's modal mode traps focus
+        // inside the Settings content and disables body pointer-events, which
+        // breaks those nested dialogs' autofocus and click handling. Non-modal
+        // keeps the visual overlay without those traps.
+        modal: false,
         size: 'full',
         contentClass: SETTINGS_CONTENT_CLASS,
         overlayClass: isWorkspaceMode ? 'p-8' : undefined
