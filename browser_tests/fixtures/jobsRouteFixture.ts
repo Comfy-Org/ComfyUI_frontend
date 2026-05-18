@@ -29,6 +29,7 @@ interface JobsListRoute {
   jobs: readonly RawJobListItem[]
   limit?: number
   offset?: number
+  responseLimit?: number
 }
 
 interface JobsScenario {
@@ -75,15 +76,16 @@ function isJobsListRequest(url: URL, route: JobsListRoute): boolean {
 function createJobsListResponse({
   jobs,
   limit = defaultJobsListLimit,
-  offset = defaultJobsListOffset
+  offset = defaultJobsListOffset,
+  responseLimit = limit
 }: Omit<JobsListRoute, 'statuses'>): JobsListResponse {
-  const pageJobs = jobs.slice(offset, offset + limit)
+  const pageJobs = jobs.slice(offset, offset + responseLimit)
 
   return {
     jobs: pageJobs,
     pagination: {
       offset,
-      limit,
+      limit: responseLimit,
       total: jobs.length,
       has_more: offset + pageJobs.length < jobs.length
     }
@@ -117,12 +119,14 @@ export class JobsRouteMocker {
 
   async mockJobsHistory(
     jobs: readonly RawJobListItem[],
-    limit = defaultJobsListLimit
+    limit = defaultJobsListLimit,
+    options: Pick<JobsListRoute, 'responseLimit'> = {}
   ): Promise<void> {
     await this.mockJobsList({
       statuses: terminalJobStatuses,
       jobs,
-      limit
+      limit,
+      ...options
     })
   }
 
