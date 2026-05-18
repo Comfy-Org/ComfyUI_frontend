@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -104,6 +104,10 @@ describe('LogsTerminal', () => {
     apiMock.subscribeLogs.mockImplementation(async () => {})
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('loads logs and subscribes to streaming on mount', async () => {
     renderLogsTerminal()
 
@@ -131,12 +135,14 @@ describe('LogsTerminal', () => {
       expect(apiMock.subscribeLogs).toHaveBeenLastCalledWith(true)
     })
 
-    // The full sequence must be: refetch -> reset -> write -> scroll -> subscribe
+    // The full sequence must be: reset -> write -> scroll -> subscribe
     const resetOrder = terminalMock.reset.mock.invocationCallOrder[0]
+    const writeOrder = terminalMock.write.mock.invocationCallOrder.at(-1)!
     const scrollOrder = terminalMock.scrollToBottom.mock.invocationCallOrder[0]
     const subscribeOrder =
       apiMock.subscribeLogs.mock.invocationCallOrder.at(-1)!
-    expect(resetOrder).toBeLessThan(scrollOrder)
+    expect(resetOrder).toBeLessThan(writeOrder)
+    expect(writeOrder).toBeLessThan(scrollOrder)
     expect(scrollOrder).toBeLessThan(subscribeOrder)
   })
 
