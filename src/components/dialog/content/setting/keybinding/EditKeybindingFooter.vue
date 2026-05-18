@@ -64,9 +64,18 @@ async function handleSave() {
 
   dialogStore.closeDialog({ key: DIALOG_KEY })
 
-  const updated = keybindingStore.updateKeybindingOnCommand(
-    new KeybindingImpl({ commandId, combo })
-  )
-  if (updated) await keybindingService.persistUserKeybindings()
+  if (dialogState.mode === 'add') {
+    keybindingStore.addUserKeybinding(new KeybindingImpl({ commandId, combo }))
+  } else if (dialogState.existingBinding) {
+    keybindingStore.updateSpecificKeybinding(
+      dialogState.existingBinding,
+      new KeybindingImpl({ commandId, combo })
+    )
+  } else {
+    keybindingStore.updateKeybindingOnCommand(
+      new KeybindingImpl({ commandId, combo })
+    )
+  }
+  await keybindingService.persistUserKeybindings()
 }
 </script>

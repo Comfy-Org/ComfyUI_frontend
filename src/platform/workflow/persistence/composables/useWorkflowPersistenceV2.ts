@@ -48,13 +48,14 @@ export function useWorkflowPersistenceV2() {
   const sharedWorkflowUrlLoader = useSharedWorkflowUrlLoader()
   const templateUrlLoader = useTemplateUrlLoader()
   const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
+  const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
   const draftStore = useWorkflowDraftStoreV2()
   const tabState = useWorkflowTabState()
   const toast = useToast()
   const { onUserLogout } = useCurrentUser()
 
-  // Run migration on module load
-  migrateV1toV2()
+  // Run migration on module load, passing clientId for tab state migration
+  migrateV1toV2(undefined, api.clientId ?? api.initialClientId ?? undefined)
 
   // Clear workflow persistence storage when user signs out (cloud only)
   onUserLogout(() => {
@@ -160,18 +161,30 @@ export function useWorkflowPersistenceV2() {
     })
   }
 
+  const hasSharedWorkflowIntent = () => {
+    if (typeof route.query.share === 'string') return true
+    hydratePreservedQuery(SHARE_NAMESPACE)
+    const merged = mergePreservedQueryIntoQuery(SHARE_NAMESPACE, route.query)
+    return typeof merged?.share === 'string'
+  }
+
   const loadDefaultWorkflow = async () => {
     if (!settingStore.get('Comfy.TutorialCompleted')) {
       await settingStore.set('Comfy.TutorialCompleted', true)
       await useWorkflowService().loadBlankWorkflow()
-      await useCommandStore().execute('Comfy.BrowseTemplates')
+      if (!hasSharedWorkflowIntent()) {
+        await useCommandStore().execute('Comfy.BrowseTemplates')
+      }
     } else {
       await comfyApp.loadGraphData()
     }
   }
 
   const initializeWorkflow = async () => {
-    if (!workflowPersistenceEnabled.value) return
+    if (!workflowPersistenceEnabled.value) {
+      await loadDefaultWorkflow()
+      return
+    }
 
     try {
       const restored = await loadPreviousWorkflowFromStorage()

@@ -1,3 +1,27 @@
+/**
+ * Parses an image widget value like "subfolder/filename [type]" into its parts.
+ */
+export function parseImageWidgetValue(raw: string): {
+  filename: string
+  subfolder: string
+  type: string
+} {
+  let value = raw
+  let type = 'input'
+  const typeMatch = value.match(/ \[([^\]]+)\]$/)
+  if (typeMatch) {
+    type = typeMatch[1]
+    value = value.slice(0, -typeMatch[0].length)
+  }
+  let subfolder = ''
+  const slashIndex = value.lastIndexOf('/')
+  if (slashIndex !== -1) {
+    subfolder = value.slice(0, slashIndex)
+    value = value.slice(slashIndex + 1)
+  }
+  return { filename: value, subfolder, type }
+}
+
 export const is_all_same_aspect_ratio = (imgs: HTMLImageElement[]): boolean => {
   if (!imgs.length || imgs.length === 1) return true
 

@@ -80,8 +80,12 @@ export function showNodeOptions(
 }
 
 /**
- * Hide the node options popover
+ * Check if the node options menu is currently open
  */
+export function isNodeOptionsOpen(): boolean {
+  return nodeOptionsInstance?.isOpen.value ?? false
+}
+
 interface NodeOptionsInstance {
   toggle: (event: Event) => void
   show: (event: MouseEvent) => void
@@ -120,8 +124,8 @@ export function useMoreOptionsMenu() {
   const {
     selectedItems,
     selectedNodes,
-    nodeDef,
-    showNodeHelp,
+    canOpenNodeInfo,
+    openNodeInfo,
     hasSubgraphs: hasSubgraphsComputed,
     hasImageNode,
     hasOutputNodesSelected,
@@ -161,8 +165,7 @@ export function useMoreOptionsMenu() {
 
   const menuOptions = computed((): MenuOption[] => {
     // Reference selection flags to ensure re-computation when they change
-
-    optionsVersion.value
+    void optionsVersion.value
     const states = computeSelectionFlags()
 
     // Detect single group selection context (and no nodes explicitly selected)
@@ -240,8 +243,8 @@ export function useMoreOptionsMenu() {
     options.push({ type: 'divider' })
 
     // Section 4: Node properties (Node Info, Shape, Color)
-    if (nodeDef.value) {
-      options.push(getNodeInfoOption(showNodeHelp))
+    if (canOpenNodeInfo.value) {
+      options.push(getNodeInfoOption(openNodeInfo))
     }
     if (groupContext) {
       options.push(getGroupColorOptions(groupContext, bump))

@@ -3,10 +3,15 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
 import {
   adjustColor,
+  hexToHsva,
+  hexToInt,
   hexToRgb,
   hsbToRgb,
+  hsvaToHex,
+  isTransparent,
   parseToRgb,
-  rgbToHex
+  rgbToHex,
+  toHexFromFormat
 } from '@/utils/colorUtil'
 
 interface ColorTestCase {
@@ -93,6 +98,20 @@ describe('colorUtil conversions', () => {
     })
   })
 
+  describe('hexToInt', () => {
+    it('converts 6-digit hex to packed integer', () => {
+      expect(hexToInt('#ff0000')).toBe(0xff0000)
+      expect(hexToInt('#00ff00')).toBe(0x00ff00)
+      expect(hexToInt('#45edf5')).toBe(0x45edf5)
+      expect(hexToInt('#000000')).toBe(0)
+    })
+
+    it('converts 3-digit hex to packed integer', () => {
+      expect(hexToInt('#fff')).toBe(0xffffff)
+      expect(hexToInt('#f00')).toBe(0xff0000)
+    })
+  })
+
   describe('parseToRgb', () => {
     it('parses #hex', () => {
       expect(parseToRgb('#ff0000')).toEqual({ r: 255, g: 0, b: 0 })
@@ -132,6 +151,139 @@ describe('colorUtil conversions', () => {
       expect(rgbToHex(rgb)).toBe('#7f0000')
     })
   })
+
+  describe('hexToHsva / hsvaToHex', () => {
+    it('round-trips hex -> hsva -> hex for primary colors', () => {
+      expect(hsvaToHex(hexToHsva('#ff0000'))).toBe('#ff0000')
+      expect(hsvaToHex(hexToHsva('#00ff00'))).toBe('#00ff00')
+      expect(hsvaToHex(hexToHsva('#0000ff'))).toBe('#0000ff')
+    })
+
+    it('handles black (v=0)', () => {
+      const hsva = hexToHsva('#000000')
+      expect(hsva.v).toBe(0)
+      expect(hsvaToHex(hsva)).toBe('#000000')
+    })
+
+    it('handles white (s=0, v=100)', () => {
+      const hsva = hexToHsva('#ffffff')
+      expect(hsva.s).toBe(0)
+      expect(hsva.v).toBe(100)
+      expect(hsvaToHex(hsva)).toBe('#ffffff')
+    })
+
+    it('handles pure hues', () => {
+      const red = hexToHsva('#ff0000')
+      expect(red.h).toBeCloseTo(0)
+      expect(red.s).toBeCloseTo(100)
+      expect(red.v).toBeCloseTo(100)
+
+      const green = hexToHsva('#00ff00')
+      expect(green.h).toBeCloseTo(120)
+
+      const blue = hexToHsva('#0000ff')
+      expect(blue.h).toBeCloseTo(240)
+    })
+
+    it('preserves alpha=100 (no alpha suffix in hex)', () => {
+      const hsva = hexToHsva('#ff0000')
+      expect(hsva.a).toBe(100)
+      expect(hsvaToHex(hsva)).toBe('#ff0000')
+    })
+
+    it('preserves alpha=0', () => {
+      const hsva = hexToHsva('#ff000000')
+      expect(hsva.a).toBe(0)
+      expect(hsvaToHex(hsva)).toBe('#ff000000')
+    })
+
+    it('round-trips hex with alpha', () => {
+      const hex = '#ff000080'
+      const hsva = hexToHsva(hex)
+      expect(hsva.a).toBe(50)
+      expect(hsvaToHex(hsva)).toBe(hex)
+    })
+
+    it('handles 5-char hex with alpha', () => {
+      const hsva = hexToHsva('#f008')
+      expect(hsva.a).toBe(53)
+      expect(hsvaToHex(hsva)).toMatch(/^#ff0000/)
+    })
+
+    // Note: a round-trip test for non-primary palette colors (e.g. #80c0ff)
+    // is intentionally NOT included here. The current conversion path drifts
+    // by 1 channel (hsbToRgb floors, rgbToHex rounds), so encoding that drift
+    // as a passing assertion would block fixing the underlying user-visible
+    // ColorPicker bug. Track the source-side fix separately.
+  })
+
+  describe('parseToRgb edge cases', () => {
+    it.for(['', 'not-a-color', '#GGGGGG', 'cmky(1,2,3,4)'])(
+      'returns black for unrecognized input %s',
+      (input) => {
+        expect(parseToRgb(input)).toEqual({ r: 0, g: 0, b: 0 })
+      }
+    )
+
+    it('parses 4-digit hex with alpha and ignores the alpha channel in RGB output', () => {
+      // #f008 == #ff0000 with 53% alpha; parseToRgb returns RGB only.
+      expect(parseToRgb('#f008')).toEqual({ r: 255, g: 0, b: 0 })
+    })
+
+    it('parses 8-digit hex and ignores the alpha channel in RGB output', () => {
+      expect(parseToRgb('#ff000080')).toEqual({ r: 255, g: 0, b: 0 })
+    })
+  })
+
+  describe('hsbToRgb normalization', () => {
+    it('normalizes negative hue', () => {
+      // h = -120 should map to h = 240 (blue) when s and b are both 100.
+      expect(hsbToRgb({ h: -120, s: 100, b: 100 })).toEqual({
+        r: 0,
+        g: 0,
+        b: 255
+      })
+    })
+  })
+
+  describe('isTransparent', () => {
+    it('returns true for the literal "transparent" keyword', () => {
+      expect(isTransparent('transparent')).toBe(true)
+    })
+
+    it('returns true for 5-char hex with zero alpha', () => {
+      expect(isTransparent('#abc0')).toBe(true)
+    })
+
+    it('returns true for 9-char hex with zero alpha', () => {
+      expect(isTransparent('#abcdef00')).toBe(true)
+    })
+
+    it('returns false for fully opaque hex colors', () => {
+      expect(isTransparent('#ff0000')).toBe(false)
+      expect(isTransparent('#ff0000ff')).toBe(false)
+    })
+  })
+
+  describe('toHexFromFormat', () => {
+    it('treats an HSV object (with v field) the same as an HSB object', () => {
+      const hsbObject = { h: 120, s: 100, b: 100 }
+      const hsvObject = { h: 120, s: 100, v: 100 }
+
+      expect(toHexFromFormat(hsvObject, 'hsb')).toBe(
+        toHexFromFormat(hsbObject, 'hsb')
+      )
+      expect(toHexFromFormat(hsvObject, 'hsb')).toBe('#00ff00')
+    })
+
+    it('returns #000000 for unparseable hsb input', () => {
+      expect(toHexFromFormat({ h: 0 }, 'hsb')).toBe('#000000')
+    })
+
+    it('prefixes a bare 6-digit hex with #', () => {
+      expect(toHexFromFormat('abcdef', 'hex')).toBe('#abcdef')
+    })
+  })
 })
 describe('colorUtil - adjustColor', () => {
   const runAdjustColorTests = (
@@ -157,8 +309,8 @@ describe('colorUtil - adjustColor', () => {
     })
   }
 
-  describe.each(Object.entries(colors))('%s color', (_colorName, color) => {
-    describe.each(formats)('%s format', (format) => {
+  describe.for(Object.entries(colors))('%s color', ([_colorName, color]) => {
+    describe.for(formats)('%s format', (format) => {
       runAdjustColorTests(color, format as ColorFormat)
     })
   })
@@ -170,8 +322,7 @@ describe('colorUtil - adjustColor', () => {
       'xyz(255, 255, 255)',
       'hsl(100, 50, 50%)',
       'hsl(100, 50%, 50)',
-      '#GGGGGG',
-      '#3333'
+      '#GGGGGG'
     ]
 
     invalidColors.forEach((color) => {
@@ -181,6 +332,15 @@ describe('colorUtil - adjustColor', () => {
       })
       expect(result).toBe(color)
     })
+  })
+
+  it('treats 5-char hex as valid color with alpha', () => {
+    const result = adjustColor('#f008', {
+      lightness: targetLightness,
+      opacity: targetOpacity
+    })
+    expect(result).not.toBe('#f008')
+    expect(result).toMatch(/^hsla\(/)
   })
 
   it('returns the original value for null or undefined inputs', () => {

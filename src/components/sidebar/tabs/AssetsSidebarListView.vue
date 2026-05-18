@@ -1,19 +1,5 @@
 <template>
   <div class="flex h-full flex-col">
-    <div v-if="assetItems.length" class="px-2">
-      <div
-        class="flex items-center p-2 font-inter text-sm/normal font-normal text-muted-foreground"
-      >
-        {{
-          t(
-            assetType === 'input'
-              ? 'sideToolbar.importedAssetsHeader'
-              : 'sideToolbar.generatedAssetsHeader'
-          )
-        }}
-      </div>
-    </div>
-
     <VirtualGrid
       class="flex-1"
       :items="assetItems"
@@ -99,22 +85,20 @@ import {
   getMediaTypeFromFilename,
   truncateFilename
 } from '@/utils/formatUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   assetItems,
   selectableAssets,
   isSelected,
   isStackExpanded,
-  toggleStack,
-  assetType = 'output'
+  toggleStack
 } = defineProps<{
   assetItems: OutputStackListItem[]
   selectableAssets: AssetItem[]
   isSelected: (assetId: string) => boolean
   isStackExpanded: (asset: AssetItem) => boolean
   toggleStack: (asset: AssetItem) => Promise<void>
-  assetType?: 'input' | 'output'
 }>()
 
 const assetsStore = useAssetsStore()

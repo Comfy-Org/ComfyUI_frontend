@@ -1,6 +1,7 @@
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
@@ -84,6 +85,7 @@ app.registerExtension({
     )
 
     const canvas = document.createElement('canvas')
+    const nodeOutputStore = useNodeOutputStore()
 
     const capture = () => {
       // @ts-expect-error widget value type narrow down
@@ -98,6 +100,7 @@ app.registerExtension({
       const img = new Image()
       img.onload = () => {
         node.imgs = [img]
+        nodeOutputStore.setNodePreviewsByNodeId(node.id, [data])
         app.canvas.setDirty(true)
       }
       img.src = data
@@ -108,7 +111,7 @@ app.registerExtension({
       'waiting for camera...',
       'capture',
       capture,
-      { canvasOnly: true }
+      {}
     )
     btn.disabled = true
     btn.serializeValue = () => undefined
@@ -142,7 +145,11 @@ app.registerExtension({
         useToastStore().addAlert(err)
         throw new Error(err)
       }
-      return `webcam/${name} [temp]`
+      const data = await resp.json()
+      const serverName = data.name || name
+      const subfolder = data.subfolder || 'webcam'
+      const type = data.type || 'temp'
+      return `${subfolder}/${serverName} [${type}]`
     }
 
     // @ts-expect-error fixme ts strict error

@@ -1,5 +1,5 @@
-import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 
@@ -11,10 +11,11 @@ describe('HoneyToast', () => {
     document.body.innerHTML = ''
   })
 
-  function mountComponent(
+  function renderComponent(
     props: { visible: boolean; expanded?: boolean } = { visible: true }
-  ): VueWrapper {
-    return mount(HoneyToast, {
+  ) {
+    const user = userEvent.setup()
+    const { unmount } = render(HoneyToast, {
       props,
       slots: {
         default: (slotProps: { isExpanded: boolean }) =>
@@ -33,48 +34,45 @@ describe('HoneyToast', () => {
             slotProps.isExpanded ? 'Collapse' : 'Expand'
           )
       },
-      attachTo: document.body
+      container: document.body.appendChild(document.createElement('div'))
     })
+    return { user, unmount }
   }
 
   it('renders when visible is true', async () => {
-    const wrapper = mountComponent({ visible: true })
+    const { unmount } = renderComponent({ visible: true })
     await nextTick()
 
-    const toast = document.body.querySelector('[role="status"]')
-    expect(toast).toBeTruthy()
+    expect(screen.getByRole('status')).toBeInTheDocument()
 
-    wrapper.unmount()
+    unmount()
   })
 
   it('does not render when visible is false', async () => {
-    const wrapper = mountComponent({ visible: false })
+    const { unmount } = renderComponent({ visible: false })
     await nextTick()
 
-    const toast = document.body.querySelector('[role="status"]')
-    expect(toast).toBeFalsy()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
 
-    wrapper.unmount()
+    unmount()
   })
 
   it('passes is-expanded=false to slots by default', async () => {
-    const wrapper = mountComponent({ visible: true })
+    const { unmount } = renderComponent({ visible: true })
     await nextTick()
 
-    const content = document.body.querySelector('[data-testid="content"]')
-    expect(content?.textContent).toBe('collapsed')
+    expect(screen.getByTestId('content')).toHaveTextContent('collapsed')
 
-    wrapper.unmount()
+    unmount()
   })
 
   it('has aria-live="polite" for accessibility', async () => {
-    const wrapper = mountComponent({ visible: true })
+    const { unmount } = renderComponent({ visible: true })
     await nextTick()
 
-    const toast = document.body.querySelector('[role="status"]')
-    expect(toast?.getAttribute('aria-live')).toBe('polite')
+    expect(screen.getByRole('status')).toHaveAttribute('aria-live', 'polite')
 
-    wrapper.unmount()
+    unmount()
   })
 
   it('supports v-model:expanded with reactive parent state', async () => {
@@ -98,23 +96,21 @@ describe('HoneyToast', () => {
       `
     })
 
-    const wrapper = mount(TestWrapper, { attachTo: document.body })
+    const user = userEvent.setup()
+    const { unmount } = render(TestWrapper, {
+      container: document.body.appendChild(document.createElement('div'))
+    })
     await nextTick()
 
-    const content = document.body.querySelector('[data-testid="content"]')
-    expect(content?.textContent).toBe('collapsed')
+    expect(screen.getByTestId('content')).toHaveTextContent('collapsed')
+    expect(screen.getByTestId('toggle-btn')).toHaveTextContent('Expand')
 
-    const toggleBtn = document.body.querySelector(
-      '[data-testid="toggle-btn"]'
-    ) as HTMLButtonElement
-    expect(toggleBtn?.textContent?.trim()).toBe('Expand')
-
-    toggleBtn?.click()
+    await user.click(screen.getByTestId('toggle-btn'))
     await nextTick()
 
-    expect(content?.textContent).toBe('expanded')
-    expect(toggleBtn?.textContent?.trim()).toBe('Collapse')
+    expect(screen.getByTestId('content')).toHaveTextContent('expanded')
+    expect(screen.getByTestId('toggle-btn')).toHaveTextContent('Collapse')
 
-    wrapper.unmount()
+    unmount()
   })
 })

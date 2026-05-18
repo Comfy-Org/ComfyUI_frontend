@@ -141,7 +141,7 @@ describe('keybindingService - Canvas Keybindings', () => {
     )
   })
 
-  it('should execute CopySelected for Ctrl+C on canvas', async () => {
+  it('should not intercept Ctrl+C to allow native copy event', async () => {
     const event = createTestKeyboardEvent('c', {
       ctrlKey: true,
       target: canvasChild
@@ -149,12 +149,10 @@ describe('keybindingService - Canvas Keybindings', () => {
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
-      'Comfy.Canvas.CopySelected'
-    )
+    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
   })
 
-  it('should execute PasteFromClipboard for Ctrl+V on canvas', async () => {
+  it('should not intercept Ctrl+V to allow native paste event', async () => {
     const event = createTestKeyboardEvent('v', {
       ctrlKey: true,
       target: canvasChild
@@ -162,9 +160,7 @@ describe('keybindingService - Canvas Keybindings', () => {
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
-      'Comfy.Canvas.PasteFromClipboard'
-    )
+    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
   })
 
   it('should execute PasteFromClipboardWithConnect for Ctrl+Shift+V on canvas', async () => {

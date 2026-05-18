@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -17,8 +17,9 @@ vi.mock('@/composables/queue/useQueueProgress', () => ({
   })
 }))
 
-const createWrapper = (props: { hidden?: boolean } = {}) =>
-  mount(QueueInlineProgress, { props })
+function renderComponent(props: { hidden?: boolean } = {}) {
+  return render(QueueInlineProgress, { props })
+}
 
 describe('QueueInlineProgress', () => {
   beforeEach(() => {
@@ -29,47 +30,53 @@ describe('QueueInlineProgress', () => {
   it('renders when total progress is non-zero', () => {
     mockProgress.totalPercent.value = 12
 
-    const wrapper = createWrapper()
+    renderComponent()
 
-    expect(wrapper.find('[aria-hidden="true"]').exists()).toBe(true)
+    expect(screen.getByTestId('queue-inline-progress')).toBeInTheDocument()
   })
 
   it('renders when current node progress is non-zero', () => {
     mockProgress.currentNodePercent.value = 33
 
-    const wrapper = createWrapper()
+    renderComponent()
 
-    expect(wrapper.find('[aria-hidden="true"]').exists()).toBe(true)
+    expect(screen.getByTestId('queue-inline-progress')).toBeInTheDocument()
   })
 
   it('does not render when hidden', () => {
     mockProgress.totalPercent.value = 45
 
-    const wrapper = createWrapper({ hidden: true })
+    renderComponent({ hidden: true })
 
-    expect(wrapper.find('[aria-hidden="true"]').exists()).toBe(false)
+    expect(
+      screen.queryByTestId('queue-inline-progress')
+    ).not.toBeInTheDocument()
   })
 
   it('shows when progress becomes non-zero', async () => {
-    const wrapper = createWrapper()
+    renderComponent()
 
-    expect(wrapper.find('[aria-hidden="true"]').exists()).toBe(false)
+    expect(
+      screen.queryByTestId('queue-inline-progress')
+    ).not.toBeInTheDocument()
 
     mockProgress.totalPercent.value = 10
     await nextTick()
-    expect(wrapper.find('[aria-hidden="true"]').exists()).toBe(true)
+    expect(screen.getByTestId('queue-inline-progress')).toBeInTheDocument()
   })
 
   it('hides when progress returns to zero', async () => {
     mockProgress.totalPercent.value = 10
 
-    const wrapper = createWrapper()
+    renderComponent()
 
-    expect(wrapper.find('[aria-hidden="true"]').exists()).toBe(true)
+    expect(screen.getByTestId('queue-inline-progress')).toBeInTheDocument()
 
     mockProgress.totalPercent.value = 0
     mockProgress.currentNodePercent.value = 0
     await nextTick()
-    expect(wrapper.find('[aria-hidden="true"]').exists()).toBe(false)
+    expect(
+      screen.queryByTestId('queue-inline-progress')
+    ).not.toBeInTheDocument()
   })
 })

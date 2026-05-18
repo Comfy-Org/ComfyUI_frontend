@@ -3,13 +3,13 @@ import { describe, expect, test } from 'vitest'
 import { PromotedWidgetViewManager } from '@/lib/litegraph/src/subgraph/PromotedWidgetViewManager'
 
 type TestPromotionEntry = {
-  interiorNodeId: string
-  widgetName: string
+  sourceNodeId: string
+  sourceWidgetName: string
   viewKey?: string
 }
 
 function makeView(entry: TestPromotionEntry) {
-  const baseKey = `${entry.interiorNodeId}:${entry.widgetName}`
+  const baseKey = `${entry.sourceNodeId}:${entry.sourceWidgetName}`
 
   return {
     key: entry.viewKey ? `${baseKey}:${entry.viewKey}` : baseKey
@@ -19,7 +19,7 @@ function makeView(entry: TestPromotionEntry) {
 describe('PromotedWidgetViewManager', () => {
   test('returns memoized array when entries reference is unchanged', () => {
     const manager = new PromotedWidgetViewManager<{ key: string }>()
-    const entries = [{ interiorNodeId: '1', widgetName: 'widgetA' }]
+    const entries = [{ sourceNodeId: '1', sourceWidgetName: 'widgetA' }]
 
     const first = manager.reconcile(entries, makeView)
     const second = manager.reconcile(entries, makeView)
@@ -33,16 +33,16 @@ describe('PromotedWidgetViewManager', () => {
 
     const firstPass = manager.reconcile(
       [
-        { interiorNodeId: '1', widgetName: 'widgetA' },
-        { interiorNodeId: '1', widgetName: 'widgetB' }
+        { sourceNodeId: '1', sourceWidgetName: 'widgetA' },
+        { sourceNodeId: '1', sourceWidgetName: 'widgetB' }
       ],
       makeView
     )
 
     const reordered = manager.reconcile(
       [
-        { interiorNodeId: '1', widgetName: 'widgetB' },
-        { interiorNodeId: '1', widgetName: 'widgetA' }
+        { sourceNodeId: '1', sourceWidgetName: 'widgetB' },
+        { sourceNodeId: '1', sourceWidgetName: 'widgetA' }
       ],
       makeView
     )
@@ -56,9 +56,9 @@ describe('PromotedWidgetViewManager', () => {
 
     const first = manager.reconcile(
       [
-        { interiorNodeId: '1', widgetName: 'widgetA' },
-        { interiorNodeId: '1', widgetName: 'widgetB' },
-        { interiorNodeId: '1', widgetName: 'widgetA' }
+        { sourceNodeId: '1', sourceWidgetName: 'widgetA' },
+        { sourceNodeId: '1', sourceWidgetName: 'widgetB' },
+        { sourceNodeId: '1', sourceWidgetName: 'widgetA' }
       ],
       makeView
     )
@@ -68,14 +68,14 @@ describe('PromotedWidgetViewManager', () => {
     ])
 
     manager.reconcile(
-      [{ interiorNodeId: '1', widgetName: 'widgetB' }],
+      [{ sourceNodeId: '1', sourceWidgetName: 'widgetB' }],
       makeView
     )
 
     const restored = manager.reconcile(
       [
-        { interiorNodeId: '1', widgetName: 'widgetB' },
-        { interiorNodeId: '1', widgetName: 'widgetA' }
+        { sourceNodeId: '1', sourceWidgetName: 'widgetB' },
+        { sourceNodeId: '1', sourceWidgetName: 'widgetA' }
       ],
       makeView
     )
@@ -89,8 +89,8 @@ describe('PromotedWidgetViewManager', () => {
 
     const views = manager.reconcile(
       [
-        { interiorNodeId: '1', widgetName: 'widgetA', viewKey: 'slotA' },
-        { interiorNodeId: '1', widgetName: 'widgetA', viewKey: 'slotB' }
+        { sourceNodeId: '1', sourceWidgetName: 'widgetA', viewKey: 'slotA' },
+        { sourceNodeId: '1', sourceWidgetName: 'widgetA', viewKey: 'slotB' }
       ],
       makeView
     )
@@ -106,8 +106,8 @@ describe('PromotedWidgetViewManager', () => {
 
     const firstPass = manager.reconcile(
       [
-        { interiorNodeId: '1', widgetName: 'widgetA', viewKey: 'slotA' },
-        { interiorNodeId: '1', widgetName: 'widgetA', viewKey: 'slotB' }
+        { sourceNodeId: '1', sourceWidgetName: 'widgetA', viewKey: 'slotA' },
+        { sourceNodeId: '1', sourceWidgetName: 'widgetA', viewKey: 'slotB' }
       ],
       makeView
     )
@@ -116,8 +116,8 @@ describe('PromotedWidgetViewManager', () => {
 
     const secondPass = manager.reconcile(
       [
-        { interiorNodeId: '1', widgetName: 'widgetA', viewKey: 'slotA' },
-        { interiorNodeId: '1', widgetName: 'widgetA', viewKey: 'slotB' }
+        { sourceNodeId: '1', sourceWidgetName: 'widgetA', viewKey: 'slotA' },
+        { sourceNodeId: '1', sourceWidgetName: 'widgetA', viewKey: 'slotB' }
       ],
       makeView
     )

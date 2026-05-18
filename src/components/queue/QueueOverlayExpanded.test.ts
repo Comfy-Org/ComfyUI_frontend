@@ -1,4 +1,6 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { defineComponent } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
@@ -25,61 +27,79 @@ const JobFiltersBarStub = {
   template: '<div />'
 }
 
-const JobAssetsListStub = {
-  name: 'JobAssetsList',
-  template: '<div class="job-assets-list-stub" />'
+const testJob: JobListItem = {
+  id: 'job-1',
+  title: 'Job 1',
+  meta: 'meta',
+  state: 'pending'
 }
+
+const JobAssetsListStub = defineComponent({
+  name: 'JobAssetsList',
+  setup(_, { emit }) {
+    return {
+      triggerCancel: () => emit('cancel-item', testJob),
+      triggerDelete: () => emit('delete-item', testJob),
+      triggerView: () => emit('view-item', testJob)
+    }
+  },
+  template: `
+    <div class="job-assets-list-stub">
+      <button data-testid="stub-cancel" @click="triggerCancel()" />
+      <button data-testid="stub-delete" @click="triggerDelete()" />
+      <button data-testid="stub-view" @click="triggerView()" />
+    </div>
+  `
+})
 
 const JobContextMenuStub = {
   template: '<div />'
 }
 
-const createJob = (): JobListItem => ({
-  id: 'job-1',
-  title: 'Job 1',
-  meta: 'meta',
-  state: 'pending'
-})
+const defaultProps = {
+  headerTitle: 'Jobs',
+  queuedCount: 1,
+  selectedJobTab: 'All' as const,
+  selectedWorkflowFilter: 'all' as const,
+  selectedSortMode: 'mostRecent' as const,
+  displayedJobGroups: [],
+  hasFailedJobs: false
+}
 
-const mountComponent = () =>
-  mount(QueueOverlayExpanded, {
-    props: {
-      headerTitle: 'Jobs',
-      queuedCount: 1,
-      selectedJobTab: 'All',
-      selectedWorkflowFilter: 'all',
-      selectedSortMode: 'mostRecent',
-      displayedJobGroups: [],
-      hasFailedJobs: false
-    },
-    global: {
-      stubs: {
-        QueueOverlayHeader: QueueOverlayHeaderStub,
-        JobFiltersBar: JobFiltersBarStub,
-        JobAssetsList: JobAssetsListStub,
-        JobContextMenu: JobContextMenuStub
-      }
-    }
-  })
+const stubs = {
+  QueueOverlayHeader: QueueOverlayHeaderStub,
+  JobFiltersBar: JobFiltersBarStub,
+  JobAssetsList: JobAssetsListStub,
+  JobContextMenu: JobContextMenuStub
+}
 
 describe('QueueOverlayExpanded', () => {
   it('renders JobAssetsList', () => {
-    const wrapper = mountComponent()
-    expect(wrapper.find('.job-assets-list-stub').exists()).toBe(true)
+    const { container } = render(QueueOverlayExpanded, {
+      props: defaultProps,
+      global: { stubs }
+    })
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    expect(container.querySelector('.job-assets-list-stub')).toBeTruthy()
   })
 
   it('re-emits list item actions from JobAssetsList', async () => {
-    const wrapper = mountComponent()
-    const job = createJob()
-    const jobAssetsList = wrapper.findComponent({ name: 'JobAssetsList' })
+    const user = userEvent.setup()
+    const onCancelItem = vi.fn<(item: JobListItem) => void>()
+    const onDeleteItem = vi.fn<(item: JobListItem) => void>()
+    const onViewItem = vi.fn<(item: JobListItem) => void>()
 
-    jobAssetsList.vm.$emit('cancel-item', job)
-    jobAssetsList.vm.$emit('delete-item', job)
-    jobAssetsList.vm.$emit('view-item', job)
-    await wrapper.vm.$nextTick()
+    render(QueueOverlayExpanded, {
+      props: { ...defaultProps, onCancelItem, onDeleteItem, onViewItem },
+      global: { stubs }
+    })
 
-    expect(wrapper.emitted('cancelItem')?.[0]).toEqual([job])
-    expect(wrapper.emitted('deleteItem')?.[0]).toEqual([job])
-    expect(wrapper.emitted('viewItem')?.[0]).toEqual([job])
+    await user.click(screen.getByTestId('stub-cancel'))
+    await user.click(screen.getByTestId('stub-delete'))
+    await user.click(screen.getByTestId('stub-view'))
+
+    expect(onCancelItem).toHaveBeenCalledWith(testJob)
+    expect(onDeleteItem).toHaveBeenCalledWith(testJob)
+    expect(onViewItem).toHaveBeenCalledWith(testJob)
   })
 })

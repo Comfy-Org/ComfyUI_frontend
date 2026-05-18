@@ -41,6 +41,7 @@
           v-else
           :class="cn(iconClass, 'size-4', iconColorClass)"
           aria-hidden="true"
+          data-testid="notification-icon"
         />
       </div>
       <div class="flex h-full items-center">
@@ -59,7 +60,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { QueueNotificationBanner } from '@/composables/queue/useQueueNotificationBanners'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { notification } = defineProps<{
   notification: QueueNotificationBanner
@@ -139,11 +140,11 @@ const iconClass = computed(() => {
 
 const iconColorClass = computed(() => {
   if (notification.type === 'queuedPending') {
-    return 'animate-spin text-slate-100'
+    return 'animate-spin text-text-secondary'
   }
   if (notification.type === 'failed') {
     return 'text-danger-200'
   }
-  return 'text-slate-100'
+  return 'text-text-secondary'
 })
 </script>

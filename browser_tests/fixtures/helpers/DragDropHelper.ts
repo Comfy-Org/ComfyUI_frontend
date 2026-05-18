@@ -1,40 +1,37 @@
 import { readFileSync } from 'fs'
+import { basename } from 'path'
 
 import type { Page } from '@playwright/test'
 
-import type { Position } from '../types'
+import type { Position } from '@e2e/fixtures/types'
+import { getMimeType } from '@e2e/fixtures/utils/mimeTypeUtil'
+import { assetPath } from '@e2e/fixtures/utils/paths'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 export class DragDropHelper {
-  constructor(
-    private readonly page: Page,
-    private readonly assetPath: (fileName: string) => string
-  ) {}
-
-  private async nextFrame(): Promise<void> {
-    await this.page.evaluate(() => {
-      return new Promise<void>((resolve) => {
-        requestAnimationFrame(() => resolve())
-      })
-    })
-  }
+  constructor(private readonly page: Page) {}
 
   async dragAndDropExternalResource(
     options: {
       fileName?: string
+      filePath?: string
       url?: string
       dropPosition?: Position
       waitForUpload?: boolean
+      preserveNativePropagation?: boolean
     } = {}
   ): Promise<void> {
     const {
       dropPosition = { x: 100, y: 100 },
       fileName,
+      filePath,
       url,
-      waitForUpload = false
+      waitForUpload = false,
+      preserveNativePropagation = false
     } = options
 
-    if (!fileName && !url)
-      throw new Error('Must provide either fileName or url')
+    if (!fileName && !filePath && !url)
+      throw new Error('Must provide fileName, filePath, or url')
 
     const evaluateParams: {
       dropPosition: Position
@@ -42,25 +39,25 @@ export class DragDropHelper {
       fileType?: string
       buffer?: Uint8Array | number[]
       url?: string
-    } = { dropPosition }
+      preserveNativePropagation: boolean
+    } = { dropPosition, preserveNativePropagation }
 
-    if (fileName) {
-      const filePath = this.assetPath(fileName)
-      const buffer = readFileSync(filePath)
-
-      const getFileType = (fileName: string) => {
-        if (fileName.endsWith('.png')) return 'image/png'
-        if (fileName.endsWith('.svg')) return 'image/svg+xml'
-        if (fileName.endsWith('.webp')) return 'image/webp'
-        if (fileName.endsWith('.webm')) return 'video/webm'
-        if (fileName.endsWith('.json')) return 'application/json'
-        if (fileName.endsWith('.glb')) return 'model/gltf-binary'
-        if (fileName.endsWith('.avif')) return 'image/avif'
-        return 'application/octet-stream'
+    if (fileName || filePath) {
+      const resolvedPath = filePath ?? assetPath(fileName!)
+      const displayName = fileName ?? basename(resolvedPath)
+      let buffer: Buffer
+      try {
+        buffer = readFileSync(resolvedPath)
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error)
+        throw new Error(
+          `Failed to read drag-and-drop fixture at "${resolvedPath}": ${reason}`,
+          { cause: error }
+        )
       }
 
-      evaluateParams.fileName = fileName
-      evaluateParams.fileType = getFileType(fileName)
+      evaluateParams.fileName = displayName
+      evaluateParams.fileType = getMimeType(displayName)
       evaluateParams.buffer = [...new Uint8Array(buffer)]
     }
 
@@ -125,15 +122,17 @@ export class DragDropHelper {
         )
       }
 
-      Object.defineProperty(dropEvent, 'preventDefault', {
-        value: () => {},
-        writable: false
-      })
+      if (!params.preserveNativePropagation) {
+        Object.defineProperty(dropEvent, 'preventDefault', {
+          value: () => {},
+          writable: false
+        })
 
-      Object.defineProperty(dropEvent, 'stopPropagation', {
-        value: () => {},
-        writable: false
-      })
+        Object.defineProperty(dropEvent, 'stopPropagation', {
+          value: () => {},
+          writable: false
+        })
+      }
 
       targetElement.dispatchEvent(dragOverEvent)
       targetElement.dispatchEvent(dropEvent)
@@ -152,7 +151,7 @@ export class DragDropHelper {
       await uploadResponsePromise
     }
 
-    await this.nextFrame()
+    await nextFrame(this.page)
   }
 
   async dragAndDropFile(
@@ -162,9 +161,19 @@ export class DragDropHelper {
     return this.dragAndDropExternalResource({ fileName, ...options })
   }
 
+  async dragAndDropFilePath(
+    filePath: string,
+    options: { dropPosition?: Position; waitForUpload?: boolean } = {}
+  ): Promise<void> {
+    return this.dragAndDropExternalResource({ filePath, ...options })
+  }
+
   async dragAndDropURL(
     url: string,
-    options: { dropPosition?: Position } = {}
+    options: {
+      dropPosition?: Position
+      preserveNativePropagation?: boolean
+    } = {}
   ): Promise<void> {
     return this.dragAndDropExternalResource({ url, ...options })
   }

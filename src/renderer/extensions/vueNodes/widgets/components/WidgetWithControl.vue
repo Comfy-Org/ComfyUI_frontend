@@ -1,13 +1,14 @@
 <script setup lang="ts" generic="T extends WidgetValue">
-import { computed, defineAsyncComponent, ref, watch } from 'vue'
+import { defineAsyncComponent, ref, watch } from 'vue'
 import type { Component } from 'vue'
 
 import Popover from '@/components/ui/Popover.vue'
-import Button from '@/components/ui/button/Button.vue'
 import type {
   SimplifiedControlWidget,
   WidgetValue
 } from '@/types/simplifiedWidget'
+
+import ValueControlButton from './ValueControlButton.vue'
 
 const ValueControlPopover = defineAsyncComponent(
   () => import('./ValueControlPopover.vue')
@@ -22,19 +23,6 @@ const modelValue = defineModel<T>()
 
 const controlModel = ref(props.widget.controlWidget.value)
 
-const controlButtonIcon = computed(() => {
-  switch (controlModel.value) {
-    case 'increment':
-      return 'pi pi-plus'
-    case 'decrement':
-      return 'pi pi-minus'
-    case 'fixed':
-      return 'icon-[lucide--pencil-off]'
-    default:
-      return 'icon-[lucide--shuffle]'
-  }
-})
-
 watch(controlModel, props.widget.controlWidget.update)
 </script>
 <template>
@@ -42,15 +30,7 @@ watch(controlModel, props.widget.controlWidget.update)
     <component :is="component" v-bind="$attrs" v-model="modelValue" :widget>
       <Popover>
         <template #button>
-          <Button
-            variant="textonly"
-            size="sm"
-            class="h-4 w-7 self-center rounded-xl bg-primary-background/30 p-0 hover:bg-primary-background-hover/30"
-          >
-            <i
-              :class="`${controlButtonIcon} w-full text-xs text-primary-background`"
-            />
-          </Button>
+          <ValueControlButton :mode="controlModel" class="self-center" />
         </template>
         <ValueControlPopover v-model="controlModel" />
       </Popover>

@@ -22,6 +22,7 @@ const logger = log.getLogger('LayoutMutations')
 interface LayoutMutations {
   // Single node operations (synchronous, CRDT-ready)
   moveNode(nodeId: NodeId, position: Point): void
+  batchMoveNodes(updates: Array<{ nodeId: NodeId; position: Point }>): void
   resizeNode(nodeId: NodeId, size: Size): void
   setNodeZIndex(nodeId: NodeId, zIndex: number): void
 
@@ -97,6 +98,33 @@ export function useLayoutMutations(): LayoutMutations {
       source: layoutStore.getCurrentSource(),
       actor: layoutStore.getCurrentActor()
     })
+  }
+
+  function batchMoveNodes(
+    updates: Array<{ nodeId: NodeId; position: Point }>
+  ): void {
+    if (updates.length === 0) return
+
+    const nodeBoundsUpdates = updates.flatMap(({ nodeId, position }) => {
+      const normalizedNodeId = String(nodeId)
+      const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
+      if (!existing) return []
+
+      return [
+        {
+          nodeId: normalizedNodeId,
+          bounds: {
+            x: position.x,
+            y: position.y,
+            width: existing.size.width,
+            height: existing.size.height
+          }
+        }
+      ]
+    })
+
+    if (nodeBoundsUpdates.length === 0) return
+    layoutStore.batchUpdateNodeBounds(nodeBoundsUpdates)
   }
 
   /**
@@ -326,6 +354,7 @@ export function useLayoutMutations(): LayoutMutations {
     setSource,
     setActor,
     moveNode,
+    batchMoveNodes,
     resizeNode,
     setNodeZIndex,
     createNode,

@@ -408,4 +408,146 @@ describe('useKeybindingStore', () => {
       defaultKeybinding
     )
   })
+
+  describe('removeAllKeybindingsForCommand', () => {
+    it('should return false when command has no bindings', () => {
+      const store = useKeybindingStore()
+      expect(store.removeAllKeybindingsForCommand('nonexistent.command')).toBe(
+        false
+      )
+    })
+
+    it('should remove all bindings for a command with multiple bindings', () => {
+      const store = useKeybindingStore()
+      const binding1 = new KeybindingImpl({
+        commandId: 'test.command',
+        combo: { key: 'A', ctrl: true }
+      })
+      const binding2 = new KeybindingImpl({
+        commandId: 'test.command',
+        combo: { key: 'B', ctrl: true }
+      })
+
+      store.addDefaultKeybinding(binding1)
+      store.addUserKeybinding(binding2)
+      expect(store.getKeybindingsByCommandId('test.command')).toHaveLength(2)
+
+      const result = store.removeAllKeybindingsForCommand('test.command')
+
+      expect(result).toBe(true)
+      expect(store.getKeybindingsByCommandId('test.command')).toHaveLength(0)
+    })
+  })
+
+  describe('updateSpecificKeybinding', () => {
+    it('should replace a specific binding with a new one', () => {
+      const store = useKeybindingStore()
+      const binding1 = new KeybindingImpl({
+        commandId: 'test.command',
+        combo: { key: 'A', ctrl: true }
+      })
+      const binding2 = new KeybindingImpl({
+        commandId: 'test.command',
+        combo: { key: 'B', ctrl: true }
+      })
+
+      store.addUserKeybinding(binding1)
+      store.addUserKeybinding(binding2)
+      expect(store.getKeybindingsByCommandId('test.command')).toHaveLength(2)
+
+      const newBinding = new KeybindingImpl({
+        commandId: 'test.command',
+        combo: { key: 'C', alt: true }
+      })
+      store.updateSpecificKeybinding(binding1, newBinding)
+
+      const bindings = store.getKeybindingsByCommandId('test.command')
+      expect(bindings).toHaveLength(2)
+      expect(bindings.some((b) => b.combo.equals(newBinding.combo))).toBe(true)
+      expect(bindings.some((b) => b.combo.equals(binding1.combo))).toBe(false)
+    })
+  })
+
+  describe('isCommandKeybindingModified (multi-binding)', () => {
+    it('should detect modification when binding count differs', () => {
+      const store = useKeybindingStore()
+      const defaultBinding = new KeybindingImpl({
+        commandId: 'test.command',
+        combo: { key: 'A', ctrl: true }
+      })
+      store.addDefaultKeybinding(defaultBinding)
+
+      const extraBinding = new KeybindingImpl({
+        commandId: 'test.command',
+        combo: { key: 'B', ctrl: true }
+      })
+      store.addUserKeybinding(extraBinding)
+
+      expect(store.isCommandKeybindingModified('test.command')).toBe(true)
+    })
+
+    it('should return false when multi-binding matches defaults', () => {
+      const store = useKeybindingStore()
+      const binding1 = new KeybindingImpl({
+        commandId: 'test.command',
+        combo: { key: 'A', ctrl: true }
+      })
+      const binding2 = new KeybindingImpl({
+        commandId: 'test.command',
+        combo: { key: 'B', ctrl: true }
+      })
+
+      store.addDefaultKeybinding(binding1)
+      store.addDefaultKeybinding(binding2)
+
+      expect(store.isCommandKeybindingModified('test.command')).toBe(false)
+    })
+  })
+
+  describe('resetKeybindingForCommand (multi-binding)', () => {
+    it('should restore all default bindings when user has modified multi-binding command', () => {
+      const store = useKeybindingStore()
+      const defaultBinding1 = new KeybindingImpl({
+        commandId: 'test.command',
+        combo: { key: 'Delete' }
+      })
+      const defaultBinding2 = new KeybindingImpl({
+        commandId: 'test.command',
+        combo: { key: 'Backspace' }
+      })
+
+      store.addDefaultKeybinding(defaultBinding1)
+      store.addDefaultKeybinding(defaultBinding2)
+      expect(store.getKeybindingsByCommandId('test.command')).toHaveLength(2)
+
+      store.unsetKeybinding(defaultBinding1)
+      expect(store.getKeybindingsByCommandId('test.command')).toHaveLength(1)
+
+      const result = store.resetKeybindingForCommand('test.command')
+
+      expect(result).toBe(true)
+      expect(store.getKeybindingsByCommandId('test.command')).toHaveLength(2)
+    })
+
+    it('should remove all user bindings when no defaults exist for multi-binding', () => {
+      const store = useKeybindingStore()
+      const userBinding1 = new KeybindingImpl({
+        commandId: 'test.command',
+        combo: { key: 'X', ctrl: true }
+      })
+      const userBinding2 = new KeybindingImpl({
+        commandId: 'test.command',
+        combo: { key: 'Y', ctrl: true }
+      })
+
+      store.addUserKeybinding(userBinding1)
+      store.addUserKeybinding(userBinding2)
+      expect(store.getKeybindingsByCommandId('test.command')).toHaveLength(2)
+
+      const result = store.resetKeybindingForCommand('test.command')
+
+      expect(result).toBe(true)
+      expect(store.getKeybindingsByCommandId('test.command')).toHaveLength(0)
+    })
+  })
 })

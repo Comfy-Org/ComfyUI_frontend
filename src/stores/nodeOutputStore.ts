@@ -15,7 +15,11 @@ import { app } from '@/scripts/app'
 import { clone } from '@/scripts/utils'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { parseFilePath } from '@/utils/formatUtil'
-import { isAnimatedOutput, isVideoNode } from '@/utils/litegraphUtil'
+import {
+  isAnimatedOutput,
+  isVideoNode,
+  resolveNode
+} from '@/utils/litegraphUtil'
 import {
   releaseSharedObjectUrl,
   retainSharedObjectUrl
@@ -257,6 +261,17 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ) {
     const nodeLocatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
     if (!nodeLocatorId) return
+    setNodePreviewsByLocatorId(nodeLocatorId, previewImages)
+    latestPreview.value = previewImages
+  }
+
+  /**
+   * Set node preview images by NodeLocatorId directly.
+   */
+  function setNodePreviewsByLocatorId(
+    nodeLocatorId: NodeLocatorId,
+    previewImages: string[]
+  ) {
     const existingPreviews = app.nodePreviewImages[nodeLocatorId]
     if (scheduledRevoke[nodeLocatorId]) {
       scheduledRevoke[nodeLocatorId].stop()
@@ -270,7 +285,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     for (const url of previewImages) {
       retainSharedObjectUrl(url)
     }
-    latestPreview.value = previewImages
     app.nodePreviewImages[nodeLocatorId] = previewImages
     nodePreviewImages.value[nodeLocatorId] = previewImages
   }
@@ -286,22 +300,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     nodeId: string | number,
     previewImages: string[]
   ) {
-    const nodeLocatorId = nodeIdToNodeLocatorId(nodeId)
-    const existingPreviews = app.nodePreviewImages[nodeLocatorId]
-    if (scheduledRevoke[nodeLocatorId]) {
-      scheduledRevoke[nodeLocatorId].stop()
-      delete scheduledRevoke[nodeLocatorId]
-    }
-    if (existingPreviews?.[Symbol.iterator]) {
-      for (const url of existingPreviews) {
-        releaseSharedObjectUrl(url)
-      }
-    }
-    for (const url of previewImages) {
-      retainSharedObjectUrl(url)
-    }
-    app.nodePreviewImages[nodeLocatorId] = previewImages
-    nodePreviewImages.value[nodeLocatorId] = previewImages
+    setNodePreviewsByLocatorId(nodeIdToNodeLocatorId(nodeId), previewImages)
   }
 
   /**
@@ -368,22 +367,11 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     }
   }
 
-  /**
-   * Remove node outputs for a specific node
-   * Clears both outputs and preview images
-   */
-  function removeNodeOutputs(nodeId: number | string) {
-    const nodeLocatorId = nodeIdToNodeLocatorId(Number(nodeId))
-    if (!nodeLocatorId) return false
-
-    // Clear from app.nodeOutputs
+  function removeOutputsByLocatorId(nodeLocatorId: NodeLocatorId) {
     const hadOutputs = !!app.nodeOutputs[nodeLocatorId]
     delete app.nodeOutputs[nodeLocatorId]
-
-    // Clear from reactive state
     delete nodeOutputs.value[nodeLocatorId]
 
-    // Clear preview images
     if (app.nodePreviewImages[nodeLocatorId]) {
       const previews = app.nodePreviewImages[nodeLocatorId]
       if (previews?.[Symbol.iterator]) {
@@ -396,6 +384,22 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     }
 
     return hadOutputs
+  }
+
+  /**
+   * Remove node outputs for a specific node
+   * Clears both outputs and preview images
+   */
+  function removeNodeOutputs(nodeId: number | string) {
+    const nodeLocatorId = nodeIdToNodeLocatorId(Number(nodeId))
+    if (!nodeLocatorId) return false
+    return removeOutputsByLocatorId(nodeLocatorId)
+  }
+
+  // Resolves the locator from the node's own graph, so interior subgraph nodes
+  // are addressed correctly even when the user has a different graph active.
+  function removeNodeOutputsForNode(node: LGraphNode) {
+    return removeOutputsByLocatorId(nodeToNodeLocatorId(node))
   }
 
   function snapshotOutputs(): Record<string, ExecutedWsMessage['output']> {
@@ -464,7 +468,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ) {
     if (!LiteGraph.vueNodesMode) return
 
-    const node = app.rootGraph?.getNodeById(Number(nodeId))
+    const node = resolveNode(Number(nodeId))
     if (!node) return
 
     node.imgs = [element]
@@ -482,6 +486,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     setNodeOutputs,
     setNodeOutputsByExecutionId,
     setNodePreviewsByExecutionId,
+    setNodePreviewsByLocatorId,
     setNodePreviewsByNodeId,
     updateNodeImages,
     refreshNodeOutputs,
@@ -489,9 +494,11 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     // Cleanup
     revokePreviewsByExecutionId,
+    revokePreviewsByLocatorId,
     revokeAllPreviews,
     revokeSubgraphPreviews,
     removeNodeOutputs,
+    removeNodeOutputsForNode,
     snapshotOutputs,
     restoreOutputs,
     resetAllOutputsAndPreviews,

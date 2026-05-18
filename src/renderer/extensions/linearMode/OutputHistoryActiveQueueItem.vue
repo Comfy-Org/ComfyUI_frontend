@@ -5,6 +5,7 @@ import Loader from '@/components/loader/Loader.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCommandStore } from '@/stores/commandStore'
+import { useQueueStore } from '@/stores/queueStore'
 
 const { queueCount } = defineProps<{
   queueCount: number
@@ -12,6 +13,7 @@ const { queueCount } = defineProps<{
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
+const queueStore = useQueueStore()
 
 function clearQueue(close: () => void) {
   void commandStore.execute('Comfy.ClearPendingTasks')
@@ -32,7 +34,13 @@ function clearQueue(close: () => void) {
           size="unset"
           class="flex size-10 items-center justify-center rounded-sm bg-secondary-background"
         >
-          <Loader size="sm" class="text-muted-foreground" />
+          <Loader
+            :variant="
+              queueStore.runningTasks.length ? 'loader-circle' : 'loader'
+            "
+            size="sm"
+            class="text-muted-foreground"
+          />
         </Button>
       </template>
       <template #default="{ close }">
@@ -48,8 +56,9 @@ function clearQueue(close: () => void) {
       </template>
     </Popover>
     <div
-      v-if="queueCount > 0"
+      v-if="queueCount > 1"
       aria-hidden="true"
+      data-testid="linear-job-badge"
       class="absolute top-0 right-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-background text-xs text-text-primary"
       v-text="queueCount"
     />

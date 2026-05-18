@@ -4,6 +4,7 @@ import EditKeybindingContent from '@/components/dialog/content/setting/keybindin
 import EditKeybindingFooter from '@/components/dialog/content/setting/keybinding/EditKeybindingFooter.vue'
 import EditKeybindingHeader from '@/components/dialog/content/setting/keybinding/EditKeybindingHeader.vue'
 import type { KeyComboImpl } from '@/platform/keybindings/keyCombo'
+import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useDialogService } from '@/services/dialogService'
 
@@ -13,6 +14,8 @@ export interface EditKeybindingDialogState {
   commandId: string
   newCombo: KeyComboImpl | null
   currentCombo: KeyComboImpl | null
+  mode: 'edit' | 'add'
+  existingBinding: KeybindingImpl | null
 }
 
 export function useEditKeybindingDialog() {
@@ -23,11 +26,15 @@ export function useEditKeybindingDialog() {
     commandId: string
     commandLabel: string
     currentCombo: KeyComboImpl | null
+    mode?: 'edit' | 'add'
+    existingBinding?: KeybindingImpl | null
   }) {
     const dialogState = reactive<EditKeybindingDialogState>({
       commandId: options.commandId,
       newCombo: options.currentCombo,
-      currentCombo: options.currentCombo
+      currentCombo: options.currentCombo,
+      mode: options.mode ?? 'edit',
+      existingBinding: options.existingBinding ?? null
     })
 
     const existingKeybindingOnCombo = computed(() => {

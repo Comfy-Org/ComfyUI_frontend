@@ -1,8 +1,14 @@
 import { useStepper } from '@vueuse/core'
+import { v4 as uuidv4 } from 'uuid'
 import { computed, ref } from 'vue'
 
-import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
+import type {
+  ComfyHubPublishFormData,
+  ExampleImage
+} from '@/platform/workflow/sharing/types/comfyHubTypes'
+import type { PublishPrefill } from '@/platform/workflow/sharing/types/shareTypes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { normalizeTags } from '@/platform/workflow/sharing/utils/normalizeTags'
 
 const PUBLISH_STEPS = [
   'describe',
@@ -13,20 +19,53 @@ const PUBLISH_STEPS = [
 
 export type ComfyHubPublishStep = (typeof PUBLISH_STEPS)[number]
 
+// TODO: Migrate to a Pinia store alongside the profile gate singleton
+const cachedPrefills = new Map<string, PublishPrefill>()
+
 function createDefaultFormData(): ComfyHubPublishFormData {
-  const { activeWorkflow } = useWorkflowStore()
+  const workflowStore = useWorkflowStore()
   return {
-    name: activeWorkflow?.filename ?? '',
+    name: workflowStore.activeWorkflow?.filename ?? '',
     description: '',
-    workflowType: '',
     tags: [],
+    models: [],
+    customNodes: [],
     thumbnailType: 'image',
     thumbnailFile: null,
     comparisonBeforeFile: null,
     comparisonAfterFile: null,
     exampleImages: [],
-    selectedExampleIds: []
+    tutorialUrl: '',
+    metadata: {}
   }
+}
+
+function createExampleImagesFromUrls(urls: string[]): ExampleImage[] {
+  return urls.map((url) => ({ id: uuidv4(), url }))
+}
+
+function extractPrefillFromFormData(
+  formData: ComfyHubPublishFormData
+): PublishPrefill {
+  return {
+    description: formData.description || undefined,
+    tags: formData.tags.length > 0 ? normalizeTags(formData.tags) : undefined,
+    thumbnailType: formData.thumbnailType,
+    sampleImageUrls: formData.exampleImages
+      .map((img) => img.url)
+      .filter((url) => !url.startsWith('blob:'))
+  }
+}
+
+export function cachePublishPrefill(
+  workflowPath: string,
+  formData: ComfyHubPublishFormData
+) {
+  cachedPrefills.set(workflowPath, extractPrefillFromFormData(formData))
+}
+
+export function getCachedPrefill(workflowPath: string): PublishPrefill | null {
+  return cachedPrefills.get(workflowPath) ?? null
 }
 
 export function useComfyHubPublishWizard() {
@@ -53,6 +92,30 @@ export function useComfyHubPublishWizard() {
     stepper.goTo('finish')
   }
 
+  function applyPrefill(prefill: PublishPrefill) {
+    const defaults = createDefaultFormData()
+    const current = formData.value
+    formData.value = {
+      ...current,
+      description:
+        current.description === defaults.description
+          ? (prefill.description ?? current.description)
+          : current.description,
+      tags:
+        current.tags.length === 0 && prefill.tags?.length
+          ? prefill.tags
+          : current.tags,
+      thumbnailType:
+        current.thumbnailType === defaults.thumbnailType
+          ? (prefill.thumbnailType ?? current.thumbnailType)
+          : current.thumbnailType,
+      exampleImages:
+        current.exampleImages.length === 0 && prefill.sampleImageUrls?.length
+          ? createExampleImagesFromUrls(prefill.sampleImageUrls)
+          : current.exampleImages
+    }
+  }
+
   return {
     currentStep: stepper.current,
     formData,
@@ -64,6 +127,7 @@ export function useComfyHubPublishWizard() {
     goNext: stepper.goToNext,
     goBack: stepper.goToPrevious,
     openProfileCreationStep,
-    closeProfileCreationStep
+    closeProfileCreationStep,
+    applyPrefill
   }
 }

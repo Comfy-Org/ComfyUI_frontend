@@ -100,7 +100,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
 
   /**
    * Saves a draft (data + metadata).
-   * Writes payload first, then updates index.
+   * Primes index cache, writes payload, then persists updated index.
    */
   function saveDraft(path: string, data: string, meta: DraftMeta): boolean {
     if (!isStorageAvailable()) return false
@@ -109,7 +109,12 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const draftKey = hashPath(path)
     const now = Date.now()
 
-    // Write payload first (before index update)
+    // Prime the index cache before writing payload.
+    // loadIndex() runs orphan cleanup on cache miss, which would
+    // delete a payload written before the index is updated.
+    const index = loadIndex()
+
+    // Write payload before persisting the updated index
     const payloadWritten = writePayload(workspaceId, draftKey, {
       data,
       updatedAt: now
@@ -119,9 +124,6 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       // Quota exceeded - try eviction loop
       return handleQuotaExceeded(path, data, meta)
     }
-
-    // Update index
-    const index = loadIndex()
     const { index: newIndex, evicted } = upsertEntry(
       index,
       path,

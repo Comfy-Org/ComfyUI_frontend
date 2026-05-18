@@ -15,7 +15,7 @@ type ValidationState = InstallValidation['basePath']
 type IndexedUpdate = InstallValidation & Record<string, ValidationState>
 
 /** State of a maintenance task, managed by the maintenance task store. */
-export class MaintenanceTaskRunner {
+class MaintenanceTaskRunner {
   constructor(readonly task: MaintenanceTask) {}
 
   private _state?: MaintenanceTaskState
@@ -66,7 +66,7 @@ export class MaintenanceTaskRunner {
       this.error = undefined
       return true
     } catch (error) {
-      this.error = (error as Error)?.message
+      this.error = error instanceof Error ? error.message : String(error)
       throw error
     } finally {
       this.executing = false

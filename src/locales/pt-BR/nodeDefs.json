@@ -24,6 +24,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "batch_size": {
+        "name": "tamanho_do_lote"
+      },
+      "height": {
+        "name": "altura"
+      },
+      "length": {
+        "name": "duração"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "start_image": {
+        "name": "imagem_inicial"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "AddNoise",
     "inputs": {
@@ -472,6 +506,196 @@
       }
     }
   },
+  "ByteDance2FirstLastFrameNode": {
+    "description": "Gere vídeo usando Seedance 2.0 a partir de uma imagem do primeiro frame e, opcionalmente, uma imagem do último frame.",
+    "display_name": "ByteDance Seedance 2.0 Primeiro-Último-Frame para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "first_frame": {
+        "name": "primeiro_frame",
+        "tooltip": "Imagem do primeiro frame para o vídeo."
+      },
+      "first_frame_asset_id": {
+        "name": "first_frame_asset_id",
+        "tooltip": "asset_id do Seedance a ser usado como o primeiro quadro. Mutuamente exclusivo com a entrada de imagem first_frame."
+      },
+      "last_frame": {
+        "name": "último_frame",
+        "tooltip": "Imagem do último frame para o vídeo."
+      },
+      "last_frame_asset_id": {
+        "name": "last_frame_asset_id",
+        "tooltip": "asset_id do Seedance a ser usado como o último quadro. Mutuamente exclusivo com a entrada de imagem last_frame."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Seedance 2.0 para máxima qualidade; Seedance 2.0 Fast para otimização de velocidade."
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_generate_audio": {
+        "name": "gerar_áudio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "proporção"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "watermark": {
+        "name": "marca_d'água",
+        "tooltip": "Se deve adicionar uma marca d'água ao vídeo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2ReferenceNode": {
+    "description": "Gere, edite ou estenda vídeos usando Seedance 2.0 com imagens, vídeos e áudios de referência. Suporta referência multimodal, edição de vídeo e extensão de vídeo.",
+    "display_name": "ByteDance Seedance 2.0 Referência para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Seedance 2.0 para máxima qualidade; Seedance 2.0 Fast para otimização de velocidade."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_generate_audio": {
+        "name": "gerar_áudio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "proporção"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "watermark": {
+        "name": "marca_d'água",
+        "tooltip": "Se deve adicionar uma marca d'água ao vídeo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2TextToVideoNode": {
+    "description": "Gere vídeo usando modelos Seedance 2.0 a partir de um prompt de texto.",
+    "display_name": "ByteDance Seedance 2.0 Texto para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Seedance 2.0 para máxima qualidade; Seedance 2.0 Fast para otimização de velocidade."
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_generate_audio": {
+        "name": "gerar_áudio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "proporção"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "watermark": {
+        "name": "marca_d'água",
+        "tooltip": "Se deve adicionar uma marca d'água ao vídeo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateImageAsset": {
+    "description": "Crie um ativo de imagem pessoal Seedance 2.0. Faz upload da imagem de entrada e a registra no grupo de ativos informado. Se o group_id estiver vazio, executa um fluxo de autenticação H5 de pessoa real para criar um novo grupo antes de adicionar o ativo.",
+    "display_name": "ByteDance Criar Ativo de Imagem",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "Reutilize um ID de grupo de ativos Seedance existente para evitar repetidas verificações humanas para a mesma pessoa. Deixe em branco para executar a autenticação de pessoa real no navegador e criar um novo grupo."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Imagem para registrar como ativo pessoal."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateVideoAsset": {
+    "description": "Crie um ativo de vídeo pessoal Seedance 2.0. Faz upload do vídeo de entrada e o registra no grupo de ativos informado. Se o group_id estiver vazio, executa um fluxo de autenticação H5 de pessoa real para criar um novo grupo antes de adicionar o ativo.",
+    "display_name": "ByteDance Criar Ativo de Vídeo",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "Reutilize um ID de grupo de ativos Seedance existente para evitar repetidas verificações humanas para a mesma pessoa. Deixe em branco para executar a autenticação de pessoa real no navegador e criar um novo grupo."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Vídeo para registrar como ativo pessoal."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "Gere vídeo usando um prompt e os quadros inicial e final.",
     "display_name": "ByteDance Primeiro-Último-Frame para Vídeo",
@@ -721,6 +945,50 @@
       "width": {
         "name": "width",
         "tooltip": "Largura personalizada para a imagem. O valor só funciona se `size_preset` estiver definido como `Personalizado`"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamNodeV2": {
+    "description": "Geração unificada de texto para imagem e edição precisa de frases únicas em até 4K de resolução.",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_fail_on_partial": {
+        "name": "falhar_em_parcial"
+      },
+      "model_height": {
+        "name": "altura"
+      },
+      "model_max_images": {
+        "name": "máx_imagens"
+      },
+      "model_size_preset": {
+        "name": "predefinição_de_tamanho"
+      },
+      "model_width": {
+        "name": "largura"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto para criar ou editar uma imagem."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente utilizada para a geração."
+      },
+      "watermark": {
+        "name": "marca d'água",
+        "tooltip": "Se deve adicionar uma marca d'água \"Gerado por IA\" à imagem."
       }
     },
     "outputs": {
@@ -1347,6 +1615,46 @@
       }
     }
   },
+  "ClaudeNode": {
+    "description": "Gere respostas de texto com os modelos Claude da Anthropic. Forneça um prompt de texto e, opcionalmente, uma ou mais imagens para contexto multimodal.",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "images": {
+        "name": "imagens",
+        "tooltip": "Imagem(ns) opcional(is) para usar como contexto para o modelo. Até 20 imagens."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo Claude utilizado para gerar a resposta."
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Entrada de texto para o modelo."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "O seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Instruções fundamentais que determinam o comportamento do modelo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ColorToRGBInt": {
     "description": "Converte uma cor em um valor inteiro RGB.",
     "display_name": "Cor para RGB Int",
@@ -1358,6 +1666,36 @@
     "outputs": {
       "0": {
         "name": "rgb_int",
+        "tooltip": null
+      }
+    }
+  },
+  "ColorTransfer": {
+    "description": "Combine as cores de uma imagem com outra usando vários algoritmos.",
+    "display_name": "ColorTransfer",
+    "inputs": {
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "Imagem(ns) de referência para combinar as cores. Se não fornecido, o processamento é ignorado."
+      },
+      "image_target": {
+        "name": "image_target",
+        "tooltip": "Imagem(ns) para aplicar a transformação de cor."
+      },
+      "method": {
+        "name": "method"
+      },
+      "source_stats": {
+        "name": "source_stats",
+        "tooltip": "per_frame: cada quadro é ajustado individualmente à image_ref. uniform: agrupa estatísticas de todos os quadros de origem como base, ajusta para image_ref. target_frame: usa um quadro escolhido como base para a transformação para image_ref, aplicado uniformemente a todos os quadros (preserva diferenças relativas)"
+      },
+      "strength": {
+        "name": "strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
         "tooltip": null
       }
     }
@@ -1427,6 +1765,26 @@
       },
       "values": {
         "name": "valores"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "BOOL",
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyNumberConvert": {
+    "display_name": "Conversão de Número",
+    "inputs": {
+      "value": {
+        "name": "valor"
       }
     },
     "outputs": {
@@ -1732,9 +2090,17 @@
     "description": "Defina manualmente as janelas de contexto.",
     "display_name": "Janelas de Contexto (Manual)",
     "inputs": {
+      "causal_window_fix": {
+        "name": "causal_window_fix",
+        "tooltip": "Adicionar ou não um quadro de correção causal para janelas de contexto com índice diferente de 0."
+      },
       "closed_loop": {
         "name": "ciclo_fechado",
         "tooltip": "Se deve fechar o ciclo da janela de contexto; aplicável apenas para agendamentos em loop."
+      },
+      "cond_retain_index_list": {
+        "name": "cond_retain_index_list",
+        "tooltip": "Lista de índices latentes a serem mantidos nos tensores de condicionamento para cada janela. Por exemplo, definir como '0' usará a imagem inicial para cada janela."
       },
       "context_length": {
         "name": "comprimento_contexto",
@@ -1767,6 +2133,10 @@
       "model": {
         "name": "modelo",
         "tooltip": "O modelo ao qual aplicar as janelas de contexto durante a amostragem."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "Se deve dividir múltiplos condicionamentos (criados por ConditionCombine) para cada janela com base no índice da região."
       }
     },
     "outputs": {
@@ -2166,6 +2536,10 @@
       "image": {
         "name": "imagem"
       },
+      "keep_aspect": {
+        "name": "keep_aspect",
+        "tooltip": "Escolher entre esticar o recorte para caber no tamanho de saída ou preencher com pixels pretos para preservar a proporção."
+      },
       "output_height": {
         "name": "altura_de_saida",
         "tooltip": "Altura para a qual cada recorte será redimensionado."
@@ -2206,6 +2580,23 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CurveEditor": {
+    "display_name": "Editor de Curva",
+    "inputs": {
+      "curve": {
+        "name": "curva"
+      },
+      "histogram": {
+        "name": "histograma"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "curva",
         "tooltip": null
       }
     }
@@ -2268,6 +2659,23 @@
     "display_name": "Desativar Ruído",
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DrawBBoxes": {
+    "display_name": "Desenhar BBoxes",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "out_image",
         "tooltip": null
       }
     }
@@ -2650,6 +3058,28 @@
       }
     }
   },
+  "EmptyARVideoLatent": {
+    "display_name": "EmptyARVideoLatent",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyAceStep1_5LatentAudio": {
     "display_name": "Empty Ace Step 1.5 Latent Audio",
     "inputs": {
@@ -2749,6 +3179,26 @@
   },
   "EmptyFlux2LatentImage": {
     "display_name": "Empty Flux 2 Latent",
+    "inputs": {
+      "batch_size": {
+        "name": "tamanho_do_lote"
+      },
+      "height": {
+        "name": "altura"
+      },
+      "width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyHiDreamO1LatentImage": {
+    "description": "Latente no espaço de pixels vazia para HiDream-O1-Image. O modelo foi treinado em ~4 megapixels; resoluções menores saem da distribuição e a qualidade regrede visivelmente. Resoluções treinadas: 2048x2048, 2304x1728, 1728x2304, 2560x1440, 1440x2560, 2496x1664, 1664x2496, 3104x1312, 1312x3104, 2304x1792, 1792x2304.",
+    "display_name": "Imagem Latente Vazia HiDream-O1",
     "inputs": {
       "batch_size": {
         "name": "tamanho_do_lote"
@@ -3078,6 +3528,37 @@
     "inputs": {
       "sigmas": {
         "name": "sigmas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux2ImageNode": {
+    "description": "Gere imagens via Flux.2 [pro] ou Flux.2 [max] a partir de um prompt e imagens de referência opcionais.",
+    "display_name": "Flux.2 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_height": {
+        "name": "altura"
+      },
+      "model_width": {
+        "name": "largura"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt para a geração ou edição da imagem"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente aleatória usada para criar o ruído."
       }
     },
     "outputs": {
@@ -3468,6 +3949,39 @@
       }
     }
   },
+  "FrameInterpolate": {
+    "display_name": "Interpolação de Quadros",
+    "inputs": {
+      "images": {
+        "name": "imagens"
+      },
+      "interp_model": {
+        "name": "interp_model"
+      },
+      "multiplier": {
+        "name": "multiplicador"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "Carregar Modelo de Interpolação de Quadros",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "Selecione um modelo de interpolação de quadros para carregar. Os modelos devem ser colocados na pasta 'frame_interpolation'."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FreSca": {
     "description": "Aplica escalonamento dependente de frequência à orientação",
     "display_name": "FreSca",
@@ -3604,6 +4118,14 @@
     "description": "Aplicar shaders de fragmento GLSL ES em imagens. u_resolution (vec2) está sempre disponível.",
     "display_name": "GLSL Shader",
     "inputs": {
+      "bools": {
+        "name": "booleanos",
+        "tooltip": "Booleanos estão disponíveis como u_bool0-9 (bool) no código do shader"
+      },
+      "curves": {
+        "name": "curvas",
+        "tooltip": "Curvas estão disponíveis como u_curve0-3 (sampler2D, 1D LUT) no código do shader. Amostre com texture(u_curve0, vec2(x, 0.5)).r"
+      },
       "floats": {
         "name": "floats",
         "tooltip": "Floats estão disponíveis como u_float0-4 no código do shader"
@@ -3815,6 +4337,58 @@
       },
       "1": {
         "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "Primeira imagem do processo de pensamento do modelo. Disponível apenas com thinking_level ALTO e modalidade IMAGEM+TEXTO."
+      }
+    }
+  },
+  "GeminiNanoBanana2V2": {
+    "description": "Gere ou edite imagens de forma síncrona via Google Vertex API.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto descrevendo a imagem a ser gerada ou as edições a serem aplicadas. Inclua quaisquer restrições, estilos ou detalhes que o modelo deve seguir."
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Quando a seed é fixada em um valor específico, o modelo faz o melhor esforço para fornecer a mesma resposta em solicitações repetidas. A saída determinística não é garantida. Além disso, alterar o modelo ou configurações de parâmetros, como a temperatura, pode causar variações na resposta mesmo usando o mesmo valor de seed. Por padrão, um valor de seed aleatório é usado."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Instruções fundamentais que ditam o comportamento da IA."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "Primeira imagem do processo de pensamento do modelo. Disponível apenas com thinking_level ALTO e modalidade IMAGE+TEXT."
       }
     }
   },
@@ -3930,6 +4504,22 @@
       }
     }
   },
+  "GetICLoRAParameters": {
+    "description": "Extrai os parâmetros IC-LoRA dos metadados safetensors de um modelo carregado com LoRA e os disponibiliza para o LTXVAddGuide (ex: reference_downscale_factor).",
+    "display_name": "Obter Parâmetros IC-LoRA",
+    "inputs": {
+      "iclora_model": {
+        "name": "iclora_model",
+        "tooltip": "Saída direta de um Loader de LoRA para o IC-LoRA específico do qual extrair os metadados."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iclora_parameters",
+        "tooltip": "Parâmetros IC-LoRA extraídos dos metadados do LoRA (ex: reference_downscale_factor). Conecte ao LTXVAddGuide se o LoRA exigir tratamento especial dos guias."
+      }
+    }
+  },
   "GetImageSize": {
     "description": "Retorna a largura e altura da imagem, e a repassa inalterada.",
     "display_name": "Obter Tamanho da Imagem",
@@ -4016,6 +4606,40 @@
       }
     }
   },
+  "GrokImageEditNodeV2": {
+    "description": "Modifique uma imagem existente com base em um prompt de texto",
+    "display_name": "Grok Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_aspect_ratio": {
+        "name": "proporção"
+      },
+      "model_number_of_images": {
+        "name": "número_de_imagens"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "O prompt de texto usado para gerar a imagem"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokImageNode": {
     "description": "Gere imagens usando Grok com base em um prompt de texto",
     "display_name": "Grok Image",
@@ -4080,6 +4704,39 @@
       }
     }
   },
+  "GrokVideoExtendNode": {
+    "description": "Estenda um vídeo existente com uma continuação perfeita baseada em um prompt de texto.",
+    "display_name": "Grok Video Extend",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo a ser usado para extensão de vídeo."
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição em texto do que deve acontecer a seguir no vídeo."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Vídeo de origem para estender. Formato MP4, 2-15 segundos."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrokVideoNode": {
     "description": "Gere vídeo a partir de um prompt ou de uma imagem",
     "display_name": "Grok Video",
@@ -4120,6 +4777,41 @@
       }
     }
   },
+  "GrokVideoReferenceNode": {
+    "description": "Gere vídeo guiado por imagens de referência como referências de estilo e conteúdo.",
+    "display_name": "Grok Referência-para-Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo a ser usado para geração de vídeo."
+      },
+      "model_aspect_ratio": {
+        "name": "proporção"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição em texto do vídeo desejado."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrowMask": {
     "display_name": "Expandir Máscara",
     "inputs": {
@@ -4135,6 +4827,220 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseImageToVideoApi": {
+    "description": "Gere um vídeo a partir de uma imagem do primeiro quadro usando o modelo HappyHorse.",
+    "display_name": "HappyHorse Imagem para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "Imagem do primeiro quadro. A proporção de aspecto de saída é derivada desta imagem."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para usar na geração."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Adicionar ou não uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "Gere um vídeo apresentando uma pessoa ou objeto a partir de materiais de referência com o modelo HappyHorse. Suporta performances de personagem único e interações entre múltiplos personagens.",
+    "display_name": "HappyHorse Referência para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para usar na geração."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Adicionar ou não uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "Gera um vídeo com base em um prompt de texto usando o modelo HappyHorse.",
+    "display_name": "HappyHorse Texto para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para usar na geração."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Adicionar ou não uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "Edite um vídeo usando instruções de texto ou imagens de referência com o modelo HappyHorse. A duração de saída é de 3 a 15s e corresponde ao vídeo de entrada; entradas com mais de 15s são cortadas.",
+    "display_name": "HappyHorse Edição de Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para usar na geração."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "O vídeo a ser editado."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Adicionar ou não uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1PatchSeamSmoothing": {
+    "description": "Média da saída do modelo em várias posições de grade de patch deslocadas durante a fase final da amostragem. Cancela as emendas.",
+    "display_name": "Suavização de Emendas de Patches HiDream-O1",
+    "inputs": {
+      "blend": {
+        "name": "mesclagem",
+        "tooltip": "average: média com pesos iguais. window: ponderação com janela de Hann favorecendo cada passagem longe dos limites do patch. median: mediana por pixel, rejeita passagens fora do padrão."
+      },
+      "end_percent": {
+        "name": "percentual_final",
+        "tooltip": "Progresso da amostragem em que a mesclagem é desativada."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "passes": {
+        "name": "passagens",
+        "tooltip": "Número de passagens por etapa controlada. 2/4 = fixo. ramp_*: a contagem de passagens aumenta conforme a amostragem se aproxima do fim (mais suavização onde as emendas são mais visíveis)."
+      },
+      "pattern": {
+        "name": "padrão",
+        "tooltip": "Layout do deslocamento. single_shift: uma passagem na grade de patch natural + outras deslocadas. symmetric: todas as passagens fora da grade, deslocamentos divididos ao redor da origem."
+      },
+      "start_percent": {
+        "name": "percentual_inicial",
+        "tooltip": "Progresso da amostragem (0=início, 1=fim) em que a mesclagem é ativada."
+      },
+      "strength": {
+        "name": "força",
+        "tooltip": "Interpolação entre a predição da grade natural (0) e o resultado médio (1)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1ReferenceImages": {
+    "description": "Anexe de 1 a 10 imagens de referência ao condicionamento, uma para instrução de edição ou múltiplas para personalização orientada por sujeito.",
+    "display_name": "Imagens de Referência HiDream-O1",
+    "inputs": {
+      "images": {
+        "name": "imagens",
+        "tooltip": "Imagens de referência. 1 imagem = edição por instrução; 2-10 imagens = múltiplas referências."
+      },
+      "negative": {
+        "name": "negativo"
+      },
+      "positive": {
+        "name": "positivo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
         "tooltip": null
       }
     }
@@ -4864,6 +5770,36 @@
       }
     }
   },
+  "ImageHistogram": {
+    "display_name": "Histograma de Imagem",
+    "inputs": {
+      "image": {
+        "name": "imagem"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb",
+        "tooltip": null
+      },
+      "1": {
+        "name": "luminância",
+        "tooltip": null
+      },
+      "2": {
+        "name": "vermelho",
+        "tooltip": null
+      },
+      "3": {
+        "name": "verde",
+        "tooltip": null
+      },
+      "4": {
+        "name": "azul",
+        "tooltip": null
+      }
+    }
+  },
   "ImageInvert": {
     "display_name": "Inverter Imagem",
     "inputs": {
@@ -5281,6 +6217,22 @@
       },
       "image": {
         "name": "imagem"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JsonExtractString": {
+    "display_name": "Extrair String do JSON",
+    "inputs": {
+      "json_string": {
+        "name": "json_string"
+      },
+      "key": {
+        "name": "key"
       }
     },
     "outputs": {
@@ -6447,6 +7399,10 @@
         "name": "frame_idx",
         "tooltip": "Índice do quadro para iniciar o condicionamento. Para imagens de um quadro ou vídeos com 1-8 quadros, qualquer valor de frame_idx é aceitável. Para vídeos com 9+ quadros, frame_idx deve ser divisível por 8, caso contrário será arredondado para baixo para o múltiplo de 8 mais próximo. Valores negativos são contados a partir do final do vídeo."
       },
+      "iclora_parameters": {
+        "name": "iclora_parameters",
+        "tooltip": "Parâmetros IC-LoRA opcionais de um nó Get IC-LoRA Parameters. Usado para ajustar o processamento dos guias conforme exigido por certos IC-LoRAs (ex: aqueles com reference_downscale_factor > 1). Quando encadeado, cada LTXVAddGuide usa apenas os parâmetros conectados a ele."
+      },
       "image": {
         "name": "image",
         "tooltip": "Imagem ou vídeo para condicionar o vídeo latente. Deve ter 8*n + 1 quadros. Se o vídeo não tiver 8*n + 1 quadros, será cortado para o múltiplo mais próximo de 8*n + 1 quadros."
@@ -6732,6 +7688,54 @@
     "outputs": {
       "0": {
         "name": "output_image",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVReferenceAudio": {
+    "description": "Defina o áudio de referência para transferência de identidade de locutor com ID-LoRA. Codifica um clipe de áudio de referência no condicionamento e, opcionalmente, ajusta o modelo com orientação de identidade (passagem extra sem referência, amplificando o efeito de identidade do locutor).",
+    "display_name": "LTXV Reference Audio (ID-LoRA)",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "LTXV Audio VAE para codificação."
+      },
+      "end_percent": {
+        "name": "percentual_final",
+        "tooltip": "Fim do intervalo sigma onde a orientação de identidade está ativa."
+      },
+      "identity_guidance_scale": {
+        "name": "escala_de_orientação_de_identidade",
+        "tooltip": "Intensidade da orientação de identidade. Executa uma passagem extra sem referência a cada etapa para amplificar a identidade do locutor. Defina como 0 para desativar (sem passagem extra)."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "negative": {
+        "name": "negativo"
+      },
+      "positive": {
+        "name": "positivo"
+      },
+      "reference_audio": {
+        "name": "áudio_de_referência",
+        "tooltip": "Clipe de áudio de referência cuja identidade do locutor será transferida. Recomenda-se cerca de 5 segundos (duração do treinamento). Clipe mais curto ou mais longo pode prejudicar a transferência da identidade vocal."
+      },
+      "start_percent": {
+        "name": "percentual_inicial",
+        "tooltip": "Início do intervalo sigma onde a orientação de identidade está ativa."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negativo",
         "tooltip": null
       }
     }
@@ -7298,6 +8302,21 @@
       }
     }
   },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "Carregar Modelo de Remoção de Fundo",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "nome_remoção_fundo",
+        "tooltip": "O modelo usado para remover fundos de imagens"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "modelo_fundo",
+        "tooltip": null
+      }
+    }
+  },
   "LoadImage": {
     "display_name": "Carregar Imagem",
     "inputs": {
@@ -7376,6 +8395,19 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadMoGeModel": {
+    "display_name": "Carregar Modelo MoGe",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -7688,6 +8720,42 @@
       }
     }
   },
+  "LumaImageEditNode2": {
+    "description": "Edite uma imagem existente com um prompt de texto usando o modelo Luma UNI-1.",
+    "display_name": "Luma UNI-1 Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo a ser usado para edição."
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_web_search": {
+        "name": "web_search"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição da edição desejada. 1–6000 caracteres."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "O seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "Imagem de origem para editar."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LumaImageModifyNode": {
     "description": "Modifica imagens de forma síncrona com base no prompt e na proporção.",
     "display_name": "Luma Imagem para Imagem",
@@ -7756,6 +8824,41 @@
       "style_image_weight": {
         "name": "style_image_weight",
         "tooltip": "Peso da imagem de estilo. Ignorado se nenhuma style_image for fornecida."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaImageNode2": {
+    "description": "Gere imagens a partir de texto usando o modelo Luma UNI-1.",
+    "display_name": "Luma UNI-1 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo a ser usado para geração."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_web_search": {
+        "name": "web_search"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição em texto da imagem desejada. 1–6000 caracteres."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "O seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
       }
     },
     "outputs": {
@@ -8628,6 +9731,122 @@
       "seed": {
         "name": "semente",
         "tooltip": "A semente aleatória usada para criar o ruído."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeInference": {
+    "display_name": "Inferência MoGe",
+    "inputs": {
+      "apply_mask": {
+        "name": "apply_mask",
+        "tooltip": "Define pixels mascarados (céu/inválidos) como inf em pontos e profundidade para que a malha os descarte. Desative para manter a geometria prevista bruta em todo lugar; a máscara ainda é retornada separadamente."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Imagens por chamada de inferência. Reduza se ocorrer OOM em um vídeo longo/conjunto de imagens."
+      },
+      "force_projection": {
+        "name": "force_projection"
+      },
+      "fov_x_degrees": {
+        "name": "fov_x_degrees",
+        "tooltip": "Campo de visão horizontal da câmera de origem. Define a distância focal usada para desprojetar o mapa de profundidade em 3D. 0 = recuperar automaticamente dos pontos previstos."
+      },
+      "image": {
+        "name": "image"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "0 = mais rápido, 9 = mais detalhado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePanoramaInference": {
+    "display_name": "Inferência Panorama MoGe",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Visualizações por lote de inferência (12 divisões no total)."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Panorama equiretangular (qualquer proporção)."
+      },
+      "merge_resolution": {
+        "name": "merge_resolution",
+        "tooltip": "Resolução do lado maior do mapa de distância equiretangular mesclado."
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "Detalhe por visualização (0 = mais rápido, 9 = mais detalhado)."
+      },
+      "split_resolution": {
+        "name": "split_resolution",
+        "tooltip": "Resolução de cada divisão de perspectiva."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePointMapToMesh": {
+    "display_name": "MoGe Point Map to Mesh",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "Qual imagem de uma geometria MoGe em lote será convertida em malha. As contagens de vértices por imagem diferem, então os lotes não podem ser empilhados em uma única MALHA."
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "Intervalo de vértices; 1 = resolução total."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "Descartar pixels cuja variação de profundidade em 3x3 exceda essa fração. 0 = desativado."
+      },
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Levar a imagem de origem como textura baseColor."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeRender": {
+    "display_name": "MoGe Render",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "DirectX vs OpenGL controla a convenção do canal verde do mapa de normais. DirectX: verde = -Y para baixo (Unreal). OpenGL: verde = +Y para cima (Blender, Substance, Unity, glTF)."
       }
     },
     "outputs": {
@@ -10708,6 +11927,18 @@
       }
     }
   },
+  "ModelNoiseScale": {
+    "display_name": "Escala de Ruído do Modelo",
+    "inputs": {
+      "model": {
+        "name": "modelo"
+      },
+      "noise_scale": {
+        "name": "escala_de_ruído",
+        "tooltip": "Escala absoluta de ruído de treinamento. Por exemplo HiDream-O1 base: 8.0, dev: 7.5."
+      }
+    }
+  },
   "ModelPatchLoader": {
     "display_name": "ModelPatchLoader",
     "inputs": {
@@ -10847,120 +12078,6 @@
       },
       "model": {
         "name": "modelo"
-      }
-    }
-  },
-  "MoonvalleyImg2VideoNode": {
-    "description": "Nó de Imagem para Vídeo Moonvalley Marey",
-    "display_name": "Moonvalley Marey Imagem para Vídeo",
-    "inputs": {
-      "control_after_generate": {
-        "name": "controle_após_gerar"
-      },
-      "image": {
-        "name": "imagem",
-        "tooltip": "A imagem de referência usada para gerar o vídeo"
-      },
-      "negative_prompt": {
-        "name": "prompt_negativo",
-        "tooltip": "Texto do prompt negativo"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "prompt_adherence": {
-        "name": "aderência_ao_prompt",
-        "tooltip": "Escala de orientação para controle da geração"
-      },
-      "resolution": {
-        "name": "resolução",
-        "tooltip": "Resolução do vídeo de saída"
-      },
-      "seed": {
-        "name": "semente",
-        "tooltip": "Valor da semente aleatória"
-      },
-      "steps": {
-        "name": "passos",
-        "tooltip": "Número de passos de remoção de ruído"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "Moonvalley Marey Texto para Vídeo",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Texto de prompt negativo"
-      },
-      "prompt": {
-        "name": "prompt"
-      },
-      "prompt_adherence": {
-        "name": "prompt_adherence",
-        "tooltip": "Escala de orientação para controle da geração"
-      },
-      "resolution": {
-        "name": "resolution",
-        "tooltip": "Resolução do vídeo de saída"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Valor da semente aleatória"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "Etapas de inferência"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey Vídeo para Vídeo",
-    "inputs": {
-      "control_type": {
-        "name": "control_type"
-      },
-      "motion_intensity": {
-        "name": "motion_intensity",
-        "tooltip": "Usado apenas se o control_type for 'Motion Transfer'"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "Texto de prompt negativo"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Descreve o vídeo a ser gerado"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Valor da semente aleatória"
-      },
-      "steps": {
-        "name": "steps",
-        "tooltip": "Número de etapas de inferência"
-      },
-      "video": {
-        "name": "video",
-        "tooltip": "O vídeo de referência usado para gerar o vídeo de saída. Deve ter pelo menos 5 segundos de duração. Vídeos com mais de 5s serão automaticamente cortados. Apenas o formato MP4 é suportado."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -11186,8 +12303,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "description": "Gera imagens de forma síncrona via endpoint GPT Image 1 da OpenAI.",
-    "display_name": "OpenAI GPT Image 1",
+    "description": "Gera imagens de forma síncrona via endpoint GPT Image 2 da OpenAI.",
+    "display_name": "OpenAI GPT Image 2",
     "inputs": {
       "background": {
         "name": "fundo",
@@ -11195,6 +12312,14 @@
       },
       "control_after_generate": {
         "name": "controle após gerar"
+      },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "Usado apenas quando `size` é 'Custom'. Deve ser um múltiplo de 16 (apenas para GPT Image 2)."
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "Usado apenas quando `size` é 'Custom'. Deve ser um múltiplo de 16 (apenas para GPT Image 2)."
       },
       "image": {
         "name": "imagem",
@@ -11226,6 +12351,50 @@
       "size": {
         "name": "tamanho",
         "tooltip": "Tamanho da imagem"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV2": {
+    "description": "Gera imagens via endpoint GPT Image da OpenAI.",
+    "display_name": "OpenAI GPT Image 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_background": {
+        "name": "fundo"
+      },
+      "model_custom_height": {
+        "name": "altura_personalizada"
+      },
+      "model_custom_width": {
+        "name": "largura_personalizada"
+      },
+      "model_quality": {
+        "name": "qualidade"
+      },
+      "model_size": {
+        "name": "tamanho"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Quantas imagens gerar"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto para o GPT Image"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "ainda não implementado no backend"
       }
     },
     "outputs": {
@@ -11287,6 +12456,20 @@
       }
     }
   },
+  "OpticalFlowLoader": {
+    "display_name": "Carregar Modelo de Optical Flow",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "Modelo de optical flow para carregar. Os arquivos devem ser colocados na pasta 'optical_flow'. Atualmente, apenas o raft_large.pth do torchvision é suportado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OptimalStepsScheduler": {
     "display_name": "Agendador de Passos Ótimos",
     "inputs": {
@@ -11302,6 +12485,35 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Painter": {
+    "display_name": "Painter",
+    "inputs": {
+      "bg_color": {
+        "name": "cor_de_fundo"
+      },
+      "height": {
+        "name": "altura"
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "Imagem base opcional para pintar por cima"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -11858,7 +13070,7 @@
   "PrimitiveInt": {
     "display_name": "Inteiro",
     "inputs": {
-      "control_after_generate": {
+      "fixed": {
         "name": "controle após gerar"
       },
       "value": {
@@ -11920,6 +13132,91 @@
       }
     }
   },
+  "QuiverImageToSVGNode": {
+    "description": "Vetorização de uma imagem raster para SVG usando Quiver AI.",
+    "display_name": "Quiver Imagem para SVG",
+    "inputs": {
+      "auto_crop": {
+        "name": "corte_automático",
+        "tooltip": "Recortar automaticamente para o sujeito dominante."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "Imagem de entrada para vetorizar."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para vetorização SVG."
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNode": {
+    "description": "Gerar um SVG a partir de um prompt de texto usando Quiver AI.",
+    "display_name": "Quiver Texto para SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "instructions": {
+        "name": "instruções",
+        "tooltip": "Orientações adicionais de estilo ou formatação."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para geração de SVG."
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição em texto do SVG desejado."
+      },
+      "reference_images": {
+        "name": "imagens_de_referência",
+        "tooltip": "Até 4 imagens de referência para guiar a geração."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QwenImageDiffsynthControlnet": {
     "display_name": "QwenImageDiffsynthControlnet",
     "inputs": {
@@ -11940,6 +13237,34 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "RTDETR_detect": {
+    "display_name": "RT-DETR Detectar",
+    "inputs": {
+      "class_name": {
+        "name": "class_name",
+        "tooltip": "Filtrar detecções por classe. Defina como 'all' para desabilitar o filtro."
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_detections": {
+        "name": "max_detections",
+        "tooltip": "Número máximo de detecções a retornar por imagem. Em ordem decrescente de confiança."
+      },
+      "model": {
+        "name": "model"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bboxes",
+        "tooltip": null
       }
     }
   },
@@ -12626,6 +13951,25 @@
       }
     }
   },
+  "RemoveBackground": {
+    "display_name": "Remover Fundo",
+    "inputs": {
+      "bg_removal_model": {
+        "name": "modelo_remoção_fundo",
+        "tooltip": "Modelo de remoção de fundo usado para gerar a máscara"
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "Imagem de entrada para remover o fundo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "máscara",
+        "tooltip": "Máscara de primeiro plano gerada"
+      }
+    }
+  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -13256,6 +14600,127 @@
       }
     }
   },
+  "SAM3_Detect": {
+    "display_name": "SAM3 Detect",
+    "inputs": {
+      "bboxes": {
+        "name": "caixas_delimitadoras",
+        "tooltip": "Caixas delimitadoras para segmentar dentro"
+      },
+      "conditioning": {
+        "name": "condicionamento",
+        "tooltip": "Condicionamento de texto do CLIPTextEncode"
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "individual_masks": {
+        "name": "máscaras_individuais",
+        "tooltip": "Gerar máscaras por objeto em vez de união"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative_coords": {
+        "name": "coordenadas_negativas",
+        "tooltip": "Pontos negativos como JSON [{\"x\": int, \"y\": int}, ...] (coordenadas de pixels)"
+      },
+      "positive_coords": {
+        "name": "coordenadas_positivas",
+        "tooltip": "Pontos positivos como JSON [{\"x\": int, \"y\": int}, ...] (coordenadas de pixels)"
+      },
+      "refine_iterations": {
+        "name": "iterações_de_refino",
+        "tooltip": "Passagens de refinamento do decodificador SAM (0=usar máscaras brutas do detector)"
+      },
+      "threshold": {
+        "name": "limiar"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "máscaras",
+        "tooltip": null
+      },
+      "1": {
+        "name": "caixas_delimitadoras",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "SAM3 Track Preview",
+    "inputs": {
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "imagens"
+      },
+      "opacity": {
+        "name": "opacidade"
+      },
+      "track_data": {
+        "name": "dados_de_rastreamento"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "SAM3 Track to Mask",
+    "inputs": {
+      "object_indices": {
+        "name": "índices_de_objetos",
+        "tooltip": "Índices de objetos separados por vírgula para incluir (ex: '0,2,3'). Vazio = todos os objetos."
+      },
+      "track_data": {
+        "name": "dados_de_rastreamento"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "máscaras",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "SAM3 Video Track",
+    "inputs": {
+      "conditioning": {
+        "name": "condicionamento",
+        "tooltip": "Condicionamento de texto para detectar novos objetos durante o rastreamento"
+      },
+      "detect_interval": {
+        "name": "intervalo_de_deteccao",
+        "tooltip": "Executar detecção a cada N quadros (1=todo quadro). Valores maiores economizam processamento."
+      },
+      "detection_threshold": {
+        "name": "limiar_de_deteccao",
+        "tooltip": "Limiar de pontuação para detecção por texto"
+      },
+      "images": {
+        "name": "imagens",
+        "tooltip": "Quadros de vídeo como imagens em lote"
+      },
+      "initial_mask": {
+        "name": "máscara_inicial",
+        "tooltip": "Máscara(s) para o primeiro quadro a ser rastreado (uma por objeto)"
+      },
+      "max_objects": {
+        "name": "máximo_de_objetos",
+        "tooltip": "Máximo de objetos rastreados (0=ilimitado). Máscaras iniciais contam para este limite."
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "dados_de_rastreamento",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
@@ -13393,6 +14858,44 @@
       }
     }
   },
+  "SUPIRApply": {
+    "display_name": "SUPIRApply",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "restore_cfg": {
+        "name": "restore_cfg",
+        "tooltip": "Puxa a saída denoised em direção ao latent de entrada. Quanto maior, maior a fidelidade ao input. 0 para desabilitar."
+      },
+      "restore_cfg_s_tmin": {
+        "name": "restore_cfg_s_tmin",
+        "tooltip": "Limite de sigma abaixo do qual restore_cfg é desabilitado."
+      },
+      "strength_end": {
+        "name": "strength_end",
+        "tooltip": "Controla a intensidade no final da amostragem (sigma baixo). Interpolado linearmente a partir do início."
+      },
+      "strength_start": {
+        "name": "strength_start",
+        "tooltip": "Controla a intensidade no início da amostragem (sigma alto)."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SV3D_Conditioning": {
     "display_name": "SV3D_Conditioning",
     "inputs": {
@@ -13473,6 +14976,20 @@
       },
       "2": {
         "name": "latent"
+      }
+    }
+  },
+  "SamplerARVideo": {
+    "display_name": "Sampler AR Video",
+    "inputs": {
+      "num_frame_per_block": {
+        "name": "num_frame_per_block",
+        "tooltip": "Quadros por bloco autorregressivo. 1 = quadro a quadro, 3 = em blocos. Deve corresponder ao modo de treinamento do checkpoint."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -13730,6 +15247,29 @@
     "inputs": {
       "version": {
         "name": "versão"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SamplerLCM": {
+    "description": "Amostrador LCM com ruído ajustável por etapa. s_noise é um multiplicador na escala de ruído de treinamento do modelo",
+    "display_name": "SamplerLCM",
+    "inputs": {
+      "noise_clip_std": {
+        "name": "noise_clip_std",
+        "tooltip": "Limita o ruído por etapa a +/- N*desvio padrão. 0 desativa."
+      },
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "Multiplicador de ruído por etapa no primeiro passo (1.0 = igual ao treinamento)."
+      },
+      "s_noise_end": {
+        "name": "s_noise_end",
+        "tooltip": "Multiplicador de ruído por etapa no último passo. Defina igual ao s_noise para um agendamento constante."
       }
     },
     "outputs": {
@@ -14391,6 +15931,58 @@
       },
       "width": {
         "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloTextToMusic": {
+    "description": "Gere música a partir de um prompt de texto usando o modelo de IA do Sonilo. Deixe a duração em 0 para que o modelo infira a duração a partir do prompt.",
+    "display_name": "Sonilo Texto para Música",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Duração alvo em segundos. Defina como 0 para que o modelo infira a duração a partir do prompt. Máximo: 6 minutos."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto descrevendo a música a ser gerada."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para reprodutibilidade. Atualmente ignorado pelo serviço Sonilo, mas mantido para consistência do grafo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloVideoToMusic": {
+    "description": "Gere música a partir de conteúdo de vídeo usando o modelo de IA do Sonilo. Analisa o vídeo e cria música correspondente.",
+    "display_name": "Sonilo Vídeo para Música",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto opcional para guiar a geração da música. Deixe em branco para melhor qualidade - o modelo irá analisar completamente o conteúdo do vídeo."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para reprodutibilidade. Atualmente ignorado pelo serviço Sonilo, mas mantido para consistência do grafo."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Vídeo de entrada para gerar música. Duração máxima: 6 minutos."
       }
     },
     "outputs": {
@@ -15222,6 +16814,41 @@
       }
     }
   },
+  "Tencent3DTextureEditNode": {
+    "description": "Após inserir o modelo 3D, realize a repintura da textura do modelo 3D.",
+    "display_name": "Hunyuan3D: Edição de Textura 3D",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Modelo 3D no formato FBX. O modelo deve ter menos de 100000 faces."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descreve a edição da textura. Suporta até 1024 caracteres UTF-8."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "texture_image",
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Imagem(ns) para Modelo (Pro)",
     "inputs": {
@@ -15270,6 +16897,22 @@
       "2": {
         "name": "OBJ",
         "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
+        "tooltip": null
+      },
+      "4": {
+        "name": "optional_metallic",
+        "tooltip": null
+      },
+      "5": {
+        "name": "optional_normal",
+        "tooltip": null
+      },
+      "6": {
+        "name": "optional_roughness",
+        "tooltip": null
       }
     }
   },
@@ -15296,6 +16939,10 @@
       },
       "1": {
         "name": "FBX",
+        "tooltip": null
+      },
+      "2": {
+        "name": "imagem UV",
         "tooltip": null
       }
     }
@@ -15370,6 +17017,10 @@
       },
       "2": {
         "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "texture_image",
         "tooltip": null
       }
     }
@@ -15565,6 +17216,9 @@
   "TextGenerate": {
     "display_name": "TextGenerate",
     "inputs": {
+      "audio": {
+        "name": "áudio"
+      },
       "clip": {
         "name": "clip"
       },
@@ -15583,6 +17237,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "penalidade_de_presença"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "penalidade_de_repetição"
       },
@@ -15597,6 +17254,18 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "pensando",
+        "tooltip": "Operar no modo de pensamento se o modelo suportar."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "Use o prompt/modelo de sistema padrão se o modelo possuir um."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Quadros de vídeo como lote de imagens. Considera-se 24 FPS; amostrado internamente para 1 FPS."
       }
     },
     "outputs": {
@@ -15609,6 +17278,9 @@
   "TextGenerateLTX2Prompt": {
     "display_name": "TextGenerateLTX2Prompt",
     "inputs": {
+      "audio": {
+        "name": "áudio"
+      },
       "clip": {
         "name": "clip"
       },
@@ -15627,6 +17299,9 @@
       "sampling_mode_min_p": {
         "name": "min_p"
       },
+      "sampling_mode_presence_penalty": {
+        "name": "penalidade_de_presença"
+      },
       "sampling_mode_repetition_penalty": {
         "name": "penalidade_de_repetição"
       },
@@ -15641,6 +17316,18 @@
       },
       "sampling_mode_top_p": {
         "name": "top_p"
+      },
+      "thinking": {
+        "name": "pensando",
+        "tooltip": "Operar no modo de pensamento se o modelo suportar."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "Use o prompt/modelo de sistema padrão se o modelo possuir um."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Quadros de vídeo como lote de imagens. Considera-se 24 FPS; amostrado internamente para 1 FPS."
       }
     },
     "outputs": {
@@ -15824,6 +17511,45 @@
       }
     }
   },
+  "TopazVideoEnhanceV2": {
+    "description": "Dê nova vida aos vídeos com tecnologia poderosa de upscaling e recuperação.",
+    "display_name": "Topaz Video Enhance",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "nível de compressão dinâmica",
+        "tooltip": "Nível CQP."
+      },
+      "interpolation_model": {
+        "name": "modelo de interpolação"
+      },
+      "upscaler_model": {
+        "name": "modelo de upscaling"
+      },
+      "upscaler_model_creativity": {
+        "name": "criatividade"
+      },
+      "upscaler_model_prompt": {
+        "name": "prompt"
+      },
+      "upscaler_model_realism": {
+        "name": "realismo"
+      },
+      "upscaler_model_sharp": {
+        "name": "nitidez"
+      },
+      "upscaler_model_upscaler_resolution": {
+        "name": "resolução do upscaler"
+      },
+      "video": {
+        "name": "vídeo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TorchCompileModel": {
     "display_name": "TorchCompileModel",
     "inputs": {
@@ -15909,6 +17635,10 @@
       "positive": {
         "name": "positivo",
         "tooltip": "O condicionamento positivo a ser usado para o treinamento."
+      },
+      "quantized_backward": {
+        "name": "quantized_backward",
+        "tooltip": "Ao usar 'training_dtype' como 'none' e treinar em um modelo quantizado, realiza o backward com matmul quantizado quando ativado."
       },
       "rank": {
         "name": "rank",
@@ -16156,7 +17886,8 @@
         "name": "pbr"
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "Este parâmetro está obsoleto e não faz nada."
       },
       "texture": {
         "name": "textura"
@@ -16676,6 +18407,127 @@
       }
     }
   },
+  "VOIDInpaintConditioning": {
+    "display_name": "VOIDInpaintConditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Número de quadros de pixels a processar. Para CogVideoX-Fun-V1.5 (patch_size_t=2), latent_t deve ser par — comprimentos que produzem latent_t ímpar são arredondados para baixo (ex.: 49 → 45)."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "quadmask": {
+        "name": "quadmask",
+        "tooltip": "Quadmask pré-processada do VOIDQuadmaskPreprocess [T, H, W]"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Quadros de vídeo de origem [T, H, W, 3]"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDQuadmaskPreprocess": {
+    "display_name": "VOIDQuadmaskPreprocess",
+    "inputs": {
+      "dilate_width": {
+        "name": "dilate_width",
+        "tooltip": "Raio de dilatação para a região principal da máscara (0 = sem dilatação)"
+      },
+      "mask": {
+        "name": "mask"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "quadmask",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDSampler": {
+    "display_name": "VOIDSampler",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDWarpedNoise": {
+    "display_name": "VOIDWarpedNoise",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Número de quadros de pixels. Arredondado para baixo para tornar latent_t par (requisito patch_size_t=2), ex.: 49 → 45."
+      },
+      "optical_flow": {
+        "name": "optical_flow",
+        "tooltip": "Modelo de optical flow do OpticalFlowLoader (RAFT-large)."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Quadros de vídeo de saída da Passagem 1 [T, H, W, 3]"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "warped_noise",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDWarpedNoiseSource": {
+    "display_name": "VOIDWarpedNoiseSource",
+    "inputs": {
+      "warped_noise": {
+        "name": "warped_noise",
+        "tooltip": "Latente de ruído distorcido do VOIDWarpedNoise"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VPScheduler": {
     "display_name": "VPScheduler",
     "inputs": {
@@ -16792,6 +18644,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Descrição em texto do vídeo"
+      },
+      "resolution": {
+        "name": "resolução",
+        "tooltip": "Resolução do vídeo de saída. 4K não está disponível para os modelos veo-3.1-lite e veo-3.0."
       },
       "seed": {
         "name": "seed",
@@ -17542,6 +19398,241 @@
       }
     }
   },
+  "Wan2ImageToVideoApi": {
+    "description": "Gere um vídeo a partir de uma imagem do primeiro quadro, com opção de imagem do último quadro e áudio.",
+    "display_name": "Wan 2.7 Imagem para Vídeo",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Áudio para direcionar a geração do vídeo (ex: sincronização labial, movimento no ritmo da batida). Duração: 2s-30s. Se não for fornecido, o modelo gera automaticamente música de fundo ou efeitos sonoros correspondentes."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "Imagem do primeiro quadro. A proporção de aspecto de saída é derivada desta imagem."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Imagem do último quadro. O modelo gera um vídeo fazendo a transição do primeiro para o último quadro."
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Se deseja aprimorar o prompt com assistência de IA."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para usar na geração."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Se deseja adicionar uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2ReferenceVideoApi": {
+    "description": "Gere um vídeo apresentando uma pessoa ou objeto a partir de materiais de referência. Suporta performances de personagem único e interações entre múltiplos personagens.",
+    "display_name": "Wan 2.7 Referência para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para usar na geração."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Se deseja adicionar uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2TextToVideoApi": {
+    "description": "Gera um vídeo com base em um prompt de texto usando o modelo Wan 2.7.",
+    "display_name": "Wan 2.7 Texto para Vídeo",
+    "inputs": {
+      "audio": {
+        "name": "áudio",
+        "tooltip": "Áudio para direcionar a geração do vídeo (ex: sincronização labial, movimento no ritmo da música). Duração: 3s-30s. Se não fornecido, o modelo gera automaticamente música de fundo ou efeitos sonoros compatíveis."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_negative_prompt": {
+        "name": "prompt_negativo"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "proporção"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt_extend": {
+        "name": "estender_prompt",
+        "tooltip": "Se deseja aprimorar o prompt com assistência de IA."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente a ser usada para a geração."
+      },
+      "watermark": {
+        "name": "marca_d'água",
+        "tooltip": "Se deseja adicionar uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoContinuationApi": {
+    "description": "Continue um vídeo de onde parou, com controle opcional do último quadro.",
+    "display_name": "Wan 2.7 Continuação de Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "first_clip": {
+        "name": "primeiro_clip",
+        "tooltip": "Vídeo de entrada para continuar. Duração: 2s-10s. A proporção de aspecto de saída é derivada deste vídeo."
+      },
+      "last_frame": {
+        "name": "último_quadro",
+        "tooltip": "Imagem do último quadro. A continuação fará a transição para este quadro."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_negative_prompt": {
+        "name": "prompt_negativo"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt_extend": {
+        "name": "estender_prompt",
+        "tooltip": "Se deseja aprimorar o prompt com assistência de IA."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente a ser usada para a geração."
+      },
+      "watermark": {
+        "name": "marca_d'água",
+        "tooltip": "Se deseja adicionar uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan2VideoEditApi": {
+    "description": "Edite um vídeo usando instruções de texto, imagens de referência ou transferência de estilo.",
+    "display_name": "Wan 2.7 Edição de Vídeo",
+    "inputs": {
+      "audio_setting": {
+        "name": "configuração_de_áudio",
+        "tooltip": "'auto': o modelo decide se deve regenerar o áudio com base no prompt. 'origin': preserva o áudio original do vídeo de entrada."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "proporção"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente a ser usada para a geração."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "O vídeo a ser editado."
+      },
+      "watermark": {
+        "name": "marca_d'água",
+        "tooltip": "Se deseja adicionar uma marca d'água gerada por IA ao resultado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "WanAnimateToVideo": {
     "display_name": "WanAnimateToVideo",
     "inputs": {
@@ -17761,6 +19852,156 @@
     "outputs": {
       "0": {
         "tooltip": "O modelo com janelas de contexto aplicadas durante a amostragem."
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "áudio"
+      },
+      "audio_inject_scale": {
+        "name": "escala_de_injeção_de_áudio",
+        "tooltip": "A escala para as características do áudio ao serem injetadas no modelo de vídeo."
+      },
+      "video_frames": {
+        "name": "quadros_de_vídeo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "saída_do_codificador_de_áudio",
+        "tooltip": null
+      },
+      "1": {
+        "name": "string_fps",
+        "tooltip": "O fps calculado com base na duração do áudio e no número de quadros de vídeo. Usado no prompt."
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "audio": {
+        "name": "áudio",
+        "tooltip": "Áudio para calcular o total de quadros de saída e extrair o áudio do segmento."
+      },
+      "images": {
+        "name": "imagens"
+      },
+      "segment_index": {
+        "name": "índice_do_segmento",
+        "tooltip": "Qual segmento é este (0 para o primeiro, 1 para o segundo, etc.)"
+      },
+      "segment_length": {
+        "name": "comprimento_do_segmento",
+        "tooltip": "Comprimento deste segmento (geralmente 149 quadros)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sequência_de_keyframes",
+        "tooltip": "Sequência de keyframes preenchida"
+      },
+      "1": {
+        "name": "máscara_de_keyframes",
+        "tooltip": "Máscara indicando quadros válidos"
+      },
+      "2": {
+        "name": "segmento_de_áudio",
+        "tooltip": "Segmento de áudio para este segmento de vídeo"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "audio": {
+        "name": "áudio",
+        "tooltip": "Áudio a ser dividido para cada segmento emitido."
+      },
+      "images": {
+        "name": "imagens"
+      },
+      "num_segments": {
+        "name": "número_de_segmentos",
+        "tooltip": "Quantos segmentos preenchidos emitir como listas."
+      },
+      "segment_length": {
+        "name": "comprimento_do_segmento",
+        "tooltip": "Comprimento de cada segmento (geralmente 149 quadros)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sequências_de_keyframes",
+        "tooltip": "Sequências de keyframes preenchidas"
+      },
+      "1": {
+        "name": "máscaras_de_keyframes",
+        "tooltip": "Máscaras indicando quadros válidos"
+      },
+      "2": {
+        "name": "segmento_de_áudio",
+        "tooltip": "Segmento de áudio para cada segmento de vídeo"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "audio_encoder_output": {
+        "name": "audio_encoder_output"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "Os embeddings de visão do CLIP para o primeiro quadro."
+      },
+      "clip_vision_output_ref": {
+        "name": "clip_vision_output_ref",
+        "tooltip": "Os embeddings de visão do CLIP para a imagem de referência."
+      },
+      "height": {
+        "name": "altura"
+      },
+      "length": {
+        "name": "duração",
+        "tooltip": "O número de quadros no vídeo gerado. Deve permanecer 149 para WanDancer."
+      },
+      "mask": {
+        "name": "máscara",
+        "tooltip": "Máscara de condicionamento de imagem para a(s) imagem(ns) inicial(is). Branco é mantido, preto é gerado. Usado para as gerações locais."
+      },
+      "negative": {
+        "name": "negativo"
+      },
+      "positive": {
+        "name": "positivo"
+      },
+      "start_image": {
+        "name": "imagem_inicial",
+        "tooltip": "A(s) imagem(ns) inicial(is) a serem codificadas, pode ser qualquer quantidade de quadros."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latente",
+        "tooltip": "Latente vazio."
       }
     }
   },

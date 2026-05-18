@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
 import { nextTick, ref } from 'vue'
@@ -46,7 +46,7 @@ describe('VirtualGrid', () => {
     mockedHeight.value = 200
     mockedScrollY.value = 0
 
-    const wrapper = mount(VirtualGrid<TestItem>, {
+    render(VirtualGrid, {
       props: {
         items,
         gridStyle: defaultGridStyle,
@@ -60,16 +60,14 @@ describe('VirtualGrid', () => {
           <div class="test-item">{{ item.name }}</div>
         </template>`
       },
-      attachTo: document.body
+      container: document.body.appendChild(document.createElement('div'))
     })
 
     await nextTick()
 
-    const renderedItems = wrapper.findAll('.test-item')
+    const renderedItems = screen.getAllByText(/^Item \d+$/)
     expect(renderedItems.length).toBeGreaterThan(0)
     expect(renderedItems.length).toBeLessThan(items.length)
-
-    wrapper.unmount()
   })
 
   it('provides correct index in slot props', async () => {
@@ -79,7 +77,7 @@ describe('VirtualGrid', () => {
     mockedHeight.value = 200
     mockedScrollY.value = 0
 
-    const wrapper = mount(VirtualGrid<TestItem>, {
+    render(VirtualGrid, {
       props: {
         items,
         gridStyle: defaultGridStyle,
@@ -94,7 +92,7 @@ describe('VirtualGrid', () => {
           return null
         }
       },
-      attachTo: document.body
+      container: document.body.appendChild(document.createElement('div'))
     })
 
     await nextTick()
@@ -104,8 +102,6 @@ describe('VirtualGrid', () => {
     for (let i = 1; i < receivedIndices.length; i++) {
       expect(receivedIndices[i]).toBe(receivedIndices[i - 1] + 1)
     }
-
-    wrapper.unmount()
   })
 
   it('respects maxColumns prop', async () => {
@@ -114,28 +110,29 @@ describe('VirtualGrid', () => {
     mockedHeight.value = 200
     mockedScrollY.value = 0
 
-    const wrapper = mount(VirtualGrid<TestItem>, {
+    const { container } = render(VirtualGrid, {
       props: {
         items,
         gridStyle: defaultGridStyle,
         maxColumns: 2
       },
-      attachTo: document.body
+      container: document.body.appendChild(document.createElement('div'))
     })
 
     await nextTick()
 
-    const gridElement = wrapper.find('[style*="display: grid"]')
-    expect(gridElement.exists()).toBe(true)
-
-    const gridEl = gridElement.element as HTMLElement
-    expect(gridEl.style.gridTemplateColumns).toBe('repeat(2, minmax(0, 1fr))')
-
-    wrapper.unmount()
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const gridElement = container.querySelector(
+      '[style*="display: grid"]'
+    ) as HTMLElement
+    expect(gridElement).not.toBeNull()
+    expect(gridElement.style.gridTemplateColumns).toBe(
+      'repeat(2, minmax(0, 1fr))'
+    )
   })
 
   it('renders empty when no items provided', async () => {
-    const wrapper = mount(VirtualGrid<TestItem>, {
+    render(VirtualGrid, {
       props: {
         items: [],
         gridStyle: defaultGridStyle
@@ -149,10 +146,8 @@ describe('VirtualGrid', () => {
 
     await nextTick()
 
-    const renderedItems = wrapper.findAll('.test-item')
+    const renderedItems = screen.queryAllByText(/^Item \d+$/)
     expect(renderedItems.length).toBe(0)
-
-    wrapper.unmount()
   })
 
   it('emits approach-end for single-column list when scrolled near bottom', async () => {
@@ -161,7 +156,9 @@ describe('VirtualGrid', () => {
     mockedHeight.value = 600
     mockedScrollY.value = 0
 
-    const wrapper = mount(VirtualGrid<TestItem>, {
+    const onApproachEnd = vi.fn()
+
+    render(VirtualGrid, {
       props: {
         items,
         gridStyle: {
@@ -171,19 +168,20 @@ describe('VirtualGrid', () => {
         defaultItemHeight: 48,
         defaultItemWidth: 200,
         maxColumns: 1,
-        bufferRows: 1
+        bufferRows: 1,
+        onApproachEnd
       },
       slots: {
         item: `<template #item="{ item }">
           <div class="test-item">{{ item.name }}</div>
         </template>`
       },
-      attachTo: document.body
+      container: document.body.appendChild(document.createElement('div'))
     })
 
     await nextTick()
 
-    expect(wrapper.emitted('approach-end')).toBeUndefined()
+    expect(onApproachEnd).not.toHaveBeenCalled()
 
     // Scroll near the end: 50 items * 48px = 2400px total
     // viewRows = ceil(600/48) = 13, buffer = 1
@@ -195,9 +193,7 @@ describe('VirtualGrid', () => {
     mockedScrollY.value = 1680
     await nextTick()
 
-    expect(wrapper.emitted('approach-end')).toBeDefined()
-
-    wrapper.unmount()
+    expect(onApproachEnd).toHaveBeenCalled()
   })
 
   it('does not emit approach-end without maxColumns in single-column layout', async () => {
@@ -208,7 +204,9 @@ describe('VirtualGrid', () => {
     mockedHeight.value = 600
     mockedScrollY.value = 0
 
-    const wrapper = mount(VirtualGrid<TestItem>, {
+    const onApproachEnd = vi.fn()
+
+    render(VirtualGrid, {
       props: {
         items,
         gridStyle: {
@@ -218,14 +216,15 @@ describe('VirtualGrid', () => {
         defaultItemHeight: 48,
         defaultItemWidth: 200,
         // No maxColumns — cols will be floor(400/200) = 2
-        bufferRows: 1
+        bufferRows: 1,
+        onApproachEnd
       },
       slots: {
         item: `<template #item="{ item }">
           <div class="test-item">{{ item.name }}</div>
         </template>`
       },
-      attachTo: document.body
+      container: document.body.appendChild(document.createElement('div'))
     })
 
     await nextTick()
@@ -237,9 +236,7 @@ describe('VirtualGrid', () => {
     // With cols=2, toCol = (35+1+13)*2 = 98, which exceeds items.length (50)
     // remainingCol = 50-98 = -48, hasMoreToRender = false → isNearEnd = false
     // The approach-end never fires at the correct scroll position
-    expect(wrapper.emitted('approach-end')).toBeUndefined()
-
-    wrapper.unmount()
+    expect(onApproachEnd).not.toHaveBeenCalled()
   })
 
   it('forces cols to maxColumns when maxColumns is finite', async () => {
@@ -248,7 +245,7 @@ describe('VirtualGrid', () => {
     mockedScrollY.value = 0
 
     const items = createItems(20)
-    const wrapper = mount(VirtualGrid<TestItem>, {
+    render(VirtualGrid, {
       props: {
         items,
         gridStyle: defaultGridStyle,
@@ -262,15 +259,13 @@ describe('VirtualGrid', () => {
           <div class="test-item">{{ item.name }}</div>
         </template>`
       },
-      attachTo: document.body
+      container: document.body.appendChild(document.createElement('div'))
     })
 
     await nextTick()
 
-    const renderedItems = wrapper.findAll('.test-item')
+    const renderedItems = screen.getAllByText(/^Item \d+$/)
     expect(renderedItems.length).toBeGreaterThan(0)
     expect(renderedItems.length % 4).toBe(0)
-
-    wrapper.unmount()
   })
 })

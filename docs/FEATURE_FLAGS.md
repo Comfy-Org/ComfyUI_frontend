@@ -363,7 +363,7 @@ Test your feature flags with different combinations:
 ### Example Test
 
 ```typescript
-// In tests-ui/tests/api.featureFlags.test.ts
+// Example from a colocated unit test
 it('should handle preview metadata based on feature flag', () => {
   // Mock server supports feature
   api.serverFeatureFlags = { supports_preview_metadata: true }

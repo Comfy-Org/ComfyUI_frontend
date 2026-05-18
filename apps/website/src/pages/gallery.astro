@@ -1,0 +1,12 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import HeroSection from '../components/gallery/HeroSection.vue'
+import GallerySection from '../components/gallery/GallerySection.vue'
+import ContactSection from '../components/gallery/ContactSection.vue'
+---
+
+<BaseLayout title="Gallery — Comfy">
+  <HeroSection />
+  <GallerySection client:load />
+  <ContactSection />
+</BaseLayout>

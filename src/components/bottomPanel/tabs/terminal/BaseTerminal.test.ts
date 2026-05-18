@@ -1,8 +1,9 @@
+/* eslint-disable testing-library/no-node-access */
+/* eslint-disable testing-library/prefer-user-event */
 import { createTestingPinia } from '@pinia/testing'
-import type { VueWrapper } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import type { Mock } from 'vitest'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -67,9 +68,10 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 // Mock clipboard API
+const mockWriteText = vi.fn().mockResolvedValue(undefined)
 Object.defineProperty(navigator, 'clipboard', {
   value: {
-    writeText: vi.fn().mockResolvedValue(undefined)
+    writeText: mockWriteText
   },
   configurable: true
 })
@@ -87,8 +89,9 @@ const i18n = createI18n({
   }
 })
 
-const mountBaseTerminal = () => {
-  return mount(BaseTerminal, {
+function renderBaseTerminal(props: Record<string, unknown> = {}) {
+  return render(BaseTerminal, {
+    props,
     global: {
       plugins: [
         createTestingPinia({
@@ -107,68 +110,60 @@ const mountBaseTerminal = () => {
 }
 
 describe('BaseTerminal', () => {
-  let wrapper: VueWrapper<InstanceType<typeof BaseTerminal>> | undefined
-
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  afterEach(() => {
-    wrapper?.unmount()
-  })
-
   it('emits created event on mount', () => {
-    wrapper = mountBaseTerminal()
+    const onCreated = vi.fn()
+    renderBaseTerminal({ onCreated })
 
-    expect(wrapper.emitted('created')).toBeTruthy()
-    expect(wrapper.emitted('created')![0]).toHaveLength(2)
+    expect(onCreated).toHaveBeenCalled()
+    expect(onCreated.mock.calls[0]).toHaveLength(2)
   })
 
   it('emits unmounted event on unmount', () => {
-    wrapper = mountBaseTerminal()
-    wrapper.unmount()
+    const onUnmounted = vi.fn()
+    const { unmount } = renderBaseTerminal({ onUnmounted })
+    unmount()
 
-    expect(wrapper.emitted('unmounted')).toBeTruthy()
+    expect(onUnmounted).toHaveBeenCalled()
   })
 
-  it('button exists and has correct initial state', async () => {
-    wrapper = mountBaseTerminal()
+  it('button exists and has correct initial state', () => {
+    renderBaseTerminal()
 
-    const button = wrapper.find('button[aria-label]')
-    expect(button.exists()).toBe(true)
-
-    expect(button.classes()).toContain('opacity-0')
-    expect(button.classes()).toContain('pointer-events-none')
+    const button = screen.getByRole('button')
+    expect(button).toHaveClass('opacity-0', 'pointer-events-none')
   })
 
   it('shows correct tooltip when no selection', async () => {
     mockTerminal.hasSelection.mockReturnValue(false)
-    wrapper = mountBaseTerminal()
+    const { container } = renderBaseTerminal()
 
-    await wrapper.trigger('mouseenter')
+    await fireEvent.mouseEnter(container.firstElementChild!)
     await nextTick()
 
-    const button = wrapper.find('button[aria-label]')
-    expect(button.attributes('aria-label')).toBe('Copy all')
+    const button = screen.getByRole('button')
+    expect(button).toHaveAttribute('aria-label', 'Copy all')
   })
 
   it('shows correct tooltip when selection exists', async () => {
     mockTerminal.hasSelection.mockReturnValue(true)
-    wrapper = mountBaseTerminal()
+    const { container } = renderBaseTerminal()
 
     // Trigger the selection change callback that was registered during mount
     expect(mockTerminal.onSelectionChange).toHaveBeenCalled()
-    // Access the mock calls - TypeScript can't infer the mock structure dynamically
     const mockCalls = (mockTerminal.onSelectionChange as Mock).mock.calls
     const selectionCallback = mockCalls[0][0] as () => void
     selectionCallback()
     await nextTick()
 
-    await wrapper.trigger('mouseenter')
+    await fireEvent.mouseEnter(container.firstElementChild!)
     await nextTick()
 
-    const button = wrapper.find('button[aria-label]')
-    expect(button.attributes('aria-label')).toBe('Copy selection')
+    const button = screen.getByRole('button')
+    expect(button).toHaveAttribute('aria-label', 'Copy selection')
   })
 
   it('copies selected text when selection exists', async () => {
@@ -176,16 +171,17 @@ describe('BaseTerminal', () => {
     mockTerminal.hasSelection.mockReturnValue(true)
     mockTerminal.getSelection.mockReturnValue(selectedText)
 
-    wrapper = mountBaseTerminal()
+    const { container } = renderBaseTerminal()
 
-    await wrapper.trigger('mouseenter')
+    await fireEvent.mouseEnter(container.firstElementChild!)
     await nextTick()
 
-    const button = wrapper.find('button[aria-label]')
-    await button.trigger('click')
+    const button = screen.getByRole('button')
+    await fireEvent.click(button)
+    await nextTick()
 
     expect(mockTerminal.selectAll).not.toHaveBeenCalled()
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(selectedText)
+    expect(mockWriteText).toHaveBeenCalledWith(selectedText)
     expect(mockTerminal.clearSelection).not.toHaveBeenCalled()
   })
 
@@ -196,16 +192,17 @@ describe('BaseTerminal', () => {
       .mockReturnValueOnce('') // First call returns empty (no selection)
       .mockReturnValueOnce(allText) // Second call after selectAll returns all text
 
-    wrapper = mountBaseTerminal()
+    const { container } = renderBaseTerminal()
 
-    await wrapper.trigger('mouseenter')
+    await fireEvent.mouseEnter(container.firstElementChild!)
     await nextTick()
 
-    const button = wrapper.find('button[aria-label]')
-    await button.trigger('click')
+    const button = screen.getByRole('button')
+    await fireEvent.click(button)
+    await nextTick()
 
     expect(mockTerminal.selectAll).toHaveBeenCalled()
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(allText)
+    expect(mockWriteText).toHaveBeenCalledWith(allText)
     expect(mockTerminal.clearSelection).toHaveBeenCalled()
   })
 
@@ -213,15 +210,16 @@ describe('BaseTerminal', () => {
     mockTerminal.hasSelection.mockReturnValue(false)
     mockTerminal.getSelection.mockReturnValue('')
 
-    wrapper = mountBaseTerminal()
+    const { container } = renderBaseTerminal()
 
-    await wrapper.trigger('mouseenter')
+    await fireEvent.mouseEnter(container.firstElementChild!)
     await nextTick()
 
-    const button = wrapper.find('button[aria-label]')
-    await button.trigger('click')
+    const button = screen.getByRole('button')
+    await fireEvent.click(button)
+    await nextTick()
 
     expect(mockTerminal.selectAll).toHaveBeenCalled()
-    expect(navigator.clipboard.writeText).not.toHaveBeenCalled()
+    expect(mockWriteText).not.toHaveBeenCalled()
   })
 })

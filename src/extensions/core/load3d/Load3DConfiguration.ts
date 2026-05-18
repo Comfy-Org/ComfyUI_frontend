@@ -1,8 +1,10 @@
+import { LOAD3D_NONE_MODEL } from '@/extensions/core/load3d/constants'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type {
   CameraConfig,
   CameraState,
+  HDRIConfig,
   LightConfig,
   ModelConfig,
   SceneConfig
@@ -20,6 +22,21 @@ type Load3DConfigurationSettings = {
   width?: IBaseWidget
   height?: IBaseWidget
   bgImagePath?: string
+  silentOnNotFound?: boolean
+}
+
+const ANNOTATED_FILENAME_PATTERN = / \[(input|output|temp)\]$/
+
+export function parseAnnotatedFilename(
+  rawValue: string,
+  fallbackFolder: string
+): { filename: string; folder: string } {
+  const match = ANNOTATED_FILENAME_PATTERN.exec(rawValue)
+  if (!match) return { filename: rawValue, folder: fallbackFolder }
+  return {
+    filename: rawValue.slice(0, match.index),
+    folder: match[1]
+  }
 }
 
 class Load3DConfiguration {
@@ -28,8 +45,16 @@ class Load3DConfiguration {
     private properties?: Dictionary<NodeProperty | undefined>
   ) {}
 
-  configureForSaveMesh(loadFolder: 'input' | 'output', filePath: string) {
-    this.setupModelHandlingForSaveMesh(filePath, loadFolder)
+  configureForSaveMesh(
+    loadFolder: 'input' | 'output',
+    filePath: string,
+    options?: { silentOnNotFound?: boolean }
+  ) {
+    this.setupModelHandlingForSaveMesh(
+      filePath,
+      loadFolder,
+      options?.silentOnNotFound ?? false
+    )
     this.setupDefaultProperties()
   }
 
@@ -37,7 +62,8 @@ class Load3DConfiguration {
     this.setupModelHandling(
       setting.modelWidget,
       setting.loadFolder,
-      setting.cameraState
+      setting.cameraState,
+      setting.silentOnNotFound ?? false
     )
     this.setupTargetSize(setting.width, setting.height)
     this.setupDefaultProperties(setting.bgImagePath)
@@ -57,25 +83,35 @@ class Load3DConfiguration {
     }
   }
 
-  private setupModelHandlingForSaveMesh(filePath: string, loadFolder: string) {
-    const onModelWidgetUpdate = this.createModelUpdateHandler(loadFolder)
+  private setupModelHandlingForSaveMesh(
+    filePath: string,
+    loadFolder: string,
+    silentOnNotFound: boolean
+  ) {
+    const onModelWidgetUpdate = this.createModelUpdateHandler(
+      loadFolder,
+      undefined,
+      silentOnNotFound
+    )
 
     if (filePath) {
-      onModelWidgetUpdate(filePath)
+      void onModelWidgetUpdate(filePath)
     }
   }
 
   private setupModelHandling(
     modelWidget: IBaseWidget,
     loadFolder: string,
-    cameraState?: CameraState
+    cameraState?: CameraState,
+    silentOnNotFound: boolean = false
   ) {
     const onModelWidgetUpdate = this.createModelUpdateHandler(
       loadFolder,
-      cameraState
+      cameraState,
+      silentOnNotFound
     )
-    if (modelWidget.value) {
-      onModelWidgetUpdate(modelWidget.value)
+    if (modelWidget.value && modelWidget.value !== LOAD3D_NONE_MODEL) {
+      void onModelWidgetUpdate(modelWidget.value)
     }
 
     const originalCallback = modelWidget.callback
@@ -96,7 +132,7 @@ class Load3DConfiguration {
     })
 
     modelWidget.callback = (value: string | number | boolean | object) => {
-      onModelWidgetUpdate(value)
+      void onModelWidgetUpdate(value)
 
       if (originalCallback) {
         originalCallback(value)
@@ -113,6 +149,7 @@ class Load3DConfiguration {
 
     const lightConfig = this.loadLightConfig()
     this.applyLightConfig(lightConfig)
+    if (lightConfig.hdri) this.applyHDRISettings(lightConfig.hdri)
   }
 
   private loadSceneConfig(): SceneConfig {
@@ -140,24 +177,57 @@ class Load3DConfiguration {
   }
 
   private loadLightConfig(): LightConfig {
+    const hdriDefaults: HDRIConfig = {
+      enabled: false,
+      hdriPath: '',
+      showAsBackground: false,
+      intensity: 1
+    }
+
     if (this.properties && 'Light Config' in this.properties) {
-      return this.properties['Light Config'] as LightConfig
+      const saved = this.properties['Light Config'] as Partial<LightConfig>
+      return {
+        intensity:
+          saved.intensity ??
+          (useSettingStore().get('Comfy.Load3D.LightIntensity') as number),
+        hdri: { ...hdriDefaults, ...(saved.hdri ?? {}) }
+      }
     }
 
     return {
-      intensity: useSettingStore().get('Comfy.Load3D.LightIntensity')
-    } as LightConfig
+      intensity: useSettingStore().get('Comfy.Load3D.LightIntensity') as number,
+      hdri: hdriDefaults
+    }
   }
 
   private loadModelConfig(): ModelConfig {
     if (this.properties && 'Model Config' in this.properties) {
-      return this.properties['Model Config'] as ModelConfig
+      const config = this.properties['Model Config'] as ModelConfig
+      if (!config.gizmo) {
+        config.gizmo = {
+          enabled: false,
+          mode: 'translate',
+          position: { x: 0, y: 0, z: 0 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 }
+        }
+      } else if (!config.gizmo.scale) {
+        config.gizmo.scale = { x: 1, y: 1, z: 1 }
+      }
+      return config
     }
 
     return {
       upDirection: 'original',
       materialMode: 'original',
-      showSkeleton: false
+      showSkeleton: false,
+      gizmo: {
+        enabled: false,
+        mode: 'translate',
+        position: { x: 0, y: 0, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: { x: 1, y: 1, z: 1 }
+      }
     }
   }
 
@@ -190,6 +260,15 @@ class Load3DConfiguration {
     this.load3d.setLightIntensity(config.intensity)
   }
 
+  private applyHDRISettings(config: HDRIConfig) {
+    if (!config.hdriPath) return
+    this.load3d.setHDRIIntensity(config.intensity)
+    this.load3d.setHDRIAsBackground(config.showAsBackground)
+    if (config.enabled) {
+      this.load3d.setHDRIEnabled(true)
+    }
+  }
+
   private applyModelConfig(config: ModelConfig) {
     this.load3d.setUpDirection(config.upDirection)
     this.load3d.setMaterialMode(config.materialMode)
@@ -197,24 +276,31 @@ class Load3DConfiguration {
 
   private createModelUpdateHandler(
     loadFolder: string,
-    cameraState?: CameraState
+    cameraState?: CameraState,
+    silentOnNotFound: boolean = false
   ) {
     let isFirstLoad = true
     return async (value: string | number | boolean | object) => {
-      if (!value) return
+      if (!value || value === LOAD3D_NONE_MODEL) {
+        this.load3d.clearModel()
+        return
+      }
 
-      const filename = value as string
+      const { filename, folder } = parseAnnotatedFilename(
+        value as string,
+        loadFolder
+      )
 
       this.setResourceFolder(filename)
 
       const modelUrl = api.apiURL(
         Load3dUtils.getResourceURL(
           ...Load3dUtils.splitFilePath(filename),
-          loadFolder
+          folder
         )
       )
 
-      await this.load3d.loadModel(modelUrl, filename)
+      await this.load3d.loadModel(modelUrl, filename, { silentOnNotFound })
 
       const modelConfig = this.loadModelConfig()
       this.applyModelConfig(modelConfig)
@@ -227,6 +313,8 @@ class Load3DConfiguration {
         }
         isFirstLoad = false
       }
+
+      this.load3d.emitModelReady()
     }
   }
 

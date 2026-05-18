@@ -6,6 +6,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+// eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 /**
@@ -27,6 +28,13 @@ export const useLitegraphSettings = () => {
     const zoomSpeed = settingStore.get('Comfy.Graph.ZoomSpeed')
     if (canvasStore.canvas) {
       canvasStore.canvas.zoom_speed = zoomSpeed
+    }
+  })
+
+  watchEffect(() => {
+    const autoPanSpeed = settingStore.get('Comfy.Graph.AutoPanSpeed')
+    if (canvasStore.canvas) {
+      canvasStore.canvas.auto_pan_speed = autoPanSpeed
     }
   })
 
@@ -161,5 +169,13 @@ export const useLitegraphSettings = () => {
     LiteGraph.saveViewportWithGraph = settingStore.get(
       'Comfy.EnableWorkflowViewRestore'
     )
+  })
+
+  watchEffect(() => {
+    const selectChildren = settingStore.get(
+      'LiteGraph.Group.SelectChildrenOnClick'
+    )
+    if (canvasStore.canvas)
+      canvasStore.canvas.groupSelectChildren = selectChildren
   })
 }

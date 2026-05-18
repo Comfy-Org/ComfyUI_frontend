@@ -1,6 +1,6 @@
 import { captureCheckoutAttributionFromSearch } from '@/platform/telemetry/utils/checkoutAttribution'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
 import type { PageViewMetadata, TelemetryProvider } from '../../types'
 
@@ -17,7 +17,7 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
   private initialized = false
   private stores: {
     apiKeyAuthStore: ReturnType<typeof useApiKeyAuthStore>
-    firebaseAuthStore: ReturnType<typeof useFirebaseAuthStore>
+    authStore: ReturnType<typeof useAuthStore>
   } | null = null
 
   constructor() {
@@ -109,12 +109,11 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
       }
     }
 
-    if (stores.firebaseAuthStore.currentUser) {
+    if (stores.authStore.currentUser) {
       return {
-        customerId:
-          stores.firebaseAuthStore.currentUser.uid ?? EMPTY_CUSTOMER_VALUE,
+        customerId: stores.authStore.currentUser.uid ?? EMPTY_CUSTOMER_VALUE,
         customerEmail:
-          stores.firebaseAuthStore.currentUser.email ?? EMPTY_CUSTOMER_VALUE
+          stores.authStore.currentUser.email ?? EMPTY_CUSTOMER_VALUE
       }
     }
 
@@ -135,7 +134,7 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
 
   private resolveAuthStores(): {
     apiKeyAuthStore: ReturnType<typeof useApiKeyAuthStore>
-    firebaseAuthStore: ReturnType<typeof useFirebaseAuthStore>
+    authStore: ReturnType<typeof useAuthStore>
   } | null {
     if (this.stores) {
       return this.stores
@@ -144,7 +143,7 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
     try {
       const stores = {
         apiKeyAuthStore: useApiKeyAuthStore(),
-        firebaseAuthStore: useFirebaseAuthStore()
+        authStore: useAuthStore()
       }
       this.stores = stores
       return stores

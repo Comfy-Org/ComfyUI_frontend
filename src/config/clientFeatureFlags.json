@@ -1,4 +1,5 @@
 {
   "supports_preview_metadata": true,
-  "supports_manager_v4_ui": true
+  "supports_manager_v4_ui": true,
+  "supports_progress_text_metadata": true
 }

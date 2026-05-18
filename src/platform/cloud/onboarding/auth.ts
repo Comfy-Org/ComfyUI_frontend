@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/vue'
 import { isEmpty } from 'es-toolkit/compat'
 
 import { api } from '@/scripts/api'
+import { toError } from '@/utils/errorUtil'
 
 interface UserCloudStatus {
   status: 'active'
@@ -80,7 +81,7 @@ export async function getUserCloudStatus(): Promise<UserCloudStatus> {
   } catch (error) {
     // Only capture network errors (not HTTP errors we already captured)
     if (!isHttpError(error, 'Failed to get user:')) {
-      captureApiError(error as Error, '/user', 'network_error')
+      captureApiError(toError(error), '/user', 'network_error')
     }
     throw error
   }
@@ -176,7 +177,7 @@ export async function submitSurvey(
     // Only capture network errors (not HTTP errors we already captured)
     if (!isHttpError(error, 'Failed to submit survey:')) {
       captureApiError(
-        error as Error,
+        toError(error),
         '/settings',
         'network_error',
         undefined,

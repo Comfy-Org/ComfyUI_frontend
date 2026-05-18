@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="showCustomPricingTable"
-    class="relative flex h-full flex-col gap-8 overflow-y-auto! p-4 pt-8 md:p-16"
+    class="relative flex h-full flex-col gap-6 overflow-y-auto p-4 pt-8 md:px-16 md:py-8"
   >
     <Button
       size="icon"
@@ -10,15 +10,30 @@
       :aria-label="$t('g.close')"
       @click="handleClose"
     >
-      <i class="pi pi-times text-xl" />
+      <i class="pi pi-times text-xl" aria-hidden="true" />
     </Button>
-    <div class="text-center">
-      <h2 class="m-0 text-xl text-muted-foreground lg:text-2xl">
-        {{ $t('subscription.description') }}
-      </h2>
+    <div class="flex flex-col items-center gap-3">
+      <div
+        class="flex size-10 items-center justify-center rounded-xl bg-muted-foreground/30 text-lg font-semibold text-white"
+        aria-hidden="true"
+      >
+        <!-- Decorative initial for "Personal" workspace icon; not user-facing text -->
+        P
+      </div>
+      <i18n-t
+        keypath="subscription.plansForWorkspace"
+        tag="h2"
+        class="m-0 font-inter text-2xl font-semibold text-base-foreground"
+      >
+        <template #workspace>
+          <span class="text-muted-foreground">
+            {{ $t('subscription.personalWorkspace') }}
+          </span>
+        </template>
+      </i18n-t>
     </div>
 
-    <PricingTable class="flex-1" />
+    <PricingTable class="flex-1" @choose-team-workspace="handleChooseTeam" />
 
     <!-- Contact and Enterprise Links -->
     <div class="flex flex-col items-center gap-2">
@@ -55,7 +70,7 @@
       :aria-label="$t('g.close')"
       @click="handleClose"
     >
-      <i class="pi pi-times" />
+      <i class="pi pi-times" aria-hidden="true" />
     </Button>
 
     <div
@@ -130,7 +145,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, watch } from 'vue'
+import { computed, watch } from 'vue'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -144,16 +159,17 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
-const { onClose, reason } = defineProps<{
+const { onClose, reason, onChooseTeam } = defineProps<{
   onClose: () => void
   reason?: SubscriptionDialogReason
+  onChooseTeam?: () => void
 }>()
 
 const emit = defineEmits<{
   close: [subscribed: boolean]
 }>()
 
-const { fetchStatus, isActiveSubscription } = useBillingContext()
+const { isActiveSubscription } = useBillingContext()
 
 const isSubscriptionEnabled = (): boolean =>
   Boolean(isCloud && window.__CONFIG__?.subscription_required)
@@ -174,64 +190,6 @@ const telemetry = useTelemetry()
 // Always show custom pricing table for cloud subscriptions
 const showCustomPricingTable = computed(() => isSubscriptionEnabled())
 
-const POLL_INTERVAL_MS = 3000
-const MAX_POLL_ATTEMPTS = 3
-let pollInterval: number | null = null
-let pollAttempts = 0
-
-const stopPolling = () => {
-  if (pollInterval) {
-    clearInterval(pollInterval)
-    pollInterval = null
-  }
-}
-
-const startPolling = () => {
-  stopPolling()
-  pollAttempts = 0
-
-  const poll = async () => {
-    try {
-      await fetchStatus()
-      pollAttempts++
-
-      if (pollAttempts >= MAX_POLL_ATTEMPTS) {
-        stopPolling()
-      }
-    } catch (error) {
-      console.error(
-        '[SubscriptionDialog] Failed to poll subscription status',
-        error
-      )
-      stopPolling()
-    }
-  }
-
-  void poll()
-  pollInterval = window.setInterval(() => {
-    void poll()
-  }, POLL_INTERVAL_MS)
-}
-
-const handleWindowFocus = () => {
-  if (showCustomPricingTable.value) {
-    startPolling()
-  }
-}
-
-watch(
-  showCustomPricingTable,
-  (enabled) => {
-    if (enabled) {
-      window.addEventListener('focus', handleWindowFocus)
-    } else {
-      window.removeEventListener('focus', handleWindowFocus)
-      stopPolling()
-    }
-  },
-  { immediate: true }
-)
-
 watch(
   () => isActiveSubscription.value,
   (isActive) => {
@@ -245,8 +203,15 @@ const handleSubscribed = () => {
   emit('close', true)
 }
 
+const handleChooseTeam = () => {
+  if (onChooseTeam) {
+    onChooseTeam()
+  } else {
+    onClose()
+  }
+}
+
 const handleClose = () => {
-  stopPolling()
   onClose()
 }
 
@@ -267,11 +232,6 @@ const handleViewEnterprise = () => {
   })
   window.open('https://www.comfy.org/cloud/enterprise', '_blank')
 }
-
-onBeforeUnmount(() => {
-  stopPolling()
-  window.removeEventListener('focus', handleWindowFocus)
-})
 </script>
 
 <style scoped>

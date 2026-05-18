@@ -20,9 +20,13 @@ export async function extractFilesFromDragEvent(
   const uri = event.dataTransfer.getData(match)?.split('\n')?.[0]
   if (!uri) return []
 
-  const response = await fetch(uri)
-  const blob = await response.blob()
-  return [new File([blob], uri, { type: blob.type })]
+  try {
+    const response = await fetch(uri)
+    const blob = await response.blob()
+    return [new File([blob], uri, { type: blob.type })]
+  } catch {
+    return []
+  }
 }
 
 export function hasImageType({ type }: File): boolean {

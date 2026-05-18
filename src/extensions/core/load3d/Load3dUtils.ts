@@ -1,34 +1,9 @@
-import type Load3d from '@/extensions/core/load3d/Load3d'
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
 class Load3dUtils {
-  static async generateThumbnailIfNeeded(
-    load3d: Load3d,
-    modelPath: string,
-    folderType: 'input' | 'output'
-  ): Promise<void> {
-    const [subfolder, filename] = this.splitFilePath(modelPath)
-    const thumbnailFilename = this.getThumbnailFilename(filename)
-
-    const exists = await this.fileExists(
-      subfolder,
-      thumbnailFilename,
-      folderType
-    )
-    if (exists) return
-
-    const imageData = await load3d.captureThumbnail(256, 256)
-    await this.uploadThumbnail(
-      imageData,
-      subfolder,
-      thumbnailFilename,
-      folderType
-    )
-  }
-
   static async uploadTempImage(
     imageData: string,
     prefix: string,
@@ -114,6 +89,15 @@ class Load3dUtils {
     return uploadPath
   }
 
+  static getFilenameExtension(url: string): string | undefined {
+    const queryString = url.split('?')[1]
+    if (queryString) {
+      const filename = new URLSearchParams(queryString).get('filename')
+      if (filename) return filename.split('.').pop()?.toLowerCase()
+    }
+    return url.split('?')[0].split('.').pop()?.toLowerCase()
+  }
+
   static splitFilePath(path: string): [string, string] {
     const folder_separator = path.lastIndexOf('/')
     if (folder_separator === -1) {
@@ -148,44 +132,17 @@ class Load3dUtils {
     await Promise.all(uploadPromises)
   }
 
-  static getThumbnailFilename(modelFilename: string): string {
-    return `${modelFilename}.png`
-  }
-
-  static async fileExists(
-    subfolder: string,
-    filename: string,
-    type: string = 'input'
-  ): Promise<boolean> {
-    try {
-      const url = api.apiURL(this.getResourceURL(subfolder, filename, type))
-      const response = await fetch(url, { method: 'HEAD' })
-      return response.ok
-    } catch {
-      return false
-    }
-  }
-
-  static async uploadThumbnail(
-    imageData: string,
-    subfolder: string,
-    filename: string,
-    type: string = 'input'
-  ): Promise<boolean> {
-    const blob = await fetch(imageData).then((r) => r.blob())
-    const file = new File([blob], filename, { type: 'image/png' })
-
-    const body = new FormData()
-    body.append('image', file)
-    body.append('subfolder', subfolder)
-    body.append('type', type)
-
-    const resp = await api.fetchApi('/upload/image', {
-      method: 'POST',
-      body
-    })
-
-    return resp.status === 200
+  static mapSceneLightIntensityToHdri(
+    sceneIntensity: number,
+    sceneMin: number,
+    sceneMax: number
+  ): number {
+    const span = sceneMax - sceneMin
+    const t = span > 0 ? (sceneIntensity - sceneMin) / span : 0
+    const clampedT = Math.min(1, Math.max(0, t))
+    const mapped = clampedT * 5
+    const minHdri = 0.25
+    return Math.min(5, Math.max(minHdri, mapped))
   }
 }
 

@@ -8,6 +8,7 @@ import {
   ComfyMetadataTags,
   type IsobmffBoxContentRange
 } from '@/types/metadataTypes'
+import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 // Set max read high, as atoms are stored near end of file
 // while search is made to be efficient.
@@ -85,7 +86,9 @@ const extractJson = (
 
   try {
     const jsonText = new TextDecoder().decode(data.slice(jsonStart, end))
-    return JSON.parse(jsonText)
+    return parseJsonWithNonFinite<ComfyWorkflowJSON | ComfyApiWorkflow>(
+      jsonText
+    )
   } catch {
     return null
   }
@@ -274,6 +277,7 @@ export function getFromIsobmffFile(file: File): Promise<ComfyMetadata> {
       console.error('FileReader: Error reading ISOBMFF file:', err)
       resolve({})
     }
+    reader.onabort = () => resolve({})
     reader.readAsArrayBuffer(file.slice(0, MAX_READ_BYTES))
   })
 }

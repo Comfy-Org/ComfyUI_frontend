@@ -1,5 +1,5 @@
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -40,6 +40,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useModelStore } from '@/stores/modelStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
 import {
   useQueueSettingsStore,
@@ -78,10 +79,11 @@ export function useCoreCommands(): ComfyCommand[] {
   const settingsDialog = useSettingsDialog()
   const dialogService = useDialogService()
   const colorPaletteStore = useColorPaletteStore()
-  const firebaseAuthActions = useFirebaseAuthActions()
+  const authActions = useAuthActions()
   const toastStore = useToastStore()
   const canvasStore = useCanvasStore()
   const executionStore = useExecutionStore()
+  const modelStore = useModelStore()
   const telemetry = useTelemetry()
   const { staticUrls, buildDocsUrl } = useExternalLink()
   const settingStore = useSettingStore()
@@ -306,7 +308,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Refresh Node Definitions',
       category: 'essentials' as const,
       function: async () => {
-        await app.refreshComboInNodes()
+        await Promise.all([app.refreshComboInNodes(), modelStore.refresh()])
       }
     },
     {
@@ -996,7 +998,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Sign Out',
       versionAdded: '1.18.1',
       function: async () => {
-        await firebaseAuthActions.logout()
+        await authActions.logout()
       }
     },
     {
@@ -1164,7 +1166,7 @@ export function useCoreCommands(): ComfyCommand[] {
         if (description === null) return
 
         extra.BlueprintDescription = description.trim() || undefined
-        workflowStore.activeWorkflow?.changeTracker?.checkState()
+        workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
       }
     },
     {
@@ -1201,7 +1203,7 @@ export function useCoreCommands(): ComfyCommand[] {
         }
 
         extra.BlueprintSearchAliases = aliases.length > 0 ? aliases : undefined
-        workflowStore.activeWorkflow?.changeTracker?.checkState()
+        workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
       }
     },
     {

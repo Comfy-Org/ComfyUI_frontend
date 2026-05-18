@@ -154,9 +154,9 @@ import { useToast } from 'primevue/usetoast'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
-import { formatTime } from '../../utils/audioUtils'
+import { formatTime } from '@/utils/formatUtil'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -184,7 +184,7 @@ const progressPercentage = computed(() => {
 const modelValue = defineModel<string>()
 
 const showVolumeTwo = computed(() => !isMuted.value && volume.value > 0.5)
-const showVolumeOne = computed(() => isMuted.value && volume.value > 0)
+const showVolumeOne = computed(() => !isMuted.value && volume.value > 0)
 
 // Playback controls
 const togglePlayPause = () => {

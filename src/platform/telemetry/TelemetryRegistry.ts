@@ -18,6 +18,7 @@ import type {
   PageVisibilityMetadata,
   SettingChangedMetadata,
   SubscriptionMetadata,
+  SubscriptionSuccessMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryDispatcher,
@@ -80,8 +81,12 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackBeginCheckout?.(metadata))
   }
 
-  trackMonthlySubscriptionSucceeded(): void {
-    this.dispatch((provider) => provider.trackMonthlySubscriptionSucceeded?.())
+  trackMonthlySubscriptionSucceeded(
+    metadata?: SubscriptionSuccessMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackMonthlySubscriptionSucceeded?.(metadata)
+    )
   }
 
   trackMonthlySubscriptionCancelled(): void {

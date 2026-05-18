@@ -22,6 +22,7 @@ import { GalleriaWidget } from './GalleriaWidget'
 import { GradientSliderWidget } from './GradientSliderWidget'
 import { ImageCompareWidget } from './ImageCompareWidget'
 import { PainterWidget } from './PainterWidget'
+import { RangeWidget } from './RangeWidget'
 import { ImageCropWidget } from './ImageCropWidget'
 import { KnobWidget } from './KnobWidget'
 import { LegacyWidget } from './LegacyWidget'
@@ -60,6 +61,7 @@ export type WidgetTypeMap = {
   boundingbox: BoundingBoxWidget
   curve: CurveWidget
   painter: PainterWidget
+  range: RangeWidget
   [key: string]: BaseWidget
 }
 
@@ -140,6 +142,8 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
       return toClass(CurveWidget, narrowedWidget, node)
     case 'painter':
       return toClass(PainterWidget, narrowedWidget, node)
+    case 'range':
+      return toClass(RangeWidget, narrowedWidget, node)
     default: {
       if (wrapLegacyWidgets) return toClass(LegacyWidget, widget, node)
     }

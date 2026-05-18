@@ -105,13 +105,17 @@ const maxSelectable = computed(() => {
 const debouncedSearchQuery = refDebounced(searchQuery, 250, { maxWait: 1000 })
 
 const filteredItems = computedAsync(async (onCancel) => {
+  if (!isOpen.value) {
+    return items
+  }
+
   let cleanupFn: (() => void) | undefined
   onCancel(() => cleanupFn?.())
   const result = await searcher(debouncedSearchQuery.value, items, (cb) => {
     cleanupFn = cb
   })
   return result
-}, [])
+}, items)
 
 const defaultSorter = computed<SortOption['sorter']>(() => {
   const sorter = sortOptions.find((option) => option.id === 'default')?.sorter
@@ -125,6 +129,10 @@ const selectedSorter = computed<SortOption['sorter']>(() => {
   return sorter || defaultSorter.value
 })
 const sortedItems = computed(() => {
+  if (!isOpen.value) {
+    return items
+  }
+
   return selectedSorter.value({ items: filteredItems.value }) || []
 })
 
@@ -135,14 +143,14 @@ function internalIsSelected(item: FormDropdownItem, index: number): boolean {
 const toggleDropdown = (event: Event) => {
   if (disabled) return
   if (popoverRef.value && triggerRef.value) {
-    popoverRef.value.toggle(event, triggerRef.value)
+    popoverRef.value.toggle?.(event, triggerRef.value)
     isOpen.value = !isOpen.value
   }
 }
 
 const closeDropdown = () => {
   if (popoverRef.value) {
-    popoverRef.value.hide()
+    popoverRef.value.hide?.()
     isOpen.value = false
   }
 }

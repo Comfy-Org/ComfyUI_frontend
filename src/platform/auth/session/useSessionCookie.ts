@@ -1,7 +1,7 @@
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
 /**
  * Session cookie management for cloud authentication.
@@ -21,7 +21,7 @@ export const useSessionCookie = () => {
 
     const { flags } = useFeatureFlags()
     try {
-      const authStore = useFirebaseAuthStore()
+      const authStore = useAuthStore()
 
       let authHeader: Record<string, string>
 

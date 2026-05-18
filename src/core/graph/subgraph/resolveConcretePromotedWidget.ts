@@ -20,7 +20,8 @@ const MAX_PROMOTED_WIDGET_CHAIN_DEPTH = 100
 function traversePromotedWidgetChain(
   hostNode: SubgraphNode,
   nodeId: string,
-  widgetName: string
+  widgetName: string,
+  sourceNodeId?: string
 ): PromotedWidgetResolutionResult {
   const visited = new Set<string>()
   const hostUidByObject = new WeakMap<SubgraphNode, number>()
@@ -28,6 +29,7 @@ function traversePromotedWidgetChain(
   let currentHost = hostNode
   let currentNodeId = nodeId
   let currentWidgetName = widgetName
+  let currentSourceNodeId = sourceNodeId
 
   for (let depth = 0; depth < MAX_PROMOTED_WIDGET_CHAIN_DEPTH; depth++) {
     let hostUid = hostUidByObject.get(currentHost)
@@ -37,7 +39,7 @@ function traversePromotedWidgetChain(
       hostUidByObject.set(currentHost, hostUid)
     }
 
-    const key = `${hostUid}:${currentNodeId}:${currentWidgetName}`
+    const key = `${hostUid}:${currentNodeId}:${currentWidgetName}:${currentSourceNodeId ?? ''}`
     if (visited.has(key)) {
       return { status: 'failure', failure: 'cycle' }
     }
@@ -48,8 +50,10 @@ function traversePromotedWidgetChain(
       return { status: 'failure', failure: 'missing-node' }
     }
 
-    const sourceWidget = sourceNode.widgets?.find(
-      (entry) => entry.name === currentWidgetName
+    const sourceWidget = findWidgetByIdentity(
+      sourceNode.widgets,
+      currentWidgetName,
+      currentSourceNodeId
     )
     if (!sourceWidget) {
       return { status: 'failure', failure: 'missing-widget' }
@@ -69,22 +73,42 @@ function traversePromotedWidgetChain(
     currentHost = sourceWidget.node
     currentNodeId = sourceWidget.sourceNodeId
     currentWidgetName = sourceWidget.sourceWidgetName
+    currentSourceNodeId = undefined
   }
 
   return { status: 'failure', failure: 'max-depth-exceeded' }
 }
 
+function findWidgetByIdentity(
+  widgets: IBaseWidget[] | undefined,
+  widgetName: string,
+  sourceNodeId?: string
+): IBaseWidget | undefined {
+  if (!widgets) return undefined
+
+  if (sourceNodeId) {
+    return widgets.find(
+      (entry) =>
+        isPromotedWidgetView(entry) &&
+        (entry.disambiguatingSourceNodeId ?? entry.sourceNodeId) ===
+          sourceNodeId &&
+        (entry.sourceWidgetName === widgetName || entry.name === widgetName)
+    )
+  }
+
+  return widgets.find((entry) => entry.name === widgetName)
+}
+
 export function resolvePromotedWidgetAtHost(
   hostNode: SubgraphNode,
   nodeId: string,
-  widgetName: string
+  widgetName: string,
+  sourceNodeId?: string
 ): ResolvedPromotedWidget | undefined {
   const node = hostNode.subgraph.getNodeById(nodeId)
   if (!node) return undefined
 
-  const widget = node.widgets?.find(
-    (entry: IBaseWidget) => entry.name === widgetName
-  )
+  const widget = findWidgetByIdentity(node.widgets, widgetName, sourceNodeId)
   if (!widget) return undefined
 
   return { node, widget }
@@ -93,10 +117,11 @@ export function resolvePromotedWidgetAtHost(
 export function resolveConcretePromotedWidget(
   hostNode: LGraphNode,
   nodeId: string,
-  widgetName: string
+  widgetName: string,
+  sourceNodeId?: string
 ): PromotedWidgetResolutionResult {
   if (!hostNode.isSubgraphNode()) {
     return { status: 'failure', failure: 'invalid-host' }
   }
-  return traversePromotedWidgetChain(hostNode, nodeId, widgetName)
+  return traversePromotedWidgetChain(hostNode, nodeId, widgetName, sourceNodeId)
 }

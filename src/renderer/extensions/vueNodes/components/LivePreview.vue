@@ -40,8 +40,8 @@ const imageError = ref(false)
 watch(
   () => props.imageUrl,
   () => {
-    // Reset states when URL changes
-    actualDimensions.value = null
+    // Reset error state when URL changes, but keep previous dimensions
+    // to avoid flickering "Calculating dimensions" text during live preview
     imageError.value = false
   }
 )

@@ -1,16 +1,86 @@
+<template>
+  <Teleport v-if="hasOpenedOnce" to="body">
+    <Transition
+      appear
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="translate-x-full opacity-0"
+      enter-to-class="translate-x-0 opacity-100"
+      leave-active-class="transition duration-300 ease-in"
+      leave-from-class="translate-x-0 opacity-100"
+      leave-to-class="translate-x-full opacity-0"
+    >
+      <div
+        v-show="openModel"
+        data-testid="nightly-survey-popover"
+        class="fixed right-4 bottom-4 z-10000 w-80 rounded-lg border border-border-subtle bg-base-background p-4 shadow-lg"
+      >
+        <div class="mb-2 flex items-center justify-end">
+          <Button
+            variant="muted-textonly"
+            size="icon-sm"
+            :aria-label="t('g.close')"
+            @click="handleDismiss"
+          >
+            <i class="icon-[lucide--x] size-4" />
+          </Button>
+        </div>
+
+        <div v-if="typeformError" class="text-danger text-sm">
+          {{ t('nightlySurvey.loadError') }}
+        </div>
+
+        <div
+          v-show="!typeformError && isValidTypeformId"
+          ref="typeformRef"
+          data-tf-auto-resize
+          :data-tf-widget="typeformId"
+          class="min-h-[300px]"
+        />
+
+        <div
+          class="mt-3 flex items-center gap-2"
+          :class="mode === 'eligible' ? 'justify-center' : 'justify-end'"
+        >
+          <Button
+            v-if="mode === 'eligible'"
+            variant="textonly"
+            size="sm"
+            @click="handleDismiss"
+          >
+            {{ t('nightlySurvey.notNow') }}
+          </Button>
+          <Button variant="muted-textonly" size="sm" @click="handleOptOut">
+            {{ t('nightlySurvey.dontAskAgain') }}
+          </Button>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+</template>
+
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
-import { computed, onUnmounted, ref, useTemplateRef, watch } from 'vue'
+import { onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 
 import type { FeatureSurveyConfig } from './useSurveyEligibility'
 import { useSurveyEligibility } from './useSurveyEligibility'
+import { useTypeformEmbed } from './useTypeformEmbed'
 
-const { config } = defineProps<{
+const { config, mode = 'eligible' } = defineProps<{
   config: FeatureSurveyConfig
+  /**
+   * `eligible` (default): auto-opens after threshold + delay, marks seen on
+   * show, renders "Not Now" button. Used by the global controller for
+   * floating surveys.
+   * `manual`: parent drives visibility via `v-model:open`. Feature site
+   * decides when to mark seen / dismiss. Used by inline-CTA surveys.
+   */
+  mode?: 'eligible' | 'manual'
 }>()
+
+const openModel = defineModel<boolean>('open', { default: false })
 
 const emit = defineEmits<{
   shown: []
@@ -24,24 +94,26 @@ const { isEligible, delayMs, markSurveyShown, optOut } = useSurveyEligibility(
   () => config
 )
 
-const TYPEFORM_SRC = 'https://embed.typeform.com/next/embed.js'
-
-const isVisible = ref(false)
-const typeformError = ref(false)
+const hasOpenedOnce = ref(openModel.value)
 const typeformRef = useTemplateRef<HTMLDivElement>('typeformRef')
 
-let showTimeout: ReturnType<typeof setTimeout> | null = null
+const { typeformError, isValidTypeformId, typeformId } = useTypeformEmbed(
+  typeformRef,
+  () => config.typeformId
+)
 
-const isValidTypeformId = computed(() =>
-  /^[A-Za-z0-9]+$/.test(config.typeformId)
-)
-const typeformId = computed(() =>
-  isValidTypeformId.value ? config.typeformId : ''
-)
+// Teleport stays mounted after the first open so the Typeform iframe
+// persists across consumer-side lifecycle changes.
+watch(openModel, (open) => {
+  if (open) hasOpenedOnce.value = true
+})
+
+let showTimeout: ReturnType<typeof setTimeout> | null = null
 
 watch(
   isEligible,
   (eligible) => {
+    if (mode !== 'eligible') return
     if (!eligible) {
       if (showTimeout) {
         clearTimeout(showTimeout)
@@ -50,11 +122,14 @@ watch(
       return
     }
 
-    if (isVisible.value || showTimeout) return
+    if (openModel.value || showTimeout) return
 
     showTimeout = setTimeout(() => {
       showTimeout = null
-      isVisible.value = true
+      if (!isValidTypeformId.value) return
+      if (openModel.value) return
+      openModel.value = true
+      markSurveyShown()
       emit('shown')
     }, delayMs.value)
   },
@@ -67,100 +142,22 @@ onUnmounted(() => {
   }
 })
 
-whenever(typeformRef, () => {
-  if (document.querySelector(`script[src="${TYPEFORM_SRC}"]`)) return
-
-  const scriptEl = document.createElement('script')
-  scriptEl.src = TYPEFORM_SRC
-  scriptEl.async = true
-  scriptEl.onerror = () => {
-    typeformError.value = true
-  }
-  document.head.appendChild(scriptEl)
-})
-
-function handleAccept() {
-  markSurveyShown()
-}
-
 function handleDismiss() {
-  isVisible.value = false
+  if (showTimeout) {
+    clearTimeout(showTimeout)
+    showTimeout = null
+  }
+  openModel.value = false
   emit('dismissed')
 }
 
 function handleOptOut() {
   optOut()
-  isVisible.value = false
+  if (showTimeout) {
+    clearTimeout(showTimeout)
+    showTimeout = null
+  }
+  openModel.value = false
   emit('optedOut')
 }
 </script>
-
-<template>
-  <Teleport to="body">
-    <Transition
-      enter-active-class="transition duration-300 ease-out"
-      enter-from-class="translate-x-full opacity-0"
-      enter-to-class="translate-x-0 opacity-100"
-      leave-active-class="transition duration-300 ease-in"
-      leave-from-class="translate-x-0 opacity-100"
-      leave-to-class="translate-x-full opacity-0"
-    >
-      <div
-        v-if="isVisible"
-        data-testid="nightly-survey-popover"
-        class="fixed right-4 bottom-4 z-10000 w-80 rounded-lg border border-border-subtle bg-base-background p-4 shadow-lg"
-      >
-        <div class="mb-3 flex items-start justify-between">
-          <h3 class="text-sm font-medium text-text-primary">
-            {{ t('nightlySurvey.title') }}
-          </h3>
-          <button
-            class="text-text-muted hover:text-text-primary"
-            :aria-label="t('g.close')"
-            @click="handleDismiss"
-          >
-            <i class="icon-[lucide--x] size-4" />
-          </button>
-        </div>
-
-        <p class="mb-4 text-sm text-text-secondary">
-          {{ t('nightlySurvey.description') }}
-        </p>
-
-        <div v-if="typeformError" class="text-danger mb-4 text-sm">
-          {{ t('nightlySurvey.loadError') }}
-        </div>
-
-        <div
-          v-show="isVisible && !typeformError && isValidTypeformId"
-          ref="typeformRef"
-          data-tf-auto-resize
-          :data-tf-widget="typeformId"
-          class="min-h-[300px]"
-        />
-
-        <div class="mt-4 flex flex-col gap-2">
-          <Button variant="primary" class="w-full" @click="handleAccept">
-            {{ t('nightlySurvey.accept') }}
-          </Button>
-          <div class="flex gap-2">
-            <Button
-              variant="textonly"
-              class="flex-1 text-xs"
-              @click="handleDismiss"
-            >
-              {{ t('nightlySurvey.notNow') }}
-            </Button>
-            <Button
-              variant="muted-textonly"
-              class="flex-1 text-xs"
-              @click="handleOptOut"
-            >
-              {{ t('nightlySurvey.dontAskAgain') }}
-            </Button>
-          </div>
-        </div>
-      </div>
-    </Transition>
-  </Teleport>
-</template>

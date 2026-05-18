@@ -1,5 +1,5 @@
 <template>
-  <BaseModalLayout content-title="" data-testid="settings-dialog" size="md">
+  <BaseModalLayout content-title="" data-testid="settings-dialog" size="sm">
     <template #leftPanelHeaderTitle>
       <i class="icon-[lucide--settings]" />
       <h2 class="text-neutral text-base">{{ $t('g.settings') }}</h2>
@@ -12,6 +12,7 @@
           size="md"
           :placeholder="$t('g.searchSettings') + '...'"
           :debounce-time="128"
+          autofocus
           @search="handleSearch"
         />
       </div>
@@ -41,7 +42,20 @@
       </nav>
     </template>
 
-    <template #header />
+    <template #header>
+      <div
+        v-if="activeCategoryKey === 'keybinding'"
+        id="keybinding-panel-header"
+        class="flex-1"
+      />
+    </template>
+
+    <template #header-right-area>
+      <div
+        v-if="activeCategoryKey === 'keybinding'"
+        id="keybinding-panel-actions"
+      />
+    </template>
 
     <template #content>
       <template v-if="activePanel">
@@ -76,7 +90,7 @@ import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserM
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import NavItem from '@/components/widget/nav/NavItem.vue'
 import NavTitle from '@/components/widget/nav/NavTitle.vue'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMessage.vue'
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
@@ -115,7 +129,7 @@ const {
   getSearchResults
 } = useSettingSearch()
 
-const authActions = useFirebaseAuthActions()
+const authActions = useAuthActions()
 
 const navRef = ref<HTMLElement | null>(null)
 const activeCategoryKey = ref<string | null>(defaultCategory.value?.key ?? null)

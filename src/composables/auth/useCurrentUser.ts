@@ -3,11 +3,11 @@ import { computed, watch } from 'vue'
 
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import type { AuthUserInfo } from '@/types/authTypes'
 
 export const useCurrentUser = () => {
-  const authStore = useFirebaseAuthStore()
+  const authStore = useAuthStore()
   const commandStore = useCommandStore()
   const apiKeyStore = useApiKeyAuthStore()
 

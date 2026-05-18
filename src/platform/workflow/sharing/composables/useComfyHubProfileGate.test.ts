@@ -2,16 +2,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyHubProfile } from '@/schemas/apiSchema'
 
-const mockFetchApi = vi.hoisted(() => vi.fn())
+const mockGetMyProfile = vi.hoisted(() => vi.fn())
+const mockRequestAssetUploadUrl = vi.hoisted(() => vi.fn())
+const mockUploadFileToPresignedUrl = vi.hoisted(() => vi.fn())
+const mockCreateProfile = vi.hoisted(() => vi.fn())
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 const mockResolvedUserInfo = vi.hoisted(() => ({
   value: { id: 'user-a' }
 }))
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    fetchApi: mockFetchApi
-  }
+vi.mock('@/platform/workflow/sharing/services/comfyHubService', () => ({
+  useComfyHubService: () => ({
+    getMyProfile: mockGetMyProfile,
+    requestAssetUploadUrl: mockRequestAssetUploadUrl,
+    uploadFileToPresignedUrl: mockUploadFileToPresignedUrl,
+    createProfile: mockCreateProfile
+  })
 }))
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
@@ -35,19 +41,16 @@ const mockProfile: ComfyHubProfile = {
   description: 'A test profile'
 }
 
-function mockSuccessResponse(data?: unknown) {
-  return {
-    ok: true,
-    json: async () => data ?? mockProfile
-  } as Response
-}
-
-function mockErrorResponse(status = 500, message = 'Server error') {
-  return {
-    ok: false,
-    status,
-    json: async () => ({ message })
-  } as Response
+function setCurrentWorkspace(workspaceId: string) {
+  sessionStorage.setItem(
+    'Comfy.Workspace.Current',
+    JSON.stringify({
+      id: workspaceId,
+      type: 'team',
+      name: 'Test Workspace',
+      role: 'owner'
+    })
+  )
 }
 
 describe('useComfyHubProfileGate', () => {
@@ -56,6 +59,15 @@ describe('useComfyHubProfileGate', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockResolvedUserInfo.value = { id: 'user-a' }
+    setCurrentWorkspace('workspace-1')
+    mockGetMyProfile.mockResolvedValue(mockProfile)
+    mockRequestAssetUploadUrl.mockResolvedValue({
+      uploadUrl: 'https://upload.example.com/avatar.png',
+      publicUrl: 'https://cdn.example.com/avatar.png',
+      token: 'avatar-token'
+    })
+    mockUploadFileToPresignedUrl.mockResolvedValue(undefined)
+    mockCreateProfile.mockResolvedValue(mockProfile)
 
     // Reset module-level singleton refs
     gate = useComfyHubProfileGate()
@@ -66,50 +78,40 @@ describe('useComfyHubProfileGate', () => {
   })
 
   describe('fetchProfile', () => {
-    it('returns mapped profile when API responds ok', async () => {
-      mockFetchApi.mockResolvedValue(mockSuccessResponse())
-
+    it('fetches profile from /hub/profiles/me', async () => {
       const profile = await gate.fetchProfile()
 
       expect(profile).toEqual(mockProfile)
       expect(gate.hasProfile.value).toBe(true)
       expect(gate.profile.value).toEqual(mockProfile)
-      expect(mockFetchApi).toHaveBeenCalledWith('/hub/profile')
+      expect(mockGetMyProfile).toHaveBeenCalledOnce()
     })
 
-    it('returns cached profile when already fetched', async () => {
-      mockFetchApi.mockResolvedValue(mockSuccessResponse())
+    it('reuses cached profile state per user', async () => {
+      await gate.fetchProfile()
+      await gate.fetchProfile()
+      expect(mockGetMyProfile).toHaveBeenCalledTimes(1)
+
+      mockResolvedUserInfo.value = { id: 'user-b' }
+      await gate.fetchProfile()
+
+      expect(mockGetMyProfile).toHaveBeenCalledTimes(2)
+    })
+
+    it('sets hasProfile to false when fetch throws', async () => {
+      mockGetMyProfile.mockRejectedValue(new Error('Network error'))
 
       await gate.fetchProfile()
-      const profile = await gate.fetchProfile()
 
-      expect(profile).toEqual(mockProfile)
-      expect(mockFetchApi).toHaveBeenCalledTimes(1)
-    })
-
-    it('re-fetches profile when force option is enabled', async () => {
-      mockFetchApi.mockResolvedValue(mockSuccessResponse())
-
-      await gate.fetchProfile()
-      await gate.fetchProfile({ force: true })
-
-      expect(mockFetchApi).toHaveBeenCalledTimes(2)
-    })
-
-    it('returns null when API responds with error', async () => {
-      mockFetchApi.mockResolvedValue(mockErrorResponse(404))
-
-      const profile = await gate.fetchProfile()
-
-      expect(profile).toBeNull()
       expect(gate.hasProfile.value).toBe(false)
-      expect(gate.profile.value).toBeNull()
+      expect(gate.profile.value).toBe(null)
+      expect(mockToastErrorHandler).toHaveBeenCalledOnce()
     })
 
     it('sets isFetchingProfile during fetch', async () => {
-      let resolvePromise: (v: Response) => void
-      mockFetchApi.mockReturnValue(
-        new Promise<Response>((resolve) => {
+      let resolvePromise: (v: ComfyHubProfile | null) => void
+      mockGetMyProfile.mockReturnValue(
+        new Promise<ComfyHubProfile | null>((resolve) => {
           resolvePromise = resolve
         })
       )
@@ -117,7 +119,7 @@ describe('useComfyHubProfileGate', () => {
       const promise = gate.fetchProfile()
       expect(gate.isFetchingProfile.value).toBe(true)
 
-      resolvePromise!(mockSuccessResponse())
+      resolvePromise!(mockProfile)
       await promise
 
       expect(gate.isFetchingProfile.value).toBe(false)
@@ -126,7 +128,7 @@ describe('useComfyHubProfileGate', () => {
 
   describe('checkProfile', () => {
     it('returns true when API responds ok', async () => {
-      mockFetchApi.mockResolvedValue(mockSuccessResponse())
+      mockGetMyProfile.mockResolvedValue(mockProfile)
 
       const result = await gate.checkProfile()
 
@@ -134,105 +136,62 @@ describe('useComfyHubProfileGate', () => {
       expect(gate.hasProfile.value).toBe(true)
     })
 
-    it('returns false when API responds with error', async () => {
-      mockFetchApi.mockResolvedValue(mockErrorResponse(404))
+    it('returns false when no profile exists', async () => {
+      mockGetMyProfile.mockResolvedValue(null)
 
       const result = await gate.checkProfile()
 
       expect(result).toBe(false)
       expect(gate.hasProfile.value).toBe(false)
     })
-
-    it('returns cached value without re-fetching', async () => {
-      mockFetchApi.mockResolvedValue(mockSuccessResponse())
-
-      await gate.checkProfile()
-      const result = await gate.checkProfile()
-
-      expect(result).toBe(true)
-      expect(mockFetchApi).toHaveBeenCalledTimes(1)
-    })
-
-    it('clears cached profile state when the authenticated user changes', async () => {
-      mockFetchApi.mockResolvedValue(mockSuccessResponse())
-
-      await gate.checkProfile()
-      mockResolvedUserInfo.value = { id: 'user-b' }
-      await gate.checkProfile()
-
-      expect(mockFetchApi).toHaveBeenCalledTimes(2)
-    })
   })
 
   describe('createProfile', () => {
-    it('sends FormData with required username', async () => {
-      mockFetchApi.mockResolvedValue(mockSuccessResponse())
-
-      await gate.createProfile({ username: 'testuser' })
-
-      const [url, options] = mockFetchApi.mock.calls[0]
-      expect(url).toBe('/hub/profile')
-      expect(options.method).toBe('POST')
-
-      const body = options.body as FormData
-      expect(body.get('username')).toBe('testuser')
-    })
-
-    it('includes optional fields when provided', async () => {
-      mockFetchApi.mockResolvedValue(mockSuccessResponse())
-      const coverImage = new File(['img'], 'cover.png')
+    it('creates profile with workspace_id and avatar token', async () => {
       const profilePicture = new File(['img'], 'avatar.png')
 
       await gate.createProfile({
         username: 'testuser',
         name: 'Test User',
         description: 'Hello',
-        coverImage,
         profilePicture
       })
 
-      const body = mockFetchApi.mock.calls[0][1].body as FormData
-      expect(body.get('name')).toBe('Test User')
-      expect(body.get('description')).toBe('Hello')
-      expect(body.get('cover_image')).toBe(coverImage)
-      expect(body.get('profile_picture')).toBe(profilePicture)
-    })
-
-    it('sets profile state on success', async () => {
-      mockFetchApi.mockResolvedValue(mockSuccessResponse())
-
-      await gate.createProfile({ username: 'testuser' })
-
-      expect(gate.hasProfile.value).toBe(true)
-      expect(gate.profile.value).toEqual(mockProfile)
-    })
-
-    it('returns the created profile', async () => {
-      mockFetchApi.mockResolvedValue(
-        mockSuccessResponse({
-          username: 'testuser',
-          name: 'Test User',
-          description: 'A test profile',
-          cover_image_url: 'https://example.com/cover.png',
-          profile_picture_url: 'https://example.com/profile.png'
-        })
-      )
-
-      const profile = await gate.createProfile({ username: 'testuser' })
-
-      expect(profile).toEqual({
-        ...mockProfile,
-        coverImageUrl: 'https://example.com/cover.png',
-        profilePictureUrl: 'https://example.com/profile.png'
+      expect(mockCreateProfile).toHaveBeenCalledWith({
+        workspaceId: 'workspace-1',
+        username: 'testuser',
+        displayName: 'Test User',
+        description: 'Hello',
+        avatarToken: 'avatar-token'
       })
     })
 
-    it('throws with error message from API response', async () => {
-      mockFetchApi.mockResolvedValue(mockErrorResponse(400, 'Username taken'))
+    it('uploads avatar via upload-url + PUT before create', async () => {
+      const profilePicture = new File(['img'], 'avatar.png', {
+        type: 'image/png'
+      })
 
-      await expect(gate.createProfile({ username: 'taken' })).rejects.toThrow(
-        'Username taken'
-      )
+      await gate.createProfile({
+        username: 'testuser',
+        profilePicture
+      })
+
+      expect(mockRequestAssetUploadUrl).toHaveBeenCalledWith({
+        filename: 'avatar.png',
+        contentType: 'image/png'
+      })
+      expect(mockUploadFileToPresignedUrl).toHaveBeenCalledWith({
+        uploadUrl: 'https://upload.example.com/avatar.png',
+        file: profilePicture,
+        contentType: 'image/png'
+      })
+      const requestCallOrder =
+        mockRequestAssetUploadUrl.mock.invocationCallOrder
+      const uploadCallOrder =
+        mockUploadFileToPresignedUrl.mock.invocationCallOrder
+      const createCallOrder = mockCreateProfile.mock.invocationCallOrder
+      expect(requestCallOrder[0]).toBeLessThan(uploadCallOrder[0])
+      expect(uploadCallOrder[0]).toBeLessThan(createCallOrder[0])
     })
   })
 })
