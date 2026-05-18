@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { getSurveyCompletedStatus } from './auth'
@@ -24,12 +25,12 @@ function mockResponse({
   status: number
   body?: unknown
 }): Response {
-  return {
+  return fromPartial<Response>({
     ok,
     status,
     statusText: '',
     json: async () => body
-  } as unknown as Response
+  })
 }
 
 describe('getSurveyCompletedStatus', () => {

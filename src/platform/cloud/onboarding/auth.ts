@@ -102,7 +102,7 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
       Sentry.addBreadcrumb({
         category: 'auth',
         message: 'Survey status check returned non-ok response',
-        level: 'info',
+        level: 'warning',
         data: {
           status: response.status,
           endpoint: `/settings/${ONBOARDING_SURVEY_KEY}`
@@ -111,7 +111,6 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
       return true
     }
     const data = await response.json()
-    // Check if data exists and is not empty
     return !isEmpty(data.value)
   } catch (error) {
     // Network/parse failure — same policy as ambiguous HTTP responses.
