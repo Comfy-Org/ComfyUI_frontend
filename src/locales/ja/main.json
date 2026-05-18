@@ -815,6 +815,7 @@
     "HISTOGRAM": "ヒストグラム",
     "HOOKS": "フック",
     "HOOK_KEYFRAMES": "フックキーフレーム",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "画像",
     "IMAGECOMPARE": "画像比較",
     "INT": "整数",
@@ -835,6 +836,8 @@
     "MODEL": "モデル",
     "MODEL_PATCH": "モデルパッチ",
     "MODEL_TASK_ID": "モデルタスクID",
+    "MOGE_GEOMETRY": "MOGE_GEOMETRY",
+    "MOGE_MODEL": "MOGE_MODEL",
     "NOISE": "ノイズ",
     "OPENAI_CHAT_CONFIG": "OpenAIチャット設定",
     "OPENAI_INPUT_FILES": "OpenAI入力ファイル",
@@ -913,7 +916,8 @@
     "extensionFileHint": "これは次のスクリプトが原因かもしれません",
     "loadWorkflowTitle": "ワークフローデータの再読み込みエラーにより、読み込みが中止されました",
     "noStackTrace": "スタックトレースは利用できません",
-    "promptExecutionError": "プロンプトの実行に失敗しました"
+    "promptExecutionError": "プロンプトの実行に失敗しました",
+    "queueOpenWorkflowFailedTitle": "ワークフローのオープンに失敗しました"
   },
   "errorOverlay": {
     "errorCount": "{count} 件のエラー",
@@ -1041,6 +1045,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrgロゴ",
+    "comfyPackageOutdated": "インストールされている{name}のバージョン{installedVersion}は、必要なバージョン{requiredVersion}よりも低いです。",
     "comingSoon": "近日公開",
     "command": "コマンド",
     "commandProhibited": "コマンド {command} は禁止されています。詳細は管理者にお問い合わせください。",
@@ -2310,6 +2315,7 @@
     "edit_models": "モデル編集",
     "experimental": "実験的",
     "flux": "flux",
+    "geometry_estimation": "geometry_estimation",
     "gligen": "グライジェン",
     "guidance": "ガイダンス",
     "guiders": "ガイダー",

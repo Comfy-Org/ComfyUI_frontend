@@ -815,6 +815,7 @@
     "HISTOGRAM": "히스토그램",
     "HOOKS": "후크",
     "HOOK_KEYFRAMES": "후크 키프레임",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "이미지",
     "IMAGECOMPARE": "이미지 비교",
     "INT": "정수",
@@ -835,6 +836,8 @@
     "MODEL": "모델",
     "MODEL_PATCH": "모델 패치",
     "MODEL_TASK_ID": "모델 작업 ID",
+    "MOGE_GEOMETRY": "MOGE_GEOMETRY",
+    "MOGE_MODEL": "MOGE_MODEL",
     "NOISE": "노이즈",
     "OPENAI_CHAT_CONFIG": "OpenAI 채팅 설정",
     "OPENAI_INPUT_FILES": "OpenAI 입력 파일",
@@ -913,7 +916,8 @@
     "extensionFileHint": "다음 스크립트 때문일 수 있습니다",
     "loadWorkflowTitle": "워크플로 데이터를 다시 로드하는 중 오류로 인해 로드가 중단되었습니다",
     "noStackTrace": "스택 추적을 사용할 수 없습니다",
-    "promptExecutionError": "프롬프트 실행 실패"
+    "promptExecutionError": "프롬프트 실행 실패",
+    "queueOpenWorkflowFailedTitle": "워크플로우 열기에 실패했습니다"
   },
   "errorOverlay": {
     "errorCount": "{count}개 오류",
@@ -1041,6 +1045,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrg 로고",
+    "comfyPackageOutdated": "설치된 {name} 버전 {installedVersion}이(가) 필요한 버전 {requiredVersion}보다 낮습니다.",
     "comingSoon": "곧 출시 예정",
     "command": "명령",
     "commandProhibited": "{command}는 금지된 명령입니다. 자세한 정보는 관리자에게 문의하십시오.",
@@ -2310,6 +2315,7 @@
     "edit_models": "edit_models",
     "experimental": "실험적",
     "flux": "flux",
+    "geometry_estimation": "geometry_estimation",
     "gligen": "글리젠",
     "guidance": "가이드",
     "guiders": "가이드",

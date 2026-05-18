@@ -815,6 +815,7 @@
     "HISTOGRAM": "HISTOGRAMME",
     "HOOKS": "CROCHETS",
     "HOOK_KEYFRAMES": "CLEFS_DE_CROCHET",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "IMAGE",
     "IMAGECOMPARE": "COMPARAISON_IMAGE",
     "INT": "ENTIER",
@@ -835,6 +836,8 @@
     "MODEL": "MODÈLE",
     "MODEL_PATCH": "PATCH_MODÈLE",
     "MODEL_TASK_ID": "ID_TÂCHE_MODÈLE",
+    "MOGE_GEOMETRY": "MOGE_GÉOMÉTRIE",
+    "MOGE_MODEL": "MOGE_MODÈLE",
     "NOISE": "BRUIT",
     "OPENAI_CHAT_CONFIG": "CONFIG_CHAT_OPENAI",
     "OPENAI_INPUT_FILES": "FICHIERS_ENTRÉE_OPENAI",
@@ -913,7 +916,8 @@
     "extensionFileHint": "Cela peut être dû au script suivant",
     "loadWorkflowTitle": "Chargement interrompu en raison d'une erreur de rechargement des données de workflow",
     "noStackTrace": "Aucune trace de pile disponible",
-    "promptExecutionError": "L'exécution de l'invite a échoué"
+    "promptExecutionError": "L'exécution de l'invite a échoué",
+    "queueOpenWorkflowFailedTitle": "Échec de l'ouverture du workflow"
   },
   "errorOverlay": {
     "errorCount": "{count} ERREUR | {count} ERREURS",
@@ -1041,6 +1045,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "Logo ComfyOrg",
+    "comfyPackageOutdated": "La version installée de {name} ({installedVersion}) est inférieure à la version requise ({requiredVersion}).",
     "comingSoon": "Bientôt disponible",
     "command": "Commande",
     "commandProhibited": "La commande {command} est interdite. Contactez un administrateur pour plus d'informations.",
@@ -2310,6 +2315,7 @@
     "edit_models": "edit_models",
     "experimental": "expérimental",
     "flux": "flux",
+    "geometry_estimation": "estimation_de_géométrie",
     "gligen": "gligen",
     "guidance": "guidance",
     "guiders": "guides",

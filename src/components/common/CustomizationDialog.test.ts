@@ -16,14 +16,6 @@ vi.mock('@/stores/nodeBookmarkStore', () => ({
   })
 }))
 
-vi.mock('primevue/dialog', () => ({
-  default: {
-    name: 'Dialog',
-    template: '<div v-if="visible"><slot /><slot name="footer" /></div>',
-    props: ['visible']
-  }
-}))
-
 vi.mock('primevue/selectbutton', () => ({
   default: {
     name: 'SelectButton',
@@ -32,8 +24,29 @@ vi.mock('primevue/selectbutton', () => ({
   }
 }))
 
-vi.mock('primevue/divider', () => ({
-  default: { name: 'Divider', template: '<hr />' }
+vi.mock('@/components/ui/dialog/Dialog.vue', () => ({
+  default: { name: 'Dialog', template: '<div><slot /></div>' }
+}))
+vi.mock('@/components/ui/dialog/DialogPortal.vue', () => ({
+  default: { name: 'DialogPortal', template: '<div><slot /></div>' }
+}))
+vi.mock('@/components/ui/dialog/DialogOverlay.vue', () => ({
+  default: { name: 'DialogOverlay', template: '<div />' }
+}))
+vi.mock('@/components/ui/dialog/DialogContent.vue', () => ({
+  default: { name: 'DialogContent', template: '<div><slot /></div>' }
+}))
+vi.mock('@/components/ui/dialog/DialogHeader.vue', () => ({
+  default: { name: 'DialogHeader', template: '<div><slot /></div>' }
+}))
+vi.mock('@/components/ui/dialog/DialogFooter.vue', () => ({
+  default: { name: 'DialogFooter', template: '<div><slot /></div>' }
+}))
+vi.mock('@/components/ui/dialog/DialogTitle.vue', () => ({
+  default: { name: 'DialogTitle', template: '<div><slot /></div>' }
+}))
+vi.mock('@/components/ui/dialog/DialogClose.vue', () => ({
+  default: { name: 'DialogClose', template: '<button />' }
 }))
 
 vi.mock('@/components/common/ColorCustomizationSelector.vue', () => ({

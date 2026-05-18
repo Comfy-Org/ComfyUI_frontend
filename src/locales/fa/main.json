@@ -815,6 +815,7 @@
     "HISTOGRAM": "HISTOGRAM",
     "HOOKS": "hookها",
     "HOOK_KEYFRAMES": "کلیدفریم‌های hook",
+    "IC_LORA_PARAMETERS": "پارامترهای IC_LORA",
     "IMAGE": "تصویر",
     "IMAGECOMPARE": "مقایسه تصویر",
     "INT": "عدد صحیح",
@@ -835,6 +836,8 @@
     "MODEL": "مدل",
     "MODEL_PATCH": "وصله مدل",
     "MODEL_TASK_ID": "شناسه وظیفه مدل",
+    "MOGE_GEOMETRY": "هندسه MOGE",
+    "MOGE_MODEL": "مدل MOGE",
     "NOISE": "نویز",
     "OPENAI_CHAT_CONFIG": "پیکربندی گفتگوی OpenAI",
     "OPENAI_INPUT_FILES": "فایل‌های ورودی OpenAI",
@@ -913,7 +916,8 @@
     "extensionFileHint": "این ممکن است به دلیل اسکریپت زیر باشد",
     "loadWorkflowTitle": "بارگذاری به دلیل خطا در بارگذاری مجدد داده‌های workflow متوقف شد",
     "noStackTrace": "هیچ stacktraceی موجود نیست",
-    "promptExecutionError": "اجرای prompt با شکست مواجه شد"
+    "promptExecutionError": "اجرای prompt با شکست مواجه شد",
+    "queueOpenWorkflowFailedTitle": "باز کردن workflow با خطا مواجه شد"
   },
   "errorOverlay": {
     "errorCount": "{count} خطا",
@@ -1041,6 +1045,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "لوگوی ComfyOrg",
+    "comfyPackageOutdated": "نسخه نصب‌شده {name} با شماره {installedVersion} پایین‌تر از نسخه مورد نیاز {requiredVersion} است.",
     "comingSoon": "به‌زودی",
     "command": "دستور",
     "commandProhibited": "دستور {command} مجاز نیست. برای اطلاعات بیشتر با مدیر تماس بگیرید.",
@@ -2310,6 +2315,7 @@
     "edit_models": "ویرایش مدل‌ها",
     "experimental": "آزمایشی",
     "flux": "flux",
+    "geometry_estimation": "برآورد هندسه",
     "gligen": "gligen",
     "guidance": "راهنمایی",
     "guiders": "راهنماها",

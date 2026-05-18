@@ -815,6 +815,7 @@
     "HISTOGRAM": "直方图",
     "HOOKS": "约束",
     "HOOK_KEYFRAMES": "约束关键帧",
+    "IC_LORA_PARAMETERS": "IC_LORA参数",
     "IMAGE": "图像",
     "IMAGECOMPARE": "图像对比",
     "INT": "整数",
@@ -835,6 +836,8 @@
     "MODEL": "模型",
     "MODEL_PATCH": "模型补丁",
     "MODEL_TASK_ID": "模型任务ID",
+    "MOGE_GEOMETRY": "MOGE几何",
+    "MOGE_MODEL": "MOGE模型",
     "NOISE": "噪波",
     "OPENAI_CHAT_CONFIG": "OpenAI对话文件",
     "OPENAI_INPUT_FILES": "OpenAI输入文件",
@@ -913,7 +916,8 @@
     "extensionFileHint": "这可能是由于以下脚本",
     "loadWorkflowTitle": "由于重新加载工作流数据出错，加载被中止",
     "noStackTrace": "无可用堆栈跟踪",
-    "promptExecutionError": "提示执行失败"
+    "promptExecutionError": "提示执行失败",
+    "queueOpenWorkflowFailedTitle": "打开工作流失败"
   },
   "errorOverlay": {
     "errorCount": "{count}个错误",
@@ -1041,6 +1045,7 @@
     "comfy": "舒适",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrg 徽标",
+    "comfyPackageOutdated": "已安装的 {name} 版本 {installedVersion} 低于所需版本 {requiredVersion}。",
     "comingSoon": "即将推出",
     "command": "指令",
     "commandProhibited": "命令 {command} 被禁止。请联系管理员了解更多信息。",
@@ -2310,6 +2315,7 @@
     "edit_models": "编辑模型",
     "experimental": "实验性",
     "flux": "Flux",
+    "geometry_estimation": "几何估计",
     "gligen": "GLIGEN",
     "guidance": "引导",
     "guiders": "引导器",
