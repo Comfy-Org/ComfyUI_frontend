@@ -125,6 +125,27 @@ function pointerEvent(clientX: number, clientY: number): PointerEvent {
   return fromPartial<PointerEvent>({ clientX, clientY, target, pointerId: 1 })
 }
 
+function pointerCancelEvent(clientX: number, clientY: number) {
+  const target = document.createElement('div')
+  target.hasPointerCapture = vi.fn(() => true)
+  target.setPointerCapture = vi.fn()
+  target.releasePointerCapture = vi.fn()
+  const event = fromPartial<PointerEvent>({
+    type: 'pointercancel',
+    clientX,
+    clientY,
+    target,
+    pointerId: 1
+  })
+  return Object.assign(event, {
+    target: Object.assign(target, {
+      releasePointerCapture: target.releasePointerCapture as ReturnType<
+        typeof vi.fn
+      >
+    })
+  })
+}
+
 describe('useNodeDrag', () => {
   beforeEach(() => {
     testState.selectedNodeIds = ref(new Set<string>())
@@ -341,5 +362,18 @@ describe('useNodeDrag auto-pan', () => {
     onPan(5, 0)
 
     expect(testState.mutationFns.batchMoveNodes).not.toHaveBeenCalled()
+  })
+
+  it('releases pointer capture on pointercancel', () => {
+    const drag = useNodeDrag()
+    drag.startDrag(pointerEvent(400, 300), '1')
+
+    // Create pointercancel event with target that has pointer capture
+    const cancelEvent = pointerCancelEvent(400, 300)
+
+    drag.endDrag(cancelEvent, '1')
+
+    // releasePointerCapture should be called for pointercancel
+    expect(cancelEvent.target.releasePointerCapture).toHaveBeenCalledWith(1)
   })
 })
