@@ -17,96 +17,28 @@
 </template>
 
 <script setup lang="ts">
-import { until } from '@vueuse/core'
-import { storeToRefs } from 'pinia'
+import type { Terminal } from '@xterm/xterm'
 import ProgressSpinner from 'primevue/progressspinner'
 import type { Ref } from 'vue'
-import { onMounted, onUnmounted, ref } from 'vue'
+import { shallowRef } from 'vue'
 
 import type { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
-import type { LogEntry, LogsWsMessage } from '@/schemas/apiSchema'
-import { api } from '@/scripts/api'
-import { useExecutionStore } from '@/stores/executionStore'
+import { useLogsTerminal } from '@/composables/bottomPanelTabs/useLogsTerminal'
 
 import BaseTerminal from './BaseTerminal.vue'
 
-const errorMessage = ref('')
-const loading = ref(true)
+const terminal = shallowRef<Terminal>()
+const { errorMessage, loading } = useLogsTerminal(terminal)
 
 const terminalCreated = (
-  { terminal, useAutoSize }: ReturnType<typeof useTerminal>,
+  { terminal: instance, useAutoSize }: ReturnType<typeof useTerminal>,
   root: Ref<HTMLElement | undefined>
 ) => {
   // Auto-size terminal to fill container width.
   // minCols: 80 ensures minimum width for colab environments.
   // See https://github.com/comfyanonymous/ComfyUI/issues/6396
   useAutoSize({ root, autoRows: true, autoCols: true, minCols: 80 })
-
-  const update = (entries: Array<LogEntry>) => {
-    terminal.write(entries.map((e) => e.m).join(''))
-  }
-
-  const logReceived = (e: CustomEvent<LogsWsMessage>) => {
-    update(e.detail.entries)
-  }
-
-  const loadLogEntries = async () => {
-    const logs = await api.getRawLogs()
-    update(logs.entries)
-  }
-
-  const resyncLogs = async () => {
-    terminal.reset()
-    try {
-      await loadLogEntries()
-      terminal.scrollToBottom()
-      // Backend lost the per-client log subscription across the restart;
-      // re-subscribe so new runtime logs stream over the fresh WebSocket.
-      await api.subscribeLogs(true)
-    } catch (err) {
-      console.error('Error resyncing logs after reconnect', err)
-    }
-  }
-
-  const handleReconnected = () => {
-    void resyncLogs()
-  }
-
-  const watchLogs = async () => {
-    const { clientId } = storeToRefs(useExecutionStore())
-    if (!clientId.value) {
-      await until(clientId).not.toBeNull()
-    }
-    await api.subscribeLogs(true)
-    api.addEventListener('logs', logReceived)
-    api.addEventListener('reconnected', handleReconnected)
-  }
-
-  onMounted(async () => {
-    try {
-      await loadLogEntries()
-    } catch (err) {
-      console.error('Error loading logs', err)
-      // On older backends the endpoints won't exist
-      errorMessage.value =
-        'Unable to load logs, please ensure you have updated your ComfyUI backend.'
-      return
-    }
-
-    await watchLogs()
-    loading.value = false
-  })
-
-  onUnmounted(() => {
-    api.removeEventListener('logs', logReceived)
-    api.removeEventListener('reconnected', handleReconnected)
-
-    if (!api.clientId) return
-
-    api.subscribeLogs(false).catch((err) => {
-      console.error('Error unsubscribing from logs', err)
-    })
-  })
+  terminal.value = instance
 }
 </script>
 

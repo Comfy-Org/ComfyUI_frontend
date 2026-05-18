@@ -1,21 +1,19 @@
 import { createTestingPinia } from '@pinia/testing'
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import LogsTerminal from '@/components/bottomPanel/tabs/terminal/LogsTerminal.vue'
 
-const apiMock = vi.hoisted(() => {
-  const target = new EventTarget() as EventTarget & {
-    clientId: string | null
-    getRawLogs: ReturnType<typeof vi.fn>
-    subscribeLogs: ReturnType<typeof vi.fn>
-  }
-  target.clientId = 'test-client'
-  target.getRawLogs = vi.fn(async () => ({ entries: [{ m: 'log line\n' }] }))
-  target.subscribeLogs = vi.fn(async () => {})
-  return target
-})
+const apiMock = vi.hoisted(
+  () =>
+    new (class extends EventTarget {
+      clientId: string | null = 'test-client'
+      getRawLogs = vi.fn(async () => ({ entries: [{ m: 'log line\n' }] }))
+      subscribeLogs = vi.fn(async () => {})
+    })()
+)
 
 vi.mock('@/scripts/api', () => ({ api: apiMock }))
 
@@ -55,7 +53,20 @@ vi.mock('@/components/bottomPanel/tabs/terminal/BaseTerminal.vue', async () => {
   }
 })
 
-const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      logsTerminal: {
+        loadError:
+          'Unable to load logs, please ensure you have updated your ComfyUI backend.',
+        resyncError:
+          'Unable to resync logs after the backend reconnected. Reopen the console to retry.'
+      }
+    }
+  }
+})
 
 const renderLogsTerminal = () =>
   render(LogsTerminal, {
@@ -71,38 +82,140 @@ const renderLogsTerminal = () =>
     }
   })
 
+// Resolve a getRawLogs call manually to drive deterministic timing in tests
+// that need to observe behavior mid-fetch.
+const deferredRawLogs = () => {
+  let resolve!: (value: { entries: { m: string }[] }) => void
+  let reject!: (err: unknown) => void
+  const promise = new Promise<{ entries: { m: string }[] }>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
+
 describe('LogsTerminal', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    apiMock.clientId = 'test-client'
+    apiMock.getRawLogs.mockImplementation(async () => ({
+      entries: [{ m: 'log line\n' }]
+    }))
+    apiMock.subscribeLogs.mockImplementation(async () => {})
   })
 
-  it('resyncs logs, re-subscribes, and scrolls to bottom on "reconnected"', async () => {
+  it('loads logs and subscribes to streaming on mount', async () => {
+    renderLogsTerminal()
+
+    await vi.waitFor(() => {
+      expect(apiMock.getRawLogs).toHaveBeenCalledTimes(1)
+      expect(apiMock.subscribeLogs).toHaveBeenCalledWith(true)
+      expect(terminalMock.write).toHaveBeenCalledWith('log line\n')
+    })
+  })
+
+  it('resyncs, snaps to tail, and re-subscribes on "reconnected"', async () => {
     renderLogsTerminal()
 
     await vi.waitFor(() => {
       expect(apiMock.subscribeLogs).toHaveBeenCalledWith(true)
-      expect(apiMock.getRawLogs).toHaveBeenCalledTimes(1)
     })
 
     apiMock.dispatchEvent(new CustomEvent('reconnected'))
 
-    // Backend loses its per-client log subscription on restart, so the
-    // terminal must reset + refetch + re-subscribe + snap to the new tail.
     await vi.waitFor(() => {
-      expect(terminalMock.reset).toHaveBeenCalledTimes(1)
       expect(apiMock.getRawLogs).toHaveBeenCalledTimes(2)
+      expect(terminalMock.reset).toHaveBeenCalledTimes(1)
       expect(terminalMock.scrollToBottom).toHaveBeenCalledTimes(1)
       expect(apiMock.subscribeLogs).toHaveBeenCalledTimes(2)
       expect(apiMock.subscribeLogs).toHaveBeenLastCalledWith(true)
     })
+
+    // The full sequence must be: refetch -> reset -> write -> scroll -> subscribe
+    const resetOrder = terminalMock.reset.mock.invocationCallOrder[0]
+    const scrollOrder = terminalMock.scrollToBottom.mock.invocationCallOrder[0]
+    const subscribeOrder =
+      apiMock.subscribeLogs.mock.invocationCallOrder.at(-1)!
+    expect(resetOrder).toBeLessThan(scrollOrder)
+    expect(scrollOrder).toBeLessThan(subscribeOrder)
   })
 
-  it('stops handling "reconnected" after unmount', async () => {
-    const { unmount } = renderLogsTerminal()
-
+  it('aborts an in-flight resync when a second "reconnected" arrives', async () => {
+    renderLogsTerminal()
     await vi.waitFor(() => {
       expect(apiMock.subscribeLogs).toHaveBeenCalledWith(true)
-      expect(apiMock.getRawLogs).toHaveBeenCalledTimes(1)
+    })
+
+    // First resync hangs on getRawLogs
+    const first = deferredRawLogs()
+    apiMock.getRawLogs.mockImplementationOnce(() => first.promise)
+    apiMock.dispatchEvent(new CustomEvent('reconnected'))
+    await vi.waitFor(() => {
+      expect(apiMock.getRawLogs).toHaveBeenCalledTimes(2)
+    })
+
+    // Second resync resolves immediately
+    apiMock.getRawLogs.mockImplementationOnce(async () => ({
+      entries: [{ m: 'fresh\n' }]
+    }))
+    apiMock.dispatchEvent(new CustomEvent('reconnected'))
+    await vi.waitFor(() => {
+      expect(terminalMock.reset).toHaveBeenCalledTimes(1)
+    })
+
+    // Now resolve the first (aborted) resync — none of its side effects must apply
+    first.resolve({ entries: [{ m: 'stale\n' }] })
+    await nextTick()
+    await nextTick()
+
+    expect(terminalMock.reset).toHaveBeenCalledTimes(1)
+    expect(terminalMock.write).not.toHaveBeenCalledWith('stale\n')
+    expect(terminalMock.write).toHaveBeenCalledWith('fresh\n')
+  })
+
+  it('surfaces an inline error when the resync fetch fails', async () => {
+    renderLogsTerminal()
+    await vi.waitFor(() => {
+      expect(apiMock.subscribeLogs).toHaveBeenCalledWith(true)
+    })
+
+    apiMock.getRawLogs.mockRejectedValueOnce(new Error('boom'))
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    apiMock.dispatchEvent(new CustomEvent('reconnected'))
+
+    await vi.waitFor(() => {
+      expect(consoleError).toHaveBeenCalledWith(
+        'Error resyncing logs after reconnect',
+        expect.any(Error)
+      )
+      expect(
+        screen.getByTestId('terminal-error-message').textContent
+      ).toContain('Unable to resync logs')
+    })
+  })
+
+  it('shows a load error when the initial fetch fails', async () => {
+    apiMock.getRawLogs.mockRejectedValueOnce(new Error('boom'))
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    renderLogsTerminal()
+
+    await vi.waitFor(() => {
+      expect(consoleError).toHaveBeenCalledWith(
+        'Error loading logs',
+        expect.any(Error)
+      )
+      expect(
+        screen.getByTestId('terminal-error-message').textContent
+      ).toContain('Unable to load logs')
+    })
+  })
+
+  it('cleans up listeners and unsubscribes on unmount', async () => {
+    const { unmount } = renderLogsTerminal()
+    await vi.waitFor(() => {
+      expect(apiMock.subscribeLogs).toHaveBeenCalledWith(true)
     })
 
     unmount()
@@ -111,8 +224,27 @@ describe('LogsTerminal', () => {
     })
 
     apiMock.dispatchEvent(new CustomEvent('reconnected'))
+    await nextTick()
 
     expect(terminalMock.reset).not.toHaveBeenCalled()
+    // No additional getRawLogs beyond the mount-time call
     expect(apiMock.getRawLogs).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not write to the terminal when unmount happens mid-fetch', async () => {
+    const pending = deferredRawLogs()
+    apiMock.getRawLogs.mockImplementationOnce(() => pending.promise)
+
+    const { unmount } = renderLogsTerminal()
+    await vi.waitFor(() => {
+      expect(apiMock.getRawLogs).toHaveBeenCalledTimes(1)
+    })
+
+    unmount()
+    pending.resolve({ entries: [{ m: 'late\n' }] })
+    await nextTick()
+    await nextTick()
+
+    expect(terminalMock.write).not.toHaveBeenCalled()
   })
 })
