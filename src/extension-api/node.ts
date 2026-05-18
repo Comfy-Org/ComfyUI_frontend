@@ -265,28 +265,63 @@ export interface NodeHandle {
   readonly comfyClass: string
 
   // ── SPATIAL STATE ─────────────────────────────────────────────────────────
+  //
+  // **Single coordinate space — canvas units.** Every spatial accessor on
+  // `NodeHandle` returns and accepts canvas units. Canvas units are
+  // independent of zoom, pan, and devicePixelRatio. They are NOT screen
+  // pixels and NOT CSS pixels. See Axiom A13
+  // (`AXIOMS.md § A13 Single Coordinate Space`) and ADR D-coord-space for
+  // the full rationale + escape-hatch.
 
   /**
-   * Returns the node's current canvas position as `[x, y]`.
+   * Returns the node's current position as `[x, y]` in **canvas units**.
    *
+   * Canvas units are the LiteGraph internal coordinate space — independent
+   * of zoom, pan, or `devicePixelRatio`. To position a DOM overlay aligned
+   * with the node visually on screen, use {@link defineWidget}'s
+   * `mount(host, ctx)` seam (host is pre-positioned by the runtime). For
+   * legitimate screen-space needs (custom hit-testing, hi-DPI math,
+   * floating overlays anchored to absolute browser coordinates), the
+   * documented escape-hatch is `window.app.canvas.ds.scale` /
+   * `window.app.canvas.ds.offset` + `window.app.canvas.canvas
+   * .getBoundingClientRect()`. The escape-hatch is `@stability escape-hatch`
+   * (deliberately fragile) — see `D-coord-space.md § Documentation contract`.
+   *
+   * @stability stable
    */
   getPosition(): Point
 
   /**
-   * Moves the node to a new canvas position. Dispatches a `MoveNode` command.
+   * Moves the node to a new position. **Argument is in canvas units.**
+   * Dispatches a `MoveNode` command.
    *
+   * No conversion is performed — passing screen pixels here will move
+   * the node by screen-pixel amounts in canvas space (almost always a
+   * bug). To convert a screen-space pointer event to canvas units before
+   * calling this, use the escape-hatch — see {@link getPosition} JSDoc.
+   *
+   * @stability stable
    */
   setPosition(pos: Point): void
 
   /**
-   * Returns the node's current size as `[width, height]`.
+   * Returns the node's current size as `[width, height]` in **canvas units**.
    *
+   * Same coordinate-space semantics as {@link getPosition}: zoom and
+   * `devicePixelRatio` are NOT applied. A 200-canvas-unit-wide node will
+   * appear as 100 CSS px wide at 50% zoom or 400 CSS px wide at 200% zoom.
+   * For DOM-overlay sizing, prefer the {@link defineWidget} `mount` seam
+   * which provides a pre-positioned host.
+   *
+   * @stability stable
    */
   getSize(): Size
 
   /**
-   * Resizes the node. Dispatches a `ResizeNode` command.
+   * Resizes the node. **Argument is in canvas units.**
+   * Dispatches a `ResizeNode` command.
    *
+   * @stability stable
    */
   setSize(size: Size): void
 
