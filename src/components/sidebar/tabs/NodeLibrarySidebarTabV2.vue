@@ -176,13 +176,7 @@
                   </DropdownMenuTrigger>
                   <DropdownMenuPortal>
                     <DropdownMenuContent
-                      :class="
-                        cn(
-                          'z-9999 flex min-w-44 flex-col gap-1 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg',
-                          jumpToVariant === 'flat' &&
-                            'max-h-(--reka-dropdown-menu-content-available-height) scrollbar-gutter-stable overflow-y-auto'
-                        )
-                      "
+                      class="z-9999 flex min-w-44 flex-col gap-1 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
                       align="start"
                       :side-offset="4"
                     >
@@ -191,67 +185,44 @@
                       >
                         {{ $t('essentials.jumpTo') }}
                       </DropdownMenuLabel>
-                      <template v-if="jumpToVariant === 'submenus'">
-                        <template
-                          v-for="section in ESSENTIAL_PLACEHOLDER_SECTIONS"
-                          :key="section.key"
-                        >
-                          <DropdownMenuSub v-if="section.subgroups">
-                            <DropdownMenuSubTrigger
-                              class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input data-[state=open]:bg-comfy-input"
+                      <template
+                        v-for="section in ESSENTIAL_PLACEHOLDER_SECTIONS"
+                        :key="section.key"
+                      >
+                        <DropdownMenuSub v-if="section.subgroups">
+                          <DropdownMenuSubTrigger
+                            class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input data-[state=open]:bg-comfy-input"
+                          >
+                            <span class="flex-1">{{ section.label }}</span>
+                            <i
+                              class="icon-[lucide--chevron-right] size-4 text-muted-foreground"
+                            />
+                          </DropdownMenuSubTrigger>
+                          <DropdownMenuPortal>
+                            <DropdownMenuSubContent
+                              class="z-9999 flex min-w-44 flex-col gap-1 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
+                              :side-offset="8"
                             >
-                              <span class="flex-1">{{ section.label }}</span>
-                              <i
-                                class="icon-[lucide--chevron-right] size-4 text-muted-foreground"
-                              />
-                            </DropdownMenuSubTrigger>
-                            <DropdownMenuPortal>
-                              <DropdownMenuSubContent
-                                class="z-9999 flex min-w-44 flex-col gap-1 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
-                                :side-offset="8"
+                              <DropdownMenuItem
+                                v-for="subgroup in section.subgroups"
+                                :key="subgroup.key"
+                                class="cursor-pointer rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                                @select="
+                                  jumpToSubgroup(section.key, subgroup.key)
+                                "
                               >
-                                <DropdownMenuItem
-                                  v-for="subgroup in section.subgroups"
-                                  :key="subgroup.key"
-                                  class="cursor-pointer rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
-                                  @select="
-                                    jumpToSubgroup(section.key, subgroup.key)
-                                  "
-                                >
-                                  {{ subgroup.label }}
-                                </DropdownMenuItem>
-                              </DropdownMenuSubContent>
-                            </DropdownMenuPortal>
-                          </DropdownMenuSub>
-                          <DropdownMenuItem
-                            v-else
-                            class="cursor-pointer rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
-                            @select="jumpToSection(section.key)"
-                          >
-                            {{ section.label }}
-                          </DropdownMenuItem>
-                        </template>
-                      </template>
-                      <template v-else>
-                        <template
-                          v-for="section in ESSENTIAL_PLACEHOLDER_SECTIONS"
-                          :key="section.key"
+                                {{ subgroup.label }}
+                              </DropdownMenuItem>
+                            </DropdownMenuSubContent>
+                          </DropdownMenuPortal>
+                        </DropdownMenuSub>
+                        <DropdownMenuItem
+                          v-else
+                          class="cursor-pointer rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                          @select="jumpToSection(section.key)"
                         >
-                          <DropdownMenuItem
-                            class="cursor-pointer rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
-                            @select="jumpToSection(section.key)"
-                          >
-                            {{ section.label }}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            v-for="subgroup in section.subgroups ?? []"
-                            :key="subgroup.key"
-                            class="cursor-pointer rounded-md py-1.5 pr-2 pl-8 text-sm outline-none hover:bg-comfy-input"
-                            @select="jumpToSubgroup(section.key, subgroup.key)"
-                          >
-                            {{ subgroup.label }}
-                          </DropdownMenuItem>
-                        </template>
+                          {{ section.label }}
+                        </DropdownMenuItem>
                       </template>
                     </DropdownMenuContent>
                   </DropdownMenuPortal>
@@ -317,7 +288,6 @@ import {
   ESSENTIALS_MEDIA_TYPES,
   useEssentialsFilters
 } from '@/composables/useEssentialsFilters'
-import { useEssentialsSubgroupGap } from '@/composables/useEssentialsSubgroupGap'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { usePerTabState } from '@/composables/usePerTabState'
@@ -351,7 +321,6 @@ import SidebarTabTemplate from './SidebarTabTemplate.vue'
 const { flags } = useFeatureFlags()
 const { mediaFilters, setMediaFilter, allMediaSelected, selectAllMedia } =
   useEssentialsFilters()
-const { jumpToVariant } = useEssentialsSubgroupGap()
 
 const selectedTab = useLocalStorage<TabId>(
   'Comfy.NodeLibrary.Tab',

@@ -55,7 +55,6 @@ const config: KnipConfig = {
     // Pending integration in stacked PR
     'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
     // Reference-only draft PR — kept for re-enabling
-    'src/components/sidebar/tabs/nodeLibrary/EssentialsGapPicker.vue',
     'src/components/sidebar/tabs/nodeLibrary/BlueprintsPanel.vue',
     'src/views/HomeView.vue',
     // Marketing media tooling — adopted by pages in a follow-up PR
