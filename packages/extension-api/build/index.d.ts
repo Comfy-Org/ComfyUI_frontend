@@ -40,20 +40,6 @@ export { defineNode }
 
 export { defineWidget }
 
-/**
- * Options for `NodeHandle.addDOMWidget()`.
- *
- * @stability experimental
- */
-export declare interface DOMWidgetOptions {
-    /** Unique widget name within this node. */
-    name: string;
-    /** The DOM element to embed in the node widget area. */
-    element: HTMLElement;
-    /** Reserved height in pixels. Defaults to `element.offsetHeight` at mount time. */
-    height?: number;
-}
-
 export { ExtensionManager }
 
 /**
@@ -382,8 +368,25 @@ export declare interface NodeHandle {
     /**
      * Returns all widgets on this node as `WidgetHandle` instances.
      *
+     * **Immutable view per D-immutability-enforcement (Hybrid C).** The returned
+     * array cannot be mutated (`push`, `splice`, `length =`, index assignment
+     * all raise TS errors). Each `WidgetHandle` is also surface-frozen — use
+     * the `WidgetHandle` setter methods (`setValue`, `setHidden`, etc.) to
+     * mutate widget state. To add or remove widgets, use
+     * {@link NodeHandle.addWidget} / future `removeWidget` (W6.P8.UNMIGRATABLE).
+     *
+     * @example
+     * ```ts
+     * // ❌ TS-ERR — readonly array; v1 patterns no longer compile
+     * node.getWidgets().push(newWidget)
+     * node.getWidgets()[0] = newWidget
+     *
+     * // ✅ Iterate / read freely
+     * for (const w of node.getWidgets()) console.log(w.name)
+     * const labels = node.getWidgets().map((w) => w.label)
+     * ```
      */
-    getWidgets(): readonly WidgetHandle[];
+    getWidgets(): ReadonlyArray<Readonly<WidgetHandle>>;
     /**
      * Adds a new widget to this node.
      *
@@ -395,33 +398,46 @@ export declare interface NodeHandle {
      */
     addWidget(type: string, name: string, defaultValue: unknown, options?: Partial<WidgetOptions>): WidgetHandle;
     /**
-     * Adds a DOM-backed widget to this node.
-     *
-     * Replaces the v1 `node.addDOMWidget(name, type, element, opts)` pattern.
-     * The runtime automatically:
-     * - Reserves node height for the element (via auto-computeSize integration).
-     * - Removes the element from the DOM when the node is removed.
-     * - Includes the widget in `NodeHandle.getWidgets()`.
-     *
-     * Use `WidgetHandle.setHeight(px)` to resize the reservation after initial mount.
-     *
-     * @param opts.name - Unique widget name on this node.
-     * @param opts.element - The DOM element to embed.
-     * @param opts.height - Initial reserved height in pixels. Defaults to `element.offsetHeight`.
-     * @returns A `WidgetHandle` for the registered DOM widget.
-     * @stability experimental
-     */
-    addDOMWidget(opts: DOMWidgetOptions): WidgetHandle;
-    /**
      * Returns all input slots on this node.
      *
+     * **Immutable view per D-immutability-enforcement (Hybrid C).** The returned
+     * array and each slot are `Readonly` — `node.getInputs().push(...)`,
+     * `node.getInputs()[i] = X`, and `node.getInputs()[i].name = "x"` all raise
+     * TypeScript errors at compile time. Per-slot mutators (`setInputName`,
+     * `replaceInput`, bulk field setters) are tracked under
+     * W6.P8.UNMIGRATABLE / D-input-output-shape.
+     *
+     * @example
+     * ```ts
+     * // ❌ TS-ERR — readonly array; v1 patterns no longer compile
+     * node.getInputs().push({ name: 'x', type: 'INT' })
+     * node.getInputs()[0].name = 'renamed'
+     *
+     * // ✅ Read / iterate freely
+     * const types = node.getInputs().map((s) => s.type)
+     * ```
      */
-    inputs(): readonly SlotInfo[];
+    getInputs(): ReadonlyArray<Readonly<SlotInfo>>;
     /**
      * Returns all output slots on this node.
      *
+     * **Immutable view per D-immutability-enforcement (Hybrid C).** Same
+     * read-only semantics as {@link NodeHandle.getInputs}. Per-slot mutators
+     * tracked under W6.P8.UNMIGRATABLE / D-input-output-shape.
      */
-    outputs(): readonly SlotInfo[];
+    getOutputs(): ReadonlyArray<Readonly<SlotInfo>>;
+    /**
+     * @deprecated Use {@link NodeHandle.getInputs} instead. Renamed to align
+     * with the `getX()` accessor convention (D11/D-immutability-enforcement).
+     * Will be removed in v1.0.
+     */
+    inputs(): ReadonlyArray<Readonly<SlotInfo>>;
+    /**
+     * @deprecated Use {@link NodeHandle.getOutputs} instead. Renamed to align
+     * with the `getX()` accessor convention (D11/D-immutability-enforcement).
+     * Will be removed in v1.0.
+     */
+    outputs(): ReadonlyArray<Readonly<SlotInfo>>;
     /**
      * Subscribe to node removal (graph deletion, not subgraph promotion).
      *
@@ -568,15 +584,23 @@ export { parseNodeLocatorId }
 
 /**
  * A 2D point as `[x, y]`.
+ *
+ * **Immutable tuple per D-immutability-enforcement (Hybrid C).** Attempts to
+ * mutate via `node.getPosition()[0] = X` raise a TypeScript error. Use
+ * {@link NodeHandle.setPosition} to move the node.
  */
-export declare type Point = [x: number, y: number];
+export declare type Point = readonly [x: number, y: number];
 
 export { SidebarTabExtension }
 
 /**
  * A 2D size as `[width, height]`.
+ *
+ * **Immutable tuple per D-immutability-enforcement (Hybrid C).** Attempts to
+ * mutate via `node.getSize()[0] = X` raise a TypeScript error. Use
+ * {@link NodeHandle.setSize} to resize the node.
  */
-export declare type Size = [width: number, height: number];
+export declare type Size = readonly [width: number, height: number];
 
 /**
  * Direction of a slot on a node.
@@ -736,8 +760,29 @@ export declare interface WidgetBeforeSerializeEvent<T = WidgetValue> {
 }
 
 /**
- * Options for `defineWidget`. Describes an extension that provides a
- * custom widget type with its own DOM rendering.
+ * Cleanup function returned from a widget's `mount()`. Fires exactly once,
+ * when the widget entity is destroyed. **Does NOT fire on host remount**
+ * (graph↔app mode, subgraph promotion, `<KeepAlive>` shuffle) — use
+ * {@link WidgetMountContext.onBeforeRemount} / {@link WidgetMountContext.onAfterRemount}
+ * for those.
+ *
+ * @stability experimental
+ */
+export declare type WidgetCleanup = () => void;
+
+/**
+ * Options for `defineWidget`. Registers a custom widget type that renders
+ * through the mount-lifecycle seam (Axiom A12 / D-widget-converge).
+ *
+ * Once registered, the widget can be instantiated on any node via
+ * `node.addWidget(type, name, defaultValue, opts?)`. The runtime allocates
+ * a per-widget host `<div>` and invokes the registered `mount(host, ctx)`
+ * hook against it. The widget's mount body captures the host (and any DOM
+ * it constructs) via closure — there is no `widget.element` accessor on
+ * the handle.
+ *
+ * `mount` is optional: omit it for value-only widgets (numeric, combo, etc.)
+ * that render through the native widget renderer with no custom DOM.
  *
  * @stability experimental
  * @example
@@ -748,13 +793,14 @@ export declare interface WidgetBeforeSerializeEvent<T = WidgetValue> {
  *   name: 'my-org.color-picker',
  *   type: 'COLOR_PICKER',
  *
- *   created(widget, node) {
- *     return {
- *       // mount color picker DOM
- *       render(container) {},
- *       // cleanup
- *       destroy() {}
- *     }
+ *   mount(host, ctx) {
+ *     const input = document.createElement('input')
+ *     input.type = 'color'
+ *     input.value = String(ctx.widget.getValue() ?? '#000000')
+ *     input.addEventListener('input', () => ctx.widget.setValue(input.value))
+ *     host.appendChild(input)
+ *     // Optional cleanup — fires once on widget destruction.
+ *     return () => input.remove()
  *   }
  * })
  * ```
@@ -765,15 +811,17 @@ export declare interface WidgetExtensionOptions {
     /** Widget type string this extension provides (e.g. `'COLOR_PICKER'`). */
     type: string;
     /**
-     * Called once per widget instance. Return a `{ render, destroy }` pair for
-     * custom DOM rendering, or `void` for non-visual widgets.
+     * Mount lifecycle hook — the **sole** DOM seam per Axiom A12. Called once
+     * per widget instance when the widget is first attached to its node host
+     * in the DOM. May return a `WidgetCleanup` function that fires on widget
+     * destruction (host remount does NOT fire cleanup; see
+     * `WidgetMountContext.onBeforeRemount` / `onAfterRemount`).
+     *
+     * Omit entirely for value-only widgets that need no custom DOM.
      *
      * @stability experimental
      */
-    created?(widget: WidgetHandle, parentNode: NodeHandle | null): {
-        render(container: HTMLElement): void;
-        destroy?(): void;
-    } | void;
+    mount?: WidgetMountFn;
 }
 
 /**
@@ -884,10 +932,13 @@ export declare interface WidgetHandle<T = WidgetValue> {
      */
     readonly label: string;
     /**
-     * Updates the reserved height for this DOM widget and triggers a node relayout.
+     * Updates the reserved height for this widget and triggers a node relayout.
      *
-     * Only meaningful for widgets registered via `NodeHandle.addDOMWidget()`.
-     * For non-DOM widgets this is a no-op.
+     * Meaningful for widgets registered via {@link defineWidget} with a
+     * {@link WidgetMountFn} `mount()` body — the reserved height bounds the
+     * runtime-owned host `<div>` that the mount body renders into. For widgets
+     * that render through the native widget renderer (no `mount`), this is a
+     * no-op.
      *
      * Replaces the v1 pattern of re-assigning `node.computeSize` to return a new
      * height whenever the embedded element resizes.
@@ -910,6 +961,38 @@ export declare interface WidgetHandle<T = WidgetValue> {
      *
      */
     setSerializeEnabled(enabled: boolean): void;
+    /**
+     * Read-only snapshot of the full options bag for this widget.
+     *
+     * **Immutable per D-immutability-enforcement (Hybrid C).** The returned
+     * object is `Readonly<WidgetOptions>` — `widget.options.min = 0`,
+     * `widget.options = {...}`, and `widget.options.values = [...]` all raise
+     * TypeScript errors at compile time. To mutate, use
+     * {@link WidgetHandle.setOption} per-key.
+     *
+     * Note: this is an accessor pair on the v2 surface. Reading is free; the
+     * setter intentionally does not exist on the public type. v1 patterns like
+     * `widget.options.serialize = false` should migrate to
+     * {@link WidgetHandle.setSerializeEnabled}; `widget.options.values = [...]`
+     * (combo refresh) migrates to a future `setValues` mutator (tracked
+     * under W6.P8.UNMIGRATABLE).
+     *
+     * @example
+     * ```ts
+     * // ❌ TS-ERR — every option write raises a compile-time error
+     * widget.options.min = 0
+     * widget.options = { min: 0, max: 100 }
+     * widget.options.serialize = false
+     *
+     * // ✅ Read freely
+     * const min = widget.options.min ?? 0
+     *
+     * // ✅ Mutate via typed setters
+     * widget.setOption('min', 0)
+     * widget.setSerializeEnabled(false)
+     * ```
+     */
+    readonly options: Readonly<WidgetOptions>;
     /**
      * Returns the per-instance override for `key`, or the class-default value
      * from `INPUT_TYPES` if no override has been set, or `undefined` if the key
@@ -939,6 +1022,36 @@ export declare interface WidgetHandle<T = WidgetValue> {
      * ```
      */
     setOption(key: string, value: unknown): void;
+    /**
+     * The widget's current `serializeValue` function (or `undefined` if none is
+     * registered).
+     *
+     * **Accessor-only per D-immutability-enforcement (Hybrid C).** The setter
+     * intentionally does not exist on the public type — assignment
+     * (`widget.serializeValue = fn`) raises a TypeScript error. The v2
+     * migration target is the {@link WidgetHandle.on | `on('beforeSerialize', fn)`}
+     * event (per D5), which is typed, async-capable, and composable across
+     * multiple extensions on the same widget.
+     *
+     * @deprecated v1 callers reading `widget.serializeValue` to invoke the
+     * function directly should subscribe to `'beforeSerialize'` instead. This
+     * read-only accessor exists for debugging / introspection only and may be
+     * removed once the v1 surface is fully retired.
+     *
+     * @example
+     * ```ts
+     * // ❌ TS-ERR — direct assignment no longer compiles
+     * widget.serializeValue = () => 'static value'
+     *
+     * // ✅ Subscribe to the typed event (D5)
+     * widget.on('beforeSerialize', (e) => {
+     *   if (e.context === 'prompt') e.setSerializedValue('static value')
+     * })
+     * ```
+     *
+     * @stability experimental
+     */
+    readonly serializeValue: ((...args: unknown[]) => unknown) | undefined;
     /**
      * Subscribe to the widget's value changes.
      *
@@ -993,6 +1106,62 @@ export declare interface WidgetHandle<T = WidgetValue> {
      */
     on(event: 'beforeQueue', handler: Handler<WidgetBeforeQueueEvent>): Unsubscribe;
 }
+
+/**
+ * Context passed to a widget's `mount()` function.
+ *
+ * Per **Axiom A12** (Mount-Lifecycle as the Sole DOM Seam), this is the only
+ * surface through which DOM enters a widget. Authors capture the host element
+ * and any constructed DOM via closure inside `mount()` — there is no
+ * `widget.element` / `widget.inputEl` accessor on the handle.
+ *
+ * @stability experimental
+ */
+export declare interface WidgetMountContext {
+    /** The widget being mounted. Use for `getValue` / `setValue` / `on(...)`. */
+    readonly widget: WidgetHandle;
+    /** The node hosting this widget. */
+    readonly node: NodeHandle;
+    /**
+     * Register a callback that fires when the widget entity is destroyed.
+     * Equivalent to returning a cleanup function from `mount()`; provided as
+     * a hook for composition (e.g. inside helpers that own their own
+     * sub-resources).
+     */
+    onUnmount(fn: () => void): void;
+    /**
+     * Register a callback that fires immediately **before** the widget's host
+     * `<div>` is moved to a new location (graph↔app mode, subgraph promotion,
+     * Vue `<KeepAlive>` shuffle). Use to detach observers, pause animations,
+     * or capture scroll position before the move.
+     *
+     * The widget's mount body is NOT re-invoked across a remount; only
+     * `onBeforeRemount` then `onAfterRemount` fire.
+     */
+    onBeforeRemount(fn: () => void): void;
+    /**
+     * Register a callback that fires immediately **after** the widget's host
+     * `<div>` has been moved to a new location. Receives the new host element
+     * so authors can re-attach observers, restore scroll position, etc.
+     */
+    onAfterRemount(fn: (newHost: HTMLElement) => void): void;
+}
+
+/**
+ * Mount function for a widget. Called once when the widget is first attached
+ * to a node host in the DOM. Returns an optional cleanup function that fires
+ * on widget destruction.
+ *
+ * @param host - A runtime-owned empty `<div>` for the widget to mount into.
+ *   The widget MAY append children, set inline styles, attach event listeners,
+ *   etc. It MUST NOT replace or remove the host itself.
+ * @param ctx - Mount context with the widget/node handles and remount hooks.
+ * @returns Optional cleanup function called on widget destruction. Host
+ *   remount fires `ctx.onBeforeRemount` / `ctx.onAfterRemount` instead.
+ *
+ * @stability experimental
+ */
+export declare type WidgetMountFn = (host: HTMLElement, ctx: WidgetMountContext) => void | WidgetCleanup;
 
 /**
  * Payload for `widget.on('optionChange', handler)`.
