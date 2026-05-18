@@ -88,7 +88,9 @@ const config: KnipConfig = {
     // the v1→v2 cut-over). Tracked by I-EXT (#12144).
     'src/extensions/core/noteNode.v2.ts',
     'src/extensions/core/rerouteNode.v2.ts',
-    'src/extensions/core/slotDefaults.v2.ts'
+    'src/extensions/core/slotDefaults.v2.ts',
+    // W6.P3.D — defineWidget+mount showcase port (D-widget-converge / A12).
+    'src/extensions/core/webcamCapture.v2.ts'
   ],
   vite: {
     config: ['vite?(.*).config.mts']
