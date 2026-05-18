@@ -580,7 +580,7 @@ describe(assetService.getAllAssetsByTag, () => {
     expect(secondParams.get('offset')).toBe('2')
   })
 
-  it.each([
+  it.for([
     {
       name: 'missing has_more',
       body: {

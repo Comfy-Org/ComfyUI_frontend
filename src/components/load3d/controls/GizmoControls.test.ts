@@ -97,13 +97,13 @@ describe('GizmoControls', () => {
     expect(emitted().toggleGizmo).toEqual([[false]])
   })
 
-  it.each([
+  it.for([
     ['Translate', 'translate'],
     ['Rotate', 'rotate'],
     ['Scale', 'scale']
   ] as const)(
     'sets mode to %s and emits setGizmoMode when clicked',
-    async (label, mode) => {
+    async ([label, mode]) => {
       const { user, gizmoConfig, emitted } = renderComponent({ enabled: true })
 
       await user.click(screen.getByRole('button', { name: label }))

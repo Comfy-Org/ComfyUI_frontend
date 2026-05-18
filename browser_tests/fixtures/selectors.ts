@@ -8,6 +8,7 @@ export const TestIds = {
     toolbar: 'side-toolbar',
     nodeLibrary: 'node-library-tree',
     nodeLibrarySearch: 'node-library-search',
+    nodePreviewCard: 'node-preview-card',
     workflows: 'workflows-sidebar',
     modeToggle: 'mode-toggle'
   },
@@ -103,14 +104,16 @@ export const TestIds = {
     errorsTab: 'panel-tab-errors'
   },
   subgraphEditor: {
-    toggle: 'subgraph-editor-toggle',
-    shownSection: 'subgraph-editor-shown-section',
     hiddenSection: 'subgraph-editor-hidden-section',
-    widgetToggle: 'subgraph-widget-toggle',
-    widgetLabel: 'subgraph-widget-label',
-    iconLink: 'icon-link',
     iconEye: 'icon-eye',
-    widgetActionsMenuButton: 'widget-actions-menu-button'
+    iconLink: 'icon-link',
+    nodeName: 'subgraph-widget-node-name',
+    shownSection: 'subgraph-editor-shown-section',
+    toggle: 'subgraph-editor-toggle',
+    widgetActionsMenuButton: 'widget-actions-menu-button',
+    widgetItem: 'subgraph-widget-item',
+    widgetLabel: 'subgraph-widget-label',
+    widgetToggle: 'subgraph-widget-toggle'
   },
   node: {
     titleInput: 'node-title-input',
@@ -142,7 +145,9 @@ export const TestIds = {
     decrement: 'decrement',
     increment: 'increment',
     domWidgetTextarea: 'dom-widget-textarea',
-    subgraphEnterButton: 'subgraph-enter-button'
+    subgraphEnterButton: 'subgraph-enter-button',
+    selectDefaultSearchInput: 'widget-select-default-search-input',
+    selectDefaultViewport: 'widget-select-default-viewport'
   },
   linear: {
     centerPanel: 'linear-center-panel',
