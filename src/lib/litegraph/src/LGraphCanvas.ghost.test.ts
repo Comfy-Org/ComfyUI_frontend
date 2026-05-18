@@ -263,4 +263,16 @@ describe('LGraphCanvas ghost placement cancellation via document keydown', () =>
       window.removeEventListener('keydown', windowSpy)
     }
   })
+
+  it('does not clobber unrelated drag state when called with no ghost in flight', () => {
+    const fakeAutoPan = { stop: vi.fn() }
+    canvas.isDragging = true
+    canvas['_autoPan'] = fakeAutoPan as unknown as (typeof canvas)['_autoPan']
+
+    canvas.finalizeGhostPlacement(true)
+
+    expect(canvas.isDragging).toBe(true)
+    expect(canvas['_autoPan']).toBe(fakeAutoPan)
+    expect(fakeAutoPan.stop).not.toHaveBeenCalled()
+  })
 })
