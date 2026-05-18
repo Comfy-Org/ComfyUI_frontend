@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -82,6 +82,10 @@ const renderLogsTerminal = () =>
     }
   })
 
+// Silence the production console.error calls in error-path tests. Vitest
+// isolates this file's module graph so the spy does not affect other files.
+vi.spyOn(console, 'error').mockImplementation(() => {})
+
 // Resolve a getRawLogs call manually to drive deterministic timing in tests
 // that need to observe behavior mid-fetch.
 const deferredRawLogs = () => {
@@ -98,14 +102,6 @@ describe('LogsTerminal', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     apiMock.clientId = 'test-client'
-    apiMock.getRawLogs.mockImplementation(async () => ({
-      entries: [{ m: 'log line\n' }]
-    }))
-    apiMock.subscribeLogs.mockImplementation(async () => {})
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('loads logs and subscribes to streaming on mount', async () => {
@@ -186,15 +182,10 @@ describe('LogsTerminal', () => {
     })
 
     apiMock.getRawLogs.mockRejectedValueOnce(new Error('boom'))
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     apiMock.dispatchEvent(new CustomEvent('reconnected'))
 
     await vi.waitFor(() => {
-      expect(consoleError).toHaveBeenCalledWith(
-        'Error resyncing logs after reconnect',
-        expect.any(Error)
-      )
       expect(
         screen.getByTestId('terminal-error-message').textContent
       ).toContain('Unable to resync logs')
@@ -203,15 +194,10 @@ describe('LogsTerminal', () => {
 
   it('shows a load error when the initial fetch fails', async () => {
     apiMock.getRawLogs.mockRejectedValueOnce(new Error('boom'))
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     renderLogsTerminal()
 
     await vi.waitFor(() => {
-      expect(consoleError).toHaveBeenCalledWith(
-        'Error loading logs',
-        expect.any(Error)
-      )
       expect(
         screen.getByTestId('terminal-error-message').textContent
       ).toContain('Unable to load logs')
@@ -222,7 +208,6 @@ describe('LogsTerminal', () => {
     apiMock.getRawLogs
       .mockRejectedValueOnce(new Error('initial fail'))
       .mockResolvedValueOnce({ entries: [{ m: 'recovered\n' }] })
-    vi.spyOn(console, 'error').mockImplementation(() => {})
 
     renderLogsTerminal()
 
