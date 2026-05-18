@@ -90,7 +90,10 @@ const config: KnipConfig = {
     'src/extensions/core/rerouteNode.v2.ts',
     'src/extensions/core/slotDefaults.v2.ts',
     // W6.P3.D — defineWidget+mount showcase port (D-widget-converge / A12).
-    'src/extensions/core/webcamCapture.v2.ts'
+    'src/extensions/core/webcamCapture.v2.ts',
+    // W6.P4.D — canvas-units canary + escape-hatch annotation example
+    // (D-coord-space / A13).
+    'src/extensions/core/coordSpaceDemo.v2.ts'
   ],
   vite: {
     config: ['vite?(.*).config.mts']
