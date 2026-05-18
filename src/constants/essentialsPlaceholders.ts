@@ -112,7 +112,7 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
         label: 'Input Text',
         icon: lucideIcon('text'),
         media: 'text',
-        nodeName: 'String (Multiline)'
+        nodeName: 'PrimitiveStringMultiline'
       },
       {
         label: 'Preview Text',
@@ -365,7 +365,7 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
           {
             label: 'Crop Image',
             icon: lucideIcon('crop'),
-            nodeName: 'ImageCrop'
+            nodeName: 'ImageCropV2'
           },
           {
             label: 'Crop Image 2x2',
@@ -395,7 +395,7 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
           {
             label: 'Image Collage',
             icon: comfyIcon('image-collage'),
-            nodeName: 'StitchImages'
+            nodeName: 'ImageStitch'
           }
         ]
       },
@@ -407,12 +407,12 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
           {
             label: 'Batch Image',
             icon: comfyIcon('image-batch'),
-            nodeName: 'ImageBatch'
+            nodeName: 'BatchImagesNode'
           },
           {
             label: 'Compare Image',
             icon: comfyIcon('image-compare'),
-            nodeName: 'image compare'
+            nodeName: 'ImageCompare'
           },
           {
             label: 'Image Frames to Video',
@@ -530,7 +530,7 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
           {
             label: 'Trim Video',
             icon: comfyIcon('video-trim'),
-            nodeName: 'VideoSlice'
+            nodeName: 'Video Slice'
           },
           {
             label: 'Upscale Video',
