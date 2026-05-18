@@ -682,6 +682,228 @@ export function getCurrentScope(): NodeInstanceScope | null {
   return _currentScope
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// D-bootstrap-hooks (W6.P6.C) — extension/sidebar/panel lifecycle context
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// SD-1 + SD-2 (handoff-11): we ship a tagged-union lifecycle context for the
+// new context-scoped hooks (`onMounted` / `onBeforeMount` / `onUnmounted` /
+// `onActivated` / `onDeactivated`). Vue's `currentInstance` precedent argues
+// for a single slot across all instance kinds; the existing `_currentScope`
+// is preserved as-is for node hooks to keep the shipped tests passing — the
+// node kind lives in its own slot for blast-radius reasons, and the new
+// extension/sidebar/panel kinds share a single new slot below. Full slot
+// consolidation (single `_currentInstance` covering all kinds) is a
+// follow-up; the public hook surface is identical either way.
+
+/**
+ * Lifecycle context for a `defineExtension` / `defineSidebarTab` /
+ * `defineBottomPanelTab` setup body. The runtime sets `_currentExtensionInstance`
+ * to one of these immediately before invoking the user's `setup()`, then
+ * restores the previous value. Hook factories (`onMounted`, etc) read this
+ * slot to capture callbacks into the right context.
+ *
+ * @internal
+ */
+export interface ExtensionLifecycleContext {
+  readonly kind: 'extension' | 'sidebarTab' | 'bottomPanel'
+  readonly name: string
+  readonly beforeMountHooks: Array<() => void>
+  readonly mountHooks: Array<() => void>
+  readonly unmountHooks: Array<() => void>
+  readonly activateHooks: Array<() => void>
+  readonly deactivateHooks: Array<() => void>
+}
+
+let _currentExtensionInstance: ExtensionLifecycleContext | null = null
+
+/** @internal */
+export function getCurrentExtensionInstance(): ExtensionLifecycleContext | null {
+  return _currentExtensionInstance
+}
+
+function createExtensionContext(
+  kind: ExtensionLifecycleContext['kind'],
+  name: string
+): ExtensionLifecycleContext {
+  return {
+    kind,
+    name,
+    beforeMountHooks: [],
+    mountHooks: [],
+    unmountHooks: [],
+    activateHooks: [],
+    deactivateHooks: []
+  }
+}
+
+function outsideContextError(hook: string): string {
+  return (
+    `[extension-api] ${hook}() called outside a setup context. ` +
+    `Call it synchronously inside the setup() body of defineExtension, ` +
+    `defineSidebarTab, or defineBottomPanelTab (D-bootstrap-hooks).`
+  )
+}
+
+/**
+ * Register a callback to fire when the surrounding instance is mounted.
+ *
+ * - Inside `defineExtension.setup`: fires after the app is fully mounted.
+ * - Inside `defineSidebarTab.setup`: fires when the tab's DOM is created.
+ * - Inside `defineBottomPanelTab.setup`: fires when the panel's DOM is created.
+ *
+ * Must be called synchronously inside the surrounding `setup()` body. Calling
+ * after an `await` (or outside any setup context) throws in development and
+ * silently no-ops in production.
+ *
+ * @publicAPI
+ * @stability experimental
+ */
+export function onMounted(fn: () => void): void {
+  if (!_currentExtensionInstance) {
+    if (import.meta.env.DEV) throw new Error(outsideContextError('onMounted'))
+    return
+  }
+  _currentExtensionInstance.mountHooks.push(fn)
+}
+
+/**
+ * Register a callback to fire just before the surrounding instance is mounted.
+ *
+ * Symmetry partner of {@link onMounted}. Rarely needed — most use cases want
+ * `onMounted`. Use this when you need to schedule pre-mount work (e.g.
+ * preparing a reactive sentinel) that the mount-time code depends on.
+ *
+ * Must be called synchronously inside a `setup()` body.
+ *
+ * @publicAPI
+ * @stability experimental
+ */
+export function onBeforeMount(fn: () => void): void {
+  if (!_currentExtensionInstance) {
+    if (import.meta.env.DEV)
+      throw new Error(outsideContextError('onBeforeMount'))
+    return
+  }
+  _currentExtensionInstance.beforeMountHooks.push(fn)
+}
+
+/**
+ * Register a callback to fire when the surrounding instance is unmounted.
+ *
+ * - Inside `defineExtension.setup`: fires at app teardown (rare).
+ * - Inside `defineSidebarTab.setup`: fires when the tab is removed.
+ * - Inside `defineBottomPanelTab.setup`: fires when the panel is removed.
+ *
+ * Use for cleanup: close connections, abort fetches, release resources.
+ *
+ * Must be called synchronously inside a `setup()` body.
+ *
+ * @publicAPI
+ * @stability experimental
+ */
+export function onUnmounted(fn: () => void): void {
+  if (!_currentExtensionInstance) {
+    if (import.meta.env.DEV) throw new Error(outsideContextError('onUnmounted'))
+    return
+  }
+  _currentExtensionInstance.unmountHooks.push(fn)
+}
+
+/**
+ * Register a callback to fire when the surrounding tab/panel is shown.
+ *
+ * Only valid inside `defineSidebarTab.setup` or `defineBottomPanelTab.setup` —
+ * the lifecycle has no "shown" semantic for app-level `defineExtension`. Throws
+ * in dev / no-ops in prod when called inside `defineExtension.setup`.
+ *
+ * Must be called synchronously inside a `setup()` body.
+ *
+ * @publicAPI
+ * @stability experimental
+ */
+export function onActivated(fn: () => void): void {
+  if (!_currentExtensionInstance) {
+    if (import.meta.env.DEV) throw new Error(outsideContextError('onActivated'))
+    return
+  }
+  if (_currentExtensionInstance.kind === 'extension') {
+    if (import.meta.env.DEV) {
+      throw new Error(
+        '[extension-api] onActivated() is not valid inside defineExtension.setup — ' +
+          'use inside defineSidebarTab.setup or defineBottomPanelTab.setup instead.'
+      )
+    }
+    return
+  }
+  _currentExtensionInstance.activateHooks.push(fn)
+}
+
+/**
+ * Register a callback to fire when the surrounding tab/panel is hidden.
+ *
+ * Symmetry partner of {@link onActivated}. Same kind restrictions apply.
+ *
+ * Must be called synchronously inside a `setup()` body.
+ *
+ * @publicAPI
+ * @stability experimental
+ */
+export function onDeactivated(fn: () => void): void {
+  if (!_currentExtensionInstance) {
+    if (import.meta.env.DEV)
+      throw new Error(outsideContextError('onDeactivated'))
+    return
+  }
+  if (_currentExtensionInstance.kind === 'extension') {
+    if (import.meta.env.DEV) {
+      throw new Error(
+        '[extension-api] onDeactivated() is not valid inside defineExtension.setup — ' +
+          'use inside defineSidebarTab.setup or defineBottomPanelTab.setup instead.'
+      )
+    }
+    return
+  }
+  _currentExtensionInstance.deactivateHooks.push(fn)
+}
+
+/**
+ * Run `body` with `_currentExtensionInstance` set to `ctx`. Restores the
+ * previous value on completion (including on throw). Mirrors Vue's
+ * `setCurrentInstance` / `unsetCurrentInstance` bracketing.
+ *
+ * @internal
+ */
+function withExtensionInstance<T>(
+  ctx: ExtensionLifecycleContext,
+  body: () => T
+): T {
+  const prev = _currentExtensionInstance
+  _currentExtensionInstance = ctx
+  try {
+    return body()
+  } finally {
+    _currentExtensionInstance = prev
+  }
+}
+
+/** Registry of extension-level contexts keyed by extension name. */
+const extensionContextRegistry = new Map<string, ExtensionLifecycleContext>()
+
+/** @internal Test-only: clear extension-level lifecycle contexts. */
+export function _clearExtensionContextsForTesting(): void {
+  extensionContextRegistry.clear()
+  _currentExtensionInstance = null
+}
+
+/** @internal Read-only view of registered extension contexts. */
+export function getExtensionContextRegistry(): ReadonlyMap<
+  string,
+  Readonly<ExtensionLifecycleContext>
+> {
+  return extensionContextRegistry
+}
+
 /**
  * Register a callback that fires after setup() completes for this node entity
  * (post-flush, still within the active EffectScope).
@@ -933,9 +1155,9 @@ export function startExtensionSystem(): void {
 }
 
 /**
- * Invoke app-level v2 extension hooks (`init` or `setup`) for all registered
- * `defineExtension()` calls. Mirrors the v1 `invokeExtensionsAsync` call sites
- * in `app.ts` at lines 951 (init) and 956 (setup).
+ * Invoke app-level v2 extension hooks for all registered `defineExtension()`
+ * calls. Mirrors the v1 `invokeExtensionsAsync` call sites in `app.ts` at
+ * lines 951 (init) and 956 (setup).
  *
  * Hook firing order: lexicographic by extension name (D10b).
  * Hooks may be async — all are awaited in sequence (not parallelised, same
@@ -943,21 +1165,119 @@ export function startExtensionSystem(): void {
  *
  * Called by `app.ts` after `loadExtensions()` resolves. Never call before
  * extensions are loaded — `appExtensions[]` must be fully populated first.
+ *
+ * ## D-bootstrap-hooks integration (W6.P6.C)
+ *
+ * When invoked with `'setup'`:
+ *
+ * 1. For each extension, the runtime sets `_currentExtensionInstance` to
+ *    the extension's `ExtensionLifecycleContext` and invokes the deprecated
+ *    `options.setup()` body inside that context. Any synchronous
+ *    `onBeforeMount` / `onMounted` / `onUnmounted` calls inside the body
+ *    are captured into the context's hook arrays.
+ * 2. After ALL `setup()` invocations complete, the runtime flushes
+ *    `beforeMountHooks` then `mountHooks` for each extension (in registration
+ *    order with lexicographic tie-break per D10b). This implements the
+ *    "app is mounted" lifecycle event for `onMounted` callbacks.
+ *
+ * `onUnmounted` callbacks are flushed by {@link teardownV2AppExtensions}.
+ *
+ * `init` hooks are invoked unchanged (no lifecycle-context wrapping) — they
+ * predate the bootstrap-hooks shape and are marked `@deprecated` in v2; the
+ * migration mapper says "move `init` body into `setup` body" so post-codemod
+ * the `init` path is empty.
  */
 export async function invokeV2AppExtensions(
   hook: 'init' | 'setup'
 ): Promise<void> {
   const sorted = [...appExtensions].sort((a, b) => a.name.localeCompare(b.name))
+
+  // Phase 1: invoke the hook body inside the lifecycle context (setup) or
+  // bare (init).
   for (const ext of sorted) {
     const fn = ext[hook]
     if (!fn) continue
     try {
-      await fn()
+      if (hook === 'setup') {
+        const ctx =
+          extensionContextRegistry.get(ext.name) ??
+          createExtensionContext('extension', ext.name)
+        extensionContextRegistry.set(ext.name, ctx)
+        // setup() body may be async — invoke first, then bracket the
+        // synchronous portion via withExtensionInstance. Authors that need
+        // to register hooks after an await must use the dispose pattern, not
+        // re-enter onMounted (mirrors Vue's onMounted constraint).
+        await withExtensionInstance(ctx, () => fn())
+      } else {
+        await fn()
+      }
     } catch (err) {
       console.error(
         `[extension-api] Error in v2 extension "${ext.name}" ${hook}():`,
         err
       )
     }
+  }
+
+  // Phase 2 (setup only): flush onBeforeMount → onMounted across all
+  // extensions. This is the "app is mounted" lifecycle event.
+  if (hook === 'setup') {
+    for (const ext of sorted) {
+      const ctx = extensionContextRegistry.get(ext.name)
+      if (!ctx) continue
+      for (const fn of ctx.beforeMountHooks) {
+        try {
+          fn()
+        } catch (err) {
+          console.error(
+            `[extension-api] Error in onBeforeMount() for "${ext.name}":`,
+            err
+          )
+        }
+      }
+      // beforeMountHooks fire once — drain so re-mount (rare; e.g. HMR) is clean.
+      ctx.beforeMountHooks.length = 0
+    }
+    for (const ext of sorted) {
+      const ctx = extensionContextRegistry.get(ext.name)
+      if (!ctx) continue
+      for (const fn of ctx.mountHooks) {
+        try {
+          fn()
+        } catch (err) {
+          console.error(
+            `[extension-api] Error in onMounted() for "${ext.name}":`,
+            err
+          )
+        }
+      }
+      ctx.mountHooks.length = 0
+    }
+  }
+}
+
+/**
+ * Flush `onUnmounted` callbacks for all registered v2 extensions. Called by
+ * `app.ts` during app teardown (rare — most extensions live for the app's
+ * full lifetime).
+ *
+ * @internal
+ */
+export function teardownV2AppExtensions(): void {
+  const sorted = [...appExtensions].sort((a, b) => a.name.localeCompare(b.name))
+  for (const ext of sorted) {
+    const ctx = extensionContextRegistry.get(ext.name)
+    if (!ctx) continue
+    for (const fn of ctx.unmountHooks) {
+      try {
+        fn()
+      } catch (err) {
+        console.error(
+          `[extension-api] Error in onUnmounted() for "${ext.name}":`,
+          err
+        )
+      }
+    }
+    ctx.unmountHooks.length = 0
   }
 }

@@ -161,6 +161,34 @@ export declare function defineWidget(
  * @see {@link onNodeRemoved} — fires before node cleanup (not on subgraph moves)
  */
 
+/**
+ * ## Context-Scoped Bootstrap Hooks (D-bootstrap-hooks, W6.P6.C)
+ *
+ * In addition to the node-level `onNodeMounted` / `onNodeRemoved` hooks above,
+ * the v2 API exposes Vue-idiomatic context-scoped hooks for
+ * `defineExtension.setup` / `defineSidebarTab.setup` / `defineBottomPanelTab.setup`
+ * bodies:
+ *
+ * - `onBeforeMount`  — before the surrounding instance is mounted
+ * - `onMounted`      — after the surrounding instance is mounted
+ * - `onUnmounted`    — when the surrounding instance is unmounted
+ * - `onActivated`    — when a sidebar tab / bottom panel is shown (tab/panel only)
+ * - `onDeactivated`  — when a sidebar tab / bottom panel is hidden (tab/panel only)
+ *
+ * Like Vue's `onMounted`, these must be called synchronously inside the
+ * surrounding `setup()` body. Calling them after an `await` (or outside any
+ * setup context) throws in development and silently no-ops in production.
+ *
+ * See {@link onMounted} for full usage examples.
+ */
+export {
+  onBeforeMount,
+  onMounted,
+  onUnmounted,
+  onActivated,
+  onDeactivated
+} from '@/services/extension-api-service'
+
 export {
   /**
    * Register a callback to fire when the node is fully mounted to the graph.

@@ -76,6 +76,28 @@ export {
 
 export { onNodeMounted, onNodeRemoved } from './lifecycle'
 
+// D-bootstrap-hooks (W6.P6.C) — context-scoped Vue-idiomatic lifecycle hooks
+// usable inside `defineExtension.setup` / `defineSidebarTab.setup` /
+// `defineBottomPanelTab.setup` bodies.
+export {
+  onBeforeMount,
+  onMounted,
+  onUnmounted,
+  onActivated,
+  onDeactivated
+} from './lifecycle'
+
+// D-bootstrap-hooks (W6.P6.C) — four typed event-namespace handles.
+// Payload types default to `unknown` and are tightened via D5 module
+// augmentation in a follow-on PR. Custom-node events ride `server.on(...)`.
+export { graph, execution, server, workbench } from './events'
+export type {
+  GraphEventPayloads,
+  ExecutionEventPayloads,
+  ServerEventPayloads,
+  WorkbenchEventPayloads
+} from './events'
+
 export type {
   NodeHandle,
   SlotInfo,
