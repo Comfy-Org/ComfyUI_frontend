@@ -3589,6 +3589,10 @@
       "missingModelsTitle": "Missing Models",
       "assetLoadTimeout": "Model detection timed out. Try reloading the workflow.",
       "downloadAll": "Download all",
+      "downloadAllToServer": "Download all to server",
+      "downloadToServer": "Download to server",
+      "downloadingToServer": "Downloading to server...",
+      "serverDownloadFailed": "Failed to download model to server.",
       "refresh": "Refresh",
       "refreshing": "Refreshing missing models.",
       "refreshFailed": "Failed to refresh missing models. Please try again."

@@ -1313,6 +1313,37 @@ export class ComfyApi extends EventTarget {
     return response.data
   }
 
+  async downloadModelToServer(model: {
+    name: string
+    url: string
+    directory: string
+  }): Promise<{
+    status: 'downloaded' | 'already_exists'
+    name: string
+    directory: string
+    path: string
+    size?: number
+  }> {
+    const response = await fetch(this.internalURL('/models/download'), {
+      method: 'POST',
+      cache: 'no-cache',
+      headers: {
+        'Content-Type': 'application/json',
+        'Comfy-User': this.user
+      },
+      body: JSON.stringify(model)
+    })
+    const data = await response.json().catch(() => null)
+    if (!response.ok) {
+      const message =
+        data && typeof data.error === 'string'
+          ? data.error
+          : 'Failed to download model to server.'
+      throw new Error(message)
+    }
+    return data
+  }
+
   /* Frees memory by unloading models and optionally freeing execution cache
    * @param {Object} options - The options object
    * @param {boolean} options.freeExecutionCache - If true, also frees execution cache
