@@ -83,7 +83,6 @@ export type {
   NodeMode,
   Point,
   Size,
-  DOMWidgetOptions,
   NodeExecutedEvent,
   NodeConnectedEvent,
   NodeDisconnectedEvent,
@@ -101,7 +100,11 @@ export type {
   WidgetOptionChangeEvent,
   WidgetPropertyChangeEvent,
   WidgetBeforeSerializeEvent,
-  WidgetBeforeQueueEvent
+  WidgetBeforeQueueEvent,
+  // Mount-lifecycle surface per D-widget-converge / Axiom A12 ────────────
+  WidgetCleanup,
+  WidgetMountContext,
+  WidgetMountFn
 } from './widget'
 
 export type { Handler, AsyncHandler, Unsubscribe } from './events'

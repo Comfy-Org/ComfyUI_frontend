@@ -12,7 +12,7 @@
  */
 
 import type { NodeHandle } from './node'
-import type { WidgetHandle } from './widget'
+import type { WidgetMountFn } from './widget'
 
 /**
  * Options for `defineNode`. Describes an extension that reacts to
@@ -118,8 +118,18 @@ export interface ExtensionOptions {
 }
 
 /**
- * Options for `defineWidget`. Describes an extension that provides a
- * custom widget type with its own DOM rendering.
+ * Options for `defineWidget`. Registers a custom widget type that renders
+ * through the mount-lifecycle seam (Axiom A12 / D-widget-converge).
+ *
+ * Once registered, the widget can be instantiated on any node via
+ * `node.addWidget(type, name, defaultValue, opts?)`. The runtime allocates
+ * a per-widget host `<div>` and invokes the registered `mount(host, ctx)`
+ * hook against it. The widget's mount body captures the host (and any DOM
+ * it constructs) via closure — there is no `widget.element` accessor on
+ * the handle.
+ *
+ * `mount` is optional: omit it for value-only widgets (numeric, combo, etc.)
+ * that render through the native widget renderer with no custom DOM.
  *
  * @stability experimental
  * @example
@@ -130,13 +140,14 @@ export interface ExtensionOptions {
  *   name: 'my-org.color-picker',
  *   type: 'COLOR_PICKER',
  *
- *   created(widget, node) {
- *     return {
- *       // mount color picker DOM
- *       render(container) {},
- *       // cleanup
- *       destroy() {}
- *     }
+ *   mount(host, ctx) {
+ *     const input = document.createElement('input')
+ *     input.type = 'color'
+ *     input.value = String(ctx.widget.getValue() ?? '#000000')
+ *     input.addEventListener('input', () => ctx.widget.setValue(input.value))
+ *     host.appendChild(input)
+ *     // Optional cleanup — fires once on widget destruction.
+ *     return () => input.remove()
  *   }
  * })
  * ```
@@ -148,13 +159,15 @@ export interface WidgetExtensionOptions {
   type: string
 
   /**
-   * Called once per widget instance. Return a `{ render, destroy }` pair for
-   * custom DOM rendering, or `void` for non-visual widgets.
+   * Mount lifecycle hook — the **sole** DOM seam per Axiom A12. Called once
+   * per widget instance when the widget is first attached to its node host
+   * in the DOM. May return a `WidgetCleanup` function that fires on widget
+   * destruction (host remount does NOT fire cleanup; see
+   * `WidgetMountContext.onBeforeRemount` / `onAfterRemount`).
+   *
+   * Omit entirely for value-only widgets that need no custom DOM.
    *
    * @stability experimental
    */
-  created?(
-    widget: WidgetHandle,
-    parentNode: NodeHandle | null
-  ): { render(container: HTMLElement): void; destroy?(): void } | void
+  mount?: WidgetMountFn
 }

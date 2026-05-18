@@ -203,20 +203,6 @@ export interface NodeBeforeSerializeEvent {
 }
 
 /**
- * Options for `NodeHandle.addDOMWidget()`.
- *
- * @stability experimental
- */
-export interface DOMWidgetOptions {
-  /** Unique widget name within this node. */
-  name: string
-  /** The DOM element to embed in the node widget area. */
-  element: HTMLElement
-  /** Reserved height in pixels. Defaults to `element.offsetHeight` at mount time. */
-  height?: number
-}
-
-/**
  * Controlled surface for node access. Reads query the ECS World; writes
  * dispatch commands. Events are Vue-reactive watches on World components.
  *
@@ -418,24 +404,12 @@ export interface NodeHandle {
     options?: Partial<WidgetOptions>
   ): WidgetHandle
 
-  /**
-   * Adds a DOM-backed widget to this node.
-   *
-   * Replaces the v1 `node.addDOMWidget(name, type, element, opts)` pattern.
-   * The runtime automatically:
-   * - Reserves node height for the element (via auto-computeSize integration).
-   * - Removes the element from the DOM when the node is removed.
-   * - Includes the widget in `NodeHandle.getWidgets()`.
-   *
-   * Use `WidgetHandle.setHeight(px)` to resize the reservation after initial mount.
-   *
-   * @param opts.name - Unique widget name on this node.
-   * @param opts.element - The DOM element to embed.
-   * @param opts.height - Initial reserved height in pixels. Defaults to `element.offsetHeight`.
-   * @returns A `WidgetHandle` for the registered DOM widget.
-   * @stability experimental
-   */
-  addDOMWidget(opts: DOMWidgetOptions): WidgetHandle
+  // NOTE: `addDOMWidget(opts)` was removed per D-widget-converge / Axiom A12.
+  // Custom DOM widgets are now registered via `defineWidget({type, mount})`
+  // and instantiated through the same `addWidget(type, name, …)` call as
+  // every other widget. The runtime invokes the registered `mount(host, ctx)`
+  // hook against a per-widget host `<div>` it owns. See `WidgetMountFn` and
+  // `WidgetMountContext` in `./widget` for the lifecycle contract.
 
   // ── SLOTS ─────────────────────────────────────────────────────────────────
 

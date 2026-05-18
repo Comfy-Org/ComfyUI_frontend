@@ -8,6 +8,7 @@
  */
 
 import type { AsyncHandler, Handler, Unsubscribe } from './events'
+import type { NodeHandle } from './node'
 
 import type { WidgetEntityId } from '@/world/entityIds'
 /**
@@ -345,13 +346,16 @@ export interface WidgetHandle<T = WidgetValue> {
    */
   readonly label: string
 
-  // ── HEIGHT — DOM widgets only ─────────────────────────────────────────────
+  // ── HEIGHT — reserved layout slot for mount-lifecycle widgets ────────────
 
   /**
-   * Updates the reserved height for this DOM widget and triggers a node relayout.
+   * Updates the reserved height for this widget and triggers a node relayout.
    *
-   * Only meaningful for widgets registered via `NodeHandle.addDOMWidget()`.
-   * For non-DOM widgets this is a no-op.
+   * Meaningful for widgets registered via {@link defineWidget} with a
+   * {@link WidgetMountFn} `mount()` body — the reserved height bounds the
+   * runtime-owned host `<div>` that the mount body renders into. For widgets
+   * that render through the native widget renderer (no `mount`), this is a
+   * no-op.
    *
    * Replaces the v1 pattern of re-assigning `node.computeSize` to return a new
    * height whenever the embedded element resizes.
@@ -388,14 +392,14 @@ export interface WidgetHandle<T = WidgetValue> {
    * object is `Readonly<WidgetOptions>` — `widget.options.min = 0`,
    * `widget.options = {...}`, and `widget.options.values = [...]` all raise
    * TypeScript errors at compile time. To mutate, use
-   * {@link WidgetHandle.setOption} per-key. Bulk `setOptions(opts)` is
-   * tracked under W6.P8.UNMIGRATABLE / D-widget-converge.
+   * {@link WidgetHandle.setOption} per-key.
    *
    * Note: this is an accessor pair on the v2 surface. Reading is free; the
    * setter intentionally does not exist on the public type. v1 patterns like
    * `widget.options.serialize = false` should migrate to
    * {@link WidgetHandle.setSerializeEnabled}; `widget.options.values = [...]`
-   * (combo refresh) migrates to a future `setValues` mutator (W6.P3).
+   * (combo refresh) migrates to a future `setValues` mutator (tracked
+   * under W6.P8.UNMIGRATABLE).
    *
    * @example
    * ```ts
@@ -553,6 +557,81 @@ export interface WidgetHandle<T = WidgetValue> {
     handler: Handler<WidgetBeforeQueueEvent>
   ): Unsubscribe
 }
+
+// ── MOUNT LIFECYCLE — the sole DOM seam per D-widget-converge / Axiom A12 ──
+
+/**
+ * Cleanup function returned from a widget's `mount()`. Fires exactly once,
+ * when the widget entity is destroyed. **Does NOT fire on host remount**
+ * (graph↔app mode, subgraph promotion, `<KeepAlive>` shuffle) — use
+ * {@link WidgetMountContext.onBeforeRemount} / {@link WidgetMountContext.onAfterRemount}
+ * for those.
+ *
+ * @stability experimental
+ */
+export type WidgetCleanup = () => void
+
+/**
+ * Context passed to a widget's `mount()` function.
+ *
+ * Per **Axiom A12** (Mount-Lifecycle as the Sole DOM Seam), this is the only
+ * surface through which DOM enters a widget. Authors capture the host element
+ * and any constructed DOM via closure inside `mount()` — there is no
+ * `widget.element` / `widget.inputEl` accessor on the handle.
+ *
+ * @stability experimental
+ */
+export interface WidgetMountContext {
+  /** The widget being mounted. Use for `getValue` / `setValue` / `on(...)`. */
+  readonly widget: WidgetHandle
+  /** The node hosting this widget. */
+  readonly node: NodeHandle
+
+  /**
+   * Register a callback that fires when the widget entity is destroyed.
+   * Equivalent to returning a cleanup function from `mount()`; provided as
+   * a hook for composition (e.g. inside helpers that own their own
+   * sub-resources).
+   */
+  onUnmount(fn: () => void): void
+
+  /**
+   * Register a callback that fires immediately **before** the widget's host
+   * `<div>` is moved to a new location (graph↔app mode, subgraph promotion,
+   * Vue `<KeepAlive>` shuffle). Use to detach observers, pause animations,
+   * or capture scroll position before the move.
+   *
+   * The widget's mount body is NOT re-invoked across a remount; only
+   * `onBeforeRemount` then `onAfterRemount` fire.
+   */
+  onBeforeRemount(fn: () => void): void
+
+  /**
+   * Register a callback that fires immediately **after** the widget's host
+   * `<div>` has been moved to a new location. Receives the new host element
+   * so authors can re-attach observers, restore scroll position, etc.
+   */
+  onAfterRemount(fn: (newHost: HTMLElement) => void): void
+}
+
+/**
+ * Mount function for a widget. Called once when the widget is first attached
+ * to a node host in the DOM. Returns an optional cleanup function that fires
+ * on widget destruction.
+ *
+ * @param host - A runtime-owned empty `<div>` for the widget to mount into.
+ *   The widget MAY append children, set inline styles, attach event listeners,
+ *   etc. It MUST NOT replace or remove the host itself.
+ * @param ctx - Mount context with the widget/node handles and remount hooks.
+ * @returns Optional cleanup function called on widget destruction. Host
+ *   remount fires `ctx.onBeforeRemount` / `ctx.onAfterRemount` instead.
+ *
+ * @stability experimental
+ */
+export type WidgetMountFn = (
+  host: HTMLElement,
+  ctx: WidgetMountContext
+) => void | WidgetCleanup
 
 /**
  * Options passed to `node.addWidget()` when creating a new widget.
