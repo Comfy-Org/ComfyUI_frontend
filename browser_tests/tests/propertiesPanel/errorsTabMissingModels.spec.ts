@@ -9,7 +9,7 @@ import {
 import {
   cleanupFakeModel,
   loadWorkflowAndOpenErrorsTab
-} from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
+} from '@e2e/fixtures/helpers/ErrorsTabHelper'
 
 test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {

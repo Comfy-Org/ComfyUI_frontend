@@ -1,0 +1,81 @@
+import generatedModels from './generated-models.json'
+import { modelMetadata } from './model-metadata'
+
+type ModelDirectory =
+  | 'diffusion_models'
+  | 'checkpoints'
+  | 'loras'
+  | 'controlnet'
+  | 'clip_vision'
+  | 'model_patches'
+  | 'vae'
+  | 'text_encoders'
+  | 'audio_encoders'
+  | 'latent_upscale_models'
+  | 'upscale_models'
+  | 'style_models'
+  | 'partner_nodes'
+
+interface Model {
+  readonly slug: string
+  readonly canonicalSlug?: string
+  readonly name: string
+  readonly displayName: string
+  readonly directory: ModelDirectory
+  readonly huggingFaceUrl: string
+  readonly thumbnailUrl?: string
+  readonly docsUrl?: string
+  readonly blogUrl?: string
+  readonly hubSlug?: string
+  readonly featured: boolean
+  readonly workflowCount: number
+}
+
+export const models: readonly Model[] = (
+  generatedModels as Array<{
+    slug: string
+    canonicalSlug?: string
+    name: string
+    displayName: string
+    directory: string
+    huggingFaceUrl: string
+    docsUrl?: string
+    thumbnailUrl?: string
+    workflowCount: number
+  }>
+).map((m) => ({
+  slug: m.slug,
+  ...(m.canonicalSlug ? { canonicalSlug: m.canonicalSlug } : {}),
+  name: m.name,
+  displayName: m.displayName,
+  directory: m.directory as ModelDirectory,
+  huggingFaceUrl: m.huggingFaceUrl,
+  ...(m.docsUrl ? { docsUrl: m.docsUrl } : {}),
+  ...(m.thumbnailUrl ? { thumbnailUrl: m.thumbnailUrl } : {}),
+  featured: false,
+  workflowCount: m.workflowCount,
+  ...modelMetadata[m.slug]
+}))
+
+const slugSet = new Set(models.map((m) => m.slug))
+if (slugSet.size !== models.length) {
+  for (const model of models) {
+    if (models.filter((m) => m.slug === model.slug).length > 1) {
+      throw new Error(`Duplicate model slug: ${model.slug}`)
+    }
+  }
+}
+for (const model of models) {
+  if (
+    model.canonicalSlug !== undefined &&
+    (!slugSet.has(model.canonicalSlug) || model.canonicalSlug === model.slug)
+  ) {
+    throw new Error(
+      `Invalid canonicalSlug "${model.canonicalSlug}" on "${model.slug}"`
+    )
+  }
+}
+
+export function getModelBySlug(slug: string): Model | undefined {
+  return models.find((m) => m.slug === slug)
+}

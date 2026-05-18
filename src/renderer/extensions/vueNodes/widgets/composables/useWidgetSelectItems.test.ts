@@ -683,6 +683,95 @@ describe('useWidgetSelectItems', () => {
     })
   })
 
+  describe('output asset subfolder', () => {
+    it('prefixes the subfolder onto the annotated path so the load URL targets the right folder', async () => {
+      mockMediaAssets.media.value = [
+        {
+          id: 'asset-mesh-1',
+          name: 'ComfyUI_00105_.glb',
+          preview_url: '',
+          tags: ['output'],
+          user_metadata: {
+            jobId: 'job-mesh',
+            nodeId: '7',
+            subfolder: '3d'
+          }
+        }
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined),
+          assetKind: () => 'mesh' as const
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value).toHaveLength(1)
+      expect(dropdownItems.value[0].name).toBe('3d/ComfyUI_00105_.glb [output]')
+    })
+
+    it('omits the subfolder prefix when the asset has none', async () => {
+      mockMediaAssets.media.value = [
+        {
+          id: 'asset-mesh-2',
+          name: 'plain.glb',
+          preview_url: '',
+          tags: ['output'],
+          user_metadata: {
+            jobId: 'job-plain',
+            nodeId: '8',
+            subfolder: ''
+          }
+        }
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined),
+          assetKind: () => 'mesh' as const
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value).toHaveLength(1)
+      expect(dropdownItems.value[0].name).toBe('plain.glb [output]')
+    })
+
+    it('does not prefix the subfolder for non-mesh kinds even when present', async () => {
+      mockMediaAssets.media.value = [
+        {
+          id: 'asset-image-1',
+          name: 'photo.png',
+          preview_url: '',
+          tags: ['output'],
+          user_metadata: {
+            jobId: 'job-image',
+            nodeId: '9',
+            subfolder: 'sub'
+          }
+        }
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined),
+          assetKind: () => 'image' as const
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value).toHaveLength(1)
+      expect(dropdownItems.value[0].name).toBe('photo.png [output]')
+    })
+  })
+
   describe('FE-228: output dropdown label uses human-readable filename', () => {
     it('renders metadata.filename in label when asset.name is a hash', async () => {
       mockMediaAssets.media.value = [
@@ -780,6 +869,138 @@ describe('useWidgetSelectItems', () => {
       )
       expect(selectedSet.value.size).toBe(1)
       expect(selectedSet.value.has('missing-nonexistent.png')).toBe(true)
+    })
+  })
+
+  describe('FE-230 missing-media filtering', () => {
+    it('drops input items whose name is in the missing-media store', async () => {
+      const { useMissingMediaStore } =
+        await import('@/platform/missingMedia/missingMediaStore')
+      const store = useMissingMediaStore()
+      store.setMissingMedia([
+        {
+          nodeId: '1',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'photo_abc.jpg',
+          isMissing: true
+        }
+      ])
+
+      const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())
+      const names = dropdownItems.value.map((i) => i.name)
+      expect(names).not.toContain('photo_abc.jpg')
+      expect(names).toContain('img_001.png')
+    })
+
+    it('drops output items whose annotated path is in the missing-media store', async () => {
+      mockMediaAssets = createMockMediaAssets()
+      mockMediaAssets.media.value = [
+        {
+          id: 'a1',
+          name: 'gone.png',
+          size: 0,
+          tags: [],
+          created_at: '2025-01-01T00:00:00Z'
+        } as AssetItem,
+        {
+          id: 'a2',
+          name: 'kept.png',
+          size: 0,
+          tags: [],
+          created_at: '2025-01-01T00:00:00Z'
+        } as AssetItem
+      ]
+
+      const { useMissingMediaStore } =
+        await import('@/platform/missingMedia/missingMediaStore')
+      const store = useMissingMediaStore()
+      store.setMissingMedia([
+        {
+          nodeId: '7',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'gone.png [output]',
+          isMissing: true
+        }
+      ])
+
+      const { dropdownItems } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          outputMediaAssets: mockMediaAssets
+        })
+      )
+      await nextTick()
+
+      const names = dropdownItems.value.map((i) => i.name)
+      expect(names).not.toContain('gone.png [output]')
+      expect(names).toContain('kept.png [output]')
+    })
+
+    it('does not cross-match basenames across input and output sources', async () => {
+      mockMediaAssets = createMockMediaAssets()
+      mockMediaAssets.media.value = [
+        {
+          id: 'a1',
+          name: 'photo_abc.jpg',
+          size: 0,
+          tags: [],
+          created_at: '2025-01-01T00:00:00Z'
+        } as AssetItem
+      ]
+
+      const { useMissingMediaStore } =
+        await import('@/platform/missingMedia/missingMediaStore')
+      const store = useMissingMediaStore()
+      store.setMissingMedia([
+        {
+          nodeId: '1',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'photo_abc.jpg',
+          isMissing: true
+        }
+      ])
+
+      const { dropdownItems } = useWidgetSelectItems(
+        createDefaultOptions({ outputMediaAssets: mockMediaAssets })
+      )
+      await nextTick()
+
+      const names = dropdownItems.value.map((i) => i.name)
+      expect(names).not.toContain('photo_abc.jpg')
+      expect(names).toContain('photo_abc.jpg [output]')
+    })
+
+    it('does not surface a missing-value placeholder when the modelValue is confirmed missing', async () => {
+      const modelValue = ref<string | undefined>('gone.png [output]')
+
+      const { useMissingMediaStore } =
+        await import('@/platform/missingMedia/missingMediaStore')
+      const store = useMissingMediaStore()
+      store.setMissingMedia([
+        {
+          nodeId: '7',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'gone.png [output]',
+          isMissing: true
+        }
+      ])
+
+      const { dropdownItems, selectedSet } = useWidgetSelectItems(
+        createDefaultOptions({ modelValue, values: () => [] })
+      )
+      await nextTick()
+
+      const names = dropdownItems.value.map((i) => i.name)
+      expect(names).not.toContain('gone.png [output]')
+      expect(selectedSet.value.size).toBe(0)
     })
   })
 })

@@ -58,7 +58,7 @@
         cn(
           'pointer-events-none absolute z-0 border-3 outline-none',
           selectionShapeClass,
-          hasAnyError ? '-inset-[7px]' : '-inset-[3px]',
+          hasAnyError ? 'inset-[-7px]' : 'inset-[-3px]',
           isSelected
             ? 'border-node-component-outline'
             : 'border-node-stroke-executing'
@@ -723,6 +723,7 @@ useGLSLPreview(lgraphNode)
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
   if (!node) return false
+  if (isCollapsed.value) return false
 
   // For subgraph nodes: check for unpromoted widgets
   if (node instanceof SubgraphNode) {

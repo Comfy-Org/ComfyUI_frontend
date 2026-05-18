@@ -1,16 +1,23 @@
 import type { Locator, Page } from '@playwright/test'
 
 import type { WorkspaceStore } from '@e2e/types/globals'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 export class Topbar {
   private readonly menuLocator: Locator
   private readonly menuTrigger: Locator
   readonly newWorkflowButton: Locator
+  readonly workflowTabs: Locator
+  readonly integratedTabBarActions: Locator
 
   constructor(public readonly page: Page) {
     this.menuLocator = page.locator('.comfy-command-menu')
     this.menuTrigger = page.locator('.comfy-menu-button-wrapper')
     this.newWorkflowButton = page.locator('.new-blank-workflow-button')
+    this.workflowTabs = page.getByTestId(TestIds.topbar.workflowTabs)
+    this.integratedTabBarActions = this.workflowTabs.getByTestId(
+      TestIds.topbar.integratedTabBarActions
+    )
   }
 
   async getTabNames(): Promise<string[]> {
@@ -75,7 +82,7 @@ export class Topbar {
   }
 
   getSaveDialog(): Locator {
-    return this.page.locator('.p-dialog-content input')
+    return this.page.getByRole('dialog').getByRole('textbox')
   }
 
   saveWorkflow(workflowName: string): Promise<void> {
@@ -109,9 +116,9 @@ export class Topbar {
 
     // Check if a confirmation dialog appeared (e.g., "Overwrite existing file?")
     // If so, return early to let the test handle the confirmation
-    const confirmationDialog = this.page.locator(
-      '.p-dialog:has-text("Overwrite")'
-    )
+    const confirmationDialog = this.page
+      .getByRole('dialog')
+      .filter({ hasText: 'Overwrite' })
     if (await confirmationDialog.isVisible()) {
       return
     }

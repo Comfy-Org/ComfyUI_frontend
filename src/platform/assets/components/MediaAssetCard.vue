@@ -44,7 +44,7 @@
         :context="{ type: assetType }"
         class="absolute inset-0"
         @view="handleZoomClick"
-        @download="actions.downloadAsset()"
+        @download="asset && actions.downloadAssets([asset])"
         @video-playing-state-changed="isVideoPlaying = $event"
         @video-controls-changed="showVideoControls = $event"
         @image-loaded="handleImageLoaded"
