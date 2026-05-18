@@ -14,10 +14,12 @@
     </template>
 
     <template #header>
-      <SearchInput
-        v-model="searchQuery"
-        size="lg"
-        class="max-w-96 flex-1"
+      <AsyncSearchInput
+        v-model="searchInput"
+        :searcher="applySearchQuery"
+        :debounce-ms="400"
+        :debounce-max-wait-ms="4000"
+        class="h-10 max-w-96 flex-1"
         autofocus
       />
     </template>
@@ -410,7 +412,7 @@ import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import Tag from '@/components/chip/Tag.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
@@ -569,6 +571,25 @@ const {
   resetFilters,
   loadFuseOptions
 } = useTemplateFiltering(navigationFilteredTemplates)
+
+/**
+ * Raw search input bound to the search box. The actual `searchQuery` consumed
+ * by the filtering composable is only updated via `applySearchQuery` after the
+ * debounce settles, keeping Fuse/grid re-renders off the keystroke critical path.
+ */
+const searchInput = ref(searchQuery.value)
+
+const applySearchQuery = async (query: string) => {
+  searchQuery.value = query
+}
+
+/**
+ * Sync the visible search input when `searchQuery` is reset externally
+ * (e.g. via the "Clear Filters" button).
+ */
+watch(searchQuery, (value) => {
+  if (value !== searchInput.value) searchInput.value = value
+})
 
 /**
  * Coordinates state between the selected navigation item and the sort order to

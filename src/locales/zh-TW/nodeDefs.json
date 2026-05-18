@@ -953,6 +953,50 @@
       }
     }
   },
+  "ByteDanceSeedreamNodeV2": {
+    "description": "統一的文字轉圖與精確單句編輯，最高支援 4K 解析度。",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_fail_on_partial": {
+        "name": "部分失敗時終止"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_max_images": {
+        "name": "最大圖像數"
+      },
+      "model_size_preset": {
+        "name": "尺寸預設"
+      },
+      "model_width": {
+        "name": "寬度"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "用於創建或編輯圖像的文字提示。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於生成的隨機種子。"
+      },
+      "watermark": {
+        "name": "浮水印",
+        "tooltip": "是否在圖像上添加「AI 生成」浮水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceTextToVideoNode": {
     "description": "透過 API 使用字節跳動模型根據提示生成影片",
     "display_name": "字節跳動文字轉影片",
@@ -1563,6 +1607,46 @@
       "start_sigma": {
         "name": "起始 sigma",
         "tooltip": "這些選項將生效的第一個 sigma 值。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClaudeNode": {
+    "description": "使用 Anthropic 的 Claude 模型生成文字回應。請提供文字提示，並可選擇性加入一張或多張圖片作為多模態上下文。",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "可選的圖片作為模型上下文使用。最多可加入 20 張圖片。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用於生成回應的 Claude 模型。"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "輸入給模型的文字內容。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制此節點是否重新執行；無論 seed 為何，結果皆為非確定性。"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "決定模型行為的基礎指令。"
       }
     },
     "outputs": {
@@ -3112,6 +3196,26 @@
       }
     }
   },
+  "EmptyHiDreamO1LatentImage": {
+    "description": "HiDream-O1-Image 的空像素潛空間。該模型於約 4 百萬像素下訓練；較低解析度會偏離分布且品質明顯下降。訓練解析度：2048x2048、2304x1728、1728x2304、2560x1440、1440x2560、2496x1664、1664x2496、3104x1312、1312x3104、2304x1792、1792x2304。",
+    "display_name": "Empty HiDream-O1 潛空間圖像",
+    "inputs": {
+      "batch_size": {
+        "name": "批次大小"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyHunyuanImageLatent": {
     "display_name": "EmptyHunyuanImageLatent",
     "inputs": {
@@ -3424,6 +3528,37 @@
     "inputs": {
       "sigmas": {
         "name": "sigmas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux2ImageNode": {
+    "description": "透過 Flux.2 [pro] 或 Flux.2 [max]，根據提示詞與可選參考圖像生成圖像。",
+    "display_name": "Flux.2 圖像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_width": {
+        "name": "寬度"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "用於圖像生成或編輯的提示詞"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於產生雜訊的隨機種子。"
       }
     },
     "outputs": {
@@ -4369,6 +4504,22 @@
       }
     }
   },
+  "GetICLoRAParameters": {
+    "description": "從已載入 LoRA 模型的 safetensors 中提取 IC-LoRA 參數，並將其輸出給 LTXVAddGuide（例如 reference_downscale_factor）。",
+    "display_name": "取得 IC-LoRA 參數",
+    "inputs": {
+      "iclora_model": {
+        "name": "iclora_model",
+        "tooltip": "從 LoRA 載入器直接輸出的特定 IC-LoRA，用於提取中繼資料。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iclora_parameters",
+        "tooltip": "從 LoRA 中繼資料中提取的 IC-LoRA 參數（例如 reference_downscale_factor）。若 LoRA 需要特殊 guide 處理，請連接至 LTXVAddGuide。"
+      }
+    }
+  },
   "GetImageSize": {
     "description": "回傳圖片的寬度和高度，並保持原樣傳遞。",
     "display_name": "取得圖片尺寸",
@@ -4447,6 +4598,40 @@
       "seed": {
         "name": "seed",
         "tooltip": "決定節點是否重新執行的種子；實際結果無論種子如何都不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNodeV2": {
+    "description": "根據文字提示修改現有圖像",
+    "display_name": "Grok 圖像編輯",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_number_of_images": {
+        "name": "圖像數量"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "用於生成圖像的文字提示"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "決定節點是否重新執行的種子；實際結果無論種子如何皆為非確定性。"
       }
     },
     "outputs": {
@@ -4792,6 +4977,70 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1PatchSeamSmoothing": {
+    "description": "在取樣後期，於多個偏移的區塊網格位置平均模型輸出。可消除接縫。",
+    "display_name": "HiDream-O1 區塊接縫平滑",
+    "inputs": {
+      "blend": {
+        "name": "混合方式",
+        "tooltip": "average：等權重平均。window：Hann 窗加權，偏重遠離區塊邊界。median：逐像素中位數，排除環繞異常通過。"
+      },
+      "end_percent": {
+        "name": "結束百分比",
+        "tooltip": "混合關閉時的取樣進度。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "passes": {
+        "name": "通過次數",
+        "tooltip": "每個閘控步驟的通過次數。2/4 = 固定。ramp_*：通過次數隨取樣接近結束而增加（接縫最明顯處加強平滑）。"
+      },
+      "pattern": {
+        "name": "模式",
+        "tooltip": "偏移佈局。single_shift：一次自然區塊網格 + 其他偏移。symmetric：全部偏移，對稱分布於原點。"
+      },
+      "start_percent": {
+        "name": "起始百分比",
+        "tooltip": "混合啟動時的取樣進度（0=開始，1=結束）。"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "在自然網格預測（0）與平均結果（1）間插值。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1ReferenceImages": {
+    "description": "附加 1-10 張參考圖像於條件設定，一張用於編輯指令，多張用於主題個人化。",
+    "display_name": "HiDream-O1 參考圖像",
+    "inputs": {
+      "images": {
+        "name": "參考圖像",
+        "tooltip": "參考圖像。1 張 = 編輯指令；2-10 張 = 多重參考。"
+      },
+      "negative": {
+        "name": "負向"
+      },
+      "positive": {
+        "name": "正向"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "name": "負向",
         "tooltip": null
       }
     }
@@ -7150,6 +7399,10 @@
         "name": "起始幀索引",
         "tooltip": "開始條件化的幀索引。對於單幀影像或 1-8 幀的影片，任何 frame_idx 值皆可。對於 9 幀以上的影片，frame_idx 必須能被 8 整除，否則會自動向下取至最接近的 8 的倍數。負值則從影片結尾倒數計算。"
       },
+      "iclora_parameters": {
+        "name": "iclora_parameters",
+        "tooltip": "來自 Get IC-LoRA Parameters 節點的可選 IC-LoRA 參數。用於根據特定 IC-LoRA（例如 reference_downscale_factor > 1）調整 guide 處理。串接時，每個 LTXVAddGuide 僅使用連接到它的參數。"
+      },
       "image": {
         "name": "影像",
         "tooltip": "用於條件化 latent 視訊的影像或影片。必須為 8*n + 1 幀。如果影片不是 8*n + 1 幀，將會裁切至最接近的 8*n + 1 幀。"
@@ -8142,6 +8395,19 @@
     "inputs": {
       "latent": {
         "name": "潛在空間"
+      }
+    }
+  },
+  "LoadMoGeModel": {
+    "display_name": "載入 MoGe 模型",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9465,6 +9731,122 @@
       "seed": {
         "name": "種子",
         "tooltip": "用於產生雜訊的隨機種子。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeInference": {
+    "display_name": "MoGe 推論",
+    "inputs": {
+      "apply_mask": {
+        "name": "apply_mask",
+        "tooltip": "將遮罩區域（天空／無效像素）在點雲和深度圖中設為 inf，以便網格化時排除。若停用則保留所有預測幾何，遮罩仍會單獨返回。"
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "每次推論的圖像數量。如果處理長影片或大量圖像時記憶體不足，請降低此值。"
+      },
+      "force_projection": {
+        "name": "force_projection"
+      },
+      "fov_x_degrees": {
+        "name": "fov_x_degrees",
+        "tooltip": "來源相機的水平視角。設定用於將深度圖反投影到 3D 的焦距。0 = 自動從預測點回推。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "0 = 最快，9 = 最細緻。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePanoramaInference": {
+    "display_name": "MoGe 全景推論",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "每批推論的視角數（共 12 個分割）。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "等距矩形全景圖（任意長寬比）。"
+      },
+      "merge_resolution": {
+        "name": "merge_resolution",
+        "tooltip": "合併後等距深度圖的長邊解析度。"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "每視角細緻度（0 = 最快，9 = 最細緻）。"
+      },
+      "split_resolution": {
+        "name": "split_resolution",
+        "tooltip": "每個視角分割的解析度。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePointMapToMesh": {
+    "display_name": "MoGe 點雲轉網格",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "要轉換為網格的 MoGe 幾何批次中的哪一張影像。每張影像的頂點數不同，因此批次無法合併為單一網格（MESH）。"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "頂點間隔；1 代表完整解析度。"
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "若 3x3 深度範圍超過此比例，則捨棄該像素。0 代表關閉。"
+      },
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "將來源影像作為 baseColor 紋理帶入。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeRender": {
+    "display_name": "MoGe 渲染",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "DirectX 與 OpenGL 控制法線貼圖綠色通道的慣例。DirectX：綠色 = -Y 向下（Unreal）。OpenGL：綠色 = +Y 向上（Blender、Substance、Unity、glTF）。"
       }
     },
     "outputs": {
@@ -11545,6 +11927,18 @@
       }
     }
   },
+  "ModelNoiseScale": {
+    "display_name": "模型雜訊尺度",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "noise_scale": {
+        "name": "雜訊尺度",
+        "tooltip": "絕對訓練雜訊尺度。例如 HiDream-O1 base：8.0，dev：7.5。"
+      }
+    }
+  },
   "ModelPatchLoader": {
     "display_name": "模型修補載入器",
     "inputs": {
@@ -11957,6 +12351,50 @@
       "size": {
         "name": "尺寸",
         "tooltip": "影像尺寸"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV2": {
+    "description": "透過 OpenAI 的 GPT Image 端點生成圖像。",
+    "display_name": "OpenAI GPT 圖像 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_background": {
+        "name": "背景"
+      },
+      "model_custom_height": {
+        "name": "自訂高度"
+      },
+      "model_custom_width": {
+        "name": "自訂寬度"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_size": {
+        "name": "尺寸"
+      },
+      "n": {
+        "name": "數量",
+        "tooltip": "要生成多少張圖像"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "GPT Image 的文字提示"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "後端尚未實作"
       }
     },
     "outputs": {
@@ -14809,6 +15247,29 @@
     "inputs": {
       "version": {
         "name": "版本"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SamplerLCM": {
+    "description": "具有可調整每步雜訊的 LCM 取樣器。s_noise 是模型訓練雜訊尺度的乘數",
+    "display_name": "SamplerLCM",
+    "inputs": {
+      "noise_clip_std": {
+        "name": "noise_clip_std",
+        "tooltip": "將每步雜訊限制在 ±N*std。設為 0 則停用。"
+      },
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "第一步的每步雜訊乘數（1.0 = 與訓練相符）。"
+      },
+      "s_noise_end": {
+        "name": "s_noise_end",
+        "tooltip": "最後一步的每步雜訊乘數。若與 s_noise 相同則為固定排程。"
       }
     },
     "outputs": {

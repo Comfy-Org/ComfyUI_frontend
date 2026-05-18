@@ -82,13 +82,18 @@ const companyColumn: { title: string; links: FooterLink[] } = {
   ]
 }
 
-const contactColumn = {
+const contactColumn: { title: string; links: FooterLink[] } = {
   title: t('footer.contact', locale),
   links: [
     { label: t('footer.sales', locale), href: routes.contact },
     {
       label: t('footer.support', locale),
       href: externalLinks.support,
+      external: true
+    },
+    {
+      label: t('footer.cloudStatus', locale),
+      href: externalLinks.cloudStatus,
       external: true
     },
     { label: t('footer.press', locale), href: 'mailto:press@comfy.org' }
