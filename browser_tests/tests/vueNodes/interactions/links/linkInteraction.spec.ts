@@ -1133,3 +1133,108 @@ test.describe(
     })
   }
 )
+
+test.describe('Vue Node Widget Link Position', { tag: '@vue-nodes' }, () => {
+  test('should keep widget-input link aligned after persisted-workflow reload', async ({
+    comfyPage
+  }) => {
+    test.setTimeout(30000)
+
+    await comfyPage.workflow.loadWorkflow(
+      'vueNodes/ksampler-denoise-widget-link'
+    )
+    await comfyPage.vueNodes.waitForNodes(2)
+    await comfyPage.workflow.waitForDraftPersisted()
+    await comfyPage.workflow.reloadAndWaitForApp()
+    await comfyPage.vueNodes.waitForNodes(2)
+
+    const ksampler = await comfyPage.page.evaluate(() => {
+      const node = window.app!.graph.nodes.find((n) => n.type === 'KSampler')
+      if (!node) return null
+      const findIndex = (name: string) =>
+        node.inputs.findIndex(
+          (input) => input.name === name || input.widget?.name === name
+        )
+      return {
+        id: node.id,
+        denoiseIndex: findIndex('denoise'),
+        schedulerIndex: findIndex('scheduler')
+      }
+    })
+    if (!ksampler) {
+      throw new Error('KSampler should be present in fixture')
+    }
+    expect(
+      ksampler.denoiseIndex,
+      'denoise input slot not found'
+    ).toBeGreaterThanOrEqual(0)
+    expect(
+      ksampler.schedulerIndex,
+      'scheduler input slot not found'
+    ).toBeGreaterThanOrEqual(0)
+
+    const denoiseSlot = slotLocator(
+      comfyPage.page,
+      ksampler.id,
+      ksampler.denoiseIndex,
+      true
+    )
+    const schedulerSlot = slotLocator(
+      comfyPage.page,
+      ksampler.id,
+      ksampler.schedulerIndex,
+      true
+    )
+    await expectVisibleAll(denoiseSlot, schedulerSlot)
+
+    await expect
+      .poll(() =>
+        getInputLinkDetails(comfyPage.page, ksampler.id, ksampler.denoiseIndex)
+      )
+      .toMatchObject({
+        targetId: ksampler.id,
+        targetSlot: ksampler.denoiseIndex
+      })
+
+    // If the regression returns, getInputPos stays stale relative to the
+    // grown slot DOM and the endpoint drifts toward scheduler. Re-read
+    // positions each retry so layout settle doesn't cause flakes.
+    await expect(async () => {
+      const linkEnd = await comfyPage.page.evaluate(
+        ([nodeId, targetSlotIndex]) => {
+          const node = window.app!.graph.getNodeById(nodeId)
+          if (!node) return null
+          const slotPos = node.getInputPos(targetSlotIndex)
+          const [cx, cy] = window.app!.canvas.ds.convertOffsetToCanvas([
+            slotPos[0],
+            slotPos[1]
+          ])
+          const rect = window.app!.canvas.canvas.getBoundingClientRect()
+          return { x: cx + rect.left, y: cy + rect.top }
+        },
+        [ksampler.id, ksampler.denoiseIndex] as const
+      )
+      expect(linkEnd, 'link endpoint should resolve').not.toBeNull()
+
+      const denoiseCenter = await getCenter(denoiseSlot)
+      const schedulerCenter = await getCenter(schedulerSlot)
+      const distToDenoise = Math.hypot(
+        linkEnd!.x - denoiseCenter.x,
+        linkEnd!.y - denoiseCenter.y
+      )
+      const rowGap = Math.hypot(
+        denoiseCenter.x - schedulerCenter.x,
+        denoiseCenter.y - schedulerCenter.y
+      )
+
+      // Bound at rowGap / 4 - half the inter-slot midpoint, so any drift
+      // toward scheduler fails well before reaching it.
+      expect(
+        distToDenoise,
+        `Link endpoint (${linkEnd!.x.toFixed(1)}, ${linkEnd!.y.toFixed(1)}) is ` +
+          `${distToDenoise.toFixed(1)}px from denoise — should be within ` +
+          `${(rowGap / 4).toFixed(1)}px (quarter of inter-slot gap ${rowGap.toFixed(1)}px)`
+      ).toBeLessThan(rowGap / 4)
+    }).toPass({ timeout: 5000 })
+  })
+})

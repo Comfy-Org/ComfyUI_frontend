@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import ProgressSpinner from 'primevue/progressspinner'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
 import { render, screen } from '@testing-library/vue'
 
@@ -56,7 +57,8 @@ vi.mock('@vueuse/core', () => ({
   createSharedComposable: vi.fn((fn) => {
     let cached: ReturnType<typeof fn>
     return (...args: Parameters<typeof fn>) => (cached ??= fn(...args))
-  })
+  }),
+  useDocumentVisibility: vi.fn(() => ref<'visible' | 'hidden'>('visible'))
 }))
 
 vi.mock('@/config', () => ({

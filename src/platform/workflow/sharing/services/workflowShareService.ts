@@ -1,3 +1,5 @@
+import type { ImportPublishedAssetsRequest } from '@comfyorg/ingest-types'
+
 import type {
   PublishPrefill,
   SharedWorkflowPayload,
@@ -255,11 +257,19 @@ export function useWorkflowShareService() {
     return workflow
   }
 
-  async function importPublishedAssets(assetIds: string[]): Promise<void> {
+  async function importPublishedAssets(
+    assetIds: string[],
+    shareId?: string
+  ): Promise<void> {
+    const body: ImportPublishedAssetsRequest = {
+      published_asset_ids: assetIds,
+      ...(shareId ? { share_id: shareId } : {})
+    }
+
     const response = await api.fetchApi('/assets/import', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ published_asset_ids: assetIds })
+      body: JSON.stringify(body)
     })
 
     if (!response.ok) {

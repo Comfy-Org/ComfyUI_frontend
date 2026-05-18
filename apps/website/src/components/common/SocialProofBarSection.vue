@@ -14,23 +14,28 @@ const logos = [
   'Ubisoft'
 ]
 
-const desktopLogos = Array.from({ length: 4 }, () => logos).flat()
-const row1 = logos.slice(0, 6)
-const mobileRow1 = [...row1, ...row1]
-const row2 = logos.slice(6)
-const mobileRow2 = [...row2, ...row2]
+const mobileRow1Logos = logos.slice(0, 6)
+const mobileRow2Logos = logos.slice(6)
 </script>
 
 <template>
   <section class="overflow-hidden py-12">
     <!-- Single row on desktop -->
-    <div class="animate-marquee hidden items-center gap-2 md:flex">
+    <div data-testid="social-proof-desktop" class="hidden w-max gap-2 md:flex">
       <div
-        v-for="(logo, i) in desktopLogos"
-        :key="`${logo}-${i}`"
-        class="flex h-20 w-50 shrink-0 items-center justify-center"
+        v-for="copy in 2"
+        :key="copy"
+        class="animate-marquee flex shrink-0 items-center gap-2"
+        style="--marquee-gap: 0.5rem"
+        :aria-hidden="copy === 2 ? 'true' : undefined"
       >
-        <img :src="`/icons/clients/${logo}.svg`" :alt="logo" />
+        <div
+          v-for="logo in logos"
+          :key="logo"
+          class="flex h-20 w-50 shrink-0 items-center justify-center"
+        >
+          <img :src="`/icons/clients/${logo}.svg`" :alt="logo" />
+        </div>
       </div>
     </div>
 
@@ -39,22 +44,38 @@ const mobileRow2 = [...row2, ...row2]
       data-testid="social-proof-mobile"
       class="flex flex-col gap-8 md:hidden"
     >
-      <div class="animate-marquee flex items-center gap-8">
+      <div class="flex w-max gap-8">
         <div
-          v-for="(logo, i) in mobileRow1"
-          :key="`${logo}-${i}`"
-          class="flex h-14 w-40 shrink-0 items-center justify-center"
+          v-for="copy in 2"
+          :key="copy"
+          class="animate-marquee flex shrink-0 items-center gap-8"
+          style="--marquee-gap: 2rem"
+          :aria-hidden="copy === 2 ? 'true' : undefined"
         >
-          <img :src="`/icons/clients/${logo}.svg`" :alt="logo" />
+          <div
+            v-for="logo in mobileRow1Logos"
+            :key="logo"
+            class="flex h-14 w-40 shrink-0 items-center justify-center"
+          >
+            <img :src="`/icons/clients/${logo}.svg`" :alt="logo" />
+          </div>
         </div>
       </div>
-      <div class="animate-marquee-reverse flex items-center gap-8">
+      <div class="flex w-max gap-8">
         <div
-          v-for="(logo, i) in mobileRow2"
-          :key="`${logo}-${i}`"
-          class="flex h-14 w-40 shrink-0 items-center justify-center"
+          v-for="copy in 2"
+          :key="copy"
+          class="animate-marquee-reverse flex shrink-0 items-center gap-8"
+          style="--marquee-gap: 2rem"
+          :aria-hidden="copy === 2 ? 'true' : undefined"
         >
-          <img :src="`/icons/clients/${logo}.svg`" :alt="logo" />
+          <div
+            v-for="logo in mobileRow2Logos"
+            :key="logo"
+            class="flex h-14 w-40 shrink-0 items-center justify-center"
+          >
+            <img :src="`/icons/clients/${logo}.svg`" :alt="logo" />
+          </div>
         </div>
       </div>
     </div>

@@ -231,6 +231,11 @@ assigning synthetic widget IDs (via `lastWidgetId` counter on LGraphState).
 the ID mapping — widgets currently lack independent IDs, so the bridge must
 maintain a `(nodeId, widgetName) -> WidgetEntityId` lookup.
 
+**Promoted-widget caveat:** ADR 0009 assigns promoted value widgets a
+host-boundary identity (`host node locator + SubgraphInput.name`). Interior
+source node/widget identity is preserved only as migration and diagnostic
+metadata.
+
 ### 2c. Read-only bridge for Node metadata
 
 Populate `NodeType`, `NodeVisual`, `Properties`, `Execution` components by
@@ -662,6 +667,10 @@ The 6 proto-ECS stores use 6 different keying strategies:
 | LayoutStore             | Raw nodeId/linkId/rerouteId       |
 | NodeOutputStore         | `"${subgraphId}:${nodeId}"`       |
 | SubgraphNavigationStore | subgraphId or `'root'`            |
+
+ADR 0009 refines the promoted-widget target: promoted value widgets should use
+host boundary identity (`host node locator + SubgraphInput.name`), not interior
+source node/widget identity.
 
 The World unifies these under branded entity IDs. But stores that use
 composite keys (e.g., `nodeId:widgetName`) reflect a genuine structural

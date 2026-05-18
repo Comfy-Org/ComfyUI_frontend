@@ -167,13 +167,18 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
     expect(mockMixpanel.track).not.toHaveBeenCalled()
   })
 
-  it.each([
+  it.for<
+    [
+      'opened' | 'requested' | 'completed',
+      (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
+    ]
+  >([
     ['opened' as const, TelemetryEvents.USER_EMAIL_VERIFY_OPENED],
     ['requested' as const, TelemetryEvents.USER_EMAIL_VERIFY_REQUESTED],
     ['completed' as const, TelemetryEvents.USER_EMAIL_VERIFY_COMPLETED]
   ])(
     'trackEmailVerification(%s) dispatches %s',
-    async (stage, expectedEvent) => {
+    async ([stage, expectedEvent]) => {
       const provider = new MixpanelTelemetryProvider()
       await waitForMixpanelInit()
       mockMixpanel.track.mockClear()
@@ -184,13 +189,18 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
     }
   )
 
-  it.each([
+  it.for<
+    [
+      'modal_opened' | 'subscribe_clicked',
+      (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
+    ]
+  >([
     [
       'modal_opened' as const,
       TelemetryEvents.SUBSCRIPTION_REQUIRED_MODAL_OPENED
     ],
     ['subscribe_clicked' as const, TelemetryEvents.SUBSCRIBE_NOW_BUTTON_CLICKED]
-  ])('trackSubscription(%s) dispatches %s', async (event, expectedEvent) => {
+  ])('trackSubscription(%s) dispatches %s', async ([event, expectedEvent]) => {
     const provider = new MixpanelTelemetryProvider()
     await waitForMixpanelInit()
     mockMixpanel.track.mockClear()
@@ -282,7 +292,7 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
   const executionSuccessMetadata: ExecutionSuccessMetadata = { jobId: 'job-1' }
   const authMetadata: AuthMetadata = {}
 
-  it.each<
+  it.for<
     [string, Trackable, (typeof TelemetryEvents)[keyof typeof TelemetryEvents]]
   >([
     [
@@ -365,7 +375,7 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
       (p) => p.trackSignupOpened(),
       TelemetryEvents.USER_SIGN_UP_OPENED
     ]
-  ])('%s dispatches %s', async (_name, invoke, expectedEvent) => {
+  ])('%s dispatches %s', async ([_name, invoke, expectedEvent]) => {
     const provider = new MixpanelTelemetryProvider()
     await waitForMixpanelInit()
     mockMixpanel.track.mockClear()

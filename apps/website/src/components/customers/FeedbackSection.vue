@@ -75,7 +75,7 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
       <!-- Progress bar -->
       <div class="h-1 flex-1 rounded-full bg-white/20">
         <div
-          class="bg-primary-comfy-yellow h-full rounded-full transition-all duration-200"
+          class="bg-primary-comfy-yellow h-full rounded-full"
           :style="{ width: progressPercent }"
         />
       </div>

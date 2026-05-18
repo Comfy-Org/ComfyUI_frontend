@@ -78,11 +78,18 @@ vi.mock('@/composables/useCopyToClipboard', () => ({
   })
 }))
 
+const mockExportWorkflowAction = vi.hoisted(() => vi.fn())
+const mockOpenWorkflowAction = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/workflow/core/services/workflowActionsService', () => ({
   useWorkflowActionsService: () => ({
-    openWorkflowAction: vi.fn(),
-    exportWorkflowAction: vi.fn()
+    openWorkflowAction: mockOpenWorkflowAction,
+    exportWorkflowAction: mockExportWorkflowAction
   })
+}))
+
+const mockExtractWorkflowFromAsset = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/workflow/utils/workflowExtractionUtil', () => ({
+  extractWorkflowFromAsset: mockExtractWorkflowFromAsset
 }))
 
 vi.mock('@/services/litegraphService', () => ({
@@ -165,6 +172,52 @@ vi.mock('@/scripts/api', () => ({
     removeEventListener: vi.fn(),
     user: 'test-user'
   }
+}))
+
+const mockAppGraph = vi.hoisted(() => ({ value: { _nodes: [] as unknown[] } }))
+vi.mock('@/scripts/app', () => ({
+  app: {
+    get graph() {
+      return mockAppGraph.value
+    },
+    get rootGraph() {
+      return mockAppGraph.value
+    }
+  }
+}))
+
+const mockRemoveNodeOutputs = vi.hoisted(() => vi.fn())
+const mockRemoveNodeOutputsForNode = vi.hoisted(() => vi.fn())
+vi.mock('@/stores/nodeOutputStore', () => ({
+  useNodeOutputStore: () => ({
+    removeNodeOutputs: mockRemoveNodeOutputs,
+    removeNodeOutputsForNode: mockRemoveNodeOutputsForNode
+  })
+}))
+
+const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: () => ({
+    activeWorkflow: {
+      changeTracker: { captureCanvasState: mockCaptureCanvasState }
+    }
+  })
+}))
+
+const mockClearNodePreviewCache = vi.hoisted(() => vi.fn())
+vi.mock('../utils/clearNodePreviewCacheForValues', () => ({
+  clearNodePreviewCacheForValues: mockClearNodePreviewCache,
+  findNodesReferencingValues: vi.fn(() => [])
+}))
+
+const mockClearWidgetValues = vi.hoisted(() => vi.fn())
+vi.mock('../utils/clearDeletedAssetWidgetValues', () => ({
+  clearDeletedAssetWidgetValues: mockClearWidgetValues
+}))
+
+const mockMarkMissingMedia = vi.hoisted(() => vi.fn())
+vi.mock('../utils/markDeletedAssetsAsMissingMedia', () => ({
+  markDeletedAssetsAsMissingMedia: mockMarkMissingMedia
 }))
 
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
@@ -327,6 +380,109 @@ describe('useMediaAssetActions', () => {
         expect(capturedFilenames.values).not.toContain('file1.jpeg')
         expect(capturedFilenames.values).not.toContain('file2.jpeg')
       })
+    })
+  })
+
+  describe('exportWorkflow', () => {
+    const successResult = { success: true } as const
+    const cancelledResult = { success: false, cancelled: true } as const
+    const failureResult = { success: false, error: 'boom' } as const
+    const noWorkflowResult = {
+      success: false,
+      error: 'No workflow data available'
+    } as const
+
+    beforeEach(() => {
+      mockExtractWorkflowFromAsset.mockResolvedValue({
+        workflow: { version: 0.4 },
+        filename: 'export.json'
+      })
+    })
+
+    it('does not show a toast when the user cancels the filename prompt', async () => {
+      mockExportWorkflowAction.mockResolvedValue(cancelledResult)
+      const actions = useMediaAssetActions()
+
+      await actions.exportWorkflow(createMockAsset())
+
+      expect(useToast().add).not.toHaveBeenCalled()
+    })
+
+    it('shows a success toast on successful export', async () => {
+      mockExportWorkflowAction.mockResolvedValue(successResult)
+      const actions = useMediaAssetActions()
+
+      await actions.exportWorkflow(createMockAsset())
+
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
+    })
+
+    it('shows an error toast on actual failure', async () => {
+      mockExportWorkflowAction.mockResolvedValue(failureResult)
+      const actions = useMediaAssetActions()
+
+      await actions.exportWorkflow(createMockAsset())
+
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+    })
+
+    it('shows a warning toast when the workflow is missing', async () => {
+      mockExportWorkflowAction.mockResolvedValue(noWorkflowResult)
+      const actions = useMediaAssetActions()
+
+      await actions.exportWorkflow(createMockAsset())
+
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'warn' })
+      )
+    })
+
+    it('shows no toast when every asset in a bulk export is cancelled', async () => {
+      mockExportWorkflowAction.mockResolvedValue(cancelledResult)
+      const actions = useMediaAssetActions()
+
+      await actions.exportMultipleWorkflows([
+        createMockAsset({ id: 'a' }),
+        createMockAsset({ id: 'b' })
+      ])
+
+      expect(useToast().add).not.toHaveBeenCalled()
+    })
+
+    it('shows a success toast for the succeeded subset when some bulk exports are cancelled', async () => {
+      mockExportWorkflowAction
+        .mockResolvedValueOnce(successResult)
+        .mockResolvedValueOnce(cancelledResult)
+      const actions = useMediaAssetActions()
+
+      await actions.exportMultipleWorkflows([
+        createMockAsset({ id: 'a' }),
+        createMockAsset({ id: 'b' })
+      ])
+
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
+    })
+
+    it('shows a partial-success warning toast when some bulk exports fail outright', async () => {
+      mockExportWorkflowAction
+        .mockResolvedValueOnce(successResult)
+        .mockResolvedValueOnce(failureResult)
+      const actions = useMediaAssetActions()
+
+      await actions.exportMultipleWorkflows([
+        createMockAsset({ id: 'a' }),
+        createMockAsset({ id: 'b' })
+      ])
+
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'warn' })
+      )
     })
   })
 
@@ -791,6 +947,122 @@ describe('useMediaAssetActions', () => {
         itemList: string[]
       }
       expect(dialogProps.itemList).toEqual(['fallback-image.png'])
+    })
+  })
+
+  describe('deleteAssets — FE-230 preview cache clearing', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+      mockGetAssetType.mockReturnValue('input')
+      mockDeleteAsset.mockReset()
+      mockShowDialog.mockImplementation(
+        (opts: {
+          props: {
+            onConfirm: () => Promise<void> | void
+          }
+        }) => {
+          void opts.props.onConfirm()
+        }
+      )
+      mockAppGraph.value = { _nodes: [] }
+    })
+
+    it('invokes clearNodePreviewCacheForValues with canonical widget-value variants', async () => {
+      mockDeleteAsset.mockResolvedValue(undefined)
+      const actions = useMediaAssetActions()
+      const asset = createMockAsset({
+        id: 'asset-match',
+        name: 'foo.png',
+        asset_hash: 'abc123.png',
+        tags: ['input']
+      })
+
+      await actions.deleteAssets(asset)
+
+      await vi.waitFor(() => {
+        expect(mockClearNodePreviewCache).toHaveBeenCalledTimes(1)
+      })
+      const [graphArg, valuesArg, removeArg] =
+        mockClearNodePreviewCache.mock.calls[0]
+      expect(graphArg).toBe(mockAppGraph.value)
+      expect(valuesArg).toEqual(
+        new Set(['foo.png', 'foo.png [input]', 'abc123.png'])
+      )
+      expect(typeof removeArg).toBe('function')
+
+      const sampleNode = { id: 42 }
+      removeArg(sampleNode)
+      expect(mockRemoveNodeOutputsForNode).toHaveBeenCalledWith(sampleNode)
+      // Locator is resolved from the node's own graph, not from the raw id —
+      // covers Load Image / Load Video nodes nested inside subgraphs.
+      expect(mockRemoveNodeOutputs).not.toHaveBeenCalled()
+
+      expect(mockClearWidgetValues).toHaveBeenCalledWith(
+        mockAppGraph.value,
+        new Set(['foo.png', 'foo.png [input]', 'abc123.png'])
+      )
+
+      expect(mockMarkMissingMedia).toHaveBeenCalledWith(
+        mockAppGraph.value,
+        new Set(['foo.png', 'foo.png [input]', 'abc123.png'])
+      )
+
+      // markMissing + previewCache must run before widget-value clearing,
+      // otherwise findNodesReferencingValues sees blanked widgets and matches
+      // nothing.
+      const markOrder = mockMarkMissingMedia.mock.invocationCallOrder[0]
+      const cacheOrder = mockClearNodePreviewCache.mock.invocationCallOrder[0]
+      const clearOrder = mockClearWidgetValues.mock.invocationCallOrder[0]
+      expect(markOrder).toBeLessThan(clearOrder)
+      expect(cacheOrder).toBeLessThan(clearOrder)
+
+      // Programmatic widget mutation doesn't go through DOM events, so the
+      // workflow won't be flagged as modified unless we capture explicitly.
+      expect(mockCaptureCanvasState).toHaveBeenCalled()
+    })
+
+    it('emits the [output]-annotated variant for output assets, including subfolder', async () => {
+      mockDeleteAsset.mockResolvedValue(undefined)
+      mockGetAssetType.mockReturnValue('output')
+      mockGetOutputAssetMetadata.mockReturnValue({
+        subfolder: 'outputs/2025'
+      })
+      const actions = useMediaAssetActions()
+      const asset = createMockAsset({
+        id: 'asset-output',
+        name: 'gen.png',
+        tags: ['output']
+      })
+
+      await actions.deleteAssets(asset)
+
+      await vi.waitFor(() => {
+        expect(mockClearNodePreviewCache).toHaveBeenCalledTimes(1)
+      })
+      const [, valuesArg] = mockClearNodePreviewCache.mock.calls[0]
+      expect(valuesArg).toEqual(new Set(['outputs/2025/gen.png [output]']))
+      expect(valuesArg.has('gen.png')).toBe(false)
+      expect(valuesArg.has('gen.png [input]')).toBe(false)
+    })
+
+    it('omits filenames of failed deletions and skips the helper when nothing was deleted', async () => {
+      mockDeleteAsset.mockRejectedValue(new Error('boom'))
+      const actions = useMediaAssetActions()
+      const asset = createMockAsset({
+        id: 'asset-failed',
+        name: 'failed.png',
+        asset_hash: 'failhash.png'
+      })
+
+      await actions.deleteAssets(asset)
+
+      await vi.waitFor(() => {
+        expect(mockDeleteAsset).toHaveBeenCalled()
+      })
+      expect(mockClearNodePreviewCache).not.toHaveBeenCalled()
+      expect(mockClearWidgetValues).not.toHaveBeenCalled()
+      expect(mockMarkMissingMedia).not.toHaveBeenCalled()
+      expect(mockCaptureCanvasState).not.toHaveBeenCalled()
     })
   })
 })
