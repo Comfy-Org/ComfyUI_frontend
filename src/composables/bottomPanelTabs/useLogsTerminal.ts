@@ -55,6 +55,7 @@ export function useLogsTerminal(
       await api.subscribeLogs(true)
       if (signal.aborted) return
       errorMessage.value = ''
+      loading.value = false
     } catch (err) {
       if (signal.aborted) return
       console.error('Error resyncing logs after reconnect', err)
@@ -87,6 +88,7 @@ export function useLogsTerminal(
       if (signal.aborted) return
       console.error('Error loading logs', err)
       errorMessage.value = t('logsTerminal.loadError')
+      loading.value = false
       return
     }
 

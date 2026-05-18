@@ -212,6 +212,29 @@ describe('LogsTerminal', () => {
     })
   })
 
+  it('recovers from an initial load failure when a reconnect arrives', async () => {
+    apiMock.getRawLogs
+      .mockRejectedValueOnce(new Error('initial fail'))
+      .mockResolvedValueOnce({ entries: [{ m: 'recovered\n' }] })
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    renderLogsTerminal()
+
+    await vi.waitFor(() => {
+      expect(
+        screen.getByTestId('terminal-error-message').textContent
+      ).toContain('Unable to load logs')
+    })
+
+    apiMock.dispatchEvent(new CustomEvent('reconnected'))
+
+    await vi.waitFor(() => {
+      expect(screen.queryByTestId('terminal-error-message')).toBeNull()
+      expect(screen.queryByTestId('terminal-loading-spinner')).toBeNull()
+      expect(terminalMock.write).toHaveBeenCalledWith('recovered\n')
+    })
+  })
+
   it('cleans up listeners and unsubscribes on unmount', async () => {
     const { unmount } = renderLogsTerminal()
     await vi.waitFor(() => {
