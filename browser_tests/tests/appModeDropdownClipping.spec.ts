@@ -87,7 +87,9 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
     const codecSelect = widgetList.getByRole('combobox', { name: 'codec' })
     await codecSelect.click()
 
-    const overlay = comfyPage.page.locator('.p-select-overlay').first()
+    const overlay = comfyPage.page
+      .getByTestId('widget-select-default-overlay')
+      .first()
     await expect(overlay).toBeVisible()
 
     await expect

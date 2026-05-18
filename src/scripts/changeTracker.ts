@@ -1,9 +1,8 @@
-import * as Sentry from '@sentry/vue'
 import _ from 'es-toolkit/compat'
 
+import { assert } from '@/base/assert'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { isDesktop } from '@/platform/distribution/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -24,23 +23,20 @@ function isActiveTracker(tracker: ChangeTracker): boolean {
   return useWorkflowStore().activeWorkflow?.changeTracker === tracker
 }
 
+const reportedInactiveCalls = new Set<string>()
+
 /**
- * Report a ChangeTracker method being called on an inactive tracker —
- * a lifecycle violation that usually indicates stale extension state or
- * an incorrect call ordering.
+ * Report a ChangeTracker method being called on an inactive tracker.
+ * Deduplicates per method+workflow per session to avoid signal noise on hot paths.
  */
 function reportInactiveTrackerCall(method: string, workflowPath: string) {
-  console.warn(`${method}() called on inactive tracker for: ${workflowPath}`)
-
-  if (isDesktop) {
-    Sentry.captureMessage(
-      `ChangeTracker.${method}() called on inactive tracker`,
-      {
-        level: 'warning',
-        tags: { workflow: workflowPath }
-      }
-    )
-  }
+  const key = `${method}:${workflowPath}`
+  if (reportedInactiveCalls.has(key)) return
+  reportedInactiveCalls.add(key)
+  assert(
+    false,
+    `ChangeTracker.${method}() called on inactive tracker for: ${workflowPath}`
+  )
 }
 
 export class ChangeTracker {

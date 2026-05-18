@@ -6,7 +6,7 @@
         variant="muted-textonly"
         size="icon"
         :aria-label="$t('g.refresh')"
-        @click="modelStore.loadModelFolders"
+        @click="modelStore.refresh"
       >
         <i class="icon-[lucide--refresh-cw] size-4" />
       </Button>
@@ -66,6 +66,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { ComfyModelDef, ModelFolder } from '@/stores/modelStore'
 import { ResourceState, useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
@@ -76,6 +77,7 @@ import { buildTree } from '@/utils/treeUtil'
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
 const settingStore = useSettingStore()
+const assetDownloadStore = useAssetDownloadStore()
 const searchBoxRef = ref()
 const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
@@ -187,6 +189,14 @@ watch(
     })
   },
   { deep: true }
+)
+
+watch(
+  () => assetDownloadStore.lastCompletedDownload,
+  (completed) => {
+    if (!completed) return
+    void modelStore.refreshModelFolder(completed.modelType)
+  }
 )
 
 onMounted(async () => {

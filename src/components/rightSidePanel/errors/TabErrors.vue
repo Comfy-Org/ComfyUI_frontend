@@ -4,7 +4,7 @@
     <div
       class="flex min-w-0 shrink-0 items-center border-b border-interface-stroke px-4 pt-1 pb-4"
     >
-      <FormSearchInput v-model="searchQuery" class="flex-1" />
+      <AsyncSearchInput v-model="searchQuery" class="flex-1" />
       <CollapseToggleButton
         v-model="isAllCollapsed"
         :show="!isSearching && tabErrorGroups.length > 1"
@@ -260,7 +260,7 @@ import { NodeBadgeMode } from '@/types/nodeSource'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 import CollapseToggleButton from '../layout/CollapseToggleButton.vue'
-import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
+import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
 import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.vue'

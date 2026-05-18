@@ -47,7 +47,7 @@ watch(
 
     searcher(debouncedSearchQuery.value, (cb) => (cleanupFn = cb))
       .catch((error) => {
-        console.error('[SidePanelSearch] searcher failed', error)
+        console.error('[AsyncSearchInput] searcher failed', error)
       })
       .finally(() => {
         if (!isCleanup) isQuerying.value = false

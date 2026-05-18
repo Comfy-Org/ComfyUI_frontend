@@ -38,6 +38,7 @@ function updateUIWidget(
 }
 
 async function uploadFile(
+  node: LGraphNode,
   audioWidget: IStringWidget,
   audioUIWidget: DOMWidget<HTMLAudioElement, string>,
   file: File,
@@ -67,6 +68,7 @@ async function uploadFile(
       }
 
       if (updateNode) {
+        const oldValue = audioWidget.value
         updateUIWidget(
           audioUIWidget,
           api.apiURL(getResourceURL(...splitFilePath(path)))
@@ -75,6 +77,7 @@ async function uploadFile(
         audioWidget.value = path
         // Manually trigger the callback to update VueNodes
         audioWidget.callback?.(path)
+        node.onWidgetChanged?.(audioWidget.name, path, oldValue, audioWidget)
       }
       return true
     } else {
@@ -247,6 +250,7 @@ app.registerExtension({
           audioWidget.value = files[0].name
           try {
             const success = await uploadFile(
+              node,
               audioWidget,
               audioUIWidget,
               files[0],
