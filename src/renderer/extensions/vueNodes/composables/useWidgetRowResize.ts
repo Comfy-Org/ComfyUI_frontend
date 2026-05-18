@@ -29,18 +29,19 @@ export function useWidgetRowResize() {
 
     target.setPointerCapture(event.pointerId)
 
+    const safeZoom = () => transformState.camera.z || 1
+
     isResizing.value = true
     resizeStartY.value = event.clientY
     resizeStartHeight.value =
-      rowElement.getBoundingClientRect().height / transformState.camera.z
+      rowElement.getBoundingClientRect().height / safeZoom()
     activeNodeId.value = nodeId
     activeWidgetName.value = widgetName
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
       if (!isResizing.value) return
 
-      const scale = transformState.camera.z || 1
-      const deltaY = (moveEvent.clientY - resizeStartY.value) / scale
+      const deltaY = (moveEvent.clientY - resizeStartY.value) / safeZoom()
       const newHeight = Math.max(
         MIN_ROW_HEIGHT,
         resizeStartHeight.value + deltaY
@@ -53,11 +54,10 @@ export function useWidgetRowResize() {
       if (!isResizing.value || !activeNodeId.value || !activeWidgetName.value)
         return
 
-      const finalHeight =
-        rowElement.getBoundingClientRect().height / transformState.camera.z
+      const finalHeight = rowElement.getBoundingClientRect().height / safeZoom()
       const heightPx = `${Math.round(finalHeight)}px`
 
-      const node = app.graph?.getNodeById(Number(activeNodeId.value))
+      const node = app.graph?.getNodeById(activeNodeId.value)
       if (node) {
         setGridOverride(node, activeWidgetName.value, heightPx)
         const manager = useVueNodeLifecycle().nodeManager.value
@@ -80,8 +80,5 @@ export function useWidgetRowResize() {
     target.addEventListener('pointercancel', handlePointerUp)
   }
 
-  return {
-    isResizing,
-    startResize
-  }
+  return { isResizing, startResize }
 }

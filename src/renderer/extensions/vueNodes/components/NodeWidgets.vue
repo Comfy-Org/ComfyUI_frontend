@@ -33,10 +33,11 @@
           )
         "
       >
-        <!-- Resize Handle -->
         <div
           class="absolute inset-x-0 bottom-0 h-1 cursor-ns-resize opacity-0 transition-opacity hover:bg-node-stroke hover:opacity-50"
-          @pointerdown="handleResizePointerDown($event, widget.name)"
+          @pointerdown="
+            handleResizePointerDown($event, widget.slotName ?? widget.name)
+          "
         />
         <!-- Widget Input Slot Dot -->
         <div
@@ -154,12 +155,15 @@ if (nodeData?.id != null) {
 
 const { startResize } = useWidgetRowResize()
 
-function handleResizePointerDown(event: PointerEvent, widgetName: string) {
+function handleResizePointerDown(
+  event: PointerEvent,
+  widgetOverrideKey: string
+) {
   const handle = event.currentTarget as HTMLElement
   const rowElement = handle.closest(
     "[data-testid='node-widget']"
   ) as HTMLElement
   if (!rowElement || nodeData?.id == null) return
-  startResize(event, String(nodeData.id), widgetName, rowElement)
+  startResize(event, String(nodeData.id), widgetOverrideKey, rowElement)
 }
 </script>
