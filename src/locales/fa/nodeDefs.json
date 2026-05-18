@@ -4504,6 +4504,22 @@
       }
     }
   },
+  "GetICLoRAParameters": {
+    "description": "پارامترهای IC-LoRA را از متادیتای safetensors یک مدل بارگذاری‌شده LoRA استخراج می‌کند و آن‌ها را برای LTXVAddGuide (مثلاً reference_downscale_factor) خروجی می‌دهد.",
+    "display_name": "دریافت پارامترهای IC-LoRA",
+    "inputs": {
+      "iclora_model": {
+        "name": "iclora_model",
+        "tooltip": "خروجی مستقیم از LoRA Loader برای IC-LoRA مشخص که متادیتا باید از آن استخراج شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iclora_parameters",
+        "tooltip": "پارامترهای IC-LoRA استخراج‌شده از متادیتای LoRA (مثلاً reference_downscale_factor). در صورتی که LoRA نیاز به مدیریت ویژه راهنماها داشته باشد، به LTXVAddGuide متصل شود."
+      }
+    }
+  },
   "GetImageSize": {
     "description": "عرض و ارتفاع تصویر را بازمی‌گرداند و تصویر را بدون تغییر عبور می‌دهد.",
     "display_name": "دریافت ابعاد تصویر",
@@ -7383,6 +7399,10 @@
         "name": "اندیس فریم",
         "tooltip": "اندیس فریم برای شروع شرط‌گذاری. برای تصاویر تک‌فریم یا ویدیوهای ۱ تا ۸ فریم، هر مقدار frame_idx قابل قبول است. برای ویدیوهای ۹ فریم به بالا، frame_idx باید بر ۸ بخش‌پذیر باشد، در غیر این صورت به نزدیک‌ترین مضرب ۸ گرد می‌شود. مقادیر منفی از انتهای ویدیو شمرده می‌شوند."
       },
+      "iclora_parameters": {
+        "name": "iclora_parameters",
+        "tooltip": "پارامترهای اختیاری IC-LoRA از یک node دریافت IC-LoRA Parameters. برای تنظیم پردازش راهنما طبق نیاز برخی IC-LoRAها (مثلاً آن‌هایی که reference_downscale_factor بالاتر از ۱ دارند) استفاده می‌شود. در زنجیره، هر LTXVAddGuide فقط از پارامترهای متصل به خود استفاده می‌کند."
+      },
       "image": {
         "name": "تصویر",
         "tooltip": "تصویر یا ویدیو برای شرط‌گذاری latent ویدیو. باید شامل ۸*n+۱ فریم باشد. اگر ویدیو این تعداد فریم نداشته باشد، به نزدیک‌ترین ۸*n+۱ فریم برش داده می‌شود."
@@ -8375,6 +8395,19 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadMoGeModel": {
+    "display_name": "بارگذاری مدل MoGe",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9698,6 +9731,122 @@
       "seed": {
         "name": "بذر تصادفی",
         "tooltip": "بذر تصادفی که برای ایجاد نویز استفاده می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeInference": {
+    "display_name": "استنتاج MoGe",
+    "inputs": {
+      "apply_mask": {
+        "name": "apply_mask",
+        "tooltip": "پیکسل‌های ماسک‌شده (آسمان / نامعتبر) را در نقاط و عمق به مقدار inf تنظیم می‌کند تا در مش‌سازی حذف شوند. برای حفظ هندسه خام پیش‌بینی‌شده در همه جا غیرفعال کنید؛ ماسک همچنان به صورت جداگانه بازگردانده می‌شود."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "تعداد تصویر در هر فراخوانی استنتاج. اگر در ویدیو یا مجموعه تصویر طولانی با کمبود حافظه مواجه شدید، مقدار را کاهش دهید."
+      },
+      "force_projection": {
+        "name": "force_projection"
+      },
+      "fov_x_degrees": {
+        "name": "fov_x_degrees",
+        "tooltip": "زاویه دید افقی دوربین منبع. فاصله کانونی برای بازسازی نقشه عمق به سه‌بعدی را تعیین می‌کند. ۰ = بازیابی خودکار از نقاط پیش‌بینی‌شده."
+      },
+      "image": {
+        "name": "image"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "۰ = سریع‌ترین، ۹ = بیشترین جزئیات."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePanoramaInference": {
+    "display_name": "استنتاج پانورامای MoGe",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "تعداد نما در هر دسته استنتاج (۱۲ بخش در کل)."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "پانورامای equirectangular (هر نسبت تصویر)."
+      },
+      "merge_resolution": {
+        "name": "merge_resolution",
+        "tooltip": "وضوح ضلع بلند نقشه فاصله equirect ادغام‌شده."
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "جزئیات هر نما (۰ = سریع‌ترین، ۹ = بیشترین جزئیات)."
+      },
+      "split_resolution": {
+        "name": "split_resolution",
+        "tooltip": "وضوح هر بخش پرسپکتیو."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePointMapToMesh": {
+    "display_name": "MoGe Point Map to Mesh",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "کدام تصویر از هندسه‌ی MoGe دسته‌ای برای مش کردن انتخاب شود. تعداد رأس‌ها در هر تصویر متفاوت است، بنابراین دسته‌ها نمی‌توانند به یک مش واحد تبدیل شوند."
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "گام رأس؛ ۱ = وضوح کامل."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "پیکسل‌هایی که بازه عمق ۳×۳ آن‌ها از این نسبت بیشتر باشد حذف می‌شوند. ۰ = غیرفعال."
+      },
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "تصویر منبع را به عنوان بافت baseColor منتقل می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeRender": {
+    "display_name": "MoGe Render",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "DirectX و OpenGL نحوه نمایش کانال سبز normal-map را کنترل می‌کنند. DirectX: سبز = -Y پایین (Unreal). OpenGL: سبز = +Y بالا (Blender، Substance، Unity، glTF)."
       }
     },
     "outputs": {

@@ -4504,6 +4504,22 @@
       }
     }
   },
+  "GetICLoRAParameters": {
+    "description": "يستخرج معلمات IC-LoRA من بيانات safetensors الوصفية لنموذج LoRA المحمّل ويخرجها لـ LTXVAddGuide (مثل reference_downscale_factor).",
+    "display_name": "الحصول على معلمات IC-LoRA",
+    "inputs": {
+      "iclora_model": {
+        "name": "iclora_model",
+        "tooltip": "المخرج المباشر من LoRA Loader لـ IC-LoRA المحدد الذي سيتم استخراج البيانات الوصفية منه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iclora_parameters",
+        "tooltip": "معلمات IC-LoRA المستخرجة من بيانات LoRA الوصفية (مثل reference_downscale_factor). قم بالتوصيل مع LTXVAddGuide إذا كان LoRA يتطلب معالجة خاصة للإرشادات."
+      }
+    }
+  },
   "GetImageSize": {
     "description": "يعرض عرض وارتفاع الصورة، ويمررها دون تغيير.",
     "display_name": "الحصول على حجم الصورة",
@@ -7383,6 +7399,10 @@
         "name": "مؤشر الإطار",
         "tooltip": "مؤشر الإطار لبدء التهيئة. لأي صورة أو فيديو بإطارات 1-8، أي قيمة مقبولة. للفيديوهات 9+، يجب أن يكون قابلاً للقسمة على 8، وإلا سيتم تقريبه للأسفل لأقرب مضاعف 8. القيم السالبة تُحسب من نهاية الفيديو."
       },
+      "iclora_parameters": {
+        "name": "iclora_parameters",
+        "tooltip": "معلمات IC-LoRA اختيارية من عقدة Get IC-LoRA Parameters. تُستخدم لضبط معالجة الإرشادات حسب متطلبات بعض IC-LoRA (مثل تلك التي تحتوي على reference_downscale_factor أكبر من 1). عند الربط المتسلسل، يستخدم كل LTXVAddGuide فقط المعلمات المتصلة به."
+      },
       "image": {
         "name": "صورة",
         "tooltip": "صورة أو فيديو لتكييف الفيديو الكامن عليه. يجب أن يكون عدد الإطارات 8*n + 1. إذا لم يكن كذلك، سيتم قصه إلى أقرب 8*n + 1."
@@ -8375,6 +8395,19 @@
     "inputs": {
       "latent": {
         "name": "كامن"
+      }
+    }
+  },
+  "LoadMoGeModel": {
+    "display_name": "تحميل نموذج MoGe",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9698,6 +9731,122 @@
       "seed": {
         "name": "بذرة",
         "tooltip": "البذرة العشوائية المستخدمة لإنشاء الضجيج."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeInference": {
+    "display_name": "استدلال MoGe",
+    "inputs": {
+      "apply_mask": {
+        "name": "apply_mask",
+        "tooltip": "تعيين البكسلات المحجوبة (السماء / غير الصالحة) إلى inf في النقاط والعمق حتى يتم استبعادها عند إنشاء الشبكة. قم بإلغاء التفعيل للاحتفاظ بالهندسة المتوقعة الخام في كل مكان؛ لا يزال يتم إرجاع القناع بشكل منفصل."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "عدد الصور لكل عملية استدلال. قلل إذا واجهت نفاد الذاكرة في فيديو طويل أو مجموعة صور."
+      },
+      "force_projection": {
+        "name": "force_projection"
+      },
+      "fov_x_degrees": {
+        "name": "fov_x_degrees",
+        "tooltip": "مجال الرؤية الأفقي للكاميرا المصدرية. يحدد البعد البؤري المستخدم لإسقاط خريطة العمق إلى ثلاثي الأبعاد. ٠ = استرجاع تلقائي من النقاط المتوقعة."
+      },
+      "image": {
+        "name": "image"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "٠ = الأسرع، ٩ = أعلى تفاصيل."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePanoramaInference": {
+    "display_name": "استدلال MoGe بانوراما",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "عدد المناظير لكل دفعة استدلال (١٢ تقسيم في المجموع)."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "بانوراما إكويركتانجولار (أي نسبة عرض إلى ارتفاع)."
+      },
+      "merge_resolution": {
+        "name": "merge_resolution",
+        "tooltip": "دقة الجانب الطويل لخريطة المسافة المدمجة."
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "تفاصيل كل منظور (٠ = الأسرع، ٩ = الأكثر تفصيلاً)."
+      },
+      "split_resolution": {
+        "name": "split_resolution",
+        "tooltip": "دقة كل تقسيم منظور."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePointMapToMesh": {
+    "display_name": "MoGe تحويل خريطة النقاط إلى شبكة",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "أي صورة من مجموعة هندسة MoGe لتحويلها إلى شبكة. أعداد الرؤوس تختلف لكل صورة، لذلك لا يمكن دمج المجموعات في شبكة واحدة."
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "تخطي الرؤوس؛ ١ = الدقة الكاملة."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "تجاهل البكسلات التي يتجاوز مدى العمق ٣×٣ لها هذا الكسر. ٠ = إيقاف."
+      },
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "تمرير الصورة المصدرية كخامة baseColor."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeRender": {
+    "display_name": "MoGe عرض",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "DirectX مقابل OpenGL يتحكم في معيار قناة الأخضر لخريطة النورمال. DirectX: الأخضر = -Y للأسفل (Unreal). OpenGL: الأخضر = +Y للأعلى (Blender, Substance, Unity, glTF)."
       }
     },
     "outputs": {
