@@ -497,6 +497,9 @@ describe('formatUtil', () => {
     it('rejects strings with non-hex characters in UUID slots', () => {
       expect(isValidUuid('gcea40bb-b0cf-4b40-a758-8935cfe8d52f')).toBe(false)
       expect(isValidUuid('9cea40bb-b0cf-4b40-a758-8935cfe8d52z')).toBe(false)
+    })
+  })
+
   describe('formatLocalizedNumber', () => {
     it('formats numbers using the given locale', () => {
       expect(formatLocalizedNumber(2618646, 'en')).toBe('2,618,646')
