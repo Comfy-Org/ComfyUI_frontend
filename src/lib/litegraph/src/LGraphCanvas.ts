@@ -1,7 +1,6 @@
 import { toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
 
-import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
@@ -8503,40 +8502,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       options = [
         {
           content: 'Convert to Subgraph',
-          callback: () => {
-            // find groupnodes, degroup and select children
-            if (this.selectedItems.size) {
-              let hasGroups = false
-              for (const item of this.selectedItems) {
-                const node = item as LGraphNode
-                const isGroup =
-                  typeof node.type === 'string' &&
-                  node.type.startsWith(`${PREFIX}${SEPARATOR}`)
-                if (isGroup && node.convertToNodes) {
-                  hasGroups = true
-                  const nodes = node.convertToNodes()
-
-                  requestAnimationFrame(() => {
-                    this.selectItems(nodes, true)
-
-                    if (!this.selectedItems.size)
-                      throw new Error('Convert to Subgraph: Nothing selected.')
-                    this._graph.convertToSubgraph(this.selectedItems)
-                  })
-                  return
-                }
-              }
-
-              // If no groups were found, continue normally
-              if (!hasGroups) {
-                if (!this.selectedItems.size)
-                  throw new Error('Convert to Subgraph: Nothing selected.')
-                this._graph.convertToSubgraph(this.selectedItems)
-              }
-            } else {
-              throw new Error('Convert to Subgraph: Nothing selected.')
-            }
-          }
+          callback: () => this._graph.convertToSubgraph(this.selectedItems)
         },
         {
           content: 'Properties',
