@@ -65,10 +65,10 @@ catalog:
   '@webgpu/types': ^0.1.66
   algoliasearch: ^5.21.0
   astro: ^5.10.0
-  axios: ^1.13.5
+  axios: ^1.15.2
   cross-env: ^10.1.0
   cva: 1.0.0-beta.4
-  dompurify: ^3.3.1
+  dompurify: ^3.4.5
   dotenv: ^16.4.5
   eslint: ^9.39.1
   eslint-config-prettier: ^10.1.8
@@ -86,7 +86,7 @@ catalog:
   glob: ^13.0.6
   globals: ^16.5.0
   gsap: ^3.14.2
-  happy-dom: ^20.0.11
+  happy-dom: ^20.8.9
   husky: ^9.1.7
   jiti: 2.6.1
   jsdom: ^27.4.0
@@ -113,8 +113,8 @@ catalog:
   storybook: ^10.2.10
   stylelint: ^16.26.1
   tailwindcss: ^4.3.0
-  three: ^0.170.0
   tailwindcss-primeui: ^0.6.1
+  three: ^0.170.0
   tsx: ^4.15.6
   tw-animate-css: ^1.3.8
   typegpu: ^0.8.2
@@ -123,8 +123,9 @@ catalog:
   unplugin-icons: ^22.5.0
   unplugin-typegpu: 0.8.0
   unplugin-vue-components: ^30.0.0
+  uuid: ^11.1.1
   vee-validate: ^4.15.1
-  vite: ^8.0.0
+  vite: ^8.0.13
   vite-plugin-dts: ^4.5.4
   vite-plugin-html: ^3.2.2
   vite-plugin-vue-devtools: ^8.0.0
@@ -163,3 +164,5 @@ onlyBuiltDependencies:
 overrides:
   '@tiptap/pm': 2.27.2
   '@types/eslint': '-'
+  flatted: '>=3.4.2'
+  protobufjs: '>=7.5.6'
