@@ -1,8 +1,13 @@
 #!/bin/bash
 set -e
 
-# Deploy Playwright test reports to Cloudflare Pages and comment on PR
+# Deploy Playwright test reports to Cloudflare Pages and write section markdown.
 # Usage: ./pr-playwright-deploy-and-comment.sh <pr_number> <branch_name> <status>
+#
+# When SUMMARY_FILE env var is set, the generated markdown is written there
+# instead of posted as a standalone GitHub comment. The caller is then
+# responsible for upserting that content into the unified PR report via the
+# upsert-comment-section action.
 
 # Input validation
 # Validate PR number is numeric
@@ -103,17 +108,26 @@ deploy_report() {
     echo "failed"
 }
 
-# Post or update GitHub comment
+# Post or update GitHub comment, or write to SUMMARY_FILE if set.
+# When SUMMARY_FILE is set, the caller (workflow) is responsible for upserting
+# the content into the unified PR report via upsert-comment-section.
 post_comment() {
     body="$1"
+
+    if [ -n "${SUMMARY_FILE:-}" ]; then
+        printf '%s\n' "$body" > "$SUMMARY_FILE"
+        echo "Wrote playwright section to $SUMMARY_FILE" >&2
+        return
+    fi
+
     temp_file=$(mktemp)
     echo "$body" > "$temp_file"
-    
+
     if command -v gh > /dev/null 2>&1; then
         # Find existing comment ID
         existing=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
             --jq ".[] | select(.body | contains(\"$COMMENT_MARKER\")) | .id" | head -1)
-        
+
         if [ -n "$existing" ]; then
             # Update specific comment by ID
             gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$existing" \
@@ -126,15 +140,20 @@ post_comment() {
         echo "GitHub CLI not available, outputting comment:"
         cat "$temp_file"
     fi
-    
+
     rm -f "$temp_file"
 }
 
 # Main execution
 if [ "$STATUS" = "starting" ]; then
-    # Post concise starting comment
-    comment="$COMMENT_MARKER
+    # When writing to SUMMARY_FILE, omit the standalone marker (the upsert
+    # action uses its own section delimiters).
+    if [ -n "${SUMMARY_FILE:-}" ]; then
+        comment="## 🎭 Playwright: ⏳ Running..."
+    else
+        comment="$COMMENT_MARKER
 ## 🎭 Playwright: ⏳ Running..."
+    fi
     post_comment "$comment"
     
 else
@@ -281,9 +300,14 @@ else
         flaky_note=" · $total_flaky flaky"
     fi
     
-    # Generate compact single-line comment
-    comment="$COMMENT_MARKER
+    # Generate compact single-line comment (omit standalone marker when writing
+    # to SUMMARY_FILE — the upsert action adds its own section delimiters).
+    if [ -n "${SUMMARY_FILE:-}" ]; then
+        comment="## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$flaky_note"
+    else
+        comment="$COMMENT_MARKER
 ## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$flaky_note"
+    fi
 
     # Extract and display failed tests from all browsers (flaky tests are treated as passing)
     if [ $total_failed -gt 0 ]; then

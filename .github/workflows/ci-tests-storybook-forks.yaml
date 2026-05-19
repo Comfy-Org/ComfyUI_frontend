@@ -38,16 +38,15 @@ jobs:
         id: pr
         uses: ./.github/actions/resolve-pr-from-workflow-run
 
-      - name: Handle Storybook Start
+      - name: Handle Storybook Start — upsert storybook starting section
         if: steps.pr.outputs.skip != 'true' && github.event.action == 'requested'
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          chmod +x scripts/cicd/pr-storybook-deploy-and-comment.sh
-          ./scripts/cicd/pr-storybook-deploy-and-comment.sh \
-            "${{ steps.pr.outputs.number }}" \
-            "${{ github.event.workflow_run.head_branch }}" \
-            "starting"
+        uses: ./.github/actions/upsert-comment-section
+        with:
+          pr-number: ${{ steps.pr.outputs.number }}
+          section-name: storybook
+          section-content: '## 🎨 Storybook: 🚧 Building...'
+          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
+          token: ${{ github.token }}
 
       - name: Download and Deploy Storybook
         if: steps.pr.outputs.skip != 'true' && github.event.action == 'completed' && github.event.workflow_run.conclusion == 'success'
@@ -58,7 +57,7 @@ jobs:
           name: storybook-static
           path: storybook-static
 
-      - name: Handle Storybook Completion
+      - name: Handle Storybook Completion — deploy and generate section
         if: steps.pr.outputs.skip != 'true' && github.event.action == 'completed'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -66,9 +65,28 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           WORKFLOW_URL: ${{ github.event.workflow_run.html_url }}
+          SUMMARY_FILE: storybook-section.md
+          BRANCH_NAME: ${{ github.event.workflow_run.head_branch }}
         run: |
           chmod +x scripts/cicd/pr-storybook-deploy-and-comment.sh
           ./scripts/cicd/pr-storybook-deploy-and-comment.sh \
             "${{ steps.pr.outputs.number }}" \
-            "${{ github.event.workflow_run.head_branch }}" \
+            "$BRANCH_NAME" \
             "completed"
+
+      - name: Read storybook section
+        id: section
+        if: steps.pr.outputs.skip != 'true' && github.event.action == 'completed' && hashFiles('storybook-section.md') != ''
+        uses: juliangruber/read-file-action@b549046febe0fe86f8cb4f93c24e284433f9ab58 # v1.1.7
+        with:
+          path: storybook-section.md
+
+      - name: Upsert storybook section into unified report
+        if: steps.pr.outputs.skip != 'true' && github.event.action == 'completed' && steps.section.outputs.content != ''
+        uses: ./.github/actions/upsert-comment-section
+        with:
+          pr-number: ${{ steps.pr.outputs.number }}
+          section-name: storybook
+          section-content: ${{ steps.section.outputs.content }}
+          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
+          token: ${{ github.token }}

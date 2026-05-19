@@ -1,21 +1,22 @@
 name: Upsert Comment Section
 description: >
   Manage a consolidated PR comment with independently-updatable sections.
-  All website CI workflows share the marker <!-- WEBSITE_CI_REPORT -->.
-  Valid section names: "e2e", "preview", "screenshot-update".
+  Multiple CI workflows can share the same comment by using the same
+  comment-marker and different section-names. Each workflow upserts only
+  its own section, leaving other sections intact.
 
 inputs:
   pr-number:
     description: PR number to comment on
     required: true
   section-name:
-    description: 'Section identifier: "e2e", "preview", or "screenshot-update"'
+    description: 'Section identifier (e.g. "playwright", "storybook", "e2e", "preview")'
     required: true
   section-content:
     description: Markdown content for this section
     required: true
   comment-marker:
-    description: Top-level HTML comment marker (must be <!-- WEBSITE_CI_REPORT --> for all callers)
+    description: Top-level HTML comment marker shared by all sections in this comment
     required: true
   token:
     description: GitHub token with pull-requests write permission
