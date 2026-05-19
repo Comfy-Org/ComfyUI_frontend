@@ -8,8 +8,12 @@
       @update:open="(open) => onRekaOpenChange(item.key, open)"
     >
       <DialogPortal>
-        <DialogOverlay :class="item.dialogComponentProps.overlayClass" />
+        <DialogOverlay
+          v-reka-z-index
+          :class="item.dialogComponentProps.overlayClass"
+        />
         <DialogContent
+          v-reka-z-index
           :size="item.dialogComponentProps.size ?? 'md'"
           :maximized="!!item.dialogComponentProps.maximized"
           :class="item.dialogComponentProps.contentClass"
@@ -118,6 +122,7 @@ import {
   onRekaFocusOutside,
   onRekaPointerDownOutside
 } from '@/components/dialog/rekaPrimeVueBridge'
+import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
