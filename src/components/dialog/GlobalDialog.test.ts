@@ -8,7 +8,10 @@ import { defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
-import { onRekaPointerDownOutside } from '@/components/dialog/rekaPrimeVueBridge'
+import {
+  onRekaFocusOutside,
+  onRekaPointerDownOutside
+} from '@/components/dialog/rekaPrimeVueBridge'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const i18n = createI18n({
@@ -239,5 +242,40 @@ describe('shouldPreventRekaDismiss', () => {
     const event = makeEvent(document.body)
     onRekaPointerDownOutside({ dismissableMask: false }, event)
     expect(event.defaultPrevented).toBe(true)
+  })
+
+  it.for(['p-dialog', 'p-select-overlay'])(
+    'focus-outside on a sibling %s portal does not dismiss the parent',
+    (className) => {
+      const overlay = document.createElement('div')
+      overlay.className = className
+      const inner = document.createElement('button')
+      overlay.appendChild(inner)
+      document.body.appendChild(overlay)
+
+      const event = makeEvent(inner)
+      onRekaFocusOutside(event)
+
+      expect(event.defaultPrevented).toBe(true)
+      overlay.remove()
+    }
+  )
+
+  it('focus-outside still dismisses when focus moves to a non-portal element', () => {
+    const event = makeEvent(document.body)
+    onRekaFocusOutside(event)
+    expect(event.defaultPrevented).toBe(false)
+  })
+
+  it('focus-outside on a sibling Reka portal does not dismiss the parent', () => {
+    const portal = document.createElement('div')
+    portal.setAttribute('role', 'dialog')
+    document.body.appendChild(portal)
+
+    const event = makeEvent(portal)
+    onRekaFocusOutside(event)
+
+    expect(event.defaultPrevented).toBe(true)
+    portal.remove()
   })
 })
