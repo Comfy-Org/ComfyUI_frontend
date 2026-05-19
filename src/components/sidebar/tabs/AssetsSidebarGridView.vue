@@ -1,6 +1,5 @@
 <template>
   <div class="flex h-full flex-col">
-    <!-- Assets Grid -->
     <VirtualGrid
       class="flex-1"
       :items="assetItems"
@@ -13,8 +12,8 @@
           :selected="isSelected(item.asset.id)"
           :show-output-count="showOutputCount(item.asset)"
           :output-count="getOutputCount(item.asset)"
-          :rating="getRating(item.asset.id)"
-          @update:rating="handleRatingUpdate(item.asset.id, $event)"
+          :rating="getAssetRating(item.asset)"
+          @update:rating="handleRatingUpdate(item.asset, $event)"
           @click="emit('select-asset', item.asset)"
           @context-menu="emit('context-menu', $event, item.asset)"
           @zoom="emit('zoom', item.asset)"
@@ -26,11 +25,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getAssetRating } from '@/platform/assets/utils/assetMetadataUtils'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 const { assets, isSelected, showOutputCount, getOutputCount } = defineProps<{
   assets: AssetItem[]
@@ -45,21 +46,15 @@ const emit = defineEmits<{
   (e: 'approach-end'): void
   (e: 'zoom', asset: AssetItem): void
   (e: 'output-count-click', asset: AssetItem): void
+  (
+    e: 'asset-metadata-updated',
+    payload: { assetId: string; user_metadata: Record<string, unknown> }
+  ): void
 }>()
 
+const assetsStore = useAssetsStore()
+
 type AssetGridItem = { key: string; asset: AssetItem }
-
-const ratingsByAssetId = ref<Record<string, number>>({})
-
-function getRating(assetId: string) {
-  return ratingsByAssetId.value[assetId] ?? 0
-}
-
-function handleRatingUpdate(assetId: string, rating: number | undefined) {
-  if (rating === undefined) return
-  ratingsByAssetId.value = { ...ratingsByAssetId.value, [assetId]: rating }
-  console.warn('[AssetsSidebarGridView] rating updated', { assetId, rating })
-}
 
 const assetItems = computed<AssetGridItem[]>(() =>
   assets.map((asset) => ({
@@ -73,5 +68,22 @@ const gridStyle = {
   gridTemplateColumns: 'repeat(auto-fill, minmax(min(200px, 30vw), 1fr))',
   padding: '0 0.5rem',
   gap: '0.5rem'
+}
+
+async function handleRatingUpdate(
+  asset: AssetItem,
+  rating: number | undefined
+) {
+  if (rating === undefined) return
+
+  const savedMetadata = await assetsStore.updateMediaAssetUserMetadata(asset, {
+    rating
+  })
+  if (!savedMetadata) return
+
+  emit('asset-metadata-updated', {
+    assetId: asset.id,
+    user_metadata: savedMetadata
+  })
 }
 </script>

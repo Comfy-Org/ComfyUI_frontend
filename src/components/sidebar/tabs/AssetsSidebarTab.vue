@@ -111,6 +111,7 @@
           @approach-end="handleApproachEnd"
           @zoom="handleZoomClick"
           @output-count-click="enterFolderView"
+          @asset-metadata-updated="handleAssetMetadataUpdated"
         />
       </div>
     </template>
@@ -510,6 +511,21 @@ function handleAssetSelect(asset: AssetItem, assets?: AssetItem[]) {
   const index = assetList.findIndex((a) => a.id === asset.id)
   emit('assetSelected', asset)
   handleAssetClick(asset, index, assetList)
+}
+
+function handleAssetMetadataUpdated(payload: {
+  assetId: string
+  user_metadata: Record<string, unknown>
+}) {
+  if (!isInFolderView.value) return
+
+  const idx = folderAssets.value.findIndex((a) => a.id === payload.assetId)
+  if (idx < 0) return
+
+  folderAssets.value[idx] = {
+    ...folderAssets.value[idx],
+    user_metadata: payload.user_metadata
+  }
 }
 
 const { start: scheduleCleanup, stop: cancelCleanup } = useTimeoutFn(

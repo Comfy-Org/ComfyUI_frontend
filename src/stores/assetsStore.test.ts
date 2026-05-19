@@ -24,6 +24,7 @@ vi.mock('@/scripts/api', () => ({
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
     getAssetsByTag: vi.fn(),
+    getAssetsPageByTag: vi.fn(),
     getAllAssetsByTag: vi.fn(),
     getAssetsForNodeType: vi.fn(),
     invalidateInputAssetsIncludingPublic: vi.fn(),
@@ -1177,6 +1178,127 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const cached = store.getAssets('CheckpointLoaderSimple')[0]
       expect(cached.user_metadata).toEqual({ note: 'before' })
       consoleSpy.mockRestore()
+    })
+  })
+
+  describe('updateMediaAssetUserMetadata', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('optimistically patches inputAssets and applies the server response', async () => {
+      const store = useAssetsStore()
+      const asset = {
+        id: 'input-1',
+        name: 'test.png',
+        size: 100,
+        tags: ['input'],
+        is_immutable: false,
+        user_metadata: { filename: 'test.png' }
+      }
+
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([asset])
+      mockIsCloud.value = true
+      await store.updateInputs()
+
+      const serverResponse = {
+        ...asset,
+        user_metadata: { filename: 'test.png', rating: 4 }
+      }
+      vi.mocked(assetService.updateAsset).mockResolvedValueOnce(serverResponse)
+
+      const promise = store.updateMediaAssetUserMetadata(asset, { rating: 4 })
+      expect(store.inputAssets[0].user_metadata?.rating).toBe(4)
+
+      await vi.advanceTimersByTimeAsync(400)
+      const result = await promise
+
+      expect(result).toEqual(serverResponse.user_metadata)
+      expect(store.inputAssets[0].user_metadata).toEqual(
+        serverResponse.user_metadata
+      )
+      expect(assetService.updateAsset).toHaveBeenCalledWith('input-1', {
+        user_metadata: { filename: 'test.png', rating: 4 }
+      })
+    })
+
+    it('rolls back inputAssets metadata when the server rejects', async () => {
+      const store = useAssetsStore()
+      const asset = {
+        id: 'input-2',
+        name: 'rollback.png',
+        size: 100,
+        tags: ['input'],
+        is_immutable: false,
+        user_metadata: { rating: 2 }
+      }
+
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([asset])
+      mockIsCloud.value = true
+      await store.updateInputs()
+
+      vi.mocked(assetService.updateAsset).mockRejectedValueOnce(
+        new Error('500 Internal Error')
+      )
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      const promise = store.updateMediaAssetUserMetadata(asset, { rating: 5 })
+      expect(store.inputAssets[0].user_metadata?.rating).toBe(5)
+
+      await vi.advanceTimersByTimeAsync(400)
+      const result = await promise
+
+      expect(result).toBeNull()
+      expect(store.inputAssets[0].user_metadata?.rating).toBe(2)
+      consoleSpy.mockRestore()
+    })
+
+    it('skips explicitly immutable assets', async () => {
+      const store = useAssetsStore()
+      const asset = {
+        id: 'immutable-1',
+        name: 'locked.png',
+        size: 100,
+        tags: ['input'],
+        is_immutable: true,
+        user_metadata: { rating: 1 }
+      }
+
+      const result = await store.updateMediaAssetUserMetadata(asset, {
+        rating: 3
+      })
+
+      expect(result).toBeNull()
+      expect(assetService.updateAsset).not.toHaveBeenCalled()
+    })
+
+    it('persists when is_immutable is undefined (sidebar media assets)', async () => {
+      const store = useAssetsStore()
+      const asset = {
+        id: 'output-uuid',
+        name: 'output.png',
+        size: 100,
+        tags: ['output'],
+        user_metadata: { jobId: 'job-1' }
+      }
+
+      vi.mocked(assetService.updateAsset).mockResolvedValueOnce({
+        ...asset,
+        user_metadata: { jobId: 'job-1', rating: 4 }
+      })
+
+      const promise = store.updateMediaAssetUserMetadata(asset, { rating: 4 })
+      await vi.advanceTimersByTimeAsync(400)
+      const result = await promise
+
+      expect(result).toEqual({ jobId: 'job-1', rating: 4 })
+      expect(assetService.updateAsset).toHaveBeenCalledWith('output-uuid', {
+        user_metadata: { jobId: 'job-1', rating: 4 }
+      })
     })
   })
 

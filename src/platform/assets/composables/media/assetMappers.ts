@@ -2,8 +2,22 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
+import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
 import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+
+function getRecordUserMetadata(
+  value: unknown
+): Record<string, unknown> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined
+  }
+  return value as Record<string, unknown>
+}
+
+function getJobUserMetadata(job: JobListItem): Record<string, unknown> {
+  return getRecordUserMetadata(job.user_metadata) ?? {}
+}
 
 /**
  * Extract asset type from tags array
@@ -47,7 +61,10 @@ export function mapTaskOutputToAssetItem(
     tags: ['output'],
     thumbnail_url: output.previewUrl,
     preview_url: output.url,
-    user_metadata: metadata
+    user_metadata: {
+      ...getJobUserMetadata(taskItem.job),
+      ...metadata
+    }
   }
 }
 

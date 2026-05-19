@@ -113,7 +113,8 @@ const zAssetUserMetadata = z.object({
   name: z.string().optional(),
   base_model: z.array(z.string()).optional(),
   additional_tags: z.array(z.string()).optional(),
-  user_description: z.string().optional()
+  user_description: z.string().optional(),
+  rating: z.number().int().min(0).max(5).optional()
 })
 
 export type AssetUserMetadata = z.infer<typeof zAssetUserMetadata>

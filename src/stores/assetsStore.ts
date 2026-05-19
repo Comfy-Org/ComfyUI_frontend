@@ -1,4 +1,4 @@
-import { useAsyncState, whenever } from '@vueuse/core'
+import { useAsyncState, useDebounceFn, whenever } from '@vueuse/core'
 import { difference } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, shallowReactive } from 'vue'
@@ -141,12 +141,52 @@ export const useAssetsStore = defineStore('assets', () => {
     return result
   }
 
+  function mergePaginatedHistoryAssets(
+    newAssets: AssetItem[],
+    loadMore: boolean,
+    hasMore: boolean,
+    offsetIncrement: number
+  ): AssetItem[] {
+    if (loadMore) {
+      for (const asset of newAssets) {
+        if (loadedIds.has(asset.id)) {
+          continue
+        }
+        loadedIds.add(asset.id)
+
+        const assetTime = new Date(asset.created_at ?? 0).getTime()
+        const insertIndex = allHistoryItems.value.findIndex(
+          (item) => new Date(item.created_at ?? 0).getTime() < assetTime
+        )
+
+        if (insertIndex === -1) {
+          allHistoryItems.value.push(asset)
+        } else {
+          allHistoryItems.value.splice(insertIndex, 0, asset)
+        }
+      }
+    } else {
+      allHistoryItems.value = newAssets
+      newAssets.forEach((asset) => loadedIds.add(asset.id))
+    }
+
+    historyOffset.value += offsetIncrement
+    hasMoreHistory.value = hasMore
+
+    if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
+      const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
+      allHistoryItems.value = allHistoryItems.value.slice(0, MAX_HISTORY_ITEMS)
+      removed.forEach((item) => loadedIds.delete(item.id))
+    }
+
+    return allHistoryItems.value
+  }
+
   /**
    * Fetch history assets with pagination support
    * @param loadMore - true for pagination (append), false for initial load (replace)
    */
   const fetchHistoryAssets = async (loadMore = false): Promise<AssetItem[]> => {
-    // Reset state for initial load
     if (!loadMore) {
       historyOffset.value = 0
       hasMoreHistory.value = true
@@ -154,55 +194,31 @@ export const useAssetsStore = defineStore('assets', () => {
       loadedIds.clear()
     }
 
-    // Fetch from server with offset
+    if (isCloud) {
+      const page = await assetService.getAssetsPageByTag('output', true, {
+        limit: BATCH_SIZE,
+        offset: historyOffset.value
+      })
+      return mergePaginatedHistoryAssets(
+        page.assets,
+        loadMore,
+        page.has_more ?? false,
+        page.assets.length
+      )
+    }
+
     const history = await api.getHistory(BATCH_SIZE, {
       offset: historyOffset.value
     })
 
-    // Convert JobListItems to AssetItems
     const newAssets = mapHistoryToAssets(history)
 
-    if (loadMore) {
-      // Filter out duplicates and insert in sorted order
-      for (const asset of newAssets) {
-        if (loadedIds.has(asset.id)) {
-          continue // Skip duplicates
-        }
-        loadedIds.add(asset.id)
-
-        // Find insertion index to maintain sorted order (newest first)
-        const assetTime = new Date(asset.created_at ?? 0).getTime()
-        const insertIndex = allHistoryItems.value.findIndex(
-          (item) => new Date(item.created_at ?? 0).getTime() < assetTime
-        )
-
-        if (insertIndex === -1) {
-          // Asset is oldest, append to end
-          allHistoryItems.value.push(asset)
-        } else {
-          // Insert at the correct position
-          allHistoryItems.value.splice(insertIndex, 0, asset)
-        }
-      }
-    } else {
-      // Initial load: replace all
-      allHistoryItems.value = newAssets
-      newAssets.forEach((asset) => loadedIds.add(asset.id))
-    }
-
-    // Update pagination state
-    historyOffset.value += BATCH_SIZE
-    hasMoreHistory.value = history.length === BATCH_SIZE
-
-    if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
-      const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
-      allHistoryItems.value = allHistoryItems.value.slice(0, MAX_HISTORY_ITEMS)
-
-      // Clean up Set
-      removed.forEach((item) => loadedIds.delete(item.id))
-    }
-
-    return allHistoryItems.value
+    return mergePaginatedHistoryAssets(
+      newAssets,
+      loadMore,
+      history.length === BATCH_SIZE,
+      BATCH_SIZE
+    )
   }
 
   const historyAssets = ref<AssetItem[]>([])
@@ -715,7 +731,11 @@ export const useAssetsStore = defineStore('assets', () => {
         invalidateCategory,
         updateAssetMetadata,
         updateAssetTags,
-        invalidateModelsForCategory
+        invalidateModelsForCategory,
+        patchAssetInModelCaches: (
+          assetId: string,
+          updates: Partial<AssetItem>
+        ) => updateAssetInCache(assetId, updates)
       }
     }
 
@@ -732,7 +752,8 @@ export const useAssetsStore = defineStore('assets', () => {
       updateModelsForTag: async () => {},
       updateAssetMetadata: async () => {},
       updateAssetTags: async () => {},
-      invalidateModelsForCategory: () => {}
+      invalidateModelsForCategory: () => {},
+      patchAssetInModelCaches: undefined
     }
   }
 
@@ -748,8 +769,109 @@ export const useAssetsStore = defineStore('assets', () => {
     invalidateCategory,
     updateAssetMetadata,
     updateAssetTags,
-    invalidateModelsForCategory
+    invalidateModelsForCategory,
+    patchAssetInModelCaches
   } = getModelState()
+
+  function patchAssetInMediaLists(
+    assetId: string,
+    updates: Partial<AssetItem>
+  ): void {
+    const patch = (list: AssetItem[]) => {
+      const idx = list.findIndex((a) => a.id === assetId)
+      if (idx < 0) return
+      list[idx] = { ...list[idx], ...updates }
+    }
+    patch(historyAssets.value)
+    patch(allHistoryItems.value)
+    patch(inputAssets.value)
+  }
+
+  const MEDIA_METADATA_DEBOUNCE_MS = 400
+  const latestUserMetadataByAssetId = new Map<string, Record<string, unknown>>()
+  const rollbackUserMetadataByAssetId = new Map<
+    string,
+    Record<string, unknown> | undefined
+  >()
+  const flushResolversByAssetId = new Map<
+    string,
+    Array<(result: Record<string, unknown> | null) => void>
+  >()
+  const debouncedMediaMetadataFlushByAssetId = new Map<
+    string,
+    ReturnType<typeof useDebounceFn<() => Promise<void>>>
+  >()
+
+  function getMediaMetadataDebouncedFlush(assetId: string) {
+    let debounced = debouncedMediaMetadataFlushByAssetId.get(assetId)
+    if (!debounced) {
+      debounced = useDebounceFn(async () => {
+        const merged = latestUserMetadataByAssetId.get(assetId)
+        if (!merged) return
+
+        const originalMetadata = rollbackUserMetadataByAssetId.get(assetId)
+        const resolvers = flushResolversByAssetId.get(assetId) ?? []
+        flushResolversByAssetId.delete(assetId)
+
+        try {
+          const updatedAsset = await assetService.updateAsset(assetId, {
+            user_metadata: merged
+          })
+          patchAssetInMediaLists(assetId, updatedAsset)
+          patchAssetInModelCaches?.(assetId, updatedAsset)
+          const savedMetadata = updatedAsset.user_metadata ?? merged
+          for (const resolve of resolvers) {
+            resolve(savedMetadata)
+          }
+        } catch (error) {
+          console.error('Failed to update media asset metadata:', error)
+          patchAssetInMediaLists(assetId, {
+            user_metadata: originalMetadata
+          })
+          patchAssetInModelCaches?.(assetId, {
+            user_metadata: originalMetadata
+          })
+          for (const resolve of resolvers) {
+            resolve(null)
+          }
+        } finally {
+          latestUserMetadataByAssetId.delete(assetId)
+          rollbackUserMetadataByAssetId.delete(assetId)
+          debouncedMediaMetadataFlushByAssetId.delete(assetId)
+        }
+      }, MEDIA_METADATA_DEBOUNCE_MS)
+      debouncedMediaMetadataFlushByAssetId.set(assetId, debounced)
+    }
+    return debounced
+  }
+
+  function updateMediaAssetUserMetadata(
+    asset: AssetItem,
+    partialUserMetadata: Record<string, unknown>
+  ): Promise<Record<string, unknown> | null> {
+    if (Object.keys(partialUserMetadata).length === 0) {
+      return Promise.resolve(null)
+    }
+    if (asset.is_immutable === true) {
+      return Promise.resolve(null)
+    }
+
+    if (!rollbackUserMetadataByAssetId.has(asset.id)) {
+      rollbackUserMetadataByAssetId.set(asset.id, asset.user_metadata)
+    }
+
+    const merged = { ...(asset.user_metadata ?? {}), ...partialUserMetadata }
+    latestUserMetadataByAssetId.set(asset.id, merged)
+    patchAssetInMediaLists(asset.id, { user_metadata: merged })
+    patchAssetInModelCaches?.(asset.id, { user_metadata: merged })
+
+    return new Promise((resolve) => {
+      const resolvers = flushResolversByAssetId.get(asset.id) ?? []
+      resolvers.push(resolve)
+      flushResolversByAssetId.set(asset.id, resolvers)
+      void getMediaMetadataDebouncedFlush(asset.id)()
+    })
+  }
 
   // Watch for completed downloads and refresh model caches
   whenever(
@@ -809,6 +931,7 @@ export const useAssetsStore = defineStore('assets', () => {
     updateHistory,
     loadMoreHistory,
     setAssetPreview,
+    updateMediaAssetUserMetadata,
 
     // Input mapping helpers
     inputAssetsByFilename,

@@ -145,7 +145,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useElementHover } from '@vueuse/core'
-import { computed, defineAsyncComponent, provide, ref, toRef, watch } from 'vue'
+import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
@@ -238,14 +238,6 @@ const fileKind = computed((): MediaKind => {
 })
 
 const supportsStarRating = computed(() => fileKind.value !== 'video')
-
-watch(rating, (value, oldValue) => {
-  if (value === oldValue || !asset) return
-  console.warn('[MediaAssetCard] rating updated', {
-    assetId: asset.id,
-    rating: value
-  })
-})
 
 const previewKind = computed((): PreviewKind => {
   return getMediaTypeFromFilename(asset?.name || '')

@@ -63,6 +63,24 @@ export function getOutputKey({
   return `${nodeId}-${subfolder}-${filename}`
 }
 
+function getOutputPersistedUserMetadata(
+  output: ResultItemImpl
+): Record<string, unknown> {
+  const metadata = getRecordUserMetadata(
+    (output as { user_metadata?: unknown }).user_metadata
+  )
+  return metadata ?? {}
+}
+
+function getRecordUserMetadata(
+  value: unknown
+): Record<string, unknown> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined
+  }
+  return value as Record<string, unknown>
+}
+
 function mapOutputsToAssetItems({
   jobId,
   outputs,
@@ -89,6 +107,7 @@ function mapOutputsToAssetItems({
       thumbnail_url: output.previewUrl,
       preview_url: output.url,
       user_metadata: {
+        ...getOutputPersistedUserMetadata(output),
         jobId,
         nodeId: output.nodeId,
         subfolder: output.subfolder,

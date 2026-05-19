@@ -1,5 +1,8 @@
+import { clampRating } from '@/components/ui/star-rating/starRating'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCivitaiUrl } from '@/utils/formatUtil'
+
+const ASSET_RATING_MAX = 5
 
 /**
  * Type-safe utilities for extracting metadata from assets.
@@ -197,4 +200,15 @@ export function getAssetCardTitle(asset: AssetItem): string {
   const curatedName = getStringProperty(asset, 'name')
   if (curatedName && curatedName !== asset.name) return curatedName
   return getAssetDisplayFilename(asset)
+}
+
+/**
+ * Reads the user star rating from asset user_metadata.
+ * @param asset - The asset to read the rating from
+ * @returns Rating from 0 to 5, or 0 when absent or invalid
+ */
+export function getAssetRating(asset: AssetItem): number {
+  const rating = asset.user_metadata?.rating
+  if (typeof rating !== 'number' || Number.isNaN(rating)) return 0
+  return clampRating(rating, ASSET_RATING_MAX)
 }

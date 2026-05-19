@@ -13,6 +13,7 @@ import {
   getAssetModelType,
   getAssetSourceUrl,
   getAssetTriggerPhrases,
+  getAssetRating,
   getAssetUserDescription,
   getSourceName
 } from '@/platform/assets/utils/assetMetadataUtils'
@@ -381,6 +382,36 @@ describe('assetMetadataUtils', () => {
         display_name: 'pretty.png'
       }
       expect(getAssetCardTitle(asset)).toBe('pretty.png')
+    })
+  })
+
+  describe('getAssetRating', () => {
+    it('returns the stored rating when it is a number', () => {
+      const asset = {
+        ...mockAsset,
+        user_metadata: { rating: 4 }
+      }
+      expect(getAssetRating(asset)).toBe(4)
+    })
+
+    it('returns 0 when rating is missing', () => {
+      expect(getAssetRating(mockAsset)).toBe(0)
+    })
+
+    it('returns 0 for invalid rating values', () => {
+      const asset = {
+        ...mockAsset,
+        user_metadata: { rating: 'four' }
+      }
+      expect(getAssetRating(asset)).toBe(0)
+    })
+
+    it('clamps ratings above the maximum', () => {
+      const asset = {
+        ...mockAsset,
+        user_metadata: { rating: 9 }
+      }
+      expect(getAssetRating(asset)).toBe(5)
     })
   })
 })
