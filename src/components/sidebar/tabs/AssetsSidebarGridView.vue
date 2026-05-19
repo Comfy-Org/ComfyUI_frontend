@@ -13,6 +13,8 @@
           :selected="isSelected(item.asset.id)"
           :show-output-count="showOutputCount(item.asset)"
           :output-count="getOutputCount(item.asset)"
+          :rating="getRating(item.asset.id)"
+          @update:rating="handleRatingUpdate(item.asset.id, $event)"
           @click="emit('select-asset', item.asset)"
           @context-menu="emit('context-menu', $event, item.asset)"
           @zoom="emit('zoom', item.asset)"
@@ -24,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
@@ -46,6 +48,18 @@ const emit = defineEmits<{
 }>()
 
 type AssetGridItem = { key: string; asset: AssetItem }
+
+const ratingsByAssetId = ref<Record<string, number>>({})
+
+function getRating(assetId: string) {
+  return ratingsByAssetId.value[assetId] ?? 0
+}
+
+function handleRatingUpdate(assetId: string, rating: number | undefined) {
+  if (rating === undefined) return
+  ratingsByAssetId.value = { ...ratingsByAssetId.value, [assetId]: rating }
+  console.warn('[AssetsSidebarGridView] rating updated', { assetId, rating })
+}
 
 const assetItems = computed<AssetGridItem[]>(() =>
   assets.map((asset) => ({

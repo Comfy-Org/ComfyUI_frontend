@@ -1,38 +1,79 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, ref } from 'vue'
-import type { HTMLAttributes } from 'vue'
+import { useElementHover } from '@vueuse/core'
+import { computed, ref, toValue } from 'vue'
+import type { HTMLAttributes, Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
   clampRating,
+  getDefaultRevealForPresentation,
   getDisplayRating,
   getRatingFromDigitKey,
   getRatingFromStarClick,
+  getStarRatingRevealState,
   isStarFilled
 } from './starRating'
+import type { StarRatingReveal } from './starRating'
+import { useStarRatingHost } from './starRatingHost'
 
 const modelValue = defineModel<number>({ default: 0 })
 
 const {
   disabled = false,
-  readonly = false,
+  readonly: explicitlyReadonly = false,
   showCount = false,
   max = 5,
+  presentation = 'inline',
+  reveal: revealProp,
+  hostRef: hostRefProp,
   class: className
 } = defineProps<{
   disabled?: boolean
   readonly?: boolean
   showCount?: boolean
   max?: number
+  presentation?: 'inline' | 'overlay'
+  reveal?: StarRatingReveal
+  hostRef?: Ref<HTMLElement | undefined>
   class?: HTMLAttributes['class']
 }>()
 
 const { t } = useI18n()
 
+const rootRef = ref<HTMLElement>()
 const hoverRating = ref<number | null>(null)
 
-const isInteractive = computed(() => !disabled && !readonly)
+const effectiveReveal = computed(
+  () => revealProp ?? getDefaultRevealForPresentation(presentation)
+)
+
+const injectedHostRef = useStarRatingHost()
+
+const isSelfHovered = useElementHover(rootRef)
+const isHostHovered = useElementHover(
+  computed(() => {
+    if (effectiveReveal.value !== 'host-hover') return null
+    return toValue(hostRefProp ?? injectedHostRef) ?? null
+  })
+)
+
+const revealState = computed(() =>
+  getStarRatingRevealState({
+    reveal: effectiveReveal.value,
+    hostHovered: isHostHovered.value,
+    selfHovered: isSelfHovered.value,
+    rating: modelValue.value,
+    disabled,
+    explicitlyReadonly
+  })
+)
+
+const effectivelyReadonly = computed(
+  () => revealState.value.effectivelyReadonly
+)
+
+const isInteractive = computed(() => !disabled && !effectivelyReadonly.value)
 
 const starIndices = computed(() =>
   Array.from({ length: max }, (_, index) => index + 1)
@@ -87,10 +128,16 @@ function handleKeydown(event: KeyboardEvent) {
 function starAriaLabel(starIndex: number) {
   return t('starRating.rateStars', { count: starIndex })
 }
+
+function handleRootClick(event: MouseEvent) {
+  if (presentation === 'overlay') event.stopPropagation()
+}
 </script>
 
 <template>
   <div
+    v-show="revealState.visible"
+    ref="rootRef"
     role="group"
     :aria-label="t('starRating.groupLabel')"
     :aria-valuenow="modelValue"
@@ -99,14 +146,16 @@ function starAriaLabel(starIndex: number) {
     :tabindex="groupTabIndex"
     :class="
       cn(
-        'inline-flex items-center',
+        'inline-flex items-center transition-opacity duration-150 ease-out',
         showCount && 'gap-2',
-        isInteractive &&
-          'opacity-60 transition-opacity duration-150 ease-out hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none',
+        revealState.opacityClass,
+        revealState.pointerEventsClass,
+        isInteractive && 'focus-visible:outline-none',
         disabled && 'opacity-50',
         className
       )
     "
+    @click="handleRootClick"
     @pointerleave="handleGroupPointerLeave"
     @keydown="handleKeydown"
   >

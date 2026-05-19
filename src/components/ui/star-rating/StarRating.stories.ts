@@ -6,6 +6,7 @@ import type {
 import { ref, toRefs } from 'vue'
 
 import StarRating from './StarRating.vue'
+import { provideStarRatingHost } from './starRatingHost'
 
 type StoryArgs = ComponentPropsAndSlots<typeof StarRating>
 
@@ -110,4 +111,36 @@ export const FiveStars: Story = {
     },
     template: '<StarRating v-model="value" />'
   })
+}
+
+export const OverlayHostHover: Story = {
+  render: () => ({
+    components: { StarRating },
+    setup() {
+      const value = ref(0)
+      const hostRef = ref<HTMLElement>()
+      provideStarRatingHost(hostRef)
+      return { value, hostRef }
+    },
+    template: `
+      <div
+        ref="hostRef"
+        class="relative size-64 rounded-lg bg-modal-card-placeholder-background"
+      >
+        <StarRating
+          v-model="value"
+          presentation="overlay"
+          class="absolute right-2 bottom-2"
+        />
+      </div>
+    `
+  }),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Overlay on a hoverable host: stars appear at 60% when the host is hovered (unrated); hover stars to rate at full opacity. Set a rating to keep stars visible.'
+      }
+    }
+  }
 }

@@ -54,13 +54,12 @@
         <i class="icon-[lucide--trash-2] size-5" />
       </LoadingOverlay>
 
-      <div
-        v-if="!loading && rating !== undefined"
+      <StarRating
+        v-if="!loading && supportsStarRating && rating !== undefined"
+        v-model="rating"
+        presentation="overlay"
         class="absolute right-2 bottom-2 z-10 flex justify-end"
-        @click.stop
-      >
-        <StarRating v-model="rating" readonly />
-      </div>
+      />
 
       <!-- Action buttons overlay (top-left) -->
       <div
@@ -146,12 +145,13 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useElementHover } from '@vueuse/core'
-import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
+import { computed, defineAsyncComponent, provide, ref, toRef, watch } from 'vue'
 
 import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
 import StarRating from '@/components/ui/star-rating/StarRating.vue'
+import { provideStarRatingHost } from '@/components/ui/star-rating/starRatingHost'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -215,6 +215,8 @@ const emit = defineEmits<{
 
 const cardContainerRef = ref<HTMLElement>()
 
+provideStarRatingHost(cardContainerRef)
+
 const isVideoPlaying = ref(false)
 const showVideoControls = ref(false)
 
@@ -233,6 +235,16 @@ const assetType = computed(() => {
 // Determine file type from extension
 const fileKind = computed((): MediaKind => {
   return getMediaTypeFromFilename(asset?.name || '')
+})
+
+const supportsStarRating = computed(() => fileKind.value !== 'video')
+
+watch(rating, (value, oldValue) => {
+  if (value === oldValue || !asset) return
+  console.warn('[MediaAssetCard] rating updated', {
+    assetId: asset.id,
+    rating: value
+  })
 })
 
 const previewKind = computed((): PreviewKind => {

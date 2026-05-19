@@ -108,8 +108,47 @@ export const WithStarRating: Story = {
     docs: {
       description: {
         story:
-          'Image asset card with star rating overlaid on the bottom-right of the preview.'
+          'Rated image asset: stars stay visible at full opacity. Hover the stars to edit.'
       }
+    }
+  }
+}
+
+export const WithStarRatingUnrated: Story = {
+  decorators: [
+    () => ({
+      template: '<div style="max-width: 280px;"><story /></div>'
+    })
+  ],
+  render: () => ({
+    components: { MediaAssetCard },
+    setup() {
+      const rating = ref(0)
+      return { rating, asset: sampleAsset }
+    },
+    template: '<MediaAssetCard :asset="asset" v-model:rating="rating" />'
+  }),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Unrated image asset: stars appear at 60% opacity on card hover; hover stars to rate at full opacity.'
+      }
+    }
+  }
+}
+
+const videoSampleAsset: AssetItem = {
+  ...sampleAsset,
+  id: 'asset-2',
+  name: 'Big_Buck_Bunny.mp4',
+  size: 10485760,
+  preview_url: SAMPLE_MEDIA.videoThumbnail,
+  user_metadata: {
+    duration: 13425,
+    dimensions: {
+      width: 1280,
+      height: 720
     }
   }
 }
@@ -120,19 +159,19 @@ export const VideoAsset: Story = {
       template: '<div style="max-width: 280px;"><story /></div>'
     })
   ],
-  args: {
-    asset: {
-      ...sampleAsset,
-      id: 'asset-2',
-      name: 'Big_Buck_Bunny.mp4',
-      size: 10485760,
-      preview_url: SAMPLE_MEDIA.videoThumbnail,
-      user_metadata: {
-        duration: 13425,
-        dimensions: {
-          width: 1280,
-          height: 720
-        }
+  render: () => ({
+    components: { MediaAssetCard },
+    setup() {
+      const rating = ref(4)
+      return { rating, asset: videoSampleAsset }
+    },
+    template: '<MediaAssetCard :asset="asset" v-model:rating="rating" />'
+  }),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Video assets do not show star rating, even when a rating value is bound.'
       }
     }
   }
@@ -304,6 +343,23 @@ export const GridLayout: Story = {
   render: () => ({
     components: { MediaAssetCard },
     setup() {
+      const ratingsByAssetId = ref<Record<string, number>>({
+        'grid-1': 3,
+        'grid-2': 0
+      })
+
+      function getRating(assetId: string) {
+        return ratingsByAssetId.value[assetId] ?? 0
+      }
+
+      function setRating(assetId: string, rating: number | undefined) {
+        if (rating === undefined) return
+        ratingsByAssetId.value = {
+          ...ratingsByAssetId.value,
+          [assetId]: rating
+        }
+      }
+
       const assets: AssetItem[] = [
         {
           id: 'grid-1',
@@ -389,7 +445,7 @@ export const GridLayout: Story = {
           }
         }
       ]
-      return { assets }
+      return { assets, getRating, setRating }
     },
     template: `
       <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; padding: 16px;">
@@ -397,6 +453,8 @@ export const GridLayout: Story = {
           v-for="asset in assets"
           :key="asset.id"
           :asset="asset"
+          :rating="getRating(asset.id)"
+          @update:rating="setRating(asset.id, $event)"
         />
       </div>
     `
