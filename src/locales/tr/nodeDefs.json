@@ -896,6 +896,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "description": "ByteDance'in Seed 2.0 modelleriyle metin yanıtları oluşturun. Bir metin istemi girin ve isteğe bağlı olarak çok modlu bağlam için bir veya daha fazla görsel ya da video ekleyin.",
+    "display_name": "ByteDance Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Yanıtı oluşturmak için kullanılan Seed modeli."
+      },
+      "model_temperature": {
+        "name": "sıcaklık"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Model için metin girişi."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Modelin davranışını belirleyen temel talimatlar."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "description": "Birleşik metinden-görüntüye oluşturma ve 4K çözünürlüğe kadar hassas tek cümle düzenleme.",
     "display_name": "ByteDance Seedream 4",
@@ -7395,6 +7428,10 @@
   "LTXVAddGuide": {
     "display_name": "LTXVRehberEkle",
     "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "İsteğe bağlı piksel alanında uzamsal mask. Güç ile çarpılarak self-attention üzerinden bölgesel koşullandırma etkisini kontrol eder."
+      },
       "frame_idx": {
         "name": "kare_indeksi",
         "tooltip": "Koşullandırmanın başlayacağı kare indeksi. Tek kareli görüntüler veya 1-8 kareli videolar için herhangi bir kare_indeksi değeri kabul edilebilir. 9+ kareli videolar için kare_indeksi 8'e bölünebilir olmalıdır, aksi takdirde en yakın 8'in katına yuvarlanacaktır. Negatif değerler videonun sonundan sayılır."

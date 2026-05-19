@@ -896,6 +896,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "description": "ByteDance의 Seed 2.0 모델로 텍스트 응답을 생성합니다. 텍스트 프롬프트와 선택적으로 하나 이상의 이미지 또는 비디오를 멀티모달 컨텍스트로 제공합니다.",
+    "display_name": "ByteDance Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "응답을 생성하는 데 사용되는 Seed 모델입니다."
+      },
+      "model_temperature": {
+        "name": "온도"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "모델에 입력할 텍스트입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "system_prompt": {
+        "name": "시스템 프롬프트",
+        "tooltip": "모델의 동작을 지시하는 기본 지침입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "description": "최대 4K 해상도까지 통합 텍스트-이미지 생성 및 정밀한 단일 문장 편집.",
     "display_name": "ByteDance Seedream 4",
@@ -7395,6 +7428,10 @@
   "LTXVAddGuide": {
     "display_name": "LTXV 가이드 추가",
     "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "선택적 픽셀 공간 마스크입니다. self-attention을 통해 각 영역별 조건 영향력을 strength 값과 곱하여 제어합니다."
+      },
       "frame_idx": {
         "name": "프레임 번호",
         "tooltip": "조건을 시작할 프레임 번호. 단일 프레임 이미지 또는 1-8 프레임의 비디오의 경우 어떤 프레임 번호 값도 허용됩니다. 9+ 프레임의 비디오의 경우, 프레임 번호는 8의 배수여야 합니다. 그렇지 않으면 가장 가까운 8의 배수로 내림됩니다. 음수 값은 비디오의 끝에서부터 계산됩니다."

@@ -896,6 +896,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "display_name": "ByteDance Seed",
+    "description": "Generate text responses with ByteDance's Seed 2.0 models. Provide a text prompt and optionally one or more images or videos for multimodal context.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text input to the model."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The Seed model used to generate the response."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Foundational instructions that dictate the model's behavior."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "display_name": "ByteDance Seedream 4.5 & 5.0",
     "description": "Unified text-to-image generation and precise single-sentence editing at up to 4K resolution.",
@@ -8256,6 +8289,10 @@
       },
       "strength": {
         "name": "strength"
+      },
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "Optional pixel-space spatial mask. Controls per-region conditioning influence via self-attention, multiplied by strength."
       },
       "iclora_parameters": {
         "name": "iclora_parameters",

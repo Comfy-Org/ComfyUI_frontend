@@ -896,6 +896,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "description": "ByteDanceのSeed 2.0モデルでテキスト応答を生成します。テキストプロンプトを入力し、必要に応じて画像や動画を追加してマルチモーダルなコンテキストを提供できます。",
+    "display_name": "ByteDance Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "応答生成に使用するSeedモデル。"
+      },
+      "model_temperature": {
+        "name": "温度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "モデルへのテキスト入力。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "system_prompt": {
+        "name": "システムプロンプト",
+        "tooltip": "モデルの挙動を指示する基本的な指示文。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "description": "最大4K解像度での統一されたテキストから画像への生成と精密な単文編集。",
     "display_name": "ByteDance Seedream 4",
@@ -7395,6 +7428,10 @@
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
+      "attention_mask": {
+        "name": "アテンションマスク",
+        "tooltip": "オプションのピクセル空間マスク。自己アテンションを通じて領域ごとの条件付けの影響を強度で調整します。"
+      },
       "frame_idx": {
         "name": "フレームインデックス",
         "tooltip": "条件付けを開始するフレームインデックス。単一フレームの画像や1-8フレームのビデオの場合、任意のframe_idx値が許容されます。9フレーム以上のビデオの場合、frame_idxは8で割り切れる数でなければならず、そうでない場合は最も近い8の倍数に切り捨てられます。負の値はビデオの終わりから数えます。"
