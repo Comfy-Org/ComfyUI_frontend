@@ -15,6 +15,7 @@ import { useWorkflowShareService } from '@/platform/workflow/sharing/services/wo
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 type SharedWorkflowUrlLoadStatus =
   | 'not-present'
@@ -36,6 +37,7 @@ export function useSharedWorkflowUrlLoader() {
   const workflowShareService = useWorkflowShareService()
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
+  const workspaceStore = useWorkspaceStore()
   const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
   const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
 
@@ -137,52 +139,64 @@ export function useSharedWorkflowUrlLoader() {
 
     templateSelectorDialog.hide()
 
-    const { payload } = result
-    const workflowName = payload.name || t('openSharedWorkflow.dialogTitle')
-    const nonOwnedAssets = payload.assets.filter((a) => !a.in_library)
+    const previousSpinner = workspaceStore.spinner
+    workspaceStore.spinner = true
 
     try {
-      await app.loadGraphData(payload.workflowJson, true, true, workflowName, {
-        openSource: 'shared_url'
-      })
-    } catch (error) {
-      console.error(
-        '[useSharedWorkflowUrlLoader] Failed to load workflow graph:',
-        error
-      )
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('shareWorkflow.loadFailed')
-      })
-      return 'failed'
-    }
+      const { payload } = result
+      const workflowName = payload.name || t('openSharedWorkflow.dialogTitle')
+      const nonOwnedAssets = payload.assets.filter((a) => !a.in_library)
+      let importFailed = false
 
-    if (result.action === 'copy-and-open' && nonOwnedAssets.length > 0) {
+      if (result.action === 'copy-and-open' && nonOwnedAssets.length > 0) {
+        try {
+          await workflowShareService.importPublishedAssets(
+            nonOwnedAssets.map((a) => a.id),
+            payload.shareId
+          )
+        } catch (importError) {
+          importFailed = true
+          console.error(
+            '[useSharedWorkflowUrlLoader] Failed to import assets:',
+            importError
+          )
+          toast.add({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('openSharedWorkflow.importFailed')
+          })
+        }
+      }
+
       try {
-        await workflowShareService.importPublishedAssets(
-          nonOwnedAssets.map((a) => a.id),
-          payload.shareId
+        await app.loadGraphData(
+          payload.workflowJson,
+          true,
+          true,
+          workflowName,
+          {
+            openSource: 'shared_url'
+          }
         )
-      } catch (importError) {
+      } catch (error) {
         console.error(
-          '[useSharedWorkflowUrlLoader] Failed to import assets:',
-          importError
+          '[useSharedWorkflowUrlLoader] Failed to load workflow graph:',
+          error
         )
         toast.add({
           severity: 'error',
           summary: t('g.error'),
-          detail: t('openSharedWorkflow.importFailed')
+          detail: t('shareWorkflow.loadFailed')
         })
-        cleanupUrlParams()
-        clearPreservedQuery(SHARE_NAMESPACE)
-        return 'loaded-without-assets'
+        return 'failed'
       }
-    }
 
-    cleanupUrlParams()
-    clearPreservedQuery(SHARE_NAMESPACE)
-    return 'loaded'
+      cleanupUrlParams()
+      clearPreservedQuery(SHARE_NAMESPACE)
+      return importFailed ? 'loaded-without-assets' : 'loaded'
+    } finally {
+      workspaceStore.spinner = previousSpinner
+    }
   }
 
   return {

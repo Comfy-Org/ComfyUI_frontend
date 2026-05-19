@@ -1,7 +1,17 @@
 <template>
   <router-view />
   <GlobalDialog />
-  <BlockUI full-screen :blocked="isLoading" />
+  <BlockUI full-screen :blocked="isLoading">
+    <div
+      v-if="isLoading"
+      class="pointer-events-none fixed inset-0 z-1200 flex items-center justify-center"
+    >
+      <div
+        class="size-12 animate-spin rounded-full border-4 border-muted-foreground border-t-base-foreground"
+        aria-hidden="true"
+      />
+    </div>
+  </BlockUI>
 </template>
 
 <script setup lang="ts">

@@ -80,6 +80,7 @@ vi.mock('vue-i18n', () => ({
 const mockShowLayoutDialog = vi.hoisted(() => vi.fn())
 const mockCloseDialog = vi.hoisted(() => vi.fn())
 const mockHideTemplateSelector = vi.hoisted(() => vi.fn())
+const mockWorkspaceStore = vi.hoisted(() => ({ spinner: false }))
 
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
@@ -91,6 +92,10 @@ vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({
     closeDialog: mockCloseDialog
   })
+}))
+
+vi.mock('@/stores/workspaceStore', () => ({
+  useWorkspaceStore: () => mockWorkspaceStore
 }))
 
 vi.mock('@/composables/useWorkflowTemplateSelectorDialog', () => ({
@@ -139,8 +144,9 @@ function resolveDialogWithCancel() {
 
 describe('useSharedWorkflowUrlLoader', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
     mockQueryParams = {}
+    mockWorkspaceStore.spinner = false
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
 
@@ -161,11 +167,15 @@ describe('useSharedWorkflowUrlLoader', () => {
       expect(mockLoadGraphData).not.toHaveBeenCalled()
       resolveDialogWithConfirm(payload)
     })
+    mockLoadGraphData.mockImplementation(() => {
+      expect(mockWorkspaceStore.spinner).toBe(true)
+    })
 
     const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
     const loaded = await loadSharedWorkflowFromUrl()
 
     expect(loaded).toBe('loaded')
+    expect(mockWorkspaceStore.spinner).toBe(false)
     const dialogCall = mockShowLayoutDialog.mock.calls[0][0]
     expect(dialogCall.props.shareId).toBe('share-id-1')
     expect(mockLoadGraphData).toHaveBeenCalledWith(
@@ -222,7 +232,7 @@ describe('useSharedWorkflowUrlLoader', () => {
     expect(mockHideTemplateSelector).not.toHaveBeenCalled()
   })
 
-  it('calls import when non-owned assets exist and user confirms', async () => {
+  it('imports non-owned assets before loading graph when user confirms', async () => {
     mockQueryParams = { share: 'share-id-1' }
     const payload = makePayload({
       assets: [
@@ -240,11 +250,17 @@ describe('useSharedWorkflowUrlLoader', () => {
     mockShowLayoutDialog.mockImplementation(() => {
       resolveDialogWithConfirm(payload)
     })
+    mockImportPublishedAssets.mockImplementation(() => {
+      expect(mockWorkspaceStore.spinner).toBe(true)
+    })
 
     const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
     await loadSharedWorkflowFromUrl()
 
     expect(mockImportPublishedAssets).toHaveBeenCalledWith(['a1'], 'share-id-1')
+    expect(mockImportPublishedAssets.mock.invocationCallOrder[0]).toBeLessThan(
+      mockLoadGraphData.mock.invocationCallOrder[0]
+    )
   })
 
   it('does not call import when user chooses open-only', async () => {
@@ -309,6 +325,13 @@ describe('useSharedWorkflowUrlLoader', () => {
     const loaded = await loadSharedWorkflowFromUrl()
 
     expect(loaded).toBe('loaded-without-assets')
+    expect(mockLoadGraphData).toHaveBeenCalledWith(
+      { nodes: [] },
+      true,
+      true,
+      'Test Workflow',
+      { openSource: 'shared_url' }
+    )
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'error',
