@@ -19,7 +19,8 @@ const mocks = vi.hoisted(() => ({
   capturedUploadOptions: undefined as CapturedImageUploadOptions | undefined,
   openFileSelection: vi.fn(),
   setNodeOutputs: vi.fn(),
-  showPreview: vi.fn()
+  showPreview: vi.fn(),
+  removeMissingMediaByName: vi.fn()
 }))
 
 vi.mock('@/composables/node/useNodeImage', () => ({
@@ -54,6 +55,12 @@ vi.mock('@/utils/litegraphUtil', () => ({
       values.push(value)
     }
   }
+}))
+
+vi.mock('@/platform/missingMedia/missingMediaStore', () => ({
+  useMissingMediaStore: () => ({
+    removeMissingMediaByName: mocks.removeMissingMediaByName
+  })
 }))
 
 function createUploadNode() {

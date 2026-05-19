@@ -6,6 +6,7 @@ import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
@@ -123,6 +124,11 @@ export const useImageUploadWidget = () => {
     // The value isn't set immediately so we need to wait a moment
     // No change callbacks seem to be fired on initial setting of the value
     requestAnimationFrame(() => {
+      const restoredValue = fileComboWidget.value
+      if (typeof restoredValue === 'string' && restoredValue) {
+        addToComboValues(fileComboWidget, restoredValue)
+        useMissingMediaStore().removeMissingMediaByName(restoredValue)
+      }
       nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
         isAnimated
       })
