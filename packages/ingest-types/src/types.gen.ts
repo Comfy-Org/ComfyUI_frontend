@@ -524,9 +524,18 @@ export type ImportPublishedAssetsRequest = {
    */
   published_asset_ids: Array<string>
   /**
-   * The share ID of the published workflow these assets belong to. Required for authorization.
+   * Optional. Share ID of the published workflow these assets belong to.
+   * When provided (non-null, non-empty): all published_asset_ids must
+   * belong to this share's workflow version; returns
+   * 400/CodeInvalidAssets if the share is not found or any asset does
+   * not belong to it.
+   * When omitted, null, or empty string: no share-scoped validation is
+   * performed and the assets are validated only against global rules
+   * (legacy behaviour, preserved for clients that have not yet adopted
+   * share_id).
+   *
    */
-  share_id: string
+  share_id?: string | null
 }
 
 /**
