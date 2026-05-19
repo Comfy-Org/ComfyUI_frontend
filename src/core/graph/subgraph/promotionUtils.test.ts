@@ -334,6 +334,22 @@ describe('hasUnpromotedWidgets', () => {
 
     expect(hasUnpromotedWidgets(subgraphNode)).toBe(false)
   })
+
+  it('returns false (does not throw) when SubgraphNode is detached', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const parentGraph = subgraphNode.graph!
+    parentGraph.add(subgraphNode)
+    const interiorNode = new LGraphNode('InnerNode')
+    subgraph.add(interiorNode)
+    interiorNode.addWidget('text', 'seed', '123', () => {})
+
+    parentGraph.remove(subgraphNode)
+
+    expect(subgraphNode.graph).toBeNull()
+    expect(() => hasUnpromotedWidgets(subgraphNode)).not.toThrow()
+    expect(hasUnpromotedWidgets(subgraphNode)).toBe(false)
+  })
 })
 
 describe('isLinkedPromotion', () => {

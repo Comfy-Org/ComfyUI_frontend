@@ -635,27 +635,24 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     }
   }
 
-  /**
-   * Handles node removal from the graph - cleans up all references
-   */
+  // Drop refs while node is still attached, before reactive store writes
+  // in node.onRemoved can invalidate computeds holding the node.
+  const handleBeforeNodeRemoved = (node: LGraphNode) => {
+    const id = String(node.id)
+    nodeRefs.delete(id)
+    vueNodeData.delete(id)
+  }
+
   const handleNodeRemoved = (
     node: LGraphNode,
     originalCallback?: (node: LGraphNode) => void
   ) => {
+    // Ensure refs are cleared if node:before-removed didn't fire
+    handleBeforeNodeRemoved(node)
     const id = String(node.id)
-
-    // Remove node from layout store
     setSource(LayoutSource.Canvas)
     void deleteNode(id)
-
-    // Clean up all tracking references
-    nodeRefs.delete(id)
-    vueNodeData.delete(id)
-
-    // Call original callback if provided
-    if (originalCallback) {
-      originalCallback(node)
-    }
+    originalCallback?.(node)
   }
 
   /**
@@ -678,9 +675,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     }
   }
 
-  /**
-   * Sets up event listeners - now simplified with extracted handlers
-   */
   const setupEventListeners = (): (() => void) => {
     // Store original callbacks
     const originalOnNodeAdded = graph.onNodeAdded
@@ -695,6 +689,16 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     graph.onNodeRemoved = (node: LGraphNode) => {
       handleNodeRemoved(node, originalOnNodeRemoved)
     }
+
+    const beforeNodeRemovedListener = (
+      e: CustomEvent<{ node: LGraphNode }>
+    ) => {
+      handleBeforeNodeRemoved(e.detail.node)
+    }
+    graph.events.addEventListener(
+      'node:before-removed',
+      beforeNodeRemovedListener
+    )
 
     const triggerHandlers: {
       [K in LGraphTriggerAction]: (event: LGraphTriggerParam<K>) => void
@@ -838,12 +842,19 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     // Initialize state
     syncWithGraph()
 
-    // Return cleanup function
-    return createCleanupFunction(
+    const cleanup = createCleanupFunction(
       originalOnNodeAdded || undefined,
       originalOnNodeRemoved || undefined,
       originalOnTrigger || undefined
     )
+
+    return () => {
+      graph.events.removeEventListener(
+        'node:before-removed',
+        beforeNodeRemovedListener
+      )
+      cleanup()
+    }
   }
 
   // Set up event listeners immediately

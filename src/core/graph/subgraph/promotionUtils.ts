@@ -360,6 +360,7 @@ export function pruneDisconnected(subgraphNode: SubgraphNode) {
 }
 
 export function hasUnpromotedWidgets(subgraphNode: SubgraphNode): boolean {
+  if (!subgraphNode.graph) return false
   const promotionStore = usePromotionStore()
   const { id: subgraphNodeId, rootGraph, subgraph } = subgraphNode
 
