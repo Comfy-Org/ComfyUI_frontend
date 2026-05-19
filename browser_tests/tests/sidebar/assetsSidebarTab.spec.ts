@@ -218,9 +218,9 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     await expect(tab.deleteSelectedButton).toBeVisible()
     await expect(tab.downloadSelectedButton).toBeVisible()
 
-    await comfyPage.page.keyboard.down('Meta')
+    await comfyPage.page.keyboard.down('Control')
     await tab.getAssetCardByName('beta').click()
-    await comfyPage.page.keyboard.up('Meta')
+    await comfyPage.page.keyboard.up('Control')
 
     await expect(tab.selectionCountButton).toHaveText(/Assets Selected:\s*2\b/)
     await expect(tab.deleteSelectedButton).toBeVisible()
