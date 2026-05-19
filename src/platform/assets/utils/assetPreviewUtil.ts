@@ -10,10 +10,13 @@ interface AssetRecord {
   preview_id?: string | null
 }
 
+/**
+ * Asset preview support. Asset API is always available post-BE-786, so this
+ * unconditionally returns `true`. Kept as a function to preserve the existing
+ * caller surface; callers can be simplified in a follow-up.
+ */
 export function isAssetPreviewSupported(): boolean {
-  return (
-    assetService.isAssetAPIEnabled() || api.getServerFeature('assets', false)
-  )
+  return true
 }
 
 async function fetchAssets(

@@ -20,8 +20,6 @@ import type {
   ModelFolder,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
-import { isCloud } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
@@ -175,7 +173,6 @@ function getLocalizedErrorMessage(errorCode: string): string {
 const ASSETS_ENDPOINT = '/assets'
 const ASSETS_DOWNLOAD_ENDPOINT = '/assets/download'
 const ASSETS_EXPORT_ENDPOINT = '/assets/export'
-const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make sure "Comfy.Assets.UseAssetAPI" is set to "false" in your ComfyUI Settings.\n`
 const DEFAULT_LIMIT = 500
 const INPUT_ASSETS_WITH_PUBLIC_LIMIT = 500
 
@@ -229,9 +226,7 @@ function validateAssetResponse(data: unknown): AssetResponse {
   if (result.success) return result.data
 
   const error = fromZodError(result.error)
-  throw new Error(
-    `${EXPERIMENTAL_WARNING}Invalid asset response against zod schema:\n${error}`
-  )
+  throw new Error(`Invalid asset response against zod schema:\n${error}`)
 }
 
 function validateUploadedAssetResponse(
@@ -309,7 +304,7 @@ function createAssetService() {
       : await api.fetchApi(url)
     if (!res.ok) {
       throw new Error(
-        `${EXPERIMENTAL_WARNING}Unable to load ${context}: Server returned ${res.status}. Please try again.`
+        `Unable to load ${context}: Server returned ${res.status}. Please try again.`
       )
     }
     const data = await res.json()
@@ -379,16 +374,7 @@ function createAssetService() {
   }
 
   /**
-   * Checks if the asset API is enabled (cloud environment + user setting).
-   */
-  function isAssetAPIEnabled(): boolean {
-    if (!isCloud) return false
-    return !!useSettingStore().get('Comfy.Assets.UseAssetAPI')
-  }
-
-  /**
    * Checks if the asset browser should be used for a given node input.
-   * Combines the cloud environment check, user setting, and eligibility check.
    *
    * @param nodeType - The ComfyUI node comfyClass
    * @param widgetName - The name of the widget to check
@@ -398,7 +384,7 @@ function createAssetService() {
     nodeType: string | undefined,
     widgetName: string
   ): boolean {
-    return isAssetAPIEnabled() && isAssetBrowserEligible(nodeType, widgetName)
+    return isAssetBrowserEligible(nodeType, widgetName)
   }
 
   /**
@@ -448,7 +434,7 @@ function createAssetService() {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`)
     if (!res.ok) {
       throw new Error(
-        `${EXPERIMENTAL_WARNING}Unable to load asset details for ${id}: Server returned ${res.status}. Please try again.`
+        `Unable to load asset details for ${id}: Server returned ${res.status}. Please try again.`
       )
     }
     const data = await res.json()
@@ -459,9 +445,7 @@ function createAssetService() {
     const error = result.error
       ? fromZodError(result.error)
       : 'Unknown validation error'
-    throw new Error(
-      `${EXPERIMENTAL_WARNING}Invalid asset response against zod schema:\n${error}`
-    )
+    throw new Error(`Invalid asset response against zod schema:\n${error}`)
   }
 
   /**
@@ -939,7 +923,6 @@ function createAssetService() {
   return {
     getAssetModelFolders,
     getAssetModels,
-    isAssetAPIEnabled,
     isAssetBrowserEligible,
     shouldUseAssetBrowser,
     getAssetsForNodeType,
