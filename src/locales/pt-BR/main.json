@@ -410,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "Continuar Localmente",
     "exploreCloud": "Experimente a Nuvem Gratuitamente",
-    "feature1Title": "400 Créditos Grátis por Mês",
     "feature2Title": "Funciona em Qualquer Lugar, Instantaneamente",
     "feature3Title": "Modelos Prontos para Usar",
     "feature4Title": "Principais Pacotes de Nodes Personalizados Pré-instalados",
@@ -816,6 +815,7 @@
     "HISTOGRAM": "HISTOGRAMA",
     "HOOKS": "GANCHOS",
     "HOOK_KEYFRAMES": "QUADROS-CHAVE DE GANCHO",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "IMAGEM",
     "IMAGECOMPARE": "COMPARAR_IMAGEM",
     "INT": "INTEIRO",
@@ -836,6 +836,8 @@
     "MODEL": "MODELO",
     "MODEL_PATCH": "PATCH DE MODELO",
     "MODEL_TASK_ID": "ID DA TAREFA DO MODELO",
+    "MOGE_GEOMETRY": "MOGE_GEOMETRY",
+    "MOGE_MODEL": "MOGE_MODEL",
     "NOISE": "RUÍDO",
     "OPENAI_CHAT_CONFIG": "CONFIGURAÇÃO DE CHAT OPENAI",
     "OPENAI_INPUT_FILES": "ARQUIVOS DE ENTRADA OPENAI",
@@ -914,7 +916,8 @@
     "extensionFileHint": "Isso pode ser devido ao seguinte script",
     "loadWorkflowTitle": "Carregamento abortado devido a erro ao recarregar os dados do fluxo de trabalho",
     "noStackTrace": "Nenhum stacktrace disponível",
-    "promptExecutionError": "Falha na execução do prompt"
+    "promptExecutionError": "Falha na execução do prompt",
+    "queueOpenWorkflowFailedTitle": "Falha ao abrir o workflow"
   },
   "errorOverlay": {
     "errorCount": "{count} ERRO | {count} ERROS",
@@ -1042,6 +1045,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "Logo do ComfyOrg",
+    "comfyPackageOutdated": "A versão instalada de {name} ({installedVersion}) é inferior à versão necessária ({requiredVersion}).",
     "comingSoon": "Em breve",
     "command": "Comando",
     "commandProhibited": "O comando {command} é proibido. Entre em contato com um administrador para mais informações.",
@@ -2254,6 +2258,7 @@
     "": "",
     "3d": "3d",
     "3d_models": "modelos_3d",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
@@ -2310,6 +2315,7 @@
     "edit_models": "editar_modelos",
     "experimental": "experimental",
     "flux": "flux",
+    "geometry_estimation": "geometry_estimation",
     "gligen": "gligen",
     "guidance": "orientação",
     "guiders": "guias",

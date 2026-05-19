@@ -896,6 +896,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "description": "ByteDance의 Seed 2.0 모델로 텍스트 응답을 생성합니다. 텍스트 프롬프트와 선택적으로 하나 이상의 이미지 또는 비디오를 멀티모달 컨텍스트로 제공합니다.",
+    "display_name": "ByteDance Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "응답을 생성하는 데 사용되는 Seed 모델입니다."
+      },
+      "model_temperature": {
+        "name": "온도"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "모델에 입력할 텍스트입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "system_prompt": {
+        "name": "시스템 프롬프트",
+        "tooltip": "모델의 동작을 지시하는 기본 지침입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "description": "최대 4K 해상도까지 통합 텍스트-이미지 생성 및 정밀한 단일 문장 편집.",
     "display_name": "ByteDance Seedream 4",
@@ -1607,6 +1640,46 @@
       "start_sigma": {
         "name": "start_sigma",
         "tooltip": "이 옵션이 적용될 첫 번째 시그마 값입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClaudeNode": {
+    "description": "Anthropic의 Claude 모델로 텍스트 응답을 생성합니다. 텍스트 프롬프트를 제공하고, 선택적으로 하나 이상의 이미지를 멀티모달 컨텍스트로 사용할 수 있습니다.",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "images": {
+        "name": "이미지",
+        "tooltip": "모델의 컨텍스트로 사용할 선택적 이미지(최대 20장)입니다."
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "응답을 생성하는 데 사용되는 Claude 모델입니다."
+      },
+      "model_max_tokens": {
+        "name": "최대 토큰"
+      },
+      "model_temperature": {
+        "name": "온도"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "모델에 입력할 텍스트입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행되어야 하는지 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "system_prompt": {
+        "name": "시스템 프롬프트",
+        "tooltip": "모델의 동작을 지시하는 기본 지침입니다."
       }
     },
     "outputs": {
@@ -4461,6 +4534,22 @@
       "1": {
         "name": "track_length",
         "tooltip": null
+      }
+    }
+  },
+  "GetICLoRAParameters": {
+    "description": "LoRA가 로드된 모델의 safetensors 메타데이터에서 IC-LoRA 파라미터를 추출하여 LTXVAddGuide(예: reference_downscale_factor)에 출력합니다.",
+    "display_name": "IC-LoRA 파라미터 가져오기",
+    "inputs": {
+      "iclora_model": {
+        "name": "iclora_model",
+        "tooltip": "메타데이터를 추출할 특정 IC-LoRA의 LoRA Loader에서 직접 출력된 값입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iclora_parameters",
+        "tooltip": "LoRA 메타데이터에서 추출된 IC-LoRA 파라미터(예: reference_downscale_factor). LoRA가 가이드의 특별한 처리를 필요로 할 경우 LTXVAddGuide에 연결하세요."
       }
     }
   },
@@ -7339,9 +7428,17 @@
   "LTXVAddGuide": {
     "display_name": "LTXV 가이드 추가",
     "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "선택적 픽셀 공간 마스크입니다. self-attention을 통해 각 영역별 조건 영향력을 strength 값과 곱하여 제어합니다."
+      },
       "frame_idx": {
         "name": "프레임 번호",
         "tooltip": "조건을 시작할 프레임 번호. 단일 프레임 이미지 또는 1-8 프레임의 비디오의 경우 어떤 프레임 번호 값도 허용됩니다. 9+ 프레임의 비디오의 경우, 프레임 번호는 8의 배수여야 합니다. 그렇지 않으면 가장 가까운 8의 배수로 내림됩니다. 음수 값은 비디오의 끝에서부터 계산됩니다."
+      },
+      "iclora_parameters": {
+        "name": "iclora_parameters",
+        "tooltip": "Get IC-LoRA Parameters 노드에서 가져온 선택적 IC-LoRA 파라미터입니다. reference_downscale_factor > 1인 IC-LoRA 등 일부 가이드 처리가 필요한 경우에 사용됩니다. 체인으로 연결할 경우, 각 LTXVAddGuide는 연결된 파라미터만 사용합니다."
       },
       "image": {
         "name": "이미지",
@@ -8335,6 +8432,19 @@
     "inputs": {
       "latent": {
         "name": "잠재 데이터"
+      }
+    }
+  },
+  "LoadMoGeModel": {
+    "display_name": "MoGe 모델 불러오기",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9658,6 +9768,122 @@
       "seed": {
         "name": "시드",
         "tooltip": "노이즈 생성을 위해 사용되는 랜덤 시드입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeInference": {
+    "display_name": "MoGe 추론",
+    "inputs": {
+      "apply_mask": {
+        "name": "apply_mask",
+        "tooltip": "마스킹된(하늘/유효하지 않은) 픽셀을 포인트와 깊이에서 inf로 설정하여 메시 생성 시 제거합니다. 비활성화하면 예측된 원본 지오메트리를 모두 유지합니다. 마스크는 별도로 반환됩니다."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "한 번의 추론 호출당 이미지 수. 긴 비디오/이미지 세트에서 OOM이 발생하면 낮추세요."
+      },
+      "force_projection": {
+        "name": "force_projection"
+      },
+      "fov_x_degrees": {
+        "name": "fov_x_degrees",
+        "tooltip": "소스 카메라의 수평 시야각. 깊이 맵을 3D로 언프로젝션할 때 사용되는 초점 거리를 설정합니다. 0 = 예측된 포인트에서 자동 복원."
+      },
+      "image": {
+        "name": "image"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "0 = 가장 빠름, 9 = 가장 디테일함."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePanoramaInference": {
+    "display_name": "MoGe 파노라마 추론",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "한 번의 추론 배치당 뷰 수 (총 12분할)."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "등각 파노라마(비율 무관)."
+      },
+      "merge_resolution": {
+        "name": "merge_resolution",
+        "tooltip": "병합된 등거리 거리 맵의 긴 변 해상도."
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "뷰별 디테일 (0 = 가장 빠름, 9 = 가장 디테일함)."
+      },
+      "split_resolution": {
+        "name": "split_resolution",
+        "tooltip": "각각의 투시 분할 해상도."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePointMapToMesh": {
+    "display_name": "MoGe 포인트 맵 → 메시",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "배치된 MoGe geometry 중 메시로 변환할 이미지의 인덱스입니다. 이미지마다 버텍스 개수가 다르므로, 배치를 하나의 메시로 합칠 수 없습니다."
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "버텍스 간격; 1 = 전체 해상도."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "3x3 깊이 범위가 이 비율을 초과하는 픽셀을 제거합니다. 0 = 비활성화."
+      },
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "원본 이미지를 baseColor 텍스처로 전달합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeRender": {
+    "display_name": "MoGe 렌더",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "DirectX와 OpenGL은 노멀 맵의 그린 채널 기준이 다릅니다. DirectX: green = -Y 아래 (Unreal). OpenGL: green = +Y 위 (Blender, Substance, Unity, glTF)."
       }
     },
     "outputs": {

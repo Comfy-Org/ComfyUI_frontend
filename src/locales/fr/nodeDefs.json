@@ -896,6 +896,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "description": "Générez des réponses textuelles avec les modèles Seed 2.0 de ByteDance. Fournissez une invite textuelle et, en option, une ou plusieurs images ou vidéos pour un contexte multimodal.",
+    "display_name": "ByteDance Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle Seed utilisé pour générer la réponse."
+      },
+      "model_temperature": {
+        "name": "température"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Entrée textuelle pour le modèle."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
+      },
+      "system_prompt": {
+        "name": "invite système",
+        "tooltip": "Instructions fondamentales qui dictent le comportement du modèle."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "description": "Génération unifiée de texte à image et édition précise phrase par phrase jusqu'à une résolution 4K.",
     "display_name": "ByteDance Seedream 4",
@@ -1607,6 +1640,46 @@
       "start_sigma": {
         "name": "sigma_début",
         "tooltip": "Premier sigma pour lequel ces options seront actives."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClaudeNode": {
+    "description": "Générez des réponses textuelles avec les modèles Claude d'Anthropic. Fournissez une invite textuelle et éventuellement une ou plusieurs images pour un contexte multimodal.",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Image(s) optionnelle(s) à utiliser comme contexte pour le modèle. Jusqu'à 20 images."
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle Claude utilisé pour générer la réponse."
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_temperature": {
+        "name": "température"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Entrée textuelle pour le modèle."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit la graine."
+      },
+      "system_prompt": {
+        "name": "invite système",
+        "tooltip": "Instructions fondamentales qui dictent le comportement du modèle."
       }
     },
     "outputs": {
@@ -4461,6 +4534,22 @@
       "1": {
         "name": "longueur_de_piste",
         "tooltip": null
+      }
+    }
+  },
+  "GetICLoRAParameters": {
+    "description": "Extrait les paramètres IC-LoRA des métadonnées safetensors d’un modèle LoRA chargé et les transmet à LTXVAddGuide (ex. reference_downscale_factor).",
+    "display_name": "Obtenir les paramètres IC-LoRA",
+    "inputs": {
+      "iclora_model": {
+        "name": "iclora_model",
+        "tooltip": "Sortie directe d’un LoRA Loader pour l’IC-LoRA spécifique dont on souhaite extraire les métadonnées."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iclora_parameters",
+        "tooltip": "Paramètres IC-LoRA extraits des métadonnées LoRA (ex. reference_downscale_factor). Connectez à LTXVAddGuide si le LoRA nécessite un traitement spécial des guides."
       }
     }
   },
@@ -7339,9 +7428,17 @@
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "Masque spatial optionnel dans l’espace pixel. Contrôle l’influence du conditionnement par région via l’auto-attention, multipliée par la force."
+      },
       "frame_idx": {
         "name": "indice_de_l'image",
         "tooltip": "Indice de l'image pour commencer le conditionnement. Pour les images uniques ou les vidéos de 1 à 8 images, toute valeur d'indice de l'image est acceptable. Pour les vidéos de 9 images ou plus, l'indice de l'image doit être divisible par 8, sinon il sera arrondi à la baisse au multiple de 8 le plus proche. Les valeurs négatives sont comptées à partir de la fin de la vidéo."
+      },
+      "iclora_parameters": {
+        "name": "iclora_parameters",
+        "tooltip": "Paramètres IC-LoRA optionnels provenant d’un nœud Get IC-LoRA Parameters. Utilisé pour ajuster le traitement des guides selon les besoins de certains IC-LoRA (ex. ceux avec un reference_downscale_factor > 1). Lorsqu’ils sont chaînés, chaque LTXVAddGuide utilise uniquement les paramètres qui lui sont connectés."
       },
       "image": {
         "name": "image",
@@ -8335,6 +8432,19 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadMoGeModel": {
+    "display_name": "Charger le modèle MoGe",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9658,6 +9768,122 @@
       "seed": {
         "name": "graine",
         "tooltip": "La graine aléatoire utilisée pour créer le bruit."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeInference": {
+    "display_name": "Inférence MoGe",
+    "inputs": {
+      "apply_mask": {
+        "name": "apply_mask",
+        "tooltip": "Définit les pixels masqués (ciel / invalides) à inf dans les points et la profondeur pour que le maillage les ignore. Désactivez pour conserver la géométrie prédite brute partout ; le masque est tout de même renvoyé séparément."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Images par appel d’inférence. Diminuez si vous manquez de mémoire sur une longue vidéo ou un grand ensemble d’images."
+      },
+      "force_projection": {
+        "name": "force_projection"
+      },
+      "fov_x_degrees": {
+        "name": "fov_x_degrees",
+        "tooltip": "Champ de vision horizontal de la caméra source. Définit la longueur focale utilisée pour déprojetter la carte de profondeur en 3D. 0 = récupération automatique à partir des points prédits."
+      },
+      "image": {
+        "name": "image"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "0 = plus rapide, 9 = plus de détails."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePanoramaInference": {
+    "display_name": "Inférence panorama MoGe",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Vues par lot d’inférence (12 découpes au total)."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Panorama équirectangulaire (n’importe quel format d’image)."
+      },
+      "merge_resolution": {
+        "name": "merge_resolution",
+        "tooltip": "Résolution du côté long de la carte de distances fusionnée."
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "Détail par vue (0 = plus rapide, 9 = plus détaillé)."
+      },
+      "split_resolution": {
+        "name": "split_resolution",
+        "tooltip": "Résolution de chaque découpe perspective."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePointMapToMesh": {
+    "display_name": "MoGe Point Map vers Mesh",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "Quelle image de la géométrie MoGe groupée convertir en mesh. Le nombre de sommets diffère selon l’image, donc les lots ne peuvent pas être fusionnés en un seul MESH."
+      },
+      "decimation": {
+        "name": "décimation",
+        "tooltip": "Pas de sommets ; 1 = résolution complète."
+      },
+      "discontinuity_threshold": {
+        "name": "seuil_de_discontinuité",
+        "tooltip": "Supprimer les pixels dont l’étendue de profondeur 3x3 dépasse cette fraction. 0 = désactivé."
+      },
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Transmettre l’image source comme texture baseColor."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeRender": {
+    "display_name": "MoGe Render",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "output": {
+        "name": "sortie",
+        "tooltip": "DirectX vs OpenGL contrôle la convention du canal vert de la normal map. DirectX : vert = -Y vers le bas (Unreal). OpenGL : vert = +Y vers le haut (Blender, Substance, Unity, glTF)."
       }
     },
     "outputs": {

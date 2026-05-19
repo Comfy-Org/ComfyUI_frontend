@@ -82,7 +82,7 @@ describe('TabErrors.vue', () => {
           })
         ],
         stubs: {
-          FormSearchInput: {
+          AsyncSearchInput: {
             template:
               '<input @input="$emit(\'update:modelValue\', $event.target.value)" />'
           },

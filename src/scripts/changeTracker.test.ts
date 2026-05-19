@@ -2,6 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
+const mockAssert = vi.hoisted(() => vi.fn())
+
+vi.mock('@/base/assert', () => ({
+  assert: mockAssert
+}))
+
 const mockNodeOutputStore = vi.hoisted(() => ({
   snapshotOutputs: vi.fn(() => ({})),
   restoreOutputs: vi.fn()
@@ -151,13 +157,17 @@ describe('ChangeTracker', () => {
         expect(app.rootGraph.serialize).not.toHaveBeenCalled()
       })
 
-      it('is a no-op and logs error when called on inactive tracker', () => {
+      it('is a no-op and calls assert when called on inactive tracker', () => {
         const tracker = createTracker()
         mockWorkflowStore.activeWorkflow = { changeTracker: {} }
 
         tracker.captureCanvasState()
 
         expect(app.rootGraph.serialize).not.toHaveBeenCalled()
+        expect(mockAssert).toHaveBeenCalledWith(
+          false,
+          expect.stringContaining('captureCanvasState')
+        )
       })
     })
 
@@ -254,7 +264,7 @@ describe('ChangeTracker', () => {
       expect(mockNodeOutputStore.snapshotOutputs).toHaveBeenCalled()
     })
 
-    it('is a full no-op when called on inactive tracker', () => {
+    it('is a full no-op and calls assert when called on inactive tracker', () => {
       const tracker = createTracker()
       mockWorkflowStore.activeWorkflow = { changeTracker: {} }
 
@@ -262,6 +272,10 @@ describe('ChangeTracker', () => {
 
       expect(app.rootGraph.serialize).not.toHaveBeenCalled()
       expect(mockNodeOutputStore.snapshotOutputs).not.toHaveBeenCalled()
+      expect(mockAssert).toHaveBeenCalledWith(
+        false,
+        expect.stringContaining('deactivate')
+      )
     })
   })
 

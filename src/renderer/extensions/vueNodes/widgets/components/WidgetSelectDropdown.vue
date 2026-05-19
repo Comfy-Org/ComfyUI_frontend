@@ -4,8 +4,8 @@ import { useI18n } from 'vue-i18n'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
+import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
 import { useFlatOutputAssets } from '@/platform/assets/composables/media/useFlatOutputAssets'
-import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { isCloud } from '@/platform/distribution/types'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
 import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
@@ -51,7 +51,7 @@ const { t } = useI18n()
 
 const outputMediaAssets = isCloud
   ? useFlatOutputAssets()
-  : useMediaAssets('output')
+  : useAssetsApi('output')
 
 const transformCompatProps = useTransformCompatOverlayProps()
 

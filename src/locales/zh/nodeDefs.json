@@ -896,6 +896,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "description": "使用字节跳动的 Seed 2.0 模型生成文本回复。请提供文本提示，并可选地添加一张或多张图像或视频以实现多模态上下文。",
+    "display_name": "字节跳动 Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于生成回复的 Seed 模型。"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "模型的文本输入。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制节点是否重新运行；无论 seed 如何，结果都是非确定性的。"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "决定模型行为的基础指令。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "description": "统一文本到图像生成，支持高达4K分辨率的精确单句编辑。",
     "display_name": "ByteDance Seedream 4.5 & 5.0",
@@ -1607,6 +1640,46 @@
       "start_sigma": {
         "name": "起始sigma",
         "tooltip": "这些选项生效的第一个sigma值。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClaudeNode": {
+    "description": "使用Anthropic的Claude模型生成文本回复。提供文本提示，并可选提供一张或多张图像用于多模态上下文。",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "可选图像，作为模型的上下文使用。最多支持20张图像。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于生成回复的Claude模型。"
+      },
+      "model_max_tokens": {
+        "name": "最大tokens数"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "输入到模型的文本。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed用于控制节点是否重新运行；无论seed如何，结果都是非确定性的。"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "决定模型行为的基础指令。"
       }
     },
     "outputs": {
@@ -4461,6 +4534,22 @@
       "1": {
         "name": "轨迹长度",
         "tooltip": null
+      }
+    }
+  },
+  "GetICLoRAParameters": {
+    "description": "从已加载 LoRA 模型的 safetensors 元数据中提取 IC-LoRA 参数，并将其输出用于 LTXVAddGuide（例如 reference_downscale_factor）。",
+    "display_name": "获取 IC-LoRA 参数",
+    "inputs": {
+      "iclora_model": {
+        "name": "iclora_model",
+        "tooltip": "来自 LoRA 加载器的直接输出，用于提取特定 IC-LoRA 的元数据。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iclora_parameters",
+        "tooltip": "从 LoRA 元数据中提取的 IC-LoRA 参数（例如 reference_downscale_factor）。如果 LoRA 需要特殊的引导处理，请连接到 LTXVAddGuide。"
       }
     }
   },
@@ -7339,9 +7428,17 @@
   "LTXVAddGuide": {
     "display_name": "LTXV添加指导",
     "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "可选的像素空间区域 mask。通过自注意力机制并乘以强度，控制每个区域的条件影响。"
+      },
       "frame_idx": {
         "name": "帧索引",
         "tooltip": "开始调节的帧索引。对于单帧图像或1-8帧的视频，任何帧索引值都可以接受。对于9+帧的视频，帧索引必须能被8整除，否则它将被向下取整到最接近的8的倍数。负值从视频的末尾开始计算。"
+      },
+      "iclora_parameters": {
+        "name": "iclora_parameters",
+        "tooltip": "来自 Get IC-LoRA Parameters 节点的可选 IC-LoRA 参数。用于根据某些 IC-LoRA（如 reference_downscale_factor > 1）需求调整引导处理。链式连接时，每个 LTXVAddGuide 仅使用连接到它的参数。"
       },
       "image": {
         "name": "图像",
@@ -8335,6 +8432,19 @@
     "inputs": {
       "latent": {
         "name": "Latent"
+      }
+    }
+  },
+  "LoadMoGeModel": {
+    "display_name": "加载 MoGe 模型",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9658,6 +9768,122 @@
       "seed": {
         "name": "随机种",
         "tooltip": "用于生成噪声的随机种子。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeInference": {
+    "display_name": "MoGe 推理",
+    "inputs": {
+      "apply_mask": {
+        "name": "apply_mask",
+        "tooltip": "将被遮罩（天空/无效）像素在点云和深度中设为 inf，以便网格化时剔除。禁用后将保留所有原始预测几何信息；遮罩仍会单独返回。"
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "每次推理的图像数量。如果处理长视频或大批量图像时显存不足，请降低此值。"
+      },
+      "force_projection": {
+        "name": "force_projection"
+      },
+      "fov_x_degrees": {
+        "name": "fov_x_degrees",
+        "tooltip": "源相机的水平视场角。设置用于将深度图反投影到 3D 的焦距。0 = 自动从预测点恢复。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "0 = 速度最快，9 = 细节最多。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePanoramaInference": {
+    "display_name": "MoGe 全景推理",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "每批推理的视角数量（共 12 个分割）。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "等距柱状全景图（任意宽高比）。"
+      },
+      "merge_resolution": {
+        "name": "merge_resolution",
+        "tooltip": "合并后距离图的长边分辨率。"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "每视角细节（0 = 速度最快，9 = 细节最多）。"
+      },
+      "split_resolution": {
+        "name": "split_resolution",
+        "tooltip": "每个透视分割的分辨率。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePointMapToMesh": {
+    "display_name": "MoGe 点云映射到网格",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "选择批量 MoGe 几何体中的哪一张图像进行网格化。每张图像的顶点数量不同，因此批量无法合并为单一网格。"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "顶点步长；1 = 全分辨率。"
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "丢弃 3x3 深度跨度超过该阈值的像素。0 = 关闭。"
+      },
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "将源图像作为 baseColor 纹理传递。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeRender": {
+    "display_name": "MoGe 渲染",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "DirectX 与 OpenGL 控制法线贴图绿色通道的约定。DirectX：绿色 = -Y 向下（Unreal）。OpenGL：绿色 = +Y 向上（Blender、Substance、Unity、glTF）。"
       }
     },
     "outputs": {

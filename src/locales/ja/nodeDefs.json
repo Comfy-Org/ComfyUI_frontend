@@ -896,6 +896,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "description": "ByteDanceのSeed 2.0モデルでテキスト応答を生成します。テキストプロンプトを入力し、必要に応じて画像や動画を追加してマルチモーダルなコンテキストを提供できます。",
+    "display_name": "ByteDance Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "応答生成に使用するSeedモデル。"
+      },
+      "model_temperature": {
+        "name": "温度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "モデルへのテキスト入力。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "system_prompt": {
+        "name": "システムプロンプト",
+        "tooltip": "モデルの挙動を指示する基本的な指示文。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "description": "最大4K解像度での統一されたテキストから画像への生成と精密な単文編集。",
     "display_name": "ByteDance Seedream 4",
@@ -1607,6 +1640,46 @@
       "start_sigma": {
         "name": "開始シグマ",
         "tooltip": "これらのオプションが有効になる最初のシグマ値。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClaudeNode": {
+    "description": "Anthropic の Claude モデルでテキスト応答を生成します。テキストプロンプトを入力し、必要に応じてマルチモーダルコンテキスト用に1枚以上の画像を追加できます。",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "モデルのコンテキストとして使用するオプションの画像（最大20枚まで）。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "応答生成に使用する Claude モデル。"
+      },
+      "model_max_tokens": {
+        "name": "最大トークン数"
+      },
+      "model_temperature": {
+        "name": "温度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "モデルへのテキスト入力。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "system_prompt": {
+        "name": "システムプロンプト",
+        "tooltip": "モデルの挙動を指示する基本的な指示文。"
       }
     },
     "outputs": {
@@ -4461,6 +4534,22 @@
       "1": {
         "name": "トラック長",
         "tooltip": null
+      }
+    }
+  },
+  "GetICLoRAParameters": {
+    "description": "LoRA読み込み済みモデルのsafetensorsメタデータからIC-LoRAパラメータを抽出し、LTXVAddGuide（例：reference_downscale_factor）用に出力します。",
+    "display_name": "IC-LoRAパラメータの取得",
+    "inputs": {
+      "iclora_model": {
+        "name": "iclora_model",
+        "tooltip": "特定のIC-LoRAからメタデータを抽出するためのLoRA Loaderの直接出力。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iclora_parameters",
+        "tooltip": "LoRAメタデータから抽出されたIC-LoRAパラメータ（例：reference_downscale_factor）。LoRAがガイドの特別な処理を必要とする場合はLTXVAddGuideに接続してください。"
       }
     }
   },
@@ -7339,9 +7428,17 @@
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
+      "attention_mask": {
+        "name": "アテンションマスク",
+        "tooltip": "オプションのピクセル空間マスク。自己アテンションを通じて領域ごとの条件付けの影響を強度で調整します。"
+      },
       "frame_idx": {
         "name": "フレームインデックス",
         "tooltip": "条件付けを開始するフレームインデックス。単一フレームの画像や1-8フレームのビデオの場合、任意のframe_idx値が許容されます。9フレーム以上のビデオの場合、frame_idxは8で割り切れる数でなければならず、そうでない場合は最も近い8の倍数に切り捨てられます。負の値はビデオの終わりから数えます。"
+      },
+      "iclora_parameters": {
+        "name": "iclora_parameters",
+        "tooltip": "Get IC-LoRA ParametersノードからのオプションのIC-LoRAパラメータ。一部のIC-LoRA（例：reference_downscale_factor > 1）で必要な場合にガイド処理を調整するために使用します。チェーン接続時は、それぞれのLTXVAddGuideが接続されたパラメータのみを使用します。"
       },
       "image": {
         "name": "画像",
@@ -8335,6 +8432,19 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadMoGeModel": {
+    "display_name": "MoGeモデルの読み込み",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9658,6 +9768,122 @@
       "seed": {
         "name": "シード",
         "tooltip": "ノイズ生成に使用されるランダムシード。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeInference": {
+    "display_name": "MoGe推論",
+    "inputs": {
+      "apply_mask": {
+        "name": "apply_mask",
+        "tooltip": "マスクされた（空や無効な）ピクセルをポイントや深度でinfに設定し、メッシュ化時に除外します。無効にすると全領域の予測ジオメトリを保持しますが、マスクは別途返されます。"
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "1回の推論で処理する画像数。長い動画や画像セットでOOMになる場合は小さくしてください。"
+      },
+      "force_projection": {
+        "name": "force_projection"
+      },
+      "fov_x_degrees": {
+        "name": "fov_x_degrees",
+        "tooltip": "元カメラの水平視野角。深度マップを3Dにアンプロジェクトする際の焦点距離を設定します。0の場合は予測ポイントから自動復元。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "0 = 最速、9 = 最高詳細。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePanoramaInference": {
+    "display_name": "MoGeパノラマ推論",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "1バッチあたりのビュー数（全12分割）。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "正距円筒パノラマ画像（アスペクト比は任意）。"
+      },
+      "merge_resolution": {
+        "name": "merge_resolution",
+        "tooltip": "マージ後の距離マップの長辺解像度。"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "ビューごとの詳細度（0 = 最速、9 = 最高詳細）。"
+      },
+      "split_resolution": {
+        "name": "split_resolution",
+        "tooltip": "各パースペクティブ分割の解像度。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePointMapToMesh": {
+    "display_name": "MoGe ポイントマップからメッシュへ",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "バッチ化された MoGe ジオメトリのどの画像をメッシュ化するか。画像ごとに頂点数が異なるため、バッチを単一のメッシュにまとめることはできません。"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "頂点ストライド；1 = フル解像度。"
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "3x3 の深度範囲がこの割合を超えるピクセルを除外します。0 = オフ。"
+      },
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "元画像を baseColor テクスチャとして引き継ぎます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeRender": {
+    "display_name": "MoGe レンダリング",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "DirectX と OpenGL でノーマルマップのグリーンチャンネル規則が異なります。DirectX: green = -Y 下向き（Unreal）。OpenGL: green = +Y 上向き（Blender、Substance、Unity、glTF）。"
       }
     },
     "outputs": {

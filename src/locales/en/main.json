@@ -220,6 +220,7 @@
     "versionMismatchWarningMessage": "{warning}: {detail} Visit https://docs.comfy.org/installation/update_comfyui#common-update-issues for update instructions.",
     "frontendOutdated": "Frontend version {frontendVersion} is outdated. Backend requires {requiredVersion} or higher.",
     "frontendNewer": "Frontend version {frontendVersion} may not be compatible with backend version {backendVersion}.",
+    "comfyPackageOutdated": "Installed {name} version {installedVersion} is lower than the required version {requiredVersion}.",
     "updateFrontend": "Update Frontend",
     "dismiss": "Dismiss",
     "update": "Update",
@@ -1159,6 +1160,10 @@
     "saveAsTemplate": "Save as template",
     "enterName": "Enter name"
   },
+  "logsTerminal": {
+    "loadError": "Unable to load logs, please ensure you have updated your ComfyUI backend.",
+    "resyncError": "Unable to resync logs after the backend reconnected. Reopen the console to retry."
+  },
   "workflowService": {
     "exportWorkflow": "Export Workflow",
     "enterFilename": "Enter the filename",
@@ -1676,6 +1681,7 @@
     "model_merging": "model_merging",
     "model_patches": "model_patches",
     "chroma_radiance": "chroma_radiance",
+    "Anthropic": "Anthropic",
     "attention_experiments": "attention_experiments",
     "flux": "flux",
     "kandinsky5": "kandinsky5",
@@ -1726,6 +1732,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "model_specific": "model_specific",
+    "geometry_estimation": "geometry_estimation",
     "OpenAI": "OpenAI",
     "Sora": "Sora",
     "cond pair": "cond pair",
@@ -1793,6 +1800,7 @@
     "HISTOGRAM": "HISTOGRAM",
     "HOOK_KEYFRAMES": "HOOK_KEYFRAMES",
     "HOOKS": "HOOKS",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "IMAGE",
     "IMAGECOMPARE": "IMAGECOMPARE",
     "INT": "INT",
@@ -1813,6 +1821,8 @@
     "MODEL": "MODEL",
     "MODEL_PATCH": "MODEL_PATCH",
     "MODEL_TASK_ID": "MODEL_TASK_ID",
+    "MOGE_GEOMETRY": "MOGE_GEOMETRY",
+    "MOGE_MODEL": "MOGE_MODEL",
     "NOISE": "NOISE",
     "OPENAI_CHAT_CONFIG": "OPENAI_CHAT_CONFIG",
     "OPENAI_INPUT_FILES": "OPENAI_INPUT_FILES",
@@ -1899,6 +1909,7 @@
   "errorDialog": {
     "defaultTitle": "An error occurred",
     "loadWorkflowTitle": "Loading aborted due to error reloading workflow data",
+    "queueOpenWorkflowFailedTitle": "Failed to Open Workflow",
     "noStackTrace": "No stacktrace available",
     "extensionFileHint": "This may be due to the following script",
     "promptExecutionError": "Prompt execution failed",
@@ -3790,7 +3801,6 @@
   "cloudNotification": {
     "title": "Run ComfyUI in the Cloud",
     "message": "From setup to creation in seconds. Popular models, extensions, and powerful GPUs — ready when you are.",
-    "feature1Title": "400 Free Credits Monthly",
     "feature2Title": "Works Anywhere, Instantly",
     "feature3Title": "Models Ready to Use",
     "feature4Title": "Top Custom Node Packs Pre-installed",
