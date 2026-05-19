@@ -198,3 +198,30 @@ export function getAssetCardTitle(asset: AssetItem): string {
   if (curatedName && curatedName !== asset.name) return curatedName
   return getAssetDisplayFilename(asset)
 }
+
+/**
+ * Type guard: a pixel dimension is a finite positive integer. `metadata` is
+ * typed as `Record<string, unknown>`, so `typeof === 'number'` alone admits
+ * NaN, Infinity, 0, negatives, and fractional values.
+ */
+function isValidDimension(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
+}
+
+/**
+ * Returns the original image dimensions from `asset.metadata.{width,height}`
+ * when both pass shape validation, otherwise `undefined`. Callers should fall
+ * back to the locally-computed `<img>.naturalWidth/Height`, which is correct
+ * on runtimes that serve the original file but reports preview size on
+ * runtimes that serve a downscaled preview.
+ */
+export function getAssetMetadataDimensions(
+  asset: AssetItem | undefined
+): { width: number; height: number } | undefined {
+  const w = asset?.metadata?.width
+  const h = asset?.metadata?.height
+  if (isValidDimension(w) && isValidDimension(h)) {
+    return { width: w, height: h }
+  }
+  return undefined
+}

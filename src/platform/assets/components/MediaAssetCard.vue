@@ -157,7 +157,10 @@ import { getAssetType } from '../composables/media/assetMappers'
 import { getAssetUrl } from '../utils/assetUrlUtil'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
-import { getAssetDisplayName } from '../utils/assetMetadataUtils'
+import {
+  getAssetDisplayName,
+  getAssetMetadataDimensions
+} from '../utils/assetMetadataUtils'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey, MIME_ASSET_INFO } from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'
@@ -278,31 +281,9 @@ const formattedDuration = computed(() => {
   return formatDuration(Number(duration))
 })
 
-// Validate a dimension value read from the asset metadata field. The schema
-// types `metadata` as `Record<string, unknown>`, so `typeof === 'number'`
-// alone would accept NaN, Infinity, 0, negatives, and fractional values —
-// any of which would surface as garbage in the dimension label.
-function isValidDimension(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value > 0
-}
-
-// Prefer original image dimensions from the asset's metadata field when the
-// backend has populated them and they pass shape validation; fall back to
-// the locally-computed dimensions from the rendered <img>'s naturalWidth /
-// Height otherwise. The latter is correct on runtimes that serve the
-// original file but reports preview size on runtimes that serve a
-// downscaled preview — the metadata path is what aligns the displayed
-// value with the source. Named `display` rather than `original` because
-// the fallback branch may return preview-sized values; consumers that
-// require the actual source dimensions should read `metadata` directly.
-const displayImageDimensions = computed(() => {
-  const metaWidth = asset?.metadata?.width
-  const metaHeight = asset?.metadata?.height
-  if (isValidDimension(metaWidth) && isValidDimension(metaHeight)) {
-    return { width: metaWidth, height: metaHeight }
-  }
-  return imageDimensions.value
-})
+const displayImageDimensions = computed(
+  () => getAssetMetadataDimensions(asset) ?? imageDimensions.value
+)
 
 // Get metadata info based on file kind
 const metaInfo = computed(() => {
