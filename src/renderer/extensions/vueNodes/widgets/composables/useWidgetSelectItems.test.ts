@@ -37,8 +37,8 @@ function createMockMediaAssets() {
 
 let mockMediaAssets = createMockMediaAssets()
 
-vi.mock('@/platform/assets/composables/media/useMediaAssets', () => ({
-  useMediaAssets: () => mockMediaAssets
+vi.mock('@/platform/assets/composables/media/useAssetsApi', () => ({
+  useAssetsApi: () => mockMediaAssets
 }))
 
 vi.mock('@/platform/assets/composables/useAssetFilterOptions', () => ({

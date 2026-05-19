@@ -1160,6 +1160,10 @@
     "saveAsTemplate": "Save as template",
     "enterName": "Enter name"
   },
+  "logsTerminal": {
+    "loadError": "Unable to load logs, please ensure you have updated your ComfyUI backend.",
+    "resyncError": "Unable to resync logs after the backend reconnected. Reopen the console to retry."
+  },
   "workflowService": {
     "exportWorkflow": "Export Workflow",
     "enterFilename": "Enter the filename",
