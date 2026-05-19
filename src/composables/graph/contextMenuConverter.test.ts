@@ -175,6 +175,15 @@ describe('contextMenuConverter', () => {
       expect(result.find((opt) => opt.label === 'Properties')).toBeUndefined()
     })
 
+    it.each(['Collapse', 'Expand'])(
+      'should skip LiteGraph %s in favor of Vue Minimize Node / Expand Node',
+      (label) => {
+        const items = [{ content: label, callback: () => {} }]
+        const result = convertContextMenuToOptions(items, undefined, false)
+        expect(result.find((opt) => opt.label === label)).toBeUndefined()
+      }
+    )
+
     it('should convert basic menu items with content', () => {
       const items = [{ content: 'Test Item', callback: () => {} }]
       const result = convertContextMenuToOptions(items, undefined, false)
