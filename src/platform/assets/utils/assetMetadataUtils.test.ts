@@ -9,6 +9,7 @@ import {
   getAssetDescription,
   getAssetDisplayFilename,
   getAssetDisplayName,
+  getAssetExtensionLabel,
   getAssetFilename,
   getAssetModelType,
   getAssetSourceUrl,
@@ -381,6 +382,49 @@ describe('assetMetadataUtils', () => {
         display_name: 'pretty.png'
       }
       expect(getAssetCardTitle(asset)).toBe('pretty.png')
+    })
+  })
+
+  describe('getAssetExtensionLabel', () => {
+    it.for([
+      { name: 'sunset.png', expected: 'PNG' },
+      { name: 'clip.MP4', expected: 'MP4' },
+      { name: 'model.safetensors', expected: 'SAFETENSORS' },
+      { name: 'archive.app.json', expected: 'APP.JSON' }
+    ])('uppercases the extension for $name', ({ name, expected }) => {
+      expect(getAssetExtensionLabel({ ...mockAsset, name })).toBe(expected)
+    })
+
+    it('falls back to the metadata filename when asset.name has no extension', () => {
+      const asset = {
+        ...mockAsset,
+        name: 'blake3:abc',
+        user_metadata: { filename: 'sunset.png' }
+      }
+      expect(getAssetExtensionLabel(asset)).toBe('PNG')
+    })
+
+    it('falls back to display_name when asset.name is a content hash (Cloud case)', () => {
+      const asset = {
+        ...mockAsset,
+        name: 'blake3:abcdef',
+        display_name: 'ComfyUI_00001_.png'
+      }
+      expect(getAssetExtensionLabel(asset)).toBe('PNG')
+    })
+
+    it('strips path prefixes before resolving the extension', () => {
+      const asset = {
+        ...mockAsset,
+        name: 'subdir.v2/cover.jpg'
+      }
+      expect(getAssetExtensionLabel(asset)).toBe('JPG')
+    })
+
+    it('returns an empty string when no filename source has an extension', () => {
+      expect(
+        getAssetExtensionLabel({ ...mockAsset, name: 'no-extension' })
+      ).toBe('')
     })
   })
 })

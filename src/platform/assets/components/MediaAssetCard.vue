@@ -158,7 +158,10 @@ import { getAssetType } from '../composables/media/assetMappers'
 import { getAssetUrl } from '../utils/assetUrlUtil'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
-import { getAssetDisplayName } from '../utils/assetMetadataUtils'
+import {
+  getAssetDisplayName,
+  getAssetExtensionLabel
+} from '../utils/assetMetadataUtils'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey, MIME_ASSET_INFO } from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'
@@ -279,17 +282,24 @@ const formattedDuration = computed(() => {
   return formatDuration(Number(duration))
 })
 
-// Get metadata info based on file kind
+/**
+ * Composes the card's description line as `<EXT> <detail>`, where the
+ * trailing detail is the image's pixel dimensions (when loaded locally)
+ * or the file size for video/audio/3D assets. Either half may be
+ * omitted; the result is an empty string when nothing is available.
+ */
 const metaInfo = computed(() => {
   if (!asset) return ''
+  const extensionLabel = getAssetExtensionLabel(asset)
+  const parts: string[] = []
+  if (extensionLabel) parts.push(extensionLabel)
   // TODO(assets): Re-enable once /assets API returns original image dimensions in metadata (#10590)
   if (fileKind.value === 'image' && imageDimensions.value && !isCloud) {
-    return `${imageDimensions.value.width}x${imageDimensions.value.height}`
+    parts.push(`${imageDimensions.value.width}x${imageDimensions.value.height}`)
+  } else if (asset.size && ['video', 'audio', '3D'].includes(fileKind.value)) {
+    parts.push(formatSize(asset.size))
   }
-  if (asset.size && ['video', 'audio', '3D'].includes(fileKind.value)) {
-    return formatSize(asset.size)
-  }
-  return ''
+  return parts.join(' ')
 })
 
 const showActionsOverlay = computed(() => {

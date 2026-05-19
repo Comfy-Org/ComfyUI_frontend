@@ -76,7 +76,10 @@ import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
+import {
+  getAssetDisplayName,
+  getAssetExtensionLabel
+} from '@/platform/assets/utils/assetMetadataUtils'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
@@ -140,22 +143,30 @@ function getAssetPreviewUrl(asset: AssetItem): string {
   return ''
 }
 
+/**
+ * Builds the description line shown beneath an asset's name. Composed as
+ * `<EXT> <timing|size>` with a single space separator, preferring
+ * execution time → duration → file size for the trailing detail. Either
+ * half may be omitted (returns the other, or an empty string).
+ */
 function getAssetSecondaryText(asset: AssetItem): string {
+  const extensionLabel = getAssetExtensionLabel(asset)
+  const parts: string[] = []
+  if (extensionLabel) parts.push(extensionLabel)
+
   const metadata = getOutputAssetMetadata(asset.user_metadata)
   if (typeof metadata?.executionTimeInSeconds === 'number') {
-    return `${metadata.executionTimeInSeconds.toFixed(2)}s`
+    parts.push(`${metadata.executionTimeInSeconds.toFixed(2)}s`)
+  } else {
+    const duration = asset.user_metadata?.duration
+    if (typeof duration === 'number') {
+      parts.push(formatDuration(duration))
+    } else if (typeof asset.size === 'number') {
+      parts.push(formatSize(asset.size))
+    }
   }
 
-  const duration = asset.user_metadata?.duration
-  if (typeof duration === 'number') {
-    return formatDuration(duration)
-  }
-
-  if (typeof asset.size === 'number') {
-    return formatSize(asset.size)
-  }
-
-  return ''
+  return parts.join(' ')
 }
 
 function getStackCount(asset: AssetItem): number | undefined {
