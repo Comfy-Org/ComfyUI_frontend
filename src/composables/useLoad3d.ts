@@ -8,10 +8,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
-import {
-  isAssetPreviewSupported,
-  persistThumbnail
-} from '@/platform/assets/utils/assetPreviewUtil'
+import { persistThumbnail } from '@/platform/assets/utils/assetPreviewUtil'
 import type {
   AnimationItem,
   CameraConfig,
@@ -862,7 +859,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       isFirstModelLoad = false
     },
     modelReady: () => {
-      if (!load3d || !isAssetPreviewSupported()) return
+      if (!load3d) return
 
       const node = nodeRef.value
       const modelWidget = node?.widgets?.find(

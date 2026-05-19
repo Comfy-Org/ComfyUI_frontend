@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   findOutputAsset,
   findServerPreviewUrl,
-  isAssetPreviewSupported,
   persistThumbnail
 } from '@/platform/assets/utils/assetPreviewUtil'
 
@@ -76,12 +75,6 @@ const localAssetWithPreview = {
   preview_id: '3df94ee8-preview',
   preview_url: '/api/view?type=output&filename=preview.png'
 }
-
-describe('isAssetPreviewSupported', () => {
-  it('returns true (asset API is always available)', () => {
-    expect(isAssetPreviewSupported()).toBe(true)
-  })
-})
 
 describe('findOutputAsset', () => {
   beforeEach(() => vi.clearAllMocks())
