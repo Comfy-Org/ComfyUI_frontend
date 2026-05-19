@@ -175,6 +175,33 @@ describe('LogsTerminal', () => {
     expect(terminalMock.write).toHaveBeenCalledWith('fresh\n')
   })
 
+  it('aborts an in-flight mount fetch when "reconnected" arrives first', async () => {
+    // Mount's getRawLogs hangs so we can drive the race deterministically.
+    const mount = deferredRawLogs()
+    apiMock.getRawLogs.mockImplementationOnce(() => mount.promise)
+    renderLogsTerminal()
+    await vi.waitFor(() => {
+      expect(apiMock.getRawLogs).toHaveBeenCalledTimes(1)
+    })
+
+    // Resync wins the race and writes the post-reboot snapshot.
+    apiMock.getRawLogs.mockImplementationOnce(async () => ({
+      entries: [{ m: 'fresh\n' }]
+    }))
+    apiMock.dispatchEvent(new CustomEvent('reconnected'))
+    await vi.waitFor(() => {
+      expect(terminalMock.reset).toHaveBeenCalledTimes(1)
+      expect(terminalMock.write).toHaveBeenCalledWith('fresh\n')
+    })
+
+    // Mount's late response must not stomp on the freshly-reset terminal.
+    mount.resolve({ entries: [{ m: 'stale-mount\n' }] })
+    await nextTick()
+    await nextTick()
+
+    expect(terminalMock.write).not.toHaveBeenCalledWith('stale-mount\n')
+  })
+
   it('surfaces an inline error when the resync fetch fails', async () => {
     renderLogsTerminal()
     await vi.waitFor(() => {

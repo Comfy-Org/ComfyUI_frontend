@@ -39,6 +39,10 @@ export function useLogsTerminal(
   }
 
   const resyncLogs = async () => {
+    // Cancel both the in-flight mount fetch and any prior resync so a late
+    // mount response can't write a stale snapshot on top of a freshly-reset
+    // terminal after we've already written the post-reconnect view.
+    mountController?.abort()
     resyncController?.abort()
     const controller = new AbortController()
     resyncController = controller
