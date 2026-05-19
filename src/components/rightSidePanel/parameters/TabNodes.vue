@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
-import { computed, reactive, ref, shallowRef, watch } from 'vue'
+import { computed, reactive, ref, shallowRef } from 'vue'
 
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 
@@ -8,7 +7,6 @@ import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
 import type { NodeWidgetsListList } from '../shared'
@@ -23,8 +21,7 @@ const nodes = computed((): LGraphNode[] => {
   return (canvasStore.canvas?.graph?.nodes ?? []) as LGraphNode[]
 })
 
-const rightSidePanelStore = useRightSidePanelStore()
-const { searchQuery } = storeToRefs(rightSidePanelStore)
+const searchQuery = ref('')
 
 const { widgetsSectionDataList } = computedSectionDataList(nodes)
 
@@ -34,15 +31,6 @@ const searchedWidgetsSectionDataList = shallowRef<NodeWidgetsListList>(
 const isSearching = ref(false)
 
 const collapseMap = reactive<Record<string, boolean>>({})
-
-watch(
-  () => workflowStore.activeWorkflow?.path,
-  () => {
-    for (const key of Object.keys(collapseMap)) {
-      delete collapseMap[key]
-    }
-  }
-)
 
 function isSectionCollapsed(nodeId: NodeId): boolean {
   // Defaults to collapsed when not explicitly set by the user
