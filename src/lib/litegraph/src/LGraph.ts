@@ -100,6 +100,10 @@ export type {
 /** Runtime allowlist for {@link LGraph.trigger}, derived from {@link LGraphTriggerActions}. */
 const validTriggerActions = new Set<LGraphTriggerAction>(LGraphTriggerActions)
 
+function isLGraphTriggerAction(action: string): action is LGraphTriggerAction {
+  return validTriggerActions.has(action as LGraphTriggerAction)
+}
+
 export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
 
 /**
@@ -1366,11 +1370,11 @@ export class LGraph
   ): void
   trigger(action: string, param: unknown): void
   trigger(action: string, param: unknown) {
-    if (!validTriggerActions.has(action as LGraphTriggerAction)) return
+    if (!isLGraphTriggerAction(action)) return
     if (!param || typeof param !== 'object') return
 
     this.onTrigger?.({ type: action, ...param } as LGraphTriggerEvent)
-    this.events.dispatch(action as LGraphTriggerAction, param as never)
+    this.events.dispatch(action, param as never)
   }
 
   /** @todo Clean up - never implemented. */
