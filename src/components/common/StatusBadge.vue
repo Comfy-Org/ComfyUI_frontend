@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import { statusBadgeVariants } from './statusBadge.variants'
 import type { StatusBadgeVariants } from './statusBadge.variants'

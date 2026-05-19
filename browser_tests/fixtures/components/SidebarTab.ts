@@ -95,6 +95,7 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
   public readonly allTab: Locator
   public readonly blueprintsTab: Locator
   public readonly sortButton: Locator
+  public readonly nodePreview: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'node-library')
@@ -103,6 +104,7 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
     this.allTab = this.getTab('All')
     this.blueprintsTab = this.getTab('Blueprints')
     this.sortButton = this.sidebarContent.getByRole('button', { name: 'Sort' })
+    this.nodePreview = page.getByTestId(TestIds.sidebar.nodePreviewCard)
   }
 
   getTab(name: string) {
@@ -136,6 +138,7 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
 export class WorkflowsSidebarTab extends SidebarTab {
   public readonly root: Locator
   public readonly activeWorkflowLabel: Locator
+  public readonly searchInput: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'workflows')
@@ -143,6 +146,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
     this.activeWorkflowLabel = this.root.locator(
       '.comfyui-workflows-open .p-tree-node-selected .node-label'
     )
+    this.searchInput = this.root.getByRole('combobox').first()
   }
 
   async getOpenedWorkflowNames() {
@@ -248,6 +252,26 @@ export class ModelLibrarySidebarTab extends SidebarTab {
   }
 }
 
+type MediaFilterKind = 'image' | 'video' | 'audio' | '3d'
+type MediaFilterLabel = 'Image' | 'Video' | 'Audio' | '3D'
+
+function getMediaFilterLabel(
+  filter: MediaFilterKind | MediaFilterLabel
+): MediaFilterLabel {
+  switch (filter) {
+    case 'image':
+      return 'Image'
+    case 'video':
+      return 'Video'
+    case 'audio':
+      return 'Audio'
+    case '3d':
+      return '3D'
+    default:
+      return filter
+  }
+}
+
 export class AssetsSidebarTab extends SidebarTab {
   // --- Tab navigation ---
   public readonly generatedTab: Locator
@@ -259,6 +283,13 @@ export class AssetsSidebarTab extends SidebarTab {
   // --- Search & filter ---
   public readonly searchInput: Locator
   public readonly settingsButton: Locator
+  public readonly filterButton: Locator
+
+  // --- Filter menu checkboxes (cloud-only, shown inside filter popover) ---
+  public readonly filterImageCheckbox: Locator
+  public readonly filterVideoCheckbox: Locator
+  public readonly filterAudioCheckbox: Locator
+  public readonly filter3DCheckbox: Locator
 
   // --- View mode ---
   public readonly listViewOption: Locator
@@ -267,6 +298,8 @@ export class AssetsSidebarTab extends SidebarTab {
   // --- Sort options (cloud-only, shown inside settings popover) ---
   public readonly sortNewestFirst: Locator
   public readonly sortOldestFirst: Locator
+  public readonly sortLongestFirst: Locator
+  public readonly sortFastestFirst: Locator
 
   // --- Asset cards ---
   public readonly assetCards: Locator
@@ -297,10 +330,17 @@ export class AssetsSidebarTab extends SidebarTab {
     )
     this.searchInput = page.getByPlaceholder('Search Assets...')
     this.settingsButton = page.getByRole('button', { name: 'View settings' })
+    this.filterButton = page.getByRole('button', { name: 'Filter by' })
+    this.filterImageCheckbox = page.getByRole('checkbox', { name: 'Image' })
+    this.filterVideoCheckbox = page.getByRole('checkbox', { name: 'Video' })
+    this.filterAudioCheckbox = page.getByRole('checkbox', { name: 'Audio' })
+    this.filter3DCheckbox = page.getByRole('checkbox', { name: '3D' })
     this.listViewOption = page.getByText('List view')
     this.gridViewOption = page.getByText('Grid view')
     this.sortNewestFirst = page.getByText('Newest first')
     this.sortOldestFirst = page.getByText('Oldest first')
+    this.sortLongestFirst = page.getByText('Generation time (longest first)')
+    this.sortFastestFirst = page.getByText('Generation time (fastest first)')
     this.assetCards = page
       .getByRole('button')
       .and(page.locator('[data-selected]'))
@@ -332,6 +372,12 @@ export class AssetsSidebarTab extends SidebarTab {
     return this.page.getByText(title)
   }
 
+  filterCheckbox(filter: MediaFilterKind | MediaFilterLabel) {
+    return this.page.getByRole('checkbox', {
+      name: getMediaFilterLabel(filter)
+    })
+  }
+
   getAssetCardByName(name: string) {
     return this.assetCards.filter({ hasText: name })
   }
@@ -340,11 +386,14 @@ export class AssetsSidebarTab extends SidebarTab {
     return this.page.locator('.p-contextmenu').getByText(label)
   }
 
-  override async open() {
+  override async open({ waitForAssets = true } = {}) {
     // Remove any toast notifications that may overlay the sidebar button
     await this.dismissToasts()
     await super.open()
     await this.generatedTab.waitFor({ state: 'visible' })
+    if (waitForAssets) {
+      await this.waitForAssets()
+    }
   }
 
   /** Dismiss all visible toast notifications by clicking their close buttons. */
@@ -379,6 +428,29 @@ export class AssetsSidebarTab extends SidebarTab {
       .or(this.gridViewOption)
       .first()
       .waitFor({ state: 'visible', timeout: 3000 })
+  }
+
+  async openFilterMenu() {
+    await this.dismissToasts()
+    await this.filterButton.click()
+    await this.filterCheckbox('Image').waitFor({
+      state: 'visible',
+      timeout: 3000
+    })
+  }
+
+  async toggleMediaTypeFilter(
+    filter: MediaFilterKind | MediaFilterLabel
+  ): Promise<void> {
+    const checkbox = this.filterCheckbox(filter)
+    const before = await checkbox.getAttribute('aria-checked')
+    await checkbox.click()
+    const expected = before === 'true' ? 'false' : 'true'
+    await expect(checkbox).toHaveAttribute('aria-checked', expected)
+  }
+
+  async getAssetCardOrder(): Promise<string[]> {
+    return await this.assetCards.allInnerTexts()
   }
 
   async rightClickAsset(name: string) {

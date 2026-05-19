@@ -2,7 +2,7 @@
   <div
     ref="transformPaneRef"
     data-testid="transform-pane"
-    class="pointer-events-none absolute inset-0 size-full will-change-auto"
+    class="ph-no-capture pointer-events-none absolute inset-0 size-full will-change-auto"
   >
     <!-- Vue nodes will be rendered here -->
     <slot />

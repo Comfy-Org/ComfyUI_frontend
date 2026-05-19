@@ -17,7 +17,7 @@ vi.mock('@/platform/assets/services/assetService', () => ({
 vi.mock('@/platform/assets/importSources/civitaiImportSource', () => ({
   civitaiImportSource: {
     name: 'Civitai',
-    hostnames: ['civitai.com'],
+    hostnames: ['civitai.com', 'civitai.red'],
     fetchMetadata: vi.fn()
   }
 }))
@@ -153,5 +153,29 @@ describe('useUploadModelWizard', () => {
 
     expect(wizard.uploadStatus.value).toBe('error')
     expect(wizard.uploadError.value).toBe('Network error')
+  })
+
+  it('accepts civitai.red model URLs', async () => {
+    const { assetService } =
+      await import('@/platform/assets/services/assetService')
+
+    const asyncResponse: AsyncUploadResponse = {
+      type: 'async',
+      task: {
+        task_id: 'task-red',
+        status: 'created',
+        message: 'Download queued'
+      }
+    }
+    vi.mocked(assetService.uploadAssetAsync).mockResolvedValue(asyncResponse)
+
+    const wizard = useUploadModelWizard(modelTypes)
+    wizard.wizardData.value.url = 'https://civitai.red/models/12345'
+    wizard.selectedModelType.value = 'checkpoints'
+
+    await wizard.uploadModel()
+
+    expect(assetService.uploadAssetAsync).toHaveBeenCalled()
+    expect(wizard.uploadStatus.value).toBe('processing')
   })
 })

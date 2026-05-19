@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/vue'
 import { isEmpty } from 'es-toolkit/compat'
 
 import { api } from '@/scripts/api'
+import { toError } from '@/utils/errorUtil'
 
 interface UserCloudStatus {
   status: 'active'
@@ -80,7 +81,7 @@ export async function getUserCloudStatus(): Promise<UserCloudStatus> {
   } catch (error) {
     // Only capture network errors (not HTTP errors we already captured)
     if (!isHttpError(error, 'Failed to get user:')) {
-      captureApiError(error as Error, '/user', 'network_error')
+      captureApiError(toError(error), '/user', 'network_error')
     }
     throw error
   }
@@ -95,23 +96,24 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
       }
     })
     if (!response.ok) {
-      // Not an error case - survey not completed is a valid state
+      // Ambiguous response (404/5xx/etc). Treat as completed to avoid
+      // bouncing working customers to /cloud/survey on transient hiccups.
+      // Real "not completed" only comes from a 200 with empty value.
       Sentry.addBreadcrumb({
         category: 'auth',
         message: 'Survey status check returned non-ok response',
-        level: 'info',
+        level: 'warning',
         data: {
           status: response.status,
           endpoint: `/settings/${ONBOARDING_SURVEY_KEY}`
         }
       })
-      return false
+      return true
     }
     const data = await response.json()
-    // Check if data exists and is not empty
     return !isEmpty(data.value)
   } catch (error) {
-    // Network error - still capture it as it's not thrown from above
+    // Network/parse failure — same policy as ambiguous HTTP responses.
     Sentry.captureException(error, {
       tags: {
         api_endpoint: '/settings/{key}',
@@ -123,7 +125,7 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
       },
       level: 'warning'
     })
-    return false
+    return true
   }
 }
 
@@ -176,7 +178,7 @@ export async function submitSurvey(
     // Only capture network errors (not HTTP errors we already captured)
     if (!isHttpError(error, 'Failed to submit survey:')) {
       captureApiError(
-        error as Error,
+        toError(error),
         '/settings',
         'network_error',
         undefined,

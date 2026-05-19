@@ -4,7 +4,7 @@ import {
   mediaTypes
 } from '@/renderer/extensions/linearMode/mediaTypes'
 import type { ResultItemImpl } from '@/stores/queueStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import VideoPlayOverlay from '@/platform/assets/components/VideoPlayOverlay.vue'
 

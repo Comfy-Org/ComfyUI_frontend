@@ -4,7 +4,7 @@ import { useNodePaste } from '@/composables/node/useNodePaste'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { ResultItemType } from '@/schemas/apiSchema'
+import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 
@@ -53,7 +53,7 @@ const uploadFile = async (
 
 interface ImageUploadOptions {
   fileFilter?: (file: File) => boolean
-  onUploadComplete: (paths: string[]) => void
+  onUploadComplete: (paths: (string | ResultItem)[]) => void
   allow_batch?: boolean
   /**
    * The file types to accept.
@@ -127,7 +127,8 @@ export const useNodeImageUpload = (
   // Handle drag & drop
   useNodeDragAndDrop(node, {
     fileFilter,
-    onDrop: handleUploadBatch
+    onDrop: handleUploadBatch,
+    onResultItemDrop: (item) => onUploadComplete([item])
   })
 
   // Handle paste

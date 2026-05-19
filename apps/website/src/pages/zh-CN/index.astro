@@ -8,15 +8,20 @@ import UseCaseSection from '../../components/home/UseCaseSection.vue'
 import CaseStudySpotlightSection from '../../components/home/CaseStudySpotlightSection.vue'
 import GetStartedSection from '../../components/home/GetStartedSection.vue'
 import BuildWhatSection from '../../components/home/BuildWhatSection.vue'
+import { t } from '../../i18n/translations'
 ---
 
-<BaseLayout title="Comfy — 视觉 AI 的专业控制">
+<BaseLayout
+  title="Comfy — 视觉 AI 的最强可控性"
+  description={t('hero.subtitle', 'zh-CN')}
+  keywords={['comfyui app', 'comfyui web app', 'comfyui application', 'ComfyUI 应用', 'ComfyUI 网页版', 'ComfyUI 桌面应用', 'ComfyUI 下载', '可视化 AI', '节点式 AI', '生成式 AI 工作流']}
+>
   <HeroSection locale="zh-CN" client:load />
   <SocialProofBarSection />
   <ProductShowcaseSection locale="zh-CN" client:load />
   <UseCaseSection locale="zh-CN" client:load />
   <GetStartedSection locale="zh-CN" />
   <ProductCardsSection locale="zh-CN" />
-  <CaseStudySpotlightSection locale="zh-CN" />
+  <CaseStudySpotlightSection locale="zh-CN" client:load />
   <BuildWhatSection locale="zh-CN" />
 </BaseLayout>

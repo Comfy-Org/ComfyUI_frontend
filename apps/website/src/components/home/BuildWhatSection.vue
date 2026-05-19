@@ -19,7 +19,7 @@ const row2 = [
   >
     <!-- Node rows -->
     <div
-      class="font-formula-condensed relative flex flex-col items-center font-semibold"
+      class="font-formula-narrow relative flex flex-col items-center font-semibold"
     >
       <NodeBadge :segments="row1" />
 

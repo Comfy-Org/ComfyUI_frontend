@@ -1,32 +1,72 @@
 import type { Page, Route } from '@playwright/test'
-import type { JobsListResponse } from '@comfyorg/ingest-types'
+import type {
+  CreateAssetExportData,
+  CreateAssetExportResponse,
+  JobsListResponse,
+  ListAssetsResponse
+} from '@comfyorg/ingest-types'
 
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type {
+  JobDetail,
+  RawJobListItem
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 
-const jobsListRoutePattern = /\/api\/jobs(?:\?.*)?$/
+const jobsListRoutePattern = '**/api/jobs?*'
+const assetsListRoutePattern = /\/api\/assets(?:\?.*)?$/
+const assetExportRoutePattern = '**/api/assets/export'
 const inputFilesRoutePattern = /\/internal\/files\/input(?:\?.*)?$/
 const historyRoutePattern = /\/api\/history$/
 
+/**
+ * Media kinds supported by the assets sidebar filter UI. The string values
+ * match what the backend stores on `preview_output.mediaType` (`images` is
+ * intentionally plural to match existing API conventions; the others are
+ * singular as emitted by `useMediaAssetGalleryStore`).
+ *
+ * The sidebar filter ultimately matches on the filename extension, so the
+ * fixture also picks an extension-appropriate filename for each kind.
+ */
+export type MediaKindFixture = 'images' | 'video' | 'audio' | '3D'
+
+const DEFAULT_EXTENSION: Record<MediaKindFixture, string> = {
+  images: 'png',
+  video: 'mp4',
+  audio: 'wav',
+  '3D': 'glb'
+}
+
 /** Factory to create a mock completed job with preview output. */
 export function createMockJob(
-  overrides: Partial<RawJobListItem> & { id: string }
+  overrides: Partial<RawJobListItem> & {
+    id: string
+    /**
+     * Optional shorthand to set both `preview_output.mediaType` and an
+     * extension-appropriate filename. Ignored when `preview_output` is also
+     * supplied via `overrides`.
+     */
+    mediaKind?: MediaKindFixture
+  }
 ): RawJobListItem {
+  const { mediaKind, ...rest } = overrides
   const now = Date.now()
+  const extension = mediaKind ? DEFAULT_EXTENSION[mediaKind] : 'png'
+  const mediaType = mediaKind ?? 'images'
+
   return {
     status: 'completed',
     create_time: now,
     execution_start_time: now,
     execution_end_time: now + 5000,
     preview_output: {
-      filename: `output_${overrides.id}.png`,
+      filename: `output_${rest.id}.${extension}`,
       subfolder: '',
       type: 'output',
       nodeId: '1',
-      mediaType: 'images'
+      mediaType
     },
     outputs_count: 1,
     priority: 0,
-    ...overrides
+    ...rest
   }
 }
 
@@ -50,6 +90,46 @@ export function createMockJobs(
         mediaType: 'images'
       },
       ...baseOverrides
+    })
+  )
+}
+
+/**
+ * Create one job per requested media kind, in the order supplied. Jobs share
+ * a stable timestamp ordering (newer first) so callers can rely on the result
+ * order when mediaType filters are inactive.
+ */
+export function createMixedMediaJobs(
+  kinds: MediaKindFixture[]
+): RawJobListItem[] {
+  const now = Date.now()
+  return kinds.map((kind, i) =>
+    createMockJob({
+      id: `${kind}-${String(i + 1).padStart(3, '0')}`,
+      mediaKind: kind,
+      create_time: now - i * 60_000,
+      execution_start_time: now - i * 60_000,
+      execution_end_time: now - i * 60_000 + 5000
+    })
+  )
+}
+
+/**
+ * Create jobs with explicit `(create_time, execution duration)` pairs so that
+ * sort assertions for newest/oldest and longest/fastest are unambiguous.
+ *
+ * Each spec entry yields a job whose `execution_end_time - execution_start_time`
+ * equals `durationMs`. The first spec becomes id `job-001`, etc.
+ */
+export function createJobsWithExecutionTimes(
+  specs: ReadonlyArray<{ createTime: number; durationMs: number }>
+): RawJobListItem[] {
+  return specs.map((spec, i) =>
+    createMockJob({
+      id: `job-${String(i + 1).padStart(3, '0')}`,
+      create_time: spec.createTime,
+      execution_start_time: spec.createTime,
+      execution_end_time: spec.createTime + spec.durationMs
     })
   )
 }
@@ -88,12 +168,23 @@ function getExecutionDuration(job: RawJobListItem): number {
 
 export class AssetsHelper {
   private jobsRouteHandler: ((route: Route) => Promise<void>) | null = null
+  private cloudAssetsRouteHandler: ((route: Route) => Promise<void>) | null =
+    null
+  private assetExportRouteHandler: ((route: Route) => Promise<void>) | null =
+    null
   private inputFilesRouteHandler: ((route: Route) => Promise<void>) | null =
     null
   private deleteHistoryRouteHandler: ((route: Route) => Promise<void>) | null =
     null
   private generatedJobs: RawJobListItem[] = []
+  private cloudAssetsResponse: ListAssetsResponse | null = null
+  private assetExportRequests: CreateAssetExportData['body'][] = []
+  private assetExportResponse: CreateAssetExportResponse | null = null
   private importedFiles: string[] = []
+  private readonly jobDetailRouteHandlers = new Map<
+    string,
+    (route: Route) => Promise<void>
+  >()
 
   constructor(private readonly page: Page) {}
 
@@ -170,6 +261,82 @@ export class AssetsHelper {
     await this.page.route(jobsListRoutePattern, this.jobsRouteHandler)
   }
 
+  async mockCloudAssets(response: ListAssetsResponse): Promise<void> {
+    this.cloudAssetsResponse = response
+
+    if (this.cloudAssetsRouteHandler) {
+      return
+    }
+
+    this.cloudAssetsRouteHandler = async (route: Route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(this.cloudAssetsResponse)
+      })
+    }
+
+    await this.page.route(assetsListRoutePattern, this.cloudAssetsRouteHandler)
+  }
+
+  async mockEmptyCloudAssets(): Promise<void> {
+    await this.mockCloudAssets({
+      assets: [],
+      total: 0,
+      has_more: false
+    })
+  }
+
+  async captureAssetExportRequests(
+    response: CreateAssetExportResponse = {
+      task_id: 'asset-export-task',
+      status: 'created'
+    }
+  ): Promise<CreateAssetExportData['body'][]> {
+    this.assetExportRequests = []
+    this.assetExportResponse = response
+
+    if (this.assetExportRouteHandler) {
+      return this.assetExportRequests
+    }
+
+    this.assetExportRouteHandler = async (route: Route) => {
+      this.assetExportRequests.push(
+        route.request().postDataJSON() as CreateAssetExportData['body']
+      )
+
+      await route.fulfill({
+        status: 202,
+        contentType: 'application/json',
+        body: JSON.stringify(this.assetExportResponse)
+      })
+    }
+
+    await this.page.route(assetExportRoutePattern, this.assetExportRouteHandler)
+
+    return this.assetExportRequests
+  }
+
+  async mockJobDetail(jobId: string, detail: JobDetail): Promise<void> {
+    const pattern = `**/api/jobs/${encodeURIComponent(jobId)}`
+    const existingHandler = this.jobDetailRouteHandlers.get(pattern)
+
+    if (existingHandler) {
+      await this.page.unroute(pattern, existingHandler)
+    }
+
+    const handler = async (route: Route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(detail)
+      })
+    }
+
+    this.jobDetailRouteHandlers.set(pattern, handler)
+    await this.page.route(pattern, handler)
+  }
+
   async mockInputFiles(files: string[]): Promise<void> {
     this.importedFiles = [...files]
 
@@ -225,11 +392,30 @@ export class AssetsHelper {
 
   async clearMocks(): Promise<void> {
     this.generatedJobs = []
+    this.cloudAssetsResponse = null
+    this.assetExportRequests = []
+    this.assetExportResponse = null
     this.importedFiles = []
 
     if (this.jobsRouteHandler) {
       await this.page.unroute(jobsListRoutePattern, this.jobsRouteHandler)
       this.jobsRouteHandler = null
+    }
+
+    if (this.cloudAssetsRouteHandler) {
+      await this.page.unroute(
+        assetsListRoutePattern,
+        this.cloudAssetsRouteHandler
+      )
+      this.cloudAssetsRouteHandler = null
+    }
+
+    if (this.assetExportRouteHandler) {
+      await this.page.unroute(
+        assetExportRoutePattern,
+        this.assetExportRouteHandler
+      )
+      this.assetExportRouteHandler = null
     }
 
     if (this.inputFilesRouteHandler) {
@@ -247,5 +433,10 @@ export class AssetsHelper {
       )
       this.deleteHistoryRouteHandler = null
     }
+
+    for (const [pattern, handler] of this.jobDetailRouteHandlers) {
+      await this.page.unroute(pattern, handler)
+    }
+    this.jobDetailRouteHandlers.clear()
   }
 }

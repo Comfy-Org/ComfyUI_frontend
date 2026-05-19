@@ -167,7 +167,7 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
     )
 
     test(
-      'Empty state matches screenshot baseline',
+      'Empty state matches the screenshot baseline',
       { tag: '@screenshot' },
       async ({ comfyPage }) => {
         const node = comfyPage.vueNodes.getNodeLocator('1')
@@ -195,6 +195,48 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
           message: 'empty-state drag should not mutate crop value'
         })
         .toStrictEqual(before)
+    })
+
+    test('Selecting a ratio preset auto-enables aspect ratio lock', async ({
+      comfyPage
+    }) => {
+      const node = comfyPage.vueNodes.getNodeLocator('1')
+
+      await expect(
+        node.getByRole('button', { name: 'Lock aspect ratio' }),
+        'lock button should start in unlocked state'
+      ).toBeVisible()
+
+      await node.getByRole('combobox').click()
+      await comfyPage.page
+        .getByRole('option', { name: '4:3', exact: true })
+        .click()
+
+      await expect(
+        node.getByRole('button', { name: 'Unlock aspect ratio' }),
+        'selecting a preset should auto-lock the ratio'
+      ).toBeVisible()
+    })
+
+    test('Unlocking after a preset selection shows Custom in ratio dropdown', async ({
+      comfyPage
+    }) => {
+      const node = comfyPage.vueNodes.getNodeLocator('1')
+
+      await node.getByRole('combobox').click()
+      await comfyPage.page
+        .getByRole('option', { name: '1:1', exact: true })
+        .click()
+      await expect(
+        node.getByRole('button', { name: 'Unlock aspect ratio' })
+      ).toBeVisible()
+
+      await node.getByRole('button', { name: 'Unlock aspect ratio' }).click()
+
+      await expect(
+        node.getByRole('combobox'),
+        'dropdown should revert to Custom after unlock'
+      ).toContainText('Custom')
     })
   })
 
@@ -812,6 +854,339 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
         } finally {
           await comfyPage.page.unroute('**/api/view**')
         }
+      })
+
+      test('Selecting 16:9 ratio adjusts crop height proportionally', async ({
+        comfyPage
+      }) => {
+        const node = comfyPage.vueNodes.getNodeLocator('2')
+        await setCropBounds(comfyPage, 2, {
+          x: 50,
+          y: 50,
+          width: 360,
+          height: 360
+        })
+
+        const before = await getCropValue(comfyPage, 2)
+        if (!before) throw new Error('missing crop')
+        const expectedHeight = Math.round(before.width / (16 / 9))
+
+        await node.getByRole('combobox').click()
+        await comfyPage.page
+          .getByRole('option', { name: '16:9', exact: true })
+          .click()
+
+        await expect
+          .poll(
+            async () => {
+              const v = await getCropValue(comfyPage, 2)
+              if (!v || v.width !== before.width) return false
+              return Math.abs(v.height - expectedHeight) <= 2
+            },
+            { message: '16:9 ratio should adjust crop height proportionally' }
+          )
+          .toBe(true)
+      })
+
+      test('Selecting Custom from ratio dropdown unlocks aspect ratio', async ({
+        comfyPage
+      }) => {
+        const node = comfyPage.vueNodes.getNodeLocator('2')
+        await setCropBounds(comfyPage, 2, {
+          x: 50,
+          y: 50,
+          width: 200,
+          height: 200
+        })
+
+        await node.getByRole('combobox').click()
+        await comfyPage.page
+          .getByRole('option', { name: '1:1', exact: true })
+          .click()
+        await expect(
+          node
+            .locator('[data-testid^="crop-resize-"]')
+            .filter({ visible: true }),
+          'preset selection should lock ratio and show 4 handles'
+        ).toHaveCount(4)
+
+        await node.getByRole('combobox').click()
+        await comfyPage.page
+          .getByRole('option', { name: 'Custom', exact: true })
+          .click()
+
+        await expect(
+          node
+            .locator('[data-testid^="crop-resize-"]')
+            .filter({ visible: true }),
+          'selecting Custom should unlock ratio and restore 8 handles'
+        ).toHaveCount(8)
+      })
+
+      test('Unlock button releases locked ratio and restores all 8 resize handles', async ({
+        comfyPage
+      }) => {
+        const node = comfyPage.vueNodes.getNodeLocator('2')
+
+        await node.getByRole('button', { name: 'Lock aspect ratio' }).click()
+
+        await expect(
+          node
+            .locator('[data-testid^="crop-resize-"]')
+            .filter({ visible: true }),
+          'lock should reduce handles to 4'
+        ).toHaveCount(4)
+        await expect(
+          node.getByRole('button', { name: 'Unlock aspect ratio' }),
+          'lock button aria-label should update after locking'
+        ).toBeVisible()
+
+        await node.getByRole('button', { name: 'Unlock aspect ratio' }).click()
+
+        await expect(
+          node
+            .locator('[data-testid^="crop-resize-"]')
+            .filter({ visible: true }),
+          'unlock should restore all 8 handles'
+        ).toHaveCount(8)
+        await expect(
+          node.getByRole('button', { name: 'Lock aspect ratio' }),
+          'lock button aria-label should revert after unlocking'
+        ).toBeVisible()
+      })
+
+      test('Constrained resize from NW corner adjusts origin and dimensions proportionally', async ({
+        comfyPage
+      }) => {
+        const node = comfyPage.vueNodes.getNodeLocator('2')
+        await setCropBounds(comfyPage, 2, {
+          x: 150,
+          y: 140,
+          width: 200,
+          height: 150
+        })
+        await node.getByRole('button', { name: 'Lock aspect ratio' }).click()
+
+        const before = await getCropValue(comfyPage, 2)
+        if (!before) throw new Error('missing crop')
+        const ratio = before.width / before.height
+
+        await dragOnLocator(
+          comfyPage,
+          node.getByTestId('crop-resize-nw'),
+          -45,
+          -35
+        )
+
+        await expect
+          .poll(
+            async () => {
+              const v = await getCropValue(comfyPage, 2)
+              if (!v) return false
+              return (
+                v.x < before.x &&
+                v.y < before.y &&
+                v.width > before.width &&
+                v.height > before.height &&
+                Math.abs(v.width / v.height - ratio) < 0.06
+              )
+            },
+            {
+              message:
+                'constrained NW resize should grow box and maintain aspect ratio'
+            }
+          )
+          .toBe(true)
+      })
+
+      test('Constrained resize clamps to image boundary while maintaining ratio', async ({
+        comfyPage
+      }) => {
+        const node = comfyPage.vueNodes.getNodeLocator('2')
+        const img = node.locator('img')
+        await waitForImageNaturalSize(img)
+        const { nw, nh } = await img.evaluate((el: HTMLImageElement) => ({
+          nw: el.naturalWidth,
+          nh: el.naturalHeight
+        }))
+
+        await setCropBounds(comfyPage, 2, {
+          x: nw - 100,
+          y: nh - 75,
+          width: 80,
+          height: 60
+        })
+        await node.getByRole('button', { name: 'Lock aspect ratio' }).click()
+
+        const before = await getCropValue(comfyPage, 2)
+        if (!before) throw new Error('missing crop')
+        const initialRatio = before.width / before.height
+
+        await dragOnLocator(
+          comfyPage,
+          node.getByTestId('crop-resize-se'),
+          600,
+          400
+        )
+
+        await expect
+          .poll(
+            async () => {
+              const v = await getCropValue(comfyPage, 2)
+              if (!v) return false
+              const withinBounds = v.x + v.width <= nw && v.y + v.height <= nh
+              const ratio = v.width / v.height
+              const ratioPreserved = Math.abs(ratio - initialRatio) < 0.05
+              return withinBounds && ratioPreserved
+            },
+            {
+              message:
+                'constrained resize should stay within image boundaries and preserve aspect ratio'
+            }
+          )
+          .toBe(true)
+      })
+
+      test('Constrained NW corner resize clamps at top-left image boundary', async ({
+        comfyPage
+      }) => {
+        const node = comfyPage.vueNodes.getNodeLocator('2')
+        await setCropBounds(comfyPage, 2, {
+          x: 30,
+          y: 25,
+          width: 160,
+          height: 120
+        })
+        await node.getByRole('button', { name: 'Lock aspect ratio' }).click()
+
+        await dragOnLocator(
+          comfyPage,
+          node.getByTestId('crop-resize-nw'),
+          -400,
+          -300
+        )
+
+        await expect
+          .poll(async () => (await getCropValue(comfyPage, 2))?.x ?? -1, {
+            message: 'constrained NW resize should clamp x to image boundary'
+          })
+          .toBeGreaterThanOrEqual(0)
+        await expect
+          .poll(async () => (await getCropValue(comfyPage, 2))?.y ?? -1, {
+            message: 'constrained NW resize should clamp y to image boundary'
+          })
+          .toBeGreaterThanOrEqual(0)
+      })
+
+      test('Constrained resize enforces minimum crop size', async ({
+        comfyPage
+      }) => {
+        const node = comfyPage.vueNodes.getNodeLocator('2')
+        await setCropBounds(comfyPage, 2, {
+          x: 100,
+          y: 100,
+          width: 60,
+          height: 60
+        })
+        await node.getByRole('button', { name: 'Lock aspect ratio' }).click()
+
+        await dragOnLocator(
+          comfyPage,
+          node.getByTestId('crop-resize-se'),
+          -300,
+          -300
+        )
+
+        await expect
+          .poll(async () => (await getCropValue(comfyPage, 2))?.width ?? 0, {
+            message: 'constrained resize should respect minimum width'
+          })
+          .toBeGreaterThanOrEqual(MIN_CROP_SIZE)
+        await expect
+          .poll(async () => (await getCropValue(comfyPage, 2))?.height ?? 0, {
+            message: 'constrained resize should respect minimum height'
+          })
+          .toBeGreaterThanOrEqual(MIN_CROP_SIZE)
+      })
+
+      test('Incrementing X in BoundingBox moves crop box right', async ({
+        comfyPage
+      }) => {
+        const node = comfyPage.vueNodes.getNodeLocator('2')
+        await setCropBounds(comfyPage, 2, {
+          x: 100,
+          y: 80,
+          width: 200,
+          height: 150
+        })
+
+        const before = await getCropValue(comfyPage, 2)
+        if (!before) throw new Error('missing crop')
+
+        await node
+          .getByTestId('bounding-box-x')
+          .getByTestId('increment')
+          .click()
+
+        await expect
+          .poll(async () => (await getCropValue(comfyPage, 2))?.x, {
+            message: 'incrementing X should move crop right by 1'
+          })
+          .toBe(before.x + 1)
+      })
+
+      test('Incrementing Width in BoundingBox increases crop width', async ({
+        comfyPage
+      }) => {
+        const node = comfyPage.vueNodes.getNodeLocator('2')
+        await setCropBounds(comfyPage, 2, {
+          x: 100,
+          y: 80,
+          width: 200,
+          height: 150
+        })
+
+        const before = await getCropValue(comfyPage, 2)
+        if (!before) throw new Error('missing crop')
+
+        await node
+          .getByTestId('bounding-box-width')
+          .getByTestId('increment')
+          .click()
+
+        await expect
+          .poll(async () => (await getCropValue(comfyPage, 2))?.width, {
+            message: 'incrementing Width should increase crop width by 1'
+          })
+          .toBe(before.width + 1)
+      })
+
+      test('BoundingBox numeric inputs reflect crop position after drag', async ({
+        comfyPage
+      }) => {
+        const node = comfyPage.vueNodes.getNodeLocator('2')
+        await setCropBounds(comfyPage, 2, {
+          x: 50,
+          y: 60,
+          width: 200,
+          height: 150
+        })
+
+        const xInput = node.getByTestId('bounding-box-x').locator('input')
+
+        await expect
+          .poll(async () => Number(await xInput.inputValue()), {
+            message: 'X input should show initial crop x value'
+          })
+          .toBe(50)
+
+        await dragOnLocator(comfyPage, node.getByTestId('crop-overlay'), 40, 20)
+
+        await expect
+          .poll(async () => Number(await xInput.inputValue()), {
+            message: 'X input should update after crop drag'
+          })
+          .toBeGreaterThan(50)
       })
     }
   )

@@ -4,6 +4,11 @@ import { expect } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import {
+  clientPointOnMinimapOverlay,
+  MINIMAP_POINTER_OPTS,
+  readMainCanvasOffset
+} from '@e2e/fixtures/utils/minimapUtils'
 
 function hasCanvasContent(canvas: Locator): Promise<boolean> {
   return canvas.evaluate((el: HTMLCanvasElement) => {
@@ -30,11 +35,18 @@ function getMinimapLocators(comfyPage: ComfyPage) {
   }
 }
 
-function getCanvasOffset(page: Page): Promise<[number, number]> {
-  return page.evaluate(() => {
-    const ds = window.app!.canvas.ds
-    return [ds.offset[0], ds.offset[1]] as [number, number]
-  })
+async function clickMinimapAt(
+  overlay: Locator,
+  page: Page,
+  relX: number,
+  relY: number
+) {
+  const { clientX, clientY } = await clientPointOnMinimapOverlay(
+    overlay,
+    relX,
+    relY
+  )
+  await page.mouse.click(clientX, clientY)
 }
 
 test.describe('Minimap', { tag: '@canvas' }, () => {
@@ -101,8 +113,10 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await expect(container).toBeVisible()
   })
 
-  test('Close button hides minimap', async ({ comfyPage }) => {
-    const { container, toggleButton, closeButton } =
+  test('Close button hides minimap; toolbar toggle reopens it', async ({
+    comfyPage
+  }) => {
+    const { container, viewport, toggleButton, closeButton } =
       getMinimapLocators(comfyPage)
 
     await expect(container).toBeVisible()
@@ -110,7 +124,23 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await closeButton.click()
     await expect(container).toBeHidden()
 
+    await expect
+      .poll(() =>
+        comfyPage.settings.getSetting<boolean>('Comfy.Minimap.Visible')
+      )
+      .toBe(false)
+
     await expect(toggleButton).toBeVisible()
+
+    await toggleButton.click()
+    await expect(container).toBeVisible()
+    await expect(viewport).toBeVisible()
+
+    await expect
+      .poll(() =>
+        comfyPage.settings.getSetting<boolean>('Comfy.Minimap.Visible')
+      )
+      .toBe(true)
   })
 
   test(
@@ -120,7 +150,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
       const { container } = getMinimapLocators(comfyPage)
       await expect(container).toBeVisible()
 
-      await comfyPage.expectScreenshot(container, 'minimap-before-pan.png')
+      await expect(container).toHaveScreenshot('minimap-before-pan.png')
 
       await comfyPage.page.evaluate(() => {
         const canvas = window.app!.canvas
@@ -129,7 +159,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
         canvas.ds.offset[1] = -600
         canvas.setDirty(true, true)
       })
-      await comfyPage.expectScreenshot(container, 'minimap-after-pan.png')
+      await expect(container).toHaveScreenshot('minimap-after-pan.png')
     }
   )
 
@@ -156,7 +186,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
       expect(viewportBox!.x).toBeLessThan(minimapBox!.x + minimapBox!.width)
       expect(viewportBox!.y).toBeLessThan(minimapBox!.y + minimapBox!.height)
 
-      await comfyPage.expectScreenshot(container, 'minimap-with-viewport.png')
+      await expect(container).toHaveScreenshot('minimap-with-viewport.png')
     }
   )
 
@@ -166,7 +196,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     const { container } = getMinimapLocators(comfyPage)
     await expect(container).toBeVisible()
 
-    const offsetBefore = await getCanvasOffset(comfyPage.page)
+    const offsetBefore = await readMainCanvasOffset(comfyPage.page)
 
     const minimapBox = await container.boundingBox()
     expect(minimapBox).toBeTruthy()
@@ -180,45 +210,174 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await comfyPage.nextFrame()
 
     await expect
-      .poll(() => getCanvasOffset(comfyPage.page))
+      .poll(() => readMainCanvasOffset(comfyPage.page))
       .not.toEqual(offsetBefore)
   })
 
-  test('Dragging on minimap continuously pans the canvas', async ({
+  test('Clicking minimap center after FitView causes minimal canvas movement', async ({
     comfyPage
   }) => {
-    const { container } = getMinimapLocators(comfyPage)
+    const { container, viewport } = getMinimapLocators(comfyPage)
+    const overlay = comfyPage.page.getByTestId(
+      TestIds.canvas.minimapInteractionOverlay
+    )
     await expect(container).toBeVisible()
 
-    const minimapBox = await container.boundingBox()
-    expect(minimapBox).toBeTruthy()
-
-    const startX = minimapBox!.x + minimapBox!.width * 0.3
-    const startY = minimapBox!.y + minimapBox!.height * 0.3
-    const endX = minimapBox!.x + minimapBox!.width * 0.7
-    const endY = minimapBox!.y + minimapBox!.height * 0.7
-
-    const offsetBefore = await getCanvasOffset(comfyPage.page)
-
-    // Drag from top-left toward bottom-right on the minimap
-    await comfyPage.page.mouse.move(startX, startY)
-    await comfyPage.page.mouse.down()
-    await comfyPage.page.mouse.move(endX, endY, { steps: 10 })
-
-    // Mid-drag: offset should already differ from initial state
-    const offsetMidDrag = await getCanvasOffset(comfyPage.page)
-    expect(
-      offsetMidDrag[0] !== offsetBefore[0] ||
-        offsetMidDrag[1] !== offsetBefore[1]
-    ).toBe(true)
-
-    await comfyPage.page.mouse.up()
+    await comfyPage.page.evaluate(() => {
+      const canvas = window.app!.canvas
+      canvas.ds.offset[0] -= 1000
+      canvas.setDirty(true, true)
+    })
     await comfyPage.nextFrame()
 
-    // Final offset should also differ (drag was not discarded on mouseup)
+    const transformBefore = await viewport.evaluate(
+      (el: HTMLElement) => el.style.transform
+    )
+
+    await comfyPage.page.evaluate(() => {
+      window.app!.canvas.fitViewToSelectionAnimated({ duration: 1 })
+    })
+
     await expect
-      .poll(() => getCanvasOffset(comfyPage.page))
-      .not.toEqual(offsetBefore)
+      .poll(() => viewport.evaluate((el: HTMLElement) => el.style.transform), {
+        timeout: 2000
+      })
+      .not.toBe(transformBefore)
+
+    await comfyPage.nextFrame()
+
+    const before = await comfyPage.page.evaluate(() => ({
+      x: window.app!.canvas.ds.offset[0],
+      y: window.app!.canvas.ds.offset[1]
+    }))
+
+    await clickMinimapAt(overlay, comfyPage.page, 0.5, 0.5)
+    await comfyPage.nextFrame()
+
+    const after = await comfyPage.page.evaluate(() => ({
+      x: window.app!.canvas.ds.offset[0],
+      y: window.app!.canvas.ds.offset[1]
+    }))
+
+    // ~3px overlay error × ~15 canvas/minimap scale ≈ 45, rounded up
+    const TOLERANCE = 50
+    expect(
+      Math.abs(after.x - before.x),
+      `offset.x changed by more than ${TOLERANCE} after clicking minimap center post-FitView`
+    ).toBeLessThan(TOLERANCE)
+    expect(
+      Math.abs(after.y - before.y),
+      `offset.y changed by more than ${TOLERANCE} after clicking minimap center post-FitView`
+    ).toBeLessThan(TOLERANCE)
+  })
+
+  test('Dragging on minimap pans the main canvas progressively', async ({
+    comfyPage
+  }) => {
+    const overlay = comfyPage.page.getByTestId(
+      TestIds.canvas.minimapInteractionOverlay
+    )
+    const initial = await readMainCanvasOffset(comfyPage.page)
+
+    const start = await clientPointOnMinimapOverlay(overlay, 0.48, 0.5)
+    await overlay.dispatchEvent('pointerdown', {
+      ...MINIMAP_POINTER_OPTS,
+      clientX: start.clientX,
+      clientY: start.clientY
+    })
+    await comfyPage.nextFrame()
+
+    const firstMove = await clientPointOnMinimapOverlay(overlay, 0.35, 0.52)
+    await overlay.dispatchEvent('pointermove', {
+      ...MINIMAP_POINTER_OPTS,
+      clientX: firstMove.clientX,
+      clientY: firstMove.clientY
+    })
+    await expect
+      .poll(() => readMainCanvasOffset(comfyPage.page))
+      .not.toStrictEqual(initial)
+    const afterFirstMove = await readMainCanvasOffset(comfyPage.page)
+
+    const secondMove = await clientPointOnMinimapOverlay(overlay, 0.22, 0.55)
+    await overlay.dispatchEvent('pointermove', {
+      ...MINIMAP_POINTER_OPTS,
+      clientX: secondMove.clientX,
+      clientY: secondMove.clientY
+    })
+    await expect
+      .poll(() => readMainCanvasOffset(comfyPage.page))
+      .not.toStrictEqual(afterFirstMove)
+
+    const upPoint = await clientPointOnMinimapOverlay(overlay, 0.18, 0.58)
+    await overlay.dispatchEvent('pointerup', {
+      ...MINIMAP_POINTER_OPTS,
+      clientX: upPoint.clientX,
+      clientY: upPoint.clientY
+    })
+    await comfyPage.nextFrame()
+
+    const final = await readMainCanvasOffset(comfyPage.page)
+    const panDistance =
+      Math.abs(final.x - initial.x) + Math.abs(final.y - initial.y)
+    expect(
+      panDistance,
+      'Expected drag from center toward lower-left on minimap to move the canvas meaningfully'
+    ).toBeGreaterThan(40)
+  })
+
+  test('Minimap viewport transform updates during overlay drag', async ({
+    comfyPage
+  }) => {
+    const { container, viewport } = getMinimapLocators(comfyPage)
+    const overlay = comfyPage.page.getByTestId(
+      TestIds.canvas.minimapInteractionOverlay
+    )
+    await expect(container).toBeVisible()
+
+    const transformBefore = await viewport.evaluate(
+      (el: HTMLElement) => el.style.transform
+    )
+
+    const start = await clientPointOnMinimapOverlay(overlay, 0.48, 0.5)
+    await overlay.dispatchEvent('pointerdown', {
+      ...MINIMAP_POINTER_OPTS,
+      clientX: start.clientX,
+      clientY: start.clientY
+    })
+    await comfyPage.nextFrame()
+
+    const mid = await clientPointOnMinimapOverlay(overlay, 0.28, 0.52)
+    await overlay.dispatchEvent('pointermove', {
+      ...MINIMAP_POINTER_OPTS,
+      clientX: mid.clientX,
+      clientY: mid.clientY
+    })
+
+    await expect
+      .poll(() => viewport.evaluate((el: HTMLElement) => el.style.transform))
+      .not.toBe(transformBefore)
+
+    const transformMid = await viewport.evaluate(
+      (el: HTMLElement) => el.style.transform
+    )
+
+    const later = await clientPointOnMinimapOverlay(overlay, 0.18, 0.55)
+    await overlay.dispatchEvent('pointermove', {
+      ...MINIMAP_POINTER_OPTS,
+      clientX: later.clientX,
+      clientY: later.clientY
+    })
+
+    await expect
+      .poll(() => viewport.evaluate((el: HTMLElement) => el.style.transform))
+      .not.toBe(transformMid)
+
+    const upPoint = await clientPointOnMinimapOverlay(overlay, 0.18, 0.55)
+    await overlay.dispatchEvent('pointerup', {
+      ...MINIMAP_POINTER_OPTS,
+      clientX: upPoint.clientX,
+      clientY: upPoint.clientY
+    })
   })
 
   test('Minimap viewport updates when canvas is zoomed', async ({
@@ -316,5 +475,39 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
         return box.x !== positionBefore.x || box.y !== positionBefore.y
       })
       .toBe(true)
+  })
+})
+
+test.describe('Minimap mobile', { tag: ['@mobile', '@canvas'] }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
+    await comfyPage.workflow.loadWorkflow('default')
+    await comfyPage.page.waitForFunction(() => window.app && window.app.canvas)
+  })
+
+  test('Minimap is hidden by default on small viewports', async ({
+    comfyPage
+  }) => {
+    const innerWidth = await comfyPage.page.evaluate(() => window.innerWidth)
+    expect(
+      innerWidth,
+      'Mobile project should use a viewport narrower than the lg breakpoint'
+    ).toBeLessThan(1024)
+
+    await expect
+      .poll(() =>
+        comfyPage.settings.getSetting<boolean>('Comfy.Minimap.Visible')
+      )
+      .toBe(false)
+
+    await expect(
+      comfyPage.page.getByTestId(TestIds.canvas.minimapContainer)
+    ).toHaveCount(0)
+
+    const toggle = comfyPage.page.getByTestId(
+      TestIds.canvas.toggleMinimapButton
+    )
+    await expect(toggle).toBeVisible()
   })
 })
