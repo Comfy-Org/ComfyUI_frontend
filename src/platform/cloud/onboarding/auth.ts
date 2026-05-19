@@ -96,24 +96,23 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
       }
     })
     if (!response.ok) {
-      // Ambiguous response (404/5xx/etc). Treat as completed to avoid
-      // bouncing working customers to /cloud/survey on transient hiccups.
-      // Real "not completed" only comes from a 200 with empty value.
+      // Not an error case - survey not completed is a valid state
       Sentry.addBreadcrumb({
         category: 'auth',
         message: 'Survey status check returned non-ok response',
-        level: 'warning',
+        level: 'info',
         data: {
           status: response.status,
           endpoint: `/settings/${ONBOARDING_SURVEY_KEY}`
         }
       })
-      return true
+      return false
     }
     const data = await response.json()
+    // Check if data exists and is not empty
     return !isEmpty(data.value)
   } catch (error) {
-    // Network/parse failure — same policy as ambiguous HTTP responses.
+    // Network error - still capture it as it's not thrown from above
     Sentry.captureException(error, {
       tags: {
         api_endpoint: '/settings/{key}',
@@ -125,7 +124,7 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
       },
       level: 'warning'
     })
-    return true
+    return false
   }
 }
 
