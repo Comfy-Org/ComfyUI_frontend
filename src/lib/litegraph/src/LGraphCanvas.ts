@@ -9088,6 +9088,17 @@ function remapProxyWidgets(
   }
 }
 
+function hasStringSourceNodeId(
+  value: unknown
+): value is { sourceNodeId: string } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'sourceNodeId' in value &&
+    typeof value.sourceNodeId === 'string'
+  )
+}
+
 function remapPreviewExposures(
   info: ISerialisedNode,
   remappedIds: Map<NodeId, NodeId> | undefined
@@ -9098,13 +9109,11 @@ function remapPreviewExposures(
   if (!Array.isArray(previewExposures)) return
 
   for (const entry of previewExposures) {
-    if (!entry || typeof entry !== 'object') continue
-    const sourceNodeId = (entry as { sourceNodeId?: unknown }).sourceNodeId
-    if (typeof sourceNodeId !== 'string' || sourceNodeId === '-1') continue
+    if (!hasStringSourceNodeId(entry) || entry.sourceNodeId === '-1') continue
 
-    const remappedNodeId = remapNodeId(sourceNodeId, remappedIds)
+    const remappedNodeId = remapNodeId(entry.sourceNodeId, remappedIds)
     if (remappedNodeId !== undefined)
-      (entry as { sourceNodeId: string }).sourceNodeId = String(remappedNodeId)
+      entry.sourceNodeId = String(remappedNodeId)
   }
 }
 
