@@ -34,6 +34,7 @@ const i18n = createI18n({
         copyAssetsAndOpen: 'Copy assets & open workflow',
         openWorkflow: 'Open workflow',
         openWithoutImporting: 'Open without importing',
+        opening: 'Opening shared workflow...',
         loadError:
           'Could not load this shared workflow. Please try again later.'
       },
@@ -290,6 +291,36 @@ describe('OpenSharedWorkflowDialogContent', () => {
       const buttons = container.querySelectorAll('footer button')
       await userEvent.click(buttons[buttons.length - 1] as HTMLElement)
       expect(onConfirm).toHaveBeenCalledWith(assetsPayload)
+    })
+
+    it('shows opening status and disables actions while opening', async () => {
+      mockGetSharedWorkflow.mockResolvedValue(assetsPayload)
+      const { container } = renderComponent({ openingAction: 'copy-and-open' })
+      await flushPromises()
+
+      expect(screen.getByRole('status').textContent).toContain(
+        'Opening shared workflow...'
+      )
+      expect(
+        container.querySelector(
+          '[data-testid="open-shared-workflow-close"]'
+        ) as HTMLButtonElement
+      ).toBeDisabled()
+      expect(
+        container.querySelector(
+          '[data-testid="open-shared-workflow-cancel"]'
+        ) as HTMLButtonElement
+      ).toBeDisabled()
+      expect(
+        container.querySelector(
+          '[data-testid="open-shared-workflow-open-without-importing"]'
+        ) as HTMLButtonElement
+      ).toBeDisabled()
+      expect(
+        container.querySelector(
+          '[data-testid="open-shared-workflow-confirm"]'
+        ) as HTMLButtonElement
+      ).toBeDisabled()
     })
 
     it('filters out assets already in library', async () => {

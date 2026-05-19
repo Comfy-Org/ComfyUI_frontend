@@ -1,5 +1,9 @@
 <template>
-  <div data-testid="open-shared-workflow-dialog" class="flex w-full flex-col">
+  <div
+    data-testid="open-shared-workflow-dialog"
+    class="flex w-full flex-col"
+    :aria-busy="isOpening"
+  >
     <header
       class="flex h-12 items-center justify-between gap-2 border-b border-border-default px-4"
     >
@@ -12,6 +16,7 @@
       <Button
         data-testid="open-shared-workflow-close"
         size="icon"
+        :disabled="isOpening"
         :aria-label="$t('g.close')"
         @click="onCancel"
       >
@@ -71,6 +76,15 @@
           <p class="m-0 text-sm text-muted-foreground">
             {{ $t('openSharedWorkflow.copyDescription') }}
           </p>
+          <p
+            v-if="isOpening"
+            role="status"
+            aria-live="polite"
+            class="m-0 flex items-center gap-2 text-sm text-muted-foreground"
+          >
+            <i class="pi pi-spin pi-spinner" aria-hidden="true" />
+            <span>{{ $t('openSharedWorkflow.opening') }}</span>
+          </p>
         </div>
 
         <div v-if="hasAssets" class="flex w-96 shrink-0 flex-col gap-2 py-4">
@@ -119,6 +133,7 @@
           data-testid="open-shared-workflow-cancel"
           variant="secondary"
           size="lg"
+          :disabled="isOpening"
           @click="onCancel"
         >
           {{ $t('g.cancel') }}
@@ -128,6 +143,8 @@
           data-testid="open-shared-workflow-open-without-importing"
           variant="secondary"
           size="lg"
+          :loading="openingAction === 'open-only'"
+          :disabled="isOpening"
           @click="onOpenWithoutImporting(sharedWorkflow)"
         >
           {{ $t('openSharedWorkflow.openWithoutImporting') }}
@@ -136,6 +153,8 @@
           data-testid="open-shared-workflow-confirm"
           variant="primary"
           size="lg"
+          :loading="openingAction === 'copy-and-open'"
+          :disabled="isOpening"
           @click="onConfirm(sharedWorkflow)"
         >
           {{
@@ -165,8 +184,17 @@ import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { shareId, onConfirm, onOpenWithoutImporting, onCancel } = defineProps<{
+type OpeningAction = 'copy-and-open' | 'open-only'
+
+const {
+  shareId,
+  openingAction = null,
+  onConfirm,
+  onOpenWithoutImporting,
+  onCancel
+} = defineProps<{
   shareId: string
+  openingAction?: OpeningAction | null
   onConfirm: (payload: SharedWorkflowPayload) => void
   onOpenWithoutImporting: (payload: SharedWorkflowPayload) => void
   onCancel: () => void
@@ -186,6 +214,7 @@ const nonOwnedAssets = computed(
 )
 
 const hasAssets = computed(() => nonOwnedAssets.value.length > 0)
+const isOpening = computed(() => openingAction !== null)
 
 const workflowName = computed(() => {
   if (!sharedWorkflow.value) return ''

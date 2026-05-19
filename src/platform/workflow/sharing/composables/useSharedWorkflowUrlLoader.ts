@@ -15,7 +15,6 @@ import { useWorkflowShareService } from '@/platform/workflow/sharing/services/wo
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 type SharedWorkflowUrlLoadStatus =
   | 'not-present'
@@ -29,6 +28,21 @@ type DialogResult =
   | { action: 'open-only'; payload: SharedWorkflowPayload }
   | { action: 'cancel' }
 
+type OpeningAction = Exclude<DialogResult['action'], 'cancel'>
+
+type OpenSharedWorkflowDialogInstance = {
+  contentProps: {
+    openingAction?: OpeningAction | null
+  }
+  dialogComponentProps: {
+    closable?: boolean
+    closeOnEscape?: boolean
+    dismissableMask?: boolean
+  }
+}
+
+const OPEN_SHARED_WORKFLOW_DIALOG_KEY = 'open-shared-workflow'
+
 export function useSharedWorkflowUrlLoader() {
   const route = useRoute()
   const router = useRouter()
@@ -37,7 +51,6 @@ export function useSharedWorkflowUrlLoader() {
   const workflowShareService = useWorkflowShareService()
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
-  const workspaceStore = useWorkspaceStore()
   const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
   const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
 
@@ -73,25 +86,38 @@ export function useSharedWorkflowUrlLoader() {
   function showOpenSharedWorkflowDialog(
     shareId: string
   ): Promise<DialogResult> {
-    const dialogKey = 'open-shared-workflow'
+    let dialog: OpenSharedWorkflowDialogInstance | undefined
+
+    function setOpeningAction(openingAction: OpeningAction) {
+      if (!dialog) return
+
+      dialog.contentProps.openingAction = openingAction
+      dialog.dialogComponentProps = {
+        ...dialog.dialogComponentProps,
+        closable: false,
+        closeOnEscape: false,
+        dismissableMask: false
+      }
+    }
 
     return new Promise<DialogResult>((resolve) => {
-      dialogService.showLayoutDialog({
-        key: dialogKey,
+      dialog = dialogService.showLayoutDialog({
+        key: OPEN_SHARED_WORKFLOW_DIALOG_KEY,
         component: OpenSharedWorkflowDialogContent,
         props: {
           shareId,
+          openingAction: null,
           onConfirm: (payload: SharedWorkflowPayload) => {
+            setOpeningAction('copy-and-open')
             resolve({ action: 'copy-and-open', payload })
-            dialogStore.closeDialog({ key: dialogKey })
           },
           onOpenWithoutImporting: (payload: SharedWorkflowPayload) => {
+            setOpeningAction('open-only')
             resolve({ action: 'open-only', payload })
-            dialogStore.closeDialog({ key: dialogKey })
           },
           onCancel: () => {
             resolve({ action: 'cancel' })
-            dialogStore.closeDialog({ key: dialogKey })
+            dialogStore.closeDialog({ key: OPEN_SHARED_WORKFLOW_DIALOG_KEY })
           }
         },
         dialogComponentProps: {
@@ -140,9 +166,6 @@ export function useSharedWorkflowUrlLoader() {
     }
 
     templateSelectorDialog.hide()
-
-    const previousSpinner = workspaceStore.spinner
-    workspaceStore.spinner = true
 
     try {
       const { payload } = result
@@ -197,7 +220,7 @@ export function useSharedWorkflowUrlLoader() {
       clearShareIntent()
       return importFailed ? 'loaded-without-assets' : 'loaded'
     } finally {
-      workspaceStore.spinner = previousSpinner
+      dialogStore.closeDialog({ key: OPEN_SHARED_WORKFLOW_DIALOG_KEY })
     }
   }
 
