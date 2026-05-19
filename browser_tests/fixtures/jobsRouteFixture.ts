@@ -40,7 +40,7 @@ interface JobsListRoute {
   responseLimit?: number
 }
 
-interface JobsScenario {
+export interface JobsScenario {
   history?: readonly RawJobListItem[]
   queue?: readonly RawJobListItem[]
 }
