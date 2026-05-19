@@ -161,6 +161,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistenceV2'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useSubgraphDragBridge } from '@/renderer/core/canvas/links/useSubgraphDragBridge'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
@@ -463,6 +464,7 @@ useContextMenuTranslation()
 useCopy()
 usePaste()
 useWorkflowAutoSave()
+useSubgraphDragBridge()
 
 // Start watching for locale change after the initial value is loaded.
 watch(
