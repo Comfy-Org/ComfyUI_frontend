@@ -1134,6 +1134,16 @@ export function startExtensionSystem(): void {
   }
   _extensionSystemStarted = true
 
+  // D-shell-ui-entrypoints (W6.P5.C) — flush any defineSidebarTab /
+  // defineCommand / defineHotkey / … calls that were made at module-eval
+  // time (before Pinia was ready). Subsequent calls mount eagerly via the
+  // _systemStarted flag inside registrations.ts.
+  void import('@/extension-api/registrations').then(
+    ({ _flushShellRegistrations }) => {
+      _flushShellRegistrations()
+    }
+  )
+
   const world = getWorld()
 
   watch(

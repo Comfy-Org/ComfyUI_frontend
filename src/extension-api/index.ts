@@ -134,14 +134,45 @@ export type { Handler, AsyncHandler, Unsubscribe } from './events'
 // Per D19 — VueExtension and CustomExtension are discriminated-union
 // ingredients of SidebarTabExtension / BottomPanelExtension and are NOT
 // part of the public surface.
+//
+// Per W6.P5.B (D-shell-ui-entrypoints): ExtensionManager + CommandManager are
+// DROPPED from the public surface — the v2 model uses per-surface defineX
+// entries (defineSidebarTab, defineCommand, …) each returning a disposable,
+// not a centralized umbrella handle. Internal callers continue importing
+// the legacy umbrella types directly from '@/types/extensionTypes'.
 export type {
+  // Pre-existing
   SidebarTabExtension,
   BottomPanelExtension,
   ToastMessageOptions,
   ToastManager,
-  ExtensionManager,
-  CommandManager
+  // Net-new W6.P5 arg types
+  CommandDefinition,
+  HotkeyExtension,
+  AboutBadgeExtension,
+  SettingDefinition,
+  ToolbarButtonExtension
 } from './shell'
+
+// D-shell-ui-entrypoints (W6.P5.C) — per-surface defineX entries. Each
+// returns a DisposableHandle; carve-out: toast + notify remain inline
+// imperative (exported below from ./imperatives), NOT as defineX wrappers.
+export {
+  defineSidebarTab,
+  defineBottomPanelTab,
+  defineCommand,
+  defineHotkey,
+  defineSetting,
+  defineAboutBadge,
+  defineToolbarButton
+} from './registrations'
+export type { DisposableHandle } from './registrations'
+
+// D-shell-ui-entrypoints (W6.P5.C) — inline imperative carve-out. Fire-and-forget;
+// no defineX wrapper, no DisposableHandle. Call from any setup() body or
+// hook closure.
+export { toast, notify } from './imperatives'
+export type { NotifyOptions } from './imperatives'
 
 export type { NodeLocatorId, NodeExecutionId } from './identifiers'
 export {
