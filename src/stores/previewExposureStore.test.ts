@@ -80,7 +80,9 @@ describe(usePreviewExposureStore, () => {
       ]
       store.setExposures(rootGraphA, hostA, next)
 
-      expect(store.getExposures(rootGraphA, hostA)).toEqual(next)
+      const stored = store.getExposures(rootGraphA, hostA)
+      expect(stored).toEqual(next)
+      expect(stored).not.toBe(next)
     })
 
     it('clears the host bucket when given an empty array', () => {
