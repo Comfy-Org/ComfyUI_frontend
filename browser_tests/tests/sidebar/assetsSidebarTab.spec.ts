@@ -7,7 +7,10 @@ import {
   jobsRouteFixture,
   routeMockJobTimestamp
 } from '@e2e/fixtures/jobsRouteFixture'
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type {
+  JobDetail,
+  RawJobListItem
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 
 const test = mergeTests(comfyPageFixture, jobsRouteFixture)
 
@@ -51,12 +54,49 @@ const betaJob = createRouteMockJob({
   }
 })
 
+const multiOutputJob = createRouteMockJob({
+  id: 'multi-output',
+  create_time: routeMockJobTimestamp - 3_000,
+  execution_start_time: routeMockJobTimestamp - 3_000,
+  execution_end_time: routeMockJobTimestamp,
+  preview_output: {
+    filename: 'multi-output-a.png',
+    subfolder: '',
+    type: 'output',
+    nodeId: '3',
+    mediaType: 'images'
+  },
+  outputs_count: 2
+})
+
+const multiOutputJobDetail: JobDetail = {
+  ...multiOutputJob,
+  outputs: {
+    '3': {
+      images: [
+        {
+          filename: 'multi-output-a.png',
+          subfolder: '',
+          type: 'output'
+        },
+        {
+          filename: 'multi-output-b.png',
+          subfolder: '',
+          type: 'output'
+        }
+      ]
+    }
+  }
+}
+
 const generatedJobs: RawJobListItem[] = [alphaJob, betaJob]
 
 const viewFiles = {
   'alpha.png': {},
   'beta.png': {},
-  'imported.png': {}
+  'imported.png': {},
+  'multi-output-a.png': {},
+  'multi-output-b.png': {}
 }
 
 async function mockInputFiles(page: Page, files: readonly string[]) {
@@ -88,9 +128,19 @@ async function mockViewFiles(page: Page, filesByName: ViewFilesByName) {
     }
 
     const file = filesByName[filename]
+    if (!file) {
+      await route.fulfill({
+        status: 404,
+        json: {
+          error: `Unknown filename: ${filename}`
+        } satisfies { error: string }
+      })
+      return
+    }
+
     await route.fulfill({
-      body: file?.body ?? transparentPng,
-      contentType: file?.contentType ?? 'image/png'
+      body: file.body ?? transparentPng,
+      contentType: file.contentType ?? 'image/png'
     })
   })
 }
@@ -175,6 +225,30 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     await expect(tab.selectionCountButton).toHaveText(/Assets Selected:\s*2\b/)
     await expect(tab.deleteSelectedButton).toBeVisible()
     await expect(tab.downloadSelectedButton).toBeVisible()
+  })
+
+  test('loads full generated job outputs from job detail', async ({
+    comfyPage,
+    jobsRoutes
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+
+    await jobsRoutes.mockJobsHistory([multiOutputJob])
+    await jobsRoutes.mockJobDetail('multi-output', multiOutputJobDetail)
+
+    await comfyPage.setup()
+    await tab.open()
+
+    await tab
+      .getAssetCardByName('multi-output-a')
+      .getByRole('button', { name: 'See more outputs' })
+      .click()
+
+    await expect(tab.backToAssetsButton).toBeVisible()
+    await expect(tab.getAssetCardByName('multi-output-b')).toBeVisible()
+    await expect(
+      comfyPage.page.getByRole('img', { name: 'multi-output-b.png' })
+    ).toHaveJSProperty('naturalWidth', 1)
   })
 
   test('deletes a generated output asset through explicit history refresh', async ({
