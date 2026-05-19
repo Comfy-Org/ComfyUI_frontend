@@ -144,7 +144,6 @@ import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
-import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   formatDuration,
@@ -279,12 +278,26 @@ const formattedDuration = computed(() => {
   return formatDuration(Number(duration))
 })
 
+// Prefer original image dimensions from the asset's typed metadata when the
+// backend has surfaced them; fall back to the locally-computed dimensions
+// from the rendered <img>'s naturalWidth/Height. The latter is correct on
+// runtimes that serve the original file but reports thumbnail size on
+// runtimes that serve a downscaled preview — the metadata path is what makes
+// the displayed value match the source asset in both cases.
+const originalImageDimensions = computed(() => {
+  const metaWidth = asset?.metadata?.width
+  const metaHeight = asset?.metadata?.height
+  if (typeof metaWidth === 'number' && typeof metaHeight === 'number') {
+    return { width: metaWidth, height: metaHeight }
+  }
+  return imageDimensions.value
+})
+
 // Get metadata info based on file kind
 const metaInfo = computed(() => {
   if (!asset) return ''
-  // TODO(assets): Re-enable once /assets API returns original image dimensions in metadata (#10590)
-  if (fileKind.value === 'image' && imageDimensions.value && !isCloud) {
-    return `${imageDimensions.value.width}x${imageDimensions.value.height}`
+  if (fileKind.value === 'image' && originalImageDimensions.value) {
+    return `${originalImageDimensions.value.width}x${originalImageDimensions.value.height}`
   }
   if (asset.size && ['video', 'audio', '3D'].includes(fileKind.value)) {
     return formatSize(asset.size)
