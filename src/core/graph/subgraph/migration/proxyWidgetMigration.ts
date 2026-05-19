@@ -68,14 +68,9 @@ function canResolveLegacyProxy(
 }
 
 /**
- * Normalize a legacy `proxyWidgets` entry.
- *
- * Under ADR 0009 each `SubgraphNode` is opaque, so the canonical state never
- * resolves through deep nested identities. This helper still recognizes the
- * legacy `"<id>: <name>"` prefix encoding and surfaces the deepest prefix as
- * `disambiguatingSourceNodeId` so migration tooling can preserve it as
- * lookup metadata. The bare entry is returned unchanged when it already
- * resolves at the immediate level.
+ * Normalize a legacy `proxyWidgets` entry. Under ADR 0009 SubgraphNodes are
+ * opaque, so this strips the legacy `"<id>: <name>"` prefix encoding and
+ * surfaces the deepest prefix as `disambiguatingSourceNodeId` metadata.
  */
 export function normalizeLegacyProxyWidgetEntry(
   hostNode: SubgraphNode,
@@ -105,17 +100,9 @@ export function normalizeLegacyProxyWidgetEntry(
 }
 
 /**
- * Resolve the source widget for a normalized proxy entry. When the entry
- * carries a `disambiguatingSourceNodeId`, prefer the `PromotedWidgetView`
- * whose interior identity matches exactly — this lets us pick the correct
- * widget after deduplication renamed it (e.g. `text_1`). Otherwise match by
- * name, falling back to `getPromotableWidgets` (which surfaces virtual
- * preview widgets that aren't on `node.widgets`).
- *
- * `classify` and `repairCreateSubgraphInput` both call this — they must
- * agree on the resolved widget, otherwise a legacy nested entry can be
- * classified as repairable but quarantined at repair time, leaving the host
- * with fewer rendered widgets than expected.
+ * Resolve the source widget for a normalized proxy entry. `classify` and
+ * `repairCreateSubgraphInput` both call this — they must agree, otherwise an
+ * entry can be classified as repairable but quarantined at repair time.
  */
 function resolveSourceWidget(
   sourceNode: LGraphNode,
@@ -131,10 +118,8 @@ function resolveSourceWidget(
         w.sourceWidgetName === sourceWidgetName
     )
     if (byDisambiguator) return byDisambiguator
-    // Disambiguator was provided but missed: only fall back to non-promoted
-    // widgets with the same name. Returning a sibling PromotedWidgetView
-    // bound to a different interior node would silently re-introduce the
-    // cross-binding bug the disambiguator exists to prevent.
+    // Disambiguator missed: fall back only to non-promoted same-name widgets.
+    // A sibling PromotedWidgetView would re-introduce the cross-binding bug.
     const byName = widgets.find(
       (w) => !isPromotedWidgetView(w) && w.name === sourceWidgetName
     )
@@ -180,11 +165,9 @@ const PRIMITIVE_NODE_TYPE = 'PrimitiveNode'
 const QUARANTINE_PROPERTY = 'proxyWidgetErrorQuarantine'
 const QUARANTINE_VERSION = 1
 /**
- * Marker written onto a PrimitiveNode after the first host successfully
- * migrates a primitive-bypass entry. Subsequent hosts of the same subgraph
- * use this to recognize the already-created `SubgraphInput` and reuse it
- * instead of falling through to `unlinkedSourceWidget` quarantine when the
- * primitive's outputs were severed by the first host's repair.
+ * Set by the first host after a primitive-bypass migration so subsequent hosts
+ * reuse the created `SubgraphInput` instead of quarantining when the
+ * primitive's outputs are already severed.
  */
 const PROXY_BYPASS_MARKER_PROPERTY = 'proxyBypassedToSubgraphInput'
 
@@ -268,9 +251,8 @@ function pickHostValue(
   ) {
     return { value: undefined, isHole: true }
   }
-  // Narrow rather than cast: a slot whose payload isn't a `TWidgetValue`
-  // (e.g. a function or `null` from corrupted serialization) is treated as
-  // a hole so the migration falls back to seeding from the source widget.
+  // Narrow rather than cast: corrupted payloads are treated as a hole so
+  // migration falls back to seeding from the source widget.
   const raw = hostWidgetValues[index]
   if (!isWidgetValue(raw)) return { value: undefined, isHole: true }
   return { value: raw, isHole: false }
@@ -329,9 +311,8 @@ function classify(
     normalized.sourceWidgetName
   )
   if (linkedInput) {
-    // ADR 0009 expects a single host input per source identity. Detect the
-    // legacy/corruption case where multiple inputs share the same source so
-    // we quarantine instead of silently picking one and stomping its value.
+    // ADR 0009: single host input per source identity. Quarantine when legacy
+    // corruption produced multiple, rather than silently picking one.
     const ambiguous =
       hostNode.inputs.filter((input) => {
         const w = input._widget
@@ -354,9 +335,8 @@ function classify(
   }
 
   if (sourceNode.type === PRIMITIVE_NODE_TYPE) {
-    // If a previous host's migration already bypassed this primitive into a
-    // SubgraphInput, reuse that input instead of trying to migrate again
-    // (the primitive's outputs were severed during the first repair).
+    // Reuse the SubgraphInput a prior host already created; the primitive's
+    // outputs were severed during that first repair.
     const bypassedTo = sourceNode.properties?.[PROXY_BYPASS_MARKER_PROPERTY]
     if (typeof bypassedTo === 'string') {
       const existingInput = hostNode.inputs.find(
@@ -417,11 +397,8 @@ function applyHostValue(widget: IBaseWidget, entry: PendingEntry): void {
     widget.hydrateHostValue(entry.hostValue)
     return
   }
-  // Reaching this branch means a caller passed a non-PromotedWidgetView
-  // (typically the interior `_widget` of a shared subgraph input). Writing
-  // through it would stomp every host instance with this host's value, so
-  // we log loudly and skip — the caller is responsible for resolving the
-  // host's input mirror first.
+  // Refuse to write through a shared interior `_widget` — doing so would
+  // stomp every host instance. Callers must resolve the host's input mirror.
   console.error(
     '[proxyWidgetMigration] applyHostValue called with non-promoted widget; refusing to write to shared interior',
     { widgetName: widget.name, type: widget.type }
@@ -474,12 +451,9 @@ function repairAlreadyLinked(
   entry: PendingEntry,
   subgraphInputName: string
 ): RepairValueResult {
-  // `classify` already identified `subgraphInputName` as the canonical target
-  // (either by direct source-id match or by the primitive bypass marker), so
-  // resolve by name directly rather than re-running source-id matching —
-  // that match would miss for primitive bypasses, where the view's
-  // `sourceNodeId` is the consumer of the legacy primitive, not the
-  // primitive itself.
+  // Resolve by name directly: source-id matching would miss for primitive
+  // bypasses, where the view's `sourceNodeId` is the consumer, not the
+  // primitive.
   const matches = hostNode.inputs.filter(
     (input) => input.name === subgraphInputName
   )
@@ -718,10 +692,8 @@ function repairPrimitive(
     return failPrimitive('mutation failed; rolled back', { error: e })
   }
 
-  // Apply this host's per-instance value through the host's input mirror
-  // (a `PromotedWidgetView`), NOT through `newSubgraphInput._widget` (the
-  // shared interior consumer widget). Writing to the interior would stomp
-  // every other host's value with this host's value.
+  // Apply through the host's input mirror (PromotedWidgetView), NOT
+  // `newSubgraphInput._widget`: the interior is shared across hosts.
   const hostInput = hostNode.inputs.find(
     (input) => input.name === newSubgraphInput.name
   )
@@ -731,9 +703,7 @@ function repairPrimitive(
     if (valueEntry) {
       applyHostValue(hostInputWidget, valueEntry)
     } else {
-      // No host value; seed this host with the primitive's own widget value
-      // so the host displays what the user previously saw, but per-host —
-      // never by mutating the shared interior consumer widget.
+      // No host value: seed per-host from the primitive's widget value.
       const primitiveValue = primitiveNode.widgets?.find(
         (w) => w.name === validated.sourceWidgetName
       )?.value as TWidgetValue | undefined
@@ -747,10 +717,7 @@ function repairPrimitive(
     }
   }
 
-  // Mark the primitive so subsequent hosts of the same subgraph recognize
-  // that this primitive has already been bypassed into `newSubgraphInput`,
-  // even though the primitive's output links have been severed by this
-  // host's repair. See `classify` for the read side.
+  // Mark the primitive for subsequent hosts; see `classify` for the read side.
   primitiveNode.properties ??= {}
   primitiveNode.properties[PROXY_BYPASS_MARKER_PROPERTY] = newSubgraphInput.name
 

@@ -177,10 +177,6 @@
               :media="preview"
             />
           </div>
-          <!-- Live mid-execution preview images.
-               SubgraphNodes project interior previews via `promotedPreviews`
-               (see `usePromotedPreviews` + `previewExposureStore`); rendering
-               LivePreview here too would duplicate the same image. -->
           <LivePreview
             v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
             :image-url="latestPreviewUrl"
@@ -787,9 +783,8 @@ const nodeMedia = computed(() => {
   if (!node || !newOutputs?.images?.length || node.hideOutputImages)
     return undefined
 
-  // SubgraphNodes project interior previews via `promotedPreviews` only —
-  // see `usePromotedPreviews` + `previewExposureStore`. Skipping `nodeMedia`
-  // here keeps a single render path and prevents duplicate <NodeContent>.
+  // SubgraphNodes render interior previews via `promotedPreviews`; skipping
+  // `nodeMedia` here prevents a duplicate <NodeContent>.
   if (node instanceof SubgraphNode) return undefined
 
   const urls = nodeOutputs.getNodeImageUrls(node)

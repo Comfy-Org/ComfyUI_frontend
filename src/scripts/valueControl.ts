@@ -11,16 +11,9 @@ type ValueControlMode =
   | 'randomize'
 
 /**
- * Single production entry point for a value-control cycle. Given a target
- * widget and its linked siblings, discovers the control widget and combo
- * filter, applies partial-execution gating, and returns the next value to
- * commit, or `undefined` when no change should be applied.
- *
- * Caller decides HOW to commit (direct assign vs `hydrateHostValue`) and
- * WHEN to run it (beforeQueued vs afterQueued). Centralising sibling
- * discovery + gating here keeps the legacy direct-attach flow and promoted
- * subgraph flow from drifting on filter forwarding or partial-execution
- * handling.
+ * Compute the next value for a value-control cycle. Returns `undefined` when
+ * no change should be applied; caller decides how/when to commit so the
+ * legacy direct-attach and promoted subgraph paths stay in sync.
  */
 export function nextValueForLinkedTarget(params: {
   target: IBaseWidget
@@ -52,9 +45,8 @@ const SAFE_INTEGER_MAX = 1125899906842624
 const SAFE_INTEGER_MIN = -1125899906842624
 
 /**
- * Detects a "control after generate" widget — a combo widget marked with
- * {@link IS_CONTROL_WIDGET} that drives increment/decrement/randomize cycling
- * of a target widget via `beforeQueued`/`afterQueued` lifecycle hooks.
+ * Detects a "control after generate" widget marked with
+ * {@link IS_CONTROL_WIDGET} that drives increment/decrement/randomize cycling.
  */
 export function isValueControlWidget(widget: IBaseWidget): boolean {
   return (
@@ -88,13 +80,9 @@ function buildComboFilter(
 }
 
 /**
- * Pure helper: compute the next value a target widget should take given a
- * value-control mode (and optional combo filter). Returns `undefined` when
- * no change should be applied (mode is `fixed`, target is not a supported
+ * Pure helper: compute the next value for a target given a value-control mode.
+ * Returns `undefined` when no change should apply (`fixed`, unsupported target
  * type, or combo filter eliminates all candidates).
- *
- * Caller is responsible for assigning the returned value to the target and
- * invoking any callbacks/side effects.
  */
 export function computeNextControlledValue(
   target: IBaseWidget,

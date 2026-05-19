@@ -133,14 +133,9 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   /**
-   * Canonical identity for this widget within its root graph. `undefined`
-   * until {@link setNodeId} has bound the widget to its node, or if the
-   * widget is detached from any graph.
-   *
-   * Single source of truth for widget identity across producers (Vue mapper,
-   * migration, runtime callbacks) and consumers (sidebar, click handlers,
-   * value store). Equality is structural — two widgets share an `entityId`
-   * iff they describe the same `(graph, node, name)` triple.
+   * Canonical identity within the root graph. `undefined` until {@link setNodeId}
+   * binds the widget. Structural equality over `(graph, node, name)` —
+   * single source of truth across Vue mapper, migration, and the value store.
    */
   get entityId(): WidgetEntityId | undefined {
     const graphId = this.node.graph?.rootGraph.id

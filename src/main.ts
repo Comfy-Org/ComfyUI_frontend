@@ -138,10 +138,8 @@ LGraph.proxyWidgetMigrationFlush = (hostNode, nodeData) =>
     hostWidgetValues: nodeData?.widgets_values
   })
 
-// ADR 0009: re-derive preview exposures for known preview-aware interior
-// nodes after configure (workflow load and paste). Older clipboard /
-// workflow data may lack `properties.previewExposures`; this hook restores
-// the canvas-image-preview entries idempotently.
+// ADR 0009: re-derive preview exposures after configure for older workflows /
+// clipboard payloads that lack `properties.previewExposures`. Idempotent.
 LGraph.autoExposePreviewNodes = (hostNode) =>
   autoExposeKnownPreviewNodes(hostNode)
 

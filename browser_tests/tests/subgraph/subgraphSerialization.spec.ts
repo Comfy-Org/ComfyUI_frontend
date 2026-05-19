@@ -177,11 +177,8 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         PRIMITIVE_FANOUT_MULTI_HOST_WORKFLOW
       )
 
-      // The fixture's proxyWidgets [["1","value"], ["4","value"]] migrates to
-      // two host widgets sharing the source widget name "value":
-      //   index 0 → PrimitiveString.value (string textbox)
-      //   index 1 → PrimitiveNode.value   (number input)
-      // Disambiguate by row order, matching widgets_values order.
+      // Fixture's two `value` widgets share a name; index 0 is the string
+      // textbox, index 1 is the number input. Order matches widgets_values.
       const expectHostHasIndependentValues = async (
         hostId: string,
         stringValue: string,
@@ -231,9 +228,8 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
 
       const nestedSubgraphNode = comfyPage.vueNodes.getNodeLocator('8')
       await expect(nestedSubgraphNode).toBeVisible()
-      // A host whose only promoted content is a preview exposure has no
-      // node.widgets entries and renders no `.lg-node-widgets` container; the
-      // pseudo-widget surfaces via usePromotedPreviews instead.
+      // Preview-only hosts have empty node.widgets — no `.lg-node-widgets`
+      // container is rendered; the pseudo-widget surfaces via usePromotedPreviews.
       await expect(nestedSubgraphNode.locator('.lg-node-widgets')).toHaveCount(
         0
       )
@@ -703,11 +699,8 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         const outerNode = comfyPage.vueNodes.getNodeLocator('5')
         await expect(outerNode).toBeVisible()
 
-        // The legacy `proxyWidgets` entry references an interior nodeId that
-        // doesn't match the existing linked input's PromotedWidgetView source,
-        // so migration creates a second SubgraphInput rather than deduping.
-        // The intent of this test is that no legacy "<id>: <id>:" prefix
-        // leaks into the rendered widget rows.
+        // Regression: no legacy "<id>: <id>:" prefix should leak into
+        // rendered widget rows after migration.
         const widgetRows = outerNode.getByTestId(TestIds.widgets.widget)
         await expect(widgetRows).toHaveCount(2)
         await expect(widgetRows.first()).not.toContainText('6: 3:')

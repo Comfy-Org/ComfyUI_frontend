@@ -44,8 +44,7 @@ export function isLinkedPromotion(
   )
 }
 
-/** Find the host input on `subgraphNode` whose `_widget` is the
- * `PromotedWidgetView` for `(sourceNodeId, sourceWidgetName)`. */
+/** Finds the host input whose `_widget` is the `PromotedWidgetView` for the given source. */
 export function findHostInputForPromotion(
   subgraphNode: SubgraphNode,
   sourceNodeId: string,
@@ -209,12 +208,9 @@ function isPreviewExposed(
 }
 
 /**
- * Returns true if the widget identified by `source` is already exposed on
- * `subgraphNode` — either as a linked promotion (subgraph input) or as a
- * preview exposure. When `widget` is provided and is a preview pseudo-widget,
- * only the preview-exposure path is consulted (callers asking about a preview
- * widget should not pick up an unrelated linked promotion with the same
- * source identity).
+ * Returns true if `source` is exposed on `subgraphNode` via linked promotion or preview exposure.
+ * If `widget` is a preview pseudo-widget, only preview exposure is consulted to avoid matching an
+ * unrelated linked promotion with the same source identity.
  */
 export function isWidgetPromotedOnSubgraphNode(
   subgraphNode: SubgraphNode,
@@ -332,10 +328,7 @@ export function promoteWidget(
   parents: SubgraphNode[]
 ) {
   const source = toPromotionSource(node, widget)
-  // Both downstream helpers (`promotePreviewViaExposure`,
-  // `promoteValueWidgetViaSubgraphInput`) require the full `LGraphNode`
-  // shape — a `Pick<...>` won't do. Narrow once with `instanceof` rather
-  // than re-checking each call site with property guards + casts.
+  // Downstream helpers require the full `LGraphNode` shape; narrow once instead of per call site.
   if (!(node instanceof LGraphNode)) return
   for (const parent of parents) {
     if (isPreviewPseudoWidget(widget)) {
@@ -375,10 +368,8 @@ export function demoteWidget(
     )
     const linkedInput = hostInput?._subgraphSlot
     if (linkedInput) {
-      // When an external link holds the host slot open, retract the projection
-      // only — disconnect the interior link so the promoted view stops
-      // resolving, but leave the SubgraphInput and the outer link alive.
-      // Otherwise demote is a true inverse of promote and collapses the slot.
+      // If an external link holds the host slot open, retract only the interior projection;
+      // otherwise demote is the inverse of promote and removes the SubgraphInput.
       const hasExternalLink = hostInput.link != null
       if (hasExternalLink) {
         linkedInput.disconnect()
@@ -533,15 +524,9 @@ function nodeWidgets(n: LGraphNode): WidgetItem[] {
 }
 
 /**
- * Idempotently add preview-exposure entries for interior nodes that either
- * already have a `$$`-style pseudo-widget or are known-preview core node types
- * (PreviewImage, etc.). Safe to call repeatedly on the same host;
- * `promotePreviewViaExposure` deduplicates against existing entries.
- *
- * This is the shared preview-promotion path used by both
- * {@link promoteRecommendedWidgets} (subgraph-converted) and the paste flow
- * — older clipboard data may lack `properties.previewExposures`, so paste
- * needs to re-derive them from interior content.
+ * Idempotently adds preview-exposure entries for interior nodes with `$$` pseudo-widgets or
+ * known-preview core types. Shared by the subgraph-convert and paste flows; paste must re-derive
+ * because older clipboard data may lack `properties.previewExposures`.
  */
 export function autoExposeKnownPreviewNodes(subgraphNode: SubgraphNode): void {
   const { updatePreviews } = useLitegraphService()

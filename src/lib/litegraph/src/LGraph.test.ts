@@ -988,12 +988,8 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
   })
 
   it('warns when configuring a host with legacy proxyWidgets and no migration hook is wired', () => {
-    // The migration hook is wired in app init via main.ts; in pure
-    // litegraph-level tests (and any other configure() path that runs without
-    // the hook) we expect a console.warn so the missed migration is visible.
-    // Build a host SubgraphNode programmatically (registering its type),
-    // serialise the root, then configure() a fresh LGraph from that payload
-    // with the migration hook unset.
+    // Hook is wired in main.ts; configure() without it must warn so the
+    // missed migration is visible.
     const subgraph = createTestSubgraph()
     const sourceHost = createTestSubgraphNode(subgraph)
     sourceHost.graph!.add(sourceHost)

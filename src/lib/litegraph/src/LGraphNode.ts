@@ -1036,9 +1036,7 @@ export class LGraphNode
     // generate the fresh UUID up front and reapply it after hydration.
     const clonedUuid = LiteGraph.use_uuids ? LiteGraph.uuidv4() : undefined
 
-    // Subclasses' configure() (e.g. SubgraphNode) keys per-instance state
-    // by id; borrow the source's id so that hydration targets the right slot
-    // before graph.add reassigns.
+    // Borrow source id so subclass configure() hydrates the right slot; see method JSDoc.
     node.id = this.id
     node.configure(data)
     if (clonedUuid !== undefined) node.id = clonedUuid

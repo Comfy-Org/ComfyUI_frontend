@@ -37,9 +37,7 @@ export type LGraphTriggerEvent =
 
 /**
  * Single source of truth for actions accepted by `LGraph.trigger()`.
- * Both the runtime allowlist (`LGraphTriggerActions`) and the static type
- * (`LGraphTriggerAction`) derive from this tuple — adding a new action is
- * a one-place change. Keep in lockstep with {@link LGraphTriggerEvent}.
+ * Keep in lockstep with {@link LGraphTriggerEvent}.
  */
 export const LGraphTriggerActions = [
   'node:property:changed',

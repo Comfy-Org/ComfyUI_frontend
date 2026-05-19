@@ -625,12 +625,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this._applyPromotedWidgetValues(info.widgets_values)
   }
 
-  /**
-   * Hydrate per-instance promoted widget values into this host's widget value
-   * store entry. Routing through `PromotedWidgetView.set value` would cascade
-   * into the shared interior widget, stomping every other SubgraphNode
-   * instance that references the same shared interior.
-   */
+  /** Hydrate promoted widget values per-host; the view setter would stomp the shared interior. */
   private _applyPromotedWidgetValues(
     widgetValues: ExportedSubgraphInstance['widgets_values']
   ): void {
@@ -675,12 +670,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
   }
 
-  /**
-   * Hydrate the preview-exposure store for this host. Reads from
-   * `properties.previewExposures` (canonical), falling back to legacy
-   * `NodeLocatorId`-keyed entries already in the store and migrating them
-   * onto the canonical execution-path key. Idempotent.
-   */
+  /** Hydrate preview exposures from properties; migrate legacy NodeLocatorId entries. Idempotent. */
   private _hydratePreviewExposures() {
     const store = usePreviewExposureStore()
     const rootGraphId = this.rootGraph.id

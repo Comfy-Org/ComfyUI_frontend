@@ -4,23 +4,12 @@ import type { WidgetState } from '@/stores/widgetValueStore'
 import { parseWidgetEntityId } from './entityIds'
 import type { WidgetEntityId } from './entityIds'
 
-/**
- * Single read/write surface for widget values keyed by {@link WidgetEntityId}.
- *
- * Producers (Vue mapper, runtime callbacks, migration) and consumers (sidebar,
- * click handlers, serialization) call these helpers instead of composing
- * `(graphId, nodeId, widgetName)` tuples themselves. A `WidgetEntityId`
- * collision becomes a TypeScript error, not a silent value mix-up.
- *
- * Internally delegates to {@link useWidgetValueStore}; replacing the storage
- * implementation (e.g. with the ECS world from PR #11706) does not require any
- * call-site changes.
- */
+// Single read/write surface for widget values keyed by WidgetEntityId, so a key
+// collision is a TypeScript error rather than a silent value mix-up. Delegates
+// to useWidgetValueStore so storage can be swapped (e.g. ECS world, PR #11706)
+// without call-site changes.
 
-/**
- * Look up the full {@link WidgetState} for a widget by entity id, or
- * `undefined` if not yet registered.
- */
+/** Look up the full {@link WidgetState} for a widget by entity id. */
 export function getWidgetState(
   entityId: WidgetEntityId
 ): WidgetState | undefined {
@@ -28,10 +17,7 @@ export function getWidgetState(
   return useWidgetValueStore().getWidget(graphId, nodeId, name)
 }
 
-/**
- * Read the current value of a widget by entity id, or `undefined` if not yet
- * registered.
- */
+/** Read the current value of a widget by entity id. */
 export function readWidgetValue(
   entityId: WidgetEntityId
 ): WidgetState['value'] | undefined {
@@ -53,16 +39,9 @@ export function writeWidgetValue(
   return useWidgetValueStore().setValue(graphId, nodeId, name, value)
 }
 
-/**
- * Initial-state shape for {@link ensureWidgetState}: the per-widget metadata
- * not encoded in the {@link WidgetEntityId}.
- */
 type WidgetStateInit = Omit<WidgetState, 'nodeId' | 'name'>
 
-/**
- * Register a widget by entity id if not already registered, returning the
- * (existing or newly-registered) {@link WidgetState}. Idempotent.
- */
+/** Idempotently register a widget by entity id, returning its {@link WidgetState}. */
 export function ensureWidgetState(
   entityId: WidgetEntityId,
   init: WidgetStateInit

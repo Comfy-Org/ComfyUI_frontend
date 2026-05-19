@@ -44,13 +44,7 @@ export function usePromotedPreviews(
   const previewExposureStore = usePreviewExposureStore()
   const nodeOutputStore = useNodeOutputStore()
 
-  /**
-   * Reads from reactive output sources to establish Vue dependency tracking,
-   * then returns the resolved image URLs (or undefined when nothing is
-   * available). `getNodeImageUrls` itself reads from non-reactive
-   * `app.nodeOutputs` / `app.nodePreviewImages`, so without these reads the
-   * computed would never re-evaluate.
-   */
+  /** Touches reactive sources for Vue tracking; `getNodeImageUrls` reads non-reactive app state. */
   function readReactivePreviewUrls(
     leafHost: SubgraphNode,
     leafSourceNodeId: string,
@@ -106,10 +100,7 @@ export function usePromotedPreviews(
       const sourceNode = currentHost?.subgraph.getNodeById(sourceNodeId)
       if (!(sourceNode instanceof SubgraphNode)) return undefined
 
-      // Prefer path-style exposures so multiple instances of a shared subgraph
-      // definition resolve to per-instance leaves; fall back to the
-      // definition-level key written by `SubgraphNode._hydratePreviewExposures`
-      // so the single-instance case works without explicit per-path setup.
+      // Prefer per-instance path key; fall back to definition key from `_hydratePreviewExposures`.
       const pathLocator = `${currentHostLocator}:${sourceNode.id}`
       const definitionLocator = String(sourceNode.id)
       const hasPathExposures =

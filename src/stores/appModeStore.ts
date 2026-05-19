@@ -29,13 +29,8 @@ import type { WidgetEntityId } from '@/world/entityIds'
 import { isWidgetEntityId, parseWidgetEntityId } from '@/world/entityIds'
 
 /**
- * Resolve a widget by its canonical {@link WidgetEntityId} within the given
- * root graph. Identity comparison is purely structural —
- * `widget.entityId === entityId` — so producers and consumers never disagree
- * about which widget an id refers to.
- *
- * This is the single load-time resolution path; render-time consumers should
- * project `selectedInputs` through `useResolvedSelectedInputs` instead.
+ * Load-time resolution only; render-time consumers should project
+ * `selectedInputs` through `useResolvedSelectedInputs` instead.
  */
 function findWidgetByEntityId(
   rootGraph: LGraph,
@@ -80,17 +75,9 @@ export const useAppModeStore = defineStore('appMode', () => {
     if (!rootGraph) {
       return { inputs: rawInputs, outputs: rawOutputs }
     }
-    // Inputs always upgrade: `configured` fires after `LGraph.configure()` has
-    // populated all nodes (LGraph.ts: dispatch in finally block), so legacy
-    // tuples can be canonicalized even when `isLoadingGraph` is still true.
-    // Without this, test-injected legacy `[nodeId, name]` tuples (and any
-    // pre-WidgetEntityId persisted data) stay raw and get filtered out by
-    // `useResolvedSelectedInputs`'s `isWidgetEntityId` guard, leaving the
-    // app-mode widget list empty.
-    //
-    // Outputs pruning is deferred during loading: a transiently-missing node
-    // (e.g. mid-reconfigure) would otherwise be silently dropped. Once the
-    // load completes the next prune will trim any genuinely stale entries.
+    // Inputs always upgrade — `configured` fires after all nodes are populated.
+    // Outputs pruning is deferred during load so a transiently-missing node
+    // (e.g. mid-reconfigure) isn't silently dropped.
     return {
       inputs: rawInputs
         .map((input) => upgradeAndValidateInput(input, rootGraph))

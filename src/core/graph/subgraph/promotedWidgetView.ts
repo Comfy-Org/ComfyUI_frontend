@@ -90,14 +90,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
   private _boundSlot?: SubgraphSlotRef
   private _boundSlotVersion = -1
 
-  /**
-   * Last value written into the host widget state by an auto-seed call
-   * ({@link ensureHostWidgetState}). When the persisted host state still
-   * matches this value, the user has not modified it; we are free to
-   * re-seed it from a freshly resolved interior value if the interior
-   * has since been hydrated. Cleared whenever the host state is written
-   * by a non-seed path (user edit, migration replay).
-   */
+  /** Sentinel for the last auto-seeded host value, so re-seed can detect an unedited host state and refresh it from a later interior hydration. */
   private _lastAutoSeededValue?: IBaseWidget['value']
 
   constructor(
@@ -120,12 +113,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
     return this.identityName ?? this.sourceWidgetName
   }
 
-  /**
-   * Canonical host-scoped identity for this promoted widget. Per ADR 0009,
-   * UI/value identity is `(host node, subgraph input name)`; the interior
-   * source widget is metadata only. Two host instances of the same subgraph
-   * therefore have distinct entity ids and keep independent values.
-   */
+  /** Host-scoped identity `(host node, subgraph input name)` per ADR 0009; distinct host instances keep independent values. */
   get entityId(): WidgetEntityId {
     return widgetEntityId(this.graphId, this.subgraphNode.id, this.name)
   }
@@ -237,18 +225,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
     this._lastAutoSeededValue = undefined
   }
 
-  /**
-   * Idempotently register a host-scoped widget state seeded with the current
-   * effective value. Vue rendering reads from this entry keyed by
-   * {@link entityId}, so it must exist before first render even if migration
-   * has not run.
-   *
-   * The first render can run before the subgraph interior nodes have
-   * finished hydrating their serialized `widgets_values`, leaving the host
-   * entry seeded with a stale interior default. Re-seed on later calls
-   * whenever the persisted host value still matches our last auto-seed
-   * (the user has not edited it) and a fresh interior fallback differs.
-   */
+  /** Idempotently seed (and re-seed if interior hydrated later) the host widget state entry that Vue rendering reads. */
   ensureHostWidgetState(): void {
     const fallback = this.fallbackEffectiveValue()
     const existing = this.getHostWidgetState()
@@ -270,13 +247,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
     this._lastAutoSeededValue = fallback
   }
 
-  /**
-   * Resolve the effective value for this promoted widget by traversing the
-   * fallback chain (linked interior state → deepest widget state → live
-   * interior value), bypassing the host's own state. Used by
-   * {@link ensureHostWidgetState} so re-seeding is not a no-op when the
-   * host state is the one holding a stale value.
-   */
+  /** Resolves the effective value bypassing host state, so re-seeding can detect a stale host value. */
   private fallbackEffectiveValue(): IBaseWidget['value'] {
     const state = this.getWidgetState()
     if (state && isWidgetValue(state.value)) return state.value
@@ -288,9 +259,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
     ensureWidgetState(this.entityId, {
       type: resolved?.widget.type ?? 'button',
       value,
-      // Clone — never share the interior widget's options reference, or
-      // host-state mutations (e.g. disabled toggle) leak into the shared
-      // interior across every SubgraphNode instance.
+      // Clone: sharing the interior options ref leaks host mutations across all SubgraphNode instances.
       options: { ...(resolved?.widget.options ?? {}) },
       label: this.displayName,
       serialize: this.serialize,
@@ -315,12 +284,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
     if (state) state.label = value
   }
 
-  /**
-   * Write a value into this host's widget store entry without cascading into
-   * the shared interior widget — the only safe path for per-instance hydration
-   * during `configure()` and clone, where multiple SubgraphNode instances
-   * reference the same shared interior nodes.
-   */
+  /** Per-instance hydration that writes only to host state; safe during configure/clone where interior nodes are shared. */
   hydrateHostValue(value: IBaseWidget['value']): void {
     this.setHostWidgetState(value)
   }
@@ -458,12 +422,8 @@ class PromotedWidgetView implements IPromotedWidgetView {
     this.resolveAtHost()?.widget.callback?.(value, canvas, node, pos, e)
   }
 
-  // No beforeQueued: source widgets linked through subgraph inputs are inert
-  // for prompt serialization (per ADR 0009). Control-after-generate is
-  // applied to the promoted host value in afterQueued so the next prompt
-  // uses the updated SubgraphNode value, not the linked source value. The
-  // BEFORE/AFTER setting is intentionally not honored here for the same
-  // reason — mutating the source `beforeQueued` would not reach the prompt.
+  // No beforeQueued: linked source widgets are inert for prompt serialization (ADR 0009);
+  // control-after-generate is applied to the host value in afterQueued instead.
   afterQueued({
     isPartialExecution
   }: { isPartialExecution?: boolean } = {}): void {

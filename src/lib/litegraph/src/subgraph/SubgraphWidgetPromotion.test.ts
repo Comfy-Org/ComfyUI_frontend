@@ -322,9 +322,7 @@ describe('SubgraphWidgetPromotion', () => {
 
       hostNode.configure(serializedHostNode)
 
-      // ADR 0009: configure() no longer writes resolved entries back to
-      // properties.proxyWidgets. Hydration is observable via the synthetic
-      // widget surface instead.
+      // ADR 0009: hydration observable via widgets surface, not properties.proxyWidgets.
       expect(hostNode.widgets).toHaveLength(1)
       expect(hostNode.widgets[0].name).toBe('batch_size')
       expect(hostNode.widgets[0].value).toBe(1)
@@ -388,14 +386,9 @@ describe('SubgraphWidgetPromotion', () => {
     })
 
     it('resolves legacy prefixed proxyWidgets via the immediate child PromotedWidgetView identity', () => {
-      // ADR 0009: each SubgraphNode is opaque, so the migration only matches
-      // against what the immediate child surfaces. The legacy
-      // "<nestedId>: <leafId>: <leafWidgetName>" encoding strips down to
-      // {sourceWidgetName: "<leafWidgetName>", disambiguatingSourceNodeId:
-      // "<leafId>"}. The immediate child's PromotedWidgetView already exposes
-      // that interior identity (sourceNodeId/sourceWidgetName), so the
-      // migration can pick the correct widget without reaching past the
-      // child boundary. This preserves user state without violating opacity.
+      // ADR 0009: opacity requires matching only the immediate child's
+      // PromotedWidgetView; legacy "<nestedId>: <leafId>: <leafWidgetName>"
+      // resolves via the child's exposed (sourceNodeId, sourceWidgetName).
       const rootGraph = createTestRootGraph()
 
       const innerSubgraph = createTestSubgraph({
@@ -463,10 +456,8 @@ describe('SubgraphWidgetPromotion', () => {
       const hostNode = createTestSubgraphNode(subgraph)
       const serialized = hostNode.serialize()
 
-      // ADR 0009: clone preservation no longer relies on properties.proxyWidgets.
-      // The promoted widgets are derived from the linked SubgraphInputs that
-      // come through the serialized inputs/links, so the host's own widgets
-      // getter should expose the promoted view after configure.
+      // ADR 0009: clones derive promoted widgets from the serialized
+      // inputs/links, not properties.proxyWidgets.
       const cloneNode = createTestSubgraphNode(subgraph)
       cloneNode.configure(serialized)
 

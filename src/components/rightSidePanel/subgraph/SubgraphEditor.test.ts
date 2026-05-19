@@ -165,8 +165,7 @@ describe('SubgraphEditor', () => {
         .map((el) => el.textContent?.trim())
     ).toEqual(['first', 'second'])
 
-    // Reverse the order via the DraggableList v-model setter; this exercises
-    // the `reorderSubgraphInputsByWidgetOrder` path that previously relied on
+    // Exercises `reorderSubgraphInputsByWidgetOrder`, which previously needed
     // a manual `inputOrderVersion` bump for the sidebar to re-render.
     const promotedWidgets = host.widgets.filter((w) => 'sourceNodeId' in w)
     const reversed: WidgetItem[] = [

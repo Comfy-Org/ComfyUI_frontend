@@ -40,10 +40,8 @@ const activeNode = computed(() => {
   return undefined
 })
 
-// `SubgraphNode.widgets` is a synthetic, non-reactive getter backed by
-// `_getPromotedViews()`/`invalidatePromotedViews()`. Snapshot it into a
-// `shallowRef` so Vue has a real reactive source, and refresh on the
-// subgraph events that mutate promoted-widget order or membership.
+// `SubgraphNode.widgets` is a non-reactive synthetic getter; snapshot into a
+// shallowRef and refresh on subgraph events that mutate promoted-widget order.
 const promotedWidgets = shallowRef<readonly IBaseWidget[]>([])
 function refreshPromotedWidgets() {
   promotedWidgets.value = activeNode.value?.widgets ?? []
@@ -93,11 +91,8 @@ function getActivePreviewWidgets(node: SubgraphNode): WidgetItem[] {
   return exposures.flatMap((exposure): WidgetItem[] => {
     const sourceNode = node.subgraph._nodes_by_id[exposure.sourceNodeId]
     if (!sourceNode) return []
-    // The exposure itself is the source of truth for "this preview is shown
-    // on the host node". Prefer an existing promotable widget (covers both
-    // real `$$` widgets and virtual ones for PreviewImage/SaveImage/GLSLShader),
-    // otherwise synthesize a label-only widget so the editor still surfaces
-    // the row instead of silently dropping the exposure (#???).
+    // Prefer a real promotable widget; fall back to a label-only widget so the
+    // row isn't dropped when no matching widget exists.
     const widget =
       getPromotableWidgets(sourceNode).find(
         (candidate) => candidate.name === exposure.sourcePreviewName
@@ -162,9 +157,8 @@ const interiorWidgets = computed<WidgetItem[]>(() => {
 const candidateWidgets = computed<WidgetItem[]>(() => {
   const node = activeNode.value
   if (!node) return []
-  // An interior widget is "already promoted" iff some active row's source
-  // identity matches it. PromotedWidgetView carries `sourceNodeId`; preview
-  // exposures are stored as the interior `[node, widget]` tuple directly.
+  // Key on source identity: PromotedWidgetView exposes `sourceNodeId`;
+  // preview exposures keep the interior `[node, widget]` tuple directly.
   const promotedSourceKeys = new Set(
     activeWidgets.value.map(
       ([n, w]) =>

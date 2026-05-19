@@ -104,8 +104,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     input.widget = { name: 'prompt' }
     graph.add(node)
 
-    // Real upstream node + real link — the renderer treats a slot as
-    // `linked` only when the upstream resolves to an actual node.
+    // Real upstream + link: renderer marks `linked` only when origin resolves.
     const upstream = new LGraphNode('upstream')
     upstream.addOutput('out', 'STRING')
     graph.add(upstream)
@@ -450,8 +449,7 @@ describe('Nested promoted widget mapping', () => {
 
     expect(mappedWidget).toBeDefined()
     expect(mappedWidget?.type).toBe('combo')
-    // Promoted widgets read from a host-scoped store entry so per-host values
-    // stay independent across SubgraphNode instances sharing the same subgraph.
+    // Host-scoped entityId keeps values independent across SubgraphNode instances.
     expect(mappedWidget?.entityId).toBe(
       widgetEntityId(graph.id, subgraphNodeB.id, 'b_input')
     )
@@ -488,8 +486,6 @@ describe('Nested promoted widget mapping', () => {
     const widgets = nodeData?.widgets
 
     expect(widgets).toHaveLength(2)
-    // Both promoted widgets live on the same host node; their entityIds use
-    // the distinct subgraph input names to keep them independent.
     expect(widgets?.[0]?.entityId).toBe(
       widgetEntityId(graph.id, subgraphNode.id, 'first_seed')
     )

@@ -1,9 +1,7 @@
-// TODO: NodeId will become a branded EntityId owned by src/world/. Once that
-// migration lands, drop this disable.
+// TODO: Drop disable once NodeId becomes a branded EntityId owned by src/world/.
 // eslint-disable-next-line import-x/no-restricted-paths
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
-// TODO: Move UUID to src/utils/ (or src/world/) — it's a primitive string
-// brand with no litegraph coupling. Once moved, drop this disable.
+// TODO: Drop disable once UUID moves to src/utils/ (no litegraph coupling).
 // eslint-disable-next-line import-x/no-restricted-paths
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
@@ -26,9 +24,7 @@ export type WidgetEntityId = Brand<string, 'WidgetEntityId'>
 
 const SEPARATOR = ':'
 
-/**
- * Build a {@link WidgetEntityId} from its components.
- */
+/** Build a {@link WidgetEntityId} from its components. */
 export function widgetEntityId(
   graphId: UUID,
   nodeId: NodeId,

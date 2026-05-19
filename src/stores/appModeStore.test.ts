@@ -162,8 +162,6 @@ describe('appModeStore', () => {
   })
 
   afterEach(() => {
-    // Restore any per-test spies (e.g. console.warn) so an assertion failure
-    // can't leak the spy into the next test.
     vi.restoreAllMocks()
   })
 
@@ -483,9 +481,6 @@ describe('appModeStore', () => {
 
   describe('pruneLinearData during graph loading', () => {
     it('still upgrades legacy inputs but defers output pruning when ChangeTracker.isLoadingGraph is true', () => {
-      // `LGraph.configure` populates all nodes before dispatching `configured`,
-      // so input upgrade can safely run during loading. Outputs pruning is
-      // deferred so a transiently-missing node is not silently dropped.
       const node1 = nodeWithWidgets(1, ['seed'])
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [node1]

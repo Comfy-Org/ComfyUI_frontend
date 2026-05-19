@@ -373,15 +373,9 @@ export function resolveNodeWidget(
 }
 
 /**
- * Resolve the canonical {@link WidgetEntityId} for a widget attached to a node.
- *
- * Prefers `widget.entityId` (set by `BaseWidget.setNodeId`). Falls back to
- * deriving `(rootGraphId, node.id, widget.name)` for plain POJO widgets that
- * third-party extensions push directly onto `node.widgets`, bypassing
- * `addCustomWidget` and therefore `setNodeId`.
- *
- * Returns `undefined` only when there is no root graph (node detached) or the
- * node has no real id (`-1` placeholder).
+ * Resolve the canonical {@link WidgetEntityId} for a widget on a node. Prefers
+ * `widget.entityId`; falls back to deriving from `(rootGraphId, node.id, name)`
+ * for POJO widgets pushed onto `node.widgets` without `addCustomWidget`.
  */
 export function getWidgetEntityIdForNode(
   node: LGraphNode,

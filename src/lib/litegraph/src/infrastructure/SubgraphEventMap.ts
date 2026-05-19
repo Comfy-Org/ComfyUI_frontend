@@ -33,14 +33,9 @@ export interface SubgraphEventMap extends LGraphEventMap {
   }
 
   /**
-   * Fires after `subgraph.inputs` order is rewritten by an input-reorder
-   * helper (e.g. `reorderSubgraphInputsByName`,
-   * `reorderSubgraphInputsByWidgetOrder`, `reorderSubgraphInputAtIndex`).
-   *
-   * Dispatched after `invalidatePromotedViews()`, the link `origin_slot`
-   * reindex, and the value-restore pass — listeners see fully consistent
-   * state. No-op reorders (where the order didn't actually change) do not
-   * dispatch.
+   * Fires after `subgraph.inputs` order is rewritten. Dispatched after view
+   * invalidation, link reindex, and value-restore so listeners observe fully
+   * consistent state. No-op reorders do not dispatch.
    */
   'inputs-reordered': {
     subgraph: Subgraph

@@ -16,11 +16,8 @@ export function resolveSubgraphInputTarget(
     inputName,
     ({ inputNode, targetInput, getTargetWidget }) => {
       if (inputNode.isSubgraphNode()) {
-        // ADR 0009: each SubgraphNode is opaque. The promoted target is the
-        // child SubgraphNode's input slot, not a deeper leaf widget.
-        // Resolve regardless of whether the inner slot has a backing widget,
-        // so that link-only / non-widget inputs still surface the host
-        // boundary contract (hostNodeLocator, subgraphInputName).
+        // ADR 0009: SubgraphNode is opaque, so target the child's input slot (even without a
+        // backing widget) instead of resolving to a deeper leaf.
         return {
           nodeId: String(inputNode.id),
           widgetName: targetInput.name

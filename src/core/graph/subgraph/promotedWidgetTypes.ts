@@ -15,18 +15,9 @@ export interface PromotedWidgetSource {
 
 export interface PromotedWidgetView extends IBaseWidget {
   readonly node: SubgraphNode
-  /**
-   * Canonical host-scoped identity per ADR 0009: `(host node, subgraph input
-   * name)`. Always defined for promoted widgets — they are owned by their
-   * host and the host is by construction bound to a graph.
-   */
+  /** Host-scoped identity `(host node, subgraph input name)` per ADR 0009. */
   readonly entityId: WidgetEntityId
-  /**
-   * Identity of the immediate interior child whose widget (or input slot, for
-   * nested SubgraphNode children) this view exposes. Per ADR 0009 each
-   * SubgraphNode is opaque: the parent's promoted view references the
-   * immediate child only and does not flatten to deeper origins.
-   */
+  /** Immediate interior child id; per ADR 0009 SubgraphNode is opaque so this never flattens past the immediate child. */
   readonly sourceNodeId: string
   readonly sourceWidgetName: string
 
@@ -36,10 +27,7 @@ export interface PromotedWidgetView extends IBaseWidget {
    */
   hydrateHostValue(value: IBaseWidget['value']): void
 
-  /**
-   * Ensure a host-scoped widget store entry exists, seeded with the current
-   * effective value. Idempotent; safe to call before each Vue render.
-   */
+  /** Idempotently ensures a host-scoped widget store entry seeded with the current effective value; safe to call per render. */
   ensureHostWidgetState(): void
 }
 

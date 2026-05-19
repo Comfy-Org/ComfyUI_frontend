@@ -109,10 +109,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return isImageOutputs(node, outputs) ? app.getPreviewFormatParam() : ''
   }
 
-  /**
-   * Builds `/view`-style image URLs for a node's outputs. Returns undefined
-   * when there are no images so callers can fall back to preview blobs.
-   */
+  /** Returns undefined when there are no images so callers can fall back to preview blobs. */
   function buildImageUrls(
     node: LGraphNode,
     outputs: ExecutedWsMessage['output'] | undefined
@@ -187,11 +184,9 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     // LoadImage nodes selecting the same image); preserve existing output.
     if (outputs == null) return
 
-    // Without this guard, execution results overwrite the upload widget's
-    // preview, causing LoadImage/LoadVideo to lose their preview after
-    // execution + tab switch. Intentional preview clears go through
-    // setNodeOutputs (widget path), not this function, so the guard does
-    // not interfere with user-initiated clears.
+    // Guard: empty execution results must not overwrite an upload widget's
+    // preview (LoadImage/LoadVideo). User-initiated clears go through
+    // setNodeOutputs (widget path), not this function.
     const incomingImages = (outputs as ExecutedWsMessage['output']).images
     const hasIncomingImages =
       Array.isArray(incomingImages) && incomingImages.length > 0

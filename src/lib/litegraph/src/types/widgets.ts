@@ -376,11 +376,8 @@ export type TWidgetType = IWidget['type']
 export type TWidgetValue = IWidget['value']
 
 /**
- * Runtime type guard for {@link TWidgetValue}. Accepts any value shape that a
- * widget can legally hold: primitives (`string`, `number`, `boolean`),
- * non-null objects (arrays, plain objects), or `undefined`. Rejects `null` and
- * functions. Used at serialization / migration boundaries that consume
- * `unknown` payloads (e.g. `widgets_values`).
+ * Runtime type guard for {@link TWidgetValue}. Accepts primitives, non-null
+ * objects, and `undefined`; rejects `null` and functions.
  */
 export function isWidgetValue(value: unknown): value is TWidgetValue {
   if (value === undefined) return true
@@ -407,12 +404,9 @@ export interface IBaseWidget<
   linkedWidgets?: IBaseWidget[]
 
   /**
-   * Canonical identity for this widget within its root graph. Read-only;
-   * derived from the widget's `(graphId, nodeId, name)` triple. `undefined`
-   * when the widget is not yet bound to a node or detached from any graph.
-   *
-   * Distinct from any DOM-widget UUID (`id`); this is the structured value
-   * key used by the widget value store, the Vue mapper, and migration.
+   * Canonical identity within the root graph, derived from
+   * `(graphId, nodeId, name)`. `undefined` when not yet bound to a node.
+   * Distinct from any DOM-widget UUID — this is the structured value key.
    */
   readonly entityId?: WidgetEntityId
 

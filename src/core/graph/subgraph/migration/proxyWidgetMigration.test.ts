@@ -265,13 +265,8 @@ describe('flushProxyWidgetMigration', () => {
     })
 
     it('createSubgraphInput: honors disambiguatingSourceNodeId when source widget name has been deduplicated', () => {
-      // The host's immediate child (inner) carries promoted widgets that
-      // surface two interior "text" widgets, deduplicated to ("text",
-      // "text_1") at this level. The legacy proxyWidgets tuple identifies
-      // the *second* one via its underlying source-node id ("2"). The
-      // migration must pick the widget whose interior identity matches
-      // (sourceNodeId="2", sourceWidgetName="text") — i.e. the one renamed
-      // to "text_1" — not the lexical first widget called "text".
+      // Two interior "text" widgets deduplicated to ("text", "text_1");
+      // the tuple's disambiguator "2" must select the renamed one.
       const host = buildHost()
       const inner = addInnerNode(host, 'InnerWithDedupedPromotion', (n) => {
         const slot1 = n.addInput('text', 'STRING')
@@ -290,8 +285,6 @@ describe('flushProxyWidgetMigration', () => {
 
       const created = host.subgraph.inputs.at(-1)
       expect(created?._widget).toBeDefined()
-      // The created SubgraphInput connects to inner's "text_1" slot (the
-      // disambiguated one), not "text".
       const linkedSlot = inner.inputs.find(
         (slot) => slot.link === created?.linkIds[0]
       )
@@ -370,9 +363,6 @@ describe('flushProxyWidgetMigration', () => {
         hostWidgetValues: [123]
       })
 
-      // Host value lands on the host's input mirror (a `PromotedWidgetView`),
-      // not on the shared interior consumer widget. Verifying the host side
-      // is what guarantees per-host value independence.
       const hostInput = host.inputs.at(-1)
       expect(hostInput?._widget?.value).toBe(123)
     })
@@ -387,8 +377,6 @@ describe('flushProxyWidgetMigration', () => {
       host.properties.proxyWidgets = [[String(primitive.id), 'value']]
       flushProxyWidgetMigration({ hostNode: host })
 
-      // With no host value supplied, the host is seeded per-instance from
-      // the primitive's widget value — never by mutating the shared interior.
       const hostInput = host.inputs.at(-1)
       expect(hostInput?._widget?.value).toBe(11)
     })
@@ -454,12 +442,8 @@ describe('flushProxyWidgetMigration', () => {
     })
 
     it('keeps independent values across two hosts of the same subgraph', () => {
-      // Regression for the multi-host primitive bypass bug: each host's
-      // per-instance value must land in its own host store, never on the
-      // shared interior consumer widget. After both hosts migrate, the
-      // first host must still see its own value (not be stomped by the
-      // second host) and the second host must successfully bypass even
-      // though the primitive's outputs were severed by the first host.
+      // Regression: first host's value must survive second host's migration,
+      // and second host must still bypass after primitive outputs were severed.
       const subgraph = createTestSubgraph()
       const hostA = createTestSubgraphNode(subgraph)
       const hostB = createTestSubgraphNode(subgraph)
@@ -491,9 +475,6 @@ describe('flushProxyWidgetMigration', () => {
         hostWidgetValues: [22]
       })
 
-      // Host B's classify recognises the bypass marker on the primitive and
-      // takes the `alreadyLinked` path. Either way, no quarantine, and each
-      // host gets an independent value.
       expect(hostA.properties.proxyWidgetErrorQuarantine).toBeUndefined()
       expect(hostB.properties.proxyWidgetErrorQuarantine).toBeUndefined()
 
@@ -902,10 +883,8 @@ describe('normalizeLegacyProxyWidgetEntry', () => {
   })
 
   it('strips legacy prefix and surfaces it as disambiguator even when the bare name does not resolve', () => {
-    // ADR 0009: each SubgraphNode is opaque, so legacy nested
-    // disambiguator-based lookup no longer reaches deep widgets. The
-    // prefix is preserved as `disambiguatingSourceNodeId` lookup metadata
-    // for migration tooling.
+    // ADR 0009: opaque SubgraphNodes can't resolve deep widgets; the prefix
+    // is preserved as `disambiguatingSourceNodeId` metadata.
     const { hostNode, innerNode } = createHostWithInnerWidget('seed')
 
     const result = normalizeLegacyProxyWidgetEntry(

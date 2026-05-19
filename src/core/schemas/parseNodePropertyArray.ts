@@ -4,20 +4,13 @@ import { fromZodError } from 'zod-validation-error'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 
 /**
- * Parses a node property that is expected to deserialize into an array `T[]`.
+ * Parse a node property into `T[]`. Returns `[]` and warns (prefixed with
+ * `contextName`) on JSON-parse or schema-validation failure; `undefined`
+ * returns `[]` silently.
  *
- * Behavior:
- * - `undefined` → returns `[]` (no warning)
- * - If `property` is a string, attempts `JSON.parse`; on failure, warns and
- *   returns `[]`.
- * - Validates the result with `schema.safeParse`; on failure, warns with the
- *   given `contextName` and returns `[]`.
- * - On success, returns the parsed array.
- *
- * @param property - The raw node property value.
- * @param schema - A zod schema describing the expected array shape.
- * @param contextName - Used as the prefix for `console.warn` messages
- *   (e.g. `properties.proxyWidgets`).
+ * @param property - Raw node property value.
+ * @param schema - Zod schema describing the expected array shape.
+ * @param contextName - Prefix for `console.warn` messages (e.g. `properties.proxyWidgets`).
  */
 export function parseNodePropertyArray<T>(
   property: NodeProperty | undefined,

@@ -13,10 +13,6 @@ import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
 const EMPTY_EXPOSURES: readonly PreviewExposure[] = Object.freeze([])
 
-/**
- * Optional resolver passed by callers that want {@link resolveChain} to walk
- * nested subgraph host boundaries.
- */
 type ResolveNestedHostFn = NonNullable<
   PreviewExposureChainContext['resolveNestedHost']
 >
@@ -43,11 +39,7 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     return exposures.value.get(rootGraphId)?.get(hostNodeLocator)
   }
 
-  /**
-   * Returns the live internal array (typed `readonly` to discourage mutation).
-   * Defensive `Object.freeze` at the four insert sites would close this if
-   * a caller ever casts away the readonly modifier; deferred until needed.
-   */
+  /** Returns the live internal array, typed `readonly` to discourage mutation. */
   function getExposures(
     rootGraphId: UUID,
     hostNodeLocator: string
@@ -105,8 +97,7 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
 
   /**
    * Returns the host's exposures translated into the {@link PromotedWidgetSource}
-   * shape consumed by `resolveSubgraphPseudoWidgetCache`. Centralising this
-   * mapping keeps the exposure → promotion translation policy next to the store.
+   * shape consumed by `resolveSubgraphPseudoWidgetCache`.
    */
   function getExposuresAsPromotionShape(
     rootGraphId: UUID,
@@ -119,12 +110,10 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
   }
 
   /**
-   * Resolve the chain of exposures from a host down to the originating source
-   * preview, optionally walking through nested subgraph hosts.
+   * Resolve the chain of exposures from a host down to the originating source preview.
    *
-   * @param resolveNestedHost If provided, the walker recurses through nested
-   * SubgraphNode boundaries by calling this resolver. Without it, the chain is
-   * a single-step walk on the starting host.
+   * @param resolveNestedHost If provided, recurses through nested SubgraphNode
+   * boundaries; otherwise the chain is a single-step walk on the starting host.
    */
   function resolveChain(
     rootGraphId: UUID,

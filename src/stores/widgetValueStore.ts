@@ -52,9 +52,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
   /**
    * @deprecated Use `ensureWidgetState(widget.entityId, init)` from
-   * `src/world/widgetValueIO.ts`. Passing a loose `(graphId, nodeId, name)`
-   * triple lets producers and consumers drift; `WidgetEntityId` is branded so
-   * a mismatch becomes a type error.
+   * `src/world/widgetValueIO.ts` — the branded `WidgetEntityId` prevents
+   * producer/consumer drift that loose triples allow.
    */
   function registerWidget<TValue = unknown>(
     graphId: UUID,
@@ -76,10 +75,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
   /**
    * @deprecated Use `getWidgetState(widget.entityId)` or
-   * `readWidgetValue(widget.entityId)` from `src/world/widgetValueIO.ts`.
-   * Passing a loose `(graphId, nodeId, name)` triple lets producers and
-   * consumers drift; `WidgetEntityId` is branded so a mismatch becomes a type
-   * error.
+   * `readWidgetValue(widget.entityId)` from `src/world/widgetValueIO.ts` —
+   * the branded `WidgetEntityId` prevents producer/consumer drift that loose
+   * triples allow.
    */
   function getWidget(
     graphId: UUID,
@@ -90,12 +88,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   /**
-   * Write a new value to an already-registered widget. Returns `true` if the
-   * widget was registered and updated, `false` if no such state exists.
-   *
-   * Prefer `writeWidgetValue(widget.entityId, value)` from
-   * `src/world/widgetValueIO.ts`, which delegates here. Direct callers must
-   * pass a matching `(graphId, nodeId, name)` triple.
+   * Write a new value to an already-registered widget. Returns `false` if no
+   * such state exists. Prefer `writeWidgetValue(widget.entityId, value)` from
+   * `src/world/widgetValueIO.ts`, which delegates here.
    */
   function setValue(
     graphId: UUID,
