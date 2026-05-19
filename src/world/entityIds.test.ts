@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import type { WidgetEntityId } from './entityIds'
 import {
   isWidgetEntityId,
   parseWidgetEntityId,
@@ -47,11 +48,12 @@ describe('parseWidgetEntityId', () => {
   })
 
   it('preserves colons inside the name segment', () => {
-    const id = widgetEntityId(graphId, 42, 'nested:label:with:colons')
-    expect(parseWidgetEntityId(id)).toEqual({
+    const rawName = 'nested:label:with:colons'
+    const rawId = `${graphId}:42:${rawName}` as WidgetEntityId
+    expect(parseWidgetEntityId(rawId)).toEqual({
       graphId,
       nodeId: '42',
-      name: 'nested:label:with:colons'
+      name: rawName
     })
   })
 })
