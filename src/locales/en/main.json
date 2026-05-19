@@ -564,6 +564,10 @@
     "hue": "Hue",
     "alpha": "Alpha"
   },
+  "starRating": {
+    "groupLabel": "Star rating",
+    "rateStars": "Rate {count} star | Rate {count} stars"
+  },
   "contextMenu": {
     "Inputs": "Inputs",
     "Outputs": "Outputs",
