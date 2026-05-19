@@ -10,30 +10,12 @@ import { createI18n } from 'vue-i18n'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import TabSubgraphInputs from './TabSubgraphInputs.vue'
 
-vi.mock(import('pinia'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    storeToRefs: vi.fn((store) => store)
-  }
-})
-
-const mockClearFocusedSection = vi.fn()
-
 vi.mock('@/core/graph/subgraph/promotedWidgetTypes', () => ({
   isPromotedWidgetView: vi.fn(() => false)
 }))
 
 vi.mock('@/core/graph/subgraph/promotionUtils', () => ({
   getWidgetName: vi.fn((widget) => widget.name)
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    canvas: {
-      setDirty: vi.fn()
-    }
-  })
 }))
 
 vi.mock('@/stores/promotionStore', () => ({
@@ -55,18 +37,11 @@ vi.mock('@/stores/promotionStore', () => ({
   })
 }))
 
-vi.mock('@/stores/workspace/rightSidePanelStore', () => ({
-  useRightSidePanelStore: () => ({
-    focusedSection: null,
-    clearFocusedSection: mockClearFocusedSection
-  })
-}))
-
 vi.mock('@/scripts/ui/draggableList', () => ({
   DraggableList: vi.fn().mockImplementation(() => ({ dispose: vi.fn() }))
 }))
 
-const FormSearchInputStub = defineComponent({
+const AsyncSearchInputStub = defineComponent({
   props: {
     modelValue: { type: String, default: '' },
     searcher: { type: Function, default: undefined }
@@ -157,7 +132,7 @@ const subgraphNode = fromAny<SubgraphNode, unknown>({
 
 describe('TabSubgraphInputs', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
+    setActivePinia(createTestingPinia({ createSpy: vi.fn, stubActions: false }))
     vi.clearAllMocks()
   })
 
@@ -171,7 +146,7 @@ describe('TabSubgraphInputs', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          FormSearchInput: FormSearchInputStub,
+          AsyncSearchInput: AsyncSearchInputStub,
           SectionWidgets: SectionWidgetsStub,
           CollapseToggleButton: { template: '<div />' }
         }
@@ -210,7 +185,7 @@ describe('TabSubgraphInputs', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          FormSearchInput: FormSearchInputStub,
+          AsyncSearchInput: AsyncSearchInputStub,
           SectionWidgets: SectionWidgetsStub,
           CollapseToggleButton: { template: '<div />' }
         }

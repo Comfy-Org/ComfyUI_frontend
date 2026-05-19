@@ -61,7 +61,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   })
 }))
 
-const FormSearchInputStub = defineComponent({
+const AsyncSearchInputStub = defineComponent({
   props: {
     modelValue: { type: String, default: '' },
     searcher: { type: Function, default: undefined }
@@ -125,7 +125,7 @@ describe('TabNodes', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          FormSearchInput: FormSearchInputStub,
+          AsyncSearchInput: AsyncSearchInputStub,
           SectionWidgets: SectionWidgetsStub,
           CollapseToggleButton: { template: '<div />' }
         }
@@ -158,7 +158,7 @@ describe('TabNodes', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          FormSearchInput: FormSearchInputStub,
+          AsyncSearchInput: AsyncSearchInputStub,
           SectionWidgets: SectionWidgetsStub,
           CollapseToggleButton: { template: '<div />' }
         }

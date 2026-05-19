@@ -7,26 +7,26 @@ import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+
 import RightSidePanel from './RightSidePanel.vue'
 
-const mockSelectedItems = ref<unknown[]>([])
 const mockActiveWorkflow = ref<{ path: string } | null>({ path: 'wf-1' })
-const mockActiveTab = ref<
-  'errors' | 'parameters' | 'nodes' | 'info' | 'settings' | 'subgraph'
->('parameters')
-const mockIsEditingSubgraph = ref(false)
 const mockSidebarLocation = ref<'left' | 'right'>('right')
 
-const closePanelMock = vi.fn()
-const openPanelMock = vi.fn()
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    canvas: { setDirty: vi.fn() },
-    currentGraph: undefined,
-    selectedItems: mockSelectedItems
-  })
-}))
+vi.mock('@/renderer/core/canvas/canvasStore', async () => {
+  const { defineStore } = await import('pinia')
+  const { ref } = await import('vue')
+  return {
+    useCanvasStore: defineStore('canvasStoreMock', () => {
+      const selectedItems = ref<unknown[]>([])
+      const currentGraph = ref(undefined)
+      const canvas = { setDirty: vi.fn() }
+      return { canvas, currentGraph, selectedItems }
+    })
+  }
+})
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => ({
@@ -36,17 +36,27 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   })
 }))
 
-vi.mock('@/stores/workspace/rightSidePanelStore', () => ({
-  useRightSidePanelStore: () => ({
-    get isOpen() {
-      return true
-    },
-    activeTab: mockActiveTab,
-    isEditingSubgraph: mockIsEditingSubgraph,
-    closePanel: closePanelMock,
-    openPanel: openPanelMock
-  })
-}))
+vi.mock('@/stores/workspace/rightSidePanelStore', async () => {
+  const { defineStore } = await import('pinia')
+  const { ref } = await import('vue')
+  type ActiveTab =
+    | 'errors'
+    | 'parameters'
+    | 'nodes'
+    | 'info'
+    | 'settings'
+    | 'subgraph'
+  return {
+    useRightSidePanelStore: defineStore('rightSidePanelStoreMock', () => {
+      const isOpen = ref(true)
+      const activeTab = ref<ActiveTab>('parameters')
+      const isEditingSubgraph = ref(false)
+      const closePanel = vi.fn()
+      const openPanel = vi.fn()
+      return { isOpen, activeTab, isEditingSubgraph, closePanel, openPanel }
+    })
+  }
+})
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
@@ -58,26 +68,45 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
-vi.mock('@/stores/executionErrorStore', () => ({
-  useExecutionErrorStore: () => ({
-    hasAnyError: false,
-    allErrorExecutionIds: [],
-    activeGraphErrorNodeIds: new Set<string>(),
-    isContainerWithInternalError: vi.fn(() => false)
-  })
-}))
+vi.mock('@/stores/executionErrorStore', async () => {
+  const { defineStore } = await import('pinia')
+  const { ref } = await import('vue')
+  return {
+    useExecutionErrorStore: defineStore('executionErrorStoreMock', () => {
+      const hasAnyError = ref(false)
+      const allErrorExecutionIds = ref<string[]>([])
+      const activeGraphErrorNodeIds = ref(new Set<string>())
+      return {
+        hasAnyError,
+        allErrorExecutionIds,
+        activeGraphErrorNodeIds,
+        isContainerWithInternalError: vi.fn(() => false)
+      }
+    })
+  }
+})
 
-vi.mock('@/platform/missingModel/missingModelStore', () => ({
-  useMissingModelStore: () => ({
-    activeMissingModelGraphIds: new Set<string>()
-  })
-}))
+vi.mock('@/platform/missingModel/missingModelStore', async () => {
+  const { defineStore } = await import('pinia')
+  const { ref } = await import('vue')
+  return {
+    useMissingModelStore: defineStore('missingModelStoreMock', () => {
+      const activeMissingModelGraphIds = ref(new Set<string>())
+      return { activeMissingModelGraphIds }
+    })
+  }
+})
 
-vi.mock('@/platform/missingMedia/missingMediaStore', () => ({
-  useMissingMediaStore: () => ({
-    activeMissingMediaGraphIds: new Set<string>()
-  })
-}))
+vi.mock('@/platform/missingMedia/missingMediaStore', async () => {
+  const { defineStore } = await import('pinia')
+  const { ref } = await import('vue')
+  return {
+    useMissingMediaStore: defineStore('missingMediaStoreMock', () => {
+      const activeMissingMediaGraphIds = ref(new Set<string>())
+      return { activeMissingMediaGraphIds }
+    })
+  }
+})
 
 vi.mock('@/platform/nodeReplacement/missingNodesErrorStore', () => ({
   useMissingNodesErrorStore: () => ({
@@ -121,14 +150,6 @@ vi.mock('@/utils/litegraphUtil', () => ({
 vi.mock('@/i18n', () => ({
   st: vi.fn((key: string) => key)
 }))
-
-vi.mock(import('pinia'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    storeToRefs: (store: Record<string, unknown>) => store
-  }
-})
 
 vi.mock(import('@/lib/litegraph/src/litegraph'), async (importOriginal) => {
   const actual = await importOriginal()
@@ -213,13 +234,17 @@ const renderOptions = {
 }
 
 describe('RightSidePanel', () => {
+  let canvasStore: ReturnType<typeof useCanvasStore>
+  let rightSidePanelStore: ReturnType<typeof useRightSidePanelStore>
+
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
-    mockSelectedItems.value = []
+    canvasStore = useCanvasStore()
+    rightSidePanelStore = useRightSidePanelStore()
+    canvasStore.selectedItems = []
     mockActiveWorkflow.value = { path: 'wf-1' }
-    mockActiveTab.value = 'parameters'
-    mockIsEditingSubgraph.value = false
+    rightSidePanelStore.activeTab = 'parameters'
     mountCounters.tabNodes = 0
     mountCounters.tabNormalInputs = 0
     mountCounters.tabSubgraphInputs = 0
@@ -231,7 +256,7 @@ describe('RightSidePanel', () => {
   })
 
   it('remounts TabNodes when the active workflow path changes', async () => {
-    mockActiveTab.value = 'nodes'
+    rightSidePanelStore.activeTab = 'nodes'
 
     render(RightSidePanel, renderOptions)
     await nextTick()
@@ -252,7 +277,7 @@ describe('RightSidePanel', () => {
   })
 
   it('does not remount TabNodes when the workflow path stays the same', async () => {
-    mockActiveTab.value = 'nodes'
+    rightSidePanelStore.activeTab = 'nodes'
 
     render(RightSidePanel, renderOptions)
     await nextTick()
@@ -270,7 +295,7 @@ describe('RightSidePanel', () => {
   })
 
   it('uses an empty workflow key when no workflow is active', async () => {
-    mockActiveTab.value = 'nodes'
+    rightSidePanelStore.activeTab = 'nodes'
     mockActiveWorkflow.value = null
 
     render(RightSidePanel, renderOptions)
@@ -293,8 +318,8 @@ describe('RightSidePanel', () => {
       widgets: []
     })
 
-    mockSelectedItems.value = [node1]
-    mockActiveTab.value = 'parameters'
+    canvasStore.selectedItems = [node1]
+    rightSidePanelStore.activeTab = 'parameters'
 
     render(RightSidePanel, renderOptions)
     await nextTick()
@@ -305,7 +330,7 @@ describe('RightSidePanel', () => {
       .getAttribute('data-mount-id')
     expect(initial).toBeTruthy()
 
-    mockSelectedItems.value = [node2]
+    canvasStore.selectedItems = [node2]
     await nextTick()
     await nextTick()
 
@@ -323,8 +348,8 @@ describe('RightSidePanel', () => {
       widgets: []
     })
 
-    mockSelectedItems.value = [node]
-    mockActiveTab.value = 'parameters'
+    canvasStore.selectedItems = [node]
+    rightSidePanelStore.activeTab = 'parameters'
 
     render(RightSidePanel, renderOptions)
     await nextTick()

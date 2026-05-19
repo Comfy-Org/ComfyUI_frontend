@@ -42,7 +42,7 @@ vi.mock('@/scripts/ui/draggableList', () => ({
   DraggableList: vi.fn().mockImplementation(() => ({ dispose: vi.fn() }))
 }))
 
-const FormSearchInputStub = defineComponent({
+const AsyncSearchInputStub = defineComponent({
   props: {
     modelValue: { type: String, default: '' },
     searcher: { type: Function, default: undefined }
@@ -104,7 +104,7 @@ function renderComponent() {
     global: {
       plugins: [i18n],
       stubs: {
-        FormSearchInput: FormSearchInputStub,
+        AsyncSearchInput: AsyncSearchInputStub,
         SectionWidgets: SectionWidgetsStub
       }
     }
@@ -148,7 +148,7 @@ describe('TabGlobalParameters', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          FormSearchInput: FormSearchInputStub,
+          AsyncSearchInput: AsyncSearchInputStub,
           SectionWidgets: SectionWidgetsStub
         }
       }

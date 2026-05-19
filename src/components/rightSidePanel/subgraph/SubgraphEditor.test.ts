@@ -59,7 +59,7 @@ vi.mock('@/lib/litegraph/src/subgraph/SubgraphNode', () => {
   return { SubgraphNode }
 })
 
-const FormSearchInputStub = defineComponent({
+const AsyncSearchInputStub = defineComponent({
   props: {
     modelValue: { type: String, default: '' }
   },
@@ -157,7 +157,7 @@ const renderOptions = {
   global: {
     plugins: [i18n],
     stubs: {
-      FormSearchInput: FormSearchInputStub,
+      AsyncSearchInput: AsyncSearchInputStub,
       SubgraphNodeWidget: SubgraphNodeWidgetStub,
       DraggableList: DraggableListStub,
       Button: { template: '<button v-bind="$attrs"><slot /></button>' }

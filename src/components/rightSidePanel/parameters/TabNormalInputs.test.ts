@@ -16,7 +16,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
-const FormSearchInputStub = defineComponent({
+const AsyncSearchInputStub = defineComponent({
   props: {
     modelValue: { type: String, default: '' },
     searcher: { type: Function, default: undefined }
@@ -113,7 +113,7 @@ describe('TabNormalInputs', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          FormSearchInput: FormSearchInputStub,
+          AsyncSearchInput: AsyncSearchInputStub,
           SectionWidgets: SectionWidgetsStub,
           CollapseToggleButton: { template: '<div />' }
         }
@@ -152,7 +152,7 @@ describe('TabNormalInputs', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          FormSearchInput: FormSearchInputStub,
+          AsyncSearchInput: AsyncSearchInputStub,
           SectionWidgets: SectionWidgetsStub,
           CollapseToggleButton: { template: '<div />' }
         }
