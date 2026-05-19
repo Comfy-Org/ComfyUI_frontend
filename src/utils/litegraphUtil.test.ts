@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { WidgetEntityId } from '@/world/entityIds'
 import { widgetEntityId } from '@/world/entityIds'
 
@@ -160,14 +159,10 @@ describe('getWidgetEntityIdForNode', () => {
     } as unknown as LGraphNode
   }
 
-  function pojoWidget(name: string): IBaseWidget {
-    return { name, type: 'custom', value: 0, options: {} } as IBaseWidget
-  }
-
   it('returns widget.entityId when present', () => {
     const node = fakeNode(7)
     const widget = {
-      ...pojoWidget('seed'),
+      name: 'seed',
       entityId: 'precomputed:7:seed' as WidgetEntityId
     }
     expect(getWidgetEntityIdForNode(node, widget)).toBe('precomputed:7:seed')
@@ -175,19 +170,18 @@ describe('getWidgetEntityIdForNode', () => {
 
   it('derives an entityId for plain POJO widgets bound to a node', () => {
     const node = fakeNode(42)
-    const widget = pojoWidget('legacy_widget')
-    expect(getWidgetEntityIdForNode(node, widget)).toBe(
+    expect(getWidgetEntityIdForNode(node, { name: 'legacy_widget' })).toBe(
       widgetEntityId(graphId, 42, 'legacy_widget')
     )
   })
 
   it('returns undefined when the node has no graph', () => {
     const node = fakeNode(1, { detached: true })
-    expect(getWidgetEntityIdForNode(node, pojoWidget('x'))).toBeUndefined()
+    expect(getWidgetEntityIdForNode(node, { name: 'x' })).toBeUndefined()
   })
 
   it('returns undefined for placeholder node id (-1)', () => {
     const node = fakeNode(-1)
-    expect(getWidgetEntityIdForNode(node, pojoWidget('x'))).toBeUndefined()
+    expect(getWidgetEntityIdForNode(node, { name: 'x' })).toBeUndefined()
   })
 })

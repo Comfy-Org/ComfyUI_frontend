@@ -374,7 +374,7 @@ export function resolveNodeWidget(
 
 export function getWidgetEntityIdForNode(
   node: LGraphNode,
-  widget: IBaseWidget
+  widget: Pick<IBaseWidget, 'name' | 'entityId'>
 ): WidgetEntityId | undefined {
   if (widget.entityId) return widget.entityId
   const graphId = node.graph?.rootGraph.id
