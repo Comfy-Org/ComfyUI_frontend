@@ -66,6 +66,7 @@ export function useNodeMenuOptions() {
       icon: 'icon-[lucide--box]',
       hasSubmenu: true,
       submenu: shapeSubmenu.value,
+      isShapePicker: true,
       action: () => {}
     },
     {
