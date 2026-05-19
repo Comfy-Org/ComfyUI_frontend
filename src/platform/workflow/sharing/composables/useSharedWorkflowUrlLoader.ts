@@ -76,21 +76,10 @@ export function useSharedWorkflowUrlLoader() {
     shareId: string
   ): Promise<DialogResult> {
     function setOpeningAction(openingAction: OpeningAction) {
-      const dialog = dialogStore.dialogStack.find(
-        (item) => item.key === OPEN_SHARED_WORKFLOW_DIALOG_KEY
-      )
-      if (!dialog) return
-
-      dialog.contentProps = {
-        ...dialog.contentProps,
-        openingAction
-      }
-      dialog.dialogComponentProps = {
-        ...dialog.dialogComponentProps,
-        closable: false,
-        closeOnEscape: false,
-        dismissableMask: false
-      }
+      dialogStore.updateDialog({
+        key: OPEN_SHARED_WORKFLOW_DIALOG_KEY,
+        contentProps: { openingAction }
+      })
     }
 
     return new Promise<DialogResult>((resolve) => {

@@ -304,26 +304,12 @@ describe('OpenSharedWorkflowDialogContent', () => {
       expect(container.textContent).not.toContain(
         'Opening the workflow will create a new copy in your workspace'
       )
+      expect(screen.getByTestId('open-shared-workflow-close')).toBeEnabled()
+      expect(screen.getByTestId('open-shared-workflow-cancel')).toBeDisabled()
       expect(
-        container.querySelector(
-          '[data-testid="open-shared-workflow-close"]'
-        ) as HTMLButtonElement
+        screen.getByTestId('open-shared-workflow-open-without-importing')
       ).toBeDisabled()
-      expect(
-        container.querySelector(
-          '[data-testid="open-shared-workflow-cancel"]'
-        ) as HTMLButtonElement
-      ).toBeDisabled()
-      expect(
-        container.querySelector(
-          '[data-testid="open-shared-workflow-open-without-importing"]'
-        ) as HTMLButtonElement
-      ).toBeDisabled()
-      expect(
-        container.querySelector(
-          '[data-testid="open-shared-workflow-confirm"]'
-        ) as HTMLButtonElement
-      ).toBeDisabled()
+      expect(screen.getByTestId('open-shared-workflow-confirm')).toBeDisabled()
     })
 
     it('filters out assets already in library', async () => {

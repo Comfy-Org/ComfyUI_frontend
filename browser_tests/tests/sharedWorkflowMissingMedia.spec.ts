@@ -36,12 +36,14 @@ async function expectImportPrecedesPublicInclusiveInputAssetScan(
 
 async function getCachedMissingMediaWarningNames(
   comfyPage: ComfyPage
-): Promise<string[]> {
+): Promise<string[] | null> {
   return await comfyPage.page.evaluate(() => {
     const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
       .activeWorkflow
+    if (!workflow) return null
+
     return (
-      workflow?.pendingWarnings?.missingMediaCandidates?.map(
+      workflow.pendingWarnings?.missingMediaCandidates?.map(
         (candidate) => candidate.name
       ) ?? []
     )
@@ -58,7 +60,9 @@ async function expectNoMissingMediaAfterPublicInclusiveAssetScan(
   await expect(
     comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
   ).toBeHidden()
-  expect(await getCachedMissingMediaWarningNames(comfyPage)).toEqual([])
+  await expect
+    .poll(() => getCachedMissingMediaWarningNames(comfyPage))
+    .toEqual([])
 }
 
 async function openPanelAndExpectNoMissingMedia(
@@ -81,7 +85,8 @@ async function openPanelAndExpectNoMissingMedia(
 const test = mergeTests(comfyPageFixture, sharedWorkflowImportFixture)
 
 test.describe('Shared workflow missing media', { tag: '@cloud' }, () => {
-  // Missing media only surfaces the overlay when the Errors tab is enabled.
+  // Missing media only surfaces the overlay when the Errors tab is enabled
+  // (src/stores/executionErrorStore.ts).
   test.use({
     initialSettings: {
       'Comfy.RightSidePanel.ShowErrorsTab': true

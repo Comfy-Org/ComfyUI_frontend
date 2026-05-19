@@ -16,7 +16,6 @@
       <Button
         data-testid="open-shared-workflow-close"
         size="icon"
-        :disabled="isOpening"
         :aria-label="$t('g.close')"
         @click="onCancel"
       >
@@ -74,13 +73,13 @@
             {{ workflowName }}
           </h2>
           <p
-            :role="isOpening ? 'status' : undefined"
-            :aria-live="isOpening ? 'polite' : undefined"
+            role="status"
+            aria-live="polite"
             class="m-0 flex items-center gap-2 text-sm text-muted-foreground"
           >
             <i
               v-if="isOpening"
-              class="pi pi-spin pi-spinner"
+              class="icon-[lucide--loader-circle] size-4 motion-safe:animate-spin"
               aria-hidden="true"
             />
             <span>

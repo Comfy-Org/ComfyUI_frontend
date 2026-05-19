@@ -88,6 +88,7 @@ const mockDialogStack = vi.hoisted(
       dialogComponentProps: Record<string, unknown>
     }>
 )
+const mockUpdateDialog = vi.hoisted(() => vi.fn())
 
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
@@ -98,7 +99,8 @@ vi.mock('@/services/dialogService', () => ({
 vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({
     dialogStack: mockDialogStack,
-    closeDialog: mockCloseDialog
+    closeDialog: mockCloseDialog,
+    updateDialog: mockUpdateDialog
   })
 }))
 
@@ -174,6 +176,32 @@ describe('useSharedWorkflowUrlLoader', () => {
     mockQueryParams = {}
     mockDialogStack.length = 0
     mockShowLayoutDialog.mockImplementation(createDialogInstance)
+    mockUpdateDialog.mockImplementation(
+      (options: {
+        key: string
+        contentProps?: Record<string, unknown>
+        dialogComponentProps?: Record<string, unknown>
+      }) => {
+        const dialog = mockDialogStack.find((item) => item.key === options.key)
+        if (!dialog) return false
+
+        if (options.contentProps) {
+          dialog.contentProps = {
+            ...dialog.contentProps,
+            ...options.contentProps
+          }
+        }
+
+        if (options.dialogComponentProps) {
+          dialog.dialogComponentProps = {
+            ...dialog.dialogComponentProps,
+            ...options.dialogComponentProps
+          }
+        }
+
+        return true
+      }
+    )
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
 
@@ -241,9 +269,13 @@ describe('useSharedWorkflowUrlLoader', () => {
     await Promise.resolve()
 
     expect(dialogInstance.contentProps.openingAction).toBe('copy-and-open')
-    expect(dialogInstance.dialogComponentProps.closable).toBe(false)
-    expect(dialogInstance.dialogComponentProps.closeOnEscape).toBe(false)
-    expect(dialogInstance.dialogComponentProps.dismissableMask).toBe(false)
+    expect(mockUpdateDialog).toHaveBeenCalledWith({
+      key: 'open-shared-workflow',
+      contentProps: { openingAction: 'copy-and-open' }
+    })
+    expect(dialogInstance.dialogComponentProps.closable).toBeUndefined()
+    expect(dialogInstance.dialogComponentProps.closeOnEscape).toBeUndefined()
+    expect(dialogInstance.dialogComponentProps.dismissableMask).toBeUndefined()
     expect(mockCloseDialog).not.toHaveBeenCalled()
 
     graphLoad.resolve()
