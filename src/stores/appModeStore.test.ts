@@ -366,6 +366,10 @@ describe('appModeStore', () => {
       })
 
       expect(store.selectedInputs).toEqual([[entityPrompt, 'prompt']])
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('dropping legacy selectedInput tuple'),
+        expect.objectContaining({ widgetName: 'deleted_widget' })
+      )
       warnSpy.mockRestore()
     })
 
