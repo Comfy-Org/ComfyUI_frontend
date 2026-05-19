@@ -16,7 +16,7 @@ export type ResultItemType = z.infer<typeof resultItemType>
 const zCustomNodesI18n = z.record(z.string(), z.unknown())
 export type CustomNodesI18n = z.infer<typeof zCustomNodesI18n>
 
-const zResultItem = z.object({
+export const zResultItem = z.object({
   filename: z.string().optional(),
   subfolder: z.string().optional(),
   type: resultItemType.optional(),
@@ -238,6 +238,12 @@ const zDeviceStats = z.object({
   torch_vram_free: z.number()
 })
 
+const zComfyPackageVersion = z.object({
+  name: z.string(),
+  installed: z.string().nullable(),
+  required: z.string().nullable()
+})
+
 const zSystemStats = z.object({
   system: z.object({
     os: z.string(),
@@ -254,7 +260,8 @@ const zSystemStats = z.object({
     comfyui_frontend_version: z.string().optional(),
     workflow_templates_version: z.string().optional(),
     installed_templates_version: z.string().optional(),
-    required_templates_version: z.string().optional()
+    required_templates_version: z.string().optional(),
+    comfy_package_versions: z.array(zComfyPackageVersion).optional()
   }),
   devices: z.array(zDeviceStats)
 })
@@ -335,6 +342,7 @@ const zSettings = z.object({
   'Comfy.ModelLibrary.AutoLoadAll': z.boolean(),
   'Comfy.ModelLibrary.NameFormat': z.enum(['filename', 'title']),
   'Comfy.NodeSearchBoxImpl.NodePreview': z.boolean(),
+  'Comfy.NodeSearchBoxImpl.FollowCursor': z.boolean(),
   'Comfy.NodeSearchBoxImpl': z.enum([
     'default',
     'v1 (legacy)',

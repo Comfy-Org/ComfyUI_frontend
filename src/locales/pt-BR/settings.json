@@ -272,6 +272,10 @@
       "v1 (legacy)": "v1 (legado)"
     }
   },
+  "Comfy_NodeSearchBoxImpl_FollowCursor": {
+    "name": "Nós adicionados seguem o cursor",
+    "tooltip": "Quando ativado, os nós adicionados pela caixa de pesquisa seguem o cursor até serem clicados para posicionar. Aplica-se apenas à implementação padrão."
+  },
   "Comfy_NodeSearchBoxImpl_NodePreview": {
     "name": "Pré-visualização do nó",
     "tooltip": "Aplica-se apenas à implementação padrão"

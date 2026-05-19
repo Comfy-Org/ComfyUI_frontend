@@ -39,6 +39,7 @@
         >
           <InputSlot
             v-if="widget.slotMetadata"
+            :key="`widget-slot-${widget.name}-${widget.slotMetadata.index}`"
             :slot-data="{
               name: widget.name,
               type: widget.slotMetadata.type,
@@ -89,7 +90,8 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
-import { cn } from '@/utils/tailwindUtil'
+import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
 
@@ -133,4 +135,9 @@ const {
   processedWidgets,
   showAdvanced
 } = useProcessedWidgets(() => nodeData)
+
+// Tracks widget-row growth that the node-level RO can't see
+if (nodeData?.id != null) {
+  useVueElementTracking(String(nodeData.id), 'widgets-grid')
+}
 </script>

@@ -3,6 +3,7 @@ import type { Locale } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
 import NodeBadge from '../common/NodeBadge.vue'
+import SectionLabel from '../common/SectionLabel.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -34,11 +35,9 @@ const values: {
 <template>
   <section class="px-6 py-24 lg:px-20 lg:py-32">
     <div class="mx-auto max-w-5xl text-center">
-      <span
-        class="text-primary-comfy-yellow text-xs font-semibold tracking-widest uppercase"
-      >
+      <SectionLabel>
         {{ t('about.values.label', locale) }}
-      </span>
+      </SectionLabel>
       <h2
         class="text-primary-comfy-canvas mt-6 text-3xl font-light lg:text-5xl"
       >
@@ -60,10 +59,10 @@ const values: {
           >
             <NodeBadge
               :segments="values[0].segments"
-              segment-class="lg:py-3"
+              size-class="h-9 lg:h-12"
               text-class="text-2xl lg:text-3xl"
             />
-            <p class="text-primary-warm-white mt-4 text-sm/relaxed">
+            <p class="text-primary-comfy-canvas mt-4 text-sm/relaxed">
               {{ t(values[0].bodyKey, locale) }}
             </p>
           </div>
@@ -78,10 +77,10 @@ const values: {
           >
             <NodeBadge
               :segments="values[1].segments"
-              segment-class="lg:py-3"
+              size-class="h-9 lg:h-12"
               text-class="text-2xl lg:text-3xl"
             />
-            <p class="text-primary-warm-white mt-4 text-sm/relaxed">
+            <p class="text-primary-comfy-canvas mt-4 text-sm/relaxed">
               {{ t(values[1].bodyKey, locale) }}
             </p>
           </div>
@@ -101,10 +100,10 @@ const values: {
         <div class="border-primary-comfy-yellow rounded-3xl border p-8">
           <NodeBadge
             :segments="values[2].segments"
-            segment-class="px-3"
+            size-class="h-9 lg:h-12"
             text-class="text-2xl lg:text-3xl"
           />
-          <p class="text-primary-warm-white mt-4 text-sm/relaxed">
+          <p class="text-primary-comfy-canvas mt-4 text-sm/relaxed">
             {{ t(values[2].bodyKey, locale) }}
           </p>
         </div>
@@ -123,10 +122,10 @@ const values: {
         <div class="border-primary-comfy-yellow rounded-3xl border p-8">
           <NodeBadge
             :segments="values[3].segments"
-            segment-class="px-3"
+            size-class="h-9 lg:h-12"
             text-class="text-2xl lg:text-3xl"
           />
-          <p class="text-primary-warm-white mt-4 text-sm/relaxed">
+          <p class="text-primary-comfy-canvas mt-4 text-sm/relaxed">
             {{ t(values[3].bodyKey, locale) }}
           </p>
         </div>
@@ -152,10 +151,11 @@ const values: {
           >
             <NodeBadge
               :segments="value.segments"
-              segment-class="px-3"
-              text-class="text-2xl lg:text-3xl"
+              size-class="h-9 lg:h-12"
+              segment-class="px-3 sm:px-6"
+              text-class="text-xl sm:text-2xl lg:text-3xl"
             />
-            <p class="text-primary-warm-white mt-4 text-sm/relaxed">
+            <p class="text-primary-comfy-canvas mt-4 text-sm/relaxed">
               {{ t(value.bodyKey, locale) }}
             </p>
           </div>

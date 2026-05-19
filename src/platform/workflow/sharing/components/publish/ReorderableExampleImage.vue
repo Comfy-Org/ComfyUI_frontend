@@ -53,7 +53,7 @@ import {
   usePragmaticDroppable
 } from '@/composables/usePragmaticDragAndDrop'
 import type { ExampleImage } from '@/platform/workflow/sharing/types/comfyHubTypes'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { image, index, total, instanceId } = defineProps<{
   image: ExampleImage

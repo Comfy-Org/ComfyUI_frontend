@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
-import { getPromotedWidgetNames } from '@e2e/helpers/promotedWidgets'
+import { getPromotedWidgetNames } from '@e2e/fixtures/utils/promotedWidgets'
 
 const DOM_WIDGET_SELECTOR = '.comfy-multiline-input'
 const VISIBLE_DOM_WIDGET_SELECTOR = `${DOM_WIDGET_SELECTOR}:visible`

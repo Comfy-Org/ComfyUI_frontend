@@ -25,8 +25,7 @@ const steps = [
   },
   {
     number: '2',
-    title: t('getStarted.step2.title', locale),
-    description: t('getStarted.step2.description', locale)
+    title: t('getStarted.step2.title', locale)
   },
   {
     number: '3',
@@ -73,6 +72,17 @@ const steps = [
             class="text-primary-comfy-canvas flex-1 text-sm"
           >
             {{ step.description }}
+          </p>
+          <p
+            v-else-if="step.number === '2'"
+            class="text-primary-comfy-canvas flex-1 text-sm"
+          >
+            {{ t('getStarted.step2.descriptionPrefix', locale)
+            }}<a
+              :href="externalLinks.workflows"
+              class="text-primary-comfy-yellow hover:underline"
+              >{{ t('getStarted.step2.descriptionLink', locale) }}</a
+            >{{ t('getStarted.step2.descriptionSuffix', locale) }}
           </p>
           <p v-if="step.links" class="flex-1 text-sm">
             <template v-for="(link, i) in step.links" :key="link.href">

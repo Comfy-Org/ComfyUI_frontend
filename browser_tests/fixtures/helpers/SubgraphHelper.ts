@@ -9,12 +9,17 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { SubgraphEditor } from '@e2e/fixtures/components/SubgraphEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 import { SubgraphSlotReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 export class SubgraphHelper {
-  constructor(private readonly comfyPage: ComfyPage) {}
+  public readonly editor: SubgraphEditor
+
+  constructor(private readonly comfyPage: ComfyPage) {
+    this.editor = new SubgraphEditor(comfyPage)
+  }
 
   private get page(): Page {
     return this.comfyPage.page
@@ -327,11 +332,40 @@ export class SubgraphHelper {
     await this.comfyPage.nextFrame()
   }
 
+  async promoteWidget(nodeLocator: Locator, widgetName: string): Promise<void> {
+    const widget = nodeLocator.getByLabel(widgetName, { exact: true })
+    await this.comfyPage.contextMenu
+      .openFor(widget)
+      .then((m) => m.clickMenuItemExact(`Promote Widget: ${widgetName}`))
+  }
+
+  async unpromoteWidget(
+    nodeLocator: Locator,
+    widgetName: string
+  ): Promise<void> {
+    const widget = nodeLocator.getByLabel(widgetName, { exact: true })
+    await this.comfyPage.contextMenu
+      .openFor(widget)
+      .then((m) => m.clickMenuItemExact(`Un-Promote Widget: ${widgetName}`))
+  }
+
   async isInSubgraph(): Promise<boolean> {
     return this.page.evaluate(() => {
       const graph = window.app!.canvas.graph
       return !!graph && 'inputNode' in graph
     })
+  }
+
+  /** ID of the graph currently shown on the canvas (root graph or subgraph). */
+  async getActiveGraphId(): Promise<string | null> {
+    return this.page.evaluate(() => window.app!.canvas.graph?.id ?? null)
+  }
+
+  /** ID of the root graph of the active workflow. */
+  async getRootGraphId(): Promise<string | null> {
+    return this.page.evaluate(
+      () => window.app!.canvas.graph?.rootGraph?.id ?? null
+    )
   }
 
   async exitViaBreadcrumb(): Promise<void> {
@@ -350,6 +384,9 @@ export class SubgraphHelper {
 
     await this.comfyPage.nextFrame()
     await expect.poll(async () => this.isInSubgraph()).toBe(false)
+    if (this.comfyPage.isVueNodes) {
+      await this.comfyPage.vueNodes.waitForNodes()
+    }
   }
 
   async countGraphPseudoPreviewEntries(): Promise<number> {

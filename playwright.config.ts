@@ -8,7 +8,10 @@ const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
       workers: 1,
       use: {
         trace: 'on',
-        video: 'on'
+        video: 'on',
+        launchOptions: {
+          slowMo: Number(process.env.SLOW_MO) || 0
+        }
       }
     }
   : {

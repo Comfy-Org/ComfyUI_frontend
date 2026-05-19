@@ -26,6 +26,8 @@ import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
+import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
+
 const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {
   controlValues?: TWidgetValue[]
@@ -43,49 +45,15 @@ export class PrimitiveNode extends LGraphNode {
   }
 
   override applyToGraph(extraLinks: LLink[] = []) {
-    if (!this.outputs[0].links?.length || !this.graph) return
+    const sourceWidget = this.widgets?.[0]
+    const graph = this.graph
+    if (!sourceWidget || !graph) return
 
-    const links = [
-      ...this.outputs[0].links.map((l) => this.graph!.links[l]),
-      ...extraLinks
-    ]
-    let v = this.widgets?.[0].value
+    let v = sourceWidget.value
     if (v && this.properties[replacePropertyName]) {
-      v = applyTextReplacements(this.graph, v as string)
+      v = applyTextReplacements(graph, v as string)
     }
-
-    // For each output link copy our value over the original widget value
-    for (const linkInfo of links) {
-      const node = this.graph?.getNodeById(linkInfo.target_id)
-      const input = node?.inputs[linkInfo.target_slot]
-      if (!input) {
-        console.warn('Unable to resolve node or input for link', linkInfo)
-        continue
-      }
-
-      const widgetName = input.widget?.name
-      if (!widgetName) {
-        console.warn('Invalid widget or widget name', input.widget)
-        continue
-      }
-
-      const widget = node.widgets?.find((w) => w.name === widgetName)
-      if (!widget) {
-        console.warn(
-          `Unable to find widget "${widgetName}" on node [${node.id}]`
-        )
-        continue
-      }
-
-      widget.value = v
-      widget.callback?.(
-        widget.value,
-        app.canvas,
-        node,
-        app.canvas.graph_mouse,
-        {} as CanvasPointerEvent
-      )
-    }
+    applyFirstWidgetValueToGraph(this, extraLinks, () => v)
   }
 
   override refreshComboInNode() {
@@ -98,7 +66,7 @@ export class PrimitiveNode extends LGraphNode {
       if (!widget.options.values.includes(widget.value as string)) {
         // @ts-expect-error fixme ts strict error
         widget.value = widget.options.values[0]
-        ;(widget.callback as Function)(widget.value)
+        widget.callback?.(widget.value)
       }
     }
   }
@@ -273,7 +241,7 @@ export class PrimitiveNode extends LGraphNode {
       )
       if (this.widgets?.[1]) widget.linkedWidgets = [this.widgets[1]]
 
-      let filter = this.widgets_values?.[2]
+      const filter = this.widgets_values?.[2]
       if (filter && this.widgets && this.widgets.length === 3) {
         this.widgets[2].value = filter
       }

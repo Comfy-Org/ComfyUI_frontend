@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
 import type { GalleryItem } from './GallerySection.vue'
+
+import GalleryItemAttribution from './GalleryItemAttribution.vue'
 
 const {
   item,
   locale = 'en',
-  hero = false,
+  aspect = 'var(--aspect-ratio-gallery-card)',
   mobile = false
 } = defineProps<{
   item: GalleryItem
   locale?: Locale
-  hero?: boolean
+  aspect?: string
   mobile?: boolean
 }>()
 
@@ -21,10 +22,20 @@ defineEmits<{ click: [] }>()
 <template>
   <div class="group block cursor-pointer" @click="$emit('click')">
     <div
-      class="relative overflow-hidden rounded-2xl"
-      :class="hero ? 'aspect-21/9' : mobile ? 'aspect-4/3' : 'aspect-3/2'"
+      class="rounded-4.5xl relative overflow-hidden"
+      :style="{ aspectRatio: aspect }"
     >
+      <video
+        v-if="item.video"
+        :src="item.video"
+        autoplay
+        loop
+        muted
+        playsinline
+        class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+      />
       <img
+        v-else
         :src="item.image"
         :alt="item.title"
         class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -38,16 +49,7 @@ defineEmits<{ click: [] }>()
           <div class="gap-2">
             <p class="text-sm font-bold text-white">{{ item.title }}</p>
             <p class="text-primary-comfy-canvas text-xs">
-              {{ t('gallery.card.by', locale) }}
-              <span class="text-primary-comfy-yellow">{{
-                item.userAlias
-              }}</span>
-              {{ t('gallery.card.and', locale) }}
-              <span class="text-primary-comfy-yellow">{{
-                item.teamAlias
-              }}</span>
-              {{ t('gallery.card.teamUsing', locale) }}
-              <span class="text-primary-comfy-yellow">{{ item.tool }}</span>
+              <GalleryItemAttribution :item :locale />
             </p>
           </div>
           <span
@@ -76,12 +78,7 @@ defineEmits<{ click: [] }>()
     <div v-if="mobile" class="mt-2 gap-2">
       <p class="text-sm font-bold text-white">{{ item.title }}</p>
       <p class="text-primary-comfy-canvas text-xs">
-        {{ t('gallery.card.by', locale) }}
-        <span class="text-primary-comfy-yellow">{{ item.userAlias }}</span>
-        {{ t('gallery.card.and', locale) }}
-        <span class="text-primary-comfy-yellow">{{ item.teamAlias }}</span>
-        {{ t('gallery.card.teamUsing', locale) }}
-        <span class="text-primary-comfy-yellow">{{ item.tool }}</span>
+        <GalleryItemAttribution :item :locale />
       </p>
     </div>
   </div>

@@ -7,6 +7,9 @@ const mockGetNodeByExecutionId = vi.fn()
 const mockResolveNodeDisplayName = vi.fn()
 const mockValidateSourceUrl = vi.fn()
 const mockGetAssetMetadata = vi.fn()
+const mockUploadAssetAsync = vi.fn()
+const mockTrackDownload = vi.fn()
+const mockInvalidateModelsForCategory = vi.fn()
 const mockGetAssetDisplayName = vi.fn((a: { name: string }) => a.name)
 const mockGetAssetFilename = vi.fn((a: { name: string }) => a.name)
 const mockGetAssets = vi.fn()
@@ -54,7 +57,7 @@ vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({
     getAssets: mockGetAssets,
     updateModelsForNodeType: mockUpdateModelsForNodeType,
-    invalidateModelsForCategory: vi.fn(),
+    invalidateModelsForCategory: mockInvalidateModelsForCategory,
     updateModelsForTag: vi.fn()
   })
 }))
@@ -64,7 +67,7 @@ vi.mock('@/stores/assetDownloadStore', () => ({
     get downloadList() {
       return mockDownloadList()
     },
-    trackDownload: vi.fn()
+    trackDownload: mockTrackDownload
   })
 }))
 
@@ -76,7 +79,8 @@ vi.mock('@/stores/modelToNodeStore', () => ({
 
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
-    getAssetMetadata: (...args: unknown[]) => mockGetAssetMetadata(...args)
+    getAssetMetadata: (...args: unknown[]) => mockGetAssetMetadata(...args),
+    uploadAssetAsync: (...args: unknown[]) => mockUploadAssetAsync(...args)
   }
 }))
 
@@ -511,6 +515,147 @@ describe('useMissingModelInteractions', () => {
 
       const { getTypeMismatch } = useMissingModelInteractions()
       expect(getTypeMismatch('key1', 'checkpoints')).toBeNull()
+    })
+  })
+
+  describe('getComboOptions', () => {
+    it('returns assets from assetsStore when the model is asset-supported', () => {
+      mockGetAssets.mockReturnValueOnce([
+        { name: 'modelA.safetensors' },
+        { name: 'modelB.safetensors' }
+      ])
+
+      const { getComboOptions } = useMissingModelInteractions()
+      const options = getComboOptions(makeCandidate({ isAssetSupported: true }))
+
+      expect(mockGetAssets).toHaveBeenCalledWith('CheckpointLoaderSimple')
+      expect(options).toEqual([
+        { name: 'modelA.safetensors', value: 'modelA.safetensors' },
+        { name: 'modelB.safetensors', value: 'modelB.safetensors' }
+      ])
+    })
+
+    it('returns widget options when the model is not asset-supported', () => {
+      ;(app as { rootGraph: unknown }).rootGraph = {}
+      mockGetNodeByExecutionId.mockReturnValue({
+        widgets: [
+          {
+            name: 'ckpt_name',
+            value: '',
+            options: { values: ['v1.safetensors', 'v2.safetensors'] }
+          }
+        ]
+      })
+
+      const { getComboOptions } = useMissingModelInteractions()
+      const options = getComboOptions(makeCandidate())
+
+      expect(options).toEqual([
+        { name: 'v1.safetensors', value: 'v1.safetensors' },
+        { name: 'v2.safetensors', value: 'v2.safetensors' }
+      ])
+    })
+
+    it('returns an empty array when the widget has no options.values', () => {
+      ;(app as { rootGraph: unknown }).rootGraph = {}
+      mockGetNodeByExecutionId.mockReturnValue({
+        widgets: [{ name: 'ckpt_name', value: '' }]
+      })
+
+      const { getComboOptions } = useMissingModelInteractions()
+      expect(getComboOptions(makeCandidate())).toEqual([])
+    })
+  })
+
+  describe('getDownloadStatus', () => {
+    it('returns null when no taskId is tracked for the key', () => {
+      const { getDownloadStatus } = useMissingModelInteractions()
+      expect(getDownloadStatus('key1')).toBeNull()
+    })
+
+    it('returns the matching download record when a taskId is tracked', () => {
+      const store = useMissingModelStore()
+      store.importTaskIds['key1'] = 'task-42'
+      mockDownloadList.mockReturnValue([
+        { taskId: 'task-other', status: 'running' },
+        { taskId: 'task-42', status: 'created' }
+      ])
+
+      const { getDownloadStatus } = useMissingModelInteractions()
+      expect(getDownloadStatus('key1')).toEqual({
+        taskId: 'task-42',
+        status: 'created'
+      })
+    })
+  })
+
+  describe('handleImport', () => {
+    const setupImportableState = (key: string) => {
+      const store = useMissingModelStore()
+      store.urlInputs[key] = 'https://civitai.com/models/123'
+      store.urlMetadata[key] = {
+        filename: 'model.safetensors',
+        name: 'model'
+      } as never
+      mockValidateSourceUrl.mockReturnValue(true)
+      return store
+    }
+
+    it('tracks an async-pending result via importTaskIds and trackDownload', async () => {
+      const store = setupImportableState('key1')
+      mockUploadAssetAsync.mockResolvedValueOnce({
+        type: 'async',
+        task: { task_id: 'task-99', status: 'created' }
+      })
+
+      const { handleImport } = useMissingModelInteractions()
+      await handleImport('key1', 'checkpoints')
+
+      expect(store.importTaskIds['key1']).toBe('task-99')
+      expect(mockTrackDownload).toHaveBeenCalledWith(
+        'task-99',
+        'checkpoints',
+        'model.safetensors'
+      )
+    })
+
+    it('invalidates model caches when the async result is already completed', async () => {
+      setupImportableState('key1')
+      mockUploadAssetAsync.mockResolvedValueOnce({
+        type: 'async',
+        task: { task_id: 'task-100', status: 'completed' }
+      })
+
+      const { handleImport } = useMissingModelInteractions()
+      await handleImport('key1', 'checkpoints')
+
+      expect(mockInvalidateModelsForCategory).toHaveBeenCalledWith(
+        'checkpoints'
+      )
+    })
+
+    it('records importCategoryMismatch when sync result tags differ from groupDirectory', async () => {
+      const store = setupImportableState('key1')
+      mockUploadAssetAsync.mockResolvedValueOnce({
+        type: 'sync',
+        asset: { tags: ['models', 'loras'] }
+      })
+
+      const { handleImport } = useMissingModelInteractions()
+      await handleImport('key1', 'checkpoints')
+
+      expect(store.importCategoryMismatch['key1']).toBe('loras')
+    })
+
+    it('writes the error message to urlErrors when the upload rejects', async () => {
+      const store = setupImportableState('key1')
+      mockUploadAssetAsync.mockRejectedValueOnce(new Error('Upload boom'))
+
+      const { handleImport } = useMissingModelInteractions()
+      await handleImport('key1', 'checkpoints')
+
+      expect(store.urlErrors['key1']).toBe('Upload boom')
+      expect(store.urlImporting['key1']).toBe(false)
     })
   })
 })

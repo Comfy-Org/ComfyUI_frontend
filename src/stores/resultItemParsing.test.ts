@@ -11,6 +11,11 @@ function makeOutput(
 }
 
 describe(parseNodeOutput, () => {
+  it('returns empty array for nullish node output', () => {
+    expect(parseNodeOutput('1', null)).toEqual([])
+    expect(parseNodeOutput('1', undefined)).toEqual([])
+  })
+
   it('returns empty array for output with no known media types', () => {
     const result = parseNodeOutput('1', makeOutput({ text: 'hello' }))
     expect(result).toEqual([])
@@ -152,6 +157,22 @@ describe(parseNodeOutput, () => {
 })
 
 describe(parseTaskOutput, () => {
+  it('ignores nullish node outputs', () => {
+    const taskOutput: Record<string, NodeExecutionOutput | null | undefined> = {
+      '1': null,
+      '2': undefined,
+      '3': makeOutput({
+        images: [{ filename: 'a.png', subfolder: '', type: 'output' }]
+      })
+    }
+
+    const result = parseTaskOutput(taskOutput)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].nodeId).toBe('3')
+    expect(result[0].filename).toBe('a.png')
+  })
+
   it('flattens across multiple nodes', () => {
     const taskOutput: Record<string, NodeExecutionOutput> = {
       '1': makeOutput({

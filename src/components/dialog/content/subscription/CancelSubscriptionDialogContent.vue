@@ -51,6 +51,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useDialogStore } from '@/stores/dialogStore'
+import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
 
 const props = defineProps<{
   cancelAt?: string
@@ -64,9 +65,8 @@ const { cancelSubscription, fetchStatus, subscription } = useBillingContext()
 const isLoading = ref(false)
 
 const formattedEndDate = computed(() => {
-  const dateStr = props.cancelAt ?? subscription.value?.endDate
-  if (!dateStr) return t('subscription.cancelDialog.endOfBillingPeriod')
-  const date = new Date(dateStr)
+  const date = parseIsoDateSafe(props.cancelAt ?? subscription.value?.endDate)
+  if (!date) return t('subscription.cancelDialog.endOfBillingPeriod')
   return date.toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',

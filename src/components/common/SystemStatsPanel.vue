@@ -57,7 +57,7 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
 import type { SystemStats } from '@/schemas/apiSchema'
 import { formatCommitHash, formatSize } from '@/utils/formatUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const frontendCommit = __COMFYUI_FRONTEND_COMMIT__
 
