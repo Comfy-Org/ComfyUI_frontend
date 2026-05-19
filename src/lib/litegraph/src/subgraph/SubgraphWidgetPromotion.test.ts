@@ -897,7 +897,7 @@ describe('SubgraphWidgetPromotion', () => {
             s.title === 'Sampler' ? { ...s, hugeMaxSeed: true } : s
           )
         )
-        const [, , seed] = sources
+        const seed = sources[2]
         const host = createTestSubgraphNode(subgraph)
         if (c.expect.promptSeed !== undefined) {
           host.comfyClass = 'Subgraph'
