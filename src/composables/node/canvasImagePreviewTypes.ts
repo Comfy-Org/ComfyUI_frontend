@@ -2,7 +2,6 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 export const CANVAS_IMAGE_PREVIEW_WIDGET = '$$canvas-image-preview'
 
-/** Node types that project a `$$canvas-image-preview`. */
 const CANVAS_IMAGE_PREVIEW_NODE_TYPES = new Set([
   'KSampler',
   'KSamplerAdvanced',

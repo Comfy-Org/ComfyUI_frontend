@@ -322,7 +322,6 @@ describe('SubgraphWidgetPromotion', () => {
 
       hostNode.configure(serializedHostNode)
 
-      // ADR 0009: hydration observable via widgets surface, not properties.proxyWidgets.
       expect(hostNode.widgets).toHaveLength(1)
       expect(hostNode.widgets[0].name).toBe('batch_size')
       expect(hostNode.widgets[0].value).toBe(1)
@@ -330,11 +329,6 @@ describe('SubgraphWidgetPromotion', () => {
     })
 
     it('should prune proxyWidgets referencing nodes not in subgraph on configure', () => {
-      // Reproduces the bug where packing nodes into a nested subgraph leaves
-      // stale proxyWidgets on the outer subgraph node referencing grandchild
-      // node IDs that no longer exist directly in the outer subgraph.
-      // Uses 3 inputs with only 1 having a linked widget entry, matching the
-      // real workflow structure where model/vae inputs don't resolve widgets.
       const subgraph = createTestSubgraph({
         inputs: [
           { name: 'clip', type: 'CLIP' },
@@ -364,8 +358,6 @@ describe('SubgraphWidgetPromotion', () => {
       const outerNode = createTestSubgraphNode(subgraph)
       const keptSamplerNodeId = String(samplerNode.id)
 
-      // Inject stale proxyWidgets referencing nodes that don't exist in
-      // this subgraph (they were packed into a nested subgraph)
       outerNode.properties.proxyWidgets = [
         ['999', 'text'],
         ['998', 'text'],
@@ -386,9 +378,6 @@ describe('SubgraphWidgetPromotion', () => {
     })
 
     it('resolves legacy prefixed proxyWidgets via the immediate child PromotedWidgetView identity', () => {
-      // ADR 0009: opacity requires matching only the immediate child's
-      // PromotedWidgetView; legacy "<nestedId>: <leafId>: <leafWidgetName>"
-      // resolves via the child's exposed (sourceNodeId, sourceWidgetName).
       const rootGraph = createTestRootGraph()
 
       const innerSubgraph = createTestSubgraph({
@@ -456,8 +445,6 @@ describe('SubgraphWidgetPromotion', () => {
       const hostNode = createTestSubgraphNode(subgraph)
       const serialized = hostNode.serialize()
 
-      // ADR 0009: clones derive promoted widgets from the serialized
-      // inputs/links, not properties.proxyWidgets.
       const cloneNode = createTestSubgraphNode(subgraph)
       cloneNode.configure(serialized)
 

@@ -8,17 +8,8 @@ import type {
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
 
-/**
- * Widget state is keyed by `nodeId:widgetName` without graph context.
- * This is intentional: nodes viewed at different subgraph depths share
- * the same widget state, enabling synchronized values across the hierarchy.
- */
 type WidgetKey = `${NodeId}:${string}`
 
-/**
- * Strips graph/subgraph prefixes from a scoped node ID to get the bare node ID.
- * e.g., "graph1:subgraph2:42" → "42"
- */
 export function stripGraphPrefix(scopedId: NodeId | string): NodeId {
   return String(scopedId).replace(/^(.*:)+/, '') as NodeId
 }
@@ -87,11 +78,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return getWidgetStateMap(graphId).get(makeKey(nodeId, widgetName))
   }
 
-  /**
-   * Write a new value to an already-registered widget. Returns `false` if no
-   * such state exists. Prefer `writeWidgetValue(widget.entityId, value)` from
-   * `src/world/widgetValueIO.ts`, which delegates here.
-   */
   function setValue(
     graphId: UUID,
     nodeId: NodeId,

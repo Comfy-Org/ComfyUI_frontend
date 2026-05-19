@@ -132,11 +132,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._state.value = value
   }
 
-  /**
-   * Canonical identity within the root graph. `undefined` until {@link setNodeId}
-   * binds the widget. Structural equality over `(graph, node, name)` —
-   * single source of truth across Vue mapper, migration, and the value store.
-   */
   get entityId(): WidgetEntityId | undefined {
     const graphId = this.node.graph?.rootGraph.id
     const nodeId = this._state.nodeId

@@ -988,8 +988,6 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
   })
 
   it('warns when configuring a host with legacy proxyWidgets and no migration hook is wired', () => {
-    // Hook is wired in main.ts; configure() without it must warn so the
-    // missed migration is visible.
     const subgraph = createTestSubgraph()
     const sourceHost = createTestSubgraphNode(subgraph)
     sourceHost.graph!.add(sourceHost)

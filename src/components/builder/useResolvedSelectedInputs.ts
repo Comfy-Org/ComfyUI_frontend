@@ -9,10 +9,6 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import type { WidgetEntityId } from '@/world/entityIds'
 import { isWidgetEntityId, parseWidgetEntityId } from '@/world/entityIds'
 
-/**
- * Selection entry resolved against the live graph. `status: 'unknown'` is kept
- * (not dropped) so the UI can offer a "remove dangling selection" affordance.
- */
 export type ResolvedSelection =
   | {
       status: 'resolved'
@@ -29,14 +25,6 @@ export type ResolvedSelection =
       config?: InputWidgetConfig
     }
 
-/**
- * Resolve `appModeStore.selectedInputs` to live `(node, widget)` pairs so
- * handlers can act on widget instances without re-walking the graph.
- *
- * Slot-label renames mutate `widget.label` not `widget.name`, so entityIds
- * remain stable; any future path that mutates `widget.name` would silently
- * drop entries here and need a dedicated event.
- */
 export function useResolvedSelectedInputs() {
   const appModeStore = useAppModeStore()
 

@@ -165,8 +165,6 @@ describe('SubgraphEditor', () => {
         .map((el) => el.textContent?.trim())
     ).toEqual(['first', 'second'])
 
-    // Exercises `reorderSubgraphInputsByWidgetOrder`, which previously needed
-    // a manual `inputOrderVersion` bump for the sidebar to re-render.
     const promotedWidgets = host.widgets.filter((w) => 'sourceNodeId' in w)
     const reversed: WidgetItem[] = [
       [secondNode, promotedWidgets[1]] as WidgetItem,

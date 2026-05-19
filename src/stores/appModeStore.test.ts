@@ -90,10 +90,6 @@ function createBuilderWorkflow(
   return workflow as LoadedComfyWorkflow
 }
 
-/**
- * Create a workflow with a persisted output so enterBuilder
- * routes to builder:arrange (requires node 1 to resolve).
- */
 function createBuilderWorkflowWithOutputs(
   activeMode: string
 ): LoadedComfyWorkflow {
@@ -800,9 +796,6 @@ describe('appModeStore', () => {
     })
   })
 
-  // ADR 0009: selection identity is now a canonical `WidgetEntityId`. Legacy
-  // tuples (plain NodeId, NodeLocatorId) are migrated forward; tuples whose
-  // target widget no longer exists are dropped with `console.warn`.
   describe('legacy selectedInput tuple migration (ADR 0009)', () => {
     const rootGraphId = '11111111-1111-4111-8111-111111111111'
 

@@ -130,16 +130,12 @@ app
     modules: [VueFireAuth()]
   })
 
-// ADR 0009: hook the proxyWidget migration flush into LGraph.configure.
-// Late-bound so the LGraph layer doesn't import the PreviewExposureStore.
 LGraph.proxyWidgetMigrationFlush = (hostNode, nodeData) =>
   flushProxyWidgetMigration({
     hostNode,
     hostWidgetValues: nodeData?.widgets_values
   })
 
-// ADR 0009: re-derive preview exposures after configure for older workflows /
-// clipboard payloads that lack `properties.previewExposures`. Idempotent.
 LGraph.autoExposePreviewNodes = (hostNode) =>
   autoExposeKnownPreviewNodes(hostNode)
 

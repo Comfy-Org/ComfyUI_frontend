@@ -1,8 +1,4 @@
 /**
- * Compile-time nominal typing primitive. `Brand<T, Tag>` is structurally `T`
- * (the phantom property is type-only), but assignment from a plain `T` is
- * rejected — values must come from a designated factory.
- *
  * @example
  * ```ts
  * type WidgetEntityId = Brand<string, 'WidgetEntityId'>

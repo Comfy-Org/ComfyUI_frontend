@@ -32,11 +32,6 @@ export interface SubgraphEventMap extends LGraphEventMap {
     index: number
   }
 
-  /**
-   * Fires after `subgraph.inputs` order is rewritten. Dispatched after view
-   * invalidation, link reindex, and value-restore so listeners observe fully
-   * consistent state. No-op reorders do not dispatch.
-   */
   'inputs-reordered': {
     subgraph: Subgraph
     oldOrder: readonly string[]

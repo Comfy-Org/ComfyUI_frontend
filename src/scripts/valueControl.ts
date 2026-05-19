@@ -10,11 +10,6 @@ type ValueControlMode =
   | 'decrement'
   | 'randomize'
 
-/**
- * Compute the next value for a value-control cycle. Returns `undefined` when
- * no change should be applied; caller decides how/when to commit so the
- * legacy direct-attach and promoted subgraph paths stay in sync.
- */
 export function nextValueForLinkedTarget(params: {
   target: IBaseWidget
   linkedWidgets: IBaseWidget[] | undefined
@@ -44,10 +39,6 @@ export function nextValueForLinkedTarget(params: {
 const SAFE_INTEGER_MAX = 1125899906842624
 const SAFE_INTEGER_MIN = -1125899906842624
 
-/**
- * Detects a "control after generate" widget marked with
- * {@link IS_CONTROL_WIDGET} that drives increment/decrement/randomize cycling.
- */
 export function isValueControlWidget(widget: IBaseWidget): boolean {
   return (
     (widget as Record<symbol, unknown>)[IS_CONTROL_WIDGET] === true &&
@@ -79,11 +70,6 @@ function buildComboFilter(
   return (item: string) => item.toLocaleLowerCase().includes(lower)
 }
 
-/**
- * Pure helper: compute the next value for a target given a value-control mode.
- * Returns `undefined` when no change should apply (`fixed`, unsupported target
- * type, or combo filter eliminates all candidates).
- */
 export function computeNextControlledValue(
   target: IBaseWidget,
   mode: ValueControlMode,

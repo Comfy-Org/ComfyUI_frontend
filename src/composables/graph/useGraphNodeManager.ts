@@ -57,13 +57,6 @@ export interface WidgetSlotMetadata {
  * Value and metadata (label, hidden, disabled, etc.) are accessed via widgetValueStore.
  */
 export interface SafeWidgetData {
-  /**
-   * Canonical identity for this widget, sourced directly from the underlying
-   * widget instance. Single source of truth for selection, matching, and
-   * comparisons across producers (this mapper) and consumers (linear-mode
-   * sidebar, builder click handler, app-mode selection store). May be
-   * undefined for transient widgets that aren't yet bound to a graph.
-   */
   entityId?: WidgetEntityId
   nodeId?: NodeId
   name: string
@@ -334,8 +327,6 @@ function safeWidgetMapper(
         : undefined
       const name = sourceWidgetName ?? displayName
 
-      // Promoted widgets carry per-host values keyed by `widget.entityId`.
-      // Seed the store entry so Vue rendering can read it on first render.
       if (isPromotedWidgetView(widget)) widget.ensureHostWidgetState()
 
       return {
@@ -389,8 +380,6 @@ function buildSlotMetadata(
 
     if (input.link != null && graphRef) {
       const link = graphRef.getLink(input.link)
-      // Resolvability gate: SubgraphInput-sentinel origins return null here,
-      // so promoted widgets stay editable instead of disabled with no chip.
       const originNode = link ? graphRef.getNodeById(link.origin_id) : null
       if (link && originNode) {
         originNodeId = String(link.origin_id)

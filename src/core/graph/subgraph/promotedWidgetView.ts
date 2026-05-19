@@ -86,11 +86,9 @@ class PromotedWidgetView implements IPromotedWidgetView {
   private cachedDeepestByFrame?: { node: LGraphNode; widget: IBaseWidget }
   private cachedDeepestFrame = -1
 
-  /** Cached reference to the bound subgraph slot, set at construction. */
   private _boundSlot?: SubgraphSlotRef
   private _boundSlotVersion = -1
 
-  /** Sentinel for the last auto-seeded host value, so re-seed can detect an unedited host state and refresh it from a later interior hydration. */
   private _lastAutoSeededValue?: IBaseWidget['value']
 
   constructor(
@@ -113,7 +111,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
     return this.identityName ?? this.sourceWidgetName
   }
 
-  /** Host-scoped identity `(host node, subgraph input name)` per ADR 0009; distinct host instances keep independent values. */
   get entityId(): WidgetEntityId {
     return widgetEntityId(this.graphId, this.subgraphNode.id, this.name)
   }
@@ -225,7 +222,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
     this._lastAutoSeededValue = undefined
   }
 
-  /** Idempotently seed (and re-seed if interior hydrated later) the host widget state entry that Vue rendering reads. */
   ensureHostWidgetState(): void {
     const fallback = this.fallbackEffectiveValue()
     const existing = this.getHostWidgetState()
@@ -247,7 +243,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
     this._lastAutoSeededValue = fallback
   }
 
-  /** Resolves the effective value bypassing host state, so re-seeding can detect a stale host value. */
   private fallbackEffectiveValue(): IBaseWidget['value'] {
     const state = this.getWidgetState()
     if (state && isWidgetValue(state.value)) return state.value
@@ -259,7 +254,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
     ensureWidgetState(this.entityId, {
       type: resolved?.widget.type ?? 'button',
       value,
-      // Clone: sharing the interior options ref leaks host mutations across all SubgraphNode instances.
       options: { ...(resolved?.widget.options ?? {}) },
       label: this.displayName,
       serialize: this.serialize,
@@ -270,8 +264,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
   get label(): string | undefined {
     const slot = this.getBoundSubgraphSlot()
     if (slot) return slot.label ?? slot.displayName ?? slot.name
-    // Fall back to persisted widget state (survives save/reload before
-    // the slot binding is established) then to construction displayName.
     const state = this.getWidgetState()
     return state?.label ?? this.displayName
   }
@@ -279,25 +271,14 @@ class PromotedWidgetView implements IPromotedWidgetView {
   set label(value: string | undefined) {
     const slot = this.getBoundSubgraphSlot()
     if (slot) slot.label = value || undefined
-    // Also persist to widget state store for save/reload resilience
     const state = this.getWidgetState()
     if (state) state.label = value
   }
 
-  /** Per-instance hydration that writes only to host state; safe during configure/clone where interior nodes are shared. */
   hydrateHostValue(value: IBaseWidget['value']): void {
     this.setHostWidgetState(value)
   }
 
-  /**
-   * Returns the cached bound subgraph slot reference, refreshing only when
-   * the subgraph node's input list has changed (length mismatch).
-   *
-   * Note: Using length as the cache key works because the returned reference
-   * is the same mutable slot object. When slot properties (label, name) change,
-   * the caller reads fresh values from that reference.  The cache only needs
-   * to invalidate when slots are added or removed, which changes length.
-   */
   private getBoundSubgraphSlot(): SubgraphSlotRef | undefined {
     const version = this.subgraphNode.inputs?.length ?? 0
     if (this._boundSlotVersion === version) return this._boundSlot
@@ -422,8 +403,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
     this.resolveAtHost()?.widget.callback?.(value, canvas, node, pos, e)
   }
 
-  // No beforeQueued: linked source widgets are inert for prompt serialization (ADR 0009);
-  // control-after-generate is applied to the host value in afterQueued instead.
   afterQueued({
     isPartialExecution
   }: { isPartialExecution?: boolean } = {}): void {
@@ -630,7 +609,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 }
 
-/** Checks if a widget is a BaseDOMWidget (DOMWidget or ComponentWidget). */
 function isBaseDOMWidget(
   widget: IBaseWidget
 ): widget is IBaseWidget & { id: string } {

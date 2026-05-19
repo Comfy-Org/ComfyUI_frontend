@@ -177,8 +177,6 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         PRIMITIVE_FANOUT_MULTI_HOST_WORKFLOW
       )
 
-      // Fixture's two `value` widgets share a name; index 0 is the string
-      // textbox, index 1 is the number input. Order matches widgets_values.
       const expectHostHasIndependentValues = async (
         hostId: string,
         stringValue: string,
@@ -228,8 +226,6 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
 
       const nestedSubgraphNode = comfyPage.vueNodes.getNodeLocator('8')
       await expect(nestedSubgraphNode).toBeVisible()
-      // Preview-only hosts have empty node.widgets — no `.lg-node-widgets`
-      // container is rendered; the pseudo-widget surfaces via usePromotedPreviews.
       await expect(nestedSubgraphNode.locator('.lg-node-widgets')).toHaveCount(
         0
       )
@@ -248,8 +244,6 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
 
       const host = comfyPage.vueNodes.getNodeLocator('2')
       await expect(host).toBeVisible()
-      // The unresolvable proxy entry must not surface as a rendered widget row
-      // on the Vue node (gated by NodeWidgets/promotion filtering).
       await expect(host.getByText('missing_widget')).toHaveCount(0)
 
       await expect
@@ -643,19 +637,6 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
     })
   })
 
-  /**
-   * Regression test for legacy-prefixed proxyWidget normalization.
-   *
-   * Older serialized workflows stored proxyWidget entries with prefixed widget
-   * names like "6: 3: string_a" instead of plain "string_a". This caused
-   * resolution failures during configure, resulting in missing promoted widgets.
-   *
-   * The fixture contains an outer SubgraphNode (id 5) whose proxyWidgets array
-   * has a legacy-prefixed entry: ["6", "6: 3: string_a"]. After normalization
-   * the promoted widget should render with the clean name "string_a".
-   *
-   * See: https://github.com/Comfy-Org/ComfyUI_frontend/pull/10573
-   */
   test.describe(
     'Legacy Prefixed proxyWidget Normalization',
     { tag: ['@subgraph', '@widget', '@vue-nodes'] },
@@ -699,8 +680,6 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         const outerNode = comfyPage.vueNodes.getNodeLocator('5')
         await expect(outerNode).toBeVisible()
 
-        // Regression: no legacy "<id>: <id>:" prefix should leak into
-        // rendered widget rows after migration.
         const widgetRows = outerNode.getByTestId(TestIds.widgets.widget)
         await expect(widgetRows).toHaveCount(2)
         await expect(widgetRows.first()).not.toContainText('6: 3:')

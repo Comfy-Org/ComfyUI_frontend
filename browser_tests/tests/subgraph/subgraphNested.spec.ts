@@ -45,7 +45,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
       }) => {
         await comfyPage.workflow.loadWorkflow(WORKFLOW)
 
-        // Outer (id=4) promotes a single widget disambiguated by source id "2".
         const outerNode = comfyPage.vueNodes.getNodeLocator(OUTER_NODE_ID)
         await comfyExpect(outerNode).toBeVisible()
 
@@ -57,7 +56,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         })
         await comfyExpect(exposedTextWidget).toHaveValue('22222222222')
 
-        // Inner instance (id=3) exposes both CLIP text widgets, dedup'd by name.
         await comfyPage.vueNodes.enterSubgraph(OUTER_NODE_ID)
 
         const innerNode = comfyPage.vueNodes.getNodeLocator(

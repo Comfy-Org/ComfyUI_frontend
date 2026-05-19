@@ -28,10 +28,6 @@ import {
 import type { WidgetEntityId } from '@/world/entityIds'
 import { isWidgetEntityId, parseWidgetEntityId } from '@/world/entityIds'
 
-/**
- * Load-time resolution only; render-time consumers should project
- * `selectedInputs` through `useResolvedSelectedInputs` instead.
- */
 function findWidgetByEntityId(
   rootGraph: LGraph,
   entityId: WidgetEntityId
@@ -75,9 +71,6 @@ export const useAppModeStore = defineStore('appMode', () => {
     if (!rootGraph) {
       return { inputs: rawInputs, outputs: rawOutputs }
     }
-    // Inputs always upgrade — `configured` fires after all nodes are populated.
-    // Outputs pruning is deferred during load so a transiently-missing node
-    // (e.g. mid-reconfigure) isn't silently dropped.
     return {
       inputs: rawInputs
         .map((input) => upgradeAndValidateInput(input, rootGraph))
@@ -102,13 +95,9 @@ export const useAppModeStore = defineStore('appMode', () => {
   ): LinearInput | null {
     const [storedId, widgetName, config] = input
 
-    // Canonical: storedId is already a WidgetEntityId.
     if (typeof storedId === 'string' && isWidgetEntityId(storedId)) {
       const widget = findWidgetByEntityId(rootGraph, storedId)
       if (widget) return buildEntry(storedId, widgetName, config)
-      // Keep dangling entries whose host node still exists (e.g. dynamic
-      // widgets temporarily not visible) so the UI can surface them as
-      // `status: 'unknown'`. Prune only when the node itself is gone.
       const { nodeId } = parseWidgetEntityId(storedId)
       if (rootGraph.getNodeById?.(nodeId)) {
         return buildEntry(storedId, widgetName, config)
@@ -116,14 +105,12 @@ export const useAppModeStore = defineStore('appMode', () => {
       return null
     }
 
-    // Legacy NodeLocatorId (`graphId:nodeId`) for promoted widgets.
     if (typeof storedId === 'string' && storedId.includes(':')) {
       const [, widget] = resolveNodeWidget(storedId, widgetName)
       if (!widget?.entityId) return null
       return buildEntry(widget.entityId, widgetName, config)
     }
 
-    // Legacy plain NodeId on root graph.
     const directNode = rootGraph.getNodeById?.(storedId)
     const directWidget = directNode?.widgets?.find((w) => w.name === widgetName)
     if (directNode && directWidget) {
@@ -131,7 +118,6 @@ export const useAppModeStore = defineStore('appMode', () => {
       if (derivedId) return buildEntry(derivedId, widgetName, config)
     }
 
-    // Legacy plain NodeId for an interior source widget — promoted on a host.
     const matches: LinearInput[] = rootGraph.nodes.flatMap((node) => {
       if (!(node instanceof SubgraphNode)) return []
       return node.inputs.flatMap((inputSlot): LinearInput[] => {
@@ -243,7 +229,6 @@ export const useAppModeStore = defineStore('appMode', () => {
       return
     }
 
-    // Prune stale references
     resetSelectedToWorkflow()
 
     useSidebarTabStore().activeSidebarTabId = null
@@ -276,8 +261,6 @@ export const useAppModeStore = defineStore('appMode', () => {
       ([id]) => id === targetEntityId
     )
     if (index === -1) return
-    // Replace the tuple rather than mutating its `[2]` slot in place so
-    // reactive consumers that key off entry identity see the change.
     const [id, type, options] = selectedInputs.value[index]
     selectedInputs.value.splice(index, 1, [id, type, { ...options, ...config }])
   }

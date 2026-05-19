@@ -28,11 +28,6 @@ import type {
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 
-/**
- * Legacy proxyWidget tuple shape carried through migration. The optional
- * `disambiguatingSourceNodeId` is read from legacy `properties.proxyWidgets`
- * payloads only — canonical runtime state never sets it. See ADR 0009.
- */
 interface LegacyProxyEntrySource extends PromotedWidgetSource {
   disambiguatingSourceNodeId?: string
 }
@@ -41,7 +36,6 @@ const LEGACY_PROXY_WIDGET_PREFIX_PATTERN = /^\s*(\d+)\s*:\s*(.+)$/
 
 interface StrippedPrefix {
   sourceWidgetName: string
-  /** Deepest legacy `n: ` prefix removed from the original widget name. */
   deepestPrefixId?: string
 }
 
@@ -67,11 +61,6 @@ function canResolveLegacyProxy(
   )
 }
 
-/**
- * Normalize a legacy `proxyWidgets` entry. Under ADR 0009 SubgraphNodes are
- * opaque, so this strips the legacy `"<id>: <name>"` prefix encoding and
- * surfaces the deepest prefix as `disambiguatingSourceNodeId` metadata.
- */
 export function normalizeLegacyProxyWidgetEntry(
   hostNode: SubgraphNode,
   sourceNodeId: string,
@@ -99,11 +88,6 @@ export function normalizeLegacyProxyWidgetEntry(
   }
 }
 
-/**
- * Resolve the source widget for a normalized proxy entry. `classify` and
- * `repairCreateSubgraphInput` both call this — they must agree, otherwise an
- * entry can be classified as repairable but quarantined at repair time.
- */
 function resolveSourceWidget(
   sourceNode: LGraphNode,
   sourceWidgetName: string,
@@ -164,11 +148,6 @@ interface PendingEntry {
 const PRIMITIVE_NODE_TYPE = 'PrimitiveNode'
 const QUARANTINE_PROPERTY = 'proxyWidgetErrorQuarantine'
 const QUARANTINE_VERSION = 1
-/**
- * Set by the first host after a primitive-bypass migration so subsequent hosts
- * reuse the created `SubgraphInput` instead of quarantining when the
- * primitive's outputs are already severed.
- */
 const PROXY_BYPASS_MARKER_PROPERTY = 'proxyBypassedToSubgraphInput'
 
 export function flushProxyWidgetMigration(args: FlushArgs): void {
@@ -251,8 +230,6 @@ function pickHostValue(
   ) {
     return { value: undefined, isHole: true }
   }
-  // Narrow rather than cast: corrupted payloads are treated as a hole so
-  // migration falls back to seeding from the source widget.
   const raw = hostWidgetValues[index]
   if (!isWidgetValue(raw)) return { value: undefined, isHole: true }
   return { value: raw, isHole: false }
@@ -311,8 +288,6 @@ function classify(
     normalized.sourceWidgetName
   )
   if (linkedInput) {
-    // ADR 0009: single host input per source identity. Quarantine when legacy
-    // corruption produced multiple, rather than silently picking one.
     const ambiguous =
       hostNode.inputs.filter((input) => {
         const w = input._widget
@@ -335,8 +310,6 @@ function classify(
   }
 
   if (sourceNode.type === PRIMITIVE_NODE_TYPE) {
-    // Reuse the SubgraphInput a prior host already created; the primitive's
-    // outputs were severed during that first repair.
     const bypassedTo = sourceNode.properties?.[PROXY_BYPASS_MARKER_PROPERTY]
     if (typeof bypassedTo === 'string') {
       const existingInput = hostNode.inputs.find(
@@ -397,8 +370,6 @@ function applyHostValue(widget: IBaseWidget, entry: PendingEntry): void {
     widget.hydrateHostValue(entry.hostValue)
     return
   }
-  // Refuse to write through a shared interior `_widget` — doing so would
-  // stomp every host instance. Callers must resolve the host's input mirror.
   console.error(
     '[proxyWidgetMigration] applyHostValue called with non-promoted widget; refusing to write to shared interior',
     { widgetName: widget.name, type: widget.type }
@@ -496,7 +467,7 @@ function repairCreateSubgraphInput(
   const slot: INodeInputSlot | undefined =
     sourceNode.getSlotFromWidget(sourceWidget)
   if (!slot) {
-    // TODO(adr-0009): synthesize a backing input slot during the wiring slice.
+    // TODO: synthesize a backing input slot during the wiring slice.
     console.warn(
       '[proxyWidgetMigration] source widget has no backing input slot; quarantining',
       {
@@ -703,7 +674,6 @@ function repairPrimitive(
     if (valueEntry) {
       applyHostValue(hostInputWidget, valueEntry)
     } else {
-      // No host value: seed per-host from the primitive's widget value.
       const primitiveValue = primitiveNode.widgets?.find(
         (w) => w.name === validated.sourceWidgetName
       )?.value as TWidgetValue | undefined
@@ -717,7 +687,6 @@ function repairPrimitive(
     }
   }
 
-  // Mark the primitive for subsequent hosts; see `classify` for the read side.
   primitiveNode.properties ??= {}
   primitiveNode.properties[PROXY_BYPASS_MARKER_PROPERTY] = newSubgraphInput.name
 

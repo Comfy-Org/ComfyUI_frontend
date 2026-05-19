@@ -15,19 +15,12 @@ export interface PromotedWidgetSource {
 
 export interface PromotedWidgetView extends IBaseWidget {
   readonly node: SubgraphNode
-  /** Host-scoped identity `(host node, subgraph input name)` per ADR 0009. */
   readonly entityId: WidgetEntityId
-  /** Immediate interior child id; per ADR 0009 SubgraphNode is opaque so this never flattens past the immediate child. */
   readonly sourceNodeId: string
   readonly sourceWidgetName: string
 
-  /**
-   * Per-instance value hydration that writes only to host widget state, never
-   * cascading into the shared interior widget. Used during configure/clone.
-   */
   hydrateHostValue(value: IBaseWidget['value']): void
 
-  /** Idempotently ensures a host-scoped widget store entry seeded with the current effective value; safe to call per render. */
   ensureHostWidgetState(): void
 }
 

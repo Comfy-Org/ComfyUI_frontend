@@ -28,11 +28,6 @@ export function getWidgetName(w: IBaseWidget): string {
   return isPromotedWidgetView(w) ? w.sourceWidgetName : w.name
 }
 
-/**
- * Returns true if the given promotion entry corresponds to a linked promotion
- * on the subgraph node. Linked promotions are driven by subgraph input
- * connections and cannot be independently hidden or shown.
- */
 export function isLinkedPromotion(
   subgraphNode: SubgraphNode,
   sourceNodeId: string,
@@ -44,7 +39,6 @@ export function isLinkedPromotion(
   )
 }
 
-/** Finds the host input whose `_widget` is the `PromotedWidgetView` for the given source. */
 export function findHostInputForPromotion(
   subgraphNode: SubgraphNode,
   sourceNodeId: string,
@@ -207,11 +201,6 @@ function isPreviewExposed(
     )
 }
 
-/**
- * Returns true if `source` is exposed on `subgraphNode` via linked promotion or preview exposure.
- * If `widget` is a preview pseudo-widget, only preview exposure is consulted to avoid matching an
- * unrelated linked promotion with the same source identity.
- */
 export function isWidgetPromotedOnSubgraphNode(
   subgraphNode: SubgraphNode,
   source: PromotedWidgetSource,
@@ -303,18 +292,10 @@ function promotePreviewViaExposure(
   })
 }
 
-/** Known non-$$ preview widget types added by core or popular extensions. */
 const PREVIEW_WIDGET_TYPES = new Set(['preview', 'video', 'audioUI'])
 
-/**
- * Returns true for pseudo-widgets that display media previews and should
- * be auto-promoted when their node is inside a subgraph.
- * Matches the core `$$` convention as well as custom-node patterns
- * (e.g. VHS `videopreview` with type `"preview"`).
- */
 export function isPreviewPseudoWidget(widget: IBaseWidget): boolean {
   if (widget.name.startsWith('$$')) return true
-  // Custom nodes may set serialize on the widget or in options
   if (widget.serialize !== false && widget.options?.serialize !== false)
     return false
   if (typeof widget.type === 'string' && PREVIEW_WIDGET_TYPES.has(widget.type))
@@ -328,7 +309,6 @@ export function promoteWidget(
   parents: SubgraphNode[]
 ) {
   const source = toPromotionSource(node, widget)
-  // Downstream helpers require the full `LGraphNode` shape; narrow once instead of per call site.
   if (!(node instanceof LGraphNode)) return
   for (const parent of parents) {
     if (isPreviewPseudoWidget(widget)) {
@@ -368,8 +348,6 @@ export function demoteWidget(
     )
     const linkedInput = hostInput?._subgraphSlot
     if (linkedInput) {
-      // If an external link holds the host slot open, retract only the interior projection;
-      // otherwise demote is the inverse of promote and removes the SubgraphInput.
       const hasExternalLink = hostInput.link != null
       if (hasExternalLink) {
         linkedInput.disconnect()
@@ -523,11 +501,6 @@ function nodeWidgets(n: LGraphNode): WidgetItem[] {
   return getPromotableWidgets(n).map((w: IBaseWidget) => [n, w])
 }
 
-/**
- * Idempotently adds preview-exposure entries for interior nodes with `$$` pseudo-widgets or
- * known-preview core types. Shared by the subgraph-convert and paste flows; paste must re-derive
- * because older clipboard data may lack `properties.previewExposures`.
- */
 export function autoExposeKnownPreviewNodes(subgraphNode: SubgraphNode): void {
   const { updatePreviews } = useLitegraphService()
   const interiorNodes = subgraphNode.subgraph.nodes
@@ -542,25 +515,15 @@ export function autoExposeKnownPreviewNodes(subgraphNode: SubgraphNode): void {
       if (!widget) return
       promotePreviewViaExposure(subgraphNode, node, widget.name)
     }
-    // Promote preview widgets that already exist (e.g. custom node DOM widgets
-    // like VHS videopreview that are created in onNodeCreated).
     promotePreviewWidget()
 
-    // If a preview widget already exists in this frame, there's nothing to
-    // defer. Core $$ preview widgets are the lazy path that needs updatePreviews.
     if (hasPreviewWidget()) continue
 
-    // Nodes in CANVAS_IMAGE_PREVIEW_NODE_TYPES support a virtual $$
-    // preview widget. Eagerly promote it so getPseudoWidgetPreviewTargets
-    // includes this node and onDrawBackground can call updatePreviews on it
-    // once execution outputs arrive.
     if (supportsVirtualCanvasImagePreview(node)) {
       promotePreviewViaExposure(subgraphNode, node, CANVAS_IMAGE_PREVIEW_WIDGET)
       continue
     }
 
-    // Also schedule a deferred check: core $$ widgets are created lazily by
-    // updatePreviews when node outputs are first loaded.
     requestAnimationFrame(() => updatePreviews(node, promotePreviewWidget))
   }
 }

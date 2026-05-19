@@ -18,7 +18,6 @@ type ResolveNestedHostFn = NonNullable<
 >
 
 export const usePreviewExposureStore = defineStore('previewExposure', () => {
-  // Host ids are execution paths like `11` or `11:20`, not NodeLocatorIds.
   const exposures = ref(new Map<UUID, Map<string, PreviewExposure[]>>())
 
   function _getHostsForGraph(
@@ -39,7 +38,6 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     return exposures.value.get(rootGraphId)?.get(hostNodeLocator)
   }
 
-  /** Returns the live internal array, typed `readonly` to discourage mutation. */
   function getExposures(
     rootGraphId: UUID,
     hostNodeLocator: string
@@ -95,10 +93,6 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     exposures.value.delete(rootGraphId)
   }
 
-  /**
-   * Returns the host's exposures translated into the {@link PromotedWidgetSource}
-   * shape consumed by `resolveSubgraphPseudoWidgetCache`.
-   */
   function getExposuresAsPromotionShape(
     rootGraphId: UUID,
     hostNodeLocator: string
@@ -110,8 +104,6 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
   }
 
   /**
-   * Resolve the chain of exposures from a host down to the originating source preview.
-   *
    * @param resolveNestedHost If provided, recurses through nested SubgraphNode
    * boundaries; otherwise the chain is a single-step walk on the starting host.
    */

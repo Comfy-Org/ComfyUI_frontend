@@ -43,8 +43,6 @@ export async function getPromotedWidgets(
   comfyPage: ComfyPage,
   nodeId: string
 ): Promise<PromotedWidgetEntry[]> {
-  // Merge live widget views with serialized previewExposures (two distinct
-  // promotion categories); validate outside page.evaluate via canonical guards.
   const { widgetSources, previewExposures } = await comfyPage.page.evaluate(
     (id) => {
       const node = window.app!.canvas.graph!.getNodeById(id)
@@ -116,7 +114,6 @@ export async function getPromotedWidgetCountByName(
   return promotedWidgets.filter(([, name]) => name === widgetName).length
 }
 
-/** Promoted widget entries for every subgraph host, sorted by numeric host id. */
 export async function getAllHostPromotedWidgets(
   comfyPage: ComfyPage
 ): Promise<{ hostNodeId: string; promotedWidgets: PromotedWidgetEntry[] }[]> {

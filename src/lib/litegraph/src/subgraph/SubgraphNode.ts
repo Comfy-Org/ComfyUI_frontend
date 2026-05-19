@@ -57,16 +57,10 @@ workflowSvg.src =
 type LinkedPromotionEntry = PromotedWidgetSource & {
   inputName: string
   inputKey: string
-  /** The subgraph input slot's internal name (stable identity). */
   slotName: string
 }
-// Pre-rasterize the SVG to a bitmap canvas to avoid Firefox re-processing
-// the SVG's internal stylesheet on every ctx.drawImage() call per frame.
 const workflowBitmapCache = createBitmapCache(workflowSvg, 32)
 
-/**
- * An instance of a {@link Subgraph}, displayed as a node on the containing (parent) graph.
- */
 export class SubgraphNode extends LGraphNode implements BaseLGraph {
   declare inputs: (INodeInputSlot & Partial<ISubgraphInput>)[]
 
@@ -100,16 +94,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     views: PromotedWidgetView[]
   }
 
-  // Declared as accessor via Object.defineProperty in constructor.
-  // TypeScript doesn't allow overriding a property with get/set syntax,
-  // so we use declare + defineProperty instead.
   declare widgets: IBaseWidget[]
 
   private _resolveLinkedPromotionBySubgraphInput(
     subgraphInput: SubgraphInput
   ): PromotedWidgetSource | undefined {
-    // Preserve deterministic representative selection for multi-linked inputs:
-    // the first connected source remains the promoted linked view.
     for (const linkId of subgraphInput.linkIds) {
       const link = this.subgraph.getLink(linkId)
       if (!link) continue
@@ -126,9 +115,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       if (!targetWidget) continue
 
       if (inputNode.isSubgraphNode()) {
-        // ADR 0009: each SubgraphNode is opaque. The promoted source on the
-        // parent host always references the immediate child's input slot, not
-        // the deeper leaf widget identity that the child internally exposes.
         return {
           sourceNodeId: String(inputNode.id),
           sourceWidgetName: targetInput.name
@@ -270,20 +256,16 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return JSON.stringify([inputKey, sourceNodeId, sourceWidgetName, inputName])
   }
 
-  /** Manages lifecycle of all subgraph event listeners */
   private _eventAbortController = new AbortController()
 
   constructor(
-    /** The (sub)graph that contains this subgraph instance. */
     graph: GraphOrSubgraph,
-    /** The definition of this subgraph; how its nodes are configured, etc. */
     readonly subgraph: Subgraph,
     instanceData: ExportedSubgraphInstance
   ) {
     super(subgraph.name, subgraph.id)
     this.graph = graph
 
-    // Synthetic widgets getter — SubgraphNodes have no native widgets.
     Object.defineProperty(this, 'widgets', {
       get: () => this._getPromotedViews(),
       set: () => {
@@ -296,7 +278,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       enumerable: true
     })
 
-    // Update this node when the subgraph input / output slots are changed
     const subgraphEvents = this.subgraph.events
     const { signal } = this._eventAbortController
 
@@ -311,8 +292,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
             (input._subgraphSlot && input._subgraphSlot.id === subgraphInput.id)
         )
         if (existingInput) {
-          // Rebind to the new SubgraphInput object and re-register listeners
-          // (configure recreates SubgraphInput objects with the same id)
           this._addSubgraphInputListeners(subgraphInput, existingInput)
           const linkId = subgraphInput.linkIds[0]
           if (linkId === undefined) return
@@ -459,10 +438,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         input.shape = this.getSlotShape(subgraphInput, e.detail.input)
         if (!e.detail.widget || !e.detail.node) return
 
-        // `SubgraphInput.connect()` dispatches before appending to `linkIds`,
-        // so resolve by current links would miss this new connection.
-        // Keep the earliest bound view once present, and only bind from event
-        // payload when this input has no representative yet.
         const boundWidget =
           input._widget && isPromotedWidgetView(input._widget)
             ? input._widget
@@ -496,7 +471,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         this.invalidatePromotedViews()
         input.shape = this.getSlotShape(subgraphInput)
 
-        // If links remain, rebind to the current representative.
         const connectedWidgets = subgraphInput.getConnectedWidgets()
         if (connectedWidgets.length > 0) {
           this._resolveInputWidget(subgraphInput, input)
@@ -625,7 +599,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this._applyPromotedWidgetValues(info.widgets_values)
   }
 
-  /** Hydrate promoted widget values per-host; the view setter would stomp the shared interior. */
   private _applyPromotedWidgetValues(
     widgetValues: ExportedSubgraphInstance['widgets_values']
   ): void {
@@ -645,20 +618,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override _internalConfigureAfterSlots() {
     this._rebindInputSubgraphSlots()
 
-    // Prune inputs that don't map to any subgraph slot definition.
-    // This prevents stale/duplicate serialized inputs from persisting (#9977).
     this.inputs = this.inputs.filter((input) => input._subgraphSlot)
     this._promotedViewManager.clear()
     this.invalidatePromotedViews()
 
     this._hydratePreviewExposures()
 
-    // Check all inputs for connected widgets
     for (const input of this.inputs) {
       const subgraphInput = input._subgraphSlot
       if (!subgraphInput) {
-        // Skip inputs that don't exist in the subgraph definition
-        // This can happen when loading workflows with dynamically added inputs
         console.warn(
           `[SubgraphNode.configure] No subgraph input found for input ${input.name}, skipping`
         )
@@ -670,7 +638,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
   }
 
-  /** Hydrate preview exposures from properties; migrate legacy NodeLocatorId entries. Idempotent. */
   private _hydratePreviewExposures() {
     const store = usePreviewExposureStore()
     const rootGraphId = this.rootGraph.id
@@ -689,11 +656,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     store.setExposures(rootGraphId, hostLocator, [])
   }
 
-  /**
-   * Clears all cached promoted widget views and re-resolves `input._widget`
-   * bindings from the current subgraph connections.  Called after ancestor
-   * promotions are repointed during nested subgraph packing.
-   */
   rebuildInputWidgetBindings(): void {
     this._promotedViewManager.clear()
     this.invalidatePromotedViews()
@@ -750,13 +712,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
   }
 
-  /**
-   * Binds a promoted widget view to a subgraph input slot.
-   *
-   * Creates or retrieves a {@link PromotedWidgetView}, registers it in the
-   * promotion store, sets up the prototype chain for multi-level subgraph
-   * nesting, and dispatches the `widget-promoted` event.
-   */
   private _setWidget(
     subgraphInput: Readonly<SubgraphInput>,
     input: INodeInputSlot,
@@ -780,10 +735,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       this._removePromotedView(previousView)
     }
 
-    // Create/retrieve the view from cache.
-    // The cache key uses `input.name` (the slot's internal name) rather
-    // than `subgraphInput.name` because nested subgraphs may remap
-    // the internal name independently of the interior node.
     const view = this._promotedViewManager.getOrCreate(
       nodeId,
       widgetName,
@@ -806,16 +757,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // NOTE: This code creates linked chains of prototypes for passing across
     // multiple levels of subgraphs. As part of this, it intentionally avoids
     // creating new objects. Have care when making changes.
-    // Use subgraphInput.name as the stable identity — unique per subgraph
-    // slot, immune to label renames. Matches PromotedWidgetView.name.
-    // Display is handled via widget.label / PromotedWidgetView.label.
     input.widget ??= { name: subgraphInput.name }
     input.widget.name = subgraphInput.name
     if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)
 
     input._widget = view
 
-    // Dispatch widget-promoted event
     this.subgraph.events.dispatch('widget-promoted', {
       widget: view,
       subgraphNode: this
@@ -827,19 +774,16 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   /**
-   * Ensures the subgraph slot is in the params before adding the input as normal.
    * @param name The name of the input slot.
    * @param type The type of the input slot.
    * @param inputProperties Properties that are directly assigned to the created input. Default: a new, empty object.
    * @returns The new input slot.
-   * @remarks Assertion is required to instantiate empty generic POJO.
    */
   override addInput<TInput extends Partial<ISubgraphInput>>(
     name: string,
     type: ISlotType,
     inputProperties: TInput = {} as TInput
   ): INodeInputSlot & TInput {
-    // Bypasses type narrowing on this.inputs
     return super.addInput(name, type, inputProperties)
   }
 
@@ -858,7 +802,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   override getInputLink(slot: number): LLink | null {
-    // Output side: the link from inside the subgraph
     const innerLink = this.subgraph.outputNode.slots[slot].getLinks().at(0)
     if (!innerLink) {
       console.warn(
@@ -875,10 +818,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   /**
-   * Finds the internal links connected to the given input slot inside the subgraph, and resolves the nodes / slots.
    * @param slot The slot index
    * @returns The resolved connections, or undefined if no input node is found.
-   * @remarks This is used to resolve the input links when dragging a link from a subgraph input slot.
    */
   resolveSubgraphInputLinks(slot: number): ResolvedConnection[] {
     const inputSlot = this.subgraph.inputNode.slots[slot]
@@ -894,7 +835,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   /**
-   * Finds the internal link connected to the given output slot inside the subgraph, and resolves the nodes / slots.
    * @param slot The slot index
    * @returns The output node if found, otherwise undefined.
    */
@@ -910,15 +850,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
   }
 
-  /** @internal Used to flatten the subgraph before execution. */
   override getInnerNodes(
-    /** The set of computed node DTOs for this execution. */
     executableNodes: Map<ExecutionId, ExecutableLGraphNode>,
-    /** The path of subgraph node IDs. */
     subgraphNodePath: readonly NodeId[] = [],
-    /** Internal recursion param. The list of nodes to add to. */
     nodes: ExecutableLGraphNode[] = [],
-    /** Internal recursion param. The set of visited nodes. */
     visited = new Set<SubgraphNode>()
   ): ExecutableLGraphNode[] {
     if (visited.has(this)) {
@@ -934,7 +869,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     const subgraphInstanceIdPath = [...subgraphNodePath, this.id]
 
-    // Store the subgraph node DTO
     const parentSubgraphNode = this.rootGraph
       .resolveSubgraphIdPath(subgraphNodePath)
       .at(-1)
@@ -955,7 +889,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           new Set(visited)
         )
       } else {
-        // Create minimal DTOs rather than cloning the node
         const aVeryRealNode = new ExecutableNodeDTO(
           node,
           subgraphInstanceIdPath,
@@ -969,7 +902,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return nodes
   }
 
-  /** Clear the DOM position override for a promoted view's interior widget. */
   private _clearDomOverrideForView(view: PromotedWidgetView): void {
     const resolved = resolveConcretePromotedWidget(
       this,
@@ -1089,21 +1021,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     ctx.restore()
   }
 
-  /**
-   * Serializes this SubgraphNode instance.
-   *
-   * After ADR 0009 the canonical owner of each promoted value widget is the
-   * linked `SubgraphInput` itself; host-overlay values live in
-   * `widgets_values`, and previews live in `properties.previewExposures`.
-   * `properties.proxyWidgets` is no longer re-emitted; legacy data is preserved
-   * for one-way ratchet load only.
-   */
   override serialize(): ISerialisedNode {
-    // TODO(adr-0009): Remove this comment once one stable release has shipped
-    // without complaints about subgraph value drift. Host promoted-widget
-    // values now serialize through standard SubgraphInput widgets and must not
-    // be copied into interior widgets, which would cause cross-host stomping.
-
     const serialized = super.serialize()
     const serializedProperties = { ...(serialized.properties ?? {}) }
     const rootGraphId = this.rootGraph.id
@@ -1134,10 +1052,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     serialized.properties = serializedProperties
 
-    // Per ADR 0009, host SubgraphNodes only carry promoted widgets — non-
-    // promoted host widgets would be silently dropped here. Surface the
-    // unexpected case in dev so a future custom subclass that adds bare
-    // widgets isn't ignored without a trace.
     if (
       import.meta.env?.DEV &&
       this.widgets.some((w) => !isPromotedWidgetView(w))
@@ -1171,10 +1085,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override clone() {
     const clone = super.clone()
 
-    //TODO: Consider deep cloning subgraphs here.
-    //It's the safest place to prevent creation of linked subgraphs
-    //But the frequency of clone().serialize() calls is likely to result in
-    //pollution of rootGraph.subgraphs
+    // TODO: Consider deep cloning subgraphs here.
 
     return clone
   }

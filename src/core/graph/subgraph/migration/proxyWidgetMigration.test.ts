@@ -265,8 +265,6 @@ describe('flushProxyWidgetMigration', () => {
     })
 
     it('createSubgraphInput: honors disambiguatingSourceNodeId when source widget name has been deduplicated', () => {
-      // Two interior "text" widgets deduplicated to ("text", "text_1");
-      // the tuple's disambiguator "2" must select the renamed one.
       const host = buildHost()
       const inner = addInnerNode(host, 'InnerWithDedupedPromotion', (n) => {
         const slot1 = n.addInput('text', 'STRING')
@@ -442,8 +440,6 @@ describe('flushProxyWidgetMigration', () => {
     })
 
     it('keeps independent values across two hosts of the same subgraph', () => {
-      // Regression: first host's value must survive second host's migration,
-      // and second host must still bypass after primitive outputs were severed.
       const subgraph = createTestSubgraph()
       const hostA = createTestSubgraphNode(subgraph)
       const hostB = createTestSubgraphNode(subgraph)
@@ -694,7 +690,6 @@ describe('flushProxyWidgetMigration', () => {
 
       flushProxyWidgetMigration({ hostNode: host })
 
-      // Re-running the flush is idempotent: no new exposures, no quarantine.
       expect(host.properties.proxyWidgetErrorQuarantine).toBeUndefined()
       expect(
         usePreviewExposureStore().getExposures(
@@ -883,8 +878,6 @@ describe('normalizeLegacyProxyWidgetEntry', () => {
   })
 
   it('strips legacy prefix and surfaces it as disambiguator even when the bare name does not resolve', () => {
-    // ADR 0009: opaque SubgraphNodes can't resolve deep widgets; the prefix
-    // is preserved as `disambiguatingSourceNodeId` metadata.
     const { hostNode, innerNode } = createHostWithInnerWidget('seed')
 
     const result = normalizeLegacyProxyWidgetEntry(

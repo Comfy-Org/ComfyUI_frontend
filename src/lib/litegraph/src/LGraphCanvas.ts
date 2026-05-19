@@ -4190,9 +4190,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const subgraph = graph.createSubgraph(info)
       results.subgraphs.set(info.id, subgraph)
     }
-    // Configure leaf-first so a SubgraphNode's referenced subgraph definition
-    // already has its `_nodes`/inputs populated by the time the host node is
-    // created and migration source-resolution runs.
     const configureOrder = topologicalSortSubgraphs(parsed.subgraphs)
     for (const info of configureOrder)
       results.subgraphs.get(info.id)?.configure(info)
@@ -4221,12 +4218,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       graph.add(node)
       node.configure(info)
 
-      // ADR 0009: forward-ratchet legacy `properties.proxyWidgets` and
-      // re-derive preview exposures for known preview-aware interior nodes
-      // on each top-level pasted SubgraphNode. Nested SubgraphNodes inside
-      // pasted subgraph definitions are handled by `LGraph.configure` when
-      // the subgraph itself is configured above; this branch covers hosts
-      // at the paste destination root that bypass that path.
       if (node instanceof SubgraphNode) {
         if (
           node.properties?.proxyWidgets !== undefined &&
@@ -9117,13 +9108,6 @@ function remapPreviewExposures(
   }
 }
 
-/**
- * Remaps pasted subgraph interior node IDs that would collide with existing
- * node IDs in the root graph. Also patches subgraph link node IDs, legacy
- * SubgraphNode `properties.proxyWidgets` references, and ADR 0009
- * `properties.previewExposures` references so promoted-widget migration and
- * preview-exposure hydration both resolve to the remapped interior IDs.
- */
 export function remapClipboardSubgraphNodeIds(
   parsed: ClipboardItems,
   rootGraph: LGraph

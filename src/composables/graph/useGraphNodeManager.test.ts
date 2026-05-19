@@ -104,7 +104,6 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     input.widget = { name: 'prompt' }
     graph.add(node)
 
-    // Real upstream + link: renderer marks `linked` only when origin resolves.
     const upstream = new LGraphNode('upstream')
     upstream.addOutput('out', 'STRING')
     graph.add(upstream)
@@ -197,10 +196,6 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     node.addWidget('string', 'prompt', 'hello', () => undefined, {})
     const input = node.addInput('prompt', 'STRING')
     input.widget = { name: 'prompt' }
-    // Reference a link that doesn't resolve to a real upstream node — mirrors
-    // the subgraph promotion case where origin_id === SUBGRAPH_INPUT_ID and
-    // getNodeById returns null. The renderer must treat the slot as editable
-    // rather than disabled-with-phantom-upstream.
     input.link = 9999
     graph.add(node)
 
@@ -449,7 +444,6 @@ describe('Nested promoted widget mapping', () => {
 
     expect(mappedWidget).toBeDefined()
     expect(mappedWidget?.type).toBe('combo')
-    // Host-scoped entityId keeps values independent across SubgraphNode instances.
     expect(mappedWidget?.entityId).toBe(
       widgetEntityId(graph.id, subgraphNodeB.id, 'b_input')
     )

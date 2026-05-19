@@ -111,8 +111,6 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
         )
         .toBe(1)
 
-      // Preview-only hosts have empty node.widgets, so `.lg-node-widgets`
-      // is not rendered (gated by `v-if="nodeData.widgets?.length"`).
       await expect(firstSubgraphNode.locator('.lg-node-widgets')).toHaveCount(0)
       await expect(secondSubgraphNode.locator('.lg-node-widgets')).toHaveCount(
         0

@@ -35,10 +35,6 @@ export type LGraphTriggerEvent =
   | NodeSlotLinksChangedEvent
   | NodeSlotLabelChangedEvent
 
-/**
- * Single source of truth for actions accepted by `LGraph.trigger()`.
- * Keep in lockstep with {@link LGraphTriggerEvent}.
- */
 export const LGraphTriggerActions = [
   'node:property:changed',
   'node:slot-errors:changed',

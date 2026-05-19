@@ -997,16 +997,6 @@ export class LGraphNode
     return o
   }
 
-  /**
-   * Creates a clone of this node.
-   *
-   * Note: between this call returning and `graph.add(clone)` running, the
-   * returned node briefly carries the **source node's id** rather than the
-   * historical `-1` sentinel. This is required so that subclass `configure()`
-   * implementations (e.g. {@link SubgraphNode}) which key per-instance state
-   * by id hydrate into the correct slot. `graph.add` will reassign a fresh id
-   * (or detect the collision and reassign) on insert.
-   */
   clone(): LGraphNode | null {
     if (this.type == null) return null
     const node = LiteGraph.createNode(this.type)
@@ -1032,11 +1022,8 @@ export class LGraphNode
     // @ts-expect-error Exceptional case: id is removed so that the graph can assign a new one on add.
     data.id = undefined
 
-    // In UUID mode, configure() would overwrite the borrowed id with data.id;
-    // generate the fresh UUID up front and reapply it after hydration.
     const clonedUuid = LiteGraph.use_uuids ? LiteGraph.uuidv4() : undefined
 
-    // Borrow source id so subclass configure() hydrates the right slot; see method JSDoc.
     node.id = this.id
     node.configure(data)
     if (clonedUuid !== undefined) node.id = clonedUuid

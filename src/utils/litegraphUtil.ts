@@ -372,11 +372,6 @@ export function resolveNodeWidget(
   return []
 }
 
-/**
- * Resolve the canonical {@link WidgetEntityId} for a widget on a node. Prefers
- * `widget.entityId`; falls back to deriving from `(rootGraphId, node.id, name)`
- * for POJO widgets pushed onto `node.widgets` without `addCustomWidget`.
- */
 export function getWidgetEntityIdForNode(
   node: LGraphNode,
   widget: IBaseWidget

@@ -375,10 +375,6 @@ export interface IRangeWidget extends IBaseWidget<
 export type TWidgetType = IWidget['type']
 export type TWidgetValue = IWidget['value']
 
-/**
- * Runtime type guard for {@link TWidgetValue}. Accepts primitives, non-null
- * objects, and `undefined`; rejects `null` and functions.
- */
 export function isWidgetValue(value: unknown): value is TWidgetValue {
   if (value === undefined) return true
   if (typeof value === 'string') return true
@@ -403,11 +399,6 @@ export interface IBaseWidget<
 
   linkedWidgets?: IBaseWidget[]
 
-  /**
-   * Canonical identity within the root graph, derived from
-   * `(graphId, nodeId, name)`. `undefined` when not yet bound to a node.
-   * Distinct from any DOM-widget UUID — this is the structured value key.
-   */
   readonly entityId?: WidgetEntityId
 
   name: string

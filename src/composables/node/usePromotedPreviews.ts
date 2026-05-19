@@ -9,9 +9,7 @@ import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 interface PromotedPreview {
-  /** Source node id resolved on the host's interior subgraph. */
   sourceNodeId: string
-  /** Canonical preview name on the source widget (typically `$$`-prefixed). */
   sourceWidgetName: string
   type: 'image' | 'video' | 'audio'
   urls: string[]
@@ -30,14 +28,6 @@ function getPreviewMediaType(node: LGraphNode): PromotedPreview['type'] {
   return 'image'
 }
 
-/**
- * Returns reactive preview media exposed by a host SubgraphNode.
- *
- * Reads from the host-scoped {@link usePreviewExposureStore}, the canonical
- * post-ADR-0009 source for display-only preview promotion. Legacy locator
- * migration is handled at configure time in `SubgraphNode`, not here — this
- * read path is pure.
- */
 export function usePromotedPreviews(
   lgraphNode: MaybeRefOrGetter<LGraphNode | null | undefined>
 ) {
@@ -100,7 +90,6 @@ export function usePromotedPreviews(
       const sourceNode = currentHost?.subgraph.getNodeById(sourceNodeId)
       if (!(sourceNode instanceof SubgraphNode)) return undefined
 
-      // Prefer per-instance path key; fall back to definition key from `_hydratePreviewExposures`.
       const pathLocator = `${currentHostLocator}:${sourceNode.id}`
       const definitionLocator = String(sourceNode.id)
       const hasPathExposures =

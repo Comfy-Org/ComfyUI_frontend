@@ -41,7 +41,6 @@
     @dragleave="handleDragLeave"
     @drop="handleDrop"
   >
-    <!-- Selection/Execution Outline Overlay -->
     <AppOutput
       v-if="
         lgraphNode?.constructor?.nodeData?.output_node &&
@@ -65,7 +64,6 @@
         )
       "
     />
-    <!-- Root Border Overlay -->
     <div
       :class="
         cn(
@@ -137,7 +135,6 @@
 
       <template v-else-if="!isCollapsed">
         <div class="relative">
-          <!-- Progress bar for executing state -->
           <div
             v-if="executing && progress !== undefined"
             :class="
@@ -783,8 +780,6 @@ const nodeMedia = computed(() => {
   if (!node || !newOutputs?.images?.length || node.hideOutputImages)
     return undefined
 
-  // SubgraphNodes render interior previews via `promotedPreviews`; skipping
-  // `nodeMedia` here prevents a duplicate <NodeContent>.
   if (node instanceof SubgraphNode) return undefined
 
   const urls = nodeOutputs.getNodeImageUrls(node)

@@ -77,10 +77,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return app.nodePreviewImages[nodeToNodeLocatorId(node)]
   }
 
-  /**
-   * Whether outputs include images loadable normally by PIL (excludes
-   * animated webp/png, video nodes, and svg).
-   */
   const isImageOutputs = (
     node: LGraphNode,
     outputs: ExecutedWsMessage['output']
@@ -98,10 +94,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return true
   }
 
-  /**
-   * For non-image outputs, returns empty string — including the preview
-   * param would force the server to load the output as an image.
-   */
   function getPreviewParam(
     node: LGraphNode,
     outputs: ExecutedWsMessage['output']
@@ -109,7 +101,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return isImageOutputs(node, outputs) ? app.getPreviewFormatParam() : ''
   }
 
-  /** Returns undefined when there are no images so callers can fall back to preview blobs. */
   function buildImageUrls(
     node: LGraphNode,
     outputs: ExecutedWsMessage['output'] | undefined
@@ -160,10 +151,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return buildImageUrls(node, getNodeOutputByExecutionId(executionId))
   }
 
-  /**
-   * Detect synthetic previews from upload widgets (LoadImage/LoadVideo)
-   * so execution results don't overwrite them when an exec sends no images.
-   */
   function isInputPreviewOutput(
     output: ExecutedWsMessage['output'] | ResultItem | undefined
   ): boolean {
@@ -180,13 +167,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     outputs: ExecutedWsMessage['output'] | ResultItem,
     options: SetOutputOptions = {}
   ) {
-    // Backend can return null for cached/deduplicated nodes (e.g. two
-    // LoadImage nodes selecting the same image); preserve existing output.
     if (outputs == null) return
 
-    // Guard: empty execution results must not overwrite an upload widget's
-    // preview (LoadImage/LoadVideo). User-initiated clears go through
-    // setNodeOutputs (widget path), not this function.
     const incomingImages = (outputs as ExecutedWsMessage['output']).images
     const hasIncomingImages =
       Array.isArray(incomingImages) && incomingImages.length > 0
@@ -329,10 +311,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     nodePreviewImages.value = {}
   }
 
-  /**
-   * Revokes the host subgraph node and its direct interior nodes. Does not
-   * recurse into nested subgraphs.
-   */
   function revokeSubgraphPreviews(subgraphNode: SubgraphNode) {
     const { graph } = subgraphNode
     if (!graph) return
@@ -363,18 +341,12 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return hadOutputs
   }
 
-  /**
-   * Remove node outputs for a specific node
-   * Clears both outputs and preview images
-   */
   function removeNodeOutputs(nodeId: number | string) {
     const nodeLocatorId = nodeIdToNodeLocatorId(Number(nodeId))
     if (!nodeLocatorId) return false
     return removeOutputsByLocatorId(nodeLocatorId)
   }
 
-  // Resolves the locator from the node's own graph, so interior subgraph nodes
-  // are addressed correctly even when the user has a different graph active.
   function removeNodeOutputsForNode(node: LGraphNode) {
     return removeOutputsByLocatorId(nodeToNodeLocatorId(node))
   }
@@ -426,12 +398,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     revokeAllPreviews()
   }
 
-  /**
-   * In Vue Nodes mode, legacy systems (Copy Image, Open Image, Save Image,
-   * Open in Mask Editor) rely on `node.imgs` containing HTMLImageElement
-   * references. Vue handles image rendering, so the already-loaded element
-   * from the Vue component is synced back to the node here.
-   */
   function syncLegacyNodeImgs(
     nodeId: string | number,
     element: HTMLImageElement,

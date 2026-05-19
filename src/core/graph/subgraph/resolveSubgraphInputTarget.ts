@@ -16,8 +16,6 @@ export function resolveSubgraphInputTarget(
     inputName,
     ({ inputNode, targetInput, getTargetWidget }) => {
       if (inputNode.isSubgraphNode()) {
-        // ADR 0009: SubgraphNode is opaque, so target the child's input slot (even without a
-        // backing widget) instead of resolving to a deeper leaf.
         return {
           nodeId: String(inputNode.id),
           widgetName: targetInput.name
