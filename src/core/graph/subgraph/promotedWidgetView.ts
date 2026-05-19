@@ -410,6 +410,8 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   private applyValueControlToHost(isPartialExecution?: boolean): void {
+    if (this.subgraphNode.getSlotFromWidget(this)?.link != null) return
+
     const resolved = this.resolveAtHost()
     const next = nextValueForLinkedTarget({
       target: this,

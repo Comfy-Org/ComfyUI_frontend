@@ -29,10 +29,18 @@ export function useResolvedSelectedInputs() {
   const appModeStore = useAppModeStore()
 
   const graphNodes = shallowRef<LGraphNode[]>([...(app.rootGraph?.nodes ?? [])])
+  const refreshGraphNodes = () =>
+    (graphNodes.value = [...(app.rootGraph?.nodes ?? [])])
+  useEventListener(() => app.rootGraph?.events, 'configured', refreshGraphNodes)
   useEventListener(
     () => app.rootGraph?.events,
-    'configured',
-    () => (graphNodes.value = [...(app.rootGraph?.nodes ?? [])])
+    'convert-to-subgraph',
+    refreshGraphNodes
+  )
+  useEventListener(
+    () => app.rootGraph?.events,
+    'subgraph-created',
+    refreshGraphNodes
   )
   useEventListener(
     () => app.rootGraph?.events,

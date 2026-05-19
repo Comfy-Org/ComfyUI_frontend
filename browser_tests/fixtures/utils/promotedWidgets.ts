@@ -56,10 +56,7 @@ export async function getPromotedWidgets(
           }
         ]
       })
-      const serialized = window.app!.graph!.serialize()
-      const serializedNode = serialized.nodes.find(
-        (candidate) => String(candidate.id) === String(id)
-      )
+      const serializedNode = node?.serialize()
       return {
         widgetSources,
         previewExposures: serializedNode?.properties?.previewExposures

@@ -957,6 +957,32 @@ describe('SubgraphWidgetPromotion', () => {
         }
       })
 
+      it('afterQueued does not run value-control when the host input is externally linked', () => {
+        const subgraph = createTestSubgraph()
+        const sources = buildSources(
+          subgraph,
+          TEXT_TEXT_SEED.map((s) =>
+            s.title === 'Sampler' ? { ...s, hugeMaxSeed: true } : s
+          )
+        )
+        const seed = sources[2]
+        const host = createTestSubgraphNode(subgraph)
+
+        seed.widget.linkedWidgets = [
+          makeControlWidget('increment', true) as never
+        ]
+        host.widgets[2].value = 2
+        reorderSubgraphInputAtIndex(host, 2, 1)
+
+        const seedSlot = host.getSlotFromWidget(host.widgets[1])
+        expect(seedSlot).toBeDefined()
+        seedSlot!.link = -1
+
+        host.widgets[1].afterQueued?.()
+
+        expect(host.widgets[1].value).toBe(2)
+      })
+
       it('serializes promoted values from each host independently', () => {
         const subgraph = createTestSubgraph({
           inputs: [{ name: 'value', type: 'number' }]
