@@ -35,13 +35,13 @@
       </Button>
     </div>
     <template v-if="reportOpen">
-      <Divider />
-      <ScrollPanel class="h-[400px] w-full max-w-[80vw]">
+      <hr class="border-t border-border-subtle" />
+      <div class="h-[400px] w-full max-w-[80vw] overflow-auto">
         <pre class="wrap-break-word whitespace-pre-wrap">{{
           reportContent
         }}</pre>
-      </ScrollPanel>
-      <Divider />
+      </div>
+      <hr class="border-t border-border-subtle" />
     </template>
     <div class="flex justify-end gap-4">
       <FindIssueButton
@@ -62,8 +62,6 @@
 </template>
 
 <script setup lang="ts">
-import Divider from 'primevue/divider'
-import ScrollPanel from 'primevue/scrollpanel'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'

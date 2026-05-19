@@ -1,48 +1,51 @@
 <template>
-  <Dialog
-    v-model:visible="isVisible"
-    modal
-    :closable="false"
-    :close-on-escape="false"
-    :dismissable-mask="true"
-    :pt="{
-      root: { class: 'video-help-dialog' },
-      header: { class: '!hidden' },
-      content: { class: '!p-0' },
-      mask: { class: '!bg-black/70' }
-    }"
-    :style="{ width: '90vw' }"
-  >
-    <div class="relative">
-      <Button
-        variant="textonly"
-        size="icon"
-        class="absolute top-4 right-6 z-10"
-        :aria-label="$t('g.close')"
-        @click="isVisible = false"
-      >
-        <i class="pi pi-times text-sm" />
-      </Button>
-      <video
-        autoplay
-        muted
-        loop
+  <Dialog v-model:open="isVisible">
+    <DialogPortal>
+      <DialogOverlay class="bg-black/70" />
+      <DialogContent
+        size="full"
+        class="w-[90vw] border-0 bg-transparent p-0 shadow-none"
         :aria-label="ariaLabel"
-        class="w-full rounded-lg"
-        :src="videoUrl"
+        @escape-key-down="onEscapeKeyDown"
       >
-        {{ $t('g.videoFailedToLoad') }}
-      </video>
-    </div>
+        <VisuallyHidden as-child>
+          <DialogTitle>{{ ariaLabel }}</DialogTitle>
+        </VisuallyHidden>
+        <div class="relative">
+          <Button
+            variant="textonly"
+            size="icon"
+            class="absolute top-4 right-6 z-10"
+            :aria-label="$t('g.close')"
+            @click="isVisible = false"
+          >
+            <i class="pi pi-times text-sm" />
+          </Button>
+          <video
+            autoplay
+            muted
+            loop
+            :aria-label="ariaLabel"
+            class="w-full rounded-lg"
+            :src="videoUrl"
+          >
+            {{ $t('g.videoFailedToLoad') }}
+          </video>
+        </div>
+      </DialogContent>
+    </DialogPortal>
   </Dialog>
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
-import Dialog from 'primevue/dialog'
-import { onWatcherCleanup, watch } from 'vue'
+import { VisuallyHidden } from 'reka-ui'
 
 import Button from '@/components/ui/button/Button.vue'
+import Dialog from '@/components/ui/dialog/Dialog.vue'
+import DialogContent from '@/components/ui/dialog/DialogContent.vue'
+import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
+import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 
 const isVisible = defineModel<boolean>({ required: true })
 
@@ -51,27 +54,13 @@ const { videoUrl, ariaLabel = 'Help video' } = defineProps<{
   ariaLabel?: string
 }>()
 
-const handleEscapeKey = (event: KeyboardEvent) => {
-  if (event.key === 'Escape') {
-    event.stopImmediatePropagation()
-    event.stopPropagation()
-    event.preventDefault()
-    isVisible.value = false
-  }
+// The dialog mounts inside other dialogs (e.g. UploadModelFooter inside an
+// asset modal). Reka's Escape handling bubbles to the parent dialog and would
+// close it as well. Stop propagation so only this dialog closes, and prevent
+// Reka's default auto-dismiss so the close path stays solely under the model.
+function onEscapeKeyDown(event: KeyboardEvent) {
+  event.preventDefault()
+  event.stopPropagation()
+  isVisible.value = false
 }
-
-// Add listener with capture phase to intercept before parent dialogs
-// Only active when dialog is visible
-watch(
-  isVisible,
-  (visible) => {
-    if (visible) {
-      const stop = useEventListener(document, 'keydown', handleEscapeKey, {
-        capture: true
-      })
-      onWatcherCleanup(stop)
-    }
-  },
-  { immediate: true }
-)
 </script>
