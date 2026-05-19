@@ -133,7 +133,9 @@ describe('ModelExporter', () => {
       const blob = new Blob(['x'])
       vi.stubGlobal(
         'fetch',
-        vi.fn().mockResolvedValue({ blob: () => Promise.resolve(blob) })
+        vi
+          .fn()
+          .mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) })
       )
 
       await ModelExporter.downloadFromURL(
@@ -157,6 +159,27 @@ describe('ModelExporter', () => {
       )
       vi.unstubAllGlobals()
     })
+
+    it('rethrows and shows a toast alert when the response status is not ok', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 404,
+          blob: () => Promise.resolve(new Blob(['x']))
+        })
+      )
+
+      await expect(
+        ModelExporter.downloadFromURL('http://example.com/cube.glb', 'cube.glb')
+      ).rejects.toThrow('HTTP 404')
+      expect(downloadBlobMock).not.toHaveBeenCalled()
+      expect(addAlertMock).toHaveBeenCalledWith(
+        'toastMessages.failedToDownloadFile'
+      )
+      vi.unstubAllGlobals()
+    })
   })
 
   describe('exportGLB', () => {
@@ -164,7 +187,9 @@ describe('ModelExporter', () => {
       const blob = new Blob(['x'])
       vi.stubGlobal(
         'fetch',
-        vi.fn().mockResolvedValue({ blob: () => Promise.resolve(blob) })
+        vi
+          .fn()
+          .mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) })
       )
       const model = new THREE.Object3D()
 
@@ -222,7 +247,9 @@ describe('ModelExporter', () => {
       const blob = new Blob(['x'])
       vi.stubGlobal(
         'fetch',
-        vi.fn().mockResolvedValue({ blob: () => Promise.resolve(blob) })
+        vi
+          .fn()
+          .mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) })
       )
 
       await ModelExporter.exportOBJ(
@@ -268,7 +295,9 @@ describe('ModelExporter', () => {
       const blob = new Blob(['x'])
       vi.stubGlobal(
         'fetch',
-        vi.fn().mockResolvedValue({ blob: () => Promise.resolve(blob) })
+        vi
+          .fn()
+          .mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) })
       )
 
       await ModelExporter.exportSTL(
@@ -314,7 +343,9 @@ describe('ModelExporter', () => {
       const blob = new Blob(['x'])
       vi.stubGlobal(
         'fetch',
-        vi.fn().mockResolvedValue({ blob: () => Promise.resolve(blob) })
+        vi
+          .fn()
+          .mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) })
       )
 
       await ModelExporter.exportFBX(

@@ -39,6 +39,9 @@ export class ModelExporter {
   ): Promise<void> {
     try {
       const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error(`Failed to download file (HTTP ${response.status})`)
+      }
       const blob = await response.blob()
       downloadBlob(desiredFilename, blob)
     } catch (error) {
