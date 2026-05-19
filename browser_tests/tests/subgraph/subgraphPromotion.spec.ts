@@ -781,7 +781,7 @@ test(
       await comfyPage.subgraph.exitViaBreadcrumb()
     })
 
-    await editor.open(subgraphNode)
+    await editor.ensureOpen(subgraphNode)
     const stepsItem = await editor.resolveItem({ widgetName: 'steps' })
     await expect(editor.getToggleButton(stepsItem)).toBeDisabled()
   }

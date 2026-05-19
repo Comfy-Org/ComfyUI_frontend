@@ -17,7 +17,7 @@ export class SubgraphEditor {
     )
   }
 
-  async open(subgraphNode: Locator) {
+  async ensureOpen(subgraphNode: Locator) {
     await new VueNodeFixture(subgraphNode).select()
     if (await this.root.isVisible()) return
     const menu = await this.comfyPage.contextMenu.openFor(subgraphNode)
@@ -70,7 +70,7 @@ export class SubgraphEditor {
       toState?: boolean
     }
   ) {
-    await this.open(subgraphNode)
+    await this.ensureOpen(subgraphNode)
 
     const item = this.resolveItem(options)
     await this.togglePromotionOnItem(item, options.toState)
