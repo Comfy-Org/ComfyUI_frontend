@@ -61,7 +61,8 @@ const config: KnipConfig = {
     '.agents/checks/eslint.strict.config.js',
     // Devtools extensions, included dynamically
     'tools/devtools/web/**',
-    // Legacy V1 draft store kept for rollback until the storage sunset
+    // Legacy V1 draft cache/store kept for rollback until the storage sunset
+    'src/platform/workflow/persistence/base/draftCache.ts',
     'src/platform/workflow/persistence/stores/workflowDraftStore.ts'
   ],
   vite: {

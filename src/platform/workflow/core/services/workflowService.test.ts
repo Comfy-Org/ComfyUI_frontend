@@ -21,6 +21,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import type { AppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+import { t } from '@/i18n'
 
 function createModeTestWorkflow(
   options: {
@@ -77,11 +78,6 @@ vi.mock('@/services/dialogService', () => ({
     prompt: vi.fn(),
     confirm: mockConfirm
   })
-}))
-
-vi.mock('@/i18n', () => ({
-  st: (key: string) => key,
-  t: (key: string) => key
 }))
 
 vi.mock('@/scripts/app', () => ({
@@ -357,10 +353,46 @@ describe('useWorkflowService', () => {
       expect(addToastSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'error',
-          summary: 'g.error',
-          detail: 'toastMessages.failedToSaveDraft'
+          summary: t('g.error'),
+          detail: t('toastMessages.failedToSaveDraft')
         })
       )
+    })
+
+    it('should log and show an error toast when the V2 draft store throws', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
+        return key === 'Comfy.Workflow.Persist'
+      })
+      const addToastSpy = vi.spyOn(useToastStore(), 'add')
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      const error = new Error('storage unavailable')
+      draftStoreMocks.saveDraft.mockImplementation(() => {
+        throw error
+      })
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      workflowStore.activeWorkflow = activeWorkflow
+
+      try {
+        useWorkflowService().beforeLoadNewGraph()
+
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          'Failed to persist active workflow draft',
+          error
+        )
+        expect(addToastSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('toastMessages.failedToSaveDraft')
+          })
+        )
+      } finally {
+        consoleErrorSpy.mockRestore()
+      }
     })
   })
 

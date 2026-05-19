@@ -40,11 +40,26 @@ const waitForWorkflowTabState = async (comfyPage: ComfyPage, minPaths = 2) => {
   }, minPaths)
 }
 
+type NodeRef = NonNullable<
+  Awaited<ReturnType<ComfyPage['nodeOps']['getFirstNodeRef']>>
+>
+
+const getRequiredFirstNodeRef = async (
+  comfyPage: ComfyPage,
+  message: string
+): Promise<NodeRef> => {
+  const node = await comfyPage.nodeOps.getFirstNodeRef()
+  expect(node, message).toBeDefined()
+  if (!node) throw new Error(message)
+  return node
+}
+
 const makeActivePathStale = async (
   comfyPage: ComfyPage,
   staleWorkflowName: string,
   activeWorkflowName: string
 ) => {
+  // Intentionally desync ActivePath from OpenPaths to exercise stale pointer recovery.
   await comfyPage.page.evaluate(
     ([staleName, activeName]) => {
       const findStorageKey = (prefix: string) => {
@@ -185,9 +200,11 @@ test.describe('Workflow Persistence', () => {
 
     await comfyPage.menu.topbar.saveWorkflow('outputs-test')
 
-    const firstNode = await comfyPage.nodeOps.getFirstNodeRef()
-    expect(firstNode).toBeTruthy()
-    const nodeId = String(firstNode!.id)
+    const firstNode = await getRequiredFirstNodeRef(
+      comfyPage,
+      'First node should be available after loading the default workflow'
+    )
+    const nodeId = String(firstNode.id)
 
     // Simulate node outputs as if execution completed
     await comfyPage.page.evaluate((id) => {
@@ -481,7 +498,10 @@ test.describe('Workflow Persistence', () => {
     await fitToViewInstant(comfyPage)
     await comfyPage.menu.topbar.saveWorkflow(workflowA)
 
-    const firstNode = (await comfyPage.nodeOps.getFirstNodeRef())!
+    const firstNode = await getRequiredFirstNodeRef(
+      comfyPage,
+      'First node should be available after loading single_ksampler'
+    )
     await firstNode.centerOnNode()
     const draftSaveStartedAt = Date.now()
     await firstNode.toggleCollapse()
@@ -506,7 +526,10 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.workflow.waitForWorkflowIdle()
     await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
 
-    const restoredNode = (await comfyPage.nodeOps.getFirstNodeRef())!
+    const restoredNode = await getRequiredFirstNodeRef(
+      comfyPage,
+      'Restored node should be available after switching back to workflow A'
+    )
     expect(await restoredNode.isCollapsed()).toBe(true)
     await expect(comfyPage.toast.toastErrors).toHaveCount(0)
   })

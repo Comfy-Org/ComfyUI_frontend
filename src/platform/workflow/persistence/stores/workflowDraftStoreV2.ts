@@ -331,6 +331,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       removeDraft(path)
     })
     if (loaded) {
+      // Direct persisted-draft restores do not go through ComfyWorkflow.load().
       markDraftUsed(path)
     }
 

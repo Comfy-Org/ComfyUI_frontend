@@ -5,7 +5,10 @@ export interface WorkflowDraftSnapshot {
   isTemporary: boolean
 }
 
-/** @knipIgnoreUsedByStackedPR */
+/**
+ * Legacy V1 draft index shape retained for rollback/migration compatibility
+ * until the 2026-07-15 storage sunset.
+ */
 export interface DraftCacheState {
   drafts: Record<string, WorkflowDraftSnapshot>
   order: string[]

@@ -146,6 +146,8 @@ export class ComfyWorkflow extends UserFile {
       this.changeTracker.activeState = draftState
       this.content = draftContent
       this._isModified = true
+      // Saved-workflow draft overlay path; direct persisted-draft restores
+      // are touched in workflowDraftStoreV2.loadDraft().
       draftStore.markDraftUsed(this.path)
     }
     return this as this & LoadedComfyWorkflow

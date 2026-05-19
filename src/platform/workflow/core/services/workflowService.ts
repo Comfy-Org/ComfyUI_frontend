@@ -82,7 +82,8 @@ export const useWorkflowService = () => {
       if (!saved) {
         showFailedToSaveDraftToast()
       }
-    } catch {
+    } catch (err) {
+      console.error('Failed to persist active workflow draft', err)
       showFailedToSaveDraftToast()
     }
   }
