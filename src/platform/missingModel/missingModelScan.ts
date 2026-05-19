@@ -6,7 +6,10 @@ import type {
   MissingModelViewModel,
   EmbeddedModelWithSource
 } from './types'
-import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
+import {
+  MODEL_FILE_EXTENSIONS,
+  getAssetFilename
+} from '@/platform/assets/utils/assetMetadataUtils'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
@@ -70,19 +73,10 @@ function isAssetWidget(widget: IBaseWidget): widget is IAssetWidget {
   return widget.type === 'asset'
 }
 
-// Full set of model file extensions used for scanning candidate widgets.
-// Intentionally broader than ALLOWED_SUFFIXES in missingModelDownload.ts,
-// which restricts which files are eligible for download.
-export const MODEL_FILE_EXTENSIONS = new Set([
-  '.safetensors',
-  '.ckpt',
-  '.pt',
-  '.pth',
-  '.bin',
-  '.sft',
-  '.onnx',
-  '.gguf'
-])
+// Re-export the canonical model extension set from assets/utils so existing
+// callers continue to work; ALLOWED_SUFFIXES in missingModelDownload.ts is
+// intentionally narrower and lives there.
+export { MODEL_FILE_EXTENSIONS }
 
 export function isModelFileName(name: string): boolean {
   const lower = name.toLowerCase()

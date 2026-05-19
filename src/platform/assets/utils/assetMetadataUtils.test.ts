@@ -14,7 +14,8 @@ import {
   getAssetSourceUrl,
   getAssetTriggerPhrases,
   getAssetUserDescription,
-  getSourceName
+  getSourceName,
+  formatAssetCardPlaceholderLabel
 } from '@/platform/assets/utils/assetMetadataUtils'
 
 describe('assetMetadataUtils', () => {
@@ -381,6 +382,62 @@ describe('assetMetadataUtils', () => {
         display_name: 'pretty.png'
       }
       expect(getAssetCardTitle(asset)).toBe('pretty.png')
+    })
+  })
+
+  describe('formatAssetCardPlaceholderLabel', () => {
+    it('strips a single safetensors extension', () => {
+      expect(
+        formatAssetCardPlaceholderLabel('v1-5-pruned-emaonly.safetensors')
+      ).toBe('v1-5-pruned-emaonly')
+    })
+
+    it('strips path prefix and keeps only the last segment', () => {
+      expect(
+        formatAssetCardPlaceholderLabel('owner/repo/model.safetensors')
+      ).toBe('model')
+    })
+
+    it('preserves hyphens and underscores as part of the name', () => {
+      expect(formatAssetCardPlaceholderLabel('detail-tweaker_v2.ckpt')).toBe(
+        'detail-tweaker_v2'
+      )
+    })
+
+    it('only strips the trailing extension on double-extension names', () => {
+      expect(formatAssetCardPlaceholderLabel('model.fp16.safetensors')).toBe(
+        'model.fp16'
+      )
+    })
+
+    it('matches extensions case-insensitively', () => {
+      expect(formatAssetCardPlaceholderLabel('Lora_v1.CKPT')).toBe('Lora_v1')
+    })
+
+    it('handles a trailing slash by falling back to the preceding segment', () => {
+      expect(formatAssetCardPlaceholderLabel('Author/')).toBe('Author')
+    })
+
+    it('does not return an empty string when the input is just an extension', () => {
+      expect(formatAssetCardPlaceholderLabel('.safetensors')).toBe(
+        '.safetensors'
+      )
+    })
+
+    it('returns plain names unchanged', () => {
+      expect(formatAssetCardPlaceholderLabel('plain-name')).toBe('plain-name')
+    })
+
+    it('handles Windows-style backslash separators', () => {
+      expect(
+        formatAssetCardPlaceholderLabel('C:\\Models\\loras\\foo.safetensors')
+      ).toBe('foo')
+    })
+
+    it('trims whitespace before extension matching', () => {
+      expect(formatAssetCardPlaceholderLabel('  model.safetensors  ')).toBe(
+        'model'
+      )
     })
   })
 })

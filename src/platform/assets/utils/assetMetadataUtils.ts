@@ -198,3 +198,33 @@ export function getAssetCardTitle(asset: AssetItem): string {
   if (curatedName && curatedName !== asset.name) return curatedName
   return getAssetDisplayFilename(asset)
 }
+
+export const MODEL_FILE_EXTENSIONS = new Set([
+  '.safetensors',
+  '.ckpt',
+  '.pt',
+  '.pth',
+  '.bin',
+  '.sft',
+  '.onnx',
+  '.gguf'
+])
+
+/**
+ * Builds a short caption for an asset card's placeholder when no preview
+ * image is available. Strips path segments and common model file extensions
+ * while preserving hyphens and underscores (these are part of the model name,
+ * not delimiters). Never returns an empty string for a non-empty input.
+ */
+export function formatAssetCardPlaceholderLabel(name: string): string {
+  const segments = name.split(/[\\/]/).filter(Boolean)
+  const filename = (segments.at(-1) ?? name).trim()
+  const lower = filename.toLowerCase()
+  for (const ext of MODEL_FILE_EXTENSIONS) {
+    if (lower.endsWith(ext)) {
+      const stripped = filename.slice(0, -ext.length).trim()
+      return stripped || filename || name
+    }
+  }
+  return filename || name
+}

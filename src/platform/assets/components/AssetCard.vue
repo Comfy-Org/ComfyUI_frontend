@@ -20,8 +20,15 @@
     <div class="relative aspect-square w-full overflow-hidden rounded-xl">
       <div
         v-if="isLoading || error"
-        class="flex size-full cursor-pointer items-center justify-center bg-linear-to-br from-smoke-400 via-smoke-800 to-charcoal-400"
-      />
+        class="flex size-full cursor-pointer items-center justify-center bg-asset-card-fallback-background p-4"
+      >
+        <span
+          aria-hidden="true"
+          class="line-clamp-3 px-2 text-center text-sm font-medium tracking-wide wrap-break-word text-muted-foreground"
+        >
+          {{ fallbackName }}
+        </span>
+      </div>
       <img
         v-else
         :src="asset.preview_url"
@@ -140,7 +147,10 @@ import Button from '@/components/ui/button/Button.vue'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
-import { getAssetCardTitle } from '@/platform/assets/utils/assetMetadataUtils'
+import {
+  formatAssetCardPlaceholderLabel,
+  getAssetCardTitle
+} from '@/platform/assets/utils/assetMetadataUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -172,6 +182,10 @@ const titleId = useId()
 const descId = useId()
 
 const displayName = computed(() => getAssetCardTitle(asset))
+
+const fallbackName = computed(() =>
+  formatAssetCardPlaceholderLabel(displayName.value)
+)
 
 // Format at render so locale switches re-flow; the upstream WeakMap caches
 // AssetItem -> AssetDisplayItem by reference, which would otherwise pin the

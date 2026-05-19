@@ -100,7 +100,7 @@ export const WithPreviewImage: Story = {
   }
 }
 
-export const FallbackGradient: Story = {
+export const FallbackPlaceholder: Story = {
   args: {
     asset: createAssetData({
       preview_url: undefined
@@ -116,7 +116,31 @@ export const FallbackGradient: Story = {
     docs: {
       description: {
         story:
-          'AssetCard showing fallback gradient when no preview image is available.'
+          'AssetCard showing the neutral placeholder when no preview image is available — filename is reduced to the last path segment with any known model extension stripped; hyphens and underscores are preserved.'
+      }
+    }
+  }
+}
+
+export const FallbackPlaceholderLongName: Story = {
+  args: {
+    asset: createAssetData({
+      name: 'Qwen-Image-Edit-2511-Lightning-8steps-V1.0-fp32.safetensors',
+      preview_url: undefined,
+      tags: ['models', 'loras']
+    }),
+    interactive: true
+  },
+  decorators: [
+    () => ({
+      template: '<div class="p-8 bg-base-background max-w-96"><story /></div>'
+    })
+  ],
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Fallback placeholder for an asset with a very long filename — text wraps and clamps to 3 lines.'
       }
     }
   }
