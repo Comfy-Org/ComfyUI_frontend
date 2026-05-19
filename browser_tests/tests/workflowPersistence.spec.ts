@@ -4,6 +4,158 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+
+const generateUniqueFilename = (extension = '') =>
+  `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}${extension}`
+
+const waitForV2DraftSave = async (comfyPage: ComfyPage, since: number) => {
+  await comfyPage.page.waitForFunction((savedSince) => {
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i)
+      if (!key?.startsWith('Comfy.Workflow.DraftIndex.v2:')) continue
+
+      const json = window.localStorage.getItem(key)
+      if (!json) continue
+
+      try {
+        const index = JSON.parse(json)
+        if (
+          typeof index.updatedAt === 'number' &&
+          index.updatedAt >= savedSince
+        ) {
+          return true
+        }
+      } catch {
+        // Ignore malformed storage while waiting for the debounce to flush.
+      }
+    }
+
+    return false
+  }, since)
+}
+
+const waitForTabStatePersistence = async (
+  comfyPage: ComfyPage,
+  minPaths = 2
+) => {
+  await comfyPage.page.waitForFunction((expectedMinPaths) => {
+    let activePathKey: string | null = null
+    let openPathsKey: string | null = null
+
+    for (let i = 0; i < window.sessionStorage.length; i++) {
+      const key = window.sessionStorage.key(i)
+      if (key?.startsWith('Comfy.Workflow.ActivePath:')) {
+        activePathKey = key
+      }
+      if (key?.startsWith('Comfy.Workflow.OpenPaths:')) {
+        openPathsKey = key
+      }
+    }
+
+    if (!activePathKey || !openPathsKey) {
+      return false
+    }
+
+    const activePointerRaw = window.sessionStorage.getItem(activePathKey)
+    const openPointerRaw = window.sessionStorage.getItem(openPathsKey)
+    if (!activePointerRaw || !openPointerRaw) {
+      return false
+    }
+
+    try {
+      const activePointer = JSON.parse(activePointerRaw) as {
+        workspaceId?: unknown
+        path?: unknown
+      }
+      const openPointer = JSON.parse(openPointerRaw) as {
+        paths?: unknown[]
+      }
+
+      return (
+        typeof activePointer.workspaceId === 'string' &&
+        typeof activePointer.path === 'string' &&
+        Array.isArray(openPointer.paths) &&
+        openPointer.paths.length >= expectedMinPaths
+      )
+    } catch {
+      return false
+    }
+  }, minPaths)
+}
+
+const forceStaleActivePathToWorkflow = async (
+  comfyPage: ComfyPage,
+  staleWorkflowName: string,
+  activeWorkflowName: string
+) => {
+  await comfyPage.page.evaluate(
+    ([staleName, activeName]) => {
+      let activePathKey: string | null = null
+      let openPathsKey: string | null = null
+
+      for (let i = 0; i < window.sessionStorage.length; i++) {
+        const key = window.sessionStorage.key(i)
+        if (key?.startsWith('Comfy.Workflow.ActivePath:')) {
+          activePathKey = key
+        }
+        if (key?.startsWith('Comfy.Workflow.OpenPaths:')) {
+          openPathsKey = key
+        }
+      }
+
+      if (!activePathKey || !openPathsKey) {
+        throw new Error('Expected workflow persistence session state to exist')
+      }
+
+      const activePointerRaw = window.sessionStorage.getItem(activePathKey)
+      const openPointerRaw = window.sessionStorage.getItem(openPathsKey)
+      if (!activePointerRaw || !openPointerRaw) {
+        throw new Error(
+          'Expected workflow persistence session payloads to exist'
+        )
+      }
+
+      const activePointer = JSON.parse(activePointerRaw) as {
+        workspaceId: string
+        path: string
+      }
+      const openPointer = JSON.parse(openPointerRaw) as {
+        workspaceId: string
+        paths: string[]
+        activeIndex: number
+      }
+
+      if (openPointer.paths.length < 2) {
+        throw new Error(
+          'Expected at least two saved workflow paths in tab state'
+        )
+      }
+
+      const pathForName = (name: string) => {
+        const path = openPointer.paths.find((candidate) =>
+          candidate.endsWith(`${name}.json`)
+        )
+        if (!path) throw new Error(`Expected tab state path for ${name}`)
+        return path
+      }
+
+      const stalePath = pathForName(staleName)
+      const activePath = pathForName(activeName)
+
+      activePointer.path = stalePath
+      openPointer.paths = [stalePath, activePath]
+      openPointer.activeIndex = 1
+
+      window.sessionStorage.setItem(
+        activePathKey,
+        JSON.stringify(activePointer)
+      )
+      window.sessionStorage.setItem(openPathsKey, JSON.stringify(openPointer))
+    },
+    [staleWorkflowName, activeWorkflowName]
+  )
+}
 
 async function getNodeOutputImageCount(
   comfyPage: ComfyPage,
@@ -43,10 +195,13 @@ async function getLinkCount(comfyPage: ComfyPage): Promise<number> {
 
 test.describe('Workflow Persistence', () => {
   test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting(
       'Comfy.Workflow.WorkflowTabsPosition',
       'Sidebar'
     )
+    await comfyPage.workflow.setupWorkflowsDirectory({})
+    await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
   })
 
   test.afterEach(async ({ comfyPage }) => {
@@ -107,7 +262,6 @@ test.describe('Workflow Persistence', () => {
     expect(firstNode).toBeTruthy()
     const nodeId = String(firstNode!.id)
 
-    // Simulate node outputs as if execution completed
     await comfyPage.page.evaluate((id) => {
       const outputStore = window.app!.nodeOutputs
       if (outputStore) {
@@ -117,7 +271,6 @@ test.describe('Workflow Persistence', () => {
       }
     }, String(nodeId))
 
-    // Trigger changeTracker to capture current state including outputs
     await comfyPage.page.evaluate(() => {
       const em = window.app!.extensionManager as unknown as Record<
         string,
@@ -173,8 +326,6 @@ test.describe('Workflow Persistence', () => {
 
     await comfyPage.menu.topbar.saveWorkflow('widget-state-test')
 
-    // Read widget values via page.evaluate — these are internal LiteGraph
-    // state not exposed through DOM
     const widgetValuesBefore = await getWidgetValueSnapshot(comfyPage)
 
     expect(Object.keys(widgetValuesBefore).length).toBeGreaterThan(0)
@@ -208,7 +359,6 @@ test.describe('Workflow Persistence', () => {
     }, apiWorkflow)
     await comfyPage.nextFrame()
 
-    // Known nodes (KSampler, EmptyLatentImage) should load; unknown node skipped
     await expect
       .poll(() => comfyPage.nodeOps.getNodeCount())
       .toBeGreaterThanOrEqual(2)
@@ -307,7 +457,6 @@ test.describe('Workflow Persistence', () => {
     const tab = comfyPage.menu.workflowsTab
     await tab.open()
 
-    // Link count requires internal graph state — not exposed via DOM
     const linkCountBefore = await getLinkCount(comfyPage)
     expect(linkCountBefore).toBeGreaterThan(0)
 
@@ -382,6 +531,53 @@ test.describe('Workflow Persistence', () => {
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeCountB)
   })
 
+  test('restores all saved tabs even when active-path state is stale, and restores saved-workflow drafts', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.WorkflowTabsPosition',
+      'Topbar'
+    )
+
+    const workflowA = generateUniqueFilename()
+    const workflowB = generateUniqueFilename()
+
+    await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+    await fitToViewInstant(comfyPage)
+    await comfyPage.menu.topbar.saveWorkflow(workflowA)
+
+    const firstNode = (await comfyPage.nodeOps.getFirstNodeRef())!
+    await firstNode.centerOnNode()
+    const draftSaveStartedAt = Date.now()
+    await firstNode.toggleCollapse()
+    expect(await firstNode.isCollapsed()).toBe(true)
+
+    await waitForV2DraftSave(comfyPage, draftSaveStartedAt)
+
+    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+    await comfyPage.menu.topbar.saveWorkflow(workflowB)
+
+    await waitForTabStatePersistence(comfyPage)
+    await forceStaleActivePathToWorkflow(comfyPage, workflowA, workflowB)
+
+    await comfyPage.workflow.reloadAndWaitForApp()
+    await expect
+      .poll(() => comfyPage.menu.topbar.getActiveTabName())
+      .toBe(workflowB)
+
+    const tabs = await comfyPage.menu.topbar.getTabNames()
+    expect(tabs).toEqual(expect.arrayContaining([workflowA, workflowB]))
+    expect(tabs.indexOf(workflowA)).toBeLessThan(tabs.indexOf(workflowB))
+
+    await comfyPage.menu.topbar.getWorkflowTab(workflowA).click()
+    await comfyPage.nextFrame()
+    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+
+    const restoredNode = (await comfyPage.nodeOps.getFirstNodeRef())!
+    expect(await restoredNode.isCollapsed()).toBe(true)
+    expect(await comfyPage.toast.getToastErrorCount()).toBe(0)
+  })
+
   test('Closing an inactive tab with save preserves its own content', async ({
     comfyPage
   }) => {
@@ -400,15 +596,12 @@ test.describe('Workflow Persistence', () => {
     const nameA = `test-A-${suffix}`
     const nameB = `test-B-${suffix}`
 
-    // Save the default workflow as A
     await comfyPage.menu.topbar.saveWorkflow(nameA)
     const nodeCountA = await comfyPage.nodeOps.getNodeCount()
 
-    // Create B: duplicate and save
     await comfyPage.command.executeCommand('Comfy.DuplicateWorkflow')
     await comfyPage.menu.topbar.saveWorkflow(nameB)
 
-    // Add a Note node in B to mark it as modified
     await comfyPage.page.evaluate(() => {
       window.app!.graph.add(window.LiteGraph!.createNode('Note', undefined, {}))
     })
@@ -428,33 +621,27 @@ test.describe('Workflow Persistence', () => {
       em.workflow?.activeWorkflow?.changeTracker?.captureCanvasState()
     })
 
-    // Switch to A via topbar tab (making B inactive)
     await comfyPage.menu.topbar.getWorkflowTab(nameA).click()
     await comfyPage.workflow.waitForWorkflowIdle()
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeCountA)
 
-    // Close inactive B tab via middle-click — triggers "Save before closing?"
     await comfyPage.menu.topbar.getWorkflowTab(nameB).click({
       button: 'middle'
     })
 
-    // Click "Save" in the dirty close dialog
     const saveButton = comfyPage.page.getByRole('button', { name: 'Save' })
     await saveButton.waitFor({ state: 'visible' })
     await saveButton.click()
     await comfyPage.workflow.waitForWorkflowIdle()
     await comfyPage.nextFrame()
 
-    // Verify we're still on A with A's content
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeCountA)
 
-    // Re-open B from sidebar saved list
     const workflowsTab = comfyPage.menu.workflowsTab
     await workflowsTab.open()
     await workflowsTab.getPersistedItem(nameB).dblclick()
     await comfyPage.workflow.waitForWorkflowIdle()
 
-    // B should have the extra Note node we added, not A's node count
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeCountB)
   })
 
@@ -476,11 +663,9 @@ test.describe('Workflow Persistence', () => {
     const nameA = `test-A-${suffix}`
     const nameB = `test-B-${suffix}`
 
-    // Save the default workflow as A
     await comfyPage.menu.topbar.saveWorkflow(nameA)
     const nodeCountA = await comfyPage.nodeOps.getNodeCount()
 
-    // Create B as an unsaved workflow with a Note node
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
 
     await comfyPage.page.evaluate(() => {
@@ -499,20 +684,16 @@ test.describe('Workflow Persistence', () => {
 
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
 
-    // Switch to A via topbar tab (making unsaved B inactive)
     await comfyPage.menu.topbar.getWorkflowTab(nameA).click()
     await comfyPage.workflow.waitForWorkflowIdle()
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeCountA)
 
-    // Close inactive unsaved B tab — triggers "Save before closing?"
     await comfyPage.menu.topbar
       .getWorkflowTab('Unsaved Workflow')
       .click({ button: 'middle' })
 
-    // Click "Save" in the dirty close dialog
     await comfyPage.confirmDialog.click('save')
 
-    // Fill in the filename dialog
     const saveDialog = comfyPage.menu.topbar.getSaveDialog()
     await saveDialog.waitFor({ state: 'visible' })
     await saveDialog.fill(nameB)
@@ -520,16 +701,13 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.workflow.waitForWorkflowIdle()
     await comfyPage.nextFrame()
 
-    // Verify we're still on A with A's content
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(nodeCountA)
 
-    // Re-open B from sidebar saved list
     const workflowsTab = comfyPage.menu.workflowsTab
     await workflowsTab.open()
     await workflowsTab.getPersistedItem(nameB).dblclick()
     await comfyPage.workflow.waitForWorkflowIdle()
 
-    // B should have 1 node (the Note), not A's node count
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
   })
 

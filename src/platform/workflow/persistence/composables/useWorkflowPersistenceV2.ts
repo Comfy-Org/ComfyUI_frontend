@@ -103,6 +103,13 @@ export function useWorkflowPersistenceV2() {
     // Skip if unchanged
     if (workflowJson === lastSavedJsonByPath.value[workflowPath]) return
 
+    if (!activeWorkflow.isTemporary && !activeWorkflow.isModified) {
+      tabState.setActivePath(workflowPath)
+      lastSavedJsonByPath.value[workflowPath] = workflowJson
+      draftStore.removeDraft(workflowPath)
+      return
+    }
+
     // Save to V2 draft store
     const saved = draftStore.saveDraft(workflowPath, workflowJson, {
       name: activeWorkflow.key,
@@ -122,11 +129,10 @@ export function useWorkflowPersistenceV2() {
     tabState.setActivePath(workflowPath)
 
     lastSavedJsonByPath.value[workflowPath] = workflowJson
+  }
 
-    // Clean up draft if workflow is saved and unmodified
-    if (!activeWorkflow.isTemporary && !activeWorkflow.isModified) {
-      draftStore.removeDraft(workflowPath)
-    }
+  const isRestorableTabState = (paths: string[], activeIndex: number) => {
+    return paths.length > 0 && activeIndex >= 0 && activeIndex < paths.length
   }
 
   // Debounced version for graphChanged events
@@ -180,6 +186,14 @@ export function useWorkflowPersistenceV2() {
     }
   }
 
+  const hasRestorableTabState = () => {
+    const storedTabState = tabState.getOpenPaths()
+    const paths = storedTabState?.paths ?? []
+    const activeIndex = storedTabState?.activeIndex ?? -1
+
+    return isRestorableTabState(paths, activeIndex)
+  }
+
   const initializeWorkflow = async () => {
     if (!workflowPersistenceEnabled.value) {
       await loadDefaultWorkflow()
@@ -187,6 +201,11 @@ export function useWorkflowPersistenceV2() {
     }
 
     try {
+      if (hasRestorableTabState()) {
+        return
+      }
+
+      await workflowStore.loadWorkflows()
       const restored = await loadPreviousWorkflowFromStorage()
       if (!restored) {
         await loadDefaultWorkflow()
@@ -270,13 +289,18 @@ export function useWorkflowPersistenceV2() {
       return
     }
 
+    await workflowStore.loadWorkflows()
+
     // Read storage fresh at restore time, not at composable init,
     // to ensure workspace is properly determined
     const storedTabState = tabState.getOpenPaths()
     const storedWorkflows = storedTabState?.paths ?? []
     const storedActiveIndex = storedTabState?.activeIndex ?? -1
 
-    const isRestorable = storedWorkflows.length > 0 && storedActiveIndex >= 0
+    const isRestorable = isRestorableTabState(
+      storedWorkflows,
+      storedActiveIndex
+    )
     if (!isRestorable) {
       tabStateRestored = true
       return

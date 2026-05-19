@@ -34,4 +34,8 @@ export class ToastHelper {
     // Assert all toasts are closed
     await expect(this.visibleToasts).toHaveCount(0)
   }
+
+  async getToastErrorCount(): Promise<number> {
+    return await this.toastErrors.count()
+  }
 }

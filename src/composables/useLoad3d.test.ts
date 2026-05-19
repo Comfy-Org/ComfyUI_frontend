@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, ref, shallowRef } from 'vue'
 import type { Pinia } from 'pinia'
@@ -1464,9 +1465,10 @@ describe('useLoad3d', () => {
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
       await composable.initializeLoad3d(containerRef)
-      const call = vi
-        .mocked(mockLoad3d.addEventListener!)
-        .mock.calls.find(([event]) => event === 'modelReady')
+      const addEventListener = mockLoad3d.addEventListener as Mock
+      const call = addEventListener.mock.calls.find(
+        ([event]) => event === 'modelReady'
+      )
       return { composable, handler: call![1] as () => void }
     }
 
@@ -1475,9 +1477,8 @@ describe('useLoad3d', () => {
       const containerRef = document.createElement('div')
       await composable.initializeLoad3d(containerRef)
 
-      const events = vi
-        .mocked(mockLoad3d.addEventListener!)
-        .mock.calls.map(([event]) => event)
+      const addEventListener = mockLoad3d.addEventListener as Mock
+      const events = addEventListener.mock.calls.map(([event]) => event)
       expect(events).toContain('modelReady')
       expect(events).toContain('modelLoadingEnd')
       expect(composable).toBeDefined()

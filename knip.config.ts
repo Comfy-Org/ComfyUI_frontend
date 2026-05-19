@@ -59,6 +59,8 @@ const config: KnipConfig = {
     'apps/website/src/utils/marketingImage.ts',
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js',
+    // Legacy V1 workflow draft store retained during V2 transition/rollback window
+    'src/platform/workflow/persistence/stores/workflowDraftStore.ts',
     // Devtools extensions, included dynamically
     'tools/devtools/web/**'
   ],

@@ -143,7 +143,7 @@ export function useHeroLogo(
       renderer.domElement.style.opacity = '1'
       loaded.value = true
 
-      loadTextures(urls.slice(1)).then((rest) => {
+      void loadTextures(urls.slice(1)).then((rest) => {
         if (!disposed) textures.push(...rest)
       })
 
