@@ -25,6 +25,37 @@ vi.mock('three', async (importOriginal) => {
   return { ...actual, TextureLoader: StubTextureLoader }
 })
 
+vi.mock('three/examples/jsm/controls/OrbitControls', () => {
+  class OrbitControls {}
+  return { OrbitControls }
+})
+
+function makeMockRenderer(pixelRatio = 1): THREE.WebGLRenderer {
+  const domElement = {
+    toDataURL: vi.fn().mockReturnValue('data:image/png;base64,abc'),
+    clientWidth: 400,
+    clientHeight: 300
+  }
+  return {
+    domElement,
+    outputColorSpace: THREE.SRGBColorSpace,
+    toneMapping: THREE.ACESFilmicToneMapping,
+    toneMappingExposure: 1,
+    getSize: vi.fn((v: THREE.Vector2) => {
+      v.set(400, 300)
+      return v
+    }),
+    getPixelRatio: vi.fn().mockReturnValue(pixelRatio),
+    getClearColor: vi.fn((c: THREE.Color) => c),
+    getClearAlpha: vi.fn().mockReturnValue(0),
+    setPixelRatio: vi.fn(),
+    setSize: vi.fn(),
+    setClearColor: vi.fn(),
+    clear: vi.fn(),
+    render: vi.fn()
+  } as unknown as THREE.WebGLRenderer
+}
+
 function makeMockEventManager() {
   return {
     addEventListener: vi.fn(),
@@ -50,6 +81,12 @@ function makeRenderer() {
     domElement: canvas,
     setClearColor: vi.fn(),
     setSize: vi.fn(),
+    getSize: vi.fn((v: THREE.Vector2) => {
+      v.set(800, 600)
+      return v
+    }),
+    getPixelRatio: vi.fn().mockReturnValue(1),
+    setPixelRatio: vi.fn(),
     render: vi.fn(),
     clear: vi.fn(),
     getClearColor: vi.fn().mockReturnValue(new THREE.Color(0xffffff)),
@@ -542,5 +579,92 @@ describe('SceneManager', () => {
 
       expect(manager.scene.background).toBeNull()
     })
+  })
+})
+
+function makeSceneManager(
+  pixelRatio = 1,
+  cameraOverride?: THREE.PerspectiveCamera | THREE.OrthographicCamera
+) {
+  const renderer = makeMockRenderer(pixelRatio)
+  const camera = cameraOverride ?? new THREE.PerspectiveCamera()
+  const eventManager = makeMockEventManager()
+  const manager = new SceneManager(
+    renderer,
+    () => camera,
+    vi.fn() as unknown as () => InstanceType<
+      typeof import('three/examples/jsm/controls/OrbitControls').OrbitControls
+    >,
+    eventManager
+  )
+  return { manager, renderer, camera, eventManager }
+}
+
+describe('SceneManager.captureScene', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('resolves with scene, mask, and normal data URLs', async () => {
+    const { manager } = makeSceneManager()
+    const result = await manager.captureScene(800, 600)
+    expect(result.scene).toContain('data:image/png')
+    expect(result.mask).toContain('data:image/png')
+    expect(result.normal).toContain('data:image/png')
+  })
+
+  it('forces pixel ratio to 1 before rendering regardless of original value', async () => {
+    const { manager, renderer } = makeSceneManager(2)
+    await manager.captureScene(800, 600)
+    expect(vi.mocked(renderer.setPixelRatio).mock.calls[0]).toEqual([1])
+  })
+
+  it('restores original pixel ratio after capture completes', async () => {
+    const originalPixelRatio = 3
+    const { manager, renderer } = makeSceneManager(originalPixelRatio)
+    await manager.captureScene(800, 600)
+    const calls = vi.mocked(renderer.setPixelRatio).mock.calls
+    expect(calls.at(-1)).toEqual([originalPixelRatio])
+  })
+
+  it('renders at requested capture dimensions', async () => {
+    const { manager, renderer } = makeSceneManager()
+    await manager.captureScene(1920, 1080)
+    expect(vi.mocked(renderer.setSize).mock.calls[0]).toEqual([1920, 1080])
+  })
+
+  it('restores original renderer size after capture', async () => {
+    const { manager, renderer } = makeSceneManager()
+    await manager.captureScene(1920, 1080)
+    const calls = vi.mocked(renderer.setSize).mock.calls
+    expect(calls.at(-1)).toEqual([400, 300])
+  })
+
+  it('restores perspective camera aspect after capture', async () => {
+    const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000)
+    const { manager } = makeSceneManager(1, camera)
+    const originalAspect = camera.aspect
+    await manager.captureScene(800, 600)
+    expect(camera.aspect).toBe(originalAspect)
+  })
+
+  it('restores orthographic camera bounds after capture', async () => {
+    const camera = new THREE.OrthographicCamera(-5, 5, 5, -5, 0.1, 1000)
+    const { manager } = makeSceneManager(1, camera)
+    await manager.captureScene(800, 600)
+    expect(camera.left).toBe(-5)
+    expect(camera.right).toBe(5)
+    expect(camera.top).toBe(5)
+    expect(camera.bottom).toBe(-5)
+  })
+
+  it('disposes each temporary MeshNormalMaterial after the normal pass', async () => {
+    const { manager } = makeSceneManager()
+    manager.scene.add(
+      new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial())
+    )
+    const disposeSpy = vi.spyOn(THREE.MeshNormalMaterial.prototype, 'dispose')
+    await manager.captureScene(800, 600)
+    expect(disposeSpy).toHaveBeenCalledOnce()
   })
 })

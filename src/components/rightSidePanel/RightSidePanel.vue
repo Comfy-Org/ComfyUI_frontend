@@ -380,7 +380,7 @@ function handleTitleCancel() {
     </section>
 
     <!-- Panel Content -->
-    <div class="scrollbar-thin flex-1 overflow-y-auto">
+    <div class="flex-1 scrollbar-thin overflow-y-auto">
       <TabErrors v-if="activeTab === 'errors'" />
       <template v-else-if="!hasSelection">
         <TabGlobalParameters v-if="activeTab === 'parameters'" />

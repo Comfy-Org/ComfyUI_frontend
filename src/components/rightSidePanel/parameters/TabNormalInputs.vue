@@ -2,9 +2,9 @@
 import { computed, reactive, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
-import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
+import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 
 import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
 import type { NodeWidgetsListList } from '../shared'
@@ -52,19 +52,19 @@ const isSearching = ref(false)
 const collapseMap = reactive<Record<string, boolean>>({})
 const advancedCollapsed = ref(true)
 
-function isSectionCollapsed(nodeId: string): boolean {
+function isSectionCollapsed(nodeId: NodeId): boolean {
   // When not explicitly set, sections are collapsed if multiple nodes are selected
   return collapseMap[nodeId] ?? isMultipleNodesSelected.value
 }
 
-function setSectionCollapsed(nodeId: string, collapsed: boolean) {
+function setSectionCollapsed(nodeId: NodeId, collapsed: boolean) {
   collapseMap[nodeId] = collapsed
 }
 
 const isAllCollapsed = computed({
   get() {
     const normalAllCollapsed = searchedWidgetsSectionDataList.value.every(
-      ({ node }) => isSectionCollapsed(String(node.id))
+      ({ node }) => isSectionCollapsed(node.id)
     )
     const hasAdvanced = advancedWidgetsSectionDataList.value.length > 0
     return hasAdvanced
@@ -73,7 +73,7 @@ const isAllCollapsed = computed({
   },
   set(collapse: boolean) {
     for (const { node } of widgetsSectionDataList.value) {
-      setSectionCollapsed(String(node.id), collapse)
+      setSectionCollapsed(node.id, collapse)
     }
     advancedCollapsed.value = collapse
   }
@@ -106,7 +106,7 @@ const advancedLabel = computed(() => {
   <div
     class="flex items-center border-b border-interface-stroke px-4 pt-1 pb-4"
   >
-    <FormSearchInput
+    <AsyncSearchInput
       v-model="searchQuery"
       :searcher
       :update-key="widgetsSectionDataList"
@@ -138,7 +138,7 @@ const advancedLabel = computed(() => {
       :node
       :label
       :widgets
-      :collapse="isSectionCollapsed(String(node.id)) && !isSearching"
+      :collapse="isSectionCollapsed(node.id) && !isSearching"
       :show-locate-button="isMultipleNodesSelected"
       :tooltip="
         isSearching || widgets.length
@@ -146,7 +146,7 @@ const advancedLabel = computed(() => {
           : t('rightSidePanel.inputsNoneTooltip')
       "
       class="border-b border-interface-stroke"
-      @update:collapse="setSectionCollapsed(String(node.id), $event)"
+      @update:collapse="setSectionCollapsed(node.id, $event)"
     />
   </TransitionGroup>
   <template v-if="advancedWidgetsSectionDataList.length > 0 && !isSearching">

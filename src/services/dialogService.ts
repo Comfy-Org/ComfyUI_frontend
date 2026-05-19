@@ -42,6 +42,31 @@ export type ConfirmationDialogType =
   | 'reinstall'
   | 'info'
 
+interface BaseConfirmOptions {
+  /** Dialog heading */
+  title: string
+  /** The main message body */
+  message: string
+  /** Displayed as an unordered list immediately below the message body */
+  itemList?: string[]
+  hint?: string
+}
+
+type ConfirmOptions = BaseConfirmOptions &
+  (
+    | {
+        /** Pre-configured dialog type */
+        type: 'dirtyClose'
+        /** Override the deny button label. Defaults to `g.no`. */
+        denyLabel?: string
+      }
+    | {
+        /** Pre-configured dialog type */
+        type?: Exclude<ConfirmationDialogType, 'dirtyClose'>
+        denyLabel?: never
+      }
+  )
+
 /**
  * Minimal interface for execution error dialogs.
  * Satisfied by both ExecutionErrorWsMessage (WebSocket) and ExecutionError (Jobs API).
@@ -74,6 +99,8 @@ export const useDialogService = () => {
       component: ErrorDialogContent,
       props,
       dialogComponentProps: {
+        renderer: 'reka',
+        size: 'lg',
         onClose: () => {
           useTelemetry()?.trackUiButtonClicked({
             button_id: 'error_dialog_closed'
@@ -138,6 +165,8 @@ export const useDialogService = () => {
       component: ErrorDialogContent,
       props,
       dialogComponentProps: {
+        renderer: 'reka',
+        size: 'lg',
         onClose: () => {
           useTelemetry()?.trackUiButtonClicked({
             button_id: 'error_dialog_closed'
@@ -226,6 +255,8 @@ export const useDialogService = () => {
           placeholder
         },
         dialogComponentProps: {
+          renderer: 'reka',
+          size: 'md',
           onClose: () => {
             resolve(null)
           }
@@ -244,18 +275,9 @@ export const useDialogService = () => {
     message,
     type = 'default',
     itemList = [],
-    hint
-  }: {
-    /** Dialog heading */
-    title: string
-    /** The main message body */
-    message: string
-    /** Pre-configured dialog type */
-    type?: ConfirmationDialogType
-    /** Displayed as an unordered list immediately below the message body */
-    itemList?: string[]
-    hint?: string
-  }): Promise<boolean | null> {
+    hint,
+    denyLabel
+  }: ConfirmOptions): Promise<boolean | null> {
     return new Promise((resolve) => {
       const options: ShowDialogOptions = {
         key: 'global-prompt',
@@ -266,9 +288,12 @@ export const useDialogService = () => {
           type,
           itemList,
           onConfirm: resolve,
-          hint
+          hint,
+          denyLabel
         },
         dialogComponentProps: {
+          renderer: 'reka',
+          size: 'md',
           onClose: () => resolve(null)
         }
       }
@@ -555,9 +580,9 @@ export const useDialogService = () => {
         onConfirm: () => {}
       },
       dialogComponentProps: {
-        pt: {
-          root: { class: 'max-w-[360px]' }
-        }
+        renderer: 'reka',
+        size: 'sm',
+        contentClass: 'max-w-[360px]'
       }
     })
   }

@@ -77,6 +77,11 @@ export interface Load3DOptions {
   // Use this for reactive dimensions that change over time
   getDimensions?: () => { width: number; height: number } | null
 
+  // Returns the current canvas zoom scale (e.g. ds.scale from LiteGraph).
+  // Used to scale the renderer pixel ratio so the 3D scene renders at the
+  // correct resolution when the graph is zoomed in or out.
+  getZoomScale?: () => number
+
   // Viewer mode flag (affects aspect ratio behavior)
   isViewerMode?: boolean
 
@@ -198,8 +203,23 @@ export interface ModelManagerInterface {
   setupModelMaterials(model: THREE.Object3D): void
 }
 
+export interface LoadModelOptions {
+  /**
+   * When true, suppress the user-facing toast for file-not-found
+   * (HTTP 404) errors. Other errors (parse failures, network drops)
+   * still surface a toast. Use for "preview" surfaces whose model
+   * file is server-produced and may legitimately be absent locally
+   * (e.g. shared workflows on a fresh machine).
+   */
+  silentOnNotFound?: boolean
+}
+
 export interface LoaderManagerInterface {
   init(): void
   dispose(): void
-  loadModel(url: string, originalFileName?: string): Promise<void>
+  loadModel(
+    url: string,
+    originalFileName?: string,
+    options?: LoadModelOptions
+  ): Promise<void>
 }

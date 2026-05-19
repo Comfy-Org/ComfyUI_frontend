@@ -428,11 +428,11 @@
     "name": "校验工作流"
   },
   "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "自动缩放布局（Vue节点）",
+    "name": "自动缩放布局（Nodes 2.0）",
     "tooltip": "切换到Vue渲染时自动缩放节点位置以防止重叠"
   },
   "Comfy_VueNodes_Enabled": {
-    "name": "现代节点设计（Vue节点）",
+    "name": "现代节点设计（Nodes 2.0）",
     "tooltip": "现代：基于DOM的渲染，具有增强的交互性、原生浏览器功能和更新的视觉设计。经典：传统的画布渲染。"
   },
   "Comfy_WidgetControlMode": {

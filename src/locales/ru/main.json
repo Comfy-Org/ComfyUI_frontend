@@ -237,6 +237,7 @@
     },
     "login": {
       "andText": "и",
+      "backToGithubLogin": "Зарегистрироваться через Github",
       "backToLogin": "Вернуться к входу",
       "backToSocialLogin": "Зарегистрируйтесь через Google или Github",
       "confirmPasswordLabel": "Подтвердите пароль",
@@ -292,7 +293,9 @@
       "title": "Требуется повторная аутентификация"
     },
     "signOut": {
+      "saveFailed": "Выход отменён, так как не удалось сохранить «{workflow}».",
       "signOut": "Выйти",
+      "signOutAnyway": "Выйти всё равно",
       "success": "Вы успешно вышли из системы",
       "successDetail": "Вы вышли из своей учетной записи.",
       "unsavedChangesMessage": "У вас есть несохранённые изменения, которые будут потеряны при выходе из системы. Вы хотите продолжить?",
@@ -407,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "Продолжить локально",
     "exploreCloud": "Попробовать облако бесплатно",
-    "feature1Title": "400 бесплатных кредитов в месяц",
     "feature2Title": "Работает везде и мгновенно",
     "feature3Title": "Модели готовы к использованию",
     "feature4Title": "Лучшие пользовательские пакеты узлов предустановлены",
@@ -461,6 +463,12 @@
       "wantToRun": "Хотите запустить ComfyUI локально?"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "Пожалуйста, выберите вариант.",
+        "describeAnswer": "Пожалуйста, опишите ваш ответ.",
+        "selectAtLeastOne": "Пожалуйста, выберите хотя бы один вариант."
+      },
+      "intro": "Помогите нам адаптировать ваш опыт работы с ComfyUI.",
       "options": {
         "familiarity": {
           "advanced": "Продвинутый пользователь (пользовательские рабочие процессы)",
@@ -469,45 +477,43 @@
           "new": "Новичок в ComfyUI (никогда не использовал)",
           "starting": "Только начинаю (следую руководствам)"
         },
-        "industry": {
-          "architecture": "Архитектура",
-          "education": "Образование",
-          "film_tv_animation": "Кино, ТВ и анимация",
-          "fine_art": "Изобразительное искусство и иллюстрация",
-          "gaming": "Игровая индустрия",
-          "marketing": "Маркетинг и реклама",
-          "other": "Другое",
-          "otherPlaceholder": "Пожалуйста, уточните",
-          "product_design": "Продуктовый и графический дизайн",
-          "software": "Программное обеспечение и технологии"
-        },
-        "making": {
-          "3d": "3D-ресурсы",
+        "intent": {
+          "3d_game": "3D-ассеты / игровые ассеты",
+          "api": "API endpoints для запуска workflow",
+          "apps": "Упрощённые приложения из workflow",
           "audio": "Аудио / музыка",
-          "custom_nodes": "Пользовательские узлы и рабочие процессы",
+          "custom_nodes": "Пользовательские node",
           "images": "Изображения",
-          "video": "Видео и анимация"
+          "not_sure": "Не уверен",
+          "videos": "Видео",
+          "workflows": "Пользовательские workflow или pipeline"
         },
-        "purpose": {
-          "client": "Работа с клиентами (фриланс)",
-          "community": "Вклад в сообщество (узлы, рабочие процессы и т.д.)",
-          "inhouse": "Моё рабочее место (внутреннее использование)",
-          "personal": "Личные проекты / хобби",
-          "research": "Академические исследования"
+        "source": {
+          "conference": "Конференция или мероприятие",
+          "discord": "Discord / сообщество",
+          "friend": "Друг или коллега",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "Новостная рассылка или блог",
+          "other": "Другое",
+          "reddit": "Reddit",
+          "search": "Google / поиск",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
+        },
+        "usage": {
+          "education": "Образование (студент или преподаватель)",
+          "personal": "Личное использование",
+          "work": "Работа"
         }
       },
       "placeholder": "Вопросы для опроса",
-      "questions": {
-        "familiarity": "Насколько вы знакомы с ComfyUI?",
-        "industry": "В какой отрасли вы работаете?",
-        "making": "Что вы планируете создавать?",
-        "purpose": "Для чего вы в основном будетете использовать ComfyUI?"
-      },
       "steps": {
         "familiarity": "Насколько вы знакомы с ComfyUI?",
-        "industry": "В какой отрасли вы работаете?",
-        "making": "Что вы планируете создавать?",
-        "purpose": "Для чего вы в основном будете использовать ComfyUI?"
+        "intent": "Что вы хотите создавать с помощью ComfyUI?",
+        "source": "Где вы узнали о ComfyUI?",
+        "usage": "Как вы планируете использовать ComfyUI?"
       },
       "title": "Облачный опрос"
     }
@@ -522,9 +528,9 @@
   "cloudStart_title": "начать создавать за секунды",
   "cloudStart_wantToRun": "Хотите запустить ComfyUI локально?",
   "cloudSurvey_steps_familiarity": "Насколько вы знакомы с ComfyUI?",
-  "cloudSurvey_steps_industry": "В какой отрасли вы работаете?",
-  "cloudSurvey_steps_making": "Что вы планируете создавать?",
-  "cloudSurvey_steps_purpose": "Для чего вы в основном будете использовать ComfyUI?",
+  "cloudSurvey_steps_intent": "Что вы хотите создавать с помощью ComfyUI?",
+  "cloudSurvey_steps_source": "Где вы узнали о ComfyUI?",
+  "cloudSurvey_steps_usage": "Как вы планируете использовать ComfyUI?",
   "cloudWaitlist_contactLink": "здесь",
   "cloudWaitlist_questionsText": "Есть вопросы? Свяжитесь с нами",
   "color": {
@@ -778,6 +784,7 @@
     "AUDIO_ENCODER": "АУДИО_КОДЕР",
     "AUDIO_ENCODER_OUTPUT": "ВЫХОД_АУДИО_КОДЕРА",
     "AUDIO_RECORD": "АУДИО_ЗАПИСЬ",
+    "BACKGROUND_REMOVAL": "УДАЛЕНИЕ_ФОНА",
     "BOOLEAN": "БУЛЕВО",
     "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "УПРАВЛЕНИЕ_КАМЕРОЙ",
@@ -808,6 +815,7 @@
     "HISTOGRAM": "ГИСТОГРАММА",
     "HOOKS": "ХУКИ",
     "HOOK_KEYFRAMES": "КЛЮЧЕВЫЕ_КАДРЫ_ХУКА",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "ИЗОБРАЖЕНИЕ",
     "IMAGECOMPARE": "СРАВНЕНИЕ_ИЗОБРАЖЕНИЙ",
     "INT": "ЦЕЛОЕ",
@@ -828,9 +836,12 @@
     "MODEL": "МОДЕЛЬ",
     "MODEL_PATCH": "ПАТЧ_МОДЕЛИ",
     "MODEL_TASK_ID": "ID_ЗАДАЧИ_МОДЕЛИ",
+    "MOGE_GEOMETRY": "MOGE_ГЕОМЕТРИЯ",
+    "MOGE_MODEL": "MOGE_МОДЕЛЬ",
     "NOISE": "ШУМ",
     "OPENAI_CHAT_CONFIG": "КОНФИГУРАЦИЯ_ЧАТА_OPENAI",
     "OPENAI_INPUT_FILES": "ВХОДНЫЕ_ФАЙЛЫ_OPENAI",
+    "OPTICAL_FLOW": "OPTICAL_FLOW",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "ШАБЛОН_PIXVERSE",
     "POSE_KEYPOINT": "POSE_KEYPOINT",
@@ -905,7 +916,8 @@
     "extensionFileHint": "Это может быть связано со следующим скриптом",
     "loadWorkflowTitle": "Загрузка прервана из-за ошибки при перезагрузке данных рабочего процесса",
     "noStackTrace": "Стек вызовов недоступен",
-    "promptExecutionError": "Ошибка выполнения запроса"
+    "promptExecutionError": "Ошибка выполнения запроса",
+    "queueOpenWorkflowFailedTitle": "Не удалось открыть рабочий процесс"
   },
   "errorOverlay": {
     "errorCount": "{count} ОШИБОК | {count} ОШИБКА | {count} ОШИБКИ",
@@ -1033,6 +1045,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "Логотип ComfyOrg",
+    "comfyPackageOutdated": "Установленная версия {name} ({installedVersion}) ниже требуемой версии ({requiredVersion}).",
     "comingSoon": "Скоро будет",
     "command": "Команда",
     "commandProhibited": "Команда {command} запрещена. Свяжитесь с администратором для получения дополнительной информации.",
@@ -2245,6 +2258,7 @@
     "": "",
     "3d": "3d",
     "3d_models": "3d_модели",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
@@ -2259,7 +2273,6 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
@@ -2277,23 +2290,21 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
-    "_for_testing": "_для_тестирования",
     "advanced": "расширенный",
     "animation": "анимация",
-    "api": "api",
     "api node": "api-узел",
     "attention_experiments": "эксперименты_внимания",
     "audio": "аудио",
+    "background removal": "удаление фона",
     "batch": "пакет",
-    "camera": "камера",
     "chroma_radiance": "chroma_radiance",
     "clip": "clip",
+    "color": "цвет",
     "combine": "объединить",
     "compositing": "композиционирование",
     "cond pair": "условие_пара",
     "cond single": "условие_одиночное",
     "conditioning": "условие",
-    "context": "контекст",
     "controlnet": "controlnet",
     "create": "создать",
     "custom_sampling": "пользовательский_семплинг",
@@ -2302,7 +2313,9 @@
     "deprecated": "устаревший",
     "detection": "детекция",
     "edit_models": "редактировать_модели",
+    "experimental": "экспериментальное",
     "flux": "flux",
+    "geometry_estimation": "оценка_геометрии",
     "gligen": "gligen",
     "guidance": "направление",
     "guiders": "направляющие",
@@ -2317,7 +2330,6 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "mask": "маска",
-    "math": "математика",
     "model": "модель",
     "model_merging": "слияние_моделей",
     "model_patches": "патчи_моделей",
@@ -2334,16 +2346,13 @@
     "save": "сохранить",
     "schedulers": "schedulers",
     "scheduling": "scheduling",
-    "sd": "sd",
     "sd3": "sd3",
     "shader": "шейдер",
     "sigmas": "сигмы",
     "stable_cascade": "стабильная_каскадная",
-    "string": "строка",
     "style_model": "модель_стиля",
     "supir": "supir",
     "text": "текст",
-    "textgen": "textgen",
     "training": "обучение",
     "transform": "преобразование",
     "unet": "unet",
@@ -3147,6 +3156,7 @@
       "deleteFailedTitle": "Не удалось удалить",
       "deleted": "Рабочий процесс удалён",
       "dirtyClose": "Файлы ниже были изменены. Вы хотите сохранить их перед закрытием?",
+      "dirtyCloseAnyway": "Закрыть всё равно",
       "dirtyCloseHint": "Удерживайте Shift, чтобы закрыть без подсказки",
       "dirtyCloseTitle": "Сохранить изменения?",
       "workflowTreeType": {
