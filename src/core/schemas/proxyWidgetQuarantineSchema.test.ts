@@ -10,22 +10,14 @@ const baseEntry = {
 }
 
 describe(parseProxyWidgetErrorQuarantine, () => {
-  it('parses a valid entry without hostValue', () => {
-    expect(parseProxyWidgetErrorQuarantine([baseEntry])).toEqual([baseEntry])
-  })
-
-  it('parses a valid entry with hostValue', () => {
-    const entry = { ...baseEntry, hostValue: 42 }
-    expect(parseProxyWidgetErrorQuarantine([entry])).toEqual([entry])
-  })
-
-  it('parses a 2-tuple originalEntry', () => {
-    const entry = { ...baseEntry, originalEntry: ['10', 'seed'] }
-    expect(parseProxyWidgetErrorQuarantine([entry])).toEqual([entry])
-  })
-
-  it('parses a 3-tuple originalEntry', () => {
-    const entry = { ...baseEntry, originalEntry: ['3', 'text', '1'] }
+  it.for([
+    { name: 'without hostValue', entry: baseEntry },
+    { name: 'with hostValue', entry: { ...baseEntry, hostValue: 42 } },
+    {
+      name: 'with 3-tuple originalEntry',
+      entry: { ...baseEntry, originalEntry: ['3', 'text', '1'] }
+    }
+  ])('parses a valid entry $name', ({ entry }) => {
     expect(parseProxyWidgetErrorQuarantine([entry])).toEqual([entry])
   })
 
@@ -46,7 +38,7 @@ describe(parseProxyWidgetErrorQuarantine, () => {
     expect(parseProxyWidgetErrorQuarantine(input)).toEqual([baseEntry])
   })
 
-  it('returns empty array for undefined', () => {
+  it('returns empty array for undefined without warning', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     expect(parseProxyWidgetErrorQuarantine(undefined)).toEqual([])
@@ -55,26 +47,22 @@ describe(parseProxyWidgetErrorQuarantine, () => {
     warnSpy.mockRestore()
   })
 
-  it('returns empty array for malformed JSON string', () => {
-    expect(parseProxyWidgetErrorQuarantine('not-json{')).toEqual([])
-  })
-
-  it('returns empty array for non-array input', () => {
-    expect(parseProxyWidgetErrorQuarantine(baseEntry)).toEqual([])
-  })
-
-  it('returns empty array when attemptedAtVersion is not 1', () => {
-    const entry = { ...baseEntry, attemptedAtVersion: 2 }
-    expect(parseProxyWidgetErrorQuarantine([entry])).toEqual([])
-  })
-
-  it('returns empty array when reason is not in the enum', () => {
-    const entry = { ...baseEntry, reason: 'somethingElse' }
-    expect(parseProxyWidgetErrorQuarantine([entry])).toEqual([])
-  })
-
-  it('returns empty array when originalEntry is malformed', () => {
-    const entry = { ...baseEntry, originalEntry: ['only-one'] }
-    expect(parseProxyWidgetErrorQuarantine([entry])).toEqual([])
+  it.for([
+    { name: 'malformed JSON string', input: 'not-json{' },
+    { name: 'non-array input', input: baseEntry },
+    {
+      name: 'attemptedAtVersion is not 1',
+      input: [{ ...baseEntry, attemptedAtVersion: 2 }]
+    },
+    {
+      name: 'reason is not in the enum',
+      input: [{ ...baseEntry, reason: 'somethingElse' }]
+    },
+    {
+      name: 'originalEntry is malformed',
+      input: [{ ...baseEntry, originalEntry: ['only-one'] }]
+    }
+  ])('returns empty array when $name', ({ input }) => {
+    expect(parseProxyWidgetErrorQuarantine(input)).toEqual([])
   })
 })
