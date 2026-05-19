@@ -73,17 +73,23 @@
           <h2 class="m-0 text-2xl font-semibold text-base-foreground">
             {{ workflowName }}
           </h2>
-          <p class="m-0 text-sm text-muted-foreground">
-            {{ $t('openSharedWorkflow.copyDescription') }}
-          </p>
           <p
-            v-if="isOpening"
-            role="status"
-            aria-live="polite"
+            :role="isOpening ? 'status' : undefined"
+            :aria-live="isOpening ? 'polite' : undefined"
             class="m-0 flex items-center gap-2 text-sm text-muted-foreground"
           >
-            <i class="pi pi-spin pi-spinner" aria-hidden="true" />
-            <span>{{ $t('openSharedWorkflow.opening') }}</span>
+            <i
+              v-if="isOpening"
+              class="pi pi-spin pi-spinner"
+              aria-hidden="true"
+            />
+            <span>
+              {{
+                isOpening
+                  ? $t('openSharedWorkflow.opening')
+                  : $t('openSharedWorkflow.copyDescription')
+              }}
+            </span>
           </p>
         </div>
 

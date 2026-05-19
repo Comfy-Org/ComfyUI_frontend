@@ -30,17 +30,6 @@ type DialogResult =
 
 type OpeningAction = Exclude<DialogResult['action'], 'cancel'>
 
-type OpenSharedWorkflowDialogInstance = {
-  contentProps: {
-    openingAction?: OpeningAction | null
-  }
-  dialogComponentProps: {
-    closable?: boolean
-    closeOnEscape?: boolean
-    dismissableMask?: boolean
-  }
-}
-
 const OPEN_SHARED_WORKFLOW_DIALOG_KEY = 'open-shared-workflow'
 
 export function useSharedWorkflowUrlLoader() {
@@ -86,12 +75,16 @@ export function useSharedWorkflowUrlLoader() {
   function showOpenSharedWorkflowDialog(
     shareId: string
   ): Promise<DialogResult> {
-    let dialog: OpenSharedWorkflowDialogInstance | undefined
-
     function setOpeningAction(openingAction: OpeningAction) {
+      const dialog = dialogStore.dialogStack.find(
+        (item) => item.key === OPEN_SHARED_WORKFLOW_DIALOG_KEY
+      )
       if (!dialog) return
 
-      dialog.contentProps.openingAction = openingAction
+      dialog.contentProps = {
+        ...dialog.contentProps,
+        openingAction
+      }
       dialog.dialogComponentProps = {
         ...dialog.dialogComponentProps,
         closable: false,
@@ -101,7 +94,7 @@ export function useSharedWorkflowUrlLoader() {
     }
 
     return new Promise<DialogResult>((resolve) => {
-      dialog = dialogService.showLayoutDialog({
+      dialogService.showLayoutDialog({
         key: OPEN_SHARED_WORKFLOW_DIALOG_KEY,
         component: OpenSharedWorkflowDialogContent,
         props: {

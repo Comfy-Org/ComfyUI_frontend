@@ -301,6 +301,9 @@ describe('OpenSharedWorkflowDialogContent', () => {
       expect(screen.getByRole('status').textContent).toContain(
         'Opening shared workflow...'
       )
+      expect(container.textContent).not.toContain(
+        'Opening the workflow will create a new copy in your workspace'
+      )
       expect(
         container.querySelector(
           '[data-testid="open-shared-workflow-close"]'

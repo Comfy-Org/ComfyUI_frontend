@@ -80,6 +80,14 @@ vi.mock('vue-i18n', () => ({
 const mockShowLayoutDialog = vi.hoisted(() => vi.fn())
 const mockCloseDialog = vi.hoisted(() => vi.fn())
 const mockHideTemplateSelector = vi.hoisted(() => vi.fn())
+const mockDialogStack = vi.hoisted(
+  () =>
+    [] as Array<{
+      key: string
+      contentProps: Record<string, unknown>
+      dialogComponentProps: Record<string, unknown>
+    }>
+)
 
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
@@ -89,6 +97,7 @@ vi.mock('@/services/dialogService', () => ({
 
 vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({
+    dialogStack: mockDialogStack,
     closeDialog: mockCloseDialog
   })
 }))
@@ -138,13 +147,17 @@ function getLastDialogOptions() {
 }
 
 function createDialogInstance(options: {
+  key: string
   props: Record<string, unknown>
   dialogComponentProps?: Record<string, unknown>
 }) {
-  return {
+  const dialog = {
+    key: options.key,
     contentProps: { ...options.props },
     dialogComponentProps: { ...options.dialogComponentProps }
   }
+  mockDialogStack.push(dialog)
+  return dialog
 }
 
 function createDeferred() {
@@ -159,6 +172,7 @@ describe('useSharedWorkflowUrlLoader', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mockQueryParams = {}
+    mockDialogStack.length = 0
     mockShowLayoutDialog.mockImplementation(createDialogInstance)
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
