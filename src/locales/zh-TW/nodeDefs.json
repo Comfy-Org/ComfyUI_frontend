@@ -896,6 +896,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "description": "使用 ByteDance 的 Seed 2.0 模型生成文字回應。請提供文字提示，並可選擇性地加入一張或多張圖片或影片作為多模態上下文。",
+    "display_name": "ByteDance Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成回應的 Seed 模型。"
+      },
+      "model_temperature": {
+        "name": "溫度"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "輸入給模型的文字內容。"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "隨機種子控制此節點是否重新執行；無論種子為何，結果皆為非確定性。"
+      },
+      "system_prompt": {
+        "name": "系統提示",
+        "tooltip": "決定模型行為的基礎指令。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "description": "統一文字生成圖片和精確單句編輯，最高支援 4K 解析度。",
     "display_name": "ByteDance Seedream 4.5 & 5.0",
@@ -7395,6 +7428,10 @@
   "LTXVAddGuide": {
     "display_name": "LTXV 添加引導",
     "inputs": {
+      "attention_mask": {
+        "name": "注意力遮罩",
+        "tooltip": "可選的像素空間遮罩。透過自注意力機制，乘以強度後控制各區域的條件影響。"
+      },
       "frame_idx": {
         "name": "起始幀索引",
         "tooltip": "開始條件化的幀索引。對於單幀影像或 1-8 幀的影片，任何 frame_idx 值皆可。對於 9 幀以上的影片，frame_idx 必須能被 8 整除，否則會自動向下取至最接近的 8 的倍數。負值則從影片結尾倒數計算。"
