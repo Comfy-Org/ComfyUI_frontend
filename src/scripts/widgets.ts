@@ -7,6 +7,7 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { dynamicWidgets } from '@/core/graph/widgets/dynamicWidgets'
+import { isControlOption } from '@/types/simplifiedWidget'
 import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
 import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget'
 import { useCurveWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useCurveWidget'
@@ -80,6 +81,20 @@ export function updateControlWidgetLabel(widget: IBaseWidget) {
 export const IS_CONTROL_WIDGET = Symbol()
 const HAS_EXECUTED = Symbol()
 
+/**
+ * Finds a user-visible control_after_generate widget that is separate from
+ * the hidden ACW. API nodes define control_after_generate as an explicit
+ * COMBO input alongside seed, producing two widgets with the same name.
+ */
+export function findExternalControlWidget(
+  node: LGraphNode,
+  cagWidget: IBaseWidget
+): IBaseWidget | undefined {
+  return node.widgets?.find(
+    (w) => w.name === cagWidget.name && w !== cagWidget && !w[IS_CONTROL_WIDGET]
+  )
+}
+
 export function addValueControlWidget(
   node: LGraphNode,
   targetWidget: IBaseWidget,
@@ -88,10 +103,11 @@ export function addValueControlWidget(
   widgetName?: string,
   inputData?: InputSpec
 ): IComboWidget {
-  let name = inputData?.[1]?.control_after_generate
-  if (typeof name !== 'string') {
-    name = widgetName
-  }
+  const rawName = inputData?.[1]?.control_after_generate
+  const name =
+    typeof rawName === 'string' && !isControlOption(rawName)
+      ? rawName
+      : widgetName
   const widgets = addValueControlWidgets(
     node,
     targetWidget,
@@ -119,7 +135,13 @@ export function addValueControlWidgets(
     let name = defaultName
     if (options[optionName]) {
       name = options[optionName]
-    } else if (typeof inputData?.[1]?.[defaultName] === 'string') {
+    } else if (
+      typeof inputData?.[1]?.[defaultName] === 'string' &&
+      !(
+        defaultName === 'control_after_generate' &&
+        isControlOption(inputData[1][defaultName])
+      )
+    ) {
       name = inputData?.[1]?.[defaultName]
     } else if (inputData?.[1]?.control_prefix) {
       name = inputData?.[1]?.control_prefix + ' ' + name
@@ -175,6 +197,10 @@ export function addValueControlWidgets(
   }
 
   const applyWidgetControl = () => {
+    const externalControl = findExternalControlWidget(node, valueControl)
+    if (externalControl !== undefined) {
+      valueControl.value = externalControl.value as string
+    }
     var v = valueControl.value
 
     if (isCombo && v !== 'fixed') {
