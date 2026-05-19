@@ -10,13 +10,23 @@ export const zPublishRecordResponse = z.object({
   assets: z.array(zAssetInfo).optional()
 })
 
+const zHubLabelRefOrString = z.union([
+  z.string(),
+  z.object({ name: z.string(), display_name: z.string().optional() })
+])
+
 export const zHubWorkflowPrefillResponse = z.object({
+  name: z.string().nullish(),
   description: z.string().nullish(),
-  tags: z.array(z.string()).nullish(),
+  tags: z.array(zHubLabelRefOrString).nullish(),
+  models: z.array(zHubLabelRefOrString).nullish(),
+  custom_nodes: z.array(zHubLabelRefOrString).nullish(),
   sample_image_urls: z.array(z.string()).nullish(),
   thumbnail_type: z.enum(['image', 'video', 'image_comparison']).nullish(),
   thumbnail_url: z.string().nullish(),
-  thumbnail_comparison_url: z.string().nullish()
+  thumbnail_comparison_url: z.string().nullish(),
+  tutorial_url: z.string().nullish(),
+  metadata: z.record(z.string(), z.unknown()).nullish()
 })
 
 /**
