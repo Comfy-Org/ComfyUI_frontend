@@ -1,3 +1,4 @@
+import type { UploadImageResponse } from '@comfyorg/ingest-types'
 import type { Ref } from 'vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useElementSize } from '@vueuse/core'
@@ -656,7 +657,7 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
       throw new Error(err)
     }
 
-    let data: { name?: string }
+    let data: UploadImageResponse
     try {
       data = await resp.json()
     } catch (e) {
