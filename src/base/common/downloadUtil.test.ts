@@ -2,8 +2,11 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  assertValidDownloadUrl,
   downloadFile,
+  downloadFileAsync,
   extractFilenameFromContentDisposition,
+  inferDownloadFilename,
   openFileInNewTab
 } from '@/base/common/downloadUtil'
 
@@ -214,9 +217,9 @@ describe('downloadUtil', () => {
       expect(fetchMock).toHaveBeenCalledWith(testUrl)
       const fetchPromise = fetchMock.mock.results[0].value as Promise<Response>
       await fetchPromise
-      await Promise.resolve() // let fetchAsBlob throw
-      await Promise.resolve() // let .catch handler run
-      expect(consoleSpy).toHaveBeenCalled()
+      await vi.waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalled()
+      })
       expect(createObjectURLSpy).not.toHaveBeenCalled()
       consoleSpy.mockRestore()
     })
@@ -309,6 +312,102 @@ describe('downloadUtil', () => {
       await blobPromise
       await Promise.resolve()
       expect(mockLink.download).toBe('my-fallback.png')
+    })
+  })
+
+  describe('downloadFileAsync', () => {
+    it('resolves after blob download completes in cloud mode', async () => {
+      mockIsCloud.value = true
+      const testUrl = 'https://storage.googleapis.com/bucket/file.bin'
+      const blob = new Blob(['test'])
+      const blobFn = vi.fn().mockResolvedValue(blob)
+      const headersMock = { get: vi.fn().mockReturnValue(null) }
+      fetchMock.mockResolvedValue(
+        fromPartial<Response>({
+          ok: true,
+          status: 200,
+          blob: blobFn,
+          headers: headersMock
+        })
+      )
+
+      await downloadFileAsync(testUrl)
+
+      expect(fetchMock).toHaveBeenCalledWith(testUrl)
+      expect(blobFn).toHaveBeenCalled()
+      expect(createObjectURLSpy).toHaveBeenCalledWith(blob)
+      expect(mockLink.click).toHaveBeenCalled()
+    })
+
+    it('rejects when cloud fetch fails', async () => {
+      mockIsCloud.value = true
+      const testUrl = 'https://storage.googleapis.com/bucket/missing.bin'
+      fetchMock.mockResolvedValue(
+        fromPartial<Response>({ ok: false, status: 404, blob: vi.fn() })
+      )
+
+      await expect(downloadFileAsync(testUrl)).rejects.toThrow(
+        'Failed to download file'
+      )
+      expect(createObjectURLSpy).not.toHaveBeenCalled()
+    })
+
+    it('resolves immediately for non-cloud downloads', async () => {
+      mockIsCloud.value = false
+      const testUrl = 'https://example.com/image.png'
+
+      await downloadFileAsync(testUrl)
+
+      expect(mockLink.href).toBe(testUrl)
+      expect(mockLink.click).toHaveBeenCalled()
+      expect(fetchMock).not.toHaveBeenCalled()
+    })
+
+    it('throws synchronously for invalid URLs', async () => {
+      await expect(downloadFileAsync('')).rejects.toThrow(
+        'Invalid URL provided for download'
+      )
+    })
+  })
+
+  describe('assertValidDownloadUrl', () => {
+    it('throws for empty string', () => {
+      expect(() => assertValidDownloadUrl('')).toThrow(
+        'Invalid URL provided for download'
+      )
+    })
+
+    it('throws for whitespace-only string', () => {
+      expect(() => assertValidDownloadUrl('   ')).toThrow(
+        'Invalid URL provided for download'
+      )
+    })
+
+    it('does not throw for valid URL', () => {
+      expect(() => assertValidDownloadUrl('https://example.com')).not.toThrow()
+    })
+  })
+
+  describe('inferDownloadFilename', () => {
+    it('prefers explicit filename over URL extraction', () => {
+      expect(
+        inferDownloadFilename(
+          'https://example.com/file?filename=url-name.png',
+          'explicit.png'
+        )
+      ).toBe('explicit.png')
+    })
+
+    it('falls back to URL filename parameter', () => {
+      expect(
+        inferDownloadFilename('https://example.com/file?filename=url-name.png')
+      ).toBe('url-name.png')
+    })
+
+    it('falls back to default when no filename available', () => {
+      expect(inferDownloadFilename('https://example.com/file')).toBe(
+        'download.png'
+      )
     })
   })
 

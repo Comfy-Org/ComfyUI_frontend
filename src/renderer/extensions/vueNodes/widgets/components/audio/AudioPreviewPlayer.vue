@@ -82,10 +82,17 @@
           variant="textonly"
           :aria-label="$t('g.downloadAudio')"
           :title="$t('g.downloadAudio')"
+          :disabled="downloading"
           class="size-6 hover:bg-interface-menu-component-surface-hovered"
           @click="handleDownload"
         >
-          <i class="text-secondary icon-[lucide--download] size-4" />
+          <i
+            :class="
+              downloading
+                ? 'text-secondary icon-[lucide--loader-circle] size-4 animate-spin'
+                : 'text-secondary icon-[lucide--download] size-4'
+            "
+          />
         </Button>
 
         <!-- Options Button -->
@@ -146,20 +153,37 @@
 <script setup lang="ts">
 import Slider from 'primevue/slider'
 import TieredMenu from 'primevue/tieredmenu'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { whenever } from '@vueuse/core'
 
 import { useToast } from 'primevue/usetoast'
 
-import { downloadFile } from '@/base/common/downloadUtil'
-import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@comfyorg/tailwind-utils'
+
+import Button from '@/components/ui/button/Button.vue'
+
+import { useDownloadFile } from '@/base/common/useDownloadFile'
 
 import { formatTime } from '@/utils/formatUtil'
 
 const { t } = useI18n()
 const toast = useToast()
+const {
+  isLoading: downloading,
+  error: downloadError,
+  downloadIfIdle: download
+} = useDownloadFile()
+
+watch(downloadError, (err) => {
+  if (err) {
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('g.failedToDownloadFile')
+    })
+  }
+})
 
 const { hideWhenEmpty = true, showOptionsButton } = defineProps<{
   hideWhenEmpty?: boolean
@@ -202,15 +226,7 @@ const togglePlayPause = () => {
 
 const handleDownload = () => {
   if (!modelValue.value) return
-  try {
-    downloadFile(modelValue.value)
-  } catch {
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('g.failedToDownloadFile')
-    })
-  }
+  void download(modelValue.value)
 }
 
 const toggleMute = () => {
