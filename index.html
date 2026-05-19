@@ -26,6 +26,10 @@
         width: 100%;
         height: 100%;
         margin: 0;
+        /* Disable trackpad two-finger horizontal swipe back/forward navigation
+           and other overscroll gestures. ComfyUI is a full-screen editor; the
+           browser's overscroll behaviors only ever leave or break the workflow. */
+        overscroll-behavior: none;
       }
       body {
         display: grid;
