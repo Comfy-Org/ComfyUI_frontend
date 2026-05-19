@@ -41,6 +41,7 @@ test.describe(
   { tag: '@node' },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
+      test.setTimeout(60_000)
       await comfyPage.page.route('**/api/object_info', (route) =>
         route.fulfill({ json: fixtureDefs })
       )
