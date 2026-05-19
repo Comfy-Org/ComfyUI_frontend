@@ -9,6 +9,7 @@ import {
   DialogTitle,
   VisuallyHidden
 } from 'reka-ui'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -19,6 +20,16 @@ const { src, alt = '' } = defineProps<{
   src: string
   alt?: string
 }>()
+
+const isVideo = computed(() => {
+  const videoExt = /\.(mp4|webm|mov)/i
+  return (
+    videoExt.test(src) ||
+    videoExt.test(
+      new URL(src, location.href).searchParams.get('filename') ?? ''
+    )
+  )
+})
 
 const { t } = useI18n()
 </script>
@@ -46,7 +57,15 @@ const { t } = useI18n()
             <i class="icon-[lucide--x] size-5" />
           </Button>
         </DialogClose>
+        <video
+          v-if="isVideo"
+          :src
+          controls
+          autoplay
+          class="max-h-[90vh] max-w-[90vw] rounded-sm object-contain"
+        />
         <img
+          v-else
           :src
           :alt
           class="max-h-[90vh] max-w-[90vw] rounded-sm object-contain"
