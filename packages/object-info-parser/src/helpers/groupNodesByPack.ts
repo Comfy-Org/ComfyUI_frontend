@@ -1,5 +1,6 @@
 import { getNodeSource, NodeSourceType } from '../classifiers/nodeSource'
 import type { ComfyNodeDef } from '../schemas/nodeDefSchema'
+import { slugifyPackId } from './slugifyPackId'
 
 export interface PackedNode {
   className: string
@@ -8,6 +9,8 @@ export interface PackedNode {
 
 export interface NodePack {
   id: string
+  rawId: string
+  rawIds: string[]
   displayName: string
   nodes: PackedNode[]
 }
@@ -23,21 +26,31 @@ export function groupNodesByPack(
       continue
     }
 
-    const packId = def.python_module.split('.')[1]?.split('@')[0]
-    if (!packId) {
+    const rawId = def.python_module.split('.')[1]?.split('@')[0]
+    if (!rawId) {
       continue
     }
 
-    const existing = byPackId.get(packId)
+    const slug = slugifyPackId(rawId)
+    if (!slug) {
+      continue
+    }
+
+    const existing = byPackId.get(slug)
     const node = { className, def }
 
     if (existing) {
       existing.nodes.push(node)
+      if (!existing.rawIds.includes(rawId)) {
+        existing.rawIds.push(rawId)
+      }
       continue
     }
 
-    byPackId.set(packId, {
-      id: packId,
+    byPackId.set(slug, {
+      id: slug,
+      rawId,
+      rawIds: [rawId],
       displayName: source.displayText,
       nodes: [node]
     })

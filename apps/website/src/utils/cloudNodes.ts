@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import {
   groupNodesByPack,
   sanitizeUserContent,
+  slugifyPackId,
   validateComfyNodeDef
 } from '@comfyorg/object-info-parser'
 
@@ -237,12 +238,12 @@ async function parseCloudNodes(
   )
   const grouped = groupNodesByPack(sanitizedDefs)
 
+  const allAliases = grouped.flatMap((pack) => pack.rawIds)
   let registryMap = new Map<string, RegistryPack | null>()
   try {
-    registryMap = await fetchRegistryPacks(
-      grouped.map((pack) => pack.id),
-      { fetchImpl: options.fetchImpl }
-    )
+    registryMap = await fetchRegistryPacks(allAliases, {
+      fetchImpl: options.fetchImpl
+    })
   } catch {
     registryMap = new Map()
   }
@@ -250,13 +251,25 @@ async function parseCloudNodes(
   const packs = grouped.map((pack) =>
     toDomainPack(
       pack.id,
+      pack.rawIds[0],
       pack.displayName,
       pack.nodes,
-      registryMap.get(pack.id)
+      pickRegistryPack(registryMap, pack.rawIds)
     )
   )
 
   return { kind: 'ok', packs, droppedNodes }
+}
+
+function pickRegistryPack(
+  registryMap: Map<string, RegistryPack | null>,
+  aliases: readonly string[]
+): RegistryPack | null | undefined {
+  for (const alias of aliases) {
+    const hit = registryMap.get(alias)
+    if (hit) return hit
+  }
+  return registryMap.get(aliases[0])
 }
 
 function safeExternalUrl(value: string | undefined): string | undefined {
@@ -273,6 +286,7 @@ function safeExternalUrl(value: string | undefined): string | undefined {
 
 function toDomainPack(
   packId: string,
+  fallbackRegistryId: string | undefined,
   fallbackDisplayName: string,
   nodes: Array<{
     className: string
@@ -288,7 +302,7 @@ function toDomainPack(
 ): Pack {
   return {
     id: packId,
-    registryId: registryPack?.id,
+    registryId: registryPack?.id ?? fallbackRegistryId,
     displayName: registryPack?.name?.trim() || fallbackDisplayName || packId,
     description: registryPack?.description?.trim() || undefined,
     bannerUrl: safeExternalUrl(registryPack?.banner_url),
@@ -338,16 +352,45 @@ async function readSnapshot(
   snapshotUrl: URL | undefined
 ): Promise<NodesSnapshot | null> {
   if (!snapshotUrl) {
-    return isNodesSnapshot(bundledSnapshot) ? bundledSnapshot : null
+    return isNodesSnapshot(bundledSnapshot)
+      ? normalizeSnapshotIds(bundledSnapshot)
+      : null
   }
   try {
     const text = await readFile(snapshotUrl, 'utf8')
     const parsed: unknown = JSON.parse(text)
-    if (isNodesSnapshot(parsed)) return parsed
+    if (isNodesSnapshot(parsed)) return normalizeSnapshotIds(parsed)
     return null
   } catch {
     return null
   }
+}
+
+function normalizeSnapshotIds(snapshot: NodesSnapshot): NodesSnapshot {
+  const bySlug = new Map<string, Pack>()
+  for (const pack of snapshot.packs) {
+    const slug = slugifyPackId(pack.id)
+    if (!slug) continue
+    const existing = bySlug.get(slug)
+    if (existing) {
+      bySlug.set(slug, mergeCollidedPacks(existing, pack))
+      continue
+    }
+    bySlug.set(slug, { ...pack, id: slug })
+  }
+  return { ...snapshot, packs: [...bySlug.values()] }
+}
+
+function mergeCollidedPacks(first: Pack, next: Pack): Pack {
+  const merged: Pack = { ...first, nodes: [...first.nodes, ...next.nodes] }
+  for (const [key, value] of Object.entries(next) as [keyof Pack, unknown][]) {
+    if (key === 'id' || key === 'nodes') continue
+    if (value === undefined || value === null) continue
+    if (merged[key] === undefined || merged[key] === null) {
+      ;(merged as Record<keyof Pack, unknown>)[key] = value
+    }
+  }
+  return merged
 }
 
 function defaultSleep(ms: number): Promise<void> {

@@ -51,6 +51,7 @@ jobs:
       - name: Build website
         env:
           WEBSITE_GITHUB_STARS_OVERRIDE: 110000
+          WEBSITE_CLOUD_NODES_FIXTURE: e2e/fixtures/cloud-nodes.fixture.json
         run: pnpm --filter @comfyorg/website build
 
       - name: Run Playwright tests

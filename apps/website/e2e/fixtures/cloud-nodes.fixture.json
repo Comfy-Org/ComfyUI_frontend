@@ -1,0 +1,156 @@
+{
+  "fetchedAt": "2026-01-01T00:00:00.000Z",
+  "packs": [
+    {
+      "id": "comfyui-impact-pack",
+      "registryId": "comfyui-impact-pack",
+      "displayName": "ComfyUI Impact Pack",
+      "description": "Production-grade detailer, detector, and SEG (segmentation) tooling. The most-used pack for face restoration, region-based refinement, and iterative upscaling on Comfy Cloud.",
+      "bannerUrl": "https://media.comfy.org/cloud-nodes/comfyui-impact-pack-banner.webp",
+      "iconUrl": "https://media.comfy.org/cloud-nodes/comfyui-impact-pack-icon.webp",
+      "repoUrl": "https://github.com/ltdrdata/ComfyUI-Impact-Pack",
+      "publisher": {
+        "id": "drltdata",
+        "name": "Dr.Lt.Data"
+      },
+      "downloads": 2618646,
+      "githubStars": 3092,
+      "latestVersion": "8.28.3",
+      "license": "GPL-3.0",
+      "lastUpdated": "2026-04-19T17:08:04.993918Z",
+      "nodes": [
+        {
+          "name": "FaceDetailer",
+          "displayName": "FaceDetailer",
+          "category": "ImpactPack/Detailer",
+          "description": "Detect and refine faces with iterative passes."
+        },
+        {
+          "name": "DetailerForEach",
+          "displayName": "DetailerForEach",
+          "category": "ImpactPack/Detailer",
+          "description": "Run iterative detail refinement over detected SEG regions."
+        },
+        {
+          "name": "UltralyticsDetectorProvider",
+          "displayName": "UltralyticsDetectorProvider",
+          "category": "ImpactPack/Detector",
+          "description": "Provide detector models powered by Ultralytics YOLO."
+        }
+      ]
+    },
+    {
+      "id": "comfyui-crystools",
+      "registryId": "ComfyUI-Crystools",
+      "displayName": "ComfyUI-Crystools",
+      "description": "Live system monitoring (GPU, RAM, disk) and rich image inspection inside your workflow.",
+      "bannerUrl": "https://media.comfy.org/cloud-nodes/comfyui-crystools-banner.webp",
+      "iconUrl": "https://media.comfy.org/cloud-nodes/comfyui-crystools-icon.webp",
+      "repoUrl": "https://github.com/crystian/ComfyUI-Crystools",
+      "publisher": {
+        "id": "crystian",
+        "name": "Crystian"
+      },
+      "downloads": 1671447,
+      "githubStars": 1855,
+      "latestVersion": "1.27.4",
+      "license": "MIT",
+      "lastUpdated": "2025-10-26T19:11:09.943366Z",
+      "nodes": [
+        {
+          "name": "CCrystools_Show_Resources",
+          "displayName": "CCrystools_Show_Resources",
+          "category": "crystools/show",
+          "description": "Display GPU, RAM and disk usage live in the workflow."
+        },
+        {
+          "name": "CCrystools_Show_Image",
+          "displayName": "CCrystools_Show_Image",
+          "category": "crystools/show",
+          "description": "Inspect images at full resolution with metadata overlays."
+        }
+      ]
+    },
+    {
+      "id": "alpha-test-pack",
+      "registryId": "alpha-test-pack",
+      "displayName": "Alpha Test Pack",
+      "description": "Deterministic fixture pack used to anchor the A\u2192Z sort assertion in Playwright. Its display name starts with 'A' so it surfaces first when sorted alphabetically.",
+      "bannerUrl": "https://media.comfy.org/cloud-nodes/alpha-test-pack-banner.webp",
+      "repoUrl": "https://github.com/Comfy-Org/alpha-test-pack",
+      "publisher": {
+        "id": "comfy-org",
+        "name": "Comfy Org"
+      },
+      "downloads": 42,
+      "githubStars": 7,
+      "latestVersion": "0.1.0",
+      "license": "MIT",
+      "lastUpdated": "2026-01-01T00:00:00.000Z",
+      "nodes": [
+        {
+          "name": "AlphaProbe",
+          "displayName": "AlphaProbe",
+          "category": "alpha/test",
+          "description": "Deterministic node used to verify alphabetical ordering."
+        }
+      ]
+    },
+    {
+      "id": "rgthree-comfy",
+      "registryId": "rgthree-comfy",
+      "displayName": "rgthree-comfy",
+      "description": "Quality-of-life nodes from rgthree: Power Lora Loader, Display Any, Image Comparer, and more.",
+      "bannerUrl": "https://media.comfy.org/cloud-nodes/rgthree-comfy-banner.webp",
+      "repoUrl": "https://github.com/rgthree/rgthree-comfy",
+      "publisher": {
+        "id": "rgthree",
+        "name": "rgthree"
+      },
+      "downloads": 987654,
+      "githubStars": 1500,
+      "latestVersion": "2.0.0",
+      "license": "MIT",
+      "lastUpdated": "2026-03-15T00:00:00.000Z",
+      "nodes": [
+        {
+          "name": "PowerLoraLoader",
+          "displayName": "Power Lora Loader",
+          "category": "rgthree/loaders",
+          "description": "Load multiple LoRAs at once with strength control."
+        },
+        {
+          "name": "DisplayAny",
+          "displayName": "Display Any",
+          "category": "rgthree/display",
+          "description": "Display the value of any wire for debugging."
+        }
+      ]
+    },
+    {
+      "id": "was-node-suite-comfyui",
+      "registryId": "was-node-suite-comfyui",
+      "displayName": "WAS Node Suite",
+      "description": "Large collection of utility nodes for image processing, text manipulation, and workflow control.",
+      "bannerUrl": "https://media.comfy.org/cloud-nodes/was-node-suite-banner.webp",
+      "repoUrl": "https://github.com/WASasquatch/was-node-suite-comfyui",
+      "publisher": {
+        "id": "wasasquatch",
+        "name": "WASasquatch"
+      },
+      "downloads": 1234567,
+      "githubStars": 1700,
+      "latestVersion": "1.0.0",
+      "license": "MIT",
+      "lastUpdated": "2026-02-01T00:00:00.000Z",
+      "nodes": [
+        {
+          "name": "WASImageBlend",
+          "displayName": "Image Blend",
+          "category": "WAS/image",
+          "description": "Blend two images using a configurable mode."
+        }
+      ]
+    }
+  ]
+}

@@ -50,7 +50,7 @@
       ]
     },
     {
-      "id": "ComfyUI-Crystools",
+      "id": "comfyui-crystools",
       "registryId": "ComfyUI-Crystools",
       "displayName": "ComfyUI-Crystools",
       "description": "Live system monitoring (GPU, RAM, disk) and rich image inspection inside your workflow. The most-installed quality-of-life pack on the registry.",
@@ -201,7 +201,7 @@
       "id": "comfyui-easy-use",
       "registryId": "comfyui-easy-use",
       "displayName": "ComfyUI-Easy-Use",
-      "description": "Simplified, opinionated nodes that bundle common patterns into single drop-ins — full loader, pre-sampling, easy KSampler, and XY plotting.",
+      "description": "Simplified, opinionated nodes that bundle common patterns into single drop-ins \u2014 full loader, pre-sampling, easy KSampler, and XY plotting.",
       "iconUrl": "https://mintlify.s3.us-west-1.amazonaws.com/yolain/images/logo.svg",
       "repoUrl": "https://github.com/yolain/ComfyUI-Easy-Use",
       "publisher": {
@@ -250,7 +250,7 @@
       "id": "comfyui-advanced-controlnet",
       "registryId": "comfyui-advanced-controlnet",
       "displayName": "ComfyUI-Advanced-ControlNet",
-      "description": "ControlNet with timestep keyframes, per-frame masks, and advanced strength scheduling — essential for animation and batched-latent workflows.",
+      "description": "ControlNet with timestep keyframes, per-frame masks, and advanced strength scheduling \u2014 essential for animation and batched-latent workflows.",
       "repoUrl": "https://github.com/Kosinkadink/ComfyUI-Advanced-ControlNet",
       "publisher": {
         "id": "kosinkadink",
@@ -298,7 +298,7 @@
       "id": "was-node-suite-comfyui",
       "registryId": "was-node-suite-comfyui",
       "displayName": "WAS Node Suite",
-      "description": "A broad utility suite covering image adjustments, compositing, text, math, and I/O — the original \"kitchen sink\" pack still relied on by thousands of workflows.",
+      "description": "A broad utility suite covering image adjustments, compositing, text, math, and I/O \u2014 the original \"kitchen sink\" pack still relied on by thousands of workflows.",
       "repoUrl": "https://github.com/WASasquatch/was-node-suite-comfyui",
       "publisher": {
         "id": "was",
@@ -343,10 +343,10 @@
       ]
     },
     {
-      "id": "comfyui_ipadapter_plus",
+      "id": "comfyui-ipadapter-plus",
       "registryId": "comfyui_ipadapter_plus",
       "displayName": "ComfyUI_IPAdapter_plus",
-      "description": "Reference-image conditioning with IPAdapter — style transfer, Face ID, and multi-image embeddings. The most-installed conditioning pack on the registry, used in countless portrait, product, and animation workflows.",
+      "description": "Reference-image conditioning with IPAdapter \u2014 style transfer, Face ID, and multi-image embeddings. The most-installed conditioning pack on the registry, used in countless portrait, product, and animation workflows.",
       "repoUrl": "https://github.com/cubiq/ComfyUI_IPAdapter_plus",
       "publisher": {
         "id": "matteo",
