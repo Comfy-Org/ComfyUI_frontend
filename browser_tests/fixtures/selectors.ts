@@ -145,7 +145,9 @@ export const TestIds = {
     decrement: 'decrement',
     increment: 'increment',
     domWidgetTextarea: 'dom-widget-textarea',
-    subgraphEnterButton: 'subgraph-enter-button'
+    subgraphEnterButton: 'subgraph-enter-button',
+    selectDefaultSearchInput: 'widget-select-default-search-input',
+    selectDefaultViewport: 'widget-select-default-viewport'
   },
   linear: {
     centerPanel: 'linear-center-panel',
@@ -224,7 +226,10 @@ export const TestIds = {
     currentUserIndicator: 'current-user-indicator'
   },
   queue: {
+    jobHistorySidebar: 'job-history-sidebar',
+    progressOverlay: 'queue-progress-overlay',
     overlayToggle: 'queue-overlay-toggle',
+    dockedJobHistoryAction: 'docked-job-history-action',
     jobDetailsPopover: 'queue-job-details-popover',
     clearHistoryAction: 'clear-history-action',
     jobAssetsList: 'job-assets-list',

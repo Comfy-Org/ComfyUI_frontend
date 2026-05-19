@@ -4504,6 +4504,22 @@
       }
     }
   },
+  "GetICLoRAParameters": {
+    "description": "Extrae los parámetros IC-LoRA de los metadatos safetensors de un modelo cargado con LoRA y los proporciona para LTXVAddGuide (por ejemplo, reference_downscale_factor).",
+    "display_name": "Obtener parámetros IC-LoRA",
+    "inputs": {
+      "iclora_model": {
+        "name": "iclora_model",
+        "tooltip": "Salida directa de un LoRA Loader para el IC-LoRA específico del que se extraerán los metadatos."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iclora_parameters",
+        "tooltip": "Parámetros IC-LoRA extraídos de los metadatos de LoRA (por ejemplo, reference_downscale_factor). Conectar a LTXVAddGuide si el LoRA requiere un manejo especial de las guías."
+      }
+    }
+  },
   "GetImageSize": {
     "description": "Devuelve el ancho y alto de la imagen, y la pasa sin cambios.",
     "display_name": "Obtener Tamaño de Imagen",
@@ -7383,6 +7399,10 @@
         "name": "indice_fotograma",
         "tooltip": "Índice de fotograma para comenzar la condición. Para imágenes de un solo fotograma o videos con 1-8 fotogramas, cualquier valor de indice_fotograma es aceptable. Para videos con 9+ fotogramas, indice_fotograma debe ser divisible por 8, de lo contrario se redondeará hacia abajo al múltiplo de 8 más cercano. Los valores negativos se cuentan desde el final del video."
       },
+      "iclora_parameters": {
+        "name": "iclora_parameters",
+        "tooltip": "Parámetros IC-LoRA opcionales de un nodo Obtener parámetros IC-LoRA. Se usan para ajustar el procesamiento de guías según lo requieran ciertos IC-LoRA (por ejemplo, aquellos con reference_downscale_factor > 1). Cuando se encadenan, cada LTXVAddGuide usa solo los parámetros conectados a él."
+      },
       "image": {
         "name": "imagen",
         "tooltip": "Imagen o video para condicionar el video latente. Debe ser 8*n + 1 fotogramas. Si el video no es 8*n + 1 fotogramas, se recortará a los 8*n + 1 fotogramas más cercanos."
@@ -8375,6 +8395,19 @@
     "inputs": {
       "latent": {
         "name": "latente"
+      }
+    }
+  },
+  "LoadMoGeModel": {
+    "display_name": "Cargar modelo MoGe",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9698,6 +9731,122 @@
       "seed": {
         "name": "semilla",
         "tooltip": "La semilla aleatoria utilizada para crear el ruido."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeInference": {
+    "display_name": "Inferencia MoGe",
+    "inputs": {
+      "apply_mask": {
+        "name": "apply_mask",
+        "tooltip": "Establece los píxeles enmascarados (cielo / inválidos) como inf en puntos y profundidad para que el mallado los descarte. Desactivar para mantener la geometría predicha en todas partes; la máscara aún se devuelve por separado."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Imágenes por llamada de inferencia. Disminuir si tienes OOM en un video largo o conjunto de imágenes."
+      },
+      "force_projection": {
+        "name": "force_projection"
+      },
+      "fov_x_degrees": {
+        "name": "fov_x_degrees",
+        "tooltip": "Campo de visión horizontal de la cámara de origen. Establece la distancia focal usada para desproyectar el mapa de profundidad en 3D. 0 = recuperación automática a partir de los puntos predichos."
+      },
+      "image": {
+        "name": "image"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "0 = más rápido, 9 = mayor detalle."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePanoramaInference": {
+    "display_name": "Inferencia panorámica MoGe",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Vistas por lote de inferencia (12 divisiones en total)."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Panorama equirectangular (cualquier relación de aspecto)."
+      },
+      "merge_resolution": {
+        "name": "merge_resolution",
+        "tooltip": "Resolución del lado largo del mapa de distancias equirectangular fusionado."
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "Detalle por vista (0 = más rápido, 9 = más detallado)."
+      },
+      "split_resolution": {
+        "name": "split_resolution",
+        "tooltip": "Resolución de cada división de perspectiva."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePointMapToMesh": {
+    "display_name": "MoGe Point Map a Malla",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "Qué imagen de una geometría MoGe por lotes convertir a malla. El número de vértices varía por imagen, por lo que los lotes no pueden combinarse en una sola MALLA."
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "Intervalo de vértices; 1 = resolución completa."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "Descartar píxeles cuyo rango de profundidad 3x3 exceda esta fracción. 0 = desactivado."
+      },
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Transportar la imagen de origen como textura baseColor."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeRender": {
+    "display_name": "MoGe Renderizado",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "DirectX vs OpenGL controla la convención del canal verde del mapa de normales. DirectX: verde = -Y hacia abajo (Unreal). OpenGL: verde = +Y hacia arriba (Blender, Substance, Unity, glTF)."
       }
     },
     "outputs": {

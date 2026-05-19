@@ -4396,6 +4396,22 @@
       }
     }
   },
+  "GetICLoRAParameters": {
+    "display_name": "Get IC-LoRA Parameters",
+    "description": "Extracts IC-LoRA parameters from the safetensors metadata of a LoRA-loaded model and outputs them for LTXVAddGuide (eg. reference_downscale_factor).",
+    "inputs": {
+      "iclora_model": {
+        "name": "iclora_model",
+        "tooltip": "Direct output from a LoRA Loader for the specific IC-LoRA from which to extract the metadata."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iclora_parameters",
+        "tooltip": "IC-LoRA parameters extracted from the LoRA metadata (eg. reference_downscale_factor). Connect to LTXVAddGuide if the LoRA requires special handling of the guides."
+      }
+    }
+  },
   "GetImageSize": {
     "display_name": "Get Image Size",
     "description": "Returns width and height of the image, and passes it through unchanged.",
@@ -7965,6 +7981,19 @@
       }
     }
   },
+  "LoadMoGeModel": {
+    "display_name": "Load MoGe Model",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadTrainingDataset": {
     "display_name": "Load Training Dataset",
     "inputs": {
@@ -8227,6 +8256,10 @@
       },
       "strength": {
         "name": "strength"
+      },
+      "iclora_parameters": {
+        "name": "iclora_parameters",
+        "tooltip": "Optional IC-LoRA parameters from a Get IC-LoRA Parameters node. Used for adjusting guide processing as required by certain IC-LoRAs (eg. those with a reference_downscale_factor > 1). When chained, each LTXVAddGuide uses only the parameters connected to it."
       }
     },
     "outputs": {
@@ -11929,6 +11962,122 @@
       },
       "filename_prefix": {
         "name": "filename_prefix"
+      }
+    }
+  },
+  "MoGeInference": {
+    "display_name": "MoGe Inference",
+    "inputs": {
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "0 = fastest, 9 = most detail."
+      },
+      "fov_x_degrees": {
+        "name": "fov_x_degrees",
+        "tooltip": "Horizontal field of view of the source camera. Sets the focal length used to unproject the depth map into 3D. 0 = auto-recover from the predicted points."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Images per inference call. Lower if you OOM on a long video / image set."
+      },
+      "force_projection": {
+        "name": "force_projection"
+      },
+      "apply_mask": {
+        "name": "apply_mask",
+        "tooltip": "Set masked-out (sky / invalid) pixels to inf in points and depth so meshing culls them. Disable to keep the raw predicted geometry everywhere; the mask is still returned separately."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePanoramaInference": {
+    "display_name": "MoGe Panorama Inference",
+    "inputs": {
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Equirectangular panorama (any aspect)."
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "Per-view detail (0 = fastest, 9 = most detailed)."
+      },
+      "split_resolution": {
+        "name": "split_resolution",
+        "tooltip": "Resolution of each perspective split."
+      },
+      "merge_resolution": {
+        "name": "merge_resolution",
+        "tooltip": "Long-side resolution of the merged equirect distance map."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Views per inference batch (12 splits total)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePointMapToMesh": {
+    "display_name": "MoGe Point Map to Mesh",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "Which image of a batched MoGe geometry to mesh. Per-image vertex counts differ, so batches can't be stacked into a single MESH."
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "Vertex stride; 1 = full resolution."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "Drop pixels whose 3x3 depth span exceeds this fraction. 0 = off."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Carry the source image through as the baseColor texture."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeRender": {
+    "display_name": "MoGe Render",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "DirectX vs OpenGL controls the normal-map green-channel convention. DirectX: green = -Y down (Unreal). OpenGL: green = +Y up (Blender, Substance, Unity, glTF)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
