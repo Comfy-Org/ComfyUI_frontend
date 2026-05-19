@@ -108,8 +108,12 @@ describe('FormDropdownMenu', () => {
 
   /** Regression: PrimeVue Popover teleports the menu to document.body, so
    *  trackpad pinch-zoom must be guarded on the menu itself — `LGraphNode`
-   *  never sees these events. */
-  it('suppresses browser default for pinch-zoom', () => {
+   *  never sees these events. macOS pinch synthesizes `ctrlKey`; explicit
+   *  `⌘ + wheel` (and Windows/Linux equivalents) come through as `metaKey`. */
+  it.for([
+    { name: 'ctrlKey', modifier: 'ctrlKey' as const },
+    { name: 'metaKey', modifier: 'metaKey' as const }
+  ])('suppresses browser default for pinch-zoom ($name)', ({ modifier }) => {
     render(FormDropdownMenu, {
       props: defaultProps,
       global: globalConfig
@@ -117,7 +121,7 @@ describe('FormDropdownMenu', () => {
 
     const root = screen.getByTestId('form-dropdown-menu')
     const event = new WheelEvent('wheel', { bubbles: true, cancelable: true })
-    Object.defineProperty(event, 'ctrlKey', { value: true })
+    Object.defineProperty(event, modifier, { value: true })
     Object.defineProperty(event, 'deltaY', { value: -10 })
     root.dispatchEvent(event)
 
