@@ -79,11 +79,7 @@
     >
       <i class="pi pi-plus" />
     </Button>
-    <div
-      v-if="isIntegratedTabBar"
-      data-testid="integrated-tab-bar-actions"
-      class="ml-auto flex shrink-0 items-center gap-2 px-2"
-    >
+    <div class="ml-auto flex shrink-0 items-center gap-2 px-2">
       <Button
         v-if="isCloud || isNightly"
         v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
@@ -118,7 +114,6 @@ import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { buildFeedbackTypeformUrl } from '@/platform/support/config'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -139,7 +134,6 @@ const props = defineProps<{
   class?: string
 }>()
 
-const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
@@ -147,9 +141,6 @@ const commandStore = useCommandStore()
 const { isLoggedIn } = useCurrentUser()
 const { flags } = useFeatureFlags()
 
-const isIntegratedTabBar = computed(
-  () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
-)
 const showCurrentUser = computed(() => isCloud || isLoggedIn.value)
 
 function openFeedback() {
