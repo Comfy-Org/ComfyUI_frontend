@@ -243,13 +243,13 @@ describe('nodeOrganizationService', () => {
       it('should handle category with trailing slash', () => {
         const nodeDef = createMockNodeDef({ category: 'test/subcategory/' })
         const path = strategy?.getNodePath(nodeDef)
-        expect(path).toEqual(['test', 'subcategory', '', 'TestNode'])
+        expect(path).toEqual(['test', 'subcategory', 'TestNode'])
       })
 
       it('should handle category with multiple consecutive slashes', () => {
         const nodeDef = createMockNodeDef({ category: 'test//subcategory' })
         const path = strategy?.getNodePath(nodeDef)
-        expect(path).toEqual(['test', '', 'subcategory', 'TestNode'])
+        expect(path).toEqual(['test', 'subcategory', 'TestNode'])
       })
     })
 

@@ -244,7 +244,7 @@ describe('useSharedWorkflowUrlLoader', () => {
     const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
     await loadSharedWorkflowFromUrl()
 
-    expect(mockImportPublishedAssets).toHaveBeenCalledWith(['a1'])
+    expect(mockImportPublishedAssets).toHaveBeenCalledWith(['a1'], 'share-id-1')
   })
 
   it('does not call import when user chooses open-only', async () => {
@@ -348,7 +348,7 @@ describe('useSharedWorkflowUrlLoader', () => {
     const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
     await loadSharedWorkflowFromUrl()
 
-    expect(mockImportPublishedAssets).toHaveBeenCalledWith(['a1'])
+    expect(mockImportPublishedAssets).toHaveBeenCalledWith(['a1'], 'share-id-1')
   })
 
   it('restores preserved share query before loading', async () => {

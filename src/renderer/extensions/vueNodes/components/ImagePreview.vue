@@ -80,7 +80,7 @@
       >
         <!-- Mask/Edit Button -->
         <button
-          v-if="!hasMultipleImages"
+          v-if="!hasMultipleImages && !imageError"
           :class="actionButtonClass"
           :title="$t('g.editOrMaskImage')"
           :aria-label="$t('g.editOrMaskImage')"
@@ -91,6 +91,7 @@
 
         <!-- Download Button -->
         <button
+          v-if="!imageError"
           :class="actionButtonClass"
           :title="$t('g.downloadImage')"
           :aria-label="$t('g.downloadImage')"
@@ -176,7 +177,7 @@ import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { resolveNode } from '@/utils/litegraphUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 interface ImagePreviewProps {
   /** Array of image URLs to display */

@@ -289,7 +289,9 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     )
     const workflowExtra = workflow.initialState.extra
     const description =
-      workflowExtra?.BlueprintDescription ?? 'User generated subgraph blueprint'
+      workflowExtra?.BlueprintDescription ??
+      workflow.initialState?.definitions?.subgraphs[0].description ??
+      'User generated subgraph blueprint'
     const search_aliases = workflowExtra?.BlueprintSearchAliases
     const subgraphDefCategory =
       workflow.initialState.definitions?.subgraphs?.[0]?.category

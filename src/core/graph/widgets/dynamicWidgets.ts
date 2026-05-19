@@ -323,6 +323,10 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
         if (!(outputGroups?.[idx] == matchKey)) return
         changeOutputType(this, output, outputType)
       })
+      // Force Vue reactivity update for output slot types.
+      // Outputs are wrapped in shallowReactive by useGraphNodeManager,
+      // so mutating output.type alone doesn't trigger re-render.
+      this.outputs = [...this.outputs]
       app.canvas?.setDirty(true, true)
     }
   )
@@ -460,7 +464,10 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   const input = node.inputs[index]
   if (!input) return
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
-  const { min = 1, inputSpecs } = node.comfyDynamic.autogrow[groupName]
+  const autogrowGroup = node.comfyDynamic.autogrow[groupName]
+  if (!autogrowGroup) return
+
+  const { min = 1, inputSpecs } = autogrowGroup
   const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
   if (ordinal == undefined || ordinal + 1 < min) return
 

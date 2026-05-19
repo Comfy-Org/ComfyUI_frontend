@@ -228,18 +228,6 @@ export const recordPendingSubscriptionCheckoutAttempt = (
   input: RecordPendingSubscriptionCheckoutAttemptInput
 ): PendingSubscriptionCheckoutAttempt => {
   const storage = getStorage()
-  if (!storage) {
-    return {
-      attempt_id: createAttemptId(),
-      started_at_ms: Date.now(),
-      tier: input.tier,
-      cycle: input.cycle,
-      checkout_type: input.checkout_type,
-      ...(input.previous_tier ? { previous_tier: input.previous_tier } : {}),
-      ...(input.previous_cycle ? { previous_cycle: input.previous_cycle } : {})
-    }
-  }
-
   const attempt: PendingSubscriptionCheckoutAttempt = {
     attempt_id: createAttemptId(),
     started_at_ms: Date.now(),
@@ -248,6 +236,10 @@ export const recordPendingSubscriptionCheckoutAttempt = (
     checkout_type: input.checkout_type,
     ...(input.previous_tier ? { previous_tier: input.previous_tier } : {}),
     ...(input.previous_cycle ? { previous_cycle: input.previous_cycle } : {})
+  }
+
+  if (!storage) {
+    return attempt
   }
 
   try {

@@ -139,7 +139,7 @@ import AssetSectionList from '@/platform/workflow/sharing/components/AssetSectio
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { shareId, onConfirm, onOpenWithoutImporting, onCancel } = defineProps<{
   shareId: string

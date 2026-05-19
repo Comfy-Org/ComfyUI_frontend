@@ -1,12 +1,14 @@
-import { SplatMesh } from '@sparkjsdev/spark'
 import * as THREE from 'three'
-import { type GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
 
-import {
-  type EventManagerInterface,
-  type MaterialMode,
-  type ModelManagerInterface,
-  type UpDirection
+import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
+import type { ModelAdapterCapabilities } from './ModelAdapter'
+import { buildPointCloudForMaterialMode } from './PointCloudModelAdapter'
+import type {
+  EventManagerInterface,
+  MaterialMode,
+  ModelManagerInterface,
+  UpDirection
 } from './interfaces'
 
 export class SceneModelManager implements ModelManagerInterface {
@@ -39,6 +41,13 @@ export class SceneModelManager implements ModelManagerInterface {
   private activeCamera: THREE.Camera
   private setupCamera: (size: THREE.Vector3, center: THREE.Vector3) => void
   private setupGizmo: (model: THREE.Object3D) => void
+  private getCurrentCapabilities: () => ModelAdapterCapabilities
+  private getBoundsFromAdapter: (model: THREE.Object3D) => THREE.Box3 | null
+  private disposeModelViaAdapter: (model: THREE.Object3D) => void
+  private getDefaultCameraPose: () => {
+    size: THREE.Vector3
+    center: THREE.Vector3
+  } | null
 
   constructor(
     scene: THREE.Scene,
@@ -46,7 +55,16 @@ export class SceneModelManager implements ModelManagerInterface {
     eventManager: EventManagerInterface,
     getActiveCamera: () => THREE.Camera,
     setupCamera: (size: THREE.Vector3, center: THREE.Vector3) => void,
-    setupGizmo: (model: THREE.Object3D) => void
+    setupGizmo: (model: THREE.Object3D) => void,
+    getCurrentCapabilities: () => ModelAdapterCapabilities = () =>
+      DEFAULT_MODEL_CAPABILITIES,
+    getBoundsFromAdapter: (model: THREE.Object3D) => THREE.Box3 | null = () =>
+      null,
+    disposeModelViaAdapter: (model: THREE.Object3D) => void = () => {},
+    getDefaultCameraPose: () => {
+      size: THREE.Vector3
+      center: THREE.Vector3
+    } | null = () => null
   ) {
     this.scene = scene
     this.renderer = renderer
@@ -55,6 +73,10 @@ export class SceneModelManager implements ModelManagerInterface {
     this.setupCamera = setupCamera
     this.textureLoader = new THREE.TextureLoader()
     this.setupGizmo = setupGizmo
+    this.getCurrentCapabilities = getCurrentCapabilities
+    this.getBoundsFromAdapter = getBoundsFromAdapter
+    this.disposeModelViaAdapter = disposeModelViaAdapter
+    this.getDefaultCameraPose = getDefaultCameraPose
 
     this.normalMaterial = new THREE.MeshNormalMaterial({
       flatShading: false,
@@ -104,23 +126,11 @@ export class SceneModelManager implements ModelManagerInterface {
     })
   }
 
-  private handlePLYModeSwitch(mode: MaterialMode): void {
-    if (!(this.originalModel instanceof THREE.BufferGeometry)) {
-      return
-    }
-
-    const plyGeometry = this.originalModel.clone()
-    const hasVertexColors = plyGeometry.attributes.color !== undefined
-
-    // Find and remove ALL MainModel instances by name to ensure deletion
+  private removeAllMainModelsFromScene(): void {
     const oldMainModels: THREE.Object3D[] = []
     this.scene.traverse((obj) => {
-      if (obj.name === 'MainModel') {
-        oldMainModels.push(obj)
-      }
+      if (obj.name === 'MainModel') oldMainModels.push(obj)
     })
-
-    // Remove and dispose all found MainModels
     oldMainModels.forEach((oldModel) => {
       oldModel.traverse((child) => {
         if (child instanceof THREE.Mesh || child instanceof THREE.Points) {
@@ -132,103 +142,31 @@ export class SceneModelManager implements ModelManagerInterface {
           }
         }
       })
+      this.disposeModelViaAdapter(oldModel)
       this.scene.remove(oldModel)
     })
+  }
 
+  private rebuildForMaterialMode(mode: MaterialMode): void {
+    if (!(this.originalModel instanceof THREE.BufferGeometry)) return
+
+    this.removeAllMainModelsFromScene()
     this.currentModel = null
 
-    let newModel: THREE.Object3D
-
-    if (mode === 'pointCloud') {
-      // Use Points rendering for point cloud mode
-      plyGeometry.computeBoundingSphere()
-      if (plyGeometry.boundingSphere) {
-        const center = plyGeometry.boundingSphere.center
-        const radius = plyGeometry.boundingSphere.radius
-
-        plyGeometry.translate(-center.x, -center.y, -center.z)
-
-        if (radius > 0) {
-          const scale = 1.0 / radius
-          plyGeometry.scale(scale, scale, scale)
-        }
-      }
-
-      const pointMaterial = hasVertexColors
-        ? new THREE.PointsMaterial({
-            size: 0.005,
-            vertexColors: true,
-            sizeAttenuation: true
-          })
-        : new THREE.PointsMaterial({
-            size: 0.005,
-            color: 0xcccccc,
-            sizeAttenuation: true
-          })
-
-      const points = new THREE.Points(plyGeometry, pointMaterial)
-      newModel = new THREE.Group()
-      newModel.add(points)
-    } else {
-      // Use Mesh rendering for other modes
-      let meshMaterial: THREE.Material = hasVertexColors
-        ? new THREE.MeshStandardMaterial({
-            vertexColors: true,
-            metalness: 0.0,
-            roughness: 0.5,
-            side: THREE.DoubleSide
-          })
-        : this.standardMaterial.clone()
-
-      if (
-        !hasVertexColors &&
-        meshMaterial instanceof THREE.MeshStandardMaterial
-      ) {
-        meshMaterial.side = THREE.DoubleSide
-      }
-
-      const mesh = new THREE.Mesh(plyGeometry, meshMaterial)
-      this.originalMaterials.set(mesh, meshMaterial)
-
-      newModel = new THREE.Group()
-      newModel.add(mesh)
-
-      // Apply the requested material mode
-      if (mode === 'normal') {
-        mesh.material = new THREE.MeshNormalMaterial({
-          flatShading: false,
-          side: THREE.DoubleSide
-        })
-      } else if (mode === 'wireframe') {
-        mesh.material = new THREE.MeshBasicMaterial({
-          color: 0xffffff,
-          wireframe: true
-        })
-      }
-    }
-
-    // Double check: remove any remaining MainModel before adding new one
-    const remainingMainModels: THREE.Object3D[] = []
-    this.scene.traverse((obj) => {
-      if (obj.name === 'MainModel') {
-        remainingMainModels.push(obj)
-      }
-    })
-    remainingMainModels.forEach((obj) => this.scene.remove(obj))
-
-    this.currentModel = newModel
+    const newModel = buildPointCloudForMaterialMode(
+      this.originalModel,
+      mode,
+      this.standardMaterial,
+      this.originalMaterials
+    )
     newModel.name = 'MainModel'
 
-    // Setup the new model
-    if (mode === 'pointCloud') {
-      this.scene.add(newModel)
-    } else {
+    if (mode !== 'pointCloud') {
       const box = new THREE.Box3().setFromObject(newModel)
       const size = box.getSize(new THREE.Vector3())
       const center = box.getCenter(new THREE.Vector3())
-
       const maxDim = Math.max(size.x, size.y, size.z)
-      const targetSize = 5
+      const targetSize = this.getCurrentCapabilities().fitTargetSize
       const scale = targetSize / maxDim
       newModel.scale.multiplyScalar(scale)
 
@@ -237,9 +175,10 @@ export class SceneModelManager implements ModelManagerInterface {
       box.getSize(size)
 
       newModel.position.set(-center.x, -box.min.y, -center.z)
-      this.scene.add(newModel)
     }
 
+    this.scene.add(newModel)
+    this.currentModel = newModel
     this.eventManager.emitEvent('materialModeChange', mode)
   }
 
@@ -250,9 +189,8 @@ export class SceneModelManager implements ModelManagerInterface {
 
     this.materialMode = mode
 
-    // Handle PLY files specially - they need to be recreated for mode switch
-    if (this.originalModel instanceof THREE.BufferGeometry) {
-      this.handlePLYModeSwitch(mode)
+    if (this.getCurrentCapabilities().requiresMaterialRebuild) {
+      this.rebuildForMaterialMode(mode)
       return
     }
 
@@ -390,7 +328,7 @@ export class SceneModelManager implements ModelManagerInterface {
       this.scene.remove(obj)
 
       obj.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
+        if (child instanceof THREE.Mesh || child instanceof THREE.Points) {
           child.geometry?.dispose()
           if (Array.isArray(child.material)) {
             child.material.forEach((material) => material.dispose())
@@ -399,6 +337,7 @@ export class SceneModelManager implements ModelManagerInterface {
           }
         }
       })
+      this.disposeModelViaAdapter(obj)
     })
 
     this.reset()
@@ -488,33 +427,38 @@ export class SceneModelManager implements ModelManagerInterface {
     this.scene.add(this.currentModel)
   }
 
+  private computeWorldBounds(model: THREE.Object3D): THREE.Box3 {
+    return (
+      this.getBoundsFromAdapter(model) ?? new THREE.Box3().setFromObject(model)
+    )
+  }
+
   async setupModel(model: THREE.Object3D): Promise<void> {
     this.currentModel = model
     model.name = 'MainModel'
 
-    // Check if model is or contains a SplatMesh (3D Gaussian Splatting)
-    const isSplatModel = this.containsSplatMesh(model)
-
-    if (isSplatModel) {
-      // SplatMesh handles its own rendering, just add to scene
-      this.scene.add(model)
-      // Set a default camera distance for splat models
-      this.setupCamera(new THREE.Vector3(5, 5, 5), new THREE.Vector3(0, 2.5, 0))
-      return
+    if (!this.getCurrentCapabilities().fitToViewer) {
+      const pose = this.getDefaultCameraPose()
+      if (pose) {
+        this.scene.add(model)
+        this.setupCamera(pose.size, pose.center)
+        return
+      }
     }
 
     this.scene.add(model)
+    const pendingMaterialMode = this.materialMode
+    this.setupModelMaterials(model)
 
-    if (this.materialMode !== 'original') {
-      this.setMaterialMode(this.materialMode)
+    if (pendingMaterialMode !== 'original') {
+      this.setMaterialMode(pendingMaterialMode)
     }
 
     if (this.currentUpDirection !== 'original') {
       this.setUpDirection(this.currentUpDirection)
     }
-    this.setupModelMaterials(model)
 
-    const box = new THREE.Box3().setFromObject(model)
+    const box = this.computeWorldBounds(model)
     const size = box.getSize(new THREE.Vector3())
     const center = box.getCenter(new THREE.Vector3())
 
@@ -524,48 +468,43 @@ export class SceneModelManager implements ModelManagerInterface {
   }
 
   fitToViewer(): void {
-    if (!this.currentModel || this.containsSplatMesh()) return
+    if (!this.currentModel || !this.getCurrentCapabilities().fitToViewer) return
     const model = this.currentModel
 
-    // Reset transform to compute from raw geometry (idempotent)
     model.scale.set(1, 1, 1)
     model.position.set(0, 0, 0)
     model.rotation.set(0, 0, 0)
 
-    const box = new THREE.Box3().setFromObject(model)
+    const box = this.computeWorldBounds(model)
     const size = box.getSize(new THREE.Vector3())
     const center = box.getCenter(new THREE.Vector3())
 
     const maxDim = Math.max(size.x, size.y, size.z)
     if (maxDim === 0) return
 
-    const targetSize = 5
+    const targetSize = this.getCurrentCapabilities().fitTargetSize
     const scale = targetSize / maxDim
     model.scale.set(scale, scale, scale)
 
-    box.setFromObject(model)
-    box.getCenter(center)
-    box.getSize(size)
+    const scaledBox = this.computeWorldBounds(model)
+    scaledBox.getCenter(center)
+    scaledBox.getSize(size)
 
-    model.position.set(-center.x, -box.min.y, -center.z)
+    model.position.set(-center.x, -scaledBox.min.y, -center.z)
 
-    const newBox = new THREE.Box3().setFromObject(model)
+    // fitToViewer resets rotation to (0,0,0), so originalRotation must be cleared
+    // before reapplying currentUpDirection to avoid compounding rotations.
+    this.originalRotation = null
+    if (this.currentUpDirection !== 'original') {
+      this.setUpDirection(this.currentUpDirection)
+    }
+
+    const newBox = this.computeWorldBounds(model)
     const newSize = newBox.getSize(new THREE.Vector3())
     const newCenter = newBox.getCenter(new THREE.Vector3())
 
     this.setupCamera(newSize, newCenter)
     this.setupGizmo(model)
-  }
-
-  containsSplatMesh(model?: THREE.Object3D | null): boolean {
-    const target = model ?? this.currentModel
-    if (!target) return false
-    if (target instanceof SplatMesh) return true
-    let found = false
-    target.traverse((child) => {
-      if (child instanceof SplatMesh) found = true
-    })
-    return found
   }
 
   setOriginalModel(model: THREE.Object3D | THREE.BufferGeometry | GLTF): void {

@@ -171,7 +171,7 @@ import { ref, toRef } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 import { useWaveAudioPlayer } from '@/composables/useWaveAudioPlayer'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   src,

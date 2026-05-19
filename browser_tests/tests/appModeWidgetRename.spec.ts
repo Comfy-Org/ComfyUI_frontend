@@ -5,7 +5,7 @@ import {
 import {
   saveAndReopenInAppMode,
   setupSubgraphBuilder
-} from '@e2e/helpers/builderTestUtils'
+} from '@e2e/fixtures/utils/builderTestUtils'
 
 test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {

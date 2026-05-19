@@ -11,7 +11,8 @@ import type {
   INodeInputSlot,
   INodeOutputSlot,
   LinkNetwork,
-  Point
+  Point,
+  SlotIndex
 } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
@@ -34,7 +35,7 @@ export class FloatingRenderLink implements RenderLink {
   readonly fromSlot: INodeOutputSlot | INodeInputSlot
   readonly fromPos: Point
   readonly fromDirection: LinkDirection
-  readonly fromSlotIndex: number
+  readonly fromSlotIndex: SlotIndex
 
   readonly outputNodeId: NodeId = -1
   readonly outputNode?: LGraphNode

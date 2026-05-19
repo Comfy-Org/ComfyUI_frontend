@@ -66,15 +66,31 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
       await openContextMenu(comfyPage, 'KSampler')
       await clickExactMenuItem(comfyPage, 'Rename')
 
-      const titleInput = comfyPage.page.getByTestId(TestIds.node.titleInput)
-      await titleInput.waitFor({ state: 'visible' })
-      await titleInput.fill('My Renamed Sampler')
-      await titleInput.press('Enter')
+      await comfyPage.titleEditor.expectVisible()
+      await comfyPage.titleEditor.setTitle('My Renamed Sampler')
       await comfyPage.nextFrame()
 
       const renamedNode =
         comfyPage.vueNodes.getNodeByTitle('My Renamed Sampler')
       await expect(renamedNode).toBeVisible()
+    })
+
+    test('should open node info in the right side panel via context menu', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting('Comfy.RightSidePanel.IsOpen', false)
+      await expect(comfyPage.menu.propertiesPanel.root).toBeHidden()
+
+      await openContextMenu(comfyPage, 'KSampler')
+      await clickExactMenuItem(comfyPage, 'Node Info')
+
+      const panel = comfyPage.menu.propertiesPanel.root
+      await expect(panel).toBeVisible()
+      await expect(panel.getByTestId('panel-tab-info')).toHaveAttribute(
+        'aria-selected',
+        'true'
+      )
+      await expect(comfyPage.menu.nodeLibraryTab.selectedTabButton).toBeHidden()
     })
 
     test('should copy and paste node via context menu', async ({

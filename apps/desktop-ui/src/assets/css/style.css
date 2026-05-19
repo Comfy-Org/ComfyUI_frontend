@@ -20,15 +20,15 @@
 }
 
 .p-button-danger {
-  background-color: var(--color-coral-red-600);
+  background-color: var(--color-coral-700);
 }
 
 .p-button-danger:hover {
-  background-color: var(--color-coral-red-500);
+  background-color: var(--color-coral-600);
 }
 
 .p-button-danger:active {
-  background-color: var(--color-coral-red-400);
+  background-color: var(--color-coral-500);
 }
 
 .task-div .p-card {

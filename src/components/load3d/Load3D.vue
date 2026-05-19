@@ -22,8 +22,10 @@
         v-model:model-config="modelConfig"
         v-model:camera-config="cameraConfig"
         v-model:light-config="lightConfig"
-        :is-splat-model="isSplatModel"
-        :is-ply-model="isPlyModel"
+        :can-use-gizmo="canUseGizmo"
+        :can-use-lighting="canUseLighting"
+        :can-export="canExport"
+        :material-modes="materialModes"
         :has-skeleton="hasSkeleton"
         @update-background-image="handleBackgroundImageUpdate"
         @export-model="handleExportModel"
@@ -43,7 +45,10 @@
         @seek="handleSeek"
       />
     </div>
-    <div class="pointer-events-auto absolute top-12 right-2 z-20">
+    <div
+      v-if="canFitToViewer"
+      class="pointer-events-auto absolute top-12 right-2 z-20"
+    >
       <div class="flex flex-col rounded-lg bg-backdrop/30">
         <Button
           v-tooltip.left="{
@@ -138,8 +143,11 @@ const {
   // other state
   isRecording,
   isPreview,
-  isSplatModel,
-  isPlyModel,
+  canFitToViewer,
+  canUseGizmo,
+  canUseLighting,
+  canExport,
+  materialModes,
   hasSkeleton,
   hasRecording,
   recordingDuration,

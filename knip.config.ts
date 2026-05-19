@@ -17,6 +17,9 @@ const config: KnipConfig = {
       entry: ['src/i18n.ts'],
       project: ['src/**/*.{js,ts,vue}']
     },
+    'packages/design-system': {
+      project: ['src/**/*.{css,js,ts}']
+    },
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
     },
@@ -51,8 +54,13 @@ const config: KnipConfig = {
     '.github/workflows/ci-oss-assets-validation.yaml',
     // Pending integration in stacked PR
     'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
+    // Marketing media tooling — adopted by pages in a follow-up PR
+    'apps/website/src/components/common/SiteVideo.vue',
+    'apps/website/src/utils/marketingImage.ts',
     // Agent review check config, not part of the build
-    '.agents/checks/eslint.strict.config.js'
+    '.agents/checks/eslint.strict.config.js',
+    // Devtools extensions, included dynamically
+    'tools/devtools/web/**'
   ],
   vite: {
     config: ['vite?(.*).config.mts']

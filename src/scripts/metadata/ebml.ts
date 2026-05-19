@@ -10,6 +10,7 @@ import {
   type TextRange,
   type VInt
 } from '@/types/metadataTypes'
+import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 const WEBM_SIGNATURE = [0x1a, 0x45, 0xdf, 0xa3]
 const MAX_READ_BYTES = 2 * 1024 * 1024
@@ -245,7 +246,9 @@ const parseJsonText = (
   if (jsonEndPos === null) return null
 
   try {
-    return JSON.parse(jsonText.substring(0, jsonEndPos))
+    return parseJsonWithNonFinite<ComfyWorkflowJSON | ComfyApiWorkflow>(
+      jsonText.substring(0, jsonEndPos)
+    )
   } catch {
     return null
   }
@@ -353,6 +356,7 @@ export function getFromWebmFile(file: File): Promise<ComfyMetadata> {
     const reader = new FileReader()
     reader.onload = (event) => handleFileLoad(event, resolve)
     reader.onerror = () => resolve({})
+    reader.onabort = () => resolve({})
     reader.readAsArrayBuffer(file.slice(0, MAX_READ_BYTES))
   })
 }
