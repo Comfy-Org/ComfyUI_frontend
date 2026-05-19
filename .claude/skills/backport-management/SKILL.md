@@ -9,13 +9,18 @@ Cherry-pick backport management for Comfy-Org/ComfyUI_frontend stable release br
 
 ## Quick Start
 
-1. **Discover** — Collect candidates from Slack bot + git log gap (`reference/discovery.md`)
-2. **Analyze** — Categorize MUST/SHOULD/SKIP, check deps (`reference/analysis.md`)
-3. **Human Review** — Present candidates in batches for interactive approval (see Interactive Approval Flow)
-4. **Plan** — Order by dependency (leaf fixes first), group into waves per branch
-5. **Execute** — Label-driven automation → worktree fallback for conflicts (`reference/execution.md`)
-6. **Verify** — After each wave, verify branch integrity before proceeding
-7. **Log & Report** — Generate session report (`reference/logging.md`)
+1. **Discover** — Collect candidates from Slack bot + git log gap, then **reconcile both lists** (`reference/discovery.md`)
+2. **Pre-filter by path** — Auto-skip PRs whose changed files are entirely under `apps/website/`, `browser_tests/`, `.github/`, `packages/design-system/`, `packages/{cloud,registry}-types/`, `.claude/`, `docs/`. Don't read PR bodies for these — they don't ship to core ComfyUI users (`reference/analysis.md`)
+3. **Verify target file existence** — For each surviving candidate, run `git cat-file -e origin/$TARGET:$path` for primary changed files. If they don't exist on the target, auto-mark SKIP with reason `feature-not-on-branch`
+4. **Tiered triage** — Bucket into **Tier 1 (core editor must-haves)**, **Tier 2 (cloud-distribution only)**, **Tier 3 (skip)** before reviewing individually (`reference/analysis.md`)
+5. **Analyze** — Categorize remaining MUST/SHOULD, check deps (`reference/analysis.md`)
+6. **Human Review** — Present candidates in batches for interactive approval, with tier context attached (see Interactive Approval Flow)
+7. **Plan** — Order by dependency (leaf fixes first), group into waves per branch
+8. **Test-then-resolve dry-run** — Classify clean vs conflict before committing time (`reference/execution.md`)
+9. **Execute** — Label-driven automation for clean PRs → worktree fallback for conflicts (`reference/execution.md`)
+10. **Public-API conflict review** — If conflict resolution touches a public LiteGraph callback, extension API, or `node.*` method, consult oracle for compat-regression review BEFORE pushing (`reference/execution.md`)
+11. **Verify** — Per-PR validation (typecheck + targeted tests + lint on changed files) AND per-wave verification (full typecheck + test:unit on branch HEAD)
+12. **Log & Report** — Generate session report + author accountability report + Slack status update (`reference/logging.md`)
 
 ## System Context
 
@@ -107,6 +112,35 @@ Husky hooks fail in worktrees (can't find lint-staged config). Always use `git p
 
 In the 2026-04-06 session: core/1.42 got 18/26 auto-PRs, cloud/1.42 got only 1/25. The cloud branch has more divergence. **Always plan for manual fallback** — don't assume automation will handle most PRs.
 
+### Cherry-Picked Tests Can Reference Files Added By Earlier Unbackported PRs
+
+A common conflict: PR A on main modifies a test file that was _added_ on main by an earlier PR B (not backported to the target). The cherry-pick of A reports "modify/delete" on B's test file because the file doesn't exist on the target. Adding the new file would smuggle in B's test scaffolding without B's runtime changes.
+
+**Detection:** Conflict says `deleted in HEAD and modified in <PR>`. Verify with:
+
+```bash
+git log --diff-filter=A --oneline origin/main -- path/to/test.ts
+```
+
+If the introducing commit is **not** on the target branch, the test file isn't a real prerequisite for the runtime fix.
+
+**Fix:** `git rm` the test file (drop it from the backport). Document in the commit body which PR introduced it on main and why dropping it is safe. The runtime fix itself usually doesn't depend on these tests — coverage exists at the integration layer.
+
+### Backport-Only Compatibility Shims
+
+When a PR's _mechanism_ relies on changes upstream that aren't on the older branch, a literal cherry-pick can recreate the original bug for any consumer still using the old contract. This is most dangerous for **public LiteGraph callbacks, extension APIs, and `node.*` methods** that custom-node packages depend on.
+
+**Real example (#11541, core/1.43 backport):** The PR removed `LGraphNode.vue`'s legacy `handled === true` sync-return check from `handleDrop`, replacing it with `await node.onDragDrop(event, true)`. Safe on `main` because all in-repo `onDragDrop` handlers had migrated to participate in the new `claimEvent` flag. On `core/1.43`, `onDragDrop` is a public callback — custom-node packages with synchronous `onDragDrop` returning `true` would no longer have their event claimed, recreating the duplicate-node-creation bug the PR was fixing.
+
+**Detection:** The PR's diff modifies a file that is part of a public extension API surface. Look for:
+
+- `node.onXxx` callback assignments
+- Methods on `LGraphNode`, `LGraphCanvas`, `LGraph`, `Subgraph`
+- Public exports from `src/lib/litegraph/`
+- Type changes affecting `litegraph-augmentation.d.ts`
+
+**Fix:** Add a backport-only compatibility shim that preserves the old contract while keeping the new fix. Document it explicitly in the commit body under a `## Backport-only compatibility fix` heading. Consult oracle for review before pushing — a bad shim is worse than no fix.
+
 ## Conflict Triage
 
 **Always categorize before deciding to skip. High conflict count ≠ hard conflicts.**
@@ -146,6 +180,26 @@ Skip these without discussion:
 - **Revert pairs** — If PR A reverted by PR B, skip both. If fixed version (PR C) exists, backport only C.
 - **Features not on target branch** — e.g., Painter, GLSLShader, appModeStore on core/1.40
 - **Cloud-only PRs on core/\* branches** — Team workspaces, cloud queue, cloud-only login. (Note: app mode and Firebase auth are NOT cloud-only — see Branch Scope Rules)
+
+### Path Pre-Filter (run BEFORE reading PR bodies)
+
+For 50+ candidate PRs, classify by changed paths first to skip the unproductive ones without spending time on triage. Run `git show --stat $SHA` (or `gh pr view --json files`) and bucket:
+
+| Path prefix                                    | Bucket                 | Reason                                           |
+| ---------------------------------------------- | ---------------------- | ------------------------------------------------ |
+| `apps/website/`                                | SKIP                   | Marketing/platform site, not core ComfyUI bundle |
+| `apps/desktop-ui/`                             | SKIP for `core/*`      | Desktop app, separate release cadence            |
+| `browser_tests/` only (no `src/`)              | SKIP                   | Test-only                                        |
+| `.github/workflows/` only                      | SKIP                   | CI/release infra                                 |
+| `packages/design-system/` only                 | SKIP                   | Design tokens, not core                          |
+| `packages/{cloud,registry,ingest}-types/` only | SKIP                   | Generated types                                  |
+| `.claude/`, `.agents/`, `docs/`                | SKIP                   | Agent / documentation                            |
+| `*.stories.ts` only                            | SKIP                   | Storybook only                                   |
+| `src/` (core editor)                           | KEEP — analyze further | Runtime/editor code that requires full triage    |
+
+A PR touches multiple paths? Keep it if **any** changed file is under `src/` (or other core paths) and run normal analysis. Auto-skip is conservative — only skip when _all_ paths match the SKIP buckets.
+
+This filter alone removes ~30-50% of candidates in a typical session, leaving only the PRs that need real triage.
 
 ## Wave Verification
 

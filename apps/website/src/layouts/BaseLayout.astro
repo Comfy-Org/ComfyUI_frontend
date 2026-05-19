@@ -5,11 +5,13 @@ import '../styles/global.css'
 import type { Locale } from '../i18n/translations'
 import SiteFooter from '../components/common/SiteFooter.vue'
 import SiteNav from '../components/common/SiteNav.vue'
+import { escapeJsonLd } from '../utils/escapeJsonLd'
 import { fetchGitHubStars, formatStarCount } from '../utils/github'
 
 interface Props {
   title: string
   description?: string
+  keywords?: string[]
   ogImage?: string
   noindex?: boolean
 }
@@ -17,9 +19,12 @@ interface Props {
 const {
   title,
   description = 'Comfy is the AI creation engine for visual professionals who demand control.',
+  keywords,
   ogImage = 'https://media.comfy.org/website/comfy.webp',
   noindex = false,
 } = Astro.props
+
+const keywordsContent = keywords && keywords.length > 0 ? keywords.join(', ') : undefined
 
 const siteBase = Astro.site ?? 'https://comfy.org'
 const canonicalURL = new URL(Astro.url.pathname, siteBase)
@@ -62,6 +67,7 @@ const websiteJsonLd = {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
+    {keywordsContent && <meta name="keywords" content={keywordsContent} />}
     {noindex && <meta name="robots" content="noindex, nofollow" />}
     <title>{title}</title>
 
@@ -89,8 +95,11 @@ const websiteJsonLd = {
     <meta name="twitter:image" content={ogImageURL.href} />
 
     <!-- Structured Data -->
-    <script is:inline type="application/ld+json" set:html={JSON.stringify(organizationJsonLd)} />
-    <script is:inline type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
+    <script is:inline type="application/ld+json" set:html={escapeJsonLd(organizationJsonLd)} />
+    <script is:inline type="application/ld+json" set:html={escapeJsonLd(websiteJsonLd)} />
+    <slot name="head" />
+
+    <slot name="head" />
 
     <!-- Google Tag Manager -->
     {gtmEnabled && (
@@ -109,6 +118,7 @@ const websiteJsonLd = {
     )}
 
     <ClientRouter />
+    <slot name="head" />
   </head>
   <body class="bg-primary-comfy-ink text-white font-formula antialiased overflow-x-clip">
     {gtmEnabled && (
