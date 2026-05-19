@@ -21,7 +21,7 @@
         loop
         muted
         playsinline
-        class="-ml-[20%] h-full min-w-5/4 object-cover p-0"
+        class="ml-[-20%] h-full min-w-5/4 object-cover p-0"
       >
         <source
           src="/assets/images/cloud-subscription.webm"
@@ -42,7 +42,11 @@
         </div>
 
         <div class="mt-6 flex flex-col items-start gap-0 self-stretch">
-          <div v-for="n in 4" :key="n" class="flex items-center gap-2 py-2">
+          <div
+            v-for="n in [2, 3, 4]"
+            :key="n"
+            class="flex items-center gap-2 py-2"
+          >
             <i class="pi pi-check text-xs text-text-primary" />
             <span class="text-sm text-text-primary">
               {{ t(`cloudNotification.feature${n}Title`) }}

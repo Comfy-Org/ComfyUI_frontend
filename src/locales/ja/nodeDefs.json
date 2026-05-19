@@ -24,6 +24,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_image": {
+        "name": "start_image"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "ノイズを追加",
     "inputs": {
@@ -472,6 +506,196 @@
       }
     }
   },
+  "ByteDance2FirstLastFrameNode": {
+    "description": "Seedance 2.0 を使用して、最初のフレーム画像とオプションの最後のフレーム画像から動画を生成します。",
+    "display_name": "ByteDance Seedance 2.0 ファースト・ラストフレームから動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "first_frame": {
+        "name": "最初のフレーム",
+        "tooltip": "動画の最初のフレーム画像です。"
+      },
+      "first_frame_asset_id": {
+        "name": "first_frame_asset_id",
+        "tooltip": "最初のフレームとして使用するSeedanceのasset_id。他のfirst_frame画像入力とは排他的です。"
+      },
+      "last_frame": {
+        "name": "最後のフレーム",
+        "tooltip": "動画の最後のフレーム画像です。"
+      },
+      "last_frame_asset_id": {
+        "name": "last_frame_asset_id",
+        "tooltip": "最後のフレームとして使用するSeedanceのasset_id。他のlast_frame画像入力とは排他的です。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "最高品質には Seedance 2.0、速度最適化には Seedance 2.0 Fast を使用します。"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_generate_audio": {
+        "name": "オーディオ生成"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "動画にウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2ReferenceNode": {
+    "description": "Seedance 2.0 を使い、リファレンス画像・動画・音声から動画を生成・編集・拡張します。マルチモーダルリファレンス、動画編集、動画拡張に対応しています。",
+    "display_name": "ByteDance Seedance 2.0 リファレンスから動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "最高品質には Seedance 2.0、速度最適化には Seedance 2.0 Fast を使用します。"
+      },
+      "model_auto_downscale": {
+        "name": "自動ダウンスケール"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_generate_audio": {
+        "name": "オーディオ生成"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "動画にウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDance2TextToVideoNode": {
+    "description": "テキストプロンプトに基づいて Seedance 2.0 モデルで動画を生成します。",
+    "display_name": "ByteDance Seedance 2.0 テキストから動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "最高品質には Seedance 2.0、速度最適化には Seedance 2.0 Fast を使用します。"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_generate_audio": {
+        "name": "オーディオ生成"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "動画にウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateImageAsset": {
+    "description": "Seedance 2.0の個人画像アセットを作成します。入力画像をアップロードし、指定したアセットグループに登録します。group_idが空の場合、実在認証フロー（H5）を実行して新しいグループを作成し、アセットを追加します。",
+    "display_name": "ByteDance 画像アセット作成",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "既存のSeedanceアセットグループIDを再利用して、同一人物の繰り返し認証を省略します。空欄の場合はブラウザで実在認証を実行し、新しいグループを作成します。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "個人アセットとして登録する画像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceCreateVideoAsset": {
+    "description": "Seedance 2.0の個人動画アセットを作成します。入力動画をアップロードし、指定したアセットグループに登録します。group_idが空の場合、実在認証フロー（H5）を実行して新しいグループを作成し、アセットを追加します。",
+    "display_name": "ByteDance 動画アセット作成",
+    "inputs": {
+      "group_id": {
+        "name": "group_id",
+        "tooltip": "既存のSeedanceアセットグループIDを再利用して、同一人物の繰り返し認証を省略します。空欄の場合はブラウザで実在認証を実行し、新しいグループを作成します。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "個人アセットとして登録する動画。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "asset_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "group_id",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "プロンプトと最初・最後のフレームを使用して動画を生成します。",
     "display_name": "ByteDance 最初-最後フレームから動画生成",
@@ -672,6 +896,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "description": "ByteDanceのSeed 2.0モデルでテキスト応答を生成します。テキストプロンプトを入力し、必要に応じて画像や動画を追加してマルチモーダルなコンテキストを提供できます。",
+    "display_name": "ByteDance Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "応答生成に使用するSeedモデル。"
+      },
+      "model_temperature": {
+        "name": "温度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "モデルへのテキスト入力。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "system_prompt": {
+        "name": "システムプロンプト",
+        "tooltip": "モデルの挙動を指示する基本的な指示文。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "description": "最大4K解像度での統一されたテキストから画像への生成と精密な単文編集。",
     "display_name": "ByteDance Seedream 4",
@@ -721,6 +978,50 @@
       "width": {
         "name": "width",
         "tooltip": "画像のカスタム幅。`size_preset`が`Custom`に設定されている場合のみ有効です"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamNodeV2": {
+    "description": "統合されたテキストから画像生成と、最大4K解像度での正確な単一文編集。",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_fail_on_partial": {
+        "name": "部分的な失敗時に停止"
+      },
+      "model_height": {
+        "name": "高さ"
+      },
+      "model_max_images": {
+        "name": "最大画像数"
+      },
+      "model_size_preset": {
+        "name": "サイズプリセット"
+      },
+      "model_width": {
+        "name": "幅"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像の作成または編集のためのテキストプロンプト。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "生成に使用するシード。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "画像に「AI生成」のウォーターマークを追加するかどうか。"
       }
     },
     "outputs": {
@@ -1347,6 +1648,46 @@
       }
     }
   },
+  "ClaudeNode": {
+    "description": "Anthropic の Claude モデルでテキスト応答を生成します。テキストプロンプトを入力し、必要に応じてマルチモーダルコンテキスト用に1枚以上の画像を追加できます。",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "モデルのコンテキストとして使用するオプションの画像（最大20枚まで）。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "応答生成に使用する Claude モデル。"
+      },
+      "model_max_tokens": {
+        "name": "最大トークン数"
+      },
+      "model_temperature": {
+        "name": "温度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "モデルへのテキスト入力。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "system_prompt": {
+        "name": "システムプロンプト",
+        "tooltip": "モデルの挙動を指示する基本的な指示文。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ColorToRGBInt": {
     "description": "カラーをRGB整数値に変換します。",
     "display_name": "カラーをRGB整数に変換",
@@ -1358,6 +1699,36 @@
     "outputs": {
       "0": {
         "name": "rgb整数値",
+        "tooltip": null
+      }
+    }
+  },
+  "ColorTransfer": {
+    "description": "さまざまなアルゴリズムを使用して、ある画像の色を別の画像に合わせます。",
+    "display_name": "ColorTransfer",
+    "inputs": {
+      "image_ref": {
+        "name": "image_ref",
+        "tooltip": "色を合わせる参照画像。指定しない場合は処理をスキップします。"
+      },
+      "image_target": {
+        "name": "image_target",
+        "tooltip": "色変換を適用する画像。"
+      },
+      "method": {
+        "name": "method"
+      },
+      "source_stats": {
+        "name": "source_stats",
+        "tooltip": "per_frame：各フレームを個別にimage_refに合わせます。uniform：すべてのソースフレームの統計をまとめて基準とし、image_refに合わせます。target_frame：選択した1フレームを変換の基準として使用し、すべてのフレームに均一に適用します（相対的な違いを保持）。"
+      },
+      "strength": {
+        "name": "strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
         "tooltip": null
       }
     }
@@ -1434,6 +1805,10 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "BOOL",
         "tooltip": null
       }
     }
@@ -1748,6 +2123,10 @@
     "description": "コンテキストウィンドウを手動で設定します。",
     "display_name": "コンテキストウィンドウ（手動）",
     "inputs": {
+      "causal_window_fix": {
+        "name": "causal_window_fix",
+        "tooltip": "非0インデックスのコンテキストウィンドウに因果修正フレームを追加するかどうか。"
+      },
       "closed_loop": {
         "name": "closed_loop",
         "tooltip": "コンテキストウィンドウのループを閉じるかどうか。ループスケジュールにのみ適用されます。"
@@ -2712,6 +3091,28 @@
       }
     }
   },
+  "EmptyARVideoLatent": {
+    "display_name": "EmptyARVideoLatent",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyAceStep1_5LatentAudio": {
     "display_name": "Empty Ace Step 1.5 Latent Audio",
     "inputs": {
@@ -2811,6 +3212,26 @@
   },
   "EmptyFlux2LatentImage": {
     "display_name": "Empty Flux 2 Latent",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyHiDreamO1LatentImage": {
+    "description": "HiDream-O1-Image 用の空のピクセル空間潜在。モデルは約4メガピクセルでトレーニングされています。解像度が低いと分布外となり、品質が著しく低下します。トレーニング解像度：2048x2048、2304x1728、1728x2304、2560x1440、1440x2560、2496x1664、1664x2496、3104x1312、1312x3104、2304x1792、1792x2304。",
+    "display_name": "Empty HiDream-O1 潜在画像",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ"
@@ -3140,6 +3561,37 @@
     "inputs": {
       "sigmas": {
         "name": "sigmas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux2ImageNode": {
+    "description": "Flux.2 [pro] または Flux.2 [max] を使い、プロンプトとオプションの参照画像から画像を生成します。",
+    "display_name": "Flux.2 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_height": {
+        "name": "高さ"
+      },
+      "model_width": {
+        "name": "幅"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像生成または編集のためのプロンプト"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノイズ生成に使用されるランダムシード。"
       }
     },
     "outputs": {
@@ -3530,6 +3982,39 @@
       }
     }
   },
+  "FrameInterpolate": {
+    "display_name": "フレーム補間",
+    "inputs": {
+      "images": {
+        "name": "画像"
+      },
+      "interp_model": {
+        "name": "補間モデル"
+      },
+      "multiplier": {
+        "name": "倍率"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FrameInterpolationModelLoader": {
+    "display_name": "フレーム補間モデルを読み込む",
+    "inputs": {
+      "model_name": {
+        "name": "モデル名",
+        "tooltip": "読み込むフレーム補間モデルを選択してください。モデルは「frame_interpolation」フォルダに配置する必要があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FreSca": {
     "description": "ガイダンスに周波数依存のスケーリングを適用します",
     "display_name": "FreSca",
@@ -3892,6 +4377,54 @@
       }
     }
   },
+  "GeminiNanoBanana2V2": {
+    "description": "Google Vertex API を使用して画像を同期的に生成または編集します。",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_thinking_level": {
+        "name": "思考レベル"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "生成する画像や適用する編集内容を説明するテキストプロンプト。モデルが従うべき制約、スタイル、詳細も含めてください。"
+      },
+      "response_modalities": {
+        "name": "応答モダリティ"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シード値を特定の値に固定すると、モデルは繰り返しリクエストに対して同じ応答を返すよう最善を尽くしますが、完全な決定的出力は保証されません。また、モデルやパラメータ設定（例：temperature）を変更すると、同じシード値でも応答が変化する場合があります。デフォルトではランダムなシード値が使用されます。"
+      },
+      "system_prompt": {
+        "name": "システムプロンプト",
+        "tooltip": "AI の挙動を指示する基本的な指示文。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "思考画像",
+        "tooltip": "モデルの思考過程から得られる最初の画像。思考レベルがHIGHかつモダリティがIMAGE+TEXTの場合のみ利用可能です。"
+      }
+    }
+  },
   "GeminiNode": {
     "description": "GoogleのGemini AIモデルでテキスト応答を生成します。テキスト、画像、音声、動画など複数の種類の入力をコンテキストとして提供し、より関連性の高い意味のある応答を生成できます。",
     "display_name": "Google Gemini",
@@ -4004,6 +4537,22 @@
       }
     }
   },
+  "GetICLoRAParameters": {
+    "description": "LoRA読み込み済みモデルのsafetensorsメタデータからIC-LoRAパラメータを抽出し、LTXVAddGuide（例：reference_downscale_factor）用に出力します。",
+    "display_name": "IC-LoRAパラメータの取得",
+    "inputs": {
+      "iclora_model": {
+        "name": "iclora_model",
+        "tooltip": "特定のIC-LoRAからメタデータを抽出するためのLoRA Loaderの直接出力。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iclora_parameters",
+        "tooltip": "LoRAメタデータから抽出されたIC-LoRAパラメータ（例：reference_downscale_factor）。LoRAがガイドの特別な処理を必要とする場合はLTXVAddGuideに接続してください。"
+      }
+    }
+  },
   "GetImageSize": {
     "description": "画像の幅と高さを返し、変更せずに通過させます。",
     "display_name": "画像サイズ取得",
@@ -4082,6 +4631,40 @@
       "seed": {
         "name": "シード値",
         "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシード値に関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNodeV2": {
+    "description": "既存の画像をテキストプロンプトに基づいて編集します",
+    "display_name": "Grok Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_number_of_images": {
+        "name": "画像数"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像生成に使用されるテキストプロンプト"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノードを再実行するかどうかを決定するシード；実際の結果はシードに関係なく非決定的です。"
       }
     },
     "outputs": {
@@ -4277,6 +4860,220 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseImageToVideoApi": {
+    "description": "HappyHorseモデルを使用して、最初のフレーム画像から動画を生成します。",
+    "display_name": "HappyHorse 画像から動画へ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "first_frame": {
+        "name": "最初のフレーム",
+        "tooltip": "最初のフレーム画像。この画像から出力のアスペクト比が決まります。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "生成に使用するシード。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseReferenceVideoApi": {
+    "description": "HappyHorseモデルで参照素材から人物や物体を含む動画を生成します。単一キャラクターの演技や複数キャラクターのインタラクションに対応しています。",
+    "display_name": "HappyHorse 参照から動画へ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "比率"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "生成に使用するシード。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseTextToVideoApi": {
+    "description": "HappyHorseモデルを使用してテキストプロンプトから動画を生成します。",
+    "display_name": "HappyHorse テキストから動画へ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_duration": {
+        "name": "継続時間"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "比率"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "生成に使用するシード。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HappyHorseVideoEditApi": {
+    "description": "HappyHorseモデルを使い、テキスト指示や参照画像で動画を編集します。出力の継続時間は3～15秒で、入力動画と一致します。15秒を超える入力は切り捨てられます。",
+    "display_name": "HappyHorse 動画編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_ratio": {
+        "name": "比率"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "生成に使用するシード。"
+      },
+      "video": {
+        "name": "動画",
+        "tooltip": "編集する動画。"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1PatchSeamSmoothing": {
+    "description": "サンプリングの後半で、複数のシフトしたパッチグリッド位置にわたってモデル出力を平均化します。継ぎ目を除去します。",
+    "display_name": "HiDream-O1 パッチ継ぎ目スムージング",
+    "inputs": {
+      "blend": {
+        "name": "ブレンド",
+        "tooltip": "average：等重み平均。window：各パスがパッチ境界から離れるほど重み付けするHannウィンドウ。median：ピクセルごとの中央値、ラップアラウンド外れ値パスを除外。"
+      },
+      "end_percent": {
+        "name": "終了パーセント",
+        "tooltip": "ブレンドがOFFになるサンプリング進行度。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "passes": {
+        "name": "パス数",
+        "tooltip": "ゲートステップごとのパス数。2/4＝固定。ramp_*：サンプリング終了に近づくほどパス数が増加（継ぎ目が目立つ部分でよりスムージング）。"
+      },
+      "pattern": {
+        "name": "パターン",
+        "tooltip": "シフトレイアウト。single_shift：自然なパッチグリッドで1回＋他はオフセット。symmetric：全てのパスがグリッド外、シフトは原点を中心に分割。"
+      },
+      "start_percent": {
+        "name": "開始パーセント",
+        "tooltip": "ブレンドがONになるサンプリング進行度（0=開始、1=終了）。"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "自然グリッド予測（0）と平均化結果（1）の間で補間。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1ReferenceImages": {
+    "description": "1～10枚の参照画像をコンディショニングに添付します。1枚は編集指示用、複数枚は被写体パーソナライズ用。",
+    "display_name": "HiDream-O1 参照画像",
+    "inputs": {
+      "images": {
+        "name": "画像",
+        "tooltip": "参照画像。1枚＝編集指示、2～10枚＝マルチ参照。"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ネガティブ",
         "tooltip": null
       }
     }
@@ -5461,6 +6258,22 @@
       }
     }
   },
+  "JsonExtractString": {
+    "display_name": "JSONから文字列を抽出",
+    "inputs": {
+      "json_string": {
+        "name": "json_string"
+      },
+      "key": {
+        "name": "key"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KSampler": {
     "description": "提供されたモデル、正の条件付けと負の条件付けを使用して潜在画像のノイズを除去します。",
     "display_name": "Kサンプラー",
@@ -6615,9 +7428,17 @@
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
+      "attention_mask": {
+        "name": "アテンションマスク",
+        "tooltip": "オプションのピクセル空間マスク。自己アテンションを通じて領域ごとの条件付けの影響を強度で調整します。"
+      },
       "frame_idx": {
         "name": "フレームインデックス",
         "tooltip": "条件付けを開始するフレームインデックス。単一フレームの画像や1-8フレームのビデオの場合、任意のframe_idx値が許容されます。9フレーム以上のビデオの場合、frame_idxは8で割り切れる数でなければならず、そうでない場合は最も近い8の倍数に切り捨てられます。負の値はビデオの終わりから数えます。"
+      },
+      "iclora_parameters": {
+        "name": "iclora_parameters",
+        "tooltip": "Get IC-LoRA ParametersノードからのオプションのIC-LoRAパラメータ。一部のIC-LoRA（例：reference_downscale_factor > 1）で必要な場合にガイド処理を調整するために使用します。チェーン接続時は、それぞれのLTXVAddGuideが接続されたパラメータのみを使用します。"
       },
       "image": {
         "name": "画像",
@@ -7518,6 +8339,21 @@
       }
     }
   },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "背景除去モデルの読み込み",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "bg_removal_name",
+        "tooltip": "画像から背景を除去するために使用するモデル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bg_model",
+        "tooltip": null
+      }
+    }
+  },
   "LoadImage": {
     "display_name": "画像を読み込む",
     "inputs": {
@@ -7596,6 +8432,19 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadMoGeModel": {
+    "display_name": "MoGeモデルの読み込み",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -7908,6 +8757,42 @@
       }
     }
   },
+  "LumaImageEditNode2": {
+    "description": "Luma UNI-1モデルを使用して、テキストプロンプトで既存の画像を編集します。",
+    "display_name": "Luma UNI-1 画像編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "編集に使用するモデル。"
+      },
+      "model_style": {
+        "name": "スタイル"
+      },
+      "model_web_search": {
+        "name": "ウェブ検索"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "希望する編集内容の説明。1～6000文字。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関係なく結果は非決定的です。"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "編集する元画像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LumaImageModifyNode": {
     "description": "プロンプトとアスペクト比に基づいて画像を同期的に変更します。",
     "display_name": "Luma 画像から画像へ",
@@ -7976,6 +8861,41 @@
       "style_image_weight": {
         "name": "スタイル画像の重み",
         "tooltip": "スタイル画像の重み。style_imageが指定されていない場合は無視されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaImageNode2": {
+    "description": "Luma UNI-1モデルを使用してテキストから画像を生成します。",
+    "display_name": "Luma UNI-1 画像生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "生成に使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_style": {
+        "name": "スタイル"
+      },
+      "model_web_search": {
+        "name": "ウェブ検索"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "希望する画像のテキスト説明。1～6000文字。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関係なく結果は非決定的です。"
       }
     },
     "outputs": {
@@ -8848,6 +9768,122 @@
       "seed": {
         "name": "シード",
         "tooltip": "ノイズ生成に使用されるランダムシード。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeInference": {
+    "display_name": "MoGe推論",
+    "inputs": {
+      "apply_mask": {
+        "name": "apply_mask",
+        "tooltip": "マスクされた（空や無効な）ピクセルをポイントや深度でinfに設定し、メッシュ化時に除外します。無効にすると全領域の予測ジオメトリを保持しますが、マスクは別途返されます。"
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "1回の推論で処理する画像数。長い動画や画像セットでOOMになる場合は小さくしてください。"
+      },
+      "force_projection": {
+        "name": "force_projection"
+      },
+      "fov_x_degrees": {
+        "name": "fov_x_degrees",
+        "tooltip": "元カメラの水平視野角。深度マップを3Dにアンプロジェクトする際の焦点距離を設定します。0の場合は予測ポイントから自動復元。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "0 = 最速、9 = 最高詳細。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePanoramaInference": {
+    "display_name": "MoGeパノラマ推論",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "1バッチあたりのビュー数（全12分割）。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "正距円筒パノラマ画像（アスペクト比は任意）。"
+      },
+      "merge_resolution": {
+        "name": "merge_resolution",
+        "tooltip": "マージ後の距離マップの長辺解像度。"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "ビューごとの詳細度（0 = 最速、9 = 最高詳細）。"
+      },
+      "split_resolution": {
+        "name": "split_resolution",
+        "tooltip": "各パースペクティブ分割の解像度。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePointMapToMesh": {
+    "display_name": "MoGe ポイントマップからメッシュへ",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "バッチ化された MoGe ジオメトリのどの画像をメッシュ化するか。画像ごとに頂点数が異なるため、バッチを単一のメッシュにまとめることはできません。"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "頂点ストライド；1 = フル解像度。"
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "3x3 の深度範囲がこの割合を超えるピクセルを除外します。0 = オフ。"
+      },
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "元画像を baseColor テクスチャとして引き継ぎます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeRender": {
+    "display_name": "MoGe レンダリング",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "DirectX と OpenGL でノーマルマップのグリーンチャンネル規則が異なります。DirectX: green = -Y 下向き（Unreal）。OpenGL: green = +Y 上向き（Blender、Substance、Unity、glTF）。"
       }
     },
     "outputs": {
@@ -10928,6 +11964,18 @@
       }
     }
   },
+  "ModelNoiseScale": {
+    "display_name": "ModelNoiseScale",
+    "inputs": {
+      "model": {
+        "name": "モデル"
+      },
+      "noise_scale": {
+        "name": "ノイズスケール",
+        "tooltip": "絶対トレーニングノイズスケール。例：HiDream-O1 base：8.0、dev：7.5。"
+      }
+    }
+  },
   "ModelPatchLoader": {
     "display_name": "モデルパッチローダー",
     "inputs": {
@@ -11067,120 +12115,6 @@
       },
       "model": {
         "name": "モデル"
-      }
-    }
-  },
-  "MoonvalleyImg2VideoNode": {
-    "description": "Moonvalley Marey 画像から動画ノード",
-    "display_name": "Moonvalley Marey 画像から動画",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後の制御"
-      },
-      "image": {
-        "name": "画像",
-        "tooltip": "動画生成に使用する参照画像"
-      },
-      "negative_prompt": {
-        "name": "ネガティブプロンプト",
-        "tooltip": "ネガティブプロンプトテキスト"
-      },
-      "prompt": {
-        "name": "プロンプト"
-      },
-      "prompt_adherence": {
-        "name": "プロンプト遵守度",
-        "tooltip": "生成制御のためのガイダンススケール"
-      },
-      "resolution": {
-        "name": "解像度",
-        "tooltip": "出力動画の解像度"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "ランダムシード値"
-      },
-      "steps": {
-        "name": "ステップ数",
-        "tooltip": "ノイズ除去ステップ数"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyTxt2VideoNode": {
-    "display_name": "Moonvalley Marey テキストから動画",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後の制御"
-      },
-      "negative_prompt": {
-        "name": "ネガティブプロンプト",
-        "tooltip": "ネガティブプロンプトテキスト"
-      },
-      "prompt": {
-        "name": "プロンプト"
-      },
-      "prompt_adherence": {
-        "name": "プロンプト遵守度",
-        "tooltip": "生成制御のためのガイダンススケール"
-      },
-      "resolution": {
-        "name": "解像度",
-        "tooltip": "出力動画の解像度"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "ランダムシード値"
-      },
-      "steps": {
-        "name": "ステップ数",
-        "tooltip": "推論ステップ数"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalley Marey 動画から動画",
-    "inputs": {
-      "control_type": {
-        "name": "制御タイプ"
-      },
-      "motion_intensity": {
-        "name": "モーション強度",
-        "tooltip": "control_typeが「モーション転送」の場合のみ使用"
-      },
-      "negative_prompt": {
-        "name": "ネガティブプロンプト",
-        "tooltip": "ネガティブプロンプトテキスト"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "生成する動画の説明"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "ランダムシード値"
-      },
-      "steps": {
-        "name": "ステップ数",
-        "tooltip": "推論ステップ数"
-      },
-      "video": {
-        "name": "動画",
-        "tooltip": "出力動画の生成に使用する参照動画。最低5秒以上である必要があります。5秒を超える動画は自動的にトリミングされます。MP4形式のみ対応。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
       }
     }
   },
@@ -11406,8 +12340,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "description": "OpenAIのGPT Image 1エンドポイントを通じて同期的に画像を生成します。",
-    "display_name": "OpenAI GPT Image 1",
+    "description": "OpenAIのGPT Image 2エンドポイントを通じて同期的に画像を生成します。",
+    "display_name": "OpenAI GPT Image 2",
     "inputs": {
       "background": {
         "name": "背景",
@@ -11415,6 +12349,14 @@
       },
       "control_after_generate": {
         "name": "生成後のコントロール"
+      },
+      "custom_height": {
+        "name": "custom_height",
+        "tooltip": "「サイズ」が「カスタム」の場合のみ使用されます。16の倍数である必要があります（GPT Image 2 のみ）。"
+      },
+      "custom_width": {
+        "name": "custom_width",
+        "tooltip": "「サイズ」が「カスタム」の場合のみ使用されます。16の倍数である必要があります（GPT Image 2 のみ）。"
       },
       "image": {
         "name": "参照画像",
@@ -11433,7 +12375,7 @@
       },
       "prompt": {
         "name": "プロンプト",
-        "tooltip": "GPT Image 1用のテキストプロンプト"
+        "tooltip": "GPT Image 2用のテキストプロンプト"
       },
       "quality": {
         "name": "品質",
@@ -11446,6 +12388,50 @@
       "size": {
         "name": "サイズ",
         "tooltip": "画像サイズ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV2": {
+    "description": "OpenAIのGPT Imageエンドポイントを使って画像を生成します。",
+    "display_name": "OpenAI GPT Image 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_background": {
+        "name": "背景"
+      },
+      "model_custom_height": {
+        "name": "カスタム高さ"
+      },
+      "model_custom_width": {
+        "name": "カスタム幅"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_size": {
+        "name": "サイズ"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "生成する画像の数"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "GPT Image用のテキストプロンプト"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "バックエンドではまだ未実装"
       }
     },
     "outputs": {
@@ -11499,6 +12485,20 @@
       },
       "size": {
         "name": "サイズ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpticalFlowLoader": {
+    "display_name": "オプティカルフローモデルの読み込み",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "読み込むオプティカルフローモデル。ファイルは「optical_flow」フォルダに配置してください。現在はtorchvisionのraft_large.pthのみ対応しています。"
       }
     },
     "outputs": {
@@ -12107,7 +13107,7 @@
   "PrimitiveInt": {
     "display_name": "整数",
     "inputs": {
-      "control_after_generate": {
+      "fixed": {
         "name": "生成後に制御"
       },
       "value": {
@@ -12988,6 +13988,25 @@
       }
     }
   },
+  "RemoveBackground": {
+    "display_name": "背景を除去",
+    "inputs": {
+      "bg_removal_model": {
+        "name": "bg_removal_model",
+        "tooltip": "マスクを生成するために使用する背景除去モデル"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "背景を除去する入力画像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "マスク",
+        "tooltip": "生成された前景マスク"
+      }
+    }
+  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -13618,6 +14637,127 @@
       }
     }
   },
+  "SAM3_Detect": {
+    "display_name": "SAM3検出",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "セグメント化するバウンディングボックス"
+      },
+      "conditioning": {
+        "name": "conditioning",
+        "tooltip": "CLIPTextEncodeによるテキストコンディショニング"
+      },
+      "image": {
+        "name": "image"
+      },
+      "individual_masks": {
+        "name": "individual_masks",
+        "tooltip": "オブジェクトごとのマスクを出力（結合ではなく個別）"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative_coords": {
+        "name": "negative_coords",
+        "tooltip": "JSON形式のネガティブポイントプロンプト [{\"x\": int, \"y\": int}, ...]（ピクセル座標）"
+      },
+      "positive_coords": {
+        "name": "positive_coords",
+        "tooltip": "JSON形式のポジティブポイントプロンプト [{\"x\": int, \"y\": int}, ...]（ピクセル座標）"
+      },
+      "refine_iterations": {
+        "name": "refine_iterations",
+        "tooltip": "SAMデコーダーのリファインパス数（0=生の検出マスクを使用）"
+      },
+      "threshold": {
+        "name": "threshold"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_TrackPreview": {
+    "display_name": "SAM3トラックプレビュー",
+    "inputs": {
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "images"
+      },
+      "opacity": {
+        "name": "opacity"
+      },
+      "track_data": {
+        "name": "track_data"
+      }
+    }
+  },
+  "SAM3_TrackToMask": {
+    "display_name": "SAM3トラックからマスク",
+    "inputs": {
+      "object_indices": {
+        "name": "object_indices",
+        "tooltip": "含めるオブジェクトのインデックスをカンマ区切りで指定（例: '0,2,3'）。空欄=全オブジェクト。"
+      },
+      "track_data": {
+        "name": "track_data"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masks",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3_VideoTrack": {
+    "display_name": "SAM3ビデオトラック",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning",
+        "tooltip": "追跡中に新しいオブジェクトを検出するためのテキストコンディショニング"
+      },
+      "detect_interval": {
+        "name": "detect_interval",
+        "tooltip": "Nフレームごとに検出を実行（1=毎フレーム）。値が大きいほど計算量を節約。"
+      },
+      "detection_threshold": {
+        "name": "detection_threshold",
+        "tooltip": "テキストプロンプト検出のスコア閾値"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "バッチ化された画像としてのビデオフレーム"
+      },
+      "initial_mask": {
+        "name": "initial_mask",
+        "tooltip": "最初のフレームで追跡するマスク（一つのオブジェクトにつき一つ）"
+      },
+      "max_objects": {
+        "name": "max_objects",
+        "tooltip": "追跡する最大オブジェクト数（0=無制限）。初期マスクもこの制限に含まれます。"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "track_data",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
@@ -13755,6 +14895,44 @@
       }
     }
   },
+  "SUPIRApply": {
+    "display_name": "SUPIRApply",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "restore_cfg": {
+        "name": "restore_cfg",
+        "tooltip": "ノイズ除去後の出力を入力のlatentに近づけます。値が高いほど入力への忠実度が強くなります。0で無効化。"
+      },
+      "restore_cfg_s_tmin": {
+        "name": "restore_cfg_s_tmin",
+        "tooltip": "このシグマ閾値未満ではrestore_cfgが無効になります。"
+      },
+      "strength_end": {
+        "name": "strength_end",
+        "tooltip": "サンプリング終了時（低シグマ）の強度を制御します。開始値から線形補間されます。"
+      },
+      "strength_start": {
+        "name": "strength_start",
+        "tooltip": "サンプリング開始時（高シグマ）の強度を制御します。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SV3D_Conditioning": {
     "display_name": "SV3D条件付け",
     "inputs": {
@@ -13835,6 +15013,20 @@
       },
       "2": {
         "name": "潜在"
+      }
+    }
+  },
+  "SamplerARVideo": {
+    "display_name": "Sampler AR Video",
+    "inputs": {
+      "num_frame_per_block": {
+        "name": "num_frame_per_block",
+        "tooltip": "自己回帰ブロックごとのフレーム数。1＝フレーム単位、3＝チャンク単位。チェックポイントのトレーニングモードと一致する必要があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -14092,6 +15284,29 @@
     "inputs": {
       "version": {
         "name": "バージョン"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SamplerLCM": {
+    "description": "調整可能なステップごとのノイズを持つLCMサンプラー。s_noiseはモデルの学習ノイズスケールに対する乗数です。",
+    "display_name": "SamplerLCM",
+    "inputs": {
+      "noise_clip_std": {
+        "name": "noise_clip_std",
+        "tooltip": "ステップごとのノイズを±N×標準偏差に制限します。0で無効化。"
+      },
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "最初のステップでのステップごとのノイズ乗数（1.0 = 学習時と同じ）。"
+      },
+      "s_noise_end": {
+        "name": "s_noise_end",
+        "tooltip": "最後のステップでのステップごとのノイズ乗数。一定スケジュールにするにはs_noiseと同じ値に設定してください。"
       }
     },
     "outputs": {
@@ -14753,6 +15968,58 @@
       },
       "width": {
         "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloTextToMusic": {
+    "description": "SoniloのAIモデルを使ってテキストプロンプトから音楽を生成します。継続時間を0にすると、プロンプトから自動的に推定されます。",
+    "display_name": "Sonilo テキストから音楽生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "目標の長さ（秒）。0に設定するとプロンプトから自動的に推定されます。最大：6分。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "生成する音楽を説明するテキストプロンプト。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "再現性のためのシード値。現在Soniloサービスでは無視されますが、グラフの一貫性のために保持されています。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SoniloVideoToMusic": {
+    "description": "SoniloのAIモデルを使って動画コンテンツから音楽を生成します。動画を解析し、マッチする音楽を作成します。",
+    "display_name": "Sonilo 動画から音楽生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "音楽生成をガイドするためのオプションのテキストプロンプト。空欄の場合は最高品質となり、モデルが動画内容を完全に解析します。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "再現性のためのシード値。現在Soniloサービスでは無視されますが、グラフの一貫性のために保持されています。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "音楽を生成する入力動画。最大長：6分。"
       }
     },
     "outputs": {
@@ -15986,6 +17253,9 @@
   "TextGenerate": {
     "display_name": "TextGenerate",
     "inputs": {
+      "audio": {
+        "name": "オーディオ"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16025,6 +17295,14 @@
       "thinking": {
         "name": "思考モード",
         "tooltip": "モデルが対応している場合、思考モードで動作します。"
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "モデルに組み込まれているシステムプロンプト／テンプレートを使用します（ある場合）。"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "ビデオフレームを画像バッチとして扱います。24 FPSと仮定し、内部的に1 FPSにサブサンプリングされます。"
       }
     },
     "outputs": {
@@ -16037,6 +17315,9 @@
   "TextGenerateLTX2Prompt": {
     "display_name": "TextGenerateLTX2Prompt",
     "inputs": {
+      "audio": {
+        "name": "オーディオ"
+      },
       "clip": {
         "name": "clip"
       },
@@ -16076,6 +17357,14 @@
       "thinking": {
         "name": "思考モード",
         "tooltip": "モデルが対応している場合、思考モードで動作します。"
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "モデルに組み込まれているシステムプロンプト／テンプレートを使用します（ある場合）。"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "ビデオフレームを画像バッチとして扱います。24 FPSと仮定し、内部的に1 FPSにサブサンプリングされます。"
       }
     },
     "outputs": {
@@ -16251,6 +17540,45 @@
       },
       "video": {
         "name": "動画"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhanceV2": {
+    "description": "強力なアップスケーリングと復元技術でビデオに新たな命を吹き込みます。",
+    "display_name": "Topaz Video Enhance",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "ダイナミック圧縮レベル",
+        "tooltip": "CQPレベル。"
+      },
+      "interpolation_model": {
+        "name": "補間モデル"
+      },
+      "upscaler_model": {
+        "name": "アップスケーラーモデル"
+      },
+      "upscaler_model_creativity": {
+        "name": "創造性"
+      },
+      "upscaler_model_prompt": {
+        "name": "プロンプト"
+      },
+      "upscaler_model_realism": {
+        "name": "リアリズム"
+      },
+      "upscaler_model_sharp": {
+        "name": "シャープ"
+      },
+      "upscaler_model_upscaler_resolution": {
+        "name": "アップスケーラー解像度"
+      },
+      "video": {
+        "name": "ビデオ"
       }
     },
     "outputs": {
@@ -16595,7 +17923,8 @@
         "name": "pbr"
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "このパラメータは非推奨であり、何も行いません。"
       },
       "texture": {
         "name": "texture"
@@ -17115,6 +18444,127 @@
       }
     }
   },
+  "VOIDInpaintConditioning": {
+    "display_name": "VOIDInpaintConditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "処理するピクセルフレーム数。CogVideoX-Fun-V1.5（patch_size_t=2）の場合、latent_tは偶数でなければなりません — 奇数のlatent_tになる長さは切り捨てられます（例：49 → 45）。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "quadmask": {
+        "name": "quadmask",
+        "tooltip": "VOIDQuadmaskPreprocessからの前処理済みquadmask [T, H, W]"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "元動画フレーム [T, H, W, 3]"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDQuadmaskPreprocess": {
+    "display_name": "VOIDQuadmaskPreprocess",
+    "inputs": {
+      "dilate_width": {
+        "name": "dilate_width",
+        "tooltip": "主マスク領域の膨張半径（0＝膨張なし）"
+      },
+      "mask": {
+        "name": "mask"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "quadmask",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDSampler": {
+    "display_name": "VOIDSampler",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDWarpedNoise": {
+    "display_name": "VOIDWarpedNoise",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "ピクセルフレーム数。latent_tを偶数にするため切り捨てられます（patch_size_t=2の要件、例：49 → 45）。"
+      },
+      "optical_flow": {
+        "name": "optical_flow",
+        "tooltip": "OpticalFlowLoader（RAFT-large）からのオプティカルフローモデル。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "パス1の出力動画フレーム [T, H, W, 3]"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "warped_noise",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDWarpedNoiseSource": {
+    "display_name": "VOIDWarpedNoiseSource",
+    "inputs": {
+      "warped_noise": {
+        "name": "warped_noise",
+        "tooltip": "VOIDWarpedNoiseからのワープノイズlatent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VPScheduler": {
     "display_name": "VPスケジューラー",
     "inputs": {
@@ -17231,6 +18681,10 @@
       "prompt": {
         "name": "プロンプト",
         "tooltip": "ビデオのテキスト説明"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "出力動画の解像度。4Kはveo-3.1-liteおよびveo-3.0モデルでは利用できません。"
       },
       "seed": {
         "name": "シード",
@@ -18435,6 +19889,156 @@
     "outputs": {
       "0": {
         "tooltip": "サンプリング中にコンテキストウィンドウが適用されたモデル。"
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_inject_scale": {
+        "name": "audio_inject_scale",
+        "tooltip": "オーディオ特徴量をビデオモデルに注入する際のスケール。"
+      },
+      "video_frames": {
+        "name": "video_frames"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio_encoder_output",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps_string",
+        "tooltip": "オーディオの長さとビデオフレーム数から計算されたfps。プロンプトで使用されます。"
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "出力フレーム総数の計算やセグメントオーディオの抽出に使用するオーディオ。"
+      },
+      "images": {
+        "name": "images"
+      },
+      "segment_index": {
+        "name": "segment_index",
+        "tooltip": "このセグメントがどれか（最初は0、次は1など）"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "このセグメントの長さ（通常は149フレーム）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "パディングされたキーフレームシーケンス"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "有効なフレームを示すマスク"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "このビデオセグメント用のオーディオセグメント"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "各出力セグメント用にスライスするオーディオ。"
+      },
+      "images": {
+        "name": "images"
+      },
+      "num_segments": {
+        "name": "num_segments",
+        "tooltip": "リストとして出力するパディング済みセグメントの数。"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "各セグメントの長さ（通常は149フレーム）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "パディングされたキーフレームシーケンス"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "有効なフレームを示すマスク"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "各ビデオセグメント用のオーディオセグメント"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "audio_encoder_output": {
+        "name": "audio_encoder_output"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "最初のフレームのCLIP vision埋め込み。"
+      },
+      "clip_vision_output_ref": {
+        "name": "clip_vision_output_ref",
+        "tooltip": "参照画像のCLIP vision埋め込み。"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ",
+        "tooltip": "生成される動画のフレーム数。WanDancerの場合は149のままにしてください。"
+      },
+      "mask": {
+        "name": "マスク",
+        "tooltip": "開始画像の画像処理用マスク。白は保持、黒は生成されます。ローカル生成に使用されます。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "start_image": {
+        "name": "開始画像",
+        "tooltip": "エンコードする初期画像。任意のフレーム数を指定できます。"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "空のlatent。"
       }
     }
   },

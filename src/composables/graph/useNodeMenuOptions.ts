@@ -66,6 +66,7 @@ export function useNodeMenuOptions() {
       icon: 'icon-[lucide--box]',
       hasSubmenu: true,
       submenu: shapeSubmenu.value,
+      isShapePicker: true,
       action: () => {}
     },
     {
@@ -111,10 +112,10 @@ export function useNodeMenuOptions() {
     action: runBranch
   })
 
-  const getNodeInfoOption = (showNodeHelp: () => void): MenuOption => ({
+  const getNodeInfoOption = (openNodeInfo: () => boolean): MenuOption => ({
     label: t('contextMenu.Node Info'),
     icon: 'icon-[lucide--info]',
-    action: showNodeHelp
+    action: openNodeInfo
   })
 
   return {

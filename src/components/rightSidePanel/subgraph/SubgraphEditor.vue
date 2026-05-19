@@ -20,11 +20,11 @@ import type { WidgetItem } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
+import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
 
@@ -226,7 +226,7 @@ onMounted(() => {
 <template>
   <div v-if="activeNode" class="subgraph-edit-section flex h-full flex-col">
     <div class="flex gap-2 border-b border-interface-stroke px-4 pt-1 pb-4">
-      <FormSearchInput v-model="searchQuery" />
+      <AsyncSearchInput v-model="searchQuery" />
     </div>
 
     <div class="flex-1">
@@ -263,6 +263,7 @@ onMounted(() => {
           <SubgraphNodeWidget
             v-for="[node, widget] in filteredActive"
             :key="toKey([node, widget])"
+            :data-nodeid="node.id"
             :class="cn(!searchQuery && dragClass, 'bg-comfy-menu-bg')"
             :node-title="node.title"
             :widget-name="widget.label || widget.name"
@@ -295,6 +296,7 @@ onMounted(() => {
           <SubgraphNodeWidget
             v-for="[node, widget] in filteredCandidates"
             :key="toKey([node, widget])"
+            :data-nodeid="node.id"
             class="bg-comfy-menu-bg"
             :node-title="node.title"
             :widget-name="widget.name"

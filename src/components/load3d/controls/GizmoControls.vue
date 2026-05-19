@@ -89,7 +89,7 @@ import type {
   GizmoConfig,
   GizmoMode
 } from '@/extensions/core/load3d/interfaces'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 

@@ -18,7 +18,7 @@ const emit = defineEmits<{
 
 <template>
   <nav
-    class="flex items-center gap-3 overflow-x-auto md:flex-col"
+    class="scrollbar-none flex items-center gap-3 overflow-x-auto lg:flex-col lg:overflow-x-hidden"
     aria-label="Category filter"
   >
     <button

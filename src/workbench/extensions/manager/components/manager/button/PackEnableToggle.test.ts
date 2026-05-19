@@ -1,4 +1,3 @@
-/* eslint-disable vue/no-unused-emit-declarations */
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'

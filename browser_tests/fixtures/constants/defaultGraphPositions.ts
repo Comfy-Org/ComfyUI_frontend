@@ -1,7 +1,7 @@
 import type { Position } from '@e2e/fixtures/constants/types'
 
 /**
- * Hardcoded positions for the default graph loaded in tests.
+ * Hardcoded positions for the default graph loaded in tests with the legacy menu.
  * These coordinates are specific to the default workflow viewport.
  */
 export const DefaultGraphPositions = {
@@ -50,4 +50,14 @@ export const DefaultGraphPositions = {
   ksampler: { pos: Position; size: { width: number; height: number } }
   loadCheckpoint: { pos: Position; size: { width: number; height: number } }
   emptyLatent: { pos: Position; size: { width: number; height: number } }
+}
+
+/**
+ * Hardcoded positions for the default graph loaded in tests with the new default menu.
+ * These coordinates are specific to the default workflow viewport.
+ */
+export const DefaultGraphNewMenuPositions = {
+  emptyCanvasClick: { x: 200, y: 200 }
+} as const satisfies {
+  emptyCanvasClick: Position
 }

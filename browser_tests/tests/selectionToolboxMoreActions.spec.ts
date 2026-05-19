@@ -2,21 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-
-async function openMoreOptions(comfyPage: ComfyPage) {
-  await expect(comfyPage.selectionToolbox).toBeVisible()
-
-  const moreOptionsBtn = comfyPage.page.getByTestId('more-options-button')
-  await expect(moreOptionsBtn).toBeVisible()
-  await moreOptionsBtn.click()
-  await comfyPage.nextFrame()
-
-  // Wait for the context menu to appear by checking for 'Copy', which is
-  // always present regardless of single or multi-node selection.
-  const menu = comfyPage.page.locator('.p-contextmenu')
-  await expect(menu.getByText('Copy', { exact: true })).toBeVisible()
-}
+import { openMoreOptions } from '@e2e/fixtures/utils/selectionToolbox'
 
 test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
   test.describe('Single node actions', () => {
@@ -34,14 +20,14 @@ test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
 
       await expect(nodeRef).not.toBePinned()
 
-      await openMoreOptions(comfyPage)
-      await comfyPage.page.getByText('Pin', { exact: true }).click()
+      let menu = await openMoreOptions(comfyPage)
+      await menu.getByText('Pin', { exact: true }).click()
       await comfyPage.nextFrame()
 
       await expect(nodeRef).toBePinned()
 
-      await openMoreOptions(comfyPage)
-      await comfyPage.page.getByText('Unpin', { exact: true }).click()
+      menu = await openMoreOptions(comfyPage)
+      await menu.getByText('Unpin', { exact: true }).click()
       await comfyPage.nextFrame()
 
       await expect(nodeRef).not.toBePinned()
@@ -57,14 +43,14 @@ test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
 
       await expect(nodeRef).not.toBeCollapsed()
 
-      await openMoreOptions(comfyPage)
-      await comfyPage.page.getByText('Minimize Node', { exact: true }).click()
+      let menu = await openMoreOptions(comfyPage)
+      await menu.getByText('Minimize Node', { exact: true }).click()
       await comfyPage.nextFrame()
 
       await expect(nodeRef).toBeCollapsed()
 
-      await openMoreOptions(comfyPage)
-      await comfyPage.page.getByText('Expand Node', { exact: true }).click()
+      menu = await openMoreOptions(comfyPage)
+      await menu.getByText('Expand Node', { exact: true }).click()
       await comfyPage.nextFrame()
 
       await expect(nodeRef).not.toBeCollapsed()
@@ -78,8 +64,8 @@ test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
 
       const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
-      await openMoreOptions(comfyPage)
-      await comfyPage.page.getByText('Copy', { exact: true }).click()
+      const menu = await openMoreOptions(comfyPage)
+      await menu.getByText('Copy', { exact: true }).click()
       await comfyPage.nextFrame()
 
       // Paste the copied node
@@ -99,8 +85,8 @@ test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
 
       const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
-      await openMoreOptions(comfyPage)
-      await comfyPage.page.getByText('Duplicate', { exact: true }).click()
+      const menu = await openMoreOptions(comfyPage)
+      await menu.getByText('Duplicate', { exact: true }).click()
       await comfyPage.nextFrame()
 
       await expect

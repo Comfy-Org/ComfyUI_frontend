@@ -12,6 +12,7 @@
   "dependencies": {
     "@comfyorg/comfyui-electron-types": "catalog:",
     "@comfyorg/shared-frontend-utils": "workspace:*",
+    "@comfyorg/tailwind-utils": "workspace:*",
     "@primevue/core": "catalog:",
     "@primevue/themes": "catalog:",
     "@vueuse/core": "catalog:",

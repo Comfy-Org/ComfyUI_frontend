@@ -92,6 +92,7 @@ function draw() {
   // @ts-expect-error canvasHeight is a custom property used by some extensions
   node.canvasHeight = height
   widgetInstance.y = 0
+  widgetInstance.width = width
   canvasEl.value.height = (height + 2) * scaleFactor
   canvasEl.value.width = width * scaleFactor
   const ctx = canvasEl.value?.getContext('2d')
