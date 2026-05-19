@@ -125,14 +125,17 @@ import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { resolveEssentialsCategory } from '@/services/nodeOrganizationService'
 import {
   BLUEPRINT_CATEGORY,
   isCustomNode,
-  isEssentialNode,
   NodeSourceType
 } from '@/types/nodeSource'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 import { cn } from '@comfyorg/tailwind-utils'
+
+const isEssentialNode = (n: ComfyNodeDefImpl) =>
+  resolveEssentialsCategory(n) !== undefined
 
 const sourceCategoryFilters: Record<string, (n: ComfyNodeDefImpl) => boolean> =
   {
