@@ -1,3 +1,5 @@
+import type { UploadImageResponse } from '@comfyorg/ingest-types'
+
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -235,7 +237,7 @@ export function useMaskEditorSaver() {
       throw new Error(`Failed to upload: ${layer.ref.filename}`)
     }
 
-    let data: { name?: string; subfolder?: string; type?: string }
+    let data: UploadImageResponse
     try {
       data = await response.json()
     } catch (error) {
