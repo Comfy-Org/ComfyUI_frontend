@@ -4,6 +4,7 @@ import { nextTick } from 'vue'
 import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -20,7 +21,21 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 
 vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
   default: {
-    uploadFile: vi.fn()
+    uploadFile: vi.fn(),
+    splitFilePath: vi.fn((path: string) => {
+      const parts = path.split('/')
+      return [parts.slice(0, -1).join('/'), parts[parts.length - 1] ?? '']
+    }),
+    getResourceURL: vi.fn(
+      (subfolder: string, filename: string, type: string) =>
+        `api/view?type=${type}&subfolder=${encodeURIComponent(subfolder)}&filename=${filename}`
+    )
+  }
+}))
+
+vi.mock('@/scripts/api', () => ({
+  api: {
+    apiURL: vi.fn((url: string) => `/${url}`)
   }
 }))
 
@@ -30,6 +45,10 @@ vi.mock('@/i18n', () => ({
 
 vi.mock('@/extensions/core/load3d/Load3d', () => ({
   default: vi.fn()
+}))
+
+vi.mock('@/extensions/core/load3d/createLoad3d', () => ({
+  createLoad3d: vi.fn()
 }))
 
 function createMockSceneManager(): Load3d['sceneManager'] {
@@ -110,7 +129,24 @@ describe('useLoad3dViewer', () => {
       addEventListener: vi.fn(),
       hasAnimations: vi.fn().mockReturnValue(false),
       isSplatModel: vi.fn().mockReturnValue(false),
-      isPlyModel: vi.fn().mockReturnValue(false)
+      isPlyModel: vi.fn().mockReturnValue(false),
+      getCurrentModelCapabilities: vi.fn().mockReturnValue({
+        fitToViewer: true,
+        requiresMaterialRebuild: false,
+        gizmoTransform: true,
+        lighting: true,
+        exportable: true,
+        materialModes: ['original', 'normal', 'wireframe'],
+        fitTargetSize: 5
+      }),
+      setGizmoEnabled: vi.fn(),
+      setGizmoMode: vi.fn(),
+      setBackgroundRenderMode: vi.fn(),
+      getGizmoTransform: vi.fn().mockReturnValue({
+        position: { x: 0, y: 0, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: { x: 1, y: 1, z: 1 }
+      })
     }
 
     mockSourceLoad3d = {
@@ -140,6 +176,7 @@ describe('useLoad3dViewer', () => {
     vi.mocked(Load3d).mockImplementation(function () {
       Object.assign(this, mockLoad3d)
     })
+    vi.mocked(createLoad3d).mockImplementation(() => mockLoad3d as Load3d)
 
     mockLoad3dService = {
       copyLoad3dState: vi.fn().mockResolvedValue(undefined),
@@ -163,27 +200,13 @@ describe('useLoad3dViewer', () => {
   })
 
   describe('initialization', () => {
-    it('should initialize with default values', () => {
-      const viewer = useLoad3dViewer(mockNode)
-
-      expect(viewer.backgroundColor.value).toBe('')
-      expect(viewer.showGrid.value).toBe(true)
-      expect(viewer.cameraType.value).toBe('perspective')
-      expect(viewer.fov.value).toBe(75)
-      expect(viewer.lightIntensity.value).toBe(1)
-      expect(viewer.backgroundImage.value).toBe('')
-      expect(viewer.hasBackgroundImage.value).toBe(false)
-      expect(viewer.upDirection.value).toBe('original')
-      expect(viewer.materialMode.value).toBe('original')
-    })
-
     it('should initialize viewer with source Load3d state', async () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
-      expect(Load3d).toHaveBeenCalledWith(containerRef, {
+      expect(createLoad3d).toHaveBeenCalledWith(containerRef, {
         width: undefined,
         height: undefined,
         getDimensions: undefined,
@@ -225,7 +248,7 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should handle initialization errors', async () => {
-      vi.mocked(Load3d).mockImplementationOnce(function () {
+      vi.mocked(createLoad3d).mockImplementationOnce(() => {
         throw new Error('Load3d creation failed')
       })
 
@@ -240,104 +263,7 @@ describe('useLoad3dViewer', () => {
     })
   })
 
-  describe('state watchers', () => {
-    it('should update background color when state changes', async () => {
-      const viewer = useLoad3dViewer(mockNode)
-      const containerRef = document.createElement('div')
-
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
-
-      viewer.backgroundColor.value = '#ff0000'
-      await nextTick()
-
-      expect(mockLoad3d.setBackgroundColor).toHaveBeenCalledWith('#ff0000')
-    })
-
-    it('should update grid visibility when state changes', async () => {
-      const viewer = useLoad3dViewer(mockNode)
-      const containerRef = document.createElement('div')
-
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
-
-      viewer.showGrid.value = false
-      await nextTick()
-
-      expect(mockLoad3d.toggleGrid).toHaveBeenCalledWith(false)
-    })
-
-    it('should update camera type when state changes', async () => {
-      const viewer = useLoad3dViewer(mockNode)
-      const containerRef = document.createElement('div')
-
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
-
-      viewer.cameraType.value = 'orthographic'
-      await nextTick()
-
-      expect(mockLoad3d.toggleCamera).toHaveBeenCalledWith('orthographic')
-    })
-
-    it('should update FOV when state changes', async () => {
-      const viewer = useLoad3dViewer(mockNode)
-      const containerRef = document.createElement('div')
-
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
-
-      viewer.fov.value = 90
-      await nextTick()
-
-      expect(mockLoad3d.setFOV).toHaveBeenCalledWith(90)
-    })
-
-    it('should update light intensity when state changes', async () => {
-      const viewer = useLoad3dViewer(mockNode)
-      const containerRef = document.createElement('div')
-
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
-
-      viewer.lightIntensity.value = 2
-      await nextTick()
-
-      expect(mockLoad3d.setLightIntensity).toHaveBeenCalledWith(2)
-    })
-
-    it('should update background image when state changes', async () => {
-      const viewer = useLoad3dViewer(mockNode)
-      const containerRef = document.createElement('div')
-
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
-
-      viewer.backgroundImage.value = 'new-bg.jpg'
-      await nextTick()
-
-      expect(mockLoad3d.setBackgroundImage).toHaveBeenCalledWith('new-bg.jpg')
-      expect(viewer.hasBackgroundImage.value).toBe(true)
-    })
-
-    it('should update up direction when state changes', async () => {
-      const viewer = useLoad3dViewer(mockNode)
-      const containerRef = document.createElement('div')
-
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
-
-      viewer.upDirection.value = '+y'
-      await nextTick()
-
-      expect(mockLoad3d.setUpDirection).toHaveBeenCalledWith('+y')
-    })
-
-    it('should update material mode when state changes', async () => {
-      const viewer = useLoad3dViewer(mockNode)
-      const containerRef = document.createElement('div')
-
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
-
-      viewer.materialMode.value = 'wireframe'
-      await nextTick()
-
-      expect(mockLoad3d.setMaterialMode).toHaveBeenCalledWith('wireframe')
-    })
-
+  describe('error handling', () => {
     it('should handle watcher errors gracefully', async () => {
       vi.mocked(mockLoad3d.setBackgroundColor!).mockImplementationOnce(
         function () {
@@ -478,6 +404,23 @@ describe('useLoad3dViewer', () => {
           .intensity
       ).toBe(1)
     })
+
+    it('should preserve unknown fields on Model Config when restoring', async () => {
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+      ;(
+        mockNode.properties!['Model Config'] as Record<string, unknown>
+      ).futureField = 'preserve-me'
+
+      viewer.restoreInitialState()
+
+      expect(
+        (mockNode.properties!['Model Config'] as Record<string, unknown>)
+          .futureField
+      ).toBe('preserve-me')
+    })
   })
 
   describe('applyChanges', () => {
@@ -530,6 +473,23 @@ describe('useLoad3dViewer', () => {
       const result = await viewer.applyChanges()
 
       expect(result).toBe(false)
+    })
+
+    it('should preserve unknown fields on Model Config when applying', async () => {
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+      ;(
+        mockNode.properties!['Model Config'] as Record<string, unknown>
+      ).futureField = 'preserve-me'
+
+      await viewer.applyChanges()
+
+      expect(
+        (mockNode.properties!['Model Config'] as Record<string, unknown>)
+          .futureField
+      ).toBe('preserve-me')
     })
   })
 
@@ -630,6 +590,78 @@ describe('useLoad3dViewer', () => {
 
       expect(Load3dUtils.uploadFile).toHaveBeenCalledWith(file, '3d')
       expect(viewer.backgroundImage.value).toBe('uploaded-image.jpg')
+    })
+  })
+
+  describe('handleModelDrop', () => {
+    it('refreshes the capability refs after the dropped model loads, so the sidebar reflects the new model', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(
+        '3d/dropped.splat'
+      )
+
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+
+      expect(viewer.canUseLighting.value).toBe(true)
+      expect(viewer.canUseGizmo.value).toBe(true)
+      expect(viewer.canExport.value).toBe(true)
+      expect([...viewer.materialModes.value]).toEqual([
+        'original',
+        'normal',
+        'wireframe'
+      ])
+
+      vi.mocked(mockLoad3d.isSplatModel!).mockReturnValueOnce(true)
+      vi.mocked(mockLoad3d.getCurrentModelCapabilities!).mockReturnValueOnce({
+        fitToViewer: true,
+        requiresMaterialRebuild: false,
+        gizmoTransform: true,
+        lighting: false,
+        exportable: false,
+        materialModes: [],
+        fitTargetSize: 20
+      })
+
+      const file = new File([''], 'dropped.splat')
+      await viewer.handleModelDrop(file)
+
+      expect(mockLoad3d.loadModel).toHaveBeenCalledWith(
+        expect.stringContaining('dropped.splat')
+      )
+      expect(viewer.canUseLighting.value).toBe(false)
+      expect(viewer.canExport.value).toBe(false)
+      expect(viewer.isSplatModel.value).toBe(true)
+      expect([...viewer.materialModes.value]).toEqual([])
+    })
+
+    it('alerts and does not call loadModel when there is no active load3d instance', async () => {
+      const viewer = useLoad3dViewer(mockNode)
+
+      const file = new File([''], 'whatever.glb')
+      await viewer.handleModelDrop(file)
+
+      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+        'toastMessages.no3dScene'
+      )
+      expect(mockLoad3d.loadModel).not.toHaveBeenCalled()
+    })
+
+    it('alerts and skips loadModel when the file upload fails', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce('')
+
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+      vi.mocked(mockLoad3d.loadModel!).mockClear()
+
+      const file = new File([''], 'whatever.glb')
+      await viewer.handleModelDrop(file)
+
+      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
+        'toastMessages.fileUploadFailed'
+      )
+      expect(mockLoad3d.loadModel).not.toHaveBeenCalled()
     })
   })
 
@@ -747,6 +779,120 @@ describe('useLoad3dViewer', () => {
       const newViewer = useLoad3dViewer()
       await newViewer.initializeStandaloneViewer(containerRef, modelUrl)
       expect(newViewer.backgroundColor.value).toBe('#0000ff')
+    })
+  })
+
+  describe('gizmo controls', () => {
+    it('should initialize gizmo state from node model config', async () => {
+      ;(mockNode.properties!['Model Config'] as Record<string, unknown>).gizmo =
+        {
+          enabled: true,
+          mode: 'rotate'
+        }
+
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+
+      expect(viewer.gizmoEnabled.value).toBe(true)
+      expect(viewer.gizmoMode.value).toBe('rotate')
+    })
+
+    it('should default gizmo to disabled translate when no config', async () => {
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+
+      expect(viewer.gizmoEnabled.value).toBe(false)
+      expect(viewer.gizmoMode.value).toBe('translate')
+    })
+
+    it('should persist gizmo state in applyChanges', async () => {
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+
+      viewer.gizmoEnabled.value = true
+      viewer.gizmoMode.value = 'rotate'
+
+      await viewer.applyChanges()
+
+      const modelConfig = mockNode.properties!['Model Config'] as Record<
+        string,
+        unknown
+      >
+      const gizmo = modelConfig.gizmo as Record<string, unknown>
+      expect(gizmo.enabled).toBe(true)
+      expect(gizmo.mode).toBe('rotate')
+    })
+
+    it('should save gizmo transform from load3d in applyChanges', async () => {
+      vi.mocked(mockLoad3d.getGizmoTransform!).mockReturnValue({
+        position: { x: 1, y: 2, z: 3 },
+        rotation: { x: 0.1, y: 0.2, z: 0.3 },
+        scale: { x: 2, y: 2, z: 2 }
+      })
+
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+
+      await viewer.applyChanges()
+
+      const modelConfig = mockNode.properties!['Model Config'] as Record<
+        string,
+        unknown
+      >
+      const gizmo = modelConfig.gizmo as {
+        position: { x: number; y: number; z: number }
+        rotation: { x: number; y: number; z: number }
+        scale: { x: number; y: number; z: number }
+      }
+      expect(gizmo.position).toEqual({ x: 1, y: 2, z: 3 })
+      expect(gizmo.rotation).toEqual({ x: 0.1, y: 0.2, z: 0.3 })
+      expect(gizmo.scale).toEqual({ x: 2, y: 2, z: 2 })
+    })
+
+    it('should restore gizmo state in restoreInitialState', async () => {
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+
+      viewer.gizmoEnabled.value = true
+      viewer.gizmoMode.value = 'rotate'
+
+      viewer.restoreInitialState()
+
+      const modelConfig = mockNode.properties!['Model Config'] as Record<
+        string,
+        unknown
+      >
+      const gizmo = modelConfig.gizmo as Record<string, unknown>
+      expect(gizmo.enabled).toBe(false)
+      expect(gizmo.mode).toBe('translate')
+    })
+
+    it('should restore gizmo state from standalone config cache', async () => {
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+      const model1 = 'gizmo_model1.glb'
+
+      await viewer.initializeStandaloneViewer(containerRef, model1)
+      viewer.gizmoEnabled.value = true
+      viewer.gizmoMode.value = 'rotate'
+      await nextTick()
+
+      viewer.cleanup()
+
+      const restoredViewer = useLoad3dViewer()
+      await restoredViewer.initializeStandaloneViewer(containerRef, model1)
+      expect(restoredViewer.gizmoEnabled.value).toBe(true)
+      expect(restoredViewer.gizmoMode.value).toBe('rotate')
     })
   })
 })

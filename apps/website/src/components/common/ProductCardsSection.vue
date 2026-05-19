@@ -6,6 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import ProductCard from './ProductCard.vue'
+import SectionLabel from './SectionLabel.vue'
 
 type Product = 'local' | 'cloud' | 'api' | 'enterprise'
 
@@ -45,15 +46,12 @@ const cards = excludeProduct
 </script>
 
 <template>
-  <section class="bg-primary-comfy-ink px-4 py-20 lg:px-20 lg:py-24">
+  <section class="bg-primary-comfy-ink px-0 py-20 lg:px-20 lg:py-24">
     <!-- Header -->
-    <div class="flex flex-col items-center text-center">
-      <p
-        v-if="labelKey"
-        class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
-      >
+    <div class="flex flex-col items-center px-4 text-center">
+      <SectionLabel v-if="labelKey">
         {{ t(labelKey, locale) }}
-      </p>
+      </SectionLabel>
       <h2
         class="text-primary-comfy-canvas mt-4 text-4xl font-light whitespace-pre-line lg:text-5xl"
       >
@@ -68,7 +66,7 @@ const cards = excludeProduct
     <div
       :class="
         cn(
-          'mt-16 grid grid-cols-1 gap-4',
+          'bg-transparency-white-t4 rounded-5xl mt-16 grid grid-cols-1 gap-4 p-4 lg:p-2',
           cards.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'
         )
       "

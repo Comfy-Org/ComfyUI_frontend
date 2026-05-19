@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { openErrorsTab } from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
+import { openErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 
 test.describe('Workflows sidebar', () => {
   test.beforeEach(async ({ comfyPage }) => {

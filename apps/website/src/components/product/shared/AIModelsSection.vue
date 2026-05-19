@@ -11,7 +11,7 @@ type ModelCard = {
   titleKey:
     | 'cloud.aiModels.card.grokImagine'
     | 'cloud.aiModels.card.nanoBananaPro'
-    | 'cloud.aiModels.card.seendance20'
+    | 'cloud.aiModels.card.seedance20'
     | 'cloud.aiModels.card.qwenImageEdit'
     | 'cloud.aiModels.card.wan22TextToVideo'
   imageSrc: string
@@ -28,15 +28,17 @@ const badgeBase =
 
 const modelCards: ModelCard[] = [
   {
-    titleKey: 'cloud.aiModels.card.seendance20',
-    imageSrc: '/images/cloud/ai-models/seedance-20.webm',
+    titleKey: 'cloud.aiModels.card.seedance20',
+    imageSrc:
+      'https://media.comfy.org/website/cloud/ai-models/seedance-20.webm',
     badgeIcon: '/icons/ai-models/bytedance.svg',
     badgeClass: `${badgeBase} rounded-2xl`,
     layoutClass: 'lg:col-span-6 lg:aspect-[16/7]'
   },
   {
     titleKey: 'cloud.aiModels.card.nanoBananaPro',
-    imageSrc: '/images/cloud/ai-models/nano-banana-pro.webp',
+    imageSrc:
+      'https://media.comfy.org/website/cloud/ai-models/nano-banana-pro.webp',
     badgeIcon: '/icons/ai-models/gemini.svg',
     badgeClass: `${badgeBase} rounded-2xl`,
     layoutClass: 'lg:col-span-6 lg:aspect-[16/7]',
@@ -44,21 +46,22 @@ const modelCards: ModelCard[] = [
   },
   {
     titleKey: 'cloud.aiModels.card.grokImagine',
-    imageSrc: '/images/cloud/ai-models/grok-video.webm',
+    imageSrc: 'https://media.comfy.org/website/cloud/ai-models/grok-video.webm',
     badgeIcon: '/icons/ai-models/grok.svg',
     badgeClass: `${badgeBase} rounded-2xl`,
     layoutClass: 'lg:col-span-4 lg:aspect-[4/3]'
   },
   {
     titleKey: 'cloud.aiModels.card.qwenImageEdit',
-    imageSrc: '/images/cloud/ai-models/qwen-image-edit.webp',
+    imageSrc:
+      'https://media.comfy.org/website/cloud/ai-models/qwen-image-edit.webp',
     badgeIcon: '/icons/ai-models/qwen.svg',
     badgeClass: `${badgeBase} rounded-2xl`,
     layoutClass: 'lg:col-span-4 lg:aspect-[4/3]'
   },
   {
     titleKey: 'cloud.aiModels.card.wan22TextToVideo',
-    imageSrc: '/images/cloud/ai-models/wan-22.webm',
+    imageSrc: 'https://media.comfy.org/website/cloud/ai-models/wan-22.webm',
     badgeIcon: '/icons/ai-models/wan.svg',
     badgeClass: `${badgeBase} rounded-2xl`,
     layoutClass: 'lg:col-span-4 lg:aspect-[4/3]'
@@ -112,7 +115,7 @@ function getCardClass(layoutClass: string): string {
                     ? { objectPosition: card.objectPosition }
                     : undefined
                 "
-                class="size-full object-cover"
+                class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                 autoplay
                 loop
                 muted
@@ -134,13 +137,13 @@ function getCardClass(layoutClass: string): string {
                     ? { objectPosition: card.objectPosition }
                     : undefined
                 "
-                class="size-full object-cover"
+                class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                 loading="lazy"
                 decoding="async"
               />
 
               <div
-                class="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-black/15"
+                class="absolute inset-0 bg-linear-to-t from-black/50 via-black/5 to-black/35"
               />
 
               <div
@@ -163,7 +166,7 @@ function getCardClass(layoutClass: string): string {
               </div>
 
               <p
-                class="text-primary-warm-white absolute inset-x-6 bottom-6 text-5xl/tight font-light whitespace-pre-line lg:top-6 lg:right-auto lg:bottom-auto lg:text-4xl"
+                class="text-primary-warm-white absolute inset-x-6 bottom-6 text-2xl/tight font-light whitespace-pre-line drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] lg:top-6 lg:right-auto lg:bottom-auto lg:text-3xl"
               >
                 {{ t(card.titleKey, locale) }}
               </p>
@@ -175,7 +178,7 @@ function getCardClass(layoutClass: string): string {
       <BrandButton
         :href="externalLinks.workflows"
         variant="outline"
-        class-name="mt-4 lg:mt-8 w-full max-w-md text-center text-sm lg:w-auto"
+        class="mt-4 w-full max-w-md text-center lg:mt-8 lg:w-auto"
       >
         <span class="lg:hidden">{{
           t('cloud.aiModels.ctaMobile', locale)

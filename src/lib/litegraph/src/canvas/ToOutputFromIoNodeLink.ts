@@ -5,7 +5,8 @@ import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/L
 import type {
   INodeOutputSlot,
   LinkNetwork,
-  Point
+  Point,
+  SlotIndex
 } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
@@ -20,7 +21,7 @@ import type { RenderLink } from './RenderLink'
 export class ToOutputFromIoNodeLink implements RenderLink {
   readonly toType = 'output'
   readonly fromPos: Point
-  readonly fromSlotIndex: number
+  readonly fromSlotIndex: SlotIndex
   fromDirection: LinkDirection = LinkDirection.LEFT
 
   constructor(

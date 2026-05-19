@@ -593,7 +593,7 @@ describe('useAuthStore', () => {
         )
       })
 
-      it.each(['loginWithGoogle', 'loginWithGithub'] as const)(
+      it.for(['loginWithGoogle', 'loginWithGithub'] as const)(
         '%s should track is_new_user=true when Firebase says new user',
         async (method) => {
           vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue({
@@ -610,7 +610,7 @@ describe('useAuthStore', () => {
         }
       )
 
-      it.each(['loginWithGoogle', 'loginWithGithub'] as const)(
+      it.for(['loginWithGoogle', 'loginWithGithub'] as const)(
         '%s should track is_new_user=true when UI options say new user',
         async (method) => {
           vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue({
@@ -627,7 +627,7 @@ describe('useAuthStore', () => {
         }
       )
 
-      it.each(['loginWithGoogle', 'loginWithGithub'] as const)(
+      it.for(['loginWithGoogle', 'loginWithGithub'] as const)(
         '%s should track is_new_user=false when neither source says new user',
         async (method) => {
           vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue({
@@ -644,7 +644,7 @@ describe('useAuthStore', () => {
         }
       )
 
-      it.each(['loginWithGoogle', 'loginWithGithub'] as const)(
+      it.for(['loginWithGoogle', 'loginWithGithub'] as const)(
         '%s should track is_new_user=false when getAdditionalUserInfo returns null',
         async (method) => {
           vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue(null)

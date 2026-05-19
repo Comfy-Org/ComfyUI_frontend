@@ -6,6 +6,10 @@ import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import {
+  normalizePendingWarnings,
+  updatePendingWarnings
+} from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
 import {
   ComfyWorkflow,
@@ -170,40 +174,39 @@ export const useWorkflowService = () => {
    * Save a workflow
    * @param workflow The workflow to save
    */
-  const saveWorkflow = async (workflow: ComfyWorkflow) => {
+  const saveWorkflow = async (workflow: ComfyWorkflow): Promise<boolean> => {
     if (workflow.isTemporary) {
-      await saveWorkflowAs(workflow)
-    } else {
-      workflow.changeTracker?.prepareForSave()
-      const isApp = workflow.initialMode === 'app'
-      const expectedPath =
-        workflow.directory +
-        '/' +
-        appendWorkflowJsonExt(workflow.filename, isApp)
-      if (workflow.path !== expectedPath) {
-        const existing = workflowStore.getWorkflowByPath(expectedPath)
-        if (existing && !existing.isTemporary) {
-          if ((await confirmOverwrite(expectedPath)) !== true) {
-            await workflowStore.saveWorkflow(workflow)
-            return
-          }
-          await deleteWorkflow(existing, true)
-        }
-        await renameWorkflow(workflow, expectedPath)
-        toastStore.add({
-          severity: 'info',
-          summary: t(
-            isApp
-              ? 'workflowService.savedAsApp'
-              : 'workflowService.savedAsWorkflow'
-          ),
-          life: 3000
-        })
-      }
-
-      await workflowStore.saveWorkflow(workflow)
-      useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: false })
+      return await saveWorkflowAs(workflow)
     }
+
+    workflow.changeTracker?.prepareForSave()
+    const isApp = workflow.initialMode === 'app'
+    const expectedPath =
+      workflow.directory + '/' + appendWorkflowJsonExt(workflow.filename, isApp)
+    if (workflow.path !== expectedPath) {
+      const existing = workflowStore.getWorkflowByPath(expectedPath)
+      if (existing && !existing.isTemporary) {
+        if ((await confirmOverwrite(expectedPath)) !== true) {
+          await workflowStore.saveWorkflow(workflow)
+          return true
+        }
+        await deleteWorkflow(existing, true)
+      }
+      await renameWorkflow(workflow, expectedPath)
+      toastStore.add({
+        severity: 'info',
+        summary: t(
+          isApp
+            ? 'workflowService.savedAsApp'
+            : 'workflowService.savedAsWorkflow'
+        ),
+        life: 3000
+      })
+    }
+
+    await workflowStore.saveWorkflow(workflow)
+    useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: false })
+    return true
   }
 
   /**
@@ -280,13 +283,15 @@ export const useWorkflowService = () => {
         type: 'dirtyClose',
         message: t('sideToolbar.workflowTab.dirtyClose'),
         itemList: [workflow.path],
-        hint: options.hint
+        hint: options.hint,
+        denyLabel: t('sideToolbar.workflowTab.dirtyCloseAnyway')
       })
       // Cancel
       if (confirmed === null) return false
 
       if (confirmed === true) {
-        await saveWorkflow(workflow)
+        const saved = await saveWorkflow(workflow)
+        if (!saved) return false
       }
     }
 
@@ -396,22 +401,11 @@ export const useWorkflowService = () => {
       const modelCandidates = useMissingModelStore().missingModelCandidates
       const mediaCandidates = useMissingMediaStore().missingMediaCandidates
       const nodeTypes = missingNodesErrorStore.missingNodesError?.nodeTypes
-      activeWorkflow.pendingWarnings = {
+      updatePendingWarnings(activeWorkflow, {
         missingNodeTypes: nodeTypes?.length ? [...nodeTypes] : undefined,
-        missingModelCandidates: modelCandidates?.length
-          ? modelCandidates
-          : undefined,
-        missingMediaCandidates: mediaCandidates?.length
-          ? mediaCandidates
-          : undefined
-      }
-      if (
-        !activeWorkflow.pendingWarnings.missingNodeTypes &&
-        !activeWorkflow.pendingWarnings.missingModelCandidates &&
-        !activeWorkflow.pendingWarnings.missingMediaCandidates
-      ) {
-        activeWorkflow.pendingWarnings = null
-      }
+        missingModelCandidates: modelCandidates ?? undefined,
+        missingMediaCandidates: mediaCandidates ?? undefined
+      })
 
       // Capture thumbnail before loading new graph
       void workflowThumbnail.storeThumbnail(activeWorkflow)
@@ -604,11 +598,11 @@ export const useWorkflowService = () => {
       missingModelCandidates?.length ||
       missingMediaCandidates?.length
     ) {
-      wf.pendingWarnings = {
+      wf.pendingWarnings = normalizePendingWarnings({
         missingNodeTypes,
         missingModelCandidates,
         missingMediaCandidates
-      }
+      })
     } else {
       wf.pendingWarnings = null
     }
