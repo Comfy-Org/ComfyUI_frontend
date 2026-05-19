@@ -1,7 +1,12 @@
 <template>
   <!-- Case 1: Subgraph + Error (Dual Tabs) -->
   <div
-    v-if="isSubgraph && hasAnyError && showErrorsTabEnabled"
+    v-if="
+      isSubgraph &&
+      hasAnyError &&
+      showErrorsTabEnabled &&
+      !compactModeStore.isCompactMode
+    "
     :class="errorWrapperStyles"
   >
     <Button
@@ -9,7 +14,8 @@
       :class="
         cn(
           tabStyles,
-          'z-10 box-border w-1/2 rounded-none bg-destructive-background pt-9 pb-4 text-white hover:bg-destructive-background-hover',
+          'z-10 box-border w-1/2 rounded-none bg-destructive-background text-white hover:bg-destructive-background-hover',
+          paddingClass,
           errorRadiusClass
         )
       "
@@ -28,7 +34,8 @@
       :class="
         cn(
           tabStyles,
-          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-4 pl-5',
+          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pl-5',
+          paddingClass,
           enterRadiusClass
         )
       "
@@ -49,7 +56,8 @@
       !isSubgraph &&
       hasAnyError &&
       showErrorsTabEnabled &&
-      (showAdvancedInputsButton || showAdvancedState)
+      (showAdvancedInputsButton || showAdvancedState) &&
+      !compactModeStore.isCompactMode
     "
     :class="errorWrapperStyles"
   >
@@ -58,7 +66,8 @@
       :class="
         cn(
           tabStyles,
-          'z-10 box-border w-1/2 rounded-none bg-destructive-background pt-9 pb-4 text-white hover:bg-destructive-background-hover',
+          'z-10 box-border w-1/2 rounded-none bg-destructive-background text-white hover:bg-destructive-background-hover',
+          paddingClass,
           errorRadiusClass
         )
       "
@@ -76,7 +85,8 @@
       :class="
         cn(
           tabStyles,
-          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-4 pl-5',
+          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pl-5',
+          paddingClass,
           enterRadiusClass
         )
       "
@@ -111,7 +121,8 @@
       :class="
         cn(
           tabStyles,
-          'box-border w-full rounded-none bg-destructive-background pt-9 pb-4 text-white hover:bg-destructive-background-hover',
+          'box-border w-full rounded-none bg-destructive-background text-white hover:bg-destructive-background-hover',
+          paddingClass,
           footerRadiusClass
         )
       "
@@ -127,7 +138,7 @@
 
   <!-- Case 3: Subgraph only (Full Width) -->
   <div
-    v-else-if="isSubgraph"
+    v-else-if="isSubgraph && !compactModeStore.isCompactMode"
     :class="
       cn(
         footerWrapperBase,
@@ -142,7 +153,7 @@
         cn(
           tabStyles,
           'box-border w-full rounded-none bg-node-component-header-surface',
-          hasAnyError ? 'pt-9 pb-4' : 'pt-8 pb-4',
+          paddingClass,
           footerRadiusClass
         )
       "
@@ -159,7 +170,10 @@
 
   <!-- Case 4: Advanced Footer (Regular Nodes) -->
   <div
-    v-else-if="showAdvancedInputsButton || showAdvancedState"
+    v-else-if="
+      (showAdvancedInputsButton || showAdvancedState) &&
+      !compactModeStore.isCompactMode
+    "
     :class="
       cn(
         footerWrapperBase,
@@ -173,7 +187,7 @@
         cn(
           tabStyles,
           'box-border w-full rounded-none bg-node-component-header-surface',
-          hasAnyError ? 'pt-9 pb-4' : 'pt-8 pb-4',
+          paddingClass,
           footerRadiusClass
         )
       "
@@ -205,9 +219,11 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { RenderShape } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useCompactModeStore } from '@/stores/compactModeStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
+const compactModeStore = useCompactModeStore()
 
 interface Props {
   isSubgraph: boolean
@@ -282,12 +298,25 @@ const errorRadiusClass = computed(() => getBottomRadius(shape, '20px'))
 
 const enterRadiusClass = computed(() => getBottomRadius(shape, '20px', 'right'))
 
-const tabStyles = 'pointer-events-auto h-9 text-xs'
-const footerWrapperBase = 'isolate -z-1 -mt-5 box-border flex'
-const errorWrapperStyles = cn(
-  footerWrapperBase,
-  '-mx-1 -mb-2 w-[calc(100%+8px)] pb-1'
+const tabStyles = computed(() =>
+  cn(
+    'pointer-events-auto text-xs',
+    compactModeStore.isCompactMode ? 'h-5' : 'h-9'
+  )
 )
+const footerWrapperBase = computed(() =>
+  cn(
+    'isolate -z-1 box-border flex',
+    compactModeStore.isCompactMode ? '-mt-2' : '-mt-5'
+  )
+)
+const errorWrapperStyles = computed(() =>
+  cn(footerWrapperBase.value, '-mx-1 -mb-2 w-[calc(100%+8px)] pb-1')
+)
+const paddingClass = computed(() => {
+  if (compactModeStore.isCompactMode) return 'pt-2 pb-1'
+  return hasAnyError ? 'pt-9 pb-4' : 'pt-8 pb-4'
+})
 
 const headerColorStyle = computed(() =>
   headerColor ? { backgroundColor: headerColor } : undefined

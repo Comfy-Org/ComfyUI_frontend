@@ -34,6 +34,7 @@ import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import { useCompactModeStore } from '@/stores/compactModeStore'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
@@ -54,6 +55,7 @@ interface OutputSlotProps {
 const props = defineProps<OutputSlotProps>()
 
 const { t } = useI18n()
+const compactModeStore = useCompactModeStore()
 
 const hasNoLabel = computed(
   () => !props.slotData.localized_name && props.slotData.name === ''
@@ -97,7 +99,8 @@ const shouldDim = computed(() => {
 
 const slotWrapperClass = computed(() =>
   cn(
-    'lg-slot lg-slot--output group flex h-6 items-center justify-end rounded-l-lg',
+    'lg-slot lg-slot--output group flex items-center justify-end rounded-l-lg',
+    compactModeStore.isCompactMode ? 'h-3' : 'h-6',
     'cursor-crosshair',
     dotOnly.value ? 'lg-slot--dot-only justify-center' : 'pl-6',
     {
