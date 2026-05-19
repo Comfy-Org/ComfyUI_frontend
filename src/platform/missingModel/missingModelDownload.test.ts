@@ -274,4 +274,20 @@ describe('downloadModel', () => {
     })
     expect(mockApi.downloadModelToServer).not.toHaveBeenCalled()
   })
+
+  it('propagates server download failures so callers can surface a toast', async () => {
+    const model = {
+      name: 'model.safetensors',
+      url: 'https://huggingface.co/org/repo/resolve/main/model.safetensors',
+      directory: 'checkpoints'
+    }
+    mockApi.downloadModelToServer.mockRejectedValueOnce(
+      new Error('Model download URL is not allowed.')
+    )
+
+    await expect(downloadModel(model, {})).rejects.toThrow(
+      'Model download URL is not allowed.'
+    )
+    expect(mockElectronDownloadStore.start).not.toHaveBeenCalled()
+  })
 })

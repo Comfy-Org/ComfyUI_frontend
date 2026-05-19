@@ -344,7 +344,12 @@ describe('MissingModelCard (OSS)', () => {
       missingModelGroups: [makeGroup({ withDownloadUrls: true })]
     })
 
-    expect(screen.getByRole('button', { name: /Download all/ })).toBeVisible()
+    // Use an exact name match so this assertion does not accidentally
+    // succeed against the OSS "Download all to server" label.
+    expect(screen.getByRole('button', { name: 'Download all' })).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: /Download all to server/i })
+    ).not.toBeInTheDocument()
   })
 
   it('hides bulk actions when no model is downloadable', () => {
