@@ -34,8 +34,12 @@ export interface WidgetState<
   nodeId: NodeId
 }
 
+type HydrationCallback = () => void
+
 export const useWidgetValueStore = defineStore('widgetValue', () => {
   const graphWidgetStates = ref(new Map<UUID, Map<WidgetKey, WidgetState>>())
+  const hydratingNodes = new Set<NodeId>()
+  const hydrationCallbacks = new Map<NodeId, HydrationCallback[]>()
 
   function getWidgetStateMap(graphId: UUID): Map<WidgetKey, WidgetState> {
     const widgetStates = graphWidgetStates.value.get(graphId)
@@ -57,6 +61,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const widgetStates = getWidgetStateMap(graphId)
     const key = makeKey(state.nodeId, state.name)
     widgetStates.set(key, state)
+    // Return the reactive proxy from the map (not the raw input) so that
+    // callers who hold a reference see Vue-tracked mutations.
     return widgetStates.get(key) as WidgetState<TValue>
   }
 
@@ -76,6 +82,53 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return getWidgetStateMap(graphId).get(makeKey(nodeId, widgetName))
   }
 
+  function getOrCreateWidget(
+    graphId: UUID,
+    nodeId: NodeId,
+    widgetName: string,
+    defaultValue?: unknown
+  ): WidgetState {
+    const widgetStates = getWidgetStateMap(graphId)
+    const key = makeKey(nodeId, widgetName)
+    const existing = widgetStates.get(key)
+    if (existing) return existing
+
+    const state: WidgetState = {
+      nodeId,
+      name: widgetName,
+      type: 'string',
+      value: defaultValue,
+      options: {}
+    }
+    widgetStates.set(key, state)
+    return widgetStates.get(key)!
+  }
+
+  function beginHydration(nodeId: NodeId): void {
+    hydratingNodes.add(nodeId)
+  }
+
+  function commitHydration(nodeId: NodeId): void {
+    hydratingNodes.delete(nodeId)
+    const callbacks = hydrationCallbacks.get(nodeId)
+    if (!callbacks) return
+
+    hydrationCallbacks.delete(nodeId)
+    for (const cb of callbacks) cb()
+  }
+
+  function isHydrating(nodeId: NodeId): boolean {
+    return hydratingNodes.has(nodeId)
+  }
+
+  function onHydrationComplete(nodeId: NodeId, callback: HydrationCallback) {
+    if (!hydratingNodes.has(nodeId)) return callback()
+
+    const existing = hydrationCallbacks.get(nodeId) ?? []
+    if (!existing.includes(callback)) existing.push(callback)
+    hydrationCallbacks.set(nodeId, existing)
+  }
+
   function clearGraph(graphId: UUID): void {
     graphWidgetStates.value.delete(graphId)
   }
@@ -83,7 +136,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   return {
     registerWidget,
     getWidget,
+    getOrCreateWidget,
     getNodeWidgets,
+    beginHydration,
+    commitHydration,
+    isHydrating,
+    onHydrationComplete,
     clearGraph
   }
 })
