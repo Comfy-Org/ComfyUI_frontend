@@ -20,6 +20,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})
@@ -229,31 +230,9 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
     const el = document.createElement('canvas')
     el.width = 800
     el.height = 600
-    el.getContext = vi.fn().mockReturnValue({
-      save: vi.fn(),
-      restore: vi.fn(),
-      translate: vi.fn(),
-      scale: vi.fn(),
-      setTransform: vi.fn(),
-      getTransform: vi
-        .fn()
-        .mockReturnValue({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }),
-      measureText: vi.fn().mockReturnValue({ width: 0 }),
-      beginPath: vi.fn(),
-      stroke: vi.fn(),
-      fill: vi.fn(),
-      clip: vi.fn(),
-      clearRect: vi.fn(),
-      fillRect: vi.fn(),
-      strokeRect: vi.fn(),
-      roundRect: vi.fn(),
-      moveTo: vi.fn(),
-      lineTo: vi.fn(),
-      arc: vi.fn(),
-      rect: vi.fn(),
-      closePath: vi.fn(),
-      fillText: vi.fn()
-    } as unknown as CanvasRenderingContext2D)
+    el.getContext = vi
+      .fn()
+      .mockReturnValue(createMockCanvasRenderingContext2D())
     el.getBoundingClientRect = vi
       .fn()
       .mockReturnValue({ left: 0, top: 0, width: 800, height: 600 })
