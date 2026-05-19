@@ -1,23 +1,28 @@
 <template>
   <router-view />
   <GlobalDialog />
-  <BlockUI full-screen :blocked="isLoading">
+  <BlockUI full-screen :blocked="isLoading" />
+  <Teleport to="body">
     <div
       v-if="isLoading"
       class="pointer-events-none fixed inset-0 z-1200 flex items-center justify-center"
+      role="status"
+      aria-live="polite"
     >
       <div
-        class="size-12 animate-spin rounded-full border-4 border-muted-foreground border-t-base-foreground"
+        class="size-12 rounded-full border-4 border-muted-foreground border-t-base-foreground motion-safe:animate-spin"
         aria-hidden="true"
       />
+      <span class="sr-only">{{ t('g.loading') }}</span>
     </div>
-  </BlockUI>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
 import { captureException } from '@sentry/vue'
 import BlockUI from 'primevue/blockui'
 import { computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
@@ -31,6 +36,7 @@ import { useConflictDetection } from '@/workbench/extensions/manager/composables
 const workspaceStore = useWorkspaceStore()
 app.extensionManager = useWorkspaceStore()
 
+const { t } = useI18n()
 const conflictDetection = useConflictDetection()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
 

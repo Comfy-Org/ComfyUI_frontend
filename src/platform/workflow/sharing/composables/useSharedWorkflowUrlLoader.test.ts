@@ -163,18 +163,20 @@ describe('useSharedWorkflowUrlLoader', () => {
   it('opens dialog immediately with shareId and loads graph on confirm', async () => {
     mockQueryParams = { share: 'share-id-1' }
     const payload = makePayload()
+    let spinnerDuringGraphLoad: boolean | undefined
     mockShowLayoutDialog.mockImplementation(() => {
       expect(mockLoadGraphData).not.toHaveBeenCalled()
       resolveDialogWithConfirm(payload)
     })
     mockLoadGraphData.mockImplementation(() => {
-      expect(mockWorkspaceStore.spinner).toBe(true)
+      spinnerDuringGraphLoad = mockWorkspaceStore.spinner
     })
 
     const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
     const loaded = await loadSharedWorkflowFromUrl()
 
     expect(loaded).toBe('loaded')
+    expect(spinnerDuringGraphLoad).toBe(true)
     expect(mockWorkspaceStore.spinner).toBe(false)
     const dialogCall = mockShowLayoutDialog.mock.calls[0][0]
     expect(dialogCall.props.shareId).toBe('share-id-1')
@@ -247,16 +249,19 @@ describe('useSharedWorkflowUrlLoader', () => {
         }
       ]
     })
+    let spinnerDuringImport: boolean | undefined
     mockShowLayoutDialog.mockImplementation(() => {
       resolveDialogWithConfirm(payload)
     })
     mockImportPublishedAssets.mockImplementation(() => {
-      expect(mockWorkspaceStore.spinner).toBe(true)
+      spinnerDuringImport = mockWorkspaceStore.spinner
     })
 
     const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
-    await loadSharedWorkflowFromUrl()
+    const loaded = await loadSharedWorkflowFromUrl()
 
+    expect(loaded).toBe('loaded')
+    expect(spinnerDuringImport).toBe(true)
     expect(mockImportPublishedAssets).toHaveBeenCalledWith(['a1'], 'share-id-1')
     expect(mockImportPublishedAssets.mock.invocationCallOrder[0]).toBeLessThan(
       mockLoadGraphData.mock.invocationCallOrder[0]
@@ -337,6 +342,37 @@ describe('useSharedWorkflowUrlLoader', () => {
         severity: 'error',
         detail: 'Failed to import workflow assets'
       })
+    )
+  })
+
+  it('clears share intent when graph load fails after importing assets', async () => {
+    mockQueryParams = { share: 'share-id-1', tab: 'assets' }
+    const payload = makePayload({
+      assets: [
+        {
+          id: 'a1',
+          name: 'img.png',
+          preview_url: '',
+          storage_url: '',
+          model: false,
+          public: false,
+          in_library: false
+        }
+      ]
+    })
+    mockShowLayoutDialog.mockImplementation(() => {
+      resolveDialogWithConfirm(payload)
+    })
+    mockLoadGraphData.mockRejectedValue(new Error('Graph load failed'))
+
+    const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
+    const loaded = await loadSharedWorkflowFromUrl()
+
+    expect(loaded).toBe('failed')
+    expect(mockImportPublishedAssets).toHaveBeenCalledWith(['a1'], 'share-id-1')
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: { tab: 'assets' } })
+    expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+      'share'
     )
   })
 

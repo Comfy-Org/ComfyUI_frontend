@@ -65,6 +65,11 @@ export function useSharedWorkflowUrlLoader() {
     void router.replace({ query: newQuery })
   }
 
+  function clearShareIntent() {
+    cleanupUrlParams()
+    clearPreservedQuery(SHARE_NAMESPACE)
+  }
+
   function showOpenSharedWorkflowDialog(
     shareId: string
   ): Promise<DialogResult> {
@@ -110,8 +115,7 @@ export function useSharedWorkflowUrlLoader() {
     }
 
     if (typeof shareParam !== 'string') {
-      cleanupUrlParams()
-      clearPreservedQuery(SHARE_NAMESPACE)
+      clearShareIntent()
       return 'not-present'
     }
 
@@ -124,16 +128,14 @@ export function useSharedWorkflowUrlLoader() {
         summary: t('g.error'),
         detail: t('shareWorkflow.loadFailed')
       })
-      cleanupUrlParams()
-      clearPreservedQuery(SHARE_NAMESPACE)
+      clearShareIntent()
       return 'failed'
     }
 
     const result = await showOpenSharedWorkflowDialog(shareParam)
 
     if (result.action === 'cancel') {
-      cleanupUrlParams()
-      clearPreservedQuery(SHARE_NAMESPACE)
+      clearShareIntent()
       return 'cancelled'
     }
 
@@ -188,11 +190,11 @@ export function useSharedWorkflowUrlLoader() {
           summary: t('g.error'),
           detail: t('shareWorkflow.loadFailed')
         })
+        clearShareIntent()
         return 'failed'
       }
 
-      cleanupUrlParams()
-      clearPreservedQuery(SHARE_NAMESPACE)
+      clearShareIntent()
       return importFailed ? 'loaded-without-assets' : 'loaded'
     } finally {
       workspaceStore.spinner = previousSpinner
