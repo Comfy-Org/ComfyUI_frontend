@@ -32,7 +32,7 @@ export function getRatingFromDigitKey(key: string, max: number): number | null {
 
 export type StarRatingReveal = 'always' | 'host-hover'
 
-export type StarRatingRevealState = {
+type StarRatingRevealState = {
   visible: boolean
   opacityClass: string
   pointerEventsClass: string
