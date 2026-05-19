@@ -1,12 +1,20 @@
 <template>
-  <div class="flex w-full flex-col">
+  <div data-testid="open-shared-workflow-dialog" class="flex w-full flex-col">
     <header
       class="flex h-12 items-center justify-between gap-2 border-b border-border-default px-4"
     >
-      <h2 class="text-sm text-base-foreground">
+      <h2
+        data-testid="open-shared-workflow-title"
+        class="text-sm text-base-foreground"
+      >
         {{ $t('openSharedWorkflow.dialogTitle') }}
       </h2>
-      <Button size="icon" :aria-label="$t('g.close')" @click="onCancel">
+      <Button
+        data-testid="open-shared-workflow-close"
+        size="icon"
+        :aria-label="$t('g.close')"
+        @click="onCancel"
+      >
         <i class="icon-[lucide--x] size-4" />
       </Button>
     </header>
@@ -43,7 +51,12 @@
       <footer
         class="flex items-center justify-end gap-2.5 border-t border-border-default px-8 py-4"
       >
-        <Button variant="secondary" size="lg" @click="onCancel">
+        <Button
+          data-testid="open-shared-workflow-error-close"
+          variant="secondary"
+          size="lg"
+          @click="onCancel"
+        >
           {{ $t('g.close') }}
         </Button>
       </footer>
@@ -102,18 +115,29 @@
       <footer
         class="flex items-center justify-end gap-2.5 border-t border-border-default px-8 py-4"
       >
-        <Button variant="secondary" size="lg" @click="onCancel">
+        <Button
+          data-testid="open-shared-workflow-cancel"
+          variant="secondary"
+          size="lg"
+          @click="onCancel"
+        >
           {{ $t('g.cancel') }}
         </Button>
         <Button
           v-if="hasAssets"
+          data-testid="open-shared-workflow-open-without-importing"
           variant="secondary"
           size="lg"
           @click="onOpenWithoutImporting(sharedWorkflow)"
         >
           {{ $t('openSharedWorkflow.openWithoutImporting') }}
         </Button>
-        <Button variant="primary" size="lg" @click="onConfirm(sharedWorkflow)">
+        <Button
+          data-testid="open-shared-workflow-confirm"
+          variant="primary"
+          size="lg"
+          @click="onConfirm(sharedWorkflow)"
+        >
           {{
             hasAssets
               ? $t('openSharedWorkflow.copyAssetsAndOpen')
