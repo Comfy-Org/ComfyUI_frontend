@@ -8,13 +8,15 @@ const {
   addAlertMock,
   gltfParseMock,
   objParseMock,
-  stlParseMock
+  stlParseMock,
+  fbxParseAsyncMock
 } = vi.hoisted(() => ({
   downloadBlobMock: vi.fn(),
   addAlertMock: vi.fn(),
   gltfParseMock: vi.fn(),
   objParseMock: vi.fn(),
-  stlParseMock: vi.fn()
+  stlParseMock: vi.fn(),
+  fbxParseAsyncMock: vi.fn()
 }))
 
 vi.mock('@/base/common/downloadUtil', () => ({
@@ -45,6 +47,12 @@ vi.mock('three/examples/jsm/exporters/OBJExporter', () => ({
 vi.mock('three/examples/jsm/exporters/STLExporter', () => ({
   STLExporter: class {
     parse = stlParseMock
+  }
+}))
+
+vi.mock('@comfyorg/fbx-exporter-three', () => ({
+  FBXExporter: class {
+    parseAsync = fbxParseAsyncMock
   }
 }))
 
@@ -297,6 +305,51 @@ describe('ModelExporter', () => {
       await assertion
       expect(addAlertMock).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel:{"format":"STL"}'
+      )
+    })
+  })
+
+  describe('exportFBX', () => {
+    it('uses the direct-URL fast path for matching .fbx URLs', async () => {
+      const blob = new Blob(['x'])
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({ blob: () => Promise.resolve(blob) })
+      )
+
+      await ModelExporter.exportFBX(
+        new THREE.Object3D(),
+        'out.fbx',
+        'http://example.com/api/view?filename=src.fbx'
+      )
+
+      expect(downloadBlobMock).toHaveBeenCalledWith('out.fbx', blob)
+      expect(fbxParseAsyncMock).not.toHaveBeenCalled()
+      vi.unstubAllGlobals()
+    })
+
+    it('serializes via FBXExporter and downloads as binary when there is no direct URL', async () => {
+      const bytes = new Uint8Array([0x4b, 0x61, 0x79, 0x64, 0x61, 0x72, 0x61])
+      fbxParseAsyncMock.mockResolvedValue(bytes)
+
+      const promise = ModelExporter.exportFBX(new THREE.Object3D(), 'out.fbx')
+      await vi.runAllTimersAsync()
+      await promise
+
+      expect(fbxParseAsyncMock).toHaveBeenCalled()
+      expect(downloadBlobMock).toHaveBeenCalledWith('out.fbx', expect.any(Blob))
+    })
+
+    it('alerts and rethrows when FBXExporter throws', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      fbxParseAsyncMock.mockRejectedValue(new Error('fbx fail'))
+
+      const promise = ModelExporter.exportFBX(new THREE.Object3D(), 'out.fbx')
+      const assertion = expect(promise).rejects.toThrow('fbx fail')
+      await vi.runAllTimersAsync()
+      await assertion
+      expect(addAlertMock).toHaveBeenCalledWith(
+        'toastMessages.failedToExportModel:{"format":"FBX"}'
       )
     })
   })
