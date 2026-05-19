@@ -8,7 +8,7 @@
     unstyled
     :pt="{
       root: {
-        class: 'absolute z-60'
+        class: 'p-popover absolute z-60'
       },
       content: {
         class: [
@@ -90,8 +90,12 @@ const popoverRef = ref<InstanceType<typeof Popover>>()
 const toggle = (event: Event, target?: HTMLElement) => {
   popoverRef.value?.toggle(event, target)
 }
+const hide = () => {
+  popoverRef.value?.hide()
+}
 defineExpose({
-  toggle
+  toggle,
+  hide
 })
 
 const handleSubmenuClick = (subOption: SubMenuOption) => {

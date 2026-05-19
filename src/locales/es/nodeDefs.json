@@ -896,6 +896,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "description": "Genera respuestas de texto con los modelos Seed 2.0 de ByteDance. Proporciona un prompt de texto y opcionalmente una o más imágenes o videos para contexto multimodal.",
+    "display_name": "ByteDance Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "El modelo Seed utilizado para generar la respuesta."
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Entrada de texto para el modelo."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente del seed."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Instrucciones fundamentales que dictan el comportamiento del modelo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "description": "Generación unificada de texto a imagen y edición precisa de oraciones individuales con resolución de hasta 4K.",
     "display_name": "ByteDance Seedream 4",
@@ -7395,6 +7428,10 @@
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "Máscara espacial opcional en el espacio de píxeles. Controla la influencia de la condición por región mediante self-attention, multiplicada por la intensidad."
+      },
       "frame_idx": {
         "name": "indice_fotograma",
         "tooltip": "Índice de fotograma para comenzar la condición. Para imágenes de un solo fotograma o videos con 1-8 fotogramas, cualquier valor de indice_fotograma es aceptable. Para videos con 9+ fotogramas, indice_fotograma debe ser divisible por 8, de lo contrario se redondeará hacia abajo al múltiplo de 8 más cercano. Los valores negativos se cuentan desde el final del video."
