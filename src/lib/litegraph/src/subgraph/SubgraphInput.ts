@@ -246,7 +246,7 @@ export class SubgraphInput extends SubgraphSlot {
   override isValidTarget(
     fromSlot: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput
   ): boolean {
-    if (isNodeSlot(fromSlot)) {
+    if (isNodeSlot(fromSlot) && 'link' in fromSlot) {
       return LiteGraph.isValidConnection(this.type, fromSlot.type)
     }
 
