@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { ref } from 'vue'
 
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
@@ -86,6 +87,30 @@ export const ImageAsset: Story = {
   args: {
     asset: sampleAsset,
     loading: false
+  }
+}
+
+export const WithStarRating: Story = {
+  decorators: [
+    () => ({
+      template: '<div style="max-width: 280px;"><story /></div>'
+    })
+  ],
+  render: () => ({
+    components: { MediaAssetCard },
+    setup() {
+      const rating = ref(4)
+      return { rating, asset: sampleAsset }
+    },
+    template: '<MediaAssetCard :asset="asset" v-model:rating="rating" />'
+  }),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Image asset card with star rating overlaid on the bottom-right of the preview.'
+      }
+    }
   }
 }
 

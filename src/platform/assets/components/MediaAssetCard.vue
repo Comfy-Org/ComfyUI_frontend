@@ -54,6 +54,14 @@
         <i class="icon-[lucide--trash-2] size-5" />
       </LoadingOverlay>
 
+      <div
+        v-if="!loading && rating !== undefined"
+        class="absolute right-2 bottom-2 z-10 flex justify-end"
+        @click.stop
+      >
+        <StarRating v-model="rating" readonly />
+      </div>
+
       <!-- Action buttons overlay (top-left) -->
       <div
         v-if="showActionsOverlay"
@@ -143,6 +151,7 @@ import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
+import StarRating from '@/components/ui/star-rating/StarRating.vue'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -179,6 +188,8 @@ const mediaComponents = {
 function getTopComponent(kind: PreviewKind) {
   return mediaComponents.top[kind] || mediaComponents.top.other
 }
+
+const rating = defineModel<number | undefined>('rating')
 
 const { asset, loading, selected, showOutputCount, outputCount } = defineProps<{
   asset?: AssetItem
