@@ -1016,9 +1016,10 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
       const graph = new LGraph()
       graph.configure(serialized)
 
-      const migrationCall = warn.mock.calls.find((call) =>
-        typeof call[0] === 'string'
-          && call[0].includes('Legacy proxyWidgets were not migrated')
+      const migrationCall = warn.mock.calls.find(
+        (call) =>
+          typeof call[0] === 'string' &&
+          call[0].includes('Legacy proxyWidgets were not migrated')
       )
       expect(migrationCall).toBeDefined()
       expect(migrationCall![1]).toEqual(
