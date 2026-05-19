@@ -23,6 +23,8 @@ vi.mock('vue-i18n', async () => {
   }
 })
 
+const mockQueuePrompt = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
+
 vi.mock('@/scripts/app', () => {
   const mockGraphClear = vi.fn()
   const mockDs = {
@@ -56,7 +58,8 @@ vi.mock('@/scripts/app', () => {
       canvas: mockCanvas,
       rootGraph: {
         clear: mockGraphClear
-      }
+      },
+      queuePrompt: mockQueuePrompt
     }
   }
 })
@@ -112,9 +115,13 @@ vi.mock('@/services/litegraphService', () => ({
 }))
 
 const mockTrackHelpResourceClicked = vi.hoisted(() => vi.fn())
+const mockTrackRunButton = vi.hoisted(() => vi.fn())
+const mockTrackWorkflowExecution = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => ({
-    trackHelpResourceClicked: mockTrackHelpResourceClicked
+    trackHelpResourceClicked: mockTrackHelpResourceClicked,
+    trackRunButton: mockTrackRunButton,
+    trackWorkflowExecution: mockTrackWorkflowExecution
   }))
 }))
 
@@ -133,6 +140,12 @@ vi.mock('@/stores/executionStore', () => ({
 
 vi.mock('@/stores/toastStore', () => ({
   useToastStore: vi.fn(() => ({}))
+}))
+
+vi.mock('@/stores/queueSettingsStore', () => ({
+  useQueueSettingsStore: vi.fn(() => ({
+    batchCount: 1
+  }))
 }))
 
 const mockChangeTracker = vi.hoisted(() => ({
@@ -171,15 +184,18 @@ vi.mock('@/composables/auth/useAuthActions', () => ({
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: vi.fn(() => ({
-    isActiveSubscription: vi.fn().mockReturnValue(true),
+    canAccessSubscriptionFeatures: vi.fn().mockReturnValue(true),
     showSubscriptionDialog: vi.fn()
   }))
 }))
 
+const mockCanAccessSubscriptionFeatures = vi.hoisted(() => ({ value: true }))
+const mockShowSubscriptionDialog = vi.hoisted(() => vi.fn())
+
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
-    isActiveSubscription: { value: true },
-    showSubscriptionDialog: vi.fn()
+    canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
+    showSubscriptionDialog: mockShowSubscriptionDialog
   }))
 }))
 
@@ -616,6 +632,70 @@ describe('useCoreCommands', () => {
       await findCmd('Comfy.Help.AboutComfyUI').function()
 
       expect(mockShowAbout).toHaveBeenCalled()
+    })
+  })
+
+  describe('Queue commands with subscription check', () => {
+    const findCmd = (id: string) =>
+      useCoreCommands().find((cmd) => cmd.id === id)!
+
+    beforeEach(() => {
+      mockCanAccessSubscriptionFeatures.value = true
+      mockShowSubscriptionDialog.mockClear()
+      mockQueuePrompt.mockClear()
+      mockTrackRunButton.mockClear()
+      mockTrackWorkflowExecution.mockClear()
+    })
+
+    it('Comfy.QueuePrompt shows subscription dialog when canAccessSubscriptionFeatures is false', async () => {
+      mockCanAccessSubscriptionFeatures.value = false
+
+      await findCmd('Comfy.QueuePrompt').function()
+
+      expect(mockTrackRunButton).toHaveBeenCalled()
+      expect(mockShowSubscriptionDialog).toHaveBeenCalled()
+      expect(mockQueuePrompt).not.toHaveBeenCalled()
+    })
+
+    it('Comfy.QueuePrompt queues prompt when canAccessSubscriptionFeatures is true', async () => {
+      mockCanAccessSubscriptionFeatures.value = true
+
+      await findCmd('Comfy.QueuePrompt').function()
+
+      expect(mockTrackRunButton).toHaveBeenCalled()
+      expect(mockShowSubscriptionDialog).not.toHaveBeenCalled()
+      expect(mockTrackWorkflowExecution).toHaveBeenCalled()
+      expect(mockQueuePrompt).toHaveBeenCalledWith(0, 1)
+    })
+
+    it('Comfy.QueuePromptFront shows subscription dialog when canAccessSubscriptionFeatures is false', async () => {
+      mockCanAccessSubscriptionFeatures.value = false
+
+      await findCmd('Comfy.QueuePromptFront').function()
+
+      expect(mockTrackRunButton).toHaveBeenCalled()
+      expect(mockShowSubscriptionDialog).toHaveBeenCalled()
+      expect(mockQueuePrompt).not.toHaveBeenCalled()
+    })
+
+    it('Comfy.QueuePromptFront queues prompt at front when canAccessSubscriptionFeatures is true', async () => {
+      mockCanAccessSubscriptionFeatures.value = true
+
+      await findCmd('Comfy.QueuePromptFront').function()
+
+      expect(mockTrackRunButton).toHaveBeenCalled()
+      expect(mockShowSubscriptionDialog).not.toHaveBeenCalled()
+      expect(mockTrackWorkflowExecution).toHaveBeenCalled()
+      expect(mockQueuePrompt).toHaveBeenCalledWith(-1, 1)
+    })
+
+    it('Comfy.QueueSelectedOutputNodes shows subscription dialog when canAccessSubscriptionFeatures is false', async () => {
+      mockCanAccessSubscriptionFeatures.value = false
+
+      await findCmd('Comfy.QueueSelectedOutputNodes').function()
+
+      expect(mockTrackRunButton).toHaveBeenCalled()
+      expect(mockShowSubscriptionDialog).toHaveBeenCalled()
     })
   })
 })

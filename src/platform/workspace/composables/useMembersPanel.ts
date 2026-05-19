@@ -85,7 +85,7 @@ export function useMembersPanel() {
   const { copyInviteLink } = workspaceStore
   const { permissions, uiConfig } = useWorkspaceUI()
   const {
-    isActiveSubscription,
+    canAccessSubscriptionFeatures,
     subscription,
     showSubscriptionDialog,
     getMaxSeats
@@ -102,7 +102,7 @@ export function useMembersPanel() {
 
   const isSingleSeatPlan = computed(() => {
     if (isPersonalWorkspace.value) return false
-    if (!isActiveSubscription.value) return true
+    if (!canAccessSubscriptionFeatures.value) return true
     return maxSeats.value <= 1
   })
 
@@ -205,7 +205,7 @@ export function useMembersPanel() {
     pendingInvites,
     permissions,
     uiConfig,
-    isActiveSubscription,
+    canAccessSubscriptionFeatures,
     userPhotoUrl,
     isCurrentUser,
     selectMember,
