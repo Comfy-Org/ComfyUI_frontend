@@ -28,6 +28,7 @@ export interface SharedWorkflowImportMocks {
   resetAndStartRecording: () => void
   getImportBody: () => ImportPublishedAssetsRequest | undefined
   getRequestEvents: () => SharedWorkflowRequestEvent[]
+  waitForPublicInclusiveInputAssetResponseAfterImport: () => Promise<void>
 }
 
 const defaultInputFileName = '00000000000000000000000Aexample.png'
@@ -132,7 +133,21 @@ async function mockSharedWorkflowImportFlow(
   let isRecording = false
   let importEndpointCalled = false
   let importBody: ImportPublishedAssetsRequest | undefined
+  let resolvePublicInclusiveInputAssetResponseAfterImport: () => void = () => {}
+  let publicInclusiveInputAssetResponseAfterImport = new Promise<void>(
+    (resolve) => {
+      resolvePublicInclusiveInputAssetResponseAfterImport = resolve
+    }
+  )
   const requestEvents: SharedWorkflowRequestEvent[] = []
+
+  function resetPublicInclusiveInputAssetResponseWaiter() {
+    publicInclusiveInputAssetResponseAfterImport = new Promise<void>(
+      (resolve) => {
+        resolvePublicInclusiveInputAssetResponseAfterImport = resolve
+      }
+    )
+  }
 
   function recordRequestEvent(event: SharedWorkflowRequestEvent) {
     if (isRecording) requestEvents.push(event)
@@ -169,8 +184,12 @@ async function mockSharedWorkflowImportFlow(
     const isInputAssetRequest = includeTags.includes('input')
     const includesPublicAssets =
       url.searchParams.get('include_public') === 'true'
+    const isPublicInclusiveInputAssetRequest =
+      isInputAssetRequest && includesPublicAssets
+    const isAfterImportPublicInclusiveInputAssetRequest =
+      isPublicInclusiveInputAssetRequest && importEndpointCalled
 
-    if (isInputAssetRequest && includesPublicAssets) {
+    if (isPublicInclusiveInputAssetRequest) {
       recordRequestEvent(
         importEndpointCalled
           ? 'input-assets-including-public-after-import'
@@ -199,6 +218,10 @@ async function mockSharedWorkflowImportFlow(
       contentType: 'application/json',
       body: JSON.stringify(response)
     })
+
+    if (isAfterImportPublicInclusiveInputAssetRequest) {
+      resolvePublicInclusiveInputAssetResponseAfterImport()
+    }
   })
 
   return {
@@ -207,9 +230,12 @@ async function mockSharedWorkflowImportFlow(
       importEndpointCalled = false
       importBody = undefined
       requestEvents.length = 0
+      resetPublicInclusiveInputAssetResponseWaiter()
     },
     getImportBody: () => importBody,
-    getRequestEvents: () => [...requestEvents]
+    getRequestEvents: () => [...requestEvents],
+    waitForPublicInclusiveInputAssetResponseAfterImport: () =>
+      publicInclusiveInputAssetResponseAfterImport
   }
 }
 

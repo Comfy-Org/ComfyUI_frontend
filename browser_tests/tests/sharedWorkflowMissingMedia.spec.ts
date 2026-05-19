@@ -9,9 +9,9 @@ import {
 } from '@e2e/fixtures/sharedWorkflowImportFixture'
 import type { SharedWorkflowImportMocks } from '@e2e/fixtures/sharedWorkflowImportFixture'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 const IMPORT_ORDER_TIMEOUT_MS = 5_000
-const MISSING_MEDIA_SETTLING_WINDOW_MS = 1_000
 
 async function expectImportPrecedesPublicInclusiveInputAssetScan(
   mocks: SharedWorkflowImportMocks
@@ -34,53 +34,31 @@ async function expectImportPrecedesPublicInclusiveInputAssetScan(
   }).toPass({ timeout: IMPORT_ORDER_TIMEOUT_MS })
 }
 
-async function expectNoMissingMediaOverlayDuringSettling(
+async function getCachedMissingMediaWarningNames(
   comfyPage: ComfyPage
-): Promise<void> {
-  await expect(
-    comfyPage.page.evaluate(
-      async ({ errorOverlay, settlingWindowMs }) => {
-        const isVisible = (element: Element | null) => {
-          if (!element) return false
-          const style = window.getComputedStyle(element)
-          const rect = element.getBoundingClientRect()
-          return (
-            style.display !== 'none' &&
-            style.visibility !== 'hidden' &&
-            rect.width > 0 &&
-            rect.height > 0
-          )
-        }
-
-        const startedAt = performance.now()
-        return await new Promise<boolean>((resolve) => {
-          const check = () => {
-            if (
-              isVisible(
-                document.querySelector(`[data-testid="${errorOverlay}"]`)
-              )
-            ) {
-              resolve(false)
-              return
-            }
-
-            if (performance.now() - startedAt >= settlingWindowMs) {
-              resolve(true)
-              return
-            }
-
-            requestAnimationFrame(check)
-          }
-
-          check()
-        })
-      },
-      {
-        errorOverlay: TestIds.dialogs.errorOverlay,
-        settlingWindowMs: MISSING_MEDIA_SETTLING_WINDOW_MS
-      }
+): Promise<string[]> {
+  return await comfyPage.page.evaluate(() => {
+    const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
+      .activeWorkflow
+    return (
+      workflow?.pendingWarnings?.missingMediaCandidates?.map(
+        (candidate) => candidate.name
+      ) ?? []
     )
-  ).resolves.toBe(true)
+  })
+}
+
+async function expectNoMissingMediaAfterPublicInclusiveAssetScan(
+  comfyPage: ComfyPage,
+  mocks: SharedWorkflowImportMocks
+): Promise<void> {
+  await mocks.waitForPublicInclusiveInputAssetResponseAfterImport()
+  await comfyPage.nextFrame()
+
+  await expect(
+    comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+  ).toBeHidden()
+  expect(await getCachedMissingMediaWarningNames(comfyPage)).toEqual([])
 }
 
 async function openPanelAndExpectNoMissingMedia(
@@ -149,7 +127,10 @@ test.describe('Shared workflow missing media', { tag: '@cloud' }, () => {
     await expectImportPrecedesPublicInclusiveInputAssetScan(
       sharedWorkflowImportMocks
     )
-    await expectNoMissingMediaOverlayDuringSettling(comfyPage)
+    await expectNoMissingMediaAfterPublicInclusiveAssetScan(
+      comfyPage,
+      sharedWorkflowImportMocks
+    )
 
     expect(sharedWorkflowImportMocks.getImportBody()).toEqual({
       published_asset_ids: [sharedWorkflowImportScenario.publishedAssetId],
