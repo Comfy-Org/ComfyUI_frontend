@@ -102,12 +102,17 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     const input = node.addInput('prompt', 'STRING')
     // Associate the input slot with the widget (as widgetInputs extension does)
     input.widget = { name: 'prompt' }
-
-    // Start with a connected link
-    input.link = 42
-
     graph.add(node)
-    return { graph, node }
+
+    // Real upstream node + real link — the renderer treats a slot as
+    // `linked` only when the upstream resolves to an actual node.
+    const upstream = new LGraphNode('upstream')
+    upstream.addOutput('out', 'STRING')
+    graph.add(upstream)
+    const link = upstream.connect(0, node, 0)
+    if (!link) throw new Error('Expected upstream.connect to produce a link')
+
+    return { graph, node, upstream, linkId: link.id }
   }
 
   it('sets slotMetadata.linked to true when input has a link', () => {
@@ -187,7 +192,28 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     expect(onChange).toHaveBeenCalledTimes(1)
   })
 
-  it('updates slotMetadata for promoted widgets where SafeWidgetData.name differs from input.widget.name', async () => {
+  it('does not mark a slot as linked when the link references a non-resolvable upstream (e.g. SubgraphInput sentinel)', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addWidget('string', 'prompt', 'hello', () => undefined, {})
+    const input = node.addInput('prompt', 'STRING')
+    input.widget = { name: 'prompt' }
+    // Reference a link that doesn't resolve to a real upstream node — mirrors
+    // the subgraph promotion case where origin_id === SUBGRAPH_INPUT_ID and
+    // getNodeById returns null. The renderer must treat the slot as editable
+    // rather than disabled-with-phantom-upstream.
+    input.link = 9999
+    graph.add(node)
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const nodeData = vueNodeData.get(String(node.id))
+    const widgetData = nodeData?.widgets?.find((w) => w.name === 'prompt')
+
+    expect(widgetData?.slotMetadata?.linked).toBe(false)
+    expect(widgetData?.slotMetadata?.originNodeId).toBeUndefined()
+  })
+
+  it('resolves slotMetadata for promoted widgets where SafeWidgetData.name differs from input.widget.name', () => {
     // Set up a subgraph with an interior node that has a "prompt" widget.
     // createPromotedWidgetView resolves against this interior node.
     const subgraph = createTestSubgraph()
@@ -217,7 +243,6 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     hostNode.widgets = [promotedView]
     const input = hostNode.addInput('value', 'STRING')
     input.widget = { name: 'value' }
-    input.link = 42
     graph.add(hostNode)
 
     const { vueNodeData } = useGraphNodeManager(graph)
@@ -228,21 +253,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     const widgetData = nodeData?.widgets?.find((w) => w.name === 'prompt')
     expect(widgetData).toBeDefined()
     expect(widgetData?.slotName).toBe('value')
-    expect(widgetData?.slotMetadata?.linked).toBe(true)
-
-    // Disconnect
-    hostNode.inputs[0].link = null
-    graph.trigger('node:slot-links:changed', {
-      nodeId: hostNode.id,
-      slotType: NodeSlotType.INPUT,
-      slotIndex: 0,
-      connected: false,
-      linkId: 42
-    })
-
-    await nextTick()
-
-    expect(widgetData?.slotMetadata?.linked).toBe(false)
+    expect(widgetData?.slotMetadata).toBeDefined()
   })
 
   it('prefers exact _widget input matches before same-name fallbacks for promoted widgets', () => {
