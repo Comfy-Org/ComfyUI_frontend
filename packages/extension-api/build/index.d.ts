@@ -262,7 +262,7 @@ export declare interface NodeHandle {
      * another handle.
      *
      * @remarks
-     * Per D20, the underlying value is a branded `NodeEntityId` at runtime
+     * The underlying value is a branded `NodeEntityId` at runtime
      * but is narrowed to `string` on the public surface so authors never
      * need to import a brand to type a local variable.
      */
@@ -396,7 +396,7 @@ export declare interface NodeHandle {
     /**
      * Returns all widgets on this node as `WidgetHandle` instances.
      *
-     * **Immutable view per D-immutability-enforcement (Hybrid C).** The returned
+     * **Immutable view.** The returned
      * array cannot be mutated (`push`, `splice`, `length =`, index assignment
      * all raise TS errors). Each `WidgetHandle` is also surface-frozen — use
      * the `WidgetHandle` setter methods (`setValue`, `setHidden`, etc.) to
@@ -419,13 +419,12 @@ export declare interface NodeHandle {
     /**
      * Returns all input slots on this node.
      *
-     * **Immutable view per D-immutability-enforcement (Hybrid C).** The returned
+     * **Immutable view.** The returned
      * array and each slot are `Readonly` — `node.getInputs().push(...)`,
      * `node.getInputs()[i] = X`, and `node.getInputs()[i].name = "x"` all raise
      * TypeScript errors at compile time. Per-slot mutators (`setInputName`,
      * `replaceInput`, bulk field setters) are tracked under
-     * W6.P8.UNMIGRATABLE / D-input-output-shape.
-     *
+     *.     *
      * @example
      * ```ts
      * // ❌ TS-ERR — readonly array; v1 patterns no longer compile
@@ -440,20 +439,20 @@ export declare interface NodeHandle {
     /**
      * Returns all output slots on this node.
      *
-     * **Immutable view per D-immutability-enforcement (Hybrid C).** Same
+     * **Immutable view.** Same
      * read-only semantics as {@link NodeHandle.getInputs}. Per-slot mutators
-     * tracked under W6.P8.UNMIGRATABLE / D-input-output-shape.
+     * tracked separately.
      */
     getOutputs(): ReadonlyArray<Readonly<SlotInfo>>;
     /**
      * @deprecated Use {@link NodeHandle.getInputs} instead. Renamed to align
-     * with the `getX()` accessor convention (D11/D-immutability-enforcement).
+     * with the `getX()` accessor convention.
      * Will be removed in v1.0.
      */
     inputs(): ReadonlyArray<Readonly<SlotInfo>>;
     /**
      * @deprecated Use {@link NodeHandle.getOutputs} instead. Renamed to align
-     * with the `getX()` accessor convention (D11/D-immutability-enforcement).
+     * with the `getX()` accessor convention.
      * Will be removed in v1.0.
      */
     outputs(): ReadonlyArray<Readonly<SlotInfo>>;
@@ -610,7 +609,7 @@ export { parseNodeLocatorId }
 /**
  * A 2D point as `[x, y]`.
  *
- * **Immutable tuple per D-immutability-enforcement (Hybrid C).** Attempts to
+ * **Immutable tuple.** Attempts to
  * mutate via `node.getPosition()[0] = X` raise a TypeScript error. Use
  * {@link NodeHandle.setPosition} to move the node.
  */
@@ -621,7 +620,7 @@ export { SidebarTabExtension }
 /**
  * A 2D size as `[width, height]`.
  *
- * **Immutable tuple per D-immutability-enforcement (Hybrid C).** Attempts to
+ * **Immutable tuple.** Attempts to
  * mutate via `node.getSize()[0] = X` raise a TypeScript error. Use
  * {@link NodeHandle.setSize} to resize the node.
  */
@@ -866,7 +865,7 @@ export declare interface WidgetHandle<T = WidgetValue> {
      * another handle.
      *
      * @remarks
-     * Per D20, the underlying value is a branded `WidgetEntityId` at runtime
+     * The underlying value is a branded `WidgetEntityId` at runtime
      * but is narrowed to `string` on the public surface so authors never need
      * to import a brand to type a local variable.
      */
@@ -959,7 +958,7 @@ export declare interface WidgetHandle<T = WidgetValue> {
     /**
      * Read-only snapshot of the full options bag for this widget.
      *
-     * **Immutable per D-immutability-enforcement (Hybrid C).** The returned
+     * **Immutable.** The returned
      * object is `Readonly<WidgetOptions>` — `widget.options.min = 0`,
      * `widget.options = {...}`, and `widget.options.values = [...]` all raise
      * TypeScript errors at compile time. To mutate, use
@@ -970,7 +969,7 @@ export declare interface WidgetHandle<T = WidgetValue> {
      * §A16, `serialize` is no longer a writable option (and no longer a key
      * on this bag) — there is no widget-level serialization disable.
      * `widget.options.values = [...]` (combo refresh) migrates to a future
-     * `setValues` mutator (tracked under W6.P8.UNMIGRATABLE).
+     * `setValues` mutator.
      *
      * @example
      * ```ts
@@ -1019,11 +1018,11 @@ export declare interface WidgetHandle<T = WidgetValue> {
      * The widget's current `serializeValue` function (or `undefined` if none is
      * registered).
      *
-     * **Accessor-only per D-immutability-enforcement (Hybrid C).** The setter
+     * **Accessor-only.** The setter
      * intentionally does not exist on the public type — assignment
      * (`widget.serializeValue = fn`) raises a TypeScript error. The v2
      * migration target is the {@link WidgetHandle.on | `on('beforeSerialize', fn)`}
-     * event (per D5), which is typed, async-capable, and composable across
+     * event, which is typed, async-capable, and composable across
      * multiple extensions on the same widget.
      *
      * @deprecated v1 callers reading `widget.serializeValue` to invoke the
