@@ -487,7 +487,8 @@ describe('useMediaAssetActions', () => {
   })
 
   describe('downloadAssets', () => {
-    it('downloads the injected media asset when called without explicit assets', () => {
+    it('downloads the canonical asset (not the preview rendition) when called without explicit assets', () => {
+      mockGetAssetType.mockReturnValue('input')
       const mediaAsset = createMockMediaAsset({
         id: 'context-asset',
         name: 'context-name.png',
@@ -499,10 +500,11 @@ describe('useMediaAssetActions', () => {
       actions.downloadAssets()
 
       expect(mockDownloadFile).toHaveBeenCalledOnce()
-      expect(mockDownloadFile).toHaveBeenCalledWith(
-        'https://example.com/context-preview.png',
-        'Context image.png'
-      )
+      const [downloadUrl, downloadName] = mockDownloadFile.mock.calls[0]
+      expect(downloadUrl).toContain('filename=context-name.png')
+      expect(downloadUrl).toContain('type=input')
+      expect(downloadUrl).not.toBe('https://example.com/context-preview.png')
+      expect(downloadName).toBe('Context image.png')
       expect(mockCreateAssetExport).not.toHaveBeenCalled()
       expect(mockTrackExport).not.toHaveBeenCalled()
 
@@ -520,8 +522,31 @@ describe('useMediaAssetActions', () => {
       unmount()
     })
 
+    it('downloads the original EXR, not the AVIF preview, when both are present', () => {
+      mockGetAssetType.mockReturnValue('output')
+      const asset = createMockAsset({
+        id: 'exr-asset',
+        name: 'render.exr',
+        mime_type: 'image/aces',
+        tags: ['output'],
+        preview_url: 'https://example.com/render.avif',
+        thumbnail_url: 'https://example.com/render.avif'
+      })
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([asset])
+
+      expect(mockDownloadFile).toHaveBeenCalledOnce()
+      const [downloadUrl, downloadName] = mockDownloadFile.mock.calls[0]
+      expect(downloadUrl).toContain('filename=render.exr')
+      expect(downloadUrl).toContain('type=output')
+      expect(downloadUrl).not.toContain('avif')
+      expect(downloadName).toBe('render.exr')
+    })
+
     it('keeps single explicit assets on the direct download path in cloud', () => {
       mockIsCloud.value = true
+      mockGetAssetType.mockReturnValue('output')
       mockGetOutputAssetMetadata.mockReturnValue({
         jobId: 'job1',
         outputCount: 1
@@ -539,10 +564,10 @@ describe('useMediaAssetActions', () => {
       actions.downloadAssets([asset])
 
       expect(mockDownloadFile).toHaveBeenCalledOnce()
-      expect(mockDownloadFile).toHaveBeenCalledWith(
-        'https://example.com/single-output.png',
-        'single-output.png'
-      )
+      const [downloadUrl, downloadName] = mockDownloadFile.mock.calls[0]
+      expect(downloadUrl).toContain('filename=single-output.png')
+      expect(downloadUrl).toContain('type=output')
+      expect(downloadName).toBe('single-output.png')
       expect(mockCreateAssetExport).not.toHaveBeenCalled()
       expect(mockTrackExport).not.toHaveBeenCalled()
     })

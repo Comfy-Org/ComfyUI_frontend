@@ -161,6 +161,7 @@ import type { AssetItem } from '../schemas/assetSchema'
 import { getAssetDisplayName } from '../utils/assetMetadataUtils'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey, MIME_ASSET_INFO } from '../schemas/mediaAssetSchema'
+import { renditionFor } from '../utils/assetRenditions'
 import MediaTitle from './MediaTitle.vue'
 
 type PreviewKind = ReturnType<typeof getMediaTypeFromFilename>
@@ -224,7 +225,15 @@ const fileKind = computed((): MediaKind => {
   return getMediaTypeFromFilename(asset?.name || '')
 })
 
+// Route by MIME family first so non-renderable image originals (e.g. EXR
+// with an AVIF preview) still flow through MediaImageTop and pick up its
+// rendition + placeholder logic instead of falling into the generic
+// MediaOtherTop bucket based on file extension alone.
 const previewKind = computed((): PreviewKind => {
+  const mimeFamily = asset?.mime_type?.toLowerCase().split('/')[0]
+  if (mimeFamily === 'image') return 'image'
+  if (mimeFamily === 'video') return 'video'
+  if (mimeFamily === 'audio') return 'audio'
   return getMediaTypeFromFilename(asset?.name || '')
 })
 
@@ -235,18 +244,24 @@ const fileName = computed(() => {
   return getFilenameDetails(asset ? getAssetDisplayName(asset) : '').filename
 })
 
-// Adapt AssetItem to legacy AssetMeta format for existing components
+// Adapt AssetItem to legacy AssetMeta format for existing components.
+// `src` resolution differs by kind: 3D viewers need the canonical model URL
+// (.glb/.obj); other previews want the thumbnail/preview rendition chain
+// from renditionFor() so non-renderable originals (e.g. EXR) fall through
+// to the icon placeholder in MediaImageTop instead of a broken <img>.
 const adaptedAsset = computed(() => {
   if (!asset) return undefined
+  const src =
+    fileKind.value === '3D'
+      ? getAssetUrl(asset)
+      : (renditionFor(asset, 'grid') ?? '')
   return {
     id: asset.id,
     name: asset.name,
     display_name: asset.display_name,
     kind: fileKind.value,
-    src:
-      fileKind.value === '3D'
-        ? getAssetUrl(asset)
-        : asset.thumbnail_url || asset.preview_url || '',
+    src,
+    mime_type: asset.mime_type,
     preview_url: asset.preview_url,
     preview_id: asset.preview_id,
     size: asset.size,
