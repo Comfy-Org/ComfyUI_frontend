@@ -70,7 +70,7 @@
           :class="
             cn(
               'z-3000 overflow-hidden rounded-lg border border-solid border-border-default bg-base-background p-0 text-base-foreground shadow-md',
-              'min-w-(--reka-combobox-trigger-width)'
+              'max-w-[min(90vw,48rem)] min-w-(--reka-combobox-trigger-width)'
             )
           "
           @keydown.escape.stop="handleOpenChange(false)"
@@ -98,38 +98,54 @@
           <div
             data-testid="widget-select-default-viewport"
             role="presentation"
-            class="flex max-h-56 min-w-full scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent scrollbar-gutter-stable flex-col gap-1 overflow-y-auto p-1 text-xs"
+            class="max-h-56 min-w-full scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent scrollbar-gutter-stable overflow-y-auto p-1 text-xs"
             :style="viewportStyle"
             @pointerdown.capture.self="handleViewportPointerDown"
           >
-            <ComboboxItem
-              v-for="option in filteredOptions"
-              :key="option.key"
-              :value="option.comboboxValue"
-              :text-value="option.label"
-              :class="
-                cn(
-                  'relative flex min-h-7 cursor-pointer items-center justify-between gap-3 rounded-sm p-2 outline-none select-none',
-                  'hover:bg-secondary-background data-highlighted:bg-secondary-background',
-                  'data-[state=checked]:bg-primary-background/20 data-[state=checked]:hover:bg-primary-background/20 data-[state=checked]:data-highlighted:bg-primary-background/30'
-                )
-              "
-            >
-              <span class="truncate">
-                {{ option.label }}
-              </span>
-              <ComboboxItemIndicator
-                class="flex shrink-0 items-center justify-center"
+            <template v-if="filteredOptions.length > 0">
+              <div aria-hidden="true" class="invisible h-0 overflow-hidden">
+                <div class="flex items-center gap-3 p-2">
+                  <span class="whitespace-nowrap">{{ longestLabel }}</span>
+                  <span class="size-3.5 shrink-0" />
+                </div>
+              </div>
+
+              <ComboboxVirtualizer
+                v-slot="{ option }"
+                :options="filteredOptions"
+                :estimate-size="32"
+                :text-content="(opt: SelectOption) => opt.label"
               >
-                <i
-                  class="icon-[lucide--check] size-3.5 text-base-foreground"
-                  aria-hidden="true"
-                />
-              </ComboboxItemIndicator>
-            </ComboboxItem>
+                <ComboboxItem
+                  :key="option.key"
+                  :value="option.comboboxValue"
+                  :text-value="option.label"
+                  :title="option.label"
+                  :class="
+                    cn(
+                      'flex h-8 w-full cursor-pointer items-center justify-between gap-3 rounded-sm p-2 outline-none select-none',
+                      'hover:bg-secondary-background data-highlighted:bg-secondary-background',
+                      'data-[state=checked]:bg-primary-background/20 data-[state=checked]:hover:bg-primary-background/20 data-[state=checked]:data-highlighted:bg-primary-background/30'
+                    )
+                  "
+                >
+                  <span class="truncate">
+                    {{ option.label }}
+                  </span>
+                  <ComboboxItemIndicator
+                    class="flex shrink-0 items-center justify-center"
+                  >
+                    <i
+                      class="icon-[lucide--check] size-3.5 text-base-foreground"
+                      aria-hidden="true"
+                    />
+                  </ComboboxItemIndicator>
+                </ComboboxItem>
+              </ComboboxVirtualizer>
+            </template>
 
             <div
-              v-if="filteredOptions.length === 0"
+              v-else
               role="status"
               aria-live="polite"
               class="p-2 text-xs text-muted-foreground"
@@ -156,7 +172,8 @@ import {
   ComboboxItemIndicator,
   ComboboxPortal,
   ComboboxRoot,
-  ComboboxTrigger
+  ComboboxTrigger,
+  ComboboxVirtualizer
 } from 'reka-ui'
 import { computed, ref } from 'vue'
 import type { CSSProperties } from 'vue'
@@ -312,6 +329,13 @@ const viewportStyle = computed<CSSProperties>(() => ({
     filteredOptions.value.length > MAX_VISIBLE_OPTIONS ? 'scroll' : 'auto',
   scrollbarGutter: 'stable'
 }))
+
+const longestLabel = computed(() =>
+  filteredOptions.value.reduce(
+    (longest, opt) => (opt.label.length > longest.length ? opt.label : longest),
+    ''
+  )
+)
 
 const selectedOption = computed(() =>
   normalizedOptions.value.find((option) => option.value === modelValue.value)
