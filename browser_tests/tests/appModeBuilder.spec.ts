@@ -112,6 +112,5 @@ test.describe('App mode builder selection', () => {
       comfyPage.searchBoxV2.input,
       'Canvas is no longer readonly after exiting'
     ).toBeVisible()
-    await comfyPage.page.keyboard.press('Escape')
   })
 })
