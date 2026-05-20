@@ -216,6 +216,9 @@ class Load3dService {
   async copyLoad3dState(source: Load3d, target: Load3d) {
     const sourceModel = source.modelManager.currentModel
 
+    const gizmoWasEnabled = target.getGizmoManager().isEnabled()
+    target.getGizmoManager().detach()
+
     if (sourceModel) {
       // Remove existing model from target scene before adding new one
       const existingModel = target.getModelManager().currentModel
@@ -254,6 +257,36 @@ class Load3dService {
         if (source.getModelManager().appliedTexture) {
           target.getModelManager().appliedTexture =
             source.getModelManager().appliedTexture
+        }
+
+        const sourceInitial = source.getGizmoManager().getInitialTransform()
+        modelClone.position.set(
+          sourceInitial.position.x,
+          sourceInitial.position.y,
+          sourceInitial.position.z
+        )
+        modelClone.rotation.set(
+          sourceInitial.rotation.x,
+          sourceInitial.rotation.y,
+          sourceInitial.rotation.z
+        )
+        modelClone.scale.set(
+          sourceInitial.scale.x,
+          sourceInitial.scale.y,
+          sourceInitial.scale.z
+        )
+
+        target.getGizmoManager().setupForModel(modelClone)
+        const gizmoTransform = source.getGizmoTransform()
+        target.applyGizmoTransform(
+          gizmoTransform.position,
+          gizmoTransform.rotation,
+          gizmoTransform.scale
+        )
+        const shouldEnable =
+          gizmoWasEnabled || source.getGizmoManager().isEnabled()
+        if (shouldEnable) {
+          target.setGizmoEnabled(true)
         }
 
         // Copy animation state

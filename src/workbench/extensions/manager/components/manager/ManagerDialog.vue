@@ -14,16 +14,21 @@
     </template>
 
     <template #header>
-      <div class="flex w-full items-center justify-between gap-2">
+      <div
+        :ref="primeVueOverlay.overlayScopeRef"
+        class="flex w-full items-center justify-between gap-2"
+      >
         <div class="flex w-full items-center gap-2">
           <SingleSelect
             v-model="searchMode"
             class="min-w-34"
             :options="filterOptions"
+            :content-style="selectContentStyle"
           />
           <SearchAutocomplete
             v-model="searchQuery"
             :suggestions="suggestions"
+            :content-style="selectContentStyle"
             :placeholder="$t('manager.searchPlaceholder')"
             option-label="query"
             autofocus
@@ -87,6 +92,7 @@
           v-model="sortField"
           :label="$t('g.sort')"
           :options="availableSortOptions"
+          :content-style="selectContentStyle"
           class="w-48"
         >
           <template #icon>
@@ -157,12 +163,13 @@ import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
-import SingleSelect from '@/components/input/SingleSelect.vue'
+import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import SearchAutocomplete from '@/components/ui/search-input/SearchAutocomplete.vue'
 import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
+import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components } from '@/types/comfyRegistryTypes'
@@ -197,6 +204,8 @@ const { initialTab, initialPackId, onClose } = defineProps<{
 provide(OnCloseKey, onClose)
 
 const { t } = useI18n()
+const primeVueOverlay = usePrimeVueOverlayChildStyle()
+const selectContentStyle = primeVueOverlay.contentStyle
 const { buildDocsUrl } = useExternalLink()
 const comfyManagerStore = useComfyManagerStore()
 const { getPackById } = useComfyRegistryStore()

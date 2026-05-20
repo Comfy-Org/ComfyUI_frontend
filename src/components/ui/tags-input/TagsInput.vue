@@ -9,7 +9,7 @@ import { TagsInputRoot, useForwardPropsEmits } from 'reka-ui'
 import { computed, nextTick, provide, ref } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import { tagsInputFocusKey, tagsInputIsEditingKey } from './tagsInputContext'
 import type { FocusCallback } from './tagsInputContext'

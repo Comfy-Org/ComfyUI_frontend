@@ -22,7 +22,7 @@
 import { computed } from 'vue'
 
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { hidden = false, radiusClass = 'rounded-[7px]' } = defineProps<{
   hidden?: boolean

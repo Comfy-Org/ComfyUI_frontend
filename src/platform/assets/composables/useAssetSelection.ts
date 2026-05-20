@@ -3,6 +3,10 @@ import { computed, ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
+import {
+  getAssetOutputCount,
+  getTotalAssetOutputCount
+} from '@/platform/assets/utils/outputAssetUtil'
 
 export function useAssetSelection() {
   const selectionStore = useAssetSelectionStore()
@@ -142,15 +146,14 @@ export function useAssetSelection() {
    * Same logic as in AssetsSidebarTab.vue
    */
   function getOutputCount(item: AssetItem): number {
-    const count = item.user_metadata?.outputCount
-    return typeof count === 'number' && count > 0 ? count : 1
+    return getAssetOutputCount(item)
   }
 
   /**
    * Get the total output count for given assets
    */
   function getTotalOutputCount(assets: AssetItem[]): number {
-    return assets.reduce((sum, asset) => sum + getOutputCount(asset), 0)
+    return getTotalAssetOutputCount(assets)
   }
 
   /**

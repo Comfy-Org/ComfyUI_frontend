@@ -134,7 +134,7 @@ export class SubgraphInput extends SubgraphSlot {
         }
       }
     }
-    subgraph._version++
+    subgraph.incrementVersion()
 
     node.onConnectionsChange?.(NodeSlotType.INPUT, inputIndex, true, link, slot)
 

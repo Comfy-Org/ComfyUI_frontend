@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import type { FilterOption } from '@/platform/assets/types/filterTypes'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { filterOptions } = defineProps<{
   filterOptions: FilterOption[]

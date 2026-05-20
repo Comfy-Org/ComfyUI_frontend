@@ -302,6 +302,21 @@ class NodeWithV2ComboInput:
     def node_with_v2_combo_input(self, combo_input: str):
         return (combo_input,)
 
+class NodeWithLegacyWidget:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": { "legacy_widget": ("INT", { "widgetType":  "DEVTOOLSLEGACYWIDGET" }) }
+        }
+
+    RETURN_TYPES = ()
+    FUNCTION = "node_with_legacy_widget"
+    CATEGORY = "DevTools"
+    DESCRIPTION = ("A node with a legacy widget")
+
+    def node_with_legacy_widget(self):
+        return ()
+
 
 class NodeWithComboControlWidget:
     @classmethod
@@ -344,6 +359,7 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithValidation": NodeWithValidation,
     "DevToolsNodeWithV2ComboInput": NodeWithV2ComboInput,
     "DevToolsNodeWithComboControlWidget": NodeWithComboControlWidget,
+    "DevToolsNodeWithLegacyWidget": NodeWithLegacyWidget,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -362,6 +378,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithValidation": "Node With Validation",
     "DevToolsNodeWithV2ComboInput": "Node With V2 Combo Input",
     "DevToolsNodeWithComboControlWidget": "Node With Combo Control Widget",
+    "DevToolsNodeWithLegacyWidget": "Node With Legacy Widget",
 }
 
 __all__ = [
