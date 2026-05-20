@@ -64,6 +64,31 @@ function renderItem(state: 'OK' | 'error' | 'warning' | 'skipped') {
   })
 }
 
+function renderItemWithRunner(
+  state: 'OK' | 'error' | 'warning' | 'skipped',
+  runnerOverrides: Record<string, unknown> = {}
+) {
+  mockGetRunner.mockReturnValue({
+    state,
+    executing: false,
+    refreshing: false,
+    resolved: false,
+    ...runnerOverrides
+  })
+
+  return render(TaskListItem, {
+    props: { task: baseTask },
+    global: {
+      plugins: [[PrimeVue, { unstyled: true }]],
+      stubs: {
+        Button: ButtonStub,
+        Popover: { template: '<div />' },
+        TaskListStatusIcon: { template: '<span />' }
+      }
+    }
+  })
+}
+
 describe('TaskListItem', () => {
   describe('severity computed', () => {
     it('uses primary severity for error state', () => {
@@ -92,6 +117,63 @@ describe('TaskListItem', () => {
       expect(screen.getByTestId('action-button').dataset.severity).toBe(
         'secondary'
       )
+    })
+  })
+
+  describe('rendering', () => {
+    it('displays the task name', () => {
+      renderItem('OK')
+      expect(screen.getByText('Test Task')).toBeTruthy()
+    })
+
+    it('passes the action button label from task.button.text', () => {
+      renderItem('OK')
+      const actionBtn = screen.getByTestId('action-button')
+      expect(actionBtn.dataset.label).toBe('Fix')
+    })
+  })
+
+  describe('opacity class bindings', () => {
+    it('applies opacity-50 class when runner.resolved is true', () => {
+      const { container } = renderItemWithRunner('OK', { resolved: true })
+      const row = container.querySelector('tr')
+      expect(row?.classList.contains('opacity-50')).toBe(true)
+    })
+
+    it('does not apply opacity-50 class when runner.resolved is false', () => {
+      const { container } = renderItemWithRunner('OK', { resolved: false })
+      const row = container.querySelector('tr')
+      expect(row?.classList.contains('opacity-50')).toBe(false)
+    })
+
+    it('applies opacity-75 class when isLoading is true and runner.resolved is true', () => {
+      // useMinLoadingDurationRef is mocked to pass through the source ref value,
+      // so refreshing: true makes isLoading truthy
+      const { container } = renderItemWithRunner('OK', {
+        resolved: true,
+        refreshing: true
+      })
+      const row = container.querySelector('tr')
+      expect(row?.classList.contains('opacity-75')).toBe(true)
+    })
+
+    it('does not apply opacity-75 class when resolved is false even if loading', () => {
+      const { container } = renderItemWithRunner('OK', {
+        resolved: false,
+        refreshing: true
+      })
+      const row = container.querySelector('tr')
+      expect(row?.classList.contains('opacity-75')).toBe(false)
+    })
+
+    it('does not apply opacity-75 class when isLoading is false even if resolved', () => {
+      const { container } = renderItemWithRunner('OK', {
+        resolved: true,
+        refreshing: false
+      })
+      const row = container.querySelector('tr')
+      // opacity-75 requires both isLoading AND resolved
+      expect(row?.classList.contains('opacity-75')).toBe(false)
     })
   })
 })
