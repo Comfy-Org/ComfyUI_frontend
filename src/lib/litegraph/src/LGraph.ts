@@ -1672,14 +1672,15 @@ export class LGraph
     this.beforeChange()
 
     try {
-      const mapper = (item: Positionable): Positionable[] => {
+      function extractNodes(item: Positionable): Positionable[] {
         if (!(item instanceof LGraphNode) || !item.convertToNodes) return [item]
 
         const innerNodes = item.convertToNodes()
         for (const innerNode of innerNodes) innerNode.updateArea()
         return innerNodes
       }
-      return this._convertToSubgraphImpl(new Set([...items].flatMap(mapper)))
+      const processedItems = new Set([...items].flatMap(extractNodes))
+      return this._convertToSubgraphImpl(processedItems)
     } finally {
       // Mark state change complete for proper undo support
       this.afterChange()
