@@ -203,6 +203,69 @@ describe('useMinimapGraph', () => {
     expect(onGraphChangedMock).not.toHaveBeenCalled()
   })
 
+  it('onTrigger wrapper forwards to original and fires on visual property changes', () => {
+    const originalOnTrigger = vi.fn()
+    mockGraph.onTrigger = originalOnTrigger
+
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    graphManager.setupEventListeners()
+
+    const colorEvent = {
+      type: 'node:property:changed',
+      nodeId: '1',
+      property: 'color',
+      oldValue: '',
+      newValue: '#fff'
+    } as const
+    mockGraph.onTrigger!(colorEvent)
+
+    expect(originalOnTrigger).toHaveBeenCalledWith(colorEvent)
+    expect(onGraphChangedMock).toHaveBeenCalled()
+  })
+
+  it('onTrigger wrapper ignores unrelated property changes', () => {
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    graphManager.setupEventListeners()
+
+    mockGraph.onTrigger!({
+      type: 'node:property:changed',
+      nodeId: '1',
+      property: 'title',
+      oldValue: 'a',
+      newValue: 'b'
+    })
+
+    expect(onGraphChangedMock).not.toHaveBeenCalled()
+  })
+
+  it('buried onTrigger wrapper becomes inert after cleanup', () => {
+    const originalOnTrigger = vi.fn()
+    mockGraph.onTrigger = originalOnTrigger
+
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    graphManager.setupEventListeners()
+    const buriedTrigger = mockGraph.onTrigger
+
+    mockGraph.onTrigger = vi.fn()
+    graphManager.cleanupEventListeners()
+    vi.mocked(onGraphChangedMock).mockClear()
+
+    const event = {
+      type: 'node:property:changed',
+      nodeId: '1',
+      property: 'mode',
+      oldValue: 0,
+      newValue: 1
+    } as const
+    buriedTrigger!(event)
+
+    expect(originalOnTrigger).toHaveBeenCalledWith(event)
+    expect(onGraphChangedMock).not.toHaveBeenCalled()
+  })
+
   it('should detect node position changes', () => {
     const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
