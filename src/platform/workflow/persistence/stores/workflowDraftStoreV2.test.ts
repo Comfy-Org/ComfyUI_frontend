@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { MAX_DRAFTS } from '../base/draftTypes'
+import { StorageKeys } from '../base/storageKeys'
 import { useWorkflowDraftStoreV2 } from './workflowDraftStoreV2'
 
 vi.mock('@/scripts/api', () => ({
@@ -130,6 +131,48 @@ describe('workflowDraftStoreV2', () => {
       // First draft should be evicted
       expect(store.getDraft('workflows/draft0.json')).toBeNull()
       expect(store.getDraft('workflows/new.json')).not.toBeNull()
+    })
+
+    it('evicts the oldest draft and retries when a payload write hits quota', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      for (let i = 0; i < MAX_DRAFTS - 1; i++) {
+        store.saveDraft(`workflows/draft${i}.json`, `{"id":${i}}`, {
+          name: `draft${i}`,
+          isTemporary: true
+        })
+      }
+
+      const originalSetItem = localStorage.setItem.bind(localStorage)
+      const newDraftPayloadKey = StorageKeys.draftPayload(
+        'workflows/new.json',
+        'personal'
+      )
+      let quotaFailureInjected = false
+      const setItemSpy = vi
+        .spyOn(localStorage, 'setItem')
+        .mockImplementation((key: string, value: string) => {
+          if (key === newDraftPayloadKey && !quotaFailureInjected) {
+            quotaFailureInjected = true
+            throw new DOMException('Quota exceeded', 'QuotaExceededError')
+          }
+
+          return originalSetItem(key, value)
+        })
+
+      try {
+        const result = store.saveDraft('workflows/new.json', '{"id":"new"}', {
+          name: 'new',
+          isTemporary: true
+        })
+
+        expect(result).toBe(true)
+        expect(quotaFailureInjected).toBe(true)
+        expect(store.getDraft('workflows/draft0.json')).toBeNull()
+        expect(store.getDraft('workflows/new.json')?.data).toBe('{"id":"new"}')
+      } finally {
+        setItemSpy.mockRestore()
+      }
     })
   })
 
