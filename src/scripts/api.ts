@@ -113,6 +113,8 @@ interface QueuePromptRequestBody {
      * 'default' uses the server's CLI setting.
      */
     preview_method?: PreviewMethod
+    /** Opaque tag dict echoed top-level on every WS frame for this prompt. */
+    metadata?: Record<string, unknown>
   }
   front?: boolean
   number?: number
@@ -871,7 +873,10 @@ export class ComfyApi extends EventTarget {
         ...(options?.previewMethod &&
           options.previewMethod !== 'default' && {
             preview_method: options.previewMethod
-          })
+          }),
+        ...(workflow?.id && {
+          metadata: { workflow_id: workflow.id }
+        })
       }
     }
 
