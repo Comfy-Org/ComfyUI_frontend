@@ -94,7 +94,9 @@ const isOpen = defineModel<boolean>('isOpen', { default: false })
 
 const toastStore = useToastStore()
 const popoverRef = ref<InstanceType<typeof Popover>>()
-const triggerRef = useTemplateRef('triggerRef')
+const triggerAnchorRef = useTemplateRef<HTMLElement>('triggerAnchorRef')
+const triggerRef =
+  useTemplateRef<InstanceType<typeof FormDropdownInput>>('triggerRef')
 const displayedSearchQuery = ref('')
 const isFiltering = ref(false)
 
@@ -176,14 +178,14 @@ function internalIsSelected(item: FormDropdownItem, index: number): boolean {
 
 const toggleDropdown = (event: Event) => {
   if (disabled) return
-  if (popoverRef.value && triggerRef.value) {
-    popoverRef.value.toggle?.(event, triggerRef.value)
+  if (popoverRef.value && triggerAnchorRef.value) {
+    popoverRef.value.toggle?.(event, triggerAnchorRef.value)
     isOpen.value = !isOpen.value
   }
 }
 
 function focusTrigger() {
-  triggerRef.value?.querySelector('button')?.focus()
+  triggerRef.value?.focus()
 }
 
 const closeDropdown = ({ restoreFocus = false } = {}) => {
@@ -262,8 +264,9 @@ function handleSearchEnter() {
 </script>
 
 <template>
-  <div ref="triggerRef">
+  <div ref="triggerAnchorRef">
     <FormDropdownInput
+      ref="triggerRef"
       :files
       :is-open
       :placeholder="placeholderText"

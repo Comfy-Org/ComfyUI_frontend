@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -42,8 +43,18 @@ const MockFormDropdownMenu = {
 
 const MockFormDropdownInput = {
   name: 'FormDropdownInput',
+  setup(
+    _: unknown,
+    { expose }: { expose: (exposed: { focus: () => void }) => void }
+  ) {
+    const triggerButton = ref<HTMLButtonElement>()
+    expose({
+      focus: () => triggerButton.value?.focus()
+    })
+    return { triggerButton }
+  },
   template:
-    '<button class="mock-dropdown-trigger" @click="$emit(\'select-click\', $event)">Open</button>'
+    '<button ref="triggerButton" class="mock-dropdown-trigger" @click="$emit(\'select-click\', $event)">Open</button>'
 }
 
 const MockPopover = {
