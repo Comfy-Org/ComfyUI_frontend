@@ -14,11 +14,14 @@ import SubscribeToRunButton from '@/platform/cloud/subscription/components/Subsc
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import LinearRunErrorWarning from '@/renderer/extensions/linearMode/LinearRunErrorWarning.vue'
 import PartnerNodesList from '@/renderer/extensions/linearMode/PartnerNodesList.vue'
 import { useCommandStore } from '@/stores/commandStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const { batchCount } = storeToRefs(useQueueSettingsStore())
@@ -28,6 +31,7 @@ const workflowStore = useWorkflowStore()
 const { isBuilderMode } = useAppMode()
 const appModeStore = useAppModeStore()
 const { hasOutputs } = storeToRefs(appModeStore)
+const { hasAnyError } = storeToRefs(useExecutionErrorStore())
 
 const { toastTo, mobile } = defineProps<{
   toastTo?: string | HTMLElement
@@ -137,6 +141,7 @@ function handleDragDrop() {
         data-testid="linear-run-button"
         class="border-t border-node-component-border p-4 pb-6"
       >
+        <LinearRunErrorWarning v-if="hasAnyError" />
         <SubscribeToRunButton
           v-if="!isActiveSubscription"
           class="mt-4 w-full"
@@ -168,7 +173,13 @@ function handleDragDrop() {
             size="lg"
             @click="runButtonClick"
           >
-            <i class="icon-[lucide--play]" />
+            <i
+              :class="
+                hasAnyError
+                  ? 'icon-[lucide--triangle-alert]'
+                  : 'icon-[lucide--play]'
+              "
+            />
             {{ t('menu.run') }}
           </Button>
         </div>
@@ -178,6 +189,7 @@ function handleDragDrop() {
         data-testid="linear-run-button"
         class="border-t border-node-component-border p-4 pb-6"
       >
+        <LinearRunErrorWarning v-if="hasAnyError" />
         <div
           class="m-1 mb-2 text-node-component-slot-text"
           v-text="t('linearMode.runCount')"
@@ -200,7 +212,13 @@ function handleDragDrop() {
           size="lg"
           @click="runButtonClick"
         >
-          <i class="icon-[lucide--play]" />
+          <i
+            :class="
+              hasAnyError
+                ? 'icon-[lucide--triangle-alert]'
+                : 'icon-[lucide--play]'
+            "
+          />
           {{ t('menu.run') }}
         </Button>
       </section>

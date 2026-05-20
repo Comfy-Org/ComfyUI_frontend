@@ -67,16 +67,14 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
+import { useViewErrorsInGraph } from '@/components/error/useViewErrorsInGraph'
 
 const { appMode = false } = defineProps<{ appMode?: boolean }>()
 
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
-const rightSidePanelStore = useRightSidePanelStore()
-const canvasStore = useCanvasStore()
+const { viewErrorsInGraph } = useViewErrorsInGraph()
 
 const { isVisible, overlayMessage, overlayTitle } = useErrorOverlayState()
 
@@ -85,13 +83,6 @@ function dismiss() {
 }
 
 function seeErrors() {
-  canvasStore.linearMode = false
-  if (canvasStore.canvas) {
-    canvasStore.canvas.deselectAll()
-    canvasStore.updateSelectedItems()
-  }
-
-  rightSidePanelStore.openPanel('errors')
-  executionErrorStore.dismissErrorOverlay()
+  viewErrorsInGraph()
 }
 </script>
