@@ -1,4 +1,4 @@
-import { remove, toString } from 'es-toolkit/compat'
+import { toString } from 'es-toolkit/compat'
 
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
@@ -1672,15 +1672,14 @@ export class LGraph
     this.beforeChange()
 
     try {
-      const itemsArray = [...items]
-      const isGroupNode = (i: Positionable) =>
-        i instanceof LGraphNode && !!i.convertToNodes
-      for (const groupNode of remove(itemsArray, isGroupNode) as LGraphNode[])
-        for (const innerNode of groupNode.convertToNodes!()) {
-          innerNode.updateArea()
-          itemsArray.push(innerNode)
-        }
-      return this._convertToSubgraphImpl(new Set(itemsArray))
+      const mapper = (item: Positionable): Positionable[] => {
+        if (!(item instanceof LGraphNode) || !item.convertToNodes) return [item]
+
+        const innerNodes = item.convertToNodes()
+        for (const innerNode of innerNodes) innerNode.updateArea()
+        return innerNodes
+      }
+      return this._convertToSubgraphImpl(new Set([...items].flatMap(mapper)))
     } finally {
       // Mark state change complete for proper undo support
       this.afterChange()

@@ -371,5 +371,5 @@ test('Convert to subgraph unpacks the group Node @vue-nodes', async ({
   await expect(comfyPage.vueNodes.getNodeByTitle('New Subgraph')).toBeVisible()
 
   await comfyPage.vueNodes.enterSubgraph()
-  await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(2)
+  await expect(comfyPage.vueNodes.getNodeByTitle('')).toHaveCount(2)
 })
