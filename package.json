@@ -52,8 +52,7 @@
     "typecheck:browser": "vue-tsc --project browser_tests/tsconfig.json",
     "typecheck:desktop": "pnpm --filter @comfyorg/desktop-ui run typecheck",
     "typecheck:website": "pnpm --filter @comfyorg/website run typecheck",
-    "zipdist": "node scripts/zipdist.js",
-    "clean": "node -e \"const fs=require('node:fs'); ['dist','dist-ssr','coverage','playwright-report','blob-report','test-results','node_modules/.vite','apps/desktop-ui/dist','apps/website/dist','.turbo'].forEach((p)=>fs.rmSync(p,{recursive:true,force:true}))\""
+    "zipdist": "node scripts/zipdist.js"
   },
   "dependencies": {
     "@alloc/quick-lru": "catalog:",
