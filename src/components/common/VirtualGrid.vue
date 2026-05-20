@@ -1,7 +1,7 @@
 <template>
   <div
     ref="container"
-    class="scrollbar-thin scrollbar-thumb-(--dialog-surface) scrollbar-track-transparent scrollbar-gutter-stable h-full overflow-y-auto [overflow-anchor:none]"
+    class="h-full scrollbar-thin scrollbar-thumb-(--dialog-surface) scrollbar-track-transparent scrollbar-gutter-stable overflow-y-auto [overflow-anchor:none]"
   >
     <div :style="topSpacerStyle" />
     <div :style="mergedGridStyle">
