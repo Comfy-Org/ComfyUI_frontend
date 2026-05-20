@@ -407,7 +407,7 @@ const {
   getMaxSeats
 } = useBillingContext()
 
-const { showCancelSubscriptionDialog } = useDialogService()
+const { launchCancellationFlow } = useDialogService()
 const { showPricingTable } = useSubscriptionDialog()
 
 const isResubscribing = ref(false)
@@ -519,7 +519,7 @@ const planMenuItems = computed(() => [
     label: t('subscription.cancelSubscription'),
     icon: 'pi pi-times',
     command: () => {
-      showCancelSubscriptionDialog(subscription.value?.endDate ?? undefined)
+      void launchCancellationFlow(subscription.value?.endDate ?? undefined)
     }
   }
 ])

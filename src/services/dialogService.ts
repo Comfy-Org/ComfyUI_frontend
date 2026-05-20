@@ -588,16 +588,15 @@ export const useDialogService = () => {
   }
 
   async function showCancelSubscriptionDialog(cancelAt?: string) {
-    const { default: component } =
-      await import('@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue')
-    return dialogStore.showDialog({
-      key: 'cancel-subscription',
-      component,
-      props: { cancelAt },
-      dialogComponentProps: {
-        ...workspaceDialogPt
-      }
-    })
+    const { showCancelSubscriptionDialog: show } =
+      await import('@/platform/cloud/subscription/showCancelSubscriptionDialog')
+    return show(cancelAt)
+  }
+
+  async function launchCancellationFlow(cancelAt?: string): Promise<void> {
+    const { launchCancellationFlow: launch } =
+      await import('@/platform/cloud/subscription/launchCancellationFlow')
+    return launch(cancelAt)
   }
 
   /** Shows one-time cloud notification modal for macOS desktop users. */
@@ -661,6 +660,7 @@ export const useDialogService = () => {
     showInviteMemberDialog,
     showInviteMemberUpsellDialog,
     showBillingComingSoonDialog,
-    showCancelSubscriptionDialog
+    showCancelSubscriptionDialog,
+    launchCancellationFlow
   }
 }
