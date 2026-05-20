@@ -74,6 +74,22 @@ export interface RunButtonProperties {
 }
 
 /**
+ * Classifies how a template workflow has been edited relative to its
+ * original baseline at the time of execution. Used to distinguish runs
+ * that explore variations (seed/prompt only) from runs that materially
+ * change the workflow graph.
+ *
+ * Only meaningful when `is_template = true` and a baseline was captured
+ * when the template was loaded. Omitted otherwise.
+ */
+export type TemplateChangeType =
+  | 'unchanged'
+  | 'seed_only'
+  | 'prompt_only'
+  | 'seed_and_prompt'
+  | 'structural'
+
+/**
  * Execution context for workflow tracking
  */
 export interface ExecutionContext {
@@ -86,6 +102,7 @@ export interface ExecutionContext {
   template_models?: string[]
   template_use_case?: string
   template_license?: string
+  template_change_type?: TemplateChangeType
   // Node composition metrics
   custom_node_count: number
   api_node_count: number
