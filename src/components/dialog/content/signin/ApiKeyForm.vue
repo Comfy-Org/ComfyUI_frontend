@@ -120,7 +120,7 @@ const emit = defineEmits<{
   (e: 'success'): void
 }>()
 
-const onSubmit = async (event: FormSubmitEvent) => {
+async function onSubmit(event: FormSubmitEvent) {
   if (event.valid) {
     await apiKeyStore.storeApiKey(event.values.apiKey)
     emit('success')

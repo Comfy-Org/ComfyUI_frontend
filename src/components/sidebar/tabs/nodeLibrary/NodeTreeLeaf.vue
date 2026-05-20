@@ -112,17 +112,17 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
 
-const toggleBookmark = async () => {
+async function toggleBookmark() {
   await nodeBookmarkStore.toggleBookmark(nodeDef.value)
 }
 
-const onHelpClick = () => {
+function onHelpClick() {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'node_library_help_button'
   })
   props.openNodeHelp(nodeDef.value)
 }
-const editBlueprint = async () => {
+async function editBlueprint() {
   if (!props.node.data)
     throw new Error(
       'Failed to edit subgraph blueprint lacking backing node data'
@@ -167,7 +167,7 @@ const nodePreviewStyle = ref<CSSProperties>({
   zIndex: 1001
 })
 
-const handleNodeHover = async () => {
+async function handleNodeHover() {
   const hoverTarget = nodeContentElement.value
   if (!hoverTarget) return
 
@@ -186,12 +186,12 @@ const handleNodeHover = async () => {
 const container = ref<HTMLElement | null>(null)
 const nodeContentElement = ref<HTMLElement | null>(null)
 const isHovered = ref(false)
-const handleMouseEnter = async () => {
+async function handleMouseEnter() {
   isHovered.value = true
   await nextTick()
   await handleNodeHover()
 }
-const handleMouseLeave = () => {
+function handleMouseLeave() {
   isHovered.value = false
 }
 onMounted(() => {

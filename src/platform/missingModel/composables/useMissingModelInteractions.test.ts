@@ -590,7 +590,7 @@ describe('useMissingModelInteractions', () => {
   })
 
   describe('handleImport', () => {
-    const setupImportableState = (key: string) => {
+    function setupImportableState(key: string) {
       const store = useMissingModelStore()
       store.urlInputs[key] = 'https://civitai.com/models/123'
       store.urlMetadata[key] = {

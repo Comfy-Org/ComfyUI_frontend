@@ -57,7 +57,7 @@ const filters = [
   { type: '3d', label: 'sideToolbar.mediaAssets.filter3D' }
 ]
 
-const toggleMediaType = (type: string) => {
+function toggleMediaType(type: string) {
   const isCurrentlySelected = mediaTypeFilters.includes(type)
   if (isCurrentlySelected) {
     emit(

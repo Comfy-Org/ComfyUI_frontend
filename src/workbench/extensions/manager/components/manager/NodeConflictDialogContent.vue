@@ -220,19 +220,19 @@ const importFailedConflicts = computed(() => {
   )
 })
 
-const toggleImportFailedPanel = () => {
+function toggleImportFailedPanel() {
   importFailedExpanded.value = !importFailedExpanded.value
   conflictsExpanded.value = false
   extensionsExpanded.value = false
 }
 
-const toggleConflictsPanel = () => {
+function toggleConflictsPanel() {
   conflictsExpanded.value = !conflictsExpanded.value
   extensionsExpanded.value = false
   importFailedExpanded.value = false
 }
 
-const toggleExtensionsPanel = () => {
+function toggleExtensionsPanel() {
   extensionsExpanded.value = !extensionsExpanded.value
   conflictsExpanded.value = false
   importFailedExpanded.value = false

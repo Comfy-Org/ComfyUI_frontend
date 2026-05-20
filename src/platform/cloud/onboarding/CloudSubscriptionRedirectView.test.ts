@@ -4,7 +4,9 @@ import { createI18n } from 'vue-i18n'
 
 import CloudSubscriptionRedirectView from './CloudSubscriptionRedirectView.vue'
 
-const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
+function flushPromises() {
+  return new Promise((resolve) => setTimeout(resolve, 0))
+}
 
 // Router mocks
 let mockQuery: Record<string, unknown> = {}
@@ -59,8 +61,8 @@ vi.mock('@/platform/cloud/subscription/utils/subscriptionCheckoutUtil', () => ({
     mockPerformSubscriptionCheckout(...args)
 }))
 
-const createI18nInstance = () =>
-  createI18n({
+function createI18nInstance() {
+  return createI18n({
     legacy: false,
     locale: 'en',
     messages: {
@@ -82,8 +84,9 @@ const createI18nInstance = () =>
       }
     }
   })
+}
 
-const mountView = async (query: Record<string, unknown>) => {
+async function mountView(query: Record<string, unknown>) {
   mockQuery = query
 
   const { container } = render(CloudSubscriptionRedirectView, {

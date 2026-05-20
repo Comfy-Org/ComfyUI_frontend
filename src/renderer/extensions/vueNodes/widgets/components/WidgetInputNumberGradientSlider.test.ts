@@ -67,8 +67,12 @@ function renderComponent(
   })
 }
 
-const getGradientSlider = () => screen.getByTestId('gradient-slider')
-const getNumberInput = () => screen.getByRole('spinbutton') as HTMLInputElement
+function getGradientSlider() {
+  return screen.getByTestId('gradient-slider')
+}
+function getNumberInput() {
+  return screen.getByRole('spinbutton') as HTMLInputElement
+}
 
 describe('WidgetInputNumberGradientSlider', () => {
   describe('Value and bounds pass-through', () => {

@@ -273,13 +273,15 @@ export function useSettingUI(
     return settingCategories.value[0]
   })
 
-  const translateCategory = (node: SettingTreeNode) => ({
-    ...node,
-    translatedLabel: t(
-      `settingsCategories.${normalizeI18nKey(node.label)}`,
-      node.label
-    )
-  })
+  function translateCategory(node: SettingTreeNode) {
+    return {
+      ...node,
+      translatedLabel: t(
+        `settingsCategories.${normalizeI18nKey(node.label)}`,
+        node.label
+      )
+    }
+  }
 
   // Sidebar structure when team workspaces is enabled
   const workspaceMenuTreeNodes = computed<SettingTreeNode[]>(() => [

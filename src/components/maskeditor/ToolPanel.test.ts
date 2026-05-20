@@ -21,13 +21,14 @@ vi.mock('@/extensions/core/maskeditor/constants', () => ({
   }
 }))
 
-const initialMock = () =>
-  reactive({
+function initialMock() {
+  return reactive({
     currentTool: Tools.MaskPen as Tools,
     displayZoomRatio: 1,
     image: null as { width: number; height: number } | null,
     resetZoom: vi.fn()
   })
+}
 
 let mockStore: ReturnType<typeof initialMock>
 
@@ -51,13 +52,14 @@ const mockToolManager = vi.hoisted(() => ({
   switchTool: vi.fn()
 }))
 
-const renderPanel = () =>
-  render(ToolPanel, {
+function renderPanel() {
+  return render(ToolPanel, {
     global: { plugins: [i18n] },
     props: { toolManager: mockToolManager as unknown as ToolManager }
   })
+}
 
-const getToolButton = (tool: Tools): HTMLElement => {
+function getToolButton(tool: Tools): HTMLElement {
   const btns = screen.getAllByTestId('tool-button')
   const match = btns.find((b) => b.dataset.tool === tool)
   if (!match) throw new Error(`tool button for "${tool}" not found`)

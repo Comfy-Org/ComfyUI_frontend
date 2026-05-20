@@ -78,7 +78,9 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const lastTokenUserId = ref<string | null>(null)
 
-  const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
+  function buildApiUrl(path: string) {
+    return `${getComfyApiBaseUrl()}${path}`
+  }
 
   // Providers
   const googleProvider = new GoogleAuthProvider()
@@ -130,7 +132,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   })
 
-  const getIdToken = async (): Promise<string | undefined> => {
+  async function getIdToken(): Promise<string | undefined> {
     if (!currentUser.value) return
     try {
       return await currentUser.value.getIdToken()
@@ -165,7 +167,7 @@ export const useAuthStore = defineStore('auth', () => {
    *   - An ApiKeyAuthHeader with X-API-KEY if API key exists
    *   - null if no authentication method is available
    */
-  const getAuthHeader = async (): Promise<AuthHeader | null> => {
+  async function getAuthHeader(): Promise<AuthHeader | null> {
     if (flags.teamWorkspacesEnabled) {
       const wsHeader = useWorkspaceAuthStore().getWorkspaceAuthHeader()
       if (wsHeader) return wsHeader
@@ -185,7 +187,7 @@ export const useAuthStore = defineStore('auth', () => {
    * Returns Firebase auth header for user-scoped endpoints (e.g., /customers/*).
    * Use this for endpoints that need user identity, not workspace context.
    */
-  const getFirebaseAuthHeader = async (): Promise<AuthHeader | null> => {
+  async function getFirebaseAuthHeader(): Promise<AuthHeader | null> {
     const token = await getIdToken()
     return token ? { Authorization: `Bearer ${token}` } : null
   }
@@ -195,7 +197,7 @@ export const useAuthStore = defineStore('auth', () => {
    * Priority: workspace token > Firebase token.
    * Use this for WebSocket connections and backend node auth.
    */
-  const getAuthToken = async (): Promise<string | undefined> => {
+  async function getAuthToken(): Promise<string | undefined> {
     if (flags.teamWorkspacesEnabled) {
       const wsToken = useWorkspaceAuthStore().getWorkspaceToken()
       if (wsToken) return wsToken
@@ -204,7 +206,7 @@ export const useAuthStore = defineStore('auth', () => {
     return await getIdToken()
   }
 
-  const getAuthHeaderOrThrow = async (): Promise<AuthHeader> => {
+  async function getAuthHeaderOrThrow(): Promise<AuthHeader> {
     const authHeader = await getAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
@@ -212,7 +214,7 @@ export const useAuthStore = defineStore('auth', () => {
     return authHeader
   }
 
-  const getFirebaseAuthHeaderOrThrow = async (): Promise<AuthHeader> => {
+  async function getFirebaseAuthHeaderOrThrow(): Promise<AuthHeader> {
     const authHeader = await getFirebaseAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
@@ -220,7 +222,7 @@ export const useAuthStore = defineStore('auth', () => {
     return authHeader
   }
 
-  const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
+  async function fetchBalance(): Promise<GetCustomerBalanceResponse | null> {
     isFetchingBalance.value = true
     try {
       const authHeader = await getAuthHeader()
@@ -258,7 +260,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const createCustomer = async (): Promise<CreateCustomerResponse> => {
+  async function createCustomer(): Promise<CreateCustomerResponse> {
     const authHeader = await getAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
@@ -292,12 +294,12 @@ export const useAuthStore = defineStore('auth', () => {
     return createCustomerResJson
   }
 
-  const executeAuthAction = async <T>(
+  async function executeAuthAction<T>(
     action: (auth: Auth) => Promise<T>,
     options: {
       createCustomer?: boolean
     } = {}
-  ): Promise<T> => {
+  ): Promise<T> {
     loading.value = true
 
     try {
@@ -318,10 +320,10 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const login = async (
+  async function login(
     email: string,
     password: string
-  ): Promise<UserCredential> => {
+  ): Promise<UserCredential> {
     const result = await executeAuthAction(
       (authInstance) =>
         signInWithEmailAndPassword(authInstance, email, password),
@@ -340,10 +342,10 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
-  const register = async (
+  async function register(
     email: string,
     password: string
-  ): Promise<UserCredential> => {
+  ): Promise<UserCredential> {
     const result = await executeAuthAction(
       (authInstance) =>
         createUserWithEmailAndPassword(authInstance, email, password),
@@ -362,9 +364,9 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
-  const loginWithGoogle = async (options?: {
+  async function loginWithGoogle(options?: {
     isNewUser?: boolean
-  }): Promise<UserCredential> => {
+  }): Promise<UserCredential> {
     const result = await executeAuthAction(
       (authInstance) => signInWithPopup(authInstance, googleProvider),
       { createCustomer: true }
@@ -384,9 +386,9 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
-  const loginWithGithub = async (options?: {
+  async function loginWithGithub(options?: {
     isNewUser?: boolean
-  }): Promise<UserCredential> => {
+  }): Promise<UserCredential> {
     const result = await executeAuthAction(
       (authInstance) => signInWithPopup(authInstance, githubProvider),
       { createCustomer: true }
@@ -406,25 +408,27 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
-  const logout = async (): Promise<void> =>
-    executeAuthAction((authInstance) => signOut(authInstance))
+  async function logout(): Promise<void> {
+    return executeAuthAction((authInstance) => signOut(authInstance))
+  }
 
-  const sendPasswordReset = async (email: string): Promise<void> =>
-    executeAuthAction((authInstance) =>
+  async function sendPasswordReset(email: string): Promise<void> {
+    return executeAuthAction((authInstance) =>
       sendPasswordResetEmail(authInstance, email)
     )
+  }
 
   /** Update password for current user */
-  const _updatePassword = async (newPassword: string): Promise<void> => {
+  async function _updatePassword(newPassword: string): Promise<void> {
     if (!currentUser.value) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
     await updatePassword(currentUser.value, newPassword)
   }
 
-  const addCredits = async (
+  async function addCredits(
     requestBodyContent: CreditPurchasePayload
-  ): Promise<CreditPurchaseResponse> => {
+  ): Promise<CreditPurchaseResponse> {
     const authHeader = await getAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
@@ -457,14 +461,15 @@ export const useAuthStore = defineStore('auth', () => {
     return response.json()
   }
 
-  const initiateCreditPurchase = async (
+  async function initiateCreditPurchase(
     requestBodyContent: CreditPurchasePayload
-  ): Promise<CreditPurchaseResponse> =>
-    executeAuthAction((_) => addCredits(requestBodyContent))
+  ): Promise<CreditPurchaseResponse> {
+    return executeAuthAction((_) => addCredits(requestBodyContent))
+  }
 
-  const accessBillingPortal = async (
+  async function accessBillingPortal(
     targetTier?: BillingPortalTargetTier
-  ): Promise<AccessBillingPortalResponse> => {
+  ): Promise<AccessBillingPortalResponse> {
     const authHeader = await getAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))

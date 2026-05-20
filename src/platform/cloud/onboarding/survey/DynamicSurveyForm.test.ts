@@ -8,7 +8,9 @@ import type { OnboardingSurvey } from '@/platform/remoteConfig/types'
 
 import DynamicSurveyForm from './DynamicSurveyForm.vue'
 
-const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
+function flushPromises() {
+  return new Promise((resolve) => setTimeout(resolve, 0))
+}
 
 const i18n = createI18n({
   legacy: false,
@@ -30,11 +32,12 @@ const i18n = createI18n({
   }
 })
 
-const renderForm = (survey: OnboardingSurvey) =>
-  render(DynamicSurveyForm, {
+function renderForm(survey: OnboardingSurvey) {
+  return render(DynamicSurveyForm, {
     global: { plugins: [PrimeVue, i18n] },
     props: { survey }
   })
+}
 
 const twoStepSurvey: OnboardingSurvey = {
   version: 1,

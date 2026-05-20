@@ -6,7 +6,7 @@ import { isValidUrl } from '@/utils/formatUtil'
  * @param mirror - The mirror to check.
  * @returns True if the mirror is reachable, false otherwise.
  */
-export const checkMirrorReachable = async (mirror: string) => {
+export async function checkMirrorReachable(mirror: string) {
   return (
     isValidUrl(mirror) && (await electronAPI().NetWork.canAccessUrl(mirror))
   )

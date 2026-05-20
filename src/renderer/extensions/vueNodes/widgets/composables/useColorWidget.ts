@@ -6,7 +6,7 @@ import type {
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 
-export const useColorWidget = (): ComfyWidgetConstructorV2 => {
+export function useColorWidget(): ComfyWidgetConstructorV2 {
   return (node: LGraphNode, inputSpec: InputSpecV2): IColorWidget => {
     const { name, options } = inputSpec as ColorInputSpec
     const defaultValue = options?.default || '#000000'

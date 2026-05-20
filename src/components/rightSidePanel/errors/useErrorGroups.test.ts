@@ -113,7 +113,9 @@ function makeModel(
 function createErrorGroups() {
   const store = useExecutionErrorStore()
   const searchQuery = ref('')
-  const t = (key: string) => key
+  function t(key: string) {
+    return key
+  }
   const groups = useErrorGroups(searchQuery, t)
   return { store, searchQuery, groups }
 }

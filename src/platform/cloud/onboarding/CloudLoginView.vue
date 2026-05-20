@@ -142,11 +142,11 @@ function switchToSocialLogin() {
   showEmailForm.value = false
 }
 
-const navigateToSignup = async () => {
+async function navigateToSignup() {
   await router.push({ name: 'cloud-signup', query: route.query })
 }
 
-const onSuccess = async () => {
+async function onSuccess() {
   toastStore.add({
     severity: 'success',
     summary: 'Login Completed',
@@ -162,21 +162,21 @@ const onSuccess = async () => {
   await router.push({ name: 'cloud-user-check' })
 }
 
-const signInWithGoogle = async () => {
+async function signInWithGoogle() {
   authError.value = ''
   if (await authActions.signInWithGoogle()) {
     await onSuccess()
   }
 }
 
-const signInWithGithub = async () => {
+async function signInWithGithub() {
   authError.value = ''
   if (await authActions.signInWithGithub()) {
     await onSuccess()
   }
 }
 
-const signInWithEmail = async (values: SignInData) => {
+async function signInWithEmail(values: SignInData) {
   authError.value = ''
   if (await authActions.signInWithEmail(values.email, values.password)) {
     await onSuccess()

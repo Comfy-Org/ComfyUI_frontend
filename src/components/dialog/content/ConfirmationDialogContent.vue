@@ -61,14 +61,18 @@
         <i class="pi pi-undo" />
         {{ $t('g.cancel') }}
       </Button>
-      <Button v-if="type === 'default'" variant="primary" @click="onConfirm">
+      <Button
+        v-if="type === 'default'"
+        variant="primary"
+        @click="handleConfirm"
+      >
         <i class="pi pi-check" />
         {{ $t('g.confirm') }}
       </Button>
       <Button
         v-else-if="type === 'delete'"
         variant="destructive"
-        @click="onConfirm"
+        @click="handleConfirm"
       >
         <i class="pi pi-trash" />
         {{ $t('g.delete') }}
@@ -76,7 +80,7 @@
       <Button
         v-else-if="type === 'overwrite' || type === 'overwriteBlueprint'"
         variant="destructive"
-        @click="onConfirm"
+        @click="handleConfirm"
       >
         <i class="pi pi-save" />
         {{ $t('g.overwrite') }}
@@ -86,7 +90,7 @@
           <i class="pi pi-times" />
           {{ denyLabel ?? $t('g.no') }}
         </Button>
-        <Button autofocus @click="onConfirm">
+        <Button autofocus @click="handleConfirm">
           <i class="pi pi-save" />
           {{ $t('g.save') }}
         </Button>
@@ -94,7 +98,7 @@
       <Button
         v-else-if="type === 'reinstall'"
         variant="destructive"
-        @click="onConfirm"
+        @click="handleConfirm"
       >
         <i class="pi pi-eraser" />
         {{ $t('desktopMenu.reinstall') }}
@@ -133,7 +137,9 @@ const props = defineProps<{
 
 const { t } = useI18n()
 
-const onCancel = () => useDialogStore().closeDialog()
+function onCancel() {
+  return useDialogStore().closeDialog()
+}
 
 function openBlueprintOverwriteSetting() {
   useDialogStore().closeDialog()
@@ -142,12 +148,12 @@ function openBlueprintOverwriteSetting() {
 
 const doNotAskAgain = ref(false)
 
-const onDeny = () => {
+function onDeny() {
   props.onConfirm(false)
   useDialogStore().closeDialog()
 }
 
-const onConfirm = () => {
+function handleConfirm() {
   if (props.type === 'overwriteBlueprint' && doNotAskAgain.value)
     void useSettingStore().set('Comfy.Workflow.WarnBlueprintOverwrite', false)
   props.onConfirm(true)

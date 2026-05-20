@@ -438,7 +438,7 @@ async function nodeOnPointerdown(event: PointerEvent) {
 }
 
 // Handle right-click context menu
-const handleContextMenu = (event: MouseEvent) => {
+function handleContextMenu(event: MouseEvent) {
   event.preventDefault()
   event.stopPropagation()
 
@@ -523,10 +523,7 @@ const { startResize } = useNodeResize((result, element) => {
   }
 })
 
-const handleResizePointerDown = (
-  event: PointerEvent,
-  corner: CompassCorners
-) => {
+function handleResizePointerDown(event: PointerEvent, corner: CompassCorners) {
   if (event.button !== 0) return
   if (!shouldHandleNodePointerEvents.value) return
   if (nodeData.flags?.pinned) return
@@ -657,25 +654,25 @@ const mutedOverlayClass = computed(() => {
 })
 
 // Event handlers
-const handleCollapse = () => {
+function handleCollapse() {
   handleNodeCollapse(nodeData.id, !isCollapsed.value)
 }
 
-const handleHeaderTitleUpdate = (newTitle: string) => {
+function handleHeaderTitleUpdate(newTitle: string) {
   handleNodeTitleUpdate(nodeData.id, newTitle)
 }
 
 const rightSidePanelStore = useRightSidePanelStore()
 
-const handleOpenErrors = () => {
+function handleOpenErrors() {
   rightSidePanelStore.openPanel('errors')
 }
 
-const handleToggleAdvanced = () => {
+function handleToggleAdvanced() {
   showAdvancedState.value = !showAdvancedState.value
 }
 
-const handleEnterSubgraph = () => {
+function handleEnterSubgraph() {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'graph_node_open_subgraph_clicked'
   })

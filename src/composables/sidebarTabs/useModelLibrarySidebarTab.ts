@@ -5,7 +5,7 @@ import { isDesktop } from '@/platform/distribution/types'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 
-export const useModelLibrarySidebarTab = (): SidebarTabExtension => {
+export function useModelLibrarySidebarTab(): SidebarTabExtension {
   return {
     id: 'model-library',
     icon: 'icon-[comfy--ai-model]',

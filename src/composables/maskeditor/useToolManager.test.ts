@@ -98,9 +98,9 @@ const mockPanZoom = {
   removePenPointerId: vi.fn()
 }
 
-const pointerEvent = (
+function pointerEvent(
   init: Partial<PointerEvent> & { pointerType?: string }
-): PointerEvent => {
+): PointerEvent {
   return {
     preventDefault: vi.fn(),
     pointerId: 1,
@@ -118,7 +118,7 @@ const pointerEvent = (
 
 let scope: EffectScope | null = null
 
-const setup = (): ReturnType<typeof useToolManager> => {
+function setup(): ReturnType<typeof useToolManager> {
   scope = effectScope()
   return scope.run(() =>
     useToolManager(

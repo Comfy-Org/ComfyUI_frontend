@@ -101,7 +101,7 @@ describe('MediaLightbox', () => {
     document.body.innerHTML = ''
   })
 
-  const renderGallery = (props = {}) => {
+  function renderGallery(props = {}) {
     const onUpdateActiveIndex = vi.fn()
     const user = userEvent.setup()
     const { rerender, container } = render(MediaLightbox, {

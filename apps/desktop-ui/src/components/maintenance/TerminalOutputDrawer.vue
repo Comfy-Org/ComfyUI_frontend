@@ -34,10 +34,10 @@ const buffer = useTerminalBuffer()
 let xterm: Terminal | null = null
 
 // Created and destroyed with the Drawer - contents copied from hidden buffer
-const terminalCreated = (
+function terminalCreated(
   { terminal, useAutoSize }: ReturnType<typeof useTerminal>,
   root: Ref<HTMLElement | undefined>
-) => {
+) {
   xterm = terminal
   useAutoSize({ root, autoRows: true, autoCols: true })
   terminal.write(props.defaultMessage)
@@ -49,7 +49,7 @@ const terminalCreated = (
   terminal.options.disableStdin = true
 }
 
-const terminalUnmounted = () => {
+function terminalUnmounted() {
   xterm = null
 }
 

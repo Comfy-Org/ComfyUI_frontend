@@ -70,7 +70,7 @@ export function downloadBlob(filename: string, blob: Blob): void {
  * @param url - The URL to extract filename from
  * @returns The extracted filename or null if not found
  */
-const extractFilenameFromUrl = (url: string): string | null => {
+function extractFilenameFromUrl(url: string): string | null {
   try {
     const urlObj = new URL(url, window.location.origin)
     return urlObj.searchParams.get('filename')

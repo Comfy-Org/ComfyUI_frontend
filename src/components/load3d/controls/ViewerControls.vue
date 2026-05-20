@@ -32,7 +32,7 @@ const { node } = defineProps<{
   node: LGraphNode
 }>()
 
-const openIn3DViewer = () => {
+function openIn3DViewer() {
   const props = { node: node }
 
   useDialogStore().showDialog({

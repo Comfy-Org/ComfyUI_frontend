@@ -95,7 +95,7 @@ const renderedRoot = computed<RenderedTreeExplorerNode<T>>(() => {
     ? combineTrees(renderedRoot, newFolderNode.value)
     : renderedRoot
 })
-const getTreeNodeIcon = (node: TreeExplorerNode<T>) => {
+function getTreeNodeIcon(node: TreeExplorerNode<T>) {
   if (node.getIcon) {
     const icon = node.getIcon()
     if (icon) {
@@ -111,9 +111,7 @@ const getTreeNodeIcon = (node: TreeExplorerNode<T>) => {
   const isExpanded = expandedKeys.value?.[node.key] ?? false
   return isExpanded ? 'pi pi-folder-open' : 'pi pi-folder'
 }
-const fillNodeInfo = (
-  node: TreeExplorerNode<T>
-): RenderedTreeExplorerNode<T> => {
+function fillNodeInfo(node: TreeExplorerNode<T>): RenderedTreeExplorerNode<T> {
   const children = node.children?.map(fillNodeInfo) ?? []
   const totalLeaves = node.leaf
     ? 1
@@ -128,10 +126,10 @@ const fillNodeInfo = (
     isEditingLabel: node.key === renameEditingNode.value?.key
   }
 }
-const onNodeContentClick = async (
+async function onNodeContentClick(
   e: MouseEvent,
   node: RenderedTreeExplorerNode<T>
-) => {
+) {
   if (!storeSelectionKeys) {
     selectionKeys.value = {}
   }
@@ -152,10 +150,10 @@ const extraMenuItems = computed(() => {
 })
 const renameEditingNode = shallowRef<RenderedTreeExplorerNode<T> | null>(null)
 const errorHandling = useErrorHandling()
-const handleNodeLabelEdit = async (
+async function handleNodeLabelEdit(
   n: RenderedTreeExplorerNode,
   newName: string
-) => {
+) {
   const node = n as RenderedTreeExplorerNode<T>
   await errorHandling.wrapWithErrorHandlingAsync(
     async () => {
@@ -174,10 +172,10 @@ const handleNodeLabelEdit = async (
 provide(InjectKeyHandleEditLabelFunction, handleNodeLabelEdit)
 
 const { t } = useI18n()
-const renameCommand = (node: RenderedTreeExplorerNode<T>) => {
+function renameCommand(node: RenderedTreeExplorerNode<T>) {
   renameEditingNode.value = node
 }
-const deleteCommand = async (node: RenderedTreeExplorerNode<T>) => {
+async function deleteCommand(node: RenderedTreeExplorerNode<T>) {
   await node.handleDelete?.()
   emit('nodeDelete', node)
 }
@@ -217,10 +215,7 @@ const menuItems = computed<MenuItem[]>(() => {
   }))
 })
 
-const handleContextMenu = (
-  e: MouseEvent,
-  node: RenderedTreeExplorerNode<T>
-) => {
+function handleContextMenu(e: MouseEvent, node: RenderedTreeExplorerNode<T>) {
   menuTargetNode.value = node
   emit('contextMenu', node, e)
   if (menuItems.value.filter((item) => item.visible).length > 0) {
@@ -228,10 +223,10 @@ const handleContextMenu = (
   }
 }
 
-const wrapCommandWithErrorHandler = (
+function wrapCommandWithErrorHandler(
   command: (event: MenuItemCommandEvent) => void,
   { isAsync = false }: { isAsync: boolean }
-) => {
+) {
   const node = menuTargetNode.value
   return isAsync
     ? errorHandling.wrapWithErrorHandlingAsync(

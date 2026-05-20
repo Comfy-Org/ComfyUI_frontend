@@ -25,7 +25,7 @@ const CORE_NODES_PACK_NAME = 'comfy-core'
  * associated node packs from the registry.
  * This is a shared singleton composable - all components use the same instance.
  */
-const _useWorkflowPacks = () => {
+function _useWorkflowPacks() {
   const nodeDefStore = useNodeDefStore()
   const systemStatsStore = useSystemStatsStore()
   const { inferPackFromNodeName } = useComfyRegistryStore()
@@ -33,7 +33,7 @@ const _useWorkflowPacks = () => {
   const workflowPacks = ref<WorkflowPack[]>([])
   const unresolvedNodeNames = ref<string[]>([])
 
-  const getWorkflowNodePackId = (node: LGraphNode): string | undefined => {
+  function getWorkflowNodePackId(node: LGraphNode): string | undefined {
     if (typeof node.properties?.cnr_id === 'string') {
       return node.properties.cnr_id
     }
@@ -47,16 +47,17 @@ const _useWorkflowPacks = () => {
    * Clean the version string to be used in the registry search.
    * Removes the leading 'v' and trims whitespace and line terminators.
    */
-  const cleanVersionString = (version: string) =>
-    version.replace(/^v/, '').trim()
+  function cleanVersionString(version: string) {
+    return version.replace(/^v/, '').trim()
+  }
 
   /**
    * Infer the pack for a node by searching the registry for packs that have nodes
    * with the same name.
    */
-  const inferPack = async (
+  async function inferPack(
     node: LGraphNode
-  ): Promise<WorkflowPack | undefined> => {
+  ): Promise<WorkflowPack | undefined> {
     const nodeName = node.type
 
     // Check if node is a core node
@@ -92,9 +93,9 @@ const _useWorkflowPacks = () => {
    * If the node pack metadata is not available, fallback to searching the
    * registry for packs that have nodes with the same name.
    */
-  const workflowNodeToPack = async (
+  async function workflowNodeToPack(
     node: LGraphNode
-  ): Promise<WorkflowPack | undefined> => {
+  ): Promise<WorkflowPack | undefined> {
     const packId = getWorkflowNodePackId(node)
     if (!packId) return inferPack(node) // Fallback
     if (packId === CORE_NODES_PACK_NAME) return undefined
@@ -115,7 +116,7 @@ const _useWorkflowPacks = () => {
    * Nodes that have no local definition and no registry match are tracked
    * as unresolved so downstream consumers can surface them to the user.
    */
-  const getWorkflowPacks = async () => {
+  async function getWorkflowPacks() {
     if (!app.rootGraph) {
       workflowPacks.value = []
       unresolvedNodeNames.value = []
@@ -147,11 +148,12 @@ const _useWorkflowPacks = () => {
     unresolvedNodeNames.value = [...new Set(unresolved)]
   }
 
-  const packsToUniqueIds = (packs: WorkflowPack[]) =>
-    packs.reduce((acc, pack) => {
+  function packsToUniqueIds(packs: WorkflowPack[]) {
+    return packs.reduce((acc, pack) => {
       if (pack?.id) acc.add(pack.id)
       return acc
     }, new Set<string>())
+  }
 
   const workflowPacksIds = computed(() =>
     Array.from(packsToUniqueIds(workflowPacks.value))
@@ -160,11 +162,13 @@ const _useWorkflowPacks = () => {
   const { startFetch, cleanup, error, isLoading, nodePacks, isReady } =
     useNodePacks(workflowPacksIds)
 
-  const isIdInWorkflow = (packId: string) =>
-    workflowPacksIds.value.includes(packId)
+  function isIdInWorkflow(packId: string) {
+    return workflowPacksIds.value.includes(packId)
+  }
 
-  const filterWorkflowPack = (packs: components['schemas']['Node'][]) =>
-    packs.filter((pack) => !!pack.id && isIdInWorkflow(pack.id))
+  function filterWorkflowPack(packs: components['schemas']['Node'][]) {
+    return packs.filter((pack) => !!pack.id && isIdInWorkflow(pack.id))
+  }
 
   onUnmounted(() => {
     cleanup()

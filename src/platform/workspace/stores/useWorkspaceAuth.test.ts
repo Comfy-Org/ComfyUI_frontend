@@ -800,7 +800,8 @@ describe('useWorkspaceAuthStore', () => {
       await store.switchWorkspace('workspace-123')
 
       // Hang the next fetch — this is the refresh's switchWorkspace fetch.
-      let resolveRefreshFetch: (value: unknown) => void = () => {}
+      function noopRefreshResolver() {}
+      let resolveRefreshFetch: (value: unknown) => void = noopRefreshResolver
       const refreshFetchPromise = new Promise((resolve) => {
         resolveRefreshFetch = resolve
       })

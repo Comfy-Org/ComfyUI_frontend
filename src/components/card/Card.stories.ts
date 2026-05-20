@@ -166,29 +166,30 @@ const meta: Meta<CardStoryArgs> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const createCardTemplate = (args: CardStoryArgs) => ({
-  components: {
-    CardContainer,
-    CardTop,
-    CardBottom,
-    CardTitle,
-    CardDescription,
-    Button,
-    Tag
-  },
-  setup() {
-    const favorited = ref(false)
-    const toggleFavorite = () => {
-      favorited.value = !favorited.value
-    }
+function createCardTemplate(args: CardStoryArgs) {
+  return {
+    components: {
+      CardContainer,
+      CardTop,
+      CardBottom,
+      CardTitle,
+      CardDescription,
+      Button,
+      Tag
+    },
+    setup() {
+      const favorited = ref(false)
+      function toggleFavorite() {
+        favorited.value = !favorited.value
+      }
 
-    return {
-      args,
-      favorited,
-      toggleFavorite
-    }
-  },
-  template: `
+      return {
+        args,
+        favorited,
+        toggleFavorite
+      }
+    },
+    template: `
     <div class="min-h-screen">
       <CardContainer 
         :size="args.containerSize"
@@ -262,7 +263,8 @@ const createCardTemplate = (args: CardStoryArgs) => ({
       </CardContainer>
     </div>
   `
-})
+  }
+}
 
 export const Default: Story = {
   render: (args: CardStoryArgs) => createCardTemplate(args),

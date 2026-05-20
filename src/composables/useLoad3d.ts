@@ -43,7 +43,7 @@ const persistentReadyCallbacks = new Map<LGraphNode, Load3dReadyCallback[]>()
 
 const nodesWithCleanup = new WeakSet<LGraphNode>()
 
-const ensureNodeCleanupChained = (node: LGraphNode): void => {
+function ensureNodeCleanupChained(node: LGraphNode): void {
   if (nodesWithCleanup.has(node)) return
   nodesWithCleanup.add(node)
   node.onRemoved = useChainCallback(node.onRemoved, () => {
@@ -53,10 +53,10 @@ const ensureNodeCleanupChained = (node: LGraphNode): void => {
   })
 }
 
-const invokeReadyCallback = (
+function invokeReadyCallback(
   callback: Load3dReadyCallback,
   instance: Load3d
-): void => {
+): void {
   try {
     callback(instance)
   } catch (error) {
@@ -64,7 +64,7 @@ const invokeReadyCallback = (
   }
 }
 
-export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
+export function useLoad3d(nodeOrRef: MaybeRef<LGraphNode | null>) {
   const nodeRef = toRef(nodeOrRef)
   let load3d: Load3d | null = null
   let isFirstModelLoad = true
@@ -141,7 +141,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     'wireframe'
   ])
 
-  const initializeLoad3d = async (containerRef: HTMLElement) => {
+  async function initializeLoad3d(containerRef: HTMLElement) {
     const rawNode = toRaw(nodeRef.value)
     if (!containerRef || !rawNode) return
 
@@ -230,7 +230,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
   }
 
-  const restoreConfigurationsFromNode = async (node: LGraphNode) => {
+  async function restoreConfigurationsFromNode(node: LGraphNode) {
     if (!load3d) return
 
     // Restore configs - watchers will handle applying them to the Three.js scene
@@ -314,7 +314,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     applyLightConfigToLoad3d()
   }
 
-  const applySceneConfigToLoad3d = () => {
+  function applySceneConfigToLoad3d() {
     if (!load3d) return
     const cfg = sceneConfig.value
     load3d.toggleGrid(cfg.showGrid)
@@ -326,7 +326,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
   }
 
-  const applyGizmoConfigToLoad3d = () => {
+  function applyGizmoConfigToLoad3d() {
     if (!load3d) return
     const gizmo = modelConfig.value.gizmo
     if (!gizmo) return
@@ -351,7 +351,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
   }
 
-  const applyLightConfigToLoad3d = () => {
+  function applyLightConfigToLoad3d() {
     if (!load3d) return
     const cfg = lightConfig.value
     load3d.setLightIntensity(cfg.intensity)
@@ -362,14 +362,14 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     load3d.setHDRIEnabled(hdri.enabled)
   }
 
-  const persistLightConfigToNode = () => {
+  function persistLightConfigToNode() {
     const n = nodeRef.value
     if (n) {
       n.properties['Light Config'] = lightConfig.value
     }
   }
 
-  const waitForLoad3d = (callback: Load3dReadyCallback) => {
+  function waitForLoad3d(callback: Load3dReadyCallback) {
     const rawNode = toRaw(nodeRef.value)
     if (!rawNode) return
 
@@ -389,7 +389,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     ensureNodeCleanupChained(node)
   }
 
-  const onLoad3dReady = (callback: Load3dReadyCallback) => {
+  function onLoad3dReady(callback: Load3dReadyCallback) {
     const rawNode = toRaw(nodeRef.value)
     if (!rawNode) return
 
@@ -557,22 +557,22 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
   })
 
-  const handleMouseEnter = () => {
+  function handleMouseEnter() {
     load3d?.updateStatusMouseOnScene(true)
   }
 
-  const handleMouseLeave = () => {
+  function handleMouseLeave() {
     load3d?.updateStatusMouseOnScene(false)
   }
 
-  const handleStartRecording = async () => {
+  async function handleStartRecording() {
     if (load3d) {
       await load3d.startRecording()
       isRecording.value = true
     }
   }
 
-  const handleStopRecording = () => {
+  function handleStopRecording() {
     if (load3d) {
       load3d.stopRecording()
       isRecording.value = false
@@ -581,7 +581,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
   }
 
-  const handleExportRecording = () => {
+  function handleExportRecording() {
     if (load3d) {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
       const filename = `${timestamp}-scene-recording.mp4`
@@ -589,7 +589,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
   }
 
-  const handleClearRecording = () => {
+  function handleClearRecording() {
     if (load3d) {
       load3d.clearRecording()
       hasRecording.value = false
@@ -597,14 +597,14 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
   }
 
-  const handleSeek = (progress: number) => {
+  function handleSeek(progress: number) {
     if (load3d && animationDuration.value > 0) {
       const time = (progress / 100) * animationDuration.value
       load3d.setAnimationTime(time)
     }
   }
 
-  const handleHDRIFileUpdate = async (file: File | null) => {
+  async function handleHDRIFileUpdate(file: File | null) {
     const capturedLoad3d = load3d
     if (!capturedLoad3d) return
 
@@ -696,7 +696,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
   }
 
-  const handleBackgroundImageUpdate = async (file: File | null) => {
+  async function handleBackgroundImageUpdate(file: File | null) {
     if (!file) {
       sceneConfig.value.backgroundImage = ''
       await load3d?.setBackgroundImage('')
@@ -715,7 +715,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     await load3d?.setBackgroundImage(uploadedPath)
   }
 
-  const handleExportModel = async (format: string) => {
+  async function handleExportModel(format: string) {
     if (!load3d) {
       useToastStore().addAlert(t('toastMessages.no3dSceneToExport'))
       return
@@ -733,7 +733,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
   }
 
-  const handleModelDrop = async (file: File) => {
+  async function handleModelDrop(file: File) {
     if (!load3d) {
       useToastStore().addAlert(t('toastMessages.no3dScene'))
       return
@@ -938,21 +938,21 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
   } as const
 
-  const handleToggleGizmo = (enabled: boolean) => {
+  function handleToggleGizmo(enabled: boolean) {
     if (load3d && modelConfig.value.gizmo) {
       modelConfig.value.gizmo.enabled = enabled
       load3d.setGizmoEnabled(enabled)
     }
   }
 
-  const handleSetGizmoMode = (mode: GizmoMode) => {
+  function handleSetGizmoMode(mode: GizmoMode) {
     if (load3d && modelConfig.value.gizmo) {
       modelConfig.value.gizmo.mode = mode
       load3d.setGizmoMode(mode)
     }
   }
 
-  const handleFitToViewer = () => {
+  function handleFitToViewer() {
     if (!load3d) return
     load3d.fitToViewer()
 
@@ -962,20 +962,20 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     modelConfig.value.gizmo.scale = transform.scale
   }
 
-  const handleResetGizmoTransform = () => {
+  function handleResetGizmoTransform() {
     if (load3d) {
       load3d.resetGizmoTransform()
     }
   }
 
-  const handleEvents = (action: 'add' | 'remove') => {
+  function handleEvents(action: 'add' | 'remove') {
     Object.entries(eventConfig).forEach(([event, handler]) => {
       const method = `${action}EventListener` as const
       load3d?.[method](event, handler as EventCallback)
     })
   }
 
-  const cleanup = () => {
+  function cleanup() {
     handleEvents('remove')
 
     const rawNode = toRaw(nodeRef.value)

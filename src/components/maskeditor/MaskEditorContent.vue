@@ -117,13 +117,13 @@ const toolManager = useToolManager(keyboard, panZoom)
 
 let resizeObserver: ResizeObserver | null = null
 
-const handleDragStart = (event: DragEvent) => {
+function handleDragStart(event: DragEvent) {
   if (event.ctrlKey) {
     event.preventDefault()
   }
 }
 
-const initUI = async () => {
+async function initUI() {
   if (!containerRef.value) {
     console.error(
       '[MaskEditorContent] Cannot initialize - missing required refs'

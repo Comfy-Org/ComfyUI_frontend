@@ -91,7 +91,7 @@ function dynamicComboWidget(
   function isInGroup(e: { name: string }): boolean {
     return e.name.startsWith(inputName + '.')
   }
-  const updateWidgets = (value?: string) => {
+  function updateWidgets(value?: string) {
     if (!node.widgets) throw new Error('Not Reachable')
     const newSpec = value ? options[value] : undefined
 

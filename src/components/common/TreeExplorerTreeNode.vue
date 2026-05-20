@@ -79,15 +79,16 @@ const showNodeBadgeText = computed<boolean>(() => nodeBadgeText.value !== '')
 
 const isEditing = computed<boolean>(() => props.node.isEditingLabel ?? false)
 const handleEditLabel = inject(InjectKeyHandleEditLabelFunction)
-const handleRename = (newName: string) => {
+function handleRename(newName: string) {
   handleEditLabel?.(props.node as RenderedTreeExplorerNode, newName)
 }
 
 const container = ref<HTMLElement | null>(null)
 const canDrop = ref(false)
 
-const treeNodeElementGetter = () =>
-  container.value?.closest('.p-tree-node-content') as HTMLElement
+function treeNodeElementGetter() {
+  return container.value?.closest('.p-tree-node-content') as HTMLElement
+}
 
 if (props.node.draggable) {
   usePragmaticDraggable(treeNodeElementGetter, {

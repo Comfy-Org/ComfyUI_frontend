@@ -64,7 +64,7 @@ export function useWorkflowPersistenceV2() {
     }
   })
 
-  const ensureTemplateQueryFromIntent = async () => {
+  async function ensureTemplateQueryFromIntent() {
     hydratePreservedQuery(TEMPLATE_NAMESPACE)
     const mergedQuery = mergePreservedQueryIntoQuery(
       TEMPLATE_NAMESPACE,
@@ -91,7 +91,7 @@ export function useWorkflowPersistenceV2() {
     }
   })
 
-  const persistCurrentWorkflow = () => {
+  function persistCurrentWorkflow() {
     if (!workflowPersistenceEnabled.value) return
     const activeWorkflow = workflowStore.activeWorkflow
     if (!activeWorkflow) return
@@ -132,7 +132,7 @@ export function useWorkflowPersistenceV2() {
   // Debounced version for graphChanged events
   const debouncedPersist = debounce(persistCurrentWorkflow, PERSIST_DEBOUNCE_MS)
 
-  const loadPreviousWorkflowFromStorage = async () => {
+  async function loadPreviousWorkflowFromStorage() {
     const sessionPath = tabState.getActivePath()
 
     // 1. Try draft for session path
@@ -161,14 +161,14 @@ export function useWorkflowPersistenceV2() {
     })
   }
 
-  const hasSharedWorkflowIntent = () => {
+  function hasSharedWorkflowIntent() {
     if (typeof route.query.share === 'string') return true
     hydratePreservedQuery(SHARE_NAMESPACE)
     const merged = mergePreservedQueryIntoQuery(SHARE_NAMESPACE, route.query)
     return typeof merged?.share === 'string'
   }
 
-  const loadDefaultWorkflow = async () => {
+  async function loadDefaultWorkflow() {
     if (!settingStore.get('Comfy.TutorialCompleted')) {
       await settingStore.set('Comfy.TutorialCompleted', true)
       await useWorkflowService().loadBlankWorkflow()
@@ -180,7 +180,7 @@ export function useWorkflowPersistenceV2() {
     }
   }
 
-  const initializeWorkflow = async () => {
+  async function initializeWorkflow() {
     if (!workflowPersistenceEnabled.value) {
       await loadDefaultWorkflow()
       return
@@ -197,7 +197,7 @@ export function useWorkflowPersistenceV2() {
     }
   }
 
-  const loadTemplateFromUrlIfPresent = async () => {
+  async function loadTemplateFromUrlIfPresent() {
     const query = await ensureTemplateQueryFromIntent()
     const hasTemplateUrl = query.template && typeof query.template === 'string'
 
@@ -206,7 +206,7 @@ export function useWorkflowPersistenceV2() {
     }
   }
 
-  const loadSharedWorkflowFromUrlIfPresent = async () => {
+  async function loadSharedWorkflowFromUrlIfPresent() {
     return await sharedWorkflowUrlLoader.loadSharedWorkflowFromUrl()
   }
 
@@ -264,7 +264,7 @@ export function useWorkflowPersistenceV2() {
     }
   })
 
-  const restoreWorkflowTabsState = async () => {
+  async function restoreWorkflowTabsState() {
     if (!workflowPersistenceEnabled.value) {
       tabStateRestored = true
       return

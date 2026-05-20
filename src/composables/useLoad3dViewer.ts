@@ -64,7 +64,7 @@ const standaloneConfigCache = new QuickLRU<string, Load3dViewerState>({
  *
  * @param node Optional LiteGraph node to sync state with
  */
-export const useLoad3dViewer = (node?: LGraphNode) => {
+export function useLoad3dViewer(node?: LGraphNode) {
   const backgroundColor = ref('')
   const showGrid = ref(true)
   const cameraType = ref<CameraType>('perspective')
@@ -92,7 +92,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     'wireframe'
   ])
 
-  const captureAdapterFlags = (source: Load3d) => {
+  function captureAdapterFlags(source: Load3d) {
     isSplatModel.value = source.isSplatModel()
     isPlyModel.value = source.isPlyModel()
     const caps = source.getCurrentModelCapabilities()
@@ -264,7 +264,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
    *
    * @param progress Progress percentage (0-100)
    */
-  const handleSeek = (progress: number) => {
+  function handleSeek(progress: number) {
     if (load3d && animationDuration.value > 0) {
       const time = (progress / 100) * animationDuration.value
       load3d.setAnimationTime(time)
@@ -274,7 +274,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   /**
    * Sets up event listeners for animation-related events from the Load3d instance.
    */
-  const setupAnimationEvents = () => {
+  function setupAnimationEvents() {
     if (!load3d) return
 
     load3d.addEventListener(
@@ -321,10 +321,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
    * @param containerRef The HTML element to mount the viewer in
    * @param source The source Load3d instance to copy state from
    */
-  const initializeViewer = async (
-    containerRef: HTMLElement,
-    source: Load3d
-  ) => {
+  async function initializeViewer(containerRef: HTMLElement, source: Load3d) {
     if (!containerRef || !node) return
 
     sourceLoad3d = source
@@ -448,10 +445,10 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
    * @param containerRef The HTML element to mount the viewer in
    * @param modelUrl URL of the model to load
    */
-  const initializeStandaloneViewer = async (
+  async function initializeStandaloneViewer(
     containerRef: HTMLElement,
     modelUrl: string
-  ) => {
+  ) {
     if (!containerRef) return
 
     try {
@@ -490,7 +487,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
    * Load a new model into an existing standalone viewer,
    * reusing the same WebGLRenderer.
    */
-  const loadStandaloneModel = async (modelUrl: string) => {
+  async function loadStandaloneModel(modelUrl: string) {
     if (!load3d) return
 
     try {
@@ -556,7 +553,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
    *
    * @param format The export format (e.g., 'glb', 'obj')
    */
-  const exportModel = async (format: string) => {
+  async function exportModel(format: string) {
     if (!load3d) return
 
     try {
@@ -572,14 +569,14 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   /**
    * Handles resizing the 3D viewer.
    */
-  const handleResize = () => {
+  function handleResize() {
     load3d?.handleResize()
   }
 
   /**
    * Notifies the viewer that the mouse has entered the viewer area.
    */
-  const handleMouseEnter = () => {
+  function handleMouseEnter() {
     mouseOnViewer = true
     load3d?.updateStatusMouseOnViewer(true)
   }
@@ -587,7 +584,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   /**
    * Notifies the viewer that the mouse has left the viewer area.
    */
-  const handleMouseLeave = () => {
+  function handleMouseLeave() {
     mouseOnViewer = false
     load3d?.updateStatusMouseOnViewer(false)
   }
@@ -595,7 +592,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   /**
    * Restores the viewer state to its initial values when the viewer was opened.
    */
-  const restoreInitialState = () => {
+  function restoreInitialState() {
     if (!node) return
 
     const nodeValue = node
@@ -650,7 +647,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
    *
    * @returns Promise resolving to true if changes were applied successfully
    */
-  const applyChanges = async () => {
+  async function applyChanges() {
     if (!node || !sourceLoad3d || !load3d) return false
 
     const viewerCameraState = load3d.getCameraState()
@@ -709,7 +706,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   /**
    * Refreshes the viewport of the current Load3d instance.
    */
-  const refreshViewport = () => {
+  function refreshViewport() {
     useLoad3dService().handleViewportRefresh(load3d)
   }
 
@@ -718,7 +715,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
    *
    * @returns The subfolder string
    */
-  const getUploadSubfolder = () => {
+  function getUploadSubfolder() {
     const resourceFolder = String(
       node?.properties?.['Resource Folder'] ?? ''
     ).trim()
@@ -730,7 +727,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
    *
    * @param file The image file to upload, or null to clear the background
    */
-  const handleBackgroundImageUpdate = async (file: File | null) => {
+  async function handleBackgroundImageUpdate(file: File | null) {
     if (!file) {
       backgroundImage.value = ''
       hasBackgroundImage.value = false
@@ -763,7 +760,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
    *
    * @param file The 3D model file to load
    */
-  const handleModelDrop = async (file: File) => {
+  async function handleModelDrop(file: File) {
     if (!load3d) {
       useToastStore().addAlert(t('toastMessages.no3dScene'))
       return
@@ -808,7 +805,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   /**
    * Cleans up the viewer resources and saves the current standalone config if applicable.
    */
-  const cleanup = () => {
+  function cleanup() {
     if (isStandaloneMode.value) {
       saveStandaloneConfig()
     }

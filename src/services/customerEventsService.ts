@@ -30,7 +30,7 @@ const customerApiClient = axios.create({
   }
 })
 
-export const useCustomerEventsService = () => {
+export function useCustomerEventsService() {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
@@ -41,11 +41,11 @@ export const useCustomerEventsService = () => {
     }
   )
 
-  const handleRequestError = (
+  function handleRequestError(
     err: unknown,
     context: string,
     routeSpecificErrors?: Record<number, string>
-  ) => {
+  ) {
     // Don't treat cancellation as an error
     if (isAbortError(err)) return
 
@@ -67,13 +67,13 @@ export const useCustomerEventsService = () => {
     error.value = message
   }
 
-  const executeRequest = async <T>(
+  async function executeRequest<T>(
     requestCall: () => Promise<AxiosResponse<T>>,
     options: {
       errorContext: string
       routeSpecificErrors?: Record<number, string>
     }
-  ): Promise<T | null> => {
+  ): Promise<T | null> {
     const { errorContext, routeSpecificErrors } = options
 
     isLoading.value = true

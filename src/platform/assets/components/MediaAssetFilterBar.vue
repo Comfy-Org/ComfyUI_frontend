@@ -62,11 +62,11 @@ const emit = defineEmits<{
 const sortBy = defineModel<SortBy>('sortBy', { required: true })
 const viewMode = defineModel<'list' | 'grid'>('viewMode', { required: true })
 
-const handleSearchChange = (value: string | undefined) => {
+function handleSearchChange(value: string | undefined) {
   emit('update:searchQuery', value ?? '')
 }
 
-const handleMediaTypeFiltersChange = (value: string[]) => {
+function handleMediaTypeFiltersChange(value: string[]) {
   emit('update:mediaTypeFilters', value)
 }
 </script>

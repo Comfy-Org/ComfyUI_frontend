@@ -137,7 +137,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
   test('Manage group opens with the correct group selected', async ({
     comfyPage
   }) => {
-    const makeGroup = async (name: string, type1: string, type2: string) => {
+    async function makeGroup(name: string, type1: string, type2: string) {
       const node1 = (await comfyPage.nodeOps.getNodeRefsByType(type1))[0]
       const node2 = (await comfyPage.nodeOps.getNodeRefsByType(type2))[0]
       await node1.click('title')
@@ -204,7 +204,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
   test('Reconnects inputs after configuration changed via manage dialog save', async ({
     comfyPage
   }) => {
-    const expectSingleNode = async (type: string) => {
+    async function expectSingleNode(type: string) {
       const nodes = await comfyPage.nodeOps.getNodeRefsByType(type)
       expect(nodes).toHaveLength(1)
       return nodes[0]
@@ -255,13 +255,13 @@ test.describe('Group Node', { tag: '@node' }, () => {
     const GROUP_NODE_NAME = 'group_node' // Node name in given workflow
     const GROUP_NODE_TYPE = `${GROUP_NODE_PREFIX}${GROUP_NODE_NAME}`
 
-    const isRegisteredLitegraph = async (comfyPage: ComfyPage) => {
+    async function isRegisteredLitegraph(comfyPage: ComfyPage) {
       return await comfyPage.page.evaluate((nodeType: string) => {
         return !!window.LiteGraph!.registered_node_types[nodeType]
       }, GROUP_NODE_TYPE)
     }
 
-    const isRegisteredNodeDefStore = async (comfyPage: ComfyPage) => {
+    async function isRegisteredNodeDefStore(comfyPage: ComfyPage) {
       await comfyPage.menu.nodeLibraryTab.open()
       const groupNodesFolderCt = await comfyPage.menu.nodeLibraryTab
         .getFolder(GROUP_NODE_CATEGORY)
@@ -269,10 +269,10 @@ test.describe('Group Node', { tag: '@node' }, () => {
       return groupNodesFolderCt === 1
     }
 
-    const verifyNodeLoaded = async (
+    async function verifyNodeLoaded(
       comfyPage: ComfyPage,
       expectedCount: number
-    ) => {
+    ) {
       expect(
         await comfyPage.nodeOps.getNodeRefsByType(GROUP_NODE_TYPE)
       ).toHaveLength(expectedCount)

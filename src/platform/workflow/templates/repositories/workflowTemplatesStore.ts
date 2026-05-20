@@ -37,7 +37,7 @@ export const useWorkflowTemplatesStore = defineStore(
     const isLoaded = ref(false)
     const knownTemplateNames = ref(new Set<string>())
 
-    const getTemplateByName = (name: string): EnhancedTemplate | undefined => {
+    function getTemplateByName(name: string): EnhancedTemplate | undefined {
       return enhancedTemplates.value.find((template) => template.name === name)
     }
 
@@ -52,49 +52,54 @@ export const useWorkflowTemplatesStore = defineStore(
     /**
      * Add localization fields to a template.
      */
-    const addLocalizedFieldsToTemplate = (
+    function addLocalizedFieldsToTemplate(
       template: TemplateInfo,
       categoryTitle: string
-    ) => ({
-      ...template,
-      localizedTitle: st(
-        `templateWorkflows.template.${normalizeI18nKey(categoryTitle)}.${normalizeI18nKey(template.name)}`,
-        template.title ?? template.name
-      ),
-      localizedDescription: st(
-        `templateWorkflows.templateDescription.${normalizeI18nKey(categoryTitle)}.${normalizeI18nKey(template.name)}`,
-        template.description
-      )
-    })
+    ) {
+      return {
+        ...template,
+        localizedTitle: st(
+          `templateWorkflows.template.${normalizeI18nKey(categoryTitle)}.${normalizeI18nKey(template.name)}`,
+          template.title ?? template.name
+        ),
+        localizedDescription: st(
+          `templateWorkflows.templateDescription.${normalizeI18nKey(categoryTitle)}.${normalizeI18nKey(template.name)}`,
+          template.description
+        )
+      }
+    }
 
     /**
      * Add localization fields to all templates in a list of templates.
      */
-    const localizeTemplateList = (
+    function localizeTemplateList(
       templates: TemplateInfo[],
       categoryTitle: string
-    ) =>
-      templates.map((template) =>
+    ) {
+      return templates.map((template) =>
         addLocalizedFieldsToTemplate(template, categoryTitle)
       )
+    }
 
     /**
      * Add localization fields to a template category and all its constituent templates.
      */
-    const localizeTemplateCategory = (templateCategory: WorkflowTemplates) => ({
-      ...templateCategory,
-      localizedTitle: st(
-        `templateWorkflows.category.${normalizeI18nKey(templateCategory.title)}`,
-        templateCategory.title ?? templateCategory.moduleName
-      ),
-      templates: localizeTemplateList(
-        templateCategory.templates,
-        templateCategory.title
-      )
-    })
+    function localizeTemplateCategory(templateCategory: WorkflowTemplates) {
+      return {
+        ...templateCategory,
+        localizedTitle: st(
+          `templateWorkflows.category.${normalizeI18nKey(templateCategory.title)}`,
+          templateCategory.title ?? templateCategory.moduleName
+        ),
+        templates: localizeTemplateList(
+          templateCategory.templates,
+          templateCategory.title
+        )
+      }
+    }
 
     // Create an "All" category that combines all templates
-    const createAllCategory = () => {
+    function createAllCategory() {
       // First, get core templates with source module added
       const coreTemplatesWithSourceModule = coreTemplates.value.flatMap(
         (category) =>
@@ -255,7 +260,7 @@ export const useWorkflowTemplatesStore = defineStore(
     /**
      * Filter templates by category ID using stored filter mappings
      */
-    const filterTemplatesByCategory = (categoryId: string) => {
+    function filterTemplatesByCategory(categoryId: string) {
       if (categoryId === 'all') {
         return enhancedTemplates.value
       }

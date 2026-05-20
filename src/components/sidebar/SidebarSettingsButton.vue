@@ -27,7 +27,7 @@ const tooltipText = computed(
 /**
  * Toggle keyboard shortcuts panel and track UI button click.
  */
-const showSettingsDialog = () => {
+function showSettingsDialog() {
   command.function()
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'sidebar_settings_button_clicked'

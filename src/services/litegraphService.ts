@@ -171,7 +171,7 @@ export function getExtraOptionsForWidget(
 /**
  * Service that augments litegraph with ComfyUI specific functionality.
  */
-export const useLitegraphService = () => {
+export function useLitegraphService() {
   const extensionService = useExtensionService()
   const toastStore = useToastStore()
   const widgetStore = useWidgetStore()

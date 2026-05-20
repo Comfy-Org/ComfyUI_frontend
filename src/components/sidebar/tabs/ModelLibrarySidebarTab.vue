@@ -84,7 +84,7 @@ const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
 const filteredModels = ref<ComfyModelDef[]>([])
-const handleSearch = async (query: string) => {
+async function handleSearch(query: string) {
   if (!query) {
     filteredModels.value = []
     expandedKeys.value = {}
@@ -114,7 +114,7 @@ const root = computed<TreeNode>(() => {
 
 const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
   const nameFormat = settingStore.get('Comfy.ModelLibrary.NameFormat')
-  const fillNodeInfo = (node: TreeNode): TreeExplorerNode<ModelOrFolder> => {
+  function fillNodeInfo(node: TreeNode): TreeExplorerNode<ModelOrFolder> {
     const children = node.children?.map(fillNodeInfo)
     const model: ComfyModelDef | null =
       node.leaf && node.data ? node.data : null

@@ -4,15 +4,15 @@ import { ref } from 'vue'
 export const useHelpCenterStore = defineStore('helpCenter', () => {
   const isVisible = ref(false)
 
-  const toggle = () => {
+  function toggle() {
     isVisible.value = !isVisible.value
   }
 
-  const show = () => {
+  function show() {
     isVisible.value = true
   }
 
-  const hide = () => {
+  function hide() {
     isVisible.value = false
   }
 

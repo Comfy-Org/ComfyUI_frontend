@@ -89,10 +89,7 @@ const unifiedDotsClass = computed((): string =>
 
 // Get the actual index of an input slot in the node's inputs array
 // (accounting for filtered widget slots)
-const getActualInputIndex = (
-  input: INodeSlot,
-  filteredIndex: number
-): number => {
+function getActualInputIndex(input: INodeSlot, filteredIndex: number): number {
   if (!nodeData?.inputs) return filteredIndex
 
   // Find the actual index in the unfiltered inputs array

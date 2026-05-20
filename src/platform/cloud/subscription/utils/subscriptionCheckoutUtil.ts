@@ -12,22 +12,23 @@ import type { BillingCycle } from './subscriptionTierRank'
 
 type CheckoutTier = TierKey | `${TierKey}-yearly`
 
-const getCheckoutTier = (
+function getCheckoutTier(
   tierKey: TierKey,
   billingCycle: BillingCycle
-): CheckoutTier => (billingCycle === 'yearly' ? `${tierKey}-yearly` : tierKey)
+): CheckoutTier {
+  return billingCycle === 'yearly' ? `${tierKey}-yearly` : tierKey
+}
 
-const getCheckoutAttributionForCloud =
-  async (): Promise<CheckoutAttributionMetadata> => {
-    if (__DISTRIBUTION__ !== 'cloud') {
-      return {}
-    }
-
-    const { getCheckoutAttribution } =
-      await import('@/platform/telemetry/utils/checkoutAttribution')
-
-    return getCheckoutAttribution()
+async function getCheckoutAttributionForCloud(): Promise<CheckoutAttributionMetadata> {
+  if (__DISTRIBUTION__ !== 'cloud') {
+    return {}
   }
+
+  const { getCheckoutAttribution } =
+    await import('@/platform/telemetry/utils/checkoutAttribution')
+
+  return getCheckoutAttribution()
+}
 
 /**
  * Core subscription checkout logic shared between PricingTable and

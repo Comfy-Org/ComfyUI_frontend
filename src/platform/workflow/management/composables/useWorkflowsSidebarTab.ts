@@ -5,7 +5,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 
-export const useWorkflowsSidebarTab = (): SidebarTabExtension => {
+export function useWorkflowsSidebarTab(): SidebarTabExtension {
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
   return {

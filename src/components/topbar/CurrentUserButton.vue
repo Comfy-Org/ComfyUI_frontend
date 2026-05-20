@@ -125,11 +125,11 @@ const workspacePopoverContent = ref<{
   refreshBalance: () => void
 } | null>(null)
 
-const closePopover = () => {
+function closePopover() {
   popover.value?.hide()
 }
 
-const onPopoverShow = () => {
+function onPopoverShow() {
   workspacePopoverContent.value?.refreshBalance()
 }
 </script>

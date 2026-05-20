@@ -214,7 +214,7 @@ const gridStyle = computed(() => ({
     : `${hasLeftPanel.value && showLeftPanel.value ? leftPanelWidth : '0rem'} 1fr`
 }))
 
-const toggleLeftPanel = () => {
+function toggleLeftPanel() {
   if (notMobile.value) {
     isLeftPanelOpen.value = !isLeftPanelOpen.value
   } else {
@@ -222,7 +222,7 @@ const toggleLeftPanel = () => {
   }
 }
 
-const toggleRightPanel = () => {
+function toggleRightPanel() {
   isRightPanelOpen.value = !isRightPanelOpen.value
 }
 

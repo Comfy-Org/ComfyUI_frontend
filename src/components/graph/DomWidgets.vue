@@ -25,7 +25,7 @@ const overrideTransitionGrace = new Set<string>()
 
 const widgetStates = computed(() => [...domWidgetStore.widgetStates.values()])
 
-const updateWidgets = () => {
+function updateWidgets() {
   const lgCanvas = canvasStore.canvas
   if (!lgCanvas) return
 

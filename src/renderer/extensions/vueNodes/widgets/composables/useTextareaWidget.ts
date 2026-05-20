@@ -6,7 +6,7 @@ import type {
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 
-export const useTextareaWidget = (): ComfyWidgetConstructorV2 => {
+export function useTextareaWidget(): ComfyWidgetConstructorV2 {
   return (node: LGraphNode, inputSpec: InputSpecV2): ITextareaWidget => {
     const { name, options = {} } = inputSpec as TextareaInputSpec
 

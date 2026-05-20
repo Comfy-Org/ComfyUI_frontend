@@ -6,15 +6,15 @@ export function useKeyboard() {
 
   const keysDown = ref<string[]>([])
 
-  const isKeyDown = (key: string): boolean => {
+  function isKeyDown(key: string): boolean {
     return keysDown.value.includes(key)
   }
 
-  const clearKeys = (): void => {
+  function clearKeys(): void {
     keysDown.value = []
   }
 
-  const handleKeyDown = (event: KeyboardEvent): void => {
+  function handleKeyDown(event: KeyboardEvent): void {
     if (!keysDown.value.includes(event.key)) {
       keysDown.value.push(event.key)
     }
@@ -38,17 +38,17 @@ export function useKeyboard() {
     }
   }
 
-  const handleKeyUp = (event: KeyboardEvent): void => {
+  function handleKeyUp(event: KeyboardEvent): void {
     keysDown.value = keysDown.value.filter((key) => key !== event.key)
   }
 
-  const addListeners = (): void => {
+  function addListeners(): void {
     document.addEventListener('keydown', handleKeyDown)
     document.addEventListener('keyup', handleKeyUp)
     window.addEventListener('blur', clearKeys)
   }
 
-  const removeListeners = (): void => {
+  function removeListeners(): void {
     document.removeEventListener('keydown', handleKeyDown)
     document.removeEventListener('keyup', handleKeyUp)
     window.removeEventListener('blur', clearKeys)

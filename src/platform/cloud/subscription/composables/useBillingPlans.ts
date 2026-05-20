@@ -43,7 +43,9 @@ export function useBillingPlans() {
     return plans.value.filter((p) => p.tier === tier)
   }
 
-  const isCurrentPlan = (slug: string) => currentPlanSlug.value === slug
+  function isCurrentPlan(slug: string) {
+    return currentPlanSlug.value === slug
+  }
 
   return {
     plans,

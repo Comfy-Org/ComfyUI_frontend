@@ -306,7 +306,7 @@ export function buildStructuredMenu(options: MenuOption[]): MenuOption[] {
   // Section 3: 9-15 (Convert to Subgraph, Frame selection, Minimize Node, Expand, Collapse, Resize, Clone)
   // Section 4: 16-17 (Node Info, Color)
   // Section 5: 18+ (Image operations and fallback items)
-  const getSectionNumber = (index: number): number => {
+  function getSectionNumber(index: number): number {
     if (index <= 2) return 1
     if (index <= 8) return 2
     if (index <= 15) return 3

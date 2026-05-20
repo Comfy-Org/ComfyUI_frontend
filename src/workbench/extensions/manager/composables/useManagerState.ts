@@ -25,7 +25,7 @@ export enum ManagerUIState {
  */
 let incompatibleToastShown = false
 
-const showIncompatibleToast = (): void => {
+function showIncompatibleToast(): void {
   if (incompatibleToastShown) return
   incompatibleToastShown = true
   useToastStore().add({
@@ -207,13 +207,13 @@ export function useManagerState() {
    * @param options.showToastOnLegacyError - Whether to show toast on legacy command failure
    * @param options.isLegacyOnly - If true, shows error in NEW_UI mode instead of opening manager
    */
-  const openManager = async (options?: {
+  async function openManager(options?: {
     initialTab?: ManagerTab
     initialPackId?: string
     legacyCommand?: string
     showToastOnLegacyError?: boolean
     isLegacyOnly?: boolean
-  }): Promise<void> => {
+  }): Promise<void> {
     const state = managerUIState.value
     const settingsDialog = useSettingsDialog()
     const commandStore = useCommandStore()
@@ -282,6 +282,6 @@ export function useManagerState() {
 
 // Test-only export: resets the once-per-session toast guard so unit tests
 // can assert toast firing across multiple `useManagerState()` invocations.
-export const __resetIncompatibleToastGuard = (): void => {
+export function __resetIncompatibleToastGuard(): void {
   incompatibleToastShown = false
 }

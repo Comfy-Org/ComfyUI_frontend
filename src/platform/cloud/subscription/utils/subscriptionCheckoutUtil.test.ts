@@ -91,14 +91,16 @@ global.fetch = vi.fn()
 
 type Distribution = 'desktop' | 'localhost' | 'cloud'
 
-const setDistribution = (distribution: Distribution) => {
+function setDistribution(distribution: Distribution) {
   ;(
     globalThis as typeof globalThis & { __DISTRIBUTION__: Distribution }
   ).__DISTRIBUTION__ = distribution
 }
 
+function noopResolver() {}
+
 function createDeferred<T>() {
-  let resolve: (value: T) => void = () => {}
+  let resolve: (value: T) => void = noopResolver
   const promise = new Promise<T>((res) => {
     resolve = res
   })

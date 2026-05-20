@@ -3,12 +3,14 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
-const getLocators = (page: Page) => ({
-  trigger: page.getByRole('button', { name: 'Canvas Mode' }),
-  menu: page.getByRole('menu', { name: 'Canvas Mode' }),
-  selectItem: page.getByRole('menuitemradio', { name: 'Select' }),
-  handItem: page.getByRole('menuitemradio', { name: 'Hand' })
-})
+function getLocators(page: Page) {
+  return {
+    trigger: page.getByRole('button', { name: 'Canvas Mode' }),
+    menu: page.getByRole('menu', { name: 'Canvas Mode' }),
+    selectItem: page.getByRole('menuitemradio', { name: 'Select' }),
+    handItem: page.getByRole('menuitemradio', { name: 'Hand' })
+  }
+}
 
 const MODES = [
   {

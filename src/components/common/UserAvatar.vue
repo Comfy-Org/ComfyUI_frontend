@@ -25,7 +25,7 @@ const { photoUrl, ariaLabel } = defineProps<{
 }>()
 
 const imageError = ref(false)
-const handleImageError = () => {
+function handleImageError() {
   imageError.value = true
 }
 const hasAvatar = computed(() => photoUrl && !imageError.value)

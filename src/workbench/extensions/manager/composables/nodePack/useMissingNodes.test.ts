@@ -379,8 +379,8 @@ describe('useMissingNodes', () => {
   })
 
   describe('missing core nodes detection', () => {
-    const createMockNode = (type: string, packId?: string, version?: string) =>
-      createMockLGraphNode({
+    function createMockNode(type: string, packId?: string, version?: string) {
+      return createMockLGraphNode({
         type,
         properties: { cnr_id: packId, ver: version },
         id: 1,
@@ -393,6 +393,7 @@ describe('useMissingNodes', () => {
         inputs: [],
         outputs: []
       })
+    }
 
     it('identifies missing core nodes not in nodeDefStore', () => {
       const coreNode1 = createMockNode('CoreNode1', 'comfy-core', '1.2.0')
@@ -485,12 +486,12 @@ describe('useMissingNodes', () => {
   })
 
   describe('subgraph support', () => {
-    const createMockNode = (
+    function createMockNode(
       type: string,
       packId?: string,
       version?: string
-    ): LGraphNode =>
-      createMockLGraphNode({
+    ): LGraphNode {
+      return createMockLGraphNode({
         type,
         properties: { cnr_id: packId, ver: version },
         id: 1,
@@ -503,6 +504,7 @@ describe('useMissingNodes', () => {
         inputs: [],
         outputs: []
       })
+    }
 
     it('detects missing core nodes from subgraphs via collectAllNodes', () => {
       const mainNode = createMockNode('MainNode', 'comfy-core', '1.0.0')

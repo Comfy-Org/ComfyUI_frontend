@@ -165,23 +165,23 @@ const thumbnailUrl = computed(() => {
 })
 
 // Event handlers that delegate to the popover component
-const handleMouseEnter = (event: Event) => {
+function handleMouseEnter(event: Event) {
   popoverRef.value?.showPopover(event)
 }
 
-const handleMouseLeave = () => {
+function handleMouseLeave() {
   popoverRef.value?.hidePopover()
 }
 
-const handleClick = (event: Event) => {
+function handleClick(event: Event) {
   popoverRef.value?.togglePopover(event)
 }
 
-const handleMouseUp = (event: MouseEvent) => {
+function handleMouseUp(event: MouseEvent) {
   emit('mouseup', event)
 }
 
-const closeWorkflows = async (options: WorkflowOption[]) => {
+async function closeWorkflows(options: WorkflowOption[]) {
   for (const opt of options) {
     if (
       !(await useWorkflowService().closeWorkflow(opt.workflow, {
@@ -195,7 +195,7 @@ const closeWorkflows = async (options: WorkflowOption[]) => {
   }
 }
 
-const onCloseWorkflow = async (option: WorkflowOption) => {
+async function onCloseWorkflow(option: WorkflowOption) {
   await closeWorkflows([option])
 }
 
@@ -257,7 +257,9 @@ const contextMenuItems = computed<WorkflowMenuItem[]>(() => [
   }
 ])
 
-const tabGetter = () => workflowTabRef.value as HTMLElement
+function tabGetter() {
+  return workflowTabRef.value as HTMLElement
+}
 
 usePragmaticDraggable(tabGetter, {
   getInitialData: () => {

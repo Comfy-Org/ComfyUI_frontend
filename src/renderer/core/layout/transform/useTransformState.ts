@@ -133,7 +133,7 @@ function useTransformStateIndividual() {
    * @param point - Point in screen coordinate system
    * @returns Point in canvas coordinate system
    */
-  const screenToCanvas = (point: Point): Point => {
+  function screenToCanvas(point: Point): Point {
     return {
       x: point.x / camera.z - camera.x,
       y: point.y / camera.z - camera.y

@@ -3,11 +3,8 @@ import { isBooleanInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 
-export const useBooleanWidget = () => {
-  const widgetConstructor: ComfyWidgetConstructorV2 = (
-    node: LGraphNode,
-    inputSpec: InputSpec
-  ) => {
+export function useBooleanWidget() {
+  function widgetConstructor(node: LGraphNode, inputSpec: InputSpec) {
     if (!isBooleanInputSpec(inputSpec)) {
       throw new Error(`Invalid input data: ${inputSpec}`)
     }
@@ -27,5 +24,5 @@ export const useBooleanWidget = () => {
     )
   }
 
-  return widgetConstructor
+  return widgetConstructor satisfies ComfyWidgetConstructorV2
 }

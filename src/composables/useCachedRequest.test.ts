@@ -138,7 +138,7 @@ describe('useCachedRequest', () => {
 
   it('should use custom cache key function if provided', async () => {
     // Create a cache key function that sorts object keys
-    const cacheKeyFn = (params: unknown) => {
+    function cacheKeyFn(params: unknown) {
       if (typeof params !== 'object' || params === null) return String(params)
       return JSON.stringify(
         Object.keys(params as Record<string, unknown>)

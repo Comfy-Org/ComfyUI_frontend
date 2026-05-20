@@ -115,12 +115,12 @@ watch(
   { immediate: true }
 )
 
-const onImageLoad = () => {
+function onImageLoad() {
   isImageLoaded.value = true
   hasError.value = false
 }
 
-const onImageError = () => {
+function onImageError() {
   hasError.value = true
   isImageLoaded.value = false
 }

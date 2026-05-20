@@ -130,10 +130,7 @@ const slotInputDefs = allInputDefs.filter(
 const widgetInputDefs = allInputDefs.filter((input) =>
   widgetStore.inputIsWidget(input)
 )
-const truncateDefaultValue = (
-  value: unknown,
-  charLimit: number = 32
-): string => {
+function truncateDefaultValue(value: unknown, charLimit: number = 32): string {
   let stringValue: string
 
   if (typeof value === 'object' && value !== null) {

@@ -31,7 +31,7 @@ export function useTemplateWorkflows() {
   /**
    * Loads all template workflows from the API
    */
-  const loadTemplates = async () => {
+  async function loadTemplates() {
     if (!workflowTemplatesStore.isLoaded) {
       await workflowTemplatesStore.loadWorkflowTemplates()
     }
@@ -41,7 +41,7 @@ export function useTemplateWorkflows() {
   /**
    * Selects the first template category as default
    */
-  const selectFirstTemplateCategory = () => {
+  function selectFirstTemplateCategory() {
     if (allTemplateGroups.value.length > 0) {
       const firstCategory = allTemplateGroups.value[0].modules[0]
       selectTemplateCategory(firstCategory)
@@ -51,7 +51,7 @@ export function useTemplateWorkflows() {
   /**
    * Selects a template category
    */
-  const selectTemplateCategory = (category: WorkflowTemplates | null) => {
+  function selectTemplateCategory(category: WorkflowTemplates | null) {
     selectedTemplate.value = category
     return category !== null
   }
@@ -59,11 +59,11 @@ export function useTemplateWorkflows() {
   /**
    * Gets template thumbnail URL
    */
-  const getTemplateThumbnailUrl = (
+  function getTemplateThumbnailUrl(
     template: TemplateInfo,
     sourceModule: string,
     index = '1'
-  ) => {
+  ) {
     const basePath =
       sourceModule === 'default'
         ? api.fileURL(`/templates/${template.name}`)
@@ -76,7 +76,7 @@ export function useTemplateWorkflows() {
   /**
    * Gets formatted template title
    */
-  const getTemplateTitle = (template: TemplateInfo, sourceModule: string) => {
+  function getTemplateTitle(template: TemplateInfo, sourceModule: string) {
     const fallback =
       template.title ?? template.name ?? `${sourceModule} Template`
     return sourceModule === 'default'
@@ -87,7 +87,7 @@ export function useTemplateWorkflows() {
   /**
    * Gets formatted template description
    */
-  const getTemplateDescription = (template: TemplateInfo) => {
+  function getTemplateDescription(template: TemplateInfo) {
     return (
       (template.localizedDescription || template.description)
         ?.replace(/[-_]/g, ' ')
@@ -98,7 +98,7 @@ export function useTemplateWorkflows() {
   /**
    * Loads a workflow template
    */
-  const loadWorkflowTemplate = async (id: string, sourceModule: string) => {
+  async function loadWorkflowTemplate(id: string, sourceModule: string) {
     if (!isTemplatesLoaded.value) return false
 
     loadingTemplateId.value = id
@@ -156,7 +156,7 @@ export function useTemplateWorkflows() {
   /**
    * Fetches template JSON from the appropriate endpoint
    */
-  const fetchTemplateJson = async (id: string, sourceModule: string) => {
+  async function fetchTemplateJson(id: string, sourceModule: string) {
     if (sourceModule === 'default') {
       // Default templates provided by frontend are served on this separate endpoint
       return fetch(api.fileURL(`/templates/${id}.json`)).then((r) => r.json())

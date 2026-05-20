@@ -22,7 +22,7 @@ export function useWorkflowAutoSave() {
   let isSaving = false
   let needsAutoSave = false
 
-  const scheduleAutoSave = () => {
+  function scheduleAutoSave() {
     // Clear any existing timeout
     if (autoSaveTimeout) {
       clearTimeout(autoSaveTimeout)
@@ -79,7 +79,7 @@ export function useWorkflowAutoSave() {
   )
 
   // Listen for graph changes and schedule autosave when they occur
-  const onGraphChanged = () => {
+  function onGraphChanged() {
     scheduleAutoSave()
   }
 

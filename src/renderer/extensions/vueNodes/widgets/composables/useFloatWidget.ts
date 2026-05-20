@@ -29,11 +29,8 @@ export const _for_testing = {
   onFloatValueChange
 }
 
-export const useFloatWidget = () => {
-  const widgetConstructor: ComfyWidgetConstructorV2 = (
-    node: LGraphNode,
-    inputSpec: InputSpec
-  ) => {
+export function useFloatWidget() {
+  function widgetConstructor(node: LGraphNode, inputSpec: InputSpec) {
     if (!isFloatInputSpec(inputSpec)) {
       throw new Error(`Invalid input data: ${inputSpec}`)
     }
@@ -96,5 +93,5 @@ export const useFloatWidget = () => {
     return widget
   }
 
-  return widgetConstructor
+  return widgetConstructor satisfies ComfyWidgetConstructorV2
 }

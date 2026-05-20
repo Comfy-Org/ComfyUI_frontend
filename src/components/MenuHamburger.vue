@@ -29,7 +29,7 @@ import { showNativeSystemMenu } from '@/utils/envUtil'
 
 const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()
-const exitFocusMode = () => {
+function exitFocusMode() {
   workspaceState.focusMode = false
 }
 

@@ -155,7 +155,7 @@ test.describe('Load3D', () => {
     async ({ comfyPage, load3d }) => {
       await expect(load3d.uploadBackgroundImageButton).toBeVisible()
       const node = await comfyPage.nodeOps.getNodeRefById(1)
-      const readBackgroundImage = async () => {
+      async function readBackgroundImage() {
         const properties =
           await node.getProperty<Record<string, { backgroundImage?: string }>>(
             'properties'
@@ -222,7 +222,7 @@ test.describe('Load3D', () => {
       await expect(load3d.gridToggleButton).toBeVisible()
 
       const node = await comfyPage.nodeOps.getNodeRefById(1)
-      const readShowGrid = async () => {
+      async function readShowGrid() {
         const properties =
           await node.getProperty<Record<string, { showGrid?: boolean }>>(
             'properties'

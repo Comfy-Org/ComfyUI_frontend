@@ -41,8 +41,9 @@ export function useNodeCustomization() {
     () => colorPaletteStore.completedActivePalette.light_theme
   )
 
-  const toLightThemeColor = (color: string) =>
-    adjustColor(color, { lightness: 0.5 })
+  function toLightThemeColor(color: string) {
+    return adjustColor(color, { lightness: 0.5 })
+  }
 
   // Color options
   const NO_COLOR_OPTION: ColorOption = {
@@ -85,7 +86,7 @@ export function useNodeCustomization() {
     }
   ]
 
-  const applyColor = (colorOption: ColorOption | null) => {
+  function applyColor(colorOption: ColorOption | null) {
     const colorName = colorOption?.name ?? NO_COLOR_OPTION.name
     const canvasColorOption =
       colorName === NO_COLOR_OPTION.name
@@ -101,7 +102,7 @@ export function useNodeCustomization() {
     canvasRefresh.refreshCanvas()
   }
 
-  const applyShape = (shapeOption: ShapeOption) => {
+  function applyShape(shapeOption: ShapeOption) {
     const selectedNodes = Array.from(canvasStore.selectedItems).filter(
       (item): item is LGraphNode => item instanceof LGraphNode
     )
@@ -117,7 +118,7 @@ export function useNodeCustomization() {
     canvasRefresh.refreshCanvas()
   }
 
-  const getCurrentColor = (): ColorOption | null => {
+  function getCurrentColor(): ColorOption | null {
     const selectedItems = Array.from(canvasStore.selectedItems)
     if (selectedItems.length === 0) return null
 
@@ -139,7 +140,7 @@ export function useNodeCustomization() {
     )
   }
 
-  const getCurrentShape = (): ShapeOption | null => {
+  function getCurrentShape(): ShapeOption | null {
     const selectedNodes = Array.from(canvasStore.selectedItems).filter(
       (item): item is LGraphNode => item instanceof LGraphNode
     )

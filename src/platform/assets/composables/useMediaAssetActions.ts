@@ -80,10 +80,10 @@ export function useMediaAssetActions() {
    * Handles both output assets (via history API) and input assets (via asset service)
    * @throws Error if deletion fails or is not allowed
    */
-  const deleteAssetApi = async (
+  async function deleteAssetApi(
     asset: AssetItem,
     assetType: string
-  ): Promise<void> => {
+  ): Promise<void> {
     if (assetType === 'output') {
       const jobId =
         getOutputAssetMetadata(asset.user_metadata)?.jobId || asset.id
@@ -107,7 +107,7 @@ export function useMediaAssetActions() {
    * Falls back to direct downloads in OSS mode and for single single-output
    * assets. With no argument, uses the asset from `MediaAssetKey` context.
    */
-  const downloadAssets = (assets?: AssetItem[]) => {
+  function downloadAssets(assets?: AssetItem[]) {
     const targetAssets =
       assets ?? (mediaContext?.asset.value ? [mediaContext.asset.value] : [])
     if (targetAssets.length === 0) return
@@ -224,7 +224,7 @@ export function useMediaAssetActions() {
     }
   }
 
-  const copyJobId = async (asset?: AssetItem) => {
+  async function copyJobId(asset?: AssetItem) {
     const targetAsset = asset ?? mediaContext?.asset.value
     if (!targetAsset) return
 
@@ -250,7 +250,7 @@ export function useMediaAssetActions() {
    * Add a loader node to the current workflow for this asset
    * Uses shared utility to detect appropriate node type based on file extension
    */
-  const addWorkflow = async (asset?: AssetItem) => {
+  async function addWorkflow(asset?: AssetItem) {
     const targetAsset = asset ?? mediaContext?.asset.value
     if (!targetAsset) return
 
@@ -334,7 +334,7 @@ export function useMediaAssetActions() {
    * Open the workflow from this asset in a new tab
    * Uses shared workflow extraction and action service
    */
-  const openWorkflow = async (asset?: AssetItem) => {
+  async function openWorkflow(asset?: AssetItem) {
     const targetAsset = asset ?? mediaContext?.asset.value
     if (!targetAsset) return
 
@@ -365,7 +365,7 @@ export function useMediaAssetActions() {
    * Export the workflow from this asset as a JSON file
    * Uses shared workflow extraction and action service
    */
-  const exportWorkflow = async (asset?: AssetItem) => {
+  async function exportWorkflow(asset?: AssetItem) {
     const targetAsset = asset ?? mediaContext?.asset.value
     if (!targetAsset) return
 
@@ -402,7 +402,7 @@ export function useMediaAssetActions() {
    * Add multiple assets to the current workflow
    * Creates loader nodes for each asset
    */
-  const addMultipleToWorkflow = async (assets: AssetItem[]) => {
+  async function addMultipleToWorkflow(assets: AssetItem[]) {
     if (!assets || assets.length === 0) return
 
     const NODE_OFFSET = 50
@@ -497,7 +497,7 @@ export function useMediaAssetActions() {
   /**
    * Open workflows from multiple assets in new tabs
    */
-  const openMultipleWorkflows = async (assets: AssetItem[]) => {
+  async function openMultipleWorkflows(assets: AssetItem[]) {
     if (!assets || assets.length === 0) return
 
     let succeeded = 0
@@ -551,7 +551,7 @@ export function useMediaAssetActions() {
   /**
    * Export workflows from multiple assets as JSON files
    */
-  const exportMultipleWorkflows = async (assets: AssetItem[]) => {
+  async function exportMultipleWorkflows(assets: AssetItem[]) {
     if (!assets || assets.length === 0) return
 
     let succeeded = 0
@@ -612,9 +612,9 @@ export function useMediaAssetActions() {
    * @param assets Single asset or array of assets to delete
    * @returns true if user confirmed and deletion was attempted, false if cancelled
    */
-  const deleteAssets = async (
+  async function deleteAssets(
     assets: AssetItem | AssetItem[]
-  ): Promise<boolean> => {
+  ): Promise<boolean> {
     const assetArray = Array.isArray(assets) ? assets : [assets]
     if (assetArray.length === 0) return false
 

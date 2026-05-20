@@ -1,10 +1,10 @@
 import { useEventListener } from '@vueuse/core'
 
-export const whileMouseDown = (
+export function whileMouseDown(
   elementOrEvent: HTMLElement | Event,
   callback: (iteration: number) => void,
   interval: number = 30
-) => {
+) {
   const element =
     elementOrEvent instanceof HTMLElement
       ? elementOrEvent
@@ -16,7 +16,7 @@ export const whileMouseDown = (
     callback(iteration++)
   }, interval)
 
-  const dispose = () => {
+  function dispose() {
     clearInterval(intervalId)
     disposeGlobal()
     disposeLocal()

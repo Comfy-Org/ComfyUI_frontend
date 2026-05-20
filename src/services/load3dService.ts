@@ -367,6 +367,6 @@ class Load3dService {
   }
 }
 
-export const useLoad3dService = () => {
+export function useLoad3dService() {
   return Load3dService.getInstance()
 }

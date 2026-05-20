@@ -4,10 +4,10 @@ import { describe, expect, it, vi } from 'vitest'
 
 import ToggleControl from './ToggleControl.vue'
 
-const renderComponent = (
+function renderComponent(
   props: { label?: string; modelValue?: boolean } = {},
   onUpdate?: (value: boolean) => void
-) => {
+) {
   const user = userEvent.setup()
   const utils = render(ToggleControl, {
     props: {

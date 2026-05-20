@@ -5,10 +5,10 @@ import {
   hydratePreservedQuery
 } from '@/platform/navigation/preservedQueryManager'
 
-export const installPreservedQueryTracker = (
+export function installPreservedQueryTracker(
   router: Router,
   definitions: Array<{ namespace: string; keys: string[] }>
-) => {
+) {
   const trackedDefinitions = definitions.map((definition) => ({
     ...definition
   }))

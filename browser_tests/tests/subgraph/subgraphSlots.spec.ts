@@ -647,7 +647,9 @@ test(
     await test.step('Make second INT typed connection', async () => {
       const toPos = await seedIOSlot.getOpenSlotPosition()
       await seedSlot.dragTo(comfyPage.canvas, { targetPosition: toPos })
-      const isConnected = () => comfyPage.vueNodes.isSlotConnected(seedSlot)
+      function isConnected() {
+        return comfyPage.vueNodes.isSlotConnected(seedSlot)
+      }
       await expect.poll(isConnected).toBe(true)
     })
 
@@ -680,8 +682,9 @@ test(
     )
 
     await test.step('Connect I/O to node with snap', async () => {
-      const hasSnap = () =>
-        comfyPage.page.evaluate(() => !!app!.canvas._highlight_pos)
+      function hasSnap() {
+        return comfyPage.page.evaluate(() => !!app!.canvas._highlight_pos)
+      }
       expect(await hasSnap()).toBe(false)
 
       const emptySlotPos = await seedIOSlot.getOpenSlotPosition()

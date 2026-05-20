@@ -10,30 +10,34 @@ import type { UseQueueEstimatesOptions } from './useQueueEstimates'
 type QueueStore = UseQueueEstimatesOptions['queueStore']
 type ExecutionStore = UseQueueEstimatesOptions['executionStore']
 
-const makeHistoryTask = (
+function makeHistoryTask(
   executionTimeInSeconds: number | string | undefined
-): TaskItemImpl =>
-  ({
+): TaskItemImpl {
+  return {
     executionTimeInSeconds
-  }) as TaskItemImpl
+  } as TaskItemImpl
+}
 
-const makeRunningTask = (executionStartTimestamp?: number): TaskItemImpl =>
-  ({
+function makeRunningTask(executionStartTimestamp?: number): TaskItemImpl {
+  return {
     executionStartTimestamp
-  }) as TaskItemImpl
+  } as TaskItemImpl
+}
 
-const createQueueStore = (data?: Partial<QueueStore>): QueueStore =>
-  ({
+function createQueueStore(data?: Partial<QueueStore>): QueueStore {
+  return {
     historyTasks: [],
     runningTasks: [],
     ...data
-  }) as QueueStore
+  } as QueueStore
+}
 
-const createExecutionStore = (data?: Partial<ExecutionStore>): ExecutionStore =>
-  ({
+function createExecutionStore(data?: Partial<ExecutionStore>): ExecutionStore {
+  return {
     runningWorkflowCount: 1,
     ...data
-  }) as ExecutionStore
+  } as ExecutionStore
+}
 
 type HarnessOptions = {
   queueStore?: QueueStore
@@ -45,7 +49,7 @@ type HarnessOptions = {
   now?: number
 }
 
-const createHarness = (options?: HarnessOptions) => {
+function createHarness(options?: HarnessOptions) {
   const queueStore = options?.queueStore ?? createQueueStore()
   const executionStore = options?.executionStore ?? createExecutionStore()
   const taskRef = ref<TaskItemImpl | null>(options?.task ?? null)

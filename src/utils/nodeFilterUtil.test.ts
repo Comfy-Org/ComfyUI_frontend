@@ -5,10 +5,10 @@ import { filterOutputNodes, isOutputNode } from '@/utils/nodeFilterUtil'
 
 describe('nodeFilterUtil', () => {
   // Helper to create a mock node
-  const createMockNode = (
+  function createMockNode(
     id: number,
     isOutputNode: boolean = false
-  ): LGraphNode => {
+  ): LGraphNode {
     // Create a custom class with the nodeData static property
     class MockNode extends LGraphNode {
       static override nodeData = isOutputNode ? { output_node: true } : {}

@@ -64,113 +64,116 @@ const meta: Meta<StoryArgs> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const createStoryTemplate = (args: StoryArgs) => ({
-  components: {
-    BaseModalLayout,
-    LeftSidePanel,
-    SearchInput,
-    MultiSelect,
-    SingleSelect,
-    Button,
-    MoreButton,
-    CardContainer,
-    CardTop,
-    CardBottom,
-    Tag
-  },
-  setup() {
-    const t = (k: string) => k
-
-    const onClose = () => {
-      // OnClose handler for story
-    }
-    provide(OnCloseKey, onClose)
-
-    const tempNavigation = ref<(NavItemData | NavGroupData)[]>([
-      {
-        id: 'installed',
-        label: 'Installed',
-        icon: 'icon-[lucide--folder]'
-      },
-      {
-        title: 'TAGS',
-        items: [
-          {
-            id: 'tag-sd15',
-            label: 'SD 1.5',
-            icon: 'icon-[lucide--tag]'
-          },
-          {
-            id: 'tag-sdxl',
-            label: 'SDXL',
-            icon: 'icon-[lucide--tag]'
-          },
-          {
-            id: 'tag-utility',
-            label: 'Utility',
-            icon: 'icon-[lucide--tag]'
-          }
-        ]
-      },
-      {
-        title: 'CATEGORIES',
-        items: [
-          {
-            id: 'cat-models',
-            label: 'Models',
-            icon: 'icon-[lucide--layers]'
-          },
-          {
-            id: 'cat-nodes',
-            label: 'Nodes',
-            icon: 'icon-[lucide--grid-3x3]'
-          }
-        ]
+function createStoryTemplate(args: StoryArgs) {
+  return {
+    components: {
+      BaseModalLayout,
+      LeftSidePanel,
+      SearchInput,
+      MultiSelect,
+      SingleSelect,
+      Button,
+      MoreButton,
+      CardContainer,
+      CardTop,
+      CardBottom,
+      Tag
+    },
+    setup() {
+      function t(k: string) {
+        return k
       }
-    ])
-    const selectedNavItem = ref<string | null>('installed')
 
-    const searchQuery = ref<string>('')
+      function onClose() {
+        // OnClose handler for story
+      }
+      provide(OnCloseKey, onClose)
 
-    const frameworkOptions = ref([
-      { name: 'Vue', value: 'vue' },
-      { name: 'React', value: 'react' },
-      { name: 'Angular', value: 'angular' },
-      { name: 'Svelte', value: 'svelte' }
-    ])
-    const projectOptions = ref([
-      { name: 'Project A', value: 'proj-a' },
-      { name: 'Project B', value: 'proj-b' },
-      { name: 'Project C', value: 'proj-c' }
-    ])
-    const sortOptions = ref([
-      { name: 'Popular', value: 'popular' },
-      { name: 'Latest', value: 'latest' },
-      { name: 'A → Z', value: 'az' }
-    ])
+      const tempNavigation = ref<(NavItemData | NavGroupData)[]>([
+        {
+          id: 'installed',
+          label: 'Installed',
+          icon: 'icon-[lucide--folder]'
+        },
+        {
+          title: 'TAGS',
+          items: [
+            {
+              id: 'tag-sd15',
+              label: 'SD 1.5',
+              icon: 'icon-[lucide--tag]'
+            },
+            {
+              id: 'tag-sdxl',
+              label: 'SDXL',
+              icon: 'icon-[lucide--tag]'
+            },
+            {
+              id: 'tag-utility',
+              label: 'Utility',
+              icon: 'icon-[lucide--tag]'
+            }
+          ]
+        },
+        {
+          title: 'CATEGORIES',
+          items: [
+            {
+              id: 'cat-models',
+              label: 'Models',
+              icon: 'icon-[lucide--layers]'
+            },
+            {
+              id: 'cat-nodes',
+              label: 'Nodes',
+              icon: 'icon-[lucide--grid-3x3]'
+            }
+          ]
+        }
+      ])
+      const selectedNavItem = ref<string | null>('installed')
 
-    const selectedFrameworks = ref<string[]>([])
-    const selectedProjects = ref<string[]>([])
-    const selectedSort = ref<string>('popular')
+      const searchQuery = ref<string>('')
 
-    const gridStyle = computed(() => createGridStyle())
+      const frameworkOptions = ref([
+        { name: 'Vue', value: 'vue' },
+        { name: 'React', value: 'react' },
+        { name: 'Angular', value: 'angular' },
+        { name: 'Svelte', value: 'svelte' }
+      ])
+      const projectOptions = ref([
+        { name: 'Project A', value: 'proj-a' },
+        { name: 'Project B', value: 'proj-b' },
+        { name: 'Project C', value: 'proj-c' }
+      ])
+      const sortOptions = ref([
+        { name: 'Popular', value: 'popular' },
+        { name: 'Latest', value: 'latest' },
+        { name: 'A → Z', value: 'az' }
+      ])
 
-    return {
-      args,
-      t,
-      tempNavigation,
-      selectedNavItem,
-      searchQuery,
-      frameworkOptions,
-      projectOptions,
-      sortOptions,
-      selectedFrameworks,
-      selectedProjects,
-      selectedSort,
-      gridStyle
-    }
-  },
-  template: `
+      const selectedFrameworks = ref<string[]>([])
+      const selectedProjects = ref<string[]>([])
+      const selectedSort = ref<string>('popular')
+
+      const gridStyle = computed(() => createGridStyle())
+
+      return {
+        args,
+        t,
+        tempNavigation,
+        selectedNavItem,
+        searchQuery,
+        frameworkOptions,
+        projectOptions,
+        sortOptions,
+        selectedFrameworks,
+        selectedProjects,
+        selectedSort,
+        gridStyle
+      }
+    },
+    template: `
     <div>
       <BaseModalLayout v-if="!args.hasRightPanel" :content-title="args.contentTitle || 'Content Title'">
         <!-- Left Panel Header Title -->
@@ -416,7 +419,8 @@ const createStoryTemplate = (args: StoryArgs) => ({
       </BaseModalLayout>
     </div>
   `
-})
+  }
+}
 
 export const Default: Story = {
   render: (args: StoryArgs) => createStoryTemplate(args),

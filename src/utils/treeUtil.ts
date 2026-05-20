@@ -120,10 +120,10 @@ export function sortedTree(
   return newNode
 }
 
-export const findNodeByKey = <T extends TreeNode>(
+export function findNodeByKey<T extends TreeNode>(
   root: T,
   key: string
-): T | null => {
+): T | null {
   if (root.key === key) {
     return root
   }
@@ -161,7 +161,7 @@ function cloneTree<T extends TreeNode>(node: T): T {
  * @param subtree - The subtree to merge.
  * @returns A new tree with the subtree merged.
  */
-export const combineTrees = <T extends TreeNode>(root: T, subtree: T): T => {
+export function combineTrees<T extends TreeNode>(root: T, subtree: T): T {
   const newRoot = cloneTree(root)
 
   const parentKey = subtree.key.slice(0, subtree.key.lastIndexOf('/'))

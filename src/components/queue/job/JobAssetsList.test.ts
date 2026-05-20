@@ -170,10 +170,10 @@ type TestJobGroup = Omit<JobGroup, 'items'> & {
   items: TestJobListItem[]
 }
 
-const createPreviewOutput = (
+function createPreviewOutput(
   filename: string,
   mediaType: string = 'images'
-): TestPreviewOutput => {
+): TestPreviewOutput {
   const url = `/api/view/${filename}`
   return {
     url,
@@ -183,21 +183,23 @@ const createPreviewOutput = (
   }
 }
 
-const createTaskRef = (preview?: TestPreviewOutput): TestTaskRef => ({
-  workflowId: 'workflow-1',
-  ...(preview && { previewOutput: preview })
-})
+function createTaskRef(preview?: TestPreviewOutput): TestTaskRef {
+  return {
+    workflowId: 'workflow-1',
+    ...(preview && { previewOutput: preview })
+  }
+}
 
-const buildJob = (
-  overrides: Partial<TestJobListItem> = {}
-): TestJobListItem => ({
-  id: 'job-1',
-  title: 'Job 1',
-  meta: 'meta',
-  state: 'completed',
-  taskRef: createTaskRef(createPreviewOutput('job-1.png')),
-  ...overrides
-})
+function buildJob(overrides: Partial<TestJobListItem> = {}): TestJobListItem {
+  return {
+    id: 'job-1',
+    title: 'Job 1',
+    meta: 'meta',
+    state: 'completed',
+    taskRef: createTaskRef(createPreviewOutput('job-1.png')),
+    ...overrides
+  }
+}
 
 function renderJobAssetsList({
   jobs = [],

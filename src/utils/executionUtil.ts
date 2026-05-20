@@ -24,10 +24,10 @@ import { compressWidgetInputSlots } from './litegraphUtil'
  *  - `sortNodes`: Whether to sort the nodes by execution order.
  * @returns The workflow and node links
  */
-export const graphToPrompt = async (
+export async function graphToPrompt(
   graph: LGraph,
   options: { sortNodes?: boolean } = {}
-): Promise<{ workflow: ComfyWorkflowJSON; output: ComfyApiWorkflow }> => {
+): Promise<{ workflow: ComfyWorkflowJSON; output: ComfyApiWorkflow }> {
   const { sortNodes = false } = options
 
   for (const node of graph.computeExecutionOrder(false)) {

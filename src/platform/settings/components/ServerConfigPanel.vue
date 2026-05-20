@@ -84,11 +84,11 @@ const {
 
 let restartTriggered = false
 
-const revertChanges = () => {
+function revertChanges() {
   serverConfigStore.revertChanges()
 }
 
-const restartApp = async () => {
+async function restartApp() {
   restartTriggered = true
   await electronAPI().restartApp()
 }
@@ -102,7 +102,7 @@ watch(serverConfigValues, async (newVal) => {
 })
 
 const { copyToClipboard } = useCopyToClipboard()
-const copyCommandLineArgs = async () => {
+async function copyCommandLineArgs() {
   await copyToClipboard(commandLineArgs.value)
 }
 
@@ -125,7 +125,7 @@ onBeforeUnmount(() => {
   })
 })
 
-const translateItem = (item: ServerConfig<ServerConfigValue>): FormItemType => {
+function translateItem(item: ServerConfig<ServerConfigValue>): FormItemType {
   return {
     ...item,
     name: t(`serverConfigItems.${item.id}.name`, item.name),

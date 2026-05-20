@@ -15,9 +15,11 @@ export type NodePackId = string
 
 export type RegistryPack = components['schemas']['Node']
 export type MergedNodePack = RegistryPack & AlgoliaNodePack
-export const isMergedNodePack = (
+export function isMergedNodePack(
   nodePack: RegistryPack | AlgoliaNodePack
-): nodePack is MergedNodePack => 'comfy_nodes' in nodePack
+): nodePack is MergedNodePack {
+  return 'comfy_nodes' in nodePack
+}
 
 export const IsInstallingKey: InjectionKey<Ref<boolean>> =
   Symbol('isInstalling')

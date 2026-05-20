@@ -18,7 +18,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 const settingStore = useSettingStore()
 const workflowStore = useWorkflowStore()
 
-const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+function handleBeforeUnload(event: BeforeUnloadEvent) {
   if (
     settingStore.get('Comfy.Window.UnloadConfirmation') &&
     workflowStore.modifiedWorkflows.length > 0

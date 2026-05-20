@@ -7,7 +7,9 @@ vi.mock('es-toolkit/compat', async (importOriginal) => {
   return {
     ...(actual as object),
     debounce: vi.fn((fn: (...args: unknown[]) => void) => {
-      const immediate = (...args: unknown[]) => fn(...args)
+      function immediate(...args: unknown[]) {
+        return fn(...args)
+      }
       immediate.cancel = vi.fn()
       return immediate
     })

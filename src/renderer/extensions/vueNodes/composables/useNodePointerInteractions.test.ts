@@ -106,10 +106,10 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => {
   }
 })
 
-const createPointerEvent = (
+function createPointerEvent(
   eventType: string,
   overrides: Partial<PointerEventInit> = {}
-): PointerEvent => {
+): PointerEvent {
   return new PointerEvent(eventType, {
     pointerId: 1,
     button: 0,
@@ -119,10 +119,10 @@ const createPointerEvent = (
   })
 }
 
-const createMouseEvent = (
+function createMouseEvent(
   eventType: string,
   overrides: Partial<MouseEventInit> = {}
-): MouseEvent => {
+): MouseEvent {
   return new MouseEvent(eventType, {
     button: 2, // Right click
     clientX: 100,

@@ -15,10 +15,11 @@ test('@vue-nodes In App Mode, widget width updates with panel size', async ({
     await comfyPage.appMode.enterAppModeWithInputs([['10', 'legacy_widget']])
   })
 
-  const getWidth = () =>
-    comfyPage.page.evaluate(
+  function getWidth() {
+    return comfyPage.page.evaluate(
       () => graph!.getNodeById(10)!.widgets![0].width ?? 0
     )
+  }
 
   await test.step('Mouse clicks resolve to button regions', async () => {
     const legacyWidget = comfyPage.appMode.linearWidgets.locator('canvas')

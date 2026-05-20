@@ -13,10 +13,10 @@ interface DropResolutionContext {
   session: SlotLinkDragContext
 }
 
-export const resolveSlotTargetCandidate = (
+export function resolveSlotTargetCandidate(
   target: EventTarget | null,
   { adapter, graph }: DropResolutionContext
-): SlotDropCandidate | null => {
+): SlotDropCandidate | null {
   const { state: dragState, setCompatibleForKey } = useSlotLinkDragUIState()
   if (!(target instanceof HTMLElement)) return null
 
@@ -50,10 +50,10 @@ export const resolveSlotTargetCandidate = (
   return candidate
 }
 
-export const resolveNodeSurfaceSlotCandidate = (
+export function resolveNodeSurfaceSlotCandidate(
   target: EventTarget | null,
   { adapter, graph, session }: DropResolutionContext
-): SlotDropCandidate | null => {
+): SlotDropCandidate | null {
   const { setCompatibleForKey } = useSlotLinkDragUIState()
   if (!(target instanceof HTMLElement)) return null
 

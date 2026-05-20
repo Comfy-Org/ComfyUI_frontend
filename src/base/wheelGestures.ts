@@ -14,7 +14,10 @@
  * Components that intercept wheel events should suppress the default for
  * these gestures even when they otherwise let the browser scroll natively.
  */
-export const isCanvasGestureWheel = (event: WheelEvent): boolean =>
-  event.ctrlKey ||
-  event.metaKey ||
-  Math.abs(event.deltaX) > Math.abs(event.deltaY)
+export function isCanvasGestureWheel(event: WheelEvent): boolean {
+  return (
+    event.ctrlKey ||
+    event.metaKey ||
+    Math.abs(event.deltaX) > Math.abs(event.deltaY)
+  )
+}

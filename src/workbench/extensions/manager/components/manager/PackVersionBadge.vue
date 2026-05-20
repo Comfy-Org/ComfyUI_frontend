@@ -92,16 +92,16 @@ const installedVersion = computed(() => {
     : version.slice(0, TRUNCATED_HASH_LENGTH)
 })
 
-const toggleVersionSelector = (event: Event) => {
+function toggleVersionSelector(event: Event) {
   lastTargetEl.value = event.currentTarget as HTMLElement
   popoverRef.value.toggle(event)
 }
 
-const closeVersionSelector = () => {
+function closeVersionSelector() {
   popoverRef.value.hide()
 }
 
-const fixPopoverIntoViewport = async () => {
+async function fixPopoverIntoViewport() {
   await nextTick()
 
   const popoverEl: HTMLElement | undefined =

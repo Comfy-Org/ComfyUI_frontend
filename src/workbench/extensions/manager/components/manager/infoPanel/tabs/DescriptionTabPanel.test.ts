@@ -28,12 +28,14 @@ describe('DescriptionTabPanel', () => {
     })
   }
 
-  const createNodePack = (
+  function createNodePack(
     overrides: Partial<components['schemas']['Node']> = {}
-  ) => ({
-    description: 'Test description',
-    ...overrides
-  })
+  ) {
+    return {
+      description: 'Test description',
+      ...overrides
+    }
+  }
 
   const licenseTests = [
     {

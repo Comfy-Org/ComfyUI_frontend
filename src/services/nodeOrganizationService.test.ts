@@ -5,7 +5,7 @@ import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 
 describe('nodeOrganizationService', () => {
-  const createMockNodeDef = (overrides: Partial<ComfyNodeDefImpl> = {}) => {
+  function createMockNodeDef(overrides: Partial<ComfyNodeDefImpl> = {}) {
     const mockNodeDef = {
       name: 'TestNode',
       display_name: 'Test Node',

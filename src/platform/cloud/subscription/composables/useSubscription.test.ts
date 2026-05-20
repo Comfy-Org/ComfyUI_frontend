@@ -60,7 +60,7 @@ const {
 let scope: ReturnType<typeof effectScope> | undefined
 type Distribution = 'desktop' | 'localhost' | 'cloud'
 
-const setDistribution = (distribution: Distribution) => {
+function setDistribution(distribution: Distribution) {
   ;(
     globalThis as typeof globalThis & { __DISTRIBUTION__: Distribution }
   ).__DISTRIBUTION__ = distribution

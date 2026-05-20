@@ -8,7 +8,7 @@ function useImageLoaderInternal() {
   const dataStore = useMaskEditorDataStore()
   const canvasManager = useCanvasManager()
 
-  const loadImages = async (): Promise<HTMLImageElement> => {
+  async function loadImages(): Promise<HTMLImageElement> {
     const inputData = dataStore.inputData
 
     if (!inputData) {

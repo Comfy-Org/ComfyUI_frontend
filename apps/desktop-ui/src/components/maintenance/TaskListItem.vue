@@ -82,7 +82,7 @@ const isExecuting = useMinLoadingDurationRef(reactiveExecuting, 250)
 // Popover
 const infoPopover = ref<InstanceType<typeof Popover> | null>(null)
 
-const toggle = (event: Event) => {
+function toggle(event: Event) {
   infoPopover.value?.toggle(event)
 }
 </script>

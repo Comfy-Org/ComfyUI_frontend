@@ -19,7 +19,7 @@ type GetNodeDefsParams = operations['ListComfyNodes']['parameters']['query'] & {
 }
 type GetPackByIdPath = operations['getNode']['parameters']['path']['nodeId']
 
-const isNodePack = (pack: NodePack | undefined): pack is NodePack => {
+function isNodePack(pack: NodePack | undefined): pack is NodePack {
   return pack !== undefined && 'id' in pack
 }
 
@@ -56,7 +56,7 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
   /**
    * Get a list of packs by their IDs from the registry
    */
-  const getPacksByIds = async (ids: NodePack['id'][]): Promise<NodePack[]> => {
+  async function getPacksByIds(ids: NodePack['id'][]): Promise<NodePack[]> {
     const [cachedPacksIds, uncachedPacksIds] = partition(ids, (id) =>
       getPacksByIdCache.has(id)
     )
@@ -118,7 +118,7 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
   /**
    * Clear all cached data
    */
-  const clearCache = () => {
+  function clearCache() {
     getNodeDefs.clear()
     listAllPacks.clear()
     getPackById.clear()
@@ -128,7 +128,7 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
   /**
    * Cancel all any in-flight requests.
    */
-  const cancelRequests = () => {
+  function cancelRequests() {
     getNodeDefs.cancel()
     listAllPacks.cancel()
     getPackById.cancel()

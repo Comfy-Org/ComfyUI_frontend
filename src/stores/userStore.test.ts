@@ -54,7 +54,8 @@ describe('userStore', () => {
     })
 
     it('deduplicates concurrent calls before the first fetch resolves', async () => {
-      let resolveConfig: (value: unknown) => void = () => {}
+      function noopConfigResolver() {}
+      let resolveConfig: (value: unknown) => void = noopConfigResolver
       getUserConfig.mockImplementation(
         () =>
           new Promise((resolve) => {

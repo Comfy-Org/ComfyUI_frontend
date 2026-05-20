@@ -168,11 +168,11 @@ const {
 } = useFreeTierOnboarding()
 const googleSsoBlockedReason = getGoogleSsoBlockedReason()
 
-const navigateToLogin = async () => {
+async function navigateToLogin() {
   await router.push({ name: 'cloud-login', query: route.query })
 }
 
-const onSuccess = async () => {
+async function onSuccess() {
   toastStore.add({
     severity: 'success',
     summary: 'Sign up Completed',
@@ -189,21 +189,21 @@ const onSuccess = async () => {
   await router.push({ path: '/', query: route.query })
 }
 
-const signInWithGoogle = async () => {
+async function signInWithGoogle() {
   authError.value = ''
   if (await authActions.signInWithGoogle({ isNewUser: true })) {
     await onSuccess()
   }
 }
 
-const signInWithGithub = async () => {
+async function signInWithGithub() {
   authError.value = ''
   if (await authActions.signInWithGithub({ isNewUser: true })) {
     await onSuccess()
   }
 }
 
-const signUpWithEmail = async (values: SignUpData) => {
+async function signUpWithEmail(values: SignUpData) {
   authError.value = ''
   if (await authActions.signUpWithEmail(values.email, values.password)) {
     await onSuccess()

@@ -13,27 +13,23 @@ const DialogDemoComponent = {
     const currentInputName = ref('ckpt_name')
     const currentValue = ref('')
 
-    const handleOpenDialog = (
-      nodeType: string,
-      inputName: string,
-      value = ''
-    ) => {
+    function handleOpenDialog(nodeType: string, inputName: string, value = '') {
       currentNodeType.value = nodeType
       currentInputName.value = inputName
       currentValue.value = value
       isDialogOpen.value = true
     }
 
-    const handleCloseDialog = () => {
+    function handleCloseDialog() {
       isDialogOpen.value = false
     }
 
-    const handleAssetSelected = (assetPath: string) => {
+    function handleAssetSelected(assetPath: string) {
       alert(`Selected asset: ${assetPath}`)
       isDialogOpen.value = false // Auto-close like the real composable
     }
 
-    const handleOpenWithCurrentValue = () => {
+    function handleOpenWithCurrentValue() {
       handleOpenDialog(
         'CheckpointLoaderSimple',
         'ckpt_name',

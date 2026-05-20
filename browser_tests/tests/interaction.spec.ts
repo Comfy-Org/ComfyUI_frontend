@@ -82,10 +82,10 @@ test.describe('Node Interaction', () => {
       }
     )
 
-    const dragSelectNodes = async (
+    async function dragSelectNodes(
       comfyPage: ComfyPage,
       clipNodes: NodeReference[]
-    ) => {
+    ) {
       const clipNode1Pos = await clipNodes[0].getPosition()
       const clipNode2Pos = await clipNodes[1].getPosition()
       const offset = 64
@@ -117,15 +117,16 @@ test.describe('Node Interaction', () => {
     }) => {
       const clipNodes =
         await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-      const getPositions = () =>
-        Promise.all(clipNodes.map((node) => node.getPosition()))
-      const testDirection = async ({
+      function getPositions() {
+        return Promise.all(clipNodes.map((node) => node.getPosition()))
+      }
+      async function testDirection({
         direction,
         expectedPosition
       }: {
         direction: string
         expectedPosition: (originalPosition: Position) => Position
-      }) => {
+      }) {
         const originalPositions = await getPositions()
         await dragSelectNodes(comfyPage, clipNodes)
         await comfyPage.command.executeCommand(
@@ -671,7 +672,7 @@ test.describe('Canvas Interaction', { tag: '@screenshot' }, () => {
   })
 
   test('Cursor style changes when panning', async ({ comfyPage }) => {
-    const getCursorStyle = async () => {
+    async function getCursorStyle() {
       return await comfyPage.page.evaluate(() => {
         return (
           document.getElementById('graph-canvas')!.style.cursor || 'default'
@@ -703,7 +704,7 @@ test.describe('Canvas Interaction', { tag: '@screenshot' }, () => {
   test('Properly resets dragging state after pan mode sequence', async ({
     comfyPage
   }) => {
-    const getCursorStyle = async () => {
+    async function getCursorStyle() {
       return await comfyPage.page.evaluate(() => {
         return (
           document.getElementById('graph-canvas')!.style.cursor || 'default'
@@ -878,8 +879,9 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
     )
   })
 
-  const generateUniqueFilename = (extension = '') =>
-    `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}${extension}`
+  function generateUniqueFilename(extension = '') {
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}${extension}`
+  }
 
   test.describe('Restore all open workflows on reload', () => {
     let workflowA: string
@@ -1077,7 +1079,7 @@ test.describe('Viewport settings', () => {
     comfyPage,
     comfyMouse
   }) => {
-    const changeTab = async (tab: Locator) => {
+    async function changeTab(tab: Locator) {
       await tab.click()
       await comfyPage.nextFrame()
       await comfyMouse.move(DefaultGraphPositions.emptySpace)
@@ -1406,7 +1408,7 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
     test('Cursor changes appropriately in different modes', async ({
       comfyPage
     }) => {
-      const getCursorStyle = async () => {
+      async function getCursorStyle() {
         return await comfyPage.page.evaluate(() => {
           return (
             document.getElementById('graph-canvas')!.style.cursor || 'default'

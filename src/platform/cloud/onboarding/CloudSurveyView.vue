@@ -54,7 +54,7 @@ onMounted(async () => {
   }
 })
 
-const onSubmitSurvey = async (payload: Record<string, unknown>) => {
+async function onSubmitSurvey(payload: Record<string, unknown>) {
   if (!onboardingSurveyEnabled.value) {
     await router.replace({ name: 'cloud-user-check' })
     return

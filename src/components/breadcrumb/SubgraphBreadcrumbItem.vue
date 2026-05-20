@@ -104,10 +104,7 @@ const itemLabel = ref<string>()
 const itemInputRef = ref<{ $el?: HTMLInputElement }>()
 const wrapperRef = ref<HTMLAnchorElement>()
 
-const rename = async (
-  newName: string | null | undefined,
-  initialName: string
-) => {
+async function rename(newName: string | null | undefined, initialName: string) {
   if (newName && newName !== initialName) {
     // Synchronize the node titles with the new name
     item.updateTitle?.(newName)
@@ -144,7 +141,7 @@ const tooltipText = computed(() => {
   return item.label
 })
 
-const startRename = async () => {
+async function startRename() {
   // Check if element is hidden (collapsed breadcrumb)
   // When collapsed, root item is hidden via CSS display:none, so use rename command
   if (isRoot && wrapperRef.value?.offsetParent === null) {
@@ -167,7 +164,7 @@ const startRename = async () => {
 
 const { menuItems } = useWorkflowActionsMenu(startRename, { isRoot })
 
-const handleClick = (event: MouseEvent) => {
+function handleClick(event: MouseEvent) {
   if (isEditing.value) {
     return
   }
@@ -186,7 +183,7 @@ const handleClick = (event: MouseEvent) => {
   }
 }
 
-const inputBlur = async (doRename: boolean) => {
+async function inputBlur(doRename: boolean) {
   if (doRename) {
     await rename(itemLabel.value, item.label as string)
   }

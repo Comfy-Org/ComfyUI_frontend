@@ -16,7 +16,7 @@ export function useFrameNodes() {
 
   const canFrame = computed(() => hasMultipleSelection.value)
 
-  const frameNodes = () => {
+  function frameNodes() {
     const { canvas } = app
     if (!canvas.selectedItems?.size) return
     const group = new LGraphGroup()

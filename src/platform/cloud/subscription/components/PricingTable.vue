@@ -286,22 +286,23 @@ import { useAuthStore } from '@/stores/authStore'
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 type CheckoutTier = CheckoutTierKey | `${CheckoutTierKey}-yearly`
 
-const getCheckoutTier = (
+function getCheckoutTier(
   tierKey: CheckoutTierKey,
   billingCycle: BillingCycle
-): CheckoutTier => (billingCycle === 'yearly' ? `${tierKey}-yearly` : tierKey)
+): CheckoutTier {
+  return billingCycle === 'yearly' ? `${tierKey}-yearly` : tierKey
+}
 
-const getCheckoutAttributionForCloud =
-  async (): Promise<CheckoutAttributionMetadata> => {
-    if (__DISTRIBUTION__ !== 'cloud') {
-      return {}
-    }
-
-    const { getCheckoutAttribution } =
-      await import('@/platform/telemetry/utils/checkoutAttribution')
-
-    return getCheckoutAttribution()
+async function getCheckoutAttributionForCloud(): Promise<CheckoutAttributionMetadata> {
+  if (__DISTRIBUTION__ !== 'cloud') {
+    return {}
   }
+
+  const { getCheckoutAttribution } =
+    await import('@/platform/telemetry/utils/checkoutAttribution')
+
+  return getCheckoutAttribution()
+}
 
 interface BillingCycleOption {
   label: string
@@ -391,7 +392,7 @@ const currentPlanDescriptor = computed(() => {
   } as const
 })
 
-const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
+function isCurrentPlan(tierKey: CheckoutTierKey): boolean {
   if (!currentTierKey.value) return false
 
   const selectedIsYearly = currentBillingCycle.value === 'yearly'
@@ -402,11 +403,11 @@ const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
   )
 }
 
-const togglePopover = (event: Event) => {
+function togglePopover(event: Event) {
   popover.value.toggle(event)
 }
 
-const getButtonLabel = (tier: PricingTierConfig): string => {
+function getButtonLabel(tier: PricingTierConfig): string {
   if (isCurrentPlan(tier.key)) return t('subscription.currentPlan')
 
   const planName =
@@ -419,27 +420,31 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
     : t('subscription.subscribeTo', { plan: planName })
 }
 
-const getButtonSeverity = (
-  tier: PricingTierConfig
-): 'primary' | 'secondary' => {
+function getButtonSeverity(tier: PricingTierConfig): 'primary' | 'secondary' {
   if (isCurrentPlan(tier.key)) return 'secondary'
   if (tier.key === 'creator') return 'primary'
   return 'secondary'
 }
 
-const getButtonTextClass = (tier: PricingTierConfig): string =>
-  tier.key === 'creator'
+function getButtonTextClass(tier: PricingTierConfig): string {
+  return tier.key === 'creator'
     ? 'font-inter text-sm font-bold leading-normal text-base-background'
     : 'font-inter text-sm font-bold leading-normal text-primary-foreground'
+}
 
-const getPrice = (tier: PricingTierConfig): number =>
-  tier.pricing[currentBillingCycle.value]
+function getPrice(tier: PricingTierConfig): number {
+  return tier.pricing[currentBillingCycle.value]
+}
 
-const getAnnualTotal = (tier: PricingTierConfig): number =>
-  tier.pricing.yearly * 12
+function getAnnualTotal(tier: PricingTierConfig): number {
+  return tier.pricing.yearly * 12
+}
 
-const getCreditsDisplay = (tier: PricingTierConfig): number =>
-  tier.pricing.credits * (currentBillingCycle.value === 'yearly' ? 12 : 1)
+function getCreditsDisplay(tier: PricingTierConfig): number {
+  return (
+    tier.pricing.credits * (currentBillingCycle.value === 'yearly' ? 12 : 1)
+  )
+}
 
 const handleSubscribe = wrapWithErrorHandlingAsync(
   async (tierKey: CheckoutTierKey) => {

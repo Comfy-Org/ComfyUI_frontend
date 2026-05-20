@@ -19,7 +19,7 @@ const props = defineProps<
 >()
 
 const pressed = ref(false)
-const setPressed = (val: boolean) => {
+function setPressed(val: boolean) {
   pressed.value = val
 }
 

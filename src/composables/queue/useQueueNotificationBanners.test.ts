@@ -43,7 +43,7 @@ vi.mock('@/stores/executionStore', () => {
   }
 })
 
-const mountComposable = () => {
+function mountComposable() {
   let composable: ReturnType<typeof useQueueNotificationBanners>
   const result = render({
     template: '<div />',
@@ -56,29 +56,32 @@ const mountComposable = () => {
 }
 
 describe(useQueueNotificationBanners, () => {
-  const queueStore = () =>
-    useQueueStore() as {
+  function queueStore() {
+    return useQueueStore() as {
       pendingTasks: MockTask[]
       runningTasks: MockTask[]
       historyTasks: MockTask[]
     }
-  const executionStore = () => useExecutionStore() as { isIdle: boolean }
+  }
+  function executionStore() {
+    return useExecutionStore() as { isIdle: boolean }
+  }
 
-  const resetState = () => {
+  function resetState() {
     queueStore().pendingTasks = []
     queueStore().runningTasks = []
     queueStore().historyTasks = []
     executionStore().isIdle = true
   }
 
-  const createTask = (
+  function createTask(
     options: {
       state?: MockTask['displayStatus']
       ts?: number
       previewUrl?: string
       isImage?: boolean
     } = {}
-  ): MockTask => {
+  ): MockTask {
     const {
       state = 'Completed',
       ts = Date.now(),
@@ -101,11 +104,11 @@ describe(useQueueNotificationBanners, () => {
     return task
   }
 
-  const runBatch = async (options: {
+  async function runBatch(options: {
     start: number
     finish: number
     tasks: MockTask[]
-  }) => {
+  }) {
     const { start, finish, tasks } = options
 
     vi.setSystemTime(start)

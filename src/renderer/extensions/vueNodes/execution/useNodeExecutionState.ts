@@ -13,9 +13,9 @@ import { useExecutionStore } from '@/stores/executionStore'
  * @param nodeLocatorIdMaybe - Locator ID (root or subgraph scoped) of the node to track
  * @returns Object containing reactive execution state and progress
  */
-export const useNodeExecutionState = (
+export function useNodeExecutionState(
   nodeLocatorIdMaybe: MaybeRefOrGetter<string | undefined>
-) => {
+) {
   const locatorId = computed(() => toValue(nodeLocatorIdMaybe) ?? '')
   const { nodeLocationProgressStates, isIdle } =
     storeToRefs(useExecutionStore())

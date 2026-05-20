@@ -4,7 +4,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 const DIALOG_KEY = 'global-model-selector'
 
-export const useModelSelectorDialog = () => {
+export function useModelSelectorDialog() {
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
 

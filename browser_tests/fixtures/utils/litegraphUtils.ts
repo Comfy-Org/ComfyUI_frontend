@@ -7,7 +7,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position, Size } from '@e2e/fixtures/types'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
-export const getMiddlePoint = (pos1: Position, pos2: Position) => {
+export function getMiddlePoint(pos1: Position, pos2: Position) {
   return {
     x: (pos1.x + pos2.x) / 2,
     y: (pos1.y + pos2.y) / 2

@@ -27,7 +27,7 @@ const isSmall = computed(
 /**
  * Open templates dialog from sidebar and track UI button click.
  */
-const openTemplates = () => {
+function openTemplates() {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'sidebar_templates_dialog_opened'
   })

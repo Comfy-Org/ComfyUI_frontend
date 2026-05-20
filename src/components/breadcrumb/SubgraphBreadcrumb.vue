@@ -125,7 +125,7 @@ const items = computed(() => {
 
 const activeItemKey = computed(() => items.value.at(-1)?.key)
 
-const handleBackClick = () => {
+function handleBackClick() {
   void useCommandStore().execute('Comfy.Graph.ExitSubgraph')
 }
 

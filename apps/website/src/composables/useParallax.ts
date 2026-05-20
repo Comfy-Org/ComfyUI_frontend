@@ -35,7 +35,7 @@ export function useParallax(
 
     const triggerEl = options.trigger?.value
 
-    const createAnimations = () => {
+    function createAnimations() {
       const els = elements
         .map((r) => r.value)
         .filter((el): el is HTMLElement => !!el && el.offsetParent !== null)

@@ -117,7 +117,7 @@ function onIdle() {
   }
 }
 
-const onMouseMove = (e: MouseEvent) => {
+function onMouseMove(e: MouseEvent) {
   hideTooltip()
   clearTimeout(idleTimeout)
 

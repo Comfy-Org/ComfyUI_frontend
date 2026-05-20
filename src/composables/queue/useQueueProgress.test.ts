@@ -12,14 +12,16 @@ const localeRef: Ref<string> = ref('en-US') as Ref<string>
 const executionProgressRef: Ref<ProgressValue> = ref(null)
 const executingNodeProgressRef: Ref<ProgressValue> = ref(null)
 
-const createExecutionStoreMock = () => ({
-  get executionProgress() {
-    return executionProgressRef.value ?? undefined
-  },
-  get executingNodeProgress() {
-    return executingNodeProgressRef.value ?? undefined
+function createExecutionStoreMock() {
+  return {
+    get executionProgress() {
+      return executionProgressRef.value ?? undefined
+    },
+    get executingNodeProgress() {
+      return executingNodeProgressRef.value ?? undefined
+    }
   }
-})
+}
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
@@ -31,7 +33,7 @@ vi.mock('@/stores/executionStore', () => ({
   useExecutionStore: () => createExecutionStoreMock()
 }))
 
-const mountUseQueueProgress = () => {
+function mountUseQueueProgress() {
   let composable: ReturnType<typeof useQueueProgress>
   render({
     template: '<div />',
@@ -43,11 +45,11 @@ const mountUseQueueProgress = () => {
   return { composable: composable! }
 }
 
-const setExecutionProgress = (value?: number | null) => {
+function setExecutionProgress(value?: number | null) {
   executionProgressRef.value = value ?? null
 }
 
-const setExecutingNodeProgress = (value?: number | null) => {
+function setExecutingNodeProgress(value?: number | null) {
   executingNodeProgressRef.value = value ?? null
 }
 

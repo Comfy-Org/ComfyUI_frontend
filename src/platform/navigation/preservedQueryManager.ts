@@ -3,22 +3,22 @@ import type { LocationQuery, LocationQueryRaw } from 'vue-router'
 const STORAGE_PREFIX = 'Comfy.PreservedQuery.'
 const preservedQueries = new Map<string, Record<string, string>>()
 
-const readQueryParam = (value: unknown): string | undefined => {
+function readQueryParam(value: unknown): string | undefined {
   return typeof value === 'string' ? value : undefined
 }
 
-const getStorageKey = (namespace: string) => `${STORAGE_PREFIX}${namespace}`
+function getStorageKey(namespace: string) {
+  return `${STORAGE_PREFIX}${namespace}`
+}
 
-const isValidQueryRecord = (
-  value: unknown
-): value is Record<string, string> => {
+function isValidQueryRecord(value: unknown): value is Record<string, string> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return false
   }
   return Object.values(value).every((v) => typeof v === 'string')
 }
 
-const readFromStorage = (namespace: string): Record<string, string> | null => {
+function readFromStorage(namespace: string): Record<string, string> | null {
   try {
     const raw = sessionStorage.getItem(getStorageKey(namespace))
     if (!raw) return null
@@ -37,10 +37,10 @@ const readFromStorage = (namespace: string): Record<string, string> | null => {
   }
 }
 
-const writeToStorage = (
+function writeToStorage(
   namespace: string,
   payload: Record<string, string> | null
-) => {
+) {
   try {
     if (!payload || Object.keys(payload).length === 0) {
       sessionStorage.removeItem(getStorageKey(namespace))
@@ -55,7 +55,7 @@ const writeToStorage = (
   }
 }
 
-export const hydratePreservedQuery = (namespace: string) => {
+export function hydratePreservedQuery(namespace: string) {
   if (preservedQueries.has(namespace)) {
     return
   }
@@ -65,11 +65,11 @@ export const hydratePreservedQuery = (namespace: string) => {
   }
 }
 
-export const capturePreservedQuery = (
+export function capturePreservedQuery(
   namespace: string,
   query: LocationQuery,
   keys: string[]
-) => {
+) {
   const payload: Record<string, string> = {}
 
   keys.forEach((key) => {
@@ -87,10 +87,10 @@ export const capturePreservedQuery = (
   writeToStorage(namespace, payload)
 }
 
-export const mergePreservedQueryIntoQuery = (
+export function mergePreservedQueryIntoQuery(
   namespace: string,
   query?: LocationQueryRaw
-): LocationQueryRaw | undefined => {
+): LocationQueryRaw | undefined {
   const payload = preservedQueries.get(namespace)
   if (!payload) return undefined
 
@@ -106,7 +106,7 @@ export const mergePreservedQueryIntoQuery = (
   return changed ? nextQuery : undefined
 }
 
-export const clearPreservedQuery = (namespace: string) => {
+export function clearPreservedQuery(namespace: string) {
   if (!preservedQueries.has(namespace)) return
   preservedQueries.delete(namespace)
   writeToStorage(namespace, null)

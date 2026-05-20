@@ -20,7 +20,7 @@ import { useCommandStore } from '@/stores/commandStore'
 
 const commandStore = useCommandStore()
 
-const toggleBypass = async () => {
+async function toggleBypass() {
   await commandStore.execute('Comfy.Canvas.ToggleSelectedNodes.Bypass')
 }
 </script>

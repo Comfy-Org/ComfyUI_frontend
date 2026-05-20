@@ -325,7 +325,7 @@ export class AssetsHelper {
       await this.page.unroute(pattern, existingHandler)
     }
 
-    const handler = async (route: Route) => {
+    async function handler(route: Route) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',

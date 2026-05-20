@@ -53,7 +53,7 @@ watch(
   }
 )
 
-const updateValue = (newValue: number | null) => {
+function updateValue(newValue: number | null) {
   if (newValue === null) {
     // If the input is cleared, reset to the minimum value or 0
     newValue = Number(props.min) || 0
@@ -74,7 +74,7 @@ const updateValue = (newValue: number | null) => {
   emit('update:modelValue', newValue)
 }
 
-const displayValue = (value: number): string => {
+function displayValue(value: number): string {
   updateValue(value)
   const stepString = (props.step ?? 1).toString()
   const resolution = stepString.includes('.')

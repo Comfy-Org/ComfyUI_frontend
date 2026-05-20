@@ -32,7 +32,7 @@ interface PrimeVueTooltipElement extends Element {
 
 const tooltipsTemporarilyDisabled = ref(false)
 
-const hideTooltipsGlobally = () => {
+function hideTooltipsGlobally() {
   // Get all visible tooltip elements
   const tooltips = document.querySelectorAll('.p-tooltip')
 
@@ -62,7 +62,7 @@ const hideTooltipsGlobally = () => {
 /**
  * Re-enable tooltips after pointer interaction ends
  */
-const handlePointerUp = () => {
+function handlePointerUp() {
   tooltipsTemporarilyDisabled.value = false
 }
 
@@ -114,7 +114,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
   /**
    * Get tooltip text for input slots
    */
-  const getInputSlotTooltip = (slotName: string) => {
+  function getInputSlotTooltip(slotName: string) {
     if (!tooltipsEnabled.value || !nodeDef.value) return ''
 
     const key = `nodeDefs.${normalizeI18nKey(unref(nodeType))}.inputs.${normalizeI18nKey(slotName)}.tooltip`
@@ -125,7 +125,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
   /**
    * Get tooltip text for output slots
    */
-  const getOutputSlotTooltip = (slotIndex: number) => {
+  function getOutputSlotTooltip(slotIndex: number) {
     if (!tooltipsEnabled.value || !nodeDef.value) return ''
 
     const key = `nodeDefs.${normalizeI18nKey(unref(nodeType))}.outputs.${slotIndex}.tooltip`
@@ -136,7 +136,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
   /**
    * Get tooltip text for widgets
    */
-  const getWidgetTooltip = (widget: SafeWidgetData) => {
+  function getWidgetTooltip(widget: SafeWidgetData) {
     if (!tooltipsEnabled.value || !nodeDef.value) return ''
 
     // First try widget-specific tooltip
@@ -153,7 +153,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
    * Create tooltip configuration object for v-tooltip directive
    * Components wrap this in computed() for reactivity
    */
-  const createTooltipConfig = (text: string): TooltipOptions => {
+  function createTooltipConfig(text: string): TooltipOptions {
     const tooltipDelay = settingsStore.get('LiteGraph.Node.TooltipDelay')
     const tooltipText = text || ''
 

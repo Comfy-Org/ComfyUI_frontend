@@ -36,7 +36,7 @@ import { electronAPI } from '@/utils/envUtil'
 const route = useRoute()
 const { id, title, message, buttons } = getDialog(route.params.dialogId)
 
-const handleButtonClick = async (button: DialogAction) => {
+async function handleButtonClick(button: DialogAction) {
   await electronAPI().Dialog.clickButton(button.returnValue)
 }
 </script>

@@ -43,7 +43,7 @@ describe('InfoButton', () => {
     openNodeInfoMock.mockReturnValue(true)
   })
 
-  const renderComponent = () => {
+  function renderComponent() {
     return render(InfoButton, {
       global: {
         plugins: [i18n, PrimeVue],
@@ -53,7 +53,7 @@ describe('InfoButton', () => {
     })
   }
 
-  const clickNodeInfoButton = async () => {
+  async function clickNodeInfoButton() {
     const user = userEvent.setup()
     await user.click(screen.getByRole('button', { name: 'Node Info' }))
   }

@@ -115,12 +115,12 @@ const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
   useQueueFeatureFlags()
 const showClearHistoryAction = computed(() => !isCloud)
 
-const onClearHistoryFromMenu = (close: () => void) => {
+function onClearHistoryFromMenu(close: () => void) {
   close()
   emit('clearHistory')
 }
 
-const onToggleDockedJobHistory = async (close: () => void) => {
+async function onToggleDockedJobHistory(close: () => void) {
   trackFeatureUsed()
   close()
 
@@ -140,7 +140,7 @@ const onToggleDockedJobHistory = async (close: () => void) => {
   }
 }
 
-const onToggleRunProgressBar = async () => {
+async function onToggleRunProgressBar() {
   trackFeatureUsed()
   await settingStore.set(
     'Comfy.Queue.ShowRunProgressBar',

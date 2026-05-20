@@ -8,7 +8,7 @@ import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { useAssetsSidebarBadgeStore } from '@/stores/workspace/assetsSidebarBadgeStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-const createHistoryTask = ({
+function createHistoryTask({
   id,
   outputsCount,
   hasPreview = true
@@ -16,8 +16,8 @@ const createHistoryTask = ({
   id: string
   outputsCount?: number
   hasPreview?: boolean
-}) =>
-  new TaskItemImpl({
+}) {
+  return new TaskItemImpl({
     id,
     status: 'completed',
     create_time: Date.now(),
@@ -33,6 +33,7 @@ const createHistoryTask = ({
         }
       : undefined
   } as JobListItem)
+}
 
 describe('useAssetsSidebarBadgeStore', () => {
   beforeEach(() => {

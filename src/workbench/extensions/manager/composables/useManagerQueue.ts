@@ -21,11 +21,11 @@ type Task = QueueTaskItem | HistoryTaskItem
 const MANAGER_WS_TASK_DONE_NAME = 'cm-task-completed'
 const MANAGER_WS_TASK_STARTED_NAME = 'cm-task-started'
 
-export const useManagerQueue = (
+export function useManagerQueue(
   taskHistory: Ref<ManagerTaskHistory>,
   taskQueue: Ref<ManagerTaskQueue>,
   installedPacks: Ref<Record<string, unknown>>
-) => {
+) {
   // Task queue state (read-only from server)
   const maxHistoryItems = ref(64)
   const isLoading = ref(false)
@@ -43,7 +43,7 @@ export const useManagerQueue = (
    * If the queue is empty, or all tasks in the queue are associated
    * with different clients, then this client is not processing any tasks.
    */
-  const updateProcessingState = (): void => {
+  function updateProcessingState(): void {
     isProcessing.value = currentQueueLength.value > 0
   }
 
@@ -56,16 +56,18 @@ export const useManagerQueue = (
    * @param task - The task to check
    * @returns True if the task belongs to this client
    */
-  const isTaskFromThisClient = (task: Task): boolean =>
-    task.client_id === app.api.clientId
+  function isTaskFromThisClient(task: Task): boolean {
+    return task.client_id === app.api.clientId
+  }
 
   /**
    * Check if a history task is associated with this client.
    * @param task - The history task to check
    * @returns True if the task belongs to this client
    */
-  const isHistoryTaskFromThisClient = (task: HistoryTaskItem): boolean =>
-    task.client_id === app.api.clientId
+  function isHistoryTaskFromThisClient(task: HistoryTaskItem): boolean {
+    return task.client_id === app.api.clientId
+  }
 
   /**
    * Filter queue tasks by client id.
@@ -74,8 +76,9 @@ export const useManagerQueue = (
    * @param tasks - Array of queue tasks to filter
    * @returns Filtered array containing only tasks from this client
    */
-  const filterQueueByClientId = (tasks: QueueTaskItem[]): QueueTaskItem[] =>
-    tasks.filter(isTaskFromThisClient)
+  function filterQueueByClientId(tasks: QueueTaskItem[]): QueueTaskItem[] {
+    return tasks.filter(isTaskFromThisClient)
+  }
 
   /**
    * Filter history tasks by client id using pickBy for optimal performance.
@@ -83,15 +86,16 @@ export const useManagerQueue = (
    * @param history - The history object to filter
    * @returns Filtered history object containing only tasks from this client
    */
-  const filterHistoryByClientId = (history: ManagerTaskHistory) =>
-    pickBy(history, isHistoryTaskFromThisClient)
+  function filterHistoryByClientId(history: ManagerTaskHistory) {
+    return pickBy(history, isHistoryTaskFromThisClient)
+  }
 
   /**
    * Update task queue and history state with filtered data from server.
    * Ensures only tasks from this client are stored in local state.
    * @param state - The task state message from the server
    */
-  const updateTaskState = (state: ManagerTaskQueue) => {
+  function updateTaskState(state: ManagerTaskQueue) {
     taskQueue.value.running_queue = filterQueueByClientId(state.running_queue)
     taskQueue.value.pending_queue = filterQueueByClientId(state.pending_queue)
     taskHistory.value = filterHistoryByClientId(state.history)
@@ -128,7 +132,7 @@ export const useManagerQueue = (
   /**
    * Cleanup function to remove event listeners and reset state
    */
-  const cleanup = () => {
+  function cleanup() {
     cleanupTaskDoneListener()
     cleanupTaskStartedListener()
 

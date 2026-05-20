@@ -23,17 +23,19 @@ describe('usePacksSelection', () => {
   let managerStore: ReturnType<typeof useComfyManagerStore>
   let mockIsPackInstalled: (packName: string | undefined) => boolean
 
-  const createMockPack = (id: string): NodePack => ({
-    id,
-    name: `Pack ${id}`,
-    description: `Description for pack ${id}`,
-    category: 'Nodes',
-    author: 'Test Author',
-    license: 'MIT',
-    repository: 'https://github.com/test/pack',
-    tags: [],
-    status: 'NodeStatusActive'
-  })
+  function createMockPack(id: string): NodePack {
+    return {
+      id,
+      name: `Pack ${id}`,
+      description: `Description for pack ${id}`,
+      category: 'Nodes',
+      author: 'Test Author',
+      license: 'MIT',
+      repository: 'https://github.com/test/pack',
+      tags: [],
+      status: 'NodeStatusActive'
+    }
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()

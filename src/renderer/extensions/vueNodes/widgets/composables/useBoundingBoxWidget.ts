@@ -22,7 +22,7 @@ function isNumericWidget(widget: IBaseWidget): widget is INumericWidget {
   return widget.type === 'number'
 }
 
-export const useBoundingBoxWidget = (): ComfyWidgetConstructorV2 => {
+export function useBoundingBoxWidget(): ComfyWidgetConstructorV2 {
   return (
     node: LGraphNode,
     inputSpec: InputSpecV2

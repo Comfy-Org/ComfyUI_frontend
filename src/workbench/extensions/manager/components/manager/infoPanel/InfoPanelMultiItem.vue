@@ -184,7 +184,7 @@ const conflictInfo = computed<ConflictDetail[]>(() => {
 
 const hasConflicts = computed(() => conflictInfo.value.length > 0)
 
-const getPackNodes = async (pack: components['schemas']['Node']) => {
+async function getPackNodes(pack: components['schemas']['Node']) {
   if (!pack.latest_version?.version) return []
   const nodeDefs = await getNodeDefs.call({
     packId: pack.id,

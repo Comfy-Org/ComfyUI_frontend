@@ -51,7 +51,7 @@ watch(
   }
 )
 
-const updateValue = (newValue: number | null) => {
+function updateValue(newValue: number | null) {
   if (newValue === null) {
     // If the input is cleared, reset to the minimum value or 0
     newValue = Number(props.min) || 0

@@ -84,7 +84,9 @@ describe('swapNodeGroups computed', () => {
     useMissingNodesErrorStore().surfaceMissingNodes(nodeTypes)
 
     const searchQuery = ref('')
-    const t = (key: string) => key
+    function t(key: string) {
+      return key
+    }
     const { swapNodeGroups } = useErrorGroups(searchQuery, t)
     return swapNodeGroups
   }

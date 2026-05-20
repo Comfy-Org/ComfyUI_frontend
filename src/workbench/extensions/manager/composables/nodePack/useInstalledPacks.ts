@@ -6,7 +6,7 @@ import { useNodePacks } from '@/workbench/extensions/manager/composables/nodePac
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import type { UseNodePacksOptions } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
-export const useInstalledPacks = (options: UseNodePacksOptions = {}) => {
+export function useInstalledPacks(options: UseNodePacksOptions = {}) {
   const comfyManagerStore = useComfyManagerStore()
 
   // Flag to prevent duplicate fetches during initialization
@@ -20,10 +20,11 @@ export const useInstalledPacks = (options: UseNodePacksOptions = {}) => {
   const { startFetch, cleanup, error, isLoading, nodePacks, isReady } =
     useNodePacks(installedPackIds, options)
 
-  const filterInstalledPack = (packs: components['schemas']['Node'][]) =>
-    packs.filter((pack) => comfyManagerStore.isPackInstalled(pack.id))
+  function filterInstalledPack(packs: components['schemas']['Node'][]) {
+    return packs.filter((pack) => comfyManagerStore.isPackInstalled(pack.id))
+  }
 
-  const startFetchInstalled = async () => {
+  async function startFetchInstalled() {
     // Prevent duplicate calls during initialization
     if (isInitializing.value) {
       return

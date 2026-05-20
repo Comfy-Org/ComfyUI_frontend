@@ -92,7 +92,7 @@ const props = defineProps<Props>()
 
 const interval = ref<number | null>(null)
 
-const applyZoom = (val: InputNumberInputEvent) => {
+function applyZoom(val: InputNumberInputEvent) {
   const inputValue = val.value as number
   if (isNaN(inputValue) || inputValue < 1 || inputValue > 1000) {
     return
@@ -100,18 +100,20 @@ const applyZoom = (val: InputNumberInputEvent) => {
   canvasStore.setAppZoomFromPercentage(inputValue)
 }
 
-const executeCommand = (command: string) => {
+function executeCommand(command: string) {
   void commandStore.execute(command)
 }
 
-const startRepeat = (command: string) => {
+function startRepeat(command: string) {
   if (interval.value) return
-  const cmd = () => commandStore.execute(command)
+  function cmd() {
+    return commandStore.execute(command)
+  }
   void cmd()
   interval.value = window.setInterval(cmd, 100)
 }
 
-const stopRepeat = () => {
+function stopRepeat() {
   if (interval.value) {
     clearInterval(interval.value)
     interval.value = null

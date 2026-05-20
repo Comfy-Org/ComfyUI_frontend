@@ -51,7 +51,7 @@ export function useToolManager(
     }
   }
 
-  const setActiveLayer = (layer: ImageLayer) => {
+  function setActiveLayer(layer: ImageLayer) {
     store.activeLayer = layer
     const currentTool = store.currentTool
 
@@ -65,7 +65,7 @@ export function useToolManager(
     }
   }
 
-  const switchTool = (tool: Tools) => {
+  function switchTool(tool: Tools) {
     store.currentTool = tool
 
     const newActiveLayer = toolSettings[tool].newActiveLayerOnSet
@@ -85,7 +85,7 @@ export function useToolManager(
     }
   }
 
-  const updateCursor = () => {
+  function updateCursor() {
     const currentTool = store.currentTool
     const cursor = toolSettings[currentTool].cursor
     const pointerZone = store.pointerZone
@@ -110,7 +110,7 @@ export function useToolManager(
     }
   )
 
-  const handlePointerDown = async (event: PointerEvent): Promise<void> => {
+  async function handlePointerDown(event: PointerEvent): Promise<void> {
     event.preventDefault()
     if (event.pointerType === 'touch') return
 
@@ -170,7 +170,7 @@ export function useToolManager(
     }
   }
 
-  const handlePointerMove = async (event: PointerEvent): Promise<void> => {
+  async function handlePointerMove(event: PointerEvent): Promise<void> {
     event.preventDefault()
     if (event.pointerType === 'touch') return
 
@@ -208,7 +208,7 @@ export function useToolManager(
     }
   }
 
-  const handlePointerUp = async (event: PointerEvent): Promise<void> => {
+  async function handlePointerUp(event: PointerEvent): Promise<void> {
     store.isPanning = false
     store.brushVisible = true
 

@@ -153,11 +153,8 @@ function addMultilineWidget(
   return widget
 }
 
-export const useStringWidget = () => {
-  const widgetConstructor: ComfyWidgetConstructorV2 = (
-    node: LGraphNode,
-    inputSpec: InputSpec
-  ) => {
+export function useStringWidget() {
+  function widgetConstructor(node: LGraphNode, inputSpec: InputSpec) {
     if (!isStringInputSpec(inputSpec)) {
       throw new Error(`Invalid input data: ${inputSpec}`)
     }
@@ -179,5 +176,5 @@ export const useStringWidget = () => {
     return widget
   }
 
-  return widgetConstructor
+  return widgetConstructor satisfies ComfyWidgetConstructorV2
 }

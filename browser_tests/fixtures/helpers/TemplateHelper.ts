@@ -150,7 +150,7 @@ export class TemplateHelper {
   }
 
   async mockThumbnails(): Promise<void> {
-    const thumbnailHandler = async (route: Route) => {
+    async function thumbnailHandler(route: Route) {
       await route.fulfill({
         status: 200,
         path: 'browser_tests/assets/example.webp',

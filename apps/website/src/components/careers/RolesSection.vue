@@ -36,7 +36,9 @@ let pendingFrame = 0
 const HEADER_OFFSET = -144
 const ACTIVATION_OFFSET = 300
 
-const deptElementId = (key: string) => `careers-dept-${key}`
+function deptElementId(key: string) {
+  return `careers-dept-${key}`
+}
 
 function pickActiveSection() {
   pendingFrame = 0

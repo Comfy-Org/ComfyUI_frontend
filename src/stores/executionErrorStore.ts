@@ -310,17 +310,15 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   )
 
   /** Get node errors by locator ID. */
-  const getNodeErrors = (
-    nodeLocatorId: NodeLocatorId
-  ): NodeError | undefined => {
+  function getNodeErrors(nodeLocatorId: NodeLocatorId): NodeError | undefined {
     return nodeErrorsByLocatorId.value[nodeLocatorId]
   }
 
   /** Check if a specific slot has validation errors. */
-  const slotHasError = (
+  function slotHasError(
     nodeLocatorId: NodeLocatorId,
     slotName: string
-  ): boolean => {
+  ): boolean {
     const nodeError = getNodeErrors(nodeLocatorId)
     if (!nodeError) return false
 

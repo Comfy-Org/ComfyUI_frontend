@@ -24,8 +24,9 @@ const {
   mockWorkflowStoreState,
   registerSearchHandlers
 } = vi.hoisted(() => {
-  let updateQuery = (_query: string) => {}
-  let triggerSearch = (_query: string) => {}
+  function noopQueryHandler(_query: string) {}
+  let updateQuery: (query: string) => void = noopQueryHandler
+  let triggerSearch: (query: string) => void = noopQueryHandler
   let capturedSearchRoot: TreeExplorerNode<ComfyWorkflow> | null = null
 
   const workflowStore = {
@@ -202,8 +203,8 @@ const i18n = createI18n({
   messages: { en: {} }
 })
 
-const createMockWorkflow = (path: string) =>
-  fromPartial<ComfyWorkflow>({
+function createMockWorkflow(path: string) {
+  return fromPartial<ComfyWorkflow>({
     path,
     key: path.replace('workflows/', ''),
     isModified: false,
@@ -212,10 +213,9 @@ const createMockWorkflow = (path: string) =>
     suffix: 'json',
     directory: 'workflows'
   })
+}
 
-const getLeafPaths = (
-  root: TreeExplorerNode<ComfyWorkflow> | null
-): string[] => {
+function getLeafPaths(root: TreeExplorerNode<ComfyWorkflow> | null): string[] {
   if (!root) return []
   return flattenTree<ComfyWorkflow>(root)
     .map((w) => w.path)
@@ -234,8 +234,8 @@ describe('BaseWorkflowsSidebarTab', () => {
     mockWorkflowStore.activeWorkflow = null
   })
 
-  const renderComponent = () =>
-    render(BaseWorkflowsSidebarTab, {
+  function renderComponent() {
+    return render(BaseWorkflowsSidebarTab, {
       props: {
         title: 'Workflows',
         searchSubject: 'Workflow',
@@ -246,6 +246,7 @@ describe('BaseWorkflowsSidebarTab', () => {
         stubs: { teleport: true }
       }
     })
+  }
 
   it('returns an empty filtered workflow set when searchQuery is empty', async () => {
     mockWorkflowStore.workflows = [

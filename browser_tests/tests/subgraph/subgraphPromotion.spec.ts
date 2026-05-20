@@ -689,7 +689,9 @@ test('Can intermix linked and proxy @vue-nodes', async ({ comfyPage }) => {
     const fromSlot = ksampler.getSlot('steps')
     const toPos = await comfyPage.subgraph.getInputSlot().getOpenSlotPosition()
     await fromSlot.dragTo(comfyPage.canvas, { targetPosition: toPos })
-    const isConnected = () => comfyPage.vueNodes.isSlotConnected(fromSlot)
+    function isConnected() {
+      return comfyPage.vueNodes.isSlotConnected(fromSlot)
+    }
     await expect.poll(isConnected).toBe(true)
 
     await comfyPage.subgraph.exitViaBreadcrumb()
@@ -735,7 +737,9 @@ test('Link already promoted widget @vue-nodes', async ({ comfyPage }) => {
     const fromSlot = ksampler.getSlot('steps')
     const toPos = await comfyPage.subgraph.getInputSlot().getOpenSlotPosition()
     await fromSlot.dragTo(comfyPage.canvas, { targetPosition: toPos })
-    const isConnected = () => comfyPage.vueNodes.isSlotConnected(fromSlot)
+    function isConnected() {
+      return comfyPage.vueNodes.isSlotConnected(fromSlot)
+    }
     await expect.poll(isConnected).toBe(true)
 
     await comfyPage.subgraph.exitViaBreadcrumb()
@@ -812,7 +816,9 @@ test('Linked widgets can not be demoted @vue-nodes', async ({ comfyPage }) => {
     const fromSlot = ksampler.getSlot('steps')
     const toPos = await comfyPage.subgraph.getInputSlot().getOpenSlotPosition()
     await fromSlot.dragTo(comfyPage.canvas, { targetPosition: toPos })
-    const isConnected = () => comfyPage.vueNodes.isSlotConnected(fromSlot)
+    function isConnected() {
+      return comfyPage.vueNodes.isSlotConnected(fromSlot)
+    }
     await expect.poll(isConnected).toBe(true)
 
     await comfyPage.subgraph.exitViaBreadcrumb()

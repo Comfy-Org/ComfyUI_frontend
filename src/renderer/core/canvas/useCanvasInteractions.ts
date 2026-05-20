@@ -34,7 +34,7 @@ export function useCanvasInteractions() {
    * This allows two-finger panning to continue over inputs until the user has
    * actively focused the widget, at which point the widget can consume scroll.
    */
-  const wheelCapturedByFocusedElement = (event: WheelEvent): boolean => {
+  function wheelCapturedByFocusedElement(event: WheelEvent): boolean {
     const target = event.target as HTMLElement | null
     const captureElement = target?.closest('[data-capture-wheel="true"]')
     const active = document.activeElement as Element | null
@@ -47,15 +47,16 @@ export function useCanvasInteractions() {
    * or when it is a canvas gesture (which must override widget consumption
    * to prevent destructive browser defaults).
    */
-  const shouldForwardWheelEvent = (event: WheelEvent): boolean =>
-    !wheelCapturedByFocusedElement(event) || isCanvasGestureWheel(event)
+  function shouldForwardWheelEvent(event: WheelEvent): boolean {
+    return !wheelCapturedByFocusedElement(event) || isCanvasGestureWheel(event)
+  }
 
   /**
    * Handles wheel events from UI components that should be forwarded to canvas
    * when appropriate (e.g., Ctrl+wheel for zoom, two-finger pan in standard
    * mode; all wheel events in legacy mode).
    */
-  const handleWheel = (event: WheelEvent) => {
+  function handleWheel(event: WheelEvent) {
     if (!shouldForwardWheelEvent(event)) return
 
     // In standard mode, only canvas gestures (zoom/pan) are forwarded;
@@ -76,7 +77,7 @@ export function useCanvasInteractions() {
    * Handles pointer events from media elements that should potentially
    * be forwarded to canvas (e.g., space+drag for panning)
    */
-  const handlePointer = (event: PointerEvent) => {
+  function handlePointer(event: PointerEvent) {
     if (isMiddlePointerInput(event)) {
       forwardEventToCanvas(event)
       return
@@ -101,9 +102,7 @@ export function useCanvasInteractions() {
   /**
    * Forwards an event to the LiteGraph canvas
    */
-  const forwardEventToCanvas = (
-    event: WheelEvent | PointerEvent | MouseEvent
-  ) => {
+  function forwardEventToCanvas(event: WheelEvent | PointerEvent | MouseEvent) {
     // Honor wheel capture only when the element is focused
     if (event instanceof WheelEvent && !shouldForwardWheelEvent(event)) return
 

@@ -12,23 +12,25 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   }
 }))
 
-const buildPlan = (overrides: Partial<Plan> = {}): Plan => ({
-  slug: 'standard-monthly',
-  tier: 'STANDARD',
-  duration: 'MONTHLY',
-  price_cents: 2000,
-  credits_cents: 4200,
-  max_seats: 1,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 2000,
-    total_credits_cents: 4200
-  },
-  ...overrides
-})
+function buildPlan(overrides: Partial<Plan> = {}): Plan {
+  return {
+    slug: 'standard-monthly',
+    tier: 'STANDARD',
+    duration: 'MONTHLY',
+    price_cents: 2000,
+    credits_cents: 4200,
+    max_seats: 1,
+    availability: { available: true },
+    seat_summary: {
+      seat_count: 1,
+      total_cost_cents: 2000,
+      total_credits_cents: 4200
+    },
+    ...overrides
+  }
+}
 
-const importUseBillingPlans = async () => {
+async function importUseBillingPlans() {
   const mod =
     await import('@/platform/cloud/subscription/composables/useBillingPlans')
   return mod.useBillingPlans
@@ -82,7 +84,8 @@ describe('useBillingPlans', () => {
     })
 
     it('dedupes concurrent calls while a fetch is in flight', async () => {
-      let resolveFetch: (value: { plans: Plan[] }) => void = () => {}
+      function noopFetchResolver() {}
+      let resolveFetch: (value: { plans: Plan[] }) => void = noopFetchResolver
       mockGetBillingPlans.mockImplementation(
         () =>
           new Promise((resolve) => {

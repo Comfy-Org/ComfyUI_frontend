@@ -618,7 +618,7 @@ export class SubgraphHelper {
     ]
   ): { warnings: string[]; dispose: () => void } {
     const warnings: string[] = []
-    const handler = (msg: ConsoleMessage) => {
+    function handler(msg: ConsoleMessage) {
       const text = msg.text()
       if (patterns.some((p) => text.includes(p))) {
         warnings.push(text)

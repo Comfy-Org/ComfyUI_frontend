@@ -3,8 +3,9 @@ import { expect, test } from '@playwright/test'
 import { demos, getNextDemo } from '../src/config/demos'
 import { t } from '../src/i18n/translations'
 
-const escapeRegExp = (value: string): string =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
 
 test.describe('Demo pages @smoke', () => {
   for (const demo of demos) {

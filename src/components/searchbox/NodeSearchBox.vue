@@ -133,7 +133,7 @@ const debouncedTrackSearch = debounce((query: string) => {
   }
 }, 500)
 
-const search = (query: string) => {
+function search(query: string) {
   const queryIsEmpty = query === '' && filters.length === 0
   currentQuery.value = query
   suggestions.value = queryIsEmpty
@@ -164,7 +164,7 @@ function onAddNode(nodeDef: ComfyNodeDefImpl, event?: MouseEvent) {
 }
 
 let inputElement: HTMLInputElement | null = null
-const reFocusInput = async () => {
+async function reFocusInput() {
   inputElement ??= document.getElementById(inputId) as HTMLInputElement
   if (inputElement) {
     inputElement.blur()
@@ -179,22 +179,22 @@ onMounted(() => {
   search('')
   autoCompletePlus.value.show()
 })
-const onAddFilter = (
+function onAddFilter(
   filterAndValue: FuseFilterWithValue<ComfyNodeDefImpl, string>
-) => {
+) {
   nodeSearchFilterVisible.value = false
   emit('addFilter', filterAndValue)
 }
-const onRemoveFilter = async (
+async function onRemoveFilter(
   event: Event,
   filterAndValue: FuseFilterWithValue<ComfyNodeDefImpl, string>
-) => {
+) {
   event.stopPropagation()
   event.preventDefault()
   emit('removeFilter', filterAndValue)
   await reFocusInput()
 }
-const setHoverSuggestion = (index: number) => {
+function setHoverSuggestion(index: number) {
   if (index === -1) {
     hoveredSuggestion.value = null
     return

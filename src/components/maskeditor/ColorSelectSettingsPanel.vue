@@ -73,31 +73,31 @@ const store = useMaskEditorStore()
 
 const methodOptions = Object.values(ColorComparisonMethod)
 
-const onToleranceChange = (value: number) => {
+function onToleranceChange(value: number) {
   store.setColorSelectTolerance(value)
 }
 
-const onSelectionOpacityChange = (value: number) => {
+function onSelectionOpacityChange(value: number) {
   store.setSelectionOpacity(value)
 }
 
-const onLivePreviewChange = (value: boolean) => {
+function onLivePreviewChange(value: boolean) {
   store.colorSelectLivePreview = value
 }
 
-const onWholeImageChange = (value: boolean) => {
+function onWholeImageChange(value: boolean) {
   store.applyWholeImage = value
 }
 
-const onMethodChange = (value: string | number) => {
+function onMethodChange(value: string | number) {
   store.colorComparisonMethod = value as ColorComparisonMethod
 }
 
-const onMaskBoundaryChange = (value: boolean) => {
+function onMaskBoundaryChange(value: boolean) {
   store.maskBoundary = value
 }
 
-const onMaskToleranceChange = (value: number) => {
+function onMaskToleranceChange(value: number) {
   store.setMaskTolerance(value)
 }
 </script>

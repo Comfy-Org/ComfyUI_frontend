@@ -56,7 +56,7 @@ export function useLazyPagination<T>(
     return Math.ceil(itemData.length / itemsPerPage)
   })
 
-  const loadNextPage = async () => {
+  async function loadNextPage() {
     if (isLoading.value || !hasMoreItems.value) return
 
     isLoading.value = true
@@ -84,7 +84,7 @@ export function useLazyPagination<T>(
     { immediate: true }
   )
 
-  const reset = () => {
+  function reset() {
     currentPage.value = initialPage
     loadedPages.value = new Set([])
     isLoading.value = false

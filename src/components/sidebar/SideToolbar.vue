@@ -128,7 +128,7 @@ const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
  * - Emits UI button telemetry for known tabs
  * - Delegates to the corresponding toggle command
  */
-const onTabClick = async (item: SidebarTabExtension) => {
+async function onTabClick(item: SidebarTabExtension) {
   const telemetry = useTelemetry()
 
   const isNodeLibraryTab = item.id === 'node-library'
@@ -159,7 +159,7 @@ const onTabClick = async (item: SidebarTabExtension) => {
 }
 
 const keybindingStore = useKeybindingStore()
-const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
+function getTabTooltipSuffix(tab: SidebarTabExtension) {
   const shortcut = keybindingStore
     .getKeybindingByCommandId(`Workspace.ToggleSidebarTab.${tab.id}`)
     ?.combo.toString()

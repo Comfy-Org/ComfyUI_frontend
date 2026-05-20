@@ -21,7 +21,7 @@ export function useNodePointerInteractions(
     useNodeEventHandlers()
   const { nodeManager } = useVueNodeLifecycle()
 
-  const forwardMiddlePointerIfNeeded = (event: PointerEvent) => {
+  function forwardMiddlePointerIfNeeded(event: PointerEvent) {
     if (!isMiddlePointerInput(event)) return false
     forwardEventToCanvas(event)
     return true

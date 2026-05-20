@@ -220,7 +220,7 @@ export function useTemplateFiltering(
     })
   })
 
-  const getVramMetric = (template: TemplateInfo) => {
+  function getVramMetric(template: TemplateInfo) {
     if (
       typeof template.vram === 'number' &&
       Number.isFinite(template.vram) &&
@@ -312,7 +312,7 @@ export function useTemplateFiltering(
 
   const filteredTemplates = computed(() => sortedTemplates.value)
 
-  const resetFilters = () => {
+  function resetFilters() {
     searchQuery.value = ''
     selectedModels.value = []
     selectedUseCases.value = []
@@ -320,15 +320,15 @@ export function useTemplateFiltering(
     sortBy.value = 'default'
   }
 
-  const removeModelFilter = (model: string) => {
+  function removeModelFilter(model: string) {
     selectedModels.value = selectedModels.value.filter((m) => m !== model)
   }
 
-  const removeUseCaseFilter = (tag: string) => {
+  function removeUseCaseFilter(tag: string) {
     selectedUseCases.value = selectedUseCases.value.filter((t) => t !== tag)
   }
 
-  const removeRunsOnFilter = (runsOn: string) => {
+  function removeRunsOnFilter(runsOn: string) {
     selectedRunsOn.value = selectedRunsOn.value.filter((r) => r !== runsOn)
   }
 
@@ -348,7 +348,7 @@ export function useTemplateFiltering(
     })
   }, 500)
 
-  const loadFuseOptions = async () => {
+  async function loadFuseOptions() {
     const fetchedOptions = await api.getFuseOptions()
     if (fetchedOptions) {
       fuseOptions.value = fetchedOptions

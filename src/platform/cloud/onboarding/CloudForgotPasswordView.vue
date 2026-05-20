@@ -87,11 +87,11 @@ const loading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 
-const navigateToLogin = () => {
+function navigateToLogin() {
   void router.push({ name: 'cloud-login' })
 }
 
-const handleSubmit = async () => {
+async function handleSubmit() {
   if (!email.value) {
     errorMessage.value = t('cloudForgotPassword_emailRequired')
     return

@@ -5,16 +5,18 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Size } from '@e2e/fixtures/types'
 
-const expectedGroupSize = (
+function expectedGroupSize(
   nodeBounds: Size,
   padding: number,
   titleHeight: number
-): Size => ({
-  width: nodeBounds.width + padding * 2,
-  // Group height adds one title row above the contained node bounds (which
-  // themselves already include the node's own title), independent of padding.
-  height: nodeBounds.height + padding * 2 + titleHeight
-})
+): Size {
+  return {
+    width: nodeBounds.width + padding * 2,
+    // Group height adds one title row above the contained node bounds (which
+    // themselves already include the node's own title), independent of padding.
+    height: nodeBounds.height + padding * 2 + titleHeight
+  }
+}
 
 test.describe('Canvas layout settings', { tag: '@canvas' }, () => {
   test.describe('Comfy.SnapToGrid.GridSize', () => {
@@ -24,7 +26,7 @@ test.describe('Canvas layout settings', { tag: '@canvas' }, () => {
       await comfyPage.nodeOps.clearGraph()
     })
 
-    const createNode = async (comfyPage: ComfyPage) => {
+    async function createNode(comfyPage: ComfyPage) {
       const note = await comfyPage.nodeOps.addNode('Note', undefined, {
         x: 0,
         y: 0
@@ -79,10 +81,10 @@ test.describe('Canvas layout settings', { tag: '@canvas' }, () => {
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     })
 
-    const groupAroundAllNodesWithPadding = async (
+    async function groupAroundAllNodesWithPadding(
       comfyPage: ComfyPage,
       padding: number
-    ): Promise<Size> => {
+    ): Promise<Size> {
       await comfyPage.settings.setSetting(
         'Comfy.GroupSelectedNodes.Padding',
         padding
@@ -126,15 +128,16 @@ test.describe('Canvas layout settings', { tag: '@canvas' }, () => {
 
   test.describe('LiteGraph.ContextMenu.Scaling', () => {
     const ZOOM_SCALE = 2
-    const litegraphContextMenu = (comfyPage: ComfyPage) =>
-      comfyPage.page.locator('.litecontextmenu')
+    function litegraphContextMenu(comfyPage: ComfyPage) {
+      return comfyPage.page.locator('.litecontextmenu')
+    }
 
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
       await comfyPage.canvasOps.setScale(ZOOM_SCALE)
     })
 
-    const openComboMenu = async (comfyPage: ComfyPage) => {
+    async function openComboMenu(comfyPage: ComfyPage) {
       const loadImage = (
         await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
       )[0]

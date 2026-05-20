@@ -44,8 +44,8 @@ const defaultProps = {
   bottomRowClass: 'flex custom-bottom-row'
 }
 
-const renderComponent = (props: Record<string, unknown> = {}) =>
-  render(QueueOverlayActive, {
+function renderComponent(props: Record<string, unknown> = {}) {
+  return render(QueueOverlayActive, {
     props: { ...defaultProps, ...props },
     global: {
       plugins: [i18n],
@@ -54,6 +54,7 @@ const renderComponent = (props: Record<string, unknown> = {}) =>
       }
     }
   })
+}
 
 describe('QueueOverlayActive', () => {
   it('renders progress metrics and emits actions when buttons clicked', async () => {

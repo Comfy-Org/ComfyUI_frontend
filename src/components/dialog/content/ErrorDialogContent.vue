@@ -99,7 +99,7 @@ const reportOpen = ref(false)
 /**
  * Open the error report content and track telemetry.
  */
-const showReport = () => {
+function showReport() {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'error_dialog_show_report_clicked'
   })
@@ -117,7 +117,7 @@ const title = computed<string>(
 /**
  * Open contact support flow from error dialog and track telemetry.
  */
-const showContactSupport = async () => {
+async function showContactSupport() {
   telemetry?.trackHelpResourceClicked({
     resource_type: 'help_feedback',
     is_external: true,
@@ -155,7 +155,7 @@ onMounted(async () => {
 })
 
 const { copyToClipboard } = useCopyToClipboard()
-const copyReportToClipboard = async () => {
+async function copyReportToClipboard() {
   await copyToClipboard(reportContent.value)
 }
 </script>

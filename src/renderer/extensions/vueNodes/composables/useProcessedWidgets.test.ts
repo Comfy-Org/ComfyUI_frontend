@@ -27,19 +27,21 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   })
 }))
 
-const createMockWidget = (
+function createMockWidget(
   overrides: Partial<SafeWidgetData> = {}
-): SafeWidgetData => ({
-  nodeId: 'test_node',
-  name: 'test_widget',
-  type: 'combo',
-  options: undefined,
-  callback: undefined,
-  spec: undefined,
-  isDOMWidget: false,
-  slotMetadata: undefined,
-  ...overrides
-})
+): SafeWidgetData {
+  return {
+    nodeId: 'test_node',
+    name: 'test_widget',
+    type: 'combo',
+    options: undefined,
+    callback: undefined,
+    spec: undefined,
+    isDOMWidget: false,
+    slotMetadata: undefined,
+    ...overrides
+  }
+}
 
 describe('getWidgetIdentity', () => {
   it('returns stable dedupeIdentity for widgets with storeNodeId', () => {

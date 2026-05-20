@@ -58,7 +58,7 @@ onMounted(() => {
   })
 
   raw.sort((a, b) => {
-    const norm = (v: number) => {
+    function norm(v: number) {
       const r = v + Math.PI / 2
       return r < 0 ? r + 2 * Math.PI : r
     }
@@ -117,7 +117,7 @@ onMounted(() => {
     applyToPanel(panels[1], elapsed2)
     applyToPanel(panels[2], elapsed3)
 
-    const wOf = (elapsed: number) => {
+    function wOf(elapsed: number) {
       const progress = elapsed < PANEL_DURATION ? elapsed / PANEL_DURATION : 1
       return lerp(S.w, E.w, ease(progress))
     }

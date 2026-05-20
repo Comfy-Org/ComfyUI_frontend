@@ -19,8 +19,9 @@ test.describe(
       await comfyPage.nextFrame()
     })
 
-    const openMoreOptions = (comfyPage: ComfyPage) =>
-      openMoreOptionsMenu(comfyPage, 'KSampler')
+    function openMoreOptions(comfyPage: ComfyPage) {
+      return openMoreOptionsMenu(comfyPage, 'KSampler')
+    }
 
     test('hides Node Info from More Options menu when the new menu is disabled', async ({
       comfyPage

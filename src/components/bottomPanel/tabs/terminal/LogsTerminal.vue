@@ -33,10 +33,10 @@ import BaseTerminal from './BaseTerminal.vue'
 const terminal = shallowRef<Terminal>()
 const { errorMessage, loading } = useLogsTerminal(terminal)
 
-const terminalCreated = (
+function terminalCreated(
   { terminal: instance, useAutoSize }: ReturnType<typeof useTerminal>,
   root: Ref<HTMLElement | undefined>
-) => {
+) {
   // Auto-size terminal to fill container width.
   // minCols: 80 ensures minimum width for colab environments.
   // See https://github.com/comfyanonymous/ComfyUI/issues/6396

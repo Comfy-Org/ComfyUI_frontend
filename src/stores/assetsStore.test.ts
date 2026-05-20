@@ -181,21 +181,23 @@ describe('assetsStore - Refactored (Option A)', () => {
   let store: ReturnType<typeof useAssetsStore>
 
   // Helper function to create mock job items
-  const createMockJobItem = (index: number): JobListItem => ({
-    id: `prompt_${index}`,
-    status: 'completed',
-    create_time: 1000 + index,
-    update_time: 1000 + index,
-    last_state_update: 1000 + index,
-    priority: 1000 + index,
-    preview_output: {
-      filename: `output_${index}.png`,
-      subfolder: '',
-      type: 'output',
-      nodeId: 'node_1',
-      mediaType: 'images'
+  function createMockJobItem(index: number): JobListItem {
+    return {
+      id: `prompt_${index}`,
+      status: 'completed',
+      create_time: 1000 + index,
+      update_time: 1000 + index,
+      last_state_update: 1000 + index,
+      priority: 1000 + index,
+      preview_output: {
+        filename: `output_${index}.png`,
+        subfolder: '',
+        type: 'output',
+        nodeId: 'node_1',
+        mediaType: 'images'
+      }
     }
-  })
+  }
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -781,14 +783,16 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     mockIsCloud.value = false
   })
 
-  const createMockAsset = (id: string, tags: string[] = ['models']) => ({
-    id,
-    name: `asset-${id}`,
-    size: 100,
-    created_at: new Date().toISOString(),
-    tags,
-    preview_url: `http://test.com/${id}`
-  })
+  function createMockAsset(id: string, tags: string[] = ['models']) {
+    return {
+      id,
+      name: `asset-${id}`,
+      size: 100,
+      created_at: new Date().toISOString(),
+      tags,
+      preview_url: `http://test.com/${id}`
+    }
+  }
 
   describe('getAssets cache invalidation', () => {
     it('should invalidate cache before mutating assets during batch loading', async () => {
@@ -1509,17 +1513,15 @@ describe('assetsStore - Deletion State and Input Mapping', () => {
 describe('assetsStore - Flat Output Assets (cloud-only)', () => {
   const FLAT_OUTPUT_PAGE_SIZE = 200
 
-  const makeAsset = (
-    id: string,
-    name: string,
-    asset_hash?: string
-  ): AssetItem => ({
-    id,
-    name,
-    asset_hash,
-    size: 0,
-    tags: ['output']
-  })
+  function makeAsset(id: string, name: string, asset_hash?: string): AssetItem {
+    return {
+      id,
+      name,
+      asset_hash,
+      size: 0,
+      tags: ['output']
+    }
+  }
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))

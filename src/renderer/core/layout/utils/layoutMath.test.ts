@@ -50,20 +50,22 @@ describe('layoutMath utils', () => {
   })
 
   describe('calculateBounds', () => {
-    const createTestNode = (
+    function createTestNode(
       id: string,
       x: number,
       y: number,
       width: number,
       height: number
-    ): NodeLayout => ({
-      id,
-      position: { x, y },
-      size: { width, height },
-      zIndex: 0,
-      visible: true,
-      bounds: { x, y, width, height }
-    })
+    ): NodeLayout {
+      return {
+        id,
+        position: { x, y },
+        size: { width, height },
+        zIndex: 0,
+        visible: true,
+        bounds: { x, y, width, height }
+      }
+    }
 
     it('calculates bounds for single node', () => {
       const nodes = [createTestNode('1', 10, 20, 100, 50)]

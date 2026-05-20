@@ -1151,12 +1151,14 @@ test.describe('Vue Node Widget Link Position', { tag: '@vue-nodes' }, () => {
     const ksampler = await comfyPage.page.evaluate(() => {
       const node = window.app!.graph.nodes.find((n) => n.type === 'KSampler')
       if (!node) return null
-      const findIndex = (name: string) =>
-        node.inputs.findIndex(
+      const ksamplerNode = node
+      function findIndex(name: string) {
+        return ksamplerNode.inputs.findIndex(
           (input) => input.name === name || input.widget?.name === name
         )
+      }
       return {
-        id: node.id,
+        id: ksamplerNode.id,
         denoiseIndex: findIndex('denoise'),
         schedulerIndex: findIndex('scheduler')
       }

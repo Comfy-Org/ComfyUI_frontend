@@ -95,7 +95,9 @@ export function useCoreCommands(): ComfyCommand[] {
 
   const { getSelectedNodes, toggleSelectedNodesMode } =
     useSelectedLiteGraphItems()
-  const getTracker = () => workflowStore.activeWorkflow?.changeTracker
+  function getTracker() {
+    return workflowStore.activeWorkflow?.changeTracker
+  }
 
   function isQueuePanelV2Enabled() {
     return settingStore.get('Comfy.Queue.QPOV2')
@@ -105,9 +107,9 @@ export function useCoreCommands(): ComfyCommand[] {
     await settingStore.set('Comfy.Queue.QPOV2', !isQueuePanelV2Enabled())
   }
 
-  const moveSelectedNodes = (
+  function moveSelectedNodes(
     positionUpdater: (pos: Point, gridSize: number) => Point
-  ) => {
+  ) {
     const selectedNodes = getSelectedNodes()
     if (selectedNodes.length === 0) return
 
@@ -1179,10 +1181,13 @@ export function useCoreCommands(): ComfyCommand[] {
         const subgraph = canvas.subgraph
         if (!subgraph) return
 
-        const parseAliases = (value: unknown): string[] =>
-          (Array.isArray(value) ? value.map(String) : String(value).split(','))
+        function parseAliases(value: unknown): string[] {
+          return (
+            Array.isArray(value) ? value.map(String) : String(value).split(',')
+          )
             .map((s) => s.trim())
             .filter(Boolean)
+        }
 
         const extra = (subgraph.extra ??= {}) as Record<string, unknown>
 

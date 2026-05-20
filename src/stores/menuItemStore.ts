@@ -22,7 +22,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     { immediate: true, once: true }
   )
 
-  const registerMenuGroup = (path: string[], items: MenuItem[]) => {
+  function registerMenuGroup(path: string[], items: MenuItem[]) {
     let currentLevel = menuItems.value
 
     // Traverse the path, creating nodes if necessary
@@ -77,12 +77,12 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     }
   }
 
-  const registerCommands = (path: string[], commandIds: string[]) => {
+  function registerCommands(path: string[], commandIds: string[]) {
     const items = commandIds.map((id) => commandIdToMenuItem(id, path))
     registerMenuGroup(path, items)
   }
 
-  const loadExtensionMenuCommands = (extension: ComfyExtension) => {
+  function loadExtensionMenuCommands(extension: ComfyExtension) {
     if (!extension.menuCommands) {
       return
     }
@@ -100,7 +100,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     })
   }
 
-  const registerCoreMenuCommands = () => {
+  function registerCoreMenuCommands() {
     for (const [path, commands] of CORE_MENU_COMMANDS) {
       registerCommands(path, commands)
     }

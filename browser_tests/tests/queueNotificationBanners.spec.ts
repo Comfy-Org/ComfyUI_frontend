@@ -15,7 +15,9 @@ const REQUEST_ID_SECONDARY = 2
 const REQUEST_ID_MISMATCH = 999
 
 let nextRequestId = 1000
-const newRequestId = () => nextRequestId++
+function newRequestId() {
+  return nextRequestId++
+}
 
 function bannerLocator(page: Page) {
   return page.getByTestId(TestIds.queue.notificationBanner)

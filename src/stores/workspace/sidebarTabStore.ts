@@ -24,20 +24,20 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     )
   })
 
-  const toggleSidebarTab = (tabId: string) => {
+  function toggleSidebarTab(tabId: string) {
     activeSidebarTabId.value = activeSidebarTabId.value === tabId ? null : tabId
   }
 
-  const registerSidebarTab = (
+  function registerSidebarTab(
     tab: SidebarTabExtension,
     options?: { prepend?: boolean }
-  ) => {
+  ) {
     sidebarTabs.value = options?.prepend
       ? [tab, ...sidebarTabs.value]
       : [...sidebarTabs.value, tab]
 
     // Generate label in format "Toggle X Sidebar"
-    const labelFunction = () => {
+    function labelFunction() {
       const tabTitle = te(tab.title) ? t(tab.title) : tab.title
       return `Toggle ${tabTitle} Sidebar`
     }
@@ -47,7 +47,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
         : String(tab.tooltip)
       : undefined
 
-    const menubarLabelFunction = () => {
+    function menubarLabelFunction() {
       const menubarLabelKeys: Record<string, string> = {
         'node-library': 'sideToolbar.nodeLibrary',
         'model-library': 'sideToolbar.modelLibrary',
@@ -93,7 +93,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     })
   }
 
-  const unregisterSidebarTab = (id: string) => {
+  function unregisterSidebarTab(id: string) {
     const index = sidebarTabs.value.findIndex((tab) => tab.id === id)
     if (index !== -1) {
       const tab = sidebarTabs.value[index]
@@ -112,10 +112,10 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
   /**
    * Register the core sidebar tabs.
    */
-  const registerCoreSidebarTabs = () => {
+  function registerCoreSidebarTabs() {
     const settingStore = useSettingStore()
     const jobHistoryTabId = 'job-history'
-    const syncJobHistoryTab = (enabled: boolean) => {
+    function syncJobHistoryTab(enabled: boolean) {
       const hasJobHistoryTab = sidebarTabs.value.some(
         (tab) => tab.id === jobHistoryTabId
       )

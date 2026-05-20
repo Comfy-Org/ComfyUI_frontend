@@ -38,15 +38,17 @@ export function useNodeResize(
   // Shift key sync for LiteGraph canvas preview
   const { trackShiftKey } = useShiftKeySync()
 
-  const startResize = (event: PointerEvent, corner: CompassCorners = 'SE') => {
+  function startResize(event: PointerEvent, corner: CompassCorners = 'SE') {
     event.preventDefault()
     event.stopPropagation()
 
-    const target = event.currentTarget
-    if (!(target instanceof HTMLElement)) return
+    const eventTarget = event.currentTarget
+    if (!(eventTarget instanceof HTMLElement)) return
+    const target: HTMLElement = eventTarget
 
-    const nodeElement = target.closest('[data-node-id]')
-    if (!(nodeElement instanceof HTMLElement)) return
+    const closestNode = target.closest('[data-node-id]')
+    if (!(closestNode instanceof HTMLElement)) return
+    const nodeElement: HTMLElement = closestNode
 
     const nodeId = nodeElement.dataset.nodeId
     if (!nodeId) return
@@ -59,7 +61,7 @@ export function useNodeResize(
       height: rect.height / scale
     }
 
-    const measureMinContentHeight = (candidateWidth: number) => {
+    function measureMinContentHeight(candidateWidth: number) {
       const savedWidth = nodeElement.style.getPropertyValue('--node-width')
       const savedHeight = nodeElement.style.getPropertyValue('--node-height')
       nodeElement.style.setProperty('--node-width', `${candidateWidth}px`)
@@ -90,7 +92,7 @@ export function useNodeResize(
     resizeStartPosition.value = startPosition
     resizeCorner.value = corner
 
-    const handlePointerMove = (moveEvent: PointerEvent) => {
+    function handlePointerMove(moveEvent: PointerEvent) {
       if (
         !isResizing.value ||
         !resizeStartPointer.value ||
@@ -203,7 +205,7 @@ export function useNodeResize(
       }
     }
 
-    const cleanup = () => {
+    function cleanup() {
       if (!isResizing.value) return
       isResizing.value = false
       layoutStore.isResizingVueNodes.value = false
@@ -219,7 +221,7 @@ export function useNodeResize(
       stopCancelListen()
     }
 
-    const handlePointerUp = (upEvent: PointerEvent) => {
+    function handlePointerUp(upEvent: PointerEvent) {
       if (isResizing.value) {
         try {
           target.releasePointerCapture(upEvent.pointerId)

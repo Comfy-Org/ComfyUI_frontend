@@ -15,7 +15,7 @@ export type SubscriptionDialogReason =
   | 'out_of_credits'
   | 'top_up_blocked'
 
-export const useSubscriptionDialog = () => {
+export function useSubscriptionDialog() {
   const { flags } = useFeatureFlags()
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()

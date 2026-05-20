@@ -315,10 +315,10 @@ const initialTabId = initialTab ?? initialState.selectedTabId ?? ManagerTab.All
 const selectedNavId = ref<string | null>(initialTabId)
 
 // Helper to find a nav item by id in the nested structure
-const findNavItemById = (
+function findNavItemById(
   items: (NavItemData | NavGroupData)[],
   id: string | null
-): NavItemData | undefined => {
+): NavItemData | undefined {
   for (const item of items) {
     if ('items' in item) {
       const found = item.items.find((subItem) => subItem.id === id)
@@ -380,11 +380,11 @@ const availableSortOptions = computed(() => {
   }))
 })
 
-const onOptionSelect = (suggestion: QuerySuggestion) => {
+function onOptionSelect(suggestion: QuerySuggestion) {
   searchQuery.value = suggestion.query
 }
 
-const onApproachEnd = () => {
+function onApproachEnd() {
   pageNumber.value++
 }
 
@@ -465,7 +465,7 @@ const emptyStateMessage = computed(() => {
     : t('manager.tryDifferentSearch')
 })
 
-const onClickWarningLink = () => {
+function onClickWarningLink() {
   window.open(
     buildDocsUrl('/troubleshooting/custom-node-issues', {
       includeLocale: true
@@ -516,7 +516,7 @@ if (initialPackId) {
     })
 }
 
-const getLoadingCount = () => {
+function getLoadingCount() {
   switch (selectedTab.value?.id) {
     case ManagerTab.AllInstalled:
       return comfyManagerStore.installedPacksIds?.size
@@ -537,10 +537,10 @@ const skeletonCardCount = computed(() => {
   return 16
 })
 
-const selectNodePack = (
+function selectNodePack(
   nodePack: components['schemas']['Node'],
   event: MouseEvent
-) => {
+) {
   if (event.shiftKey || event.ctrlKey || event.metaKey) {
     const index = selectedNodePacks.value.findIndex(
       (pack) => pack.id === nodePack.id
@@ -558,10 +558,10 @@ const selectNodePack = (
   }
 }
 
-const unSelectItems = () => {
+function unSelectItems() {
   selectedNodePacks.value = []
 }
-const handleGridContainerClick = (event: MouseEvent) => {
+function handleGridContainerClick(event: MouseEvent) {
   const targetElement = event.target as HTMLElement
   if (targetElement && !targetElement.closest('[data-virtual-grid-item]')) {
     unSelectItems()

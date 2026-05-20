@@ -24,7 +24,7 @@ interface BrowseOptions {
 
 const DIALOG_KEY = 'global-asset-browser'
 
-export const useAssetBrowserDialog = () => {
+export function useAssetBrowserDialog() {
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
 
@@ -33,7 +33,7 @@ export const useAssetBrowserDialog = () => {
   }
 
   function show(props: ShowOptions) {
-    const handleAssetSelected = (asset: AssetItem) => {
+    function handleAssetSelected(asset: AssetItem) {
       props.onAssetSelected?.(asset)
       hide()
     }
@@ -52,7 +52,7 @@ export const useAssetBrowserDialog = () => {
   }
 
   function browse(options: BrowseOptions) {
-    const handleAssetSelected = (asset: AssetItem) => {
+    function handleAssetSelected(asset: AssetItem) {
       options.onAssetSelected?.(asset)
       hide()
     }

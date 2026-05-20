@@ -27,7 +27,7 @@ export function parseIsoDateSafe(
  * @param ts Unix timestamp in milliseconds
  * @returns Local date key string
  */
-export const dateKey = (ts: number): string => {
+export function dateKey(ts: number): string {
   const d = new Date(ts)
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
@@ -41,7 +41,7 @@ export const dateKey = (ts: number): string => {
  * @param ts Unix timestamp in milliseconds
  * @returns True if today
  */
-export const isToday = (ts: number): boolean => {
+export function isToday(ts: number): boolean {
   const d = new Date(ts)
   const now = new Date()
   return (
@@ -57,7 +57,7 @@ export const isToday = (ts: number): boolean => {
  * @param ts Unix timestamp in milliseconds
  * @returns True if yesterday
  */
-export const isYesterday = (ts: number): boolean => {
+export function isYesterday(ts: number): boolean {
   const d = new Date(ts)
   const now = new Date()
   const yest = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
@@ -75,7 +75,7 @@ export const isYesterday = (ts: number): boolean => {
  * @param locale BCP-47 locale string
  * @returns Localized month/day label
  */
-export const formatShortMonthDay = (ts: number, locale: string): string => {
+export function formatShortMonthDay(ts: number, locale: string): string {
   const d = new Date(ts)
   return new Intl.DateTimeFormat(locale, {
     month: 'short',
@@ -90,7 +90,7 @@ export const formatShortMonthDay = (ts: number, locale: string): string => {
  * @param locale BCP-47 locale string
  * @returns Localized time string
  */
-export const formatClockTime = (ts: number, locale: string): string => {
+export function formatClockTime(ts: number, locale: string): string {
   const d = new Date(ts)
   return new Intl.DateTimeFormat(locale, {
     hour: 'numeric',

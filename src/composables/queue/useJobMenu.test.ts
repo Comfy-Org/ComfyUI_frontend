@@ -154,34 +154,36 @@ type TestJobListItem = Omit<JobListItem, 'taskRef'> & {
   taskRef?: MockTaskRef
 }
 
-const createJobItem = (
-  overrides: Partial<TestJobListItem> = {}
-): JobListItem => ({
-  id: overrides.id ?? 'job-1',
-  title: overrides.title ?? 'Test job',
-  meta: overrides.meta ?? 'meta',
-  state: overrides.state ?? 'completed',
-  taskRef: overrides.taskRef as TaskItemImpl | undefined,
-  iconName: overrides.iconName,
-  iconImageUrl: overrides.iconImageUrl,
-  showClear: overrides.showClear,
-  progressCurrentPercent: overrides.progressCurrentPercent,
-  progressTotalPercent: overrides.progressTotalPercent,
-  runningNodeName: overrides.runningNodeName,
-  executionTimeMs: overrides.executionTimeMs,
-  computeHours: overrides.computeHours
-})
+function createJobItem(overrides: Partial<TestJobListItem> = {}): JobListItem {
+  return {
+    id: overrides.id ?? 'job-1',
+    title: overrides.title ?? 'Test job',
+    meta: overrides.meta ?? 'meta',
+    state: overrides.state ?? 'completed',
+    taskRef: overrides.taskRef as TaskItemImpl | undefined,
+    iconName: overrides.iconName,
+    iconImageUrl: overrides.iconImageUrl,
+    showClear: overrides.showClear,
+    progressCurrentPercent: overrides.progressCurrentPercent,
+    progressTotalPercent: overrides.progressTotalPercent,
+    runningNodeName: overrides.runningNodeName,
+    executionTimeMs: overrides.executionTimeMs,
+    computeHours: overrides.computeHours
+  }
+}
 
 let currentItem: Ref<JobListItem | null>
 
-const mountJobMenu = (onInspectAsset?: (item: JobListItem) => void) =>
-  useJobMenu(() => currentItem.value, onInspectAsset)
+function mountJobMenu(onInspectAsset?: (item: JobListItem) => void) {
+  return useJobMenu(() => currentItem.value, onInspectAsset)
+}
 
-const findActionEntry = (entries: MenuEntry[], key: string) =>
-  entries.find(
+function findActionEntry(entries: MenuEntry[], key: string) {
+  return entries.find(
     (entry): entry is Extract<MenuEntry, { kind?: 'item' }> =>
       entry.key === key && entry.kind !== 'divider'
   )
+}
 
 describe('useJobMenu', () => {
   beforeEach(() => {
@@ -212,7 +214,7 @@ describe('useJobMenu', () => {
     getJobWorkflowMock.mockResolvedValue(undefined)
   })
 
-  const setCurrentItem = (item: JobListItem | null) => {
+  function setCurrentItem(item: JobListItem | null) {
     currentItem.value = item
   }
 

@@ -28,7 +28,7 @@ const { t } = useI18n()
 const toast = useToast()
 
 const workflowStore = useWorkflowStore()
-const migrateToLitegraphReroute = async () => {
+async function migrateToLitegraphReroute() {
   const workflowJSON = app.rootGraph.serialize() as unknown as WorkflowJSON04
   const migratedWorkflowJSON = migrateLegacyRerouteNodes(workflowJSON)
   await app.loadGraphData(

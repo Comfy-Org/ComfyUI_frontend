@@ -6,13 +6,14 @@ import { useLazyPagination } from '@/composables/useLazyPagination'
 
 type Item = { id: number }
 
-const buildItems = (n: number): Item[] =>
-  Array.from({ length: n }, (_, i) => ({ id: i }))
+function buildItems(n: number): Item[] {
+  return Array.from({ length: n }, (_, i) => ({ id: i }))
+}
 
 describe('useLazyPagination', () => {
   let scope: EffectScope | undefined
 
-  const runInScope = <T>(fn: () => T): T => {
+  function runInScope<T>(fn: () => T): T {
     scope = effectScope()
     const result = scope.run(fn)
     if (result === undefined) {

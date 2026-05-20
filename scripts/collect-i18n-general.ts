@@ -18,7 +18,7 @@ const localePath = './src/locales/en/main.json'
 const commandsPath = './src/locales/en/commands.json'
 const settingsPath = './src/locales/en/settings.json'
 
-const extractMenuCommandLocaleStrings = (): Set<string> => {
+function extractMenuCommandLocaleStrings(): Set<string> {
   const labels = new Set<string>()
   for (const [category, _] of CORE_MENU_COMMANDS) {
     category.forEach((category) => labels.add(category))

@@ -223,19 +223,21 @@ for (const [type, def] of coreWidgetDefinitions) {
 }
 
 // Utility functions
-const getCanonicalType = (type: string): string => aliasMap.get(type) || type
+function getCanonicalType(type: string): string {
+  return aliasMap.get(type) || type
+}
 
-export const getComponent = (type: string): Component | null => {
+export function getComponent(type: string): Component | null {
   const canonicalType = getCanonicalType(type)
   return widgets.get(canonicalType)?.component || null
 }
 
-export const isEssential = (type: string): boolean => {
+export function isEssential(type: string): boolean {
   const canonicalType = getCanonicalType(type)
   return widgets.get(canonicalType)?.essential || false
 }
 
-export const shouldRenderAsVue = (widget: Partial<SafeWidgetData>): boolean => {
+export function shouldRenderAsVue(widget: Partial<SafeWidgetData>): boolean {
   return !widget.options?.canvasOnly && !!widget.type
 }
 

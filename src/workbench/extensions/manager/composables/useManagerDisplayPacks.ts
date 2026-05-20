@@ -44,7 +44,7 @@ export function useManagerDisplayPacks(
   const isEmptySearch = computed(() => searchQuery.value === '')
 
   // Sorting function for packs not from searchResults
-  const sortPacks = (packs: NodePack[]) => {
+  function sortPacks(packs: NodePack[]) {
     if (!sortField.value || packs.length === 0) return packs
 
     const sortableFields = getSortableFields()
@@ -59,20 +59,22 @@ export function useManagerDisplayPacks(
   }
 
   // Filter functions
-  const filterNotInstalled = (packs: NodePack[]) =>
-    packs.filter((p) => !comfyManagerStore.isPackInstalled(p.id))
+  function filterNotInstalled(packs: NodePack[]) {
+    return packs.filter((p) => !comfyManagerStore.isPackInstalled(p.id))
+  }
 
-  const filterConflicting = (packs: NodePack[]) =>
-    packs.filter(
+  function filterConflicting(packs: NodePack[]) {
+    return packs.filter(
       (p) =>
         !!p.id &&
         conflictDetectionStore.conflictedPackages.some(
           (c) => c.package_id === p.id
         )
     )
+  }
 
-  const filterOutdated = (packs: NodePack[]) =>
-    packs.filter((p) => {
+  function filterOutdated(packs: NodePack[]) {
+    return packs.filter((p) => {
       const installedVersion = comfyManagerStore.getInstalledPackVersion(
         p.id ?? ''
       )
@@ -87,6 +89,7 @@ export function useManagerDisplayPacks(
       }
       return compare(latestVersion, installedVersion) > 0
     })
+  }
 
   // Data fetching triggers using whenever
   const needsInstalledPacks = computed(() =>

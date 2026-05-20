@@ -74,11 +74,11 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     }
   )
 
-  const setStale = () => {
+  function setStale() {
     isStale.value = true
   }
 
-  const partitionTaskLogs = () => {
+  function partitionTaskLogs() {
     const successTaskLogs: TaskLog[] = []
     const failTaskLogs: TaskLog[] = []
     for (const log of taskLogs.value) {
@@ -92,7 +92,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     failedTasksLogs.value = failTaskLogs
   }
 
-  const partitionTasks = () => {
+  function partitionTasks() {
     const successTasksIds = []
     const failTasksIds = []
     for (const task of Object.values(taskHistory.value)) {
@@ -115,25 +115,33 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     { deep: true }
   )
 
-  const getPackId = (pack: ManagerPackInstalled) => pack.cnr_id || pack.aux_id
+  function getPackId(pack: ManagerPackInstalled) {
+    return pack.cnr_id || pack.aux_id
+  }
 
-  const isInstalledPackId = (packName: NodePackId | undefined): boolean =>
-    !!packName && installedPacksIds.value.has(packName)
+  function isInstalledPackId(packName: NodePackId | undefined): boolean {
+    return !!packName && installedPacksIds.value.has(packName)
+  }
 
-  const isEnabledPackId = (packName: NodePackId | undefined): boolean =>
-    !!packName &&
-    isInstalledPackId(packName) &&
-    enabledPacksIds.value.has(packName)
+  function isEnabledPackId(packName: NodePackId | undefined): boolean {
+    return (
+      !!packName &&
+      isInstalledPackId(packName) &&
+      enabledPacksIds.value.has(packName)
+    )
+  }
 
-  const isInstallingPackId = (packName: NodePackId | undefined): boolean =>
-    !!packName && installingPacksIds.value.has(packName)
+  function isInstallingPackId(packName: NodePackId | undefined): boolean {
+    return !!packName && installingPacksIds.value.has(packName)
+  }
 
-  const packsToIdSet = (packs: ManagerPackInstalled[]) =>
-    packs.reduce((acc, pack) => {
+  function packsToIdSet(packs: ManagerPackInstalled[]) {
+    return packs.reduce((acc, pack) => {
       const id = pack.cnr_id || pack.aux_id
       if (id) acc.add(id)
       return acc
     }, new Set<NodePackId>())
+  }
 
   /**
    * A pack is disabled if there is a disabled entry and no corresponding
@@ -152,7 +160,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
    * }
    * isDisabled("packname") // true
    */
-  const updateDisabledIds = (packs: ManagerPackInstalled[]) => {
+  function updateDisabledIds(packs: ManagerPackInstalled[]) {
     // Use temporary variables to avoid triggering reactivity
     const enabledIds = new Set<NodePackId>()
     const disabledIds = new Set<NodePackId>()
@@ -175,11 +183,11 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     disabledPacksIds.value = disabledIds
   }
 
-  const updateInstalledIds = (packs: ManagerPackInstalled[]) => {
+  function updateInstalledIds(packs: ManagerPackInstalled[]) {
     installedPacksIds.value = packsToIdSet(packs)
   }
 
-  const onPacksChanged = () => {
+  function onPacksChanged() {
     const packs = Object.values(installedPacks.value)
     updateDisabledIds(packs)
     updateInstalledIds(packs)
@@ -187,7 +195,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
 
   watch(installedPacks, onPacksChanged, { deep: true })
 
-  const refreshInstalledList = async () => {
+  async function refreshInstalledList() {
     const packs = await managerService.listInstalledPacks()
     if (packs) {
       // Normalize pack keys to ensure consistent access
@@ -198,10 +206,10 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
 
   whenever(isStale, refreshInstalledList, { immediate: true })
 
-  const enqueueTaskWithLogs = async (
+  async function enqueueTaskWithLogs(
     task: (taskId: string) => Promise<null>,
     taskName: string
-  ) => {
+  ) {
     const taskId = uuidv4()
     const { logs } = useServerLogs({
       ui_id: taskId,
@@ -256,7 +264,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
       }
 
       installingPacksIds.value.add(params.id)
-      const task = (taskId: string) => {
+      function task(taskId: string) {
         taskIdToPackId.value.set(taskId, params.id)
         return managerService.installPack(params, taskId, signal)
       }
@@ -265,10 +273,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     { maxSize: 1 }
   )
 
-  const uninstallPack = async (
-    params: ManagerPackInfo,
-    signal?: AbortSignal
-  ) => {
+  async function uninstallPack(params: ManagerPackInfo, signal?: AbortSignal) {
     installPack.clear()
     installPack.cancel()
 
@@ -277,7 +282,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
       node_name: params.id,
       is_unknown: false
     }
-    const task = (taskId: string) => {
+    function task(taskId: string) {
       taskIdToPackId.value.set(taskId, params.id)
       return managerService.uninstallPack(uninstallParams, taskId, signal)
     }
@@ -294,8 +299,9 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
         node_name: params.id,
         node_ver: params.version
       }
-      const task = (taskId: string) =>
-        managerService.updatePack(updateParams, taskId, signal)
+      function task(taskId: string) {
+        return managerService.updatePack(updateParams, taskId, signal)
+      }
       await enqueueTaskWithLogs(task, t('g.updating', { id: params.id }))
     },
     { maxSize: 1 }
@@ -303,42 +309,45 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
 
   const updateAllPacks = useCachedRequest<UpdateAllPacksParams, void>(
     async (params: UpdateAllPacksParams, signal?: AbortSignal) => {
-      const task = (taskId: string) =>
-        managerService.updateAllPacks(params, taskId, signal)
+      function task(taskId: string) {
+        return managerService.updateAllPacks(params, taskId, signal)
+      }
       await enqueueTaskWithLogs(task, t('manager.updatingAllPacks'))
     },
     { maxSize: 1 }
   )
 
-  const disablePack = async (params: ManagerPackInfo, signal?: AbortSignal) => {
+  async function disablePack(params: ManagerPackInfo, signal?: AbortSignal) {
     const disableParams: components['schemas']['DisablePackParams'] = {
       node_name: params.id,
       is_unknown: false
     }
-    const task = (taskId: string) =>
-      managerService.disablePack(disableParams, taskId, signal)
+    function task(taskId: string) {
+      return managerService.disablePack(disableParams, taskId, signal)
+    }
     await enqueueTaskWithLogs(task, t('g.disabling', { id: params.id }))
   }
 
-  const enablePack = async (params: ManagerPackInfo, signal?: AbortSignal) => {
+  async function enablePack(params: ManagerPackInfo, signal?: AbortSignal) {
     const enableParams: components['schemas']['EnablePackParams'] = {
       cnr_id: params.id
     }
-    const task = (taskId: string) =>
-      managerService.enablePack(enableParams, taskId, signal)
+    function task(taskId: string) {
+      return managerService.enablePack(enableParams, taskId, signal)
+    }
     await enqueueTaskWithLogs(task, t('g.enabling', { id: params.id }))
   }
 
-  const getInstalledPackVersion = (packId: NodePackId) => {
+  function getInstalledPackVersion(packId: NodePackId) {
     const pack = installedPacks.value[packId]
     return pack?.ver
   }
 
-  const clearLogs = () => {
+  function clearLogs() {
     taskLogs.value = []
   }
 
-  const resetTaskState = () => {
+  function resetTaskState() {
     // Clear all task-related reactive state for fresh start after restart
     taskLogs.value = []
     taskHistory.value = {}

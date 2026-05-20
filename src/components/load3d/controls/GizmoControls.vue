@@ -104,19 +104,19 @@ const emit = defineEmits<{
   (e: 'resetGizmoTransform'): void
 }>()
 
-const toggleGizmo = () => {
+function toggleGizmo() {
   if (!gizmoConfig.value) return
   gizmoConfig.value.enabled = !gizmoConfig.value.enabled
   emit('toggleGizmo', gizmoConfig.value.enabled)
 }
 
-const setMode = (mode: GizmoMode) => {
+function setMode(mode: GizmoMode) {
   if (!gizmoConfig.value) return
   gizmoConfig.value.mode = mode
   emit('setGizmoMode', mode)
 }
 
-const resetTransform = () => {
+function resetTransform() {
   emit('resetGizmoTransform')
 }
 </script>

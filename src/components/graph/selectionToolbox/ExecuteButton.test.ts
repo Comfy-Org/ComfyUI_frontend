@@ -76,7 +76,7 @@ describe('ExecuteButton', () => {
     vi.clearAllMocks()
   })
 
-  const renderComponent = () => {
+  function renderComponent() {
     return render(ExecuteButton, {
       global: {
         plugins: [i18n, PrimeVue],

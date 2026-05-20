@@ -11,8 +11,8 @@ import { MaskBlendMode, Tools } from '@/extensions/core/maskeditor/types'
 
 type ToolManager = ReturnType<typeof useToolManager>
 
-const initialMock = () =>
-  reactive({
+function initialMock() {
+  return reactive({
     maskOpacity: 0.8,
     maskBlendMode: MaskBlendMode.Black,
     activeLayer: 'mask' as 'mask' | 'rgb',
@@ -23,6 +23,7 @@ const initialMock = () =>
     imgCanvas: null as HTMLCanvasElement | null,
     setMaskOpacity: vi.fn()
   })
+}
 
 let mockStore: ReturnType<typeof initialMock>
 const mockUpdateMaskColor = vi.fn().mockResolvedValue(undefined)
@@ -67,13 +68,16 @@ const i18n = createI18n({
   }
 })
 
-const renderPanel = (props?: Record<string, unknown>) =>
-  render(ImageLayerSettingsPanel, {
+function renderPanel(props?: Record<string, unknown>) {
+  return render(ImageLayerSettingsPanel, {
     global: { plugins: [i18n] },
     props
   })
+}
 
-const makeCanvas = (): HTMLCanvasElement => document.createElement('canvas')
+function makeCanvas(): HTMLCanvasElement {
+  return document.createElement('canvas')
+}
 
 describe('ImageLayerSettingsPanel', () => {
   beforeEach(() => {
@@ -241,7 +245,9 @@ describe('ImageLayerSettingsPanel', () => {
   })
 
   describe('paint layer activate visibility', () => {
-    const styleOf = (el: Element): string => el.getAttribute('style') ?? ''
+    function styleOf(el: Element): string {
+      return el.getAttribute('style') ?? ''
+    }
 
     it('should hide paint activate button when current tool is not Eraser', () => {
       mockStore.currentTool = Tools.MaskPen

@@ -36,15 +36,16 @@ export const useWorkflowDraftStore = defineStore('workflowDraft', () => {
 
   const mostRecentDraft = computed(() => mostRecentDraftPath(storedOrder.value))
 
-  const currentState = (): DraftCacheState =>
-    createDraftCacheState(storedDrafts.value, storedOrder.value)
+  function currentState(): DraftCacheState {
+    return createDraftCacheState(storedDrafts.value, storedOrder.value)
+  }
 
-  const updateState = (state: DraftCacheState) => {
+  function updateState(state: DraftCacheState) {
     storedDrafts.value = state.drafts
     storedOrder.value = state.order
   }
 
-  const saveDraft = (path: string, snapshot: WorkflowDraftSnapshot) => {
+  function saveDraft(path: string, snapshot: WorkflowDraftSnapshot) {
     try {
       updateState(upsertDraft(currentState(), path, snapshot, MAX_DRAFTS))
     } catch (error) {
@@ -66,26 +67,28 @@ export const useWorkflowDraftStore = defineStore('workflowDraft', () => {
     }
   }
 
-  const removeDraft = (path: string) => {
+  function removeDraft(path: string) {
     updateState(removeDraftEntry(currentState(), path))
   }
 
-  const moveDraft = (oldPath: string, newPath: string, name: string) => {
+  function moveDraft(oldPath: string, newPath: string, name: string) {
     updateState(moveDraftEntry(currentState(), oldPath, newPath, name))
   }
 
-  const markDraftUsed = (path: string) => {
+  function markDraftUsed(path: string) {
     if (!(path in storedDrafts.value)) return
     storedOrder.value = touchEntry(storedOrder.value, path)
   }
 
-  const getDraft = (path: string) => storedDrafts.value[path]
+  function getDraft(path: string) {
+    return storedDrafts.value[path]
+  }
 
-  const tryLoadGraph = async (
+  async function tryLoadGraph(
     payload: string | null,
     workflowName: string | null,
     onFailure?: () => void
-  ) => {
+  ) {
     if (!payload) return false
     try {
       const workflow = JSON.parse(payload)
@@ -103,7 +106,7 @@ export const useWorkflowDraftStore = defineStore('workflowDraft', () => {
     }
   }
 
-  const loadDraft = async (path: string) => {
+  async function loadDraft(path: string) {
     const draft = getDraft(path)
     if (!draft) return false
     const loaded = await tryLoadGraph(draft.data, draft.name, () => {
@@ -115,9 +118,9 @@ export const useWorkflowDraftStore = defineStore('workflowDraft', () => {
     return loaded
   }
 
-  const loadPersistedWorkflow = async (
+  async function loadPersistedWorkflow(
     options: LoadPersistedWorkflowOptions
-  ): Promise<boolean> => {
+  ): Promise<boolean> {
     const {
       workflowName,
       preferredPath,

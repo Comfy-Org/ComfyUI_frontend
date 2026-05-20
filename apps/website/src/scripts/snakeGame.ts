@@ -35,8 +35,9 @@ const TICK_MS = 200
 
 function readColors() {
   const style = getComputedStyle(document.documentElement)
-  const get = (name: string, fallback: string): string =>
-    style.getPropertyValue(name).trim() || fallback
+  function get(name: string, fallback: string): string {
+    return style.getPropertyValue(name).trim() || fallback
+  }
 
   return {
     bg: get('--color-primary-comfy-ink', '#211927'),
@@ -59,9 +60,12 @@ function requireElement<T extends Element>(
   return el
 }
 
-const isSVGSVG = (el: Element): el is SVGSVGElement =>
-  el instanceof SVGSVGElement
-const isSVGG = (el: Element): el is SVGGElement => el instanceof SVGGElement
+function isSVGSVG(el: Element): el is SVGSVGElement {
+  return el instanceof SVGSVGElement
+}
+function isSVGG(el: Element): el is SVGGElement {
+  return el instanceof SVGGElement
+}
 function isSVGText(el: Element): el is SVGTextElement {
   return el instanceof SVGTextElement
 }
@@ -127,8 +131,9 @@ function depth(cell: Cell): number {
 
 function roundedPath(pts: [number, number][], radius: number): string {
   const n = pts.length
-  const fmt = (p: readonly [number, number]) =>
-    `${p[0].toFixed(2)},${p[1].toFixed(2)}`
+  function fmt(p: readonly [number, number]) {
+    return `${p[0].toFixed(2)},${p[1].toFixed(2)}`
+  }
   let d = ''
   for (let i = 0; i < n; i++) {
     const prev = pts[(i - 1 + n) % n]
@@ -206,7 +211,7 @@ function triggerExplosion() {
   const cx = ((COLS - ROWS) * STEP_X) / 2
   const cy = ((COLS + ROWS - 2) * STEP_Y) / 2
 
-  const launchParticle = (i: number, j: number, fill: string): Particle => {
+  function launchParticle(i: number, j: number, fill: string): Particle {
     const [sx, sy] = iso(i, j)
     const baseAngle = Math.atan2(sy - cy, sx - cx)
     const angle = baseAngle + (Math.random() - 0.5) * 1.2
@@ -239,7 +244,9 @@ function triggerExplosion() {
 const DROP_DURATION_MS = 450
 const DROP_HEIGHT = 600
 let foodDropStart = 0
-const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
+function easeOutCubic(t: number) {
+  return 1 - Math.pow(1 - t, 3)
+}
 
 function foodDropOffset(now = performance.now()): number {
   if (!foodDropStart) return 0
@@ -252,7 +259,7 @@ function foodDropOffset(now = performance.now()): number {
 const REBIRTH_STAGGER_MS = 90
 const REBIRTH_GROW_MS = 260
 let rebirthStart = 0
-const easeOutBack = (t: number) => {
+function easeOutBack(t: number) {
   const c1 = 1.70158
   const c3 = c1 + 1
   return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2)
@@ -271,7 +278,9 @@ function rebirthScaleFor(idx: number, now = performance.now()): number {
 const CHOMP_DURATION_MS = 220
 const CHOMP_PEAK_SCALE = 1.15
 let chompStart = 0
-const easeOut = (t: number) => 1 - (1 - t) * (1 - t)
+function easeOut(t: number) {
+  return 1 - (1 - t) * (1 - t)
+}
 
 function chompScale(now = performance.now()): number {
   if (!chompStart) return 1
@@ -299,7 +308,7 @@ function isAnimating(): boolean {
 
 function ensureAnimationLoop() {
   if (animationHandle !== null) return
-  const tick = () => {
+  function tick() {
     if (
       explodeStart &&
       performance.now() - explodeStart >= EXPLODE_DURATION_MS
@@ -411,8 +420,12 @@ function updateScoreDisplay() {
   scoreBestEl.textContent = String(best)
 }
 
-const cellsEqual = (a: Cell, b: Cell) => a.i === b.i && a.j === b.j
-const inBounds = (c: Cell) => c.i >= 0 && c.j >= 0 && c.i < COLS && c.j < ROWS
+function cellsEqual(a: Cell, b: Cell) {
+  return a.i === b.i && a.j === b.j
+}
+function inBounds(c: Cell) {
+  return c.i >= 0 && c.j >= 0 && c.i < COLS && c.j < ROWS
+}
 
 function reset() {
   const j0 = Math.floor(ROWS / 2)

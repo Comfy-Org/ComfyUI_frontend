@@ -49,11 +49,11 @@ const modelValue = defineModel<string>()
 const fileInput = ref<HTMLInputElement | null>(null)
 const isUploading = ref(false)
 
-const triggerFileInput = () => {
+function triggerFileInput() {
   fileInput.value?.click()
 }
 
-const uploadFile = async (file: File): Promise<string | null> => {
+async function uploadFile(file: File): Promise<string | null> {
   const body = new FormData()
   body.append('image', file)
   body.append('subfolder', 'backgrounds')
@@ -74,7 +74,7 @@ const uploadFile = async (file: File): Promise<string | null> => {
   return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
 }
 
-const handleFileUpload = async (event: Event) => {
+async function handleFileUpload(event: Event) {
   const target = event.target as HTMLInputElement
   if (target.files && target.files[0]) {
     const file = target.files[0]
@@ -100,7 +100,7 @@ const handleFileUpload = async (event: Event) => {
   }
 }
 
-const clearImage = () => {
+function clearImage() {
   modelValue.value = ''
   if (fileInput.value) {
     fileInput.value.value = ''

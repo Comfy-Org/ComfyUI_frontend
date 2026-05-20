@@ -66,10 +66,10 @@ interface EnabledDisabledTestCase {
 describe('useComfyManagerStore', () => {
   let mockManagerService: ReturnType<typeof useComfyManagerService>
 
-  const triggerPacksChange = async (
+  async function triggerPacksChange(
     installedPacks: InstalledPacksResponse,
     store: ReturnType<typeof useComfyManagerStore>
-  ) => {
+  ) {
     // Simulate change in value to properly trigger watchers. Required even for immediate watchers.
     store.installedPacks = {}
     await nextTick()

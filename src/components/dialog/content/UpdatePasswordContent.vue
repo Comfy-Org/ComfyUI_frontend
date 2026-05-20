@@ -32,7 +32,7 @@ const { onSuccess } = defineProps<{
   onSuccess: () => void
 }>()
 
-const onSubmit = async (event: FormSubmitEvent) => {
+async function onSubmit(event: FormSubmitEvent) {
   if (event.valid) {
     loading.value = true
     try {

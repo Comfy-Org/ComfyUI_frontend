@@ -123,10 +123,10 @@ export const useExecutionStore = defineStore('execution', () => {
     return locatorId
   }
 
-  const mergeExecutionProgressStates = (
+  function mergeExecutionProgressStates(
     currentState: NodeProgressState | undefined,
     newState: NodeProgressState
-  ): NodeProgressState => {
+  ): NodeProgressState {
     if (currentState === undefined) {
       return newState
     }
@@ -617,9 +617,9 @@ export const useExecutionStore = defineStore('execution', () => {
    * @param locatorId The NodeLocatorId
    * @returns The execution ID or null if conversion fails
    */
-  const nodeLocatorIdToExecutionId = (
+  function nodeLocatorIdToExecutionId(
     locatorId: NodeLocatorId | string
-  ): string | null => {
+  ): string | null {
     const executionId = workflowStore.nodeLocatorIdToNodeExecutionId(locatorId)
     return executionId
   }

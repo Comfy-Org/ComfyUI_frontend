@@ -7,9 +7,9 @@ test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
   const ALWAYS_AHEAD_OF_INSTALLED_VERSION = '100.100.100'
   const ALWAYS_BEHIND_INSTALLED_VERSION = '0.0.0'
 
-  const createMockSystemStatsRes = (
+  function createMockSystemStatsRes(
     requiredFrontendVersion: string
-  ): SystemStats => {
+  ): SystemStats {
     return {
       system: {
         os: 'posix',

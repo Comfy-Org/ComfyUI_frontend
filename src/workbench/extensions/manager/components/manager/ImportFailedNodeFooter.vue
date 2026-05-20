@@ -37,7 +37,7 @@ const formatErrorText = computed(() => {
   return errorParts.join('\n\n')
 })
 
-const handleCopyError = () => {
+function handleCopyError() {
   copyToClipboard(formatErrorText.value)
 }
 </script>

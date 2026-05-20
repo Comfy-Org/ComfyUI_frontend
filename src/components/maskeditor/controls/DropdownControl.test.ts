@@ -4,14 +4,14 @@ import { describe, expect, it, vi } from 'vitest'
 
 import DropdownControl from './DropdownControl.vue'
 
-const renderComponent = (
+function renderComponent(
   props: {
     label?: string
     options?: string[] | { label: string; value: string | number }[]
     modelValue?: string | number
   } = {},
   onUpdate?: (value: string | number) => void
-) => {
+) {
   const user = userEvent.setup()
   const utils = render(DropdownControl, {
     props: {

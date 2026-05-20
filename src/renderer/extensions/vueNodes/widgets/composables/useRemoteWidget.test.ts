@@ -65,15 +65,17 @@ function createMockConfig(overrides = {}): RemoteWidgetConfig {
   }
 }
 
-const createMockOptions = (inputOverrides = {}) => ({
-  remoteConfig: createMockConfig(inputOverrides),
-  defaultValue: DEFAULT_VALUE,
-  node: createMockLGraphNode({
-    addWidget: vi.fn(() => createMockWidget()),
-    onRemoved: undefined
-  }),
-  widget: createMockWidget()
-})
+function createMockOptions(inputOverrides = {}) {
+  return {
+    remoteConfig: createMockConfig(inputOverrides),
+    defaultValue: DEFAULT_VALUE,
+    node: createMockLGraphNode({
+      addWidget: vi.fn(() => createMockWidget()),
+      onRemoved: undefined
+    }),
+    widget: createMockWidget()
+  }
+}
 
 function mockAxiosResponse(data: unknown, status = 200) {
   vi.mocked(axios.get).mockResolvedValueOnce({ data, status })

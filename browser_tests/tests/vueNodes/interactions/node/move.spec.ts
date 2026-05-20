@@ -8,10 +8,10 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position } from '@e2e/fixtures/types'
 
 test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
-  const getHeaderPos = async (
+  async function getHeaderPos(
     comfyPage: ComfyPage,
     title: string
-  ): Promise<{ x: number; y: number; width: number; height: number }> => {
+  ): Promise<{ x: number; y: number; width: number; height: number }> {
     const box = await comfyPage.vueNodes
       .getNodeByTitle(title)
       .getByTestId('node-title')
@@ -21,27 +21,30 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     return box
   }
 
-  const getLoadCheckpointHeaderPos = async (comfyPage: ComfyPage) =>
-    getHeaderPos(comfyPage, 'Load Checkpoint')
+  async function getLoadCheckpointHeaderPos(comfyPage: ComfyPage) {
+    return getHeaderPos(comfyPage, 'Load Checkpoint')
+  }
 
-  const expectPosChanged = async (pos1: Position, pos2: Position) => {
+  async function expectPosChanged(pos1: Position, pos2: Position) {
     const diffX = Math.abs(pos2.x - pos1.x)
     const diffY = Math.abs(pos2.y - pos1.y)
     expect(diffX).toBeGreaterThan(0)
     expect(diffY).toBeGreaterThan(0)
   }
 
-  const deltaBetween = (before: Position, after: Position) => ({
-    x: after.x - before.x,
-    y: after.y - before.y
-  })
+  function deltaBetween(before: Position, after: Position) {
+    return {
+      x: after.x - before.x,
+      y: after.y - before.y
+    }
+  }
 
-  const expectSameDelta = (a: Position, b: Position, tol = 2) => {
+  function expectSameDelta(a: Position, b: Position, tol = 2) {
     expect(Math.abs(a.x - b.x)).toBeLessThanOrEqual(tol)
     expect(Math.abs(a.y - b.y)).toBeLessThanOrEqual(tol)
   }
 
-  const dragFromTabButton = async (comfyPage: ComfyPage, button: Locator) => {
+  async function dragFromTabButton(comfyPage: ComfyPage, button: Locator) {
     const box = await button.boundingBox()
     if (!box) throw new Error('Tab button has no bounding box')
     const start = {
@@ -172,7 +175,7 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     const dx = 120
     const dy = 80
 
-    const clickNodeTitleWithMeta = async (title: string) => {
+    async function clickNodeTitleWithMeta(title: string) {
       await comfyPage.vueNodes
         .getNodeByTitle(title)
         .getByTestId('node-title')

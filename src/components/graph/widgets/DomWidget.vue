@@ -58,7 +58,7 @@ const enableDomClipping = computed(() =>
   settingStore.get('Comfy.DOMClippingEnabled')
 )
 
-const updateDomClipping = () => {
+function updateDomClipping() {
   const lgCanvas = canvasStore.canvas
   if (!lgCanvas || !widgetElement.value) return
 
@@ -184,7 +184,7 @@ const inputSpec = widget.node.constructor.nodeData
 const tooltip = inputSpec?.inputs?.[widget.name]?.tooltip
 
 // Mount DOM element when widget is or becomes visible
-const mountElementIfVisible = () => {
+function mountElementIfVisible() {
   if (!(widgetState.visible && isDOMWidget(widget) && widgetElement.value)) {
     return
   }

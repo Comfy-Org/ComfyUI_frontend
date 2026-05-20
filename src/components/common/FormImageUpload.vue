@@ -55,11 +55,11 @@ const emit = defineEmits<{
 
 const fileInput = ref<HTMLInputElement | null>(null)
 
-const triggerFileInput = () => {
+function triggerFileInput() {
   fileInput.value?.click()
 }
 
-const handleFileUpload = (event: Event) => {
+function handleFileUpload(event: Event) {
   const target = event.target as HTMLInputElement
   if (target.files && target.files[0]) {
     const file = target.files[0]
@@ -71,7 +71,7 @@ const handleFileUpload = (event: Event) => {
   }
 }
 
-const clearImage = () => {
+function clearImage() {
   emit('update:modelValue', '')
   if (fileInput.value) {
     fileInput.value.value = ''

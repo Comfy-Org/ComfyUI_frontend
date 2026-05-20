@@ -36,14 +36,14 @@ export function useHelpCenter() {
   /**
    * Toggle Help Center and track UI button click.
    */
-  const toggleHelpCenter = () => {
+  function toggleHelpCenter() {
     useTelemetry()?.trackUiButtonClicked({
       button_id: 'sidebar_help_center_toggled'
     })
     helpCenterStore.toggle()
   }
 
-  const closeHelpCenter = () => {
+  function closeHelpCenter() {
     helpCenterStore.hide()
   }
 
@@ -51,7 +51,7 @@ export function useHelpCenter() {
    * Handle What's New popup dismissal
    * Check if conflict modal should be shown after ComfyUI update
    */
-  const handleWhatsNewDismissed = async () => {
+  async function handleWhatsNewDismissed() {
     try {
       // Check if conflict modal should be shown after update
       const shouldShow =
@@ -67,7 +67,7 @@ export function useHelpCenter() {
   /**
    * Show the node conflict dialog with current conflict data
    */
-  const showConflictModal = () => {
+  function showConflictModal() {
     void showNodeConflictDialog({
       showAfterWhatsNew: true,
       dialogComponentProps: {

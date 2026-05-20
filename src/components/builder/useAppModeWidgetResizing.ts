@@ -34,15 +34,16 @@ export function useAppModeWidgetResizing(
       return
     const resizable = target.closest<HTMLElement>(RESIZABLE_SELECTOR)
     if (!resizable || !wrapper.contains(resizable)) return
+    const resizableEl: HTMLElement = resizable
 
     clearPendingHandler()
 
-    const startHeight = resizable.offsetHeight
-    const handler = () => {
+    const startHeight = resizableEl.offsetHeight
+    function handler() {
       window.removeEventListener('pointerup', handler)
       window.removeEventListener('pointercancel', handler)
       pendingHandler = null
-      const height = resizable.offsetHeight
+      const height = resizableEl.offsetHeight
       if (height === startHeight) return
       onResize(nodeId, widgetName, { height })
     }

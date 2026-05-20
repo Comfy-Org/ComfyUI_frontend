@@ -171,8 +171,12 @@ const activePanel = computed(() => {
   return findPanelByKey(activeCategoryKey.value)
 })
 
-const getGroupSortOrder = (group: SettingTreeNode): number =>
-  Math.max(0, ...flattenTree<SettingParams>(group).map((s) => s.sortOrder ?? 0))
+function getGroupSortOrder(group: SettingTreeNode): number {
+  return Math.max(
+    0,
+    ...flattenTree<SettingParams>(group).map((s) => s.sortOrder ?? 0)
+  )
+}
 
 function sortedGroups(category: SettingTreeNode): ISettingGroup[] {
   return [...(category.children ?? [])]

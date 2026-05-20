@@ -27,7 +27,7 @@ const emit = defineEmits<{
   'update:modelValue': [value: boolean]
 }>()
 
-const onChange = (event: Event) => {
+function onChange(event: Event) {
   const checked = (event.target as HTMLInputElement).checked
   emit('update:modelValue', checked)
 }

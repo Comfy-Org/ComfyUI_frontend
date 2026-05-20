@@ -42,9 +42,10 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
     window.ire_o = IMPACT_QUEUE_NAME
 
     if (!window.ire) {
-      const queueFn: NonNullable<Window['ire']> = (...args: unknown[]) => {
+      function queueFnImpl(...args: unknown[]) {
         ;(queueFn.a ??= []).push(args)
       }
+      const queueFn = queueFnImpl as NonNullable<Window['ire']>
       window.ire = queueFn
     }
 

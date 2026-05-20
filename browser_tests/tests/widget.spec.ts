@@ -56,8 +56,8 @@ test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('should refresh combo values of optional inputs', async ({
     comfyPage
   }) => {
-    const getComboValues = async () =>
-      comfyPage.page.evaluate(() => {
+    async function getComboValues() {
+      return comfyPage.page.evaluate(() => {
         return window
           .app!.graph!.nodes.find(
             (node) => node.title === 'Node With Optional Combo Input'
@@ -65,6 +65,7 @@ test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
           .widgets!.find((widget) => widget.name === 'optional_combo_input')!
           .options.values
       })
+    }
 
     await comfyPage.workflow.loadWorkflow('inputs/optional_combo_input')
     const initialComboValues = await getComboValues()
@@ -82,8 +83,8 @@ test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Should refresh combo values of nodes with v2 combo input spec', async ({
     comfyPage
   }) => {
-    const getComboValues = async () =>
-      comfyPage.page.evaluate(() => {
+    async function getComboValues() {
+      return comfyPage.page.evaluate(() => {
         return window
           .app!.graph!.nodes.find(
             (node) => node.title === 'Node With V2 Combo Input'
@@ -91,6 +92,7 @@ test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
           .widgets!.find((widget) => widget.name === 'combo_input')!.options
           .values
       })
+    }
 
     await comfyPage.workflow.loadWorkflow('inputs/node_with_v2_combo_input')
     // click canvas to focus

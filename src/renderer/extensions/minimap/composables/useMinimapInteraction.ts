@@ -20,7 +20,7 @@ export function useMinimapInteraction(
     height: height
   })
 
-  const updateContainerRect = () => {
+  function updateContainerRect() {
     if (!containerRef.value) return
 
     const rect = containerRef.value.getBoundingClientRect()
@@ -32,7 +32,7 @@ export function useMinimapInteraction(
     }
   }
 
-  const handlePointerDown = (e: PointerEvent) => {
+  function handlePointerDown(e: PointerEvent) {
     isDragging.value = true
     updateContainerRect()
     const target = e.currentTarget
@@ -42,7 +42,7 @@ export function useMinimapInteraction(
     handlePointerMove(e)
   }
 
-  const handlePointerMove = (e: PointerEvent) => {
+  function handlePointerMove(e: PointerEvent) {
     if (!isDragging.value || !canvas.value) return
 
     const x = e.clientX - containerRect.value.left
@@ -57,7 +57,7 @@ export function useMinimapInteraction(
     centerViewOn(worldX, worldY)
   }
 
-  const releasePointer = (e?: PointerEvent) => {
+  function releasePointer(e?: PointerEvent) {
     isDragging.value = false
     if (!e) return
 
@@ -74,7 +74,7 @@ export function useMinimapInteraction(
 
   const handlePointerCancel = releasePointer
 
-  const handleWheel = (e: WheelEvent) => {
+  function handleWheel(e: WheelEvent) {
     e.preventDefault()
 
     const c = canvas.value

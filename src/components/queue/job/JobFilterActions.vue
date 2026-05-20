@@ -164,34 +164,31 @@ const searchPlaceholderText = computed(
   () => searchPlaceholder ?? t('sideToolbar.queueProgressOverlay.searchJobs')
 )
 
-const selectWorkflowFilter = (value: 'all' | 'current') => {
+function selectWorkflowFilter(value: 'all' | 'current') {
   selectedWorkflowFilter.value = value
 }
 
-const onSelectWorkflowFilter = (
-  value: 'all' | 'current',
-  close: () => void
-) => {
+function onSelectWorkflowFilter(value: 'all' | 'current', close: () => void) {
   trackFeatureUsed()
   selectWorkflowFilter(value)
   close()
 }
 
-const selectSortMode = (value: JobSortMode) => {
+function selectSortMode(value: JobSortMode) {
   selectedSortMode.value = value
 }
 
-const onSelectSortMode = (value: JobSortMode, close: () => void) => {
+function onSelectSortMode(value: JobSortMode, close: () => void) {
   trackFeatureUsed()
   selectSortMode(value)
   close()
 }
 
-const onSearchQueryUpdate = (value: string | undefined) => {
+function onSearchQueryUpdate(value: string | undefined) {
   searchQuery.value = value ?? ''
 }
 
-const sortLabel = (mode: JobSortMode) => {
+function sortLabel(mode: JobSortMode) {
   if (mode === 'mostRecent') {
     return t('queue.jobList.sortMostRecent')
   }

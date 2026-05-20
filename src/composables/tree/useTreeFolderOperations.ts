@@ -18,12 +18,12 @@ export function useTreeFolderOperations<T>(
   )
 
   // Generate a unique temporary key for the new folder
-  const generateTempKey = (parentKey: string) => {
+  function generateTempKey(parentKey: string) {
     return `${parentKey}/new_folder_${Date.now()}`
   }
 
   // Handle folder creation after name is confirmed
-  const handleFolderCreation = async (newName: string) => {
+  async function handleFolderCreation(newName: string) {
     if (!newFolderNode.value || !addFolderTargetNode.value) return
 
     try {
@@ -39,7 +39,7 @@ export function useTreeFolderOperations<T>(
    * The command to add a folder to a node via the context menu
    * @param targetNode - The node where the folder will be added under
    */
-  const addFolderCommand = (targetNode: RenderedTreeExplorerNode<T>) => {
+  function addFolderCommand(targetNode: RenderedTreeExplorerNode<T>) {
     expandNode(targetNode)
     newFolderNode.value = {
       key: generateTempKey(targetNode.key),
@@ -56,9 +56,9 @@ export function useTreeFolderOperations<T>(
   }
 
   // Generate the "Add Folder" menu item
-  const getAddFolderMenuItem = (
+  function getAddFolderMenuItem(
     targetNode: RenderedTreeExplorerNode<T> | null
-  ): MenuItem => {
+  ): MenuItem {
     return {
       label: t('g.newFolder'),
       icon: 'pi pi-folder-plus',

@@ -11,11 +11,11 @@ export const useMediaAssetGalleryStore = defineStore(
     const activeIndex = ref(-1)
     const items = shallowRef<ResultItemImpl[]>([])
 
-    const close = () => {
+    function close() {
       activeIndex.value = -1
     }
 
-    const openSingle = (asset: AssetMeta) => {
+    function openSingle(asset: AssetMeta) {
       // Convert AssetMeta to ResultItemImpl format
       const resultItem = new ResultItemImpl({
         filename: asset.name,

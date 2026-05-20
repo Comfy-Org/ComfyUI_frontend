@@ -70,10 +70,10 @@ export function ensureCorrectLayoutScale(
 
   const anchor = getGraphRenderAnchor(graph)
 
-  const applySnap = (
+  function applySnap(
     pos: [number, number],
     method: 'round' | 'ceil' | 'floor' = 'round'
-  ) => {
+  ) {
     if (LiteGraph.alwaysSnapToGrid) {
       const snapTo = graph.getSnapToGridSize?.()
       if (snapTo) {

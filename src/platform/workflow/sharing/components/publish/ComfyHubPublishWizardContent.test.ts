@@ -160,9 +160,11 @@ describe('ComfyHubPublishWizardContent', () => {
     })
   }
 
+  function noopResolver() {}
+
   function createDeferred<T>() {
-    let resolve: (value: T) => void = () => {}
-    let reject: (error: unknown) => void = () => {}
+    let resolve: (value: T) => void = noopResolver
+    let reject: (error: unknown) => void = noopResolver
 
     const promise = new Promise<T>((res, rej) => {
       resolve = res

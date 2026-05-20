@@ -254,8 +254,9 @@ export function promoteRecommendedWidgets(subgraphNode: SubgraphNode) {
   for (const node of interiorNodes) {
     node.updateComputedDisabled()
 
-    const hasPreviewWidget = () =>
-      node.widgets?.some(isPreviewPseudoWidget) ?? false
+    function hasPreviewWidget() {
+      return node.widgets?.some(isPreviewPseudoWidget) ?? false
+    }
 
     function promotePreviewWidget() {
       const widget = node.widgets?.find(isPreviewPseudoWidget)

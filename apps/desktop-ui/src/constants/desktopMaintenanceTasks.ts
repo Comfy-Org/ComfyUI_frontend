@@ -5,7 +5,7 @@ import { electronAPI } from '@/utils/envUtil'
 
 const electron = electronAPI()
 
-const openUrl = (url: string) => {
+function openUrl(url: string) {
   window.open(url, '_blank')
   return true
 }

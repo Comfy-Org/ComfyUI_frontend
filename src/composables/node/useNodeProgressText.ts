@@ -9,14 +9,16 @@ const TEXT_PREVIEW_WIDGET_NAME = '$$node-text-preview'
 export function useNodeProgressText() {
   const textPreviewWidget = useTextPreviewWidget()
 
-  const findTextPreviewWidget = (node: LGraphNode) =>
-    node.widgets?.find((w) => w.name === TEXT_PREVIEW_WIDGET_NAME)
+  function findTextPreviewWidget(node: LGraphNode) {
+    return node.widgets?.find((w) => w.name === TEXT_PREVIEW_WIDGET_NAME)
+  }
 
-  const addTextPreviewWidget = (node: LGraphNode) =>
-    textPreviewWidget(node, {
+  function addTextPreviewWidget(node: LGraphNode) {
+    return textPreviewWidget(node, {
       name: TEXT_PREVIEW_WIDGET_NAME,
       type: 'progressText'
     })
+  }
 
   /**
    * Shows text preview for a node

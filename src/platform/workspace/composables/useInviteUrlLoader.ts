@@ -33,7 +33,7 @@ export function useInviteUrlLoader() {
    * Hydrates preserved query from sessionStorage and merges into route.
    * This restores the invite token after login redirects.
    */
-  const ensureInviteQueryFromIntent = async () => {
+  async function ensureInviteQueryFromIntent() {
     hydratePreservedQuery(INVITE_NAMESPACE)
     const mergedQuery = mergePreservedQueryIntoQuery(
       INVITE_NAMESPACE,
@@ -50,7 +50,7 @@ export function useInviteUrlLoader() {
   /**
    * Removes invite parameter from URL using Vue Router
    */
-  const cleanupUrlParams = () => {
+  function cleanupUrlParams() {
     const newQuery = { ...route.query }
     delete newQuery.invite
     void router.replace({ query: newQuery })
@@ -67,7 +67,7 @@ export function useInviteUrlLoader() {
    * 4. Show toast notification
    * 5. Clean up URL and preserved query
    */
-  const loadInviteFromUrl = async () => {
+  async function loadInviteFromUrl() {
     // Restore preserved query from sessionStorage (handles login redirect case)
     const query = await ensureInviteQueryFromIntent()
     const inviteParam = query.invite

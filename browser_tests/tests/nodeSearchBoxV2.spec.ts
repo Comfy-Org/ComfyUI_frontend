@@ -243,15 +243,18 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       comfyPage
     }) => {
       const { searchBoxV2 } = comfyPage
-      const switchToDesktop = () =>
-        comfyPage.page.setViewportSize({ width: 1280, height: 800 })
-      const switchToMobile = () =>
-        comfyPage.page.setViewportSize({ width: 360, height: 800 })
-      const expectExpanded = (value: 'true' | 'false') =>
-        expect(searchBoxV2.sidebarToggle).toHaveAttribute(
+      function switchToDesktop() {
+        return comfyPage.page.setViewportSize({ width: 1280, height: 800 })
+      }
+      function switchToMobile() {
+        return comfyPage.page.setViewportSize({ width: 360, height: 800 })
+      }
+      function expectExpanded(value: 'true' | 'false') {
+        return expect(searchBoxV2.sidebarToggle).toHaveAttribute(
           'aria-expanded',
           value
         )
+      }
 
       await switchToDesktop()
       await searchBoxV2.open()

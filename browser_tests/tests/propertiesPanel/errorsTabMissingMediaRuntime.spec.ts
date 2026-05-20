@@ -77,7 +77,7 @@ const cloudUploadRaceTest = comfyPageFixture.extend<{
     }
     cloudUploadAssetStateByPage.set(page, state)
 
-    const assetsRouteHandler = async (route: Route) => {
+    async function assetsRouteHandler(route: Route) {
       const allAssets = [
         cloudDefaultGraphInputAsset,
         ...(state.isUploadedAssetAvailable ? [cloudUploadedVideoAsset] : [])
@@ -149,7 +149,7 @@ async function delayNextUpload(comfyPage: ComfyPage) {
     releaseUpload = resolve
   })
 
-  const uploadRouteHandler = async (route: Route) => {
+  async function uploadRouteHandler(route: Route) {
     resolveUploadStarted()
     await release
     await route.continue()

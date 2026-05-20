@@ -63,7 +63,7 @@ const popoverRef = ref<InstanceType<typeof Popover> | null>(null)
 let hideTimeout: ReturnType<typeof setTimeout> | null = null
 let showTimeout: ReturnType<typeof setTimeout> | null = null
 
-const showPopover = (event: Event) => {
+function showPopover(event: Event) {
   // Clear any existing timeouts
   if (hideTimeout) {
     clearTimeout(hideTimeout)
@@ -81,14 +81,14 @@ const showPopover = (event: Event) => {
   }, 200)
 }
 
-const cancelHidePopover = () => {
+function cancelHidePopover() {
   if (hideTimeout) {
     clearTimeout(hideTimeout)
     hideTimeout = null
   }
 }
 
-const hidePopover = () => {
+function hidePopover() {
   // Clear show timeout if mouse leaves before popover appears
   if (showTimeout) {
     clearTimeout(showTimeout)

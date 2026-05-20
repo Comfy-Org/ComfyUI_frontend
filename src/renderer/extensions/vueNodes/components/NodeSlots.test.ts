@@ -24,21 +24,25 @@ import {
 
 import NodeSlots from './NodeSlots.vue'
 
-const toVueNodeId = (id: string | number): VueNodeId => String(id)
+function toVueNodeId(id: string | number): VueNodeId {
+  return String(id)
+}
 
-const makeNodeData = (overrides: Partial<VueNodeData> = {}): VueNodeData => ({
-  id: '123',
-  title: 'Test Node',
-  type: 'TestType',
-  mode: 0,
-  selected: false,
-  executing: false,
-  inputs: [],
-  outputs: [],
-  widgets: [],
-  flags: { collapsed: false },
-  ...overrides
-})
+function makeNodeData(overrides: Partial<VueNodeData> = {}): VueNodeData {
+  return {
+    id: '123',
+    title: 'Test Node',
+    type: 'TestType',
+    mode: 0,
+    selected: false,
+    executing: false,
+    inputs: [],
+    outputs: [],
+    widgets: [],
+    flags: { collapsed: false },
+    ...overrides
+  }
+}
 
 // Explicit stubs to capture props for assertions
 interface StubSlotData {

@@ -21,7 +21,7 @@ vi.mock('@/composables/maskeditor/useCanvasHistory', () => ({
   useCanvasHistory: vi.fn(() => mockHistory)
 }))
 
-const makeCanvas = (): HTMLCanvasElement => {
+function makeCanvas(): HTMLCanvasElement {
   const canvas = document.createElement('canvas')
   canvas.getContext = vi
     .fn()

@@ -40,10 +40,13 @@ export const useExtensionStore = defineStore('extension', () => {
     )
   })
 
-  const isExtensionInstalled = (name: string) => name in extensionByName.value
+  function isExtensionInstalled(name: string) {
+    return name in extensionByName.value
+  }
 
-  const isExtensionEnabled = (name: string) =>
-    !disabledExtensionNames.value.has(name)
+  function isExtensionEnabled(name: string) {
+    return !disabledExtensionNames.value.has(name)
+  }
   const enabledExtensions = computed(() => {
     return extensions.value.filter((ext) => isExtensionEnabled(ext.name))
   })

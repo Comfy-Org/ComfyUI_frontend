@@ -14,7 +14,7 @@ export function useSelectedNodeActions() {
   const commandStore = useCommandStore()
   const workflowStore = useWorkflowStore()
 
-  const adjustNodeSize = () => {
+  function adjustNodeSize() {
     const selectedNodes = getSelectedNodes()
 
     selectedNodes.forEach((node) => {
@@ -26,7 +26,7 @@ export function useSelectedNodeActions() {
     workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
   }
 
-  const toggleNodeCollapse = () => {
+  function toggleNodeCollapse() {
     const selectedNodes = getSelectedNodes()
     selectedNodes.forEach((node) => {
       node.collapse()
@@ -36,7 +36,7 @@ export function useSelectedNodeActions() {
     workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
   }
 
-  const toggleNodePin = () => {
+  function toggleNodePin() {
     const selectedNodes = getSelectedNodes()
     selectedNodes.forEach((node) => {
       node.pin(!node.pinned)
@@ -46,12 +46,12 @@ export function useSelectedNodeActions() {
     workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
   }
 
-  const toggleNodeBypass = () => {
+  function toggleNodeBypass() {
     toggleSelectedNodesMode(LGraphEventMode.BYPASS)
     app.canvas.setDirty(true, true)
   }
 
-  const runBranch = async () => {
+  async function runBranch() {
     const selectedNodes = getSelectedNodes()
     const selectedOutputNodes = filterOutputNodes(selectedNodes)
     if (selectedOutputNodes.length === 0) return

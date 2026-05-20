@@ -32,7 +32,7 @@ const cameraType = defineModel<CameraType>('cameraType')
 const fov = defineModel<number>('fov')
 const showFOVButton = computed(() => cameraType.value === 'perspective')
 
-const switchCamera = () => {
+function switchCamera() {
   cameraType.value =
     cameraType.value === 'perspective' ? 'orthographic' : 'perspective'
 }

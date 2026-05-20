@@ -22,7 +22,7 @@ export function parseImageWidgetValue(raw: string): {
   return { filename: value, subfolder, type }
 }
 
-export const is_all_same_aspect_ratio = (imgs: HTMLImageElement[]): boolean => {
+export function is_all_same_aspect_ratio(imgs: HTMLImageElement[]): boolean {
   if (!imgs.length || imgs.length === 1) return true
 
   const ratio = imgs[0].naturalWidth / imgs[0].naturalHeight
@@ -35,12 +35,12 @@ export const is_all_same_aspect_ratio = (imgs: HTMLImageElement[]): boolean => {
   return true
 }
 
-export const fitDimensionsToNodeWidth = (
+export function fitDimensionsToNodeWidth(
   width: number,
   height: number,
   nodeWidth: number,
   minHeight: number = 64
-): { minHeight: number; minWidth: number } => {
+): { minHeight: number; minWidth: number } {
   const intrinsicAspectRatio = width / height
   if (!intrinsicAspectRatio || isNaN(intrinsicAspectRatio))
     return { minHeight: 0, minWidth: 0 }

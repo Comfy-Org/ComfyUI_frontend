@@ -20,7 +20,7 @@ import { useTelemetry } from '@/platform/telemetry'
 
 const { openNodeInfo } = useSelectionState()
 
-const onInfoClick = () => {
+function onInfoClick() {
   if (!openNodeInfo()) return
 
   useTelemetry()?.trackUiButtonClicked({

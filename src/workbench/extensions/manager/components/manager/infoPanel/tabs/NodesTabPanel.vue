@@ -52,7 +52,7 @@ const { getNodeDefs } = useComfyRegistryStore()
 const isLoading = ref(false)
 const registryNodeDefs = shallowRef<ListComfyNodesResponse | null>(null)
 
-const fetchNodeDefs = async () => {
+async function fetchNodeDefs() {
   getNodeDefs.cancel()
   isLoading.value = true
 
@@ -76,7 +76,7 @@ const fetchNodeDefs = async () => {
 
 whenever(() => nodePack, fetchNodeDefs, { immediate: true, deep: true })
 
-const toFrontendNodeDef = (nodeDef: components['schemas']['ComfyNode']) => {
+function toFrontendNodeDef(nodeDef: components['schemas']['ComfyNode']) {
   try {
     return registryToFrontendV2NodeDef(nodeDef, nodePack)
   } catch (error) {
@@ -90,6 +90,7 @@ const mappedNodeDefs = computed(() => {
     .filter((nodeDef) => nodeDef !== null)
 })
 
-const createNodeDefKey = (nodeDef: components['schemas']['ComfyNode']) =>
-  `${nodeDef.category}${nodeDef.comfy_node_name ?? useId()}`
+function createNodeDefKey(nodeDef: components['schemas']['ComfyNode']) {
+  return `${nodeDef.category}${nodeDef.comfy_node_name ?? useId()}`
+}
 </script>

@@ -77,13 +77,13 @@ describe('WidgetSelect Value Binding', () => {
     return_index?: boolean
   }
 
-  const createSelectWidget = (
+  function createSelectWidget(
     value: string = 'option1',
     options: SelectWidgetOptions = {},
     callback?: (value: string | undefined) => void,
     spec?: ComboInputSpec
-  ) =>
-    createMockWidget<string | undefined>({
+  ) {
+    return createMockWidget<string | undefined>({
       value,
       name: 'test_select',
       type: 'combo',
@@ -94,12 +94,13 @@ describe('WidgetSelect Value Binding', () => {
       callback,
       spec
     })
+  }
 
-  const renderComponent = (
+  function renderComponent(
     widget: SimplifiedWidget<string | undefined>,
     modelValue: string | undefined,
     extraProps: Record<string, unknown> = {}
-  ) => {
+  ) {
     const onModelUpdate = vi.fn()
     render(WidgetSelect, {
       props: {

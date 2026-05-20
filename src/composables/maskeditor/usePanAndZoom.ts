@@ -51,17 +51,17 @@ export function usePanAndZoom() {
   const cursorPoint = ref<Point>({ x: 0, y: 0 })
   const penPointerIdList = ref<number[]>([])
 
-  const updateCursorPosition = (clientPoint: Point): void => {
+  function updateCursorPosition(clientPoint: Point): void {
     const point = getCursorPoint(clientPoint, pan_offset.value)
     cursorPoint.value = point
     store.setCursorPoint(point)
   }
 
-  const handleDoubleTap = (): void => {
+  function handleDoubleTap(): void {
     store.canvasHistory.undo()
   }
 
-  const invalidatePanZoom = async (): Promise<void> => {
+  async function invalidatePanZoom(): Promise<void> {
     if (
       !image.value?.width ||
       !image.value?.height ||
@@ -111,14 +111,14 @@ export function usePanAndZoom() {
     store.setZoomRatio(zoom_ratio.value)
   }
 
-  const handlePanStart = (event: PointerEvent): void => {
+  function handlePanStart(event: PointerEvent): void {
     mouseDownPoint.value = { x: event.clientX, y: event.clientY }
 
     store.isPanning = true
     initialPan.value = { ...pan_offset.value }
   }
 
-  const handlePanMove = async (event: PointerEvent): Promise<void> => {
+  async function handlePanMove(event: PointerEvent): Promise<void> {
     if (mouseDownPoint.value === null) {
       throw new Error('mouseDownPoint is null')
     }
@@ -132,7 +132,7 @@ export function usePanAndZoom() {
     await invalidatePanZoom()
   }
 
-  const handleSingleTouchPan = async (touch: Touch): Promise<void> => {
+  async function handleSingleTouchPan(touch: Touch): Promise<void> {
     if (lastTouchPoint.value === null) {
       lastTouchPoint.value = { x: touch.clientX, y: touch.clientY }
       return
@@ -149,12 +149,14 @@ export function usePanAndZoom() {
     lastTouchPoint.value = { x: touch.clientX, y: touch.clientY }
   }
 
-  const touchToPoint = (touch: Touch): Point => ({
-    x: touch.clientX,
-    y: touch.clientY
-  })
+  function touchToPoint(touch: Touch): Point {
+    return {
+      x: touch.clientX,
+      y: touch.clientY
+    }
+  }
 
-  const handleTouchStart = (event: TouchEvent): void => {
+  function handleTouchStart(event: TouchEvent): void {
     event.preventDefault()
 
     if (penPointerIdList.value.length > 0) return
@@ -182,7 +184,7 @@ export function usePanAndZoom() {
     }
   }
 
-  const handleTouchMove = async (event: TouchEvent): Promise<void> => {
+  async function handleTouchMove(event: TouchEvent): Promise<void> {
     event.preventDefault()
 
     if (penPointerIdList.value.length > 0) return
@@ -231,7 +233,7 @@ export function usePanAndZoom() {
     }
   }
 
-  const handleTouchEnd = (event: TouchEvent): void => {
+  function handleTouchEnd(event: TouchEvent): void {
     event.preventDefault()
 
     const lastTouch = event.touches[0]
@@ -244,7 +246,7 @@ export function usePanAndZoom() {
     }
   }
 
-  const zoom = async (event: WheelEvent): Promise<void> => {
+  async function zoom(event: WheelEvent): Promise<void> {
     const cursorPosition = { x: event.clientX, y: event.clientY }
 
     if (!maskCanvas.value) {
@@ -278,10 +280,10 @@ export function usePanAndZoom() {
     updateCursorPosition(cursorPosition)
   }
 
-  const getPanelDimensions = (): {
+  function getPanelDimensions(): {
     sidePanelWidth: number
     toolPanelWidth: number
-  } => {
+  } {
     const toolPanelWidth =
       toolPanelElement.value?.getBoundingClientRect().width || 64
     const sidePanelWidth =
@@ -290,7 +292,7 @@ export function usePanAndZoom() {
     return { sidePanelWidth, toolPanelWidth }
   }
 
-  const smoothResetView = async (duration: number = 500): Promise<void> => {
+  async function smoothResetView(duration: number = 500): Promise<void> {
     if (!image.value || !rootElement.value) return
 
     const startZoom = zoom_ratio.value
@@ -308,7 +310,7 @@ export function usePanAndZoom() {
     })
 
     const startTime = performance.now()
-    const animate = async (currentTime: number) => {
+    async function animate(currentTime: number) {
       const elapsed = currentTime - startTime
       const progress = Math.min(elapsed / duration, 1)
       const eased = easeOutCubic(progress)
@@ -338,12 +340,12 @@ export function usePanAndZoom() {
     interpolatedZoomRatio.value = 1.0
   }
 
-  const initializeCanvasPanZoom = async (
+  async function initializeCanvasPanZoom(
     img: HTMLImageElement,
     root: HTMLElement,
     toolPanel?: HTMLElement | null,
     sidePanel?: HTMLElement | null
-  ): Promise<void> => {
+  ): Promise<void> {
     rootElement.value = root
     toolPanelElement.value = toolPanel || null
     sidePanelElement.value = sidePanel || null
@@ -382,13 +384,13 @@ export function usePanAndZoom() {
     }
   )
 
-  const addPenPointerId = (pointerId: number): void => {
+  function addPenPointerId(pointerId: number): void {
     if (!penPointerIdList.value.includes(pointerId)) {
       penPointerIdList.value.push(pointerId)
     }
   }
 
-  const removePenPointerId = (pointerId: number): void => {
+  function removePenPointerId(pointerId: number): void {
     const index = penPointerIdList.value.indexOf(pointerId)
     if (index !== -1) {
       penPointerIdList.value.splice(index, 1)

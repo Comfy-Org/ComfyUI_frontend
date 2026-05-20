@@ -15,10 +15,13 @@ const meta: Meta<typeof QueueNotificationBanner> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const thumbnail = (hex: string) =>
-  `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='256' height='256'><rect width='256' height='256' fill='%23${hex}'/></svg>`
+function thumbnail(hex: string) {
+  return `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='256' height='256'><rect width='256' height='256' fill='%23${hex}'/></svg>`
+}
 
-const args = (notification: QueueNotificationBannerItem) => ({ notification })
+function args(notification: QueueNotificationBannerItem) {
+  return { notification }
+}
 
 export const Queueing: Story = {
   args: args({

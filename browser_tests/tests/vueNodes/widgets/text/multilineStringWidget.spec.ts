@@ -5,11 +5,15 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
-  const getFirstClipNode = (comfyPage: ComfyPage) =>
-    comfyPage.vueNodes.getNodeByTitle('CLIP Text Encode (Prompt)').first()
+  function getFirstClipNode(comfyPage: ComfyPage) {
+    return comfyPage.vueNodes
+      .getNodeByTitle('CLIP Text Encode (Prompt)')
+      .first()
+  }
 
-  const getFirstMultilineStringWidget = (comfyPage: ComfyPage) =>
-    getFirstClipNode(comfyPage).getByRole('textbox', { name: 'text' })
+  function getFirstMultilineStringWidget(comfyPage: ComfyPage) {
+    return getFirstClipNode(comfyPage).getByRole('textbox', { name: 'text' })
+  }
 
   test('should allow entering text', async ({ comfyPage }) => {
     const textarea = getFirstMultilineStringWidget(comfyPage)

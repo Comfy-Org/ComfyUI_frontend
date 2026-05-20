@@ -122,7 +122,7 @@ describe('useCanvasTransform', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    const createMockImageData = (width: number, height: number) => {
+    function createMockImageData(width: number, height: number) {
       const data = new Uint8ClampedArray(width * height * 4)
       for (let i = 0; i < data.length; i += 4) {
         data[i] = 255 // R
@@ -279,7 +279,7 @@ describe('useCanvasTransform', () => {
       mockMaskCanvas.width = 2
       mockMaskCanvas.height = 2
 
-      const createTestPattern = () => {
+      function createTestPattern() {
         const data = new Uint8ClampedArray(2 * 2 * 4)
         // TL (0,0): Red
         data[0] = 255
@@ -357,7 +357,7 @@ describe('useCanvasTransform', () => {
       mockMaskCanvas.width = 2
       mockMaskCanvas.height = 2
 
-      const createTestPattern = () => {
+      function createTestPattern() {
         const data = new Uint8ClampedArray(2 * 2 * 4)
         // TL (0,0): Red
         data[0] = 255
@@ -417,7 +417,7 @@ describe('useCanvasTransform', () => {
     it('should produce different result than clockwise rotation', async () => {
       const transform = useCanvasTransform()
 
-      const createAsymmetricImageData = (width: number, height: number) => {
+      function createAsymmetricImageData(width: number, height: number) {
         const data = new Uint8ClampedArray(width * height * 4)
         for (let y = 0; y < height; y++) {
           for (let x = 0; x < width; x++) {
@@ -480,7 +480,7 @@ describe('useCanvasTransform', () => {
       mockMaskCanvas.width = 2
       mockMaskCanvas.height = 2
 
-      const createTestPattern = () => {
+      function createTestPattern() {
         const data = new Uint8ClampedArray(2 * 2 * 4)
         // TL (0,0): Red
         data[0] = 255
@@ -545,7 +545,7 @@ describe('useCanvasTransform', () => {
       mockMaskCanvas.width = 2
       mockMaskCanvas.height = 2
 
-      const createTestPattern = () => {
+      function createTestPattern() {
         const data = new Uint8ClampedArray(2 * 2 * 4)
         // TL (0,0): Red
         data[0] = 255
@@ -641,7 +641,7 @@ describe('useCanvasTransform', () => {
       mockMaskCanvas.height = 1
 
       // Create 1x1 ImageData with semi-transparent pixel
-      const createSemiTransparentImageData = () => {
+      function createSemiTransparentImageData() {
         const data = new Uint8ClampedArray(1 * 1 * 4)
         data[0] = 200 // R
         data[1] = 100 // G

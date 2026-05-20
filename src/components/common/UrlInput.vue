@@ -44,8 +44,9 @@ const emit = defineEmits<{
 
 const validationState = ref<ValidationState>(ValidationState.IDLE)
 
-const cleanInput = (value: string): string =>
-  value ? value.replace(/\s+/g, '') : ''
+function cleanInput(value: string): string {
+  return value ? value.replace(/\s+/g, '') : ''
+}
 
 // Add internal value state
 const internalValue = ref(cleanInput(props.modelValue))
@@ -68,14 +69,14 @@ onMounted(async () => {
   await validateUrl(props.modelValue)
 })
 
-const handleInput = (value: string | undefined) => {
+function handleInput(value: string | undefined) {
   // Update internal value without emitting
   internalValue.value = cleanInput(value ?? '')
   // Reset validation state when user types
   validationState.value = ValidationState.IDLE
 }
 
-const handleBlur = async () => {
+async function handleBlur() {
   const input = cleanInput(internalValue.value)
 
   let normalizedUrl = input
@@ -91,7 +92,7 @@ const handleBlur = async () => {
 }
 
 // Default validation implementation
-const defaultValidateUrl = async (url: string): Promise<boolean> => {
+async function defaultValidateUrl(url: string): Promise<boolean> {
   if (!isValidUrl(url)) return false
   try {
     return await checkUrlReachable(url)
@@ -100,7 +101,7 @@ const defaultValidateUrl = async (url: string): Promise<boolean> => {
   }
 }
 
-const validateUrl = async (value: string) => {
+async function validateUrl(value: string) {
   if (validationState.value === ValidationState.LOADING) return
 
   const url = cleanInput(value)

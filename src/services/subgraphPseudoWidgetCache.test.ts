@@ -173,7 +173,7 @@ describe('resolveSubgraphPseudoWidgetCache', () => {
       { sourceNodeId: 'n1', sourceWidgetName: 'preview' },
       { sourceNodeId: 'n2', sourceWidgetName: 'preview' }
     ]
-    const getNodeById = (id: string) => {
+    function getNodeById(id: string) {
       if (id === 'n1') return nodeA
       if (id === 'n2') return nodeB
       return undefined

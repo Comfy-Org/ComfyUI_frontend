@@ -1,13 +1,14 @@
 import type { OnboardingSurvey } from '@/platform/remoteConfig/types'
 
-const optionsFor = (
+function optionsFor(
   fieldId: string,
   values: string[]
-): { value: string; labelKey: string }[] =>
-  values.map((value) => ({
+): { value: string; labelKey: string }[] {
+  return values.map((value) => ({
     value,
     labelKey: `cloudOnboarding.survey.options.${fieldId}.${value}`
   }))
+}
 
 export const defaultOnboardingSurvey: OnboardingSurvey = {
   version: 2,

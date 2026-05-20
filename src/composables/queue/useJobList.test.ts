@@ -26,7 +26,7 @@ const translations: Record<string, string> = {
 }
 let localeRef: Ref<string>
 let tMock: ReturnType<typeof vi.fn>
-const ensureLocaleMocks = () => {
+function ensureLocaleMocks() {
   if (!localeRef) {
     localeRef = ref('en-US') as Ref<string>
   }
@@ -52,7 +52,7 @@ vi.mock('@/i18n', () => ({
 
 let totalPercent: Ref<number>
 let currentNodePercent: Ref<number>
-const ensureProgressRefs = () => {
+function ensureProgressRefs() {
   if (!totalPercent) totalPercent = ref(0) as Ref<number>
   if (!currentNodePercent) currentNodePercent = ref(0) as Ref<number>
   return { totalPercent, currentNodePercent }
@@ -92,7 +92,7 @@ let queueStoreMock: {
   runningTasks: TestTask[]
   historyTasks: TestTask[]
 }
-const ensureQueueStore = () => {
+function ensureQueueStore() {
   if (!queueStoreMock) {
     queueStoreMock = reactive({
       pendingTasks: [] as TestTask[],
@@ -114,7 +114,7 @@ let executionStoreMock: {
   isJobInitializing: (jobId?: string | number) => boolean
 }
 let isJobInitializingMock: (jobId?: string | number) => boolean
-const ensureExecutionStore = () => {
+function ensureExecutionStore() {
   if (!isJobInitializingMock) {
     isJobInitializingMock = vi.fn(() => false)
   }
@@ -138,7 +138,7 @@ let jobPreviewStoreMock: {
   previewsByPromptId: Record<string, string>
   isPreviewEnabled: boolean
 }
-const ensureJobPreviewStore = () => {
+function ensureJobPreviewStore() {
   if (!jobPreviewStoreMock) {
     jobPreviewStoreMock = reactive({
       previewsByPromptId: {} as Record<string, string>,
@@ -156,7 +156,7 @@ vi.mock('@/stores/jobPreviewStore', () => ({
 let workflowStoreMock: {
   activeWorkflow: null | { activeState?: { id?: string } }
 }
-const ensureWorkflowStore = () => {
+function ensureWorkflowStore() {
   if (!workflowStoreMock) {
     workflowStoreMock = reactive({
       activeWorkflow: null as null | { activeState?: { id?: string } }
@@ -170,19 +170,21 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   }
 }))
 
-const createTask = (
+function createTask(
   overrides: Partial<TestTask> & { mockState?: JobState } = {}
-): TestTask => ({
-  jobId: overrides.jobId ?? `task-${Math.random().toString(36).slice(2, 7)}`,
-  job: overrides.job ?? { priority: 0 },
-  mockState: overrides.mockState ?? 'pending',
-  executionTime: overrides.executionTime,
-  executionEndTimestamp: overrides.executionEndTimestamp,
-  createTime: overrides.createTime,
-  workflowId: overrides.workflowId
-})
+): TestTask {
+  return {
+    jobId: overrides.jobId ?? `task-${Math.random().toString(36).slice(2, 7)}`,
+    job: overrides.job ?? { priority: 0 },
+    mockState: overrides.mockState ?? 'pending',
+    executionTime: overrides.executionTime,
+    executionEndTimestamp: overrides.executionEndTimestamp,
+    createTime: overrides.createTime,
+    workflowId: overrides.workflowId
+  }
+}
 
-const mountUseJobList = () => {
+function mountUseJobList() {
   let composable: ReturnType<typeof useJobList>
   const result = render({
     template: '<div />',
@@ -194,7 +196,7 @@ const mountUseJobList = () => {
   return { ...result, composable: composable! }
 }
 
-const resetStores = () => {
+function resetStores() {
   const queueStore = ensureQueueStore()
   queueStore.pendingTasks = []
   queueStore.runningTasks = []
@@ -225,7 +227,7 @@ const resetStores = () => {
   }
 }
 
-const flush = async () => {
+async function flush() {
   await nextTick()
 }
 
@@ -248,7 +250,7 @@ describe('useJobList', () => {
     vi.useRealTimers()
   })
 
-  const initComposable = () => {
+  function initComposable() {
     const mounted = mountUseJobList()
     unmount = mounted.unmount
     api = mounted.composable

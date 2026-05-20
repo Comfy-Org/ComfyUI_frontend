@@ -82,7 +82,7 @@ const canToggleDirectly = computed(() => {
   )
 })
 
-const showConflictModal = (skipModalDismissed: boolean) => {
+function showConflictModal(skipModalDismissed: boolean) {
   let modal_dismissed = acknowledgmentState.value.modal_dismissed
   if (skipModalDismissed) modal_dismissed = false
 
@@ -118,7 +118,7 @@ const showConflictModal = (skipModalDismissed: boolean) => {
   }
 }
 
-const handleEnable = () => {
+function handleEnable() {
   if (!nodePack.id) {
     throw new Error('Node ID is required for enabling')
   }
@@ -130,7 +130,7 @@ const handleEnable = () => {
   })
 }
 
-const handleDisable = () => {
+function handleDisable() {
   if (!nodePack.id) {
     throw new Error('Node ID is required for disabling')
   }
@@ -142,7 +142,7 @@ const handleDisable = () => {
   })
 }
 
-const handleToggle = async (enable: boolean) => {
+async function handleToggle(enable: boolean) {
   if (isLoading.value) return
 
   isLoading.value = true
@@ -161,7 +161,7 @@ const onToggle = debounce(
   TOGGLE_DEBOUNCE_MS,
   { trailing: true }
 )
-const handleToggleInteraction = async (event: Event) => {
+async function handleToggleInteraction(event: Event) {
   if (!canToggleDirectly.value) {
     event.preventDefault()
     showConflictModal(false)

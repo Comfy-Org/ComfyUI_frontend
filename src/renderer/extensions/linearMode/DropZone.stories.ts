@@ -33,41 +33,42 @@ function extractDroppedImageFile(e: DragEvent): File | undefined {
   )
 }
 
-const renderStory = (args: StoryArgs) => ({
-  components: { DropZone },
-  setup() {
-    const imageUrl = ref<string | undefined>(undefined)
-    const hovered = ref(false)
+function renderStory(args: StoryArgs) {
+  return {
+    components: { DropZone },
+    setup() {
+      const imageUrl = ref<string | undefined>(undefined)
+      const hovered = ref(false)
 
-    function handleFile(file: File) {
-      imageUrl.value = fileToObjectUrl(file)
-    }
+      function handleFile(file: File) {
+        imageUrl.value = fileToObjectUrl(file)
+      }
 
-    const onDragOver = (e: DragEvent) => {
-      if (!e.dataTransfer?.items) return false
-      return Array.from(e.dataTransfer.items).some(
-        (item) => item.kind === 'file' && item.type.startsWith('image/')
-      )
-    }
+      function onDragOver(e: DragEvent) {
+        if (!e.dataTransfer?.items) return false
+        return Array.from(e.dataTransfer.items).some(
+          (item) => item.kind === 'file' && item.type.startsWith('image/')
+        )
+      }
 
-    const onDragDrop = (e: DragEvent) => {
-      const file = extractDroppedImageFile(e)
-      if (file) handleFile(file)
-      return !!file
-    }
+      function onDragDrop(e: DragEvent) {
+        const file = extractDroppedImageFile(e)
+        if (file) handleFile(file)
+        return !!file
+      }
 
-    const onClick = () => {
-      createFileInput(handleFile).click()
-    }
+      function onClick() {
+        createFileInput(handleFile).click()
+      }
 
-    const dropIndicator = ref({
-      ...args.dropIndicator,
-      onClick
-    })
+      const dropIndicator = ref({
+        ...args.dropIndicator,
+        onClick
+      })
 
-    return { args, onDragOver, onDragDrop, dropIndicator, imageUrl, hovered }
-  },
-  template: `
+      return { args, onDragOver, onDragDrop, dropIndicator, imageUrl, hovered }
+    },
+    template: `
     <div
       @mouseenter="hovered = true"
       @mouseleave="hovered = false"
@@ -84,7 +85,8 @@ const renderStory = (args: StoryArgs) => ({
       />
     </div>
   `
-})
+  }
+}
 
 const meta: Meta<StoryArgs> = {
   title: 'Components/FileUpload',

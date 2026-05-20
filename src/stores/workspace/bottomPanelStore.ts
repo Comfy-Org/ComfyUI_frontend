@@ -55,7 +55,7 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     }
   })
 
-  const togglePanel = (panelType: PanelType) => {
+  function togglePanel(panelType: PanelType) {
     const panel = panels.value[panelType]
     if (panel.tabs.length === 0) return
 
@@ -71,7 +71,7 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     }
   }
 
-  const toggleBottomPanel = () => {
+  function toggleBottomPanel() {
     // Toggles the terminal panel if available, otherwise falls back to shortcuts
     // Terminal tabs are loaded asynchronously, so may not be available immediately
     const terminalPanel = panels.value.terminal
@@ -86,14 +86,14 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     }
   }
 
-  const setActiveTab = (tabId: string) => {
+  function setActiveTab(tabId: string) {
     const state = activePanelState.value
     if (state) {
       state.activeTabId = tabId
     }
   }
 
-  const toggleBottomPanelTab = (tabId: string) => {
+  function toggleBottomPanelTab(tabId: string) {
     // Find which panel contains this tab
     for (const [panelType, panel] of Object.entries(panels.value)) {
       const tab = panel.tabs.find((t) => t.id === tabId)
@@ -108,7 +108,7 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
       }
     }
   }
-  const registerBottomPanelTab = (tab: BottomPanelExtension) => {
+  function registerBottomPanelTab(tab: BottomPanelExtension) {
     const targetPanel = tab.targetPanel ?? 'terminal'
     const panel = panels.value[targetPanel]
 
@@ -128,7 +128,7 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     })
   }
 
-  const registerCoreBottomPanelTabs = async () => {
+  async function registerCoreBottomPanelTabs() {
     // Register shortcuts tabs first (synchronous, always available)
     useShortcutsTab().forEach(registerBottomPanelTab)
 
@@ -147,7 +147,7 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     }
   }
 
-  const registerExtensionBottomPanelTabs = (extension: ComfyExtension) => {
+  function registerExtensionBottomPanelTabs(extension: ComfyExtension) {
     if (extension.bottomPanelTabs) {
       extension.bottomPanelTabs.forEach(registerBottomPanelTab)
     }

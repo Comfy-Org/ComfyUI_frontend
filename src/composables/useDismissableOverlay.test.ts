@@ -12,13 +12,13 @@ describe('useDismissableOverlay', () => {
   let outsideEl: HTMLElement
   let dismissCount: number
 
-  const mountComposable = ({
+  function mountComposable({
     dismissOnScroll = false,
     getTriggerEl
   }: {
     dismissOnScroll?: boolean
     getTriggerEl?: () => HTMLElement | null
-  } = {}) => {
+  } = {}) {
     scope = effectScope()
     scope.run(() =>
       useDismissableOverlay({

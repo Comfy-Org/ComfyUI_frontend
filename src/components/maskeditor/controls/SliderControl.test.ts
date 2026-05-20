@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import SliderControl from './SliderControl.vue'
 
-const renderComponent = (
+function renderComponent(
   props: {
     label?: string
     min?: number
@@ -12,7 +12,7 @@ const renderComponent = (
     modelValue?: number
   } = {},
   onUpdate?: (value: number) => void
-) => {
+) {
   return render(SliderControl, {
     props: {
       label: 'Brush Size',
@@ -25,7 +25,7 @@ const renderComponent = (
   })
 }
 
-const setSliderValue = (input: HTMLInputElement, value: string): void => {
+function setSliderValue(input: HTMLInputElement, value: string): void {
   input.value = value
   input.dispatchEvent(new Event('input', { bubbles: true }))
 }

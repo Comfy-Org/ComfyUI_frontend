@@ -12,13 +12,13 @@ interface NodePasteOptions<T> {
 /**
  * Adds paste handling to a node
  */
-export const useNodePaste = <T>(
+export function useNodePaste<T>(
   node: LGraphNode,
   options: NodePasteOptions<T>
-) => {
+) {
   const { onPaste, fileFilter = () => true, allow_batch = false } = options
 
-  const installedPasteFiles = function (files: File[]) {
+  function installedPasteFiles(files: File[]) {
     const filteredFiles = Array.from(files).filter(fileFilter)
     if (!filteredFiles.length) return false
 

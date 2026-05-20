@@ -90,7 +90,8 @@ describe('missingModelStore', () => {
 
     it('ignores overlapping refresh requests', async () => {
       const store = useMissingModelStore()
-      let resolveRefresh: () => void = () => {}
+      function noopRefreshResolver() {}
+      let resolveRefresh: () => void = noopRefreshResolver
       const refreshSpy = vi.spyOn(app, 'refreshMissingModels').mockReturnValue(
         new Promise((resolve) => {
           resolveRefresh = () =>

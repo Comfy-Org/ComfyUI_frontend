@@ -24,7 +24,7 @@ import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import { useRemoteWidget } from './useRemoteWidget'
 
-const getDefaultValue = (inputSpec: ComboInputSpec) => {
+function getDefaultValue(inputSpec: ComboInputSpec) {
   if (inputSpec.default) return inputSpec.default
   if (inputSpec.options?.length) return inputSpec.options[0]
   if (inputSpec.remote) return 'Loading...'
@@ -45,10 +45,10 @@ const NODE_PLACEHOLDER_MAP: Record<string, string> = {
   LoadAudio: 'widgets.uploadSelect.placeholderAudio'
 }
 
-const bindDynamicValuesOption = (
+function bindDynamicValuesOption(
   widget: IBaseWidget,
   getValues: () => unknown
-) => {
+) {
   const options = widget.options
   let fallbackValues = Array.isArray(options.values)
     ? options.values
@@ -68,10 +68,10 @@ const bindDynamicValuesOption = (
   })
 }
 
-const addMultiSelectWidget = (
+function addMultiSelectWidget(
   node: LGraphNode,
   inputSpec: ComboInputSpec
-): IBaseWidget => {
+): IBaseWidget {
   const widgetValue = ref<string[]>([])
   const widget = new ComponentWidgetImpl({
     node,
@@ -141,11 +141,11 @@ function createAssetBrowserWidget(
   })
 }
 
-const createInputMappingWidget = (
+function createInputMappingWidget(
   node: LGraphNode,
   inputSpec: ComboInputSpec,
   defaultValue: string | undefined
-): IBaseWidget => {
+): IBaseWidget {
   const assetsStore = useAssetsStore()
 
   const widget = node.addWidget(
@@ -207,10 +207,10 @@ const createInputMappingWidget = (
   return widget
 }
 
-const addComboWidget = (
+function addComboWidget(
   node: LGraphNode,
   inputSpec: ComboInputSpec
-): IBaseWidget => {
+): IBaseWidget {
   const defaultValue = getDefaultValue(inputSpec)
 
   if (isCloud) {
@@ -278,11 +278,8 @@ const addComboWidget = (
   return widget
 }
 
-export const useComboWidget = () => {
-  const widgetConstructor: ComfyWidgetConstructorV2 = (
-    node: LGraphNode,
-    inputSpec: InputSpec
-  ) => {
+export function useComboWidget() {
+  function widgetConstructor(node: LGraphNode, inputSpec: InputSpec) {
     if (!isComboInputSpec(inputSpec)) {
       throw new Error(`Invalid input data: ${inputSpec}`)
     }
@@ -291,5 +288,5 @@ export const useComboWidget = () => {
       : addComboWidget(node, inputSpec)
   }
 
-  return widgetConstructor
+  return widgetConstructor satisfies ComfyWidgetConstructorV2
 }

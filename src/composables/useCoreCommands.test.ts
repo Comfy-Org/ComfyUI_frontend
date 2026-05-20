@@ -184,7 +184,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 }))
 
 describe('useCoreCommands', () => {
-  const createMockNode = (id: number, comfyClass: string): LGraphNode => {
+  function createMockNode(id: number, comfyClass: string): LGraphNode {
     const baseNode = createMockLGraphNode({ id })
     return Object.assign(baseNode, {
       constructor: {
@@ -194,7 +194,7 @@ describe('useCoreCommands', () => {
     })
   }
 
-  const createMockSubgraph = () => {
+  function createMockSubgraph() {
     const mockNodes = [
       // Mock input node
       createMockNode(1, 'SubgraphInputNode'),
@@ -526,8 +526,9 @@ describe('useCoreCommands', () => {
   })
 
   describe('Canvas view commands', () => {
-    const findCmd = (id: string) =>
-      useCoreCommands().find((cmd) => cmd.id === id)!
+    function findCmd(id: string) {
+      return useCoreCommands().find((cmd) => cmd.id === id)!
+    }
 
     it('Comfy.Canvas.ResetView delegates to litegraphService.resetView', async () => {
       await findCmd('Comfy.Canvas.ResetView').function()
@@ -559,8 +560,9 @@ describe('useCoreCommands', () => {
   })
 
   describe('Workflow lifecycle commands', () => {
-    const findCmd = (id: string) =>
-      useCoreCommands().find((cmd) => cmd.id === id)!
+    function findCmd(id: string) {
+      return useCoreCommands().find((cmd) => cmd.id === id)!
+    }
 
     it('Comfy.OpenClipspace delegates to app.openClipspace', async () => {
       await findCmd('Comfy.OpenClipspace').function()
@@ -577,8 +579,9 @@ describe('useCoreCommands', () => {
   })
 
   describe('Help commands', () => {
-    const findCmd = (id: string) =>
-      useCoreCommands().find((cmd) => cmd.id === id)!
+    function findCmd(id: string) {
+      return useCoreCommands().find((cmd) => cmd.id === id)!
+    }
     const { staticUrls } = useExternalLink()
     let openSpy: ReturnType<typeof vi.spyOn>
 

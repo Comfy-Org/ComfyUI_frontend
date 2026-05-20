@@ -22,8 +22,9 @@ const CONTROL_LABELS = {
   randomize: 'Randomize Value'
 } as const satisfies Record<ControlOptions, string>
 
-const isHTMLInputElement = (el: HTMLElement): el is HTMLInputElement =>
-  el instanceof HTMLInputElement
+function isHTMLInputElement(el: HTMLElement): el is HTMLInputElement {
+  return el instanceof HTMLInputElement
+}
 
 const i18n = createI18n({
   legacy: false,

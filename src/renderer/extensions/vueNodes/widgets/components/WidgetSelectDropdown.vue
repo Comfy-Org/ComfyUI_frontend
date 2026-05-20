@@ -60,7 +60,7 @@ const combinedProps = computed(() => ({
   ...transformCompatProps.value
 }))
 
-const getAssetData = () => {
+function getAssetData() {
   const nodeType: string | undefined =
     props.widget.options?.nodeType ?? props.nodeType
   if (props.isAssetMode && nodeType) {

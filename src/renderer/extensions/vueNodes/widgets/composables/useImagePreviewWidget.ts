@@ -74,14 +74,14 @@ function renderUploadSpinner(
   node.graph?.setDirtyCanvas(true)
 }
 
-const renderPreview = (
+function renderPreview(
   ctx: CanvasRenderingContext2D,
   node: LGraphNode,
   shiftY: number,
   computedHeight: number | undefined,
   imgs: HTMLImageElement[],
   width: number
-) => {
+) {
   if (!node.size) return
 
   if (node.isUploading) {
@@ -279,12 +279,7 @@ const renderPreview = (
     ctx.fillText(sizeText, x + w / 2, textY)
   }
 
-  const drawButton = (
-    x: number,
-    y: number,
-    sz: number,
-    text: string
-  ): boolean => {
+  function drawButton(x: number, y: number, sz: number, text: string): boolean {
     const hovered = LiteGraph.isInsideRectangle(
       mouse[0],
       mouse[1],
@@ -424,11 +419,8 @@ class ImagePreviewWidget extends BaseWidget {
   }
 }
 
-export const useImagePreviewWidget = () => {
-  const widgetConstructor: ComfyWidgetConstructorV2 = (
-    node: LGraphNode,
-    inputSpec: InputSpec
-  ) => {
+export function useImagePreviewWidget() {
+  function widgetConstructor(node: LGraphNode, inputSpec: InputSpec) {
     return node.addCustomWidget(
       new ImagePreviewWidget(node, inputSpec.name, {
         serialize: false,
@@ -437,5 +429,5 @@ export const useImagePreviewWidget = () => {
     )
   }
 
-  return widgetConstructor
+  return widgetConstructor satisfies ComfyWidgetConstructorV2
 }

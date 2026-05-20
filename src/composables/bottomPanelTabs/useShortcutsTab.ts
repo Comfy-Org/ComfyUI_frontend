@@ -5,7 +5,7 @@ import EssentialsPanel from '@/components/bottomPanel/tabs/shortcuts/EssentialsP
 import ViewControlsPanel from '@/components/bottomPanel/tabs/shortcuts/ViewControlsPanel.vue'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 
-export const useShortcutsTab = (): BottomPanelExtension[] => {
+export function useShortcutsTab(): BottomPanelExtension[] {
   const { t } = useI18n()
   return [
     {

@@ -36,7 +36,7 @@ export function useMaskEditorSaver() {
   const editorStore = useMaskEditorStore()
   const nodeOutputStore = useNodeOutputStore()
 
-  const save = async (): Promise<void> => {
+  async function save(): Promise<void> {
     const sourceNode = dataStore.sourceNode as LGraphNode
     if (!sourceNode || !dataStore.inputData) {
       throw new Error('No source node or input data')

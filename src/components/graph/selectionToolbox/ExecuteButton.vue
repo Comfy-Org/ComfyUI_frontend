@@ -47,7 +47,7 @@ function outputNodeStokeStyle(this: LGraphNode) {
   }
 }
 
-const handleMouseEnter = () => {
+function handleMouseEnter() {
   buttonHovered.value = true
   for (const node of selectedOutputNodes.value) {
     node.strokeStyles['outputNode'] = outputNodeStokeStyle
@@ -55,12 +55,12 @@ const handleMouseEnter = () => {
   canvas.setDirty(true)
 }
 
-const handleMouseLeave = () => {
+function handleMouseLeave() {
   buttonHovered.value = false
   canvas.setDirty(true)
 }
 
-const handleClick = async () => {
+async function handleClick() {
   await commandStore.execute('Comfy.QueueSelectedOutputNodes')
 }
 </script>

@@ -83,13 +83,14 @@ describe('WorkspaceAuthGate', () => {
 
   const i18n = createI18n({ legacy: false })
 
-  const mountComponent = () =>
-    render(WorkspaceAuthGate, {
+  function mountComponent() {
+    return render(WorkspaceAuthGate, {
       global: { plugins: [i18n] },
       slots: {
         default: '<div data-testid="slot-content">App Content</div>'
       }
     })
+  }
 
   describe('non-cloud builds', () => {
     it('renders slot immediately when isCloud is false', async () => {

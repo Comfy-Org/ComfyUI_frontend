@@ -74,8 +74,9 @@ const workflowStore = useWorkflowStore()
 const isLightTheme = computed(
   () => colorPaletteStore.completedActivePalette.light_theme
 )
-const toLightThemeColor = (color: string) =>
-  adjustColor(color, { lightness: 0.5 })
+function toLightThemeColor(color: string) {
+  return adjustColor(color, { lightness: 0.5 })
+}
 
 const showColorPicker = ref(false)
 
@@ -109,7 +110,7 @@ const colorOptions: ColorOption[] = [
 ]
 
 const selectedColorOption = ref<ColorOption | null>(null)
-const applyColor = (colorOption: ColorOption | null) => {
+function applyColor(colorOption: ColorOption | null) {
   const colorName = colorOption?.name ?? NO_COLOR_OPTION.name
   const canvasColorOption =
     colorName === NO_COLOR_OPTION.name
@@ -146,9 +147,7 @@ const localizedCurrentColorName = computed(() => {
   )
   return colorOption?.localizedName ?? NO_COLOR_OPTION.localizedName
 })
-const updateColorSelectionFromNode = (
-  newSelectedItems: Raw<Positionable[]>
-) => {
+function updateColorSelectionFromNode(newSelectedItems: Raw<Positionable[]>) {
   showColorPicker.value = false
   selectedColorOption.value = null
   currentColorOption.value = getItemsColorOption(newSelectedItems)

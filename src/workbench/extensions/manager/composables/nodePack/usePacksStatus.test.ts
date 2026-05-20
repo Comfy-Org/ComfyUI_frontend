@@ -15,37 +15,41 @@ type NodeVersionStatus = components['schemas']['NodeVersionStatus']
 describe('usePacksStatus', () => {
   let conflictDetectionStore: ReturnType<typeof useConflictDetectionStore>
 
-  const createMockPack = (
+  function createMockPack(
     id: string,
     status?: NodeStatus | NodeVersionStatus
-  ): NodePack => ({
-    id,
-    name: `Pack ${id}`,
-    description: `Description for pack ${id}`,
-    category: 'Nodes',
-    author: 'Test Author',
-    license: 'MIT',
-    repository: 'https://github.com/test/pack',
-    tags: [],
-    status: (status || 'NodeStatusActive') as NodeStatus
-  })
+  ): NodePack {
+    return {
+      id,
+      name: `Pack ${id}`,
+      description: `Description for pack ${id}`,
+      category: 'Nodes',
+      author: 'Test Author',
+      license: 'MIT',
+      repository: 'https://github.com/test/pack',
+      tags: [],
+      status: (status || 'NodeStatusActive') as NodeStatus
+    }
+  }
 
-  const createMockConflict = (
+  function createMockConflict(
     packageId: string,
     type: 'import_failed' | 'banned' | 'pending' = 'import_failed'
-  ): ConflictDetectionResult => ({
-    package_id: packageId,
-    package_name: `Pack ${packageId}`,
-    has_conflict: true,
-    conflicts: [
-      {
-        type,
-        current_value: 'current',
-        required_value: 'required'
-      }
-    ],
-    is_compatible: false
-  })
+  ): ConflictDetectionResult {
+    return {
+      package_id: packageId,
+      package_name: `Pack ${packageId}`,
+      has_conflict: true,
+      conflicts: [
+        {
+          type,
+          current_value: 'current',
+          required_value: 'required'
+        }
+      ],
+      is_compatible: false
+    }
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()

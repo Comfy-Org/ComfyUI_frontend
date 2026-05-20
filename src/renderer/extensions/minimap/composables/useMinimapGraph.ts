@@ -45,7 +45,7 @@ export function useMinimapGraph(
     onGraphChanged()
   }, 500)
 
-  const setupEventListeners = () => {
+  function setupEventListeners() {
     const g = graph.value
     if (!g) return
 
@@ -96,7 +96,7 @@ export function useMinimapGraph(
     }
   }
 
-  const cleanupEventListeners = (oldGraph?: LGraph) => {
+  function cleanupEventListeners(oldGraph?: LGraph) {
     const g = oldGraph || graph.value
     if (!g) return
 
@@ -114,7 +114,7 @@ export function useMinimapGraph(
     originalCallbacksMap.delete(g.id)
   }
 
-  const checkForChangesInternal = () => {
+  function checkForChangesInternal() {
     const g = graph.value
     if (!g) return false
 
@@ -172,7 +172,7 @@ export function useMinimapGraph(
     return structureChanged || positionChanged || connectionChanged
   }
 
-  const init = () => {
+  function init() {
     setupEventListeners()
     api.addEventListener('graphChanged', handleGraphChangedThrottled)
 
@@ -181,13 +181,13 @@ export function useMinimapGraph(
     })
   }
 
-  const destroy = () => {
+  function destroy() {
     cleanupEventListeners()
     api.removeEventListener('graphChanged', handleGraphChangedThrottled)
     nodeStatesCache.clear()
   }
 
-  const clearCache = () => {
+  function clearCache() {
     nodeStatesCache.clear()
     linksCache.value = ''
     lastNodeCount.value = 0

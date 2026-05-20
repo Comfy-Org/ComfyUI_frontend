@@ -57,7 +57,7 @@ export type JobGroup = {
 
 const ADDED_HINT_DURATION_MS = 3000
 const relativeTimeFormatterCache = new Map<string, Intl.RelativeTimeFormat>()
-const taskIdToKey = (id: string | number | undefined) => {
+function taskIdToKey(id: string | number | undefined) {
   if (id === null || id === undefined) return null
   const key = String(id)
   return key.length ? key : null
@@ -66,12 +66,12 @@ const taskIdToKey = (id: string | number | undefined) => {
 /**
  * Returns localized Today/Yesterday (capitalized) or localized Mon DD.
  */
-const dateLabelForTimestamp = (
+function dateLabelForTimestamp(
   ts: number,
   locale: string,
   relativeFormatter: Intl.RelativeTimeFormat
-) => {
-  const formatRelativeDay = (value: number) => {
+) {
+  function formatRelativeDay(value: number) {
     const formatted = relativeFormatter.format(value, 'day')
     return formatted
       ? formatted[0].toLocaleUpperCase(locale) + formatted.slice(1)
@@ -105,7 +105,7 @@ export function useJobList() {
   const recentlyAddedPendingIds = ref<Set<string>>(new Set())
   const addedHintTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
 
-  const clearAddedHintTimeout = (id: string) => {
+  function clearAddedHintTimeout(id: string) {
     const timeoutId = addedHintTimeouts.get(id)
     if (timeoutId !== undefined) {
       clearTimeout(timeoutId)
@@ -113,7 +113,7 @@ export function useJobList() {
     }
   }
 
-  const scheduleAddedHintExpiry = (id: string) => {
+  function scheduleAddedHintExpiry(id: string) {
     clearAddedHintTimeout(id)
     const timeoutId = setTimeout(() => {
       addedHintTimeouts.delete(id)
@@ -157,7 +157,7 @@ export function useJobList() {
     { immediate: true }
   )
 
-  const shouldShowAddedHint = (task: TaskItemImpl, state: JobState) => {
+  function shouldShowAddedHint(task: TaskItemImpl, state: JobState) {
     if (state !== 'pending') return false
     const id = taskIdToKey(task.jobId)
     if (!id) return false
@@ -184,8 +184,9 @@ export function useJobList() {
   })
   const undatedLabel = computed(() => t('queue.jobList.undated') || 'Undated')
 
-  const isJobInitializing = (jobId: string | number | undefined) =>
-    executionStore.isJobInitializing(jobId)
+  function isJobInitializing(jobId: string | number | undefined) {
+    return executionStore.isJobInitializing(jobId)
+  }
 
   const currentNodeName = computed(() => {
     return resolveNodeDisplayName(executionStore.executingNode, {
@@ -201,7 +202,9 @@ export function useJobList() {
   const searchQuery = ref('')
   const debouncedSearchQuery = refDebounced(searchQuery, 150)
 
-  const mostRecentTimestamp = (task: TaskItemImpl) => task.createTime ?? 0
+  function mostRecentTimestamp(task: TaskItemImpl) {
+    return task.createTime ?? 0
+  }
 
   const allTasksSorted = computed<TaskItemImpl[]>(() => {
     const all = [
@@ -365,10 +368,14 @@ export function useJobList() {
     }
 
     if (selectedSortMode.value === 'totalGenerationTime') {
-      const valueOrDefault = (value: JobListItem['executionTimeMs']) =>
-        typeof value === 'number' && !Number.isNaN(value) ? value : -1
-      const sortByExecutionTimeDesc = (a: JobListItem, b: JobListItem) =>
-        valueOrDefault(b.executionTimeMs) - valueOrDefault(a.executionTimeMs)
+      function valueOrDefault(value: JobListItem['executionTimeMs']) {
+        return typeof value === 'number' && !Number.isNaN(value) ? value : -1
+      }
+      function sortByExecutionTimeDesc(a: JobListItem, b: JobListItem) {
+        return (
+          valueOrDefault(b.executionTimeMs) - valueOrDefault(a.executionTimeMs)
+        )
+      }
 
       groups.forEach((group) => {
         group.items.sort(sortByExecutionTimeDesc)

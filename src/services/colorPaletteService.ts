@@ -23,7 +23,7 @@ const THEME_PROPERTY_MAP = {
   WIDGET_TEXT_COLOR: 'component-node-foreground'
 } as const satisfies Partial<Record<keyof Colors['litegraph_base'], string>>
 
-export const useColorPaletteService = () => {
+export function useColorPaletteService() {
   const colorPaletteStore = useColorPaletteStore()
   const settingStore = useSettingStore()
   const nodeDefStore = useNodeDefStore()
@@ -36,7 +36,7 @@ export const useColorPaletteService = () => {
    * @param data - The palette to validate.
    * @returns The validated palette.
    */
-  const validateColorPalette = (data: unknown): Palette => {
+  function validateColorPalette(data: unknown): Palette {
     const result = paletteSchema.safeParse(data)
     if (result.success) return result.data
 
@@ -44,7 +44,7 @@ export const useColorPaletteService = () => {
     throw new Error(`Invalid color palette against zod schema:\n${error}`)
   }
 
-  const persistCustomColorPalettes = async () => {
+  async function persistCustomColorPalettes() {
     await settingStore.set(
       'Comfy.CustomColorPalettes',
       colorPaletteStore.customPalettes
@@ -56,7 +56,7 @@ export const useColorPaletteService = () => {
    *
    * @param colorPaletteId - The ID of the color palette to delete.
    */
-  const deleteCustomColorPalette = async (colorPaletteId: string) => {
+  async function deleteCustomColorPalette(colorPaletteId: string) {
     colorPaletteStore.deleteCustomPalette(colorPaletteId)
     await persistCustomColorPalettes()
   }
@@ -66,7 +66,7 @@ export const useColorPaletteService = () => {
    *
    * @param colorPalette - The palette to add.
    */
-  const addCustomColorPalette = async (colorPalette: Palette) => {
+  async function addCustomColorPalette(colorPalette: Palette) {
     validateColorPalette(colorPalette)
     colorPaletteStore.addCustomPalette(colorPalette)
     await persistCustomColorPalettes()
@@ -77,7 +77,7 @@ export const useColorPaletteService = () => {
    *
    * @param linkColorPalette - The palette to set.
    */
-  const loadLinkColorPalette = (linkColorPalette: Colors['node_slot']) => {
+  function loadLinkColorPalette(linkColorPalette: Colors['node_slot']) {
     const types = Object.fromEntries(
       Array.from(nodeDefStore.nodeDataTypes).map((type) => [type, ''])
     )
@@ -147,7 +147,7 @@ export const useColorPaletteService = () => {
    *
    * @param liteGraphColorPalette - The palette to set.
    */
-  const loadLiteGraphColorPalette = (palette: Colors['litegraph_base']) => {
+  function loadLiteGraphColorPalette(palette: Colors['litegraph_base']) {
     // Sets the colors of the LiteGraph objects
     app.canvas.node_title_color = palette.NODE_TITLE_COLOR
     app.canvas.default_link_color = palette.LINK_COLOR
@@ -187,7 +187,7 @@ export const useColorPaletteService = () => {
    * @param schema - The Zod schema object to analyze.
    * @returns Array of optional key names.
    */
-  const getOptionalKeys = (schema: z.ZodObject<z.ZodRawShape>) => {
+  function getOptionalKeys(schema: z.ZodObject<z.ZodRawShape>) {
     const optionalKeys: string[] = []
     const shape = schema.shape
 
@@ -206,10 +206,10 @@ export const useColorPaletteService = () => {
    *
    * @param comfyColorPalette - The palette to set.
    */
-  const loadComfyColorPalette = (
+  function loadComfyColorPalette(
     comfyColorPalette: Colors['comfy_base'],
     isLightTheme: boolean
-  ) => {
+  ) {
     if (!comfyColorPalette) return
     const rootStyle = document.documentElement.style
     for (const [key, value] of Object.entries(comfyColorPalette)) {
@@ -246,7 +246,7 @@ export const useColorPaletteService = () => {
    *
    * @param colorPaletteId - The ID of the color palette to load.
    */
-  const loadColorPalette = async (colorPaletteId: string) => {
+  async function loadColorPalette(colorPaletteId: string) {
     const colorPalette = colorPaletteStore.palettesLookup[colorPaletteId]
     if (!colorPalette) {
       throw new Error(`Color palette ${colorPaletteId} not found`)
@@ -274,7 +274,7 @@ export const useColorPaletteService = () => {
    *
    * @param colorPaletteId - The ID of the color palette to export.
    */
-  const exportColorPalette = (colorPaletteId: string) => {
+  function exportColorPalette(colorPaletteId: string) {
     const colorPalette = colorPaletteStore.palettesLookup[colorPaletteId]
     if (!colorPalette) {
       throw new Error(`Color palette ${colorPaletteId} not found`)
@@ -292,7 +292,7 @@ export const useColorPaletteService = () => {
    *
    * @returns The imported palette.
    */
-  const importColorPalette = async () => {
+  async function importColorPalette() {
     const file = await uploadFile('application/json')
     const text = await file.text()
     const palette = JSON.parse(text)

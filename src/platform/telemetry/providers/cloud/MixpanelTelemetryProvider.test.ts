@@ -71,8 +71,9 @@ import type {
 } from '@/platform/telemetry/types'
 import { TelemetryEvents } from '@/platform/telemetry/types'
 
-const waitForMixpanelInit = () =>
-  vi.waitFor(() => expect(mockMixpanel.init).toHaveBeenCalled())
+function waitForMixpanelInit() {
+  return vi.waitFor(() => expect(mockMixpanel.init).toHaveBeenCalled())
+}
 
 type ConfigWindow = { __CONFIG__?: { mixpanel_token?: string } }
 

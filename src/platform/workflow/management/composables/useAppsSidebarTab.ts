@@ -3,7 +3,7 @@ import { markRaw } from 'vue'
 import AppsSidebarTab from '@/components/sidebar/tabs/AppsSidebarTab.vue'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 
-export const useAppsSidebarTab = (): SidebarTabExtension => {
+export function useAppsSidebarTab(): SidebarTabExtension {
   return {
     id: 'apps',
     icon: 'icon-[lucide--panels-top-left]',

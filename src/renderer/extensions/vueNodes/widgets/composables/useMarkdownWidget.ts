@@ -137,15 +137,12 @@ function addMarkdownWidget(
   return widget
 }
 
-export const useMarkdownWidget = () => {
-  const widgetConstructor: ComfyWidgetConstructorV2 = (
-    node: LGraphNode,
-    inputSpec: InputSpec
-  ) => {
+export function useMarkdownWidget() {
+  function widgetConstructor(node: LGraphNode, inputSpec: InputSpec) {
     return addMarkdownWidget(node, inputSpec.name, {
       defaultVal: inputSpec.default ?? ''
     })
   }
 
-  return widgetConstructor
+  return widgetConstructor satisfies ComfyWidgetConstructorV2
 }

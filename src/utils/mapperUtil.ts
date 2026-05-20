@@ -6,9 +6,9 @@ import type {
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import type { components } from '@/types/comfyRegistryTypes'
 
-const registryToFrontendV2NodeOutputs = (
+function registryToFrontendV2NodeOutputs(
   registryDef: components['schemas']['ComfyNode']
-): ComfyNodeDefV2['outputs'] => {
+): ComfyNodeDefV2['outputs'] {
   const returnTypes = JSON.parse(registryDef.return_types ?? '{}')
   if (!returnTypes.length) return []
 
@@ -28,9 +28,9 @@ const registryToFrontendV2NodeOutputs = (
   return outputs
 }
 
-const registryToFrontendV2NodeInputs = (
+function registryToFrontendV2NodeInputs(
   registryDef: components['schemas']['ComfyNode']
-): ComfyNodeDefV2['inputs'] => {
+): ComfyNodeDefV2['inputs'] {
   const inputTypes = JSON.parse(
     registryDef.input_types ?? '{}'
   ) as ComfyNodeDefV1['input']
@@ -59,10 +59,10 @@ const registryToFrontendV2NodeInputs = (
   return inputsV2
 }
 
-export const registryToFrontendV2NodeDef = (
+export function registryToFrontendV2NodeDef(
   nodeDef: components['schemas']['ComfyNode'],
   nodePack: components['schemas']['Node']
-): ComfyNodeDefV2 => {
+): ComfyNodeDefV2 {
   const name = nodeDef.comfy_node_name ?? 'Node Name'
   return {
     category: nodeDef.category ?? 'unknown',

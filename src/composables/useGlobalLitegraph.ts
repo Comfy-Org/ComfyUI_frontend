@@ -13,7 +13,7 @@ import {
 /**
  * Assign all properties of LiteGraph to window to make it backward compatible.
  */
-export const useGlobalLitegraph = () => {
+export function useGlobalLitegraph() {
   // @ts-expect-error fixme ts strict error
   window['LiteGraph'] = LiteGraph
   // @ts-expect-error fixme ts strict error

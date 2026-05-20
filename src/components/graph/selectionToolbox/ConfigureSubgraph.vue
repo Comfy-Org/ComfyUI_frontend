@@ -17,7 +17,7 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 const rightSidePanelStore = useRightSidePanelStore()
 
-const handleClick = () => {
+function handleClick() {
   rightSidePanelStore.openPanel('subgraph')
 }
 </script>

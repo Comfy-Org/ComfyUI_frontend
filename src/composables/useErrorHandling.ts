@@ -51,7 +51,7 @@ export interface ErrorRecoveryStrategy<
 
 export function useErrorHandling() {
   const toast = useToastStore()
-  const toastErrorHandler = (error: unknown) => {
+  function toastErrorHandler(error: unknown) {
     const isNetworkError =
       error instanceof TypeError &&
       /failed to fetch|networkerror|load failed/i.test(error.message)
@@ -68,13 +68,12 @@ export function useErrorHandling() {
     console.error(error)
   }
 
-  const wrapWithErrorHandling =
-    <TArgs extends unknown[], TReturn>(
-      action: (...args: TArgs) => TReturn,
-      errorHandler?: (error: unknown) => void,
-      finallyHandler?: () => void
-    ) =>
-    (...args: TArgs): TReturn | undefined => {
+  function wrapWithErrorHandling<TArgs extends unknown[], TReturn>(
+    action: (...args: TArgs) => TReturn,
+    errorHandler?: (error: unknown) => void,
+    finallyHandler?: () => void
+  ) {
+    return (...args: TArgs): TReturn | undefined => {
       try {
         return action(...args)
       } catch (e) {
@@ -83,15 +82,15 @@ export function useErrorHandling() {
         finallyHandler?.()
       }
     }
+  }
 
-  const wrapWithErrorHandlingAsync =
-    <TArgs extends unknown[], TReturn>(
-      action: (...args: TArgs) => Promise<TReturn> | TReturn,
-      errorHandler?: (error: unknown) => void,
-      finallyHandler?: () => void,
-      recoveryStrategies: ErrorRecoveryStrategy<TArgs, TReturn>[] = []
-    ) =>
-    async (...args: TArgs): Promise<TReturn | undefined> => {
+  function wrapWithErrorHandlingAsync<TArgs extends unknown[], TReturn>(
+    action: (...args: TArgs) => Promise<TReturn> | TReturn,
+    errorHandler?: (error: unknown) => void,
+    finallyHandler?: () => void,
+    recoveryStrategies: ErrorRecoveryStrategy<TArgs, TReturn>[] = []
+  ) {
+    return async (...args: TArgs): Promise<TReturn | undefined> => {
       try {
         return await action(...args)
       } catch (e) {
@@ -111,6 +110,7 @@ export function useErrorHandling() {
         finallyHandler?.()
       }
     }
+  }
 
   return {
     wrapWithErrorHandling,

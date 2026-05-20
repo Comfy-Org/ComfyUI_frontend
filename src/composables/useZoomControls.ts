@@ -3,15 +3,15 @@ import { computed, ref } from 'vue'
 export function useZoomControls() {
   const isModalVisible = ref(false)
 
-  const showModal = () => {
+  function showModal() {
     isModalVisible.value = true
   }
 
-  const hideModal = () => {
+  function hideModal() {
     isModalVisible.value = false
   }
 
-  const toggleModal = () => {
+  function toggleModal() {
     isModalVisible.value = !isModalVisible.value
   }
 

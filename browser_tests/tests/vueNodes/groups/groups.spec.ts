@@ -79,7 +79,7 @@ async function getNodeGroupCenteringErrors(
 
     const nodeRect = nodeElement.getBoundingClientRect()
 
-    const getCenteringError = (group: GraphGroup): NodeGroupCenteringError => {
+    function getCenteringError(group: GraphGroup): NodeGroupCenteringError {
       const [groupStartX, groupStartY] = app.canvasPosToClientPos([
         group.pos[0],
         group.pos[1]

@@ -8,7 +8,7 @@ import { migrateLegacyRerouteNodes } from '@/utils/migration/migrateReroute'
 describe('migrateReroute', () => {
   describe('migrateReroute snapshots', () => {
     // Helper function to load workflow JSON files
-    const loadWorkflow = (filePath: string): WorkflowJSON04 => {
+    function loadWorkflow(filePath: string): WorkflowJSON04 {
       const fullPath = path.resolve(__dirname, filePath)
       const fileContent = fs.readFileSync(fullPath, 'utf-8')
       return JSON.parse(fileContent) as WorkflowJSON04

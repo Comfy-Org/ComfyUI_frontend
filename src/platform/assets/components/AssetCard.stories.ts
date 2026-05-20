@@ -6,22 +6,24 @@ import { mockAssets } from '@/platform/assets/fixtures/ui-mock-assets'
 
 // Use the first mock asset as base and transform it to display format
 const baseAsset = mockAssets[0]
-const createAssetData = (
+function createAssetData(
   overrides: Partial<AssetDisplayItem> = {}
-): AssetDisplayItem => ({
-  ...baseAsset,
-  secondaryText:
-    'High-quality realistic images with perfect detail and natural lighting effects for professional photography',
-  badges: [
-    { label: 'checkpoints', type: 'type' },
-    { label: '2.1 GB', type: 'size' }
-  ],
-  stats: {
-    downloadCount: '1.8k',
-    stars: '4.2k'
-  },
-  ...overrides
-})
+): AssetDisplayItem {
+  return {
+    ...baseAsset,
+    secondaryText:
+      'High-quality realistic images with perfect detail and natural lighting effects for professional photography',
+    badges: [
+      { label: 'checkpoints', type: 'type' },
+      { label: '2.1 GB', type: 'size' }
+    ],
+    stats: {
+      downloadCount: '1.8k',
+      stars: '4.2k'
+    },
+    ...overrides
+  }
+}
 
 const meta: Meta<typeof AssetCard> = {
   title: 'Platform/Assets/AssetCard',

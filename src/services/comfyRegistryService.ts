@@ -21,15 +21,15 @@ const registryApiClient = axios.create({
 /**
  * Service for interacting with the Comfy Registry API
  */
-export const useComfyRegistryService = () => {
+export function useComfyRegistryService() {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  const handleApiError = (
+  function handleApiError(
     err: unknown,
     context: string,
     routeSpecificErrors?: Record<number, string>
-  ): string => {
+  ): string {
     if (!axios.isAxiosError(err))
       return err instanceof Error
         ? `${context}: ${err.message}`
@@ -71,11 +71,11 @@ export const useComfyRegistryService = () => {
    * @param routeSpecificErrors - Optional map of status codes to custom error messages
    * @returns Promise with the API response data or null if the request failed
    */
-  const executeApiRequest = async <T>(
+  async function executeApiRequest<T>(
     apiCall: () => Promise<AxiosResponse<T>>,
     errorContext: string,
     routeSpecificErrors?: Record<number, string>
-  ): Promise<T | null> => {
+  ): Promise<T | null> {
     isLoading.value = true
     error.value = null
 
@@ -99,13 +99,13 @@ export const useComfyRegistryService = () => {
    * @param versionId - The version of the node pack
    * @returns The node definitions or null if not found or an error occurred
    */
-  const getNodeDefs = async (
+  async function getNodeDefs(
     params: {
       packId: components['schemas']['Node']['id']
       version: components['schemas']['NodeVersion']['version']
     } & operations['ListComfyNodes']['parameters']['query'],
     signal?: AbortSignal
-  ) => {
+  ) {
     const { packId, version: versionId, ...queryParams } = params
     if (!packId || !versionId) return null
 
@@ -133,10 +133,10 @@ export const useComfyRegistryService = () => {
    * Get a paginated list of packs matching specific criteria.
    * Search packs using `search` param. Search individual nodes using `comfy_node_search` param.
    */
-  const search = async (
+  async function search(
     params?: operations['searchNodes']['parameters']['query'],
     signal?: AbortSignal
-  ) => {
+  ) {
     const endpoint = '/nodes/search'
     const errorContext = 'Failed to perform search'
 
@@ -152,10 +152,10 @@ export const useComfyRegistryService = () => {
   /**
    * Get publisher information
    */
-  const getPublisherById = async (
+  async function getPublisherById(
     publisherId: components['schemas']['Publisher']['id'],
     signal?: AbortSignal
-  ) => {
+  ) {
     const endpoint = `/publishers/${publisherId}`
     const errorContext = 'Failed to get publisher'
     const routeSpecificErrors = {
@@ -175,11 +175,11 @@ export const useComfyRegistryService = () => {
   /**
    * List all packs associated with a specific publisher
    */
-  const listPacksForPublisher = async (
+  async function listPacksForPublisher(
     publisherId: components['schemas']['Publisher']['id'],
     includeBanned?: boolean,
     signal?: AbortSignal
-  ) => {
+  ) {
     const params = includeBanned ? { include_banned: true } : undefined
     const endpoint = `/publishers/${publisherId}/nodes`
     const errorContext = 'Failed to list packs for publisher'
@@ -202,11 +202,11 @@ export const useComfyRegistryService = () => {
   /**
    * Add a review for a pack
    */
-  const postPackReview = async (
+  async function postPackReview(
     packId: components['schemas']['Node']['id'],
     star: number,
     signal?: AbortSignal
-  ) => {
+  ) {
     const endpoint = `/nodes/${packId}/reviews`
     const params = { star }
     const errorContext = 'Failed to add review'
@@ -229,10 +229,10 @@ export const useComfyRegistryService = () => {
   /**
    * Get a paginated list of all packs on the registry
    */
-  const listAllPacks = async (
+  async function listAllPacks(
     params?: operations['listAllNodes']['parameters']['query'],
     signal?: AbortSignal
-  ) => {
+  ) {
     const endpoint = '/nodes'
     const errorContext = 'Failed to list packs'
 
@@ -248,11 +248,11 @@ export const useComfyRegistryService = () => {
   /**
    * Get a list of all pack versions
    */
-  const getPackVersions = async (
+  async function getPackVersions(
     packId: components['schemas']['Node']['id'],
     params?: operations['listNodeVersions']['parameters']['query'],
     signal?: AbortSignal
-  ) => {
+  ) {
     const endpoint = `/nodes/${packId}/versions`
     const errorContext = 'Failed to get pack versions'
     const routeSpecificErrors = {
@@ -274,11 +274,11 @@ export const useComfyRegistryService = () => {
   /**
    * Get a specific pack by ID and version
    */
-  const getPackByVersion = async (
+  async function getPackByVersion(
     packId: components['schemas']['Node']['id'],
     versionId: components['schemas']['NodeVersion']['id'],
     signal?: AbortSignal
-  ) => {
+  ) {
     const endpoint = `/nodes/${packId}/versions/${versionId}`
     const errorContext = 'Failed to get pack version'
     const routeSpecificErrors = {
@@ -299,10 +299,10 @@ export const useComfyRegistryService = () => {
   /**
    * Get a specific pack by ID
    */
-  const getPackById = async (
+  async function getPackById(
     packId: operations['getNode']['parameters']['path']['nodeId'],
     signal?: AbortSignal
-  ) => {
+  ) {
     const endpoint = `/nodes/${packId}`
     const errorContext = 'Failed to get pack'
     const routeSpecificErrors = {
@@ -340,10 +340,10 @@ export const useComfyRegistryService = () => {
    * }
    * ```
    */
-  const inferPackFromNodeName = async (
+  async function inferPackFromNodeName(
     nodeName: operations['getNodeByComfyNodeName']['parameters']['path']['comfyNodeName'],
     signal?: AbortSignal
-  ) => {
+  ) {
     const endpoint = `/comfy-nodes/${nodeName}/node`
     const errorContext = 'Failed to infer pack from comfy node name'
     const routeSpecificErrors = {
@@ -383,10 +383,10 @@ export const useComfyRegistryService = () => {
    * }
    * ```
    */
-  const getBulkNodeVersions = async (
+  async function getBulkNodeVersions(
     nodeVersions: components['schemas']['NodeVersionIdentifier'][],
     signal?: AbortSignal
-  ) => {
+  ) {
     const endpoint = '/bulk/nodes/versions'
     const errorContext = 'Failed to get bulk node versions'
     const routeSpecificErrors = {

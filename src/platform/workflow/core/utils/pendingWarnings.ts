@@ -3,8 +3,9 @@ import type {
   PendingWarnings
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 
-const emptyToUndefined = <T>(arr: T[] | undefined): T[] | undefined =>
-  arr?.length ? arr : undefined
+function emptyToUndefined<T>(arr: T[] | undefined): T[] | undefined {
+  return arr?.length ? arr : undefined
+}
 
 export function normalizePendingWarnings(
   warnings: PendingWarnings | null | undefined

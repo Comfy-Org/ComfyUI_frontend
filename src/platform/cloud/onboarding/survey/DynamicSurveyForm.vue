@@ -186,7 +186,7 @@ const isCurrentValid = computed(() => {
   return true
 })
 
-const onFieldChange = (id: string, value: string | string[]) => {
+function onFieldChange(id: string, value: string | string[]) {
   setFieldValue(id, value)
   liveValues.value = { ...liveValues.value, [id]: value }
   if (stepIndex.value > visible.value.length - 1) {
@@ -194,14 +194,14 @@ const onFieldChange = (id: string, value: string | string[]) => {
   }
 }
 
-const goNext = () => {
+function goNext() {
   if (stepIndex.value < visible.value.length - 1) stepIndex.value += 1
 }
-const goPrevious = () => {
+function goPrevious() {
   if (stepIndex.value > 0) stepIndex.value -= 1
 }
 
-const onSubmit = async () => {
+async function onSubmit() {
   const result = await validate()
   if (!result.valid) return
   emit(

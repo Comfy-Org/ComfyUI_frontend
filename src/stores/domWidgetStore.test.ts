@@ -6,7 +6,7 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { createTestingPinia } from '@pinia/testing'
 
 // Mock DOM widget for testing
-const createMockDOMWidget = (id: string) => {
+function createMockDOMWidget(id: string) {
   const element = document.createElement('input')
   return {
     id,

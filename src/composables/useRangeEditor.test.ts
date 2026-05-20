@@ -18,7 +18,7 @@ const TRACK_RECT: DOMRect = {
   toJSON: () => ({})
 }
 
-const createTrackElement = (): HTMLElement => {
+function createTrackElement(): HTMLElement {
   const el = document.createElement('div')
   vi.spyOn(el, 'getBoundingClientRect').mockReturnValue(TRACK_RECT)
   el.setPointerCapture = vi.fn()
@@ -27,7 +27,7 @@ const createTrackElement = (): HTMLElement => {
   return el
 }
 
-const createPointerEvent = (
+function createPointerEvent(
   type: string,
   init: {
     clientX?: number
@@ -35,14 +35,15 @@ const createPointerEvent = (
     button?: number
     pointerId?: number
   } = {}
-): PointerEvent =>
-  new PointerEvent(type, {
+): PointerEvent {
+  return new PointerEvent(type, {
     clientX: init.clientX ?? 0,
     clientY: init.clientY ?? 0,
     button: init.button ?? 0,
     pointerId: init.pointerId ?? 1,
     bubbles: true
   })
+}
 
 interface HarnessOptions {
   initial?: RangeValue
@@ -62,7 +63,7 @@ interface Harness {
   unmount: () => void
 }
 
-const mountRangeEditor = (opts: HarnessOptions = {}): Harness => {
+function mountRangeEditor(opts: HarnessOptions = {}): Harness {
   const track =
     opts.track === null ? null : (opts.track ?? createTrackElement())
   const trackRef = ref<HTMLElement | null>(track)

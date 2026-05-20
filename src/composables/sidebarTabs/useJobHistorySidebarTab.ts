@@ -5,7 +5,7 @@ import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 
-export const useJobHistorySidebarTab = (): SidebarTabExtension => {
+export function useJobHistorySidebarTab(): SidebarTabExtension {
   return {
     id: 'job-history',
     icon: 'icon-[lucide--history]',

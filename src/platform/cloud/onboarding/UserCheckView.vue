@@ -103,7 +103,7 @@ const errorMessage = computed(() => {
 
 const isRetrying = computed(() => isLoading.value && !!error.value)
 
-const handleRetry = async () => {
+async function handleRetry() {
   await checkUserStatus()
 }
 </script>

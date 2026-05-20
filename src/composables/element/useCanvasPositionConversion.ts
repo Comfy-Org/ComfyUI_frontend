@@ -12,13 +12,13 @@ let sharedConverter: ReturnType<typeof useCanvasPositionConversion> | null =
  * @param lgCanvas - The litegraph canvas
  * @returns The canvas position conversion functions
  */
-export const useCanvasPositionConversion = (
+export function useCanvasPositionConversion(
   canvasElement: Parameters<typeof useElementBounding>[0],
   lgCanvas: LGraphCanvas
-) => {
+) {
   const { left, top, update } = useElementBounding(canvasElement)
 
-  const clientPosToCanvasPos = (pos: Point): Point => {
+  function clientPosToCanvasPos(pos: Point): Point {
     const { offset, scale } = lgCanvas.ds
     return [
       (pos[0] - left.value) / scale - offset[0],
@@ -26,7 +26,7 @@ export const useCanvasPositionConversion = (
     ]
   }
 
-  const canvasPosToClientPos = (pos: Point): Point => {
+  function canvasPosToClientPos(pos: Point): Point {
     const { offset, scale } = lgCanvas.ds
     return [
       (pos[0] + offset[0]) * scale + left.value,

@@ -47,22 +47,24 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
     )
   })
 
-  const createMockAsset = (
+  function createMockAsset(
     id: string,
     name: string,
     filename: string,
     previewUrl?: string
-  ): AssetItem => ({
-    id,
-    name,
-    size: 1024,
-    tags: ['models', 'checkpoints'],
-    created_at: '2025-01-01T00:00:00Z',
-    preview_url: previewUrl,
-    user_metadata: {
-      filename
+  ): AssetItem {
+    return {
+      id,
+      name,
+      size: 1024,
+      tags: ['models', 'checkpoints'],
+      created_at: '2025-01-01T00:00:00Z',
+      preview_url: previewUrl,
+      user_metadata: {
+        filename
+      }
     }
-  })
+  }
 
   it('fetches assets for a given node type', async () => {
     const mockAssets: AssetItem[] = [

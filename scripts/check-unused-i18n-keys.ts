@@ -103,8 +103,9 @@ function shouldIgnoreKey(key: string): boolean {
 // Search for key usage in source files
 function isKeyUsed(key: string, sourceFiles: string[]): boolean {
   // Escape special regex characters
-  const escapeRegex = (str: string) =>
-    str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  function escapeRegex(str: string) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  }
   const escapedKey = escapeRegex(key)
   const lastPart = key.split('.').pop()
   const escapedLastPart = lastPart ? escapeRegex(lastPart) : ''

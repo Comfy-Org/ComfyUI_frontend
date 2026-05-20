@@ -12,7 +12,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 /**
  * Watch for changes in the setting store and update the LiteGraph settings accordingly.
  */
-export const useLitegraphSettings = () => {
+export function useLitegraphSettings() {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
 

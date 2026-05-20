@@ -61,7 +61,7 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
 
-const handleModelHover = async () => {
+async function handleModelHover() {
   const hoverTarget = modelContentElement.value
   if (!hoverTarget) return
 
@@ -101,12 +101,12 @@ const showPreview = computed(() => {
   )
 })
 
-const handleMouseEnter = async () => {
+async function handleMouseEnter() {
   isHovered.value = true
   await nextTick()
   await handleModelHover()
 }
-const handleMouseLeave = () => {
+function handleMouseLeave() {
   isHovered.value = false
 }
 onMounted(async () => {

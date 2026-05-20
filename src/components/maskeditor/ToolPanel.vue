@@ -52,7 +52,7 @@ const { toolManager } = defineProps<{
 const { t } = useI18n()
 const store = useMaskEditorStore()
 
-const onToolSelect = (tool: Tools) => {
+function onToolSelect(tool: Tools) {
   toolManager.switchTool(tool)
 }
 
@@ -64,7 +64,7 @@ const dimensionsText = computed(() => {
   return img ? `${img.width}x${img.height}` : ' '
 })
 
-const onResetZoom = () => {
+function onResetZoom() {
   store.resetZoom()
 }
 </script>

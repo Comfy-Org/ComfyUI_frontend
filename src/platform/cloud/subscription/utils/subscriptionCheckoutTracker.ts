@@ -50,7 +50,7 @@ interface RecordPendingSubscriptionCheckoutAttemptInput {
   previous_cycle?: BillingCycle
 }
 
-const dispatchPendingCheckoutChangeEvent = () => {
+function dispatchPendingCheckoutChangeEvent() {
   if (typeof window === 'undefined') {
     return
   }
@@ -58,7 +58,7 @@ const dispatchPendingCheckoutChangeEvent = () => {
   window.dispatchEvent(new Event(PENDING_SUBSCRIPTION_CHECKOUT_EVENT))
 }
 
-const createAttemptId = (): string => {
+function createAttemptId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID()
   }
@@ -66,7 +66,7 @@ const createAttemptId = (): string => {
   return `attempt-${Date.now()}`
 }
 
-const getStorage = (): Storage | null => {
+function getStorage(): Storage | null {
   let storage: Storage | null = null
 
   try {
@@ -87,10 +87,11 @@ const getStorage = (): Storage | null => {
   return storage
 }
 
-const getAnnualCheckoutValue = (tier: Exclude<TierKey, 'free' | 'founder'>) =>
-  getTierPrice(tier, true) * 12
+function getAnnualCheckoutValue(tier: Exclude<TierKey, 'free' | 'founder'>) {
+  return getTierPrice(tier, true) * 12
+}
 
-const getCheckoutValue = (tier: TierKey, cycle: BillingCycle): number => {
+function getCheckoutValue(tier: TierKey, cycle: BillingCycle): number {
   if (tier === 'free' || tier === 'founder') {
     return getTierPrice(tier, cycle === 'yearly')
   }
@@ -100,9 +101,7 @@ const getCheckoutValue = (tier: TierKey, cycle: BillingCycle): number => {
     : getTierPrice(tier, false)
 }
 
-const getTierFromStatus = (
-  status: SubscriptionStatusSnapshot
-): TierKey | null => {
+function getTierFromStatus(status: SubscriptionStatusSnapshot): TierKey | null {
   const subscriptionTier = status.subscription_tier
   if (!subscriptionTier) {
     return null
@@ -111,9 +110,9 @@ const getTierFromStatus = (
   return TIER_TO_KEY[subscriptionTier] ?? null
 }
 
-const getCycleFromStatus = (
+function getCycleFromStatus(
   status: SubscriptionStatusSnapshot
-): BillingCycle | null => {
+): BillingCycle | null {
   if (status.subscription_duration === 'ANNUAL') {
     return 'yearly'
   }
@@ -125,12 +124,16 @@ const getCycleFromStatus = (
   return null
 }
 
-const isExpired = (attempt: PendingSubscriptionCheckoutAttempt): boolean =>
-  Date.now() - attempt.started_at_ms > PENDING_SUBSCRIPTION_CHECKOUT_MAX_AGE_MS
+function isExpired(attempt: PendingSubscriptionCheckoutAttempt): boolean {
+  return (
+    Date.now() - attempt.started_at_ms >
+    PENDING_SUBSCRIPTION_CHECKOUT_MAX_AGE_MS
+  )
+}
 
-const normalizeAttempt = (
+function normalizeAttempt(
   value: unknown
-): PendingSubscriptionCheckoutAttempt | null => {
+): PendingSubscriptionCheckoutAttempt | null {
   if (!value || typeof value !== 'object') {
     return null
   }
@@ -172,7 +175,7 @@ const normalizeAttempt = (
   }
 }
 
-export const clearPendingSubscriptionCheckoutAttempt = (): void => {
+export function clearPendingSubscriptionCheckoutAttempt(): void {
   const storage = getStorage()
   if (!storage) {
     return
@@ -186,47 +189,47 @@ export const clearPendingSubscriptionCheckoutAttempt = (): void => {
   dispatchPendingCheckoutChangeEvent()
 }
 
-const getPendingSubscriptionCheckoutAttempt =
-  (): PendingSubscriptionCheckoutAttempt | null => {
-    const storage = getStorage()
-    if (!storage) {
-      return null
-    }
+function getPendingSubscriptionCheckoutAttempt(): PendingSubscriptionCheckoutAttempt | null {
+  const storage = getStorage()
+  if (!storage) {
+    return null
+  }
 
-    let rawAttempt: string | null
+  let rawAttempt: string | null
 
-    try {
-      rawAttempt = storage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
-    } catch {
-      return null
-    }
+  try {
+    rawAttempt = storage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+  } catch {
+    return null
+  }
 
-    if (!rawAttempt) {
-      return null
-    }
+  if (!rawAttempt) {
+    return null
+  }
 
-    try {
-      const parsed = JSON.parse(rawAttempt)
-      const attempt = normalizeAttempt(parsed)
+  try {
+    const parsed = JSON.parse(rawAttempt)
+    const attempt = normalizeAttempt(parsed)
 
-      if (!attempt || isExpired(attempt)) {
-        clearPendingSubscriptionCheckoutAttempt()
-        return null
-      }
-
-      return attempt
-    } catch {
+    if (!attempt || isExpired(attempt)) {
       clearPendingSubscriptionCheckoutAttempt()
       return null
     }
+
+    return attempt
+  } catch {
+    clearPendingSubscriptionCheckoutAttempt()
+    return null
   }
+}
 
-export const hasPendingSubscriptionCheckoutAttempt = (): boolean =>
-  getPendingSubscriptionCheckoutAttempt() !== null
+export function hasPendingSubscriptionCheckoutAttempt(): boolean {
+  return getPendingSubscriptionCheckoutAttempt() !== null
+}
 
-export const recordPendingSubscriptionCheckoutAttempt = (
+export function recordPendingSubscriptionCheckoutAttempt(
   input: RecordPendingSubscriptionCheckoutAttemptInput
-): PendingSubscriptionCheckoutAttempt => {
+): PendingSubscriptionCheckoutAttempt {
   const storage = getStorage()
   const attempt: PendingSubscriptionCheckoutAttempt = {
     attempt_id: createAttemptId(),
@@ -255,10 +258,10 @@ export const recordPendingSubscriptionCheckoutAttempt = (
   return attempt
 }
 
-const didAttemptSucceed = (
+function didAttemptSucceed(
   attempt: PendingSubscriptionCheckoutAttempt,
   status: SubscriptionStatusSnapshot
-): boolean => {
+): boolean {
   if (!status.is_active) {
     return false
   }
@@ -269,9 +272,9 @@ const didAttemptSucceed = (
   )
 }
 
-export const consumePendingSubscriptionCheckoutSuccess = (
+export function consumePendingSubscriptionCheckoutSuccess(
   status: SubscriptionStatusSnapshot
-): SubscriptionSuccessMetadata | null => {
+): SubscriptionSuccessMetadata | null {
   const attempt = getPendingSubscriptionCheckoutAttempt()
   if (!attempt || !didAttemptSucceed(attempt, status)) {
     return null

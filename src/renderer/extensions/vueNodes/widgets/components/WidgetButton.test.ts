@@ -27,11 +27,13 @@ const ButtonStub = {
 }
 
 describe('WidgetButton Interactions', () => {
-  const createButtonWidget = (
+  function createButtonWidget(
     overrides: Partial<SimplifiedWidget<void, ButtonWidgetOptions>> = {}
-  ) => createMockWidget<void>({ ...BUTTON_DEFAULTS, ...overrides })
+  ) {
+    return createMockWidget<void>({ ...BUTTON_DEFAULTS, ...overrides })
+  }
 
-  const mountComponent = (widget: SimplifiedWidget<void>) => {
+  function mountComponent(widget: SimplifiedWidget<void>) {
     const user = userEvent.setup()
     const result = render(WidgetButton, {
       global: {
@@ -46,7 +48,7 @@ describe('WidgetButton Interactions', () => {
     return { ...result, user }
   }
 
-  const clickButton = async (user: ReturnType<typeof userEvent.setup>) => {
+  async function clickButton(user: ReturnType<typeof userEvent.setup>) {
     const button = screen.getByRole('button')
     await user.click(button)
     return button

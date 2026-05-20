@@ -10,7 +10,7 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 const DEFAULT_TITLE = 'ComfyUI'
 const TITLE_SUFFIX = ' - ComfyUI'
 
-export const useBrowserTabTitle = () => {
+export function useBrowserTabTitle() {
   const executionStore = useExecutionStore()
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()

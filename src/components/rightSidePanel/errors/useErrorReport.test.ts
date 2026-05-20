@@ -350,11 +350,12 @@ describe('useErrorReport', () => {
         `report:${exceptionMessage}`
     )
 
+    function noopLogsResolver() {}
     const firstLogsDeferred: {
       resolve: (value: string) => void
       promise: Promise<string>
     } = (() => {
-      let resolve: (value: string) => void = () => {}
+      let resolve: (value: string) => void = noopLogsResolver
       const promise = new Promise<string>((r) => {
         resolve = r
       })

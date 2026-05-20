@@ -34,11 +34,11 @@ import SliderControl from './controls/SliderControl.vue'
 const { t } = useI18n()
 const store = useMaskEditorStore()
 
-const onToleranceChange = (value: number) => {
+function onToleranceChange(value: number) {
   store.setPaintBucketTolerance(value)
 }
 
-const onFillOpacityChange = (value: number) => {
+function onFillOpacityChange(value: number) {
   store.setFillOpacity(value)
 }
 </script>

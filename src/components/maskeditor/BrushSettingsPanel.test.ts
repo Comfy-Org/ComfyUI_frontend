@@ -8,22 +8,24 @@ import { createI18n } from 'vue-i18n'
 import BrushSettingsPanel from '@/components/maskeditor/BrushSettingsPanel.vue'
 import { BrushShape } from '@/extensions/core/maskeditor/types'
 
-const initialMock = () => ({
-  brushSettings: reactive({
-    type: BrushShape.Arc,
-    size: 10,
-    opacity: 0.7,
-    hardness: 1,
-    stepSize: 5
-  }),
-  rgbColor: '#FF0000',
-  colorInput: null as HTMLInputElement | null,
-  setBrushSize: vi.fn(),
-  setBrushOpacity: vi.fn(),
-  setBrushHardness: vi.fn(),
-  setBrushStepSize: vi.fn(),
-  resetBrushToDefault: vi.fn()
-})
+function initialMock() {
+  return {
+    brushSettings: reactive({
+      type: BrushShape.Arc,
+      size: 10,
+      opacity: 0.7,
+      hardness: 1,
+      stepSize: 5
+    }),
+    rgbColor: '#FF0000',
+    colorInput: null as HTMLInputElement | null,
+    setBrushSize: vi.fn(),
+    setBrushOpacity: vi.fn(),
+    setBrushHardness: vi.fn(),
+    setBrushStepSize: vi.fn(),
+    resetBrushToDefault: vi.fn()
+  }
+}
 
 let mockStore: ReturnType<typeof initialMock>
 
@@ -59,10 +61,11 @@ const i18n = createI18n({
   }
 })
 
-const renderPanel = () =>
-  render(BrushSettingsPanel, { global: { plugins: [i18n] } })
+function renderPanel() {
+  return render(BrushSettingsPanel, { global: { plugins: [i18n] } })
+}
 
-const setNumberInput = (input: HTMLInputElement, value: string): void => {
+function setNumberInput(input: HTMLInputElement, value: string): void {
   input.value = value
   input.dispatchEvent(new Event('input', { bubbles: true }))
 }

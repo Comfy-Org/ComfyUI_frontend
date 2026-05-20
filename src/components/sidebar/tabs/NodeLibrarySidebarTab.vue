@@ -266,16 +266,16 @@ const selectedSortingIcon = computed(() =>
   nodeOrganizationService.getSortingIcon(selectedSortingId.value)
 )
 
-const selectGrouping = (groupingId: string) => {
+function selectGrouping(groupingId: string) {
   selectedGroupingId.value = groupingId as GroupingStrategyId
   groupingPopover.value?.hide()
 }
-const selectSorting = (sortingId: string) => {
+function selectSorting(sortingId: string) {
   selectedSortingId.value = sortingId as SortingStrategyId
   sortingPopover.value?.hide()
 }
 
-const resetOrganization = () => {
+function resetOrganization() {
   selectedGroupingId.value = DEFAULT_GROUPING_ID
   selectedSortingId.value = DEFAULT_SORTING_ID
 }
@@ -295,7 +295,7 @@ const root = computed(() => {
 })
 
 const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
-  const fillNodeInfo = (node: TreeNode): TreeExplorerNode<ComfyNodeDefImpl> => {
+  function fillNodeInfo(node: TreeNode): TreeExplorerNode<ComfyNodeDefImpl> {
     const children = node.children?.map(fillNodeInfo)
 
     return {
@@ -336,7 +336,7 @@ const filteredNodeDefs = ref<ComfyNodeDefImpl[]>([])
 const filters: Ref<
   (SearchFilter & { filter: FuseFilterWithValue<ComfyNodeDefImpl, string> })[]
 > = ref([])
-const handleSearch = async (query: string) => {
+async function handleSearch(query: string) {
   // Don't apply a min length filter because it does not make sense in
   // multi-byte languages like Chinese, Japanese, Korean, etc.
   if (query.length === 0 && !filters.value.length) {
@@ -364,9 +364,9 @@ const handleSearch = async (query: string) => {
   }
 }
 
-const onAddFilter = async (
+async function onAddFilter(
   filterAndValue: FuseFilterWithValue<ComfyNodeDefImpl, string>
-) => {
+) {
   filters.value.push({
     filter: filterAndValue,
     badge: filterAndValue.filterDef.invokeSequence.toUpperCase(),
@@ -378,11 +378,11 @@ const onAddFilter = async (
   await handleSearch(searchQuery.value)
 }
 
-const onRemoveFilter = async (
+async function onRemoveFilter(
   filterAndValue: SearchFilter & {
     filter: FuseFilterWithValue<ComfyNodeDefImpl, string>
   }
-) => {
+) {
   const index = filters.value.findIndex((f) => f === filterAndValue)
   if (index !== -1) {
     filters.value.splice(index, 1)

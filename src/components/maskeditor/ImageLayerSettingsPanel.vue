@@ -159,7 +159,7 @@ const showLayerButtons = computed(() => {
   return store.currentTool === Tools.Eraser
 })
 
-const onMaskLayerVisibilityChange = (event: Event) => {
+function onMaskLayerVisibilityChange(event: Event) {
   const checked = (event.target as HTMLInputElement).checked
   maskLayerVisible.value = checked
 
@@ -169,7 +169,7 @@ const onMaskLayerVisibilityChange = (event: Event) => {
   }
 }
 
-const onPaintLayerVisibilityChange = (event: Event) => {
+function onPaintLayerVisibilityChange(event: Event) {
   const checked = (event.target as HTMLInputElement).checked
   paintLayerVisible.value = checked
 
@@ -179,7 +179,7 @@ const onPaintLayerVisibilityChange = (event: Event) => {
   }
 }
 
-const onBaseImageLayerVisibilityChange = (event: Event) => {
+function onBaseImageLayerVisibilityChange(event: Event) {
   const checked = (event.target as HTMLInputElement).checked
   baseImageLayerVisible.value = checked
 
@@ -189,7 +189,7 @@ const onBaseImageLayerVisibilityChange = (event: Event) => {
   }
 }
 
-const onMaskOpacityChange = (value: number) => {
+function onMaskOpacityChange(value: number) {
   store.setMaskOpacity(value)
 
   const maskCanvas = store.maskCanvas
@@ -200,7 +200,7 @@ const onMaskOpacityChange = (value: number) => {
   maskLayerVisible.value = value !== 0
 }
 
-const onBlendModeChange = async (event: Event) => {
+async function onBlendModeChange(event: Event) {
   const value = (event.target as HTMLSelectElement).value
   let blendMode: MaskBlendMode
 
@@ -220,7 +220,7 @@ const onBlendModeChange = async (event: Event) => {
   await canvasManager.updateMaskColor()
 }
 
-const setActiveLayer = (layer: ImageLayer) => {
+function setActiveLayer(layer: ImageLayer) {
   toolManager?.setActiveLayer(layer)
 }
 </script>

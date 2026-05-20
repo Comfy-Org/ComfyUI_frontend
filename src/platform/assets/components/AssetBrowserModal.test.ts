@@ -165,30 +165,33 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-const flushPromises = () =>
-  new Promise<void>((resolve) => setTimeout(resolve, 0))
+function flushPromises() {
+  return new Promise<void>((resolve) => setTimeout(resolve, 0))
+}
 
 describe('AssetBrowserModal', () => {
-  const createTestAsset = (
+  function createTestAsset(
     id: string,
     name: string,
     category: string
-  ): AssetItem => ({
-    id,
-    name,
-    asset_hash: `blake3:${id.padEnd(64, '0')}`,
-    size: 1024000,
-    mime_type: 'application/octet-stream',
-    tags: ['models', category, 'test'],
-    preview_url: `/api/assets/${id}/content`,
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z',
-    last_access_time: '2024-01-01T00:00:00Z',
-    user_metadata: {
-      description: `Test ${name}`,
-      base_model: 'sd15'
+  ): AssetItem {
+    return {
+      id,
+      name,
+      asset_hash: `blake3:${id.padEnd(64, '0')}`,
+      size: 1024000,
+      mime_type: 'application/octet-stream',
+      tags: ['models', category, 'test'],
+      preview_url: `/api/assets/${id}/content`,
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z',
+      last_access_time: '2024-01-01T00:00:00Z',
+      user_metadata: {
+        description: `Test ${name}`,
+        base_model: 'sd15'
+      }
     }
-  })
+  }
 
   function renderModal(props: Record<string, unknown>) {
     const pinia = createPinia()

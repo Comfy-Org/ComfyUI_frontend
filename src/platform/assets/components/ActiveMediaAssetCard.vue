@@ -100,7 +100,7 @@ const showActionButton = computed(
 const activeAction = computed(() =>
   canCancelJob.value ? cancelAction : deleteAction
 )
-const runActiveAction = () => {
+function runActiveAction() {
   if (canCancelJob.value) {
     runCancelJob()
   } else if (canDeleteJob.value) {

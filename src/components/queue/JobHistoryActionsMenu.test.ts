@@ -54,13 +54,14 @@ vi.mock('@/stores/workspace/sidebarTabStore', () => ({
 
 import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
 
-const renderMenu = () =>
-  render(JobHistoryActionsMenu, {
+function renderMenu() {
+  return render(JobHistoryActionsMenu, {
     global: {
       plugins: [i18n],
       directives: { tooltip: () => {} }
     }
   })
+}
 
 describe('JobHistoryActionsMenu', () => {
   beforeEach(() => {

@@ -37,7 +37,7 @@ const visibleJobTabs = computed(() =>
   hasFailedJobs ? jobTabs : jobTabs.filter((tab) => tab !== 'Failed')
 )
 
-const tabLabel = (tab: JobTab) => {
+function tabLabel(tab: JobTab) {
   if (tab === 'All') return t('g.all')
   if (tab === 'Completed') return t('g.completed')
   return t('g.failed')

@@ -12,23 +12,24 @@ import WidgetInputText from './WidgetInputText.vue'
 import { createMockWidget } from './widgetTestUtils'
 
 describe('WidgetInputText Value Binding', () => {
-  const createInputTextWidget = (
+  function createInputTextWidget(
     value: string = 'default',
     options: Partial<InputTextProps> & IWidgetOptions = {},
     callback?: (value: string) => void
-  ) =>
-    createMockWidget<string>({
+  ) {
+    return createMockWidget<string>({
       value,
       name: 'test_input',
       options,
       callback
     })
+  }
 
-  const renderComponent = (
+  function renderComponent(
     widget: SimplifiedWidget<string>,
     modelValue: string,
     extraProps: Record<string, unknown> = {}
-  ) => {
+  ) {
     return render(WidgetInputText, {
       global: {
         plugins: [PrimeVue],
@@ -42,11 +43,11 @@ describe('WidgetInputText Value Binding', () => {
     })
   }
 
-  const setInputValueAndTrigger = async (
+  async function setInputValueAndTrigger(
     input: HTMLElement,
     value: string,
     trigger: 'blur' | 'enter' = 'blur'
-  ) => {
+  ) {
     await fireEvent.update(input, value)
     if (trigger === 'blur') {
       await fireEvent.blur(input)

@@ -758,8 +758,8 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
     await drawStroke(comfyPage.page, canvas, { yPct: 0.75 })
     await comfyPage.nextFrame()
 
-    const hasContentAtRow = (yFraction: number) =>
-      canvas.evaluate((el: HTMLCanvasElement, y: number) => {
+    function hasContentAtRow(yFraction: number) {
+      return canvas.evaluate((el: HTMLCanvasElement, y: number) => {
         const ctx = el.getContext('2d')
         if (!ctx) return false
         const cy = Math.floor(el.height * y)
@@ -769,6 +769,7 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
         }
         return false
       }, yFraction)
+    }
 
     await expect
       .poll(() => hasContentAtRow(0.25), {

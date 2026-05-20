@@ -70,21 +70,23 @@ const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
 }>()
 
-const isGitHubLink = (url: string): boolean => url.includes('github.com')
+function isGitHubLink(url: string): boolean {
+  return url.includes('github.com')
+}
 
-const isLicenseFile = (filename: string): boolean => {
+function isLicenseFile(filename: string): boolean {
   // Match LICENSE, LICENSE.md, LICENSE.txt (case insensitive)
   const licensePattern = /^license(\.md|\.txt)?$/i
   return licensePattern.test(filename)
 }
 
-const extractBaseRepoUrl = (repoUrl: string): string => {
+function extractBaseRepoUrl(repoUrl: string): string {
   const githubRepoPattern = /^(https?:\/\/github\.com\/[^/]+\/[^/]+)/i
   const match = repoUrl.match(githubRepoPattern)
   return match ? match[1] : repoUrl
 }
 
-const createLicenseUrl = (filename: string, repoUrl: string): string => {
+function createLicenseUrl(filename: string, repoUrl: string): string {
   if (!repoUrl || !filename) return ''
 
   const licenseFile = isLicenseFile(filename) ? filename : 'LICENSE'
@@ -97,9 +99,10 @@ interface LicenseObject {
   text?: string
 }
 
-const parseLicenseObject = (
-  licenseObj: LicenseObject
-): { text: string; isUrl: boolean } => {
+function parseLicenseObject(licenseObj: LicenseObject): {
+  text: string
+  isUrl: boolean
+} {
   const licenseFile = licenseObj.file || licenseObj.text
 
   if (
@@ -130,9 +133,9 @@ const parseLicenseObject = (
   }
 }
 
-const formatLicense = (
+function formatLicense(
   license: string
-): { text: string; isUrl: boolean } | null => {
+): { text: string; isUrl: boolean } | null {
   // Treat "{}" JSON string as undefined
   if (license === '{}') return null
 

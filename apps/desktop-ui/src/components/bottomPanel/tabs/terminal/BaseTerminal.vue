@@ -58,7 +58,7 @@ const tooltipText = computed(() => {
     : t('serverStart.copyAllTooltip')
 })
 
-const handleCopy = async () => {
+async function handleCopy() {
   const existingSelection = terminal.getSelection()
   const shouldSelectAll = !existingSelection
   if (shouldSelectAll) terminal.selectAll()
@@ -76,7 +76,7 @@ const handleCopy = async () => {
   }
 }
 
-const showContextMenu = (event: MouseEvent) => {
+function showContextMenu(event: MouseEvent) {
   event.preventDefault()
   electronAPI()?.showContextMenu({ type: 'text' })
 }

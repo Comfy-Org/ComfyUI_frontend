@@ -7,18 +7,19 @@ import type { JobErrorDialogService } from '@/components/queue/job/useJobErrorRe
 import { useJobErrorReporting } from '@/components/queue/job/useJobErrorReporting'
 import type { ExecutionError } from '@/platform/remote/comfyui/jobs/jobTypes'
 
-const createTaskWithError = (
+function createTaskWithError(
   jobId: string,
   errorMessage?: string,
   executionError?: ExecutionError,
   createTime?: number
-): TaskItemImpl =>
-  ({
+): TaskItemImpl {
+  return {
     jobId,
     errorMessage,
     executionError,
     createTime: createTime ?? Date.now()
-  }) as Partial<TaskItemImpl> as TaskItemImpl
+  } as Partial<TaskItemImpl> as TaskItemImpl
+}
 
 describe('useJobErrorReporting', () => {
   let taskState = ref<TaskItemImpl | null>(null)

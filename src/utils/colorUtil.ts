@@ -88,10 +88,11 @@ export function hexToInt(hex: string): number {
 }
 
 export function rgbToHex({ r, g, b }: RGB): string {
-  const toHex = (n: number) =>
-    Math.max(0, Math.min(255, Math.round(n)))
+  function toHex(n: number) {
+    return Math.max(0, Math.min(255, Math.round(n)))
       .toString(16)
       .padStart(2, '0')
+  }
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`
 }
 
@@ -199,7 +200,7 @@ export function parseToRgb(color: string): RGB {
   }
 }
 
-const identifyColorFormat = (color: string): ColorFormatInternal | null => {
+function identifyColorFormat(color: string): ColorFormatInternal | null {
   if (!color) return null
   if (
     color.startsWith('#') &&
@@ -216,7 +217,7 @@ const identifyColorFormat = (color: string): ColorFormatInternal | null => {
   return null
 }
 
-const isHSLA = (color: unknown): color is HSLA => {
+function isHSLA(color: unknown): color is HSLA {
   if (typeof color !== 'object' || color === null) return false
 
   return ['h', 's', 'l', 'a'].every(
@@ -408,10 +409,10 @@ export function hsvaToHex(hsva: HSVA): string {
   return `${hex}${alphaHex}`.toLowerCase()
 }
 
-const applyColorAdjustments = (
+function applyColorAdjustments(
   color: string,
   options: ColorAdjustOptions
-): string => {
+): string {
   if (!Object.keys(options).length) return color
 
   const format = identifyColorFormat(color)

@@ -37,18 +37,20 @@ function createHistoryJob(createTime: number, id: string): JobListItem {
   return createJob(id, 'completed', createTime)
 }
 
-const createTaskOutput = (
+function createTaskOutput(
   nodeId: string = 'node-1',
   images: {
     type?: 'output' | 'input' | 'temp'
     filename?: string
     subfolder?: string
   }[] = []
-): TaskOutput => ({
-  [nodeId]: {
-    images
+): TaskOutput {
+  return {
+    [nodeId]: {
+      images
+    }
   }
-})
+}
 
 type QueueResponse = { Running: JobListItem[]; Pending: JobListItem[] }
 type QueueResolver = (value: QueueResponse) => void

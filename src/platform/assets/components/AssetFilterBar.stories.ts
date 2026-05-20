@@ -201,7 +201,7 @@ export const CategorySwitchingReactivity: Story = {
 
       const categoryFilteredAssets = ref<AssetItem[]>(allAssets)
 
-      const switchCategory = (category: string) => {
+      function switchCategory(category: string) {
         selectedCategory.value = category
         categoryFilteredAssets.value =
           category === 'all'

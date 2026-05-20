@@ -14,7 +14,7 @@ test.describe(
       )
       await comfyPage.vueNodes.waitForNodes()
 
-      const assertInSubgraph = async (inSubgraph: boolean) => {
+      async function assertInSubgraph(inSubgraph: boolean) {
         await expect
           .poll(() => comfyPage.subgraph.isInSubgraph())
           .toBe(inSubgraph)

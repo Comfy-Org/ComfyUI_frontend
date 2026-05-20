@@ -42,12 +42,12 @@ async function pasteClipboardImageToNode(node: LGraphNode): Promise<void> {
 export function useImageMenuOptions() {
   const { t } = useI18n()
 
-  const openMaskEditor = () => {
+  function openMaskEditor() {
     const commandStore = useCommandStore()
     void commandStore.execute('Comfy.MaskEditor.OpenMaskEditor')
   }
 
-  const openImage = (node: LGraphNode) => {
+  function openImage(node: LGraphNode) {
     if (!node?.imgs?.length) return
     const img = node.imgs[node.imageIndex ?? 0]
     if (!img) return
@@ -56,7 +56,7 @@ export function useImageMenuOptions() {
     void openFileInNewTab(url.toString())
   }
 
-  const copyImage = async (node: LGraphNode) => {
+  async function copyImage(node: LGraphNode) {
     if (!node?.imgs?.length) return
     const img = node.imgs[node.imageIndex ?? 0]
     if (!img) return
@@ -93,7 +93,7 @@ export function useImageMenuOptions() {
     }
   }
 
-  const saveImage = (node: LGraphNode) => {
+  function saveImage(node: LGraphNode) {
     if (!node?.imgs?.length) return
     const img = node.imgs[node.imageIndex ?? 0]
     if (!img) return
@@ -107,7 +107,7 @@ export function useImageMenuOptions() {
     }
   }
 
-  const getImageMenuOptions = (node: LGraphNode): MenuOption[] => {
+  function getImageMenuOptions(node: LGraphNode): MenuOption[] {
     const hasImages = !!node?.imgs?.length
     const canPaste = canPasteImage(node)
     if (!hasImages && !canPaste) return []

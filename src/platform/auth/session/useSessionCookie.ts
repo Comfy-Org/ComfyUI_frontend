@@ -7,7 +7,7 @@ import { useAuthStore } from '@/stores/authStore'
  * Session cookie management for cloud authentication.
  * Creates and deletes session cookies on the ComfyUI server.
  */
-export const useSessionCookie = () => {
+export function useSessionCookie() {
   /**
    * Creates or refreshes the session cookie.
    * Called after login and on token refresh.
@@ -16,7 +16,7 @@ export const useSessionCookie = () => {
    * (since getAuthHeader() returns workspace token which shouldn't be used for session creation).
    * When disabled, uses getAuthHeader() for backward compatibility.
    */
-  const createSession = async (): Promise<void> => {
+  async function createSession(): Promise<void> {
     if (!isCloud) return
 
     const { flags } = useFeatureFlags()
@@ -72,7 +72,7 @@ export const useSessionCookie = () => {
    * Deletes the session cookie.
    * Called on logout.
    */
-  const deleteSession = async (): Promise<void> => {
+  async function deleteSession(): Promise<void> {
     if (!isCloud) return
 
     try {

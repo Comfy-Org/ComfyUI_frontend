@@ -82,7 +82,9 @@ function makeGraph(nodes: LGraphNode[]): LGraph {
   return fromAny<LGraph, unknown>({ _testNodes: nodes })
 }
 
-const noAssetSupport = () => false
+function noAssetSupport() {
+  return false
+}
 
 describe('isModelFileName', () => {
   it('should return true for common model extensions', () => {
@@ -671,8 +673,12 @@ function makeCandidate(
   }
 }
 
-const alwaysMissing = async () => false
-const alwaysInstalled = async () => true
+async function alwaysMissing() {
+  return false
+}
+async function alwaysInstalled() {
+  return true
+}
 
 describe('enrichWithEmbeddedMetadata', () => {
   it('enriches existing candidate with url and directory from embedded metadata', async () => {
@@ -1312,8 +1318,9 @@ describe('OSS missing model detection (non-Cloud path)', () => {
       ]
     })
 
-    const selectiveInstallCheck = async (name: string) =>
-      name === 'installed_model.safetensors'
+    async function selectiveInstallCheck(name: string) {
+      return name === 'installed_model.safetensors'
+    }
 
     const result = await enrichWithEmbeddedMetadata(
       candidates,

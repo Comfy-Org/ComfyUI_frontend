@@ -23,7 +23,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const currentUser = ref<ComfyApiUser | null>(null)
   const isAuthenticated = computed(() => !!currentUser.value)
 
-  const initializeUserFromApiKey = async () => {
+  async function initializeUserFromApiKey() {
     const createCustomerResponse = await authStore
       .createCustomer()
       .catch((err) => {
@@ -51,7 +51,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
     { immediate: true }
   )
 
-  const reportError = (error: unknown) => {
+  function reportError(error: unknown) {
     if (error instanceof Error && error.message === 'STORAGE_FAILED') {
       toastStore.add({
         severity: 'error',
@@ -85,13 +85,15 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
     return true
   }, reportError)
 
-  const getApiKey = () => apiKey.value
+  function getApiKey() {
+    return apiKey.value
+  }
 
   /**
    * Retrieves the appropriate authentication header for API requests if an
    * API key is available, otherwise returns null.
    */
-  const getAuthHeader = (): ApiKeyAuthHeader | null => {
+  function getAuthHeader(): ApiKeyAuthHeader | null {
     const comfyOrgApiKey = getApiKey()
     if (comfyOrgApiKey) {
       return {

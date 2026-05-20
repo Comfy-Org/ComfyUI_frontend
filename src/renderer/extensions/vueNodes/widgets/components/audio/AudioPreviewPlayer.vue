@@ -187,7 +187,7 @@ const showVolumeTwo = computed(() => !isMuted.value && volume.value > 0.5)
 const showVolumeOne = computed(() => !isMuted.value && volume.value > 0)
 
 // Playback controls
-const togglePlayPause = () => {
+function togglePlayPause() {
   if (!audioRef.value || !audioRef.value.src) {
     return
   }
@@ -200,7 +200,7 @@ const togglePlayPause = () => {
   isPlaying.value = !isPlaying.value
 }
 
-const handleDownload = () => {
+function handleDownload() {
   if (!modelValue.value) return
   try {
     downloadFile(modelValue.value)
@@ -213,14 +213,14 @@ const handleDownload = () => {
   }
 }
 
-const toggleMute = () => {
+function toggleMute() {
   if (audioRef.value) {
     isMuted.value = !isMuted.value
     audioRef.value.muted = isMuted.value
   }
 }
 
-const handleSeek = (event: Event) => {
+function handleSeek(event: Event) {
   const target = event.target as HTMLInputElement
   const value = parseFloat(target.value)
   if (audioRef.value && duration.value > 0) {
@@ -231,36 +231,36 @@ const handleSeek = (event: Event) => {
 }
 
 // Audio events
-const handleLoadedMetadata = () => {
+function handleLoadedMetadata() {
   if (audioRef.value) {
     duration.value = audioRef.value.duration
   }
 }
 
-const handleTimeUpdate = () => {
+function handleTimeUpdate() {
   if (audioRef.value) {
     currentTime.value = audioRef.value.currentTime
   }
 }
 
-const handleEnded = () => {
+function handleEnded() {
   isPlaying.value = false
   currentTime.value = 0
 }
 
 // Options menu
-const toggleOptionsMenu = (event: Event) => {
+function toggleOptionsMenu(event: Event) {
   optionsMenu.value?.toggle(event)
 }
 
-const setPlaybackSpeed = (speed: number) => {
+function setPlaybackSpeed(speed: number) {
   playbackRate.value = speed
   if (audioRef.value) {
     audioRef.value.playbackRate = speed
   }
 }
 
-const handleVolumeChange = (value: number | number[]) => {
+function handleVolumeChange(value: number | number[]) {
   const numValue = Array.isArray(value) ? value[0] : value
   volume.value = numValue / 10
   if (audioRef.value) {

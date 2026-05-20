@@ -133,7 +133,7 @@ const tooltipContentMap = computed(() => {
   return map
 })
 
-const loadEvents = async () => {
+async function loadEvents() {
   loading.value = true
   error.value = null
 
@@ -177,14 +177,14 @@ const loadEvents = async () => {
   }
 }
 
-const onPageChange = (event: { page: number }) => {
+function onPageChange(event: { page: number }) {
   pagination.value.page = event.page + 1
   loadEvents().catch((error) => {
     console.error('Error loading events:', error)
   })
 }
 
-const refresh = async () => {
+async function refresh() {
   pagination.value.page = 1
   await loadEvents()
 }

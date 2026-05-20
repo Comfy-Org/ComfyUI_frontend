@@ -73,7 +73,7 @@ import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const { t } = useI18n()
 
-const handleDownloadClick = () => {
+function handleDownloadClick() {
   window.open('https://www.comfy.org/download', '_blank')
 }
 </script>

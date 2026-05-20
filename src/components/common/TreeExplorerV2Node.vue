@@ -159,7 +159,7 @@ function deleteBlueprint() {
     void subgraphStore.deleteBlueprint(nodeDef.value.name)
   }
 }
-const editBlueprint = async () => {
+async function editBlueprint() {
   if (!nodeDef.value)
     throw new Error(
       'Failed to edit subgraph blueprint lacking backing node data'

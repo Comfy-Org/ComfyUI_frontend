@@ -10,8 +10,12 @@ vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
   remoteConfig: mockRemoteConfig
 }))
 
-const translate = (key: string) => `t:${key}`
-const formatNumber = (value: number) => `n:${value}`
+function translate(key: string) {
+  return `t:${key}`
+}
+function formatNumber(value: number) {
+  return `n:${value}`
+}
 
 describe('getCommonTierBenefits', () => {
   beforeEach(() => {

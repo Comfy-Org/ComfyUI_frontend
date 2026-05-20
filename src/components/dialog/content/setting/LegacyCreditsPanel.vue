@@ -158,17 +158,17 @@ watch(
   }
 )
 
-const handlePurchaseCreditsClick = () => {
+function handlePurchaseCreditsClick() {
   // Track purchase credits entry from Settings > Credits panel
   useTelemetry()?.trackAddApiCreditButtonClicked()
   dialogService.showTopUpCreditsDialog()
 }
 
-const handleCreditsHistoryClick = async () => {
+async function handleCreditsHistoryClick() {
   await authActions.accessBillingPortal()
 }
 
-const handleMessageSupport = async () => {
+async function handleMessageSupport() {
   telemetry?.trackHelpResourceClicked({
     resource_type: 'help_feedback',
     is_external: true,
@@ -177,14 +177,14 @@ const handleMessageSupport = async () => {
   await commandStore.execute('Comfy.ContactSupport')
 }
 
-const handleFaqClick = () => {
+function handleFaqClick() {
   window.open(
     buildDocsUrl('/tutorials/api-nodes/faq', { includeLocale: true }),
     '_blank'
   )
 }
 
-const handleOpenPartnerNodesInfo = () => {
+function handleOpenPartnerNodesInfo() {
   window.open(
     buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true }),
     '_blank'

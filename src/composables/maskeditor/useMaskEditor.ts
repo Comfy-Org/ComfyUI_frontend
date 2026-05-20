@@ -4,7 +4,7 @@ import TopBarHeader from '@/components/maskeditor/dialog/TopBarHeader.vue'
 import MaskEditorContent from '@/components/maskeditor/MaskEditorContent.vue'
 
 export function useMaskEditor() {
-  const openMaskEditor = (node: LGraphNode) => {
+  function openMaskEditor(node: LGraphNode) {
     if (!node) {
       console.error('[MaskEditor] No node provided')
       return

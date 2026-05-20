@@ -15,8 +15,9 @@ export const useKeybindingStore = defineStore('keybinding', () => {
   const currentPresetName = ref('default')
   const savedPresetData = ref<KeybindingPreset | null>(null)
 
-  const serializeBinding = (b: KeybindingImpl) =>
-    `${b.commandId}:${b.combo.serialize()}:${b.targetElementId ?? ''}`
+  function serializeBinding(b: KeybindingImpl) {
+    return `${b.commandId}:${b.combo.serialize()}:${b.targetElementId ?? ''}`
+  }
 
   const savedPresetSerialized = computed(() => {
     if (!savedPresetData.value) return null

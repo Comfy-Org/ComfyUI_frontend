@@ -28,9 +28,9 @@ const { nodePacks, size } = defineProps<{
 const managerStore = useComfyManagerStore()
 const { t } = useI18n()
 
-const createPayload = (
+function createPayload(
   uninstallItem: NodePack
-): ManagerComponents['schemas']['ManagerPackInfo'] => {
+): ManagerComponents['schemas']['ManagerPackInfo'] {
   if (!uninstallItem.id) {
     throw new Error('Node ID is required for uninstallation')
   }
@@ -41,10 +41,11 @@ const createPayload = (
   }
 }
 
-const uninstallPack = (item: NodePack) =>
-  managerStore.uninstallPack(createPayload(item))
+function uninstallPack(item: NodePack) {
+  return managerStore.uninstallPack(createPayload(item))
+}
 
-const uninstallItems = async () => {
+async function uninstallItems() {
   if (!nodePacks?.length) return
   await Promise.all(nodePacks.map(uninstallPack))
 }

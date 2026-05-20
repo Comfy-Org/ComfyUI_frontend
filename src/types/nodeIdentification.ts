@@ -157,7 +157,9 @@ export function compareExecutionId(
   a: string | undefined,
   b: string | undefined
 ): number {
-  const parse = (id: string | undefined) => (id ?? '').split(':').map(Number)
+  function parse(id: string | undefined) {
+    return (id ?? '').split(':').map(Number)
+  }
   const idA = parse(a)
   const idB = parse(b)
   for (let i = 0; i < Math.max(idA.length, idB.length); i++) {

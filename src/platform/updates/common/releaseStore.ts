@@ -56,10 +56,7 @@ export const useReleaseStore = defineStore('release', () => {
   // Helper constants
   const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000 // 3 days
 
-  const compareVersions = (
-    releaseVersion: string,
-    currentVer: string
-  ): number => {
+  function compareVersions(releaseVersion: string, currentVer: string): number {
     if (valid(releaseVersion) && valid(currentVer)) {
       return compare(releaseVersion, currentVer)
     }

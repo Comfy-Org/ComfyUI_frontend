@@ -58,11 +58,11 @@ function createPointerSession(): PointerSession {
   let pointerId: number | null = null
   let stops: Fn[] = []
 
-  const begin = (id: number) => {
+  function begin(id: number) {
     pointerId = id
   }
 
-  const register = (...newStops: Array<Fn | null | undefined>) => {
+  function register(...newStops: Array<Fn | null | undefined>) {
     for (const stop of newStops) {
       if (typeof stop === 'function') {
         stops.push(stop)
@@ -70,12 +70,15 @@ function createPointerSession(): PointerSession {
     }
   }
 
-  const matches = (event: PointerEvent) =>
-    pointerId !== null && event.pointerId === pointerId
+  function matches(event: PointerEvent) {
+    return pointerId !== null && event.pointerId === pointerId
+  }
 
-  const isActive = () => pointerId !== null
+  function isActive() {
+    return pointerId !== null
+  }
 
-  const clear = () => {
+  function clear() {
     for (const stop of stops) {
       stop()
     }
@@ -130,7 +133,7 @@ export function useSlotLinkInteraction({
   // Per-drag drag-state context (non-reactive caches + RAF batching)
   const dragContext = createSlotLinkDragContext()
 
-  const resolveRenderLinkSource = (link: RenderLink): Point | null => {
+  function resolveRenderLinkSource(link: RenderLink): Point | null {
     if (link.fromReroute) {
       const rerouteLayout = layoutStore.getRerouteLayout(link.fromReroute.id)
       if (rerouteLayout) return rerouteLayout.position
@@ -150,7 +153,7 @@ export function useSlotLinkInteraction({
     return toPoint(pos[0], pos[1])
   }
 
-  const syncRenderLinkOrigins = () => {
+  function syncRenderLinkOrigins() {
     if (!activeAdapter) return
     for (const link of activeAdapter.renderLinks) {
       const origin = resolveRenderLinkSource(link)
@@ -172,10 +175,12 @@ export function useSlotLinkInteraction({
 
   type ToInputLink = RenderLink & { toType: 'input' }
   type ToOutputLink = RenderLink & { toType: 'output' }
-  const isToInputLink = (link: RenderLink): link is ToInputLink =>
-    link.toType === 'input'
-  const isToOutputLink = (link: RenderLink): link is ToOutputLink =>
-    link.toType === 'output'
+  function isToInputLink(link: RenderLink): link is ToInputLink {
+    return link.toType === 'input'
+  }
+  function isToOutputLink(link: RenderLink): link is ToOutputLink {
+    return link.toType === 'output'
+  }
 
   function connectLinksToInput(
     links: ReadonlyArray<RenderLink>,
@@ -213,9 +218,9 @@ export function useSlotLinkInteraction({
     return validCandidates.length > 0
   }
 
-  const resolveLinkOrigin = (
+  function resolveLinkOrigin(
     link: LLink | undefined
-  ): { position: Point; direction: LinkDirection } | null => {
+  ): { position: Point; direction: LinkDirection } | null {
     if (!link) return null
 
     const slotKey = getSlotKey(String(link.origin_id), link.origin_slot, false)
@@ -225,10 +230,10 @@ export function useSlotLinkInteraction({
     return { position: { ...layout.position }, direction: LinkDirection.NONE }
   }
 
-  const resolveExistingInputLinkAnchor = (
+  function resolveExistingInputLinkAnchor(
     graph: LGraph,
     inputSlot: INodeInputSlot | undefined
-  ): { position: Point; direction: LinkDirection } | null => {
+  ): { position: Point; direction: LinkDirection } | null {
     if (!inputSlot) return null
 
     const directLink = graph.getLink(inputSlot.link)
@@ -284,7 +289,7 @@ export function useSlotLinkInteraction({
     return null
   }
 
-  const cleanupInteraction = () => {
+  function cleanupInteraction() {
     autoPan?.stop()
     autoPan = null
     if (state.pointerId != null) {
@@ -299,7 +304,7 @@ export function useSlotLinkInteraction({
     clearCompatible()
   }
 
-  const updatePointerState = (event: PointerEvent) => {
+  function updatePointerState(event: PointerEvent) {
     const clientX = event.clientX
     const clientY = event.clientY
     const [canvasX, canvasY] = conversion.clientPosToCanvasPos([
@@ -310,7 +315,7 @@ export function useSlotLinkInteraction({
     updatePointerPosition(clientX, clientY, canvasX, canvasY)
   }
 
-  const processPointerMoveFrame = () => {
+  function processPointerMoveFrame() {
     const data = dragContext.pendingPointerMove
     if (!data) return
     dragContext.pendingPointerMove = null
@@ -413,7 +418,7 @@ export function useSlotLinkInteraction({
 
   const canvas = app.canvas
   const node = canvas.graph?.getNodeById(nodeId)
-  const handlePointerMove = (event: PointerEvent) => {
+  function handlePointerMove(event: PointerEvent) {
     if (!pointerSession.matches(event)) return
     event.stopPropagation()
 
@@ -434,9 +439,7 @@ export function useSlotLinkInteraction({
   }
 
   // Attempt to finalize by connecting to a DOM slot candidate
-  const tryConnectToCandidate = (
-    candidate: SlotDropCandidate | null
-  ): boolean => {
+  function tryConnectToCandidate(candidate: SlotDropCandidate | null): boolean {
     if (!candidate?.compatible) return false
     const graph = app.canvas?.graph
     const adapter = activeAdapter
@@ -466,7 +469,7 @@ export function useSlotLinkInteraction({
   }
 
   // Attempt to finalize by dropping on a reroute under the pointer
-  const tryConnectViaRerouteAtPointer = (): boolean => {
+  function tryConnectViaRerouteAtPointer(): boolean {
     const rerouteLayout = layoutStore.queryRerouteAtPoint({
       x: state.pointer.canvas.x,
       y: state.pointer.canvas.y
@@ -518,7 +521,7 @@ export function useSlotLinkInteraction({
     return didConnect
   }
 
-  const finishInteraction = (event: PointerEvent) => {
+  function finishInteraction(event: PointerEvent) {
     if (!pointerSession.matches(event)) return
     const canvasEvent = toCanvasPointerEvent(event)
     canvasEvent.preventDefault()
@@ -552,12 +555,12 @@ export function useSlotLinkInteraction({
     app.canvas?.setDirty(true, true)
   }
 
-  const handlePointerUp = (event: PointerEvent) => {
+  function handlePointerUp(event: PointerEvent) {
     event.stopPropagation()
     finishInteraction(event)
   }
 
-  const handlePointerCancel = (event: PointerEvent) => {
+  function handlePointerCancel(event: PointerEvent) {
     if (!pointerSession.matches(event)) return
 
     raf.flush()
@@ -574,18 +577,25 @@ export function useSlotLinkInteraction({
     const graph = app.canvas?.graph ?? null
     const context = { adapter, graph, session: dragContext }
 
-    const attemptSnapped = () => tryConnectToCandidate(snappedCandidate)
+    function attemptSnapped() {
+      return tryConnectToCandidate(snappedCandidate)
+    }
 
     const domSlotCandidate = resolveSlotTargetCandidate(target, context)
-    const attemptDomSlot = () => tryConnectToCandidate(domSlotCandidate)
+    function attemptDomSlot() {
+      return tryConnectToCandidate(domSlotCandidate)
+    }
 
     const nodeSurfaceSlotCandidate = resolveNodeSurfaceSlotCandidate(
       target,
       context
     )
-    const attemptNodeSurface = () =>
-      tryConnectToCandidate(nodeSurfaceSlotCandidate)
-    const attemptReroute = () => tryConnectViaRerouteAtPointer()
+    function attemptNodeSurface() {
+      return tryConnectToCandidate(nodeSurfaceSlotCandidate)
+    }
+    function attemptReroute() {
+      return tryConnectViaRerouteAtPointer()
+    }
 
     if (attemptSnapped()) return true
     if (attemptDomSlot()) return true
@@ -594,7 +604,7 @@ export function useSlotLinkInteraction({
     return false
   }
 
-  const onPointerDown = (event: PointerEvent) => {
+  function onPointerDown(event: PointerEvent) {
     if (event.button !== 0) return
     if (!nodeId) return
     if (pointerSession.isActive()) return

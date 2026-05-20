@@ -89,20 +89,20 @@ const { jobMenuEntries } = useJobMenu(
   (item) => emit('viewItem', item)
 )
 
-const onCancelItemEvent = (item: JobListItem) => {
+function onCancelItemEvent(item: JobListItem) {
   emit('cancelItem', item)
 }
 
-const onDeleteItemEvent = (item: JobListItem) => {
+function onDeleteItemEvent(item: JobListItem) {
   emit('deleteItem', item)
 }
 
-const onUpdateSelectedJobTab = (value: JobTab) => {
+function onUpdateSelectedJobTab(value: JobTab) {
   trackFeatureUsed()
   emit('update:selectedJobTab', value)
 }
 
-const onMenuItem = (item: JobListItem, event: Event) => {
+function onMenuItem(item: JobListItem, event: Event) {
   currentMenuItem.value = item
   jobContextMenuRef.value?.open(event)
 }

@@ -21,7 +21,7 @@ import { useCommandStore } from '@/stores/commandStore'
 const commandStore = useCommandStore()
 const { isSingleImageNode } = useSelectionState()
 
-const openMaskEditor = () => {
+function openMaskEditor() {
   void commandStore.execute('Comfy.MaskEditor.OpenMaskEditor')
 }
 </script>

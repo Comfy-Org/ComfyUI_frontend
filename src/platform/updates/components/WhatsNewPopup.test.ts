@@ -62,7 +62,7 @@ vi.mock('../common/releaseStore', () => ({
 }))
 
 describe('WhatsNewPopup', () => {
-  const renderComponent = (props = {}) => {
+  function renderComponent(props = {}) {
     return render(WhatsNewPopup, {
       global: {
         plugins: [PrimeVue],
