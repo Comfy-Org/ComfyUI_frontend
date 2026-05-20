@@ -75,33 +75,28 @@ test.describe('App mode builder selection', () => {
   })
 
   test('Marks canvas readOnly', async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.NodeSearchBoxImpl',
-      'v1 (legacy)'
-    )
-
-    await comfyPage.page.mouse.dblclick(100, 100, { delay: 5 })
+    await comfyPage.searchBoxV2.openByDoubleClickCanvas()
     await expect(
-      comfyPage.searchBox.input,
+      comfyPage.searchBoxV2.input,
       'Canvas is initially editable'
-    ).toHaveCount(1)
+    ).toBeVisible()
     await comfyPage.page.keyboard.press('Escape')
 
     await comfyPage.appMode.enterBuilder()
     await comfyPage.appMode.steps.goToInputs()
 
-    await comfyPage.page.mouse.dblclick(100, 100, { delay: 5 })
+    await comfyPage.searchBoxV2.openByDoubleClickCanvas()
     await expect(
-      comfyPage.searchBox.input,
+      comfyPage.searchBoxV2.input,
       'Entering builder makes the canvas readonly'
-    ).toHaveCount(0)
+    ).toBeHidden()
 
     await comfyPage.page.keyboard.press('Space')
-    await comfyPage.page.mouse.dblclick(100, 100, { delay: 5 })
+    await comfyPage.searchBoxV2.openByDoubleClickCanvas()
     await expect(
-      comfyPage.searchBox.input,
+      comfyPage.searchBoxV2.input,
       'Canvas remains readonly after pressing space'
-    ).toHaveCount(0)
+    ).toBeHidden()
 
     const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
     // oxlint-disable-next-line playwright/no-force-option -- Node container has conditional pointer-events:none that blocks actionability
@@ -112,10 +107,11 @@ test.describe('App mode builder selection', () => {
     ).toBeHidden()
 
     await comfyPage.page.keyboard.press('Escape')
-    await comfyPage.page.mouse.dblclick(100, 100, { delay: 5 })
+    await comfyPage.searchBoxV2.openByDoubleClickCanvas()
     await expect(
-      comfyPage.searchBox.input,
+      comfyPage.searchBoxV2.input,
       'Canvas is no longer readonly after exiting'
-    ).toHaveCount(1)
+    ).toBeVisible()
+    await comfyPage.page.keyboard.press('Escape')
   })
 })
