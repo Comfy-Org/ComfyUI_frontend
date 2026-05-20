@@ -33,7 +33,6 @@ import {
   writeIndex,
   writePayload
 } from '../base/storageIO'
-import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 
 interface DraftMeta {
@@ -319,11 +318,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   async function loadPersistedWorkflow(
     options: LoadPersistedWorkflowOptions
   ): Promise<boolean> {
-    const {
-      workflowName,
-      preferredPath,
-      fallbackToLatestDraft = false
-    } = options
+    const { preferredPath, fallbackToLatestDraft = false } = options
 
     // 1. Try preferred path
     if (preferredPath && (await loadDraft(preferredPath))) {
@@ -338,33 +333,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       }
     }
 
-    // Legacy fallbacks are NOT workspace-scoped and must only be used for
-    // personal workspace to prevent cross-workspace data leakage.
-    // These exist only for migration from V1 and should be removed after 2026-07-15.
-    if (currentWorkspaceId() !== 'personal') {
-      return false
-    }
-
-    // 3. Legacy fallback: sessionStorage payload (remove after 2026-07-15)
-    const clientId = api.initialClientId ?? api.clientId
-    if (clientId) {
-      try {
-        const sessionPayload = sessionStorage.getItem(`workflow:${clientId}`)
-        if (await tryLoadGraph(sessionPayload, workflowName)) {
-          return true
-        }
-      } catch {
-        // Ignore storage access errors and continue fallback chain
-      }
-    }
-
-    // 4. Legacy fallback: localStorage payload (remove after 2026-07-15)
-    try {
-      const localPayload = localStorage.getItem('workflow')
-      return await tryLoadGraph(localPayload, workflowName)
-    } catch {
-      return false
-    }
+    return false
   }
 
   /**

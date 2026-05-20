@@ -36,12 +36,6 @@
 
           <div ref="actionbarContainerRef" :class="actionbarContainerClass">
             <ActionBarButtons />
-            <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
-            <div
-              ref="legacyCommandsContainerRef"
-              data-testid="legacy-topbar-container"
-              class="[&:not(:has(*>*:not(:empty)))]:hidden"
-            ></div>
 
             <ComfyActionbar
               :top-menu-container="actionbarContainerRef"
@@ -127,9 +121,9 @@
 </template>
 
 <script setup lang="ts">
-import { useLocalStorage, useMutationObserver } from '@vueuse/core'
+import { useLocalStorage } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
@@ -148,7 +142,6 @@ import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useQueueUIStore } from '@/stores/queueStore'
@@ -196,7 +189,6 @@ const isActionbarFloating = computed(
  */
 const hasDockedButtons = computed(() => {
   if (actionBarButtonStore.buttons.length > 0) return true
-  if (hasLegacyContent.value) return true
   if (isLoggedIn.value && !isIntegratedTabBar.value) return true
   if (isDesktop && !isIntegratedTabBar.value) return true
   if (isCloud && flags.workflowSharingEnabled) return true
@@ -281,51 +273,6 @@ const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)
 const rightSidePanelTooltipConfig = computed(() =>
   buildTooltipConfig(t('rightSidePanel.togglePanel'))
 )
-
-// Maintain support for legacy topbar elements attached by custom scripts
-const legacyCommandsContainerRef = ref<HTMLElement>()
-const hasLegacyContent = ref(false)
-let legacyContentCheckRafId: number | null = null
-
-function checkLegacyContent() {
-  const el = legacyCommandsContainerRef.value
-  if (!el) {
-    hasLegacyContent.value = false
-    return
-  }
-  // Mirror the CSS: [&:not(:has(*>*:not(:empty)))]:hidden
-  hasLegacyContent.value =
-    el.querySelector(':scope > * > *:not(:empty)') !== null
-}
-
-function scheduleLegacyContentCheck() {
-  if (legacyContentCheckRafId !== null) return
-
-  legacyContentCheckRafId = requestAnimationFrame(() => {
-    legacyContentCheckRafId = null
-    checkLegacyContent()
-  })
-}
-
-useMutationObserver(legacyCommandsContainerRef, scheduleLegacyContentCheck, {
-  childList: true,
-  subtree: true
-})
-
-onMounted(() => {
-  if (legacyCommandsContainerRef.value) {
-    app.menu.element.style.width = 'fit-content'
-    legacyCommandsContainerRef.value.appendChild(app.menu.element)
-    checkLegacyContent()
-  }
-})
-
-onBeforeUnmount(() => {
-  if (legacyContentCheckRafId === null) return
-
-  cancelAnimationFrame(legacyContentCheckRafId)
-  legacyContentCheckRafId = null
-})
 
 const openCustomNodeManager = async () => {
   try {
