@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-05-12T16:10:34.114Z",
+  "fetchedAt": "2026-05-20T21:18:13.335Z",
   "departments": [
     {
       "name": "DESIGN",
@@ -36,14 +36,14 @@
           "id": "6a6d865eeb3c10a8",
           "title": "Senior Software Engineer, Frontend",
           "department": "Engineering",
-          "location": "San Francisco",
+          "location": "Remote",
           "jobUrl": "https://jobs.ashbyhq.com/comfy-org/c3e0584d-5490-491f-aae4-b5922ef63fd2"
         },
         {
           "id": "1b4f7f1da9616e14",
           "title": "Senior Software Engineer, Backend Generalist",
           "department": "Engineering",
-          "location": "San Francisco",
+          "location": "Remote",
           "jobUrl": "https://jobs.ashbyhq.com/comfy-org/732f8b39-076d-4847-afe3-f54d4451607e"
         },
         {
@@ -71,14 +71,14 @@
           "id": "91604c4182a1bc3c",
           "title": "Software Engineer, Core ComfyUI Contributor",
           "department": "Engineering",
-          "location": "San Francisco",
+          "location": "Remote",
           "jobUrl": "https://jobs.ashbyhq.com/comfy-org/7d4062d6-d500-445a-9a5f-014971af259f"
         },
         {
           "id": "a1dbc0576ab14034",
           "title": "Software Engineer, ComfyUI Desktop",
           "department": "Engineering",
-          "location": "San Francisco",
+          "location": "Remote",
           "jobUrl": "https://jobs.ashbyhq.com/comfy-org/ad2f76cb-a787-47d8-81c5-7e7f917747c0"
         },
         {
@@ -105,21 +105,21 @@
           "id": "23dd98cab77ff459",
           "title": "Freelance Motion Designer",
           "department": "Marketing",
-          "location": "San Francisco",
+          "location": "Remote",
           "jobUrl": "https://jobs.ashbyhq.com/comfy-org/a7ccc2b4-4d9d-4e04-b39c-28a711995b5b"
         },
         {
           "id": "a998b9fc973ff3c0",
           "title": "Creative Artist",
           "department": "Marketing",
-          "location": "San Francisco",
+          "location": "Remote",
           "jobUrl": "https://jobs.ashbyhq.com/comfy-org/19ba10aa-4961-45e8-8473-66a8a7a8079d"
         },
         {
           "id": "3e730938026d6e70",
           "title": "Graphic Designer",
           "department": "Marketing",
-          "location": "San Francisco",
+          "location": "Remote",
           "jobUrl": "https://jobs.ashbyhq.com/comfy-org/49fa0b07-3fa1-4a3a-b2c6-d2cc684ad63f"
         },
         {
@@ -135,6 +135,20 @@
           "department": "Marketing",
           "location": "San Francisco",
           "jobUrl": "https://jobs.ashbyhq.com/comfy-org/89d3ff75-2055-4e92-9c69-81feff55627c"
+        },
+        {
+          "id": "e11f8b9e58dbea81",
+          "title": "Creative Producer",
+          "department": "Marketing",
+          "location": "Remote",
+          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/7be2d690-7a2b-4ebf-b1c4-6907b273d3d9"
+        },
+        {
+          "id": "6eac654593208ec3",
+          "title": "Forward Deployed Creative Technologist",
+          "department": "Marketing",
+          "location": "San Francisco",
+          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/af49c05f-dcd8-4c3d-a464-43eb3b1c6efc"
         }
       ]
     },
