@@ -8,11 +8,6 @@ import {
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
-// Group Node creation has been removed from the UI. These tests cover the
-// surviving behaviors: loading legacy workflows that contain group nodes,
-// copy/paste of already-loaded group nodes, and opening the Manage Group
-// Node dialog from an existing group node.
-
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
   await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
