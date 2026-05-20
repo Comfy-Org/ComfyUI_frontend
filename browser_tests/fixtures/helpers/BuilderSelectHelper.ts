@@ -128,7 +128,7 @@ export class BuilderSelectHelper {
       .getByLabel(widgetName, { exact: true })
       .or(
         node
-          .getByTestId("widget-layout-field-label")
+          .getByTestId('widget-layout-field-label')
           .filter({ hasText: widgetName })
           .locator('..')
           .locator('button')
