@@ -17,7 +17,7 @@
       "properties": {
         "Node name for S&R": "DevToolsNodeWithColorInput"
       },
-      "widgets_values": ["#00ff00"]
+      "widgets_values": ["#ff00ff"]
     }
   ],
   "links": [],
