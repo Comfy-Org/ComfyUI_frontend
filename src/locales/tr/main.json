@@ -1745,6 +1745,10 @@
     "outdatedVersionGeneric": "Bu iş akışı ComfyUI'nin daha yeni bir sürümüyle oluşturulmuş. Bazı düğümler düzgün çalışmayabilir.",
     "unknownVersion": "bilinmeyen"
   },
+  "logsTerminal": {
+    "loadError": "Kayıtlar yüklenemiyor, lütfen ComfyUI arka ucunuzu güncellediğinizden emin olun.",
+    "resyncError": "Arka uç yeniden bağlandıktan sonra kayıtlar yeniden eşitlenemedi. Tekrar denemek için konsolu yeniden açın."
+  },
   "maintenance": {
     "None": "Yok",
     "OK": "Tamam",
@@ -2291,7 +2295,6 @@
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
     "advanced": "gelişmiş",
-    "animation": "animasyon",
     "api node": "api düğümü",
     "attention_experiments": "dikkat_deneyleri",
     "audio": "ses",
@@ -2314,6 +2317,7 @@
     "detection": "tespit",
     "edit_models": "modelleri_düzenle",
     "experimental": "deneysel",
+    "filters": "filtreler",
     "flux": "flux",
     "geometry_estimation": "geometri_tahmini",
     "gligen": "gligen",
@@ -2337,13 +2341,11 @@
     "noise": "gürültü",
     "operations": "işlemler",
     "photomaker": "photomaker",
-    "postprocessing": "son işleme",
     "preprocessors": "ön işlemciler",
     "primitive": "ilkel",
     "qwen": "qwen",
     "samplers": "örnekleyiciler",
     "sampling": "örnekleme",
-    "save": "kaydet",
     "schedulers": "zamanlayıcılar",
     "scheduling": "zamanlama",
     "sd3": "sd3",

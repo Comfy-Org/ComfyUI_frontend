@@ -1745,6 +1745,10 @@
     "outdatedVersionGeneric": "このワークフローは新しいバージョンのComfyUIで作成されました。一部のノードが正しく動作しない場合があります。",
     "unknownVersion": "不明"
   },
+  "logsTerminal": {
+    "loadError": "ログを読み込めません。ComfyUI バックエンドが最新であることを確認してください。",
+    "resyncError": "バックエンド再接続後にログを再同期できませんでした。再度コンソールを開いて再試行してください。"
+  },
   "maintenance": {
     "None": "なし",
     "OK": "OK",
@@ -2291,7 +2295,6 @@
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
     "advanced": "高度な機能",
-    "animation": "アニメーション",
     "api node": "apiノード",
     "attention_experiments": "アテンション実験",
     "audio": "オーディオ",
@@ -2314,6 +2317,7 @@
     "detection": "検出",
     "edit_models": "モデル編集",
     "experimental": "実験的",
+    "filters": "フィルター",
     "flux": "flux",
     "geometry_estimation": "geometry_estimation",
     "gligen": "グライジェン",
@@ -2337,13 +2341,11 @@
     "noise": "ノイズ",
     "operations": "操作",
     "photomaker": "photomaker",
-    "postprocessing": "ポストプロセッシング",
     "preprocessors": "前処理",
     "primitive": "プリミティブ",
     "qwen": "qwen",
     "samplers": "サンプラー",
     "sampling": "サンプリング",
-    "save": "保存",
     "schedulers": "スケジューラー",
     "scheduling": "スケジューリング",
     "sd3": "SD3",

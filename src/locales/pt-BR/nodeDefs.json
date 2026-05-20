@@ -13989,6 +13989,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "Gera uma máscara de primeiro plano para remover o fundo de uma imagem usando um modelo de remoção de fundo.",
     "display_name": "Remover Fundo",
     "inputs": {
       "bg_removal_model": {

@@ -13989,6 +13989,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "使用背景移除模型生成前景mask，从图像中移除背景。",
     "display_name": "移除背景",
     "inputs": {
       "bg_removal_model": {
