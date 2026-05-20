@@ -208,7 +208,7 @@ test.describe('Topbar commands', () => {
             type: 'color',
             defaultValue: '#000000'
           },
-          selector: '.p-colorpicker-preview'
+          selector: '.color-picker-wrapper > button'
         }
       ] as const
 
@@ -238,11 +238,11 @@ test.describe('Topbar commands', () => {
 
           await expect
             .poll(() =>
-              component.evaluate((el) =>
-                el.tagName === 'INPUT'
-                  ? (el as HTMLInputElement).disabled
-                  : el.classList.contains('p-disabled')
-              )
+              component.evaluate((el) => {
+                if (el instanceof HTMLInputElement) return el.disabled
+                if (el instanceof HTMLButtonElement) return el.disabled
+                return el.classList.contains('p-disabled')
+              })
             )
             .toBe(true)
         })
