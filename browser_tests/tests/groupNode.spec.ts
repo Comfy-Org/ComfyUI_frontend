@@ -361,3 +361,15 @@ test.describe('Group Node', { tag: '@node' }, () => {
     })
   })
 })
+
+test('Convert to subgraph unpacks the group Node @vue-nodes', async ({
+  comfyPage
+}) => {
+  await comfyPage.workflow.loadWorkflow('groupnodes/legacy_group_node')
+  await (await comfyPage.vueNodes.getFixtureByTitle('hello')).title.click()
+  await comfyPage.page.keyboard.press('Control+Shift+e')
+  await expect(comfyPage.vueNodes.getNodeByTitle('New Subgraph')).toBeVisible()
+
+  await comfyPage.vueNodes.enterSubgraph()
+  await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(2)
+})
