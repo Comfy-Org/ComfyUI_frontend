@@ -310,6 +310,13 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
   })
 
   test.describe('Empty graph defaults', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.featureFlags.setServerFlag(
+        'node_library_essentials_enabled',
+        true
+      )
+    })
+
     test('Defaults to Essentials when graph is empty', async ({
       comfyPage
     }) => {
