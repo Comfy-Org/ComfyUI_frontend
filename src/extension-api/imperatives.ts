@@ -1,6 +1,6 @@
 /**
  * Inline imperative shell APIs — `toast` + `notify`
- * (D-shell-ui-entrypoints, W6.P5.C carve-out).
+ *.
  *
  * Per the ACCEPTED PICK (option (ii) "separate entries" with an
  * inline-imperative carve-out), `toast` and `notify` are NOT exposed as

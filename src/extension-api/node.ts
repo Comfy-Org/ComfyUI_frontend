@@ -9,7 +9,6 @@
  */
 
 import type { AsyncHandler, Handler, Unsubscribe } from './events'
-import type { WidgetHandle, WidgetOptions } from './widget'
 
 import type { NodeEntityId } from '@/world/entityIds'
 /**
@@ -27,7 +26,7 @@ export type { NodeEntityId }
 /**
  * A 2D point as `[x, y]`.
  *
- * **Immutable tuple per D-immutability-enforcement (Hybrid C).** Attempts to
+ * **Immutable tuple.** Attempts to
  * mutate via `node.getPosition()[0] = X` raise a TypeScript error. Use
  * {@link NodeHandle.setPosition} to move the node.
  */
@@ -36,7 +35,7 @@ export type Point = readonly [x: number, y: number]
 /**
  * A 2D size as `[width, height]`.
  *
- * **Immutable tuple per D-immutability-enforcement (Hybrid C).** Attempts to
+ * **Immutable tuple.** Attempts to
  * mutate via `node.getSize()[0] = X` raise a TypeScript error. Use
  * {@link NodeHandle.setSize} to resize the node.
  */
@@ -138,8 +137,6 @@ export interface NodeBeforeSerializeEvent {
  * ```
  */
 export interface NodeHandle {
-  // ── IDENTITY ──────────────────────────────────────────────────────────────
-
   /**
    * Opaque identifier for this node. Stable for the lifetime of the node
    * entity. Treat as a string token: do not parse, slice, or compare its
@@ -147,7 +144,7 @@ export interface NodeHandle {
    * another handle.
    *
    * @remarks
-   * Per D20, the underlying value is a branded `NodeEntityId` at runtime
+   * The underlying value is a branded `NodeEntityId` at runtime
    * but is narrowed to `string` on the public surface so authors never
    * need to import a brand to type a local variable.
    */
@@ -176,25 +173,20 @@ export interface NodeHandle {
    */
   readonly comfyClass: string
 
-  // ── SPATIAL STATE ─────────────────────────────────────────────────────────
   // PHASE_A_EXCLUDED per AXIOMS.md A14: Deferred pending A13 coord-space stabilization.
   // getPosition(): Point
   // setPosition(pos: Point): void
   // getSize(): Size
   // setSize(size: Size): void
 
-  // ── VISUAL STATE ──────────────────────────────────────────────────────────
   // PHASE_A_EXCLUDED per AXIOMS.md A14: Uncertain use case.
   // getTitle(): string
   // setTitle(title: string): void
   // isSelected(): boolean
 
-  // ── EXECUTION MODE ────────────────────────────────────────────────────────
   // PHASE_A_EXCLUDED per AXIOMS.md A14: nodeMode has "egregious" use patterns.
   // getMode(): NodeMode
   // setMode(mode: NodeMode): void
-
-  // ── PROPERTIES (migration shim) ───────────────────────────────────────────
 
   /**
    * Returns a per-node-instance property by key.
@@ -221,9 +213,7 @@ export interface NodeHandle {
    */
   setProperty(key: string, value: unknown): void
 
-  // ── WIDGETS ───────────────────────────────────────────────────────────────
-
-  // COMMENTED OUT per AXIOMS.md A1 + A2 (D-no-node-widget-access, 2026-05-19):
+  // COMMENTED OUT per AXIOMS.md A1 + A2:
   // Nodes cannot reference or enumerate their widgets. Bilateral (node→widget)
   // direction is closed; the widget→node direction (`widget.parentNode`)
   // remains the sole channel. Extensions needing per-widget coordination
@@ -246,7 +236,7 @@ export interface NodeHandle {
   // /**
   //  * Returns all widgets on this node as `WidgetHandle` instances.
   //  *
-  //  * **Immutable view per D-immutability-enforcement (Hybrid C).** The returned
+  //  * **Immutable view.** The returned
   //  * array cannot be mutated (`push`, `splice`, `length =`, index assignment
   //  * all raise TS errors). Each `WidgetHandle` is also surface-frozen — use
   //  * the `WidgetHandle` setter methods (`setValue`, `setHidden`, etc.) to
@@ -276,18 +266,15 @@ export interface NodeHandle {
   // hook against a per-widget host `<div>` it owns. See `WidgetMountFn` and
   // `WidgetMountContext` in `./widget` for the lifecycle contract.
 
-  // ── SLOTS ─────────────────────────────────────────────────────────────────
-
   /**
    * Returns all input slots on this node.
    *
-   * **Immutable view per D-immutability-enforcement (Hybrid C).** The returned
+   * **Immutable view.** The returned
    * array and each slot are `Readonly` — `node.getInputs().push(...)`,
    * `node.getInputs()[i] = X`, and `node.getInputs()[i].name = "x"` all raise
    * TypeScript errors at compile time. Per-slot mutators (`setInputName`,
    * `replaceInput`, bulk field setters) are tracked under
-   * W6.P8.UNMIGRATABLE / D-input-output-shape.
-   *
+   *   *
    * @example
    * ```ts
    * // ❌ TS-ERR — readonly array; v1 patterns no longer compile
@@ -303,27 +290,25 @@ export interface NodeHandle {
   /**
    * Returns all output slots on this node.
    *
-   * **Immutable view per D-immutability-enforcement (Hybrid C).** Same
+   * **Immutable view.** Same
    * read-only semantics as {@link NodeHandle.getInputs}. Per-slot mutators
-   * tracked under W6.P8.UNMIGRATABLE / D-input-output-shape.
+   * tracked separately.
    */
   getOutputs(): ReadonlyArray<Readonly<SlotInfo>>
 
   /**
    * @deprecated Use {@link NodeHandle.getInputs} instead. Renamed to align
-   * with the `getX()` accessor convention (D11/D-immutability-enforcement).
+   * with the `getX()` accessor convention.
    * Will be removed in v1.0.
    */
   inputs(): ReadonlyArray<Readonly<SlotInfo>>
 
   /**
    * @deprecated Use {@link NodeHandle.getOutputs} instead. Renamed to align
-   * with the `getX()` accessor convention (D11/D-immutability-enforcement).
+   * with the `getX()` accessor convention.
    * Will be removed in v1.0.
    */
   outputs(): ReadonlyArray<Readonly<SlotInfo>>
-
-  // ── EVENTS ────────────────────────────────────────────────────────────────
 
   /**
    * Subscribe to node removal (graph deletion, not subgraph promotion).

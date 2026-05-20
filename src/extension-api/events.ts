@@ -37,9 +37,7 @@ export type AsyncHandler<E> = (event: E) => void | Promise<void>
  */
 export type Unsubscribe = () => void
 
-// ─────────────────────────────────────────────────────────────────────────────
-// D-bootstrap-hooks (W6.P6.C) — Event-namespace facades
-// ─────────────────────────────────────────────────────────────────────────────
+// Event-namespace facades
 //
 // Four typed event-namespace handles (`graph` / `execution` / `server` /
 // `workbench`) replace the ad-hoc `api.addEventListener('execution_start', ...)`
@@ -206,7 +204,7 @@ export const server: EventNamespace<ServerEventPayloads> = makeNamespace(
  *
  * Canonical events today: `'notification'`. Future: `'themeChanged'`,
  * `'panelToggled'`, `'commandInvoked'`. NOT a DI container — see
- * D-bootstrap-hooks §Decision for the "thin event-namespace handle only"
+ * the bootstrap-hooks design for the "thin event-namespace handle only"
  * scope-back.
  *
  * @publicAPI

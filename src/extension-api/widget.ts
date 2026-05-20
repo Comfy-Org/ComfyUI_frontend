@@ -74,7 +74,7 @@ export interface WidgetOptionChangeEvent {
   readonly newValue: unknown
 }
 
-// PHASE_A_EXCLUDED per AXIOMS.md A14 + A16 (D-widget-serialization-simplification, wave-9):
+// PHASE_A_EXCLUDED per AXIOMS.md A14 + A16:
 // `WidgetPropertyChangeEvent` is vacuous after `'serialize'` was removed from
 // the property union (A16: authors cannot disable serialization). The other
 // historical members ('hidden', 'disabled') were already A14-deferred.
@@ -126,7 +126,7 @@ export interface WidgetOptionChangeEvent {
  * ```
  */
 export interface WidgetBeforeSerializeEvent<T = WidgetValue> {
-  // PHASE_A_EXCLUDED per AXIOMS.md A14 + A16 (D-widget-serialization-simplification, wave-9):
+  // PHASE_A_EXCLUDED per AXIOMS.md A14 + A16:
   // The 4-way transport discriminator inverted the direction of knowledge
   // flow — framework owns transport, extensions own value. Workflow JSON
   // and API prompt converge to a single serialized payload; clone and
@@ -151,7 +151,7 @@ export interface WidgetBeforeSerializeEvent<T = WidgetValue> {
    */
   setSerializedValue(v: unknown): void
 
-  // PHASE_A_EXCLUDED per AXIOMS.md A14 + A16 (D-widget-serialization-simplification, wave-9):
+  // PHASE_A_EXCLUDED per AXIOMS.md A14 + A16:
   // `skip()` IS a per-call disable — authors cannot disable serialization
   // (A16). If a widget should not contribute to the payload, it should not
   // be a widget (A15). Restoration requires axiom amendments to A15 + A16.
@@ -215,7 +215,7 @@ export interface WidgetBeforeQueueEvent {
  * ```ts
  * import { defineWidget } from '@comfyorg/extension-api'
  *
- * // Per AXIOMS.md A1 (D-no-node-widget-access, 2026-05-19), nodes cannot
+ * // Per AXIOMS.md A1, nodes cannot
  * // enumerate or reference widgets — `node.getWidget(name)` was removed.
  * // To react to a specific widget's lifecycle and value changes, register
  * // a widget type and use the `mount` context's `ctx.widget` handle:
@@ -232,8 +232,6 @@ export interface WidgetBeforeQueueEvent {
  * ```
  */
 export interface WidgetHandle<T = WidgetValue> {
-  // ── IDENTITY ───────────────────────────────────────────────────────────────
-
   /**
    * Opaque identifier for this widget. Stable for the lifetime of the
    * widget entity. Treat as a string token: do not parse, slice, or compare
@@ -241,7 +239,7 @@ export interface WidgetHandle<T = WidgetValue> {
    * another handle.
    *
    * @remarks
-   * Per D20, the underlying value is a branded `WidgetEntityId` at runtime
+   * The underlying value is a branded `WidgetEntityId` at runtime
    * but is narrowed to `string` on the public surface so authors never need
    * to import a brand to type a local variable.
    */
@@ -269,8 +267,6 @@ export interface WidgetHandle<T = WidgetValue> {
    */
   readonly widgetType: string
 
-  // ── VALUE — first-class, every-widget ─────────────────────────────────────
-
   /**
    * Returns the widget's current user-edited value.
    *
@@ -278,8 +274,7 @@ export interface WidgetHandle<T = WidgetValue> {
    * @example
    * ```ts
    * // Inside `defineWidget({mount})` — `ctx.widget` is the only legal
-   * // path to a `WidgetHandle` (D-no-node-widget-access removed
-   * // `node.getWidget(name)`).
+   * // path to a `WidgetHandle` (nodes cannot enumerate widgets per A1).
    * const value = widget.getValue<number>()
    * ```
    */
@@ -292,17 +287,13 @@ export interface WidgetHandle<T = WidgetValue> {
    */
   setValue(value: T): void
 
-  // ── VISIBILITY — first-class, every-widget ────────────────────────────────
   // PHASE_A_EXCLUDED per AXIOMS.md A14: Deferred pending serialization convergence.
   // isHidden(): boolean
   // setHidden(hidden: boolean): void
 
-  // ── DISABLED — first-class, every-widget ─────────────────────────────────
   // PHASE_A_EXCLUDED per AXIOMS.md A14: Deferred pending serialization convergence.
   // isDisabled(): boolean
   // setDisabled(disabled: boolean): void
-
-  // ── LABEL — first-class, every-widget ────────────────────────────────────
 
   /**
    * The widget's display label shown to the user. Defaults to the widget name.
@@ -312,8 +303,6 @@ export interface WidgetHandle<T = WidgetValue> {
    * the `label` key on the input options dict).
    */
   readonly label: string
-
-  // ── HEIGHT — reserved layout slot for mount-lifecycle widgets ────────────
 
   /**
    * Updates the reserved height for this widget and triggers a node relayout.
@@ -332,7 +321,7 @@ export interface WidgetHandle<T = WidgetValue> {
    */
   setHeight(px: number): void
 
-  // PHASE_A_EXCLUDED per AXIOMS.md A14 + A16 (D-widget-serialization-simplification, wave-9):
+  // PHASE_A_EXCLUDED per AXIOMS.md A14 + A16:
   // Authors cannot disable serialization at the widget level (A16). If a
   // widget should not contribute to the serialized payload, it should not
   // be a widget (A15) — use a boxed/composed widget (BBOX-style), a
@@ -344,12 +333,10 @@ export interface WidgetHandle<T = WidgetValue> {
   // isSerializeEnabled(): boolean
   // setSerializeEnabled(enabled: boolean): void
 
-  // ── OPTIONS BAG — type-specific overrides ─────────────────────────────────
-
   /**
    * Read-only snapshot of the full options bag for this widget.
    *
-   * **Immutable per D-immutability-enforcement (Hybrid C).** The returned
+   * **Immutable.** The returned
    * object is `Readonly<WidgetOptions>` — `widget.options.min = 0`,
    * `widget.options = {...}`, and `widget.options.values = [...]` all raise
    * TypeScript errors at compile time. To mutate, use
@@ -360,7 +347,7 @@ export interface WidgetHandle<T = WidgetValue> {
    * §A16, `serialize` is no longer a writable option (and no longer a key
    * on this bag) — there is no widget-level serialization disable.
    * `widget.options.values = [...]` (combo refresh) migrates to a future
-   * `setValues` mutator (tracked under W6.P8.UNMIGRATABLE).
+   * `setValues` mutator.
    *
    * @example
    * ```ts
@@ -408,17 +395,15 @@ export interface WidgetHandle<T = WidgetValue> {
    */
   setOption(key: string, value: unknown): void
 
-  // ── SERIALIZE VALUE — read-only accessor; D5 is the write path ───────────
-
   /**
    * The widget's current `serializeValue` function (or `undefined` if none is
    * registered).
    *
-   * **Accessor-only per D-immutability-enforcement (Hybrid C).** The setter
+   * **Accessor-only.** The setter
    * intentionally does not exist on the public type — assignment
    * (`widget.serializeValue = fn`) raises a TypeScript error. The v2
    * migration target is the {@link WidgetHandle.on | `on('beforeSerialize', fn)`}
-   * event (per D5), which is typed, async-capable, and composable across
+   * event, which is typed, async-capable, and composable across
    * multiple extensions on the same widget.
    *
    * @deprecated v1 callers reading `widget.serializeValue` to invoke the
@@ -442,8 +427,6 @@ export interface WidgetHandle<T = WidgetValue> {
    * @stability experimental
    */
   readonly serializeValue: ((...args: unknown[]) => unknown) | undefined
-
-  // ── EVENTS ────────────────────────────────────────────────────────────────
 
   /**
    * Subscribe to the widget's value changes.
@@ -472,7 +455,7 @@ export interface WidgetHandle<T = WidgetValue> {
     handler: Handler<WidgetOptionChangeEvent>
   ): Unsubscribe
 
-  // PHASE_A_EXCLUDED per AXIOMS.md A14 + A16 (D-widget-serialization-simplification, wave-9):
+  // PHASE_A_EXCLUDED per AXIOMS.md A14 + A16:
   // `WidgetPropertyChangeEvent` is vacuous — the only property the event
   // ever surfaced was `'serialize'`, which is gone per A16. `setHidden` /
   // `setDisabled` were already A14-deferred. Restoration requires a new
@@ -520,8 +503,6 @@ export interface WidgetHandle<T = WidgetValue> {
     handler: Handler<WidgetBeforeQueueEvent>
   ): Unsubscribe
 }
-
-// ── MOUNT LIFECYCLE — the sole DOM seam per D-widget-converge / Axiom A12 ──
 
 /**
  * Cleanup function returned from a widget's `mount()`. Fires exactly once,
@@ -612,10 +593,9 @@ export interface WidgetOptions {
   hidden?: boolean
   /** If `true`, the widget is rendered read-only (no user editing). */
   readonly?: boolean
-  // PHASE_A_EXCLUDED per AXIOMS.md A14 + A16 (D-widget-serialization-simplification, wave-9):
+  // PHASE_A_EXCLUDED per AXIOMS.md A14 + A16:
   // `serialize` contradicted A16 even as a read-only key — there is no
-  // widget-level serialization disable. Already write-blocked by
-  // D-immutability-enforcement; now removed from the type entirely.
+  // widget-level serialization disable. Removed from the type entirely.
   //
   // serialize?: boolean
   /** Display label override. Defaults to the widget `name`. */

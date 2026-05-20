@@ -1,6 +1,6 @@
 /**
  * Per-surface shell UI registration entry points
- * (D-shell-ui-entrypoints, W6.P5.C).
+ *.
  *
  * Each `defineX` function in this module is the v2 replacement for one slot
  * of the v1 `app.registerExtension({ commands, keybindings, settings, … })`
@@ -64,10 +64,7 @@ export interface DisposableHandle {
   dispose(): void
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Internal mount-queue infrastructure
-// ─────────────────────────────────────────────────────────────────────────────
-
 /**
  * Registration side effect: registers something into a store and returns a
  * cleanup. May be async (most registrations dynamic-import their store at
@@ -198,10 +195,7 @@ export function _clearShellRegistrationsForTesting(): void {
   _systemStarted = false
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Public defineX entry points
-// ─────────────────────────────────────────────────────────────────────────────
-
 /**
  * Register a sidebar tab. Returns a {@link DisposableHandle} — call
  * `handle.dispose()` to remove the tab.

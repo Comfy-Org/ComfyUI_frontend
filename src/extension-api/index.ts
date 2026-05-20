@@ -59,7 +59,6 @@ export type {
   WidgetExtensionOptions
 } from './types'
 
-// ── Registration function implementations ────────────────────────────────────
 // Runtime implementations live in the service; the types above are the
 // public contract. The barrel re-exports the concrete fns from the service
 // so `import { defineNode } from '@comfyorg/extension-api'` works
@@ -76,7 +75,7 @@ export {
 
 export { onNodeMounted, onNodeRemoved } from './lifecycle'
 
-// D-bootstrap-hooks (W6.P6.C) — context-scoped Vue-idiomatic lifecycle hooks
+// context-scoped Vue-idiomatic lifecycle hooks
 // usable inside `defineExtension.setup` / `defineSidebarTab.setup` /
 // `defineBottomPanelTab.setup` bodies.
 export {
@@ -87,7 +86,7 @@ export {
   onDeactivated
 } from './lifecycle'
 
-// D-bootstrap-hooks (W6.P6.C) — four typed event-namespace handles.
+// four typed event-namespace handles.
 // Payload types default to `unknown` and are tightened via D5 module
 // augmentation in a follow-on PR. Custom-node events ride `server.on(...)`.
 export { graph, execution, server, workbench } from './events'
@@ -135,7 +134,7 @@ export type { Handler, AsyncHandler, Unsubscribe } from './events'
 // ingredients of SidebarTabExtension / BottomPanelExtension and are NOT
 // part of the public surface.
 //
-// Per W6.P5.B (D-shell-ui-entrypoints): ExtensionManager + CommandManager are
+// Note: ExtensionManager + CommandManager are
 // DROPPED from the public surface — the v2 model uses per-surface defineX
 // entries (defineSidebarTab, defineCommand, …) each returning a disposable,
 // not a centralized umbrella handle. Internal callers continue importing
@@ -146,7 +145,7 @@ export type {
   BottomPanelExtension,
   ToastMessageOptions,
   ToastManager,
-  // Net-new W6.P5 arg types
+  // Shell-UI arg types
   CommandDefinition,
   HotkeyExtension,
   AboutBadgeExtension,
@@ -154,7 +153,7 @@ export type {
   ToolbarButtonExtension
 } from './shell'
 
-// D-shell-ui-entrypoints (W6.P5.C) — per-surface defineX entries. Each
+// per-surface defineX entries. Each
 // returns a DisposableHandle; carve-out: toast + notify remain inline
 // imperative (exported below from ./imperatives), NOT as defineX wrappers.
 export {
@@ -168,7 +167,7 @@ export {
 } from './registrations'
 export type { DisposableHandle } from './registrations'
 
-// D-shell-ui-entrypoints (W6.P5.C) — inline imperative carve-out. Fire-and-forget;
+// inline imperative carve-out. Fire-and-forget;
 // no defineX wrapper, no DisposableHandle. Call from any setup() body or
 // hook closure.
 export { toast, notify } from './imperatives'

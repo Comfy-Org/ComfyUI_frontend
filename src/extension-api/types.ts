@@ -107,7 +107,7 @@ export interface ExtensionOptions {
    * Runs once during app initialization (after the app is mounted but before
    * the first workflow is loaded). Equivalent to the v1 `ComfyExtension.init`.
    *
-   * @deprecated Per D-bootstrap-hooks (W6.P6.C, ACCEPTED 2026-05-14): move the
+   * @deprecated move the
    * `init` body into `setup()`. The body of `setup()` runs at the same point
    * `init` used to run (early lifecycle); use `onMounted(() => ...)` inside
    * `setup()` for what `init` did via late-lifecycle assumptions. A codemod
@@ -121,7 +121,7 @@ export interface ExtensionOptions {
    * to the v1 `ComfyExtension.setup`. Safe to call shell UI registration APIs
    * (`ExtensionManager`, `CommandManager`) here.
    *
-   * @deprecated Per D-bootstrap-hooks (W6.P6.C, ACCEPTED 2026-05-14): the
+   * @deprecated the
    * `setup` property name is retained, but the v1 semantic "fires after all
    * core extensions ready" now lives in `onMounted(() => ...)` *inside* the
    * `setup()` body. The `setup()` body itself now runs at the earlier

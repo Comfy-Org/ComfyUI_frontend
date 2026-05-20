@@ -110,9 +110,9 @@ export declare function defineExtension(
  * @publicAPI
  * @example
  * ```ts
- * import { defineWidgetExtension } from '@comfyorg/extension-api'
+ * import { defineWidget } from '@comfyorg/extension-api'
  *
- * export default defineWidgetExtension({
+ * export default defineWidget({
  *   name: 'my-org.color-picker',
  *   type: 'COLOR_PICKER'
  * })
@@ -165,7 +165,7 @@ export declare function defineWidget(
  */
 
 /**
- * ## Context-Scoped Bootstrap Hooks (D-bootstrap-hooks, W6.P6.C)
+ * ## Context-Scoped Bootstrap Hooks
  *
  * In addition to the node-level `onNodeMounted` / `onNodeRemoved` hooks above,
  * the v2 API exposes Vue-idiomatic context-scoped hooks for
