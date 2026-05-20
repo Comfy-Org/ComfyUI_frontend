@@ -282,10 +282,12 @@ export class ComfyPage {
 
   async setup({
     clearStorage = true,
-    mockReleases = true
+    mockReleases = true,
+    url
   }: {
     clearStorage?: boolean
     mockReleases?: boolean
+    url?: string
   } = {}) {
     // Mock release endpoint to prevent changelog popups (before navigation)
     if (mockReleases) {
@@ -317,7 +319,7 @@ export class ComfyPage {
       }, this.id)
     }
 
-    await this.goto()
+    await this.goto({ url })
 
     await this.page.waitForFunction(() => document.fonts.ready)
     await this.waitForAppReady()
@@ -344,8 +346,8 @@ export class ComfyPage {
     return assetPath(fileName)
   }
 
-  async goto() {
-    await this.page.goto(this.url)
+  async goto({ url }: { url?: string } = {}) {
+    await this.page.goto(url ? new URL(url, this.url).toString() : this.url)
   }
 
   async nextFrame() {
