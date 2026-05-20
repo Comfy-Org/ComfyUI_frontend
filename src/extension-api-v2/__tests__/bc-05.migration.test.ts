@@ -1,10 +1,38 @@
 // Category: BC.05 — Custom DOM widgets and node sizing
 // DB cross-ref: S4.W2, S2.N11
 // Exemplar: https://github.com/Lightricks/ComfyUI-LTXVideo/blob/main/web/js/sparse_track_editor.js#L218
-// compat-floor: blast_radius 5.45 ≥ 2.0 — MUST pass before v2 ships
-// Migration: v1 node.addDOMWidget + node.computeSize → v2 NodeHandle.addDOMWidget + WidgetHandle.setHeight
+//
+// AXIOM-EXCLUDED (wave-10, D-ban-runtime-addwidget, AXIOMS.md A15):
+//   This file asserts v1↔v2 parity for runtime DOM widget addition.
+//   v2 NodeHandle.addDOMWidget is removed per A15 — runtime widget addition
+//   is forbidden in the new API. All tests are wrapped with
+//   `axiomExcluded({...})` (vitest test.fails) and continue to run as
+//   regression alarms.
+//
+//   Migration: v1 `node.addDOMWidget(...)` extensions migrate to one of —
+//   - Declare in Python INPUT_TYPES (preferred)
+//   - Boxed widget (BBOX-style)
+//   - Non-widget UI primitive via defineNode/defineExtension setup()
+//
+//   The "compat-floor blast_radius ≥ 2.0 MUST pass before v2 ships"
+//   doctrine is retired (AXIOMS.md §Axiom-Excluded Test Annotation Policy).
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { axiomExcluded } from './helpers/axiomExcluded'
+
+const excluded = axiomExcluded({
+  axiom: 'A15',
+  adr: 'decisions/D-ban-runtime-addwidget.md',
+  rationale:
+    'v2 NodeHandle does not expose addDOMWidget; the v1↔v2 parity scenario this file tests is no longer valid.',
+  migration: [
+    'Declare in Python INPUT_TYPES',
+    'Boxed widget (e.g. BBOX [x,y,w,h])',
+    'Non-widget UI primitive via defineNode/defineExtension setup()'
+  ],
+  restoration: 'D-ban-runtime-addwidget §Restoration criteria'
+})
 
 // ── Mock world (same pattern as bc-01.migration.test.ts) ──────────────────────
 
@@ -144,7 +172,7 @@ describe('BC.05 migration — custom DOM widgets and node sizing', () => {
   })
 
   describe('widget registration parity (S4.W2)', () => {
-    it('v1 addDOMWidget and v2 addDOMWidget both register a widget with the given name', () => {
+    excluded('v1 addDOMWidget and v2 addDOMWidget both register a widget with the given name', () => {
       const el = makeDiv()
 
       // v1 pattern
@@ -168,7 +196,7 @@ describe('BC.05 migration — custom DOM widgets and node sizing', () => {
       expect(registeredNames).toEqual(v1Names)
     })
 
-    it('v1 opts.getHeight() value matches the v2 height option stored in the dispatch command', () => {
+    excluded('v1 opts.getHeight() value matches the v2 height option stored in the dispatch command', () => {
       const el = makeDiv(0) // offsetHeight irrelevant
       const reportedHeight = 200
 
@@ -201,7 +229,7 @@ describe('BC.05 migration — custom DOM widgets and node sizing', () => {
       expect(createCmd?.options.__domHeight).toBe(v1Height)
     })
 
-    it('v2 registers the same number of DOM widgets as v1 for a multi-widget node', () => {
+    excluded('v2 registers the same number of DOM widgets as v1 for a multi-widget node', () => {
       // v1 pattern: two addDOMWidget calls
       const v1Node = createV1Node(3)
       v1Node.addDOMWidget('widgetA', 'custom', makeDiv(50))
@@ -229,7 +257,7 @@ describe('BC.05 migration — custom DOM widgets and node sizing', () => {
   })
 
   describe('computeSize elimination (S2.N11)', () => {
-    it('v2 setHeight produces a SetWidgetOption command; v1 requires a computeSize override for the same effect', () => {
+    excluded('v2 setHeight produces a SetWidgetOption command; v1 requires a computeSize override for the same effect', () => {
       const el = makeDiv(100)
       const newHeight = 400
 
@@ -264,7 +292,7 @@ describe('BC.05 migration — custom DOM widgets and node sizing', () => {
   })
 
   describe('cleanup parity', () => {
-    it('v1 requires manual removal in onRemoved; v2 auto-removes the element via scope disposal', () => {
+    excluded('v1 requires manual removal in onRemoved; v2 auto-removes the element via scope disposal', () => {
       const el = makeDiv()
       document.body.appendChild(el)
 
@@ -297,7 +325,7 @@ describe('BC.05 migration — custom DOM widgets and node sizing', () => {
       expect(document.body.contains(el)).toBe(false)
     })
 
-    it('v2 auto-cleanup only removes the element registered via addDOMWidget, not unrelated elements', () => {
+    excluded('v2 auto-cleanup only removes the element registered via addDOMWidget, not unrelated elements', () => {
       const registeredEl = makeDiv()
       const unrelatedEl = makeDiv()
       document.body.appendChild(registeredEl)

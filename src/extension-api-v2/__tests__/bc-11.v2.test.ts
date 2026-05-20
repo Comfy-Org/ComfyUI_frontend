@@ -1,11 +1,35 @@
 // Category: BC.11 — Widget imperative state writes
 // DB cross-ref: S4.W4, S4.W5, S2.N16
 // Exemplar: https://github.com/r-vage/ComfyUI_Eclipse/blob/main/js/eclipse-set-get.js#L9
-// blast_radius: 5.81 — compat-floor: blast_radius ≥ 2.0 — MUST pass before v2 ships
-// v2 replacement: WidgetHandle.setValue(v), WidgetHandle.setOption(key,v), NodeHandle.addWidget(opts)
+//
+// PARTIALLY AXIOM-EXCLUDED (wave-10, D-ban-runtime-addwidget, AXIOMS.md A15):
+//   - WidgetHandle.setValue / setHidden / setDisabled / setOption tests
+//     remain unchanged — these surfaces are valid in v2.
+//   - The "NodeHandle.addWidget" describe block is wrapped via
+//     `axiomExcluded({...})` (vitest test.fails) because v2 NodeHandle
+//     no longer exposes `addWidget`. The tests continue to run as
+//     regression alarms.
+//
+//   The "compat-floor blast_radius ≥ 2.0 MUST pass before v2 ships"
+//   doctrine is retired (AXIOMS.md §Axiom-Excluded Test Annotation Policy).
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WidgetHandle } from '@/extension-api/widget'
+
+import { axiomExcluded } from './helpers/axiomExcluded'
+
+const excluded = axiomExcluded({
+  axiom: 'A15',
+  adr: 'decisions/D-ban-runtime-addwidget.md',
+  rationale:
+    'v2 NodeHandle does not expose addWidget; runtime widget addition is forbidden per A15.',
+  migration: [
+    'Declare in Python INPUT_TYPES',
+    'Boxed widget (e.g. BBOX [x,y,w,h])',
+    'Non-widget UI primitive via defineNode/defineExtension setup()'
+  ],
+  restoration: 'D-ban-runtime-addwidget §Restoration criteria'
+})
 
 // ── Mock world (same pattern as bc-01.v2.test.ts) ────────────────────────────
 
@@ -251,7 +275,7 @@ describe('BC.11 v2 contract — widget imperative state writes', () => {
   })
 
   describe('NodeHandle.addWidget — managed widget list mutation (S2.N16)', () => {
-    it('addWidget dispatches a CreateWidget command and returns a handle with the given name', () => {
+    excluded('addWidget dispatches a CreateWidget command and returns a handle with the given name', () => {
       let handleName: string | undefined
 
       defineNode({
@@ -273,7 +297,7 @@ describe('BC.11 v2 contract — widget imperative state writes', () => {
       expect(handleName).toBe('steps')
     })
 
-    it('addWidget for each of two distinct widgets produces two independent CreateWidget commands', () => {
+    excluded('addWidget for each of two distinct widgets produces two independent CreateWidget commands', () => {
       defineNode({
         name: 'bc11.v2.add-two-widgets',
         nodeCreated(handle) {
@@ -295,7 +319,7 @@ describe('BC.11 v2 contract — widget imperative state writes', () => {
       expect(createCmds).toHaveLength(2)
     })
 
-    it('addWidget carries the defaultValue in the CreateWidget command', () => {
+    excluded('addWidget carries the defaultValue in the CreateWidget command', () => {
       defineNode({
         name: 'bc11.v2.add-widget-default',
         nodeCreated(handle) {
