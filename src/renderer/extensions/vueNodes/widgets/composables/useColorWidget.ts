@@ -10,10 +10,6 @@ export const useColorWidget = (): ComfyWidgetConstructorV2 => {
   return (node: LGraphNode, inputSpec: InputSpecV2): IColorWidget => {
     const colorSpec = inputSpec as ColorInputSpec
     const { name, options } = colorSpec
-    // The V1→V2 migration spreads input options at the top level of the spec,
-    // so a backend-declared `default` lands on `colorSpec.default`. The V2
-    // schema also allows a nested `options.default`, so read both locations
-    // to remain compatible with hand-authored V2 specs.
     const defaultValue = colorSpec.default ?? options?.default ?? '#000000'
 
     const widget = node.addWidget('color', name, defaultValue, () => {}, {
