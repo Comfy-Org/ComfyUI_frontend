@@ -1175,12 +1175,12 @@ describe('SubgraphWidgetPromotion', () => {
           expected: [named12, named14]
         },
         {
-          name: 'omits previewExposures when the store has no entries for the host',
+          name: 'writes empty previewExposures when the store has no entries for the host',
           addExposures: [],
           staleProperty: [
             { name: 'stale', sourceNodeId: '0', sourcePreviewName: CANVAS }
           ],
-          expected: undefined,
+          expected: [],
           expectLiveUnchanged: true
         }
       ]

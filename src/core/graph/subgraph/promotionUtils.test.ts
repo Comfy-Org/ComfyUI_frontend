@@ -28,6 +28,7 @@ vi.mock('@/services/litegraphService', () => ({
 
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
+  autoExposeKnownPreviewNodes,
   demoteWidget,
   getPromotableWidgets,
   hasUnpromotedWidgets,
@@ -338,6 +339,74 @@ describe('promoteRecommendedWidgets', () => {
       sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
     })
     expect(updatePreviewsMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('autoExposeKnownPreviewNodes', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    updatePreviewsMock.mockReset()
+  })
+
+  it('auto-exposes previews when host has no persisted previewExposures property', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const glslNode = new LGraphNode('GLSLShader')
+    glslNode.type = 'GLSLShader'
+    subgraph.add(glslNode)
+
+    autoExposeKnownPreviewNodes(subgraphNode)
+
+    expect(
+      usePreviewExposureStore().getExposures(
+        subgraphNode.rootGraph.id,
+        String(subgraphNode.id)
+      )
+    ).toHaveLength(1)
+  })
+
+  it('does not auto-expose when host has empty persisted previewExposures (user cleared)', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    subgraphNode.properties.previewExposures = []
+    const glslNode = new LGraphNode('GLSLShader')
+    glslNode.type = 'GLSLShader'
+    subgraph.add(glslNode)
+
+    autoExposeKnownPreviewNodes(subgraphNode)
+
+    expect(
+      usePreviewExposureStore().getExposures(
+        subgraphNode.rootGraph.id,
+        String(subgraphNode.id)
+      )
+    ).toEqual([])
+  })
+
+  it('does not auto-expose when host has non-empty persisted previewExposures', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const glslNode = new LGraphNode('GLSLShader')
+    glslNode.type = 'GLSLShader'
+    subgraph.add(glslNode)
+    const otherNode = new LGraphNode('OtherShader')
+    otherNode.type = 'GLSLShader'
+    subgraph.add(otherNode)
+    subgraphNode.properties.previewExposures = [
+      {
+        name: CANVAS_IMAGE_PREVIEW_WIDGET,
+        sourceNodeId: String(otherNode.id),
+        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
+      }
+    ]
+
+    autoExposeKnownPreviewNodes(subgraphNode)
+
+    expect(
+      usePreviewExposureStore()
+        .getExposures(subgraphNode.rootGraph.id, String(subgraphNode.id))
+        .map((e) => e.sourceNodeId)
+    ).not.toContain(String(glslNode.id))
   })
 })
 

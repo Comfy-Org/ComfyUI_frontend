@@ -1031,13 +1031,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       rootGraphId,
       hostLocator
     )
-    if (previewExposures.length > 0) {
-      serializedProperties.previewExposures = previewExposures.map((entry) => ({
-        ...entry
-      }))
-    } else {
-      delete serializedProperties.previewExposures
-    }
+    serializedProperties.previewExposures = previewExposures.map((entry) => ({
+      ...entry
+    }))
 
     const quarantine = parseProxyWidgetErrorQuarantine(
       this.properties.proxyWidgetErrorQuarantine

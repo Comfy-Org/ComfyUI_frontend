@@ -470,6 +470,7 @@ function nodeWidgets(n: LGraphNode): WidgetItem[] {
 }
 
 export function autoExposeKnownPreviewNodes(subgraphNode: SubgraphNode): void {
+  if (subgraphNode.properties.previewExposures !== undefined) return
   const { updatePreviews } = useLitegraphService()
   const interiorNodes = subgraphNode.subgraph.nodes
   for (const node of interiorNodes) {
