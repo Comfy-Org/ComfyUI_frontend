@@ -1745,6 +1745,10 @@
     "outdatedVersionGeneric": "این workflow با نسخه جدیدتری از ComfyUI ایجاد شده است. برخی nodeها ممکن است به درستی کار نکنند.",
     "unknownVersion": "نامشخص"
   },
+  "logsTerminal": {
+    "loadError": "امکان بارگذاری لاگ‌ها وجود ندارد، لطفاً اطمینان حاصل کنید که ComfyUI backend خود را به‌روزرسانی کرده‌اید.",
+    "resyncError": "امکان همگام‌سازی مجدد لاگ‌ها پس از اتصال مجدد backend وجود ندارد. برای تلاش مجدد، کنسول را دوباره باز کنید."
+  },
   "maintenance": {
     "None": "هیچ‌کدام",
     "OK": "مناسب",
@@ -2291,7 +2295,6 @@
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
     "advanced": "پیشرفته",
-    "animation": "انیمیشن",
     "api node": "گره API",
     "attention_experiments": "آزمایش‌های توجه",
     "audio": "صدا",
@@ -2314,6 +2317,7 @@
     "detection": "شناسایی",
     "edit_models": "ویرایش مدل‌ها",
     "experimental": "آزمایشی",
+    "filters": "فیلترها",
     "flux": "flux",
     "geometry_estimation": "برآورد هندسه",
     "gligen": "gligen",
@@ -2337,13 +2341,11 @@
     "noise": "نویز",
     "operations": "عملیات",
     "photomaker": "photomaker",
-    "postprocessing": "پس‌پردازش",
     "preprocessors": "پیش‌پردازنده‌ها",
     "primitive": "ابتدایی",
     "qwen": "qwen",
     "samplers": "نمونه‌گیرها",
     "sampling": "نمونه‌گیری",
-    "save": "ذخیره",
     "schedulers": "زمان‌بندی‌ها",
     "scheduling": "زمان‌بندی",
     "sd3": "sd3",

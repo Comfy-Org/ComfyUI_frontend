@@ -13989,6 +13989,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "배경 제거 모델을 사용하여 이미지에서 배경을 제거하기 위한 전경 마스크를 생성합니다.",
     "display_name": "배경 제거",
     "inputs": {
       "bg_removal_model": {

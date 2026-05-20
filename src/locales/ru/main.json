@@ -1745,6 +1745,10 @@
     "outdatedVersionGeneric": "Этот рабочий процесс был создан в более новой версии ComfyUI. Некоторые узлы могут работать некорректно.",
     "unknownVersion": "неизвестно"
   },
+  "logsTerminal": {
+    "loadError": "Не удалось загрузить логи, пожалуйста, убедитесь, что вы обновили ваш ComfyUI backend.",
+    "resyncError": "Не удалось повторно синхронизировать логи после переподключения backend. Откройте консоль заново, чтобы повторить попытку."
+  },
   "maintenance": {
     "None": "Нет",
     "OK": "OK",
@@ -2291,7 +2295,6 @@
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
     "advanced": "расширенный",
-    "animation": "анимация",
     "api node": "api-узел",
     "attention_experiments": "эксперименты_внимания",
     "audio": "аудио",
@@ -2314,6 +2317,7 @@
     "detection": "детекция",
     "edit_models": "редактировать_модели",
     "experimental": "экспериментальное",
+    "filters": "фильтры",
     "flux": "flux",
     "geometry_estimation": "оценка_геометрии",
     "gligen": "gligen",
@@ -2337,13 +2341,11 @@
     "noise": "шум",
     "operations": "операции",
     "photomaker": "photomaker",
-    "postprocessing": "постобработка",
     "preprocessors": "предобработчики",
     "primitive": "примитив",
     "qwen": "qwen",
     "samplers": "семплеры",
     "sampling": "выборка",
-    "save": "сохранить",
     "schedulers": "schedulers",
     "scheduling": "scheduling",
     "sd3": "sd3",

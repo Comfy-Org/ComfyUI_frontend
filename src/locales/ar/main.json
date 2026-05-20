@@ -1745,6 +1745,10 @@
     "outdatedVersionGeneric": "تم إنشاء سير العمل هذا باستخدام إصدار أحدث من ComfyUI. قد لا تعمل بعض العقد بشكل صحيح.",
     "unknownVersion": "غير معروف"
   },
+  "logsTerminal": {
+    "loadError": "تعذر تحميل السجلات، يرجى التأكد من أنك قمت بتحديث الواجهة الخلفية لـ ComfyUI.",
+    "resyncError": "تعذر إعادة مزامنة السجلات بعد إعادة اتصال الواجهة الخلفية. أعد فتح وحدة التحكم للمحاولة مرة أخرى."
+  },
   "maintenance": {
     "None": "لا شيء",
     "OK": "حسنًا",
@@ -2291,7 +2295,6 @@
     "Wan": "وان",
     "WaveSpeed": "WaveSpeed",
     "advanced": "متقدم",
-    "animation": "الرسوم المتحركة",
     "api node": "عقدة API",
     "attention_experiments": "تجارب الانتباه",
     "audio": "صوت",
@@ -2314,6 +2317,7 @@
     "detection": "الكشف",
     "edit_models": "تحرير النماذج",
     "experimental": "تجريبي",
+    "filters": "مرشحات",
     "flux": "تدفق",
     "geometry_estimation": "تقدير الهندسة",
     "gligen": "gligen",
@@ -2337,13 +2341,11 @@
     "noise": "ضجيج",
     "operations": "العمليات",
     "photomaker": "صانع الصور",
-    "postprocessing": "المعالجة اللاحقة",
     "preprocessors": "المعالجون المسبقون",
     "primitive": "بدائي",
     "qwen": "تشي وين",
     "samplers": "أجهزة التجميع",
     "sampling": "التجميع",
-    "save": "حفظ",
     "schedulers": "الجدولة",
     "scheduling": "الجدولة",
     "sd3": "sd3",

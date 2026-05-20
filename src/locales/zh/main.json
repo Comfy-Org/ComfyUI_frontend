@@ -1745,6 +1745,10 @@
     "outdatedVersionGeneric": "这个工作流由新版 ComfyUI 创建，部分节点可能无法正常运行。",
     "unknownVersion": "未知"
   },
+  "logsTerminal": {
+    "loadError": "无法加载日志，请确保已更新您的ComfyUI后端。",
+    "resyncError": "后端重新连接后无法重新同步日志。请重新打开控制台以重试。"
+  },
   "maintenance": {
     "None": "无",
     "OK": "确定",
@@ -2291,7 +2295,6 @@
     "Wan": "Wan万相",
     "WaveSpeed": "WaveSpeed",
     "advanced": "高级",
-    "animation": "动画",
     "api node": "api 节点",
     "attention_experiments": "注意力实验",
     "audio": "音频",
@@ -2314,6 +2317,7 @@
     "detection": "检测",
     "edit_models": "编辑模型",
     "experimental": "实验性",
+    "filters": "滤镜",
     "flux": "Flux",
     "geometry_estimation": "几何估计",
     "gligen": "GLIGEN",
@@ -2337,13 +2341,11 @@
     "noise": "噪波",
     "operations": "操作",
     "photomaker": "PhotoMaker",
-    "postprocessing": "后处理",
     "preprocessors": "预处理器",
     "primitive": "基础",
     "qwen": "Qwen千问",
     "samplers": "采样器",
     "sampling": "采样",
-    "save": "保存",
     "schedulers": "调度器",
     "scheduling": "调度",
     "sd3": "SD3",
