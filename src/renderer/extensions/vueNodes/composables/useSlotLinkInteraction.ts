@@ -12,6 +12,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import {
   clearCanvasPointerHistory,
@@ -33,6 +34,7 @@ import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/compos
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { app } from '@/scripts/app'
 import { createRafBatch } from '@/utils/rafBatch'
+import { isSubgraph } from '@/utils/typeGuardUtil'
 
 interface SlotInteractionOptions {
   nodeId: string
@@ -103,9 +105,10 @@ function createPointerSession(): PointerSession {
 export function resolvePointerTarget(
   clientX: number,
   clientY: number,
-  fallback: EventTarget | null
+  fallback: EventTarget | null,
+  ownerDoc: Document = document
 ): EventTarget | null {
-  return document.elementFromPoint(clientX, clientY) ?? fallback
+  return ownerDoc.elementFromPoint(clientX, clientY) ?? fallback
 }
 
 export function useSlotLinkInteraction({
@@ -285,6 +288,12 @@ export function useSlotLinkInteraction({
   }
 
   const cleanupInteraction = () => {
+    // Clear synthetic hover state on subgraph IO nodes
+    const graph = app.canvas?.graph
+    if (isSubgraph(graph)) {
+      graph.inputNode?.onPointerLeave()
+      graph.outputNode?.onPointerLeave()
+    }
     autoPan?.stop()
     autoPan = null
     if (state.pointerId != null) {
@@ -390,14 +399,44 @@ export function useSlotLinkInteraction({
       dragContext.lastCandidateKey = newCandidateKey
     }
 
+    let subgraphIOSnapPos: [number, number] | null = null
+    let subgraphIOHoverChanged = false
+
+    const graph = app.canvas?.graph
+    if (isSubgraph(graph)) {
+      const pointerEvent = { canvasX, canvasY } as CanvasPointerEvent
+
+      for (const node of [graph.inputNode, graph.outputNode]) {
+        if (!node) continue
+
+        const wasPointerOver = node.isPointerOver
+        node.onPointerMove(pointerEvent)
+
+        if (wasPointerOver !== node.isPointerOver) {
+          subgraphIOHoverChanged = true
+        }
+
+        if (node.isPointerOver && newCandidate?.compatible) {
+          const slot = node.getSlotInPosition(canvasX, canvasY)
+          if (slot && slot.isPointerOver) {
+            subgraphIOSnapPos = slot.pos
+          }
+        }
+      }
+    }
+
     let snapPosChanged = false
     if (activeAdapter) {
-      const snapX = newCandidate
-        ? newCandidate.layout.position.x
-        : state.pointer.canvas.x
-      const snapY = newCandidate
-        ? newCandidate.layout.position.y
-        : state.pointer.canvas.y
+      const snapX = subgraphIOSnapPos
+        ? subgraphIOSnapPos[0]
+        : newCandidate
+          ? newCandidate.layout.position.x
+          : state.pointer.canvas.x
+      const snapY = subgraphIOSnapPos
+        ? subgraphIOSnapPos[1]
+        : newCandidate
+          ? newCandidate.layout.position.y
+          : state.pointer.canvas.y
       const currentSnap = activeAdapter.linkConnector.state.snapLinksPos
       snapPosChanged =
         !currentSnap || currentSnap[0] !== snapX || currentSnap[1] !== snapY
@@ -406,7 +445,8 @@ export function useSlotLinkInteraction({
       }
     }
 
-    const shouldRedraw = candidateChanged || snapPosChanged
+    const shouldRedraw =
+      candidateChanged || snapPosChanged || subgraphIOHoverChanged
     if (shouldRedraw) app.canvas?.setDirty(true, true)
   }
   const raf = createRafBatch(processPointerMoveFrame)
@@ -514,8 +554,6 @@ export function useSlotLinkInteraction({
     if (!pointerSession.matches(event)) return
     const canvasEvent = toCanvasPointerEvent(event)
     canvasEvent.preventDefault()
-
-    raf.flush()
 
     raf.flush()
 
