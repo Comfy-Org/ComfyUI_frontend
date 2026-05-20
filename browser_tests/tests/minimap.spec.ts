@@ -476,6 +476,42 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
       })
       .toBe(true)
   })
+
+  test('Closing minimap after subgraph navigation keeps Vue render in sync', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+    await comfyPage.vueNodes.waitForNodes()
+
+    const subgraphNodeId = await comfyPage.subgraph.findSubgraphNodeId()
+
+    // Round-trip layers Vue's onNodeAdded wrapper on top of the minimap's.
+    await comfyPage.vueNodes.enterSubgraph(subgraphNodeId)
+    await comfyPage.subgraph.exitViaBreadcrumb()
+
+    // Minimap unmount must not clobber the Vue wrapper layered above it.
+    await comfyPage.page.getByTestId(TestIds.canvas.closeMinimapButton).click()
+
+    await comfyPage.page.evaluate((id) => {
+      const graph = window.app!.graph!
+      const subgraphNode = graph.getNodeById(id)
+      if (!subgraphNode?.isSubgraphNode()) {
+        throw new Error('expected subgraph node at root')
+      }
+      graph.unpackSubgraph(subgraphNode)
+    }, subgraphNodeId)
+
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => window.app!.graph!.nodes.length)
+      )
+      .toBe(2)
+    await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(2)
+    await expect(comfyPage.vueNodes.getNodeLocator(subgraphNodeId)).toHaveCount(
+      0
+    )
+  })
 })
 
 test.describe('Minimap mobile', { tag: ['@mobile', '@canvas'] }, () => {

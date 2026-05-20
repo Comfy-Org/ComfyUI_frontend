@@ -38,8 +38,13 @@ export function useMinimapGraph(
   // Track LayoutStore version for change detection
   const layoutStoreVersion = layoutStore.getVersion()
 
-  // Map to store original callbacks per graph ID
-  const originalCallbacksMap = new Map<string, GraphCallbacks>()
+  // Cleanup restores originals only when our wrapper is still on top, and
+  // marks any buried wrapper inert via `isLive()` so it can't fire dead work.
+  interface InstalledHooks {
+    originals: GraphCallbacks
+    wrappers: GraphCallbacks
+  }
+  const hooksMap = new Map<string, InstalledHooks>()
 
   const handleGraphChangedThrottled = useThrottleFn(() => {
     onGraphChanged()
@@ -47,40 +52,44 @@ export function useMinimapGraph(
 
   const setupEventListeners = () => {
     const g = graph.value
-    if (!g) return
+    if (!g || hooksMap.has(g.id)) return
 
-    // Check if we've already wrapped this graph's callbacks
-    if (originalCallbacksMap.has(g.id)) {
-      return
-    }
-
-    // Store the original callbacks for this graph
-    const originalCallbacks: GraphCallbacks = {
+    const originals: GraphCallbacks = {
       onNodeAdded: g.onNodeAdded,
       onNodeRemoved: g.onNodeRemoved,
       onConnectionChange: g.onConnectionChange,
       onTrigger: g.onTrigger
     }
-    originalCallbacksMap.set(g.id, originalCallbacks)
+    const wrappers: GraphCallbacks = {}
+    const entry: InstalledHooks = { originals, wrappers }
+    hooksMap.set(g.id, entry)
+    const isLive = () => hooksMap.get(g.id) === entry
 
-    g.onNodeAdded = function (node: LGraphNode) {
-      originalCallbacks.onNodeAdded?.call(this, node)
+    wrappers.onNodeAdded = function (node: LGraphNode) {
+      originals.onNodeAdded?.call(this, node)
+      if (!isLive()) return
       void handleGraphChangedThrottled()
     }
+    g.onNodeAdded = wrappers.onNodeAdded
 
-    g.onNodeRemoved = function (node: LGraphNode) {
-      originalCallbacks.onNodeRemoved?.call(this, node)
+    wrappers.onNodeRemoved = function (node: LGraphNode) {
+      originals.onNodeRemoved?.call(this, node)
+      if (!isLive()) return
       nodeStatesCache.delete(node.id)
       void handleGraphChangedThrottled()
     }
+    g.onNodeRemoved = wrappers.onNodeRemoved
 
-    g.onConnectionChange = function (node: LGraphNode) {
-      originalCallbacks.onConnectionChange?.call(this, node)
+    wrappers.onConnectionChange = function (node: LGraphNode) {
+      originals.onConnectionChange?.call(this, node)
+      if (!isLive()) return
       void handleGraphChangedThrottled()
     }
+    g.onConnectionChange = wrappers.onConnectionChange
 
-    g.onTrigger = function (event: LGraphTriggerEvent) {
-      originalCallbacks.onTrigger?.call(this, event)
+    wrappers.onTrigger = function (event: LGraphTriggerEvent) {
+      originals.onTrigger?.call(this, event)
+      if (!isLive()) return
 
       // Listen for visual property changes that affect minimap rendering
       if (
@@ -94,24 +103,25 @@ export function useMinimapGraph(
         void handleGraphChangedThrottled()
       }
     }
+    g.onTrigger = wrappers.onTrigger
   }
 
   const cleanupEventListeners = (oldGraph?: LGraph) => {
     const g = oldGraph || graph.value
     if (!g) return
+    const entry = hooksMap.get(g.id)
+    if (!entry) return
+    const { originals, wrappers } = entry
 
-    const originalCallbacks = originalCallbacksMap.get(g.id)
-    if (!originalCallbacks) {
-      // Graph was never set up (e.g., minimap destroyed before init) - nothing to clean up
-      return
-    }
+    if (g.onNodeAdded === wrappers.onNodeAdded)
+      g.onNodeAdded = originals.onNodeAdded
+    if (g.onNodeRemoved === wrappers.onNodeRemoved)
+      g.onNodeRemoved = originals.onNodeRemoved
+    if (g.onConnectionChange === wrappers.onConnectionChange)
+      g.onConnectionChange = originals.onConnectionChange
+    if (g.onTrigger === wrappers.onTrigger) g.onTrigger = originals.onTrigger
 
-    g.onNodeAdded = originalCallbacks.onNodeAdded
-    g.onNodeRemoved = originalCallbacks.onNodeRemoved
-    g.onConnectionChange = originalCallbacks.onConnectionChange
-    g.onTrigger = originalCallbacks.onTrigger
-
-    originalCallbacksMap.delete(g.id)
+    hooksMap.delete(g.id)
   }
 
   const checkForChangesInternal = () => {
