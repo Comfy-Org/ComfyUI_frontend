@@ -204,3 +204,13 @@ export function getAssetCardTitle(asset: AssetItem): string {
   if (curatedName && curatedName !== asset.name) return curatedName
   return getAssetDisplayFilename(asset)
 }
+
+/**
+ * Returns the filename component the cloud `/api/view` endpoint resolves
+ * for this asset — `asset_hash` when present (cloud assets are hash-keyed
+ * in storage), otherwise `asset.name`. Use this when constructing widget
+ * values or media URLs that must round-trip through the view endpoint.
+ */
+export function getAssetUrlFilename(asset: AssetItem): string {
+  return asset.asset_hash || asset.name
+}
