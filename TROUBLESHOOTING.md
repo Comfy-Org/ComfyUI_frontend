@@ -7,7 +7,7 @@ This guide helps you resolve common issues when developing ComfyUI Frontend.
 ```mermaid
 flowchart TD
     A[Having Issues?] --> B{What's the problem?}
-    B -->|Dev server stuck| C[nx serve hangs]
+    B -->|Dev server stuck| C[pnpm dev hangs]
     B -->|Build errors| D[Check build issues]
     B -->|Lint errors| Q[Check linting issues]
     B -->|Dependency issues| E[Package problems]
@@ -21,7 +21,7 @@ flowchart TD
 
     C --> G{Tried quick fixes?}
     G -->|No| H[Run: pnpm i]
-    G -->|Still stuck| I[Run: pnpm clean]
+    G -->|Still stuck| I[Run: pnpm dlx rimraf dist dist-ssr coverage playwright-report blob-report test-results node_modules/.vite apps/desktop-ui/dist apps/website/dist .turbo]
     I --> J{Still stuck?}
     J -->|Yes| K[Nuclear option:<br/>pnpm dlx rimraf node_modules<br/>&& pnpm i]
     J -->|No| L[Fixed!]
@@ -41,11 +41,11 @@ flowchart TD
 
 ### Development Server Issues
 
-#### Q: `pnpm dev` or `nx serve` gets stuck and won't start
+#### Q: `pnpm dev` gets stuck and won't start
 
 **Symptoms:**
 
-- Command hangs on "nx serve"
+- Command hangs during Vite startup
 - Dev server doesn't respond
 - Terminal appears frozen
 
@@ -60,7 +60,7 @@ flowchart TD
 2. **Second attempt - Clean build cache:**
 
    ```bash
-   pnpm clean
+   pnpm dlx rimraf dist dist-ssr coverage playwright-report blob-report test-results node_modules/.vite apps/desktop-ui/dist apps/website/dist .turbo
    ```
 
 3. **Last resort - Full node_modules reset:**
@@ -73,7 +73,7 @@ flowchart TD
 - Corrupted dependency cache
 - Outdated lock files after branch switching
 - Incomplete previous installations
-- NX cache corruption
+- stale local build cache
 
 ---
 
@@ -127,7 +127,7 @@ flowchart TD
 2. **Clean and reinstall:**
 
    ```bash
-   pnpm clean && pnpm i
+   pnpm dlx rimraf dist dist-ssr coverage playwright-report blob-report test-results node_modules/.vite apps/desktop-ui/dist apps/website/dist .turbo && pnpm i
    ```
 
 3. **Restart your IDE's TypeScript server**
