@@ -231,17 +231,20 @@ export interface WidgetBeforeQueueEvent {
  * @typeParam T - The type of `getValue()` / `setValue()`. Defaults to `WidgetValue`.
  * @example
  * ```ts
- * import { defineNode } from '@comfyorg/extension-api'
+ * import { defineWidget } from '@comfyorg/extension-api'
  *
- * export default defineNode({
+ * // Per AXIOMS.md A1 (D-no-node-widget-access, 2026-05-19), nodes cannot
+ * // enumerate or reference widgets — `node.getWidget(name)` was removed.
+ * // To react to a specific widget's lifecycle and value changes, register
+ * // a widget type and use the `mount` context's `ctx.widget` handle:
+ *
+ * export default defineWidget({
  *   name: 'my-extension',
- *   nodeCreated(node) {
- *     const steps = node.getWidget('steps')
- *     if (!steps) return
- *
- *     steps.on('valueChange', (e) => console.log('steps =', e.newValue))
- *     steps.setOption('min', 1)
- *     steps.setOption('max', 150)
+ *   type: 'INT',
+ *   mount(_host, { widget }) {
+ *     widget.on('valueChange', (e) => console.log(widget.name, '=', e.newValue))
+ *     widget.setOption('min', 1)
+ *     widget.setOption('max', 150)
  *   }
  * })
  * ```
@@ -292,7 +295,10 @@ export interface WidgetHandle<T = WidgetValue> {
    * @typeParam T - Narrows the return type when you know the widget type.
    * @example
    * ```ts
-   * const steps = node.getWidget('steps')!.getValue<number>()
+   * // Inside `defineWidget({mount})` — `ctx.widget` is the only legal
+   * // path to a `WidgetHandle` (D-no-node-widget-access removed
+   * // `node.getWidget(name)`).
+   * const value = widget.getValue<number>()
    * ```
    */
   getValue(): T

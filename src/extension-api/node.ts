@@ -223,40 +223,47 @@ export interface NodeHandle {
 
   // ── WIDGETS ───────────────────────────────────────────────────────────────
 
-  /**
-   * Returns a `WidgetHandle` for the named widget, or `undefined` if no such
-   * widget exists on this node.
-   *
-   * @example
-   * ```ts
-   * const steps = node.getWidget('steps')
-   * if (steps) steps.setValue(20)
-   * ```
-   */
-  getWidget(name: string): WidgetHandle | undefined
-
-  /**
-   * Returns all widgets on this node as `WidgetHandle` instances.
-   *
-   * **Immutable view per D-immutability-enforcement (Hybrid C).** The returned
-   * array cannot be mutated (`push`, `splice`, `length =`, index assignment
-   * all raise TS errors). Each `WidgetHandle` is also surface-frozen — use
-   * the `WidgetHandle` setter methods (`setValue`, `setHidden`, etc.) to
-   * mutate widget state. To add or remove widgets, use
-   * {@link NodeHandle.addWidget} / future `removeWidget` (W6.P8.UNMIGRATABLE).
-   *
-   * @example
-   * ```ts
-   * // ❌ TS-ERR — readonly array; v1 patterns no longer compile
-   * node.getWidgets().push(newWidget)
-   * node.getWidgets()[0] = newWidget
-   *
-   * // ✅ Iterate / read freely
-   * for (const w of node.getWidgets()) console.log(w.name)
-   * const labels = node.getWidgets().map((w) => w.label)
-   * ```
-   */
-  getWidgets(): ReadonlyArray<Readonly<WidgetHandle>>
+  // COMMENTED OUT per AXIOMS.md A1 + A2 (D-no-node-widget-access, 2026-05-19):
+  // Nodes cannot reference or enumerate their widgets. Bilateral (node→widget)
+  // direction is closed; the widget→node direction (`widget.parentNode`)
+  // remains the sole channel. Extensions needing per-widget coordination
+  // register via `defineWidget({mount, ...})` and share state through Vue
+  // `provide()` / `inject()` or the World event bus. Restoration criteria
+  // in AXIOMS.md §A14.
+  //
+  // /**
+  //  * Returns a `WidgetHandle` for the named widget, or `undefined` if no such
+  //  * widget exists on this node.
+  //  *
+  //  * @example
+  //  * ```ts
+  //  * const steps = node.getWidget('steps')
+  //  * if (steps) steps.setValue(20)
+  //  * ```
+  //  */
+  // getWidget(name: string): WidgetHandle | undefined
+  //
+  // /**
+  //  * Returns all widgets on this node as `WidgetHandle` instances.
+  //  *
+  //  * **Immutable view per D-immutability-enforcement (Hybrid C).** The returned
+  //  * array cannot be mutated (`push`, `splice`, `length =`, index assignment
+  //  * all raise TS errors). Each `WidgetHandle` is also surface-frozen — use
+  //  * the `WidgetHandle` setter methods (`setValue`, `setHidden`, etc.) to
+  //  * mutate widget state.
+  //  *
+  //  * @example
+  //  * ```ts
+  //  * // ❌ TS-ERR — readonly array; v1 patterns no longer compile
+  //  * node.getWidgets().push(newWidget)
+  //  * node.getWidgets()[0] = newWidget
+  //  *
+  //  * // ✅ Iterate / read freely
+  //  * for (const w of node.getWidgets()) console.log(w.name)
+  //  * const labels = node.getWidgets().map((w) => w.label)
+  //  * ```
+  //  */
+  // getWidgets(): ReadonlyArray<Readonly<WidgetHandle>>
 
   // REMOVED per AXIOMS.md A14: Widgets are defined in Python node schema,
   // not created at frontend runtime. Node->widget mutation violates A1.
