@@ -46,7 +46,7 @@ test.describe(
     test('Shape popover opens even when the menu must scroll', async ({
       comfyPage
     }) => {
-      await comfyPage.page.setViewportSize({ width: 1280, height: 520 })
+      await comfyPage.page.setViewportSize({ width: 1280, height: 420 })
       const menu = await openMoreOptionsMenu(comfyPage, 'KSampler')
       const rootList = menu.locator(':scope > ul')
 
