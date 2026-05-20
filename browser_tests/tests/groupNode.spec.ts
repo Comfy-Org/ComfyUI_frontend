@@ -43,7 +43,6 @@ test.describe('Group Node', { tag: '@node' }, () => {
     }) => {
       const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
 
-      // Add group node from node library sidebar
       await libraryTab.getFolder(GROUP_NODE_CATEGORY).click()
       await libraryTab.getNode(GROUP_NODE_NAME).click()
 
@@ -69,7 +68,6 @@ test.describe('Group Node', { tag: '@node' }, () => {
       // Verify the bookmark node with the same name is added to the tree
       await expect(libraryTab.getNode(GROUP_NODE_NAME)).not.toHaveCount(0)
 
-      // Unbookmark the node
       await libraryTab
         .getNode(GROUP_NODE_NAME)
         .locator('.bookmark-button')
@@ -245,10 +243,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
     test('Copies and pastes group node after clearing workflow', async ({
       comfyPage
     }) => {
-      // Set setting
       await comfyPage.settings.setSetting('Comfy.ConfirmClear', false)
-
-      // Clear workflow
       await comfyPage.command.executeCommand('Comfy.ClearWorkflow')
 
       await comfyPage.clipboard.paste()
