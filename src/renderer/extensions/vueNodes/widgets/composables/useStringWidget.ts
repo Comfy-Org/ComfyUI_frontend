@@ -134,8 +134,16 @@ function addMultilineWidget(
       }
 
       // Vertical scrolling when gestures disabled: let textarea scroll if scrollable
+      // but prevent event from leaking to canvas when scroll reaches bounds
       if (canScrollY) {
-        event.stopPropagation()
+        const atTop = inputEl.scrollTop === 0
+        const atBottom = inputEl.scrollTop + inputEl.clientHeight >= inputEl.scrollHeight
+        if (atTop || atBottom) {
+          // At scroll bounds: prevent default AND stop propagation so canvas doesn't scroll
+          event.preventDefault()
+          event.stopPropagation()
+        }
+        // In middle of scrollable content: let textarea scroll naturally
         return
       }
 
