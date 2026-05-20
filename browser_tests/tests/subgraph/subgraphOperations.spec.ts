@@ -5,10 +5,6 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-    await comfyPage.settings.setSetting(
-      'Comfy.NodeSearchBoxImpl',
-      'v1 (legacy)'
-    )
   })
 
   test.describe('Subgraph Clipboard Operations', () => {
@@ -59,7 +55,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       await comfyPage.canvasOps.doubleClick()
-      await comfyPage.searchBox.fillAndSelectFirstNode('Note')
+      await comfyPage.searchBoxV2.addNode('Note')
       await comfyPage.nextFrame()
 
       const initialCount = await comfyPage.subgraph.getNodeCount()
