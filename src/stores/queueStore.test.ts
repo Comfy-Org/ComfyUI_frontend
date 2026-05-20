@@ -677,6 +677,34 @@ describe('useQueueStore', () => {
       // Should preserve array identity when history is unchanged
       expect(store.historyTasks).toBe(initialHistoryTasks)
     })
+
+    it('should reconcile terminal jobs when queue is empty but history is not', async () => {
+      const executionStore = useExecutionStore()
+      const reconcileSpy = vi.spyOn(executionStore, 'reconcileTerminalJobs')
+      const finishedJob = createHistoryJob(10, 'finished-job')
+
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue([finishedJob])
+
+      await store.update()
+
+      expect(reconcileSpy).toHaveBeenCalledTimes(1)
+      const [activeIds, terminalIds] = reconcileSpy.mock.calls[0]
+      expect(activeIds.size).toBe(0)
+      expect(terminalIds.has('finished-job')).toBe(true)
+    })
+
+    it('should not reconcile terminal jobs when history is empty', async () => {
+      const executionStore = useExecutionStore()
+      const reconcileSpy = vi.spyOn(executionStore, 'reconcileTerminalJobs')
+
+      mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
+      mockGetHistory.mockResolvedValue([])
+
+      await store.update()
+
+      expect(reconcileSpy).not.toHaveBeenCalled()
+    })
   })
 
   describe('update() - maxHistoryItems limit', () => {

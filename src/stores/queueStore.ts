@@ -530,6 +530,9 @@ export const useQueueStore = defineStore('queue', () => {
         api.getHistory(maxHistoryItems.value)
       ])
 
+      // Track activeJobIds for reconciliation across both blocks
+      let activeJobIds: Set<string> | null = null
+
       if (queueResult.status === 'fulfilled') {
         const queue = queueResult.value
         // API returns pre-sorted data (sort_by=create_time&order=desc)
@@ -546,10 +549,11 @@ export const useQueueStore = defineStore('queue', () => {
           }
         })
 
-        const activeJobIds = new Set([
+        activeJobIds = new Set([
           ...queue.Running.map((j) => j.id),
           ...queue.Pending.map((j) => j.id)
         ])
+
         executionStore.reconcileInitializingJobs(activeJobIds)
       } else {
         console.error('Failed to fetch queue:', queueResult.reason)
@@ -558,6 +562,16 @@ export const useQueueStore = defineStore('queue', () => {
       if (historyResult.status === 'fulfilled') {
         const history = historyResult.value
         const currentHistory = toValue(historyTasks)
+        const executionStore = useExecutionStore()
+
+        // Reconcile terminal jobs whenever history is non-empty. The last
+        // active job finishing legitimately produces empty Running/Pending,
+        // and terminal eviction is the only path that clears stuck node
+        // progress when WebSocket terminal messages are dropped.
+        if (history.length > 0 && activeJobIds) {
+          const terminalJobIds = new Set(history.map((j) => j.id))
+          executionStore.reconcileTerminalJobs(activeJobIds, terminalJobIds)
+        }
 
         // Sort by create_time descending and limit to maxItems
         const sortedHistory = [...history]

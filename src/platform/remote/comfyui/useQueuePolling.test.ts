@@ -63,13 +63,13 @@ describe('useQueuePolling', () => {
     expect(store.update).toHaveBeenCalledOnce()
   })
 
-  it('does not poll when activeJobsCount > 1', async () => {
+  it('polls when activeJobsCount > 1', async () => {
     mountUseQueuePolling()
 
     store.activeJobsCount = 2
-    await vi.advanceTimersByTimeAsync(16_000)
+    await vi.advanceTimersByTimeAsync(8_000)
 
-    expect(store.update).not.toHaveBeenCalled()
+    expect(store.update).toHaveBeenCalledOnce()
   })
 
   it('stops polling when activeJobsCount drops to 0', async () => {
