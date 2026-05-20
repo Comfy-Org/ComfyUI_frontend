@@ -18,7 +18,7 @@ interface UseServerLogsOptions {
   messageFilter?: (message: string) => boolean
 }
 
-export const useServerLogs = (options: UseServerLogsOptions = {}) => {
+export function useServerLogs(options: UseServerLogsOptions = {}) {
   const {
     ui_id,
     immediate = false,
@@ -31,13 +31,17 @@ export const useServerLogs = (options: UseServerLogsOptions = {}) => {
   let stopTaskDone: ReturnType<typeof useEventListener> | null = null
   let stopTaskStarted: ReturnType<typeof useEventListener> | null = null
 
-  const isValidLogEvent = (event: CustomEvent<LogsWsMessage>) =>
-    event?.type === LOGS_MESSAGE_TYPE && event.detail?.entries?.length > 0
+  function isValidLogEvent(event: CustomEvent<LogsWsMessage>) {
+    return (
+      event?.type === LOGS_MESSAGE_TYPE && event.detail?.entries?.length > 0
+    )
+  }
 
-  const parseLogMessage = (event: CustomEvent<LogsWsMessage>) =>
-    event.detail.entries.map((e) => e.m).filter(messageFilter)
+  function parseLogMessage(event: CustomEvent<LogsWsMessage>) {
+    return event.detail.entries.map((e) => e.m).filter(messageFilter)
+  }
 
-  const handleLogMessage = (event: CustomEvent<LogsWsMessage>) => {
+  function handleLogMessage(event: CustomEvent<LogsWsMessage>) {
     // Only capture logs if this task has started
     if (!isTaskStarted.value) return
 
@@ -49,19 +53,19 @@ export const useServerLogs = (options: UseServerLogsOptions = {}) => {
     }
   }
 
-  const handleTaskStarted = (event: CustomEvent<ManagerWsTaskStartedMsg>) => {
+  function handleTaskStarted(event: CustomEvent<ManagerWsTaskStartedMsg>) {
     if (ui_id && event?.detail?.ui_id === ui_id) {
       isTaskStarted.value = true
     }
   }
 
-  const handleTaskDone = (event: CustomEvent<ManagerWsTaskDoneMsg>) => {
+  function handleTaskDone(event: CustomEvent<ManagerWsTaskDoneMsg>) {
     if (ui_id && event?.detail?.ui_id === ui_id) {
       isTaskStarted.value = false
     }
   }
 
-  const start = async () => {
+  async function start() {
     await api.subscribeLogs(true)
     stopLogs = useEventListener(api, LOGS_MESSAGE_TYPE, handleLogMessage)
 
@@ -79,7 +83,7 @@ export const useServerLogs = (options: UseServerLogsOptions = {}) => {
     }
   }
 
-  const stopListening = async () => {
+  async function stopListening() {
     stopLogs?.()
     stopTaskStarted?.()
     stopTaskDone?.()

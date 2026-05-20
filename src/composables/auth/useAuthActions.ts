@@ -21,14 +21,14 @@ import { usdToMicros } from '@/utils/formatUtil'
  * All actions are wrapped with error handling.
  * @returns {Object} - Object containing all Firebase Auth actions
  */
-export const useAuthActions = () => {
+export function useAuthActions() {
   const authStore = useAuthStore()
   const toastStore = useToastStore()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
   const accessError = ref(false)
 
-  const reportError = (error: unknown) => {
+  function reportError(error: unknown) {
     // Ref: https://firebase.google.com/docs/auth/admin/errors
     if (
       error instanceof FirebaseError &&
@@ -190,10 +190,10 @@ export const useAuthActions = () => {
    * Recovery strategy for Firebase auth/requires-recent-login errors.
    * Prompts user to reauthenticate and retries the operation after successful login.
    */
-  const createReauthenticationRecovery = <
+  function createReauthenticationRecovery<
     TArgs extends unknown[],
     TReturn
-  >(): ErrorRecoveryStrategy<TArgs, TReturn> => {
+  >(): ErrorRecoveryStrategy<TArgs, TReturn> {
     const dialogService = useDialogService()
 
     return {

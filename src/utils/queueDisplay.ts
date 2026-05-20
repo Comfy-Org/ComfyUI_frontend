@@ -24,7 +24,7 @@ type JobDisplay = {
   showClear: boolean
 }
 
-export const iconForJobState = (state: JobState): string => {
+export function iconForJobState(state: JobState): string {
   switch (state) {
     case 'pending':
       return 'icon-[lucide--loader-circle]'
@@ -41,7 +41,7 @@ export const iconForJobState = (state: JobState): string => {
   }
 }
 
-const buildTitle = (task: TaskItemImpl, t: (k: string) => string): string => {
+function buildTitle(task: TaskItemImpl, t: (k: string) => string): string {
   const prefix = t('g.job')
   const shortId = String(task.jobId ?? '').split('-')[0]
   const idx = task.job.priority
@@ -50,20 +50,20 @@ const buildTitle = (task: TaskItemImpl, t: (k: string) => string): string => {
   return prefix
 }
 
-const buildQueuedTime = (
+function buildQueuedTime(
   task: TaskItemImpl,
   locale: string,
   formatClockTimeFn: (ts: number, locale: string) => string
-): string => {
+): string {
   const ts = task.createTime
   return ts !== undefined ? formatClockTimeFn(ts, locale) : ''
 }
 
-export const buildJobDisplay = (
+export function buildJobDisplay(
   task: TaskItemImpl,
   state: JobState,
   ctx: BuildJobDisplayCtx
-): JobDisplay => {
+): JobDisplay {
   if (state === 'pending') {
     if (ctx.showAddedHint) {
       return {

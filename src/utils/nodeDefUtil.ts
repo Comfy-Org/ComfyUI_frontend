@@ -28,16 +28,16 @@ const IGNORE_KEYS = new Set<string>([
   'dynamicPrompts'
 ])
 
-const getRange = (options: NumericInputOptions) => {
+function getRange(options: NumericInputOptions) {
   const min = options.min ?? -Infinity
   const max = options.max ?? Infinity
   return { min, max }
 }
 
-const mergeNumericInputSpec = <T extends IntInputSpec | FloatInputSpec>(
+function mergeNumericInputSpec<T extends IntInputSpec | FloatInputSpec>(
   spec1: T,
   spec2: T
-): T | null => {
+): T | null {
   const type = spec1[0]
   const options1 = spec1[1] ?? {}
   const options2 = spec2[1] ?? {}
@@ -66,10 +66,10 @@ const mergeNumericInputSpec = <T extends IntInputSpec | FloatInputSpec>(
   )
 }
 
-const mergeComboInputSpec = <T extends ComboInputSpec | ComboInputSpecV2>(
+function mergeComboInputSpec<T extends ComboInputSpec | ComboInputSpecV2>(
   spec1: T,
   spec2: T
-): T | null => {
+): T | null {
   const options1 = spec1[1] ?? {}
   const options2 = spec2[1] ?? {}
 
@@ -89,10 +89,10 @@ const mergeComboInputSpec = <T extends ComboInputSpec | ComboInputSpecV2>(
   )
 }
 
-const mergeCommonInputSpec = <T extends InputSpec>(
+function mergeCommonInputSpec<T extends InputSpec>(
   spec1: T,
   spec2: T
-): T | null => {
+): T | null {
   const type = getInputSpecType(spec1)
   const options1 = spec1[1] ?? {}
   const options2 = spec2[1] ?? {}
@@ -117,10 +117,10 @@ const mergeCommonInputSpec = <T extends InputSpec>(
  * @param spec2 - The second input spec.
  * @returns The merged input spec, or null if the specs are not mergeable.
  */
-export const mergeInputSpec = (
+export function mergeInputSpec(
   spec1: InputSpec,
   spec2: InputSpec
-): InputSpec | null => {
+): InputSpec | null {
   const type1 = getInputSpecType(spec1)
   const type2 = getInputSpecType(spec2)
 

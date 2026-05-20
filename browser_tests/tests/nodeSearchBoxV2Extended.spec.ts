@@ -312,7 +312,9 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
   test.describe('Search behavior', () => {
     test('Search narrows results progressively', async ({ comfyPage }) => {
       const { searchBoxV2 } = comfyPage
-      const getCount = () => searchBoxV2.results.count()
+      function getCount() {
+        return searchBoxV2.results.count()
+      }
 
       await searchBoxV2.open()
 

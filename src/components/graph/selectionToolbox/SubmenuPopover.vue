@@ -87,10 +87,10 @@ const { getCurrentShape } = useNodeCustomization()
 
 const popoverRef = ref<InstanceType<typeof Popover>>()
 
-const toggle = (event: Event, target?: HTMLElement) => {
+function toggle(event: Event, target?: HTMLElement) {
   popoverRef.value?.toggle(event, target)
 }
-const hide = () => {
+function hide() {
   popoverRef.value?.hide()
 }
 defineExpose({
@@ -98,7 +98,7 @@ defineExpose({
   hide
 })
 
-const handleSubmenuClick = (subOption: SubMenuOption) => {
+function handleSubmenuClick(subOption: SubMenuOption) {
   if (subOption.disabled) {
     return
   }
@@ -106,7 +106,7 @@ const handleSubmenuClick = (subOption: SubMenuOption) => {
   popoverRef.value?.hide()
 }
 
-const isShapeSelected = (subOption: SubMenuOption): boolean => {
+function isShapeSelected(subOption: SubMenuOption): boolean {
   if (subOption.color) return false
 
   const currentShape = getCurrentShape()

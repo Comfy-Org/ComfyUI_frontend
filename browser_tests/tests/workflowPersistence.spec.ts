@@ -213,10 +213,11 @@ test.describe('Workflow Persistence', () => {
       .poll(() => comfyPage.nodeOps.getNodeCount())
       .toBeGreaterThanOrEqual(2)
 
-    const getNodeTypes = () =>
-      comfyPage.page.evaluate(() =>
+    function getNodeTypes() {
+      return comfyPage.page.evaluate(() =>
         window.app!.graph.nodes.map((n: { type: string }) => n.type)
       )
+    }
     await expect.poll(getNodeTypes).toContain('KSampler')
     await expect.poll(getNodeTypes).toContain('EmptyLatentImage')
     await expect
@@ -552,11 +553,12 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.setup({ clearStorage: false })
     await comfyPage.nextFrame()
 
-    const getSplitterSizes = () =>
-      comfyPage.page.evaluate(() => {
+    function getSplitterSizes() {
+      return comfyPage.page.evaluate(() => {
         const raw = localStorage.getItem('Comfy.Splitter.MainSplitter')
         return raw ? (JSON.parse(raw) as number[]) : null
       })
+    }
 
     await expect
       .poll(async () => {

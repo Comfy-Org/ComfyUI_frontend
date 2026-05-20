@@ -70,29 +70,31 @@ vi.mock('@/workbench/extensions/manager/composables/useManagerDialog', () => {
  * Helper to build a minimal systemStats argv-only fixture.
  * Feature-flag values are supplied separately via mocked `api`.
  */
-const systemStatsFixture = (argv: string[]) => ({
-  system: {
-    os: 'Test OS',
-    python_version: '3.10',
-    embedded_python: false,
-    comfyui_version: '1.0.0',
-    pytorch_version: '2.0.0',
-    argv,
-    ram_total: 16000000000,
-    ram_free: 8000000000
-  },
-  devices: []
-})
+function systemStatsFixture(argv: string[]) {
+  return {
+    system: {
+      os: 'Test OS',
+      python_version: '3.10',
+      embedded_python: false,
+      comfyui_version: '1.0.0',
+      pytorch_version: '2.0.0',
+      argv,
+      ram_total: 16000000000,
+      ram_free: 8000000000
+    },
+    devices: []
+  }
+}
 
 /**
  * Mocks the two server feature flags queried by useManagerState.
  * `supports_v4`        → `extension.manager.supports_v4`
  * `supports_csrf_post` → `extension.manager.supports_csrf_post`
  */
-const mockServerFeatures = (flags: {
+function mockServerFeatures(flags: {
   supports_v4?: boolean
   supports_csrf_post?: boolean
-}) => {
+}) {
   vi.mocked(api.getServerFeature).mockImplementation((name: string) => {
     if (name === 'extension.manager.supports_v4') return flags.supports_v4
     if (name === 'extension.manager.supports_csrf_post')
@@ -240,8 +242,9 @@ describe('useManagerState', () => {
   })
 
   describe('INCOMPATIBLE state (missing supports_csrf_post)', () => {
-    const enabledManagerStats = () =>
-      systemStatsFixture(['python', 'main.py', '--enable-manager'])
+    function enabledManagerStats() {
+      return systemStatsFixture(['python', 'main.py', '--enable-manager'])
+    }
 
     it('returns INCOMPATIBLE when server supports v4 but csrf_post is false', () => {
       systemStatsStore.$patch({
@@ -369,8 +372,9 @@ describe('useManagerState', () => {
   })
 
   describe('helper properties', () => {
-    const enabledManagerStats = () =>
-      systemStatsFixture(['python', 'main.py', '--enable-manager'])
+    function enabledManagerStats() {
+      return systemStatsFixture(['python', 'main.py', '--enable-manager'])
+    }
 
     it('isManagerEnabled should return true when state is not DISABLED / INCOMPATIBLE', () => {
       systemStatsStore.$patch({

@@ -45,7 +45,7 @@ const { apiNodeNames, onLogin, onCancel } = defineProps<{
   onCancel?: () => void
 }>()
 
-const handleLearnMoreClick = () => {
+function handleLearnMoreClick() {
   window.open(
     buildDocsUrl('/tutorials/api-nodes/faq', { includeLocale: true }),
     '_blank'

@@ -129,12 +129,12 @@ const lockCommandText = computed(() =>
     .toUpperCase()
 )
 
-const toggle = (event: Event) => {
+function toggle(event: Event) {
   const el = buttonRef.value?.$el || buttonRef.value
   popover.value?.toggle(event, el)
 }
 
-const setMode = (mode: 'select' | 'hand') => {
+function setMode(mode: 'select' | 'hand') {
   if (mode === 'select' && isCanvasReadOnly.value) {
     void commandStore.execute('Comfy.Canvas.Unlock')
   } else if (mode === 'hand' && !isCanvasReadOnly.value) {

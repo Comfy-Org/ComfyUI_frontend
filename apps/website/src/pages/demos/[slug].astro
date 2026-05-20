@@ -8,7 +8,7 @@ import DemoNavSection from '../../components/demos/DemoNavSection.vue'
 import { demos, getDemoBySlug, getNextDemo } from '../../config/demos'
 import { t } from '../../i18n/translations'
 
-export const getStaticPaths: GetStaticPaths = () => {
+export function getStaticPaths() {
   return demos.map((demo) => ({
     params: { slug: demo.slug }
   }))

@@ -19,7 +19,7 @@ const bottomPanelStore = useBottomPanelStore()
 /**
  * Toggle console bottom panel and track UI button click.
  */
-const toggleConsole = () => {
+function toggleConsole() {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'sidebar_bottom_panel_console_toggled'
   })

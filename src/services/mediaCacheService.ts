@@ -201,11 +201,18 @@ export function useMediaCache(options?: MediaCacheOptions) {
     mediaCacheInstance = new MediaCacheService(options)
   }
 
-  const getCachedMedia = (src: string) =>
-    mediaCacheInstance!.getCachedMedia(src)
-  const clearCache = () => mediaCacheInstance!.clearCache()
-  const acquireUrl = (src: string) => mediaCacheInstance!.acquireUrl(src)
-  const releaseUrl = (src: string) => mediaCacheInstance!.releaseUrl(src)
+  function getCachedMedia(src: string) {
+    return mediaCacheInstance!.getCachedMedia(src)
+  }
+  function clearCache() {
+    return mediaCacheInstance!.clearCache()
+  }
+  function acquireUrl(src: string) {
+    return mediaCacheInstance!.acquireUrl(src)
+  }
+  function releaseUrl(src: string) {
+    return mediaCacheInstance!.releaseUrl(src)
+  }
 
   return {
     getCachedMedia,

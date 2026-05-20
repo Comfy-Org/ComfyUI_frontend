@@ -71,7 +71,7 @@ const filteredSubcategories = computed(() => {
   return result
 })
 
-const getSubcategoryTitle = (subcategory: string): string => {
+function getSubcategoryTitle(subcategory: string): string {
   const titleMap: Record<string, string> = {
     workflow: t('shortcuts.subcategories.workflow'),
     node: t('shortcuts.subcategories.node'),
@@ -83,7 +83,7 @@ const getSubcategoryTitle = (subcategory: string): string => {
   return titleMap[subcategory] || subcategory
 }
 
-const formatKey = (key: string): string => {
+function formatKey(key: string): string {
   const keyMap: Record<string, string> = {
     Control: 'Ctrl',
     Meta: 'Cmd',

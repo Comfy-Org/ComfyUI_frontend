@@ -41,7 +41,7 @@ export function useFrontendVersionMismatchWarning(
   // Track if we've already shown the warning
   let hasShownWarning = false
 
-  const emitAlert = (detail: string) => {
+  function emitAlert(detail: string) {
     const fullMessage = t('g.versionMismatchWarningMessage', {
       warning: t('g.versionMismatchWarning'),
       detail
@@ -49,7 +49,7 @@ export function useFrontendVersionMismatchWarning(
     toastStore.addAlert(fullMessage)
   }
 
-  const showWarning = () => {
+  function showWarning() {
     // Prevent showing the warning multiple times
     if (hasShownWarning) return
 

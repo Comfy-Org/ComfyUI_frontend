@@ -148,13 +148,13 @@ export const TemplateFilterBar: Story = {
       const selectedUseCases = ref<SelectOption[]>([])
       const sortBy = ref<string | undefined>('default')
 
-      const modelLabel = () => {
+      function modelLabel() {
         if (selectedModels.value.length === 0) return 'Models'
         if (selectedModels.value.length === 1)
           return selectedModels.value[0].name
         return selectedModels.value.length + ' Models'
       }
-      const useCaseLabel = () => {
+      function useCaseLabel() {
         if (selectedUseCases.value.length === 0) return 'Use Case'
         if (selectedUseCases.value.length === 1)
           return selectedUseCases.value[0].name

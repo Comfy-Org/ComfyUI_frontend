@@ -40,7 +40,7 @@ setup((app) => {
   app.use(ToastService)
 })
 
-export const withTheme = (Story: StoryFn, context: StoryContext) => {
+export function withTheme(Story: StoryFn, context: StoryContext) {
   const theme = context.globals.theme || 'light'
   if (theme === 'dark') {
     document.documentElement.classList.add('dark-theme')

@@ -126,7 +126,7 @@ const tooltipConfig = computed(() => {
   return createTooltipConfig(description)
 })
 
-const resolveTitle = (info: VueNodeData | undefined) => {
+function resolveTitle(info: VueNodeData | undefined) {
   const untitledLabel = st('g.untitled', 'Untitled')
   return resolveNodeDisplayName(info ?? null, {
     emptyLabel: untitledLabel,
@@ -186,15 +186,15 @@ watch(
 )
 
 // Event handlers
-const handleCollapse = () => {
+function handleCollapse() {
   emit('collapse')
 }
 
-const handleDoubleClick = () => {
+function handleDoubleClick() {
   isEditing.value = true
 }
 
-const handleTitleEdit = (newTitle: string) => {
+function handleTitleEdit(newTitle: string) {
   isEditing.value = false
   const trimmedTitle = newTitle.trim()
   if (trimmedTitle && trimmedTitle !== displayTitle.value) {
@@ -203,7 +203,7 @@ const handleTitleEdit = (newTitle: string) => {
   }
 }
 
-const handleTitleCancel = () => {
+function handleTitleCancel() {
   isEditing.value = false
 }
 </script>

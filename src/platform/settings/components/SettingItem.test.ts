@@ -6,8 +6,9 @@ import SettingItem from '@/platform/settings/components/SettingItem.vue'
 import type { SettingParams } from '@/platform/settings/types'
 import { i18n } from '@/i18n'
 
-const flushPromises = () =>
-  new Promise<void>((resolve) => setTimeout(resolve, 0))
+function flushPromises() {
+  return new Promise<void>((resolve) => setTimeout(resolve, 0))
+}
 
 const trackSettingChanged = vi.fn()
 vi.mock('@/platform/telemetry', () => ({

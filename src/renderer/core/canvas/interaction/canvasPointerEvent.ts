@@ -12,10 +12,10 @@ type PointerOffsets = {
 
 const pointerHistory = new Map<number, PointerOffsets>()
 
-const defineEnhancements = (
+function defineEnhancements(
   event: PointerEvent,
   enhancement: CanvasPointerExtensions
-) => {
+) {
   Object.defineProperties(event, {
     canvasX: { value: enhancement.canvasX, configurable: true, writable: true },
     canvasY: { value: enhancement.canvasY, configurable: true, writable: true },
@@ -34,7 +34,7 @@ const defineEnhancements = (
   })
 }
 
-const createEnhancement = (event: PointerEvent): CanvasPointerExtensions => {
+function createEnhancement(event: PointerEvent): CanvasPointerExtensions {
   const conversion = useSharedCanvasPositionConversion()
   conversion.update()
 
@@ -61,14 +61,14 @@ const createEnhancement = (event: PointerEvent): CanvasPointerExtensions => {
   return { canvasX, canvasY, deltaX, deltaY, safeOffsetX, safeOffsetY }
 }
 
-export const toCanvasPointerEvent = <T extends PointerEvent>(
+export function toCanvasPointerEvent<T extends PointerEvent>(
   event: T
-): T & CanvasPointerEvent => {
+): T & CanvasPointerEvent {
   const enhancement = createEnhancement(event)
   defineEnhancements(event, enhancement)
   return event as T & CanvasPointerEvent
 }
 
-export const clearCanvasPointerHistory = (pointerId: number) => {
+export function clearCanvasPointerHistory(pointerId: number) {
   pointerHistory.delete(pointerId)
 }

@@ -40,7 +40,7 @@ const isInProgress = computed(
   () => comfyManagerStore.isProcessingTasks || isRestarting.value
 )
 
-const isTaskInProgress = (index: number) => {
+function isTaskInProgress(index: number) {
   const log = focusedLogs.value[index]
   if (!log) return false
 

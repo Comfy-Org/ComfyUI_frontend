@@ -220,7 +220,7 @@ const queueButtonTooltip = computed(() => {
 })
 
 const commandStore = useCommandStore()
-const queuePrompt = async (e: Event) => {
+async function queuePrompt(e: Event) {
   if (isStopInstantAction.value) {
     queueMode.value = 'instant-idle'
     return

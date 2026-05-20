@@ -12,23 +12,25 @@ export interface DraftCacheState {
 
 export const MAX_DRAFTS = 32
 
-export const createDraftCacheState = (
+export function createDraftCacheState(
   drafts: Record<string, WorkflowDraftSnapshot> = {},
   order: string[] = []
-): DraftCacheState => ({ drafts, order })
+): DraftCacheState {
+  return { drafts, order }
+}
 
-export const touchEntry = (order: string[], path: string): string[] => {
+export function touchEntry(order: string[], path: string): string[] {
   const next = order.filter((entry) => entry !== path)
   next.push(path)
   return next
 }
 
-export const upsertDraft = (
+export function upsertDraft(
   state: DraftCacheState,
   path: string,
   snapshot: WorkflowDraftSnapshot,
   limit: number = MAX_DRAFTS
-): DraftCacheState => {
+): DraftCacheState {
   const effectiveLimit = Math.max(1, limit)
   const drafts = { ...state.drafts, [path]: snapshot }
   const order = touchEntry(state.order, path)
@@ -44,10 +46,10 @@ export const upsertDraft = (
   return createDraftCacheState(drafts, order)
 }
 
-export const removeDraft = (
+export function removeDraft(
   state: DraftCacheState,
   path: string
-): DraftCacheState => {
+): DraftCacheState {
   if (!(path in state.drafts)) return state
   const drafts = { ...state.drafts }
   delete drafts[path]
@@ -55,12 +57,12 @@ export const removeDraft = (
   return createDraftCacheState(drafts, order)
 }
 
-export const moveDraft = (
+export function moveDraft(
   state: DraftCacheState,
   oldPath: string,
   newPath: string,
   name: string
-): DraftCacheState => {
+): DraftCacheState {
   const draft = state.drafts[oldPath]
   if (!draft) return state
   const updatedDraft = { ...draft, name }
@@ -74,5 +76,6 @@ export const moveDraft = (
   return createDraftCacheState(drafts, order)
 }
 
-export const mostRecentDraftPath = (order: string[]): string | null =>
-  order.length ? order[order.length - 1] : null
+export function mostRecentDraftPath(order: string[]): string | null {
+  return order.length ? order[order.length - 1] : null
+}

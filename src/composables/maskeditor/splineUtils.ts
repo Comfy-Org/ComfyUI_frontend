@@ -19,7 +19,7 @@ export function catmullRomSpline(
   // Centripetal Catmull-Rom Spline (alpha = 0.5) to prevent loops and overshoots
   const alpha = 0.5
 
-  const getT = (t: number, p0: Point, p1: Point) => {
+  function getT(t: number, p0: Point, p1: Point) {
     const d = Math.hypot(p1.x - p0.x, p1.y - p0.y)
     return t + Math.pow(d, alpha)
   }
@@ -33,13 +33,13 @@ export function catmullRomSpline(
   const tInterp = t1 + (t2 - t1) * t
 
   // Safe interpolation for coincident points
-  const interp = (
+  function interp(
     pA: Point,
     pB: Point,
     tA: number,
     tB: number,
     t: number
-  ): Point => {
+  ): Point {
     if (Math.abs(tB - tA) < 0.0001) return pA
     const k = (t - tA) / (tB - tA)
     return add(mul(pA, 1 - k), mul(pB, k))

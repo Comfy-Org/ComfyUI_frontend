@@ -153,15 +153,15 @@ const iconButtonClass =
 const textButtonClass =
   'h-7.5 w-15 rounded-[10px] border border-border-default text-current font-sans pointer-events-auto transition-colors duration-100 bg-comfy-menu-bg hover:bg-secondary-background-hover'
 
-const onUndo = () => {
+function onUndo() {
   store.canvasHistory.undo()
 }
 
-const onRedo = () => {
+function onRedo() {
   store.canvasHistory.redo()
 }
 
-const onRotateLeft = async () => {
+async function onRotateLeft() {
   try {
     await canvasTransform.rotateCounterclockwise()
   } catch (error) {
@@ -169,7 +169,7 @@ const onRotateLeft = async () => {
   }
 }
 
-const onRotateRight = async () => {
+async function onRotateRight() {
   try {
     await canvasTransform.rotateClockwise()
   } catch (error) {
@@ -177,7 +177,7 @@ const onRotateRight = async () => {
   }
 }
 
-const onMirrorHorizontal = async () => {
+async function onMirrorHorizontal() {
   try {
     await canvasTransform.mirrorHorizontal()
   } catch (error) {
@@ -185,7 +185,7 @@ const onMirrorHorizontal = async () => {
   }
 }
 
-const onMirrorVertical = async () => {
+async function onMirrorVertical() {
   try {
     await canvasTransform.mirrorVertical()
   } catch (error) {
@@ -193,16 +193,16 @@ const onMirrorVertical = async () => {
   }
 }
 
-const onInvert = () => {
+function onInvert() {
   canvasTools.invertMask()
 }
 
-const onClear = () => {
+function onClear() {
   canvasTools.clearMask()
   store.triggerClear()
 }
 
-const handleSave = async () => {
+async function handleSave() {
   saveButtonText.value = t('g.saving')
   saveEnabled.value = false
 
@@ -218,7 +218,7 @@ const handleSave = async () => {
   }
 }
 
-const handleCancel = () => {
+function handleCancel() {
   dialogStore.closeDialog({ key: 'global-mask-editor' })
 }
 </script>

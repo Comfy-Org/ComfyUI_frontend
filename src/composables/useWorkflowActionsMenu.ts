@@ -62,7 +62,7 @@ export function useWorkflowActionsMenu(
   )
 
   /** Switch to the target workflow tab if it's not already active */
-  const ensureWorkflowActive = async (wf: ComfyWorkflow | null) => {
+  async function ensureWorkflowActive(wf: ComfyWorkflow | null) {
     if (!wf || wf === workflowStore.activeWorkflow) return
     await workflowService.openWorkflow(wf)
   }
@@ -75,7 +75,7 @@ export function useWorkflowActionsMenu(
 
     const items: WorkflowMenuItem[] = []
 
-    const addItem = ({
+    function addItem({
       id,
       label,
       icon,
@@ -84,7 +84,7 @@ export function useWorkflowActionsMenu(
       disabled = false,
       prependSeparator = false,
       isNew = false
-    }: AddItemOptions) => {
+    }: AddItemOptions) {
       if (prependSeparator && visible) items.push({ separator: true })
       const item: WorkflowMenuAction = { id, label, icon, command, disabled }
       if (!visible) item.visible = false
@@ -102,7 +102,7 @@ export function useWorkflowActionsMenu(
       isRoot && (menuItemStore.hasSeenLinear || flags.linearToggleEnabled)
     const isBookmarked = bookmarkStore.isBookmarked(workflow?.path ?? '')
 
-    const toggleLinear = async () => {
+    async function toggleLinear() {
       await ensureWorkflowActive(targetWorkflow.value)
       await commandStore.execute('Comfy.ToggleLinear', {
         metadata: { source: 'breadcrumb_menu' }

@@ -6,7 +6,7 @@ import type {
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 
-export const useGalleriaWidget = (): ComfyWidgetConstructorV2 => {
+export function useGalleriaWidget(): ComfyWidgetConstructorV2 {
   return (node: LGraphNode, inputSpec: InputSpecV2): IGalleriaWidget => {
     const { name, options = {} } = inputSpec as GalleriaInputSpec
 

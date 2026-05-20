@@ -13,12 +13,12 @@ import { normalizeI18nKey } from '@/utils/formatUtil'
 /**
  * Add translation for litegraph context menu.
  */
-export const useContextMenuTranslation = () => {
+export function useContextMenuTranslation() {
   // Install compatibility layer BEFORE any extensions load
   legacyMenuCompat.install(LGraphCanvas.prototype, 'getCanvasMenuOptions')
 
   const { getCanvasMenuOptions } = LGraphCanvas.prototype
-  const getCanvasCenterMenuOptions = function (
+  function getCanvasCenterMenuOptions(
     this: LGraphCanvas,
     ...args: Parameters<typeof getCanvasMenuOptions>
   ) {
@@ -66,7 +66,7 @@ export const useContextMenuTranslation = () => {
 
   // Wrap getNodeMenuOptions to add new API items
   const nodeMenuFn = LGraphCanvas.prototype.getNodeMenuOptions
-  const getNodeMenuOptionsWithExtensions = function (
+  function getNodeMenuOptionsWithExtensions(
     this: LGraphCanvas,
     ...args: Parameters<typeof nodeMenuFn>
   ) {

@@ -90,7 +90,7 @@ const currentStep = ref('1')
 /** Forces each install step to be visited at least once. */
 const highestStep = ref(0)
 
-const handleStepChange = (value: string | number) => {
+function handleStepChange(value: string | number) {
   setHighestStep(value)
 
   electronAPI().Events.trackEvent('install_stepper_change', {
@@ -98,7 +98,7 @@ const handleStepChange = (value: string | number) => {
   })
 }
 
-const setHighestStep = (value: string | number) => {
+function setHighestStep(value: string | number) {
   const int = typeof value === 'number' ? value : parseInt(value, 10)
   if (!isNaN(int) && int > highestStep.value) highestStep.value = int
 }
@@ -123,7 +123,7 @@ const canProceed = computed(() => {
 })
 
 // Navigation methods
-const goToNextStep = () => {
+function goToNextStep() {
   const nextStep = (parseInt(currentStep.value) + 1).toString()
   currentStep.value = nextStep
   setHighestStep(nextStep)
@@ -132,7 +132,7 @@ const goToNextStep = () => {
   })
 }
 
-const goToPreviousStep = () => {
+function goToPreviousStep() {
   const prevStep = (parseInt(currentStep.value) - 1).toString()
   currentStep.value = prevStep
   electronAPI().Events.trackEvent('install_stepper_change', {
@@ -142,7 +142,7 @@ const goToPreviousStep = () => {
 
 const electron = electronAPI()
 const router = useRouter()
-const install = async () => {
+async function install() {
   if (!device.value) return
 
   const options: InstallOptions = {

@@ -183,30 +183,30 @@ const comfyPlatformBaseUrl = computed(() =>
   )
 )
 
-const toggleState = () => {
+function toggleState() {
   isSignIn.value = !isSignIn.value
   showApiKeyForm.value = false
 }
 
-const signInWithGoogle = async () => {
+async function signInWithGoogle() {
   if (await authActions.signInWithGoogle({ isNewUser: !isSignIn.value })) {
     onSuccess()
   }
 }
 
-const signInWithGithub = async () => {
+async function signInWithGithub() {
   if (await authActions.signInWithGithub({ isNewUser: !isSignIn.value })) {
     onSuccess()
   }
 }
 
-const signInWithEmail = async (values: SignInData) => {
+async function signInWithEmail(values: SignInData) {
   if (await authActions.signInWithEmail(values.email, values.password)) {
     onSuccess()
   }
 }
 
-const signUpWithEmail = async (values: SignUpData) => {
+async function signUpWithEmail(values: SignUpData) {
   if (await authActions.signUpWithEmail(values.email, values.password)) {
     onSuccess()
   }

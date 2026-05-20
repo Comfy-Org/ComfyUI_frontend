@@ -54,11 +54,11 @@ function onSliderUpdate(val: number[] | undefined) {
   if (val?.length) value.value = val[0]
 }
 
-const toggleSlider = () => {
+function toggleSlider() {
   showSlider.value = !showSlider.value
 }
 
-const closeSlider = (e: MouseEvent) => {
+function closeSlider(e: MouseEvent) {
   const target = e.target as HTMLElement
 
   if (!target.closest('.show-slider')) {

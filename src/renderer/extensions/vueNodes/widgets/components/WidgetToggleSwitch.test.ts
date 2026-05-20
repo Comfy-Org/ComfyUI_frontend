@@ -39,24 +39,25 @@ const ToggleSwitchStub = defineComponent({
 })
 
 describe('WidgetToggleSwitch Value Binding', () => {
-  const createToggleWidget = (
+  function createToggleWidget(
     value: boolean = false,
     options: IWidgetOptions = {},
     callback?: (value: boolean) => void
-  ) =>
-    createMockWidget<boolean>({
+  ) {
+    return createMockWidget<boolean>({
       value,
       name: 'test_toggle',
       type: 'boolean',
       options,
       callback
     })
+  }
 
-  const mountComponent = (
+  function mountComponent(
     widget: SimplifiedWidget<boolean>,
     modelValue: boolean,
     onModelUpdate?: (value: boolean | undefined) => void
-  ) => {
+  ) {
     const user = userEvent.setup()
     const result = render(WidgetToggleSwitch, {
       props: {

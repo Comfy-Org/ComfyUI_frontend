@@ -21,13 +21,14 @@ test.describe('Group Copy Paste', { tag: ['@canvas'] }, () => {
     await comfyPage.clipboard.paste()
     await comfyPage.nextFrame()
 
-    const getGroupPositions = () =>
-      comfyPage.page.evaluate(() =>
+    function getGroupPositions() {
+      return comfyPage.page.evaluate(() =>
         window.app!.graph.groups.map((g: { pos: number[] }) => ({
           x: g.pos[0],
           y: g.pos[1]
         }))
       )
+    }
 
     await expect.poll(getGroupPositions).toHaveLength(2)
 

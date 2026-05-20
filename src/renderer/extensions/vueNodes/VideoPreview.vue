@@ -184,7 +184,7 @@ watch(
 )
 
 // Event handlers
-const handleVideoLoad = (event: Event) => {
+function handleVideoLoad(event: Event) {
   if (!event.target || !(event.target instanceof HTMLVideoElement)) return
   const video = event.target
   showLoader.value = false
@@ -194,13 +194,13 @@ const handleVideoLoad = (event: Event) => {
   }
 }
 
-const handleVideoError = () => {
+function handleVideoError() {
   showLoader.value = false
   videoError.value = true
   actualDimensions.value = null
 }
 
-const handleDownload = () => {
+function handleDownload() {
   try {
     downloadFile(currentVideoUrl.value)
   } catch (error) {
@@ -214,12 +214,12 @@ const handleDownload = () => {
   }
 }
 
-const handleRemove = () => {
+function handleRemove() {
   if (!props.nodeId) return
   nodeOutputStore.removeNodeOutputs(props.nodeId)
 }
 
-const setCurrentIndex = (index: number) => {
+function setCurrentIndex(index: number) {
   if (currentIndex.value === index) return
   if (index >= 0 && index < props.imageUrls.length) {
     const urlChanged = props.imageUrls[index] !== currentVideoUrl.value
@@ -232,33 +232,34 @@ const setCurrentIndex = (index: number) => {
   }
 }
 
-const handleMouseEnter = () => {
+function handleMouseEnter() {
   isHovered.value = true
 }
 
-const handleMouseLeave = () => {
+function handleMouseLeave() {
   isHovered.value = false
 }
 
-const handleFocusIn = () => {
+function handleFocusIn() {
   isFocused.value = true
 }
 
-const handleFocusOut = (event: FocusEvent) => {
+function handleFocusOut(event: FocusEvent) {
   if (!videoWrapperEl.value?.contains(event.relatedTarget as Node)) {
     isFocused.value = false
   }
 }
 
-const getNavigationDotClass = (index: number) =>
-  cn(
+function getNavigationDotClass(index: number) {
+  return cn(
     'size-2 cursor-pointer rounded-full border-0 transition-all duration-200',
     index === currentIndex.value
       ? 'bg-base-foreground'
       : 'bg-base-foreground/50 hover:bg-base-foreground/80'
   )
+}
 
-const handleKeyDown = (event: KeyboardEvent) => {
+function handleKeyDown(event: KeyboardEvent) {
   if (props.imageUrls.length <= 1) return
 
   switch (event.key) {
@@ -289,7 +290,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
   }
 }
 
-const getVideoFilename = (url: string): string => {
+function getVideoFilename(url: string): string {
   try {
     return new URL(url).searchParams.get('filename') || 'Unknown file'
   } catch {

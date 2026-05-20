@@ -109,8 +109,9 @@ export async function runMissingModelPipeline({
 }: RunMissingModelPipelineOptions): Promise<MissingModelPipelineResult> {
   const controller = missingModelStore.createVerificationAbortController()
 
-  const getDirectory = (nodeType: string) =>
-    useModelToNodeStore().getCategoryForNodeType(nodeType)
+  function getDirectory(nodeType: string) {
+    return useModelToNodeStore().getCategoryForNodeType(nodeType)
+  }
   const isAssetBrowserWidget = isCloud
     ? assetService.shouldUseAssetBrowser
     : () => false

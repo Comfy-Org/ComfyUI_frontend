@@ -46,30 +46,32 @@ export function useSelectionMenuOptions() {
     }))
   )
 
-  const getBasicSelectionOptions = (): MenuOption[] => [
-    {
-      label: t('contextMenu.Rename'),
-      action: renameSelection
-    },
-    {
-      label: t('contextMenu.Copy'),
-      shortcut: 'Ctrl+C',
-      action: copySelection
-    },
-    {
-      label: t('contextMenu.Duplicate'),
-      shortcut: 'Ctrl+D',
-      action: duplicateSelection
-    }
-  ]
+  function getBasicSelectionOptions(): MenuOption[] {
+    return [
+      {
+        label: t('contextMenu.Rename'),
+        action: renameSelection
+      },
+      {
+        label: t('contextMenu.Copy'),
+        shortcut: 'Ctrl+C',
+        action: copySelection
+      },
+      {
+        label: t('contextMenu.Duplicate'),
+        shortcut: 'Ctrl+D',
+        action: duplicateSelection
+      }
+    ]
+  }
 
-  const getSubgraphOptions = ({
+  function getSubgraphOptions({
     hasSubgraphs,
     hasMultipleSelection
   }: {
     hasSubgraphs: boolean
     hasMultipleSelection: boolean
-  }): MenuOption[] => {
+  }): MenuOption[] {
     const convertOption: MenuOption = {
       label: t('contextMenu.Convert to Subgraph'),
       icon: 'icon-[lucide--shrink]',
@@ -102,8 +104,8 @@ export function useSelectionMenuOptions() {
     return options
   }
 
-  const getMultipleNodesOptions = (): MenuOption[] => {
-    const convertToGroupNodes = () => {
+  function getMultipleNodesOptions(): MenuOption[] {
+    function convertToGroupNodes() {
       const commandStore = useCommandStore()
       void commandStore.execute(
         'Comfy.GroupNode.ConvertSelectedNodesToGroupNode'
@@ -125,29 +127,33 @@ export function useSelectionMenuOptions() {
     ]
   }
 
-  const getAlignmentOptions = (): MenuOption[] => [
-    {
-      label: t('contextMenu.Align Selected To'),
-      icon: 'icon-[lucide--align-start-horizontal]',
-      hasSubmenu: true,
-      submenu: alignSubmenu.value,
-      action: () => {}
-    },
-    {
-      label: t('contextMenu.Distribute Nodes'),
-      icon: 'icon-[lucide--align-center-horizontal]',
-      hasSubmenu: true,
-      submenu: distributeSubmenu.value,
-      action: () => {}
-    }
-  ]
+  function getAlignmentOptions(): MenuOption[] {
+    return [
+      {
+        label: t('contextMenu.Align Selected To'),
+        icon: 'icon-[lucide--align-start-horizontal]',
+        hasSubmenu: true,
+        submenu: alignSubmenu.value,
+        action: () => {}
+      },
+      {
+        label: t('contextMenu.Distribute Nodes'),
+        icon: 'icon-[lucide--align-center-horizontal]',
+        hasSubmenu: true,
+        submenu: distributeSubmenu.value,
+        action: () => {}
+      }
+    ]
+  }
 
-  const getDeleteOption = (): MenuOption => ({
-    label: t('contextMenu.Delete'),
-    icon: 'icon-[lucide--trash-2]',
-    shortcut: 'Delete',
-    action: deleteSelection
-  })
+  function getDeleteOption(): MenuOption {
+    return {
+      label: t('contextMenu.Delete'),
+      icon: 'icon-[lucide--trash-2]',
+      shortcut: 'Delete',
+      action: deleteSelection
+    }
+  }
 
   return {
     getBasicSelectionOptions,

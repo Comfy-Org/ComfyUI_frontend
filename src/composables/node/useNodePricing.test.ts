@@ -43,12 +43,12 @@ interface MockNodeData {
  * Determine if a number should display 1 decimal place.
  * Shows decimal only when the first decimal digit is non-zero.
  */
-const shouldShowDecimal = (value: number): boolean => {
+function shouldShowDecimal(value: number): boolean {
   const rounded = Math.round(value * 10) / 10
   return rounded % 1 !== 0
 }
 
-const creditValue = (usd: number): string => {
+function creditValue(usd: number): string {
   const rawCredits = usd * CREDITS_PER_USD
   return formatCredits({
     value: rawCredits,
@@ -59,8 +59,9 @@ const creditValue = (usd: number): string => {
   })
 }
 
-const creditsLabel = (usd: number, suffix = '/Run'): string =>
-  `${creditValue(usd)} credits${suffix}`
+function creditsLabel(usd: number, suffix = '/Run'): string {
+  return `${creditValue(usd)} credits${suffix}`
+}
 
 /**
  * Create a mock node with price_badge for testing JSONata-based pricing.
@@ -97,16 +98,18 @@ function createMockNodeWithPriceBadge(
 }
 
 /** Helper to create a price badge with defaults */
-const priceBadge = (
+function priceBadge(
   expr: string,
   widgets: Array<{ name: string; type: string }> = [],
   inputs: string[] = [],
   inputGroups: string[] = []
-): PriceBadge => ({
-  engine: 'jsonata',
-  expr,
-  depends_on: { widgets, inputs, input_groups: inputGroups }
-})
+): PriceBadge {
+  return {
+    engine: 'jsonata',
+    expr,
+    depends_on: { widgets, inputs, input_groups: inputGroups }
+  }
+}
 
 /** Helper to create a mock node for edge case testing */
 function createMockNode(
@@ -1132,10 +1135,10 @@ describe('formatCreditsListValue', () => {
 // -----------------------------------------------------------------------------
 
 describe('evaluateNodeDefPricing', () => {
-  const createMockNodeDef = (
+  function createMockNodeDef(
     overrides: Partial<ComfyNodeDef> = {}
-  ): ComfyNodeDef =>
-    ({
+  ): ComfyNodeDef {
+    return {
       name: 'TestNode',
       display_name: 'Test Node',
       description: '',
@@ -1146,7 +1149,8 @@ describe('evaluateNodeDefPricing', () => {
       output_is_list: [],
       python_module: 'test',
       ...overrides
-    }) as ComfyNodeDef
+    } as ComfyNodeDef
+  }
 
   it('should return empty for node without price_badge', async () => {
     const nodeDef = createMockNodeDef()

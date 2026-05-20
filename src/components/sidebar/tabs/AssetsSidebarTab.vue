@@ -296,7 +296,7 @@ const contextMenuFileKind = computed<MediaKind>(() =>
   getMediaTypeFromFilename(contextMenuAsset.value?.name ?? '')
 )
 
-const shouldShowOutputCount = (item: AssetItem): boolean => {
+function shouldShowOutputCount(item: AssetItem): boolean {
   if (activeTab.value !== 'output' || isInFolderView.value) {
     return false
   }
@@ -487,7 +487,7 @@ const galleryItems = computed(() => {
   })
 })
 
-const refreshAssets = async () => {
+async function refreshAssets() {
   await currentAssets.value.fetchMediaList()
   if (error.value) {
     console.error('Failed to refresh assets:', error.value)
@@ -533,44 +533,44 @@ function handleContextMenuHide() {
   scheduleCleanup()
 }
 
-const handleBulkDownload = (assets: AssetItem[]) => {
+function handleBulkDownload(assets: AssetItem[]) {
   downloadAssets(assets)
   clearSelection()
 }
 
-const handleBulkDelete = async (assets: AssetItem[]) => {
+async function handleBulkDelete(assets: AssetItem[]) {
   if (await deleteAssets(assets)) {
     clearSelection()
   }
 }
 
-const handleBulkAddToWorkflow = async (assets: AssetItem[]) => {
+async function handleBulkAddToWorkflow(assets: AssetItem[]) {
   await addMultipleToWorkflow(assets)
   clearSelection()
 }
 
-const handleBulkOpenWorkflow = async (assets: AssetItem[]) => {
+async function handleBulkOpenWorkflow(assets: AssetItem[]) {
   await openMultipleWorkflows(assets)
   clearSelection()
 }
 
-const handleBulkExportWorkflow = async (assets: AssetItem[]) => {
+async function handleBulkExportWorkflow(assets: AssetItem[]) {
   await exportMultipleWorkflows(assets)
   clearSelection()
 }
 
-const handleDownloadSelected = () => {
+function handleDownloadSelected() {
   downloadAssets(selectedAssets.value)
   clearSelection()
 }
 
-const handleDeleteSelected = async () => {
+async function handleDeleteSelected() {
   if (await deleteAssets(selectedAssets.value)) {
     clearSelection()
   }
 }
 
-const handleZoomClick = (asset: AssetItem) => {
+function handleZoomClick(asset: AssetItem) {
   const mediaType = getMediaTypeFromFilename(asset.name)
   if (!isPreviewableMediaType(mediaType)) {
     return
@@ -602,7 +602,7 @@ const handleZoomClick = (asset: AssetItem) => {
   }
 }
 
-const enterFolderView = async (asset: AssetItem) => {
+async function enterFolderView(asset: AssetItem) {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
   if (!metadata) {
     console.warn('Invalid output asset metadata')
@@ -632,7 +632,7 @@ const enterFolderView = async (asset: AssetItem) => {
   }
 }
 
-const exitFolderView = () => {
+function exitFolderView() {
   folderJobId.value = null
   folderExecutionTime.value = undefined
   expectedFolderCount.value = 0
@@ -648,17 +648,17 @@ onUnmounted(() => {
   deactivateSelection()
 })
 
-const handleDeselectAll = () => {
+function handleDeselectAll() {
   clearSelection()
 }
 
-const handleEmptySpaceClick = () => {
+function handleEmptySpaceClick() {
   if (hasSelection) {
     clearSelection()
   }
 }
 
-const copyJobId = async () => {
+async function copyJobId() {
   if (folderJobId.value) {
     try {
       await navigator.clipboard.writeText(folderJobId.value)

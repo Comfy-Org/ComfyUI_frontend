@@ -32,13 +32,14 @@ const i18n = createI18n({
   }
 })
 
-const renderButton = () =>
-  render(MaskEditorButton, {
+function renderButton() {
+  return render(MaskEditorButton, {
     global: {
       plugins: [i18n],
       directives: { tooltip: () => {} }
     }
   })
+}
 
 describe('MaskEditorButton', () => {
   beforeEach(() => {

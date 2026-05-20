@@ -23,20 +23,20 @@ type UseJobErrorReportingOptions = {
   dialog: JobErrorDialogService
 }
 
-export const useJobErrorReporting = ({
+export function useJobErrorReporting({
   taskForJob,
   copyToClipboard,
   dialog
-}: UseJobErrorReportingOptions) => {
+}: UseJobErrorReportingOptions) {
   const errorMessageValue = computed(() => taskForJob.value?.errorMessage ?? '')
 
-  const copyErrorMessage = () => {
+  function copyErrorMessage() {
     if (errorMessageValue.value) {
       void copyToClipboard(errorMessageValue.value)
     }
   }
 
-  const reportJobError = () => {
+  function reportJobError() {
     const executionError = taskForJob.value?.executionError
     if (executionError) {
       dialog.showExecutionErrorDialog(executionError)

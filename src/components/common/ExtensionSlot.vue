@@ -23,7 +23,7 @@ const props = defineProps<{
   extension: VueExtension | CustomExtension
 }>()
 
-const mountCustomExtension = (extension: CustomExtension, el: HTMLElement) => {
+function mountCustomExtension(extension: CustomExtension, el: HTMLElement) {
   extension.render(el)
 }
 

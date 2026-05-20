@@ -130,15 +130,15 @@ export function addToComboValues(widget: IComboWidget, value: string) {
   }
 }
 
-export const isLGraphNode = (item: unknown): item is LGraphNode => {
+export function isLGraphNode(item: unknown): item is LGraphNode {
   return item instanceof LGraphNode
 }
 
-export const isLGraphGroup = (item: unknown): item is LGraphGroup => {
+export function isLGraphGroup(item: unknown): item is LGraphGroup {
   return item instanceof LGraphGroup
 }
 
-export const isReroute = (item: unknown): item is Reroute => {
+export function isReroute(item: unknown): item is Reroute {
   return item instanceof Reroute
 }
 
@@ -147,7 +147,7 @@ export const isReroute = (item: unknown): item is Reroute => {
  * @param items - The items to get the color option of.
  * @returns The color option of the item.
  */
-export const getItemsColorOption = (items: unknown[]): ColorOption | null => {
+export function getItemsColorOption(items: unknown[]): ColorOption | null {
   const validItems = _.filter(items, isColorable)
   if (_.isEmpty(validItems)) return null
 

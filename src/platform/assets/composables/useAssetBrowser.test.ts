@@ -32,19 +32,21 @@ describe('useAssetBrowser', () => {
   })
 
   // Test fixtures - minimal data focused on functionality being tested
-  const createApiAsset = (overrides: Partial<AssetItem> = {}): AssetItem => ({
-    id: 'test-id',
-    name: 'test-asset.safetensors',
-    asset_hash: 'blake3:abc123',
-    size: 1024,
-    mime_type: 'application/octet-stream',
-    tags: ['models', 'checkpoints'],
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z',
-    last_access_time: '2024-01-01T00:00:00Z',
-    is_immutable: false,
-    ...overrides
-  })
+  function createApiAsset(overrides: Partial<AssetItem> = {}): AssetItem {
+    return {
+      id: 'test-id',
+      name: 'test-asset.safetensors',
+      asset_hash: 'blake3:abc123',
+      size: 1024,
+      mime_type: 'application/octet-stream',
+      tags: ['models', 'checkpoints'],
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z',
+      last_access_time: '2024-01-01T00:00:00Z',
+      is_immutable: false,
+      ...overrides
+    }
+  }
 
   describe('Category Filtering', () => {
     it('exposes category-filtered assets for filter options', () => {

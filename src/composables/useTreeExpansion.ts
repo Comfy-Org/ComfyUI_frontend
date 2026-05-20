@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 
 export function useTreeExpansion(expandedKeys: Ref<Record<string, boolean>>) {
-  const toggleNode = (node: TreeNode) => {
+  function toggleNode(node: TreeNode) {
     if (node.key && typeof node.key === 'string') {
       if (node.key in expandedKeys.value) {
         delete expandedKeys.value[node.key]
@@ -13,7 +13,7 @@ export function useTreeExpansion(expandedKeys: Ref<Record<string, boolean>>) {
     }
   }
 
-  const toggleNodeRecursive = (node: TreeNode) => {
+  function toggleNodeRecursive(node: TreeNode) {
     if (node.key && typeof node.key === 'string') {
       if (node.key in expandedKeys.value) {
         collapseNode(node)
@@ -23,7 +23,7 @@ export function useTreeExpansion(expandedKeys: Ref<Record<string, boolean>>) {
     }
   }
 
-  const expandNode = (node: TreeNode) => {
+  function expandNode(node: TreeNode) {
     if (node.key && typeof node.key === 'string' && !node.leaf) {
       expandedKeys.value[node.key] = true
 
@@ -33,7 +33,7 @@ export function useTreeExpansion(expandedKeys: Ref<Record<string, boolean>>) {
     }
   }
 
-  const collapseNode = (node: TreeNode) => {
+  function collapseNode(node: TreeNode) {
     if (node.key && typeof node.key === 'string' && !node.leaf) {
       delete expandedKeys.value[node.key]
 
@@ -43,7 +43,7 @@ export function useTreeExpansion(expandedKeys: Ref<Record<string, boolean>>) {
     }
   }
 
-  const toggleNodeOnEvent = (e: MouseEvent | KeyboardEvent, node: TreeNode) => {
+  function toggleNodeOnEvent(e: MouseEvent | KeyboardEvent, node: TreeNode) {
     if (e.ctrlKey) {
       toggleNodeRecursive(node)
     } else {

@@ -24,18 +24,15 @@ const PLAN_RANK = PLAN_ORDER.reduce<Map<RankedPlanKey, number>>(
   new Map()
 )
 
-const toRankedPlanKey = (
+function toRankedPlanKey(
   tierKey: TierKey,
   billingCycle: BillingCycle
-): RankedPlanKey | null => {
+): RankedPlanKey | null {
   if (tierKey === 'founder' || tierKey === 'free') return null
   return `${billingCycle}-${tierKey}` as RankedPlanKey
 }
 
-export const getPlanRank = ({
-  tierKey,
-  billingCycle
-}: PlanDescriptor): number => {
+export function getPlanRank({ tierKey, billingCycle }: PlanDescriptor): number {
   const planKey = toRankedPlanKey(tierKey, billingCycle)
   if (!planKey) return Number.POSITIVE_INFINITY
 
@@ -47,10 +44,10 @@ interface DowngradeCheckParams {
   target: PlanDescriptor
 }
 
-export const isPlanDowngrade = ({
+export function isPlanDowngrade({
   current,
   target
-}: DowngradeCheckParams): boolean => {
+}: DowngradeCheckParams): boolean {
   const currentRank = getPlanRank(current)
   const targetRank = getPlanRank(target)
 

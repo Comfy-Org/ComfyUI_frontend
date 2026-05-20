@@ -5,7 +5,7 @@ import type { TaskItemImpl } from '@/stores/queueStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-const getAddedAssetCount = (task: TaskItemImpl): number => {
+function getAddedAssetCount(task: TaskItemImpl): number {
   if (typeof task.outputsCount === 'number') {
     return Math.max(task.outputsCount, 0)
   }
@@ -23,7 +23,7 @@ export const useAssetsSidebarBadgeStore = defineStore(
     const countedHistoryAssetsByJobId = ref(new Map<string, number>())
     const hasInitializedHistory = ref(false)
 
-    const markCurrentHistoryAsSeen = () => {
+    function markCurrentHistoryAsSeen() {
       countedHistoryAssetsByJobId.value = new Map(
         queueStore.historyTasks.map((task) => [
           task.jobId,

@@ -102,7 +102,7 @@ export const useAssetsStore = defineStore('assets', () => {
   // Track assets currently being deleted (for loading overlay)
   const deletingAssetIds = shallowReactive(new Set<string>())
 
-  const setAssetDeleting = (assetId: string, isDeleting: boolean) => {
+  function setAssetDeleting(assetId: string, isDeleting: boolean) {
     if (isDeleting) {
       deletingAssetIds.add(assetId)
     } else {
@@ -110,7 +110,7 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   }
 
-  const isAssetDeleting = (assetId: string): boolean => {
+  function isAssetDeleting(assetId: string): boolean {
     return deletingAssetIds.has(assetId)
   }
 
@@ -140,7 +140,7 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   })
 
-  const updateInputs = async () => {
+  async function updateInputs() {
     const result = await executeUpdateInputs()
     assetService.invalidateInputAssetsIncludingPublic()
     return result
@@ -150,7 +150,7 @@ export const useAssetsStore = defineStore('assets', () => {
    * Fetch history assets with pagination support
    * @param loadMore - true for pagination (append), false for initial load (replace)
    */
-  const fetchHistoryAssets = async (loadMore = false): Promise<AssetItem[]> => {
+  async function fetchHistoryAssets(loadMore = false): Promise<AssetItem[]> {
     // Reset state for initial load
     if (!loadMore) {
       historyOffset.value = 0
@@ -217,7 +217,7 @@ export const useAssetsStore = defineStore('assets', () => {
   /**
    * Initial load of history assets
    */
-  const updateHistory = async () => {
+  async function updateHistory() {
     historyLoading.value = true
     historyError.value = null
     try {
@@ -238,7 +238,7 @@ export const useAssetsStore = defineStore('assets', () => {
   /**
    * Load more history items (infinite scroll)
    */
-  const loadMoreHistory = async () => {
+  async function loadMoreHistory() {
     // Guard: prevent concurrent loads and check if more items available
     if (!hasMoreHistory.value || isLoadingMore.value) return
 
@@ -313,8 +313,10 @@ export const useAssetsStore = defineStore('assets', () => {
     return flatOutputInFlight
   }
 
-  const updateFlatOutputs = () => fetchFlatOutputs(false)
-  const loadMoreFlatOutputs = async () => {
+  function updateFlatOutputs() {
+    return fetchFlatOutputs(false)
+  }
+  async function loadMoreFlatOutputs() {
     if (flatOutputIsLoadingMore.value) return
     await fetchFlatOutputs(true)
   }
@@ -326,12 +328,12 @@ export const useAssetsStore = defineStore('assets', () => {
    * Match by name because the cloud assets API and the history API use
    * different id spaces; name is the stable cross-API identifier.
    */
-  const setAssetPreview = (
+  function setAssetPreview(
     name: string,
     previewId: string,
     previewUrl: string
-  ) => {
-    const patch = (list: AssetItem[]) => {
+  ) {
+    function patch(list: AssetItem[]) {
       const idx = list.findIndex((a) => a.name === name)
       if (idx < 0) return
       list[idx] = {
@@ -384,7 +386,7 @@ export const useAssetsStore = defineStore('assets', () => {
    * to category internally using modelToNodeStore.getCategoryForNodeType().
    * Cloud-only feature - empty Maps in desktop builds
    */
-  const getModelState = () => {
+  function getModelState() {
     if (isCloud) {
       const modelStateByCategory = ref(new Map<string, ModelPaginationState>())
 

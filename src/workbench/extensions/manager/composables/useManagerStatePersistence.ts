@@ -6,11 +6,11 @@ import {
 
 const STORAGE_KEY = 'Comfy.Manager.UI.State'
 
-export const useManagerStatePersistence = () => {
+export function useManagerStatePersistence() {
   /**
    * Load the UI state from localStorage.
    */
-  const loadStoredState = (): ManagerState => {
+  function loadStoredState(): ManagerState {
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
@@ -30,14 +30,14 @@ export const useManagerStatePersistence = () => {
   /**
    * Persist the UI state to localStorage.
    */
-  const persistState = (state: ManagerState) => {
+  function persistState(state: ManagerState) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
   }
 
   /**
    * Reset the UI state to the default values.
    */
-  const reset = () => {
+  function reset() {
     persistState({
       selectedTabId: ManagerTab.All,
       searchQuery: '',

@@ -182,8 +182,9 @@ const { title, filter, searchSubject, dataTestid, hideLeafIcon } = defineProps<{
 const { t } = useI18n()
 const { isAppMode } = useAppMode()
 
-const applyFilter = (workflows: ComfyWorkflow[]) =>
-  filter ? workflows.filter(filter) : workflows
+function applyFilter(workflows: ComfyWorkflow[]) {
+  return filter ? workflows.filter(filter) : workflows
+}
 
 const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>
@@ -204,7 +205,7 @@ const filteredWorkflows = computed(() => {
 const filteredRoot = computed<TreeNode>(() => {
   return buildWorkflowTree(filteredWorkflows.value as ComfyWorkflow[])
 })
-const handleSearch = async (query: string) => {
+async function handleSearch(query: string) {
   if (query.length === 0) {
     expandedKeys.value = {}
     return
@@ -220,7 +221,7 @@ const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 const dummyExpandedKeys = ref<Record<string, boolean>>({})
 
-const handleCloseWorkflow = async (workflow?: ComfyWorkflow) => {
+async function handleCloseWorkflow(workflow?: ComfyWorkflow) {
   if (workflow) {
     await workflowService.closeWorkflow(workflow, {
       warnIfUnsaved: !workspaceStore.shiftDown
@@ -234,7 +235,7 @@ enum WorkflowTreeType {
   Browse = 'Browse'
 }
 
-const buildWorkflowTree = (workflows: ComfyWorkflow[]) => {
+function buildWorkflowTree(workflows: ComfyWorkflow[]) {
   return buildTree(workflows, (workflow: ComfyWorkflow) =>
     workflow.key.split('/')
   )
@@ -263,10 +264,10 @@ const openWorkflowsTree = computed(() =>
   ])
 )
 
-const renderTreeNode = (
+function renderTreeNode(
   node: TreeNode,
   type: WorkflowTreeType
-): TreeExplorerNode<ComfyWorkflow> => {
+): TreeExplorerNode<ComfyWorkflow> {
   const children = node.children?.map((child) => renderTreeNode(child, type))
 
   const workflow: ComfyWorkflow = node.data

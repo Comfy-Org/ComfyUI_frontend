@@ -28,6 +28,7 @@
   ],
   "rules": {
     "no-async-promise-executor": "off",
+    "func-style": ["error", "declaration"],
     "no-console": [
       "error",
       {
@@ -122,6 +123,12 @@
       "files": ["**/*.{stories,test,spec}.ts", "**/*.stories.vue"],
       "rules": {
         "no-console": "allow"
+      }
+    },
+    {
+      "files": ["src/lib/litegraph/**"],
+      "rules": {
+        "func-style": "off"
       }
     },
     {

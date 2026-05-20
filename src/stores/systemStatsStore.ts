@@ -6,7 +6,7 @@ import type { SystemStats } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 
 export const useSystemStatsStore = defineStore('systemStats', () => {
-  const fetchSystemStatsData = async () => {
+  async function fetchSystemStatsData() {
     try {
       return await api.getSystemStats()
     } catch (err) {

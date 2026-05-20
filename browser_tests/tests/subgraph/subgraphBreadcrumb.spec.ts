@@ -25,7 +25,7 @@ const MISSING_NODES_SUBGRAPH_NODE_ID = '2'
  * the root graph, then the inner subgraph node that appears inside. Matches
  * how a user navigates via the canvas.
  */
-const enterNestedSubgraphs = async (comfyPage: ComfyPage) => {
+async function enterNestedSubgraphs(comfyPage: ComfyPage) {
   const outerNode = await comfyPage.nodeOps.getNodeRefById(
     OUTER_SUBGRAPH_NODE_ID_IN_NESTED
   )

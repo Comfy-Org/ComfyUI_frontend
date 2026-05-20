@@ -50,21 +50,21 @@ const managerApiClient = axios.create({
  * Provides methods for managing packs, ComfyUI-Manager queue operations, and system functions
  * Note: This service should only be used when Manager state is NEW_UI
  */
-export const useComfyManagerService = () => {
+export function useComfyManagerService() {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
   // Check if manager service should be available
-  const isManagerServiceAvailable = () => {
+  function isManagerServiceAvailable() {
     const managerState = useManagerState()
     return managerState.isNewManagerUI.value
   }
 
-  const handleRequestError = (
+  function handleRequestError(
     err: unknown,
     context: string,
     routeSpecificErrors?: Record<number, string>
-  ) => {
+  ) {
     // Don't treat cancellation as an error
     if (isAbortError(err)) return
 
@@ -88,14 +88,14 @@ export const useComfyManagerService = () => {
     error.value = message
   }
 
-  const executeRequest = async <T>(
+  async function executeRequest<T>(
     requestCall: () => Promise<AxiosResponse<T>>,
     options: {
       errorContext: string
       routeSpecificErrors?: Record<number, string>
       isQueueOperation?: boolean
     }
-  ): Promise<T | null> => {
+  ): Promise<T | null> {
     const { errorContext, routeSpecificErrors, isQueueOperation } = options
 
     // Block service calls if not in NEW_UI state
@@ -119,7 +119,7 @@ export const useComfyManagerService = () => {
     }
   }
 
-  const startQueue = async (signal?: AbortSignal) => {
+  async function startQueue(signal?: AbortSignal) {
     const errorContext = 'Starting ComfyUI-Manager job queue'
     const routeSpecificErrors = {
       201: 'Created: ComfyUI-Manager job queue is already running'
@@ -131,7 +131,7 @@ export const useComfyManagerService = () => {
     )
   }
 
-  const getQueueStatus = async (client_id?: string, signal?: AbortSignal) => {
+  async function getQueueStatus(client_id?: string, signal?: AbortSignal) {
     const errorContext = 'Getting ComfyUI-Manager queue status'
 
     return executeRequest<ManagerQueueStatus>(
@@ -144,7 +144,7 @@ export const useComfyManagerService = () => {
     )
   }
 
-  const listInstalledPacks = async (signal?: AbortSignal) => {
+  async function listInstalledPacks(signal?: AbortSignal) {
     const errorContext = 'Fetching installed packs'
 
     return executeRequest<InstalledPacksResponse>(
@@ -153,7 +153,7 @@ export const useComfyManagerService = () => {
     )
   }
 
-  const getImportFailInfo = async (signal?: AbortSignal) => {
+  async function getImportFailInfo(signal?: AbortSignal) {
     const errorContext = 'Fetching import failure information'
 
     return executeRequest<Record<string, unknown>>(
@@ -162,10 +162,10 @@ export const useComfyManagerService = () => {
     )
   }
 
-  const getImportFailInfoBulk = async (
+  async function getImportFailInfoBulk(
     params: components['schemas']['ImportFailInfoBulkRequest'] = {},
     signal?: AbortSignal
-  ) => {
+  ) {
     const errorContext = 'Fetching bulk import failure information'
 
     if (!params.cnr_ids?.length && !params.urls?.length) {
@@ -181,12 +181,12 @@ export const useComfyManagerService = () => {
     )
   }
 
-  const queueTask = async (
+  async function queueTask(
     kind: QueueTaskItem['kind'],
     params: QueueTaskItem['params'],
     ui_id?: string,
     signal?: AbortSignal
-  ) => {
+  ) {
     const task: QueueTaskItem = {
       kind,
       params,
@@ -206,51 +206,51 @@ export const useComfyManagerService = () => {
     )
   }
 
-  const installPack = async (
+  async function installPack(
     params: InstallPackParams,
     ui_id?: string,
     signal?: AbortSignal
-  ) => {
+  ) {
     return queueTask('install', params, ui_id, signal)
   }
 
-  const uninstallPack = async (
+  async function uninstallPack(
     params: components['schemas']['UninstallPackParams'],
     ui_id?: string,
     signal?: AbortSignal
-  ) => {
+  ) {
     return queueTask('uninstall', params, ui_id, signal)
   }
 
-  const disablePack = async (
+  async function disablePack(
     params: components['schemas']['DisablePackParams'],
     ui_id?: string,
     signal?: AbortSignal
-  ): Promise<null> => {
+  ): Promise<null> {
     return queueTask('disable', params, ui_id, signal)
   }
 
-  const enablePack = async (
+  async function enablePack(
     params: components['schemas']['EnablePackParams'],
     ui_id?: string,
     signal?: AbortSignal
-  ): Promise<null> => {
+  ): Promise<null> {
     return queueTask('enable', params, ui_id, signal)
   }
 
-  const updatePack = async (
+  async function updatePack(
     params: components['schemas']['UpdatePackParams'],
     ui_id?: string,
     signal?: AbortSignal
-  ): Promise<null> => {
+  ): Promise<null> {
     return queueTask('update', params, ui_id, signal)
   }
 
-  const updateAllPacks = async (
+  async function updateAllPacks(
     params: UpdateAllPacksParams = {},
     ui_id?: string,
     signal?: AbortSignal
-  ) => {
+  ) {
     const errorContext = 'Updating all packs'
     const routeSpecificErrors = {
       403: 'Forbidden: To use this action, a security_level of `middle or below` is required',
@@ -273,11 +273,11 @@ export const useComfyManagerService = () => {
     )
   }
 
-  const updateComfyUI = async (
+  async function updateComfyUI(
     params: UpdateComfyUIParams = { is_stable: true },
     ui_id?: string,
     signal?: AbortSignal
-  ) => {
+  ) {
     const errorContext = 'Updating ComfyUI'
     const routeSpecificErrors = {
       400: 'Bad Request: Missing required parameters',
@@ -300,7 +300,7 @@ export const useComfyManagerService = () => {
     )
   }
 
-  const rebootComfyUI = async (signal?: AbortSignal) => {
+  async function rebootComfyUI(signal?: AbortSignal) {
     const errorContext = 'Rebooting ComfyUI'
     const routeSpecificErrors = {
       403: 'Forbidden: Rebooting ComfyUI requires security_level of middle or below'
@@ -312,7 +312,7 @@ export const useComfyManagerService = () => {
     )
   }
 
-  const isLegacyManagerUI = async (signal?: AbortSignal) => {
+  async function isLegacyManagerUI(signal?: AbortSignal) {
     const errorContext = 'Checking if user set Manager to use the legacy UI'
 
     return executeRequest<{ is_legacy_manager_ui: boolean }>(
@@ -321,7 +321,7 @@ export const useComfyManagerService = () => {
     )
   }
 
-  const getTaskHistory = async (
+  async function getTaskHistory(
     options: {
       ui_id?: string
       max_items?: number
@@ -329,7 +329,7 @@ export const useComfyManagerService = () => {
       offset?: number
     } = {},
     signal?: AbortSignal
-  ) => {
+  ) {
     const errorContext = 'Getting ComfyUI-Manager task history'
 
     return executeRequest<ManagerTaskHistory>(

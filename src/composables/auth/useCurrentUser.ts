@@ -6,7 +6,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthUserInfo } from '@/types/authTypes'
 
-export const useCurrentUser = () => {
+export function useCurrentUser() {
   const authStore = useAuthStore()
   const commandStore = useCommandStore()
   const apiKeyStore = useApiKeyAuthStore()
@@ -29,13 +29,15 @@ export const useCurrentUser = () => {
     return null
   })
 
-  const onUserResolved = (callback: (user: AuthUserInfo) => void) =>
-    whenever(resolvedUserInfo, callback, { immediate: true })
+  function onUserResolved(callback: (user: AuthUserInfo) => void) {
+    return whenever(resolvedUserInfo, callback, { immediate: true })
+  }
 
-  const onTokenRefreshed = (callback: () => void) =>
-    whenever(() => authStore.tokenRefreshTrigger, callback)
+  function onTokenRefreshed(callback: () => void) {
+    return whenever(() => authStore.tokenRefreshTrigger, callback)
+  }
 
-  const onUserLogout = (callback: () => void) => {
+  function onUserLogout(callback: () => void) {
     watch(resolvedUserInfo, (user, prevUser) => {
       if (prevUser && !user) callback()
     })
@@ -99,7 +101,7 @@ export const useCurrentUser = () => {
     return firebaseUser.value?.photoURL
   })
 
-  const handleSignOut = async () => {
+  async function handleSignOut() {
     if (isApiKeyLogin.value) {
       await apiKeyStore.clearStoredApiKey()
     } else {
@@ -107,7 +109,7 @@ export const useCurrentUser = () => {
     }
   }
 
-  const handleSignIn = async () => {
+  async function handleSignIn() {
     await commandStore.execute('Comfy.User.OpenSignInDialog')
   }
 

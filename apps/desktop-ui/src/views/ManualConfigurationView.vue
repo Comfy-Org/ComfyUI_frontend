@@ -67,7 +67,9 @@ const electron = electronAPI()
 const basePath = ref<string | null>(null)
 const sep = ref<'\\' | '/'>('/')
 
-const restartApp = (message?: string) => electron.restartApp(message)
+function restartApp(message?: string) {
+  return electron.restartApp(message)
+}
 
 onMounted(async () => {
   basePath.value = await electron.getBasePath()

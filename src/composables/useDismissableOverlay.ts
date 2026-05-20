@@ -11,11 +11,13 @@ interface UseDismissableOverlayOptions {
   dismissOnScroll?: boolean
 }
 
-const isNode = (value: EventTarget | null | undefined): value is Node =>
-  value instanceof Node
+function isNode(value: EventTarget | null | undefined): value is Node {
+  return value instanceof Node
+}
 
-const isInside = (target: Node, element: HTMLElement | null | undefined) =>
-  !!element?.contains(target)
+function isInside(target: Node, element: HTMLElement | null | undefined) {
+  return !!element?.contains(target)
+}
 
 export function useDismissableOverlay({
   isOpen,
@@ -24,7 +26,7 @@ export function useDismissableOverlay({
   getTriggerEl,
   dismissOnScroll = false
 }: UseDismissableOverlayOptions) {
-  const dismissIfOutside = (event: Event) => {
+  function dismissIfOutside(event: Event) {
     if (!toValue(isOpen)) {
       return
     }

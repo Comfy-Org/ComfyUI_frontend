@@ -44,35 +44,39 @@ vi.mock(
 )
 
 describe('NodeWidgets', () => {
-  const createMockWidget = (
+  function createMockWidget(
     overrides: Partial<SafeWidgetData> = {}
-  ): SafeWidgetData => ({
-    nodeId: 'test_node',
-    name: 'test_widget',
-    type: 'combo',
-    options: undefined,
-    callback: undefined,
-    spec: undefined,
-    isDOMWidget: false,
-    slotMetadata: undefined,
-    ...overrides
-  })
+  ): SafeWidgetData {
+    return {
+      nodeId: 'test_node',
+      name: 'test_widget',
+      type: 'combo',
+      options: undefined,
+      callback: undefined,
+      spec: undefined,
+      isDOMWidget: false,
+      slotMetadata: undefined,
+      ...overrides
+    }
+  }
 
-  const createMockNodeData = (
+  function createMockNodeData(
     nodeType: string = 'TestNode',
     widgets: SafeWidgetData[] = [],
     id: string = '1'
-  ): VueNodeData => ({
-    id,
-    type: nodeType,
-    widgets,
-    title: 'Test Node',
-    mode: 0,
-    selected: false,
-    executing: false,
-    inputs: [],
-    outputs: []
-  })
+  ): VueNodeData {
+    return {
+      id,
+      type: nodeType,
+      widgets,
+      title: 'Test Node',
+      mode: 0,
+      selected: false,
+      executing: false,
+      inputs: [],
+      outputs: []
+    }
+  }
 
   function renderComponent(nodeData?: VueNodeData, setupStores?: () => void) {
     const pinia = createTestingPinia({ stubActions: false })

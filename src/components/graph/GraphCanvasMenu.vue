@@ -216,7 +216,7 @@ onMounted(() => {
 /**
  * Track minimap toggle button click and execute the command.
  */
-const onMinimapToggleClick = () => {
+function onMinimapToggleClick() {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'graph_menu_minimap_toggle_clicked'
   })
@@ -226,7 +226,7 @@ const onMinimapToggleClick = () => {
 /**
  * Track hide/show links button click and execute the command.
  */
-const onLinkVisibilityToggleClick = () => {
+function onLinkVisibilityToggleClick() {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'graph_menu_hide_links_toggle_clicked'
   })

@@ -10,7 +10,7 @@ interface Point {
 function useCoordinateTransformInternal() {
   const store = useMaskEditorStore()
 
-  const screenToCanvas = (clientPoint: Point): Point => {
+  function screenToCanvas(clientPoint: Point): Point {
     const pointerZoneEl = unref(store.pointerZone)
     const canvasContainerEl = unref(store.canvasContainer)
     const canvasEl = unref(store.maskCanvas)
@@ -39,7 +39,7 @@ function useCoordinateTransformInternal() {
     return { x, y }
   }
 
-  const canvasToScreen = (canvasPoint: Point): Point => {
+  function canvasToScreen(canvasPoint: Point): Point {
     const pointerZoneEl = unref(store.pointerZone)
     const canvasContainerEl = unref(store.canvasContainer)
     const canvasEl = unref(store.maskCanvas)

@@ -166,7 +166,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     }
   })
 
-  const getInputImageUrl = (): string | null => {
+  function getInputImageUrl(): string | null {
     if (!node.value) return null
 
     let sourceNode = node.value.getInputNode(0)
@@ -189,7 +189,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     return null
   }
 
-  const updateImageUrl = () => {
+  function updateImageUrl() {
     imageUrl.value = getInputImageUrl()
   }
 
@@ -200,7 +200,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     }
   })
 
-  const updateDisplayedDimensions = () => {
+  function updateDisplayedDimensions() {
     if (!imageEl.value || !containerEl.value) return
 
     const img = imageEl.value
@@ -239,7 +239,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     }
   }
 
-  const getEffectiveScale = (): number => {
+  function getEffectiveScale(): number {
     const container = containerEl.value
 
     if (!container || naturalWidth.value <= 0 || displayedWidth.value <= 0) {
@@ -370,26 +370,26 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     )
   })
 
-  const handleImageLoad = () => {
+  function handleImageLoad() {
     isLoading.value = false
     updateDisplayedDimensions()
   }
 
-  const handleImageError = () => {
+  function handleImageError() {
     isLoading.value = false
     imageUrl.value = null
   }
 
-  const capturePointer = (e: PointerEvent) => {
+  function capturePointer(e: PointerEvent) {
     if (e.target instanceof HTMLElement) e.target.setPointerCapture(e.pointerId)
   }
 
-  const releasePointer = (e: PointerEvent) => {
+  function releasePointer(e: PointerEvent) {
     if (e.target instanceof HTMLElement)
       e.target.releasePointerCapture(e.pointerId)
   }
 
-  const handleDragStart = (e: PointerEvent) => {
+  function handleDragStart(e: PointerEvent) {
     if (!imageUrl.value) return
 
     isDragging.value = true
@@ -400,7 +400,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     capturePointer(e)
   }
 
-  const handleDragMove = (e: PointerEvent) => {
+  function handleDragMove(e: PointerEvent) {
     if (!isDragging.value) return
 
     const effectiveScale = getEffectiveScale()
@@ -420,14 +420,14 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     )
   }
 
-  const handleDragEnd = (e: PointerEvent) => {
+  function handleDragEnd(e: PointerEvent) {
     if (!isDragging.value) return
 
     isDragging.value = false
     releasePointer(e)
   }
 
-  const handleResizeStart = (e: PointerEvent, direction: ResizeDirection) => {
+  function handleResizeStart(e: PointerEvent, direction: ResizeDirection) {
     if (!imageUrl.value) return
 
     e.stopPropagation()
@@ -443,7 +443,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     capturePointer(e)
   }
 
-  const handleResizeMove = (e: PointerEvent) => {
+  function handleResizeMove(e: PointerEvent) {
     if (!isResizing.value || !resizeDirection.value) return
 
     const effectiveScale = getEffectiveScale()
@@ -572,7 +572,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     cropHeight.value = Math.max(MIN_CROP_SIZE, newHeight)
   }
 
-  const handleResizeEnd = (e: PointerEvent) => {
+  function handleResizeEnd(e: PointerEvent) {
     if (!isResizing.value) return
 
     isResizing.value = false
@@ -580,7 +580,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     releasePointer(e)
   }
 
-  const initialize = () => {
+  function initialize() {
     if (nodeId != null) {
       node.value = resolveNode(nodeId) ?? null
     }

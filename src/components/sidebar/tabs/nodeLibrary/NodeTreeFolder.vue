@@ -50,7 +50,7 @@ onMounted(() => {
   stopWatchCustomization = watch(customization, updateIconColor, { deep: true })
 })
 
-const updateIconColor = () => {
+function updateIconColor() {
   if (iconElement.value && customization.value) {
     iconElement.value.style.color = customization.value.color ?? ''
   }
@@ -63,7 +63,7 @@ onUnmounted(() => {
 })
 
 const expandedKeys = inject(InjectKeyExpandedKeys)
-const handleItemDrop = (node: RenderedTreeExplorerNode<ComfyNodeDefImpl>) => {
+function handleItemDrop(node: RenderedTreeExplorerNode<ComfyNodeDefImpl>) {
   if (!expandedKeys) return
   expandedKeys.value[node.key] = true
 }

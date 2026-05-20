@@ -61,19 +61,19 @@ import { useRouter } from 'vue-router'
 
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
-const openDocs = () => {
+function openDocs() {
   window.open(
     'https://github.com/Comfy-Org/desktop#currently-supported-platforms',
     '_blank'
   )
 }
 
-const reportIssue = () => {
+function reportIssue() {
   window.open('https://forum.comfy.org/c/v1-feedback/', '_blank')
 }
 
 const router = useRouter()
-const continueToInstall = async () => {
+async function continueToInstall() {
   await router.push('/install')
 }
 </script>

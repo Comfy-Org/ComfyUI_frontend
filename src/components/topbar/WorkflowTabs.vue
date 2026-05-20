@@ -165,10 +165,12 @@ const showOverflowArrows = ref(false)
 const leftArrowEnabled = ref(false)
 const rightArrowEnabled = ref(false)
 
-const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
-  value: workflow.path,
-  workflow
-})
+function workflowToOption(workflow: ComfyWorkflow): WorkflowOption {
+  return {
+    value: workflow.path,
+    workflow
+  }
+}
 
 const options = computed<WorkflowOption[]>(() =>
   workflowStore.openWorkflows.map(workflowToOption)
@@ -179,7 +181,7 @@ const selectedWorkflow = computed<WorkflowOption | null>(() =>
     : null
 )
 
-const onWorkflowChange = async (option: WorkflowOption) => {
+async function onWorkflowChange(option: WorkflowOption) {
   // Prevent unselecting the current workflow
   if (!option) {
     return
@@ -192,7 +194,7 @@ const onWorkflowChange = async (option: WorkflowOption) => {
   await workflowService.openWorkflow(option.workflow)
 }
 
-const closeWorkflows = async (options: WorkflowOption[]) => {
+async function closeWorkflows(options: WorkflowOption[]) {
   for (const opt of options) {
     if (
       !(await workflowService.closeWorkflow(opt.workflow, {
@@ -205,12 +207,12 @@ const closeWorkflows = async (options: WorkflowOption[]) => {
   }
 }
 
-const onCloseWorkflow = async (option: WorkflowOption) => {
+async function onCloseWorkflow(option: WorkflowOption) {
   await closeWorkflows([option])
 }
 
 // Horizontal scroll on wheel
-const handleWheel = (event: WheelEvent) => {
+function handleWheel(event: WheelEvent) {
   const scrollElement = event.currentTarget as HTMLElement
   const scrollAmount = event.deltaX || event.deltaY
   scrollElement.scroll({
@@ -225,15 +227,13 @@ const scrollContent = computed(
     ) as HTMLElement | null) ?? null
 )
 
-const scroll = (direction: number) => {
+function scroll(direction: number) {
   const el = scrollContent.value
   if (!el) return
   el.scrollBy({ left: direction * 20 })
 }
 
-const ensureActiveTabVisible = async (
-  options: { waitForDom?: boolean } = {}
-) => {
+async function ensureActiveTabVisible(options: { waitForDom?: boolean } = {}) {
   if (!selectedWorkflow.value) return
 
   if (options.waitForDom !== false) {

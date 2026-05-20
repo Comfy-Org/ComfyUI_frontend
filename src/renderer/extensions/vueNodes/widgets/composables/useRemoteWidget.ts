@@ -34,7 +34,7 @@ async function getAuthHeaders() {
 
 const dataCache = new Map<string, CacheEntry<unknown>>()
 
-const createCacheKey = (config: RemoteWidgetConfig): string => {
+function createCacheKey(config: RemoteWidgetConfig): string {
   const { route, query_params = {}, refresh = 0 } = config
 
   const paramsKey = Object.entries(query_params)
@@ -45,32 +45,42 @@ const createCacheKey = (config: RemoteWidgetConfig): string => {
   return [route, `r=${refresh}`, paramsKey].join(';')
 }
 
-const getBackoff = (retryCount: number) =>
-  Math.min(1000 * Math.pow(2, retryCount), 512)
+function getBackoff(retryCount: number) {
+  return Math.min(1000 * Math.pow(2, retryCount), 512)
+}
 
-const isInitialized = (entry: CacheEntry<unknown> | undefined) =>
-  entry?.data !== undefined &&
-  entry?.timestamp !== undefined &&
-  entry.timestamp > 0
+function isInitialized(entry: CacheEntry<unknown> | undefined) {
+  return (
+    entry?.data !== undefined &&
+    entry?.timestamp !== undefined &&
+    entry.timestamp > 0
+  )
+}
 
-const isStale = (entry: CacheEntry<unknown> | undefined, ttl: number) =>
-  entry?.timestamp && Date.now() - entry.timestamp >= ttl
+function isStale(entry: CacheEntry<unknown> | undefined, ttl: number) {
+  return entry?.timestamp && Date.now() - entry.timestamp >= ttl
+}
 
-const isFetching = (entry: CacheEntry<unknown> | undefined) =>
-  entry?.fetchPromise !== undefined
+function isFetching(entry: CacheEntry<unknown> | undefined) {
+  return entry?.fetchPromise !== undefined
+}
 
-const isFailed = (entry: CacheEntry<unknown> | undefined) =>
-  entry?.failed === true
+function isFailed(entry: CacheEntry<unknown> | undefined) {
+  return entry?.failed === true
+}
 
-const isBackingOff = (entry: CacheEntry<unknown> | undefined) =>
-  entry?.error &&
-  entry?.lastErrorTime &&
-  Date.now() - entry.lastErrorTime < getBackoff(entry.retryCount || 0)
+function isBackingOff(entry: CacheEntry<unknown> | undefined) {
+  return (
+    entry?.error &&
+    entry?.lastErrorTime &&
+    Date.now() - entry.lastErrorTime < getBackoff(entry.retryCount || 0)
+  )
+}
 
-const fetchData = async (
+async function fetchData(
   config: RemoteWidgetConfig,
   controller: AbortController
-) => {
+) {
   const { route, response_key, query_params, timeout = TIMEOUT } = config
 
   const authHeaders = await getAuthHeaders()
@@ -100,7 +110,7 @@ export function useRemoteWidget<
   let isLoaded = false
   let refreshQueued = false
 
-  const setSuccess = (entry: CacheEntry<T>, data: T) => {
+  function setSuccess(entry: CacheEntry<T>, data: T) {
     entry.retryCount = 0
     entry.lastErrorTime = 0
     entry.error = null
@@ -108,7 +118,7 @@ export function useRemoteWidget<
     entry.data = data ?? defaultValue
   }
 
-  const setError = (entry: CacheEntry<T>, error: Error | unknown) => {
+  function setError(entry: CacheEntry<T>, error: Error | unknown) {
     entry.retryCount = (entry.retryCount || 0) + 1
     entry.lastErrorTime = Date.now()
     entry.error = error instanceof Error ? error : new Error(String(error))
@@ -119,18 +129,18 @@ export function useRemoteWidget<
     }
   }
 
-  const setFailed = (entry: CacheEntry<T>) => {
+  function setFailed(entry: CacheEntry<T>) {
     dataCache.set(cacheKey, {
       data: entry.data ?? defaultValue,
       failed: true
     })
   }
 
-  const isFirstLoad = () => {
+  function isFirstLoad() {
     return !isLoaded && isInitialized(dataCache.get(cacheKey))
   }
 
-  const onFirstLoad = (data: T | T[]) => {
+  function onFirstLoad(data: T | T[]) {
     isLoaded = true
     const nextValue =
       Array.isArray(data) && data.length > 0 ? data[0] : undefined
@@ -139,7 +149,7 @@ export function useRemoteWidget<
     node.graph?.setDirtyCanvas(true)
   }
 
-  const fetchValue = async () => {
+  async function fetchValue() {
     const entry = dataCache.get(cacheKey)
 
     if (isFailed(entry)) return entry!.data as T
@@ -173,7 +183,7 @@ export function useRemoteWidget<
     }
   }
 
-  const onRefresh = () => {
+  function onRefresh() {
     if (remoteConfig.control_after_refresh) {
       const data = getCachedValue()
       if (!Array.isArray(data)) return // control_after_refresh is only supported for array values
@@ -194,7 +204,7 @@ export function useRemoteWidget<
   /**
    * Clear the widget's cached value, forcing a refresh on next access (e.g., a new render)
    */
-  const clearCachedValue = () => {
+  function clearCachedValue() {
     const entry = dataCache.get(cacheKey)
     if (!entry) return
     if (entry.fetchPromise) entry.controller?.abort() // Abort in-flight request
@@ -253,7 +263,7 @@ export function useRemoteWidget<
     let autoRefreshEnabled = false
 
     // Handler for execution success
-    const handleExecutionSuccess = () => {
+    function handleExecutionSuccess() {
       if (autoRefreshEnabled && widget.refresh) {
         widget.refresh()
       }

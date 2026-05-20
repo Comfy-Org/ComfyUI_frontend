@@ -11,7 +11,7 @@ import { readonly, ref } from 'vue'
  * @param options.useResizeObserver - Whether to use a resize observer to check for overflow
  * @returns An object containing the isOverflowing state and the checkOverflow function to manually trigger
  */
-export const useOverflowObserver = (
+export function useOverflowObserver(
   element: HTMLElement,
   options?: {
     debounceTime?: number
@@ -19,8 +19,8 @@ export const useOverflowObserver = (
     useResizeObserver?: boolean
     onCheck?: (isOverflowing: boolean) => void
   }
-) => {
-  options = {
+) {
+  const mergedOptions = {
     debounceTime: 25,
     useMutationObserver: true,
     useResizeObserver: true,
@@ -31,16 +31,16 @@ export const useOverflowObserver = (
   const disposeFns: (() => void)[] = []
   const disposed = ref(false)
 
-  const checkOverflowFn = () => {
+  function checkOverflowFn() {
     isOverflowing.value = element.scrollWidth > element.clientWidth
-    options.onCheck?.(isOverflowing.value)
+    mergedOptions.onCheck?.(isOverflowing.value)
   }
 
-  const checkOverflow = options.debounceTime
-    ? debounce(checkOverflowFn, options.debounceTime)
+  const checkOverflow = mergedOptions.debounceTime
+    ? debounce(checkOverflowFn, mergedOptions.debounceTime)
     : checkOverflowFn
 
-  if (options.useMutationObserver) {
+  if (mergedOptions.useMutationObserver) {
     disposeFns.push(
       useMutationObserver(element, checkOverflow, {
         subtree: true,
@@ -48,7 +48,7 @@ export const useOverflowObserver = (
       }).stop
     )
   }
-  if (options.useResizeObserver) {
+  if (mergedOptions.useResizeObserver) {
     disposeFns.push(useResizeObserver(element, checkOverflow).stop)
   }
 

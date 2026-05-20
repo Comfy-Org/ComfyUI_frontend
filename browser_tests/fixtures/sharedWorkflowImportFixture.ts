@@ -130,10 +130,12 @@ export const sharedWorkflowImportFixture = base.extend<{
 async function mockSharedWorkflowImportFlow(
   page: Page
 ): Promise<SharedWorkflowImportMocks> {
+  function noopResolveResponse() {}
   let isRecording = false
   let importEndpointCalled = false
   let importBody: ImportPublishedAssetsRequest | undefined
-  let resolvePublicInclusiveInputAssetResponseAfterImport: () => void = () => {}
+  let resolvePublicInclusiveInputAssetResponseAfterImport: () => void =
+    noopResolveResponse
   let publicInclusiveInputAssetResponseAfterImport = new Promise<void>(
     (resolve) => {
       resolvePublicInclusiveInputAssetResponseAfterImport = resolve

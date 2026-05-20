@@ -28,13 +28,15 @@ describe('useSubscriptionCancellationWatcher', () => {
   const isActiveSubscription = computed(() => isActive.value)
 
   let shouldWatch = true
-  const shouldWatchCancellation = () => shouldWatch
+  function shouldWatchCancellation() {
+    return shouldWatch
+  }
 
   const activeScopes: EffectScope[] = []
 
-  const initWatcher = (
+  function initWatcher(
     options: Parameters<typeof useSubscriptionCancellationWatcher>[0]
-  ): ReturnType<typeof useSubscriptionCancellationWatcher> => {
+  ): ReturnType<typeof useSubscriptionCancellationWatcher> {
     const scope = effectScope()
     let result: ReturnType<typeof useSubscriptionCancellationWatcher> | null =
       null

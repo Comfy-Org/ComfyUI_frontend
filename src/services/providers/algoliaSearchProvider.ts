@@ -55,9 +55,9 @@ const searchPacksCache = new QuickLRU<string, SearchPacksResult>({
   maxSize: SEARCH_CACHE_MAX_SIZE
 })
 
-const toRegistryLatestVersion = (
+function toRegistryLatestVersion(
   algoliaNode: AlgoliaNodePack
-): RegistryNodePack['latest_version'] => {
+): RegistryNodePack['latest_version'] {
   return {
     version: algoliaNode.latest_version,
     createdAt: algoliaNode.update_time,
@@ -67,9 +67,9 @@ const toRegistryLatestVersion = (
   }
 }
 
-const toRegistryPublisher = (
+function toRegistryPublisher(
   algoliaNode: AlgoliaNodePack
-): RegistryNodePack['publisher'] => {
+): RegistryNodePack['publisher'] {
   return {
     id: algoliaNode.publisher_id,
     name: algoliaNode.publisher_id
@@ -111,16 +111,16 @@ const toRegistryPack = memoize(
   (algoliaNode: AlgoliaNodePack) => algoliaNode.id
 )
 
-export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
+export function useAlgoliaSearchProvider(): NodePackSearchProvider {
   const searchClient = algoliasearch(__ALGOLIA_APP_ID__, __ALGOLIA_API_KEY__)
 
   /**
    * Search for node packs in Algolia (internal method)
    */
-  const searchPacksInternal = async (
+  async function searchPacksInternal(
     query: string,
     params: SearchNodePacksParams
-  ): Promise<SearchPacksResult> => {
+  ): Promise<SearchPacksResult> {
     const { pageSize, pageNumber } = params
     const rest = omit(params, ['pageSize', 'pageNumber'])
 
@@ -176,10 +176,10 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
   /**
    * Search for node packs in Algolia with caching.
    */
-  const searchPacks = async (
+  async function searchPacks(
     query: string,
     params: SearchNodePacksParams
-  ): Promise<SearchPacksResult> => {
+  ): Promise<SearchPacksResult> {
     const cacheKey = paramsToCacheKey({ query, ...params })
     const cachedResult = searchPacksCache.get(cacheKey)
     if (cachedResult !== undefined) return cachedResult
@@ -189,14 +189,14 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
     return result
   }
 
-  const clearSearchCache = () => {
+  function clearSearchCache() {
     searchPacksCache.clear()
   }
 
-  const getSortValue = (
+  function getSortValue(
     pack: RegistryNodePack,
     sortField: string
-  ): string | number => {
+  ): string | number {
     // For Algolia, we rely on the default sorting behavior
     // The results are already sorted by the index configuration
     // This is mainly used for re-sorting after results are fetched
@@ -220,7 +220,7 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
     }
   }
 
-  const getSortableFields = (): SortableField[] => {
+  function getSortableFields(): SortableField[] {
     return [
       {
         id: SortableAlgoliaField.Downloads,

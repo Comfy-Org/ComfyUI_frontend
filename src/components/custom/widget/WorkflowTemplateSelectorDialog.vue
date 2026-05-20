@@ -452,7 +452,7 @@ onMounted(() => {
 })
 
 // Wrap onClose to track session end
-const onClose = () => {
+function onClose() {
   if (isCloud) {
     const timeSpentSeconds = Math.floor(
       (Date.now() - sessionStartTime.value) / 1000
@@ -479,23 +479,26 @@ const {
   getTemplateDescription
 } = useTemplateWorkflows()
 
-const getEffectiveSourceModule = (template: TemplateInfo) =>
-  template.sourceModule || 'default'
+function getEffectiveSourceModule(template: TemplateInfo) {
+  return template.sourceModule || 'default'
+}
 
-const isAppTemplate = (template: TemplateInfo) => template.name.endsWith('.app')
+function isAppTemplate(template: TemplateInfo) {
+  return template.name.endsWith('.app')
+}
 
-const getBaseThumbnailSrc = (template: TemplateInfo) => {
+function getBaseThumbnailSrc(template: TemplateInfo) {
   const sm = getEffectiveSourceModule(template)
   return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '1' : '')
 }
 
-const getOverlayThumbnailSrc = (template: TemplateInfo) => {
+function getOverlayThumbnailSrc(template: TemplateInfo) {
   const sm = getEffectiveSourceModule(template)
   return getTemplateThumbnailUrl(template, sm, sm === 'default' ? '2' : '')
 }
 
 // Open tutorial in new tab
-const openTutorial = (template: TemplateInfo) => {
+function openTutorial(template: TemplateInfo) {
   if (template.tutorialUrl) {
     window.open(template.tutorialUrl, '_blank')
   }
@@ -579,7 +582,7 @@ const {
  */
 const searchInput = ref(searchQuery.value)
 
-const applySearchQuery = async (query: string) => {
+async function applySearchQuery(query: string) {
   searchQuery.value = query
 }
 
@@ -596,7 +599,7 @@ watch(searchQuery, (value) => {
  * create deterministic, predictable behavior.
  * @param source The origin of the change ('nav' or 'sort').
  */
-const coordinateNavAndSort = (source: 'nav' | 'sort') => {
+function coordinateNavAndSort(source: 'nav' | 'sort') {
   const isPopularNav = selectedNavItem.value === 'popular'
   const isPopularSort = sortBy.value === 'popular'
 
@@ -810,7 +813,7 @@ watch(
 )
 
 // Methods
-const onLoadWorkflow = async (template: TemplateInfo) => {
+async function onLoadWorkflow(template: TemplateInfo) {
   loadingTemplate.value = template.name
   try {
     await loadWorkflowTemplate(

@@ -75,9 +75,9 @@ export function useSelectionState() {
   )
 
   // Helper function to compute selection flags (reused by both computed and function)
-  const computeSelectionStatesFromNodes = (
+  function computeSelectionStatesFromNodes(
     nodes: LGraphNode[]
-  ): NodeSelectionState => {
+  ): NodeSelectionState {
     if (!nodes.length)
       return { collapsed: false, pinned: false, bypassed: false }
     return {
@@ -92,8 +92,9 @@ export function useSelectionState() {
   )
 
   // On-demand computation (non-reactive) so callers can fetch fresh flags
-  const computeSelectionFlags = (): NodeSelectionState =>
-    computeSelectionStatesFromNodes(selectedNodes.value)
+  function computeSelectionFlags(): NodeSelectionState {
+    return computeSelectionStatesFromNodes(selectedNodes.value)
+  }
 
   const canOpenNodeInfo = computed(
     () =>
@@ -101,7 +102,7 @@ export function useSelectionState() {
       settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
   )
 
-  const openNodeInfo = () => {
+  function openNodeInfo() {
     if (!canOpenNodeInfo.value) return false
     rightSidePanelStore.openPanel('info')
     return true

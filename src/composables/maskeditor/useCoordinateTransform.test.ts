@@ -23,7 +23,7 @@ vi.mock('@vueuse/core', () => ({
     fn
 }))
 
-const createElementWithRect = (rect: Partial<DOMRect>): HTMLElement => {
+function createElementWithRect(rect: Partial<DOMRect>): HTMLElement {
   const el = document.createElement('div')
   vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
     left: 0,
@@ -40,11 +40,11 @@ const createElementWithRect = (rect: Partial<DOMRect>): HTMLElement => {
   return el
 }
 
-const createCanvasWithRect = (
+function createCanvasWithRect(
   rect: Partial<DOMRect>,
   width: number,
   height: number
-): HTMLCanvasElement => {
+): HTMLCanvasElement {
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height

@@ -111,12 +111,12 @@ const { showQueueClearHistoryDialog } = useQueueClearHistoryDialog()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { trackFeatureUsed } = useSurveyFeatureTracking('queue-progress-overlay')
 
-const onClearHistory = () => {
+function onClearHistory() {
   trackFeatureUsed()
   showQueueClearHistoryDialog()
 }
 
-const onUpdateSelectedJobTab = (value: JobTab) => {
+function onUpdateSelectedJobTab(value: JobTab) {
   trackFeatureUsed()
   selectedJobTab.value = value
 }
@@ -199,7 +199,7 @@ const onViewItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
   await openResultGallery(item)
 })
 
-const onInspectAsset = (item: JobListItem) => {
+function onInspectAsset(item: JobListItem) {
   void onViewItem(item)
 }
 
@@ -222,7 +222,7 @@ const onDeleteItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
   await queueStore.delete(item.taskRef)
 })
 
-const onMenuItem = (item: JobListItem, event: Event) => {
+function onMenuItem(item: JobListItem, event: Event) {
   currentMenuItem.value = item
   jobContextMenuRef.value?.open(event)
 }

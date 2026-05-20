@@ -27,26 +27,27 @@ interface ShowPreviewOptions {
   block?: boolean
 }
 
-const createContainer = () => {
+function createContainer() {
   const container = document.createElement('div')
   container.classList.add('comfy-img-preview')
   return container
 }
 
-const createTimeout = (ms: number) =>
-  new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))
+function createTimeout(ms: number) {
+  return new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))
+}
 
-const useNodePreview = <T extends MediaElement>(
+function useNodePreview<T extends MediaElement>(
   node: LGraphNode,
   options: NodePreviewOptions<T>
-) => {
+) {
   const { loadElement, onLoaded, onFailedLoading } = options
   const nodeOutputStore = useNodeOutputStore()
 
-  const loadElementWithTimeout = async (
+  async function loadElementWithTimeout(
     url: string,
     retryCount = 0
-  ): Promise<T | null> => {
+  ): Promise<T | null> {
     const result = await Promise.race([
       loadElement(url),
       createTimeout(MEDIA_LOAD_TIMEOUT)
@@ -59,8 +60,9 @@ const useNodePreview = <T extends MediaElement>(
     return result
   }
 
-  const loadElements = async (urls: string[]) =>
-    Promise.all(urls.map((url) => loadElementWithTimeout(url)))
+  async function loadElements(urls: string[]) {
+    return Promise.all(urls.map((url) => loadElementWithTimeout(url)))
+  }
 
   /**
    * Displays media element(s) on the node.
@@ -99,18 +101,19 @@ const useNodePreview = <T extends MediaElement>(
 /**
  * Attaches a preview image to a node.
  */
-export const useNodeImage = (node: LGraphNode, callback?: () => void) => {
+export function useNodeImage(node: LGraphNode, callback?: () => void) {
   node.previewMediaType = 'image'
 
-  const loadElement = (url: string): Promise<HTMLImageElement | null> =>
-    new Promise((resolve) => {
+  function loadElement(url: string): Promise<HTMLImageElement | null> {
+    return new Promise((resolve) => {
       const img = new Image()
       img.onload = () => resolve(img)
       img.onerror = () => resolve(null)
       img.src = url
     })
+  }
 
-  const onLoaded = (elements: HTMLImageElement[]) => {
+  function onLoaded(elements: HTMLImageElement[]) {
     node.imageIndex = null
     node.imgs = elements
     callback?.()
@@ -128,14 +131,14 @@ export const useNodeImage = (node: LGraphNode, callback?: () => void) => {
 /**
  * Attaches a preview video to a node.
  */
-export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
+export function useNodeVideo(node: LGraphNode, callback?: () => void) {
   node.previewMediaType = 'video'
   let minHeight = DEFAULT_VIDEO_SIZE
   let minWidth = DEFAULT_VIDEO_SIZE
 
   const { handleWheel, handlePointer } = useCanvasInteractions()
 
-  const setMinDimensions = (video: HTMLVideoElement) => {
+  function setMinDimensions(video: HTMLVideoElement) {
     const { minHeight: calculatedHeight, minWidth: calculatedWidth } =
       fitDimensionsToNodeWidth(
         video.videoWidth,
@@ -147,8 +150,8 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
     minHeight = calculatedHeight
   }
 
-  const loadElement = (url: string): Promise<HTMLVideoElement | null> =>
-    new Promise((resolve) => {
+  function loadElement(url: string): Promise<HTMLVideoElement | null> {
+    return new Promise((resolve) => {
       const video = document.createElement('video')
       Object.assign(video, VIDEO_DEFAULT_OPTIONS)
 
@@ -159,8 +162,9 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
       video.onerror = () => resolve(null)
       video.src = url
     })
+  }
 
-  const addVideoDomWidget = (container: HTMLElement) => {
+  function addVideoDomWidget(container: HTMLElement) {
     const hasWidget = node.widgets?.some((w) => w.name === VIDEO_WIDGET_NAME)
     if (!hasWidget) {
       const widget = node.addDOMWidget(VIDEO_WIDGET_NAME, 'video', container, {
@@ -185,7 +189,7 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
     }
   }
 
-  const onLoaded = (videoElements: HTMLVideoElement[]) => {
+  function onLoaded(videoElements: HTMLVideoElement[]) {
     const videoElement = videoElements[0]
     if (!videoElement) return
 

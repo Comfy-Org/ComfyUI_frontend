@@ -36,7 +36,7 @@ const filteredProps = computed(() =>
   filterWidgetProps(props.widget.options, BUTTON_EXCLUDED_PROPS)
 )
 
-const handleClick = () => {
+function handleClick() {
   if (props.widget.callback) {
     props.widget.callback()
   }

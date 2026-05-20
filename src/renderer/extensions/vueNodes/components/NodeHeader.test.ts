@@ -17,21 +17,23 @@ import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 
 import NodeHeader from './NodeHeader.vue'
 
-const makeNodeData = (overrides: Partial<VueNodeData> = {}): VueNodeData => ({
-  id: '1',
-  title: 'KSampler',
-  type: 'KSampler',
-  mode: 0,
-  selected: false,
-  executing: false,
-  widgets: [],
-  inputs: [],
-  outputs: [],
-  flags: { collapsed: false },
-  ...overrides
-})
+function makeNodeData(overrides: Partial<VueNodeData> = {}): VueNodeData {
+  return {
+    id: '1',
+    title: 'KSampler',
+    type: 'KSampler',
+    mode: 0,
+    selected: false,
+    executing: false,
+    widgets: [],
+    inputs: [],
+    outputs: [],
+    flags: { collapsed: false },
+    ...overrides
+  }
+}
 
-const setupMockStores = () => {
+function setupMockStores() {
   const pinia = createTestingPinia({ stubActions: false })
   setActivePinia(pinia)
 
@@ -85,7 +87,7 @@ const setupMockStores = () => {
   return { settingStore, nodeDefStore, pinia }
 }
 
-const createGlobalConfig = () => {
+function createGlobalConfig() {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -112,7 +114,7 @@ const createGlobalConfig = () => {
   }
 }
 
-const renderHeader = (props?: Partial<ComponentProps<typeof NodeHeader>>) => {
+function renderHeader(props?: Partial<ComponentProps<typeof NodeHeader>>) {
   const { global, tooltipDirective } = createGlobalConfig()
   const onCollapse = vi.fn()
   const onUpdateTitle = vi.fn()

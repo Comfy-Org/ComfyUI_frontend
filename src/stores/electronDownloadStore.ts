@@ -20,10 +20,11 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
   const downloads = ref<ElectronDownload[]>([])
   const DownloadManager = isDesktop ? electronAPI().DownloadManager : undefined
 
-  const findByUrl = (url: string) =>
-    downloads.value.find((download) => url === download.url)
+  function findByUrl(url: string) {
+    return downloads.value.find((download) => url === download.url)
+  }
 
-  const initialize = async () => {
+  async function initialize() {
     if (!isDesktop || !DownloadManager) return
 
     const allDownloads = await DownloadManager.getAllDownloads()
@@ -50,7 +51,7 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
 
   void initialize()
 
-  const start = ({
+  function start({
     url,
     savePath,
     filename
@@ -58,10 +59,18 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
     url: string
     savePath: string
     filename: string
-  }) => DownloadManager!.startDownload(url, savePath, filename)
-  const pause = (url: string) => DownloadManager!.pauseDownload(url)
-  const resume = (url: string) => DownloadManager!.resumeDownload(url)
-  const cancel = (url: string) => DownloadManager!.cancelDownload(url)
+  }) {
+    return DownloadManager!.startDownload(url, savePath, filename)
+  }
+  function pause(url: string) {
+    return DownloadManager!.pauseDownload(url)
+  }
+  function resume(url: string) {
+    return DownloadManager!.resumeDownload(url)
+  }
+  function cancel(url: string) {
+    return DownloadManager!.cancelDownload(url)
+  }
 
   return {
     downloads,

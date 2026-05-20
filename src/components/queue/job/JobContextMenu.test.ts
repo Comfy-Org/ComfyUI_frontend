@@ -63,23 +63,26 @@ const buttonStub = {
 
 type MenuHandle = { open: (e: Event) => Promise<void>; hide: () => void }
 
-const createEntries = (): MenuEntry[] => [
-  { key: 'enabled', label: 'Enabled action', onClick: vi.fn() },
-  {
-    key: 'disabled',
-    label: 'Disabled action',
-    disabled: true,
-    onClick: vi.fn()
-  },
-  { kind: 'divider', key: 'divider-1' }
-]
+function createEntries(): MenuEntry[] {
+  return [
+    { key: 'enabled', label: 'Enabled action', onClick: vi.fn() },
+    {
+      key: 'disabled',
+      label: 'Disabled action',
+      disabled: true,
+      onClick: vi.fn()
+    },
+    { kind: 'divider', key: 'divider-1' }
+  ]
+}
 
-const createTriggerEvent = (type: string, currentTarget: EventTarget) =>
-  ({
+function createTriggerEvent(type: string, currentTarget: EventTarget) {
+  return {
     type,
     currentTarget,
     target: currentTarget
-  }) as Event
+  } as Event
+}
 
 function renderMenu(entries: MenuEntry[], onAction?: ReturnType<typeof vi.fn>) {
   const menuRef = ref<MenuHandle | null>(null)

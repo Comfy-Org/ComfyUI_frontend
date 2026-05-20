@@ -429,7 +429,7 @@ const isYearlySubscription = computed(
   () => subscription.value?.duration === 'ANNUAL'
 )
 
-const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
+function isCurrentPlan(tierKey: CheckoutTierKey): boolean {
   // Use API current_plan_slug if available
   if (currentPlanSlug.value) {
     const plan = getApiPlanForTier(tierKey, currentBillingCycle.value)
@@ -447,11 +447,11 @@ const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
   )
 }
 
-const togglePopover = (event: Event) => {
+function togglePopover(event: Event) {
   popover.value.toggle(event)
 }
 
-const getButtonLabel = (tier: PricingTierConfig): string => {
+function getButtonLabel(tier: PricingTierConfig): string {
   const planName =
     currentBillingCycle.value === 'yearly'
       ? t('subscription.tierNameYearly', { name: tier.name })
@@ -468,9 +468,7 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
     : t('subscription.subscribeTo', { plan: planName })
 }
 
-const getButtonSeverity = (
-  tier: PricingTierConfig
-): 'primary' | 'secondary' => {
+function getButtonSeverity(tier: PricingTierConfig): 'primary' | 'secondary' {
   if (isCurrentPlan(tier.key)) {
     return isCancelled.value ? 'primary' : 'secondary'
   }
@@ -478,7 +476,7 @@ const getButtonSeverity = (
   return 'secondary'
 }
 
-const isButtonDisabled = (tier: PricingTierConfig): boolean => {
+function isButtonDisabled(tier: PricingTierConfig): boolean {
   if (isLoading) return true
   if (isCurrentPlan(tier.key)) {
     // Allow clicking current plan button when cancelled (for resubscribe)
@@ -487,20 +485,22 @@ const isButtonDisabled = (tier: PricingTierConfig): boolean => {
   return false
 }
 
-const getButtonTextClass = (tier: PricingTierConfig): string =>
-  tier.key === 'creator'
+function getButtonTextClass(tier: PricingTierConfig): string {
+  return tier.key === 'creator'
     ? 'font-inter text-sm font-bold leading-normal text-base-background'
     : 'font-inter text-sm font-bold leading-normal text-primary-foreground'
+}
 
-const getPrice = (tier: PricingTierConfig): number =>
-  getPriceFromApi(tier) ?? tier.pricing[currentBillingCycle.value]
+function getPrice(tier: PricingTierConfig): number {
+  return getPriceFromApi(tier) ?? tier.pricing[currentBillingCycle.value]
+}
 
-const getMonthlyPrice = (tier: PricingTierConfig): number => {
+function getMonthlyPrice(tier: PricingTierConfig): number {
   const plan = getApiPlanForTier(tier.key, 'monthly')
   return plan ? plan.price_cents / 100 : tier.pricing.monthly
 }
 
-const getAnnualTotal = (tier: PricingTierConfig): number => {
+function getAnnualTotal(tier: PricingTierConfig): number {
   const plan = getApiPlanForTier(tier.key, 'yearly')
   return plan ? plan.price_cents / 100 : tier.pricing.yearly * 12
 }
@@ -513,8 +513,9 @@ const maxMembersByTier = computed(
     >
 )
 
-const getMonthlyCreditsPerMember = (tier: PricingTierConfig): number =>
-  tier.pricing.credits
+function getMonthlyCreditsPerMember(tier: PricingTierConfig): number {
+  return tier.pricing.credits
+}
 
 function handleSubscribe(tierKey: CheckoutTierKey) {
   if (isLoading) return

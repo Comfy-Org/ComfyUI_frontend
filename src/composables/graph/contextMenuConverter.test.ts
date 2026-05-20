@@ -124,8 +124,9 @@ describe('contextMenuConverter', () => {
       const result = buildStructuredMenu(options)
 
       // Get indices of items (excluding dividers and categories)
-      const getIndex = (label: string) =>
-        result.findIndex((opt) => opt.label === label)
+      function getIndex(label: string) {
+        return result.findIndex((opt) => opt.label === label)
+      }
 
       // Rename (section 1) should come before Pin (section 2)
       expect(getIndex('Rename')).toBeLessThan(getIndex('Pin'))

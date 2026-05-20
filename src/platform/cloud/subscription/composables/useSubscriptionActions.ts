@@ -23,11 +23,11 @@ export function useSubscriptionActions() {
     void handleRefresh()
   })
 
-  const handleAddApiCredits = () => {
+  function handleAddApiCredits() {
     void dialogService.showTopUpCreditsDialog()
   }
 
-  const handleMessageSupport = async () => {
+  async function handleMessageSupport() {
     try {
       isLoadingSupport.value = true
       if (isCloud) {
@@ -45,7 +45,7 @@ export function useSubscriptionActions() {
     }
   }
 
-  const handleRefresh = async () => {
+  async function handleRefresh() {
     try {
       await Promise.all([authActions.fetchBalance(), fetchStatus()])
     } catch (error) {
@@ -53,7 +53,7 @@ export function useSubscriptionActions() {
     }
   }
 
-  const handleLearnMoreClick = () => {
+  function handleLearnMoreClick() {
     window.open('https://docs.comfy.org/get_started/cloud', '_blank')
   }
 

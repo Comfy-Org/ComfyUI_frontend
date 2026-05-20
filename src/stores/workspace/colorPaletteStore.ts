@@ -27,7 +27,7 @@ export const useColorPaletteStore = defineStore('colorPalette', () => {
     completePalette(palettesLookup.value[activePaletteId.value])
   )
 
-  const addCustomPalette = (palette: Palette) => {
+  function addCustomPalette(palette: Palette) {
     if (palette.id in palettesLookup.value) {
       throw new Error(`Palette with id ${palette.id} already exists`)
     }
@@ -36,7 +36,7 @@ export const useColorPaletteStore = defineStore('colorPalette', () => {
     activePaletteId.value = palette.id
   }
 
-  const deleteCustomPalette = (id: string) => {
+  function deleteCustomPalette(id: string) {
     if (!(id in customPalettes.value)) {
       throw new Error(`Palette with id ${id} does not exist`)
     }
@@ -45,7 +45,7 @@ export const useColorPaletteStore = defineStore('colorPalette', () => {
     activePaletteId.value = CORE_COLOR_PALETTES.dark.id
   }
 
-  const isCustomPalette = (id: string) => {
+  function isCustomPalette(id: string) {
     return id in customPalettes.value
   }
 
@@ -55,7 +55,7 @@ export const useColorPaletteStore = defineStore('colorPalette', () => {
    * @param palette - The palette to complete.
    * @returns The completed palette.
    */
-  const completePalette = (palette: Palette): CompletedPalette => {
+  function completePalette(palette: Palette): CompletedPalette {
     // Set comfy-menu-secondary-bg to comfy-menu-bg if not set
     if (
       palette.colors.comfy_base['comfy-menu-bg'] &&

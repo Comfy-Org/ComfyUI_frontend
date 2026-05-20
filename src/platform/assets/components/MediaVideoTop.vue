@@ -57,17 +57,17 @@ onMounted(() => {
   emit('videoControlsChanged', shouldShowControls.value)
 })
 
-const onVideoPlay = () => {
+function onVideoPlay() {
   isPlaying.value = true
   emit('videoPlayingStateChanged', true)
 }
 
-const onVideoPause = () => {
+function onVideoPause() {
   isPlaying.value = false
   emit('videoPlayingStateChanged', false)
 }
 
-const onVideoClick = async () => {
+async function onVideoClick() {
   if (shouldShowControls.value) return
 
   const video = videoElement.value

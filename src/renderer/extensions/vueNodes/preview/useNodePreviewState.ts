@@ -5,12 +5,12 @@ import type { MaybeRefOrGetter, Ref } from 'vue'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
-export const useNodePreviewState = (
+export function useNodePreviewState(
   nodeIdMaybe: MaybeRefOrGetter<string>,
   options?: {
     isCollapsed?: Ref<boolean>
   }
-) => {
+) {
   const nodeId = toValue(nodeIdMaybe)
   const workflowStore = useWorkflowStore()
   const { nodePreviewImages } = storeToRefs(useNodeOutputStore())

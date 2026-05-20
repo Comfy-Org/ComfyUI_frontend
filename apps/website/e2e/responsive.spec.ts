@@ -111,7 +111,7 @@ async function measureMarqueeLoopGeometry(
         `Animation on ${sel} has unusable duration: ${String(duration)}`
       )
     }
-    const setAllTimes = (time: number) => {
+    function setAllTimes(time: number) {
       for (const track of tracks) {
         for (const anim of track.getAnimations()) {
           anim.currentTime = time
@@ -119,7 +119,9 @@ async function measureMarqueeLoopGeometry(
       }
       void document.body.offsetWidth
     }
-    const readX = () => tracks.map((track) => track.getBoundingClientRect().x)
+    function readX() {
+      return tracks.map((track) => track.getBoundingClientRect().x)
+    }
     setAllTimes(0)
     const startPositions = readX()
     const copyWidths = tracks.map(

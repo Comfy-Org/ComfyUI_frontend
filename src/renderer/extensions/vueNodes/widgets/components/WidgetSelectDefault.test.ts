@@ -26,19 +26,22 @@ const WidgetLayoutFieldStub = defineComponent({
   template: '<div class="relative"><slot /></div>'
 })
 
-const flushPromises = () =>
-  new Promise<void>((resolve) => setTimeout(resolve, 0))
+function flushPromises() {
+  return new Promise<void>((resolve) => setTimeout(resolve, 0))
+}
 
 describe('WidgetSelectDefault', () => {
-  const createWidget = (
+  function createWidget(
     values: unknown,
     options: Record<string, unknown> = {}
-  ): SimplifiedWidget<string | undefined> => ({
-    name: 'test_combo',
-    type: 'combo',
-    value: undefined,
-    options: { values, ...options } as SimplifiedWidget['options']
-  })
+  ): SimplifiedWidget<string | undefined> {
+    return {
+      name: 'test_combo',
+      type: 'combo',
+      value: undefined,
+      options: { values, ...options } as SimplifiedWidget['options']
+    }
+  }
 
   function renderComponent(
     widget: SimplifiedWidget<string | undefined>,
@@ -71,8 +74,11 @@ describe('WidgetSelectDefault', () => {
     await flushPromises()
   }
 
-  const optionLabels = () =>
-    screen.queryAllByRole('option').map((option) => option.textContent?.trim())
+  function optionLabels() {
+    return screen
+      .queryAllByRole('option')
+      .map((option) => option.textContent?.trim())
+  }
 
   async function expectHighlightedOption(name: string) {
     await waitFor(() => {

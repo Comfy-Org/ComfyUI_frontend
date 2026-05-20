@@ -183,7 +183,7 @@ const unsafeReasonText = computed(() => {
 })
 
 /** If valid, leave the validation window. */
-const completeValidation = async () => {
+async function completeValidation() {
   const isValid = await electron.Validation.complete()
   if (!isValid) {
     toast.add({
@@ -194,7 +194,7 @@ const completeValidation = async () => {
   }
 }
 
-const toggleConsoleDrawer = () => {
+function toggleConsoleDrawer() {
   terminalVisible.value = !terminalVisible.value
 }
 

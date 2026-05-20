@@ -155,7 +155,7 @@ function onLogoMenuClick(event: MouseEvent) {
   menuRef.value?.toggle(event)
 }
 
-const translateMenuItem = (item: MenuItem): MenuItem => {
+function translateMenuItem(item: MenuItem): MenuItem {
   const label = typeof item.label === 'function' ? item.label() : item.label
   const translatedLabel = label
     ? t(`menuLabels.${normalizeI18nKey(label)}`, label)
@@ -168,11 +168,11 @@ const translateMenuItem = (item: MenuItem): MenuItem => {
   }
 }
 
-const showSettings = (defaultPanel?: SettingPanelType) => {
+function showSettings(defaultPanel?: SettingPanelType) {
   settingsDialog.show(defaultPanel)
 }
 
-const showManageExtensions = async () => {
+async function showManageExtensions() {
   await managerState.openManager({
     initialTab: ManagerTab.All,
     showToastOnLegacyError: false
@@ -270,7 +270,7 @@ const translatedItems = computed(() => {
   return items
 })
 
-const onMenuShow = () => {
+function onMenuShow() {
   void nextTick(() => {
     // Force the menu to show submenus on hover
     if (menuRef.value) {
@@ -279,14 +279,14 @@ const onMenuShow = () => {
   })
 }
 
-const isZoomCommand = (item: MenuItem) => {
+function isZoomCommand(item: MenuItem) {
   return (
     item.comfyCommand?.id === 'Comfy.Canvas.ZoomIn' ||
     item.comfyCommand?.id === 'Comfy.Canvas.ZoomOut'
   )
 }
 
-const handleZoomMouseDown = (item: MenuItem, event: MouseEvent) => {
+function handleZoomMouseDown(item: MenuItem, event: MouseEvent) {
   if (item.comfyCommand) {
     whileMouseDown(
       event,
@@ -298,7 +298,7 @@ const handleZoomMouseDown = (item: MenuItem, event: MouseEvent) => {
   }
 }
 
-const handleItemClick = (item: MenuItem, event: MouseEvent) => {
+function handleItemClick(item: MenuItem, event: MouseEvent) {
   // Prevent the menu from closing for zoom commands or commands that have active state
   if (isZoomCommand(item) || item.comfyCommand?.active) {
     event.preventDefault()
@@ -313,7 +313,7 @@ const handleItemClick = (item: MenuItem, event: MouseEvent) => {
   }
 }
 
-const hasActiveStateSiblings = (item: MenuItem): boolean => {
+function hasActiveStateSiblings(item: MenuItem): boolean {
   // Check if this item has siblings with active state (either from store or theme items)
   return (
     item.parentPath &&
@@ -322,11 +322,11 @@ const hasActiveStateSiblings = (item: MenuItem): boolean => {
   )
 }
 
-const handleNodes2ToggleClick = () => {
+function handleNodes2ToggleClick() {
   return false
 }
 
-const onNodes2ToggleChange = async (value: boolean) => {
+async function onNodes2ToggleChange(value: boolean) {
   await settingStore.set('Comfy.VueNodes.Enabled', value)
   telemetry?.trackUiButtonClicked({
     button_id: `menu_nodes_2.0_toggle_${value ? 'enabled' : 'disabled'}`

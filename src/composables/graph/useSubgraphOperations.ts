@@ -15,7 +15,7 @@ export function useSubgraphOperations() {
   const nodeOutputStore = useNodeOutputStore()
   const subgraphStore = useSubgraphStore()
 
-  const convertToSubgraph = () => {
+  function convertToSubgraph() {
     const canvas = canvasStore.getCanvas()
     const graph = canvas.subgraph ?? canvas.graph
     if (!graph) {
@@ -34,10 +34,7 @@ export function useSubgraphOperations() {
     workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
   }
 
-  const doUnpack = (
-    subgraphNodes: SubgraphNode[],
-    skipMissingNodes: boolean
-  ) => {
+  function doUnpack(subgraphNodes: SubgraphNode[], skipMissingNodes: boolean) {
     const canvas = canvasStore.getCanvas()
     const graph = canvas.subgraph ?? canvas.graph
     if (!graph) return
@@ -49,7 +46,7 @@ export function useSubgraphOperations() {
     workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
   }
 
-  const unpackSubgraph = () => {
+  function unpackSubgraph() {
     const canvas = canvasStore.getCanvas()
     const graph = canvas.subgraph ?? canvas.graph
 
@@ -68,7 +65,7 @@ export function useSubgraphOperations() {
     doUnpack(subgraphNodes, true)
   }
 
-  const addSubgraphToLibrary = async () => {
+  async function addSubgraphToLibrary() {
     const selectedItems = Array.from(canvasStore.selectedItems)
     const subgraphNodes = selectedItems.filter(
       (item): item is SubgraphNode => item instanceof SubgraphNode
@@ -79,12 +76,12 @@ export function useSubgraphOperations() {
     await subgraphStore.publishSubgraph()
   }
 
-  const isSubgraphSelected = (): boolean => {
+  function isSubgraphSelected(): boolean {
     const selectedItems = Array.from(canvasStore.selectedItems)
     return selectedItems.some((item) => item instanceof SubgraphNode)
   }
 
-  const hasSelectableNodes = (): boolean => {
+  function hasSelectableNodes(): boolean {
     return getSelectedNodes().length > 0
   }
 

@@ -7,14 +7,16 @@ import type { UseNodePacksOptions } from '@/workbench/extensions/manager/types/c
 /**
  * Handles fetching node packs from the registry given a list of node pack IDs
  */
-export const useNodePacks = (
+export function useNodePacks(
   packsIds: string[] | Ref<string[]>,
   options: UseNodePacksOptions = {}
-) => {
+) {
   const { immediate = false } = options
   const { getPacksByIds } = useComfyRegistryStore()
 
-  const fetchPacks = () => getPacksByIds.call(get(packsIds).filter(Boolean))
+  function fetchPacks() {
+    return getPacksByIds.call(get(packsIds).filter(Boolean))
+  }
 
   const {
     isReady,
@@ -26,7 +28,7 @@ export const useNodePacks = (
     immediate
   })
 
-  const cleanup = () => {
+  function cleanup() {
     getPacksByIds.cancel()
     isReady.value = false
     isLoading.value = false

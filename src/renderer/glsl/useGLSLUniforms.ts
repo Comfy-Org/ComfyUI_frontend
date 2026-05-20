@@ -171,7 +171,9 @@ export function useGLSLUniforms(
     return values
   }
 
-  const toBool = (v: unknown): boolean => Boolean(v)
+  function toBool(v: unknown): boolean {
+    return Boolean(v)
+  }
 
   const floatValues = computed(() =>
     collectValues(

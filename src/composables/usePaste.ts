@@ -177,7 +177,7 @@ export async function pasteVideoNodes(
 /**
  * Adds a handler on paste that extracts and loads images or workflows from pasted JSON data
  */
-export const usePaste = () => {
+export function usePaste() {
   const workspaceStore = useWorkspaceStore()
   const canvasStore = useCanvasStore()
 

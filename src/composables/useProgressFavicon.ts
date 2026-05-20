@@ -3,7 +3,7 @@ import { watch } from 'vue'
 
 import { useExecutionStore } from '@/stores/executionStore'
 
-export const useProgressFavicon = () => {
+export function useProgressFavicon() {
   const defaultFavicon = '/assets/images/favicon_progress_16x16/frame_9.png'
   const favicon = useFavicon(defaultFavicon)
   const executionStore = useExecutionStore()

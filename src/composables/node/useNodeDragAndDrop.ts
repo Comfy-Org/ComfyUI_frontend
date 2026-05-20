@@ -26,21 +26,25 @@ function parseAssetInfo(assetString?: string) {
  * Adds drag and drop file handling to a node
  * Will also resolve 'text/uri-list' to a file before passing
  */
-export const useNodeDragAndDrop = <T>(
+export function useNodeDragAndDrop<T>(
   node: LGraphNode,
   options: DragAndDropOptions<T>
-) => {
+) {
   const { onDragOver, onDrop, fileFilter = () => true } = options
 
-  const hasFiles = (items: DataTransferItemList) =>
-    !!Array.from(items).find((f) => f.kind === 'file')
+  function hasFiles(items: DataTransferItemList) {
+    return !!Array.from(items).find((f) => f.kind === 'file')
+  }
 
-  const filterFiles = (files: FileList | File[]) =>
-    Array.from(files).filter(fileFilter)
+  function filterFiles(files: FileList | File[]) {
+    return Array.from(files).filter(fileFilter)
+  }
 
-  const hasValidFiles = (files: FileList) => filterFiles(files).length > 0
+  function hasValidFiles(files: FileList) {
+    return filterFiles(files).length > 0
+  }
 
-  const isDraggingFiles = (e: DragEvent | undefined) => {
+  function isDraggingFiles(e: DragEvent | undefined) {
     if (!e?.dataTransfer?.items) return false
     return (
       onDragOver?.(e) ??
@@ -49,7 +53,7 @@ export const useNodeDragAndDrop = <T>(
     )
   }
 
-  const isDraggingValidFiles = (e: DragEvent | undefined) => {
+  function isDraggingValidFiles(e: DragEvent | undefined) {
     if (e?.dataTransfer?.files?.length)
       return hasValidFiles(e.dataTransfer.files)
 
@@ -59,7 +63,7 @@ export const useNodeDragAndDrop = <T>(
   const installedDragOver = isDraggingFiles
   node.onDragOver = installedDragOver
 
-  const installedDragDrop = async function (e: DragEvent) {
+  async function installedDragDrop(e: DragEvent) {
     if (!isDraggingValidFiles(e)) return false
 
     const files = filterFiles(e.dataTransfer!.files)

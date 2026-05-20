@@ -9,7 +9,7 @@ import { t } from '../../../../i18n/translations'
 import { loadPacksForBuild } from '../../../../utils/cloudNodes.build'
 import { escapeJsonLd } from '../../../../utils/escapeJsonLd'
 
-export const getStaticPaths: GetStaticPaths = async () => {
+export async function getStaticPaths() {
   const packs = await loadPacksForBuild()
   return packs.map((pack) => ({
     params: { pack: pack.id },

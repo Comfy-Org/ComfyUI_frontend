@@ -18,7 +18,7 @@ import { useCommandStore } from '@/stores/commandStore'
 
 const commandStore = useCommandStore()
 
-const open3DViewer = () => {
+function open3DViewer() {
   void commandStore.execute('Comfy.3DViewer.Open3DViewer')
 }
 </script>

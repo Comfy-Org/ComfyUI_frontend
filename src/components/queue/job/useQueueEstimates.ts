@@ -20,22 +20,23 @@ export type UseQueueEstimatesOptions = {
 
 type EstimateRange = [number, number]
 
-export const formatElapsedTime = (ms: number): string => {
+export function formatElapsedTime(ms: number): string {
   const totalSec = Math.max(0, Math.floor(ms / 1000))
   const minutes = Math.floor(totalSec / 60)
   const seconds = totalSec % 60
   return `${minutes}m ${seconds}s`
 }
 
-const pickRecentDurations = (queueStore: QueueStore) =>
-  queueStore.historyTasks
+function pickRecentDurations(queueStore: QueueStore) {
+  return queueStore.historyTasks
     .map((task: TaskItemImpl) => Number(task.executionTimeInSeconds))
     .filter(
       (value: number | undefined) =>
         typeof value === 'number' && !Number.isNaN(value)
     ) as number[]
+}
 
-export const useQueueEstimates = ({
+export function useQueueEstimates({
   queueStore,
   executionStore,
   taskForJob,
@@ -43,7 +44,7 @@ export const useQueueEstimates = ({
   firstSeenTs,
   jobsAhead,
   nowTs
-}: UseQueueEstimatesOptions) => {
+}: UseQueueEstimatesOptions) {
   const runningWorkflowCount = computed(
     () => executionStore.runningWorkflowCount
   )

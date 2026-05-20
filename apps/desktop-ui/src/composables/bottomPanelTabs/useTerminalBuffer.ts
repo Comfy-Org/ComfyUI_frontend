@@ -6,13 +6,17 @@ export function useTerminalBuffer() {
   const serializeAddon = new SerializeAddon()
   const terminal = markRaw(new Terminal({ convertEol: true }))
 
-  const copyTo = (destinationTerminal: Terminal) => {
+  function copyTo(destinationTerminal: Terminal) {
     destinationTerminal.write(serializeAddon.serialize())
   }
 
-  const write = (message: string) => terminal.write(message)
+  function write(message: string) {
+    return terminal.write(message)
+  }
 
-  const serialize = () => serializeAddon.serialize()
+  function serialize() {
+    return serializeAddon.serialize()
+  }
 
   onMounted(() => {
     terminal.loadAddon(serializeAddon)

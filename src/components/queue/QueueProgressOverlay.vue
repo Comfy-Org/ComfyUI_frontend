@@ -224,25 +224,25 @@ const {
   onViewItem: openResultGallery
 } = useResultGallery(() => filteredTasks.value)
 
-const setExpanded = (expanded: boolean) => {
+function setExpanded(expanded: boolean) {
   isExpanded.value = expanded
 }
 
-const viewAllJobs = () => {
+function viewAllJobs() {
   trackFeatureUsed()
   setExpanded(true)
 }
 
-const toggleAssetsSidebar = () => {
+function toggleAssetsSidebar() {
   trackFeatureUsed()
   sidebarTabStore.toggleSidebarTab('assets')
 }
 
-const openAssetsSidebar = () => {
+function openAssetsSidebar() {
   sidebarTabStore.activeSidebarTabId = 'assets'
 }
 
-const focusAssetInSidebar = async (item: JobListItem) => {
+async function focusAssetInSidebar(item: JobListItem) {
   const task = item.taskRef
   const jobId = task?.jobId
   const preview = task?.previewOutput
@@ -307,7 +307,7 @@ const interruptAll = wrapWithErrorHandlingAsync(async () => {
   await queueStore.update()
 })
 
-const onClearHistoryFromMenu = () => {
+function onClearHistoryFromMenu() {
   trackFeatureUsed()
   showQueueClearHistoryDialog()
 }

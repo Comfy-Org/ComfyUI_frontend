@@ -220,17 +220,17 @@ const canUpgrade = computed(() => {
   )
 })
 
-const handleOpenUserSettings = () => {
+function handleOpenUserSettings() {
   settingsDialog.show('user')
   emit('close')
 }
 
-const handleOpenPlansAndPricing = () => {
+function handleOpenPlansAndPricing() {
   subscriptionDialog.showPricingTable()
   emit('close')
 }
 
-const handleOpenPlanAndCreditsSettings = () => {
+function handleOpenPlanAndCreditsSettings() {
   if (isCloud) {
     settingsDialog.show('subscription')
   } else {
@@ -240,14 +240,14 @@ const handleOpenPlanAndCreditsSettings = () => {
   emit('close')
 }
 
-const handleTopUp = () => {
+function handleTopUp() {
   // Track purchase credits entry from avatar popover
   useTelemetry()?.trackAddApiCreditButtonClicked()
   dialogService.showTopUpCreditsDialog()
   emit('close')
 }
 
-const handleOpenPartnerNodesInfo = () => {
+function handleOpenPartnerNodesInfo() {
   window.open(
     buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true }),
     '_blank'
@@ -255,17 +255,17 @@ const handleOpenPartnerNodesInfo = () => {
   emit('close')
 }
 
-const handleUpgradeToAddCredits = () => {
+function handleUpgradeToAddCredits() {
   subscriptionDialog.showPricingTable()
   emit('close')
 }
 
-const handleLogout = async () => {
+async function handleLogout() {
   await handleSignOut()
   emit('close')
 }
 
-const handleSubscribed = async () => {
+async function handleSubscribed() {
   await fetchStatus()
 }
 

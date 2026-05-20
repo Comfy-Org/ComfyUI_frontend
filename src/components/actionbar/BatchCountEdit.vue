@@ -92,38 +92,39 @@ watch(batchCount, (nextBatchCount) => {
   }
 })
 
-const clampBatchCount = (nextBatchCount: number): number =>
-  Math.min(Math.max(nextBatchCount, minQueueCount), maxQueueCount.value)
+function clampBatchCount(nextBatchCount: number): number {
+  return Math.min(Math.max(nextBatchCount, minQueueCount), maxQueueCount.value)
+}
 
-const setBatchCount = (nextBatchCount: number) => {
+function setBatchCount(nextBatchCount: number) {
   batchCount.value = clampBatchCount(nextBatchCount)
   batchCountInput.value = String(batchCount.value)
 }
 
-const incrementBatchCount = () => {
+function incrementBatchCount() {
   setBatchCount(batchCount.value * 2)
 }
 
-const decrementBatchCount = () => {
+function decrementBatchCount() {
   setBatchCount(Math.floor(batchCount.value / 2))
 }
 
-const onInputFocus = () => {
+function onInputFocus() {
   isEditing.value = true
 }
 
-const onInput = (event: Event) => {
+function onInput(event: Event) {
   const input = event.target as HTMLInputElement
   batchCountInput.value = input.value.replace(/[^0-9]/g, '')
 }
 
-const onInputBlur = () => {
+function onInputBlur() {
   isEditing.value = false
   const parsedInput = Number.parseInt(batchCountInput.value, 10)
   setBatchCount(Number.isNaN(parsedInput) ? minQueueCount : parsedInput)
 }
 
-const onInputEnter = () => {
+function onInputEnter() {
   batchCountInputRef.value?.blur()
 }
 </script>

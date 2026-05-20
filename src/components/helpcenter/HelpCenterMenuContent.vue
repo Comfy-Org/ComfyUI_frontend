@@ -413,7 +413,7 @@ const menuItems = computed<MenuItem[]>(() => {
 })
 
 // Utility Functions
-const trackResourceClick = (
+function trackResourceClick(
   resourceType:
     | 'docs'
     | 'discord'
@@ -422,7 +422,7 @@ const trackResourceClick = (
     | 'manager'
     | 'release_notes',
   isExternal: boolean
-): void => {
+): void {
   telemetry?.trackHelpResourceClicked({
     resource_type: resourceType,
     is_external: isExternal,
@@ -430,18 +430,18 @@ const trackResourceClick = (
   })
 }
 
-const openExternalLink = (url: string): void => {
+function openExternalLink(url: string): void {
   window.open(url, '_blank', 'noopener,noreferrer')
 }
 
-const clearHoverTimeout = (): void => {
+function clearHoverTimeout(): void {
   if (hoverTimeout) {
     clearTimeout(hoverTimeout)
     hoverTimeout = null
   }
 }
 
-const calculateSubmenuPosition = (button: HTMLElement): CSSProperties => {
+function calculateSubmenuPosition(button: HTMLElement): CSSProperties {
   const rect = button.getBoundingClientRect()
   const submenuWidth = 210 // Width defined in CSS
 
@@ -490,7 +490,7 @@ const calculateSubmenuPosition = (button: HTMLElement): CSSProperties => {
   }
 }
 
-const formatReleaseDate = (dateString?: string): string => {
+function formatReleaseDate(dateString?: string): string {
   if (!dateString) return 'date'
 
   const date = new Date(dateString)
@@ -517,10 +517,7 @@ const formatReleaseDate = (dateString?: string): string => {
 }
 
 // Event Handlers
-const onMenuItemHover = async (
-  key: string,
-  event: MouseEvent
-): Promise<void> => {
+async function onMenuItemHover(key: string, event: MouseEvent): Promise<void> {
   if (key !== 'more' || !moreMenuItem.value?.items) return
 
   // Don't show submenu if all items are hidden
@@ -546,7 +543,7 @@ const onMenuItemHover = async (
   }
 }
 
-const onMenuItemLeave = (key: string): void => {
+function onMenuItemLeave(key: string): void {
   if (key !== 'more') return
 
   hoverTimeout = window.setTimeout(() => {
@@ -554,27 +551,27 @@ const onMenuItemLeave = (key: string): void => {
   }, SUBMENU_CONFIG.DELAY_MS)
 }
 
-const onSubmenuHover = (): void => {
+function onSubmenuHover(): void {
   clearHoverTimeout()
 }
 
-const onSubmenuLeave = (): void => {
+function onSubmenuLeave(): void {
   isSubmenuVisible.value = false
 }
 
-const openDevTools = (): void => {
+function openDevTools(): void {
   if (isDesktop) {
     electronAPI().openDevTools()
   }
 }
 
-const onReinstall = (): void => {
+function onReinstall(): void {
   if (isDesktop) {
     void electronAPI().reinstall()
   }
 }
 
-const onUpdateComfyUI = async (): Promise<void> => {
+async function onUpdateComfyUI(): Promise<void> {
   const { updateComfyUI, rebootComfyUI, error } = useComfyManagerService()
 
   toast.add({
@@ -613,7 +610,7 @@ const onUpdateComfyUI = async (): Promise<void> => {
   }
 }
 
-const onReleaseClick = (release: ReleaseNote): void => {
+function onReleaseClick(release: ReleaseNote): void {
   trackResourceClick('release_notes', true)
   void releaseStore.handleShowChangelog(release.version)
   const versionAnchor = formatVersionAnchor(release.version)

@@ -46,7 +46,7 @@ watch(
   }
 )
 
-const handleImageLoad = (event: Event) => {
+function handleImageLoad(event: Event) {
   if (!event.target || !(event.target instanceof HTMLImageElement)) return
   const img = event.target
   imageError.value = false
@@ -55,7 +55,7 @@ const handleImageLoad = (event: Event) => {
   }
 }
 
-const handleImageError = () => {
+function handleImageError() {
   imageError.value = true
   actualDimensions.value = null
 }

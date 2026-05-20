@@ -40,10 +40,10 @@ interface UseComputedWithWidgetWatchOptions {
  * })
  * ```
  */
-export const useComputedWithWidgetWatch = (
+export function useComputedWithWidgetWatch(
   node: LGraphNode,
   options: UseComputedWithWidgetWatchOptions = {}
-) => {
+) {
   const { widgetNames, triggerCanvasRedraw = false } = options
 
   // Create a reactive trigger based on widget values

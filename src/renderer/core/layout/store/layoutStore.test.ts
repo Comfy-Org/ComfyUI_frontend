@@ -31,14 +31,16 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.initializeFromLiteGraph([])
   })
   // Helper to create test node data
-  const createTestNode = (id: string): NodeLayout => ({
-    id,
-    position: { x: 100, y: 100 },
-    size: { width: 200, height: 100 },
-    zIndex: 0,
-    visible: true,
-    bounds: { x: 100, y: 100, width: 200, height: 100 }
-  })
+  function createTestNode(id: string): NodeLayout {
+    return {
+      id,
+      position: { x: 100, y: 100 },
+      size: { width: 200, height: 100 },
+      zIndex: 0,
+      visible: true,
+      bounds: { x: 100, y: 100, width: 200, height: 100 }
+    }
+  }
 
   it('should create and retrieve nodes', () => {
     const nodeId = 'test-node-1'
@@ -788,7 +790,7 @@ describe('layoutStore queries', () => {
     layoutStore.initializeFromLiteGraph([])
   })
 
-  const seedNode = (id: string, x: number, y: number, z = 0) => {
+  function seedNode(id: string, x: number, y: number, z = 0) {
     const layout: NodeLayout = {
       id,
       position: { x, y },
@@ -846,17 +848,21 @@ describe('layoutStore link layout updates', () => {
     layoutStore.initializeFromLiteGraph([])
   })
 
-  const stubPath = () => ({}) as unknown as Path2D
-  const baseLink = (path = stubPath()) => ({
-    id: 1 as const,
-    path,
-    bounds: { x: 0, y: 0, width: 50, height: 50 },
-    centerPos: { x: 25, y: 25 },
-    sourceNodeId: 'a',
-    targetNodeId: 'b',
-    sourceSlot: 0,
-    targetSlot: 0
-  })
+  function stubPath() {
+    return {} as unknown as Path2D
+  }
+  function baseLink(path = stubPath()) {
+    return {
+      id: 1 as const,
+      path,
+      bounds: { x: 0, y: 0, width: 50, height: 50 },
+      centerPos: { x: 25, y: 25 },
+      sourceNodeId: 'a',
+      targetNodeId: 'b',
+      sourceSlot: 0,
+      targetSlot: 0
+    }
+  }
 
   it('updateLinkLayout short-circuits when bounds and centerPos are unchanged', () => {
     layoutStore.updateLinkLayout(1, baseLink())

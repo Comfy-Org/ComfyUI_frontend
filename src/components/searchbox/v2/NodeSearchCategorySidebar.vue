@@ -105,7 +105,9 @@ const categoryTree = computed<CategoryNode[]>(() => {
     groupBy: 'category'
   })
 
-  const stripRootPrefix = (key: string) => key.replace(/^root\//, '')
+  function stripRootPrefix(key: string) {
+    return key.replace(/^root\//, '')
+  }
 
   function mapNode(node: TreeNode): CategoryNode {
     const children = node.children

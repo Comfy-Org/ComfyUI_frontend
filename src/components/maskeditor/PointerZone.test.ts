@@ -10,12 +10,13 @@ import PointerZone from '@/components/maskeditor/PointerZone.vue'
 type ToolManager = ReturnType<typeof useToolManager>
 type PanZoom = ReturnType<typeof usePanAndZoom>
 
-const initialMock = () =>
-  reactive({
+function initialMock() {
+  return reactive({
     pointerZone: null as HTMLElement | null,
     isPanning: false,
     brushVisible: true
   })
+}
 
 let mockStore: ReturnType<typeof initialMock>
 
@@ -38,16 +39,18 @@ vi.mock('@/stores/maskEditorStore', () => ({
   useMaskEditorStore: () => mockStore
 }))
 
-const renderZone = () =>
-  render(PointerZone, {
+function renderZone() {
+  return render(PointerZone, {
     props: {
       toolManager: mockToolManager as unknown as ToolManager,
       panZoom: mockPanZoom as unknown as PanZoom
     }
   })
+}
 
-const getZone = (): HTMLDivElement =>
-  screen.getByTestId('pointer-zone') as HTMLDivElement
+function getZone(): HTMLDivElement {
+  return screen.getByTestId('pointer-zone') as HTMLDivElement
+}
 
 describe('PointerZone', () => {
   beforeEach(() => {

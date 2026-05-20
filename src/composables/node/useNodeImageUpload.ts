@@ -19,11 +19,11 @@ interface ImageUploadFormFields {
   type: ResultItemType
 }
 
-const uploadFile = async (
+async function uploadFile(
   file: File,
   isPasted: boolean,
   formFields: Partial<ImageUploadFormFields> = {}
-) => {
+) {
   const body = new FormData()
   body.append('image', file)
   if (isPasted) body.append('subfolder', 'pasted')
@@ -72,17 +72,20 @@ interface ImageUploadOptions {
 /**
  * Adds image upload to a node via drag & drop, paste, and file input.
  */
-export const useNodeImageUpload = (
+export function useNodeImageUpload(
   node: LGraphNode,
   options: ImageUploadOptions
-) => {
+) {
   const { fileFilter, onUploadComplete, allow_batch, accept } = options
 
-  const isPastedFile = (file: File): boolean =>
-    file.name === 'image.png' &&
-    file.lastModified - Date.now() < PASTED_IMAGE_EXPIRY_MS
+  function isPastedFile(file: File): boolean {
+    return (
+      file.name === 'image.png' &&
+      file.lastModified - Date.now() < PASTED_IMAGE_EXPIRY_MS
+    )
+  }
 
-  const handleUpload = async (file: File) => {
+  async function handleUpload(file: File) {
     try {
       const path = await uploadFile(file, isPastedFile(file), {
         type: options.folder
@@ -98,7 +101,7 @@ export const useNodeImageUpload = (
     }
   }
 
-  const handleUploadBatch = async (files: File[]) => {
+  async function handleUploadBatch(files: File[]) {
     if (node.isUploading) {
       useToastStore().addAlert(t('g.uploadAlreadyInProgress'))
       return []

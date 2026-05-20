@@ -7,11 +7,11 @@ import FormSelectButton from './FormSelectButton.vue'
 
 describe('FormSelectButton Core Component', () => {
   // Type-safe helper for rendering component
-  const renderComponent = (
+  function renderComponent(
     modelValue: string | null | undefined = null,
     options: unknown[] = [],
     props: Record<string, unknown> = {}
-  ) => {
+  ) {
     return render(FormSelectButton, {
       global: {
         plugins: [PrimeVue]
@@ -28,7 +28,7 @@ describe('FormSelectButton Core Component', () => {
     })
   }
 
-  const clickButton = async (buttonText: string) => {
+  async function clickButton(buttonText: string) {
     const buttons = screen.getAllByRole('button')
     const targetButton = buttons.find((button) =>
       button.textContent?.includes(buttonText)

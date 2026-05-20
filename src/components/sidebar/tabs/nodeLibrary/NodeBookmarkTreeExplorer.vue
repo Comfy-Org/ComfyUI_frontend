@@ -61,7 +61,7 @@ const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
 const nodeBookmarkStore = useNodeBookmarkStore()
 const bookmarkedRoot = computed<TreeNode>(() => {
-  const filterTree = (node: TreeNode): TreeNode | null => {
+  function filterTree(node: TreeNode): TreeNode | null {
     if (node.leaf) {
       // Check if the node's display_name is in the filteredNodeDefs list
       return props.filteredNodeDefs.some((def) => def.name === node.data.name)
@@ -102,34 +102,34 @@ watch(
 )
 
 const { t } = useI18n()
-const extraMenuItems = (
+function extraMenuItems(
   menuTargetNode: RenderedTreeExplorerNode<ComfyNodeDefImpl>
-) => [
-  {
-    label: t('g.customize'),
-    icon: 'pi pi-palette',
-    command: () => {
-      if (!menuTargetNode.data) return
+) {
+  return [
+    {
+      label: t('g.customize'),
+      icon: 'pi pi-palette',
+      command: () => {
+        if (!menuTargetNode.data) return
 
-      const customization =
-        nodeBookmarkStore.bookmarksCustomization[menuTargetNode.data.nodePath]
-      initialIcon.value =
-        customization?.icon || nodeBookmarkStore.defaultBookmarkIcon
-      initialColor.value =
-        customization?.color || nodeBookmarkStore.defaultBookmarkColor
+        const customization =
+          nodeBookmarkStore.bookmarksCustomization[menuTargetNode.data.nodePath]
+        initialIcon.value =
+          customization?.icon || nodeBookmarkStore.defaultBookmarkIcon
+        initialColor.value =
+          customization?.color || nodeBookmarkStore.defaultBookmarkColor
 
-      showCustomizationDialog.value = true
-      customizationTargetNodePath.value = menuTargetNode.data.nodePath
-    },
-    visible: !menuTargetNode?.leaf
-  }
-]
+        showCustomizationDialog.value = true
+        customizationTargetNodePath.value = menuTargetNode.data.nodePath
+      },
+      visible: !menuTargetNode?.leaf
+    }
+  ]
+}
 
 const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
   () => {
-    const fillNodeInfo = (
-      node: TreeNode
-    ): TreeExplorerNode<ComfyNodeDefImpl> => {
+    function fillNodeInfo(node: TreeNode): TreeExplorerNode<ComfyNodeDefImpl> {
       const children = node.children?.map(fillNodeInfo)
 
       // Sort children: non-leaf nodes first, then leaf nodes, both alphabetically
@@ -225,7 +225,7 @@ const showCustomizationDialog = ref(false)
 const initialIcon = ref(nodeBookmarkStore.defaultBookmarkIcon)
 const initialColor = ref(nodeBookmarkStore.defaultBookmarkColor)
 const customizationTargetNodePath = ref('')
-const updateCustomization = async (icon: string, color: string) => {
+async function updateCustomization(icon: string, color: string) {
   if (customizationTargetNodePath.value) {
     await nodeBookmarkStore.updateBookmarkCustomization(
       customizationTargetNodePath.value,

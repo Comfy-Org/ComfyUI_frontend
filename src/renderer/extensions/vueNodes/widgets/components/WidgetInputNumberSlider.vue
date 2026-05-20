@@ -59,11 +59,11 @@ const modelValue = defineModel<number>({ default: 0 })
 
 const timesEmptied = ref(0)
 
-const updateLocalValue = (newValue: number[] | undefined): void => {
+function updateLocalValue(newValue: number[] | undefined): void {
   if (newValue?.length) modelValue.value = newValue[0]
 }
 
-const handleNumberInputUpdate = (newValue: number | undefined) => {
+function handleNumberInputUpdate(newValue: number | undefined) {
   if (newValue !== undefined) {
     updateLocalValue([newValue])
     return

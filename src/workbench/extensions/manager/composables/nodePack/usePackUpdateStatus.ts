@@ -6,9 +6,9 @@ import { compare, valid } from 'semver'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
-export const usePackUpdateStatus = (
+export function usePackUpdateStatus(
   nodePackSource: MaybeRefOrGetter<components['schemas']['Node']>
-) => {
+) {
   const { isPackInstalled, isPackEnabled, getInstalledPackVersion } =
     useComfyManagerStore()
 

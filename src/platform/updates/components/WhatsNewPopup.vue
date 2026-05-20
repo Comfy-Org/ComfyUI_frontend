@@ -133,16 +133,16 @@ const formattedContent = computed(() => {
   }
 })
 
-const show = () => {
+function show() {
   isDismissed.value = false
 }
 
-const hide = () => {
+function hide() {
   isDismissed.value = true
   emit('whats-new-dismissed')
 }
 
-const closePopup = async () => {
+async function closePopup() {
   // Mark "what's new" seen when popup is closed
   if (latestRelease.value) {
     await releaseStore.handleWhatsNewSeen(latestRelease.value.version)

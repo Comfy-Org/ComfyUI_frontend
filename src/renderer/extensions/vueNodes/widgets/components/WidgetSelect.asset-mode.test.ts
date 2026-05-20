@@ -13,8 +13,9 @@ const i18n = createI18n({
   messages: { en: {} }
 })
 
-const flushPromises = () =>
-  new Promise<void>((resolve) => setTimeout(resolve, 0))
+function flushPromises() {
+  return new Promise<void>((resolve) => setTimeout(resolve, 0))
+}
 
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
@@ -39,20 +40,21 @@ const stubs = {
 }
 
 describe('WidgetSelect asset mode', () => {
-  const createWidget = () =>
-    createMockWidget<string | undefined>({
+  function createWidget() {
+    return createMockWidget<string | undefined>({
       value: undefined,
       name: 'ckpt_name',
       type: 'combo',
       options: { values: [] }
     })
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()
     mockShouldUseAssetBrowser.mockReturnValue(true)
   })
 
-  const renderWidget = () => {
+  function renderWidget() {
     return render(WidgetSelect, {
       props: {
         widget: createWidget(),

@@ -77,7 +77,7 @@ export function useSelectionToolboxPosition(
   /**
    * Update position based on selection
    */
-  const updateSelectionBounds = () => {
+  function updateSelectionBounds() {
     const selectableItems = getSelectableItems()
 
     if (!selectableItems.size) {
@@ -137,7 +137,7 @@ export function useSelectionToolboxPosition(
     updateTransform()
   }
 
-  const updateTransform = () => {
+  function updateTransform() {
     if (!visible.value) return
 
     const { scale, offset } = lgCanvas.ds
@@ -198,7 +198,7 @@ export function useSelectionToolboxPosition(
     }
   )
 
-  const handleDragStateChange = (dragging: boolean) => {
+  function handleDragStateChange(dragging: boolean) {
     if (dragging) {
       handleDragStart()
       return
@@ -207,7 +207,7 @@ export function useSelectionToolboxPosition(
     handleDragEnd()
   }
 
-  const handleDragStart = () => {
+  function handleDragStart() {
     visible.value = false
 
     // Early return if more options wasn't open
@@ -236,7 +236,7 @@ export function useSelectionToolboxPosition(
     moreOptionsWasOpenBeforeDrag = false
   }
 
-  const handleDragEnd = () => {
+  function handleDragEnd() {
     requestAnimationFrame(() => {
       updateSelectionBounds()
 

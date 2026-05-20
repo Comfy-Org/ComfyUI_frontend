@@ -48,7 +48,7 @@ const normalizedOptions = computed((): DropdownOption[] => {
   })
 })
 
-const onChange = (event: Event) => {
+function onChange(event: Event) {
   const value = (event.target as HTMLSelectElement).value
   emit('update:modelValue', value)
 }

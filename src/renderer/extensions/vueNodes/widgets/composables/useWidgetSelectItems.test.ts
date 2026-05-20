@@ -84,7 +84,9 @@ describe('display label behavior', () => {
   })
 
   it('applies custom label function', () => {
-    const getOptionLabel = (v?: string | null) => `Custom: ${v}`
+    function getOptionLabel(v?: string | null) {
+      return `Custom: ${v}`
+    }
     const { dropdownItems } = useWidgetSelectItems(
       createDefaultOptions({ getOptionLabel: () => getOptionLabel })
     )
@@ -95,7 +97,7 @@ describe('display label behavior', () => {
     const consoleWarnSpy = vi
       .spyOn(console, 'warn')
       .mockImplementation(() => {})
-    const getOptionLabel = (v?: string | null) => {
+    function getOptionLabel(v?: string | null) {
       if (v === 'photo_abc.jpg') throw new Error('fail')
       return `Labeled: ${v}`
     }
@@ -110,7 +112,7 @@ describe('display label behavior', () => {
   })
 
   it('falls back to value when label function returns empty string', () => {
-    const getOptionLabel = (v?: string | null) => {
+    function getOptionLabel(v?: string | null) {
       if (v === 'photo_abc.jpg') return ''
       return `Labeled: ${v}`
     }
@@ -121,7 +123,7 @@ describe('display label behavior', () => {
   })
 
   it('falls back to value when label function returns undefined', () => {
-    const getOptionLabel = (v?: string | null) => {
+    function getOptionLabel(v?: string | null) {
       if (v === 'hash789.png') return undefined as unknown as string
       return `Labeled: ${v}`
     }
@@ -295,16 +297,18 @@ describe('useWidgetSelectItems', () => {
   })
 
   describe('cloud asset mode', () => {
-    const createTestAsset = (
+    function createTestAsset(
       id: string,
       name: string,
       preview_url: string
-    ): AssetItem => ({
-      id,
-      name,
-      preview_url,
-      tags: []
-    })
+    ): AssetItem {
+      return {
+        id,
+        name,
+        preview_url,
+        tags: []
+      }
+    }
 
     it('excludes missing items from cloud dropdown', () => {
       mockAssetsData.items = [

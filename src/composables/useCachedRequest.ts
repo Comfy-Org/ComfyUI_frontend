@@ -32,10 +32,10 @@ export function useCachedRequest<TParams, TResult>(
   const pendingRequests = new Map<string, Promise<TResult | null>>()
   const abortControllers = new Map<string, AbortController>()
 
-  const executeAndCacheCall = async (
+  async function executeAndCacheCall(
     params: TParams,
     cacheKey: string
-  ): Promise<TResult | null> => {
+  ): Promise<TResult | null> {
     try {
       const controller = new AbortController()
       abortControllers.set(cacheKey, controller)
@@ -57,9 +57,9 @@ export function useCachedRequest<TParams, TResult>(
     }
   }
 
-  const handlePendingRequest = async (
+  async function handlePendingRequest(
     pendingRequest: Promise<TResult | null>
-  ): Promise<TResult | null> => {
+  ): Promise<TResult | null> {
     try {
       return await pendingRequest
     } catch (err) {
@@ -68,7 +68,7 @@ export function useCachedRequest<TParams, TResult>(
     }
   }
 
-  const abortAllRequests = () => {
+  function abortAllRequests() {
     for (const controller of abortControllers.values()) {
       controller.abort()
     }
@@ -77,7 +77,7 @@ export function useCachedRequest<TParams, TResult>(
   /**
    * Cancel and clear any pending requests
    */
-  const cancel = () => {
+  function cancel() {
     abortAllRequests()
     abortControllers.clear()
     pendingRequests.clear()
@@ -86,7 +86,7 @@ export function useCachedRequest<TParams, TResult>(
   /**
    * Cached version of the request function
    */
-  const call = async (params: TParams): Promise<TResult | null> => {
+  async function call(params: TParams): Promise<TResult | null> {
     const cacheKey = cacheKeyFn(params)
 
     const cachedResult = cache.get(cacheKey)

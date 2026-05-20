@@ -78,7 +78,7 @@ export function useShiftKeySync() {
     syncShiftState(initialEvent.shiftKey)
 
     // Listen for shift key press/release during the operation
-    const handleKeyEvent = (e: KeyboardEvent) => {
+    function handleKeyEvent(e: KeyboardEvent) {
       if (e.key !== 'Shift') return
       syncShiftState(e.shiftKey)
     }

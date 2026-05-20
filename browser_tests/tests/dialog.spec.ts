@@ -290,7 +290,7 @@ test('Blueprint overwrite', { tag: ['@subgraph'] }, async ({ comfyPage }) => {
 
   const confirmDialog = comfyPage.confirmDialog.root
   const { incrementButton } = comfyPage.vueNodes.getInputNumberControls(steps)
-  const dirtyGraphAndSave = async () => {
+  async function dirtyGraphAndSave() {
     await incrementButton.click()
     await comfyPage.page.keyboard.press('Control+s')
   }

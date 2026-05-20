@@ -16,13 +16,13 @@ vi.mock('@/composables/functional/useChainCallback', () => ({
 }))
 
 describe('useComputedWithWidgetWatch', () => {
-  const createMockNode = (
+  function createMockNode(
     widgets: Array<{
       name: string
       value: unknown
       callback?: (...args: unknown[]) => void
     }> = []
-  ): LGraphNode => {
+  ): LGraphNode {
     const baseNode = createMockLGraphNode()
     return Object.assign(baseNode, {
       widgets: widgets.map((widget) => ({

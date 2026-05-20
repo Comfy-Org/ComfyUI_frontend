@@ -12,7 +12,7 @@ type SortOption = 'newest' | 'oldest' | 'longest' | 'fastest'
 /**
  * Get timestamp from asset (either create_time or created_at)
  */
-const getAssetTime = (asset: AssetItem): number => {
+function getAssetTime(asset: AssetItem): number {
   return (
     (asset.user_metadata?.create_time as number) ??
     (asset.created_at ? new Date(asset.created_at).getTime() : 0)
@@ -22,7 +22,7 @@ const getAssetTime = (asset: AssetItem): number => {
 /**
  * Get execution time from asset user_metadata
  */
-const getAssetExecutionTime = (asset: AssetItem): number => {
+function getAssetExecutionTime(asset: AssetItem): number {
   return (asset.user_metadata?.executionTimeInSeconds as number) ?? 0
 }
 

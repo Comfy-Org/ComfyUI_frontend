@@ -5,7 +5,9 @@ import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { getExecutionStatusMessage } from './getExecutionStatusMessage'
 
 // Pass-through t so we can assert the i18n key
-const t = (key: string) => key
+function t(key: string) {
+  return key
+}
 
 describe('getExecutionStatusMessage', () => {
   describe('custom messages', () => {

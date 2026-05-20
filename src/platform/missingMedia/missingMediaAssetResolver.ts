@@ -40,7 +40,9 @@ export async function resolveMissingMediaAssetSources({
   const pathOptions = { allowCompactSuffix }
 
   const controller = new AbortController()
-  const abortFromCaller = () => controller.abort(signal?.reason)
+  function abortFromCaller() {
+    return controller.abort(signal?.reason)
+  }
   if (signal?.aborted) {
     abortFromCaller()
   } else {

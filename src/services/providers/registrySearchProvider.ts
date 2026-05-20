@@ -13,16 +13,16 @@ type RegistryNodePack = components['schemas']['Node']
  * Search provider for the Comfy Registry.
  * Uses public Comfy Registry API.
  */
-export const useComfyRegistrySearchProvider = (): NodePackSearchProvider => {
+export function useComfyRegistrySearchProvider(): NodePackSearchProvider {
   const registryStore = useComfyRegistryStore()
 
   /**
    * Search for node packs using the Comfy Registry API.
    */
-  const searchPacks = async (
+  async function searchPacks(
     query: string,
     params: SearchNodePacksParams
-  ): Promise<SearchPacksResult> => {
+  ): Promise<SearchPacksResult> {
     const { pageSize, pageNumber, restrictSearchableAttributes } = params
 
     // For empty queries, use the cached listAllPacks endpoint instead of search
@@ -61,15 +61,15 @@ export const useComfyRegistrySearchProvider = (): NodePackSearchProvider => {
     }
   }
 
-  const clearSearchCache = () => {
+  function clearSearchCache() {
     registryStore.search.clear()
     registryStore.listAllPacks.clear()
   }
 
-  const getSortValue = (
+  function getSortValue(
     pack: RegistryNodePack,
     sortField: string
-  ): string | number => {
+  ): string | number {
     switch (sortField) {
       case 'downloads':
         return pack.downloads ?? 0
@@ -86,7 +86,7 @@ export const useComfyRegistrySearchProvider = (): NodePackSearchProvider => {
     }
   }
 
-  const getSortableFields = (): SortableField[] => {
+  function getSortableFields(): SortableField[] {
     return [
       { id: 'downloads', label: 'Downloads', direction: 'desc' },
       { id: 'name', label: 'Name', direction: 'asc' },

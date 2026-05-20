@@ -420,10 +420,11 @@ describe('NodeSearchContent', () => {
       ])
 
       await user.click(screen.getByRole('combobox'))
-      const selectedIndex = () =>
-        screen
+      function selectedIndex() {
+        return screen
           .getAllByTestId('result-item')
           .findIndex((r) => r.getAttribute('aria-selected') === 'true')
+      }
 
       expect(selectedIndex()).toBe(0)
 
@@ -737,8 +738,11 @@ describe('NodeSearchContent', () => {
       const { user } = renderComponent()
 
       const toggle = screen.getByTestId('toggle-category-sidebar')
-      const expectExpanded = (value: 'true' | 'false') =>
-        waitFor(() => expect(toggle).toHaveAttribute('aria-expanded', value))
+      function expectExpanded(value: 'true' | 'false') {
+        return waitFor(() =>
+          expect(toggle).toHaveAttribute('aria-expanded', value)
+        )
+      }
 
       await expectExpanded('true')
 

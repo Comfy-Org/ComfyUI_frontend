@@ -84,7 +84,9 @@ const showUploadTile = computed(() => exampleImages.value.length < MAX_EXAMPLES)
 
 const instanceId = Symbol('example-images')
 
-let cleanupMonitor = () => {}
+function noopCleanupMonitor() {}
+
+let cleanupMonitor: () => void = noopCleanupMonitor
 
 onMounted(() => {
   cleanupMonitor = monitorForElements({

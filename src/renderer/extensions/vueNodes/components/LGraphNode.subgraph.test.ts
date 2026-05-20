@@ -59,7 +59,7 @@ vi.mock('@/i18n', () => ({
 
 describe('Vue Node - Subgraph Functionality', () => {
   // Helper to setup common mocks
-  const setupMocks = async (isSubgraph = true, hasGraph = true) => {
+  async function setupMocks(isSubgraph = true, hasGraph = true) {
     if (hasGraph) mockApp.rootGraph = {}
     else mockApp.rootGraph = undefined
 
@@ -72,25 +72,24 @@ describe('Vue Node - Subgraph Functionality', () => {
     vi.clearAllMocks()
   })
 
-  const createMockNodeData = (
-    id: string,
-    subgraphId?: string
-  ): VueNodeData => ({
-    id,
-    title: 'Test Node',
-    type: 'TestNode',
-    mode: 0,
-    selected: false,
-    executing: false,
-    subgraphId,
-    widgets: [],
-    inputs: [],
-    outputs: [],
-    hasErrors: false,
-    flags: {}
-  })
+  function createMockNodeData(id: string, subgraphId?: string): VueNodeData {
+    return {
+      id,
+      title: 'Test Node',
+      type: 'TestNode',
+      mode: 0,
+      selected: false,
+      executing: false,
+      subgraphId,
+      widgets: [],
+      inputs: [],
+      outputs: [],
+      hasErrors: false,
+      flags: {}
+    }
+  }
 
-  const renderComponent = (props: { nodeData: VueNodeData }) => {
+  function renderComponent(props: { nodeData: VueNodeData }) {
     return render(LGraphNode, {
       props,
       global: {

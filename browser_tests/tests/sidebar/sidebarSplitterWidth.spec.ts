@@ -114,11 +114,12 @@ test.describe('Sidebar splitter width independence', () => {
     await dragGutter(comfyPage, 80)
 
     // Check that saved sizes sum to ~100%
-    const getSidebarSizes = () =>
-      comfyPage.page.evaluate(() => {
+    function getSidebarSizes() {
+      return comfyPage.page.evaluate(() => {
         const raw = localStorage.getItem('unified-sidebar')
         return raw ? (JSON.parse(raw) as number[]) : null
       })
+    }
 
     await expect
       .poll(async () => {

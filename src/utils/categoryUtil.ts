@@ -1,7 +1,7 @@
 /**
  * Maps category IDs to their corresponding Lucide icon classes
  */
-export const getCategoryIcon = (categoryId: string): string => {
+export function getCategoryIcon(categoryId: string): string {
   const iconMap: Record<string, string> = {
     // Main categories
     all: 'icon-[lucide--list]',

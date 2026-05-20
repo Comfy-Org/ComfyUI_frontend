@@ -50,7 +50,7 @@ describe('UserCredit', () => {
     mockIsFetchingBalance.value = false
   })
 
-  const renderComponent = (props = {}) => {
+  function renderComponent(props = {}) {
     const i18n = createI18n({
       legacy: false,
       locale: 'en',

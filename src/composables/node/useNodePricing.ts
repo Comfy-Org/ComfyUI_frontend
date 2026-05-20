@@ -31,15 +31,17 @@ import jsonata from 'jsonata'
  * Determine if a number should display 1 decimal place.
  * Shows decimal only when the first decimal digit is non-zero.
  */
-const shouldShowDecimal = (value: number): boolean => {
+function shouldShowDecimal(value: number): boolean {
   const rounded = Math.round(value * 10) / 10
   return rounded % 1 !== 0
 }
 
-const getNumberOptions = (credits: number): Intl.NumberFormatOptions => ({
-  minimumFractionDigits: 0,
-  maximumFractionDigits: shouldShowDecimal(credits) ? 1 : 0
-})
+function getNumberOptions(credits: number): Intl.NumberFormatOptions {
+  return {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: shouldShowDecimal(credits) ? 1 : 0
+  }
+}
 
 type CreditFormatOptions = {
   suffix?: string
@@ -48,7 +50,7 @@ type CreditFormatOptions = {
   separator?: string
 }
 
-export const formatCreditsValue = (usd: number): string => {
+export function formatCreditsValue(usd: number): string {
   // Use raw credits value (before rounding) to determine decimal display
   const rawCredits = usd * CREDITS_PER_USD
   return formatCredits({
@@ -57,48 +59,55 @@ export const formatCreditsValue = (usd: number): string => {
   })
 }
 
-const makePrefix = (approximate?: boolean) => (approximate ? '~' : '')
+function makePrefix(approximate?: boolean) {
+  return approximate ? '~' : ''
+}
 
-const makeSuffix = (suffix?: string) => suffix ?? '/Run'
+function makeSuffix(suffix?: string) {
+  return suffix ?? '/Run'
+}
 
-const appendNote = (note?: string) => (note ? ` ${note}` : '')
+function appendNote(note?: string) {
+  return note ? ` ${note}` : ''
+}
 
-const formatCreditsLabel = (
+function formatCreditsLabel(
   usd: number,
   { suffix, note, approximate }: CreditFormatOptions = {}
-): string =>
-  `${makePrefix(approximate)}${formatCreditsValue(usd)} credits${makeSuffix(suffix)}${appendNote(note)}`
+): string {
+  return `${makePrefix(approximate)}${formatCreditsValue(usd)} credits${makeSuffix(suffix)}${appendNote(note)}`
+}
 
-export const formatCreditsRangeValue = (
+export function formatCreditsRangeValue(
   minUsd: number,
   maxUsd: number
-): string => {
+): string {
   const min = formatCreditsValue(minUsd)
   const max = formatCreditsValue(maxUsd)
   return min === max ? min : `${min}-${max}`
 }
 
-const formatCreditsRangeLabel = (
+function formatCreditsRangeLabel(
   minUsd: number,
   maxUsd: number,
   { suffix, note, approximate }: CreditFormatOptions = {}
-): string => {
+): string {
   const rangeValue = formatCreditsRangeValue(minUsd, maxUsd)
   return `${makePrefix(approximate)}${rangeValue} credits${makeSuffix(suffix)}${appendNote(note)}`
 }
 
-export const formatCreditsListValue = (
+export function formatCreditsListValue(
   usdValues: number[],
   separator = '/'
-): string => {
+): string {
   const parts = usdValues.map((value) => formatCreditsValue(value))
   return parts.join(separator)
 }
 
-const formatCreditsListLabel = (
+function formatCreditsListLabel(
   usdValues: number[],
   { suffix, note, approximate, separator }: CreditFormatOptions = {}
-): string => {
+): string {
   const value = formatCreditsListValue(usdValues, separator)
   return `${makePrefix(approximate)}${value} credits${makeSuffix(suffix)}${appendNote(note)}`
 }
@@ -120,14 +129,17 @@ type PricingResult =
 const PRICING_RESULT_TYPES = ['text', 'usd', 'range_usd', 'list_usd'] as const
 
 /** Type guard to validate that a value is a PricingResult. */
-const isPricingResult = (value: unknown): value is PricingResult =>
-  typeof value === 'object' &&
-  value !== null &&
-  'type' in value &&
-  typeof (value as { type: unknown }).type === 'string' &&
-  PRICING_RESULT_TYPES.includes(
-    (value as { type: string }).type as (typeof PRICING_RESULT_TYPES)[number]
+function isPricingResult(value: unknown): value is PricingResult {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'type' in value &&
+    typeof (value as { type: unknown }).type === 'string' &&
+    PRICING_RESULT_TYPES.includes(
+      (value as { type: string }).type as (typeof PRICING_RESULT_TYPES)[number]
+    )
   )
+}
 
 /**
  * Widget values are normalized based on their declared type:
@@ -163,10 +175,11 @@ type NodeConstructorData = Partial<
  * Extract nodeData from an LGraphNode's constructor.
  * Centralizes the `as any` cast needed to access this runtime property.
  */
-const getNodeConstructorData = (
+function getNodeConstructorData(
   node: LGraphNode
-): NodeConstructorData | undefined =>
-  (node.constructor as { nodeData?: NodeConstructorData }).nodeData
+): NodeConstructorData | undefined {
+  return (node.constructor as { nodeData?: NodeConstructorData }).nodeData
+}
 
 type JsonataEvalContext = {
   widgets: Record<string, NormalizedWidgetValue>
@@ -178,7 +191,7 @@ type JsonataEvalContext = {
 // -----------------------------
 // Normalization helpers
 // -----------------------------
-const asFiniteNumber = (v: unknown): number | null => {
+function asFiniteNumber(v: unknown): number | null {
   if (v === null || v === undefined) return null
 
   if (typeof v === 'number') return Number.isFinite(v) ? v : null
@@ -198,10 +211,10 @@ const asFiniteNumber = (v: unknown): number | null => {
  * Normalize widget value based on its declared type.
  * Returns the value in its natural type for simpler JSONata expressions.
  */
-const normalizeWidgetValue = (
+function normalizeWidgetValue(
   raw: unknown,
   declaredType: string
-): NormalizedWidgetValue => {
+): NormalizedWidgetValue {
   if (raw === undefined || raw === null) {
     return null
   }
@@ -235,10 +248,10 @@ const normalizeWidgetValue = (
   return String(raw).trim().toLowerCase()
 }
 
-const buildJsonataContext = (
+function buildJsonataContext(
   node: LGraphNode,
   rule: JsonataPricingRule
-): JsonataEvalContext => {
+): JsonataEvalContext {
   const widgets: Record<string, NormalizedWidgetValue> = {}
   for (const dep of rule.depends_on.widgets) {
     const widget = node.widgets?.find((x: IBaseWidget) => x.name === dep.name)
@@ -265,7 +278,7 @@ const buildJsonataContext = (
   return { widgets, inputs, inputGroups }
 }
 
-const safeValueForSig = (v: unknown): string => {
+function safeValueForSig(v: unknown): string {
   if (v === null || v === undefined) return ''
   if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean')
     return String(v)
@@ -277,10 +290,10 @@ const safeValueForSig = (v: unknown): string => {
 }
 
 // Signature determines whether we need to re-evaluate when widgets/inputs change.
-const buildSignature = (
+function buildSignature(
   ctx: JsonataEvalContext,
   rule: JsonataPricingRule
-): string => {
+): string {
   const parts: string[] = []
   for (const dep of rule.depends_on.widgets) {
     parts.push(`w:${dep.name}=${safeValueForSig(ctx.widgets[dep.name])}`)
@@ -310,10 +323,10 @@ type FormatPricingResultOptions = {
  * @param options - Formatting options
  * @returns Formatted string, e.g. "10 credits/Run" or "10" if valueOnly
  */
-export const formatPricingResult = (
+export function formatPricingResult(
   result: unknown,
   options: FormatPricingResultOptions = {}
-): string => {
+): string {
   const { valueOnly = false, defaults = {} } = options
 
   // Handle legacy format: { usd: number } without type field
@@ -388,7 +401,7 @@ export const formatPricingResult = (
 // -----------------------------
 // Compile rules (non-fatal)
 // -----------------------------
-const compileRule = (rule: JsonataPricingRule): CompiledJsonataPricingRule => {
+function compileRule(rule: JsonataPricingRule): CompiledJsonataPricingRule {
   try {
     return { ...rule, _compiled: jsonata(rule.expr) }
   } catch (e) {
@@ -407,23 +420,25 @@ const compiledRulesCache = new Map<string, CompiledJsonataPricingRule | null>()
 /**
  * Convert a PriceBadge from node definition to a JsonataPricingRule.
  */
-const priceBadgeToRule = (priceBadge: PriceBadge): JsonataPricingRule => ({
-  engine: priceBadge.engine ?? 'jsonata',
-  depends_on: {
-    widgets: priceBadge.depends_on?.widgets ?? [],
-    inputs: priceBadge.depends_on?.inputs ?? [],
-    input_groups: priceBadge.depends_on?.input_groups ?? []
-  },
-  expr: priceBadge.expr
-})
+function priceBadgeToRule(priceBadge: PriceBadge): JsonataPricingRule {
+  return {
+    engine: priceBadge.engine ?? 'jsonata',
+    depends_on: {
+      widgets: priceBadge.depends_on?.widgets ?? [],
+      inputs: priceBadge.depends_on?.inputs ?? [],
+      input_groups: priceBadge.depends_on?.input_groups ?? []
+    },
+    expr: priceBadge.expr
+  }
+}
 
 /**
  * Get or compile a pricing rule for a node type.
  */
-const getCompiledRuleForNodeType = (
+function getCompiledRuleForNodeType(
   nodeName: string,
   priceBadge: PriceBadge | undefined
-): CompiledJsonataPricingRule | null => {
+): CompiledJsonataPricingRule | null {
   if (!priceBadge) return null
 
   // Check cache first
@@ -455,7 +470,7 @@ const nodeRevisions = new Map<string, Ref<number>>()
  * Get or create a revision ref for a specific node.
  * Each node has its own independent ref, so updates to one won't trigger others.
  */
-const getNodeRevisionRef = (nodeId: string | number): Ref<number> => {
+function getNodeRevisionRef(nodeId: string | number): Ref<number> {
   const key = String(nodeId)
   let rev = nodeRevisions.get(key)
   if (!rev) {
@@ -473,12 +488,12 @@ const cache = new WeakMap<LGraphNode, CacheEntry>()
 const desiredSig = new WeakMap<LGraphNode, string>()
 const inflight = new WeakMap<LGraphNode, InflightEntry>()
 
-const scheduleEvaluation = (
+function scheduleEvaluation(
   node: LGraphNode,
   rule: CompiledJsonataPricingRule,
   ctx: JsonataEvalContext,
   sig: string
-) => {
+) {
   desiredSig.set(node, sig)
 
   const running = inflight.get(node)
@@ -521,9 +536,9 @@ const scheduleEvaluation = (
 /**
  * Get the pricing rule for a node from its nodeData.price_badge field.
  */
-const getRuleForNode = (
+function getRuleForNode(
   node: LGraphNode
-): CompiledJsonataPricingRule | undefined => {
+): CompiledJsonataPricingRule | undefined {
   const nodeData = getNodeConstructorData(node)
   if (!nodeData?.api_node) return undefined
 
@@ -539,7 +554,7 @@ const getRuleForNode = (
 // -----------------------------
 // Helper to get price badge from node type
 // -----------------------------
-const getNodePriceBadge = (nodeType: string): PriceBadge | undefined => {
+function getNodePriceBadge(nodeType: string): PriceBadge | undefined {
   const nodeDefStore = useNodeDefStore()
   return nodeDefStore.nodeDefsByName[nodeType]?.price_badge
 }
@@ -547,14 +562,14 @@ const getNodePriceBadge = (nodeType: string): PriceBadge | undefined => {
 // -----------------------------
 // Public composable API
 // -----------------------------
-export const useNodePricing = () => {
+export function useNodePricing() {
   /**
    * Sync getter:
    * - returns cached label for the current node signature when available
    * - schedules async evaluation when needed
    * - remains non-fatal on errors (returns safe fallback '')
    */
-  const getNodeDisplayPrice = (node: LGraphNode): string => {
+  function getNodeDisplayPrice(node: LGraphNode): string {
     // Make this function reactive: when async evaluation completes, we bump pricingTick,
     // which causes this getter to recompute in Vue render/computed contexts.
     void pricingTick.value
@@ -585,7 +600,7 @@ export const useNodePricing = () => {
    * Expose raw pricing config for tooling/debug UI.
    * (Strips compiled expression from returned object.)
    */
-  const getNodePricingConfig = (node: LGraphNode) => {
+  function getNodePricingConfig(node: LGraphNode) {
     const rule = getRuleForNode(node)
     if (!rule) return undefined
     const { _compiled, ...config } = rule
@@ -596,7 +611,7 @@ export const useNodePricing = () => {
    * Caller compatibility helper:
    * returns union of widget dependencies + input dependencies for a node type.
    */
-  const getRelevantWidgetNames = (nodeType: string): string[] => {
+  function getRelevantWidgetNames(nodeType: string): string[] {
     const priceBadge = getNodePriceBadge(nodeType)
     if (!priceBadge) return []
 
@@ -623,7 +638,7 @@ export const useNodePricing = () => {
   /**
    * Check if a node type has dynamic pricing (depends on widgets, inputs, or input_groups).
    */
-  const hasDynamicPricing = (nodeType: string): boolean => {
+  function hasDynamicPricing(nodeType: string): boolean {
     const priceBadge = getNodePriceBadge(nodeType)
     if (!priceBadge) return false
 
@@ -640,7 +655,7 @@ export const useNodePricing = () => {
   /**
    * Get input_groups prefixes for a node type (for watching connection changes).
    */
-  const getInputGroupPrefixes = (nodeType: string): string[] => {
+  function getInputGroupPrefixes(nodeType: string): string[] {
     const priceBadge = getNodePriceBadge(nodeType)
     return priceBadge?.depends_on?.input_groups ?? []
   }
@@ -648,7 +663,7 @@ export const useNodePricing = () => {
   /**
    * Get regular input names for a node type (for watching connection changes).
    */
-  const getInputNames = (nodeType: string): string[] => {
+  function getInputNames(nodeType: string): string[] {
     const priceBadge = getNodePriceBadge(nodeType)
     return priceBadge?.depends_on?.inputs ?? []
   }
@@ -658,7 +673,7 @@ export const useNodePricing = () => {
    * Forces re-evaluation by calling getNodeDisplayPrice which will detect
    * the signature change and schedule a new evaluation.
    */
-  const triggerPriceRecalculation = (node: LGraphNode): void => {
+  function triggerPriceRecalculation(node: LGraphNode): void {
     const nodeData = getNodeConstructorData(node)
     if (!nodeData?.api_node) return
 

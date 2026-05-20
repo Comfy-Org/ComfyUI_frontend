@@ -52,15 +52,17 @@ const i18n = createI18n({
   }
 })
 
-const createJob = (overrides: Partial<JobListItem> = {}): JobListItem => ({
-  id: 'test-job-1',
-  title: 'Running...',
-  meta: 'Step 5/10',
-  state: 'running',
-  progressTotalPercent: 50,
-  progressCurrentPercent: 75,
-  ...overrides
-})
+function createJob(overrides: Partial<JobListItem> = {}): JobListItem {
+  return {
+    id: 'test-job-1',
+    title: 'Running...',
+    meta: 'Step 5/10',
+    state: 'running',
+    progressTotalPercent: 50,
+    progressCurrentPercent: 75,
+    ...overrides
+  }
+}
 
 function renderComponent(job: JobListItem) {
   const user = userEvent.setup()

@@ -28,15 +28,15 @@ vi.mock('@/stores/maskEditorStore', () => ({
   useMaskEditorStore: vi.fn(() => mockStore)
 }))
 
-const dispatchKeyDown = (
+function dispatchKeyDown(
   init: KeyboardEventInit & { key: string }
-): KeyboardEvent => {
+): KeyboardEvent {
   const event = new KeyboardEvent('keydown', { cancelable: true, ...init })
   document.dispatchEvent(event)
   return event
 }
 
-const dispatchKeyUp = (key: string): void => {
+function dispatchKeyUp(key: string): void {
   document.dispatchEvent(new KeyboardEvent('keyup', { key }))
 }
 

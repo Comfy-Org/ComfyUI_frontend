@@ -231,7 +231,7 @@ useQueuePolling()
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
 const sidebarTabStore = useSidebarTabStore()
 
-const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
+async function onStatus(e: CustomEvent<StatusWsMessageStatus>) {
   queuePendingTaskCountStore.update(e)
   await queueStore.update()
   // Only update assets if the assets sidebar is currently open
@@ -241,7 +241,7 @@ const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
   }
 }
 
-const onExecutionSuccess = async () => {
+async function onExecutionSuccess() {
   await queueStore.update()
   // Only update assets if the assets sidebar is currently open
   // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
@@ -253,7 +253,7 @@ const onExecutionSuccess = async () => {
 const { onReconnecting, onReconnected } = useReconnectingNotification()
 const refreshOnReconnect = useReconnectQueueRefresh()
 
-const handleReconnected = async () => {
+async function handleReconnected() {
   onReconnected()
   await refreshOnReconnect()
 }
@@ -292,7 +292,7 @@ void nextTick(() => {
   })
 })
 
-const onGraphReady = () => {
+function onGraphReady() {
   runWhenGlobalIdle(() => {
     // Track user login when app is ready in graph view (cloud only)
     if (isCloud && authStore.isAuthenticated && !hasTrackedLogin) {

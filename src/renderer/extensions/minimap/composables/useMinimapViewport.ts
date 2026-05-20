@@ -39,7 +39,7 @@ export function useMinimapViewport(
     height: 0
   })
 
-  const updateCanvasDimensions = () => {
+  function updateCanvasDimensions() {
     const c = canvas.value
     if (!c) return
 
@@ -52,7 +52,7 @@ export function useMinimapViewport(
     }
   }
 
-  const calculateGraphBounds = (): MinimapBounds => {
+  function calculateGraphBounds(): MinimapBounds {
     // Use unified data source
     const dataSource = MinimapDataSourceFactory.create(graph.value)
 
@@ -64,11 +64,11 @@ export function useMinimapViewport(
     return enforceMinimumBounds(sourceBounds)
   }
 
-  const calculateScale = () => {
+  function calculateScale() {
     return calculateMinimapScale(bounds.value, width, height)
   }
 
-  const updateViewport = () => {
+  function updateViewport() {
     const c = canvas.value
     if (!c) return
 
@@ -102,12 +102,12 @@ export function useMinimapViewport(
     viewportTransform.value = { x, y, width: w, height: h }
   }
 
-  const updateBounds = () => {
+  function updateBounds() {
     bounds.value = calculateGraphBounds()
     scale.value = calculateScale()
   }
 
-  const centerViewOn = (worldX: number, worldY: number) => {
+  function centerViewOn(worldX: number, worldY: number) {
     const c = canvas.value
     if (!c) return
 

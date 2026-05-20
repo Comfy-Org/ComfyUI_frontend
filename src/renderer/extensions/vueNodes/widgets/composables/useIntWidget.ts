@@ -30,11 +30,8 @@ export const _for_testing = {
   onValueChange
 }
 
-export const useIntWidget = () => {
-  const widgetConstructor: ComfyWidgetConstructorV2 = (
-    node: LGraphNode,
-    inputSpec: InputSpec
-  ) => {
+export function useIntWidget() {
+  function widgetConstructor(node: LGraphNode, inputSpec: InputSpec) {
     if (!isIntInputSpec(inputSpec)) {
       throw new Error(`Invalid input data: ${inputSpec}`)
     }
@@ -89,5 +86,5 @@ export const useIntWidget = () => {
 
     return widget
   }
-  return widgetConstructor
+  return widgetConstructor satisfies ComfyWidgetConstructorV2
 }

@@ -8,8 +8,9 @@ import { nextTick } from 'vue'
 
 import TeamWorkspacesDialogContent from './TeamWorkspacesDialogContent.vue'
 
-const flushPromises = () =>
-  new Promise<void>((resolve) => setTimeout(resolve, 0))
+function flushPromises() {
+  return new Promise<void>((resolve) => setTimeout(resolve, 0))
+}
 
 const mockCloseDialog = vi.fn()
 const mockToastAdd = vi.fn()

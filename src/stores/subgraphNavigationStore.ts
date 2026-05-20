@@ -42,7 +42,7 @@ export const useSubgraphNavigationStore = defineStore(
     })
 
     /** Get the ID of the root graph for the currently active workflow. */
-    const getCurrentRootGraphId = () => {
+    function getCurrentRootGraphId() {
       const canvas = canvasStore.getCanvas()
       return canvas.graph?.rootGraph?.id ?? 'root'
     }
@@ -88,7 +88,7 @@ export const useSubgraphNavigationStore = defineStore(
      * Restore the navigation stack from a list of subgraph IDs.
      * @see exportState
      */
-    const restoreState = (subgraphIds: string[]) => {
+    function restoreState(subgraphIds: string[]) {
       idStack.value.length = 0
       for (const id of subgraphIds) idStack.value.push(id)
     }
@@ -97,12 +97,14 @@ export const useSubgraphNavigationStore = defineStore(
      * Export the navigation stack as a list of subgraph IDs.
      * @see restoreState
      */
-    const exportState = () => [...idStack.value]
+    function exportState() {
+      return [...idStack.value]
+    }
 
     // ── Viewport save / restore ──────────────────────────────────────
 
     /** Get the current viewport state, or null if the canvas is not available. */
-    const getCurrentViewport = (): DragAndScaleState | null => {
+    function getCurrentViewport(): DragAndScaleState | null {
       const canvas = canvasStore.getCanvas()
       if (!canvas) return null
       return {

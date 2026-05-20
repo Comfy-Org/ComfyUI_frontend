@@ -6,11 +6,11 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
   const mockOptions = ['d', 'c', 'b', 'a']
 
-  const addRemoteWidgetNode = async (
+  async function addRemoteWidgetNode(
     comfyPage: ComfyPage,
     nodeName: string,
     count: number = 1
-  ) => {
+  ) {
     const tab = comfyPage.menu.nodeLibraryTab
     await tab.open()
     await tab.getFolder('DevTools').click()
@@ -21,24 +21,24 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
     }
   }
 
-  const getWidgetOptions = async (
+  async function getWidgetOptions(
     comfyPage: ComfyPage,
     nodeName: string
-  ): Promise<string[] | undefined> => {
+  ): Promise<string[] | undefined> {
     return await comfyPage.page.evaluate((name) => {
       const node = window.app!.graph!.nodes.find((node) => node.title === name)
       return node!.widgets![0].options.values as string[] | undefined
     }, nodeName)
   }
 
-  const getWidgetValue = async (comfyPage: ComfyPage, nodeName: string) => {
+  async function getWidgetValue(comfyPage: ComfyPage, nodeName: string) {
     return await comfyPage.page.evaluate((name) => {
       const node = window.app!.graph!.nodes.find((node) => node.title === name)
       return node!.widgets![0].value
     }, nodeName)
   }
 
-  const clickRefreshButton = (comfyPage: ComfyPage, nodeName: string) => {
+  function clickRefreshButton(comfyPage: ComfyPage, nodeName: string) {
     return comfyPage.page.evaluate((name) => {
       const node = window.app!.graph!.nodes.find((node) => node.title === name)
       const buttonWidget = node!.widgets!.find((w) => w.name === 'refresh')

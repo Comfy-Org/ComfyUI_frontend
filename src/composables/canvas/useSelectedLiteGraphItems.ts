@@ -17,7 +17,7 @@ export function useSelectedLiteGraphItems() {
    * @param item - The item to check.
    * @returns True if the item should be ignored, false otherwise.
    */
-  const isIgnoredItem = (item: Positionable): boolean => {
+  function isIgnoredItem(item: Positionable): boolean {
     return item instanceof Reroute
   }
 
@@ -26,9 +26,7 @@ export function useSelectedLiteGraphItems() {
    * @param items - The Set of items to filter.
    * @returns The filtered Set of items.
    */
-  const filterSelectableItems = (
-    items: Set<Positionable>
-  ): Set<Positionable> => {
+  function filterSelectableItems(items: Set<Positionable>): Set<Positionable> {
     const result = new Set<Positionable>()
     for (const item of items) {
       if (!isIgnoredItem(item)) {
@@ -42,7 +40,7 @@ export function useSelectedLiteGraphItems() {
    * Get the filtered selected items from the canvas.
    * @returns The filtered Set of selected items.
    */
-  const getSelectableItems = (): Set<Positionable> => {
+  function getSelectableItems(): Set<Positionable> {
     const { selectedItems } = canvasStore.getCanvas()
     return filterSelectableItems(selectedItems)
   }
@@ -51,7 +49,7 @@ export function useSelectedLiteGraphItems() {
    * Check if there are any selectable items.
    * @returns True if there are selectable items, false otherwise.
    */
-  const hasSelectableItems = (): boolean => {
+  function hasSelectableItems(): boolean {
     return getSelectableItems().size > 0
   }
 
@@ -59,7 +57,7 @@ export function useSelectedLiteGraphItems() {
    * Check if there are multiple selectable items.
    * @returns True if there are multiple selectable items, false otherwise.
    */
-  const hasMultipleSelectableItems = (): boolean => {
+  function hasMultipleSelectableItems(): boolean {
     return getSelectableItems().size > 1
   }
 
@@ -69,7 +67,7 @@ export function useSelectedLiteGraphItems() {
    * If a selected node is a subgraph, this also includes all nodes within it.
    * @returns Array of selected LGraphNode instances and their descendants.
    */
-  const getSelectedNodes = (): LGraphNode[] => {
+  function getSelectedNodes(): LGraphNode[] {
     const selectedNodes = app.canvas.selected_nodes
     if (!selectedNodes) return []
 
@@ -101,7 +99,7 @@ export function useSelectedLiteGraphItems() {
    *
    * @param mode - The LGraphEventMode to toggle to (e.g., NEVER for mute, BYPASS for bypass)
    */
-  const toggleSelectedNodesMode = (mode: LGraphEventMode): void => {
+  function toggleSelectedNodesMode(mode: LGraphEventMode): void {
     const selectedNodes = app.canvas.selected_nodes
     if (!selectedNodes) return
 

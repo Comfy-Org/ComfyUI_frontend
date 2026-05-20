@@ -1549,9 +1549,13 @@ describe('SubgraphNode.widgets getter', () => {
     linkedView.value = 'shared-linked'
 
     const widgetStore = useWidgetValueStore()
-    const getValue = (nodeId: string) =>
-      widgetStore.getWidget(graph.id, stripGraphPrefix(nodeId), 'string_a')
-        ?.value
+    function getValue(nodeId: string) {
+      return widgetStore.getWidget(
+        graph.id,
+        stripGraphPrefix(nodeId),
+        'string_a'
+      )?.value
+    }
 
     expect(getValue('20')).toBe('shared-linked')
     expect(getValue('18')).toBe('shared-linked')

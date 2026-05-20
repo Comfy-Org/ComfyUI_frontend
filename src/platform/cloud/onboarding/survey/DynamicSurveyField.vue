@@ -113,7 +113,7 @@ const emit = defineEmits<{
 const { t, te, locale } = useI18n()
 const controlId = useId()
 
-const resolveLocalized = (value: LocalizedString): string => {
+function resolveLocalized(value: LocalizedString): string {
   if (typeof value === 'string') return value
   return value[locale.value] ?? value.en ?? Object.values(value)[0] ?? ''
 }
@@ -133,16 +133,16 @@ const resolvedLabel = (() => {
   return field.id
 })()
 
-const resolveOptionLabel = (option: OnboardingSurveyOption): string => {
+function resolveOptionLabel(option: OnboardingSurveyOption): string {
   if (option.labelKey && te(option.labelKey)) return t(option.labelKey)
   if (option.label != null) return resolveLocalized(option.label)
   return option.value
 }
 
-const onSingleChange = (value: unknown) => {
+function onSingleChange(value: unknown) {
   emit('update:modelValue', typeof value === 'string' ? value : '')
 }
-const onMultiChange = (value: unknown) => {
+function onMultiChange(value: unknown) {
   if (!Array.isArray(value)) {
     emit('update:modelValue', [])
     return
@@ -152,10 +152,10 @@ const onMultiChange = (value: unknown) => {
     value.filter((v): v is string => typeof v === 'string')
   )
 }
-const onTextChange = (value: string | number | undefined) => {
+function onTextChange(value: string | number | undefined) {
   emit('update:modelValue', String(value ?? ''))
 }
-const onOtherChange = (value: string | number | undefined) => {
+function onOtherChange(value: string | number | undefined) {
   emit('update:otherValue', String(value ?? ''))
 }
 </script>

@@ -18,18 +18,15 @@ type NodeDefs = NodeDefLookup
 let nodeIdCounter = 0
 const mockNodeDef = {} as ComfyNodeDefImpl
 
-const createGraph = (nodes: LGraphNode[] = []): LGraph => {
+function createGraph(nodes: LGraphNode[] = []): LGraph {
   return fromPartial<LGraph>({ nodes })
 }
 
-const createSubgraph = (nodes: LGraphNode[]): Subgraph => {
+function createSubgraph(nodes: LGraphNode[]): Subgraph {
   return fromPartial<Subgraph>({ nodes })
 }
 
-const createNode = (
-  type?: string,
-  subgraphNodes?: LGraphNode[]
-): LGraphNode => {
+function createNode(type?: string, subgraphNodes?: LGraphNode[]): LGraphNode {
   return fromAny<LGraphNode, unknown>({
     id: nodeIdCounter++,
     type,

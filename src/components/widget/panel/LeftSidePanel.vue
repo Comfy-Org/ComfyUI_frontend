@@ -58,7 +58,7 @@ const emit = defineEmits<{
 // Track collapsed state for each group
 const collapsedGroups = ref<Record<string, boolean>>({})
 
-const getFirstItemId = () => {
+function getFirstItemId() {
   if (!navItems || navItems.length === 0) {
     return null
   }

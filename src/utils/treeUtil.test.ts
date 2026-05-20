@@ -66,12 +66,14 @@ describe('buildTree', () => {
 })
 
 describe('sortedTree', () => {
-  const createNode = (label: string, leaf = false): TreeNode => ({
-    key: label,
-    label,
-    leaf,
-    children: []
-  })
+  function createNode(label: string, leaf = false): TreeNode {
+    return {
+      key: label,
+      label,
+      leaf,
+      children: []
+    }
+  }
 
   it('should return a new node instance', () => {
     const node = createNode('root')

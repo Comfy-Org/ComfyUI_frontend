@@ -4,21 +4,21 @@ import { ColorComparisonMethod } from '@/extensions/core/maskeditor/types'
 import type { Point } from '@/extensions/core/maskeditor/types'
 import { rgbToHsl } from '@/utils/colorUtil'
 
-const getPixelAlpha = (
+function getPixelAlpha(
   data: Uint8ClampedArray,
   x: number,
   y: number,
   width: number
-): number => {
+): number {
   return data[(y * width + x) * 4 + 3]
 }
 
-const getPixelColor = (
+function getPixelColor(
   data: Uint8ClampedArray,
   x: number,
   y: number,
   width: number
-): { r: number; g: number; b: number } => {
+): { r: number; g: number; b: number } {
   const index = (y * width + x) * 4
   return {
     r: data[index],
@@ -27,14 +27,14 @@ const getPixelColor = (
   }
 }
 
-const setPixel = (
+function setPixel(
   data: Uint8ClampedArray,
   x: number,
   y: number,
   width: number,
   alpha: number,
   color: { r: number; g: number; b: number }
-): void => {
+): void {
   const index = (y * width + x) * 4
   data[index] = color.r
   data[index + 1] = color.g
@@ -43,24 +43,20 @@ const setPixel = (
 }
 
 // Color comparison utilities
-const rgbToHSL = (
+function rgbToHSL(
   r: number,
   g: number,
   b: number
-): { h: number; s: number; l: number } => {
+): { h: number; s: number; l: number } {
   const hsl = rgbToHsl({ r, g, b })
   return { h: hsl.h * 360, s: hsl.s * 100, l: hsl.l * 100 }
 }
 
-const rgbToLab = (rgb: {
-  r: number
-  g: number
-  b: number
-}): {
+function rgbToLab(rgb: { r: number; g: number; b: number }): {
   l: number
   a: number
   b: number
-} => {
+} {
   let r = rgb.r / 255
   let g = rgb.g / 255
   let b = rgb.b / 255
@@ -94,11 +90,11 @@ const rgbToLab = (rgb: {
   }
 }
 
-const isPixelInRangeSimple = (
+function isPixelInRangeSimple(
   pixel: { r: number; g: number; b: number },
   target: { r: number; g: number; b: number },
   tolerance: number
-): boolean => {
+): boolean {
   const distance = Math.sqrt(
     Math.pow(pixel.r - target.r, 2) +
       Math.pow(pixel.g - target.g, 2) +
@@ -107,11 +103,11 @@ const isPixelInRangeSimple = (
   return distance <= tolerance
 }
 
-const isPixelInRangeHSL = (
+function isPixelInRangeHSL(
   pixel: { r: number; g: number; b: number },
   target: { r: number; g: number; b: number },
   tolerance: number
-): boolean => {
+): boolean {
   const pixelHSL = rgbToHSL(pixel.r, pixel.g, pixel.b)
   const targetHSL = rgbToHSL(target.r, target.g, target.b)
 
@@ -127,11 +123,11 @@ const isPixelInRangeHSL = (
   return distance <= tolerance
 }
 
-const isPixelInRangeLab = (
+function isPixelInRangeLab(
   pixel: { r: number; g: number; b: number },
   target: { r: number; g: number; b: number },
   tolerance: number
-): boolean => {
+): boolean {
   const pixelLab = rgbToLab(pixel)
   const targetLab = rgbToLab(target)
 
@@ -145,12 +141,12 @@ const isPixelInRangeLab = (
   return normalizedDeltaE <= tolerance
 }
 
-const isPixelInRange = (
+function isPixelInRange(
   pixel: { r: number; g: number; b: number },
   target: { r: number; g: number; b: number },
   tolerance: number,
   method: ColorComparisonMethod
-): boolean => {
+): boolean {
   switch (method) {
     case ColorComparisonMethod.Simple:
       return isPixelInRangeSimple(pixel, target, tolerance)
@@ -167,7 +163,7 @@ export function useCanvasTools() {
   const store = useMaskEditorStore()
   const lastColorSelectPoint = ref<Point | null>(null)
 
-  const paintBucketFill = (point: Point): void => {
+  function paintBucketFill(point: Point): void {
     const ctx = store.maskCtx
     const canvas = store.maskCanvas
     if (!ctx || !canvas) return
@@ -196,12 +192,12 @@ export function useCanvasTools() {
     const stack: Array<[number, number]> = []
     const visited = new Uint8Array(width * height)
 
-    const shouldProcessPixel = (
+    function shouldProcessPixel(
       currentAlpha: number,
       targetAlpha: number,
       tolerance: number,
       isFillMode: boolean
-    ): boolean => {
+    ): boolean {
       if (currentAlpha === -1) return false
 
       if (isFillMode) {
@@ -237,7 +233,7 @@ export function useCanvasTools() {
       visited[visitedIndex] = 1
       setPixel(data, x, y, width, isFillMode ? fillOpacity : 0, maskColor)
 
-      const checkNeighbor = (nx: number, ny: number) => {
+      function checkNeighbor(nx: number, ny: number) {
         if (nx < 0 || nx >= width || ny < 0 || ny >= height) return
         if (!visited[ny * width + nx]) {
           const alpha = getPixelAlpha(data, nx, ny, width)
@@ -257,7 +253,7 @@ export function useCanvasTools() {
     store.canvasHistory.saveState()
   }
 
-  const colorSelectFill = async (point: Point): Promise<void> => {
+  async function colorSelectFill(point: Point): Promise<void> {
     const maskCtx = store.maskCtx
     const imgCtx = store.imgCtx
     const imgCanvas = store.imgCanvas
@@ -340,7 +336,7 @@ export function useCanvasTools() {
         visited[visitedIndex] = 1
         setPixel(maskDataArray, x, y, width, selectOpacity, maskColor)
 
-        const checkNeighbor = (nx: number, ny: number) => {
+        function checkNeighbor(nx: number, ny: number) {
           if (nx < 0 || nx >= width || ny < 0 || ny >= height) return
           if (visited[ny * width + nx]) return
           if (
@@ -372,7 +368,7 @@ export function useCanvasTools() {
     store.canvasHistory.saveState()
   }
 
-  const invertMask = (): void => {
+  function invertMask(): void {
     const ctx = store.maskCtx
     const canvas = store.maskCanvas
     if (!ctx || !canvas) return
@@ -407,7 +403,7 @@ export function useCanvasTools() {
     store.canvasHistory.saveState()
   }
 
-  const clearMask = (): void => {
+  function clearMask(): void {
     const maskCtx = store.maskCtx
     const maskCanvas = store.maskCanvas
     const rgbCtx = store.rgbCtx
@@ -422,7 +418,7 @@ export function useCanvasTools() {
     store.canvasHistory.saveState()
   }
 
-  const clearLastColorSelectPoint = () => {
+  function clearLastColorSelectPoint() {
     lastColorSelectPoint.value = null
   }
 

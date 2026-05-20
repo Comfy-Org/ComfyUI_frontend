@@ -35,7 +35,7 @@ type Vec2 = readonly [number, number]
  * @param b - The second number.
  * @returns The GCD of the two numbers.
  */
-export const gcd = (a: number, b: number): number => {
+export function gcd(a: number, b: number): number {
   // Use absolute values to handle negative numbers
   let x = Math.abs(a)
   let y = Math.abs(b)
@@ -65,7 +65,7 @@ export const gcd = (a: number, b: number): number => {
  * @param b - The second number.
  * @returns The LCM of the two numbers.
  */
-export const lcm = (a: number, b: number): number => {
+export function lcm(a: number, b: number): number {
   return Math.abs(a * b) / gcd(a, b)
 }
 

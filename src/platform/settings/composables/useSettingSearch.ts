@@ -52,7 +52,7 @@ export function useSettingSearch() {
   /**
    * Handle search functionality
    */
-  const handleSearch = (query: string, navItems?: SearchableNavItem[]) => {
+  function handleSearch(query: string, navItems?: SearchableNavItem[]) {
     matchedNavItemKeys.value = new Set()
 
     if (!query) {
@@ -115,9 +115,9 @@ export function useSettingSearch() {
   /**
    * Get search results grouped by category
    */
-  const getSearchResults = (
+  function getSearchResults(
     activeCategory: SettingTreeNode | null
-  ): ISettingGroup[] => {
+  ): ISettingGroup[] {
     const groupedSettings: {
       [key: string]: { category: string; settings: SettingParams[] }
     } = {}

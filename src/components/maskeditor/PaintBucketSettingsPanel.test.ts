@@ -39,8 +39,9 @@ const i18n = createI18n({
   }
 })
 
-const renderPanel = () =>
-  render(PaintBucketSettingsPanel, { global: { plugins: [i18n] } })
+function renderPanel() {
+  return render(PaintBucketSettingsPanel, { global: { plugins: [i18n] } })
+}
 
 describe('PaintBucketSettingsPanel', () => {
   beforeEach(() => {

@@ -56,8 +56,8 @@ const tooltipDirectiveStub = {
   updated: vi.fn()
 }
 
-const renderHeader = (props = {}) =>
-  render(QueueOverlayHeader, {
+function renderHeader(props = {}) {
+  return render(QueueOverlayHeader, {
     props: {
       headerTitle: 'Job queue',
       queuedCount: 3,
@@ -68,6 +68,7 @@ const renderHeader = (props = {}) =>
       directives: { tooltip: tooltipDirectiveStub }
     }
   })
+}
 
 describe('QueueOverlayHeader', () => {
   beforeEach(() => {

@@ -34,12 +34,13 @@ vi.mock('@/views/templates/BaseViewTemplate.vue', () => ({
   }
 }))
 
-const mountView = () =>
-  render(UserSelectView, {
+function mountView() {
+  return render(UserSelectView, {
     global: {
       plugins: [i18n, PrimeVue]
     }
   })
+}
 
 describe('UserSelectView', () => {
   beforeEach(() => {

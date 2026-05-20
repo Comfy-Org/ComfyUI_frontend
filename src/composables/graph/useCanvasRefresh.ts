@@ -8,7 +8,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 export function useCanvasRefresh() {
   const canvasStore = useCanvasStore()
   const workflowStore = useWorkflowStore()
-  const refreshCanvas = () => {
+  function refreshCanvas() {
     canvasStore.canvas?.emitBeforeChange()
     canvasStore.canvas?.setDirty(true, true)
     canvasStore.canvas?.graph?.afterChange()

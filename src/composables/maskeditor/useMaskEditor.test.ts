@@ -25,12 +25,13 @@ type NodeShape = {
   previewMediaType?: string
 }
 
-const nodeWithImage = (overrides: NodeShape = {}): LGraphNode =>
-  ({
+function nodeWithImage(overrides: NodeShape = {}): LGraphNode {
+  return {
     imgs: [new Image()],
     previewMediaType: undefined,
     ...overrides
-  }) as unknown as LGraphNode
+  } as unknown as LGraphNode
+}
 
 describe('useMaskEditor', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>

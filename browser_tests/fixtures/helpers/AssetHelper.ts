@@ -158,7 +158,7 @@ export class AssetHelper {
     statusCode: number,
     error: string = 'Internal Server Error'
   ): Promise<void> {
-    const handler = async (route: Route) => {
+    async function handler(route: Route) {
       return route.fulfill({
         status: statusCode,
         json: { error }

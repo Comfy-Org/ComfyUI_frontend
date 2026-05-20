@@ -257,7 +257,7 @@ watch(
   }
 )
 
-const handleVueNodeLifecycleReset = async () => {
+async function handleVueNodeLifecycleReset() {
   if (shouldRenderVueNodes.value) {
     vueNodeLifecycle.disposeNodeManagerAndSyncs()
     await nextTick()

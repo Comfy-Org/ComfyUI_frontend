@@ -57,10 +57,10 @@ export const Default: Story = {
   render: (args) => ({
     components: { AssetBrowserModal },
     setup() {
-      const onAssetSelect = (_asset: AssetDisplayItem) => {
+      function onAssetSelect(_asset: AssetDisplayItem) {
         // Asset selection handler for story
       }
-      const onClose = () => {}
+      function onClose() {}
 
       return {
         ...args,
@@ -95,10 +95,10 @@ export const SingleAssetType: Story = {
   render: (args) => ({
     components: { AssetBrowserModal },
     setup() {
-      const onAssetSelect = (_asset: AssetDisplayItem) => {
+      function onAssetSelect(_asset: AssetDisplayItem) {
         // Asset selection handler for story
       }
-      const onClose = () => {
+      function onClose() {
         // Modal close handler for story
       }
 
@@ -144,10 +144,10 @@ export const NoLeftPanel: Story = {
   render: (args) => ({
     components: { AssetBrowserModal },
     setup() {
-      const onAssetSelect = (_asset: AssetDisplayItem) => {
+      function onAssetSelect(_asset: AssetDisplayItem) {
         // Asset selection handler for story
       }
-      const onClose = () => {
+      function onClose() {
         // Modal close handler for story
       }
 

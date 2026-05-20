@@ -170,7 +170,7 @@ watchDebounced(
 )
 
 // Set initial position to bottom center
-const setInitialPosition = () => {
+function setInitialPosition() {
   const panel = panelElement.value
   if (panel) {
     const screenWidth = window.innerWidth
@@ -232,7 +232,7 @@ const lastDragState = ref({
   windowWidth: window.innerWidth,
   windowHeight: window.innerHeight
 })
-const captureLastDragState = () => {
+function captureLastDragState() {
   lastDragState.value = {
     x: x.value,
     y: y.value,
@@ -251,7 +251,7 @@ watch(
   { immediate: true }
 )
 
-const adjustMenuPosition = () => {
+function adjustMenuPosition() {
   const panel = panelElement.value
   if (panel) {
     const screenWidth = window.innerWidth
@@ -312,13 +312,13 @@ useEventListener(window, 'resize', adjustMenuPosition)
 const isMouseOverDropZone = ref(false)
 
 // Mouse event handlers for self-contained drop zone
-const onMouseEnterDropZone = () => {
+function onMouseEnterDropZone() {
   if (isDragging.value) {
     isMouseOverDropZone.value = true
   }
 }
 
-const onMouseLeaveDropZone = () => {
+function onMouseLeaveDropZone() {
   if (isDragging.value) {
     isMouseOverDropZone.value = false
   }
@@ -396,21 +396,21 @@ const queueContextMenuItems = computed<MenuItem[]>(() => [
   }
 ])
 
-const cancelCurrentJob = async () => {
+async function cancelCurrentJob() {
   if (isExecutionIdle.value) return
   await commandStore.execute('Comfy.Interrupt')
 }
-const toggleQueueOverlay = () => {
+function toggleQueueOverlay() {
   if (isQueuePanelV2Enabled.value) {
     sidebarTabStore.toggleSidebarTab('job-history')
     return
   }
   commandStore.execute('Comfy.Queue.ToggleOverlay')
 }
-const showQueueContextMenu = (event: MouseEvent) => {
+function showQueueContextMenu(event: MouseEvent) {
   queueContextMenu.value?.show(event)
 }
-const handleClearQueue = async () => {
+async function handleClearQueue() {
   const pendingJobIds = queueStore.pendingTasks
     .map((task) => task.jobId)
     .filter((id): id is string => typeof id === 'string' && id.length > 0)

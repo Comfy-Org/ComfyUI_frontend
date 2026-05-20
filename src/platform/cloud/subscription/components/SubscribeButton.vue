@@ -52,7 +52,7 @@ watch(
   }
 )
 
-const handleSubscribe = () => {
+function handleSubscribe() {
   if (isCloud) {
     useTelemetry()?.trackSubscription('subscribe_clicked', {
       current_tier: subscriptionTier.value?.toLowerCase()

@@ -75,31 +75,31 @@ export const useCommandStore = defineStore('command', () => {
   const commandsById = ref<Record<string, ComfyCommandImpl>>({})
   const commands = computed(() => Object.values(commandsById.value))
 
-  const registerCommand = (command: ComfyCommand) => {
+  function registerCommand(command: ComfyCommand) {
     if (commandsById.value[command.id]) {
       console.warn(`Command ${command.id} already registered`)
     }
     commandsById.value[command.id] = new ComfyCommandImpl(command)
   }
 
-  const registerCommands = (commands: ComfyCommand[]) => {
+  function registerCommands(commands: ComfyCommand[]) {
     for (const command of commands) {
       registerCommand(command)
     }
   }
 
-  const getCommand = (command: string) => {
+  function getCommand(command: string) {
     return commandsById.value[command]
   }
 
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
-  const execute = async (
+  async function execute(
     commandId: string,
     options?: {
       errorHandler?: (error: unknown) => void
       metadata?: Record<string, unknown>
     }
-  ) => {
+  ) {
     const command = getCommand(commandId)
     if (command) {
       await wrapWithErrorHandlingAsync(
@@ -111,11 +111,11 @@ export const useCommandStore = defineStore('command', () => {
     }
   }
 
-  const isRegistered = (command: string) => {
+  function isRegistered(command: string) {
     return !!commandsById.value[command]
   }
 
-  const loadExtensionCommands = (extension: ComfyExtension) => {
+  function loadExtensionCommands(extension: ComfyExtension) {
     if (extension.commands) {
       for (const command of extension.commands) {
         registerCommand({
@@ -126,7 +126,7 @@ export const useCommandStore = defineStore('command', () => {
     }
   }
 
-  const formatKeySequence = (command: ComfyCommandImpl): string => {
+  function formatKeySequence(command: ComfyCommandImpl): string {
     const sequences = command.keybinding?.combo.getKeySequences() || []
     return sequences
       .map((seq) => seq.replace(/Control/g, 'Ctrl').replace(/Shift/g, 'Shift'))

@@ -328,11 +328,11 @@ describe('TopMenuSection', () => {
   })
 
   describe('inline progress summary', () => {
-    const configureSettings = (
+    function configureSettings(
       pinia: ReturnType<typeof createTestingPinia>,
       qpoV2Enabled: boolean,
       showRunProgressBar = true
-    ) => {
+    ) {
       const settingStore = useSettingStore(pinia)
       vi.mocked(settingStore.get).mockImplementation((key) => {
         if (key === 'Comfy.Queue.QPOV2') return qpoV2Enabled
@@ -413,10 +413,10 @@ describe('TopMenuSection', () => {
   })
 
   describe(QueueNotificationBannerHost, () => {
-    const configureSettings = (
+    function configureSettings(
       pinia: ReturnType<typeof createTestingPinia>,
       qpoV2Enabled: boolean
-    ) => {
+    ) {
       const settingStore = useSettingStore(pinia)
       vi.mocked(settingStore.get).mockImplementation((key) => {
         if (key === 'Comfy.Queue.QPOV2') return qpoV2Enabled

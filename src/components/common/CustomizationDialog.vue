@@ -136,13 +136,13 @@ const defaultIcon = iconOptions.find(
 const selectedIcon = ref(defaultIcon ?? iconOptions[0])
 const finalColor = ref(initialColor || nodeBookmarkStore.defaultBookmarkColor)
 
-const resetCustomization = () => {
+function resetCustomization() {
   selectedIcon.value =
     iconOptions.find((option) => option.value === initialIcon) ?? iconOptions[0]
   finalColor.value = initialColor || nodeBookmarkStore.defaultBookmarkColor
 }
 
-const confirmCustomization = () => {
+function confirmCustomization() {
   emit('confirm', selectedIcon.value.value, finalColor.value)
   visible.value = false
 }

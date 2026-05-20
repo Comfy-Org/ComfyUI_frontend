@@ -103,20 +103,20 @@ const isShortcutsTabActive = computed(() => {
   )
 })
 
-const shouldCapitalizeTab = (tabId: string): boolean => {
+function shouldCapitalizeTab(tabId: string): boolean {
   return tabId !== 'shortcuts-essentials' && tabId !== 'shortcuts-view-controls'
 }
 
-const getTabDisplayTitle = (tab: BottomPanelExtension): string => {
+function getTabDisplayTitle(tab: BottomPanelExtension): string {
   const title = tab.titleKey ? t(tab.titleKey) : tab.title || ''
   return shouldCapitalizeTab(tab.id) ? title.toUpperCase() : title
 }
 
-const openKeybindingSettings = async () => {
+async function openKeybindingSettings() {
   settingsDialog.show('keybinding')
 }
 
-const closeBottomPanel = () => {
+function closeBottomPanel() {
   bottomPanelStore.activePanel = null
 }
 </script>

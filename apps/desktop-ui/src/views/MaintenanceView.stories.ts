@@ -35,12 +35,14 @@ const validationState: ValidationState = {
   upgradePackages: 'OK'
 }
 
-const createMockElectronAPI = () => {
+function createMockElectronAPI() {
   const logListeners: Array<(message: string) => void> = []
 
-  const getValidationUpdate = () => ({
-    ...validationState
-  })
+  function getValidationUpdate() {
+    return {
+      ...validationState
+    }
+  }
 
   return {
     getPlatform: () => 'darwin',
@@ -76,7 +78,7 @@ const createMockElectronAPI = () => {
   }
 }
 
-const ensureElectronAPI = () => {
+function ensureElectronAPI() {
   const globalWindow = window as { electronAPI?: unknown }
   if (!globalWindow.electronAPI) {
     globalWindow.electronAPI = createMockElectronAPI()

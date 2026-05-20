@@ -9,7 +9,9 @@ function widget(name: string, value: unknown): WidgetState {
   return { name, type: 'INPUT', value, nodeId: '1' as NodeId, options: {} }
 }
 
-const isNumber = (v: unknown): v is number => typeof v === 'number'
+function isNumber(v: unknown): v is number {
+  return typeof v === 'number'
+}
 
 describe('singleValueExtractor', () => {
   const extract = singleValueExtractor(isNumber)

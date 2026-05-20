@@ -102,7 +102,7 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
  * back/forward on horizontal swipe); regular vertical scrolling still
  * scrolls the dropdown's own content.
  */
-const onWheel = (event: WheelEvent) => {
+function onWheel(event: WheelEvent) {
   if (isCanvasGestureWheel(event)) event.preventDefault()
 }
 </script>

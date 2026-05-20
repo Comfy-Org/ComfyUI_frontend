@@ -8,8 +8,8 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import InstallView from './InstallView.vue'
 
 // Create a mock router for stories
-const createMockRouter = () =>
-  createRouter({
+function createMockRouter() {
+  return createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: '/', component: { template: '<div>Home</div>' } },
@@ -23,6 +23,7 @@ const createMockRouter = () =>
       }
     ]
   })
+}
 
 const meta: Meta<typeof InstallView> = {
   title: 'Desktop/Views/InstallView',

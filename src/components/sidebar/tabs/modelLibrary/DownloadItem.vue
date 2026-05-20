@@ -83,7 +83,7 @@ const props = defineProps<{
   download: ElectronDownload
 }>()
 
-const getDownloadLabel = (savePath: string) => {
+function getDownloadLabel(savePath: string) {
   let parts = savePath.split('/')
   parts = parts.length === 1 ? parts[0].split('\\') : parts
   const name = parts.pop()
@@ -91,14 +91,17 @@ const getDownloadLabel = (savePath: string) => {
   return `${dir}/${name}`
 }
 
-const triggerCancelDownload = () =>
-  electronDownloadStore.cancel(props.download.url)
-const triggerPauseDownload = () =>
-  electronDownloadStore.pause(props.download.url)
-const triggerResumeDownload = () =>
-  electronDownloadStore.resume(props.download.url)
+function triggerCancelDownload() {
+  return electronDownloadStore.cancel(props.download.url)
+}
+function triggerPauseDownload() {
+  return electronDownloadStore.pause(props.download.url)
+}
+function triggerResumeDownload() {
+  return electronDownloadStore.resume(props.download.url)
+}
 
-const handleRemoveDownload = () => {
+function handleRemoveDownload() {
   electronDownloadStore.$patch((state) => {
     state.downloads = state.downloads.filter(
       ({ url }) => url !== props.download.url

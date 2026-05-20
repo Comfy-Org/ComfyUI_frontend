@@ -37,7 +37,7 @@ const buttonLabel = computed(() =>
 
 const { showSubscriptionDialog } = useBillingContext()
 
-const handleSubscribeToRun = () => {
+function handleSubscribeToRun() {
   if (isCloud) {
     useTelemetry()?.trackRunButton({ subscribe_to_run: true })
   }

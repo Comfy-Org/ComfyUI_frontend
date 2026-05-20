@@ -53,42 +53,42 @@ watch(
   }
 )
 
-const handlePointerDown = async (event: PointerEvent) => {
+async function handlePointerDown(event: PointerEvent) {
   await toolManager.handlePointerDown(event)
 }
 
-const handlePointerMove = async (event: PointerEvent) => {
+async function handlePointerMove(event: PointerEvent) {
   await toolManager.handlePointerMove(event)
 }
 
-const handlePointerUp = (event: PointerEvent) => {
+function handlePointerUp(event: PointerEvent) {
   void toolManager.handlePointerUp(event)
 }
 
-const handlePointerLeave = () => {
+function handlePointerLeave() {
   store.brushVisible = false
   if (pointerZoneRef.value) {
     pointerZoneRef.value.style.cursor = ''
   }
 }
 
-const handlePointerEnter = () => {
+function handlePointerEnter() {
   toolManager.updateCursor()
 }
 
-const handleTouchStart = (event: TouchEvent) => {
+function handleTouchStart(event: TouchEvent) {
   panZoom.handleTouchStart(event)
 }
 
-const handleTouchMove = async (event: TouchEvent) => {
+async function handleTouchMove(event: TouchEvent) {
   await panZoom.handleTouchMove(event)
 }
 
-const handleTouchEnd = (event: TouchEvent) => {
+function handleTouchEnd(event: TouchEvent) {
   panZoom.handleTouchEnd(event)
 }
 
-const handleWheel = async (event: WheelEvent) => {
+async function handleWheel(event: WheelEvent) {
   await panZoom.zoom(event)
   const newCursorPoint = { x: event.clientX, y: event.clientY }
   panZoom.updateCursorPosition(newCursorPoint)

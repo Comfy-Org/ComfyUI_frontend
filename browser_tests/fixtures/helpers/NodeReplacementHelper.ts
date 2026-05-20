@@ -42,7 +42,7 @@ export async function setupNodeReplacement(
       options?: AddEventListenerOptions | boolean
     ) {
       if (type === 'message' && typeof listener === 'function') {
-        const wrapped = function (this: WebSocket, event: Event) {
+        function wrapped(this: WebSocket, event: Event) {
           const msgEvent = event as MessageEvent
           if (typeof msgEvent.data === 'string') {
             try {

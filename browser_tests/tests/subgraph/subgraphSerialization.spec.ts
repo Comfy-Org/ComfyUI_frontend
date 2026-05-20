@@ -368,15 +368,16 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         ]
 
         const SENTINEL_IDS = new Set([-1, -10, -20])
-        const isSentinelNodeId = (id: number | string): id is number =>
-          typeof id === 'number' && SENTINEL_IDS.has(id)
+        function isSentinelNodeId(id: number | string): id is number {
+          return typeof id === 'number' && SENTINEL_IDS.has(id)
+        }
 
-        const checkEndpoint = (
+        function checkEndpoint(
           label: string,
           kind: 'origin_id' | 'target_id',
           id: number | string,
           g: typeof graph
-        ): string | null => {
+        ): string | null {
           if (isSentinelNodeId(id)) return null
           if (typeof id !== 'number' || !g._nodes_by_id[id]) {
             return `${label}: ${kind} ${id} invalid or not found`

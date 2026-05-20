@@ -11,12 +11,13 @@ const mockCanvasHistory = vi.hoisted(() => ({
   redo: vi.fn()
 }))
 
-const initialMock = () =>
-  reactive({
+function initialMock() {
+  return reactive({
     canvasHistory: mockCanvasHistory,
     brushVisible: true,
     triggerClear: vi.fn()
   })
+}
 
 let mockStore: ReturnType<typeof initialMock>
 
@@ -94,7 +95,9 @@ const i18n = createI18n({
   }
 })
 
-const renderHeader = () => render(TopBarHeader, { global: { plugins: [i18n] } })
+function renderHeader() {
+  return render(TopBarHeader, { global: { plugins: [i18n] } })
+}
 
 describe('TopBarHeader', () => {
   beforeEach(() => {

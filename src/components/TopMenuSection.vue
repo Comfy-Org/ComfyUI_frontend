@@ -327,7 +327,7 @@ onBeforeUnmount(() => {
   legacyContentCheckRafId = null
 })
 
-const openCustomNodeManager = async () => {
+async function openCustomNodeManager() {
   try {
     await managerState.openManager({
       initialTab: ManagerTab.All,

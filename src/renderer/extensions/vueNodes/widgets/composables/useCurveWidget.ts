@@ -15,7 +15,7 @@ const DEFAULT_CURVE_DATA: CurveData = {
   interpolation: 'monotone_cubic'
 }
 
-export const useCurveWidget = (): ComfyWidgetConstructorV2 => {
+export function useCurveWidget(): ComfyWidgetConstructorV2 {
   return (node: LGraphNode, inputSpec: InputSpecV2): ICurveWidget => {
     const spec = inputSpec as CurveInputSpec
     const defaultValue: CurveData = spec.default

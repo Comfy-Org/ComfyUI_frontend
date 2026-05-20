@@ -47,7 +47,7 @@ const isCollapsed = computed({
   set: (value: boolean) => emit('update:modelValue', value)
 })
 
-const toggleCollapse = () => {
+function toggleCollapse() {
   isCollapsed.value = !isCollapsed.value
 }
 </script>

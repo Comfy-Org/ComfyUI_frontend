@@ -127,7 +127,7 @@ const showDialog = ref(false)
 const autoUpdate = defineModel<boolean>('autoUpdate', { required: true })
 const allowMetrics = defineModel<boolean>('allowMetrics', { required: true })
 
-const showMetricsInfo = () => {
+function showMetricsInfo() {
   showDialog.value = true
 }
 </script>

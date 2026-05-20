@@ -160,7 +160,7 @@ export function useMoreOptionsMenu() {
 
   // Internal version to force menu rebuild after state mutations
   const optionsVersion = ref(0)
-  const bump = () => {
+  function bump() {
     optionsVersion.value++
   }
 

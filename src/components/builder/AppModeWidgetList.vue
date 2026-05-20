@@ -122,7 +122,7 @@ function getDropIndicator(node: LGraphNode) {
     ? parseImageWidgetValue(stringValue)
     : { filename: '', subfolder: '', type: 'input' }
 
-  const buildImageUrl = () => {
+  function buildImageUrl() {
     if (!filename) return undefined
     const params = new URLSearchParams({ filename, subfolder, type })
     appendCloudResParam(params, filename)
@@ -154,7 +154,7 @@ function nodeToNodeData(node: LGraphNode) {
 }
 
 async function handleDragDrop() {
-  const onDragDrop = async (e: DragEvent) => {
+  async function onDragDrop(e: DragEvent) {
     for (const { nodeData } of mappedSelections.value)
       if (nodeData?.onDragOver?.(e) && (await nodeData.onDragDrop?.(e)))
         return true

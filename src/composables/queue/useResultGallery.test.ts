@@ -6,10 +6,7 @@ import type { JobListItem as JobListViewItem } from '@/composables/queue/useJobL
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
-const createResultItem = (
-  url: string,
-  supportsPreview = true
-): ResultItemImpl => {
+function createResultItem(url: string, supportsPreview = true): ResultItemImpl {
   const item = new ResultItemImpl({
     filename: url,
     subfolder: '',
@@ -23,20 +20,22 @@ const createResultItem = (
   return item
 }
 
-const createMockJob = (id: string, outputsCount = 1): JobListItem => ({
-  id,
-  status: 'completed',
-  create_time: Date.now(),
-  preview_output: null,
-  outputs_count: outputsCount,
-  priority: 0
-})
+function createMockJob(id: string, outputsCount = 1): JobListItem {
+  return {
+    id,
+    status: 'completed',
+    create_time: Date.now(),
+    preview_output: null,
+    outputs_count: outputsCount,
+    priority: 0
+  }
+}
 
-const createTask = (
+function createTask(
   preview?: ResultItemImpl,
   allOutputs?: ResultItemImpl[],
   outputsCount = 1
-): TaskItemImpl => {
+): TaskItemImpl {
   const job = createMockJob(
     `task-${Math.random().toString(36).slice(2)}`,
     outputsCount
@@ -45,18 +44,19 @@ const createTask = (
   return new TaskItemImpl(job, {}, flatOutputs)
 }
 
-const createJobViewItem = (
+function createJobViewItem(
   id: string,
   taskRef?: TaskItemImpl
-): JobListViewItem =>
-  ({
+): JobListViewItem {
+  return {
     id,
     title: `Job ${id}`,
     meta: '',
     state: 'completed',
     showClear: false,
     taskRef
-  }) as JobListViewItem
+  } as JobListViewItem
+}
 
 describe('useResultGallery', () => {
   beforeEach(() => {

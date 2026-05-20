@@ -53,10 +53,11 @@ export function useJobMenu(
   const nodeDefStore = useNodeDefStore()
   const mediaAssetActions = useMediaAssetActions()
 
-  const resolveItem = (item?: JobListItem | null): JobListItem | null =>
-    item ?? currentMenuItem()
+  function resolveItem(item?: JobListItem | null): JobListItem | null {
+    return item ?? currentMenuItem()
+  }
 
-  const openJobWorkflow = async (item?: JobListItem | null) => {
+  async function openJobWorkflow(item?: JobListItem | null) {
     const target = resolveItem(item)
     if (!target) return
     const data = await getJobWorkflow(target.id)
@@ -73,13 +74,13 @@ export function useJobMenu(
     }
   }
 
-  const copyJobId = async (item?: JobListItem | null) => {
+  async function copyJobId(item?: JobListItem | null) {
     const target = resolveItem(item)
     if (!target) return
     await copyToClipboard(target.id)
   }
 
-  const cancelJob = async (item?: JobListItem | null) => {
+  async function cancelJob(item?: JobListItem | null) {
     const target = resolveItem(item)
     if (!target) return
     if (target.state === 'running' || target.state === 'initialization') {
@@ -95,13 +96,13 @@ export function useJobMenu(
     await queueStore.update()
   }
 
-  const copyErrorMessage = async (item?: JobListItem | null) => {
+  async function copyErrorMessage(item?: JobListItem | null) {
     const target = resolveItem(item)
     const message = target?.taskRef?.errorMessage
     if (message) await copyToClipboard(message)
   }
 
-  const reportError = (item?: JobListItem | null) => {
+  function reportError(item?: JobListItem | null) {
     const target = resolveItem(item)
     if (!target) return
 
@@ -124,7 +125,7 @@ export function useJobMenu(
 
   // This is very magical only because it matches the respective backend implementation
   // There is or will be a better way to do this
-  const addOutputLoaderNode = async () => {
+  async function addOutputLoaderNode() {
     const item = currentMenuItem()
     if (!item) return
     const result: ResultItemImpl | undefined = item.taskRef?.previewOutput
@@ -152,8 +153,9 @@ export function useJobMenu(
 
     if (!node) return
 
-    const isResultItemType = (v: string | undefined): v is ResultItemType =>
-      v === 'input' || v === 'output' || v === 'temp'
+    function isResultItemType(v: string | undefined): v is ResultItemType {
+      return v === 'input' || v === 'output' || v === 'temp'
+    }
 
     const apiItem: ResultItem = {
       filename: result.filename,
@@ -175,7 +177,7 @@ export function useJobMenu(
   /**
    * Trigger a download of the job's previewable output asset.
    */
-  const downloadPreviewAsset = () => {
+  function downloadPreviewAsset() {
     const item = currentMenuItem()
     if (!item) return
     const result: ResultItemImpl | undefined = item.taskRef?.previewOutput
@@ -186,7 +188,7 @@ export function useJobMenu(
   /**
    * Export the workflow JSON attached to the job.
    */
-  const exportJobWorkflow = async () => {
+  async function exportJobWorkflow() {
     const item = currentMenuItem()
     if (!item) return
     const data = await getJobWorkflow(item.id)
@@ -210,7 +212,7 @@ export function useJobMenu(
     downloadBlob(filename, blob)
   }
 
-  const deleteJobAsset = async () => {
+  async function deleteJobAsset() {
     const item = currentMenuItem()
     if (!item) return
     const task = item.taskRef as TaskItemImpl | undefined
@@ -224,7 +226,7 @@ export function useJobMenu(
     }
   }
 
-  const removeFailedJob = async (task?: TaskItemImpl | null) => {
+  async function removeFailedJob(task?: TaskItemImpl | null) {
     const target =
       task ?? (currentMenuItem()?.taskRef as TaskItemImpl | undefined)
     if (!target) return

@@ -53,7 +53,7 @@ let hideTimeout: ReturnType<typeof setTimeout> | null = null
 let showTimeout: ReturnType<typeof setTimeout> | null = null
 const id = useId()
 
-const showPopover = (event: Event) => {
+function showPopover(event: Event) {
   // Clear any existing timeouts
   if (hideTimeout) {
     clearTimeout(hideTimeout)
@@ -102,7 +102,7 @@ const showPopover = (event: Event) => {
   }, 200) // 200ms delay before showing
 }
 
-const cancelHidePopover = () => {
+function cancelHidePopover() {
   // Temporarily disable this functionality until we need the popover to be interactive:
   /*
   if (hideTimeout) {
@@ -112,7 +112,7 @@ const cancelHidePopover = () => {
   */
 }
 
-const hidePopover = () => {
+function hidePopover() {
   // Clear show timeout if mouse leaves before popover appears
   if (showTimeout) {
     clearTimeout(showTimeout)
@@ -126,7 +126,7 @@ const hidePopover = () => {
   }, 100) // Minimal delay to allow moving to popover
 }
 
-const togglePopover = (event: Event) => {
+function togglePopover(event: Event) {
   if (popoverRef.value) {
     popoverRef.value.toggle(event)
   }

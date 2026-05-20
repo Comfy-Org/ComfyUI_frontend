@@ -91,7 +91,7 @@ describe('useCanvasHistory', () => {
       }
     )
 
-    const createMockImageData = (): ImageData => {
+    function createMockImageData(): ImageData {
       return {
         data: new Uint8ClampedArray(100 * 100 * 4),
         width: 100,
@@ -194,7 +194,7 @@ describe('useCanvasHistory', () => {
 
       expect(rafSpy).toHaveBeenCalled()
 
-      const createMockImageData = (): ImageData => {
+      function createMockImageData(): ImageData {
         return {
           data: new Uint8ClampedArray(100 * 100 * 4),
           width: 100,

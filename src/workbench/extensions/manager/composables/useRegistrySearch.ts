@@ -50,7 +50,7 @@ export function useRegistrySearch(
   const { searchPacks, clearSearchCache, getSortValue, getSortableFields } =
     searchGateway
 
-  const updateSearchResults = async (options: { append?: boolean }) => {
+  async function updateSearchResults(options: { append?: boolean }) {
     isLoading.value = true
     if (!options.append) {
       pageNumber.value = 0
@@ -89,8 +89,10 @@ export function useRegistrySearch(
     isLoading.value = false
   }
 
-  const onQueryChange = () => void updateSearchResults({ append: false })
-  const onPageChange = () => {
+  function onQueryChange() {
+    return void updateSearchResults({ append: false })
+  }
+  function onPageChange() {
     if (pageNumber.value === 0) return
     void updateSearchResults({ append: true })
   }

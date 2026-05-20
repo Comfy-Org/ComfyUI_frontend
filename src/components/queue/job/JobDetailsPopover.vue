@@ -130,12 +130,15 @@ const workflowValue = computed(() => {
 const jobIdValue = computed(() => props.jobId)
 
 const { copyToClipboard } = useCopyToClipboard()
-const copyJobId = () => void copyToClipboard(jobIdValue.value)
+function copyJobId() {
+  return void copyToClipboard(jobIdValue.value)
+}
 
 const taskForJob = computed(() => {
   const pid = props.jobId
-  const findIn = (arr: TaskItemImpl[]) =>
-    arr.find((t) => String(t.jobId ?? '') === String(pid))
+  function findIn(arr: TaskItemImpl[]) {
+    return arr.find((t) => String(t.jobId ?? '') === String(pid))
+  }
   return (
     findIn(queueStore.pendingTasks) ||
     findIn(queueStore.runningTasks) ||
@@ -211,7 +214,7 @@ const {
   nowTs
 })
 
-const formatEta = (lo: number, hi: number): string => {
+function formatEta(lo: number, hi: number): string {
   if (hi <= 60) {
     const hiS = Math.max(1, Math.round(hi))
     const loS = Math.max(1, Math.min(hiS, Math.round(lo)))

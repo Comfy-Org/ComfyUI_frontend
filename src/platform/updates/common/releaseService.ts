@@ -21,7 +21,7 @@ const releaseApiClient = axios.create({
 })
 
 // Release service for fetching release notes
-export const useReleaseService = () => {
+export function useReleaseService() {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
@@ -35,11 +35,11 @@ export const useReleaseService = () => {
   // No transformation needed - API response matches the generated type
 
   // Handle API errors with context
-  const handleApiError = (
+  function handleApiError(
     err: unknown,
     context: string,
     routeSpecificErrors?: Record<number, string>
-  ): string => {
+  ): string {
     if (!axios.isAxiosError(err))
       return err instanceof Error
         ? `${context}: ${err.message}`
@@ -73,11 +73,11 @@ export const useReleaseService = () => {
   }
 
   // Execute API request with error handling
-  const executeApiRequest = async <T>(
+  async function executeApiRequest<T>(
     apiCall: () => Promise<AxiosResponse<T>>,
     errorContext: string,
     routeSpecificErrors?: Record<number, string>
-  ): Promise<T | null> => {
+  ): Promise<T | null> {
     isLoading.value = true
     error.value = null
 
@@ -96,10 +96,10 @@ export const useReleaseService = () => {
   }
 
   // Fetch release notes from API
-  const getReleases = async (
+  async function getReleases(
     params: GetReleasesParams,
     signal?: AbortSignal
-  ): Promise<ReleaseNote[] | null> => {
+  ): Promise<ReleaseNote[] | null> {
     const endpoint = '/releases'
     const errorContext = 'Failed to get releases'
     const routeSpecificErrors = {

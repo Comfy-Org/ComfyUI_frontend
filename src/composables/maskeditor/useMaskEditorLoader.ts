@@ -87,7 +87,7 @@ export function useMaskEditorLoader() {
   const dataStore = useMaskEditorDataStore()
   const nodeOutputStore = useNodeOutputStore()
 
-  const loadFromNode = async (node: LGraphNode): Promise<void> => {
+  async function loadFromNode(node: LGraphNode): Promise<void> {
     dataStore.setLoading(true)
 
     try {

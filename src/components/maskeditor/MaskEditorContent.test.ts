@@ -39,8 +39,8 @@ const mockCanvasHistory = vi.hoisted(() => ({
   clearStates: vi.fn()
 }))
 
-const initialMockStore = () =>
-  reactive({
+function initialMockStore() {
+  return reactive({
     activeLayer: 'mask' as 'mask' | 'rgb',
     maskCanvas: null as HTMLCanvasElement | null,
     rgbCanvas: null as HTMLCanvasElement | null,
@@ -50,6 +50,7 @@ const initialMockStore = () =>
     canvasHistory: mockCanvasHistory,
     resetState: vi.fn()
   })
+}
 
 let mockStore: ReturnType<typeof initialMockStore>
 
@@ -150,8 +151,9 @@ class MockResizeObserver {
 // with a stable identity is enough — we never read its fields.
 const fakeNode = { id: 1, title: 'test-node' } as unknown as LGraphNode
 
-const renderContent = () =>
-  render(MaskEditorContent, { props: { node: fakeNode } })
+function renderContent() {
+  return render(MaskEditorContent, { props: { node: fakeNode } })
+}
 
 let originalResizeObserver: typeof ResizeObserver | undefined
 
@@ -213,8 +215,9 @@ describe('MaskEditorContent', () => {
         expect(mockBrushDrawing.initPreviewCanvas).toHaveBeenCalled()
       })
 
-      const orderOf = (fn: { mock: { invocationCallOrder: number[] } }) =>
-        fn.mock.invocationCallOrder[0]
+      function orderOf(fn: { mock: { invocationCallOrder: number[] } }) {
+        return fn.mock.invocationCallOrder[0]
+      }
 
       expect(orderOf(mockMaskEditorLoader.loadFromNode)).toBeLessThan(
         orderOf(mockImageLoader.loadImages)

@@ -128,7 +128,7 @@ const {
 
 const showOptionsPanel = ref(false)
 
-const toggleOptionsPanel = () => {
+function toggleOptionsPanel() {
   showOptionsPanel.value = !showOptionsPanel.value
 }
 

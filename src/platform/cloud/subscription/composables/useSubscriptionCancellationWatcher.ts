@@ -43,7 +43,7 @@ export function useSubscriptionCancellationWatcher({
     { immediate: false }
   )
 
-  const stopCancellationWatcher = () => {
+  function stopCancellationWatcher() {
     watcherActive.value = false
     stopTimer()
     cancellationAttempts.value = 0
@@ -54,7 +54,7 @@ export function useSubscriptionCancellationWatcher({
     }
   }
 
-  const scheduleNextCancellationCheck = () => {
+  function scheduleNextCancellationCheck() {
     if (!watcherActive.value) return
 
     if (cancellationAttempts.value >= MAX_CANCELLATION_ATTEMPTS) {
@@ -69,7 +69,7 @@ export function useSubscriptionCancellationWatcher({
     startTimer()
   }
 
-  const checkForCancellation = async (triggeredFromFocus = false) => {
+  async function checkForCancellation(triggeredFromFocus = false) {
     if (!watcherActive.value || cancellationCheckInFlight.value) return
 
     cancellationCheckInFlight.value = true
@@ -103,7 +103,7 @@ export function useSubscriptionCancellationWatcher({
     }
   }
 
-  const startCancellationWatcher = () => {
+  function startCancellationWatcher() {
     if (!shouldWatchCancellation() || !subscriptionStatus.value?.is_active) {
       return
     }

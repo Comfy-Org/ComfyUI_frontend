@@ -307,22 +307,22 @@ const showSubscribeAction = computed(
     (!isActiveSubscription.value || isCancelled.value)
 )
 
-const handleOpenUserSettings = () => {
+function handleOpenUserSettings() {
   settingsDialog.show('user')
   emit('close')
 }
 
-const handleOpenWorkspaceSettings = () => {
+function handleOpenWorkspaceSettings() {
   settingsDialog.show('workspace')
   emit('close')
 }
 
-const handleOpenPlansAndPricing = () => {
+function handleOpenPlansAndPricing() {
   subscriptionDialog.showPricingTable()
   emit('close')
 }
 
-const handleOpenPlanAndCreditsSettings = () => {
+function handleOpenPlanAndCreditsSettings() {
   if (isCloud) {
     settingsDialog.show('workspace')
   } else {
@@ -332,19 +332,19 @@ const handleOpenPlanAndCreditsSettings = () => {
   emit('close')
 }
 
-const handleUpgradeToAddCredits = () => {
+function handleUpgradeToAddCredits() {
   subscriptionDialog.showPricingTable()
   emit('close')
 }
 
-const handleTopUp = () => {
+function handleTopUp() {
   // Track purchase credits entry from avatar popover
   useTelemetry()?.trackAddApiCreditButtonClicked()
   dialogService.showTopUpCreditsDialog()
   emit('close')
 }
 
-const handleOpenPartnerNodesInfo = () => {
+function handleOpenPartnerNodesInfo() {
   window.open(
     buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true }),
     '_blank'
@@ -352,22 +352,22 @@ const handleOpenPartnerNodesInfo = () => {
   emit('close')
 }
 
-const handleLogout = async () => {
+async function handleLogout() {
   await handleSignOut()
   emit('close')
 }
 
-const handleCreateWorkspace = () => {
+function handleCreateWorkspace() {
   workspaceSwitcherPopover.value?.hide()
   dialogService.showCreateWorkspaceDialog()
   emit('close')
 }
 
-const toggleWorkspaceSwitcher = (event: MouseEvent) => {
+function toggleWorkspaceSwitcher(event: MouseEvent) {
   workspaceSwitcherPopover.value?.toggle(event)
 }
 
-const refreshBalance = () => {
+function refreshBalance() {
   void fetchBalance()
 }
 

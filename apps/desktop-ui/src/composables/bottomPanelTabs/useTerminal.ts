@@ -55,14 +55,14 @@ export function useTerminal(element: Ref<HTMLElement | undefined>) {
       minRows?: number
       onResize?: () => void
     }) {
-      const ensureValidRows = (rows: number | undefined): number => {
+      function ensureValidRows(rows: number | undefined): number {
         if (rows == null || isNaN(rows)) {
           return (root.value?.clientHeight ?? 80) / 20
         }
         return rows
       }
 
-      const ensureValidCols = (cols: number | undefined): number => {
+      function ensureValidCols(cols: number | undefined): number {
         if (cols == null || isNaN(cols)) {
           // Sometimes this is NaN if so, estimate.
           return (root.value?.clientWidth ?? 80) / 8
@@ -70,7 +70,7 @@ export function useTerminal(element: Ref<HTMLElement | undefined>) {
         return cols
       }
 
-      const resize = () => {
+      function resize() {
         const dims = fitAddon.proposeDimensions()
         // Sometimes propose returns NaN, so we may need to estimate.
         terminal.resize(

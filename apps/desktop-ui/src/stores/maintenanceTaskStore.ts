@@ -124,13 +124,15 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
    * @param task Task to get the matching state object for
    * @returns The state object for this task
    */
-  const getRunner = (task: MaintenanceTask) => taskRunners.value.get(task.id)!
+  function getRunner(task: MaintenanceTask) {
+    return taskRunners.value.get(task.id)!
+  }
 
   /**
    * Updates the task list with the latest validation state.
    * @param validationUpdate Update details passed in by electron
    */
-  const processUpdate = (validationUpdate: InstallValidation) => {
+  function processUpdate(validationUpdate: InstallValidation) {
     lastUpdate.value = validationUpdate
     const update = validationUpdate as IndexedUpdate
     isRefreshing.value = true
@@ -151,19 +153,19 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
   }
 
   /** Clears the resolved status of tasks (when changing filters) */
-  const clearResolved = () => {
+  function clearResolved() {
     for (const task of tasks.value) {
       getRunner(task).resolved &&= false
     }
   }
 
   /** @todo Refreshes Electron tasks only. */
-  const refreshDesktopTasks = async () => {
+  async function refreshDesktopTasks() {
     isRefreshing.value = true
     await electron.Validation.validateInstallation(processUpdate)
   }
 
-  const execute = async (task: MaintenanceTask) => {
+  async function execute(task: MaintenanceTask) {
     const success = await getRunner(task).execute(task)
     if (success && task.isInstallationFix) {
       await refreshDesktopTasks()

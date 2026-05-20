@@ -16,21 +16,26 @@ import {
   ACCEPTED_VIDEO_TYPES
 } from '@/utils/mediaUploadUtil'
 
-const isImageFile = (file: File) => file.type.startsWith('image/')
-const isVideoFile = (file: File) => file.type.startsWith('video/')
+function isImageFile(file: File) {
+  return file.type.startsWith('image/')
+}
+function isVideoFile(file: File) {
+  return file.type.startsWith('video/')
+}
 
-const findFileComboWidget = (
+function findFileComboWidget(
   node: LGraphNode,
   inputName: string
-): IComboWidget | undefined =>
-  node.widgets?.find((w): w is IComboWidget => w.name === inputName)
+): IComboWidget | undefined {
+  return node.widgets?.find((w): w is IComboWidget => w.name === inputName)
+}
 
-export const useImageUploadWidget = () => {
-  const widgetConstructor: ComfyWidgetConstructor = (
+export function useImageUploadWidget() {
+  function widgetConstructor(
     node: LGraphNode,
     inputName: string,
     inputData: InputSpec
-  ) => {
+  ) {
     if (!isImageUploadInput(inputData)) {
       throw new Error(
         'Image upload widget requires imageInputName augmentation'
@@ -52,8 +57,9 @@ export const useImageUploadWidget = () => {
     if (!fileComboWidget) {
       throw new Error(`Widget "${imageInputName}" not found on node`)
     }
-    const formatPath = (value: string | ResultItem) =>
-      createAnnotatedPath(value, { rootFolder: image_folder })
+    function formatPath(value: string | ResultItem) {
+      return createAnnotatedPath(value, { rootFolder: image_folder })
+    }
 
     // Setup file upload handling
     let rollback: (() => void) | undefined
@@ -132,5 +138,5 @@ export const useImageUploadWidget = () => {
     return { widget: uploadWidget }
   }
 
-  return widgetConstructor
+  return widgetConstructor as ComfyWidgetConstructor
 }

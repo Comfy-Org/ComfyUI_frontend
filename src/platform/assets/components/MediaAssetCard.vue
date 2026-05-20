@@ -297,17 +297,17 @@ const showActionsOverlay = computed(() => {
   return isHovered.value || selected || isVideoPlaying.value
 })
 
-const handleZoomClick = () => {
+function handleZoomClick() {
   if (asset && canInspect.value) {
     emit('zoom', asset)
   }
 }
 
-const handleImageLoaded = (width: number, height: number) => {
+function handleImageLoaded(width: number, height: number) {
   imageDimensions.value = { width, height }
 }
 
-const handleOutputCountClick = () => {
+function handleOutputCountClick() {
   emit('output-count-click')
 }
 function dragStart(e: DragEvent) {

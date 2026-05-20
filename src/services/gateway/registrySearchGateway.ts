@@ -32,7 +32,7 @@ const CIRCUIT_BREAKER_TIMEOUT = 60000 // 1 minute before retry
  * - Circuit breaker: Prevents repeated calls to failed services
  * - Automatic failover: Cascades through providers on failure
  */
-export const useRegistrySearchGateway = (): NodePackSearchProvider => {
+export function useRegistrySearchGateway(): NodePackSearchProvider {
   const providers: ProviderState[] = []
   let activeProviderIndex = 0
 
@@ -60,7 +60,7 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
   /**
    * Check if a provider's circuit breaker should be closed (available to try)
    */
-  const isCircuitClosed = (providerState: ProviderState): boolean => {
+  function isCircuitClosed(providerState: ProviderState): boolean {
     if (providerState.consecutiveFailures < CIRCUIT_BREAKER_THRESHOLD) {
       return true
     }
@@ -80,7 +80,7 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
   /**
    * Record a successful call to a provider
    */
-  const recordSuccess = (providerState: ProviderState) => {
+  function recordSuccess(providerState: ProviderState) {
     providerState.isHealthy = true
     providerState.consecutiveFailures = 0
     providerState.lastError = undefined
@@ -89,7 +89,7 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
   /**
    * Record a failed call to a provider
    */
-  const recordFailure = (providerState: ProviderState, error: Error) => {
+  function recordFailure(providerState: ProviderState, error: Error) {
     providerState.consecutiveFailures++
     providerState.lastError = error
     providerState.lastAttempt = new Date()
@@ -105,7 +105,7 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
   /**
    * Get the currently active provider based on circuit breaker states
    */
-  const getActiveProvider = (): NodePackSearchProvider => {
+  function getActiveProvider(): NodePackSearchProvider {
     // First, try to use the current active provider if it's healthy
     const currentProvider = providers[activeProviderIndex]
     if (currentProvider && isCircuitClosed(currentProvider)) {
@@ -128,7 +128,7 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
    * Update the active provider index after a failure.
    * Move to the next provider if available.
    */
-  const updateActiveProviderOnFailure = () => {
+  function updateActiveProviderOnFailure() {
     if (activeProviderIndex < providers.length - 1) {
       activeProviderIndex++
     }
@@ -137,10 +137,10 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
   /**
    * Search for node packs.
    */
-  const searchPacks = async (
+  async function searchPacks(
     query: string,
     params: SearchNodePacksParams
-  ): Promise<SearchPacksResult> => {
+  ): Promise<SearchPacksResult> {
     let lastError: Error | null = null
 
     // Start with the current active provider
@@ -175,7 +175,7 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
   /**
    * Clear the search cache for all providers that implement it.
    */
-  const clearSearchCache = () => {
+  function clearSearchCache() {
     for (const providerState of providers) {
       try {
         providerState.provider.clearSearchCache()
@@ -199,10 +199,10 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
    * const sortValue = getSortValue(pack, 'downloads')
    * console.log(sortValue) // 100
    */
-  const getSortValue = (
+  function getSortValue(
     pack: RegistryNodePack,
     sortField: string
-  ): string | number => {
+  ): string | number {
     return getActiveProvider().getSortValue(pack, sortField)
   }
 
@@ -212,7 +212,7 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
    * const sortableFields = getSortableFields()
    * console.log(sortableFields) // ['downloads', 'created', 'updated', 'publisher', 'name']
    */
-  const getSortableFields = () => {
+  function getSortableFields() {
     return getActiveProvider().getSortableFields()
   }
 

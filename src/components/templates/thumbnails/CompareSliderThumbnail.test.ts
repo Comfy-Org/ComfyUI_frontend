@@ -21,7 +21,7 @@ vi.mock('@/components/common/LazyImage.vue', () => ({
   }
 }))
 
-const mockRect = (el: HTMLElement, width: number) => {
+function mockRect(el: HTMLElement, width: number) {
   vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
     left: 0,
     top: 0,
@@ -36,7 +36,7 @@ const mockRect = (el: HTMLElement, width: number) => {
 }
 
 describe('CompareSliderThumbnail', () => {
-  const renderThumbnail = (props = {}) => {
+  function renderThumbnail(props = {}) {
     return render(CompareSliderThumbnail, {
       props: {
         baseImageSrc: '/base-image.jpg',

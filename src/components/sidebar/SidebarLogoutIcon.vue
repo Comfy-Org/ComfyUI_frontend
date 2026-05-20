@@ -21,7 +21,7 @@ const userStore = useUserStore()
 const tooltip = computed(
   () => `${t('sideToolbar.logout')} (${userStore.currentUser?.username})`
 )
-const logout = async () => {
+async function logout() {
   await userStore.logout()
   window.location.reload()
 }

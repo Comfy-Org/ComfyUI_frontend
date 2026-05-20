@@ -90,7 +90,7 @@ vi.mock('../common/releaseStore', () => ({
 }))
 
 describe('ReleaseNotificationToast', () => {
-  const renderComponent = (props = {}) => {
+  function renderComponent(props = {}) {
     return render(ReleaseNotificationToast, {
       global: {
         mocks: {

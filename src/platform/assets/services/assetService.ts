@@ -202,6 +202,8 @@ function normalizeAssetTags(tags: string[]): string[] {
   return tags.map((tag) => tag.trim()).filter(Boolean)
 }
 
+function noopAbortListener() {}
+
 async function withCallerAbort<T>(
   promise: Promise<T>,
   signal?: AbortSignal
@@ -209,9 +211,11 @@ async function withCallerAbort<T>(
   throwIfAborted(signal)
   if (!signal) return await promise
 
-  let removeAbortListener = () => {}
+  let removeAbortListener: () => void = noopAbortListener
   const abortPromise = new Promise<never>((_, reject) => {
-    const onAbort = () => reject(createAbortError())
+    function onAbort() {
+      return reject(createAbortError())
+    }
     signal.addEventListener('abort', onAbort, { once: true })
     removeAbortListener = () => signal.removeEventListener('abort', onAbort)
   })

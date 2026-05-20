@@ -24,7 +24,7 @@ export function useAssetsApi(directory: 'input' | 'output') {
     directory === 'input' ? assetsStore.inputError : assetsStore.historyError
   )
 
-  const fetchMediaList = async (): Promise<AssetItem[]> => {
+  async function fetchMediaList(): Promise<AssetItem[]> {
     if (directory === 'input') {
       await assetsStore.updateInputs()
       return assetsStore.inputAssets
@@ -34,9 +34,11 @@ export function useAssetsApi(directory: 'input' | 'output') {
     }
   }
 
-  const refresh = () => fetchMediaList()
+  function refresh() {
+    return fetchMediaList()
+  }
 
-  const loadMore = async (): Promise<void> => {
+  async function loadMore(): Promise<void> {
     if (directory === 'output') {
       await assetsStore.loadMoreHistory()
     }

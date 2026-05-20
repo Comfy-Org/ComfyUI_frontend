@@ -48,7 +48,7 @@ export const useMaskEditorDataStore = defineStore('maskEditorData', () => {
 
   const isReady = computed(() => hasValidInput.value && !isLoading.value)
 
-  const reset = () => {
+  function reset() {
     inputData.value = null
     outputData.value = null
     sourceNode.value = null
@@ -56,7 +56,7 @@ export const useMaskEditorDataStore = defineStore('maskEditorData', () => {
     loadError.value = null
   }
 
-  const setLoading = (loading: boolean, error?: string) => {
+  function setLoading(loading: boolean, error?: string) {
     isLoading.value = loading
     if (error) {
       loadError.value = error

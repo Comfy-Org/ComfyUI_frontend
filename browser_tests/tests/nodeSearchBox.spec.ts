@@ -166,10 +166,10 @@ test.describe('Node search box', { tag: '@node' }, () => {
   })
 
   test.describe('Filtering', () => {
-    const expectFilterChips = async (
+    async function expectFilterChips(
       comfyPage: ComfyPage,
       expectedTexts: string[]
-    ) => {
+    ) {
       const chips = comfyPage.searchBox.filterChips
 
       // Check that the number of chips matches the expected count

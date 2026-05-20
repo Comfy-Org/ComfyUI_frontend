@@ -36,14 +36,14 @@ export type QueueNotificationBanner =
   | QueueCompletedNotification
   | QueueFailedNotification
 
-const sanitizeCount = (value: number | undefined) => {
+function sanitizeCount(value: number | undefined) {
   if (!(typeof value === 'number' && value > 0)) {
     return 1
   }
   return Math.floor(value)
 }
 
-export const useQueueNotificationBanners = () => {
+export function useQueueNotificationBanners() {
   const queueStore = useQueueStore()
   const executionStore = useExecutionStore()
 
@@ -60,7 +60,7 @@ export const useQueueNotificationBanners = () => {
       !executionStore.isIdle
   )
 
-  const clearIdleCompletionHooks = () => {
+  function clearIdleCompletionHooks() {
     idleCompletionScheduleToken++
     if (!stopIdleHistoryWatch) {
       return
@@ -69,7 +69,7 @@ export const useQueueNotificationBanners = () => {
     stopIdleHistoryWatch = null
   }
 
-  const clearDismissTimer = () => {
+  function clearDismissTimer() {
     if (dismissTimer.value === null) {
       return
     }
@@ -77,13 +77,13 @@ export const useQueueNotificationBanners = () => {
     dismissTimer.value = null
   }
 
-  const dismissActiveNotification = () => {
+  function dismissActiveNotification() {
     activeNotification.value = null
     dismissTimer.value = null
     showNextNotification()
   }
 
-  const showNextNotification = () => {
+  function showNextNotification() {
     if (activeNotification.value !== null) {
       return
     }
@@ -101,16 +101,16 @@ export const useQueueNotificationBanners = () => {
     )
   }
 
-  const queueNotification = (notification: QueueNotificationBanner) => {
+  function queueNotification(notification: QueueNotificationBanner) {
     pendingNotifications.value = [...pendingNotifications.value, notification]
     showNextNotification()
   }
 
-  const toQueueLifecycleNotification = (
+  function toQueueLifecycleNotification(
     type: QueueQueuedNotificationType,
     count: number,
     requestId?: number
-  ): QueueQueuedNotification => {
+  ): QueueQueuedNotification {
     if (requestId === undefined) {
       return {
         type,
@@ -124,24 +124,28 @@ export const useQueueNotificationBanners = () => {
     }
   }
 
-  const toCompletedNotification = (
+  function toCompletedNotification(
     count: number,
     thumbnailUrls: string[]
-  ): QueueCompletedNotification => ({
-    type: 'completed',
-    count,
-    thumbnailUrls: thumbnailUrls.slice(0, MAX_COMPLETION_THUMBNAILS)
-  })
+  ): QueueCompletedNotification {
+    return {
+      type: 'completed',
+      count,
+      thumbnailUrls: thumbnailUrls.slice(0, MAX_COMPLETION_THUMBNAILS)
+    }
+  }
 
-  const toFailedNotification = (count: number): QueueFailedNotification => ({
-    type: 'failed',
-    count
-  })
+  function toFailedNotification(count: number): QueueFailedNotification {
+    return {
+      type: 'failed',
+      count
+    }
+  }
 
-  const convertQueuedPendingToQueued = (
+  function convertQueuedPendingToQueued(
     requestId: number | undefined,
     count: number
-  ) => {
+  ) {
     if (
       activeNotification.value?.type === 'queuedPending' &&
       (requestId === undefined ||
@@ -186,9 +190,9 @@ export const useQueueNotificationBanners = () => {
     return true
   }
 
-  const handlePromptQueueing = (
+  function handlePromptQueueing(
     event: CustomEvent<PromptQueueingEventPayload>
-  ) => {
+  ) {
     const payload = event.detail
     const count = sanitizeCount(payload?.batchCount)
     queueNotification(
@@ -196,7 +200,7 @@ export const useQueueNotificationBanners = () => {
     )
   }
 
-  const handlePromptQueued = (event: CustomEvent<PromptQueuedEventPayload>) => {
+  function handlePromptQueued(event: CustomEvent<PromptQueuedEventPayload>) {
     const payload = event.detail
     const count = sanitizeCount(payload?.batchCount)
     const handled = convertQueuedPendingToQueued(payload?.requestId, count)
@@ -210,7 +214,7 @@ export const useQueueNotificationBanners = () => {
   api.addEventListener('promptQueueing', handlePromptQueueing)
   api.addEventListener('promptQueued', handlePromptQueued)
 
-  const queueCompletionBatchNotifications = () => {
+  function queueCompletionBatchNotifications() {
     const startTs = lastActiveStartTs.value ?? 0
     const finishedTasks = queueStore.historyTasks.filter((task) => {
       const ts = task.executionEndTimestamp
@@ -249,15 +253,18 @@ export const useQueueNotificationBanners = () => {
     return completedCount > 0 || failedCount > 0
   }
 
-  const scheduleIdleCompletionBatchNotifications = () => {
+  function scheduleIdleCompletionBatchNotifications() {
     clearIdleCompletionHooks()
     const scheduleToken = idleCompletionScheduleToken
     const startTsSnapshot = lastActiveStartTs.value
 
-    const isStillSameIdleWindow = () =>
-      scheduleToken === idleCompletionScheduleToken &&
-      !isQueueActive.value &&
-      lastActiveStartTs.value === startTsSnapshot
+    function isStillSameIdleWindow() {
+      return (
+        scheduleToken === idleCompletionScheduleToken &&
+        !isQueueActive.value &&
+        lastActiveStartTs.value === startTsSnapshot
+      )
+    }
 
     stopIdleHistoryWatch = watch(
       () => queueStore.historyTasks,

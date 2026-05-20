@@ -57,17 +57,20 @@ const AssetsListItemStub = defineComponent({
   ><button data-testid="preview-click-trigger" @click="$emit('preview-click')" /><slot /></div>`
 })
 
-const buildAsset = (id: string, name: string): AssetItem =>
-  ({
+function buildAsset(id: string, name: string): AssetItem {
+  return {
     id,
     name,
     tags: []
-  }) satisfies AssetItem
+  } satisfies AssetItem
+}
 
-const buildOutputItem = (asset: AssetItem): OutputStackListItem => ({
-  key: `asset-${asset.id}`,
-  asset
-})
+function buildOutputItem(asset: AssetItem): OutputStackListItem {
+  return {
+    key: `asset-${asset.id}`,
+    asset
+  }
+}
 
 function renderListView(
   assetItems: OutputStackListItem[] = [],

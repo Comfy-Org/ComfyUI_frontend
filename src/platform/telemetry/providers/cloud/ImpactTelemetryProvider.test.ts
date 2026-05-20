@@ -73,9 +73,10 @@ describe('ImpactTelemetryProvider', () => {
     mockUseApiKeyAuthStore.mockReturnValue(mockApiKeyAuthStore)
     mockUseAuthStore.mockReturnValue(mockAuthStore)
 
-    const queueFn: NonNullable<Window['ire']> = (...args: unknown[]) => {
+    function queueFnImpl(...args: unknown[]) {
       ;(queueFn.a ??= []).push(args)
     }
+    const queueFn = queueFnImpl as NonNullable<Window['ire']>
     window.ire = queueFn
     window.ire_o = undefined
 

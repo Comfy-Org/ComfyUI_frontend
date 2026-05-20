@@ -6,7 +6,7 @@ import type {
 import type { RangeInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 
-export const useRangeWidget = (): ComfyWidgetConstructorV2 => {
+export function useRangeWidget(): ComfyWidgetConstructorV2 {
   return (node: LGraphNode, inputSpec): IRangeWidget => {
     const spec = inputSpec as RangeInputSpec
     const defaultValue = spec.default ?? { min: 0.0, max: 1.0 }

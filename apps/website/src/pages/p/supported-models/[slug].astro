@@ -5,7 +5,7 @@ import ModelHeroSection from '../../../components/models/ModelHeroSection.vue'
 import { models, getModelBySlug } from '../../../config/models'
 import { t } from '../../../i18n/translations'
 
-export const getStaticPaths: GetStaticPaths = () => {
+export function getStaticPaths() {
   return models.map((model) => ({
     params: { slug: model.slug }
   }))

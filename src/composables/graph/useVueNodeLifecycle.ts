@@ -18,7 +18,7 @@ function useVueNodeLifecycleIndividual() {
   const nodeManager = shallowRef<GraphNodeManager | null>(null)
   const { startSync, stopSync } = useLayoutSync()
 
-  const initializeNodeManager = () => {
+  function initializeNodeManager() {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
     const activeGraph = comfyApp.canvas?.graph
     if (!activeGraph || nodeManager.value) return
@@ -59,7 +59,7 @@ function useVueNodeLifecycleIndividual() {
     startSync(canvasStore.canvas)
   }
 
-  const disposeNodeManagerAndSyncs = () => {
+  function disposeNodeManagerAndSyncs() {
     stopSync()
     if (!nodeManager.value) return
 
@@ -117,7 +117,7 @@ function useVueNodeLifecycleIndividual() {
   )
 
   // Handle case where Vue nodes are enabled but graph starts empty
-  const setupEmptyGraphListener = () => {
+  function setupEmptyGraphListener() {
     const activeGraph = comfyApp.canvas?.graph
     if (
       !shouldRenderVueNodes.value ||
@@ -144,7 +144,7 @@ function useVueNodeLifecycleIndividual() {
   }
 
   // Cleanup function for component unmounting
-  const cleanup = () => {
+  function cleanup() {
     if (nodeManager.value) {
       nodeManager.value.cleanup()
       nodeManager.value = null

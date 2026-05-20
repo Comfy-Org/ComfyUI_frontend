@@ -28,11 +28,11 @@ import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 
 const PREVIEW_REVOKE_DELAY_MS = 400
 
-const createOutputs = (
+function createOutputs(
   filenames: string[],
   type: ResultItemType,
   isAnimated: boolean
-): ExecutedWsMessage['output'] => {
+): ExecutedWsMessage['output'] {
   return {
     images: filenames.map((image) => ({ type, ...parseFilePath(image) })),
     animated: filenames.map(
@@ -83,10 +83,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
    * Check if a node's outputs includes images that should/can be loaded normally
    * by PIL.
    */
-  const isImageOutputs = (
+  function isImageOutputs(
     node: LGraphNode,
     outputs: ExecutedWsMessage['output']
-  ): boolean => {
+  ): boolean {
     // If animated webp/png or video outputs, return false
     if (isAnimatedOutput(outputs) || isVideoNode(node)) return false
 

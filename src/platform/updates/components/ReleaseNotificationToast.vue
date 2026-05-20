@@ -130,33 +130,33 @@ const formattedContent = computed(() => {
 // Auto-hide timer
 let hideTimer: ReturnType<typeof setTimeout> | null = null
 
-const startAutoHide = () => {
+function startAutoHide() {
   if (hideTimer) clearTimeout(hideTimer)
   hideTimer = setTimeout(() => {
     dismissToast()
   }, 8000) // 8 second auto-hide
 }
 
-const clearAutoHide = () => {
+function clearAutoHide() {
   if (hideTimer) {
     clearTimeout(hideTimer)
     hideTimer = null
   }
 }
 
-const dismissToast = () => {
+function dismissToast() {
   isDismissed.value = true
   clearAutoHide()
 }
 
-const handleSkip = () => {
+function handleSkip() {
   if (latestRelease.value) {
     void releaseStore.handleSkipRelease(latestRelease.value.version)
   }
   dismissToast()
 }
 
-const handleLearnMore = () => {
+function handleLearnMore() {
   if (latestRelease.value) {
     void releaseStore.handleShowChangelog(latestRelease.value.version)
   }
@@ -164,7 +164,7 @@ const handleLearnMore = () => {
   dismissToast()
 }
 
-const handleUpdate = async () => {
+async function handleUpdate() {
   if (isDesktop) {
     try {
       await useCommandStore().execute('Comfy-Desktop.CheckForUpdates')

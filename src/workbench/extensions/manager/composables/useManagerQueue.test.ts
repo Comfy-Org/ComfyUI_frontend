@@ -29,7 +29,7 @@ describe('useManagerQueue', () => {
     Record<string, components['schemas']['ManagerPackInstalled']>
   >
 
-  const createManagerQueue = () => {
+  function createManagerQueue() {
     taskHistory = ref<ManagerTaskHistory>({})
     taskQueue = ref<ManagerTaskQueue>({
       history: {},

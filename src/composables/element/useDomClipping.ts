@@ -28,14 +28,14 @@ interface ClippingOptions {
   margin?: number
 }
 
-export const useDomClipping = (options: ClippingOptions = {}) => {
+export function useDomClipping(options: ClippingOptions = {}) {
   const style = ref<CSSProperties>({})
   const { margin = 4 } = options
 
   /**
    * Calculates a clip path for an element based on its intersection with a selected area
    */
-  const calculateClipPath = (
+  function calculateClipPath(
     elementRect: DOMRect,
     canvasRect: DOMRect,
     isSelected: boolean,
@@ -47,7 +47,7 @@ export const useDomClipping = (options: ClippingOptions = {}) => {
       scale: number
       offset: [number, number]
     }
-  ): string => {
+  ): string {
     if (!isSelected && selectedArea) {
       const { scale, offset } = selectedArea
 
@@ -92,7 +92,7 @@ export const useDomClipping = (options: ClippingOptions = {}) => {
    * Batched via requestAnimationFrame to avoid forcing synchronous layout
    * from getBoundingClientRect() on every reactive state change.
    */
-  const updateClipPath = (
+  function updateClipPath(
     element: HTMLElement,
     canvasElement: HTMLCanvasElement,
     isSelected: boolean,
@@ -104,7 +104,7 @@ export const useDomClipping = (options: ClippingOptions = {}) => {
       scale: number
       offset: [number, number]
     }
-  ) => {
+  ) {
     if (pendingRaf) cancelAnimationFrame(pendingRaf)
     pendingRaf = requestAnimationFrame(() => {
       pendingRaf = 0

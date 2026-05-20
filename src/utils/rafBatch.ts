@@ -1,7 +1,7 @@
 export function createRafBatch(run: () => void) {
   let rafId: number | null = null
 
-  const schedule = () => {
+  function schedule() {
     if (rafId != null) return
     rafId = requestAnimationFrame(() => {
       rafId = null
@@ -9,21 +9,23 @@ export function createRafBatch(run: () => void) {
     })
   }
 
-  const cancel = () => {
+  function cancel() {
     if (rafId != null) {
       cancelAnimationFrame(rafId)
       rafId = null
     }
   }
 
-  const flush = () => {
+  function flush() {
     if (rafId == null) return
     cancelAnimationFrame(rafId)
     rafId = null
     run()
   }
 
-  const isScheduled = () => rafId != null
+  function isScheduled() {
+    return rafId != null
+  }
 
   return { schedule, cancel, flush, isScheduled }
 }

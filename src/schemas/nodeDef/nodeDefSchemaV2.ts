@@ -234,38 +234,38 @@ export type InputSpec = z.infer<typeof zInputSpec>
 export type OutputSpec = z.infer<typeof zOutputSpec>
 export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>
 
-export const isIntInputSpec = (
+export function isIntInputSpec(
   inputSpec: InputSpec
-): inputSpec is IntInputSpec => {
+): inputSpec is IntInputSpec {
   return inputSpec.type === 'INT'
 }
 
-export const isFloatInputSpec = (
+export function isFloatInputSpec(
   inputSpec: InputSpec
-): inputSpec is FloatInputSpec => {
+): inputSpec is FloatInputSpec {
   return inputSpec.type === 'FLOAT'
 }
 
-export const isBooleanInputSpec = (
+export function isBooleanInputSpec(
   inputSpec: InputSpec
-): inputSpec is BooleanInputSpec => {
+): inputSpec is BooleanInputSpec {
   return inputSpec.type === 'BOOLEAN'
 }
 
-export const isStringInputSpec = (
+export function isStringInputSpec(
   inputSpec: InputSpec
-): inputSpec is StringInputSpec => {
+): inputSpec is StringInputSpec {
   return inputSpec.type === 'STRING'
 }
 
-export const isComboInputSpec = (
+export function isComboInputSpec(
   inputSpec: InputSpec
-): inputSpec is ComboInputSpec => {
+): inputSpec is ComboInputSpec {
   return inputSpec.type === 'COMBO'
 }
 
-export const isChartInputSpec = (
+export function isChartInputSpec(
   inputSpec: InputSpec
-): inputSpec is ChartInputSpec => {
+): inputSpec is ChartInputSpec {
   return inputSpec.type === 'CHART'
 }

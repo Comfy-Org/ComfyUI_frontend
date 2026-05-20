@@ -91,7 +91,7 @@ let lastOffsetX = 0
 let lastOffsetY = 0
 
 // Update menu position based on canvas transform
-const updateMenuPosition = () => {
+function updateMenuPosition() {
   if (!isOpen.value) return
 
   const menuInstance = contextMenu.value as unknown as {

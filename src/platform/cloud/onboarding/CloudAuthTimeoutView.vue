@@ -86,7 +86,7 @@ const router = useRouter()
 const { logout } = useAuthActions()
 const showTechnicalDetails = ref(false)
 
-const handleRestart = async () => {
+async function handleRestart() {
   await logout()
   await router.replace({ name: 'cloud-login' })
 }

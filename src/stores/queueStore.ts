@@ -515,7 +515,7 @@ export const useQueueStore = defineStore('queue', () => {
     () => pendingTasks.value.length + runningTasks.value.length
   )
 
-  const update = async () => {
+  async function update() {
     if (inFlight) {
       dirty = true
       return
@@ -602,9 +602,9 @@ export const useQueueStore = defineStore('queue', () => {
     }
   }
 
-  const clear = async (
+  async function clear(
     targets: ('queue' | 'history')[] = ['queue', 'history']
-  ) => {
+  ) {
     if (targets.length === 0) {
       return
     }
@@ -612,7 +612,7 @@ export const useQueueStore = defineStore('queue', () => {
     await update()
   }
 
-  const deleteTask = async (task: TaskItemImpl) => {
+  async function deleteTask(task: TaskItemImpl) {
     await api.deleteItem(task.apiTaskType, task.jobId)
     await update()
   }
@@ -657,14 +657,17 @@ export type AutoQueueMode =
   | 'instant-idle'
   | 'instant-running'
 
-export const isInstantMode = (
+export function isInstantMode(
   mode: AutoQueueMode
-): mode is 'instant-idle' | 'instant-running' =>
-  mode === 'instant-idle' || mode === 'instant-running'
+): mode is 'instant-idle' | 'instant-running' {
+  return mode === 'instant-idle' || mode === 'instant-running'
+}
 
-export const isInstantRunningMode = (
+export function isInstantRunningMode(
   mode: AutoQueueMode
-): mode is 'instant-running' => mode === 'instant-running'
+): mode is 'instant-running' {
+  return mode === 'instant-running'
+}
 
 export const useQueueSettingsStore = defineStore('queueSettingsStore', {
   state: () => ({

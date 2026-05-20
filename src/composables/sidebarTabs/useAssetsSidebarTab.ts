@@ -5,7 +5,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAssetsSidebarBadgeStore } from '@/stores/workspace/assetsSidebarBadgeStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 
-export const useAssetsSidebarTab = (): SidebarTabExtension => {
+export function useAssetsSidebarTab(): SidebarTabExtension {
   return {
     id: 'assets',
     icon: 'icon-[comfy--image-ai-edit]',

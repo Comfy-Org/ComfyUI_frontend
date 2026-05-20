@@ -21,7 +21,7 @@ export function useSelectionOperations() {
   const titleEditorStore = useTitleEditorStore()
   const workflowStore = useWorkflowStore()
 
-  const copySelection = () => {
+  function copySelection() {
     const canvas = app.canvas
     if (!canvas.selectedItems || canvas.selectedItems.size === 0) {
       toastStore.add({
@@ -42,7 +42,7 @@ export function useSelectionOperations() {
     })
   }
 
-  const pasteSelection = () => {
+  function pasteSelection() {
     const canvas = app.canvas
     canvas.pasteFromClipboard({ connectInputs: false })
 
@@ -50,7 +50,7 @@ export function useSelectionOperations() {
     workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
   }
 
-  const duplicateSelection = () => {
+  function duplicateSelection() {
     const canvas = app.canvas
     if (!canvas.selectedItems || canvas.selectedItems.size === 0) {
       toastStore.add({
@@ -76,7 +76,7 @@ export function useSelectionOperations() {
     workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
   }
 
-  const deleteSelection = () => {
+  function deleteSelection() {
     const canvas = app.canvas
     if (!canvas.selectedItems || canvas.selectedItems.size === 0) {
       toastStore.add({
@@ -95,7 +95,7 @@ export function useSelectionOperations() {
     workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
   }
 
-  const renameSelection = async () => {
+  async function renameSelection() {
     const selectedItems = Array.from(canvasStore.selectedItems)
 
     // Handle single node selection

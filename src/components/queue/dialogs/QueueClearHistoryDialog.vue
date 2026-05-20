@@ -73,13 +73,13 @@ const clearHistory = wrapWithErrorHandlingAsync(
   }
 )
 
-const onConfirm = async () => {
+async function onConfirm() {
   if (isClearing.value) return
   isClearing.value = true
   await clearHistory()
 }
 
-const onCancel = () => {
+function onCancel() {
   dialogStore.closeDialog()
 }
 </script>

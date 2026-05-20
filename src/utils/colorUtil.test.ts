@@ -34,10 +34,10 @@ vi.mock('es-toolkit/compat', () => ({
 const targetOpacity = 0.5
 const targetLightness = 0.5
 
-const assertColorVariationsMatch = (
+function assertColorVariationsMatch(
   variations: string[],
   adjustment: ColorAdjustOptions
-) => {
+) {
   for (let i = 0; i < variations.length - 1; i++) {
     expect(adjustColor(variations[i], adjustment)).toBe(
       adjustColor(variations[i + 1], adjustment)
@@ -286,10 +286,10 @@ describe('colorUtil conversions', () => {
   })
 })
 describe('colorUtil - adjustColor', () => {
-  const runAdjustColorTests = (
+  function runAdjustColorTests(
     color: ColorTestCase,
     format: ColorFormat
-  ): void => {
+  ): void {
     it('converts lightness', () => {
       const result = adjustColor(color[format], { lightness: targetLightness })
       expect(result).toBe(color.lightExpected)

@@ -45,9 +45,11 @@ interface MockContainerElement {
   getBoundingClientRect: Mock
 }
 
-const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
+function flushPromises() {
+  return new Promise((resolve) => setTimeout(resolve, 0))
+}
 
-const triggerRAF = async () => {
+async function triggerRAF() {
   // Trigger all RAF callbacks
   Object.values(rafCallbacks).forEach((cb) => cb?.())
   await flushPromises()
@@ -93,7 +95,7 @@ vi.mock('@vueuse/core', () => {
 let moduleMockCanvas: MockCanvas = null!
 let moduleMockGraph: MockGraph = null!
 
-const setupMocks = () => {
+function setupMocks() {
   const mockNodes = [
     {
       id: 'node1',

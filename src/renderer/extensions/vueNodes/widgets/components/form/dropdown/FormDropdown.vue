@@ -140,7 +140,7 @@ function internalIsSelected(item: FormDropdownItem, index: number): boolean {
   return isSelected(selected.value, item, index)
 }
 
-const toggleDropdown = (event: Event) => {
+function toggleDropdown(event: Event) {
   if (disabled) return
   if (popoverRef.value && triggerRef.value) {
     popoverRef.value.toggle?.(event, triggerRef.value)
@@ -148,7 +148,7 @@ const toggleDropdown = (event: Event) => {
   }
 }
 
-const closeDropdown = () => {
+function closeDropdown() {
   if (popoverRef.value) {
     popoverRef.value.hide?.()
     isOpen.value = false

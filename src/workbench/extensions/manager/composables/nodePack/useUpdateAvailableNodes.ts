@@ -9,13 +9,13 @@ import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comf
  * Composable to find NodePacks that have updates available
  * Automatically fetches installed pack data when initialized
  */
-export const useUpdateAvailableNodes = () => {
+export function useUpdateAvailableNodes() {
   const comfyManagerStore = useComfyManagerStore()
   const { installedPacks, isLoading, error, startFetchInstalled } =
     useInstalledPacks()
 
   // Check if a pack has updates available (same logic as usePackUpdateStatus)
-  const isOutdatedPack = (pack: components['schemas']['Node']) => {
+  function isOutdatedPack(pack: components['schemas']['Node']) {
     const isInstalled = comfyManagerStore.isPackInstalled(pack?.id)
     if (!isInstalled) return false
 
@@ -33,8 +33,9 @@ export const useUpdateAvailableNodes = () => {
     return compare(latestVersion, installedVersion) > 0
   }
 
-  const filterOutdatedPacks = (packs: components['schemas']['Node'][]) =>
-    packs.filter(isOutdatedPack)
+  function filterOutdatedPacks(packs: components['schemas']['Node'][]) {
+    return packs.filter(isOutdatedPack)
+  }
 
   // Filter only outdated packs from installed packs
   const updateAvailableNodePacks = computed(() => {

@@ -195,7 +195,7 @@ export function processDynamicPrompt(input: string): string {
   let result = ''
   input = stripComments(input)
 
-  const handleEscape = () => {
+  function handleEscape() {
     const nextChar = input[i++]
     return '\\' + nextChar
   }
@@ -347,7 +347,7 @@ export function formatDate(text: string, date: Date) {
  * Generate a cache key from parameters
  * Sorts the parameters to ensure consistent keys regardless of parameter order
  */
-export const paramsToCacheKey = (params: unknown): string => {
+export function paramsToCacheKey(params: unknown): string {
   if (typeof params === 'string') return params
   if (typeof params === 'object' && params !== null)
     return Object.keys(params)
@@ -362,7 +362,7 @@ export const paramsToCacheKey = (params: unknown): string => {
  * Generates a RFC4122 compliant UUID v4 using the native crypto API when available
  * @returns A properly formatted UUID string
  */
-export const generateUUID = (): string => {
+export function generateUUID(): string {
   // Use native crypto.randomUUID() if available (modern browsers)
   if (
     typeof crypto !== 'undefined' &&
@@ -379,18 +379,21 @@ export const generateUUID = (): string => {
   })
 }
 
-const isCivitaiHost = (hostname: string): boolean =>
-  hostname === 'civitai.com' ||
-  hostname.endsWith('.civitai.com') ||
-  hostname === 'civitai.red' ||
-  hostname.endsWith('.civitai.red')
+function isCivitaiHost(hostname: string): boolean {
+  return (
+    hostname === 'civitai.com' ||
+    hostname.endsWith('.civitai.com') ||
+    hostname === 'civitai.red' ||
+    hostname.endsWith('.civitai.red')
+  )
+}
 
 /**
  * Checks if a URL belongs to any Civitai domain (civitai.com or civitai.red).
  * Use this for source-name detection; use `isCivitaiModelUrl` when the URL
  * must also match a specific model API path format.
  */
-export const isCivitaiUrl = (url: string): boolean => {
+export function isCivitaiUrl(url: string): boolean {
   if (!isValidUrl(url)) return false
   return isCivitaiHost(new URL(url).hostname.toLowerCase())
 }
@@ -403,7 +406,7 @@ export const isCivitaiUrl = (url: string): boolean => {
  * isCivitaiModelUrl('https://civitai.com/api/v1/models-versions/15342') // true
  * isCivitaiModelUrl('https://example.com/model.safetensors') // false
  */
-export const isCivitaiModelUrl = (url: string): boolean => {
+export function isCivitaiModelUrl(url: string): boolean {
   if (!isValidUrl(url)) return false
 
   const urlObj = new URL(url)
@@ -426,7 +429,7 @@ export const isCivitaiModelUrl = (url: string): boolean => {
  *  'https://huggingface.co/bfl/FLUX.1/resolve/main/flux1-canny-dev.safetensors?download=true'
  * ) // https://huggingface.co/bfl/FLUX.1
  */
-export const downloadUrlToHfRepoUrl = (url: string): string => {
+export function downloadUrlToHfRepoUrl(url: string): string {
   try {
     const urlObj = new URL(url)
     const pathname = urlObj.pathname

@@ -38,14 +38,14 @@ export const useCanvasStore = defineStore('canvas', () => {
    * The selected items on the canvas. All stored items are raw.
    */
   const selectedItems = ref<Raw<Positionable>[]>([])
-  const updateSelectedItems = () => {
+  function updateSelectedItems() {
     const items = Array.from(canvas.value?.selectedItems ?? [])
     selectedItems.value = items.map((item) => markRaw(item))
   }
 
   // Reactive scale percentage that syncs with app.canvas.ds.scale
   const appScalePercentage = ref(100)
-  const updateAppScalePercentage = (scale: number) => {
+  function updateAppScalePercentage(scale: number) {
     appScalePercentage.value = Math.round(scale * 100)
   }
 
@@ -60,7 +60,7 @@ export const useCanvasStore = defineStore('canvas', () => {
   // Set up scale synchronization when canvas is available
   let originalOnChanged: ((scale: number, offset: Point) => void) | undefined =
     undefined
-  const initScaleSync = () => {
+  function initScaleSync() {
     if (app.canvas?.ds) {
       // Initial sync
       originalOnChanged = app.canvas.ds.onChanged
@@ -77,7 +77,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     }
   }
 
-  const cleanupScaleSync = () => {
+  function cleanupScaleSync() {
     if (app.canvas?.ds) {
       app.canvas.ds.onChanged = originalOnChanged
       originalOnChanged = undefined
@@ -88,7 +88,7 @@ export const useCanvasStore = defineStore('canvas', () => {
   const groupSelected = computed(() => selectedItems.value.some(isLGraphGroup))
   const rerouteSelected = computed(() => selectedItems.value.some(isReroute))
 
-  const getCanvas = () => {
+  function getCanvas() {
     if (!canvas.value) throw new Error('getCanvas: canvas is null')
     return canvas.value
   }
@@ -97,7 +97,7 @@ export const useCanvasStore = defineStore('canvas', () => {
    * Sets the canvas zoom level from a percentage value
    * @param percentage - Zoom percentage value (1-1000, where 1000 = 1000% zoom)
    */
-  const setAppZoomFromPercentage = (percentage: number) => {
+  function setAppZoomFromPercentage(percentage: number) {
     if (!app.canvas?.ds || percentage <= 0) return
 
     // Convert percentage to scale (1000% = 10.0 scale)

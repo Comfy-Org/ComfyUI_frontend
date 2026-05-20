@@ -111,7 +111,9 @@ const tileRef = ref<HTMLElement | null>(null)
 type DragState = 'idle' | 'dragging' | 'over'
 const state = ref<DragState>('idle')
 
-const tileGetter = () => tileRef.value as HTMLElement
+function tileGetter() {
+  return tileRef.value as HTMLElement
+}
 
 usePragmaticDraggable(tileGetter, {
   getInitialData: () => ({

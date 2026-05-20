@@ -93,7 +93,9 @@ async function buildBundleReport() {
    * @param {string[]} files
    * @returns {string[]}
    */
-  const filterFiles = (files) => files.filter((file) => file.endsWith('.json'))
+  function filterFiles(files) {
+    return files.filter((file) => file.endsWith('.json'))
+  }
 
   const currFiles = filterFiles(await readdir(currDir))
   const baselineFiles = existsSync(prevDir)

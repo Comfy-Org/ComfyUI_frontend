@@ -138,7 +138,10 @@ describe('AsyncSearchInput', () => {
       const cleanupA = vi.fn()
       const cleanupB = vi.fn()
       let call = 0
-      const searcher: Searcher = async (_q, onCleanup) => {
+      async function searcher(
+        _q: Parameters<Searcher>[0],
+        onCleanup: Parameters<Searcher>[1]
+      ) {
         const current = ++call
         onCleanup(current === 1 ? cleanupA : cleanupB)
       }

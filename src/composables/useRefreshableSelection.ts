@@ -8,16 +8,19 @@ interface RefreshableItem {
   refresh: () => Promise<void> | void
 }
 
-const isRefreshableWidget = (widget: unknown): widget is RefreshableItem =>
-  widget != null &&
-  typeof widget === 'object' &&
-  'refresh' in widget &&
-  typeof widget.refresh === 'function'
+function isRefreshableWidget(widget: unknown): widget is RefreshableItem {
+  return (
+    widget != null &&
+    typeof widget === 'object' &&
+    'refresh' in widget &&
+    typeof widget.refresh === 'function'
+  )
+}
 
 /**
  * Tracks selected nodes and their refreshable widgets
  */
-export const useRefreshableSelection = () => {
+export function useRefreshableSelection() {
   const graphStore = useCanvasStore()
   const selectedNodes = ref<LGraphNode[]>([])
 

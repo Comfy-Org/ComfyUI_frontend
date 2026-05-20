@@ -133,10 +133,11 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       await node.click('title')
 
       // Normal mode is ALWAYS (0)
-      const getMode = () =>
-        comfyPage.page.evaluate((nodeId) => {
+      function getMode() {
+        return comfyPage.page.evaluate((nodeId) => {
           return window.app!.canvas.graph!.getNodeById(nodeId)!.mode
         }, node.id)
+      }
 
       await expect.poll(() => getMode()).toBe(0)
 

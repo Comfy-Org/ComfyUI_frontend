@@ -3,7 +3,7 @@ const DEFAULT_NUMBER_FORMAT: Intl.NumberFormatOptions = {
   maximumFractionDigits: 2
 }
 
-const formatNumber = ({
+function formatNumber({
   value,
   locale,
   options
@@ -11,7 +11,7 @@ const formatNumber = ({
   value: number
   locale?: string
   options?: Intl.NumberFormatOptions
-}): string => {
+}): string {
   const merged: Intl.NumberFormatOptions = {
     ...DEFAULT_NUMBER_FORMAT,
     ...options
@@ -31,19 +31,25 @@ const formatNumber = ({
 export const CREDITS_PER_USD = 211
 export const COMFY_CREDIT_RATE_CENTS = CREDITS_PER_USD / 100 // credits per cent
 
-export const usdToCents = (usd: number): number => Math.round(usd * 100)
+export function usdToCents(usd: number): number {
+  return Math.round(usd * 100)
+}
 
-export const centsToCredits = (cents: number): number =>
-  Math.round(cents * COMFY_CREDIT_RATE_CENTS)
+export function centsToCredits(cents: number): number {
+  return Math.round(cents * COMFY_CREDIT_RATE_CENTS)
+}
 
-export const creditsToCents = (credits: number): number =>
-  Math.round(credits / COMFY_CREDIT_RATE_CENTS)
+export function creditsToCents(credits: number): number {
+  return Math.round(credits / COMFY_CREDIT_RATE_CENTS)
+}
 
-export const usdToCredits = (usd: number): number =>
-  Math.round(usd * CREDITS_PER_USD)
+export function usdToCredits(usd: number): number {
+  return Math.round(usd * CREDITS_PER_USD)
+}
 
-export const creditsToUsd = (credits: number): number =>
-  Math.round((credits / CREDITS_PER_USD) * 100) / 100
+export function creditsToUsd(credits: number): number {
+  return Math.round((credits / CREDITS_PER_USD) * 100) / 100
+}
 
 export type FormatOptions = {
   value: number
@@ -63,63 +69,68 @@ export type FormatFromUsdOptions = {
   numberOptions?: Intl.NumberFormatOptions
 }
 
-export const formatCredits = ({
+export function formatCredits({
   value,
   locale,
   numberOptions
-}: FormatOptions): string =>
-  formatNumber({ value, locale, options: numberOptions })
+}: FormatOptions): string {
+  return formatNumber({ value, locale, options: numberOptions })
+}
 
-export const formatCreditsFromCents = ({
+export function formatCreditsFromCents({
   cents,
   locale,
   numberOptions
-}: FormatFromCentsOptions): string =>
-  formatCredits({
+}: FormatFromCentsOptions): string {
+  return formatCredits({
     value: centsToCredits(cents),
     locale,
     numberOptions
   })
+}
 
-export const formatCreditsFromUsd = ({
+export function formatCreditsFromUsd({
   usd,
   locale,
   numberOptions
-}: FormatFromUsdOptions): string =>
-  formatCredits({
+}: FormatFromUsdOptions): string {
+  return formatCredits({
     value: usdToCredits(usd),
     locale,
     numberOptions
   })
+}
 
-export const formatUsd = ({
+export function formatUsd({
   value,
   locale,
   numberOptions
-}: FormatOptions): string =>
-  formatNumber({
+}: FormatOptions): string {
+  return formatNumber({
     value,
     locale,
     options: numberOptions
   })
+}
 
-export const formatUsdFromCents = ({
+export function formatUsdFromCents({
   cents,
   locale,
   numberOptions
-}: FormatFromCentsOptions): string =>
-  formatUsd({
+}: FormatFromCentsOptions): string {
+  return formatUsd({
     value: cents / 100,
     locale,
     numberOptions
   })
+}
 
 /**
  * Clamps a USD value to the allowed range for credit purchases
  * @param value - The USD amount to clamp
  * @returns The clamped value between $1 and $1000, or 0 if NaN
  */
-export const clampUsd = (value: number): number => {
+export function clampUsd(value: number): number {
   if (Number.isNaN(value)) return 0
   return Math.min(1000, Math.max(1, value))
 }

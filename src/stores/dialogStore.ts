@@ -108,7 +108,9 @@ export const useDialogStore = defineStore('dialog', () => {
    */
   const activeKey = ref<string | null>(null)
 
-  const genDialogKey = () => `dialog-${Math.random().toString(36).slice(2, 9)}`
+  function genDialogKey() {
+    return `dialog-${Math.random().toString(36).slice(2, 9)}`
+  }
 
   /**
    * Inserts a dialog into the stack at the correct position based on priority.

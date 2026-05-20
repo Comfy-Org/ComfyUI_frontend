@@ -6,11 +6,15 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import type { EditorOutputData } from '@/stores/maskEditorDataStore'
 
-const createImage = (): HTMLImageElement => document.createElement('img')
+function createImage(): HTMLImageElement {
+  return document.createElement('img')
+}
 
-const createCanvas = (): HTMLCanvasElement => document.createElement('canvas')
+function createCanvas(): HTMLCanvasElement {
+  return document.createElement('canvas')
+}
 
-const createOutputData = (): EditorOutputData => {
+function createOutputData(): EditorOutputData {
   const blob = new Blob()
   const ref = { filename: 'out.png' }
   return {

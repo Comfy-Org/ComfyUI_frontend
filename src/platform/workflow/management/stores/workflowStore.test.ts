@@ -49,7 +49,7 @@ describe('useWorkflowStore', () => {
   let store: ReturnType<typeof useWorkflowStore>
   let bookmarkStore: ReturnType<typeof useWorkflowBookmarkStore>
 
-  const syncRemoteWorkflows = async (filenames: string[]) => {
+  async function syncRemoteWorkflows(filenames: string[]) {
     vi.mocked(api.listUserDataFullInfo).mockResolvedValue(
       filenames.map((filename) => ({
         path: filename,
@@ -60,9 +60,9 @@ describe('useWorkflowStore', () => {
     return await store.syncWorkflows()
   }
 
-  const syncRemoteWorkflowsWithMeta = async (
+  async function syncRemoteWorkflowsWithMeta(
     files: Array<{ path: string; modified: number; size: number }>
-  ) => {
+  ) {
     vi.mocked(api.listUserDataFullInfo).mockResolvedValue(files)
     return await store.syncWorkflows()
   }
@@ -299,8 +299,11 @@ describe('useWorkflowStore', () => {
     let workflowB: ComfyWorkflow
     let workflowC: ComfyWorkflow
 
-    const openWorkflowPaths = () =>
-      store.openWorkflows.filter((w) => store.isOpen(w)).map((w) => w.path)
+    function openWorkflowPaths() {
+      return store.openWorkflows
+        .filter((w) => store.isOpen(w))
+        .map((w) => w.path)
+    }
 
     beforeEach(async () => {
       await syncRemoteWorkflows(['a.json', 'b.json', 'c.json'])

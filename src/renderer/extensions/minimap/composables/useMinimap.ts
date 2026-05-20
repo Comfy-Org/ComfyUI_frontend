@@ -55,7 +55,7 @@ export function useMinimap({
     panelStyles
   } = settings
 
-  const updateOption = async (key: MinimapSettingsKey, value: boolean) => {
+  async function updateOption(key: MinimapSettingsKey, value: boolean) {
     await settingStore.set(key, value)
     renderer.forceFullRedraw()
     renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
@@ -110,7 +110,7 @@ export function useMinimap({
       { immediate: false }
     )
 
-  const init = async () => {
+  async function init() {
     if (initialized.value) return
 
     visible.value = settingStore.get('Comfy.Minimap.Visible')
@@ -139,7 +139,7 @@ export function useMinimap({
     }
   }
 
-  const destroy = () => {
+  function destroy() {
     pauseChangeDetection()
     viewport.stopViewportSync()
     graphManager.destroy()
@@ -214,12 +214,12 @@ export function useMinimap({
     { deep: true }
   )
 
-  const toggle = async () => {
+  async function toggle() {
     visible.value = !visible.value
     await settingStore.set('Comfy.Minimap.Visible', visible.value)
   }
 
-  const setMinimapRef = (ref: HTMLElement | null) => {
+  function setMinimapRef(ref: HTMLElement | null) {
     minimapRef.value = ref
   }
 

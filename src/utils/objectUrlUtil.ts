@@ -1,6 +1,8 @@
 const objectUrlRefCounts = new Map<string, number>()
 
-const isBlobUrl = (url: string) => url.startsWith('blob:')
+function isBlobUrl(url: string) {
+  return url.startsWith('blob:')
+}
 
 export function createSharedObjectUrl(blob: Blob): string {
   const url = URL.createObjectURL(blob)

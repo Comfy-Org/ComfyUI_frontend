@@ -78,7 +78,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const pendingCancelOpId = ref<string | null>(null)
   let cancelPollTimeout: number | null = null
 
-  const stopCancelPolling = () => {
+  function stopCancelPolling() {
     if (cancelPollTimeout !== null) {
       window.clearTimeout(cancelPollTimeout)
       cancelPollTimeout = null
@@ -90,7 +90,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
 
     const maxAttempts = 30
     let attempt = 0
-    const poll = async () => {
+    async function poll() {
       if (pendingCancelOpId.value !== opId) return
 
       try {

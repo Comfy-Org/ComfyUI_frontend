@@ -38,21 +38,21 @@ export function useTemplateUrlLoader() {
    * Allows: letters, numbers, underscores, hyphens, and dots (for version numbers)
    * Blocks: path separators (/, \), special chars that could enable injection
    */
-  const isValidParameter = (param: string): boolean => {
+  function isValidParameter(param: string): boolean {
     return /^[a-zA-Z0-9_.-]+$/.test(param)
   }
 
   /**
    * Type guard to check if a value is a supported mode
    */
-  const isSupportedMode = (mode: string): mode is SupportedMode => {
+  function isSupportedMode(mode: string): mode is SupportedMode {
     return SUPPORTED_MODES.includes(mode as SupportedMode)
   }
 
   /**
    * Removes template, source, and mode parameters from URL
    */
-  const cleanupUrlParams = () => {
+  function cleanupUrlParams() {
     const newQuery = { ...route.query }
     delete newQuery.template
     delete newQuery.source
@@ -64,7 +64,7 @@ export function useTemplateUrlLoader() {
    * Loads template from URL query parameters if present
    * Handles errors internally and shows appropriate user feedback
    */
-  const loadTemplateFromUrl = async () => {
+  async function loadTemplateFromUrl() {
     const templateParam = route.query.template
 
     if (!templateParam || typeof templateParam !== 'string') {

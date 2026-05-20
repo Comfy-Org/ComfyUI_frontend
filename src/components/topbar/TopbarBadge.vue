@@ -148,7 +148,7 @@ const {
 
 const popover = ref<InstanceType<typeof Popover>>()
 
-const togglePopover = (event: Event) => {
+function togglePopover(event: Event) {
   popover.value?.toggle(event)
 }
 

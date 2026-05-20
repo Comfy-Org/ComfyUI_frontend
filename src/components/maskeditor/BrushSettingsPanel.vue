@@ -219,12 +219,12 @@ const brushStepSize = computed({
 })
 
 /* Brush shape */
-const setBrushShape = (shape: BrushShape) => {
+function setBrushShape(shape: BrushShape) {
   store.brushSettings.type = shape
 }
 
 /* Reset */
-const resetToDefault = () => {
+function resetToDefault() {
   store.resetBrushToDefault()
 }
 

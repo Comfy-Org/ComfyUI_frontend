@@ -23,23 +23,25 @@ const i18n = createI18n({
 })
 
 describe('ModelInfoPanel', () => {
-  const createMockAsset = (
+  function createMockAsset(
     overrides: Partial<AssetDisplayItem> = {}
-  ): AssetDisplayItem => ({
-    id: 'test-id',
-    name: 'test-model.safetensors',
-    asset_hash: 'hash123',
-    size: 1024,
-    mime_type: 'application/octet-stream',
-    tags: ['models', 'checkpoints'],
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z',
-    last_access_time: '2024-01-01T00:00:00Z',
-    secondaryText: 'A test model description',
-    badges: [],
-    stats: {},
-    ...overrides
-  })
+  ): AssetDisplayItem {
+    return {
+      id: 'test-id',
+      name: 'test-model.safetensors',
+      asset_hash: 'hash123',
+      size: 1024,
+      mime_type: 'application/octet-stream',
+      tags: ['models', 'checkpoints'],
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z',
+      last_access_time: '2024-01-01T00:00:00Z',
+      secondaryText: 'A test model description',
+      badges: [],
+      stats: {},
+      ...overrides
+    }
+  }
 
   function renderPanel(asset: AssetDisplayItem) {
     return render(ModelInfoPanel, {

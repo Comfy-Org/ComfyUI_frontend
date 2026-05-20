@@ -69,7 +69,7 @@ const newUserExistsError = computed(() => {
 })
 const error = computed(() => newUserExistsError.value || loginError.value)
 
-const login = async () => {
+async function login() {
   try {
     const user = createNewUser.value
       ? await userStore.createUser(newUsername.value)

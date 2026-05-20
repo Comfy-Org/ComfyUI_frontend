@@ -29,8 +29,9 @@ export const useMissingNodes = createSharedComposable(() => {
     startFetchWorkflowPacks
   } = useWorkflowPacks()
 
-  const filterMissingPacks = (packs: components['schemas']['Node'][]) =>
-    packs.filter((pack) => !comfyManagerStore.isPackInstalled(pack.id))
+  function filterMissingPacks(packs: components['schemas']['Node'][]) {
+    return packs.filter((pack) => !comfyManagerStore.isPackInstalled(pack.id))
+  }
 
   // Filter only uninstalled packs from workflow packs
   const missingNodePacks = computed(() => {
@@ -43,7 +44,7 @@ export const useMissingNodes = createSharedComposable(() => {
    * @param packId - The id of the pack to check
    * @returns True if the pack is the comfy-core pack, false otherwise
    */
-  const isCorePack = (packId: NodeProperty) => {
+  function isCorePack(packId: NodeProperty) {
     return packId === 'comfy-core'
   }
 
@@ -55,7 +56,7 @@ export const useMissingNodes = createSharedComposable(() => {
    * @param node - The node to check
    * @returns True if the node is a missing core node, false otherwise
    */
-  const isMissingCoreNode = (node: LGraphNode) => {
+  function isMissingCoreNode(node: LGraphNode) {
     const packId = node.properties?.cnr_id
     if (packId === undefined || !isCorePack(packId)) return false
     const nodeName = node.type

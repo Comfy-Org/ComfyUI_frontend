@@ -78,28 +78,29 @@ export function useRangeEditor({
     activeHandle.value = handle
     const el = trackRef.value
     if (!el) return
+    const trackEl: HTMLElement = el
 
-    el.setPointerCapture(e.pointerId)
+    trackEl.setPointerCapture(e.pointerId)
 
-    const onMove = (ev: PointerEvent) => {
+    function onMove(ev: PointerEvent) {
       if (!activeHandle.value) return
       updateValue(activeHandle.value, pointerToValue(ev))
     }
 
-    const endDrag = () => {
+    function endDrag() {
       if (!activeHandle.value) return
       activeHandle.value = null
-      el.removeEventListener('pointermove', onMove)
-      el.removeEventListener('pointerup', endDrag)
-      el.removeEventListener('lostpointercapture', endDrag)
+      trackEl.removeEventListener('pointermove', onMove)
+      trackEl.removeEventListener('pointerup', endDrag)
+      trackEl.removeEventListener('lostpointercapture', endDrag)
       cleanupDrag = null
     }
 
     cleanupDrag = endDrag
 
-    el.addEventListener('pointermove', onMove)
-    el.addEventListener('pointerup', endDrag)
-    el.addEventListener('lostpointercapture', endDrag)
+    trackEl.addEventListener('pointermove', onMove)
+    trackEl.addEventListener('pointerup', endDrag)
+    trackEl.addEventListener('lostpointercapture', endDrag)
   }
 
   onBeforeUnmount(() => {

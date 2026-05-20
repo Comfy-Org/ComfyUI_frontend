@@ -7,7 +7,7 @@ import { sleep } from '@e2e/fixtures/utils/timing'
 
 const CLIP_NODE_COUNT = 2
 
-const getClipNodesDragBox = async (comfyPage: ComfyPage) => {
+async function getClipNodesDragBox(comfyPage: ComfyPage) {
   const clipNodes = await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
   expect(
     clipNodes,
@@ -242,11 +242,11 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
      * hold), nudge by `(dx, dy)` absolute pixels, then release. Spec-local
      * because it exists only to probe the CanvasPointer timing thresholds.
      */
-    const holdDragAt = async (
+    async function holdDragAt(
       comfyPage: ComfyPage,
       pos: { x: number; y: number },
       opts: { dx: number; dy: number; holdMs: number }
-    ) => {
+    ) {
       const abs = await comfyPage.canvasOps.toAbsolute(pos)
       await comfyPage.page.mouse.move(abs.x, abs.y)
       await comfyPage.page.mouse.down()
@@ -383,8 +383,9 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
     // (CI jitter, background throttling, canvas-idle behaviour). Assert the
     // render-loop throttle value instead — that is what actually governs
     // frame cadence.
-    const getFrameGap = (comfyPage: ComfyPage) =>
-      comfyPage.page.evaluate(() => window.app!.canvas.maximumFps * 1000)
+    function getFrameGap(comfyPage: ComfyPage) {
+      return comfyPage.page.evaluate(() => window.app!.canvas.maximumFps * 1000)
+    }
 
     test('caps the render loop frame gap', async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('LiteGraph.Canvas.MaximumFps', 30)

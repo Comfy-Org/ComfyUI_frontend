@@ -59,7 +59,7 @@ export function boundsExtractor(): ValueExtractor<Bounds> {
     if (singleResult) return singleResult
 
     // Fallback: assemble from individual widgets matching BoundingBoxInputSpec field names
-    const getNum = (name: string): number | undefined => {
+    function getNum(name: string): number | undefined {
       const w = widgets.find((w) => w.name === name)
       return typeof w?.value === 'number' ? w.value : undefined
     }

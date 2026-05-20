@@ -171,8 +171,9 @@ const emit = defineEmits<{
 
 const { isActiveSubscription } = useBillingContext()
 
-const isSubscriptionEnabled = (): boolean =>
-  Boolean(isCloud && window.__CONFIG__?.subscription_required)
+function isSubscriptionEnabled(): boolean {
+  return Boolean(isCloud && window.__CONFIG__?.subscription_required)
+}
 
 // Legacy price for non-tier flow with locale-aware formatting
 const formattedMonthlyPrice = new Intl.NumberFormat(
@@ -199,11 +200,11 @@ watch(
   }
 )
 
-const handleSubscribed = () => {
+function handleSubscribed() {
   emit('close', true)
 }
 
-const handleChooseTeam = () => {
+function handleChooseTeam() {
   if (onChooseTeam) {
     onChooseTeam()
   } else {
@@ -211,11 +212,11 @@ const handleChooseTeam = () => {
   }
 }
 
-const handleClose = () => {
+function handleClose() {
   onClose()
 }
 
-const handleContactUs = async () => {
+async function handleContactUs() {
   telemetry?.trackHelpResourceClicked({
     resource_type: 'help_feedback',
     is_external: true,
@@ -224,7 +225,7 @@ const handleContactUs = async () => {
   await commandStore.execute('Comfy.ContactSupport')
 }
 
-const handleViewEnterprise = () => {
+function handleViewEnterprise() {
   telemetry?.trackHelpResourceClicked({
     resource_type: 'docs',
     is_external: true,

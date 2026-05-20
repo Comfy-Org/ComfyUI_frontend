@@ -47,7 +47,7 @@ setup((app) => {
 })
 
 // Theme and dialog decorator
-export const withTheme = (Story: StoryFn, context: StoryContext) => {
+export function withTheme(Story: StoryFn, context: StoryContext) {
   const theme = context.globals.theme || 'light'
 
   // Apply theme class to document root

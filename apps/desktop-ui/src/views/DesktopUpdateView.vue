@@ -52,7 +52,7 @@ const electron = electronAPI()
 
 const terminalVisible = ref(false)
 
-const toggleConsoleDrawer = () => {
+function toggleConsoleDrawer() {
   terminalVisible.value = !terminalVisible.value
 }
 

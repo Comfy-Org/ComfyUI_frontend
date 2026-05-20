@@ -17,10 +17,10 @@ export function isActiveJobState(state: JobState): boolean {
  * @param isInitializing True if the prompt is currently initializing
  * @returns JobState for UI
  */
-export const jobStateFromTask = (
+export function jobStateFromTask(
   task: TaskItemImpl,
   isInitializing: boolean
-): JobState => {
+): JobState {
   if (isInitializing) return 'initialization'
   const status = task.displayStatus
   switch (status) {

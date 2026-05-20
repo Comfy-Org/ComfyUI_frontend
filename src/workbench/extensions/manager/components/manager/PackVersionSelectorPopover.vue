@@ -149,7 +149,7 @@ onMounted(() => {
     validSemver(initialVersion) ? initialVersion : SelectedVersionValues.NIGHTLY
 })
 
-const getInitialSelectedVersion = () => {
+function getInitialSelectedVersion() {
   if (!nodePack.id) return
 
   // If unclaimed, set selected version to nightly
@@ -164,7 +164,7 @@ const getInitialSelectedVersion = () => {
   return nodePack.latest_version?.version
 }
 
-const fetchVersions = async () => {
+async function fetchVersions() {
   if (!nodePack?.id) return []
   return (await registryService.getPackVersions(nodePack.id)) || []
 }
@@ -180,7 +180,7 @@ const fetchedVersions = ref<components['schemas']['NodeVersion'][]>([])
 
 const isLoadingVersions = ref(false)
 
-const onNodePackChange = async () => {
+async function onNodePackChange() {
   isLoadingVersions.value = true
 
   // Fetch versions from the registry
@@ -231,7 +231,7 @@ whenever(
   { deep: true, immediate: true }
 )
 
-const handleSubmit = async () => {
+async function handleSubmit() {
   isQueueing.value = true
 
   if (!nodePack.id) {
@@ -256,7 +256,7 @@ const handleSubmit = async () => {
   emit('submit')
 }
 
-const getVersionData = (version: string) => {
+function getVersionData(version: string) {
   const latestVersionNumber = nodePack.latest_version?.version
   const useLatestVersionData =
     version === 'latest' || version === latestVersionNumber
@@ -278,7 +278,7 @@ const getVersionData = (version: string) => {
   }
 }
 // Main function to get version compatibility info
-const getVersionCompatibility = (version: string) => {
+function getVersionCompatibility(version: string) {
   const versionData = getVersionData(version)
   const compatibility = checkNodeCompatibility(versionData)
   const conflictMessage = compatibility.hasConflict
@@ -290,7 +290,7 @@ const getVersionCompatibility = (version: string) => {
   }
 }
 // Helper to determine if an option is selected.
-const isOptionSelected = (optionValue: string) => {
+function isOptionSelected(optionValue: string) {
   if (selectedVersion.value === optionValue) {
     return true
   }
@@ -302,7 +302,7 @@ const isOptionSelected = (optionValue: string) => {
   }
   return false
 }
-const isVersionInstalled = (version: string) => {
+function isVersionInstalled(version: string) {
   const installed = nodePack.id
     ? managerStore.getInstalledPackVersion(nodePack.id)
     : undefined

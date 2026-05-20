@@ -34,7 +34,7 @@ interface Props {
 const { buttonText, onButtonClick } = defineProps<Props>()
 const { buildDocsUrl } = useExternalLink()
 const dialogStore = useDialogStore()
-const handleConflictInfoClick = () => {
+function handleConflictInfoClick() {
   window.open(
     buildDocsUrl('/troubleshooting/custom-node-issues', {
       includeLocale: true
@@ -42,7 +42,7 @@ const handleConflictInfoClick = () => {
     '_blank'
   )
 }
-const handleButtonClick = () => {
+function handleButtonClick() {
   // Close the conflict dialog
   dialogStore.closeDialog({ key: 'global-node-conflict' })
   // Execute the custom button action if provided

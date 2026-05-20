@@ -21,69 +21,75 @@ export function useGroupMenuOptions() {
   const canvasRefresh = useCanvasRefresh()
   const { shapeOptions, colorOptions, isLightTheme } = useNodeCustomization()
 
-  const getFitGroupToNodesOption = (groupContext: LGraphGroup): MenuOption => ({
-    label: 'Fit Group To Nodes',
-    icon: 'icon-[lucide--move-diagonal-2]',
-    action: () => {
-      try {
-        groupContext.recomputeInsideNodes()
-      } catch (e) {
-        console.warn('Failed to recompute group nodes:', e)
-        return
-      }
+  function getFitGroupToNodesOption(groupContext: LGraphGroup): MenuOption {
+    return {
+      label: 'Fit Group To Nodes',
+      icon: 'icon-[lucide--move-diagonal-2]',
+      action: () => {
+        try {
+          groupContext.recomputeInsideNodes()
+        } catch (e) {
+          console.warn('Failed to recompute group nodes:', e)
+          return
+        }
 
-      const padding = settingStore.get('Comfy.GroupSelectedNodes.Padding')
-      groupContext.resizeTo(groupContext.children, padding)
-      groupContext.graph?.change()
-      canvasStore.canvas?.setDirty(true, true)
-      workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+        const padding = settingStore.get('Comfy.GroupSelectedNodes.Padding')
+        groupContext.resizeTo(groupContext.children, padding)
+        groupContext.graph?.change()
+        canvasStore.canvas?.setDirty(true, true)
+        workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+      }
     }
-  })
+  }
 
-  const getGroupShapeOptions = (
+  function getGroupShapeOptions(
     groupContext: LGraphGroup,
     bump: () => void
-  ): MenuOption => ({
-    label: t('contextMenu.Shape'),
-    icon: 'icon-[lucide--box]',
-    hasSubmenu: true,
-    submenu: shapeOptions.map((shape) => ({
-      label: shape.localizedName,
-      action: () => {
-        const nodes = (groupContext.nodes || []) as LGraphNode[]
-        nodes.forEach((node) => (node.shape = shape.value))
-        canvasRefresh.refreshCanvas()
-        bump()
-      }
-    }))
-  })
+  ): MenuOption {
+    return {
+      label: t('contextMenu.Shape'),
+      icon: 'icon-[lucide--box]',
+      hasSubmenu: true,
+      submenu: shapeOptions.map((shape) => ({
+        label: shape.localizedName,
+        action: () => {
+          const nodes = (groupContext.nodes || []) as LGraphNode[]
+          nodes.forEach((node) => (node.shape = shape.value))
+          canvasRefresh.refreshCanvas()
+          bump()
+        }
+      }))
+    }
+  }
 
-  const getGroupColorOptions = (
+  function getGroupColorOptions(
     groupContext: LGraphGroup,
     bump: () => void
-  ): MenuOption => ({
-    label: t('contextMenu.Color'),
-    icon: 'icon-[lucide--palette]',
-    hasSubmenu: true,
-    submenu: colorOptions.map((colorOption) => ({
-      label: colorOption.localizedName,
-      color: isLightTheme.value
-        ? colorOption.value.light
-        : colorOption.value.dark,
-      action: () => {
-        groupContext.color = isLightTheme.value
+  ): MenuOption {
+    return {
+      label: t('contextMenu.Color'),
+      icon: 'icon-[lucide--palette]',
+      hasSubmenu: true,
+      submenu: colorOptions.map((colorOption) => ({
+        label: colorOption.localizedName,
+        color: isLightTheme.value
           ? colorOption.value.light
-          : colorOption.value.dark
-        canvasRefresh.refreshCanvas()
-        bump()
-      }
-    }))
-  })
+          : colorOption.value.dark,
+        action: () => {
+          groupContext.color = isLightTheme.value
+            ? colorOption.value.light
+            : colorOption.value.dark
+          canvasRefresh.refreshCanvas()
+          bump()
+        }
+      }))
+    }
+  }
 
-  const getGroupModeOptions = (
+  function getGroupModeOptions(
     groupContext: LGraphGroup,
     bump: () => void
-  ): MenuOption[] => {
+  ): MenuOption[] {
     const options: MenuOption[] = []
 
     try {
@@ -105,24 +111,26 @@ export function useGroupMenuOptions() {
       }
     }
 
-    const createModeAction = (label: string, mode: LGraphEventMode) => ({
-      label: t(`selectionToolbox.${label}`),
-      icon:
-        mode === LGraphEventMode.BYPASS
-          ? 'icon-[lucide--ban]'
-          : mode === LGraphEventMode.NEVER
-            ? 'icon-[lucide--zap-off]'
-            : 'icon-[lucide--play]',
-      action: () => {
-        groupNodes.forEach((n) => {
-          n.mode = mode
-        })
-        canvasStore.canvas?.setDirty(true, true)
-        groupContext.graph?.change()
-        workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
-        bump()
+    function createModeAction(label: string, mode: LGraphEventMode) {
+      return {
+        label: t(`selectionToolbox.${label}`),
+        icon:
+          mode === LGraphEventMode.BYPASS
+            ? 'icon-[lucide--ban]'
+            : mode === LGraphEventMode.NEVER
+              ? 'icon-[lucide--zap-off]'
+              : 'icon-[lucide--play]',
+        action: () => {
+          groupNodes.forEach((n) => {
+            n.mode = mode
+          })
+          canvasStore.canvas?.setDirty(true, true)
+          groupContext.graph?.change()
+          workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+          bump()
+        }
       }
-    })
+    }
 
     if (allSame) {
       const current = groupNodes[0].mode

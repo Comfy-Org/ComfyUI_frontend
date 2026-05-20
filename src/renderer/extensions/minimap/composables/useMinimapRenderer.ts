@@ -25,7 +25,7 @@ export function useMinimapRenderer(
   const needsFullRedraw = ref(true)
   const needsBoundsUpdate = ref(true)
 
-  const renderMinimap = () => {
+  function renderMinimap() {
     const g = graph.value
     if (!canvasRef.value || !g) return
 
@@ -64,10 +64,7 @@ export function useMinimapRenderer(
     }
   }
 
-  const updateMinimap = (
-    updateBounds: () => void,
-    updateViewport: () => void
-  ) => {
+  function updateMinimap(updateBounds: () => void, updateViewport: () => void) {
     if (needsBoundsUpdate.value || updateFlags.value.bounds) {
       updateBounds()
       needsBoundsUpdate.value = false
@@ -92,7 +89,7 @@ export function useMinimapRenderer(
     }
   }
 
-  const forceFullRedraw = () => {
+  function forceFullRedraw() {
     needsFullRedraw.value = true
     updateFlags.value.bounds = true
     updateFlags.value.nodes = true

@@ -182,10 +182,12 @@ function getTorchMirrorItem(device: TorchDeviceType): UVMirror {
 }
 
 const userIsInChina = ref(false)
-const useFallbackMirror = (mirror: UVMirror) => ({
-  ...mirror,
-  mirror: mirror.fallbackMirror
-})
+function useFallbackMirror(mirror: UVMirror) {
+  return {
+    ...mirror,
+    mirror: mirror.fallbackMirror
+  }
+}
 
 const mirrors = computed<[UVMirror, ModelRef<string>][]>(() =>
   (
@@ -212,7 +214,7 @@ onMounted(async () => {
   userIsInChina.value = await isInChina()
 })
 
-const validatePath = async (path: string | undefined) => {
+async function validatePath(path: string | undefined) {
   try {
     pathError.value = ''
     pathExists.value = false
@@ -246,7 +248,7 @@ const validatePath = async (path: string | undefined) => {
   }
 }
 
-const browsePath = async () => {
+async function browsePath() {
   try {
     const result = await electron.showDirectoryPicker()
     if (result) {
@@ -258,7 +260,7 @@ const browsePath = async () => {
   }
 }
 
-const onFocus = async () => {
+async function onFocus() {
   if (!inputTouched.value) {
     inputTouched.value = true
     return

@@ -10,30 +10,32 @@ import type { ResultItemType } from '@/schemas/apiSchema'
  * Check if an error is an AbortError triggered by `AbortController#abort`
  * when cancelling a request.
  */
-export const isAbortError = (
+export function isAbortError(
   err: unknown
-): err is DOMException & { name: 'AbortError' } =>
-  err instanceof DOMException && err.name === 'AbortError'
+): err is DOMException & { name: 'AbortError' } {
+  return err instanceof DOMException && err.name === 'AbortError'
+}
 
-export const isSubgraph = (
+export function isSubgraph(
   item: LGraph | Subgraph | undefined | null
-): item is Subgraph => item?.isRootGraph === false
+): item is Subgraph {
+  return item?.isRootGraph === false
+}
 
 /**
  * Check if an item is non-nullish.
  */
-export const isNonNullish = <T>(item: T | undefined | null): item is T =>
-  item != null
+export function isNonNullish<T>(item: T | undefined | null): item is T {
+  return item != null
+}
 
 /**
  * Type guard to check if a node is a subgraph input/output node.
  * These nodes are essential to subgraph structure and should not be removed.
  */
-export const isSubgraphIoNode = (
-  node: LGraphNode
-): node is LGraphNode & {
+export function isSubgraphIoNode(node: LGraphNode): node is LGraphNode & {
   constructor: { comfyClass: 'SubgraphInputNode' | 'SubgraphOutputNode' }
-} => {
+} {
   const nodeClass = node.constructor?.comfyClass
   return nodeClass === 'SubgraphInputNode' || nodeClass === 'SubgraphOutputNode'
 }
@@ -41,7 +43,7 @@ export const isSubgraphIoNode = (
 /**
  * Type guard for slot objects (inputs/outputs)
  */
-export const isSlotObject = (obj: unknown): obj is INodeSlot => {
+export function isSlotObject(obj: unknown): obj is INodeSlot {
   return (
     obj !== null &&
     typeof obj === 'object' &&
@@ -55,8 +57,8 @@ export const isSlotObject = (obj: unknown): obj is INodeSlot => {
  * Type guard to check if a string is a valid ResultItemType
  * ResultItemType is used for asset categorization (input/output/temp)
  */
-export const isResultItemType = (
+export function isResultItemType(
   value: string | undefined
-): value is ResultItemType => {
+): value is ResultItemType {
   return value === 'input' || value === 'output' || value === 'temp'
 }

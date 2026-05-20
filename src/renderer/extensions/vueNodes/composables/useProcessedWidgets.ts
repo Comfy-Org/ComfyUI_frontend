@@ -319,7 +319,7 @@ export function computeProcessedWidgets({
     )
 
     const tooltipConfig = ui.getTooltipConfig(widget)
-    const handleContextMenu = (e: PointerEvent) => {
+    function handleContextMenu(e: PointerEvent) {
       e.preventDefault()
       e.stopPropagation()
       if (nodeId !== undefined) ui.handleNodeRightClick(e, nodeId)

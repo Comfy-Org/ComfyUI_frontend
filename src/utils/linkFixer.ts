@@ -300,18 +300,45 @@ export function fixBadLinks(
         : extendLink(l as SerialisedLLinkArray)
 
     const originNode = getNodeById(graph, link.origin_id)
-    const originHasLink = () =>
-      nodeHasLinkId(originNode!, IoDirection.OUTPUT, link.origin_slot, link.id)
-    const patchOrigin = (op: 'ADD' | 'REMOVE', id = link.id) =>
-      patchNodeSlot(originNode!, IoDirection.OUTPUT, link.origin_slot, id, op)
+    function originHasLink() {
+      return nodeHasLinkId(
+        originNode!,
+        IoDirection.OUTPUT,
+        link.origin_slot,
+        link.id
+      )
+    }
+    function patchOrigin(op: 'ADD' | 'REMOVE', id = link.id) {
+      return patchNodeSlot(
+        originNode!,
+        IoDirection.OUTPUT,
+        link.origin_slot,
+        id,
+        op
+      )
+    }
 
     const targetNode = getNodeById(graph, link.target_id)
-    const targetHasLink = () =>
-      nodeHasLinkId(targetNode!, IoDirection.INPUT, link.target_slot, link.id)
-    const targetHasAnyLink = () =>
-      nodeHasAnyLink(targetNode!, IoDirection.INPUT, link.target_slot)
-    const patchTarget = (op: 'ADD' | 'REMOVE', id = link.id) =>
-      patchNodeSlot(targetNode!, IoDirection.INPUT, link.target_slot, id, op)
+    function targetHasLink() {
+      return nodeHasLinkId(
+        targetNode!,
+        IoDirection.INPUT,
+        link.target_slot,
+        link.id
+      )
+    }
+    function targetHasAnyLink() {
+      return nodeHasAnyLink(targetNode!, IoDirection.INPUT, link.target_slot)
+    }
+    function patchTarget(op: 'ADD' | 'REMOVE', id = link.id) {
+      return patchNodeSlot(
+        targetNode!,
+        IoDirection.INPUT,
+        link.target_slot,
+        id,
+        op
+      )
+    }
 
     const originLog = `origin(${link.origin_id}).outputs[${link.origin_slot}].links`
     const targetLog = `target(${link.target_id}).inputs[${link.target_slot}].link`

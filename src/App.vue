@@ -34,7 +34,7 @@ watch(
   { flush: 'post' }
 )
 
-const showContextMenu = (event: MouseEvent) => {
+function showContextMenu(event: MouseEvent) {
   const { target } = event
   switch (true) {
     case target instanceof HTMLTextAreaElement:

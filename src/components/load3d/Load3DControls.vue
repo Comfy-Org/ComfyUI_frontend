@@ -207,11 +207,11 @@ const showGizmoControls = computed(
   () => canUseGizmo && activeCategory.value === 'gizmo' && !!modelConfig.value
 )
 
-const toggleMenu = () => {
+function toggleMenu() {
   isMenuOpen.value = !isMenuOpen.value
 }
 
-const selectCategory = (category: string) => {
+function selectCategory(category: string) {
   activeCategory.value = category
   isMenuOpen.value = false
 }
@@ -225,7 +225,7 @@ const categoryIcons = {
   export: 'icon-[lucide--download]'
 } as const
 
-const getCategoryIcon = (category: string) => {
+function getCategoryIcon(category: string) {
   const icon =
     category in categoryIcons
       ? categoryIcons[category as keyof typeof categoryIcons]
@@ -242,27 +242,27 @@ const emit = defineEmits<{
   (e: 'resetGizmoTransform'): void
 }>()
 
-const handleBackgroundImageUpdate = (file: File | null) => {
+function handleBackgroundImageUpdate(file: File | null) {
   emit('updateBackgroundImage', file)
 }
 
-const handleExportModel = (format: string) => {
+function handleExportModel(format: string) {
   emit('exportModel', format)
 }
 
-const handleHDRIFileUpdate = (file: File | null) => {
+function handleHDRIFileUpdate(file: File | null) {
   emit('updateHdriFile', file)
 }
 
-const handleToggleGizmo = (enabled: boolean) => {
+function handleToggleGizmo(enabled: boolean) {
   emit('toggleGizmo', enabled)
 }
 
-const handleSetGizmoMode = (mode: GizmoMode) => {
+function handleSetGizmoMode(mode: GizmoMode) {
   emit('setGizmoMode', mode)
 }
 
-const handleResetGizmoTransform = () => {
+function handleResetGizmoTransform() {
   emit('resetGizmoTransform')
 }
 </script>

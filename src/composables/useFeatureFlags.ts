@@ -166,8 +166,9 @@ export function useFeatureFlags() {
     }
   })
 
-  const featureFlag = <T = unknown>(featurePath: string, defaultValue?: T) =>
-    computed(() => api.getServerFeature(featurePath, defaultValue))
+  function featureFlag<T = unknown>(featurePath: string, defaultValue?: T) {
+    return computed(() => api.getServerFeature(featurePath, defaultValue))
+  }
 
   return {
     flags: readonly(flags),

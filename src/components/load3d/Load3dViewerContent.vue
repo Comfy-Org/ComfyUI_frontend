@@ -182,7 +182,7 @@ onMounted(async () => {
   window.addEventListener('resize', viewer.handleResize)
 })
 
-const handleCancel = () => {
+function handleCancel() {
   if (!isStandaloneMode) {
     viewer.restoreInitialState()
   }

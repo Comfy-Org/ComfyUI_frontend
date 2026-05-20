@@ -18,14 +18,14 @@ export function useIntersectionObserver(
 
   let observer: IntersectionObserver | null = null
 
-  const cleanup = () => {
+  function cleanup() {
     if (observer) {
       observer.disconnect()
       observer = null
     }
   }
 
-  const observe = () => {
+  function observe() {
     cleanup()
 
     if (!isSupported || !target.value) return
@@ -38,7 +38,7 @@ export function useIntersectionObserver(
     observer.observe(target.value)
   }
 
-  const unobserve = () => {
+  function unobserve() {
     if (observer && target.value) {
       observer.unobserve(target.value)
     }

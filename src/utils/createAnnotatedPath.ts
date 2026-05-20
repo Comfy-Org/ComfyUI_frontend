@@ -1,13 +1,18 @@
 import type { ResultItem } from '@/schemas/apiSchema'
 
-const hasAnnotation = (filepath: string): boolean =>
-  /\[(input|output|temp)\]/i.test(filepath)
+function hasAnnotation(filepath: string): boolean {
+  return /\[(input|output|temp)\]/i.test(filepath)
+}
 
-const createAnnotation = (filepath: string, rootFolder = 'input'): string =>
-  !hasAnnotation(filepath) && rootFolder !== 'input' ? ` [${rootFolder}]` : ''
+function createAnnotation(filepath: string, rootFolder = 'input'): string {
+  return !hasAnnotation(filepath) && rootFolder !== 'input'
+    ? ` [${rootFolder}]`
+    : ''
+}
 
-const createPath = (filename: string, subfolder = ''): string =>
-  subfolder ? `${subfolder}/${filename}` : filename
+function createPath(filename: string, subfolder = ''): string {
+  return subfolder ? `${subfolder}/${filename}` : filename
+}
 
 /** Creates annotated filepath in format used by folder_paths.py */
 export function createAnnotatedPath(

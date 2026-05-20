@@ -26,7 +26,7 @@ export function useCanvasHistory(maxStates = 20) {
     )
   })
 
-  const saveInitialState = () => {
+  function saveInitialState() {
     const { maskCtx, rgbCtx, imgCtx, maskCanvas, rgbCanvas, imgCanvas } = store
 
     // Ensure all 3 contexts and canvases are ready
@@ -74,11 +74,11 @@ export function useCanvasHistory(maxStates = 20) {
     initialized.value = true
   }
 
-  const saveState = (
+  function saveState(
     providedMaskData?: ImageData | ImageBitmap,
     providedRgbData?: ImageData | ImageBitmap,
     providedImgData?: ImageData | ImageBitmap
-  ) => {
+  ) {
     const { maskCtx, rgbCtx, imgCtx, maskCanvas, rgbCanvas, imgCanvas } = store
 
     if (
@@ -131,19 +131,19 @@ export function useCanvasHistory(maxStates = 20) {
     }
   }
 
-  const undo = () => {
+  function undo() {
     if (!canUndo.value) return
     currentStateIndex.value--
     restoreState(states.value[currentStateIndex.value])
   }
 
-  const redo = () => {
+  function redo() {
     if (!canRedo.value) return
     currentStateIndex.value++
     restoreState(states.value[currentStateIndex.value])
   }
 
-  const restoreState = (state: CanvasState) => {
+  function restoreState(state: CanvasState) {
     const { maskCtx, rgbCtx, imgCtx, maskCanvas, rgbCanvas, imgCanvas } = store
     if (
       !maskCtx ||
@@ -185,13 +185,13 @@ export function useCanvasHistory(maxStates = 20) {
     })
   }
 
-  const cleanupState = (state: CanvasState) => {
+  function cleanupState(state: CanvasState) {
     if (state.mask instanceof ImageBitmap) state.mask.close()
     if (state.rgb instanceof ImageBitmap) state.rgb.close()
     if (state.img instanceof ImageBitmap) state.img.close()
   }
 
-  const clearStates = () => {
+  function clearStates() {
     states.value.forEach(cleanupState)
     states.value = []
     currentStateIndex.value = -1

@@ -64,7 +64,7 @@ const allowMetrics = ref(true)
 const router = useRouter()
 const isUpdating = ref(false)
 
-const updateConsent = async () => {
+async function updateConsent() {
   isUpdating.value = true
   try {
     await electronAPI().setMetricsConsent(allowMetrics.value)

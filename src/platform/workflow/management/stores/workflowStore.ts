@@ -106,7 +106,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @param workflow The workflow to detach.
    * @returns The index of the workflow in the openWorkflowPaths array, or -1 if the workflow was not open.
    */
-  const detachWorkflow = (workflow: ComfyWorkflow) => {
+  function detachWorkflow(workflow: ComfyWorkflow) {
     delete workflowLookup.value[workflow.path]
     const index = openWorkflowPaths.value.indexOf(workflow.path)
     if (index !== -1) {
@@ -122,7 +122,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @param workflow The workflow to attach.
    * @param openIndex The index to open the workflow at.
    */
-  const attachWorkflow = (workflow: ComfyWorkflow, openIndex: number = -1) => {
+  function attachWorkflow(workflow: ComfyWorkflow, openIndex: number = -1) {
     workflowLookup.value[workflow.path] = workflow
 
     if (openIndex !== -1) {
@@ -134,8 +134,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * The active workflow currently being edited.
    */
   const activeWorkflow = ref<LoadedComfyWorkflow | null>(null)
-  const isActive = (workflow: ComfyWorkflow) =>
-    activeWorkflow.value?.path === workflow.path
+  function isActive(workflow: ComfyWorkflow) {
+    return activeWorkflow.value?.path === workflow.path
+  }
   /**
    * All workflows.
    */
@@ -143,8 +144,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const workflows = computed<ComfyWorkflow[]>(() =>
     Object.values(workflowLookup.value)
   )
-  const getWorkflowByPath = (path: string): ComfyWorkflow | null =>
-    workflowLookup.value[path] ?? null
+  function getWorkflowByPath(path: string): ComfyWorkflow | null {
+    return workflowLookup.value[path] ?? null
+  }
 
   /**
    * The paths of the open workflows. It is setup as a ref to allow user
@@ -155,13 +157,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const openWorkflows = computed(() =>
     openWorkflowPaths.value.map((path) => workflowLookup.value[path])
   )
-  const reorderWorkflows = (from: number, to: number) => {
+  function reorderWorkflows(from: number, to: number) {
     const movedTab = openWorkflowPaths.value[from]
     openWorkflowPaths.value.splice(from, 1)
     openWorkflowPaths.value.splice(to, 0, movedTab)
   }
-  const isOpen = (workflow: ComfyWorkflow) =>
-    openWorkflowPathSet.value.has(workflow.path)
+  function isOpen(workflow: ComfyWorkflow) {
+    return openWorkflowPathSet.value.has(workflow.path)
+  }
 
   /**
    * Add paths to the list of open workflow paths without loading the files
@@ -174,17 +177,18 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * Invalid paths (non-strings or paths not found in `workflowLookup.value`)
    * will be ignored. Duplicate paths are automatically removed.
    */
-  const openWorkflowsInBackground = (paths: {
+  function openWorkflowsInBackground(paths: {
     left?: string[]
     right?: string[]
-  }) => {
+  }) {
     const { left = [], right = [] } = paths
     if (!left.length && !right.length) return
 
-    const isValidPath = (
+    function isValidPath(
       path: unknown
-    ): path is keyof typeof workflowLookup.value =>
-      typeof path === 'string' && path in workflowLookup.value
+    ): path is keyof typeof workflowLookup.value {
+      return typeof path === 'string' && path in workflowLookup.value
+    }
 
     openWorkflowPaths.value = _.union(
       left,
@@ -197,9 +201,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * Set the workflow as the active workflow.
    * @param workflow The workflow to open.
    */
-  const openWorkflow = async (
+  async function openWorkflow(
     workflow: ComfyWorkflow
-  ): Promise<LoadedComfyWorkflow> => {
+  ): Promise<LoadedComfyWorkflow> {
     if (isActive(workflow)) return workflow as LoadedComfyWorkflow
 
     if (!openWorkflowPaths.value.includes(workflow.path)) {
@@ -223,7 +227,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     return loadedWorkflow
   }
 
-  const getUnconflictedPath = (basePath: string): string => {
+  function getUnconflictedPath(basePath: string): string {
     const { directory, filename, suffix } = getPathDetails(basePath)
     let counter = 2
     let newPath = basePath
@@ -233,10 +237,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
     return newPath
   }
-  const saveAs = (
+  function saveAs(
     existingWorkflow: ComfyWorkflow,
     path: string
-  ): ComfyWorkflow => {
+  ): ComfyWorkflow {
     // Generate new id when saving existing workflow as a new file
     const id = generateUUID()
     const state = JSON.parse(
@@ -256,9 +260,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
     return workflow
   }
 
-  const ensureWorkflowId = (
+  function ensureWorkflowId(
     workflowData?: ComfyWorkflowJSON
-  ): ComfyWorkflowJSON => {
+  ): ComfyWorkflowJSON {
     const base = workflowData
       ? (JSON.parse(JSON.stringify(workflowData)) as ComfyWorkflowJSON)
       : (JSON.parse(defaultGraphJSON) as ComfyWorkflowJSON)
@@ -273,10 +277,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
   /**
    * Helper to create a new temporary workflow
    */
-  const createNewWorkflow = (
+  function createNewWorkflow(
     path: string,
     workflowData?: ComfyWorkflowJSON
-  ): ComfyWorkflow => {
+  ): ComfyWorkflow {
     const workflow = new ComfyWorkflow({
       path,
       modified: Date.now(),
@@ -294,7 +298,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   /**
    * Create a temporary workflow, attempting to reuse an existing workflow if conditions match
    */
-  const createTemporary = (path?: string, workflowData?: ComfyWorkflowJSON) => {
+  function createTemporary(path?: string, workflowData?: ComfyWorkflowJSON) {
     const fullPath = getUnconflictedPath(
       ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
     )
@@ -326,17 +330,17 @@ export const useWorkflowStore = defineStore('workflow', () => {
   /**
    * Create a new temporary workflow without attempting to reuse existing workflows
    */
-  const createNewTemporary = (
+  function createNewTemporary(
     path?: string,
     workflowData?: ComfyWorkflowJSON
-  ): ComfyWorkflow => {
+  ): ComfyWorkflow {
     const fullPath = getUnconflictedPath(
       ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
     )
     return createNewWorkflow(fullPath, workflowData)
   }
 
-  const closeWorkflow = async (workflow: ComfyWorkflow) => {
+  async function closeWorkflow(workflow: ComfyWorkflow) {
     openWorkflowPaths.value = openWorkflowPaths.value.filter(
       (path) => path !== workflow.path
     )
@@ -354,7 +358,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @param shift The shift to the next workflow. Positive for next, negative for previous.
    * @returns The next workflow or null if the shift is out of bounds.
    */
-  const openedWorkflowIndexShift = (shift: number): ComfyWorkflow | null => {
+  function openedWorkflowIndexShift(shift: number): ComfyWorkflow | null {
     const index = openWorkflowPaths.value.indexOf(
       activeWorkflow.value?.path ?? ''
     )
@@ -373,7 +377,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * Lazily cleans invalid paths from history.
    * @returns The most recent valid workflow or null if none found.
    */
-  const getMostRecentWorkflow = (): ComfyWorkflow | null => {
+  function getMostRecentWorkflow(): ComfyWorkflow | null {
     const currentPath = activeWorkflow.value?.path
     const validPaths: string[] = []
 
@@ -489,7 +493,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const isBusy = ref<boolean>(false)
   const { moveWorkflowThumbnail, clearThumbnail } = useWorkflowThumbnail()
 
-  const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
+  async function renameWorkflow(workflow: ComfyWorkflow, newPath: string) {
     isBusy.value = true
     try {
       // Capture all needed values upfront
@@ -524,7 +528,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
   }
 
-  const deleteWorkflow = async (workflow: ComfyWorkflow) => {
+  async function deleteWorkflow(workflow: ComfyWorkflow) {
     isBusy.value = true
     try {
       await workflow.delete()
@@ -544,7 +548,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * Save a workflow.
    * @param workflow The workflow to save.
    */
-  const saveWorkflow = async (workflow: ComfyWorkflow) => {
+  async function saveWorkflow(workflow: ComfyWorkflow) {
     isBusy.value = true
     try {
       await workflow.save()
@@ -564,7 +568,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const activeSubgraph = shallowRef<Raw<Subgraph>>()
 
   /** @see WorkflowStore.updateActiveGraph */
-  const updateActiveGraph = () => {
+  function updateActiveGraph() {
     const subgraph = comfyApp.canvas?.subgraph
     activeSubgraph.value = subgraph ? markRaw(subgraph) : undefined
     if (!comfyApp.canvas) return
@@ -572,16 +576,16 @@ export const useWorkflowStore = defineStore('workflow', () => {
     isSubgraphActive.value = isSubgraph(subgraph)
   }
 
-  const subgraphNodeIdToSubgraph = (id: string, graph: LGraph | Subgraph) => {
+  function subgraphNodeIdToSubgraph(id: string, graph: LGraph | Subgraph) {
     const node = graph.getNodeById(id)
     if (node?.isSubgraphNode()) return node.subgraph
   }
 
-  const getSubgraphsFromInstanceIds = (
+  function getSubgraphsFromInstanceIds(
     currentGraph: LGraph | Subgraph,
     subgraphNodeIds: string[],
     subgraphs: Subgraph[] = []
-  ): Subgraph[] => {
+  ): Subgraph[] {
     const currentPart = subgraphNodeIds.shift()
     if (currentPart === undefined) return subgraphs
 
@@ -593,7 +597,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   //FIXME: use existing util function
-  const executionIdToCurrentId = (id: string): string | undefined => {
+  function executionIdToCurrentId(id: string): string | undefined {
     const subgraph = activeSubgraph.value
 
     // Short-circuit: ID belongs to the parent workflow / no active subgraph
@@ -624,10 +628,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @param subgraph The subgraph containing the node (defaults to active subgraph)
    * @returns The NodeLocatorId (for root graph nodes, returns the node ID as-is)
    */
-  const nodeIdToNodeLocatorId = (
+  function nodeIdToNodeLocatorId(
     nodeId: NodeId,
     subgraph?: Subgraph
-  ): NodeLocatorId => {
+  ): NodeLocatorId {
     const targetSubgraph = subgraph ?? activeSubgraph.value
     if (!targetSubgraph) {
       // Node is in the root graph, return the node ID as-is
@@ -642,7 +646,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @param The actual node instance
    * @returns The NodeLocatorId (for root graph nodes, returns the node ID as-is)
    */
-  const nodeToNodeLocatorId = (node: LGraphNode): NodeLocatorId => {
+  function nodeToNodeLocatorId(node: LGraphNode): NodeLocatorId {
     if (isSubgraph(node.graph))
       return createNodeLocatorId(node.graph.id, node.id)
     return String(node.id)
@@ -653,9 +657,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @param nodeExecutionId The execution node ID (e.g., "123:456:789")
    * @returns The NodeLocatorId or null if conversion fails
    */
-  const nodeExecutionIdToNodeLocatorId = (
+  function nodeExecutionIdToNodeLocatorId(
     nodeExecutionId: NodeExecutionId | string
-  ): NodeLocatorId | null => {
+  ): NodeLocatorId | null {
     // Handle simple node IDs (root graph - no colons)
     if (!nodeExecutionId.includes(':')) {
       return nodeExecutionId
@@ -689,9 +693,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @param locatorId The NodeLocatorId
    * @returns The local node ID or null if invalid
    */
-  const nodeLocatorIdToNodeId = (
+  function nodeLocatorIdToNodeId(
     locatorId: NodeLocatorId | string
-  ): NodeId | null => {
+  ): NodeId | null {
     const parsed = parseNodeLocatorId(locatorId)
     return parsed?.localNodeId ?? null
   }
@@ -702,10 +706,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @param targetSubgraph The subgraph context (defaults to active subgraph)
    * @returns The execution ID or null if the node is not accessible from the target context
    */
-  const nodeLocatorIdToNodeExecutionId = (
+  function nodeLocatorIdToNodeExecutionId(
     locatorId: NodeLocatorId | string,
     targetSubgraph?: Subgraph
-  ): NodeExecutionId | null => {
+  ): NodeExecutionId | null {
     const parsed = parseNodeLocatorId(locatorId)
     if (!parsed) return null
 
@@ -717,11 +721,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
 
     // Find the path from root to the subgraph with this UUID
-    const findSubgraphPath = (
+    function findSubgraphPath(
       graph: LGraph | Subgraph,
       targetUuid: string,
       path: NodeId[] = []
-    ): NodeId[] | null => {
+    ): NodeId[] | null {
       if (isSubgraph(graph) && graph.id === targetUuid) {
         return path
       }
@@ -802,9 +806,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
 export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
   const bookmarks = ref<Set<string>>(new Set())
 
-  const isBookmarked = (path: string) => bookmarks.value.has(path)
+  function isBookmarked(path: string) {
+    return bookmarks.value.has(path)
+  }
 
-  const loadBookmarks = async () => {
+  async function loadBookmarks() {
     const resp = await api.getUserData('workflows/.index.json')
     if (resp.status === 200) {
       const info = await resp.json()
@@ -812,13 +818,13 @@ export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
     }
   }
 
-  const saveBookmarks = async () => {
+  async function saveBookmarks() {
     await api.storeUserData('workflows/.index.json', {
       favorites: Array.from(bookmarks.value)
     })
   }
 
-  const setBookmarked = async (path: string, value: boolean) => {
+  async function setBookmarked(path: string, value: boolean) {
     if (bookmarks.value.has(path) === value) return
     if (value) {
       bookmarks.value.add(path)
@@ -828,7 +834,7 @@ export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
     await saveBookmarks()
   }
 
-  const toggleBookmarked = async (path: string) => {
+  async function toggleBookmarked(path: string) {
     await setBookmarked(path, !bookmarks.value.has(path))
   }
 

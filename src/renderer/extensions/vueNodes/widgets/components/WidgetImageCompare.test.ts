@@ -10,16 +10,17 @@ import type { ImageCompareValue } from './WidgetImageCompare.vue'
 import { createMockWidget } from './widgetTestUtils'
 
 describe('WidgetImageCompare Display', () => {
-  const createImageCompareWidget = (
+  function createImageCompareWidget(
     value: ImageCompareValue | string,
     options: SimplifiedWidget<ImageCompareValue | string>['options'] = {}
-  ) =>
-    createMockWidget<ImageCompareValue | string>({
+  ) {
+    return createMockWidget<ImageCompareValue | string>({
       value,
       name: 'test_imagecompare',
       type: 'object',
       options
     })
+  }
 
   function renderComponent(
     widget: SimplifiedWidget<ImageCompareValue | string>

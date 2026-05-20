@@ -55,7 +55,7 @@ async function setLocaleAndWaitForWorkflowReload(
     const waitForReload = new Promise<void>((resolve, reject) => {
       const timeoutAt = performance.now() + 5000
 
-      const tick = () => {
+      function tick() {
         if (changeTracker.isLoadingGraph) {
           sawLoading = true
         }

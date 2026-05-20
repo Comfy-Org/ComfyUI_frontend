@@ -48,7 +48,7 @@ const { icon, badge, active, onClick } = defineProps<{
 const textRef = ref<HTMLElement | null>(null)
 const isOverflowing = ref(false)
 
-const checkOverflow = () => {
+function checkOverflow() {
   if (!textRef.value) return
   isOverflowing.value =
     textRef.value.scrollWidth > textRef.value.clientWidth + 1

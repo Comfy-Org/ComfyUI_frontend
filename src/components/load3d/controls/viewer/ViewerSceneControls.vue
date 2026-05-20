@@ -85,11 +85,11 @@ const emit = defineEmits<{
 
 const imagePickerRef = ref<HTMLInputElement | null>(null)
 
-const openImagePicker = () => {
+function openImagePicker() {
   imagePickerRef.value?.click()
 }
 
-const handleImageUpload = (event: Event) => {
+function handleImageUpload(event: Event) {
   const input = event.target as HTMLInputElement
   if (input.files && input.files[0]) {
     emit('updateBackgroundImage', input.files[0])
@@ -98,11 +98,11 @@ const handleImageUpload = (event: Event) => {
   input.value = ''
 }
 
-const removeBackgroundImage = () => {
+function removeBackgroundImage() {
   emit('updateBackgroundImage', null)
 }
 
-const setBackgroundRenderMode = (mode: 'tiled' | 'panorama') => {
+function setBackgroundRenderMode(mode: 'tiled' | 'panorama') {
   backgroundRenderMode.value = mode
 }
 </script>

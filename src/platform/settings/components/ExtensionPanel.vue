@@ -155,7 +155,7 @@ const hasChanges = computed(() => {
   return changedExtensions.value.length > 0
 })
 
-const updateExtensionStatus = async () => {
+async function updateExtensionStatus() {
   const editingDisabledExtensionNames = Object.entries(
     editingEnabledExtensions.value
   )
@@ -168,7 +168,7 @@ const updateExtensionStatus = async () => {
   ])
 }
 
-const enableAllExtensions = async () => {
+async function enableAllExtensions() {
   extensionStore.extensions.forEach((ext) => {
     if (extensionStore.isExtensionReadOnly(ext.name)) return
 
@@ -177,7 +177,7 @@ const enableAllExtensions = async () => {
   await updateExtensionStatus()
 }
 
-const disableAllExtensions = async () => {
+async function disableAllExtensions() {
   extensionStore.extensions.forEach((ext) => {
     if (extensionStore.isExtensionReadOnly(ext.name)) return
 
@@ -186,7 +186,7 @@ const disableAllExtensions = async () => {
   await updateExtensionStatus()
 }
 
-const disableThirdPartyExtensions = async () => {
+async function disableThirdPartyExtensions() {
   extensionStore.extensions.forEach((ext) => {
     if (extensionStore.isCoreExtension(ext.name)) return
 
@@ -195,7 +195,7 @@ const disableThirdPartyExtensions = async () => {
   await updateExtensionStatus()
 }
 
-const applyChanges = () => {
+function applyChanges() {
   // Refresh the page to apply changes
   window.location.reload()
 }

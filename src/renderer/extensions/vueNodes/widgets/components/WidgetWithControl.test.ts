@@ -58,10 +58,10 @@ const RenderedComponent = defineComponent({
   `
 })
 
-const makeControlWidget = (
+function makeControlWidget(
   update: (value: WidgetValue) => void = () => {},
   initial = 'randomize'
-): SimplifiedControlWidget => {
+): SimplifiedControlWidget {
   const controlWidget: SafeControlWidget = {
     value: initial as SafeControlWidget['value'],
     update: (value) => update(value)
@@ -75,8 +75,8 @@ const makeControlWidget = (
   }) as SimplifiedControlWidget
 }
 
-const mount = (widget: SimplifiedControlWidget, modelValue = 0) =>
-  render(WidgetWithControl, {
+function mount(widget: SimplifiedControlWidget, modelValue = 0) {
+  return render(WidgetWithControl, {
     global: {
       stubs: {
         Popover: PopoverStub,
@@ -86,6 +86,7 @@ const mount = (widget: SimplifiedControlWidget, modelValue = 0) =>
     },
     props: { widget, modelValue, component: RenderedComponent }
   })
+}
 
 describe('WidgetWithControl', () => {
   it('renders the passed component with widget and modelValue', () => {

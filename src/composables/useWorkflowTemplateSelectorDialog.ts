@@ -8,7 +8,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 const DIALOG_KEY = 'global-workflow-template-selector'
 const GETTING_STARTED_CATEGORY_ID = 'basics-getting-started'
 
-export const useWorkflowTemplateSelectorDialog = () => {
+export function useWorkflowTemplateSelectorDialog() {
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
   const newUserService = useNewUserService()

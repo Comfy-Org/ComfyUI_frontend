@@ -279,8 +279,9 @@ export function buildNodeDefTree(
   options: BuildNodeDefTreeOptions = {}
 ): TreeNode {
   const { pathExtractor } = options
-  const defaultPathExtractor = (nodeDef: ComfyNodeDefImpl) =>
-    nodeDef.nodePath.split('/')
+  function defaultPathExtractor(nodeDef: ComfyNodeDefImpl) {
+    return nodeDef.nodePath.split('/')
+  }
   return buildTree(nodeDefs, pathExtractor || defaultPathExtractor)
 }
 
@@ -530,7 +531,7 @@ export const useNodeFrequencyStore = defineStore('nodeFrequency', () => {
   )
   const isLoaded = ref(false)
 
-  const loadNodeFrequencies = async () => {
+  async function loadNodeFrequencies() {
     if (!isLoaded.value) {
       try {
         const response = await axios.get('assets/sorted-custom-node-map.json')
@@ -542,11 +543,11 @@ export const useNodeFrequencyStore = defineStore('nodeFrequency', () => {
     }
   }
 
-  const getNodeFrequency = (nodeDef: ComfyNodeDefImpl) => {
+  function getNodeFrequency(nodeDef: ComfyNodeDefImpl) {
     return getNodeFrequencyByName(nodeDef.name)
   }
 
-  const getNodeFrequencyByName = (nodeName: string) => {
+  function getNodeFrequencyByName(nodeName: string) {
     return nodeFrequencyLookup.value[nodeName] ?? 0
   }
 

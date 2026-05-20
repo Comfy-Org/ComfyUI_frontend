@@ -223,7 +223,7 @@ export const useUserFileStore = defineStore('userFile', () => {
    * Syncs the files in the given directory with the API.
    * @param dir The directory to sync.
    */
-  const syncFiles = async (dir: string = '') => {
+  async function syncFiles(dir: string = '') {
     await syncEntities(
       dir,
       userFilesByPath.value,

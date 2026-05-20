@@ -12,10 +12,10 @@ import { electronAPI } from '@/utils/envUtil'
 
 import BaseTerminal from './BaseTerminal.vue'
 
-const terminalCreated = (
+function terminalCreated(
   { terminal, useAutoSize }: ReturnType<typeof useTerminal>,
   root: Ref<HTMLElement | undefined>
-) => {
+) {
   const terminalApi = electronAPI().Terminal
 
   let offData: IDisposable

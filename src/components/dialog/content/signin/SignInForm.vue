@@ -113,10 +113,10 @@ const onSubmit = useThrottleFn((event: FormSubmitEvent) => {
   }
 }, 1_500)
 
-const handleForgotPassword = async (
+async function handleForgotPassword(
   email: string,
   isValid: boolean | undefined
-) => {
+) {
   if (!email || !isValid) {
     toast.add({
       severity: 'warn',

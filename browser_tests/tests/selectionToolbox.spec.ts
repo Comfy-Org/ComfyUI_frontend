@@ -13,16 +13,21 @@ test.beforeEach(async ({ comfyPage }) => {
 const BLUE_COLOR = 'rgb(51, 51, 85)'
 const RED_COLOR = 'rgb(85, 51, 51)'
 
-const getColorPickerButton = (comfyPage: { page: Page }) =>
-  comfyPage.page.getByTestId(TestIds.selectionToolbox.colorPickerButton)
+function getColorPickerButton(comfyPage: { page: Page }) {
+  return comfyPage.page.getByTestId(TestIds.selectionToolbox.colorPickerButton)
+}
 
-const getColorPickerCurrentColor = (comfyPage: { page: Page }) =>
-  comfyPage.page.getByTestId(TestIds.selectionToolbox.colorPickerCurrentColor)
+function getColorPickerCurrentColor(comfyPage: { page: Page }) {
+  return comfyPage.page.getByTestId(
+    TestIds.selectionToolbox.colorPickerCurrentColor
+  )
+}
 
-const getColorPickerGroup = (comfyPage: { page: Page }) =>
-  comfyPage.page.getByRole('group').filter({
+function getColorPickerGroup(comfyPage: { page: Page }) {
+  return comfyPage.page.getByRole('group').filter({
     has: comfyPage.page.getByTestId(TestIds.selectionToolbox.colorBlue)
   })
+}
 
 test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {

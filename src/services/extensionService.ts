@@ -15,7 +15,7 @@ import type { AuthUserInfo } from '@/types/authTypes'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 
-export const useExtensionService = () => {
+export function useExtensionService() {
   const extensionStore = useExtensionStore()
   const settingStore = useSettingStore()
   const keybindingStore = useKeybindingStore()
@@ -28,7 +28,7 @@ export const useExtensionService = () => {
   /**
    * Loads all extensions from the API into the window in parallel
    */
-  const loadExtensions = async () => {
+  async function loadExtensions() {
     extensionStore.loadDisabledExtensionNames(
       settingStore.get('Comfy.Extension.Disabled')
     )
@@ -56,7 +56,7 @@ export const useExtensionService = () => {
    * Register an extension with the app
    * @param extension The extension to register
    */
-  const registerExtension = (extension: ComfyExtension) => {
+  function registerExtension(extension: ComfyExtension) {
     extensionStore.registerExtension(extension)
 
     const addKeybinding = wrapWithErrorHandling(
@@ -159,10 +159,10 @@ export const useExtensionService = () => {
    * @param  {unknown[]} args Any arguments to pass to the callback
    * @returns
    */
-  const invokeExtensions = <T extends KnownExtensionMethods>(
+  function invokeExtensions<T extends KnownExtensionMethods>(
     method: T,
     ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
-  ) => {
+  ) {
     const results: ReturnType<ComfyExtensionMethod<T>>[] = []
     for (const ext of extensionStore.enabledExtensions) {
       if (method in ext) {
@@ -191,10 +191,10 @@ export const useExtensionService = () => {
    * @param  {...unknown} args Any arguments to pass to the callback
    * @returns
    */
-  const invokeExtensionsAsync = async <T extends KnownExtensionMethods>(
+  async function invokeExtensionsAsync<T extends KnownExtensionMethods>(
     method: T,
     ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
-  ) => {
+  ) {
     return await Promise.all(
       extensionStore.enabledExtensions.map(async (ext) => {
         if (method in ext) {

@@ -9,16 +9,16 @@ import type {
 
 export type SurveyValues = Record<string, string | string[] | undefined>
 
-const hasNonEmptyValue = (current: string | string[] | undefined): boolean => {
+function hasNonEmptyValue(current: string | string[] | undefined): boolean {
   if (current === undefined || current === '') return false
   if (Array.isArray(current)) return current.length > 0
   return true
 }
 
-const conditionMatches = (
+function conditionMatches(
   condition: OnboardingSurveyFieldCondition | undefined,
   values: SurveyValues
-): boolean => {
+): boolean {
   if (!condition) return true
   const current = values[condition.field]
   if (!hasNonEmptyValue(current)) return false
@@ -31,15 +31,18 @@ const conditionMatches = (
   return typeof current === 'string' && expectedSet.includes(current)
 }
 
-export const visibleFields = (
+export function visibleFields(
   survey: OnboardingSurvey,
   values: SurveyValues
-): OnboardingSurveyField[] =>
-  survey.fields.filter((field) => conditionMatches(field.showWhen, values))
+): OnboardingSurveyField[] {
+  return survey.fields.filter((field) =>
+    conditionMatches(field.showWhen, values)
+  )
+}
 
 const PIN_LAST_VALUES = new Set(['other', 'not_sure'])
 
-const randomizeOptions = (field: OnboardingSurveyField) => {
+function randomizeOptions(field: OnboardingSurveyField) {
   if (!field.randomize || !field.options) return field
   const pinned = field.options.filter((opt) => PIN_LAST_VALUES.has(opt.value))
   const rest = field.options.filter((opt) => !PIN_LAST_VALUES.has(opt.value))
@@ -49,16 +52,20 @@ const randomizeOptions = (field: OnboardingSurveyField) => {
   }
 }
 
-export const prepareSurvey = (survey: OnboardingSurvey): OnboardingSurvey => ({
-  ...survey,
-  fields: survey.fields.map(randomizeOptions)
-})
+export function prepareSurvey(survey: OnboardingSurvey): OnboardingSurvey {
+  return {
+    ...survey,
+    fields: survey.fields.map(randomizeOptions)
+  }
+}
 
 type Translator = (key: string) => string
 
-const identityTranslator: Translator = (key) => key
+function identityTranslator(key: string): string {
+  return key
+}
 
-const fieldSchema = (field: OnboardingSurveyField, t: Translator) => {
+function fieldSchema(field: OnboardingSurveyField, t: Translator) {
   if (field.type === 'multi') {
     const arr = z.array(z.string())
     return field.required
@@ -75,11 +82,11 @@ const fieldSchema = (field: OnboardingSurveyField, t: Translator) => {
   return z.string().optional()
 }
 
-export const buildZodSchema = (
+export function buildZodSchema(
   survey: OnboardingSurvey,
   values: SurveyValues,
   t: Translator = identityTranslator
-) => {
+) {
   const shape: Record<string, z.ZodTypeAny> = {}
   for (const field of survey.fields) {
     if (!conditionMatches(field.showWhen, values)) continue
@@ -99,7 +106,7 @@ export const buildZodSchema = (
   return z.object(shape)
 }
 
-export const buildInitialValues = (survey: OnboardingSurvey): SurveyValues => {
+export function buildInitialValues(survey: OnboardingSurvey): SurveyValues {
   const initial: SurveyValues = {}
   for (const field of survey.fields) {
     initial[field.id] = field.type === 'multi' ? [] : ''
@@ -108,10 +115,10 @@ export const buildInitialValues = (survey: OnboardingSurvey): SurveyValues => {
   return initial
 }
 
-export const buildSubmissionPayload = (
+export function buildSubmissionPayload(
   survey: OnboardingSurvey,
   values: SurveyValues
-): Record<string, unknown> => {
+): Record<string, unknown> {
   const payload: Record<string, unknown> = {}
   for (const field of survey.fields) {
     const visible = conditionMatches(field.showWhen, values)

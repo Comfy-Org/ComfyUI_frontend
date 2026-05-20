@@ -111,10 +111,11 @@ export function useCurveEditor({
     dragIndex.value = index
     const svg = svgRef.value
     if (!svg) return
+    const svgEl: SVGSVGElement = svg
 
-    svg.setPointerCapture(e.pointerId)
+    svgEl.setPointerCapture(e.pointerId)
 
-    const onMove = (ev: PointerEvent) => {
+    function onMove(ev: PointerEvent) {
       if (dragIndex.value < 0) return
       const [x, y] = svgCoords(ev)
       const movedPoint: CurvePoint = [x, y]
@@ -125,20 +126,20 @@ export function useCurveEditor({
       dragIndex.value = newPoints.indexOf(movedPoint)
     }
 
-    const endDrag = () => {
+    function endDrag() {
       if (dragIndex.value < 0) return
       dragIndex.value = -1
-      svg.removeEventListener('pointermove', onMove)
-      svg.removeEventListener('pointerup', endDrag)
-      svg.removeEventListener('lostpointercapture', endDrag)
+      svgEl.removeEventListener('pointermove', onMove)
+      svgEl.removeEventListener('pointerup', endDrag)
+      svgEl.removeEventListener('lostpointercapture', endDrag)
       cleanupDrag = null
     }
 
     cleanupDrag = endDrag
 
-    svg.addEventListener('pointermove', onMove)
-    svg.addEventListener('pointerup', endDrag)
-    svg.addEventListener('lostpointercapture', endDrag)
+    svgEl.addEventListener('pointermove', onMove)
+    svgEl.addEventListener('pointerup', endDrag)
+    svgEl.addEventListener('lostpointercapture', endDrag)
   }
 
   onBeforeUnmount(() => {

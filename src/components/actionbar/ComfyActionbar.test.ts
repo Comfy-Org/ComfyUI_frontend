@@ -7,10 +7,10 @@ import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
 import { i18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
-const configureSettings = (
+function configureSettings(
   pinia: ReturnType<typeof createTestingPinia>,
   showRunProgressBar: boolean
-) => {
+) {
   const settingStore = useSettingStore(pinia)
   vi.mocked(settingStore.get).mockImplementation((key) => {
     if (key === 'Comfy.UseNewMenu') return 'Top'
@@ -20,7 +20,7 @@ const configureSettings = (
   })
 }
 
-const renderActionbar = (showRunProgressBar: boolean) => {
+function renderActionbar(showRunProgressBar: boolean) {
   const topMenuContainer = document.createElement('div')
   document.body.appendChild(topMenuContainer)
 

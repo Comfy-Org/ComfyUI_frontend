@@ -21,7 +21,7 @@ vi.mock('@/components/common/LazyImage.vue', () => ({
 }))
 
 describe('HoverDissolveThumbnail', () => {
-  const renderThumbnail = (props = {}) => {
+  function renderThumbnail(props = {}) {
     return render(HoverDissolveThumbnail, {
       props: {
         baseImageSrc: '/base-image.jpg',

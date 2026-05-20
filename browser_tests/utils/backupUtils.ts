@@ -3,9 +3,11 @@ import path from 'path'
 
 type PathParts = readonly [string, ...string[]]
 
-const getBackupPath = (originalPath: string): string => `${originalPath}.bak`
+function getBackupPath(originalPath: string): string {
+  return `${originalPath}.bak`
+}
 
-const resolvePathIfExists = (pathParts: PathParts): string | null => {
+function resolvePathIfExists(pathParts: PathParts): string | null {
   const resolvedPath = path.resolve(...pathParts)
   if (!fs.pathExistsSync(resolvedPath)) {
     console.warn(`Path not found: ${resolvedPath}`)
@@ -14,7 +16,7 @@ const resolvePathIfExists = (pathParts: PathParts): string | null => {
   return resolvedPath
 }
 
-const createScaffoldingCopy = (srcDir: string, destDir: string) => {
+function createScaffoldingCopy(srcDir: string, destDir: string) {
   // Get all items (files and directories) in the source directory
   const items = fs.readdirSync(srcDir, { withFileTypes: true })
 

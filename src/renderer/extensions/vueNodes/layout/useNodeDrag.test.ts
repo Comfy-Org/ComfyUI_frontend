@@ -11,7 +11,9 @@ const testState = vi.hoisted(() => {
   // Imports are unavailable inside vi.hoisted() so shoehorn's fromAny cannot
   // be used here. This local identity function serves the same purpose
   // (runtime no-op cast) until the test is rewritten to use real stores.
-  const placeholder = <T>(v: unknown): T => v as T
+  function placeholder<T>(v: unknown): T {
+    return v as T
+  }
   return {
     selectedNodeIds: placeholder<Ref<Set<string>>>(null),
     selectedItems: placeholder<Ref<unknown[]>>(null),

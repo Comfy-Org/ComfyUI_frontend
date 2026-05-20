@@ -27,7 +27,7 @@ export function usePackInstall(
     return nodePacks.some((pack) => managerStore.isPackInstalling(pack.id))
   })
 
-  const createPayload = (installItem: NodePack) => {
+  function createPayload(installItem: NodePack) {
     if (!installItem.id) {
       throw new Error(t('manager.packInstall.nodeIdRequired'))
     }
@@ -48,10 +48,11 @@ export function usePackInstall(
     }
   }
 
-  const installPack = (item: NodePack) =>
-    managerStore.installPack.call(createPayload(item))
+  function installPack(item: NodePack) {
+    return managerStore.installPack.call(createPayload(item))
+  }
 
-  const performInstallation = async (packs: NodePack[]) => {
+  async function performInstallation(packs: NodePack[]) {
     try {
       const results = await Promise.allSettled(packs.map(installPack))
       const failures = results.filter(
@@ -68,7 +69,7 @@ export function usePackInstall(
     }
   }
 
-  const installAllPacks = async () => {
+  async function installAllPacks() {
     const nodePacks = getNodePacks()
     if (!nodePacks?.length) return
 

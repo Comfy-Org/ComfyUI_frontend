@@ -9,11 +9,11 @@ export function useCanvasTransform() {
   /**
    * Rotates a canvas 90 degrees clockwise or counter-clockwise
    */
-  const rotateCanvas = (
+  function rotateCanvas(
     ctx: CanvasRenderingContext2D,
     canvas: HTMLCanvasElement,
     clockwise: boolean
-  ): ImageData => {
+  ): ImageData {
     const width = canvas.width
     const height = canvas.height
 
@@ -58,11 +58,11 @@ export function useCanvasTransform() {
   /**
    * Mirrors a canvas horizontally or vertically
    */
-  const mirrorCanvas = (
+  function mirrorCanvas(
     ctx: CanvasRenderingContext2D,
     canvas: HTMLCanvasElement,
     horizontal: boolean
-  ): ImageData => {
+  ): ImageData {
     const width = canvas.width
     const height = canvas.height
 
@@ -105,7 +105,7 @@ export function useCanvasTransform() {
   /**
    * Premultiplies alpha for GPU upload
    */
-  const premultiplyData = (data: Uint8ClampedArray): void => {
+  function premultiplyData(data: Uint8ClampedArray): void {
     for (let i = 0; i < data.length; i += 4) {
       const a = data[i + 3] / 255
       data[i] = Math.round(data[i] * a)
@@ -118,10 +118,10 @@ export function useCanvasTransform() {
    * Recreates and updates GPU textures after transformation
    * This is required because GPU textures have immutable dimensions
    */
-  const recreateGPUTextures = async (
+  async function recreateGPUTextures(
     width: number,
     height: number
-  ): Promise<void> => {
+  ): Promise<void> {
     if (
       !store.tgpuRoot ||
       !store.maskCanvas ||
@@ -181,7 +181,7 @@ export function useCanvasTransform() {
   /**
    * Rotates all canvas layers 90 degrees clockwise and updates GPU
    */
-  const rotateClockwise = async (): Promise<void> => {
+  async function rotateClockwise(): Promise<void> {
     const { maskCanvas, maskCtx, rgbCanvas, rgbCtx, imgCanvas, imgCtx } = store
 
     if (
@@ -230,7 +230,7 @@ export function useCanvasTransform() {
   /**
    * Rotates all canvas layers 90 degrees counter-clockwise and updates GPU
    */
-  const rotateCounterclockwise = async (): Promise<void> => {
+  async function rotateCounterclockwise(): Promise<void> {
     const { maskCanvas, maskCtx, rgbCanvas, rgbCtx, imgCanvas, imgCtx } = store
 
     if (
@@ -279,7 +279,7 @@ export function useCanvasTransform() {
   /**
    * Mirrors all canvas layers horizontally and updates GPU
    */
-  const mirrorHorizontal = async (): Promise<void> => {
+  async function mirrorHorizontal(): Promise<void> {
     const { maskCanvas, maskCtx, rgbCanvas, rgbCtx, imgCanvas, imgCtx } = store
 
     if (
@@ -316,7 +316,7 @@ export function useCanvasTransform() {
   /**
    * Mirrors all canvas layers vertically and updates GPU
    */
-  const mirrorVertical = async (): Promise<void> => {
+  async function mirrorVertical(): Promise<void> {
     const { maskCanvas, maskCtx, rgbCanvas, rgbCtx, imgCanvas, imgCtx } = store
 
     if (

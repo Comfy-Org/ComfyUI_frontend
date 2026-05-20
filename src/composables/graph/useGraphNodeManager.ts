@@ -283,7 +283,7 @@ function safeWidgetMapper(
         slotMetadata.get(displayName) ?? slotMetadata.get(widget.name)
 
       // Wrapper callback specific to Nodes 2.0 rendering
-      const callback = (v: unknown) => {
+      function callback(v: unknown) {
         const value = normalizeWidgetValue(v)
         widget.value = value ?? undefined
         // Match litegraph callback signature: (value, canvas, node, pos, event)
@@ -528,7 +528,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   // Non-reactive storage for original LiteGraph nodes
   const nodeRefs = new Map<string, LGraphNode>()
 
-  const refreshNodeSlots = (nodeId: string) => {
+  function refreshNodeSlots(nodeId: string) {
     const nodeRef = nodeRefs.get(nodeId)
     const currentData = vueNodeData.get(nodeId)
 
@@ -543,11 +543,11 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   }
 
   // Get access to original LiteGraph node (non-reactive)
-  const getNode = (id: string): LGraphNode | undefined => {
+  function getNode(id: string): LGraphNode | undefined {
     return nodeRefs.get(id)
   }
 
-  const syncWithGraph = () => {
+  function syncWithGraph() {
     if (!graph?._nodes) return
 
     const currentNodes = new Set(graph._nodes.map((n) => String(n.id)))
@@ -576,10 +576,10 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
    * Handles node addition to the graph - sets up Vue state and spatial indexing
    * Defers position extraction until after potential configure() calls
    */
-  const handleNodeAdded = (
+  function handleNodeAdded(
     node: LGraphNode,
     originalCallback?: (node: LGraphNode) => void
-  ) => {
+  ) {
     const id = String(node.id)
 
     // Store non-reactive reference to original node
@@ -588,7 +588,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     // Extract initial data for Vue (may be incomplete during graph configure)
     vueNodeData.set(id, extractVueNodeData(node))
 
-    const initializeVueNodeLayout = () => {
+    function initializeVueNodeLayout() {
       // Check if the node was removed mid-sequence
       if (!nodeRefs.has(id)) return
 
@@ -638,10 +638,10 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   /**
    * Handles node removal from the graph - cleans up all references
    */
-  const handleNodeRemoved = (
+  function handleNodeRemoved(
     node: LGraphNode,
     originalCallback?: (node: LGraphNode) => void
-  ) => {
+  ) {
     const id = String(node.id)
 
     // Remove node from layout store
@@ -661,11 +661,11 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   /**
    * Creates cleanup function for event listeners and state
    */
-  const createCleanupFunction = (
+  function createCleanupFunction(
     originalOnNodeAdded: ((node: LGraphNode) => void) | undefined,
     originalOnNodeRemoved: ((node: LGraphNode) => void) | undefined,
     originalOnTrigger: ((event: LGraphTriggerEvent) => void) | undefined
-  ) => {
+  ) {
     return () => {
       // Restore original callbacks
       graph.onNodeAdded = originalOnNodeAdded || undefined
@@ -681,7 +681,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   /**
    * Sets up event listeners - now simplified with extracted handlers
    */
-  const setupEventListeners = (): (() => void) => {
+  function setupEventListeners(): () => void {
     // Store original callbacks
     const originalOnNodeAdded = graph.onNodeAdded
     const originalOnNodeRemoved = graph.onNodeRemoved

@@ -118,7 +118,7 @@ let xterm: Terminal | undefined
 /**
  * Handles installation stage updates from the desktop
  */
-const updateInstallStage = (stageInfo: InstallStageInfo) => {
+function updateInstallStage(stageInfo: InstallStageInfo) {
   console.warn('[InstallStage.onUpdate] Received:', {
     stage: stageInfo.stage,
     progress: stageInfo.progress,
@@ -183,17 +183,17 @@ const displayStatusText = computed(() => {
   return currentStatusLabel.value
 })
 
-const updateProgress = ({ status: newStatus }: { status: ProgressStatus }) => {
+function updateProgress({ status: newStatus }: { status: ProgressStatus }) {
   status.value = newStatus
 
   // Make critical error screen more obvious.
   if (newStatus === ProgressStatus.ERROR) terminalVisible.value = false
 }
 
-const terminalCreated = (
+function terminalCreated(
   { terminal, useAutoSize }: ReturnType<typeof useTerminal>,
   root: Ref<HTMLElement | undefined>
-) => {
+) {
   xterm = terminal
 
   useAutoSize({ root, autoRows: true, autoCols: true })
@@ -206,11 +206,15 @@ const terminalCreated = (
   terminal.options.cursorInactiveStyle = 'block'
 }
 
-const troubleshoot = () => electron.startTroubleshooting()
-const reportIssue = () => {
+function troubleshoot() {
+  return electron.startTroubleshooting()
+}
+function reportIssue() {
   window.open('https://forum.comfy.org/c/v1-feedback/', '_blank')
 }
-const openLogs = () => electron.openLogsFolder()
+function openLogs() {
+  return electron.openLogsFolder()
+}
 
 let cleanupInstallStageListener: (() => void) | undefined
 

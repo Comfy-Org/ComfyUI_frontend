@@ -12,16 +12,16 @@ export interface AudioRecordingError {
 
 let isEncoderRegistered: boolean = false
 
-export const useAudioService = () => {
-  const handleError = (
+export function useAudioService() {
+  function handleError(
     type: AudioRecordingError['type'],
     message: string,
     originalError?: unknown
-  ) => {
+  ) {
     console.error(`Audio Service Error (${type}):`, message, originalError)
   }
 
-  const stopAllTracks = (currentStream: MediaStream | null) => {
+  function stopAllTracks(currentStream: MediaStream | null) {
     if (currentStream) {
       currentStream.getTracks().forEach((track) => {
         track.stop()
@@ -30,7 +30,7 @@ export const useAudioService = () => {
     }
   }
 
-  const registerWavEncoder = async (): Promise<void> => {
+  async function registerWavEncoder(): Promise<void> {
     if (isEncoderRegistered) {
       return
     }
@@ -50,7 +50,7 @@ export const useAudioService = () => {
     }
   }
 
-  const convertBlobToFileAndSubmit = async (blob: Blob): Promise<string> => {
+  async function convertBlobToFileAndSubmit(blob: Blob): Promise<string> {
     const name = `recording-${Date.now()}.wav`
     const file = new File([blob], name, { type: blob.type || 'audio/wav' })
 

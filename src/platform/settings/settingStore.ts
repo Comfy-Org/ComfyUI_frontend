@@ -11,7 +11,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 
-export const getSettingInfo = (setting: SettingParams) => {
+export function getSettingInfo(setting: SettingParams) {
   const parts = setting.category || setting.id.split('.')
   return {
     category: parts[0] ?? 'Other',

@@ -47,7 +47,7 @@ const exportFormats = [
 
 const exportFormat = ref('obj')
 
-const exportModel = (format: string) => {
+function exportModel(format: string) {
   emit('exportModel', format)
 }
 </script>

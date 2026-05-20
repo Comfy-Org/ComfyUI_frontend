@@ -125,7 +125,7 @@ export const Interactive: Story = {
     components: { TabList, Tab },
     setup() {
       const activeTab = ref('input')
-      const handleTabChange = (value: string) => {
+      function handleTabChange(value: string) {
         console.log('Tab changed to:', value)
       }
       return { activeTab, handleTabChange }

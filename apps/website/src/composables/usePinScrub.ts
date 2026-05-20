@@ -29,7 +29,7 @@ function interpolateY(
   contentH: number,
   vpH: number
 ) {
-  const clampedTarget = (i: number) => {
+  function clampedTarget(i: number) {
     const center = buttonCenters[i] ?? 0
     return Math.max(-(contentH - vpH), Math.min(0, vpH / 2 - center))
   }

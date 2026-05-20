@@ -26,7 +26,7 @@ export const useApplyChanges = createSharedComposable(() => {
     const originalToastSetting = settingStore.get(
       'Comfy.Toast.DisableReconnectingToast'
     )
-    const onReconnect = async () => {
+    async function onReconnect() {
       try {
         comfyManagerStore.setStale()
         await useCommandStore().execute('Comfy.RefreshNodeDefinitions')

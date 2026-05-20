@@ -20,18 +20,24 @@ import type { ComponentAttrs } from 'vue-component-type-helpers'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
 // Lazy loaders for dialogs - components are loaded on first use
-const lazyApiNodesSignInContent = () =>
-  import('@/components/dialog/content/ApiNodesSignInContent.vue')
-const lazySignInContent = () =>
-  import('@/components/dialog/content/SignInContent.vue')
-const lazyUpdatePasswordContent = () =>
-  import('@/components/dialog/content/UpdatePasswordContent.vue')
-const lazyComfyOrgHeader = () =>
-  import('@/components/dialog/header/ComfyOrgHeader.vue')
-const lazyCloudNotificationContent = () =>
-  import('@/platform/cloud/notification/components/CloudNotificationContent.vue')
-const lazyPublishDialog = () =>
-  import('@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue')
+function lazyApiNodesSignInContent() {
+  return import('@/components/dialog/content/ApiNodesSignInContent.vue')
+}
+function lazySignInContent() {
+  return import('@/components/dialog/content/SignInContent.vue')
+}
+function lazyUpdatePasswordContent() {
+  return import('@/components/dialog/content/UpdatePasswordContent.vue')
+}
+function lazyComfyOrgHeader() {
+  return import('@/components/dialog/header/ComfyOrgHeader.vue')
+}
+function lazyCloudNotificationContent() {
+  return import('@/platform/cloud/notification/components/CloudNotificationContent.vue')
+}
+function lazyPublishDialog() {
+  return import('@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue')
+}
 
 export type ConfirmationDialogType =
   | 'default'
@@ -79,7 +85,7 @@ export interface ExecutionErrorDialogInput {
   traceback: string[]
 }
 
-export const useDialogService = () => {
+export function useDialogService() {
   const dialogStore = useDialogStore()
 
   function showExecutionErrorDialog(executionError: ExecutionErrorDialogInput) {

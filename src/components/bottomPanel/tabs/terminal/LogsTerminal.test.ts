@@ -68,8 +68,8 @@ const i18n = createI18n({
   }
 })
 
-const renderLogsTerminal = () =>
-  render(LogsTerminal, {
+function renderLogsTerminal() {
+  return render(LogsTerminal, {
     global: {
       plugins: [
         createTestingPinia({
@@ -81,6 +81,7 @@ const renderLogsTerminal = () =>
       ]
     }
   })
+}
 
 // Silence the production console.error calls in error-path tests. Vitest
 // isolates this file's module graph so the spy does not affect other files.
@@ -88,7 +89,7 @@ vi.spyOn(console, 'error').mockImplementation(() => {})
 
 // Resolve a getRawLogs call manually to drive deterministic timing in tests
 // that need to observe behavior mid-fetch.
-const deferredRawLogs = () => {
+function deferredRawLogs() {
   let resolve!: (value: { entries: { m: string }[] }) => void
   let reject!: (err: unknown) => void
   const promise = new Promise<{ entries: { m: string }[] }>((res, rej) => {

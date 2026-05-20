@@ -510,7 +510,7 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     const brokenAfter = 'http://127.0.0.1:1/broken2.png'
 
     const pageErrors: Error[] = []
-    const onPageError = (err: Error) => {
+    function onPageError(err: Error) {
       pageErrors.push(err)
     }
     comfyPage.page.on('pageerror', onPageError)

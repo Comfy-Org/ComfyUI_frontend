@@ -137,23 +137,23 @@ const hasBackgroundImage = computed(
 const colorPickerRef = ref<HTMLInputElement | null>(null)
 const imagePickerRef = ref<HTMLInputElement | null>(null)
 
-const toggleGrid = () => {
+function toggleGrid() {
   showGrid.value = !showGrid.value
 }
 
-const updateBackgroundColor = (color: string) => {
+function updateBackgroundColor(color: string) {
   backgroundColor.value = color
 }
 
-const openColorPicker = () => {
+function openColorPicker() {
   colorPickerRef.value?.click()
 }
 
-const openImagePicker = () => {
+function openImagePicker() {
   imagePickerRef.value?.click()
 }
 
-const uploadBackgroundImage = (event: Event) => {
+function uploadBackgroundImage(event: Event) {
   const input = event.target as HTMLInputElement
 
   if (input.files && input.files[0]) {
@@ -161,11 +161,11 @@ const uploadBackgroundImage = (event: Event) => {
   }
 }
 
-const removeBackgroundImage = () => {
+function removeBackgroundImage() {
   emit('updateBackgroundImage', null)
 }
 
-const toggleBackgroundRenderMode = () => {
+function toggleBackgroundRenderMode() {
   backgroundRenderMode.value =
     backgroundRenderMode.value === 'panorama' ? 'tiled' : 'panorama'
 }

@@ -52,8 +52,9 @@ describe(NodeSearchFilterBar, () => {
     return { user, onSelectCategory, onUpdateIsSidebarOpen }
   }
 
-  const buttonTexts = () =>
-    screen.getAllByRole('button').map((b) => b.textContent?.trim())
+  function buttonTexts() {
+    return screen.getAllByRole('button').map((b) => b.textContent?.trim())
+  }
 
   it.for([
     { prop: 'hasFavorites', label: 'Bookmarked' },

@@ -21,10 +21,12 @@ vi.mock('@/stores/executionStore', async () => {
   }
 })
 
-const execState = (): {
+function execState(): {
   executingNodeIds: Array<string | number>
   isIdle: boolean
-} => execHolder.state!
+} {
+  return execHolder.state!
+}
 
 import TextPreviewWidget from './TextPreviewWidget.vue'
 

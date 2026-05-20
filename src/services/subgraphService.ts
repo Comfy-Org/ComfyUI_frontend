@@ -10,7 +10,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import { useLitegraphService } from './litegraphService'
 
-export const useSubgraphService = () => {
+export function useSubgraphService() {
   const nodeDefStore = useNodeDefStore()
 
   /** Loads a single subgraph definition and registers it with the node def store */

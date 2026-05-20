@@ -95,11 +95,11 @@ const { isActiveSubscription, manageSubscription } = useBillingContext()
 const { isLoadingSupport, handleMessageSupport, handleLearnMoreClick } =
   useSubscriptionActions()
 
-const handleInvoiceHistory = async () => {
+async function handleInvoiceHistory() {
   await manageSubscription()
 }
 
-const handleOpenPartnerNodesInfo = () => {
+function handleOpenPartnerNodesInfo() {
   window.open(
     buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true }),
     '_blank'

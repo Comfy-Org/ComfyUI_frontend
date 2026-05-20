@@ -37,14 +37,14 @@ export function useWorkflowActionsService() {
    *   toast.add({ severity: 'success', detail: 'Exported!' })
    * }
    */
-  const exportWorkflowAction = async (
+  async function exportWorkflowAction(
     workflow: ComfyWorkflowJSON | null,
     defaultFilename: string
   ): Promise<{
     success: boolean
     cancelled?: boolean
     error?: string
-  }> => {
+  }> {
     if (!workflow) {
       return { success: false, error: 'No workflow data available' }
     }
@@ -93,13 +93,13 @@ export function useWorkflowActionsService() {
    *   toast.add({ severity: 'error', detail: result.error })
    * }
    */
-  const openWorkflowAction = async (
+  async function openWorkflowAction(
     workflow: ComfyWorkflowJSON | null,
     filename: string
   ): Promise<{
     success: boolean
     error?: string
-  }> => {
+  }> {
     if (!workflow) {
       return { success: false, error: 'No workflow data available' }
     }

@@ -6,19 +6,21 @@ import { flatAndCategorizeSelectedItems, searchWidgets } from './shared'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 describe('searchWidgets', () => {
-  const createWidget = (
+  function createWidget(
     name: string,
     type: string,
     value?: string,
     label?: string
-  ): { widget: IBaseWidget } => ({
-    widget: {
-      name,
-      type,
-      value,
-      label
-    } as IBaseWidget
-  })
+  ): { widget: IBaseWidget } {
+    return {
+      widget: {
+        name,
+        type,
+        value,
+        label
+      } as IBaseWidget
+    }
+  }
 
   it('should return all widgets when query is empty', () => {
     const widgets = [

@@ -84,7 +84,7 @@ vi.mock(
   })
 )
 
-const waitForPromises = async () => {
+async function waitForPromises() {
   await new Promise((resolve) => setTimeout(resolve, 16))
   await nextTick()
 }

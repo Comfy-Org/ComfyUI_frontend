@@ -78,9 +78,9 @@ const formItem = computed(() => {
 
 const settingStore = useSettingStore()
 const settingValue = computed(() => settingStore.get(props.setting.id))
-const updateSettingValue = async <K extends keyof Settings>(
+async function updateSettingValue<K extends keyof Settings>(
   newValue: Settings[K]
-) => {
+) {
   const telemetry = useTelemetry()
   const settingId = props.setting.id
   const previousValue = settingValue.value

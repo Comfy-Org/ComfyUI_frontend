@@ -30,10 +30,13 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
 
   // For a node in custom bookmark folders, check if its nodePath is in bookmarksSet
   // For a node in the nodeDefStore, check if its name is bookmarked at top level
-  const isBookmarked = (node: ComfyNodeDefImpl) =>
-    bookmarksSet.value.has(node.nodePath) || bookmarksSet.value.has(node.name)
+  function isBookmarked(node: ComfyNodeDefImpl) {
+    return (
+      bookmarksSet.value.has(node.nodePath) || bookmarksSet.value.has(node.name)
+    )
+  }
 
-  const toggleBookmark = async (node: ComfyNodeDefImpl) => {
+  async function toggleBookmark(node: ComfyNodeDefImpl) {
     if (isBookmarked(node)) {
       await deleteBookmark(node.nodePath)
       // Delete the bookmark at the top level if it exists
@@ -45,7 +48,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     }
   }
 
-  const buildBookmarkTree = (bookmarks: string[]) => {
+  function buildBookmarkTree(bookmarks: string[]) {
     const bookmarkNodes = bookmarks
       .map((bookmark: string) => {
         if (bookmark.endsWith('/')) return createDummyFolderNodeDef(bookmark)
@@ -65,31 +68,31 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     return buildNodeDefTree(bookmarkNodes)
   }
 
-  const addBookmark = async (nodePath: string) => {
+  async function addBookmark(nodePath: string) {
     await settingStore.set(BOOKMARK_SETTING_ID, [...bookmarks.value, nodePath])
   }
 
-  const deleteBookmark = async (nodePath: string) => {
+  async function deleteBookmark(nodePath: string) {
     await settingStore.set(
       BOOKMARK_SETTING_ID,
       bookmarks.value.filter((b: string) => b !== nodePath)
     )
   }
 
-  const addNewBookmarkFolder = async (
+  async function addNewBookmarkFolder(
     parent: ComfyNodeDefImpl | undefined,
     folderName: string
-  ) => {
+  ) {
     const parentPath = parent ? parent.nodePath : ''
     const newFolderPath = parentPath + folderName + '/'
     await addBookmark(newFolderPath)
     return newFolderPath
   }
 
-  const renameBookmarkFolder = async (
+  async function renameBookmarkFolder(
     folderNode: ComfyNodeDefImpl,
     newName: string
-  ) => {
+  ) {
     if (!folderNode.isDummyFolder) {
       throw new Error('Cannot rename non-folder node')
     }
@@ -121,7 +124,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     await renameBookmarkCustomization(folderNode.nodePath, newNodePath)
   }
 
-  const deleteBookmarkFolder = async (folderNode: ComfyNodeDefImpl) => {
+  async function deleteBookmarkFolder(folderNode: ComfyNodeDefImpl) {
     if (!folderNode.isDummyFolder) {
       throw new Error('Cannot delete non-folder node')
     }
@@ -139,10 +142,10 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     Record<string, BookmarkCustomization>
   >(() => settingStore.get('Comfy.NodeLibrary.BookmarksCustomization'))
 
-  const updateBookmarkCustomization = async (
+  async function updateBookmarkCustomization(
     nodePath: string,
     customization: BookmarkCustomization
-  ) => {
+  ) {
     const currentCustomization = bookmarksCustomization.value[nodePath] || {}
     const newCustomization = { ...currentCustomization, ...customization }
 
@@ -165,17 +168,17 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     }
   }
 
-  const deleteBookmarkCustomization = async (nodePath: string) => {
+  async function deleteBookmarkCustomization(nodePath: string) {
     await settingStore.set('Comfy.NodeLibrary.BookmarksCustomization', {
       ...bookmarksCustomization.value,
       [nodePath]: undefined
     } as Record<string, BookmarkCustomization>)
   }
 
-  const renameBookmarkCustomization = async (
+  async function renameBookmarkCustomization(
     oldNodePath: string,
     newNodePath: string
-  ) => {
+  ) {
     const updatedCustomization = { ...bookmarksCustomization.value }
     if (updatedCustomization[oldNodePath]) {
       updatedCustomization[newNodePath] = updatedCustomization[oldNodePath]

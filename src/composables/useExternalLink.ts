@@ -56,13 +56,13 @@ export function useExternalLink() {
    * // => 'https://docs.comfy.org/zh-CN/installation/desktop/macos' (if Chinese + macOS)
    * ```
    */
-  const buildDocsUrl = (
+  function buildDocsUrl(
     path: string,
     options: {
       includeLocale?: boolean
       platform?: boolean
     } = {}
-  ): string => {
+  ): string {
     const { includeLocale = false, platform: includePlatform = false } = options
 
     let url = 'https://docs.comfy.org'

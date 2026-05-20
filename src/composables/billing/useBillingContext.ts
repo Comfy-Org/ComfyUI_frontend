@@ -67,14 +67,14 @@ function useBillingContextInternal(): BillingContext {
     (BillingState & BillingActions) | null
   >(null)
 
-  const getLegacyBilling = () => {
+  function getLegacyBilling() {
     if (!legacyBillingRef.value) {
       legacyBillingRef.value = useLegacyBilling()
     }
     return legacyBillingRef.value
   }
 
-  const getWorkspaceBilling = () => {
+  function getWorkspaceBilling() {
     if (!workspaceBillingRef.value) {
       workspaceBillingRef.value = useWorkspaceBilling()
     }

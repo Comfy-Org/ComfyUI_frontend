@@ -39,12 +39,13 @@ describe('NodeSearchCategorySidebar', () => {
       global: { plugins: [testI18n] }
     })
 
-    const rerender = (overrides: SidebarProps) =>
-      result.rerender({
+    function rerender(overrides: SidebarProps) {
+      return result.rerender({
         ...initialProps,
         ...overrides,
         'onUpdate:selectedCategory': onUpdateSelectedCategory
       })
+    }
 
     return { user, onUpdateSelectedCategory, rerender }
   }

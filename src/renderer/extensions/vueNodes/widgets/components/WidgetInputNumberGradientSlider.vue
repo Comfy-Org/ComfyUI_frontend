@@ -61,7 +61,7 @@ const modelValue = defineModel<number>({ default: 0 })
 
 const timesEmptied = ref(0)
 
-const handleNumberInputUpdate = (newValue: number | undefined) => {
+function handleNumberInputUpdate(newValue: number | undefined) {
   if (newValue !== undefined) {
     modelValue.value = newValue
     return

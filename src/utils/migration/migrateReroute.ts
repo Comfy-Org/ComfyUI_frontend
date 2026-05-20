@@ -313,9 +313,9 @@ class ConversionContext {
 /**
  * Main function to migrate legacy reroute nodes to native reroute points
  */
-export const migrateLegacyRerouteNodes = (
+export function migrateLegacyRerouteNodes(
   workflow: WorkflowJSON04
-): WorkflowJSON04 => {
+): WorkflowJSON04 {
   // Find all legacy Reroute nodes
   const legacyRerouteNodes = findLegacyRerouteNodes(workflow)
 

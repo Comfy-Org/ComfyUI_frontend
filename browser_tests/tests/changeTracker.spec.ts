@@ -219,7 +219,7 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
     comfyPage
   }) => {
     const node = (await comfyPage.nodeOps.getFirstNodeRef())!
-    const bypassAndPin = async () => {
+    async function bypassAndPin() {
       await beforeChange(comfyPage)
       await comfyPage.keyboard.bypass()
       await expect(node).toBeBypassed()
@@ -228,14 +228,14 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
       await afterChange(comfyPage)
     }
 
-    const collapse = async () => {
+    async function collapse() {
       await beforeChange(comfyPage)
       await node.click('collapse', { moveMouseToEmptyArea: true })
       await expect(node).toBeCollapsed()
       await afterChange(comfyPage)
     }
 
-    const multipleChanges = async () => {
+    async function multipleChanges() {
       await beforeChange(comfyPage)
       // Call other actions that uses begin/endChange
       await node.click('title')

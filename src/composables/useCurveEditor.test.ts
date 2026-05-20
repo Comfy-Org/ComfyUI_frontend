@@ -17,7 +17,7 @@ vi.mock('@/components/curve/curveUtils', () => ({
   createInterpolator: mockCreateInterpolator
 }))
 
-const ensureMatrixTransformPolyfill = () => {
+function ensureMatrixTransformPolyfill() {
   const proto = DOMPoint.prototype as DOMPoint & {
     matrixTransform?: (m: DOMMatrix) => DOMPoint
   }
@@ -28,7 +28,7 @@ const ensureMatrixTransformPolyfill = () => {
   }
 }
 
-const createSvgElement = (): SVGSVGElement => {
+function createSvgElement(): SVGSVGElement {
   const svg = document.createElementNS(
     'http://www.w3.org/2000/svg',
     'svg'
@@ -39,7 +39,7 @@ const createSvgElement = (): SVGSVGElement => {
   return svg
 }
 
-const createPointerEvent = (
+function createPointerEvent(
   type: string,
   init: {
     clientX?: number
@@ -48,8 +48,8 @@ const createPointerEvent = (
     pointerId?: number
     ctrlKey?: boolean
   } = {}
-): PointerEvent =>
-  new PointerEvent(type, {
+): PointerEvent {
+  return new PointerEvent(type, {
     clientX: init.clientX ?? 0,
     clientY: init.clientY ?? 0,
     button: init.button ?? 0,
@@ -57,6 +57,7 @@ const createPointerEvent = (
     ctrlKey: init.ctrlKey ?? false,
     bubbles: true
   })
+}
 
 interface HarnessOptions {
   points?: CurvePoint[]
@@ -72,7 +73,7 @@ interface Harness {
   unmount: () => void
 }
 
-const mountCurveEditor = (opts: HarnessOptions = {}): Harness => {
+function mountCurveEditor(opts: HarnessOptions = {}): Harness {
   const svg = opts.svg === null ? null : (opts.svg ?? createSvgElement())
   const svgRef = ref<SVGSVGElement | null>(svg)
   const modelValue = ref<CurvePoint[]>(

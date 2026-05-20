@@ -10,8 +10,8 @@ import type {
 import WidgetInputNumber from './WidgetInputNumber.vue'
 import { createMockWidget } from './widgetTestUtils'
 
-const variantStub = (name: string, testid: string) =>
-  defineComponent({
+function variantStub(name: string, testid: string) {
+  return defineComponent({
     name,
     props: {
       widget: { type: Object, default: () => ({}) },
@@ -19,6 +19,7 @@ const variantStub = (name: string, testid: string) =>
     },
     template: `<div data-testid="${testid}" :data-model-value="String(modelValue)" :data-widget-type="widget?.type" />`
   })
+}
 
 const WithControlStub = defineComponent({
   name: 'WidgetWithControl',
@@ -49,23 +50,25 @@ const globalConfig = {
   }
 }
 
-const makeWidget = (
+function makeWidget(
   type: string,
   overrides: Partial<SimplifiedWidget<number>> = {}
-): SimplifiedWidget<number> =>
-  createMockWidget<number>({
+): SimplifiedWidget<number> {
+  return createMockWidget<number>({
     value: 0,
     name: 'num',
     type,
     options: {},
     ...overrides
   })
+}
 
-const mount = (widget: SimplifiedWidget<number>, modelValue = 0) =>
-  render(WidgetInputNumber, {
+function mount(widget: SimplifiedWidget<number>, modelValue = 0) {
+  return render(WidgetInputNumber, {
     global: globalConfig,
     props: { widget, modelValue }
   })
+}
 
 describe('WidgetInputNumber variant selection', () => {
   it('renders input variant for type "int"', () => {

@@ -45,7 +45,7 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
     const requestPromise = comfyPage.page.waitForResponse('**/api/prompt')
 
     // Find and set the width on the latent node
-    const triggerChange = async (value: number) => {
+    async function triggerChange(value: number) {
       return await comfyPage.page.evaluate((value) => {
         const node = window.app!.graph!._nodes.find(
           (n) => n.type === 'EmptyLatentImage'
@@ -59,7 +59,7 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
     }
 
     // Trigger a status websocket message
-    const triggerStatus = (queueSize: number) => {
+    function triggerStatus(queueSize: number) {
       ws.send(
         JSON.stringify({
           type: 'status',
@@ -75,7 +75,7 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
     }
 
     // Extract the width from the queue response
-    const getQueuedWidth = async (resp: Promise<Response>) => {
+    async function getQueuedWidth(resp: Promise<Response>) {
       const obj = await (await resp).json()
       return obj['__request']['prompt']['5']['inputs']['width']
     }

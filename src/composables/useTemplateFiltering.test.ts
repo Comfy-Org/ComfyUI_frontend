@@ -79,7 +79,9 @@ describe('useTemplateFiltering', () => {
   })
 
   it('sorts templates by VRAM from low to high and pushes missing values last', () => {
-    const gb = (value: number) => value * 1024 ** 3
+    function gb(value: number) {
+      return value * 1024 ** 3
+    }
 
     const templates = ref<TemplateInfo[]>([
       {
@@ -484,8 +486,9 @@ describe('useTemplateFiltering', () => {
   })
 
   describe('Distribution filtering', () => {
-    const setDistribution = (distribution: 'desktop' | 'localhost' | 'cloud') =>
-      vi.stubGlobal('__DISTRIBUTION__', distribution)
+    function setDistribution(distribution: 'desktop' | 'localhost' | 'cloud') {
+      return vi.stubGlobal('__DISTRIBUTION__', distribution)
+    }
 
     const cloudTemplate: TemplateInfo = {
       name: 'cloud-only',

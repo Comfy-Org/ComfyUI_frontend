@@ -14,23 +14,25 @@ describe('useNodeDefStore', () => {
     store = useNodeDefStore()
   })
 
-  const createMockNodeDef = (
+  function createMockNodeDef(
     overrides: Partial<ComfyNodeDef> = {}
-  ): ComfyNodeDef => ({
-    name: 'TestNode',
-    display_name: 'Test Node',
-    category: 'test',
-    python_module: 'test_module',
-    description: 'Test node',
-    input: {},
-    output: [],
-    output_is_list: [],
-    output_name: [],
-    output_node: false,
-    deprecated: false,
-    experimental: false,
-    ...overrides
-  })
+  ): ComfyNodeDef {
+    return {
+      name: 'TestNode',
+      display_name: 'Test Node',
+      category: 'test',
+      python_module: 'test_module',
+      description: 'Test node',
+      input: {},
+      output: [],
+      output_is_list: [],
+      output_name: [],
+      output_node: false,
+      deprecated: false,
+      experimental: false,
+      ...overrides
+    }
+  }
 
   describe('filter registry', () => {
     it('should register a new filter', () => {

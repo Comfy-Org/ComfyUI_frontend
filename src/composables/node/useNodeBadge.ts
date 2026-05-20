@@ -23,7 +23,7 @@ import { NodeBadgeMode } from '@/types/nodeSource'
  * - Node life cycle badge
  * - API node credits badge
  */
-export const useNodeBadge = () => {
+export function useNodeBadge() {
   const settingStore = useSettingStore()
   const extensionStore = useExtensionStore()
   const colorPaletteStore = useColorPaletteStore()
@@ -190,7 +190,7 @@ export const useNodeBadge = () => {
           let lastLabel = nodePricing.getNodeDisplayPrice(node)
           let lastBadge = priceBadge.getCreditsBadge(lastLabel)
 
-          const creditsBadgeGetter: () => LGraphBadge = () => {
+          function creditsBadgeGetter() {
             const label = nodePricing.getNodeDisplayPrice(node)
             if (label !== lastLabel) {
               lastLabel = label

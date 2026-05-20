@@ -7,11 +7,11 @@ import { createGraphThumbnail } from './graphThumbnailRenderer'
 // Store thumbnails for each workflow
 const workflowThumbnails = ref<Map<string, string>>(new Map())
 
-export const useWorkflowThumbnail = () => {
+export function useWorkflowThumbnail() {
   /**
    * Capture a thumbnail of the canvas
    */
-  const createMinimapPreview = (): Promise<string | null> => {
+  function createMinimapPreview(): Promise<string | null> {
     try {
       const thumbnailDataUrl = createGraphThumbnail()
       return Promise.resolve(thumbnailDataUrl)
@@ -24,7 +24,7 @@ export const useWorkflowThumbnail = () => {
   /**
    * Store a thumbnail for a workflow
    */
-  const storeThumbnail = async (workflow: ComfyWorkflow) => {
+  async function storeThumbnail(workflow: ComfyWorkflow) {
     const thumbnail = await createMinimapPreview()
     if (thumbnail) {
       // Clean up existing thumbnail if it exists
@@ -39,14 +39,14 @@ export const useWorkflowThumbnail = () => {
   /**
    * Get a thumbnail for a workflow
    */
-  const getThumbnail = (workflowKey: string): string | undefined => {
+  function getThumbnail(workflowKey: string): string | undefined {
     return workflowThumbnails.value.get(workflowKey)
   }
 
   /**
    * Clear a thumbnail for a workflow
    */
-  const clearThumbnail = (workflowKey: string) => {
+  function clearThumbnail(workflowKey: string) {
     const thumbnail = workflowThumbnails.value.get(workflowKey)
     if (thumbnail) {
       URL.revokeObjectURL(thumbnail)
@@ -57,7 +57,7 @@ export const useWorkflowThumbnail = () => {
   /**
    * Clear all thumbnails
    */
-  const clearAllThumbnails = () => {
+  function clearAllThumbnails() {
     for (const thumbnail of workflowThumbnails.value.values()) {
       URL.revokeObjectURL(thumbnail)
     }
@@ -67,7 +67,7 @@ export const useWorkflowThumbnail = () => {
   /**
    * Move a thumbnail from one workflow key to another (useful for workflow renaming)
    */
-  const moveWorkflowThumbnail = (oldKey: string, newKey: string) => {
+  function moveWorkflowThumbnail(oldKey: string, newKey: string) {
     // Don't do anything if moving to the same key
     if (oldKey === newKey) return
 

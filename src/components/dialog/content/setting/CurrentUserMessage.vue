@@ -31,7 +31,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useUserStore } from '@/stores/userStore'
 
 const userStore = useUserStore()
-const logout = async () => {
+async function logout() {
   await userStore.logout()
   window.location.reload()
 }

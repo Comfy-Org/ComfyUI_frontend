@@ -5,8 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import BrushCursor from '@/components/maskeditor/BrushCursor.vue'
 import { BrushShape } from '@/extensions/core/maskeditor/types'
 
-const initialMock = () =>
-  reactive({
+function initialMock() {
+  return reactive({
     brushVisible: true,
     brushPreviewGradientVisible: false,
     brushSettings: {
@@ -20,6 +20,7 @@ const initialMock = () =>
     cursorPoint: { x: 100, y: 50 },
     panOffset: { x: 0, y: 0 }
   })
+}
 
 let mockStore: ReturnType<typeof initialMock>
 
@@ -27,17 +28,23 @@ vi.mock('@/stores/maskEditorStore', () => ({
   useMaskEditorStore: () => mockStore
 }))
 
-const styleOf = (el: Element): string => el.getAttribute('style') ?? ''
+function styleOf(el: Element): string {
+  return el.getAttribute('style') ?? ''
+}
 
-const renderCursor = (containerRef?: HTMLElement) =>
-  render(BrushCursor, {
+function renderCursor(containerRef?: HTMLElement) {
+  return render(BrushCursor, {
     props: containerRef ? { containerRef } : {}
   })
+}
 
-const getBrushEl = (): HTMLElement => screen.getByTestId('brush-cursor')
+function getBrushEl(): HTMLElement {
+  return screen.getByTestId('brush-cursor')
+}
 
-const getGradientEl = (): HTMLElement =>
-  screen.getByTestId('brush-cursor-gradient')
+function getGradientEl(): HTMLElement {
+  return screen.getByTestId('brush-cursor-gradient')
+}
 
 describe('BrushCursor', () => {
   beforeEach(() => {

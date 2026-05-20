@@ -67,7 +67,7 @@ defineProps<{
   filter: MaintenanceFilter
 }>()
 
-const executeTask = async (task: MaintenanceTask) => {
+async function executeTask(task: MaintenanceTask) {
   let message: string | undefined
 
   try {
@@ -87,7 +87,7 @@ const executeTask = async (task: MaintenanceTask) => {
 }
 
 // Commands
-const confirmButton = async (event: MouseEvent, task: MaintenanceTask) => {
+async function confirmButton(event: MouseEvent, task: MaintenanceTask) {
   if (!task.requireConfirm) {
     await executeTask(task)
     return

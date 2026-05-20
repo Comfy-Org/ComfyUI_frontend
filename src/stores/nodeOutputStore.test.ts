@@ -31,16 +31,19 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-const createMockNode = (overrides: Record<string, unknown> = {}): LGraphNode =>
-  fromAny<LGraphNode, unknown>({
+function createMockNode(overrides: Record<string, unknown> = {}): LGraphNode {
+  return fromAny<LGraphNode, unknown>({
     id: 1,
     type: 'TestNode',
     ...overrides
   })
+}
 
-const createMockOutputs = (
+function createMockOutputs(
   images?: ExecutedWsMessage['output']['images']
-): ExecutedWsMessage['output'] => ({ images })
+): ExecutedWsMessage['output'] {
+  return { images }
+}
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
   executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)

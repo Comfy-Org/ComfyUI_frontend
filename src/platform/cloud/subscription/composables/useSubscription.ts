@@ -114,23 +114,22 @@ function useSubscriptionInternal() {
     return `${getComfyApiBaseUrl()}${path}`
   }
 
-  const getCheckoutAttributionForCloud =
-    async (): Promise<CheckoutAttributionMetadata> => {
-      if (__DISTRIBUTION__ !== 'cloud') {
-        return {}
-      }
-
-      const { getCheckoutAttribution } =
-        await import('@/platform/telemetry/utils/checkoutAttribution')
-
-      return getCheckoutAttribution()
+  async function getCheckoutAttributionForCloud(): Promise<CheckoutAttributionMetadata> {
+    if (__DISTRIBUTION__ !== 'cloud') {
+      return {}
     }
+
+    const { getCheckoutAttribution } =
+      await import('@/platform/telemetry/utils/checkoutAttribution')
+
+    return getCheckoutAttribution()
+  }
 
   let pendingCheckoutRecoveryTimeout: number | null = null
   let pendingCheckoutRecoveryAttempt = 0
   let isRecoveringPendingCheckout = false
 
-  const stopPendingCheckoutRecovery = () => {
+  function stopPendingCheckoutRecovery() {
     if (pendingCheckoutRecoveryTimeout !== null && defaultWindow) {
       defaultWindow.clearTimeout(pendingCheckoutRecoveryTimeout)
     }
@@ -139,7 +138,7 @@ function useSubscriptionInternal() {
     pendingCheckoutRecoveryAttempt = 0
   }
 
-  const schedulePendingCheckoutRecovery = () => {
+  function schedulePendingCheckoutRecovery() {
     if (
       !defaultWindow ||
       pendingCheckoutRecoveryTimeout !== null ||
@@ -165,9 +164,9 @@ function useSubscriptionInternal() {
     }, nextDelay)
   }
 
-  const syncPendingSubscriptionSuccess = (
+  function syncPendingSubscriptionSuccess(
     statusData: CloudSubscriptionStatusResponse
-  ) => {
+  ) {
     const metadata = consumePendingSubscriptionCheckoutSuccess(statusData)
 
     if (!metadata) {
@@ -186,7 +185,7 @@ function useSubscriptionInternal() {
     stopPendingCheckoutRecovery()
   }
 
-  const buildAuthHeaders = async (): Promise<Record<string, string>> => {
+  async function buildAuthHeaders(): Promise<Record<string, string>> {
     const authHeader = await getAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
@@ -234,9 +233,9 @@ function useSubscriptionInternal() {
     })
   }, reportError)
 
-  const showSubscriptionDialog = (options?: {
+  function showSubscriptionDialog(options?: {
     reason?: SubscriptionDialogReason
-  }) => {
+  }) {
     if (isCloud) {
       useTelemetry()?.trackSubscription('modal_opened', {
         current_tier: subscriptionTier.value?.toLowerCase(),
@@ -251,8 +250,9 @@ function useSubscriptionInternal() {
    * Whether cloud subscription mode is enabled (cloud distribution with subscription_required config).
    * Use to determine which UI to show (SubscriptionPanel vs LegacyCreditsPanel).
    */
-  const isSubscriptionEnabled = (): boolean =>
-    Boolean(isCloud && window.__CONFIG__?.subscription_required)
+  function isSubscriptionEnabled(): boolean {
+    return Boolean(isCloud && window.__CONFIG__?.subscription_required)
+  }
 
   const { startCancellationWatcher, stopCancellationWatcher } =
     useSubscriptionCancellationWatcher({
@@ -263,7 +263,7 @@ function useSubscriptionInternal() {
       shouldWatchCancellation: isSubscriptionEnabled
     })
 
-  const manageSubscription = async () => {
+  async function manageSubscription() {
     const didOpenPortal = await accessBillingPortal()
     if (!didOpenPortal) {
       return
@@ -272,7 +272,7 @@ function useSubscriptionInternal() {
     startCancellationWatcher()
   }
 
-  const requireActiveSubscription = async (): Promise<void> => {
+  async function requireActiveSubscription(): Promise<void> {
     await fetchSubscriptionStatus()
 
     if (!isSubscribedOrIsNotCloud.value) {
@@ -280,21 +280,21 @@ function useSubscriptionInternal() {
     }
   }
 
-  const handleViewUsageHistory = () => {
+  function handleViewUsageHistory() {
     window.open(`${getComfyPlatformBaseUrl()}/profile/usage`, '_blank')
   }
 
-  const handleLearnMore = () => {
+  function handleLearnMore() {
     window.open('https://docs.comfy.org', '_blank')
   }
 
-  const handleInvoiceHistory = async () => {
+  async function handleInvoiceHistory() {
     await accessBillingPortal()
   }
 
-  const recoverPendingSubscriptionCheckout = async (
+  async function recoverPendingSubscriptionCheckout(
     source: 'bootstrap' | 'pageshow' | 'visibilitychange' | 'retry'
-  ) => {
+  ) {
     if (
       !isCloud ||
       !isLoggedIn.value ||
@@ -349,7 +349,7 @@ function useSubscriptionInternal() {
     return statusData
   }
 
-  const handlePendingSubscriptionCheckoutChange = () => {
+  function handlePendingSubscriptionCheckoutChange() {
     if (!hasPendingSubscriptionCheckoutAttempt()) {
       stopPendingCheckoutRecovery()
       return
@@ -411,31 +411,30 @@ function useSubscriptionInternal() {
     { immediate: true }
   )
 
-  const initiateSubscriptionCheckout =
-    async (): Promise<CloudSubscriptionCheckoutResponse> => {
-      const headers = await buildAuthHeaders()
-      const checkoutAttribution = await getCheckoutAttributionForCloud()
+  async function initiateSubscriptionCheckout(): Promise<CloudSubscriptionCheckoutResponse> {
+    const headers = await buildAuthHeaders()
+    const checkoutAttribution = await getCheckoutAttributionForCloud()
 
-      const response = await fetch(
-        buildApiUrl('/customers/cloud-subscription-checkout'),
-        {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(checkoutAttribution)
-        }
-      )
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new AuthStoreError(
-          t('toastMessages.failedToInitiateSubscription', {
-            error: errorData.message
-          })
-        )
+    const response = await fetch(
+      buildApiUrl('/customers/cloud-subscription-checkout'),
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(checkoutAttribution)
       }
+    )
 
-      return response.json()
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new AuthStoreError(
+        t('toastMessages.failedToInitiateSubscription', {
+          error: errorData.message
+        })
+      )
     }
+
+    return response.json()
+  }
 
   return {
     // State

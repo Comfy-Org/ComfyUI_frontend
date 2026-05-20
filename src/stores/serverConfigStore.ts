@@ -28,7 +28,7 @@ export const useServerConfigStore = defineStore('serverConfig', () => {
       })
     }
   )
-  const revertChanges = () => {
+  function revertChanges() {
     for (const config of modifiedConfigs.value) {
       config.value = config.initialValue
     }

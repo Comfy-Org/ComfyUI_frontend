@@ -14,9 +14,9 @@ describe('useComfyRegistrySearchProvider', () => {
   const mockListAllPacksCall = vi.fn()
   const mockListAllPacksClear = vi.fn()
 
-  const createMockStore = (
+  function createMockStore(
     params: Partial<ReturnType<typeof useComfyRegistryStore>> = {}
-  ) => {
+  ) {
     return {
       search: {
         call: mockSearchCall,

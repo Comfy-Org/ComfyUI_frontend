@@ -92,7 +92,8 @@ describe('useSystemStatsStore', () => {
     })
 
     it('should set loading state correctly', async () => {
-      let resolvePromise: (value: SystemStats) => void = () => {}
+      function noopStatsResolver() {}
+      let resolvePromise: (value: SystemStats) => void = noopStatsResolver
       const promise = new Promise<SystemStats>((resolve) => {
         resolvePromise = resolve
       })

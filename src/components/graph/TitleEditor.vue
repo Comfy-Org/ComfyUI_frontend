@@ -48,7 +48,7 @@ const titleEditorStore = useTitleEditorStore()
 const canvasStore = useCanvasStore()
 const previousCanvasDraggable = ref(true)
 
-const onEdit = (newValue: string) => {
+function onEdit(newValue: string) {
   if (titleEditorStore.titleEditorTarget && newValue?.trim()) {
     const trimmedTitle = newValue.trim()
     titleEditorStore.titleEditorTarget.title = trimmedTitle
@@ -100,7 +100,7 @@ watch(
   }
 )
 
-const canvasEventHandler = (event: LiteGraphCanvasEvent) => {
+function canvasEventHandler(event: LiteGraphCanvasEvent) {
   if (event.detail.subType === 'group-double-click') {
     if (!settingStore.get('Comfy.Group.DoubleClickTitleToEdit')) {
       return

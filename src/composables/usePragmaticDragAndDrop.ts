@@ -5,11 +5,13 @@ import {
 import { onBeforeUnmount, onMounted, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
+function noopCleanup() {}
+
 export function usePragmaticDroppable(
   dropTargetElement: MaybeRefOrGetter<HTMLElement | null>,
   options: Omit<Parameters<typeof dropTargetForElements>[0], 'element'>
 ) {
-  let cleanup = () => {}
+  let cleanup: () => void = noopCleanup
 
   onMounted(() => {
     const element = toValue(dropTargetElement)
@@ -33,7 +35,7 @@ export function usePragmaticDraggable(
   draggableElement: MaybeRefOrGetter<HTMLElement | null>,
   options: Omit<Parameters<typeof draggable>[0], 'element'>
 ) {
-  let cleanup = () => {}
+  let cleanup: () => void = noopCleanup
 
   onMounted(() => {
     const element = toValue(draggableElement)

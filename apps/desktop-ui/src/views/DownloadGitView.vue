@@ -47,11 +47,11 @@ import { useRouter } from 'vue-router'
 
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
-const openGitDownloads = () => {
+function openGitDownloads() {
   window.open('https://git-scm.com/downloads/', '_blank')
 }
 
-const skipGit = async () => {
+async function skipGit() {
   console.warn('pushing')
   const router = useRouter()
   await router.push('install')

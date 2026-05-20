@@ -6,7 +6,7 @@ import { clamp } from 'es-toolkit/math'
  * @param value Numeric value expected to be a percentage (0-100)
  * @returns Integer percent between 0 and 100
  */
-export const clampPercentInt = (value?: number): number => {
+export function clampPercentInt(value?: number): number {
   const v = Math.round(value ?? 0)
   return clamp(v, 0, 100)
 }
@@ -18,7 +18,7 @@ export const clampPercentInt = (value?: number): number => {
  * @param value0to100 Percent value in [0, 100]
  * @returns Localized percent string, e.g. "42%"
  */
-export const formatPercent0 = (locale: string, value0to100: number): string => {
+export function formatPercent0(locale: string, value0to100: number): string {
   const v = clampPercentInt(value0to100)
   return new Intl.NumberFormat(locale, {
     style: 'percent',

@@ -30,24 +30,25 @@ const ColorPickerStub = defineComponent({
 })
 
 describe('WidgetColorPicker Value Binding', () => {
-  const createColorWidget = (
+  function createColorWidget(
     value: string = '#000000',
     options: Record<string, unknown> = {},
     callback?: (value: string) => void
-  ) =>
-    createMockWidget<string>({
+  ) {
+    return createMockWidget<string>({
       value,
       name: 'test_color_picker',
       type: 'color',
       options,
       callback
     })
+  }
 
-  const renderComponent = (
+  function renderComponent(
     widget: SimplifiedWidget<string>,
     modelValue: string,
     extraProps: Record<string, unknown> = {}
-  ) => {
+  ) {
     return render(WidgetColorPicker, {
       global: {
         stubs: {

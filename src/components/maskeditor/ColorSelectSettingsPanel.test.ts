@@ -69,8 +69,9 @@ const i18n = createI18n({
   }
 })
 
-const renderPanel = () =>
-  render(ColorSelectSettingsPanel, { global: { plugins: [i18n] } })
+function renderPanel() {
+  return render(ColorSelectSettingsPanel, { global: { plugins: [i18n] } })
+}
 
 describe('ColorSelectSettingsPanel', () => {
   beforeEach(() => {
