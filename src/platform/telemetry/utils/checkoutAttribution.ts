@@ -180,6 +180,11 @@ async function getGeneratedClickId(): Promise<string | undefined> {
   }
 }
 
+function getRewardfulReferral(): string | undefined {
+  if (typeof window === 'undefined') return undefined
+  return asNonEmptyString(window.Rewardful?.referral)
+}
+
 export function captureCheckoutAttributionFromSearch(search: string): void {
   const fromUrl = readAttributionFromUrl(search)
   const storedAttribution = readStoredAttribution()
@@ -213,11 +218,13 @@ export async function getCheckoutAttribution(): Promise<CheckoutAttributionMetad
   }
 
   const gaIdentity = await getGaIdentity()
+  const rewardfulReferral = getRewardfulReferral()
 
   return {
     ...attribution,
     ga_client_id: gaIdentity?.client_id,
     ga_session_id: gaIdentity?.session_id,
-    ga_session_number: gaIdentity?.session_number
+    ga_session_number: gaIdentity?.session_number,
+    rewardful_referral: rewardfulReferral
   }
 }
