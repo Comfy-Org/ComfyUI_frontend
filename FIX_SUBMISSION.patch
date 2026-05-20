@@ -1,0 +1,29 @@
+```javascript
+// Fix scroll event leak after scrolling to the top of a text widget
+function preventScrollEventLeak(textWidget) {
+  // Get the text widget element
+  const textElement = textWidget.querySelector('.text-content');
+
+  // Add event listener to the text element
+  textElement.addEventListener('wheel', (event) => {
+    // Check if the text element is scrollable
+    if (textElement.scrollHeight > textElement.clientHeight) {
+      // Prevent scroll event from bubbling up to the canvas layer
+      event.stopPropagation();
+    }
+  });
+
+  // Add event listener to the text element for touch events
+  textElement.addEventListener('touchmove', (event) => {
+    // Check if the text element is scrollable
+    if (textElement.scrollHeight > textElement.clientHeight) {
+      // Prevent scroll event from bubbling up to the canvas layer
+      event.stopPropagation();
+    }
+  });
+}
+
+// Example usage:
+const textWidget = document.querySelector('.text-widget');
+preventScrollEventLeak(textWidget);
+```
