@@ -222,7 +222,7 @@ describe('useSharedWorkflowUrlLoader', () => {
     expect(mockHideTemplateSelector).not.toHaveBeenCalled()
   })
 
-  it('calls import when non-owned assets exist and user confirms', async () => {
+  it('imports non-owned assets before loading graph when user confirms', async () => {
     mockQueryParams = { share: 'share-id-1' }
     const payload = makePayload({
       assets: [
@@ -242,9 +242,13 @@ describe('useSharedWorkflowUrlLoader', () => {
     })
 
     const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
-    await loadSharedWorkflowFromUrl()
+    const loaded = await loadSharedWorkflowFromUrl()
 
+    expect(loaded).toBe('loaded')
     expect(mockImportPublishedAssets).toHaveBeenCalledWith(['a1'])
+    expect(mockImportPublishedAssets.mock.invocationCallOrder[0]).toBeLessThan(
+      mockLoadGraphData.mock.invocationCallOrder[0]
+    )
   })
 
   it('does not call import when user chooses open-only', async () => {
@@ -309,11 +313,49 @@ describe('useSharedWorkflowUrlLoader', () => {
     const loaded = await loadSharedWorkflowFromUrl()
 
     expect(loaded).toBe('loaded-without-assets')
+    expect(mockLoadGraphData).toHaveBeenCalledWith(
+      { nodes: [] },
+      true,
+      true,
+      'Test Workflow',
+      { openSource: 'shared_url' }
+    )
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'error',
         detail: 'Failed to import workflow assets'
       })
+    )
+  })
+
+  it('clears share intent when graph load fails after importing assets', async () => {
+    mockQueryParams = { share: 'share-id-1', tab: 'assets' }
+    const payload = makePayload({
+      assets: [
+        {
+          id: 'a1',
+          name: 'img.png',
+          preview_url: '',
+          storage_url: '',
+          model: false,
+          public: false,
+          in_library: false
+        }
+      ]
+    })
+    mockShowLayoutDialog.mockImplementation(() => {
+      resolveDialogWithConfirm(payload)
+    })
+    mockLoadGraphData.mockRejectedValue(new Error('Graph load failed'))
+
+    const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
+    const loaded = await loadSharedWorkflowFromUrl()
+
+    expect(loaded).toBe('failed')
+    expect(mockImportPublishedAssets).toHaveBeenCalledWith(['a1'])
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: { tab: 'assets' } })
+    expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+      'share'
     )
   })
 
