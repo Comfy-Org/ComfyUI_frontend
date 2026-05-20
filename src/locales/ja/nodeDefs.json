@@ -13989,6 +13989,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "背景除去モデルを使用して画像から背景を削除するための前景マスクを生成します。",
     "display_name": "背景を除去",
     "inputs": {
       "bg_removal_model": {

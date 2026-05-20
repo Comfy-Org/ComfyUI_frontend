@@ -13989,6 +13989,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "Bir arka plan kaldırma modeli kullanarak bir görüntüden arka planı kaldırmak için bir ön plan maskesi oluşturur.",
     "display_name": "Arka Planı Kaldır",
     "inputs": {
       "bg_removal_model": {

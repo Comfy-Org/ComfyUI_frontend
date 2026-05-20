@@ -13989,6 +13989,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "使用背景去除模型產生前景遮罩，以從圖像中移除背景。",
     "display_name": "移除背景",
     "inputs": {
       "bg_removal_model": {

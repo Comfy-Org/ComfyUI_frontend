@@ -76,7 +76,8 @@ describe('createExportMenuItems', () => {
     expect(submenuOptions.map((o: { content: string }) => o.content)).toEqual([
       'GLB',
       'OBJ',
-      'STL'
+      'STL',
+      'FBX'
     ])
   })
 

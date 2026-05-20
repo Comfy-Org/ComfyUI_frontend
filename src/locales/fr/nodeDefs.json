@@ -13989,6 +13989,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "Génère un masque de premier plan pour supprimer l'arrière-plan d'une image à l'aide d'un modèle de suppression d'arrière-plan.",
     "display_name": "Supprimer l’arrière-plan",
     "inputs": {
       "bg_removal_model": {
