@@ -550,17 +550,11 @@ onMounted(async () => {
     // Restore saved workflow and workflow tabs state
     await workflowPersistence.initializeWorkflow()
     await workflowPersistence.restoreWorkflowTabsState()
-
-    const sharedWorkflowLoadStatus =
-      await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
-
-    // Load template from URL if present
-    if (sharedWorkflowLoadStatus === 'not-present') {
-      await workflowPersistence.loadTemplateFromUrlIfPresent()
-    }
+    await workflowPersistence.loadTemplateFromUrlIfPresent()
   } finally {
     workspaceStore.spinner = false
   }
+  await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
 
   comfyApp.canvas.onSelectionChange = useChainCallback(
     comfyApp.canvas.onSelectionChange,
