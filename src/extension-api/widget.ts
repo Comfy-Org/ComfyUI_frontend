@@ -92,11 +92,13 @@ export interface WidgetOptionChangeEvent {
 export interface WidgetPropertyChangeEvent {
   /**
    * Which first-class property changed.
-   * - `'hidden'` — visibility toggled via `setHidden()`
-   * - `'disabled'` — enabled/disabled via `setDisabled()`
    * - `'serialize'` — serialization opt-in/out via `setSerializeEnabled()`
+   *
+   * PHASE_A_EXCLUDED per AXIOMS.md A14:
+   * - `'hidden'` — visibility toggled via `setHidden()` (deferred)
+   * - `'disabled'` — enabled/disabled via `setDisabled()` (deferred)
    */
-  readonly property: 'hidden' | 'disabled' | 'serialize'
+  readonly property: 'serialize' // Phase A: 'hidden' | 'disabled' deferred
   /** Value before the change. */
   readonly oldValue: boolean
   /** Value after the change. */
@@ -303,38 +305,14 @@ export interface WidgetHandle<T = WidgetValue> {
   setValue(value: T): void
 
   // ── VISIBILITY — first-class, every-widget ────────────────────────────────
-
-  /**
-   * Returns `true` if the widget is currently hidden from the node UI.
-   *
-   */
-  isHidden(): boolean
-
-  /**
-   * Show or hide the widget. Dispatches a `SetWidgetHidden` command.
-   *
-   * @example
-   * ```ts
-   * toggle.on('valueChange', (e) => {
-   *   detail.setHidden(!e.newValue)
-   * })
-   * ```
-   */
-  setHidden(hidden: boolean): void
+  // PHASE_A_EXCLUDED per AXIOMS.md A14: Deferred pending serialization convergence.
+  // isHidden(): boolean
+  // setHidden(hidden: boolean): void
 
   // ── DISABLED — first-class, every-widget ─────────────────────────────────
-
-  /**
-   * Returns `true` if the widget is disabled (read-only in the UI).
-   *
-   */
-  isDisabled(): boolean
-
-  /**
-   * Enable or disable the widget.
-   *
-   */
-  setDisabled(disabled: boolean): void
+  // PHASE_A_EXCLUDED per AXIOMS.md A14: Deferred pending serialization convergence.
+  // isDisabled(): boolean
+  // setDisabled(disabled: boolean): void
 
   // ── LABEL — first-class, every-widget ────────────────────────────────────
 
@@ -512,8 +490,10 @@ export interface WidgetHandle<T = WidgetValue> {
   ): Unsubscribe
 
   /**
-   * Subscribe to first-class property mutations (`setHidden`, `setDisabled`,
-   * `setSerializeEnabled`).
+   * Subscribe to first-class property mutations (`setSerializeEnabled`).
+   *
+   * PHASE_A_EXCLUDED per AXIOMS.md A14: `setHidden`, `setDisabled` deferred
+   * pending serialization convergence.
    *
    * Does NOT fire for `setValue` (use `valueChange`) or options-bag mutations
    * (use `optionChange`).

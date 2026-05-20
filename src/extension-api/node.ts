@@ -42,67 +42,13 @@ export type Point = readonly [x: number, y: number]
  */
 export type Size = readonly [width: number, height: number]
 
-/**
- * LiteGraph node execution mode.
- *
- * String values map to the underlying `LGraphEventMode` numeric enum
- * (`ALWAYS=0`, `ON_EVENT=1`, `NEVER=2`, `ON_TRIGGER=3`, `BYPASS=4`).
- *
- * - `'always'` — Execute every run (default).
- * - `'never'` — Muted; node is skipped during execution.
- * - `'bypass'` — Passthrough; inputs forwarded to outputs without running.
- * - `'once'` — Execute once then mute.
- * - `'onTrigger'` — Legacy ABI-reserved slot for the dead trigger/action
- *   subsystem; gated behind `LiteGraph.do_add_triggers_slots` (always
- *   `false`). Has no behavioural effect in the current scheduler. Reserved
- *   for compatibility — **do not use in new extensions**. Flagged for removal
- *   by AUDIT-LG.4 / AUDIT-LG.5.
- *
- * Cross-ref: research/architecture/audit-litegraph-pruning.md
- * §AUDIT-LG.4 §AUDIT-LG.5
- */
-export type NodeMode = 'always' | 'never' | 'bypass' | 'once' | 'onTrigger'
+// PHASE_A_EXCLUDED per AXIOMS.md A14: nodeMode has "egregious" use patterns.
+// export type NodeMode = 'always' | 'never' | 'bypass' | 'once' | 'onTrigger'
 
-/**
- * Direction of a slot on a node.
- */
-export type SlotDirection = 'input' | 'output'
-
-/**
- * Read-only snapshot of a single slot (input or output) on a node.
- *
- * Identity is opaque per D20: use `slot.id` and `slot.equals(other)` for
- * comparisons; do not parse the string format.
- */
-export interface SlotInfo {
-  /** Opaque identifier for this slot. Treat as a string token; do not parse. */
-  readonly id: string
-  /** Slot name as declared in `INPUT_TYPES` or `addInput`/`addOutput`. */
-  readonly name: string
-  /** Slot type string (e.g. `'IMAGE'`, `'LATENT'`, `'*'`). */
-  readonly type: string
-  /** Whether this is an input or output slot. */
-  readonly direction: SlotDirection
-  /** Opaque identifier of the node this slot belongs to. */
-  readonly nodeId: string
-  /**
-   * Returns `true` if `other` represents the same slot entity as this one.
-   * Equivalent to `this.id === other.id` but the canonical comparator.
-   */
-  equals(other: SlotInfo): boolean
-}
-
-/**
- * Branded entity ID for slots. Prevents mixing slot IDs with node/widget IDs.
- *
- * Phase A uses synthetic content-addressed format: `slot:${nodeId}:${direction}:${index}`.
- * Phase B will migrate to opaque UUIDs when ECS adds slot entity support.
- *
- * @internal Per D20 — extension authors use `slot.id: string` and
- * `slot.equals(other)`. The branded type is intentionally absent from the
- * published barrel.
- */
-export type SlotEntityId = string & { readonly __brand: 'SlotEntityId' }
+// PHASE_A_EXCLUDED per AXIOMS.md A14: Slot/connection hooks deferred.
+// export type SlotDirection = 'input' | 'output'
+// export interface SlotInfo { ... }
+// export type SlotEntityId = string & { readonly __brand: 'SlotEntityId' }
 
 /**
  * Payload for `node.on('executed', handler)`.
@@ -122,50 +68,16 @@ export interface NodeExecutedEvent {
   readonly output: Record<string, unknown>
 }
 
-/**
- * Payload for `node.on('connected', handler)`.
- *
- * Replaces `nodeType.prototype.onConnectInput` / `onConnectOutput` and
- * `nodeType.prototype.onConnectionsChange` patching.
- */
-export interface NodeConnectedEvent {
-  /** The local slot that was connected. */
-  readonly slot: SlotInfo
-  /** The remote slot on the other node. */
-  readonly remote: SlotInfo
-}
+// PHASE_A_EXCLUDED per AXIOMS.md A14: Slot/connection hooks deferred.
+// export interface NodeConnectedEvent { slot: SlotInfo; remote: SlotInfo }
+// export interface NodeDisconnectedEvent { slot: SlotInfo }
 
-/**
- * Payload for `node.on('disconnected', handler)`.
- */
-export interface NodeDisconnectedEvent {
-  /** The local slot that was disconnected. */
-  readonly slot: SlotInfo
-}
+// PHASE_A_EXCLUDED per AXIOMS.md A14: Spatial events deferred.
+// export interface NodePositionChangedEvent { pos: Point }
+// export interface NodeSizeChangedEvent { size: Size }
 
-/**
- * Payload for `node.on('positionChanged', handler)`.
- */
-export interface NodePositionChangedEvent {
-  /** The new position. */
-  readonly pos: Point
-}
-
-/**
- * Payload for `node.on('sizeChanged', handler)`.
- */
-export interface NodeSizeChangedEvent {
-  /** The new size. */
-  readonly size: Size
-}
-
-/**
- * Payload for `node.on('modeChanged', handler)`.
- */
-export interface NodeModeChangedEvent {
-  /** The new execution mode. */
-  readonly mode: NodeMode
-}
+// PHASE_A_EXCLUDED per AXIOMS.md A14: nodeMode has "egregious" use patterns.
+// export interface NodeModeChangedEvent { mode: NodeMode }
 
 /**
  * Payload for `node.on('beforeSerialize', handler)`.
@@ -265,99 +177,22 @@ export interface NodeHandle {
   readonly comfyClass: string
 
   // ── SPATIAL STATE ─────────────────────────────────────────────────────────
-  //
-  // **Single coordinate space — canvas units.** Every spatial accessor on
-  // `NodeHandle` returns and accepts canvas units. Canvas units are
-  // independent of zoom, pan, and devicePixelRatio. They are NOT screen
-  // pixels and NOT CSS pixels. See Axiom A13
-  // (`AXIOMS.md § A13 Single Coordinate Space`) and ADR D-coord-space for
-  // the full rationale + escape-hatch.
-
-  /**
-   * Returns the node's current position as `[x, y]` in **canvas units**.
-   *
-   * Canvas units are the LiteGraph internal coordinate space — independent
-   * of zoom, pan, or `devicePixelRatio`. To position a DOM overlay aligned
-   * with the node visually on screen, use {@link defineWidget}'s
-   * `mount(host, ctx)` seam (host is pre-positioned by the runtime). For
-   * legitimate screen-space needs (custom hit-testing, hi-DPI math,
-   * floating overlays anchored to absolute browser coordinates), the
-   * documented escape-hatch is `window.app.canvas.ds.scale` /
-   * `window.app.canvas.ds.offset` + `window.app.canvas.canvas
-   * .getBoundingClientRect()`. The escape-hatch is `@stability escape-hatch`
-   * (deliberately fragile) — see `D-coord-space.md § Documentation contract`.
-   *
-   * @stability stable
-   */
-  getPosition(): Point
-
-  /**
-   * Moves the node to a new position. **Argument is in canvas units.**
-   * Dispatches a `MoveNode` command.
-   *
-   * No conversion is performed — passing screen pixels here will move
-   * the node by screen-pixel amounts in canvas space (almost always a
-   * bug). To convert a screen-space pointer event to canvas units before
-   * calling this, use the escape-hatch — see {@link getPosition} JSDoc.
-   *
-   * @stability stable
-   */
-  setPosition(pos: Point): void
-
-  /**
-   * Returns the node's current size as `[width, height]` in **canvas units**.
-   *
-   * Same coordinate-space semantics as {@link getPosition}: zoom and
-   * `devicePixelRatio` are NOT applied. A 200-canvas-unit-wide node will
-   * appear as 100 CSS px wide at 50% zoom or 400 CSS px wide at 200% zoom.
-   * For DOM-overlay sizing, prefer the {@link defineWidget} `mount` seam
-   * which provides a pre-positioned host.
-   *
-   * @stability stable
-   */
-  getSize(): Size
-
-  /**
-   * Resizes the node. **Argument is in canvas units.**
-   * Dispatches a `ResizeNode` command.
-   *
-   * @stability stable
-   */
-  setSize(size: Size): void
+  // PHASE_A_EXCLUDED per AXIOMS.md A14: Deferred pending A13 coord-space stabilization.
+  // getPosition(): Point
+  // setPosition(pos: Point): void
+  // getSize(): Size
+  // setSize(size: Size): void
 
   // ── VISUAL STATE ──────────────────────────────────────────────────────────
-
-  /**
-   * Returns the node's display title. Defaults to the node type string.
-   *
-   */
-  getTitle(): string
-
-  /**
-   * Sets the node's display title. Dispatches a `SetNodeVisual` command.
-   *
-   */
-  setTitle(title: string): void
-
-  /**
-   * Returns `true` if the node is currently selected on the canvas.
-   *
-   */
-  isSelected(): boolean
+  // PHASE_A_EXCLUDED per AXIOMS.md A14: Uncertain use case.
+  // getTitle(): string
+  // setTitle(title: string): void
+  // isSelected(): boolean
 
   // ── EXECUTION MODE ────────────────────────────────────────────────────────
-
-  /**
-   * Returns the node's current execution mode.
-   *
-   */
-  getMode(): NodeMode
-
-  /**
-   * Sets the node's execution mode. Dispatches a `SetNodeMode` command.
-   *
-   */
-  setMode(mode: NodeMode): void
+  // PHASE_A_EXCLUDED per AXIOMS.md A14: nodeMode has "egregious" use patterns.
+  // getMode(): NodeMode
+  // setMode(mode: NodeMode): void
 
   // ── PROPERTIES (migration shim) ───────────────────────────────────────────
 
@@ -423,21 +258,9 @@ export interface NodeHandle {
    */
   getWidgets(): ReadonlyArray<Readonly<WidgetHandle>>
 
-  /**
-   * Adds a new widget to this node.
-   *
-   * @param type - Widget type string (e.g. `'INT'`, `'STRING'`, `'COMBO'`).
-   * @param name - Unique widget name on this node.
-   * @param defaultValue - Initial value.
-   * @param options - Optional type-specific options.
-   * @returns The new `WidgetHandle`.
-   */
-  addWidget(
-    type: string,
-    name: string,
-    defaultValue: unknown,
-    options?: Partial<WidgetOptions>
-  ): WidgetHandle
+  // REMOVED per AXIOMS.md A14: Widgets are defined in Python node schema,
+  // not created at frontend runtime. Node->widget mutation violates A1.
+  // addWidget(type, name, defaultValue, options?): WidgetHandle
 
   // NOTE: `addDOMWidget(opts)` was removed per D-widget-converge / Axiom A12.
   // Custom DOM widgets are now registered via `defineWidget({type, mount})`
@@ -526,50 +349,16 @@ export interface NodeHandle {
    */
   on(event: 'configured', handler: Handler<void>): Unsubscribe
 
-  /**
-   * Subscribe to slot connection events.
-   *
-   * Replaces `nodeType.prototype.onConnectInput`, `onConnectOutput`, and
-   * `onConnectionsChange` patching patterns (R4-P4: six distinct signatures
-   * in the wild — this single typed event resolves the confusion).
-   *
-   * @returns A cleanup function to remove the listener.
-   */
-  on(event: 'connected', handler: Handler<NodeConnectedEvent>): Unsubscribe
+  // PHASE_A_EXCLUDED per AXIOMS.md A14: Slot/connection hooks deferred.
+  // on(event: 'connected', handler: Handler<NodeConnectedEvent>): Unsubscribe
+  // on(event: 'disconnected', handler: Handler<NodeDisconnectedEvent>): Unsubscribe
 
-  /**
-   * Subscribe to slot disconnection events.
-   *
-   * @returns A cleanup function to remove the listener.
-   */
-  on(
-    event: 'disconnected',
-    handler: Handler<NodeDisconnectedEvent>
-  ): Unsubscribe
+  // PHASE_A_EXCLUDED per AXIOMS.md A14: Spatial events deferred pending A13.
+  // on(event: 'positionChanged', handler: Handler<NodePositionChangedEvent>): Unsubscribe
+  // on(event: 'sizeChanged', handler: Handler<NodeSizeChangedEvent>): Unsubscribe
 
-  /**
-   * Subscribe to canvas position changes.
-   *
-   * @returns A cleanup function to remove the listener.
-   */
-  on(
-    event: 'positionChanged',
-    handler: Handler<NodePositionChangedEvent>
-  ): Unsubscribe
-
-  /**
-   * Subscribe to node size changes.
-   *
-   * @returns A cleanup function to remove the listener.
-   */
-  on(event: 'sizeChanged', handler: Handler<NodeSizeChangedEvent>): Unsubscribe
-
-  /**
-   * Subscribe to execution mode changes.
-   *
-   * @returns A cleanup function to remove the listener.
-   */
-  on(event: 'modeChanged', handler: Handler<NodeModeChangedEvent>): Unsubscribe
+  // PHASE_A_EXCLUDED per AXIOMS.md A14: nodeMode has "egregious" use patterns.
+  // on(event: 'modeChanged', handler: Handler<NodeModeChangedEvent>): Unsubscribe
 
   /**
    * Subscribe to node serialization. Async-capable.
