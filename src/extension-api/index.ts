@@ -120,7 +120,7 @@ export type {
   WidgetOptions,
   WidgetValueChangeEvent,
   WidgetOptionChangeEvent,
-  WidgetPropertyChangeEvent,
+  // WidgetPropertyChangeEvent removed per A16 (D-widget-serialization-simplification, wave-9)
   WidgetBeforeSerializeEvent,
   WidgetBeforeQueueEvent,
   // Mount-lifecycle surface per D-widget-converge / Axiom A12 ────────────

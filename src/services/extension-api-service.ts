@@ -42,7 +42,8 @@ import {
   WidgetComponentContainer,
   WidgetComponentDisplay,
   WidgetComponentSchema,
-  WidgetComponentSerialize,
+  // WidgetComponentSerialize import removed per A16
+  // (D-widget-serialization-simplification, wave-9) — adapter blocks gone.
   WidgetComponentValue
 } from '@/world/widgets/widgetComponents'
 import type { NodeEntityId, WidgetEntityId } from '@/world/entityIds'
@@ -299,20 +300,12 @@ function createWidgetHandle(widgetId: WidgetEntityId): WidgetHandle {
       })
     },
 
-    isSerializeEnabled() {
-      return (
-        world.getComponent(widgetId, WidgetComponentSerialize)?.serialize ??
-        true
-      )
-    },
-    setSerializeEnabled(enabled: boolean) {
-      dispatch({
-        type: 'SetWidgetOption',
-        widgetId,
-        key: 'serialize',
-        value: enabled
-      })
-    },
+    // PHASE_A_EXCLUDED per AXIOMS.md A14 + A16 (D-widget-serialization-simplification, wave-9):
+    // Authors cannot disable serialization at the widget level (A16).
+    // Restoration requires axiom amendments to A15 + A16.
+    //
+    // isSerializeEnabled(): boolean { ... }
+    // setSerializeEnabled(enabled: boolean): void { ... }
 
     // D-immutability-enforcement (Hybrid C): read-only snapshot of options
     // bag. Public type is Readonly<WidgetOptions> — TS-ERR on any assignment.
@@ -359,7 +352,10 @@ function createWidgetHandle(widgetId: WidgetEntityId): WidgetHandle {
           () => world.getComponent(widgetId, WidgetComponentValue)?.value,
           (newValue, oldValue) => fn({ newValue, oldValue })
         )
-      } else if (event === 'optionChange' || event === 'propertyChange') {
+      } else if (event === 'optionChange') {
+        // PHASE_A_EXCLUDED per AXIOMS.md A14 + A16 (D-widget-serialization-simplification, wave-9):
+        // `propertyChange` event removed alongside `setSerializeEnabled`
+        // (vacuous union after `'serialize'` was the sole member).
         // TODO(#11939): wire through ECS event bus when available
         if (import.meta.env.DEV) {
           console.warn(
