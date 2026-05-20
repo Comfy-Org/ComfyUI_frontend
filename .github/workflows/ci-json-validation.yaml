@@ -9,6 +9,13 @@ on:
     paths:
       - '**/*.json'
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   json-lint:
     runs-on: ubuntu-latest
@@ -16,3 +23,4 @@ jobs:
       - uses: actions/checkout@v6
       - name: Validate JSON syntax
         run: ./scripts/cicd/check-json.sh
+
