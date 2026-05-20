@@ -14,6 +14,7 @@ vi.mock('@/scripts/app', () => ({
 
 const mockGetShareableAssets = vi.fn()
 const mockFetchApi = vi.fn()
+const mockInvalidateInputAssetsIncludingPublic = vi.hoisted(() => vi.fn())
 
 vi.mock(
   '@/platform/workflow/validation/schemas/workflowSchema',
@@ -29,6 +30,13 @@ vi.mock('@/scripts/api', () => ({
     fetchApi: (...args: unknown[]) => mockFetchApi(...args),
     apiURL: (route: string) => `/api${route}`,
     fileURL: (route: string) => route
+  }
+}))
+
+vi.mock('@/platform/assets/services/assetService', () => ({
+  assetService: {
+    invalidateInputAssetsIncludingPublic:
+      mockInvalidateInputAssetsIncludingPublic
   }
 }))
 
@@ -348,6 +356,7 @@ describe(useWorkflowShareService, () => {
         share_id: 'share-id-1'
       })
     })
+    expect(mockInvalidateInputAssetsIncludingPublic).toHaveBeenCalledTimes(1)
   })
 
   it('omits share_id from the payload when not provided', async () => {
@@ -384,6 +393,7 @@ describe(useWorkflowShareService, () => {
     await expect(
       service.importPublishedAssets(['bad-id'], 'share-id-1')
     ).rejects.toThrow('Failed to import assets: 400')
+    expect(mockInvalidateInputAssetsIncludingPublic).not.toHaveBeenCalled()
   })
 
   it('throws when shared workflow payload is invalid', async () => {

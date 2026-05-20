@@ -88,6 +88,12 @@ export interface ShowDialogOptions<
   priority?: number
 }
 
+interface UpdateDialogOptions {
+  key: string
+  contentProps?: Partial<DialogInstance['contentProps']>
+  dialogComponentProps?: Partial<DialogComponentProps>
+}
+
 export const useDialogStore = defineStore('dialog', () => {
   const dialogStack = ref<DialogInstance[]>([])
 
@@ -264,6 +270,28 @@ export const useDialogStore = defineStore('dialog', () => {
     return dialogStack.value.some((d) => d.key === key)
   }
 
+  function updateDialog(options: UpdateDialogOptions): boolean {
+    const dialog = dialogStack.value.find((d) => d.key === options.key)
+    if (!dialog) return false
+
+    if (options.contentProps) {
+      dialog.contentProps = {
+        ...dialog.contentProps,
+        ...options.contentProps
+      }
+    }
+
+    if (options.dialogComponentProps) {
+      dialog.dialogComponentProps = {
+        ...dialog.dialogComponentProps,
+        ...options.dialogComponentProps
+      }
+      updateCloseOnEscapeStates()
+    }
+
+    return true
+  }
+
   return {
     dialogStack,
     riseDialog,
@@ -271,6 +299,7 @@ export const useDialogStore = defineStore('dialog', () => {
     closeDialog,
     showExtensionDialog,
     isDialogOpen,
+    updateDialog,
     activeKey
   }
 })
