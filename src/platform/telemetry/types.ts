@@ -347,6 +347,7 @@ export interface SubscriptionMetadata {
  */
 export type PaywallSurface =
   | 'free_tier_dialog'
+  | 'subscription_required_dialog'
   | 'subscription_required_dialog_workspace'
   | 'upload_model_upgrade_modal'
   | 'invite_member_upsell'

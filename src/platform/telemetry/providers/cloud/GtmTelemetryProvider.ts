@@ -166,7 +166,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   }
 
   trackPaywallViewed(metadata: PaywallViewedMetadata): void {
-    this.pushEvent('view_promotion', { ...metadata })
+    this.pushEvent('paywall_viewed', { ...metadata })
   }
 
   trackSignupOpened(): void {

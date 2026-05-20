@@ -145,7 +145,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -169,7 +169,7 @@ const emit = defineEmits<{
   close: [subscribed: boolean]
 }>()
 
-const { isActiveSubscription } = useBillingContext()
+const { isActiveSubscription, subscription } = useBillingContext()
 
 const isSubscriptionEnabled = (): boolean =>
   Boolean(isCloud && window.__CONFIG__?.subscription_required)
@@ -198,6 +198,14 @@ watch(
     }
   }
 )
+
+onMounted(() => {
+  telemetry?.trackPaywallViewed({
+    surface: 'subscription_required_dialog',
+    current_tier: subscription.value?.tier?.toLowerCase(),
+    reason
+  })
+})
 
 const handleSubscribed = () => {
   emit('close', true)
