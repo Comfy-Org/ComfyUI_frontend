@@ -289,19 +289,8 @@ function showAll() {
   }
 }
 function hideAll() {
-  const node = activeNode.value
   for (const row of filteredActive.value) {
     if (String(row.node.id) === '-1') continue
-    if (row.kind === 'promoted' && node) {
-      if (
-        isLinkedPromotion(
-          node,
-          String(row.node.id),
-          row.widget.sourceWidgetName
-        )
-      )
-        continue
-    }
     demoteRow(row)
   }
 }

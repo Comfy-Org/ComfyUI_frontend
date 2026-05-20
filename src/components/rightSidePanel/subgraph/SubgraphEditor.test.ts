@@ -182,6 +182,46 @@ describe('SubgraphEditor', () => {
     ).toEqual(['second', 'first'])
   })
 
+  it('demotes linked promoted widgets when "Hide all" is clicked', async () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const firstNode = new LGraphNode('FirstNode')
+    const secondNode = new LGraphNode('SecondNode')
+    subgraph.add(firstNode)
+    subgraph.add(secondNode)
+
+    const firstInput = firstNode.addInput('first', 'STRING')
+    const firstWidget = firstNode.addWidget('text', 'first', '', () => {})
+    firstInput.widget = { name: firstWidget.name }
+    const secondInput = secondNode.addInput('second', 'STRING')
+    const secondWidget = secondNode.addWidget('text', 'second', '', () => {})
+    secondInput.widget = { name: secondWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
+    promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
+    useCanvasStore().selectedItems = [host]
+
+    render(SubgraphEditor, {
+      container: document.body.appendChild(document.createElement('div')),
+      global: {
+        plugins: [i18n],
+        stubs: {
+          DraggableList: {
+            template:
+              '<div data-testid="draggable-list"><slot drag-class="draggable-item" /></div>'
+          }
+        }
+      }
+    })
+
+    expect(host.widgets.filter(isPromotedWidgetView)).toHaveLength(2)
+
+    const shown = screen.getByTestId('subgraph-editor-shown-section')
+    const hideAllLink = within(shown).getByText('Hide all')
+    await userEvent.click(hideAllLink)
+
+    expect(host.widgets.filter(isPromotedWidgetView)).toHaveLength(0)
+  })
+
   it('removes the exposure when a preview row without a real source widget is demoted', async () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)
