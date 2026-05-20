@@ -39,19 +39,10 @@
         v-model:sort-by="sortBy"
         v-model:view-mode="viewMode"
         v-model:media-type-filters="mediaTypeFilters"
-        bottom-divider
+        v-model:active-tab="activeTab"
         :show-generation-time-sort="activeTab === 'output'"
+        :show-tab-toggle="!isInFolderView"
       />
-      <!-- Tab list -->
-      <div
-        v-if="!isInFolderView"
-        class="border-b border-comfy-input p-2 2xl:px-4"
-      >
-        <TabList v-model="activeTab">
-          <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
-          <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
-        </TabList>
-      </div>
     </template>
     <template #body>
       <div
@@ -83,11 +74,7 @@
           :message="$t('sideToolbar.noFilesFoundMessage')"
         />
       </div>
-      <div
-        v-else
-        class="relative size-full py-2"
-        @click="handleEmptySpaceClick"
-      >
+      <div v-else class="relative size-full" @click="handleEmptySpaceClick">
         <AssetsSidebarListView
           v-if="isListView"
           :asset-items="listViewAssetItems"
@@ -118,9 +105,9 @@
       <div
         v-if="hasSelection"
         ref="footerRef"
-        class="flex h-18 w-full items-center justify-between gap-1"
+        class="flex w-full items-center justify-between gap-1 border-t border-comfy-input px-4 py-2"
       >
-        <div class="flex-1 pl-4">
+        <div class="flex-1">
           <div ref="selectionCountButtonRef" class="inline-flex w-48">
             <Button
               variant="secondary"
@@ -137,7 +124,7 @@
             </Button>
           </div>
         </div>
-        <div class="flex shrink items-center-safe justify-end-safe gap-2 pr-4">
+        <div class="flex shrink items-center-safe justify-end-safe gap-2">
           <template v-if="isCompact">
             <!-- Compact mode: Icon only -->
             <Button
@@ -231,8 +218,6 @@ import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListVi
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
-import Tab from '@/components/tab/Tab.vue'
-import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'

@@ -109,10 +109,6 @@ vi.mock('@/components/sidebar/tabs/SidebarTopArea.vue', () => ({
   default: { name: 'SidebarTopArea', template: '<div><slot /></div>' }
 }))
 
-vi.mock('@/components/common/TextDivider.vue', () => ({
-  default: { name: 'TextDivider', template: '<div />' }
-}))
-
 vi.mock('@/components/common/TreeExplorer.vue', () => ({
   default: {
     name: 'TreeExplorer',

@@ -167,8 +167,7 @@ test.describe('Assets sidebar - tab navigation', () => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    await expect(tab.generatedTab).toHaveAttribute('aria-selected', 'true')
-    await expect(tab.importedTab).toHaveAttribute('aria-selected', 'false')
+    await expect.poll(() => tab.currentAssetTab()).toBe('output')
   })
 
   test('Can switch between Generated and Imported tabs', async ({
@@ -177,14 +176,11 @@ test.describe('Assets sidebar - tab navigation', () => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    // Switch to Imported
     await tab.switchToImported()
-    await expect(tab.importedTab).toHaveAttribute('aria-selected', 'true')
-    await expect(tab.generatedTab).toHaveAttribute('aria-selected', 'false')
+    await expect.poll(() => tab.currentAssetTab()).toBe('input')
 
-    // Switch back to Generated
     await tab.switchToGenerated()
-    await expect(tab.generatedTab).toHaveAttribute('aria-selected', 'true')
+    await expect.poll(() => tab.currentAssetTab()).toBe('output')
   })
 
   test('Search is cleared when switching tabs', async ({ comfyPage }) => {

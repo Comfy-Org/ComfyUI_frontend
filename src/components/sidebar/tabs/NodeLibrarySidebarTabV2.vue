@@ -1,7 +1,7 @@
 <template>
   <SidebarTabTemplate :title="$t('sideToolbar.nodes')">
     <template #header>
-      <SidebarTopArea bottom-divider>
+      <SidebarTopArea>
         <SearchInput
           ref="searchBoxRef"
           v-model="searchQuery"
@@ -9,38 +9,6 @@
           @search="handleSearch"
         />
         <template #actions>
-          <DropdownMenuRoot>
-            <DropdownMenuTrigger as-child>
-              <Button
-                variant="secondary"
-                size="icon"
-                :aria-label="$t('g.sort')"
-              >
-                <i class="icon-[lucide--arrow-up-down] size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuContent
-                class="z-9999 min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
-                align="end"
-                :side-offset="4"
-              >
-                <DropdownMenuRadioGroup v-model="sortOrder">
-                  <DropdownMenuRadioItem
-                    v-for="option in sortingOptions"
-                    :key="option.id"
-                    :value="option.id"
-                    class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
-                  >
-                    <span class="flex-1">{{ $t(option.label) }}</span>
-                    <DropdownMenuItemIndicator class="w-4">
-                      <i class="icon-[lucide--check] size-4" />
-                    </DropdownMenuItemIndicator>
-                  </DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenuPortal>
-          </DropdownMenuRoot>
           <DropdownMenuRoot v-if="selectedTab === 'all'">
             <DropdownMenuTrigger as-child>
               <Button
@@ -104,9 +72,41 @@
               </DropdownMenuContent>
             </DropdownMenuPortal>
           </DropdownMenuRoot>
+          <DropdownMenuRoot>
+            <DropdownMenuTrigger as-child>
+              <Button
+                variant="secondary"
+                size="icon"
+                :aria-label="$t('g.sort')"
+              >
+                <i class="icon-[lucide--arrow-up-down] size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuContent
+                class="z-9999 min-w-32 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
+                align="end"
+                :side-offset="4"
+              >
+                <DropdownMenuRadioGroup v-model="sortOrder">
+                  <DropdownMenuRadioItem
+                    v-for="option in sortingOptions"
+                    :key="option.id"
+                    :value="option.id"
+                    class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
+                  >
+                    <span class="flex-1">{{ $t(option.label) }}</span>
+                    <DropdownMenuItemIndicator class="w-4">
+                      <i class="icon-[lucide--check] size-4" />
+                    </DropdownMenuItemIndicator>
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenuPortal>
+          </DropdownMenuRoot>
         </template>
       </SidebarTopArea>
-      <div class="border-b border-comfy-input p-2 2xl:px-4">
+      <div class="px-2 pb-2 2xl:px-4">
         <TabList v-model="selectedTab">
           <Tab v-for="tab in tabs" :key="tab.value" :value="tab.value">
             {{ tab.label }}
@@ -117,7 +117,7 @@
     <template #body>
       <NodeDragPreview />
       <div class="flex h-full flex-col">
-        <div class="min-h-0 flex-1 overflow-y-auto py-2">
+        <div class="min-h-0 flex-1">
           <TabPanel
             v-if="flags.nodeLibraryEssentialsEnabled"
             :model-value="selectedTab"

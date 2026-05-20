@@ -17,7 +17,7 @@
 
       <Splitter
         :key="splitterRefreshKey"
-        class="pointer-events-none flex-1 overflow-hidden border-none bg-transparent"
+        class="pointer-events-none flex-1 overflow-hidden rounded-none border-none bg-transparent"
         :state-key="
           isSelectMode
             ? sidebarLocation === 'left'

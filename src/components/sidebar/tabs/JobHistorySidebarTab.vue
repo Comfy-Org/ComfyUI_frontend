@@ -4,55 +4,42 @@
     :title="$t('queue.jobHistory')"
   >
     <template #alt-title>
-      <div class="ml-auto flex shrink-0 items-center">
-        <JobHistoryActionsMenu @clear-history="onClearHistory" />
-      </div>
+      <JobHistoryStatusWidgets
+        class="ml-auto"
+        :queued-count="queuedCount"
+        :running-count="runningCount"
+        @clear-queued="clearQueuedWorkflows"
+      />
+    </template>
+    <template #tool-buttons>
+      <JobHistoryActionsMenu @clear-history="onClearHistory" />
     </template>
     <template #header>
-      <div class="flex flex-col gap-2 pb-1">
-        <div class="px-3 py-2">
-          <JobFilterTabs
-            :selected-job-tab="selectedJobTab"
-            :has-failed-jobs="hasFailedJobs"
-            @update:selected-job-tab="onUpdateSelectedJobTab"
-          />
-        </div>
+      <SidebarTopArea>
         <JobFilterActions
           v-model:selected-workflow-filter="selectedWorkflowFilter"
           v-model:selected-sort-mode="selectedSortMode"
           v-model:search-query="searchQuery"
-          class="px-3"
           :hide-show-assets-action="true"
           :show-search="true"
           :search-placeholder="t('sideToolbar.queueProgressOverlay.searchJobs')"
         />
-      </div>
-      <div
-        class="flex items-center justify-between px-3 pb-1 text-xs leading-none text-text-primary"
-      >
-        <span class="text-text-secondary">{{ activeQueueSummary }}</span>
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-base-foreground">
-            {{ t('sideToolbar.queueProgressOverlay.clearQueueTooltip') }}
-          </span>
-          <Button
-            variant="destructive"
-            size="icon"
-            :aria-label="
-              t('sideToolbar.queueProgressOverlay.clearQueueTooltip')
-            "
-            :disabled="queuedCount === 0"
-            @click="clearQueuedWorkflows"
-          >
-            <i class="icon-[lucide--list-x] size-4" />
-          </Button>
-        </div>
+      </SidebarTopArea>
+      <div class="px-2 pb-2 2xl:px-4">
+        <TabList
+          :model-value="selectedJobTab"
+          @update:model-value="onUpdateSelectedJobTab"
+        >
+          <Tab v-for="tab in visibleJobTabs" :key="tab" :value="tab">
+            {{ jobTabLabel(tab) }}
+          </Tab>
+        </TabList>
       </div>
     </template>
     <template #body>
       <div class="flex h-full min-h-0 flex-col">
         <JobAssetsList
-          class="min-h-0 flex-1"
+          class="scrollbar-custom min-h-0 flex-1 pt-2"
           :displayed-job-groups="displayedJobGroups"
           @cancel-item="onCancelItem"
           @delete-item="onDeleteItem"
@@ -77,21 +64,23 @@
 import { computed, defineAsyncComponent, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import JobFilterActions from '@/components/queue/job/JobFilterActions.vue'
-import JobFilterTabs from '@/components/queue/job/JobFilterTabs.vue'
 import JobAssetsList from '@/components/queue/job/JobAssetsList.vue'
 import JobContextMenu from '@/components/queue/job/JobContextMenu.vue'
+import JobFilterActions from '@/components/queue/job/JobFilterActions.vue'
+import JobHistoryStatusWidgets from '@/components/queue/job/JobHistoryStatusWidgets.vue'
 import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
+import Tab from '@/components/tab/Tab.vue'
+import TabList from '@/components/tab/TabList.vue'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
-import { useJobList } from '@/composables/queue/useJobList'
+import { jobTabs, useJobList } from '@/composables/queue/useJobList'
 import type { JobListItem, JobTab } from '@/composables/queue/useJobList'
 import { useQueueClearHistoryDialog } from '@/composables/queue/useQueueClearHistoryDialog'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
+import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
-import Button from '@/components/ui/button/Button.vue'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -102,7 +91,7 @@ const Load3dViewerContent = defineAsyncComponent(
   () => import('@/components/load3d/Load3dViewerContent.vue')
 )
 
-const { t, n } = useI18n()
+const { t } = useI18n()
 const commandStore = useCommandStore()
 const dialogStore = useDialogStore()
 const executionStore = useExecutionStore()
@@ -134,31 +123,14 @@ const displayedJobGroups = computed(() => groupedJobItems.value)
 const runningCount = computed(() => queueStore.runningTasks.length)
 const queuedCount = computed(() => queueStore.pendingTasks.length)
 
-const runningJobsLabel = computed(() =>
-  t('sideToolbar.queueProgressOverlay.runningJobsLabel', {
-    count: n(runningCount.value)
-  })
+const visibleJobTabs = computed(() =>
+  hasFailedJobs.value ? jobTabs : jobTabs.filter((tab) => tab !== 'Failed')
 )
-const queuedJobsLabel = computed(() =>
-  t('sideToolbar.queueProgressOverlay.queuedJobsLabel', {
-    count: n(queuedCount.value)
-  })
-)
-const activeQueueSummary = computed(() => {
-  if (runningCount.value === 0 && queuedCount.value === 0) {
-    return t('sideToolbar.queueProgressOverlay.noActiveJobs')
-  }
-  if (queuedCount.value === 0) {
-    return runningJobsLabel.value
-  }
-  if (runningCount.value === 0) {
-    return queuedJobsLabel.value
-  }
-  return t('sideToolbar.queueProgressOverlay.runningQueuedSummary', {
-    running: runningJobsLabel.value,
-    queued: queuedJobsLabel.value
-  })
-})
+const jobTabLabel = (tab: JobTab) => {
+  if (tab === 'All') return t('g.all')
+  if (tab === 'Completed') return t('g.completed')
+  return t('g.failed')
+}
 
 const clearQueuedWorkflows = wrapWithErrorHandlingAsync(async () => {
   trackFeatureUsed()

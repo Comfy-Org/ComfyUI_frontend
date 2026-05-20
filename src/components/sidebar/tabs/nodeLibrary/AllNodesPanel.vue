@@ -1,11 +1,9 @@
 <template>
-  <div class="h-full flex-1 overflow-y-auto">
+  <div class="scrollbar-custom h-full flex-1 pb-2">
     <!-- Favorites section -->
-    <h3
-      class="mb-0 px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase"
-    >
-      {{ $t('sideToolbar.nodeLibraryTab.sections.bookmarked') }}
-    </h3>
+    <SidebarSectionHeader
+      :text="$t('sideToolbar.nodeLibraryTab.sections.bookmarked')"
+    />
     <TreeExplorerV2
       v-if="hasFavorites"
       v-model:expanded-keys="expandedKeys"
@@ -19,12 +17,10 @@
 
     <!-- Node sections -->
     <div v-for="(section, index) in sections" :key="section.category ?? index">
-      <h3
+      <SidebarSectionHeader
         v-if="section.category && sortOrder !== 'alphabetical'"
-        class="mb-0 px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase"
-      >
-        {{ $t(NODE_CATEGORY_LABELS[section.category]) }}
-      </h3>
+        :text="$t(NODE_CATEGORY_LABELS[section.category])"
+      />
       <TreeExplorerV2
         v-model:expanded-keys="expandedKeys"
         :root="section.root"
@@ -39,6 +35,7 @@
 import { computed } from 'vue'
 
 import TreeExplorerV2 from '@/components/common/TreeExplorerV2.vue'
+import SidebarSectionHeader from '@/components/sidebar/tabs/SidebarSectionHeader.vue'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { NODE_CATEGORY_LABELS } from '@/types/nodeOrganizationTypes'

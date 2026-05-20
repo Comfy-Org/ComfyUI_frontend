@@ -3,15 +3,10 @@
     <div
       v-for="(section, index) in sections"
       :key="section.title ?? index"
-      class="h-full flex-1 overflow-y-auto"
+      class="scrollbar-custom h-full flex-1 pb-2"
     >
       <!-- Section header -->
-      <h3
-        v-if="section.title"
-        class="mb-0 px-4 py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase"
-      >
-        {{ section.title }}
-      </h3>
+      <SidebarSectionHeader v-if="section.title" :text="section.title" />
       <!-- Section tree -->
       <TreeExplorerV2
         v-model:expanded-keys="expandedKeys"
@@ -35,6 +30,7 @@
 
 <script setup lang="ts">
 import TreeExplorerV2 from '@/components/common/TreeExplorerV2.vue'
+import SidebarSectionHeader from '@/components/sidebar/tabs/SidebarSectionHeader.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type {

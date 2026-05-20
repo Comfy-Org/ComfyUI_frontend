@@ -838,6 +838,8 @@
       "title": "Media Assets",
       "sortNewestFirst": "Newest first",
       "sortOldestFirst": "Oldest first",
+      "switchToImported": "Show imported",
+      "switchToGenerated": "Show generated",
       "sortLongestFirst": "Generation time (longest first)",
       "sortFastestFirst": "Generation time (fastest first)",
       "filterImage": "Image",

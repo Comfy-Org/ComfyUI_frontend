@@ -30,15 +30,13 @@
       </SidebarTopArea>
     </template>
     <template #body>
-      <div v-if="!isSearching" class="comfyui-workflows-panel">
+      <div v-if="!isSearching" class="comfyui-workflows-panel pb-3">
         <div
           v-if="workflowTabsPosition === 'Sidebar'"
           class="comfyui-workflows-open"
         >
-          <TextDivider
+          <SidebarSectionHeader
             :text="t('sideToolbar.workflowTab.workflowTreeType.open')"
-            type="dashed"
-            class="ml-2"
           />
           <TreeExplorer
             v-model:expanded-keys="dummyExpandedKeys"
@@ -58,7 +56,7 @@
                 </template>
                 <template #actions="{ node: treeNode }">
                   <Button
-                    class="close-workflow-button"
+                    class="close-workflow-button mr-0.5"
                     :variant="
                       workspaceStore.shiftDown ? 'destructive' : 'textonly'
                     "
@@ -79,10 +77,8 @@
           v-show="filteredBookmarkedWorkflows.length > 0"
           class="comfyui-workflows-bookmarks"
         >
-          <TextDivider
+          <SidebarSectionHeader
             :text="t('sideToolbar.workflowTab.workflowTreeType.bookmarks')"
-            type="dashed"
-            class="ml-2"
           />
           <TreeExplorer
             v-model:expanded-keys="dummyExpandedKeys"
@@ -100,10 +96,8 @@
           </TreeExplorer>
         </div>
         <div class="comfyui-workflows-browse">
-          <TextDivider
+          <SidebarSectionHeader
             :text="t('sideToolbar.workflowTab.workflowTreeType.browse')"
-            type="dashed"
-            class="ml-2"
           />
           <TreeExplorer
             v-if="filteredPersistedWorkflows.length > 0"
@@ -124,7 +118,7 @@
           </slot>
         </div>
       </div>
-      <div v-else class="comfyui-workflows-search-panel">
+      <div v-else class="comfyui-workflows-search-panel pt-2 pb-3">
         <TreeExplorer
           v-model:expanded-keys="expandedKeys"
           :root="renderTreeNode(filteredRoot, WorkflowTreeType.Browse)"
@@ -147,9 +141,9 @@ import { useI18n } from 'vue-i18n'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
-import TextDivider from '@/components/common/TextDivider.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
+import SidebarSectionHeader from '@/components/sidebar/tabs/SidebarSectionHeader.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
 import Button from '@/components/ui/button/Button.vue'

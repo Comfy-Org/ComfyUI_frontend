@@ -36,7 +36,11 @@
     </div>
 
     <!-- Scrollable content (non-runtime or mixed errors) -->
-    <div v-else class="min-w-0 flex-1 overflow-y-auto" aria-live="polite">
+    <div
+      v-else
+      class="scrollbar-custom min-w-0 flex-1 overflow-y-auto"
+      aria-live="polite"
+    >
       <TransitionGroup tag="div" name="list-scale" class="relative">
         <div
           v-if="filteredGroups.length === 0"

@@ -274,8 +274,7 @@ function getMediaFilterLabel(
 
 export class AssetsSidebarTab extends SidebarTab {
   // --- Tab navigation ---
-  public readonly generatedTab: Locator
-  public readonly importedTab: Locator
+  public readonly tabToggleButton: Locator
 
   // --- Empty state ---
   public readonly emptyStateMessage: Locator
@@ -323,8 +322,7 @@ export class AssetsSidebarTab extends SidebarTab {
 
   constructor(public override readonly page: Page) {
     super(page, 'assets')
-    this.generatedTab = page.getByRole('tab', { name: 'Generated' })
-    this.importedTab = page.getByRole('tab', { name: 'Imported' })
+    this.tabToggleButton = page.getByTestId('assets-tab-toggle')
     this.emptyStateMessage = page.getByText(
       'Upload files or generate content to see them here'
     )
@@ -390,10 +388,18 @@ export class AssetsSidebarTab extends SidebarTab {
     // Remove any toast notifications that may overlay the sidebar button
     await this.dismissToasts()
     await super.open()
-    await this.generatedTab.waitFor({ state: 'visible' })
+    await this.searchInput.waitFor({ state: 'visible' })
     if (waitForAssets) {
       await this.waitForAssets()
     }
+  }
+
+  async currentAssetTab(): Promise<'output' | 'input'> {
+    const value = await this.tabToggleButton.getAttribute('data-active-tab')
+    if (value !== 'output' && value !== 'input') {
+      throw new Error(`Unexpected assets tab state: ${value}`)
+    }
+    return value
   }
 
   /** Dismiss all visible toast notifications by clicking their close buttons. */
@@ -410,14 +416,18 @@ export class AssetsSidebarTab extends SidebarTab {
 
   async switchToImported() {
     await this.dismissToasts()
-    await this.importedTab.click()
-    await expect(this.importedTab).toHaveAttribute('aria-selected', 'true')
+    if ((await this.currentAssetTab()) === 'output') {
+      await this.tabToggleButton.click()
+    }
+    await expect.poll(() => this.currentAssetTab()).toBe('input')
   }
 
   async switchToGenerated() {
     await this.dismissToasts()
-    await this.generatedTab.click()
-    await expect(this.generatedTab).toHaveAttribute('aria-selected', 'true')
+    if ((await this.currentAssetTab()) === 'input') {
+      await this.tabToggleButton.click()
+    }
+    await expect.poll(() => this.currentAssetTab()).toBe('output')
   }
 
   async openSettingsMenu() {
