@@ -305,7 +305,7 @@
     }
   },
   "BasicGuider": {
-    "display_name": "BasicGuider",
+    "display_name": "Basic Guider",
     "inputs": {
       "model": {
         "name": "model"
@@ -896,6 +896,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "display_name": "ByteDance Seed",
+    "description": "Generate text responses with ByteDance's Seed 2.0 models. Provide a text prompt and optionally one or more images or videos for multimodal context.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text input to the model."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The Seed model used to generate the response."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Foundational instructions that dictate the model's behavior."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "display_name": "ByteDance Seedream 4.5 & 5.0",
     "description": "Unified text-to-image generation and precise single-sentence editing at up to 4K resolution.",
@@ -1047,7 +1080,7 @@
     }
   },
   "Canny": {
-    "display_name": "Canny",
+    "display_name": "Detect Edges (Canny)",
     "inputs": {
       "image": {
         "name": "image"
@@ -1105,7 +1138,7 @@
     }
   },
   "CFGGuider": {
-    "display_name": "CFGGuider",
+    "display_name": "CFG Guider",
     "inputs": {
       "model": {
         "name": "model"
@@ -1228,6 +1261,46 @@
       "nerf_tile_size": {
         "name": "nerf_tile_size",
         "tooltip": "Allows overriding the default NeRF tile size. -1 means use the default (32). 0 means use non-tiling mode (may require a lot of VRAM)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClaudeNode": {
+    "display_name": "Anthropic Claude",
+    "description": "Generate text responses with Anthropic's Claude models. Provide a text prompt and optionally one or more images for multimodal context.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text input to the model."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The Claude model used to generate the response."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Optional image(s) to use as context for the model. Up to 20 images."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Foundational instructions that dictate the model's behavior."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_temperature": {
+        "name": "temperature"
       }
     },
     "outputs": {
@@ -1631,7 +1704,7 @@
     }
   },
   "ColorTransfer": {
-    "display_name": "Color Transfer",
+    "display_name": "Transfer Color",
     "description": "Match the colors of one image to another using various algorithms.",
     "inputs": {
       "image_target": {
@@ -1741,7 +1814,7 @@
     }
   },
   "ComfyNumberConvert": {
-    "display_name": "Number Convert",
+    "display_name": "Convert Number",
     "inputs": {
       "value": {
         "name": "value"
@@ -2487,7 +2560,7 @@
     }
   },
   "CropByBBoxes": {
-    "display_name": "CropByBBoxes",
+    "display_name": "Crop By Bounding Boxes",
     "description": "Crop and resize regions from the input image batch based on provided bounding boxes.",
     "inputs": {
       "image": {
@@ -2641,7 +2714,7 @@
     }
   },
   "DualCFGGuider": {
-    "display_name": "DualCFGGuider",
+    "display_name": "Dual CFG Guider",
     "inputs": {
       "model": {
         "name": "model"
@@ -3139,6 +3212,26 @@
   },
   "EmptyFlux2LatentImage": {
     "display_name": "Empty Flux 2 Latent",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyHiDreamO1LatentImage": {
+    "display_name": "Empty HiDream-O1 Latent Image",
+    "description": "Empty pixel-space latent for HiDream-O1-Image. The model was trained at ~4 megapixels; lower resolutions go off-distribution and quality regresses noticeably. Trained resolutions: 2048x2048, 2304x1728, 1728x2304, 2560x1440, 1440x2560, 2496x1664, 1664x2496, 3104x1312, 1312x3104, 2304x1792, 1792x2304.",
     "inputs": {
       "width": {
         "name": "width"
@@ -4336,6 +4429,22 @@
       }
     }
   },
+  "GetICLoRAParameters": {
+    "display_name": "Get IC-LoRA Parameters",
+    "description": "Extracts IC-LoRA parameters from the safetensors metadata of a LoRA-loaded model and outputs them for LTXVAddGuide (eg. reference_downscale_factor).",
+    "inputs": {
+      "iclora_model": {
+        "name": "iclora_model",
+        "tooltip": "Direct output from a LoRA Loader for the specific IC-LoRA from which to extract the metadata."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iclora_parameters",
+        "tooltip": "IC-LoRA parameters extracted from the LoRA metadata (eg. reference_downscale_factor). Connect to LTXVAddGuide if the LoRA requires special handling of the guides."
+      }
+    }
+  },
   "GetImageSize": {
     "display_name": "Get Image Size",
     "description": "Returns width and height of the image, and passes it through unchanged.",
@@ -4905,6 +5014,70 @@
       }
     }
   },
+  "HiDreamO1PatchSeamSmoothing": {
+    "display_name": "HiDream-O1 Patch Seam Smoothing",
+    "description": "Average the model output across multiple shifted patch-grid positions during the late portion of sampling. Cancels seams.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Sampling progress (0=start, 1=end) at which the blend turns ON."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Sampling progress at which the blend turns OFF."
+      },
+      "pattern": {
+        "name": "pattern",
+        "tooltip": "Shift layout. single_shift: one pass at the natural patch grid + others offset. symmetric: all passes off-grid, shifts split around origin."
+      },
+      "passes": {
+        "name": "passes",
+        "tooltip": "Number of passes per gated step. 2/4 = fixed. ramp_*: pass count increases as sampling approaches end (more smoothing where seams are most visible)."
+      },
+      "blend": {
+        "name": "blend",
+        "tooltip": "average: equal-weight mean. window: Hann-windowed weighting favoring each pass away from its patch boundaries. median: per-pixel median, rejects wraparound-outlier passes."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Interpolation between the natural-grid pred (0) and the averaged result (1)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1ReferenceImages": {
+    "display_name": "HiDream-O1 Reference Images",
+    "description": "Attach 1-10 reference images to conditioning, one for edit instructionor multiple for subject-driven personalization.",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Reference images. 1 image = instruction edit; 2-10 images = multi reference."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "display_name": "HitPaw General Image Enhance",
     "description": "Upscale low-resolution images to super-resolution, eliminate artifacts and noise. Maximum output: 32 megapixels.",
@@ -5423,7 +5596,7 @@
     }
   },
   "ImageBlur": {
-    "display_name": "Image Blur",
+    "display_name": "Blur Image",
     "inputs": {
       "image": {
         "name": "image"
@@ -5442,7 +5615,7 @@
     }
   },
   "ImageColorToMask": {
-    "display_name": "ImageColorToMask",
+    "display_name": "Convert Image Color to Mask",
     "inputs": {
       "image": {
         "name": "image"
@@ -5475,6 +5648,9 @@
   "ImageCompositeMasked": {
     "display_name": "Image Composite Masked",
     "inputs": {
+      "destination": {
+        "name": "destination"
+      },
       "source": {
         "name": "source"
       },
@@ -5486,9 +5662,6 @@
       },
       "resize_source": {
         "name": "resize_source"
-      },
-      "destination": {
-        "name": "destination"
       },
       "mask": {
         "name": "mask"
@@ -5691,7 +5864,7 @@
     }
   },
   "ImageOnlyCheckpointLoader": {
-    "display_name": "Image Only Checkpoint Loader (img2vid model)",
+    "display_name": "Load Checkpoint Image Only (img2vid model)",
     "inputs": {
       "ckpt_name": {
         "name": "ckpt_name"
@@ -7841,6 +8014,19 @@
       }
     }
   },
+  "LoadMoGeModel": {
+    "display_name": "Load MoGe Model",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadTrainingDataset": {
     "display_name": "Load Training Dataset",
     "inputs": {
@@ -7878,7 +8064,7 @@
   },
   "LoraLoader": {
     "display_name": "Load LoRA (Model and CLIP)",
-    "description": "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
+    "description": "This LoRA loader is used to modify both diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
     "inputs": {
       "model": {
         "name": "model",
@@ -7966,7 +8152,7 @@
   },
   "LoraLoaderModelOnly": {
     "display_name": "Load LoRA",
-    "description": "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
+    "description": "This LoRAs loader is used to modify the diffusion model, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
     "inputs": {
       "model": {
         "name": "model"
@@ -8103,6 +8289,14 @@
       },
       "strength": {
         "name": "strength"
+      },
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "Optional pixel-space spatial mask. Controls per-region conditioning influence via self-attention, multiplied by strength."
+      },
+      "iclora_parameters": {
+        "name": "iclora_parameters",
+        "tooltip": "Optional IC-LoRA parameters from a Get IC-LoRA Parameters node. Used for adjusting guide processing as required by certain IC-LoRAs (eg. those with a reference_downscale_factor > 1). When chained, each LTXVAddGuide uses only the parameters connected to it."
       }
     },
     "outputs": {
@@ -11654,6 +11848,18 @@
       }
     }
   },
+  "ModelNoiseScale": {
+    "display_name": "ModelNoiseScale",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "noise_scale": {
+        "name": "noise_scale",
+        "tooltip": "Absolute training noise scale. For example HiDream-O1 base: 8.0, dev: 7.5."
+      }
+    }
+  },
   "ModelPatchLoader": {
     "display_name": "ModelPatchLoader",
     "inputs": {
@@ -11796,8 +12002,124 @@
       }
     }
   },
+  "MoGeInference": {
+    "display_name": "MoGe Inference",
+    "inputs": {
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "0 = fastest, 9 = most detail."
+      },
+      "fov_x_degrees": {
+        "name": "fov_x_degrees",
+        "tooltip": "Horizontal field of view of the source camera. Sets the focal length used to unproject the depth map into 3D. 0 = auto-recover from the predicted points."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Images per inference call. Lower if you OOM on a long video / image set."
+      },
+      "force_projection": {
+        "name": "force_projection"
+      },
+      "apply_mask": {
+        "name": "apply_mask",
+        "tooltip": "Set masked-out (sky / invalid) pixels to inf in points and depth so meshing culls them. Disable to keep the raw predicted geometry everywhere; the mask is still returned separately."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePanoramaInference": {
+    "display_name": "MoGe Panorama Inference",
+    "inputs": {
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Equirectangular panorama (any aspect)."
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "Per-view detail (0 = fastest, 9 = most detailed)."
+      },
+      "split_resolution": {
+        "name": "split_resolution",
+        "tooltip": "Resolution of each perspective split."
+      },
+      "merge_resolution": {
+        "name": "merge_resolution",
+        "tooltip": "Long-side resolution of the merged equirect distance map."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Views per inference batch (12 splits total)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePointMapToMesh": {
+    "display_name": "MoGe Point Map to Mesh",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "Which image of a batched MoGe geometry to mesh. Per-image vertex counts differ, so batches can't be stacked into a single MESH."
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "Vertex stride; 1 = full resolution."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "Drop pixels whose 3x3 depth span exceeds this fraction. 0 = off."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Carry the source image through as the baseColor texture."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeRender": {
+    "display_name": "MoGe Render",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "DirectX vs OpenGL controls the normal-map green-channel convention. DirectX: green = -Y down (Unreal). OpenGL: green = +Y up (Blender, Substance, Unity, glTF)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Morphology": {
-    "display_name": "ImageMorphology",
+    "display_name": "Apply Morphology",
     "inputs": {
       "image": {
         "name": "image"
@@ -13640,6 +13962,7 @@
   },
   "RemoveBackground": {
     "display_name": "Remove Background",
+    "description": "Generates a foreground mask to remove the background from an image using a background removal model.",
     "inputs": {
       "image": {
         "name": "image",
@@ -14712,6 +15035,29 @@
       }
     }
   },
+  "SamplerLCM": {
+    "display_name": "SamplerLCM",
+    "description": "LCM sampler with tunable per-step noise. s_noise is a multiplier on the model's training noise scale",
+    "inputs": {
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "Per-step noise multiplier at the first step (1.0 = match training)."
+      },
+      "s_noise_end": {
+        "name": "s_noise_end",
+        "tooltip": "Per-step noise multiplier at the last step. Set equal to s_noise for a constant schedule."
+      },
+      "noise_clip_std": {
+        "name": "noise_clip_std",
+        "tooltip": "Clamp per-step noise to +/- N*std. 0 disables."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SamplerLCMUpscale": {
     "display_name": "SamplerLCMUpscale",
     "inputs": {
@@ -14829,7 +15175,7 @@
     }
   },
   "SaveAnimatedPNG": {
-    "display_name": "SaveAnimatedPNG",
+    "display_name": "Save Animated PNG",
     "inputs": {
       "images": {
         "name": "images"
@@ -14846,7 +15192,7 @@
     }
   },
   "SaveAnimatedWEBP": {
-    "display_name": "SaveAnimatedWEBP",
+    "display_name": "Save Animated WEBP",
     "inputs": {
       "images": {
         "name": "images"
@@ -15163,7 +15509,7 @@
     }
   },
   "SDPoseDrawKeypoints": {
-    "display_name": "SDPoseDrawKeypoints",
+    "display_name": "SDPose Draw Keypoints",
     "inputs": {
       "keypoints": {
         "name": "keypoints"
@@ -15197,7 +15543,7 @@
     }
   },
   "SDPoseFaceBBoxes": {
-    "display_name": "SDPoseFaceBBoxes",
+    "display_name": "SDPose Face Bounding Boxes",
     "inputs": {
       "keypoints": {
         "name": "keypoints"
@@ -15219,7 +15565,7 @@
     }
   },
   "SDPoseKeypointExtractor": {
-    "display_name": "SDPoseKeypointExtractor",
+    "display_name": "SDPose Keypoint Extractor",
     "description": "Extract pose keypoints from images using the SDPose model: https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
     "inputs": {
       "model": {
@@ -15492,7 +15838,7 @@
     }
   },
   "SolidMask": {
-    "display_name": "SolidMask",
+    "display_name": "Create Solid Mask",
     "inputs": {
       "value": {
         "name": "value"
@@ -17060,7 +17406,7 @@
     }
   },
   "ThresholdMask": {
-    "display_name": "ThresholdMask",
+    "display_name": "Threshold Mask",
     "inputs": {
       "mask": {
         "name": "mask"
@@ -18310,7 +18656,7 @@
     }
   },
   "VideoLinearCFGGuidance": {
-    "display_name": "VideoLinearCFGGuidance",
+    "display_name": "Video Linear CFG Guidance",
     "inputs": {
       "model": {
         "name": "model"
@@ -18321,7 +18667,7 @@
     }
   },
   "VideoTriangleCFGGuidance": {
-    "display_name": "VideoTriangleCFGGuidance",
+    "display_name": "Video Triangle CFG Guidance",
     "inputs": {
       "model": {
         "name": "model"
@@ -18913,7 +19259,7 @@
     }
   },
   "VOIDQuadmaskPreprocess": {
-    "display_name": "VOIDQuadmaskPreprocess",
+    "display_name": "VOID Quadmask Preprocessor",
     "inputs": {
       "mask": {
         "name": "mask"
@@ -19432,7 +19778,7 @@
   },
   "wanBlockSwap": {
     "display_name": "wanBlockSwap",
-    "description": "NOP",
+    "description": "Intercept wanBlockSwap custom node that causes major instability and make it no-op.",
     "inputs": {
       "model": {
         "name": "model"

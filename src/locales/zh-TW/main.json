@@ -410,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "在本地繼續",
     "exploreCloud": "免費試用雲端",
-    "feature1Title": "每月 400 點免費額度",
     "feature2Title": "隨處可用，立即啟動",
     "feature3Title": "模型即刻可用",
     "feature4Title": "頂級自訂節點包預先安裝",
@@ -816,6 +815,7 @@
     "HISTOGRAM": "直方圖",
     "HOOKS": "掛鉤",
     "HOOK_KEYFRAMES": "關鍵影格掛鉤",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "影像",
     "IMAGECOMPARE": "圖像比較",
     "INT": "整數",
@@ -836,6 +836,8 @@
     "MODEL": "模型",
     "MODEL_PATCH": "模型修補",
     "MODEL_TASK_ID": "模型任務ID",
+    "MOGE_GEOMETRY": "MOGE_幾何",
+    "MOGE_MODEL": "MOGE_模型",
     "NOISE": "雜訊",
     "OPENAI_CHAT_CONFIG": "OpenAI聊天配置",
     "OPENAI_INPUT_FILES": "OpenAI輸入檔案",
@@ -914,7 +916,8 @@
     "extensionFileHint": "這可能是由於以下指令碼所致",
     "loadWorkflowTitle": "由於重新載入工作流程資料時發生錯誤，已中止載入",
     "noStackTrace": "沒有可用的堆疊追蹤",
-    "promptExecutionError": "提示執行失敗"
+    "promptExecutionError": "提示執行失敗",
+    "queueOpenWorkflowFailedTitle": "開啟工作流程失敗"
   },
   "errorOverlay": {
     "errorCount": "{count} 個錯誤",
@@ -1042,6 +1045,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrg 標誌",
+    "comfyPackageOutdated": "已安裝的 {name} 版本 {installedVersion} 低於所需版本 {requiredVersion}。",
     "comingSoon": "即將推出",
     "command": "指令",
     "commandProhibited": "指令 {command} 已被禁止。如需更多資訊，請聯絡管理員。",
@@ -1741,6 +1745,10 @@
     "outdatedVersionGeneric": "此工作流程是以較新版本的 ComfyUI 建立的。部分節點可能無法正確運作。",
     "unknownVersion": "未知"
   },
+  "logsTerminal": {
+    "loadError": "無法載入日誌，請確認您已更新 ComfyUI 後端。",
+    "resyncError": "後端重新連線後無法重新同步日誌。請重新開啟主控台以重試。"
+  },
   "maintenance": {
     "None": "無",
     "OK": "正常",
@@ -2254,6 +2262,7 @@
     "": "",
     "3d": "3D",
     "3d_models": "3D 模型",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "字節跳動",
@@ -2286,7 +2295,6 @@
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
     "advanced": "進階",
-    "animation": "動畫",
     "api node": "API 節點",
     "attention_experiments": "注意力實驗",
     "audio": "音訊",
@@ -2309,7 +2317,9 @@
     "detection": "偵測",
     "edit_models": "編輯模型",
     "experimental": "實驗性",
+    "filters": "濾鏡",
     "flux": "Flux",
+    "geometry_estimation": "幾何估算",
     "gligen": "GLIGEN",
     "guidance": "引導",
     "guiders": "引導器",
@@ -2331,13 +2341,11 @@
     "noise": "雜訊",
     "operations": "操作",
     "photomaker": "photomaker",
-    "postprocessing": "後處理",
     "preprocessors": "前處理器",
     "primitive": "基礎元件",
     "qwen": "千問",
     "samplers": "取樣器",
     "sampling": "取樣",
-    "save": "儲存",
     "schedulers": "排程器",
     "scheduling": "排程",
     "sd3": "sd3",

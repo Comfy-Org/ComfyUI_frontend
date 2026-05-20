@@ -410,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "Continuar Localmente",
     "exploreCloud": "Experimente a Nuvem Gratuitamente",
-    "feature1Title": "400 Créditos Grátis por Mês",
     "feature2Title": "Funciona em Qualquer Lugar, Instantaneamente",
     "feature3Title": "Modelos Prontos para Usar",
     "feature4Title": "Principais Pacotes de Nodes Personalizados Pré-instalados",
@@ -816,6 +815,7 @@
     "HISTOGRAM": "HISTOGRAMA",
     "HOOKS": "GANCHOS",
     "HOOK_KEYFRAMES": "QUADROS-CHAVE DE GANCHO",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "IMAGEM",
     "IMAGECOMPARE": "COMPARAR_IMAGEM",
     "INT": "INTEIRO",
@@ -836,6 +836,8 @@
     "MODEL": "MODELO",
     "MODEL_PATCH": "PATCH DE MODELO",
     "MODEL_TASK_ID": "ID DA TAREFA DO MODELO",
+    "MOGE_GEOMETRY": "MOGE_GEOMETRY",
+    "MOGE_MODEL": "MOGE_MODEL",
     "NOISE": "RUÍDO",
     "OPENAI_CHAT_CONFIG": "CONFIGURAÇÃO DE CHAT OPENAI",
     "OPENAI_INPUT_FILES": "ARQUIVOS DE ENTRADA OPENAI",
@@ -914,7 +916,8 @@
     "extensionFileHint": "Isso pode ser devido ao seguinte script",
     "loadWorkflowTitle": "Carregamento abortado devido a erro ao recarregar os dados do fluxo de trabalho",
     "noStackTrace": "Nenhum stacktrace disponível",
-    "promptExecutionError": "Falha na execução do prompt"
+    "promptExecutionError": "Falha na execução do prompt",
+    "queueOpenWorkflowFailedTitle": "Falha ao abrir o workflow"
   },
   "errorOverlay": {
     "errorCount": "{count} ERRO | {count} ERROS",
@@ -1042,6 +1045,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "Logo do ComfyOrg",
+    "comfyPackageOutdated": "A versão instalada de {name} ({installedVersion}) é inferior à versão necessária ({requiredVersion}).",
     "comingSoon": "Em breve",
     "command": "Comando",
     "commandProhibited": "O comando {command} é proibido. Entre em contato com um administrador para mais informações.",
@@ -1741,6 +1745,10 @@
     "outdatedVersionGeneric": "Este fluxo de trabalho foi criado com uma versão mais recente do ComfyUI. Alguns nós podem não funcionar corretamente.",
     "unknownVersion": "desconhecida"
   },
+  "logsTerminal": {
+    "loadError": "Não foi possível carregar os logs. Certifique-se de que você atualizou o backend do ComfyUI.",
+    "resyncError": "Não foi possível ressincronizar os logs após a reconexão do backend. Reabra o console para tentar novamente."
+  },
   "maintenance": {
     "None": "Nenhum",
     "OK": "OK",
@@ -2254,6 +2262,7 @@
     "": "",
     "3d": "3d",
     "3d_models": "modelos_3d",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
@@ -2286,7 +2295,6 @@
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
     "advanced": "avançado",
-    "animation": "animação",
     "api node": "nó da API",
     "attention_experiments": "experimentos_de_atenção",
     "audio": "áudio",
@@ -2309,7 +2317,9 @@
     "detection": "detecção",
     "edit_models": "editar_modelos",
     "experimental": "experimental",
+    "filters": "filtros",
     "flux": "flux",
+    "geometry_estimation": "geometry_estimation",
     "gligen": "gligen",
     "guidance": "orientação",
     "guiders": "guias",
@@ -2331,13 +2341,11 @@
     "noise": "ruído",
     "operations": "operações",
     "photomaker": "photomaker",
-    "postprocessing": "pós-processamento",
     "preprocessors": "pré-processadores",
     "primitive": "primitivo",
     "qwen": "qwen",
     "samplers": "amostradores",
     "sampling": "amostragem",
-    "save": "salvar",
     "schedulers": "agendadores",
     "scheduling": "agendamento",
     "sd3": "sd3",

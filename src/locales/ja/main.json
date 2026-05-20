@@ -410,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "ローカルで続行",
     "exploreCloud": "クラウドを無料で試す",
-    "feature1Title": "毎月400クレジット無料",
     "feature2Title": "どこでも即時利用可能",
     "feature3Title": "すぐに使えるモデル",
     "feature4Title": "人気カスタムノードパックをプリインストール",
@@ -816,6 +815,7 @@
     "HISTOGRAM": "ヒストグラム",
     "HOOKS": "フック",
     "HOOK_KEYFRAMES": "フックキーフレーム",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "画像",
     "IMAGECOMPARE": "画像比較",
     "INT": "整数",
@@ -836,6 +836,8 @@
     "MODEL": "モデル",
     "MODEL_PATCH": "モデルパッチ",
     "MODEL_TASK_ID": "モデルタスクID",
+    "MOGE_GEOMETRY": "MOGE_GEOMETRY",
+    "MOGE_MODEL": "MOGE_MODEL",
     "NOISE": "ノイズ",
     "OPENAI_CHAT_CONFIG": "OpenAIチャット設定",
     "OPENAI_INPUT_FILES": "OpenAI入力ファイル",
@@ -914,7 +916,8 @@
     "extensionFileHint": "これは次のスクリプトが原因かもしれません",
     "loadWorkflowTitle": "ワークフローデータの再読み込みエラーにより、読み込みが中止されました",
     "noStackTrace": "スタックトレースは利用できません",
-    "promptExecutionError": "プロンプトの実行に失敗しました"
+    "promptExecutionError": "プロンプトの実行に失敗しました",
+    "queueOpenWorkflowFailedTitle": "ワークフローのオープンに失敗しました"
   },
   "errorOverlay": {
     "errorCount": "{count} 件のエラー",
@@ -1042,6 +1045,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrgロゴ",
+    "comfyPackageOutdated": "インストールされている{name}のバージョン{installedVersion}は、必要なバージョン{requiredVersion}よりも低いです。",
     "comingSoon": "近日公開",
     "command": "コマンド",
     "commandProhibited": "コマンド {command} は禁止されています。詳細は管理者にお問い合わせください。",
@@ -1741,6 +1745,10 @@
     "outdatedVersionGeneric": "このワークフローは新しいバージョンのComfyUIで作成されました。一部のノードが正しく動作しない場合があります。",
     "unknownVersion": "不明"
   },
+  "logsTerminal": {
+    "loadError": "ログを読み込めません。ComfyUI バックエンドが最新であることを確認してください。",
+    "resyncError": "バックエンド再接続後にログを再同期できませんでした。再度コンソールを開いて再試行してください。"
+  },
   "maintenance": {
     "None": "なし",
     "OK": "OK",
@@ -2254,6 +2262,7 @@
     "": "",
     "3d": "3d",
     "3d_models": "3Dモデル",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
@@ -2286,7 +2295,6 @@
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
     "advanced": "高度な機能",
-    "animation": "アニメーション",
     "api node": "apiノード",
     "attention_experiments": "アテンション実験",
     "audio": "オーディオ",
@@ -2309,7 +2317,9 @@
     "detection": "検出",
     "edit_models": "モデル編集",
     "experimental": "実験的",
+    "filters": "フィルター",
     "flux": "flux",
+    "geometry_estimation": "geometry_estimation",
     "gligen": "グライジェン",
     "guidance": "ガイダンス",
     "guiders": "ガイダー",
@@ -2331,13 +2341,11 @@
     "noise": "ノイズ",
     "operations": "操作",
     "photomaker": "photomaker",
-    "postprocessing": "ポストプロセッシング",
     "preprocessors": "前処理",
     "primitive": "プリミティブ",
     "qwen": "qwen",
     "samplers": "サンプラー",
     "sampling": "サンプリング",
-    "save": "保存",
     "schedulers": "スケジューラー",
     "scheduling": "スケジューリング",
     "sd3": "SD3",

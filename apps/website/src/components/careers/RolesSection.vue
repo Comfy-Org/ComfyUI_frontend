@@ -130,7 +130,7 @@ function scrollToDepartment(deptKey: string) {
             <a
               v-for="role in dept.roles"
               :key="role.id"
-              :href="role.applyUrl"
+              :href="role.jobUrl"
               target="_blank"
               rel="noopener noreferrer"
               class="border-primary-warm-gray/20 group flex items-center justify-between border-b py-5"

@@ -11,7 +11,7 @@ import type {
 } from '@/platform/assets/types/filterTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import FormSearchInput from '../FormSearchInput.vue'
+import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import type { LayoutMode, SortOption } from './types'
 
 const { t } = useI18n()
@@ -99,7 +99,7 @@ function toggleBaseModelSelection(item: FilterOption) {
 
 <template>
   <div class="text-secondary flex gap-2 px-4">
-    <FormSearchInput
+    <AsyncSearchInput
       v-model="searchQuery"
       autofocus
       :class="

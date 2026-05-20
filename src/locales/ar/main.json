@@ -410,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "المتابعة محليًا",
     "exploreCloud": "جرّب السحابة مجانًا",
-    "feature1Title": "٤٠٠ رصيد مجاني شهريًا",
     "feature2Title": "يعمل في أي مكان، فورًا",
     "feature3Title": "نماذج جاهزة للاستخدام",
     "feature4Title": "أفضل حزم العقد المخصصة مثبتة مسبقًا",
@@ -816,6 +815,7 @@
     "HISTOGRAM": "مخطط بياني",
     "HOOKS": "معالجات",
     "HOOK_KEYFRAMES": "مفاتيح المعالجات",
+    "IC_LORA_PARAMETERS": "معاملات IC_LORA",
     "IMAGE": "صورة",
     "IMAGECOMPARE": "مقارنة الصور",
     "INT": "عدد صحيح",
@@ -836,6 +836,8 @@
     "MODEL": "نموذج",
     "MODEL_PATCH": "ترقيع النموذج",
     "MODEL_TASK_ID": "معرّف مهمة النموذج",
+    "MOGE_GEOMETRY": "هندسة MOGE",
+    "MOGE_MODEL": "نموذج MOGE",
     "NOISE": "ضجيج",
     "OPENAI_CHAT_CONFIG": "إعدادات محادثة أوبن إيه آي",
     "OPENAI_INPUT_FILES": "ملفات إدخال أوبن إيه آي",
@@ -914,7 +916,8 @@
     "extensionFileHint": "قد يكون السبب هو السكربت التالي",
     "loadWorkflowTitle": "تم إلغاء التحميل بسبب خطأ في إعادة تحميل بيانات سير العمل",
     "noStackTrace": "لا توجد تتبع للمكدس متاحة",
-    "promptExecutionError": "فشل تنفيذ الطلب"
+    "promptExecutionError": "فشل تنفيذ الطلب",
+    "queueOpenWorkflowFailedTitle": "فشل في فتح سير العمل"
   },
   "errorOverlay": {
     "errorCount": "{count} خطأ | {count} أخطاء",
@@ -1042,6 +1045,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "شعار ComfyOrg",
+    "comfyPackageOutdated": "إصدار {name} المثبت ({installedVersion}) أقل من الإصدار المطلوب ({requiredVersion}).",
     "comingSoon": "قريباً",
     "command": "أمر",
     "commandProhibited": "الأمر {command} محظور. يرجى التواصل مع المسؤول لمزيد من المعلومات.",
@@ -1741,6 +1745,10 @@
     "outdatedVersionGeneric": "تم إنشاء سير العمل هذا باستخدام إصدار أحدث من ComfyUI. قد لا تعمل بعض العقد بشكل صحيح.",
     "unknownVersion": "غير معروف"
   },
+  "logsTerminal": {
+    "loadError": "تعذر تحميل السجلات، يرجى التأكد من أنك قمت بتحديث الواجهة الخلفية لـ ComfyUI.",
+    "resyncError": "تعذر إعادة مزامنة السجلات بعد إعادة اتصال الواجهة الخلفية. أعد فتح وحدة التحكم للمحاولة مرة أخرى."
+  },
   "maintenance": {
     "None": "لا شيء",
     "OK": "حسنًا",
@@ -2254,6 +2262,7 @@
     "": "",
     "3d": "ثلاثي الأبعاد",
     "3d_models": "نماذج ثلاثية الأبعاد",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "بايت دانس",
@@ -2286,7 +2295,6 @@
     "Wan": "وان",
     "WaveSpeed": "WaveSpeed",
     "advanced": "متقدم",
-    "animation": "الرسوم المتحركة",
     "api node": "عقدة API",
     "attention_experiments": "تجارب الانتباه",
     "audio": "صوت",
@@ -2309,7 +2317,9 @@
     "detection": "الكشف",
     "edit_models": "تحرير النماذج",
     "experimental": "تجريبي",
+    "filters": "مرشحات",
     "flux": "تدفق",
+    "geometry_estimation": "تقدير الهندسة",
     "gligen": "gligen",
     "guidance": "التوجيه",
     "guiders": "الموجهات",
@@ -2331,13 +2341,11 @@
     "noise": "ضجيج",
     "operations": "العمليات",
     "photomaker": "صانع الصور",
-    "postprocessing": "المعالجة اللاحقة",
     "preprocessors": "المعالجون المسبقون",
     "primitive": "بدائي",
     "qwen": "تشي وين",
     "samplers": "أجهزة التجميع",
     "sampling": "التجميع",
-    "save": "حفظ",
     "schedulers": "الجدولة",
     "scheduling": "الجدولة",
     "sd3": "sd3",

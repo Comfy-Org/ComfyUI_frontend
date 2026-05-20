@@ -5,7 +5,7 @@ import { defineComponent, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
-import FormSearchInput from './FormSearchInput.vue'
+import AsyncSearchInput from './AsyncSearchInput.vue'
 
 const i18n = createI18n({
   legacy: false,
@@ -20,7 +20,7 @@ const i18n = createI18n({
   }
 })
 
-type Searcher = NonNullable<ComponentProps<typeof FormSearchInput>['searcher']>
+type Searcher = NonNullable<ComponentProps<typeof AsyncSearchInput>['searcher']>
 
 function renderSearch(
   initialQuery: string = '',
@@ -30,9 +30,9 @@ function renderSearch(
   const query = ref(initialQuery)
   const key = updateKey
   const Harness = defineComponent({
-    components: { FormSearchInput },
+    components: { AsyncSearchInput },
     setup: () => ({ query, searcher, key }),
-    template: `<FormSearchInput
+    template: `<AsyncSearchInput
       v-model="query"
       :searcher="searcher"
       :update-key="key"
@@ -42,7 +42,7 @@ function renderSearch(
   return { ...utils, query, key }
 }
 
-describe('FormSearchInput', () => {
+describe('AsyncSearchInput', () => {
   beforeEach(() => {
     vi.useFakeTimers()
   })

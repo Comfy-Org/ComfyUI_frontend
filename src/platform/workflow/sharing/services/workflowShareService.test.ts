@@ -14,6 +14,7 @@ vi.mock('@/scripts/app', () => ({
 
 const mockGetShareableAssets = vi.fn()
 const mockFetchApi = vi.fn()
+const mockInvalidateInputAssetsIncludingPublic = vi.hoisted(() => vi.fn())
 
 vi.mock(
   '@/platform/workflow/validation/schemas/workflowSchema',
@@ -29,6 +30,13 @@ vi.mock('@/scripts/api', () => ({
     fetchApi: (...args: unknown[]) => mockFetchApi(...args),
     apiURL: (route: string) => `/api${route}`,
     fileURL: (route: string) => route
+  }
+}))
+
+vi.mock('@/platform/assets/services/assetService', () => ({
+  assetService: {
+    invalidateInputAssetsIncludingPublic:
+      mockInvalidateInputAssetsIncludingPublic
   }
 }))
 
@@ -334,16 +342,46 @@ describe(useWorkflowShareService, () => {
     )
   })
 
-  it('imports published assets via POST /assets/import', async () => {
+  it('imports published assets via POST /assets/import with share_id', async () => {
     mockFetchApi.mockResolvedValue(mockJsonResponse({}, true, 200))
 
     const service = useWorkflowShareService()
-    await service.importPublishedAssets(['pa-1', 'pa-2'])
+    await service.importPublishedAssets(['pa-1', 'pa-2'], 'share-id-1')
 
     expect(mockFetchApi).toHaveBeenCalledWith('/assets/import', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ published_asset_ids: ['pa-1', 'pa-2'] })
+      body: JSON.stringify({
+        published_asset_ids: ['pa-1', 'pa-2'],
+        share_id: 'share-id-1'
+      })
+    })
+    expect(mockInvalidateInputAssetsIncludingPublic).toHaveBeenCalledTimes(1)
+  })
+
+  it('omits share_id from the payload when not provided', async () => {
+    mockFetchApi.mockResolvedValue(mockJsonResponse({}, true, 200))
+
+    const service = useWorkflowShareService()
+    await service.importPublishedAssets(['pa-1'])
+
+    expect(mockFetchApi).toHaveBeenCalledWith('/assets/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ published_asset_ids: ['pa-1'] })
+    })
+  })
+
+  it('omits share_id from the payload when shareId is an empty string', async () => {
+    mockFetchApi.mockResolvedValue(mockJsonResponse({}, true, 200))
+
+    const service = useWorkflowShareService()
+    await service.importPublishedAssets(['pa-1'], '')
+
+    expect(mockFetchApi).toHaveBeenCalledWith('/assets/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ published_asset_ids: ['pa-1'] })
     })
   })
 
@@ -352,9 +390,10 @@ describe(useWorkflowShareService, () => {
 
     const service = useWorkflowShareService()
 
-    await expect(service.importPublishedAssets(['bad-id'])).rejects.toThrow(
-      'Failed to import assets: 400'
-    )
+    await expect(
+      service.importPublishedAssets(['bad-id'], 'share-id-1')
+    ).rejects.toThrow('Failed to import assets: 400')
+    expect(mockInvalidateInputAssetsIncludingPublic).not.toHaveBeenCalled()
   })
 
   it('throws when shared workflow payload is invalid', async () => {

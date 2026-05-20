@@ -896,6 +896,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "description": "Генерируйте текстовые ответы с помощью моделей Seed 2.0 от ByteDance. Введите текстовый запрос и при необходимости одно или несколько изображений или видео для мультимодального контекста.",
+    "display_name": "ByteDance Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель Seed, используемая для генерации ответа."
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый ввод для модели."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет тем, должен ли узел выполняться повторно; результаты всегда недетерминированы, независимо от значения seed."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Базовые инструкции, определяющие поведение модели."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "description": "Унифицированная генерация изображений из текста и точное редактирование одним предложением с разрешением до 4K.",
     "display_name": "ByteDance Seedream 4",
@@ -1607,6 +1640,46 @@
       "start_sigma": {
         "name": "начальная_сигма",
         "tooltip": "Первая сигма, для которой эти настройки вступят в силу."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClaudeNode": {
+    "description": "Генерируйте текстовые ответы с помощью моделей Claude от Anthropic. Введите текстовый запрос и при необходимости одно или несколько изображений для мультимодального контекста.",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Необязательные изображения для использования в качестве контекста для модели. До 20 изображений."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель Claude, используемая для генерации ответа."
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый ввод для модели."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет тем, должен ли узел выполняться повторно; результаты всегда недетерминированы, независимо от значения seed."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Базовые инструкции, определяющие поведение модели."
       }
     },
     "outputs": {
@@ -3156,6 +3229,26 @@
       }
     }
   },
+  "EmptyHiDreamO1LatentImage": {
+    "description": "Пустое латентное пространство пикселей для HiDream-O1-Image. Модель обучалась на разрешении около 4 мегапикселей; при меньших разрешениях качество заметно ухудшается и выходит за пределы распределения. Обученные разрешения: 2048x2048, 2304x1728, 1728x2304, 2560x1440, 1440x2560, 2496x1664, 1664x2496, 3104x1312, 1312x3104, 2304x1792, 1792x2304.",
+    "display_name": "Пустое HiDream-O1 латентное изображение",
+    "inputs": {
+      "batch_size": {
+        "name": "размер_пакета"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyHunyuanImageLatent": {
     "display_name": "EmptyHunyuanImageLatent",
     "inputs": {
@@ -4444,6 +4537,22 @@
       }
     }
   },
+  "GetICLoRAParameters": {
+    "description": "Извлекает параметры IC-LoRA из метаданных safetensors модели, загруженной через LoRA, и выводит их для LTXVAddGuide (например, reference_downscale_factor).",
+    "display_name": "Получить параметры IC-LoRA",
+    "inputs": {
+      "iclora_model": {
+        "name": "iclora_model",
+        "tooltip": "Прямой вывод из LoRA Loader для конкретной IC-LoRA, из которой нужно извлечь метаданные."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iclora_parameters",
+        "tooltip": "Параметры IC-LoRA, извлечённые из метаданных LoRA (например, reference_downscale_factor). Подключите к LTXVAddGuide, если для LoRA требуется специальная обработка направляющих."
+      }
+    }
+  },
   "GetImageSize": {
     "description": "Возвращает ширину и высоту изображения и передаёт его без изменений.",
     "display_name": "Получить размер изображения",
@@ -4901,6 +5010,70 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1PatchSeamSmoothing": {
+    "description": "Усредняет выход модели по нескольким смещённым позициям сетки патчей на поздних этапах сэмплирования. Устраняет швы.",
+    "display_name": "Сглаживание швов патчей HiDream-O1",
+    "inputs": {
+      "blend": {
+        "name": "смешивание",
+        "tooltip": "average: среднее арифметическое. window: взвешивание по окну Ханна, отдавая предпочтение проходам вдали от границ патчей. median: медиана по каждому пикселю, отбрасывает выбросы на границах."
+      },
+      "end_percent": {
+        "name": "конечный_процент",
+        "tooltip": "Прогресс сэмплирования, при котором смешивание выключается."
+      },
+      "model": {
+        "name": "модель"
+      },
+      "passes": {
+        "name": "проходы",
+        "tooltip": "Количество проходов на каждом этапе. 2/4 = фиксировано. ramp_*: количество проходов увеличивается к концу сэмплирования (больше сглаживания там, где швы заметнее)."
+      },
+      "pattern": {
+        "name": "шаблон",
+        "tooltip": "Схема смещения. single_shift: один проход по естественной сетке патчей + другие со смещением. symmetric: все проходы вне сетки, смещения симметричны относительно центра."
+      },
+      "start_percent": {
+        "name": "начальный_процент",
+        "tooltip": "Прогресс сэмплирования (0=начало, 1=конец), при котором включается смешивание."
+      },
+      "strength": {
+        "name": "интенсивность",
+        "tooltip": "Интерполяция между предсказанием по естественной сетке (0) и усреднённым результатом (1)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1ReferenceImages": {
+    "description": "Прикрепите 1-10 референсных изображений для кондиционирования: одно для редактирования по инструкции или несколько для персонализации по объекту.",
+    "display_name": "Референсные изображения HiDream-O1",
+    "inputs": {
+      "images": {
+        "name": "изображения",
+        "tooltip": "Референсные изображения. 1 изображение = редактирование по инструкции; 2-10 изображений = мульти-референс."
+      },
+      "negative": {
+        "name": "отрицательный"
+      },
+      "positive": {
+        "name": "положительный"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "положительный",
+        "tooltip": null
+      },
+      "1": {
+        "name": "отрицательный",
         "tooltip": null
       }
     }
@@ -7255,9 +7428,17 @@
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "Необязательная пространственная маска в пиксельном пространстве. Управляет влиянием кондиционирования по регионам через self-attention, умноженным на силу."
+      },
       "frame_idx": {
         "name": "индекс кадра",
         "tooltip": "Индекс кадра для начала условия. Для однокадровых изображений или видео с 1-8 кадрами любое значение frame_idx приемлемо. Для видео с 9+ кадрами, frame_idx должен быть кратен 8, в противном случае он будет округлен вниз до ближайшего кратного 8. Отрицательные значения считаются с конца видео."
+      },
+      "iclora_parameters": {
+        "name": "iclora_parameters",
+        "tooltip": "Необязательные параметры IC-LoRA из узла Get IC-LoRA Parameters. Используются для корректировки обработки направляющих, как требуется некоторыми IC-LoRA (например, если reference_downscale_factor > 1). При последовательном соединении каждый LTXVAddGuide использует только подключённые к нему параметры."
       },
       "image": {
         "name": "изображение",
@@ -8251,6 +8432,19 @@
     "inputs": {
       "latent": {
         "name": "скрытый"
+      }
+    }
+  },
+  "LoadMoGeModel": {
+    "display_name": "Загрузить MoGe модель",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9574,6 +9768,122 @@
       "seed": {
         "name": "seed",
         "tooltip": "Случайное зерно, используемое для создания шума."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeInference": {
+    "display_name": "MoGe инференс",
+    "inputs": {
+      "apply_mask": {
+        "name": "apply_mask",
+        "tooltip": "Устанавливает замаскированные (небо / невалидные) пиксели в inf в точках и глубине, чтобы при построении сетки они отбрасывались. Отключите, чтобы сохранить исходную предсказанную геометрию везде; маска всё равно возвращается отдельно."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Количество изображений за один инференс. Уменьшите, если возникает нехватка памяти при обработке длинного видео или набора изображений."
+      },
+      "force_projection": {
+        "name": "force_projection"
+      },
+      "fov_x_degrees": {
+        "name": "fov_x_degrees",
+        "tooltip": "Горизонтальный угол обзора исходной камеры. Определяет фокусное расстояние, используемое для обратного проецирования карты глубины в 3D. 0 = автоматически восстанавливается по предсказанным точкам."
+      },
+      "image": {
+        "name": "image"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "0 = быстрее всего, 9 = максимальная детализация."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePanoramaInference": {
+    "display_name": "MoGe инференс панорамы",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Количество видов в одном инференс-батче (всего 12 сегментов)."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Эквидистантная панорама (любое соотношение сторон)."
+      },
+      "merge_resolution": {
+        "name": "merge_resolution",
+        "tooltip": "Разрешение по длинной стороне объединённой эквидистантной карты расстояний."
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "Детализация для каждого вида (0 = быстрее всего, 9 = максимальная детализация)."
+      },
+      "split_resolution": {
+        "name": "split_resolution",
+        "tooltip": "Разрешение каждого перспективного сегмента."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePointMapToMesh": {
+    "display_name": "MoGe Point Map to Mesh",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "Какое изображение из пакета MoGe геометрии преобразовать в mesh. Количество вершин для каждого изображения различается, поэтому пакеты не могут быть объединены в один MESH."
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "Шаг по вершинам; 1 = полное разрешение."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "Отбрасывать пиксели, если диапазон глубины 3x3 превышает эту долю. 0 = выкл."
+      },
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Передавать исходное изображение как текстуру baseColor."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeRender": {
+    "display_name": "MoGe Render",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "DirectX и OpenGL управляют соглашением о зелёном канале normal-map. DirectX: зелёный = -Y вниз (Unreal). OpenGL: зелёный = +Y вверх (Blender, Substance, Unity, glTF)."
       }
     },
     "outputs": {
@@ -11654,6 +11964,18 @@
       }
     }
   },
+  "ModelNoiseScale": {
+    "display_name": "Масштаб шума модели",
+    "inputs": {
+      "model": {
+        "name": "модель"
+      },
+      "noise_scale": {
+        "name": "масштаб_шума",
+        "tooltip": "Абсолютный масштаб шума обучения. Например, HiDream-O1 base: 8.0, dev: 7.5."
+      }
+    }
+  },
   "ModelPatchLoader": {
     "display_name": "ModelPatchLoader",
     "inputs": {
@@ -13667,6 +13989,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "Генерирует маску переднего плана для удаления фона с изображения с помощью модели удаления фона.",
     "display_name": "Удалить фон",
     "inputs": {
       "bg_removal_model": {
@@ -14962,6 +15285,29 @@
     "inputs": {
       "version": {
         "name": "версия"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SamplerLCM": {
+    "description": "LCM-семплер с настраиваемым уровнем шума на каждом шаге. s_noise — это множитель масштаба шума обучения модели",
+    "display_name": "SamplerLCM",
+    "inputs": {
+      "noise_clip_std": {
+        "name": "noise_clip_std",
+        "tooltip": "Ограничить шум на каждом шаге до +/- N*std. 0 — отключить."
+      },
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "Множитель шума на первом шаге (1.0 = соответствует обучению)."
+      },
+      "s_noise_end": {
+        "name": "s_noise_end",
+        "tooltip": "Множитель шума на последнем шаге. Установите равным s_noise для постоянного расписания."
       }
     },
     "outputs": {

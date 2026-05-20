@@ -896,6 +896,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "description": "تولید پاسخ متنی با مدل‌های Seed 2.0 شرکت ByteDance. یک متن ورودی (prompt) و در صورت نیاز یک یا چند تصویر یا ویدیو برای زمینه چندرسانه‌ای ارائه دهید.",
+    "display_name": "ByteDance Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدل Seed مورد استفاده برای تولید پاسخ."
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "ورودی متنی برای مدل."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از مقدار seed غیرقطعی هستند."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "دستورالعمل‌های پایه‌ای که رفتار مدل را تعیین می‌کنند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "description": "تولید یکپارچه تصویر از متن و ویرایش دقیق جمله‌ای تا وضوح ۴K.",
     "display_name": "ByteDance Seedream ۴.۵",
@@ -1607,6 +1640,46 @@
       "start_sigma": {
         "name": "start_sigma",
         "tooltip": "اولین سیگما که این گزینه‌ها اعمال می‌شوند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClaudeNode": {
+    "description": "تولید پاسخ متنی با مدل‌های Claude از Anthropic. یک پرامپت متنی وارد کنید و در صورت نیاز یک یا چند تصویر برای زمینه چندرسانه‌ای ارائه دهید.",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصویر(ها)ی اختیاری برای استفاده به عنوان زمینه برای مدل. تا ۲۰ تصویر."
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل Claude که برای تولید پاسخ استفاده می‌شود."
+      },
+      "model_max_tokens": {
+        "name": "حداکثر توکن‌ها"
+      },
+      "model_temperature": {
+        "name": "دمای مدل"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "ورودی متنی برای مدل."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "دستورالعمل‌های پایه‌ای که رفتار مدل را تعیین می‌کند."
       }
     },
     "outputs": {
@@ -3156,6 +3229,26 @@
       }
     }
   },
+  "EmptyHiDreamO1LatentImage": {
+    "description": "فضای پیکسلی نهفته خالی برای HiDream-O1-Image. مدل در حدود ۴ مگاپیکسل آموزش دیده است؛ رزولوشن‌های پایین‌تر از توزیع خارج می‌شوند و کیفیت به طور محسوسی کاهش می‌یابد. رزولوشن‌های آموزش‌دیده: ۲۰۴۸×۲۰۴۸، ۲۳۰۴×۱۷۲۸، ۱۷۲۸×۲۳۰۴، ۲۵۶۰×۱۴۴۰، ۱۴۴۰×۲۵۶۰، ۲۴۹۶×۱۶۶۴، ۱۶۶۴×۲۴۹۶، ۳۱۰۴×۱۳۱۲، ۱۳۱۲×۳۱۰۴، ۲۳۰۴×۱۷۹۲، ۱۷۹۲×۲۳۰۴.",
+    "display_name": "تصویر نهفته خالی HiDream-O1",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyHunyuanImageLatent": {
     "display_name": "تصویر نهفته Hunyuan خالی",
     "inputs": {
@@ -4444,6 +4537,22 @@
       }
     }
   },
+  "GetICLoRAParameters": {
+    "description": "پارامترهای IC-LoRA را از متادیتای safetensors یک مدل بارگذاری‌شده LoRA استخراج می‌کند و آن‌ها را برای LTXVAddGuide (مثلاً reference_downscale_factor) خروجی می‌دهد.",
+    "display_name": "دریافت پارامترهای IC-LoRA",
+    "inputs": {
+      "iclora_model": {
+        "name": "iclora_model",
+        "tooltip": "خروجی مستقیم از LoRA Loader برای IC-LoRA مشخص که متادیتا باید از آن استخراج شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iclora_parameters",
+        "tooltip": "پارامترهای IC-LoRA استخراج‌شده از متادیتای LoRA (مثلاً reference_downscale_factor). در صورتی که LoRA نیاز به مدیریت ویژه راهنماها داشته باشد، به LTXVAddGuide متصل شود."
+      }
+    }
+  },
   "GetImageSize": {
     "description": "عرض و ارتفاع تصویر را بازمی‌گرداند و تصویر را بدون تغییر عبور می‌دهد.",
     "display_name": "دریافت ابعاد تصویر",
@@ -4901,6 +5010,70 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1PatchSeamSmoothing": {
+    "description": "میانگین‌گیری خروجی مدل در چندین موقعیت شبکه پچ جابجا شده در بخش پایانی نمونه‌گیری. درزها را حذف می‌کند.",
+    "display_name": "هموارسازی درز پچ HiDream-O1",
+    "inputs": {
+      "blend": {
+        "name": "ترکیب",
+        "tooltip": "average: میانگین با وزن برابر. window: وزن‌دهی پنجره Hann که هر عبور را از مرز پچ خود دور می‌کند. median: میانه هر پیکسل، عبورهای پرت را حذف می‌کند."
+      },
+      "end_percent": {
+        "name": "درصد پایان",
+        "tooltip": "پیشرفت نمونه‌گیری که در آن ترکیب غیرفعال می‌شود."
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "passes": {
+        "name": "تعداد عبور",
+        "tooltip": "تعداد عبور در هر مرحله. ۲/۴ = ثابت. ramp_*: تعداد عبور با نزدیک شدن نمونه‌گیری به پایان افزایش می‌یابد (هموارسازی بیشتر در جایی که درزها بیشتر دیده می‌شوند)."
+      },
+      "pattern": {
+        "name": "الگو",
+        "tooltip": "طرح جابجایی. single_shift: یک بار در شبکه پچ طبیعی + سایرین با افست. symmetric: همه عبورها خارج از شبکه، جابجایی‌ها حول مبدأ تقسیم می‌شوند."
+      },
+      "start_percent": {
+        "name": "درصد شروع",
+        "tooltip": "پیشرفت نمونه‌گیری (۰=شروع، ۱=پایان) که در آن ترکیب فعال می‌شود."
+      },
+      "strength": {
+        "name": "شدت",
+        "tooltip": "درون‌یابی بین پیش‌بینی شبکه طبیعی (۰) و نتیجه میانگین‌گیری شده (۱)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1ReferenceImages": {
+    "description": "ضمیمه کردن ۱ تا ۱۰ تصویر مرجع به شرط‌دهی؛ یک تصویر برای ویرایش دستور یا چند تصویر برای شخصی‌سازی مبتنی بر سوژه.",
+    "display_name": "تصاویر مرجع HiDream-O1",
+    "inputs": {
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصاویر مرجع. ۱ تصویر = ویرایش دستور؛ ۲ تا ۱۰ تصویر = مرجع چندگانه."
+      },
+      "negative": {
+        "name": "منفی"
+      },
+      "positive": {
+        "name": "مثبت"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
         "tooltip": null
       }
     }
@@ -7255,9 +7428,17 @@
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "ماسک فضایی اختیاری در فضای پیکسل. تأثیر شرطی‌سازی هر ناحیه را از طریق self-attention و ضرب در میزان قدرت کنترل می‌کند."
+      },
       "frame_idx": {
         "name": "اندیس فریم",
         "tooltip": "اندیس فریم برای شروع شرط‌گذاری. برای تصاویر تک‌فریم یا ویدیوهای ۱ تا ۸ فریم، هر مقدار frame_idx قابل قبول است. برای ویدیوهای ۹ فریم به بالا، frame_idx باید بر ۸ بخش‌پذیر باشد، در غیر این صورت به نزدیک‌ترین مضرب ۸ گرد می‌شود. مقادیر منفی از انتهای ویدیو شمرده می‌شوند."
+      },
+      "iclora_parameters": {
+        "name": "iclora_parameters",
+        "tooltip": "پارامترهای اختیاری IC-LoRA از یک node دریافت IC-LoRA Parameters. برای تنظیم پردازش راهنما طبق نیاز برخی IC-LoRAها (مثلاً آن‌هایی که reference_downscale_factor بالاتر از ۱ دارند) استفاده می‌شود. در زنجیره، هر LTXVAddGuide فقط از پارامترهای متصل به خود استفاده می‌کند."
       },
       "image": {
         "name": "تصویر",
@@ -8251,6 +8432,19 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadMoGeModel": {
+    "display_name": "بارگذاری مدل MoGe",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9574,6 +9768,122 @@
       "seed": {
         "name": "بذر تصادفی",
         "tooltip": "بذر تصادفی که برای ایجاد نویز استفاده می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeInference": {
+    "display_name": "استنتاج MoGe",
+    "inputs": {
+      "apply_mask": {
+        "name": "apply_mask",
+        "tooltip": "پیکسل‌های ماسک‌شده (آسمان / نامعتبر) را در نقاط و عمق به مقدار inf تنظیم می‌کند تا در مش‌سازی حذف شوند. برای حفظ هندسه خام پیش‌بینی‌شده در همه جا غیرفعال کنید؛ ماسک همچنان به صورت جداگانه بازگردانده می‌شود."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "تعداد تصویر در هر فراخوانی استنتاج. اگر در ویدیو یا مجموعه تصویر طولانی با کمبود حافظه مواجه شدید، مقدار را کاهش دهید."
+      },
+      "force_projection": {
+        "name": "force_projection"
+      },
+      "fov_x_degrees": {
+        "name": "fov_x_degrees",
+        "tooltip": "زاویه دید افقی دوربین منبع. فاصله کانونی برای بازسازی نقشه عمق به سه‌بعدی را تعیین می‌کند. ۰ = بازیابی خودکار از نقاط پیش‌بینی‌شده."
+      },
+      "image": {
+        "name": "image"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "۰ = سریع‌ترین، ۹ = بیشترین جزئیات."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePanoramaInference": {
+    "display_name": "استنتاج پانورامای MoGe",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "تعداد نما در هر دسته استنتاج (۱۲ بخش در کل)."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "پانورامای equirectangular (هر نسبت تصویر)."
+      },
+      "merge_resolution": {
+        "name": "merge_resolution",
+        "tooltip": "وضوح ضلع بلند نقشه فاصله equirect ادغام‌شده."
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "جزئیات هر نما (۰ = سریع‌ترین، ۹ = بیشترین جزئیات)."
+      },
+      "split_resolution": {
+        "name": "split_resolution",
+        "tooltip": "وضوح هر بخش پرسپکتیو."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePointMapToMesh": {
+    "display_name": "MoGe Point Map to Mesh",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "کدام تصویر از هندسه‌ی MoGe دسته‌ای برای مش کردن انتخاب شود. تعداد رأس‌ها در هر تصویر متفاوت است، بنابراین دسته‌ها نمی‌توانند به یک مش واحد تبدیل شوند."
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "گام رأس؛ ۱ = وضوح کامل."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "پیکسل‌هایی که بازه عمق ۳×۳ آن‌ها از این نسبت بیشتر باشد حذف می‌شوند. ۰ = غیرفعال."
+      },
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "تصویر منبع را به عنوان بافت baseColor منتقل می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeRender": {
+    "display_name": "MoGe Render",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "DirectX و OpenGL نحوه نمایش کانال سبز normal-map را کنترل می‌کنند. DirectX: سبز = -Y پایین (Unreal). OpenGL: سبز = +Y بالا (Blender، Substance، Unity، glTF)."
       }
     },
     "outputs": {
@@ -11654,6 +11964,18 @@
       }
     }
   },
+  "ModelNoiseScale": {
+    "display_name": "ModelNoiseScale",
+    "inputs": {
+      "model": {
+        "name": "مدل"
+      },
+      "noise_scale": {
+        "name": "مقیاس نویز",
+        "tooltip": "مقیاس نویز آموزش مطلق. برای مثال HiDream-O1 base: ۸.۰، dev: ۷.۵."
+      }
+    }
+  },
   "ModelPatchLoader": {
     "display_name": "ModelPatchLoader",
     "inputs": {
@@ -13667,6 +13989,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "یک ماسک پیش‌زمینه ایجاد می‌کند تا پس‌زمینه را با استفاده از مدل حذف پس‌زمینه از تصویر حذف کند.",
     "display_name": "حذف پس‌زمینه",
     "inputs": {
       "bg_removal_model": {
@@ -14962,6 +15285,29 @@
     "inputs": {
       "version": {
         "name": "نسخه"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SamplerLCM": {
+    "description": "نمونه‌گیر LCM با نویز قابل تنظیم در هر گام. s_noise ضریب مقیاس نویز آموزش مدل است.",
+    "display_name": "SamplerLCM",
+    "inputs": {
+      "noise_clip_std": {
+        "name": "noise_clip_std",
+        "tooltip": "محدود کردن نویز هر گام به ±N*std. مقدار ۰ غیرفعال می‌کند."
+      },
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "ضریب نویز در هر گام در اولین مرحله (۱.۰ = مطابق آموزش)."
+      },
+      "s_noise_end": {
+        "name": "s_noise_end",
+        "tooltip": "ضریب نویز در هر گام در آخرین مرحله. برای برنامه زمانی ثابت، مقدار را برابر با s_noise قرار دهید."
       }
     },
     "outputs": {

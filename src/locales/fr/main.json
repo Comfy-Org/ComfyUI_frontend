@@ -410,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "Continuer localement",
     "exploreCloud": "Essayer le cloud gratuitement",
-    "feature1Title": "400 crédits gratuits par mois",
     "feature2Title": "Fonctionne partout, instantanément",
     "feature3Title": "Modèles prêts à l’emploi",
     "feature4Title": "Packs de nœuds personnalisés préinstallés",
@@ -816,6 +815,7 @@
     "HISTOGRAM": "HISTOGRAMME",
     "HOOKS": "CROCHETS",
     "HOOK_KEYFRAMES": "CLEFS_DE_CROCHET",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "IMAGE",
     "IMAGECOMPARE": "COMPARAISON_IMAGE",
     "INT": "ENTIER",
@@ -836,6 +836,8 @@
     "MODEL": "MODÈLE",
     "MODEL_PATCH": "PATCH_MODÈLE",
     "MODEL_TASK_ID": "ID_TÂCHE_MODÈLE",
+    "MOGE_GEOMETRY": "MOGE_GÉOMÉTRIE",
+    "MOGE_MODEL": "MOGE_MODÈLE",
     "NOISE": "BRUIT",
     "OPENAI_CHAT_CONFIG": "CONFIG_CHAT_OPENAI",
     "OPENAI_INPUT_FILES": "FICHIERS_ENTRÉE_OPENAI",
@@ -914,7 +916,8 @@
     "extensionFileHint": "Cela peut être dû au script suivant",
     "loadWorkflowTitle": "Chargement interrompu en raison d'une erreur de rechargement des données de workflow",
     "noStackTrace": "Aucune trace de pile disponible",
-    "promptExecutionError": "L'exécution de l'invite a échoué"
+    "promptExecutionError": "L'exécution de l'invite a échoué",
+    "queueOpenWorkflowFailedTitle": "Échec de l'ouverture du workflow"
   },
   "errorOverlay": {
     "errorCount": "{count} ERREUR | {count} ERREURS",
@@ -1042,6 +1045,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "Logo ComfyOrg",
+    "comfyPackageOutdated": "La version installée de {name} ({installedVersion}) est inférieure à la version requise ({requiredVersion}).",
     "comingSoon": "Bientôt disponible",
     "command": "Commande",
     "commandProhibited": "La commande {command} est interdite. Contactez un administrateur pour plus d'informations.",
@@ -1741,6 +1745,10 @@
     "outdatedVersionGeneric": "Ce workflow a été créé avec une version plus récente de ComfyUI. Certains nœuds peuvent ne pas fonctionner correctement.",
     "unknownVersion": "inconnue"
   },
+  "logsTerminal": {
+    "loadError": "Impossible de charger les journaux, veuillez vous assurer que votre backend ComfyUI est à jour.",
+    "resyncError": "Impossible de resynchroniser les journaux après la reconnexion du backend. Rouvrez la console pour réessayer."
+  },
   "maintenance": {
     "None": "Aucun",
     "OK": "OK",
@@ -2254,6 +2262,7 @@
     "": "",
     "3d": "3d",
     "3d_models": "modèles_3d",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
@@ -2286,7 +2295,6 @@
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
     "advanced": "avancé",
-    "animation": "animation",
     "api node": "nœud api",
     "attention_experiments": "expériences_d'attention",
     "audio": "audio",
@@ -2309,7 +2317,9 @@
     "detection": "détection",
     "edit_models": "edit_models",
     "experimental": "expérimental",
+    "filters": "filtres",
     "flux": "flux",
+    "geometry_estimation": "estimation_de_géométrie",
     "gligen": "gligen",
     "guidance": "guidance",
     "guiders": "guides",
@@ -2331,13 +2341,11 @@
     "noise": "bruit",
     "operations": "opérations",
     "photomaker": "photomaker",
-    "postprocessing": "post-traitement",
     "preprocessors": "préprocesseurs",
     "primitive": "primitif",
     "qwen": "qwen",
     "samplers": "échantillonneurs",
     "sampling": "échantillonnage",
-    "save": "enregistrer",
     "schedulers": "planificateurs",
     "scheduling": "planification",
     "sd3": "sd3",

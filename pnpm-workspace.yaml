@@ -41,7 +41,7 @@ catalog:
   '@storybook/addon-mcp': 0.1.6
   '@storybook/vue3': ^10.2.10
   '@storybook/vue3-vite': ^10.2.10
-  '@tailwindcss/vite': ^4.2.0
+  '@tailwindcss/vite': ^4.3.0
   '@tanstack/vue-virtual': ^3.13.12
   '@testing-library/jest-dom': ^6.9.1
   '@testing-library/user-event': ^14.6.1
@@ -117,7 +117,7 @@ catalog:
   rollup-plugin-visualizer: ^6.0.4
   storybook: ^10.2.10
   stylelint: ^16.26.1
-  tailwindcss: ^4.2.0
+  tailwindcss: ^4.3.0
   three: ^0.170.0
   tailwindcss-primeui: ^0.6.1
   tsx: ^4.15.6
