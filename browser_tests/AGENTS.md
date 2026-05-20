@@ -127,7 +127,7 @@ Reserve `toPass()` for blocks with multiple assertions or complex async logic th
 When a test needs a node, input shape, or backend behavior that no production node exposes, prefer **adding a node to `tools/devtools/nodes/`** over intercepting `/object_info` from the test.
 
 - Add the new class to the appropriate file (e.g. `inputs.py` for input-shape variants), register it in that file's `NODE_CLASS_MAPPINGS` / `NODE_DISPLAY_NAME_MAPPINGS` with a `DevTools` prefix, and re-export it through `nodes/__init__.py` and `dev_nodes.py`.
-- In the spec, create the node via `comfyPage.nodeOps.addNode('DevToolsYourNode')` and assert against the rendered widget (see `vueNodes/widgets/legacy.spec.ts` and `vueNodes/widgets/color/colorWidget.spec.ts`).
+- In the spec, prefer real user actions for adding the node: `await comfyPage.page.mouse.dblclick(...)` then `comfyPage.searchBox.fillAndSelectFirstNode('Node Display Name')` (see `vueNodes/widgets/color/colorWidget.spec.ts`). Reach for `comfyPage.nodeOps.addNode(...)` only when the test is not specifically about the add flow and a programmatic shortcut keeps the test focused (e.g. `vueNodes/widgets/legacy.spec.ts`).
 - Reserve `page.route(/\/object_info$/, ...)` for cases where the test needs to mutate an existing production node's shape mid-flight (e.g. `propertiesPanel/errorsTabMissingModels.spec.ts`).
 
 Devtools nodes are loaded automatically into the test ComfyUI instance, so no fixture wiring is required.
