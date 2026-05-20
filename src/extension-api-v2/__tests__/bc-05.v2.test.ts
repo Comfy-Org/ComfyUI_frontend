@@ -1,10 +1,37 @@
 // Category: BC.05 — Custom DOM widgets and node sizing
 // DB cross-ref: S4.W2, S2.N11
 // Exemplar: https://github.com/Lightricks/ComfyUI-LTXVideo/blob/main/web/js/sparse_track_editor.js#L218
-// compat-floor: blast_radius 5.45 ≥ 2.0 — MUST pass before v2 ships
-// v2 replacement: NodeHandle.addDOMWidget(opts) — auto-hooks computeSize via WidgetHandle geometry
+//
+// AXIOM-EXCLUDED (wave-10, D-ban-runtime-addwidget, AXIOMS.md A15):
+//   v2 NodeHandle.addDOMWidget / addWidget surfaces removed. All tests in
+//   this file are wrapped with `axiomExcluded({...})` (vitest test.fails)
+//   and continue to run as regression alarms — if the v2 surface is
+//   ever re-introduced, these tests flip to FAIL.
+//
+//   Migration paths for original consumers:
+//   - Declare in Python INPUT_TYPES
+//   - Boxed widget (e.g. BBOX [x,y,w,h])
+//   - Non-widget UI primitive via defineNode/defineExtension setup()
+//
+//   The "compat-floor blast_radius ≥ 2.0 MUST pass before v2 ships"
+//   doctrine is retired (AXIOMS.md §Axiom-Excluded Test Annotation Policy).
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { axiomExcluded } from './helpers/axiomExcluded'
+
+const excluded = axiomExcluded({
+  axiom: 'A15',
+  adr: 'decisions/D-ban-runtime-addwidget.md',
+  rationale:
+    'Widgets are schema-declared per A15; v2 NodeHandle does not expose addDOMWidget/addWidget.',
+  migration: [
+    'Declare in Python INPUT_TYPES',
+    'Boxed widget (e.g. BBOX [x,y,w,h])',
+    'Non-widget UI primitive via defineNode/defineExtension setup()'
+  ],
+  restoration: 'D-ban-runtime-addwidget §Restoration criteria'
+})
 
 // ── Mock world (same pattern as bc-01.v2.test.ts) ────────────────────────────
 
@@ -41,11 +68,18 @@ import {
   _clearExtensionsForTesting,
   _setDispatchImplForTesting,
   defineNode,
-  getDOMWidgetElement,
   mountExtensionsForNode,
   unmountExtensionsForNode
 } from '@/services/extension-api-service'
 import type { NodeEntityId, WidgetEntityId } from '@/world/entityIds'
+
+// Stub for the removed `getDOMWidgetElement` export. The side table was
+// deleted alongside the v2 addDOMWidget shim per D-ban-runtime-addwidget;
+// tests that reference it remain (wrapped via axiomExcluded) so the
+// resulting assertion failures continue to flag any re-introduction.
+const getDOMWidgetElement = (
+  _widgetId: WidgetEntityId
+): HTMLElement | undefined => undefined
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -98,7 +132,7 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
   })
 
   describe('NodeHandle.addDOMWidget(opts) — widget registration (S4.W2)', () => {
-    it('addDOMWidget dispatches a CreateWidget command with type "DOM" and the given name', () => {
+    excluded('addDOMWidget dispatches a CreateWidget command with type "DOM" and the given name', () => {
       const el = makeDiv()
 
       defineNode({
@@ -120,7 +154,7 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
       expect(createCmd?.widgetType).toBe('DOM')
     })
 
-    it('addDOMWidget returns a WidgetHandle with the correct name', () => {
+    excluded('addDOMWidget returns a WidgetHandle with the correct name', () => {
       let handleName: string | undefined
 
       defineNode({
@@ -141,7 +175,7 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
       expect(handleName).toBe('preview')
     })
 
-    it('addDOMWidget stores the DOM element in a side table (not in command options, for serializability)', () => {
+    excluded('addDOMWidget stores the DOM element in a side table (not in command options, for serializability)', () => {
       const el = makeDiv()
       let widgetId: WidgetEntityId | undefined
 
@@ -169,7 +203,7 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
       expect(getDOMWidgetElement(widgetId!)).toBe(el)
     })
 
-    it('addDOMWidget uses the provided height option rather than offsetHeight when specified', () => {
+    excluded('addDOMWidget uses the provided height option rather than offsetHeight when specified', () => {
       const el = makeDiv(120) // offsetHeight = 120
       const customHeight = 250
 
@@ -195,7 +229,7 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
       expect(createCmd?.options.__domHeight).toBe(customHeight)
     })
 
-    it('addDOMWidget falls back to element.offsetHeight when no height option is given', () => {
+    excluded('addDOMWidget falls back to element.offsetHeight when no height option is given', () => {
       const el = makeDiv(88)
 
       defineNode({
@@ -216,7 +250,7 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
       expect(createCmd?.options.__domHeight).toBe(88)
     })
 
-    it('DOM element is removed from the document when the node scope is disposed', () => {
+    excluded('DOM element is removed from the document when the node scope is disposed', () => {
       const el = makeDiv()
       document.body.appendChild(el)
       expect(document.body.contains(el)).toBe(true)
@@ -240,7 +274,7 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
   })
 
   describe('WidgetHandle geometry — setHeight (replaces S2.N11 computeSize override)', () => {
-    it('WidgetHandle.setHeight dispatches a SetWidgetOption command with key "__domHeight"', () => {
+    excluded('WidgetHandle.setHeight dispatches a SetWidgetOption command with key "__domHeight"', () => {
       defineNode({
         name: 'bc05.v2.set-height',
         nodeCreated(handle) {
@@ -266,7 +300,7 @@ describe('BC.05 v2 contract — custom DOM widgets and node sizing', () => {
       expect(setCmd).toBeDefined()
     })
 
-    it('multiple addDOMWidget calls each produce independent CreateWidget commands', () => {
+    excluded('multiple addDOMWidget calls each produce independent CreateWidget commands', () => {
       defineNode({
         name: 'bc05.v2.multi-widget',
         nodeCreated(handle) {

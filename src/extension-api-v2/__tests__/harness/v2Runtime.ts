@@ -59,7 +59,8 @@ export function createV2Runtime(options: V2RuntimeOptions = {}): V2Runtime {
   function createHandle(record: NodeRecord): NodeHandle {
     // Minimal NodeHandle stub — only the fields BC tests touch are real.
     const widgets: Array<{ name: string; id: string }> = []
-    let widgetCounter = 0
+    // widgetCounter removed alongside addWidget/addDOMWidget mocks
+    // per D-ban-runtime-addwidget (wave-10).
 
     return {
       id: record.id as unknown as string,
@@ -83,48 +84,12 @@ export function createV2Runtime(options: V2RuntimeOptions = {}): V2Runtime {
       setProperty: () => {},
       widget: (name: string) => widgets.find((w) => w.name === name),
       widgets: () => widgets,
-      addWidget: (_type: string, name: string, _defaultValue: unknown) => {
-        const id = `widget:${record.id}:${++widgetCounter}`
-        const wh = {
-          name,
-          id,
-          equals(other: { id: string }): boolean {
-            return this.id === other.id
-          },
-          getValue: () => undefined,
-          setValue: () => {},
-          setOption: () => {},
-          setHidden: () => {},
-          setDisabled: () => {},
-          setHeight: () => {},
-          on: () => () => {},
-          isSerializeEnabled: () => true,
-          setSerializeEnabled: () => {}
-        }
-        widgets.push(wh)
-        return wh
-      },
-      addDOMWidget: (opts: { name: string; element: HTMLElement }) => {
-        const id = `widget:${record.id}:dom:${++widgetCounter}`
-        const wh = {
-          name: opts.name,
-          id,
-          equals(other: { id: string }): boolean {
-            return this.id === other.id
-          },
-          getValue: () => undefined,
-          setValue: () => {},
-          setOption: () => {},
-          setHidden: () => {},
-          setDisabled: () => {},
-          setHeight: () => {},
-          on: () => () => {},
-          isSerializeEnabled: () => true,
-          setSerializeEnabled: () => {}
-        }
-        widgets.push(wh)
-        return wh
-      },
+      // REMOVED per AXIOMS.md A15 and
+      // decisions/D-ban-runtime-addwidget.md — v2 NodeHandle does not
+      // expose addWidget / addDOMWidget. These mocks would mask the
+      // absence of the public surface in harness-backed tests.
+      // addWidget: (_type, name, _defaultValue) => { … }
+      // addDOMWidget: (opts) => { … }
       inputs: () => [],
       outputs: () => [],
       on: () => () => {}

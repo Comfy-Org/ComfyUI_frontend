@@ -1,10 +1,31 @@
 // Category: BC.11 — Widget imperative state writes
 // DB cross-ref: S4.W4, S4.W5, S2.N16
 // Exemplar: https://github.com/r-vage/ComfyUI_Eclipse/blob/main/js/eclipse-set-get.js#L9
-// Migration: v1 direct property mutation (widget.value, widget.options.values, node.widgets.push/splice)
-//            → v2 WidgetHandle.setValue / setOption / NodeHandle.addWidget
+//
+// PARTIALLY AXIOM-EXCLUDED (wave-10, D-ban-runtime-addwidget, AXIOMS.md A15):
+//   - The widget.value→setValue and widget.options→setOption parity blocks
+//     remain unchanged (these v2 surfaces are valid).
+//   - The "node.widgets.push/splice → NodeHandle.addWidget" describe block
+//     is wrapped via `axiomExcluded({...})` (vitest test.fails) because the
+//     v2 surface no longer exposes addWidget. v1 callers migrate to one of —
+//     declare in INPUT_TYPES / boxed widget / non-widget UI primitive.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { axiomExcluded } from './helpers/axiomExcluded'
+
+const excluded = axiomExcluded({
+  axiom: 'A15',
+  adr: 'decisions/D-ban-runtime-addwidget.md',
+  rationale:
+    'v2 NodeHandle does not expose addWidget; the v1↔v2 parity scenario this describes is no longer valid.',
+  migration: [
+    'Declare in Python INPUT_TYPES',
+    'Boxed widget (e.g. BBOX [x,y,w,h])',
+    'Non-widget UI primitive via defineNode/defineExtension setup()'
+  ],
+  restoration: 'D-ban-runtime-addwidget §Restoration criteria'
+})
 
 // ── Mock world (same pattern as bc-01.migration.test.ts) ──────────────────────
 
@@ -250,7 +271,7 @@ describe('BC.11 migration — widget imperative state writes', () => {
   })
 
   describe('node.widgets.push/splice → NodeHandle.addWidget (S2.N16)', () => {
-    it('v1 push and v2 addWidget both result in a new widget with the expected name', () => {
+    excluded('v1 push and v2 addWidget both result in a new widget with the expected name', () => {
       // v1: push into node.widgets
       const v1Node = createV1Node()
       const v1NewWidget = createV1Widget('dynamic_lora', '')
@@ -274,7 +295,7 @@ describe('BC.11 migration — widget imperative state writes', () => {
       expect(v2Names).toContain('dynamic_lora')
     })
 
-    it('v1 splice by index is position-dependent; v2 addWidget uses name-keyed identity (no drift)', () => {
+    excluded('v1 splice by index is position-dependent; v2 addWidget uses name-keyed identity (no drift)', () => {
       // v1: positional splice — inserting before 'cfg' bumps 'cfg' index
       const v1Node = createV1Node([
         createV1Widget('steps', 20),
@@ -308,7 +329,7 @@ describe('BC.11 migration — widget imperative state writes', () => {
       expect(names).toContain('new_widget')
     })
 
-    it('v2 addWidget returns a WidgetHandle that can immediately call setValue — no index lookup needed', () => {
+    excluded('v2 addWidget returns a WidgetHandle that can immediately call setValue — no index lookup needed', () => {
       defineNode({
         name: 'bc11.mig.immediate-set',
         nodeCreated(handle) {
@@ -326,7 +347,7 @@ describe('BC.11 migration — widget imperative state writes', () => {
       expect(setCmd).toBeDefined()
     })
 
-    it('v1 push requires manual index tracking; v2 addWidget returns handle directly — no index bookkeeping', () => {
+    excluded('v1 push requires manual index tracking; v2 addWidget returns handle directly — no index bookkeeping', () => {
       // v1: to get the widget back after push, you track the index
       const v1Node = createV1Node()
       v1Node.widgets.push(createV1Widget('added', ''))
