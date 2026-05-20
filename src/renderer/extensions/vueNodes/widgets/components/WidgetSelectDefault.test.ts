@@ -6,6 +6,27 @@ import { createI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
+vi.mock('reka-ui', async () => {
+  const actual = (await vi.importActual('reka-ui')) as Record<string, unknown>
+  return {
+    ...actual,
+    ComboboxVirtualizer: defineComponent({
+      name: 'ComboboxVirtualizerStub',
+      props: {
+        options: Array,
+        estimateSize: Number,
+        textContent: Function
+      },
+      setup(props, { slots }) {
+        return () =>
+          (props.options ?? []).flatMap(
+            (option) => slots.default?.({ option }) ?? []
+          )
+      }
+    })
+  }
+})
+
 import WidgetSelectDefault from './WidgetSelectDefault.vue'
 
 const i18n = createI18n({
