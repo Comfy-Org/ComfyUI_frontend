@@ -1,6 +1,11 @@
 import { test as base } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import type { z } from 'zod'
+import {
+  zHistoryManageRequest,
+  zQueueManageRequest,
+  zQueueManageResponse
+} from '@comfyorg/ingest-types/zod'
 
 import type {
   JobStatus,
@@ -9,6 +14,8 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 
 type JobsListResponse = z.infer<typeof zJobsListResponse>
+type HistoryManageRequest = z.infer<typeof zHistoryManageRequest>
+type QueueManageRequest = z.infer<typeof zQueueManageRequest>
 
 const terminalJobStatuses = [
   'completed',
@@ -22,7 +29,8 @@ const activeJobStatuses = [
 const defaultJobsListLimit = 200
 const defaultScenarioHistoryLimit = 64
 const defaultJobsListOffset = 0
-const defaultRouteMockJobTimestamp = Date.UTC(2026, 0, 1, 12)
+
+export const routeMockJobTimestamp = Date.UTC(2026, 0, 1, 12)
 
 interface JobsListRoute {
   statuses: readonly JobStatus[]
@@ -32,7 +40,7 @@ interface JobsListRoute {
   responseLimit?: number
 }
 
-interface JobsScenario {
+export interface JobsScenario {
   history?: readonly RawJobListItem[]
   queue?: readonly RawJobListItem[]
 }
@@ -65,11 +73,9 @@ function hasJobsListPageParams(
   )
 }
 
-function isJobsListRequest(url: URL, route: JobsListRoute): boolean {
+function matchesJobsListRoute(url: URL, route: JobsListRoute): boolean {
   return (
-    url.pathname.endsWith('/api/jobs') &&
-    hasExactStatuses(url, route.statuses) &&
-    hasJobsListPageParams(url, route)
+    hasExactStatuses(url, route.statuses) && hasJobsListPageParams(url, route)
   )
 }
 
@@ -99,9 +105,9 @@ export function createRouteMockJob({
   return {
     id,
     status: 'completed',
-    create_time: defaultRouteMockJobTimestamp,
-    execution_start_time: defaultRouteMockJobTimestamp,
-    execution_end_time: defaultRouteMockJobTimestamp + 5_000,
+    create_time: routeMockJobTimestamp,
+    execution_start_time: routeMockJobTimestamp,
+    execution_end_time: routeMockJobTimestamp + 5_000,
     preview_output: {
       filename: `output_${id}.png`,
       subfolder: '',
@@ -150,7 +156,8 @@ export class JobsRouteMocker {
     const response = createJobsListResponse(route)
 
     await this.page.route(
-      (url) => isJobsListRequest(url, route),
+      (url) =>
+        url.pathname.endsWith('/api/jobs') && matchesJobsListRoute(url, route),
       async (requestRoute) => {
         if (requestRoute.request().method().toUpperCase() !== 'GET') {
           await requestRoute.fallback()
@@ -161,6 +168,44 @@ export class JobsRouteMocker {
       }
     )
   }
+
+  async mockClearQueue(): Promise<QueueManageRequest[]> {
+    const response = zQueueManageResponse.parse({ cleared: true })
+    return await this.mockPostManageRoute(
+      'queue',
+      zQueueManageRequest,
+      response
+    )
+  }
+
+  async mockClearHistory(): Promise<HistoryManageRequest[]> {
+    return await this.mockPostManageRoute('history', zHistoryManageRequest, {})
+  }
+
+  private async mockPostManageRoute<TRequest>(
+    type: 'queue' | 'history',
+    requestSchema: z.ZodType<TRequest>,
+    response: unknown
+  ): Promise<TRequest[]> {
+    const requests: TRequest[] = []
+
+    await this.page.route(
+      (url) => url.pathname.endsWith(`/api/${type}`),
+      async (requestRoute) => {
+        if (requestRoute.request().method().toUpperCase() !== 'POST') {
+          await requestRoute.fallback()
+          return
+        }
+
+        requests.push(
+          requestSchema.parse(requestRoute.request().postDataJSON())
+        )
+        await requestRoute.fulfill({ json: response })
+      }
+    )
+
+    return requests
+  }
 }
 
 export const jobsRouteFixture = base.extend<{
@@ -168,6 +213,5 @@ export const jobsRouteFixture = base.extend<{
 }>({
   jobsRoutes: async ({ page }, use) => {
     await use(new JobsRouteMocker(page))
-    await page.unrouteAll({ behavior: 'wait' })
   }
 })

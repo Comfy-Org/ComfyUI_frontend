@@ -896,6 +896,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "description": "تولید پاسخ متنی با مدل‌های Seed 2.0 شرکت ByteDance. یک متن ورودی (prompt) و در صورت نیاز یک یا چند تصویر یا ویدیو برای زمینه چندرسانه‌ای ارائه دهید.",
+    "display_name": "ByteDance Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدل Seed مورد استفاده برای تولید پاسخ."
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "ورودی متنی برای مدل."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از مقدار seed غیرقطعی هستند."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "دستورالعمل‌های پایه‌ای که رفتار مدل را تعیین می‌کنند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "description": "تولید یکپارچه تصویر از متن و ویرایش دقیق جمله‌ای تا وضوح ۴K.",
     "display_name": "ByteDance Seedream ۴.۵",
@@ -7395,6 +7428,10 @@
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "ماسک فضایی اختیاری در فضای پیکسل. تأثیر شرطی‌سازی هر ناحیه را از طریق self-attention و ضرب در میزان قدرت کنترل می‌کند."
+      },
       "frame_idx": {
         "name": "اندیس فریم",
         "tooltip": "اندیس فریم برای شروع شرط‌گذاری. برای تصاویر تک‌فریم یا ویدیوهای ۱ تا ۸ فریم، هر مقدار frame_idx قابل قبول است. برای ویدیوهای ۹ فریم به بالا، frame_idx باید بر ۸ بخش‌پذیر باشد، در غیر این صورت به نزدیک‌ترین مضرب ۸ گرد می‌شود. مقادیر منفی از انتهای ویدیو شمرده می‌شوند."
@@ -13952,6 +13989,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "یک ماسک پیش‌زمینه ایجاد می‌کند تا پس‌زمینه را با استفاده از مدل حذف پس‌زمینه از تصویر حذف کند.",
     "display_name": "حذف پس‌زمینه",
     "inputs": {
       "bg_removal_model": {

@@ -896,6 +896,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "description": "إنشاء استجابات نصية باستخدام نماذج Seed 2.0 من ByteDance. قدم مطالبة نصية ويمكنك أيضًا إضافة صورة أو أكثر أو فيديوهات للسياق متعدد الوسائط.",
+    "display_name": "ByteDance Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "نموذج Seed المستخدم لإنشاء الاستجابة."
+      },
+      "model_temperature": {
+        "name": "درجة الحرارة"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "إدخال نصي للنموذج."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "تتحكم قيمة seed في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن قيمة seed."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "تعليمات أساسية تحدد سلوك النموذج."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "description": "توليد موحد من النص إلى الصورة وتحرير دقيق للجملة الواحدة بدقة تصل إلى 4K.",
     "display_name": "ByteDance Seedream 4",
@@ -7395,6 +7428,10 @@
   "LTXVAddGuide": {
     "display_name": "إضافة دليل LTXV",
     "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "قناع مكاني اختياري في مساحة البكسل. يتحكم في تأثير التكييف لكل منطقة عبر self-attention، ويُضرب في القوة."
+      },
       "frame_idx": {
         "name": "مؤشر الإطار",
         "tooltip": "مؤشر الإطار لبدء التهيئة. لأي صورة أو فيديو بإطارات 1-8، أي قيمة مقبولة. للفيديوهات 9+، يجب أن يكون قابلاً للقسمة على 8، وإلا سيتم تقريبه للأسفل لأقرب مضاعف 8. القيم السالبة تُحسب من نهاية الفيديو."
@@ -13952,6 +13989,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "ينشئ قناع المقدمة لإزالة الخلفية من صورة باستخدام نموذج إزالة الخلفية.",
     "display_name": "إزالة الخلفية",
     "inputs": {
       "bg_removal_model": {

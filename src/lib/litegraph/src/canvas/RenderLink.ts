@@ -43,6 +43,8 @@ export interface RenderLink {
   /** The reroute that the link is being connected from. */
   readonly fromReroute?: Reroute
 
+  readonly isIoNodeLink?: boolean
+
   /**
    * Capability checks used for hit-testing and validation during drag.
    * Implementations should return `false` when a connection is not possible

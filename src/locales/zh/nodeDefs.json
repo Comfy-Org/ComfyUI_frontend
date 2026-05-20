@@ -896,6 +896,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "description": "使用字节跳动的 Seed 2.0 模型生成文本回复。请提供文本提示，并可选地添加一张或多张图像或视频以实现多模态上下文。",
+    "display_name": "字节跳动 Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于生成回复的 Seed 模型。"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "模型的文本输入。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制节点是否重新运行；无论 seed 如何，结果都是非确定性的。"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "决定模型行为的基础指令。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "description": "统一文本到图像生成，支持高达4K分辨率的精确单句编辑。",
     "display_name": "ByteDance Seedream 4.5 & 5.0",
@@ -7395,6 +7428,10 @@
   "LTXVAddGuide": {
     "display_name": "LTXV添加指导",
     "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "可选的像素空间区域 mask。通过自注意力机制并乘以强度，控制每个区域的条件影响。"
+      },
       "frame_idx": {
         "name": "帧索引",
         "tooltip": "开始调节的帧索引。对于单帧图像或1-8帧的视频，任何帧索引值都可以接受。对于9+帧的视频，帧索引必须能被8整除，否则它将被向下取整到最接近的8的倍数。负值从视频的末尾开始计算。"
@@ -13952,6 +13989,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "使用背景移除模型生成前景mask，从图像中移除背景。",
     "display_name": "移除背景",
     "inputs": {
       "bg_removal_model": {
