@@ -85,16 +85,14 @@ async function openPanelAndExpectNoMissingMedia(
 const test = mergeTests(comfyPageFixture, sharedWorkflowImportFixture)
 
 test.describe('Shared workflow missing media', { tag: '@cloud' }, () => {
-  // Missing media only surfaces the overlay when the Errors tab is enabled
-  // (src/stores/executionErrorStore.ts).
-  test.use({
-    initialSettings: {
-      'Comfy.RightSidePanel.ShowErrorsTab': true
-    }
-  })
-
   test.beforeEach(async ({ comfyPage, sharedWorkflowImportMocks }) => {
     sharedWorkflowImportMocks.resetAndStartRecording()
+    // Missing media only surfaces the overlay when the Errors tab is enabled
+    // (src/stores/executionErrorStore.ts).
+    await comfyPage.settings.setSetting(
+      'Comfy.RightSidePanel.ShowErrorsTab',
+      true
+    )
     await comfyPage.setup({
       clearStorage: false,
       url: `/?share=${sharedWorkflowImportScenario.shareId}`
