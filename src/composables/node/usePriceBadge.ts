@@ -18,6 +18,15 @@ export function usePriceBadge() {
     } else {
       node.badges.push(...newBadges)
     }
+    const graph = node.graph
+    if (!graph) return
+    graph.trigger('node:property:changed', {
+      type: 'node:property:changed',
+      nodeId: node.id,
+      property: 'badges',
+      oldValue: node.badges,
+      newValue: node.badges
+    })
   }
   function collectCreditsBadges(
     graph: LGraph,

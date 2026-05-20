@@ -524,10 +524,8 @@ function scheduleEvaluation(
       if (LiteGraph.vueNodesMode) {
         // VueNodes mode: bump per-node revision (only this node re-renders)
         getNodeRevisionRef(node.id).value++
-      } else {
-        // Nodes 1.0 mode: bump global tick to trigger setDirtyCanvas
-        pricingTick.value++
       }
+      pricingTick.value++
     })
 
   inflight.set(node, { sig, promise })
