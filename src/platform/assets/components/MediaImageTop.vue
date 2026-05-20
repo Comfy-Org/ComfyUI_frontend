@@ -15,7 +15,7 @@
       class="flex size-full flex-col items-center justify-center gap-2 bg-modal-card-placeholder-background p-3 text-center text-muted-foreground"
       data-testid="media-image-placeholder"
     >
-      <i :class="['size-8', placeholderIcon]" />
+      <i :class="cn('size-8', placeholderIcon)" />
       <span class="line-clamp-2 max-w-full text-xs break-all">
         {{ getAssetDisplayName(asset) }}
       </span>
@@ -27,6 +27,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useImage, whenever } from '@vueuse/core'
 import { computed } from 'vue'
 

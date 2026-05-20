@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   canRenderNatively,
   renditionFor
@@ -21,13 +22,13 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-function makeAsset(overrides: Record<string, unknown> = {}) {
+function makeAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return {
     id: 'asset-1',
     name: 'image.png',
     tags: ['output'],
     ...overrides
-  } as never
+  } satisfies AssetItem
 }
 
 describe('canRenderNatively', () => {
