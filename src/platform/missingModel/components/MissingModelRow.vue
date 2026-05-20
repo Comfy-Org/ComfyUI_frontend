@@ -156,10 +156,20 @@
             variant="secondary"
             size="md"
             class="flex w-full flex-1"
-            :aria-label="`${t('g.download')} ${model.name}`"
+            :aria-busy="isServerDownloadActive"
+            :disabled="isServerDownloadActive"
+            :aria-label="`${downloadActionLabel} ${model.name}`"
             @click="handleDownload"
           >
+            <DotSpinner
+              v-if="isServerDownloadActive"
+              aria-hidden="true"
+              class="mr-1"
+              duration="1s"
+              :size="12"
+            />
             <i
+              v-else
               aria-hidden="true"
               class="text-foreground mr-1 icon-[lucide--download] size-4 shrink-0"
             />
@@ -184,11 +194,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
+import DotSpinner from '@/components/common/DotSpinner.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
 import MissingModelStatusCard from '@/platform/missingModel/components/MissingModelStatusCard.vue'
 import MissingModelUrlInput from '@/platform/missingModel/components/MissingModelUrlInput.vue'
@@ -203,7 +214,8 @@ import {
 } from '@/platform/missingModel/composables/useMissingModelInteractions'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
   downloadModel,
   fetchModelMetadata,
@@ -225,6 +237,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
+const toastStore = useToastStore()
+const isServerDownloadActive = ref(false)
 
 const modelKey = computed(() =>
   getModelStateKey(model.name, directory, isAssetSupported)
@@ -277,22 +291,56 @@ const downloadable = computed(() => {
   )
 })
 
+const downloadActionLabel = computed(() =>
+  !isDesktop
+    ? t('rightSidePanel.missingModels.downloadToServer')
+    : t('g.download')
+)
+
 const downloadLabel = computed(() => {
-  const base = t('g.download')
+  const base = isServerDownloadActive.value
+    ? t('rightSidePanel.missingModels.downloadingToServer')
+    : downloadActionLabel.value
   const url = model.representative.url
   const size = url ? store.fileSizes[url] : undefined
-  return size ? `${base} (${formatSize(size)})` : base
+  return size && !isServerDownloadActive.value
+    ? `${base} (${formatSize(size)})`
+    : base
 })
 
-function handleDownload() {
+async function handleDownload() {
   const rep = model.representative
-  if (rep.url && rep.directory) {
-    downloadModel(
+  if (!rep.url || !rep.directory) {
+    console.warn('[MissingModelRow] Cannot download: missing url or directory')
+    return
+  }
+
+  if (isDesktop) {
+    await downloadModel(
       { name: rep.name, url: rep.url, directory: rep.directory },
       store.folderPaths
     )
-  } else {
-    console.warn('[MissingModelRow] Cannot download: missing url or directory')
+    return
+  }
+
+  isServerDownloadActive.value = true
+  try {
+    await downloadModel(
+      { name: rep.name, url: rep.url, directory: rep.directory },
+      store.folderPaths
+    )
+    await store.refreshMissingModels()
+  } catch (error) {
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail:
+        error instanceof Error
+          ? error.message
+          : t('rightSidePanel.missingModels.serverDownloadFailed')
+    })
+  } finally {
+    isServerDownloadActive.value = false
   }
 }
 

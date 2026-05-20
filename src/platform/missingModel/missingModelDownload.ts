@@ -1,6 +1,7 @@
 import { downloadUrlToHfRepoUrl, isCivitaiModelUrl } from '@/utils/formatUtil'
 import { isDesktop } from '@/platform/distribution/types'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+import { api } from '@/scripts/api'
 
 const ALLOWED_SOURCES = [
   'https://civitai.com/',
@@ -59,15 +60,9 @@ export function isModelDownloadable(model: ModelWithUrl): boolean {
 export function downloadModel(
   model: ModelWithUrl,
   paths: Record<string, string[]>
-): void {
+): Promise<void> {
   if (!isDesktop) {
-    const link = document.createElement('a')
-    link.href = model.url
-    link.download = model.name
-    link.target = '_blank'
-    link.rel = 'noopener noreferrer'
-    link.click()
-    return
+    return api.downloadModelToServer(model).then(() => undefined)
   }
 
   const modelPaths = paths[model.directory]
@@ -78,6 +73,7 @@ export function downloadModel(
       filename: model.name
     })
   }
+  return Promise.resolve()
 }
 
 interface ModelMetadata {

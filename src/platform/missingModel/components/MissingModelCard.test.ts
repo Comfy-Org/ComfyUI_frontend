@@ -1,5 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -23,12 +23,30 @@ vi.mock('./MissingModelRow.vue', () => ({
   }
 }))
 
-const mockIsCloud = vi.hoisted(() => ({ value: true }))
+const mockDistribution = vi.hoisted(() => ({
+  isCloud: true,
+  isDesktop: false
+}))
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
-    return mockIsCloud.value
+    return mockDistribution.isCloud
+  },
+  get isDesktop() {
+    return mockDistribution.isDesktop
   }
 }))
+
+const mockDownloadModel = vi.hoisted(() => vi.fn())
+vi.mock(
+  '@/platform/missingModel/missingModelDownload',
+  async (importOriginal) => {
+    const actual = (await importOriginal()) as Record<string, unknown>
+    return {
+      ...actual,
+      downloadModel: mockDownloadModel
+    }
+  }
+)
 
 import MissingModelCard from './MissingModelCard.vue'
 
@@ -44,6 +62,8 @@ const i18n = createI18n({
             'Cloud environment does not support model imports for custom nodes.',
           unknownCategory: 'Unknown Category',
           downloadAll: 'Download all',
+          downloadAllToServer: 'Download all to server',
+          downloadingToServer: 'Downloading to server...',
           refresh: 'Refresh',
           refreshing: 'Refreshing missing models.'
         }
@@ -126,7 +146,10 @@ function mountCard(
 
 describe('MissingModelCard', () => {
   beforeEach(() => {
-    mockIsCloud.value = true
+    mockDistribution.isCloud = true
+    mockDistribution.isDesktop = false
+    mockDownloadModel.mockReset()
+    mockDownloadModel.mockResolvedValue(undefined)
   })
 
   describe('Rendering & Props', () => {
@@ -243,11 +266,15 @@ describe('MissingModelCard', () => {
 
 describe('MissingModelCard (OSS)', () => {
   beforeEach(() => {
-    mockIsCloud.value = false
+    mockDistribution.isCloud = false
+    mockDistribution.isDesktop = false
+    mockDownloadModel.mockReset()
+    mockDownloadModel.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
-    mockIsCloud.value = true
+    mockDistribution.isCloud = true
+    mockDistribution.isDesktop = false
   })
 
   it('shows directory name instead of "Import Not Supported" for unsupported groups', () => {
@@ -284,8 +311,45 @@ describe('MissingModelCard (OSS)', () => {
       missingModelGroups: [makeGroup({ withDownloadUrls: true })]
     })
 
-    expect(screen.getByRole('button', { name: /Download all/ })).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: /Download all to server/ })
+    ).toBeVisible()
     expect(screen.getByRole('button', { name: 'Refresh' })).toBeVisible()
+  })
+
+  it('downloads all models and refreshes missing models', async () => {
+    mountCard({
+      missingModelGroups: [
+        makeGroup({
+          modelNames: ['a.safetensors', 'b.safetensors'],
+          withDownloadUrls: true
+        })
+      ]
+    })
+    const store = useMissingModelStore()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: /Download all to server/ })
+    )
+
+    await waitFor(() => {
+      expect(mockDownloadModel).toHaveBeenCalledTimes(2)
+      expect(store.refreshMissingModels).toHaveBeenCalled()
+    })
+  })
+
+  it('keeps the original bulk label in desktop builds', () => {
+    mockDistribution.isDesktop = true
+    mountCard({
+      missingModelGroups: [makeGroup({ withDownloadUrls: true })]
+    })
+
+    // Use an exact name match so this assertion does not accidentally
+    // succeed against the OSS "Download all to server" label.
+    expect(screen.getByRole('button', { name: 'Download all' })).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: /Download all to server/i })
+    ).not.toBeInTheDocument()
   })
 
   it('hides bulk actions when no model is downloadable', () => {

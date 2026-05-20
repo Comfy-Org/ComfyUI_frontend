@@ -10,9 +10,21 @@
         variant="secondary"
         size="sm"
         class="h-8 min-w-0 flex-1 rounded-lg text-sm"
+        :aria-busy="isDownloadingAll"
+        :disabled="isDownloadingAll"
         @click="downloadAllModels"
       >
-        <i aria-hidden="true" class="icon-[lucide--download] size-4 shrink-0" />
+        <DotSpinner
+          v-if="isDownloadingAll"
+          aria-hidden="true"
+          duration="1s"
+          :size="12"
+        />
+        <i
+          v-else
+          aria-hidden="true"
+          class="icon-[lucide--download] size-4 shrink-0"
+        />
         <span class="truncate">{{ downloadAllLabel }}</span>
       </Button>
       <!-- Keep this focusable while refreshing so the live status remains discoverable. -->
@@ -42,7 +54,9 @@
         {{
           missingModelStore.isRefreshingMissingModels
             ? t('rightSidePanel.missingModels.refreshing')
-            : ''
+            : isDownloadingAll
+              ? t('rightSidePanel.missingModels.downloadingToServer')
+              : ''
         }}
       </span>
     </div>
@@ -114,16 +128,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import MissingModelRow from '@/platform/missingModel/components/MissingModelRow.vue'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import { downloadModel } from '@/platform/missingModel/missingModelDownload'
 import { getDownloadableModels } from '@/platform/missingModel/missingModelViewUtils'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { formatSize } from '@/utils/formatUtil'
 
 const { missingModelGroups, showNodeIdBadge } = defineProps<{
@@ -137,6 +152,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const missingModelStore = useMissingModelStore()
+const toastStore = useToastStore()
+const isDownloadingAll = ref(false)
 
 const downloadableModels = computed(() => {
   if (isCloud) return []
@@ -145,7 +162,9 @@ const downloadableModels = computed(() => {
 })
 
 const downloadAllLabel = computed(() => {
-  const base = t('rightSidePanel.missingModels.downloadAll')
+  const base = !isDesktop
+    ? t('rightSidePanel.missingModels.downloadAllToServer')
+    : t('rightSidePanel.missingModels.downloadAll')
   const total = downloadableModels.value.reduce(
     (sum, model) => sum + (missingModelStore.fileSizes[model.url] ?? 0),
     0
@@ -153,9 +172,28 @@ const downloadAllLabel = computed(() => {
   return total > 0 ? `${base} (${formatSize(total)})` : base
 })
 
-function downloadAllModels() {
-  for (const model of downloadableModels.value) {
-    downloadModel(model, missingModelStore.folderPaths)
+async function downloadAllModels() {
+  if (isDownloadingAll.value) return
+
+  isDownloadingAll.value = true
+  try {
+    for (const model of downloadableModels.value) {
+      await downloadModel(model, missingModelStore.folderPaths)
+    }
+    if (!isDesktop) {
+      await missingModelStore.refreshMissingModels()
+    }
+  } catch (error) {
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail:
+        error instanceof Error
+          ? error.message
+          : t('rightSidePanel.missingModels.serverDownloadFailed')
+    })
+  } finally {
+    isDownloadingAll.value = false
   }
 }
 

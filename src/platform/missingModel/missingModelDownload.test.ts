@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 import {
+  downloadModel,
   fetchModelMetadata,
   isModelDownloadable,
   toBrowsableUrl
@@ -9,14 +10,31 @@ import {
 const fetchMock = vi.fn()
 vi.stubGlobal('fetch', fetchMock)
 
-vi.mock('@/platform/distribution/types', () => ({ isDesktop: false }))
-vi.mock('@/stores/electronDownloadStore', () => ({}))
+const mockDistribution = vi.hoisted(() => ({ isDesktop: false }))
+vi.mock('@/platform/distribution/types', () => ({
+  get isDesktop() {
+    return mockDistribution.isDesktop
+  }
+}))
+
+const mockElectronDownloadStore = vi.hoisted(() => ({ start: vi.fn() }))
+vi.mock('@/stores/electronDownloadStore', () => ({
+  useElectronDownloadStore: () => mockElectronDownloadStore
+}))
+
+const mockApi = vi.hoisted(() => ({
+  downloadModelToServer: vi.fn()
+}))
+vi.mock('@/scripts/api', () => ({ api: mockApi }))
 
 let testId = 0
 
 describe('fetchModelMetadata', () => {
   beforeEach(() => {
     fetchMock.mockReset()
+    mockApi.downloadModelToServer.mockReset()
+    mockElectronDownloadStore.start.mockReset()
+    mockDistribution.isDesktop = false
     testId++
   })
 
@@ -211,5 +229,65 @@ describe('isModelDownloadable', () => {
         directory: 'checkpoints'
       })
     ).toBe(false)
+  })
+})
+
+describe('downloadModel', () => {
+  beforeEach(() => {
+    mockApi.downloadModelToServer.mockReset()
+    mockElectronDownloadStore.start.mockReset()
+    mockDistribution.isDesktop = false
+  })
+
+  it('downloads models to the server for non-desktop builds', async () => {
+    const model = {
+      name: 'model.safetensors',
+      url: 'https://huggingface.co/org/repo/resolve/main/model.safetensors',
+      directory: 'checkpoints'
+    }
+    mockApi.downloadModelToServer.mockResolvedValueOnce({
+      status: 'downloaded',
+      ...model,
+      path: '/models/checkpoints/model.safetensors'
+    })
+
+    await downloadModel(model, {})
+
+    expect(mockApi.downloadModelToServer).toHaveBeenCalledWith(model)
+    expect(mockElectronDownloadStore.start).not.toHaveBeenCalled()
+  })
+
+  it('keeps using the Electron download store for desktop builds', async () => {
+    mockDistribution.isDesktop = true
+    const model = {
+      name: 'model.safetensors',
+      url: 'https://huggingface.co/org/repo/resolve/main/model.safetensors',
+      directory: 'checkpoints'
+    }
+
+    await downloadModel(model, { checkpoints: ['/models/checkpoints'] })
+
+    expect(mockElectronDownloadStore.start).toHaveBeenCalledWith({
+      url: model.url,
+      savePath: '/models/checkpoints',
+      filename: model.name
+    })
+    expect(mockApi.downloadModelToServer).not.toHaveBeenCalled()
+  })
+
+  it('propagates server download failures so callers can surface a toast', async () => {
+    const model = {
+      name: 'model.safetensors',
+      url: 'https://huggingface.co/org/repo/resolve/main/model.safetensors',
+      directory: 'checkpoints'
+    }
+    mockApi.downloadModelToServer.mockRejectedValueOnce(
+      new Error('Model download URL is not allowed.')
+    )
+
+    await expect(downloadModel(model, {})).rejects.toThrow(
+      'Model download URL is not allowed.'
+    )
+    expect(mockElectronDownloadStore.start).not.toHaveBeenCalled()
   })
 })
