@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
@@ -48,6 +48,29 @@ function renderPreview(
       plugins: [PrimeVue],
       stubs: { Skeleton: SkeletonStub }
     }
+  })
+}
+
+function getScrollContainer(container: HTMLElement): HTMLElement {
+  // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+  const element = container.firstElementChild
+  if (!(element instanceof HTMLElement)) {
+    throw new Error('Expected text preview root element')
+  }
+  return element
+}
+
+function mockScrollMetrics(
+  element: HTMLElement,
+  { clientHeight, scrollHeight }: { clientHeight: number; scrollHeight: number }
+) {
+  Object.defineProperty(element, 'clientHeight', {
+    configurable: true,
+    value: clientHeight
+  })
+  Object.defineProperty(element, 'scrollHeight', {
+    configurable: true,
+    value: scrollHeight
   })
 }
 
@@ -200,6 +223,48 @@ describe('TextPreviewWidget', () => {
       await nextTick()
 
       expect(screen.queryByTestId('skeleton')).toBeNull()
+    })
+  })
+
+  describe('Wheel event handling', () => {
+    it('keeps wheel events inside a scrollable text preview', async () => {
+      const { container } = renderPreview('long text')
+      const preview = getScrollContainer(container)
+      const parentWheel = vi.fn()
+      mockScrollMetrics(preview, { clientHeight: 100, scrollHeight: 200 })
+      container.addEventListener('wheel', parentWheel)
+
+      await fireEvent.wheel(preview, { deltaY: 40 })
+
+      expect(parentWheel).not.toHaveBeenCalled()
+    })
+
+    it('lets wheel events reach the canvas when text preview is not scrollable', async () => {
+      const { container } = renderPreview('short text')
+      const preview = getScrollContainer(container)
+      const parentWheel = vi.fn()
+      mockScrollMetrics(preview, { clientHeight: 100, scrollHeight: 100 })
+      container.addEventListener('wheel', parentWheel)
+
+      await fireEvent.wheel(preview, { deltaY: 40 })
+
+      expect(parentWheel).toHaveBeenCalledTimes(1)
+    })
+
+    it('prevents default browser handling for intercepted canvas wheel gestures', async () => {
+      const { container } = renderPreview('long text')
+      const preview = getScrollContainer(container)
+      mockScrollMetrics(preview, { clientHeight: 100, scrollHeight: 200 })
+
+      const event = new WheelEvent('wheel', {
+        bubbles: true,
+        cancelable: true,
+        ctrlKey: true,
+        deltaY: 40
+      })
+      preview.dispatchEvent(event)
+
+      expect(event.defaultPrevented).toBe(true)
     })
   })
 })
