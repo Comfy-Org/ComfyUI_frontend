@@ -50,12 +50,16 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
+
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useTelemetry } from '@/platform/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const dialogStore = useDialogStore()
-const { isActiveSubscription, showSubscriptionDialog } = useBillingContext()
+const { isActiveSubscription, showSubscriptionDialog, subscription } =
+  useBillingContext()
 
 function onDismiss() {
   dialogStore.closeDialog({ key: 'invite-member-upsell' })
@@ -65,4 +69,11 @@ function onUpgrade() {
   dialogStore.closeDialog({ key: 'invite-member-upsell' })
   showSubscriptionDialog()
 }
+
+onMounted(() => {
+  useTelemetry()?.trackPaywallViewed({
+    surface: 'invite_member_upsell',
+    current_tier: subscription.value?.tier?.toLowerCase()
+  })
+})
 </script>

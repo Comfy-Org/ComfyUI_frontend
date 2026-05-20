@@ -179,6 +179,26 @@ describe('PostHogTelemetryProvider', () => {
         {}
       )
     })
+
+    it('captures paywall_viewed with surface and tier metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackPaywallViewed({
+        surface: 'free_tier_dialog',
+        current_tier: 'free',
+        reason: 'out_of_credits'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.PAYWALL_VIEWED,
+        {
+          surface: 'free_tier_dialog',
+          current_tier: 'free',
+          reason: 'out_of_credits'
+        }
+      )
+    })
   })
 
   describe('disabled events', () => {
