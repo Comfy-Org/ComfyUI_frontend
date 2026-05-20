@@ -17,7 +17,7 @@ export const dialogContentVariants = cva({
   }
 })
 
-export type DialogContentVariants = VariantProps<typeof dialogContentVariants>
+type DialogContentVariants = VariantProps<typeof dialogContentVariants>
 
 export type DialogContentSize = NonNullable<DialogContentVariants['size']>
 
