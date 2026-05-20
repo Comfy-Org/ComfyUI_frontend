@@ -400,8 +400,9 @@ export declare interface NodeHandle {
      * array cannot be mutated (`push`, `splice`, `length =`, index assignment
      * all raise TS errors). Each `WidgetHandle` is also surface-frozen — use
      * the `WidgetHandle` setter methods (`setValue`, `setHidden`, etc.) to
-     * mutate widget state. To add or remove widgets, use
-     * {@link NodeHandle.addWidget} / future `removeWidget` (W6.P8.UNMIGRATABLE).
+     * mutate widget state. Adding/removing widgets at runtime is forbidden
+     * per AXIOMS.md A15 / `decisions/D-ban-runtime-addwidget.md` — widgets
+     * are declared in the Python node's `INPUT_TYPES` schema.
      *
      * @example
      * ```ts
@@ -415,16 +416,6 @@ export declare interface NodeHandle {
      * ```
      */
     getWidgets(): ReadonlyArray<Readonly<WidgetHandle>>;
-    /**
-     * Adds a new widget to this node.
-     *
-     * @param type - Widget type string (e.g. `'INT'`, `'STRING'`, `'COMBO'`).
-     * @param name - Unique widget name on this node.
-     * @param defaultValue - Initial value.
-     * @param options - Optional type-specific options.
-     * @returns The new `WidgetHandle`.
-     */
-    addWidget(type: string, name: string, defaultValue: unknown, options?: Partial<WidgetOptions>): WidgetHandle;
     /**
      * Returns all input slots on this node.
      *
@@ -537,16 +528,22 @@ export declare interface NodeHandle {
      *
      * **Migration example:**
      * ```ts
-     * // BEFORE (deprecated)
+     * // BEFORE (deprecated — node-level)
      * node.on('beforeSerialize', (e) => {
      *   e.data['my_extension_state'] = computeState()
      * })
      *
-     * // AFTER (recommended)
-     * const stateWidget = node.addWidget('STRING', '_my_state', '', { hidden: true })
+     * // AFTER (recommended — widget-level, schema-declared)
+     * // Declare `_my_state` in the Python node's INPUT_TYPES as a hidden
+     * // STRING input; the widget will exist automatically. Then attach
+     * // the serialization transform to the widget:
+     * const stateWidget = node.getWidget('_my_state')!
      * stateWidget.on('beforeSerialize', (e) => {
      *   e.setSerializedValue(JSON.stringify(computeState()))
      * })
+     * // Note: runtime widget addition is forbidden per AXIOMS.md A15 /
+     * // D-ban-runtime-addwidget — declare in INPUT_TYPES, do not call
+     * // node.addWidget().
      * ```
      *
      * @returns A cleanup function to remove the listener.
@@ -781,12 +778,16 @@ export declare type WidgetCleanup = () => void;
  * Options for `defineWidget`. Registers a custom widget type that renders
  * through the mount-lifecycle seam (Axiom A12 / D-widget-converge).
  *
- * Once registered, the widget can be instantiated on any node via
- * `node.addWidget(type, name, defaultValue, opts?)`. The runtime allocates
- * a per-widget host `<div>` and invokes the registered `mount(host, ctx)`
- * hook against it. The widget's mount body captures the host (and any DOM
- * it constructs) via closure — there is no `widget.element` accessor on
- * the handle.
+ * Once registered, the widget type can be referenced from Python
+ * `INPUT_TYPES` schema declarations. The runtime allocates a per-widget
+ * host `<div>` and invokes the registered `mount(host, ctx)` hook against
+ * it. The widget's mount body captures the host (and any DOM it
+ * constructs) via closure — there is no `widget.element` accessor on the
+ * handle.
+ *
+ * Runtime widget addition (`node.addWidget(...)`) is forbidden per
+ * AXIOMS.md A15 / `decisions/D-ban-runtime-addwidget.md` — widgets are
+ * schema-declared, never created at runtime by extensions.
  *
  * `mount` is optional: omit it for value-only widgets (numeric, combo, etc.)
  * that render through the native widget renderer with no custom DOM.
@@ -878,8 +879,8 @@ export declare interface WidgetHandle<T = WidgetValue> {
      */
     equals(other: WidgetHandle): boolean;
     /**
-     * The widget's name as registered in `INPUT_TYPES` or `addWidget`. Stable
-     * for the lifetime of the node; never changes after creation.
+     * The widget's name as registered in the node's `INPUT_TYPES` schema.
+     * Stable for the lifetime of the node; never changes after creation.
      *
      */
     readonly name: string;
@@ -935,7 +936,8 @@ export declare interface WidgetHandle<T = WidgetValue> {
      * The widget's display label shown to the user. Defaults to the widget name.
      * Read-only invariant (set at creation, never changes after).
      *
-     * To override at construction, pass `label` to `addWidget()` options.
+     * The label is set by the Python node's `INPUT_TYPES` schema (e.g. via
+     * the `label` key on the input options dict).
      */
     readonly label: string;
     /**
@@ -1178,10 +1180,15 @@ export declare interface WidgetOptionChangeEvent {
 }
 
 /**
- * Options passed to `node.addWidget()` when creating a new widget.
+ * Options surfaced on each widget instance. Type-specific keys (e.g. `min`,
+ * `max`, `step` for numeric widgets; `multiline`, `dynamicPrompts` for
+ * strings) are passed through from the node's `INPUT_TYPES` schema as-is.
  *
- * Type-specific keys (e.g. `min`, `max`, `step` for numeric widgets;
- * `multiline`, `dynamicPrompts` for strings) are passed through as-is.
+ * Runtime widget addition is forbidden per AXIOMS.md A15 (Widget
+ * Declarativity) / `decisions/D-ban-runtime-addwidget.md` — every widget
+ * originates from the Python `INPUT_TYPES` declaration; this type
+ * describes the options surfaced on the resulting `WidgetHandle`, not a
+ * constructor argument bag.
  */
 export declare interface WidgetOptions {
     /** If `true`, the widget is hidden from the node UI on creation. */
