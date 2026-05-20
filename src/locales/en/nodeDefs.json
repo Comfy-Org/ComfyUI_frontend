@@ -305,7 +305,7 @@
     }
   },
   "BasicGuider": {
-    "display_name": "BasicGuider",
+    "display_name": "Basic Guider",
     "inputs": {
       "model": {
         "name": "model"
@@ -1080,7 +1080,7 @@
     }
   },
   "Canny": {
-    "display_name": "Canny",
+    "display_name": "Detect Edges (Canny)",
     "inputs": {
       "image": {
         "name": "image"
@@ -1138,7 +1138,7 @@
     }
   },
   "CFGGuider": {
-    "display_name": "CFGGuider",
+    "display_name": "CFG Guider",
     "inputs": {
       "model": {
         "name": "model"
@@ -1704,7 +1704,7 @@
     }
   },
   "ColorTransfer": {
-    "display_name": "Color Transfer",
+    "display_name": "Transfer Color",
     "description": "Match the colors of one image to another using various algorithms.",
     "inputs": {
       "image_target": {
@@ -1814,7 +1814,7 @@
     }
   },
   "ComfyNumberConvert": {
-    "display_name": "Number Convert",
+    "display_name": "Convert Number",
     "inputs": {
       "value": {
         "name": "value"
@@ -2560,7 +2560,7 @@
     }
   },
   "CropByBBoxes": {
-    "display_name": "CropByBBoxes",
+    "display_name": "Crop By Bounding Boxes",
     "description": "Crop and resize regions from the input image batch based on provided bounding boxes.",
     "inputs": {
       "image": {
@@ -2714,7 +2714,7 @@
     }
   },
   "DualCFGGuider": {
-    "display_name": "DualCFGGuider",
+    "display_name": "Dual CFG Guider",
     "inputs": {
       "model": {
         "name": "model"
@@ -5596,7 +5596,7 @@
     }
   },
   "ImageBlur": {
-    "display_name": "Image Blur",
+    "display_name": "Blur Image",
     "inputs": {
       "image": {
         "name": "image"
@@ -5615,7 +5615,7 @@
     }
   },
   "ImageColorToMask": {
-    "display_name": "ImageColorToMask",
+    "display_name": "Convert Image Color to Mask",
     "inputs": {
       "image": {
         "name": "image"
@@ -5864,7 +5864,7 @@
     }
   },
   "ImageOnlyCheckpointLoader": {
-    "display_name": "Image Only Checkpoint Loader (img2vid model)",
+    "display_name": "Load Checkpoint Image Only (img2vid model)",
     "inputs": {
       "ckpt_name": {
         "name": "ckpt_name"
@@ -8064,7 +8064,7 @@
   },
   "LoraLoader": {
     "display_name": "Load LoRA (Model and CLIP)",
-    "description": "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
+    "description": "This LoRA loader is used to modify both diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
     "inputs": {
       "model": {
         "name": "model",
@@ -8152,7 +8152,7 @@
   },
   "LoraLoaderModelOnly": {
     "display_name": "Load LoRA",
-    "description": "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
+    "description": "This LoRAs loader is used to modify the diffusion model, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
     "inputs": {
       "model": {
         "name": "model"
@@ -12119,7 +12119,7 @@
     }
   },
   "Morphology": {
-    "display_name": "ImageMorphology",
+    "display_name": "Apply Morphology",
     "inputs": {
       "image": {
         "name": "image"
@@ -13962,6 +13962,7 @@
   },
   "RemoveBackground": {
     "display_name": "Remove Background",
+    "description": "Generates a foreground mask to remove the background from an image using a background removal model.",
     "inputs": {
       "image": {
         "name": "image",
@@ -15174,7 +15175,7 @@
     }
   },
   "SaveAnimatedPNG": {
-    "display_name": "SaveAnimatedPNG",
+    "display_name": "Save Animated PNG",
     "inputs": {
       "images": {
         "name": "images"
@@ -15191,7 +15192,7 @@
     }
   },
   "SaveAnimatedWEBP": {
-    "display_name": "SaveAnimatedWEBP",
+    "display_name": "Save Animated WEBP",
     "inputs": {
       "images": {
         "name": "images"
@@ -15508,7 +15509,7 @@
     }
   },
   "SDPoseDrawKeypoints": {
-    "display_name": "SDPoseDrawKeypoints",
+    "display_name": "SDPose Draw Keypoints",
     "inputs": {
       "keypoints": {
         "name": "keypoints"
@@ -15542,7 +15543,7 @@
     }
   },
   "SDPoseFaceBBoxes": {
-    "display_name": "SDPoseFaceBBoxes",
+    "display_name": "SDPose Face Bounding Boxes",
     "inputs": {
       "keypoints": {
         "name": "keypoints"
@@ -15564,7 +15565,7 @@
     }
   },
   "SDPoseKeypointExtractor": {
-    "display_name": "SDPoseKeypointExtractor",
+    "display_name": "SDPose Keypoint Extractor",
     "description": "Extract pose keypoints from images using the SDPose model: https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
     "inputs": {
       "model": {
@@ -15837,7 +15838,7 @@
     }
   },
   "SolidMask": {
-    "display_name": "SolidMask",
+    "display_name": "Create Solid Mask",
     "inputs": {
       "value": {
         "name": "value"
@@ -17405,7 +17406,7 @@
     }
   },
   "ThresholdMask": {
-    "display_name": "ThresholdMask",
+    "display_name": "Threshold Mask",
     "inputs": {
       "mask": {
         "name": "mask"
@@ -18655,7 +18656,7 @@
     }
   },
   "VideoLinearCFGGuidance": {
-    "display_name": "VideoLinearCFGGuidance",
+    "display_name": "Video Linear CFG Guidance",
     "inputs": {
       "model": {
         "name": "model"
@@ -18666,7 +18667,7 @@
     }
   },
   "VideoTriangleCFGGuidance": {
-    "display_name": "VideoTriangleCFGGuidance",
+    "display_name": "Video Triangle CFG Guidance",
     "inputs": {
       "model": {
         "name": "model"
@@ -19258,7 +19259,7 @@
     }
   },
   "VOIDQuadmaskPreprocess": {
-    "display_name": "VOIDQuadmaskPreprocess",
+    "display_name": "VOID Quadmask Preprocessor",
     "inputs": {
       "mask": {
         "name": "mask"
@@ -19777,7 +19778,7 @@
   },
   "wanBlockSwap": {
     "display_name": "wanBlockSwap",
-    "description": "NOP",
+    "description": "Intercept wanBlockSwap custom node that causes major instability and make it no-op.",
     "inputs": {
       "model": {
         "name": "model"

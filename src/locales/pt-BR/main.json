@@ -1745,6 +1745,10 @@
     "outdatedVersionGeneric": "Este fluxo de trabalho foi criado com uma versão mais recente do ComfyUI. Alguns nós podem não funcionar corretamente.",
     "unknownVersion": "desconhecida"
   },
+  "logsTerminal": {
+    "loadError": "Não foi possível carregar os logs. Certifique-se de que você atualizou o backend do ComfyUI.",
+    "resyncError": "Não foi possível ressincronizar os logs após a reconexão do backend. Reabra o console para tentar novamente."
+  },
   "maintenance": {
     "None": "Nenhum",
     "OK": "OK",
@@ -2291,7 +2295,6 @@
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
     "advanced": "avançado",
-    "animation": "animação",
     "api node": "nó da API",
     "attention_experiments": "experimentos_de_atenção",
     "audio": "áudio",
@@ -2314,6 +2317,7 @@
     "detection": "detecção",
     "edit_models": "editar_modelos",
     "experimental": "experimental",
+    "filters": "filtros",
     "flux": "flux",
     "geometry_estimation": "geometry_estimation",
     "gligen": "gligen",
@@ -2337,13 +2341,11 @@
     "noise": "ruído",
     "operations": "operações",
     "photomaker": "photomaker",
-    "postprocessing": "pós-processamento",
     "preprocessors": "pré-processadores",
     "primitive": "primitivo",
     "qwen": "qwen",
     "samplers": "amostradores",
     "sampling": "amostragem",
-    "save": "salvar",
     "schedulers": "agendadores",
     "scheduling": "agendamento",
     "sd3": "sd3",

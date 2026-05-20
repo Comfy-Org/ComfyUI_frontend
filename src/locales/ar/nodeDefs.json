@@ -13989,6 +13989,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "ينشئ قناع المقدمة لإزالة الخلفية من صورة باستخدام نموذج إزالة الخلفية.",
     "display_name": "إزالة الخلفية",
     "inputs": {
       "bg_removal_model": {
