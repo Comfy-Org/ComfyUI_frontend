@@ -57,14 +57,17 @@ import type {
  * ```ts
  * import { defineNode } from '@comfyorg/extension-api'
  *
+ * // Assumes the Python `PreviewAny` node declares a hidden, read-only
+ * // STRING input named `preview` in INPUT_TYPES. Runtime widget addition
+ * // is forbidden per AXIOMS.md A15 / D-ban-runtime-addwidget — declare in
+ * // INPUT_TYPES, then bind via getWidget().
  * export default defineNode({
  *   name: 'Comfy.PreviewAny',
  *   nodeTypes: ['PreviewAny'],
  *
  *   nodeCreated(node) {
- *     const preview = node.addWidget('STRING', 'preview', '', {
- *       multiline: true, readonly: true, serialize: false
- *     })
+ *     const preview = node.getWidget('preview')
+ *     if (!preview) return
  *     node.on('executed', (e) => {
  *       preview.setValue(String(e.output['text'] ?? ''))
  *     })

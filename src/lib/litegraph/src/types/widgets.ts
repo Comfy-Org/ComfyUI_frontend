@@ -21,6 +21,15 @@ export interface NodeBindable {
 }
 
 export interface IWidgetOptions<TValues = unknown> {
+  /**
+   * @internal
+   * Suppresses the `LGraphNode.addWidget` / `addCustomWidget` / `addDOMWidget`
+   * deprecation warning (D-ban-runtime-addwidget / AXIOMS.md A15) for
+   * first-party core call sites that have not yet been migrated to a
+   * schema-declared widget, boxed widget, or non-widget UI primitive.
+   * NOT part of the public surface — stripped before serialization.
+   */
+  __suppressDeprecationWarning?: boolean
   on?: string
   off?: string
   max?: number

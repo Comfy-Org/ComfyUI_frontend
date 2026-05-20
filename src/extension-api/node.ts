@@ -376,16 +376,22 @@ export interface NodeHandle {
    *
    * **Migration example:**
    * ```ts
-   * // BEFORE (deprecated)
+   * // BEFORE (deprecated — node-level)
    * node.on('beforeSerialize', (e) => {
    *   e.data['my_extension_state'] = computeState()
    * })
    *
-   * // AFTER (recommended)
-   * const stateWidget = node.addWidget('STRING', '_my_state', '', { hidden: true })
+   * // AFTER (recommended — widget-level, schema-declared)
+   * // Declare `_my_state` in the Python node's INPUT_TYPES as a hidden
+   * // STRING input; the widget will exist automatically. Then attach
+   * // the serialization transform to the widget:
+   * const stateWidget = node.getWidget('_my_state')!
    * stateWidget.on('beforeSerialize', (e) => {
    *   e.setSerializedValue(JSON.stringify(computeState()))
    * })
+   * // Note: runtime widget addition is forbidden per AXIOMS.md A15 /
+   * // D-ban-runtime-addwidget — declare in INPUT_TYPES, do not call
+   * // node.addWidget().
    * ```
    *
    * @returns A cleanup function to remove the listener.

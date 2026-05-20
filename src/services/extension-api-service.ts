@@ -54,8 +54,7 @@ import type {
   NodeMode,
   SlotInfo,
   Point,
-  Size,
-  DOMWidgetOptions
+  Size
 } from '@/extension-api/node'
 import type { WidgetHandle, WidgetOptions } from '@/extension-api/widget'
 import type { Unsubscribe } from '@/extension-api/events'
@@ -155,21 +154,11 @@ function dispatch(_command: Record<string, unknown>): unknown {
   return undefined
 }
 
-// Side table for DOM widget elements. Maps widgetId → HTMLElement.
-// Keeps HTMLElement out of serializable commands (CR-12142-3).
-// Cleanup wired via onScopeDispose in addDOMWidget.
-const domWidgetElements = new Map<WidgetEntityId, HTMLElement>()
-
-/**
- * @internal
- * Get the DOM element for a DOM widget. Used by renderer in Phase B.
- * @knipIgnoreUsedByStackedPR
- */
-export function getDOMWidgetElement(
-  widgetId: WidgetEntityId
-): HTMLElement | undefined {
-  return domWidgetElements.get(widgetId)
-}
+// REMOVED per AXIOMS.md A15 (Widget Declarativity) and
+// decisions/D-ban-runtime-addwidget.md — addDOMWidget on the v2 surface is
+// gone, so the side table and getDOMWidgetElement accessor are dead.
+// const domWidgetElements = new Map<WidgetEntityId, HTMLElement>()
+// export function getDOMWidgetElement(widgetId): HTMLElement | undefined
 
 // Mirrors Vue's ComponentInternalInstance + EffectScope pair.
 // One scope per (extension, nodeEntityId). Lifetime = node entity lifetime.
@@ -527,40 +516,12 @@ function createNodeHandle(nodeId: NodeEntityId): NodeHandle {
       const container = world.getComponent(nodeId, WidgetComponentContainer)
       return (container?.widgetIds ?? []).map(createWidgetHandle)
     },
-    addWidget(type, name, defaultValue, options) {
-      const widgetId = dispatch({
-        type: 'CreateWidget',
-        parentNodeId: nodeId,
-        widgetType: type,
-        name,
-        defaultValue,
-        options
-      }) as WidgetEntityId
-      return createWidgetHandle(widgetId)
-    },
-
-    addDOMWidget(opts: DOMWidgetOptions) {
-      // TODO(#11939): dispatch CreateDOMWidget command once ECS DOM widget component lands.
-      // For Phase A we register a regular widget with type 'DOM'. Element stored in
-      // side table (not command) so commands remain serializable (CR-12142-3).
-      const widgetId = dispatch({
-        type: 'CreateWidget',
-        parentNodeId: nodeId,
-        widgetType: 'DOM',
-        name: opts.name,
-        defaultValue: null,
-        options: {
-          __domHeight: opts.height ?? opts.element.offsetHeight
-        }
-      }) as WidgetEntityId
-      // Store element in side table, not in command (keeps commands serializable)
-      domWidgetElements.set(widgetId, opts.element)
-      onScopeDispose(() => {
-        opts.element.remove()
-        domWidgetElements.delete(widgetId)
-      })
-      return createWidgetHandle(widgetId)
-    },
+    // REMOVED per AXIOMS.md A15 (Widget Declarativity) and
+    // decisions/D-ban-runtime-addwidget.md — widgets are schema-declared.
+    // The v1 path remains @deprecated + runtime-warned on
+    // LGraphNode.{addWidget,addCustomWidget} and addDOMWidget.
+    // addWidget(...): WidgetHandle
+    // addDOMWidget(opts): WidgetHandle
 
     getInputs() {
       const conn = world.getComponent(nodeId, ConnectivityKey)

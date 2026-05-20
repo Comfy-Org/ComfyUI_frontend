@@ -225,6 +225,17 @@ export interface LGraphNode {
 // #endregion Types
 
 /**
+ * Shared deprecation message for the v1 `addWidget` / `addCustomWidget` /
+ * `addDOMWidget` family. Sharing one message string lets `warnDeprecated`
+ * deduplicate naturally — calling `addWidget` warns once per session even
+ * if it internally invokes `addCustomWidget`. See AXIOMS.md A15 and
+ * `decisions/D-ban-runtime-addwidget.md`.
+ */
+const ADD_WIDGET_DEPRECATION_MESSAGE =
+  "LGraphNode.addWidget(...) / addCustomWidget(...) / addDOMWidget(...) is deprecated and will be removed in v1.0. Widgets must be declared in the Python node's INPUT_TYPES per AXIOMS.md A15 (Widget Declarativity). Migration paths: (1) boxed widget — declare a single rich-value INPUT_TYPES field (e.g. BBOX [x,y,w,h]) and compose the multi-control UI against it; (2) non-widget UI primitive — mount custom DOM from defineNode/defineExtension setup() via bootstrap-hooks, owned by the extension not the widget system; (3) schema input — add the field to INPUT_TYPES and let the frontend render it normally. See AXIOMS.md A15 and decisions/D-ban-runtime-addwidget.md."
+export { ADD_WIDGET_DEPRECATION_MESSAGE }
+
+/**
  * Base class for all nodes
  * @param title a name for the node
  * @param type a type for the node
@@ -1930,6 +1941,21 @@ export class LGraphNode
   }
 
   /**
+   * @deprecated Runtime widget addition will be removed in v1.0 per
+   * **AXIOMS.md A15 (Widget Declarativity)**. Widgets must be declared in
+   * the Python node's `INPUT_TYPES`. Migration paths:
+   *
+   * 1. **Boxed widget** — declare a single rich-value `INPUT_TYPES` field
+   *    (e.g. `BBOX [x,y,w,h]`) and compose the multi-control UI inside one
+   *    widget against that one value.
+   * 2. **Non-widget UI primitive** — mount custom DOM from
+   *    `defineNode` / `defineExtension` `setup()` via the bootstrap-hooks
+   *    lifecycle. Owned by the extension, not the widget system.
+   * 3. **Schema input** — add the field to Python `INPUT_TYPES` and let the
+   *    frontend render it normally.
+   *
+   * See `AXIOMS.md` §A15 and `decisions/D-ban-runtime-addwidget.md`.
+   *
    * Defines a widget inside the node, it will be rendered on top of the node, you can control lots of properties
    * @param type the widget type
    * @param name the text to show on the widget
@@ -1948,6 +1974,13 @@ export class LGraphNode
     callback: IBaseWidget['callback'] | string | null,
     options?: IWidgetOptions | string
   ): WidgetTypeMap[Type] | IBaseWidget {
+    const suppress =
+      typeof options === 'object' &&
+      options !== null &&
+      (options as IWidgetOptions).__suppressDeprecationWarning === true
+    if (!suppress) {
+      warnDeprecated(ADD_WIDGET_DEPRECATION_MESSAGE, this)
+    }
     this.widgets ||= []
 
     if (!options && callback && typeof callback === 'object') {
@@ -1993,9 +2026,21 @@ export class LGraphNode
     return widget
   }
 
+  /**
+   * @deprecated Runtime widget addition will be removed in v1.0 per
+   * **AXIOMS.md A15 (Widget Declarativity)**. See {@link addWidget} for
+   * the three migration paths (boxed widget / non-widget UI primitive /
+   * schema input). Reference: `decisions/D-ban-runtime-addwidget.md`.
+   */
   addCustomWidget<TPlainWidget extends IBaseWidget>(
     custom_widget: TPlainWidget
   ): TPlainWidget | WidgetTypeMap[TPlainWidget['type']] {
+    const customOptions = (custom_widget as { options?: IWidgetOptions })
+      .options
+    const suppress = customOptions?.__suppressDeprecationWarning === true
+    if (!suppress) {
+      warnDeprecated(ADD_WIDGET_DEPRECATION_MESSAGE, this)
+    }
     this.widgets ||= []
     const widget = toConcreteWidget(custom_widget, this, false) ?? custom_widget
     this.widgets.push(widget)

@@ -121,7 +121,9 @@ app.registerExtension({
         audio.setAttribute('name', 'media')
 
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
-          node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
+          node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio, {
+            __suppressDeprecationWarning: true
+          })
         audioUIWidget.serialize = false
         const { nodeData } = node.constructor
         if (nodeData == null) throw new TypeError('nodeData is null')
@@ -263,7 +265,11 @@ app.registerExtension({
           inputName,
           '',
           openFileSelection,
-          { serialize: false, canvasOnly: true }
+          {
+            serialize: false,
+            canvasOnly: true,
+            __suppressDeprecationWarning: true
+          }
         )
         uploadWidget.label = t('g.choose_file_to_upload')
 
@@ -296,7 +302,9 @@ app.registerExtension({
         audio.classList.add('comfy-audio')
         audio.setAttribute('name', 'media')
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
-          node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
+          node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio, {
+            __suppressDeprecationWarning: true
+          })
         audioUIWidget.options.canvasOnly = false
 
         let mediaRecorder: MediaRecorder | null = null
@@ -420,7 +428,11 @@ app.registerExtension({
               mediaRecorder.stop()
             }
           },
-          { serialize: false, canvasOnly: false }
+          {
+            serialize: false,
+            canvasOnly: false,
+            __suppressDeprecationWarning: true
+          }
         )
 
         recordWidget.label = t('g.startRecording')

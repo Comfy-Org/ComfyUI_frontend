@@ -44,7 +44,9 @@ function onCustomComboCreated(this: LGraphNode) {
     if (!node.widgets) return
     const newCount = node.widgets.length - 1
     const widgetName = `option${newCount}`
-    const widget = node.addWidget('string', widgetName, '', () => {})
+    const widget = node.addWidget('string', widgetName, '', () => {}, {
+      __suppressDeprecationWarning: true
+    })
     if (!widget) return
     let localValue = `${widget.value ?? ''}`
 

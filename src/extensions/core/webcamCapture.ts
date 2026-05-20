@@ -64,7 +64,11 @@ app.registerExtension({
 
         loadVideo()
 
-        return { widget: node.addDOMWidget(inputName, 'WEBCAM', container) }
+        return {
+          widget: node.addDOMWidget(inputName, 'WEBCAM', container, {
+            __suppressDeprecationWarning: true
+          })
+        }
       }
     }
   },
@@ -111,7 +115,7 @@ app.registerExtension({
       'waiting for camera...',
       'capture',
       capture,
-      {}
+      { __suppressDeprecationWarning: true }
     )
     btn.disabled = true
     btn.serializeValue = () => undefined

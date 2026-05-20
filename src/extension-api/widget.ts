@@ -256,8 +256,8 @@ export interface WidgetHandle<T = WidgetValue> {
   equals(other: WidgetHandle): boolean
 
   /**
-   * The widget's name as registered in `INPUT_TYPES` or `addWidget`. Stable
-   * for the lifetime of the node; never changes after creation.
+   * The widget's name as registered in the node's `INPUT_TYPES` schema.
+   * Stable for the lifetime of the node; never changes after creation.
    *
    */
   readonly name: string
@@ -308,7 +308,8 @@ export interface WidgetHandle<T = WidgetValue> {
    * The widget's display label shown to the user. Defaults to the widget name.
    * Read-only invariant (set at creation, never changes after).
    *
-   * To override at construction, pass `label` to `addWidget()` options.
+   * The label is set by the Python node's `INPUT_TYPES` schema (e.g. via
+   * the `label` key on the input options dict).
    */
   readonly label: string
 
@@ -596,10 +597,15 @@ export type WidgetMountFn = (
 ) => void | WidgetCleanup
 
 /**
- * Options passed to `node.addWidget()` when creating a new widget.
+ * Options surfaced on each widget instance. Type-specific keys (e.g. `min`,
+ * `max`, `step` for numeric widgets; `multiline`, `dynamicPrompts` for
+ * strings) are passed through from the node's `INPUT_TYPES` schema as-is.
  *
- * Type-specific keys (e.g. `min`, `max`, `step` for numeric widgets;
- * `multiline`, `dynamicPrompts` for strings) are passed through as-is.
+ * Runtime widget addition is forbidden per AXIOMS.md A15 (Widget
+ * Declarativity) / `decisions/D-ban-runtime-addwidget.md` — every widget
+ * originates from the Python `INPUT_TYPES` declaration; this type
+ * describes the options surfaced on the resulting `WidgetHandle`, not a
+ * constructor argument bag.
  */
 export interface WidgetOptions {
   /** If `true`, the widget is hidden from the node UI on creation. */

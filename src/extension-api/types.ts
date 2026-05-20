@@ -146,12 +146,16 @@ export interface ExtensionOptions {
  * Options for `defineWidget`. Registers a custom widget type that renders
  * through the mount-lifecycle seam (Axiom A12 / D-widget-converge).
  *
- * Once registered, the widget can be instantiated on any node via
- * `node.addWidget(type, name, defaultValue, opts?)`. The runtime allocates
- * a per-widget host `<div>` and invokes the registered `mount(host, ctx)`
- * hook against it. The widget's mount body captures the host (and any DOM
- * it constructs) via closure — there is no `widget.element` accessor on
- * the handle.
+ * Once registered, the widget type can be referenced from Python
+ * `INPUT_TYPES` schema declarations. The runtime allocates a per-widget
+ * host `<div>` and invokes the registered `mount(host, ctx)` hook against
+ * it. The widget's mount body captures the host (and any DOM it
+ * constructs) via closure — there is no `widget.element` accessor on the
+ * handle.
+ *
+ * Runtime widget addition (`node.addWidget(...)`) is forbidden per
+ * AXIOMS.md A15 / `decisions/D-ban-runtime-addwidget.md` — widgets are
+ * schema-declared, never created at runtime by extensions.
  *
  * `mount` is optional: omit it for value-only widgets (numeric, combo, etc.)
  * that render through the native widget renderer with no custom DOM.
