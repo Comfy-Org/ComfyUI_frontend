@@ -63,6 +63,11 @@ export function useSharedWorkflowUrlLoader() {
     void router.replace({ query: newQuery })
   }
 
+  function clearShareIntent() {
+    cleanupUrlParams()
+    clearPreservedQuery(SHARE_NAMESPACE)
+  }
+
   function showOpenSharedWorkflowDialog(
     shareId: string
   ): Promise<DialogResult> {
@@ -108,8 +113,7 @@ export function useSharedWorkflowUrlLoader() {
     }
 
     if (typeof shareParam !== 'string') {
-      cleanupUrlParams()
-      clearPreservedQuery(SHARE_NAMESPACE)
+      clearShareIntent()
       return 'not-present'
     }
 
@@ -122,16 +126,14 @@ export function useSharedWorkflowUrlLoader() {
         summary: t('g.error'),
         detail: t('shareWorkflow.loadFailed')
       })
-      cleanupUrlParams()
-      clearPreservedQuery(SHARE_NAMESPACE)
+      clearShareIntent()
       return 'failed'
     }
 
     const result = await showOpenSharedWorkflowDialog(shareParam)
 
     if (result.action === 'cancel') {
-      cleanupUrlParams()
-      clearPreservedQuery(SHARE_NAMESPACE)
+      clearShareIntent()
       return 'cancelled'
     }
 
@@ -140,6 +142,26 @@ export function useSharedWorkflowUrlLoader() {
     const { payload } = result
     const workflowName = payload.name || t('openSharedWorkflow.dialogTitle')
     const nonOwnedAssets = payload.assets.filter((a) => !a.in_library)
+    let importFailed = false
+
+    if (result.action === 'copy-and-open' && nonOwnedAssets.length > 0) {
+      try {
+        await workflowShareService.importPublishedAssets(
+          nonOwnedAssets.map((a) => a.id)
+        )
+      } catch (importError) {
+        importFailed = true
+        console.error(
+          '[useSharedWorkflowUrlLoader] Failed to import assets:',
+          importError
+        )
+        toast.add({
+          severity: 'error',
+          summary: t('g.error'),
+          detail: t('openSharedWorkflow.importFailed')
+        })
+      }
+    }
 
     try {
       await app.loadGraphData(payload.workflowJson, true, true, workflowName, {
@@ -155,33 +177,12 @@ export function useSharedWorkflowUrlLoader() {
         summary: t('g.error'),
         detail: t('shareWorkflow.loadFailed')
       })
+      clearShareIntent()
       return 'failed'
     }
 
-    if (result.action === 'copy-and-open' && nonOwnedAssets.length > 0) {
-      try {
-        await workflowShareService.importPublishedAssets(
-          nonOwnedAssets.map((a) => a.id)
-        )
-      } catch (importError) {
-        console.error(
-          '[useSharedWorkflowUrlLoader] Failed to import assets:',
-          importError
-        )
-        toast.add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('openSharedWorkflow.importFailed')
-        })
-        cleanupUrlParams()
-        clearPreservedQuery(SHARE_NAMESPACE)
-        return 'loaded-without-assets'
-      }
-    }
-
-    cleanupUrlParams()
-    clearPreservedQuery(SHARE_NAMESPACE)
-    return 'loaded'
+    clearShareIntent()
+    return importFailed ? 'loaded-without-assets' : 'loaded'
   }
 
   return {
