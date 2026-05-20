@@ -10,7 +10,6 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import type { Position, Size } from '@e2e/fixtures/types'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 import { SubgraphSlotReference } from '@e2e/fixtures/utils/litegraphUtils'
 
@@ -235,17 +234,6 @@ export class SubgraphHelper {
    */
   getOutputSlot(slotName?: string): SubgraphSlotReference {
     return new SubgraphSlotReference('output', slotName || '', this.comfyPage)
-  }
-
-  async getInputBounds(): Promise<Position & Size> {
-    return await this.comfyPage.page.evaluate(() => {
-      const graph = app!.canvas.graph as Subgraph
-      const inputNode = graph.inputNode
-      const [x, y] = app!.canvas.ds.convertOffsetToCanvas(inputNode.pos)
-      const width = inputNode.size[0] * app!.canvas.ds.scale
-      const height = inputNode.size[1] * app!.canvas.ds.scale
-      return { x, y, width, height }
-    })
   }
 
   /**
