@@ -5,6 +5,7 @@ import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
@@ -121,50 +122,17 @@ function applySubgraphInputOrder(
   subgraphNode: SubgraphNode,
   orderedIndices: readonly number[]
 ): void {
-  const oldOrder = subgraphNode.subgraph.inputs.map((input) => input.id)
-
-  const rows = subgraphNode.subgraph.inputs.map((input, index) => ({
-    subgraphInput: input,
-    hostInput: subgraphNode.inputs[index],
-    value: getExplicitHostWidgetValue(subgraphNode.inputs[index]?._widget)
-  }))
-
-  const orderedRows = orderedIndices.flatMap((index) => rows[index] ?? [])
-
-  subgraphNode.subgraph.inputs.splice(
-    0,
-    subgraphNode.subgraph.inputs.length,
-    ...orderedRows.map((row) => row.subgraphInput)
+  const widgetValues = subgraphNode.inputs.map((input) =>
+    getExplicitHostWidgetValue(input?._widget)
   )
-  subgraphNode.inputs.splice(
-    0,
-    subgraphNode.inputs.length,
-    ...orderedRows.flatMap((row) => row.hostInput ?? [])
-  )
-  subgraphNode.invalidatePromotedViews()
 
-  for (const [index, input] of subgraphNode.subgraph.inputs.entries()) {
-    for (const linkId of input.linkIds) {
-      const link = subgraphNode.subgraph.getLink(linkId)
-      if (link) link.origin_slot = index
-    }
-  }
+  reorderSubgraphInputs(subgraphNode, orderedIndices)
 
-  for (const row of orderedRows) {
-    const widget = row.hostInput?._widget
-    if (widget && row.value !== undefined) widget.value = row.value
-  }
-
-  const newOrder = subgraphNode.subgraph.inputs.map((input) => input.id)
-  if (
-    oldOrder.length !== newOrder.length ||
-    oldOrder.some((id, i) => id !== newOrder[i])
-  ) {
-    subgraphNode.subgraph.events.dispatch('inputs-reordered', {
-      subgraph: subgraphNode.subgraph,
-      oldOrder,
-      newOrder
-    })
+  for (const [newIndex, oldIndex] of orderedIndices.entries()) {
+    const value = widgetValues[oldIndex]
+    if (value === undefined) continue
+    const widget = subgraphNode.inputs[newIndex]?._widget
+    if (widget) widget.value = value
   }
 }
 

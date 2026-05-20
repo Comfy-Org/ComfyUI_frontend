@@ -645,6 +645,31 @@ describe('reorderSubgraphInputAtIndex', () => {
     expect(secondLink?.origin_slot).toBe(0)
     expect(firstLink?.origin_slot).toBe(1)
   })
+
+  it('updates outer link target_slot when host inputs are reordered', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'first', type: 'STRING' },
+        { name: 'second', type: 'STRING' }
+      ]
+    })
+    const host = createTestSubgraphNode(subgraph)
+    subgraph.rootGraph.add(host)
+
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'STRING')
+    subgraph.rootGraph.add(source)
+
+    const firstLink = source.connect(0, host, 0)
+    const secondLink = source.connect(0, host, 1)
+    expect(firstLink?.target_slot).toBe(0)
+    expect(secondLink?.target_slot).toBe(1)
+
+    reorderSubgraphInputAtIndex(host, 0, 1)
+
+    expect(firstLink?.target_slot).toBe(1)
+    expect(secondLink?.target_slot).toBe(0)
+  })
 })
 
 describe('reorderSubgraphInputsByWidgetOrder', () => {
