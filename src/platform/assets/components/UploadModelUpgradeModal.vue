@@ -12,13 +12,16 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
+
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import UploadModelUpgradeModalBody from '@/platform/assets/components/UploadModelUpgradeModalBody.vue'
 import UploadModelUpgradeModalFooter from '@/platform/assets/components/UploadModelUpgradeModalFooter.vue'
+import { useTelemetry } from '@/platform/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const dialogStore = useDialogStore()
-const { showSubscriptionDialog } = useBillingContext()
+const { showSubscriptionDialog, subscription } = useBillingContext()
 
 function handleClose() {
   dialogStore.closeDialog({ key: 'upload-model-upgrade' })
@@ -27,4 +30,11 @@ function handleClose() {
 function handleSubscribe() {
   showSubscriptionDialog()
 }
+
+onMounted(() => {
+  useTelemetry()?.trackPaywallViewed({
+    surface: 'upload_model_upgrade_modal',
+    current_tier: subscription.value?.tier?.toLowerCase()
+  })
+})
 </script>

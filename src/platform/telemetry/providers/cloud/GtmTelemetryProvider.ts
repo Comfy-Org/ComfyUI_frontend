@@ -15,6 +15,7 @@ import type {
   PageVisibilityMetadata,
   SettingChangedMetadata,
   ShareFlowMetadata,
+  PaywallViewedMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
@@ -162,6 +163,10 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     const ga4EventName =
       event === 'modal_opened' ? 'view_promotion' : 'select_promotion'
     this.pushEvent(ga4EventName, metadata ? { ...metadata } : undefined)
+  }
+
+  trackPaywallViewed(metadata: PaywallViewedMetadata): void {
+    this.pushEvent('view_promotion', { ...metadata })
   }
 
   trackSignupOpened(): void {

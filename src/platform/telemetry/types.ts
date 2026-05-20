@@ -340,6 +340,21 @@ export interface SubscriptionMetadata {
   reason?: SubscriptionDialogReason
 }
 
+/**
+ * Paywall surface identifier — distinguishes which UI entry point triggered
+ * the impression. Used to measure conversion across the various billing
+ * entry points (subscription required dialog, out-of-credits, upsells, etc.).
+ */
+export type PaywallSurface =
+  | 'free_tier_dialog'
+  | 'subscription_required_dialog_workspace'
+  | 'upload_model_upgrade_modal'
+  | 'invite_member_upsell'
+
+export interface PaywallViewedMetadata extends SubscriptionMetadata {
+  surface: PaywallSurface
+}
+
 export interface BeginCheckoutMetadata
   extends Record<string, unknown>, CheckoutAttributionMetadata {
   user_id: string
@@ -390,6 +405,7 @@ export interface TelemetryProvider {
     event: 'modal_opened' | 'subscribe_clicked',
     metadata?: SubscriptionMetadata
   ): void
+  trackPaywallViewed?(metadata: PaywallViewedMetadata): void
   trackBeginCheckout?(metadata: BeginCheckoutMetadata): void
   trackMonthlySubscriptionSucceeded?(
     metadata?: SubscriptionSuccessMetadata
@@ -489,6 +505,7 @@ export const TelemetryEvents = {
   SUBSCRIBE_NOW_BUTTON_CLICKED: 'app:subscribe_now_button_clicked',
   MONTHLY_SUBSCRIPTION_SUCCEEDED: 'app:monthly_subscription_succeeded',
   MONTHLY_SUBSCRIPTION_CANCELLED: 'app:monthly_subscription_cancelled',
+  PAYWALL_VIEWED: 'app:paywall_viewed',
   ADD_API_CREDIT_BUTTON_CLICKED: 'app:add_api_credit_button_clicked',
   API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED:
     'app:api_credit_topup_button_purchase_clicked',
