@@ -11,6 +11,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import { commonType } from '@/lib/litegraph/src/utils/type'
+import { resolveNodeRootGraphId } from '@/lib/litegraph/src/utils/widget'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -22,6 +23,7 @@ import {
 import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 const INLINE_INPUTS = false
 
@@ -185,11 +187,18 @@ function dynamicComboWidget(
   //A little hacky, but onConfigure won't work.
   //It fires too late and is overly disruptive
   let widgetValue = widget.value
+  const graphId = resolveNodeRootGraphId(node)
+  const getState = () =>
+    graphId
+      ? useWidgetValueStore().getWidget(graphId, node.id, widget.name)
+      : undefined
   Object.defineProperty(widget, 'value', {
     get() {
-      return widgetValue
+      return getState()?.value ?? widgetValue
     },
     set(value) {
+      const state = getState()
+      if (state) state.value = value
       widgetValue = value
       updateWidgets(value)
     }

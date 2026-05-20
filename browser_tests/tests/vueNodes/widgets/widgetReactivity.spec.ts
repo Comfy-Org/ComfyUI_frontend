@@ -52,4 +52,42 @@ test.describe('Vue Widget Reactivity', { tag: '@vue-nodes' }, () => {
     })
     await expect(loadCheckpointNode).toHaveCount(3)
   })
+
+  test('Can load dynamic combos', async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting(
+      'Comfy.NodeSearchBoxImpl',
+      'v1 (legacy)'
+    )
+    await comfyPage.menu.topbar.newWorkflowButton.click()
+    await comfyPage.nextFrame()
+
+    await test.step('Add node with dynamic combo', async () => {
+      await comfyPage.page.mouse.dblclick(500, 500, { delay: 5 })
+      await comfyPage.searchBox.fillAndSelectFirstNode('Resize Image/Mask')
+      await expect(comfyPage.searchBox.input).toBeHidden()
+    })
+
+    const widget = comfyPage.vueNodes.getWidgetByName(
+      'Resize Image/Mask',
+      'resize_type'
+    )
+
+    await test.step('Update value of the dynamic combo widget', async () => {
+      await widget.click()
+      await comfyPage.page.getByRole('searchbox').fill('scale width')
+      await comfyPage.page.keyboard.press('ArrowDown')
+      await comfyPage.page.keyboard.press('Enter')
+      await expect(widget.locator('input')).toBeHidden()
+      await expect(widget).toHaveText('scale width')
+    })
+
+    await test.step('Swap to a different workflow and back', async () => {
+      await comfyPage.menu.topbar.getTab(0).click()
+      await expect(widget).toBeHidden()
+      await comfyPage.menu.topbar.getTab(1).click()
+      await expect(widget).toBeVisible()
+    })
+
+    await expect(widget, 'Widget has restored value').toHaveText('scale width')
+  })
 })
