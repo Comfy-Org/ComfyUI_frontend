@@ -143,7 +143,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     })
 
     await expect(
-      comfyPage.page.getByRole('heading', { name: 'Open shared workflow' })
+      comfyPage.page.getByTestId(TestIds.dialogs.openSharedWorkflowTitle)
     ).toBeVisible()
 
     await expect(comfyPage.templates.content).toBeHidden()
