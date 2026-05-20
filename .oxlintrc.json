@@ -2,7 +2,6 @@
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "ignorePatterns": [
     ".i18nrc.cjs",
-    ".nx/*",
     "**/vite.config.*.timestamp*",
     "**/vitest.config.*.timestamp*",
     "components.d.ts",

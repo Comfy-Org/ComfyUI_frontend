@@ -15,11 +15,5 @@
   },
   "devDependencies": {
     "@hey-api/openapi-ts": "0.93.0"
-  },
-  "nx": {
-    "tags": [
-      "scope:shared",
-      "type:types"
-    ]
   }
 }

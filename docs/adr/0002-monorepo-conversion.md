@@ -28,7 +28,7 @@ For more information on Monorepos, check out [monorepo.tools](https://monorepo.t
 
 [PNPM](https://pnpm.io/) and [PNPM workspaces](https://pnpm.io/workspaces)
 
-For monorepo management, I'd probably go with [Nx](https://nx.dev/), but I could be conviced otherwise.
+For monorepo task management, use direct workspace scripts and native tool CLIs.
 There's a [whole list here](https://monorepo.tools/#tools-review) if you're interested.
 
 ## Consequences
