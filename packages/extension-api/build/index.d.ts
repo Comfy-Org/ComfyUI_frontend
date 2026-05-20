@@ -721,70 +721,49 @@ export declare interface WidgetBeforeQueueEvent {
 /**
  * Payload for `widget.on('beforeSerialize', handler)`.
  *
- * This is the **only async-allowed event** in the API.
- * Replaces `widget.serializeValue`, `widget.options.serialize = false`, and
- * the v1 `widget.serializeValue = (workflowNode, widgetIndex) => ...` pattern.
+ * This is the **only async-allowed event** in the API and, per AXIOMS.md
+ * §A16 (Unified Serialization Target), the **sole** extension-author
+ * interface to serialization. The hook fires **once per serialization**
+ * and the framework writes the resulting payload to every transport
+ * (workflow JSON `widgets_values[i]`, API prompt, clone target, subgraph
+ * promotion). Extensions do not see and cannot branch on the transport.
  *
- * Call `event.setSerializedValue(v)` to override what is written to
- * `widgets_values[i]` and the API prompt. Call `event.skip()` to exclude this
- * widget from the prompt entirely. Do not call either to pass through the
- * widget's current `getValue()` unchanged.
+ * Per A16 there is no `skip()` and no `context` discriminator. Per A15
+ * (Widget Declarativity) there is no way to exclude a widget from
+ * serialization — if a widget should not contribute to the payload, it
+ * should not be a widget (use a boxed widget, a non-widget UI primitive,
+ * or a schema input).
  *
  * @typeParam T - The widget's value type.
  * @example
  * ```ts
  * // Dynamic prompts: replace value at serialize time
  * widget.on('beforeSerialize', (e) => {
- *   if (e.context === 'prompt') {
- *     e.setSerializedValue(processDynamicPrompt(widget.getValue()))
- *   }
+ *   e.setSerializedValue(processDynamicPrompt(widget.getValue()))
  * })
  *
- * // Preview widget: exclude from prompt
- * widget.on('beforeSerialize', (e) => {
- *   if (e.context === 'prompt') e.skip()
- * })
- *
- * // Async: webcam capture — materialize frame before prompt builds
+ * // Async: webcam capture — materialize frame before serialization
  * widget.on('beforeSerialize', async (e) => {
- *   if (e.context === 'prompt') {
- *     const frame = await captureFrame()
- *     e.setSerializedValue(frame)
- *   }
+ *   const frame = await captureFrame()
+ *   e.setSerializedValue(frame)
  * })
  * ```
  */
 export declare interface WidgetBeforeSerializeEvent<T = WidgetValue> {
-    /**
-     * Which serialization path triggered this handler.
-     *
-     * - `'workflow'` — user is saving the workflow to disk (full round-trip).
-     * - `'prompt'` — user is queueing a run (only prompt-relevant data sent to backend).
-     * - `'clone'` — a copy/paste is happening; the framework already populated the
-     *   cloned entity's widget value from the source. Override only if the clone should
-     *   differ from the source.
-     * - `'subgraph-promote'` — the widget is being promoted to a subgraph IO slot.
-     */
-    readonly context: 'workflow' | 'prompt' | 'clone' | 'subgraph-promote';
     /**
      * The widget's current value at the time of serialization (before any override).
      * Equivalent to calling `widget.getValue()`.
      */
     readonly value: T;
     /**
-     * Override the serialized value. The provided value is written to
-     * `widgets_values[i]` (and to the API prompt for `context='prompt'`).
-     * Calling this multiple times keeps the last call's value.
+     * Override the serialized value. The provided value is written to every
+     * transport (workflow JSON `widgets_values[i]`, API prompt, clone target,
+     * subgraph promotion). Calling this multiple times keeps the last call's
+     * value.
      *
      * @param v - The value to serialize. Must be JSON-serializable.
      */
     setSerializedValue(v: unknown): void;
-    /**
-     * Exclude this widget from the API prompt entirely.
-     * Only meaningful for `context='prompt'`; no-ops on other contexts.
-     * Replaces `widget.options.serialize = false` and `() => undefined` patterns.
-     */
-    skip(): void;
 }
 
 /**
@@ -976,20 +955,6 @@ export declare interface WidgetHandle<T = WidgetValue> {
      */
     setHeight(px: number): void;
     /**
-     * Returns `true` if this widget is included in workflow and prompt
-     * serialization. Defaults to `true` for all widget types.
-     *
-     */
-    isSerializeEnabled(): boolean;
-    /**
-     * Enable or disable serialization for this widget. When disabled, the widget
-     * is excluded from both `widgets_values` in the workflow JSON and the API
-     * prompt payload. Equivalent to the v1 `widget.options.serialize = false`
-     * pattern.
-     *
-     */
-    setSerializeEnabled(enabled: boolean): void;
-    /**
      * Read-only snapshot of the full options bag for this widget.
      *
      * **Immutable per D-immutability-enforcement (Hybrid C).** The returned
@@ -999,25 +964,23 @@ export declare interface WidgetHandle<T = WidgetValue> {
      * {@link WidgetHandle.setOption} per-key.
      *
      * Note: this is an accessor pair on the v2 surface. Reading is free; the
-     * setter intentionally does not exist on the public type. v1 patterns like
-     * `widget.options.serialize = false` should migrate to
-     * {@link WidgetHandle.setSerializeEnabled}; `widget.options.values = [...]`
-     * (combo refresh) migrates to a future `setValues` mutator (tracked
-     * under W6.P8.UNMIGRATABLE).
+     * setter intentionally does not exist on the public type. Per AXIOMS.md
+     * §A16, `serialize` is no longer a writable option (and no longer a key
+     * on this bag) — there is no widget-level serialization disable.
+     * `widget.options.values = [...]` (combo refresh) migrates to a future
+     * `setValues` mutator (tracked under W6.P8.UNMIGRATABLE).
      *
      * @example
      * ```ts
      * // ❌ TS-ERR — every option write raises a compile-time error
      * widget.options.min = 0
      * widget.options = { min: 0, max: 100 }
-     * widget.options.serialize = false
      *
      * // ✅ Read freely
      * const min = widget.options.min ?? 0
      *
      * // ✅ Mutate via typed setters
      * widget.setOption('min', 0)
-     * widget.setSerializeEnabled(false)
      * ```
      */
     readonly options: Readonly<WidgetOptions>;
@@ -1071,9 +1034,11 @@ export declare interface WidgetHandle<T = WidgetValue> {
      * // ❌ TS-ERR — direct assignment no longer compiles
      * widget.serializeValue = () => 'static value'
      *
-     * // ✅ Subscribe to the typed event (D5)
+     * // ✅ Subscribe to the typed event (D5). Per A16 the hook fires once
+     * // and the framework writes the resulting payload to every transport;
+     * // there is no transport discriminator.
      * widget.on('beforeSerialize', (e) => {
-     *   if (e.context === 'prompt') e.setSerializedValue('static value')
+     *   e.setSerializedValue('static value')
      * })
      * ```
      *
@@ -1100,21 +1065,16 @@ export declare interface WidgetHandle<T = WidgetValue> {
      */
     on(event: 'optionChange', handler: Handler<WidgetOptionChangeEvent>): Unsubscribe;
     /**
-     * Subscribe to first-class property mutations (`setHidden`, `setDisabled`,
-     * `setSerializeEnabled`).
-     *
-     * Does NOT fire for `setValue` (use `valueChange`) or options-bag mutations
-     * (use `optionChange`).
-     *
-     * @returns A cleanup function to remove the listener.
-     * @stability experimental
-     */
-    on(event: 'propertyChange', handler: Handler<WidgetPropertyChangeEvent>): Unsubscribe;
-    /**
      * Subscribe to widget serialization. The only async-allowed event.
      *
-     * Replaces `widget.serializeValue = fn` and the v1 `widget.options.serialize`
-     * flag. The handler may be sync or async; async handlers are awaited before
+     * Per AXIOMS.md §A16 this is the **sole** extension-author interface
+     * to serialization. The hook fires once per serialization and the
+     * framework writes the resulting payload to every transport (workflow
+     * JSON `widgets_values`, API prompt, clone target, subgraph promotion).
+     * Replaces the v1 `widget.serializeValue = fn` /
+     * `widget.options.serialize` patterns.
+     *
+     * The handler may be sync or async; async handlers are awaited before
      * the serialization payload is sent.
      *
      * @returns A cleanup function to remove the listener.
@@ -1228,8 +1188,6 @@ export declare interface WidgetOptions {
     hidden?: boolean;
     /** If `true`, the widget is rendered read-only (no user editing). */
     readonly?: boolean;
-    /** If `false`, this widget is excluded from workflow/prompt serialization. */
-    serialize?: boolean;
     /** Display label override. Defaults to the widget `name`. */
     label?: string;
     /** Toggle label shown when value is `true` (BOOLEAN widgets). */
@@ -1255,34 +1213,11 @@ export declare interface WidgetOptions {
     [key: string]: unknown;
 }
 
-/**
- * Payload for `widget.on('propertyChange', handler)`.
- *
- * Fires when a first-class every-widget property is mutated — specifically
- * `hidden`, `disabled`, and `serialize`. Does NOT fire for `value` changes
- * (use `valueChange`) or for options-bag mutations (use `optionChange`).
- *
- * @stability experimental
- * @example
- * ```ts
- * widget.on('propertyChange', (e) => {
- *   if (e.property === 'hidden') updateLayout(e.newValue as boolean)
- * })
- * ```
- */
-export declare interface WidgetPropertyChangeEvent {
-    /**
-     * Which first-class property changed.
-     * - `'hidden'` — visibility toggled via `setHidden()`
-     * - `'disabled'` — enabled/disabled via `setDisabled()`
-     * - `'serialize'` — serialization opt-in/out via `setSerializeEnabled()`
-     */
-    readonly property: 'hidden' | 'disabled' | 'serialize';
-    /** Value before the change. */
-    readonly oldValue: boolean;
-    /** Value after the change. */
-    readonly newValue: boolean;
-}
+// PHASE_A_EXCLUDED per AXIOMS.md A14 + A16 (D-widget-serialization-simplification, wave-9):
+// `WidgetPropertyChangeEvent` is vacuous after `'serialize'` was removed
+// from the property union (the only member). `'hidden'` / `'disabled'`
+// were already A14-deferred. Restoration requires a new first-class
+// property to surface that satisfies A1–A16.
 
 /**
  * The union of all legal widget scalar values. Complex widgets (DOM, canvas)
