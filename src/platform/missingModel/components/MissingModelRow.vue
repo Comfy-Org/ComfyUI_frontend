@@ -156,7 +156,7 @@
             variant="secondary"
             size="md"
             class="flex w-full flex-1"
-            :aria-label="`${t('g.download')} ${model.name}`"
+            :aria-label="`${downloadActionLabel} ${model.name}`"
             @click="handleDownload"
           >
             <i
@@ -203,7 +203,7 @@ import {
 } from '@/platform/missingModel/composables/useMissingModelInteractions'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import {
   downloadModel,
   fetchModelMetadata,
@@ -277,8 +277,14 @@ const downloadable = computed(() => {
   )
 })
 
+const downloadActionLabel = computed(() =>
+  !isDesktop
+    ? t('rightSidePanel.missingModels.downloadToBrowser')
+    : t('g.download')
+)
+
 const downloadLabel = computed(() => {
-  const base = t('g.download')
+  const base = downloadActionLabel.value
   const url = model.representative.url
   const size = url ? store.fileSizes[url] : undefined
   return size ? `${base} (${formatSize(size)})` : base

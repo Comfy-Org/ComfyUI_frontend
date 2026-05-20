@@ -3592,6 +3592,10 @@
       "missingModelsTitle": "Missing Models",
       "assetLoadTimeout": "Model detection timed out. Try reloading the workflow.",
       "downloadAll": "Download all",
+      "downloadAllToBrowser": "Download all to browser",
+      "downloadToBrowser": "Download to browser",
+      "browserDownloadHint": "Browser downloads are saved on this device, not on a remote ComfyUI server. For remote installs, copy each URL and save it in the matching server folder below.",
+      "savePathHint": "Expected server folder: {path}",
       "refresh": "Refresh",
       "refreshing": "Refreshing missing models.",
       "refreshFailed": "Failed to refresh missing models. Please try again."
