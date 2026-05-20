@@ -3225,6 +3225,7 @@
     "copyAssetsAndOpen": "Import assets & open workflow",
     "openWorkflow": "Open workflow",
     "openWithoutImporting": "Open without importing",
+    "opening": "Opening shared workflow...",
     "importFailed": "Failed to import workflow assets",
     "loadError": "Could not load this shared workflow. Please try again later."
   },
