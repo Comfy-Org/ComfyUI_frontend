@@ -70,7 +70,7 @@
           :class="
             cn(
               'z-3000 overflow-hidden rounded-lg border border-solid border-border-default bg-base-background p-0 text-base-foreground shadow-md',
-              'min-w-(--reka-combobox-trigger-width)'
+              'max-w-[min(90vw,48rem)] min-w-(--reka-combobox-trigger-width)'
             )
           "
           @keydown.escape.stop="handleOpenChange(false)"
@@ -102,38 +102,47 @@
             :style="viewportStyle"
             @pointerdown.capture.self="handleViewportPointerDown"
           >
-            <ComboboxVirtualizer
-              v-if="filteredOptions.length > 0"
-              v-slot="{ option }"
-              :options="filteredOptions"
-              :estimate-size="32"
-              :text-content="(opt: SelectOption) => opt.label"
-            >
-              <ComboboxItem
-                :key="option.key"
-                :value="option.comboboxValue"
-                :text-value="option.label"
-                :class="
-                  cn(
-                    'flex h-8 w-full cursor-pointer items-center justify-between gap-3 rounded-sm p-2 outline-none select-none',
-                    'hover:bg-secondary-background data-highlighted:bg-secondary-background',
-                    'data-[state=checked]:bg-primary-background/20 data-[state=checked]:hover:bg-primary-background/20 data-[state=checked]:data-highlighted:bg-primary-background/30'
-                  )
-                "
+            <template v-if="filteredOptions.length > 0">
+              <div aria-hidden="true" class="invisible h-0 overflow-hidden">
+                <div class="flex items-center gap-3 p-2">
+                  <span class="whitespace-nowrap">{{ longestLabel }}</span>
+                  <span class="size-3.5 shrink-0" />
+                </div>
+              </div>
+
+              <ComboboxVirtualizer
+                v-slot="{ option }"
+                :options="filteredOptions"
+                :estimate-size="32"
+                :text-content="(opt: SelectOption) => opt.label"
               >
-                <span class="truncate">
-                  {{ option.label }}
-                </span>
-                <ComboboxItemIndicator
-                  class="flex shrink-0 items-center justify-center"
+                <ComboboxItem
+                  :key="option.key"
+                  :value="option.comboboxValue"
+                  :text-value="option.label"
+                  :title="option.label"
+                  :class="
+                    cn(
+                      'flex h-8 w-full cursor-pointer items-center justify-between gap-3 rounded-sm p-2 outline-none select-none',
+                      'hover:bg-secondary-background data-highlighted:bg-secondary-background',
+                      'data-[state=checked]:bg-primary-background/20 data-[state=checked]:hover:bg-primary-background/20 data-[state=checked]:data-highlighted:bg-primary-background/30'
+                    )
+                  "
                 >
-                  <i
-                    class="icon-[lucide--check] size-3.5 text-base-foreground"
-                    aria-hidden="true"
-                  />
-                </ComboboxItemIndicator>
-              </ComboboxItem>
-            </ComboboxVirtualizer>
+                  <span class="truncate">
+                    {{ option.label }}
+                  </span>
+                  <ComboboxItemIndicator
+                    class="flex shrink-0 items-center justify-center"
+                  >
+                    <i
+                      class="icon-[lucide--check] size-3.5 text-base-foreground"
+                      aria-hidden="true"
+                    />
+                  </ComboboxItemIndicator>
+                </ComboboxItem>
+              </ComboboxVirtualizer>
+            </template>
 
             <div
               v-else
@@ -320,6 +329,13 @@ const viewportStyle = computed<CSSProperties>(() => ({
     filteredOptions.value.length > MAX_VISIBLE_OPTIONS ? 'scroll' : 'auto',
   scrollbarGutter: 'stable'
 }))
+
+const longestLabel = computed(() =>
+  filteredOptions.value.reduce(
+    (longest, opt) => (opt.label.length > longest.length ? opt.label : longest),
+    ''
+  )
+)
 
 const selectedOption = computed(() =>
   normalizedOptions.value.find((option) => option.value === modelValue.value)
