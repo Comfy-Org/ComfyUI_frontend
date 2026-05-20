@@ -322,6 +322,15 @@ export class LiteGraphGlobal {
   mouseWheelScroll: 'panning' | 'zoom' = 'panning'
 
   /**
+   * Override for the auto-detection of trackpad vs mouse in wheel events.
+   * "auto" preserves the existing heuristic-based detection.
+   * "mouse" / "trackpad" force the corresponding formula on every event,
+   * which avoids misclassification when the user switches devices mid-session.
+   * @default "auto"
+   */
+  wheelInputMode: 'auto' | 'mouse' | 'trackpad' = 'auto'
+
+  /**
    * If `true`, widget labels and values will both be truncated (proportionally to size),
    * until they fit within the widget.
    *

@@ -107,6 +107,9 @@ export class CanvasPointer {
   /** Currently detected input device type */
   detectedDevice: 'mouse' | 'trackpad' = 'mouse'
 
+  /** Fired when {@link detectedDevice} flips between mouse and trackpad. */
+  onDetectedDeviceChange?: (device: 'mouse' | 'trackpad') => void
+
   /** Timestamp of last wheel event for cooldown tracking */
   lastWheelEventTime: number = 0
 
@@ -313,6 +316,7 @@ export class CanvasPointer {
     const now = performance.now()
     const timeSinceLastEvent = Math.max(0, now - this.lastWheelEventTime)
     this.lastWheelEventTime = now
+    const previousDevice = this.detectedDevice
 
     if (this._isHighResWheelEvent(e, now)) {
       this.detectedDevice = 'mouse'
@@ -325,6 +329,9 @@ export class CanvasPointer {
       this.hasReceivedWheelEvent = true
     }
 
+    if (previousDevice !== this.detectedDevice) {
+      this.onDetectedDeviceChange?.(this.detectedDevice)
+    }
     return this.detectedDevice === 'trackpad'
   }
 

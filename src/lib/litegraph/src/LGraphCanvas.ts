@@ -2682,8 +2682,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       !pointer.onDrag &&
       this.allow_dragcanvas
     ) {
-      // allow dragging canvas based on leftMouseClickBehavior or read-only mode
-      if (LiteGraph.leftMouseClickBehavior === 'panning' || this.read_only) {
+      /**
+       * Always pan for single-finger touch — selection-by-drag is a desktop
+       * idiom that does not translate to mobile, where the natural gesture
+       * for moving the viewport is dragging with one finger.
+       */
+      const isTouch = e.pointerType === 'touch'
+      if (
+        LiteGraph.leftMouseClickBehavior === 'panning' ||
+        this.read_only ||
+        isTouch
+      ) {
         pointer.onClick = () => this.processSelect(null, e)
         pointer.finally = () => (this.dragging_canvas = false)
         this.dragging_canvas = true
@@ -3907,20 +3916,40 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     let { scale } = this.ds
 
-    // Detect if this is a trackpad gesture or mouse wheel
-    const isTrackpad = this.pointer.isTrackpadGesture(e)
+    /**
+     * Resolve trackpad vs mouse mode. Honor the user's manual override when
+     * set; otherwise fall back to the heuristic-based auto-detection.
+     */
+    const isTrackpad =
+      LiteGraph.wheelInputMode === 'mouse'
+        ? false
+        : LiteGraph.wheelInputMode === 'trackpad'
+          ? true
+          : this.pointer.isTrackpadGesture(e)
     const isCtrlOrMacMeta =
       e.ctrlKey || (e.metaKey && navigator.platform.includes('Mac'))
     const isZoomModifier = isCtrlOrMacMeta && !e.altKey && !e.shiftKey
 
-    if (isZoomModifier || LiteGraph.mouseWheelScroll === 'zoom') {
-      // Zoom mode or modifier key pressed - use wheel for zoom
+    const factor = 0.18
+    /**
+     * Mouse + Shift: redirect vertical wheel to horizontal pan. Mice only
+     * produce deltaY, so this is the only way to pan horizontally with a
+     * wheel input, regardless of WheelInputMode. Skip when a zoom modifier
+     * (Ctrl/Meta) is held — that combination should still zoom.
+     */
+    const isMouseShiftPan =
+      !isTrackpad && e.shiftKey && !isZoomModifier && e.deltaX === 0
+
+    if (isMouseShiftPan) {
+      this.ds.offset[0] -= e.deltaY * (1 + factor) * (1 / scale)
+    } else if (isZoomModifier || !isTrackpad) {
+      // Wheel-to-zoom: mouse default and Ctrl/Meta forces it on either device
       if (isTrackpad) {
-        // Trackpad gesture - use smooth scaling
+        // Trackpad pinch — smooth scaling
         scale *= 1 + e.deltaY * (1 - this.zoom_speed) * 0.18
         this.ds.changeScale(scale, [e.clientX, e.clientY], false)
       } else {
-        // Mouse wheel - use stepped scaling
+        // Mouse wheel — stepped scaling
         if (e.deltaY < 0) {
           scale *= this.zoom_speed
         } else if (e.deltaY > 0) {
@@ -3929,15 +3958,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.ds.changeScale(scale, [e.clientX, e.clientY])
       }
     } else {
-      // Trackpads and mice work on significantly different scales
-      const factor = isTrackpad ? 0.18 : 0.008_333
-
-      if (!isTrackpad && e.shiftKey && e.deltaX === 0) {
-        this.ds.offset[0] -= e.deltaY * (1 + factor) * (1 / scale)
-      } else {
-        this.ds.offset[0] -= e.deltaX * (1 + factor) * (1 / scale)
-        this.ds.offset[1] -= e.deltaY * (1 + factor) * (1 / scale)
-      }
+      // Trackpad two-finger pan
+      this.ds.offset[0] -= e.deltaX * (1 + factor) * (1 / scale)
+      this.ds.offset[1] -= e.deltaY * (1 + factor) * (1 / scale)
     }
 
     this.graph.change()

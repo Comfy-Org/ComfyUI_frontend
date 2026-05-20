@@ -135,7 +135,7 @@ const activePlanIndex = ref(0)
     </div>
 
     <!-- Mobile plan tabs -->
-    <div class="scrollbar-none mb-6 flex gap-2 overflow-x-auto lg:hidden">
+    <div class="mb-6 flex scrollbar-none gap-2 overflow-x-auto lg:hidden">
       <button
         v-for="(plan, index) in plans"
         :key="plan.id"

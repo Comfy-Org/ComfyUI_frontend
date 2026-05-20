@@ -1141,8 +1141,8 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
   test.describe('Legacy Mode', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting(
-        'Comfy.Canvas.NavigationMode',
-        'legacy'
+        'Comfy.Canvas.LeftMouseClickBehavior',
+        'panning'
       )
     })
 
@@ -1201,8 +1201,8 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
   test.describe('Standard Mode', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting(
-        'Comfy.Canvas.NavigationMode',
-        'standard'
+        'Comfy.Canvas.LeftMouseClickBehavior',
+        'select'
       )
     })
 
@@ -1385,8 +1385,8 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
       comfyPage
     }) => {
       await comfyPage.settings.setSetting(
-        'Comfy.Canvas.NavigationMode',
-        'legacy'
+        'Comfy.Canvas.LeftMouseClickBehavior',
+        'panning'
       )
 
       await comfyPage.page.keyboard.down('Alt')
@@ -1415,8 +1415,8 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
       }
 
       await comfyPage.settings.setSetting(
-        'Comfy.Canvas.NavigationMode',
-        'legacy'
+        'Comfy.Canvas.LeftMouseClickBehavior',
+        'panning'
       )
       await comfyPage.page.mouse.move(50, 50)
       await comfyPage.page.mouse.down()

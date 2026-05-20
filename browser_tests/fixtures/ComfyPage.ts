@@ -523,6 +523,10 @@ export const comfyPageFixture = base.extend<{
         'Comfy.Graph.CanvasInfo': false,
         'Comfy.Graph.CanvasMenu': false,
         'Comfy.Canvas.SelectionToolbox': false,
+        // Pin to the legacy panning behavior so existing baselines that
+        // assume empty-drag pans the canvas remain valid. Individual tests
+        // can opt into 'select' explicitly.
+        'Comfy.Canvas.LeftMouseClickBehavior': 'panning',
         // Hide all badges by default.
         'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
         'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,

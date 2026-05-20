@@ -15,8 +15,8 @@ export function useCanvasInteractions() {
   const canvasStore = useCanvasStore()
   const { getCanvas } = canvasStore
 
-  const isStandardNavMode = computed(
-    () => settingStore.get('Comfy.Canvas.NavigationMode') === 'standard'
+  const isTrackpadWheelMode = computed(
+    () => settingStore.get('Comfy.Graph.WheelInputMode') === 'trackpad'
   )
 
   /**
@@ -58,17 +58,18 @@ export function useCanvasInteractions() {
   const handleWheel = (event: WheelEvent) => {
     if (!shouldForwardWheelEvent(event)) return
 
-    // In standard mode, only canvas gestures (zoom/pan) are forwarded;
-    // vertical wheel falls through so the document/widget scrolls normally.
-    // The re-check is intentional and NOT redundant with shouldForwardWheelEvent:
-    // that function also returns true for unfocused vertical wheel (its
-    // `!wheelCapturedByFocusedElement` branch), which here must stay native.
-    if (isStandardNavMode.value) {
+    // Trackpad mode: only canvas gestures (zoom / horizontal pan) are
+    // forwarded; plain vertical wheel falls through so the document or
+    // widget scrolls natively. The re-check is intentional and NOT
+    // redundant with shouldForwardWheelEvent: that function also returns
+    // true for unfocused vertical wheel (its `!wheelCapturedByFocusedElement`
+    // branch), which here must stay native.
+    if (isTrackpadWheelMode.value) {
       if (isCanvasGestureWheel(event)) forwardEventToCanvas(event)
       return
     }
 
-    // In legacy mode, all forwardable wheel events go to canvas for zoom/pan.
+    // Mouse mode: all forwardable wheel events go to canvas for zoom/pan.
     forwardEventToCanvas(event)
   }
 
