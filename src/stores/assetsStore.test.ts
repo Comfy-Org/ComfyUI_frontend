@@ -33,12 +33,8 @@ vi.mock('@/platform/assets/services/assetService', () => ({
   }
 }))
 
-// Mock distribution type - hoisted so it can be changed per test
-const mockIsCloud = vi.hoisted(() => ({ value: false }))
 vi.mock('@/platform/distribution/types', () => ({
-  get isCloud() {
-    return mockIsCloud.value
-  }
+  isCloud: true
 }))
 
 // Mock modelToNodeStore with proper node providers and category lookups
@@ -152,14 +148,6 @@ vi.mock('@/stores/queueStore', () => ({
 
 // Mock asset mappers - add unique timestamps
 vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
-  mapInputFileToAssetItem: vi.fn((name, index, type) => ({
-    id: `${type}-${index}`,
-    name,
-    size: 0,
-    created_at: new Date(Date.now() - index * 1000).toISOString(),
-    tags: [type],
-    preview_url: `http://test.com/${name}`
-  })),
   mapTaskOutputToAssetItem: vi.fn((task, output) => {
     const index = parseInt(task.jobId.split('_')[1]) || 0
     return {
@@ -767,15 +755,10 @@ describe('assetsStore - Refactored (Option A)', () => {
   })
 })
 
-describe('assetsStore - Model Assets Cache (Cloud)', () => {
+describe('assetsStore - Model Assets Cache', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    mockIsCloud.value = true
     vi.clearAllMocks()
-  })
-
-  afterEach(() => {
-    mockIsCloud.value = false
   })
 
   const createMockAsset = (id: string, tags: string[] = ['models']) => ({
@@ -1451,25 +1434,20 @@ describe('assetsStore - Deletion State and Input Mapping', () => {
 
   describe('getInputName', () => {
     it('resolves a hashed filename to the human-readable name when the input asset is in the cache', async () => {
-      mockIsCloud.value = true
-      try {
-        setActivePinia(createTestingPinia({ stubActions: false }))
-        const store = useAssetsStore()
+      setActivePinia(createTestingPinia({ stubActions: false }))
+      const store = useAssetsStore()
 
-        vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([
-          {
-            id: 'input-1',
-            name: 'cute-puppy.png',
-            asset_hash: 'abc123def.png',
-            tags: ['input']
-          }
-        ])
-        await store.updateInputs()
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([
+        {
+          id: 'input-1',
+          name: 'cute-puppy.png',
+          asset_hash: 'abc123def.png',
+          tags: ['input']
+        }
+      ])
+      await store.updateInputs()
 
-        expect(store.getInputName('abc123def.png')).toBe('cute-puppy.png')
-      } finally {
-        mockIsCloud.value = false
-      }
+      expect(store.getInputName('abc123def.png')).toBe('cute-puppy.png')
     })
 
     it('falls back to the original filename when the input asset is not cached', () => {
@@ -1478,27 +1456,22 @@ describe('assetsStore - Deletion State and Input Mapping', () => {
     })
   })
 
-  describe('updateInputs cloud routing', () => {
-    it('reads from assetService.getAssetsByTag with limit 100 when isCloud is true', async () => {
-      mockIsCloud.value = true
-      try {
-        setActivePinia(createTestingPinia({ stubActions: false }))
-        const store = useAssetsStore()
+  describe('updateInputs', () => {
+    it('reads from assetService.getAssetsByTag with limit 100', async () => {
+      setActivePinia(createTestingPinia({ stubActions: false }))
+      const store = useAssetsStore()
 
-        vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([])
-        await store.updateInputs()
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([])
+      await store.updateInputs()
 
-        expect(vi.mocked(assetService.getAssetsByTag)).toHaveBeenCalledWith(
-          'input',
-          false,
-          { limit: 100 }
-        )
-        expect(
-          assetService.invalidateInputAssetsIncludingPublic
-        ).toHaveBeenCalledOnce()
-      } finally {
-        mockIsCloud.value = false
-      }
+      expect(vi.mocked(assetService.getAssetsByTag)).toHaveBeenCalledWith(
+        'input',
+        false,
+        { limit: 100 }
+      )
+      expect(
+        assetService.invalidateInputAssetsIncludingPublic
+      ).toHaveBeenCalledOnce()
     })
   })
 })
