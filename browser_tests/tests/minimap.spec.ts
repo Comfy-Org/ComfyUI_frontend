@@ -493,20 +493,13 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     // Minimap unmount must not clobber the Vue wrapper layered above it.
     await comfyPage.page.getByTestId(TestIds.canvas.closeMinimapButton).click()
 
-    await comfyPage.page.evaluate((id) => {
-      const graph = window.app!.graph!
-      const subgraphNode = graph.getNodeById(id)
-      if (!subgraphNode?.isSubgraphNode()) {
-        throw new Error('expected subgraph node at root')
-      }
-      graph.unpackSubgraph(subgraphNode)
-    }, subgraphNodeId)
+    const subgraphFixture =
+      await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
+    await comfyPage.contextMenu.openForVueNode(subgraphFixture.header)
+    await comfyPage.contextMenu.clickMenuItemExact('Unpack Subgraph')
+    await comfyPage.contextMenu.waitForHidden()
 
-    await expect
-      .poll(() =>
-        comfyPage.page.evaluate(() => window.app!.graph!.nodes.length)
-      )
-      .toBe(2)
+    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(2)
     await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(2)
     await expect(comfyPage.vueNodes.getNodeLocator(subgraphNodeId)).toHaveCount(
       0
