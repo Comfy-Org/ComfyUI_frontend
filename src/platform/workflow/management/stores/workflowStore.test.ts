@@ -8,6 +8,7 @@ import type {
   ComfyWorkflow,
   LoadedComfyWorkflow
 } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   useWorkflowBookmarkStore,
   useWorkflowStore
@@ -207,6 +208,74 @@ describe('useWorkflowStore', () => {
       expect(typeof state.id).toBe('string')
       expect(state.id.length).toBeGreaterThan(0)
       expect(workflowDataWithoutId.id).toBeUndefined()
+    })
+
+    it('should replace a non-UUID workflow id with a fresh UUID', () => {
+      const workflowDataWithSlugId = {
+        ...defaultGraph,
+        id: 'video-point-prompt-example'
+      } as unknown as ComfyWorkflowJSON
+
+      const workflow = store.createTemporary(
+        'slug-id.json',
+        workflowDataWithSlugId
+      )
+      const state = JSON.parse(workflow.content!)
+
+      expect(state.id).not.toBe('video-point-prompt-example')
+      expect(state.id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      )
+      expect(workflowDataWithSlugId.id).toBe('video-point-prompt-example')
+    })
+
+    it('should replace an empty-string id with a fresh UUID', () => {
+      const workflowDataWithEmptyId = {
+        ...defaultGraph,
+        id: ''
+      } as unknown as ComfyWorkflowJSON
+
+      const workflow = store.createTemporary(
+        'empty-id.json',
+        workflowDataWithEmptyId
+      )
+      const state = JSON.parse(workflow.content!)
+
+      expect(state.id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      )
+    })
+
+    it('should preserve a valid existing UUID', () => {
+      const existingUuid = '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
+      const workflowDataWithValidId = {
+        ...defaultGraph,
+        id: existingUuid
+      } as unknown as ComfyWorkflowJSON
+
+      const workflow = store.createTemporary(
+        'valid-uuid.json',
+        workflowDataWithValidId
+      )
+      const state = JSON.parse(workflow.content!)
+
+      expect(state.id).toBe(existingUuid)
+    })
+
+    it('should preserve a valid uppercase UUID', () => {
+      const existingUuid = '9CEA40BB-B0CF-4B40-A758-8935CFE8D52F'
+      const workflowDataWithUpperId = {
+        ...defaultGraph,
+        id: existingUuid
+      } as unknown as ComfyWorkflowJSON
+
+      const workflow = store.createTemporary(
+        'upper-uuid.json',
+        workflowDataWithUpperId
+      )
+      const state = JSON.parse(workflow.content!)
+
+      expect(state.id).toBe(existingUuid)
     })
   })
 

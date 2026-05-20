@@ -26,7 +26,7 @@ import {
   parseNodeExecutionId,
   parseNodeLocatorId
 } from '@/types/nodeIdentification'
-import { generateUUID, getPathDetails } from '@/utils/formatUtil'
+import { generateUUID, getPathDetails, isValidUuid } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 import { ComfyWorkflow } from './comfyWorkflow'
@@ -263,7 +263,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       ? (JSON.parse(JSON.stringify(workflowData)) as ComfyWorkflowJSON)
       : (JSON.parse(defaultGraphJSON) as ComfyWorkflowJSON)
 
-    if (!base.id) {
+    if (!isValidUuid(base.id)) {
       base.id = generateUUID()
     }
 
