@@ -159,6 +159,113 @@ describe('useMinimapGraph', () => {
     expect(() => graphManager.cleanupEventListeners()).not.toThrow()
   })
 
+  it('cleanup leaves a later wrapper alone when one is layered on top', () => {
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.setupEventListeners()
+    const minimapWrapper = mockGraph.onNodeAdded
+
+    // Simulate another system ddding its own wrapper on top
+    const downstream = vi.fn()
+    const layeredWrapper = vi.fn(function (this: unknown, node: LGraphNode) {
+      minimapWrapper?.call(this, node)
+      downstream(node)
+    })
+    mockGraph.onNodeAdded = layeredWrapper
+
+    graphManager.cleanupEventListeners()
+
+    // The newer wrapper must survive cleanup
+    expect(mockGraph.onNodeAdded).toBe(layeredWrapper)
+  })
+
+  it('a buried wrapper becomes inert after cleanup', () => {
+    const originalOnNodeAdded = vi.fn()
+    mockGraph.onNodeAdded = originalOnNodeAdded
+
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.setupEventListeners()
+    const buriedWrapper = mockGraph.onNodeAdded
+
+    // Layer something on top so cleanup can't restore.
+    mockGraph.onNodeAdded = vi.fn()
+    graphManager.cleanupEventListeners()
+    vi.mocked(onGraphChangedMock).mockClear()
+
+    // Call the method directly and ensure it is a no-op
+    const testNode = { id: '9' } as LGraphNode
+    buriedWrapper!(testNode)
+
+    expect(originalOnNodeAdded).toHaveBeenCalledWith(testNode)
+    expect(onGraphChangedMock).not.toHaveBeenCalled()
+  })
+
+  it('onTrigger wrapper forwards to original and fires on visual property changes', () => {
+    const originalOnTrigger = vi.fn()
+    mockGraph.onTrigger = originalOnTrigger
+
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    graphManager.setupEventListeners()
+
+    const colorEvent = {
+      type: 'node:property:changed',
+      nodeId: '1',
+      property: 'color',
+      oldValue: '',
+      newValue: '#fff'
+    } as const
+    mockGraph.onTrigger!(colorEvent)
+
+    expect(originalOnTrigger).toHaveBeenCalledWith(colorEvent)
+    expect(onGraphChangedMock).toHaveBeenCalled()
+  })
+
+  it('onTrigger wrapper ignores unrelated property changes', () => {
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    graphManager.setupEventListeners()
+
+    mockGraph.onTrigger!({
+      type: 'node:property:changed',
+      nodeId: '1',
+      property: 'title',
+      oldValue: 'a',
+      newValue: 'b'
+    })
+
+    expect(onGraphChangedMock).not.toHaveBeenCalled()
+  })
+
+  it('buried onTrigger wrapper becomes inert after cleanup', () => {
+    const originalOnTrigger = vi.fn()
+    mockGraph.onTrigger = originalOnTrigger
+
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+    graphManager.setupEventListeners()
+    const buriedTrigger = mockGraph.onTrigger
+
+    mockGraph.onTrigger = vi.fn()
+    graphManager.cleanupEventListeners()
+    vi.mocked(onGraphChangedMock).mockClear()
+
+    const event = {
+      type: 'node:property:changed',
+      nodeId: '1',
+      property: 'mode',
+      oldValue: 0,
+      newValue: 1
+    } as const
+    buriedTrigger!(event)
+
+    expect(originalOnTrigger).toHaveBeenCalledWith(event)
+    expect(onGraphChangedMock).not.toHaveBeenCalled()
+  })
+
   it('should detect node position changes', () => {
     const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
