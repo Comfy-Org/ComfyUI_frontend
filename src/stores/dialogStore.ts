@@ -6,7 +6,6 @@ import type { DialogPassThroughOptions } from 'primevue/dialog'
 import { markRaw, ref } from 'vue'
 import type { Component, HTMLAttributes } from 'vue'
 
-import type GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import type { DialogContentSize } from '@/components/ui/dialog/dialog.variants'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
@@ -50,23 +49,19 @@ interface CustomDialogComponentProps {
   contentClass?: HTMLAttributes['class']
 }
 
-export type DialogComponentProps = ComponentAttrs<typeof GlobalDialog> &
+export type DialogComponentProps = Record<string, unknown> &
   CustomDialogComponentProps
 
-export interface DialogInstance<
-  H extends Component = Component,
-  B extends Component = Component,
-  F extends Component = Component
-> {
+export interface DialogInstance {
   key: string
   visible: boolean
   title?: string
-  headerComponent?: H
-  headerProps?: ComponentAttrs<H>
-  component: B
-  contentProps: ComponentAttrs<B>
-  footerComponent?: F
-  footerProps?: ComponentAttrs<F>
+  headerComponent?: Component
+  headerProps?: Record<string, unknown>
+  component: Component
+  contentProps: Record<string, unknown>
+  footerComponent?: Component
+  footerProps?: Record<string, unknown>
   dialogComponentProps: DialogComponentProps
   priority: number
 }
@@ -112,7 +107,6 @@ export const useDialogStore = defineStore('dialog', () => {
     const insertIndex = dialogStack.value.findIndex(
       (d) => d.priority <= dialog.priority
     )
-
     dialogStack.value.splice(
       insertIndex === -1 ? dialogStack.value.length : insertIndex,
       0,
@@ -139,8 +133,8 @@ export const useDialogStore = defineStore('dialog', () => {
     if (!targetDialog) return
 
     targetDialog.dialogComponentProps?.onClose?.()
-    const index = dialogStack.value.indexOf(targetDialog)
-    dialogStack.value.splice(index, 1)
+    const index = dialogStack.value.findIndex((d) => d.key === targetDialog.key)
+    if (index !== -1) dialogStack.value.splice(index, 1)
 
     activeKey.value =
       dialogStack.value.length > 0
