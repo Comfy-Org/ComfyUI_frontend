@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas, Positionable } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 vi.mock('@/composables/useAppMode', () => ({
@@ -121,5 +122,11 @@ describe('useCanvasStore', () => {
       ).toBe(false)
       expect(store.selectedItems).toEqual([])
     })
+  })
+
+  it('Does not include groups in selected nodeIds', async () => {
+    store.selectedItems = [new LGraphGroup()]
+
+    expect(store.selectedNodeIds).toHaveLength(0)
   })
 })

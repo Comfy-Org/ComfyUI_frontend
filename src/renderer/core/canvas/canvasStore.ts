@@ -123,7 +123,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     () =>
       new Set(
         selectedItems.value
-          .filter((item) => item.id !== undefined)
+          .filter((item) => item.id !== undefined && isLGraphNode(item))
           .map((item) => String(item.id))
       )
   )

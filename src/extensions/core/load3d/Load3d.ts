@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js'
 
 import type { AnimationManager } from './AnimationManager'
 import type { CameraManager } from './CameraManager'
@@ -22,6 +23,7 @@ import type {
   EventCallback,
   GizmoMode,
   Load3DOptions,
+  LoadModelOptions,
   MaterialMode,
   UpDirection
 } from './interfaces'
@@ -101,6 +103,7 @@ class Load3d {
 
   private disposeContextMenuGuard: (() => void) | null = null
   private resizeObserver: ResizeObserver | null = null
+  private getZoomScaleCallback: (() => number) | undefined
 
   constructor(
     container: Element | HTMLElement,
@@ -111,6 +114,7 @@ class Load3d {
     this.isViewerMode = options.isViewerMode || false
     this.onContextMenuCallback = options.onContextMenu
     this.getDimensionsCallback = options.getDimensions
+    this.getZoomScaleCallback = options.getZoomScale
 
     if (options.width && options.height) {
       this.targetWidth = options.width
@@ -341,8 +345,30 @@ class Load3d {
     const exportMessage = `Exporting as ${format.toUpperCase()}...`
     this.eventManager.emitEvent('exportLoadingStart', exportMessage)
 
+    const source = this.modelManager.currentModel
+    const savedPos = source.position.clone()
+    const savedRot = source.rotation.clone()
+    const savedScale = source.scale.clone()
+    source.position.set(0, 0, 0)
+    source.rotation.set(0, 0, 0)
+    source.scale.set(1, 1, 1)
+    source.updateMatrixWorld(true)
+
     try {
-      const model = this.modelManager.currentModel.clone()
+      const original = this.modelManager.originalModel
+      const clipsFromOriginal =
+        original &&
+        'animations' in original &&
+        Array.isArray(original.animations)
+          ? original.animations
+          : []
+      const clips = source.animations?.length
+        ? source.animations
+        : clipsFromOriginal
+      const model =
+        format === 'fbx'
+          ? Object.assign(cloneSkinned(source), { animations: clips })
+          : source.clone()
 
       const originalFileName = this.modelManager.originalFileName || 'model'
       const filename = `${originalFileName}.${format}`
@@ -361,6 +387,9 @@ class Load3d {
         case 'stl':
           ;(await ModelExporter.exportSTL(model, filename), originalURL)
           break
+        case 'fbx':
+          await ModelExporter.exportFBX(model, filename, originalURL)
+          break
         default:
           throw new Error(`Unsupported export format: ${format}`)
       }
@@ -370,6 +399,10 @@ class Load3d {
       console.error(`Error exporting model as ${format}:`, error)
       throw error
     } finally {
+      source.position.copy(savedPos)
+      source.rotation.copy(savedRot)
+      source.scale.copy(savedScale)
+      source.updateMatrixWorld(true)
       this.eventManager.emitEvent('exportLoadingEnd', null)
     }
   }
@@ -500,7 +533,11 @@ class Load3d {
     return this._loadGeneration
   }
 
-  async loadModel(url: string, originalFileName?: string): Promise<void> {
+  async loadModel(
+    url: string,
+    originalFileName?: string,
+    options?: LoadModelOptions
+  ): Promise<void> {
     this._loadGeneration += 1
 
     if (this.loadingPromise) {
@@ -509,7 +546,11 @@ class Load3d {
       } catch (e) {}
     }
 
-    this.loadingPromise = this._loadModelInternal(url, originalFileName)
+    this.loadingPromise = this._loadModelInternal(
+      url,
+      originalFileName,
+      options
+    )
     return this.loadingPromise
   }
 
@@ -525,7 +566,8 @@ class Load3d {
 
   private async _loadModelInternal(
     url: string,
-    originalFileName?: string
+    originalFileName?: string,
+    options?: LoadModelOptions
   ): Promise<void> {
     this.cameraManager.reset()
     this.controlsManager.reset()
@@ -533,7 +575,7 @@ class Load3d {
     this.modelManager.clearModel()
     this.animationManager.dispose()
 
-    await this.loaderManager.loadModel(url, originalFileName)
+    await this.loaderManager.loadModel(url, originalFileName, options)
 
     // Auto-detect and setup animations if present
     if (this.modelManager.currentModel) {
@@ -620,6 +662,10 @@ class Load3d {
     this.eventManager.removeEventListener(event, callback)
   }
 
+  emitModelReady(): void {
+    this.eventManager.emitEvent('modelReady', null)
+  }
+
   refreshViewport(): void {
     this.handleResize()
   }
@@ -634,6 +680,11 @@ class Load3d {
 
     const containerWidth = parentElement.clientWidth
     const containerHeight = parentElement.clientHeight
+
+    // Scale pixel density to match the graph zoom level so the 3D scene
+    // renders at the correct resolution when the canvas is zoomed in or out.
+    const zoomScale = this.getZoomScaleCallback?.() ?? 1
+    this.renderer.setPixelRatio(Math.min(zoomScale, 3))
 
     if (this.getDimensionsCallback) {
       const dims = this.getDimensionsCallback()
@@ -795,6 +846,8 @@ class Load3d {
       }
       this.cameraManager.setCameraState(savedState)
       this.controlsManager.controls?.update()
+
+      this.forceRender()
     }
   }
 

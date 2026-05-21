@@ -2,6 +2,11 @@ packages:
   - apps/**
   - packages/**
 
+ignoreWorkspaceRootCheck: true
+catalogMode: prefer
+publicHoistPattern:
+  - '@parcel/watcher'
+
 catalog:
   '@alloc/quick-lru': ^5.2.0
   '@astrojs/check': ^0.9.8
@@ -31,12 +36,12 @@ catalog:
   '@primevue/themes': ^4.2.5
   '@sentry/vite-plugin': ^4.6.0
   '@sentry/vue': ^10.32.1
-  '@sparkjsdev/spark': ^0.1.10
+  '@sparkjsdev/spark': ^2.1.0
   '@storybook/addon-docs': ^10.2.10
   '@storybook/addon-mcp': 0.1.6
   '@storybook/vue3': ^10.2.10
   '@storybook/vue3-vite': ^10.2.10
-  '@tailwindcss/vite': ^4.2.0
+  '@tailwindcss/vite': ^4.3.0
   '@tanstack/vue-virtual': ^3.13.12
   '@testing-library/jest-dom': ^6.9.1
   '@testing-library/user-event': ^14.6.1
@@ -54,7 +59,8 @@ catalog:
   '@types/jsdom': ^21.1.7
   '@types/node': ^24.1.0
   '@types/semver': ^7.7.0
-  '@types/three': ^0.169.0
+  '@types/three': ^0.184.1
+  '@vee-validate/zod': ^4.15.1
   '@vercel/analytics': ^2.0.1
   '@vitejs/plugin-vue': ^6.0.0
   '@vitest/coverage-v8': ^4.0.16
@@ -111,7 +117,8 @@ catalog:
   rollup-plugin-visualizer: ^6.0.4
   storybook: ^10.2.10
   stylelint: ^16.26.1
-  tailwindcss: ^4.2.0
+  tailwindcss: ^4.3.0
+  three: ^0.184.0
   tailwindcss-primeui: ^0.6.1
   tsx: ^4.15.6
   tw-animate-css: ^1.3.8
@@ -121,6 +128,7 @@ catalog:
   unplugin-icons: ^22.5.0
   unplugin-typegpu: 0.8.0
   unplugin-vue-components: ^30.0.0
+  vee-validate: ^4.15.1
   vite: ^8.0.0
   vite-plugin-dts: ^4.5.4
   vite-plugin-html: ^3.2.2
@@ -141,22 +149,20 @@ catalog:
 
 cleanupUnusedCatalogs: true
 
-ignoredBuiltDependencies:
-  - '@firebase/util'
-  - protobufjs
-  - unrs-resolver
-  - vue-demi
-
-onlyBuiltDependencies:
-  - '@playwright/browser-chromium'
-  - '@playwright/browser-firefox'
-  - '@playwright/browser-webkit'
-  - '@sentry/cli'
-  - '@tailwindcss/oxide'
-  - esbuild
-  - nx
-  - oxc-resolver
+allowBuilds:
+  '@firebase/util': false
+  '@sentry/cli': true
+  '@tailwindcss/oxide': true
+  core-js: false
+  esbuild: true
+  nx: true
+  oxc-resolver: true
+  protobufjs: false
+  sharp: false
+  unrs-resolver: false
+  vue-demi: false
 
 overrides:
+  vite: 'catalog:'
   '@tiptap/pm': 2.27.2
   '@types/eslint': '-'

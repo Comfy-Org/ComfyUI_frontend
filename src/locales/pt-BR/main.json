@@ -237,6 +237,7 @@
     },
     "login": {
       "andText": "e",
+      "backToGithubLogin": "Cadastre-se com o Github",
       "backToLogin": "Voltar para login",
       "backToSocialLogin": "Cadastre-se com Google ou Github em vez disso",
       "confirmPasswordLabel": "Confirmar senha",
@@ -292,7 +293,9 @@
       "title": "Reautenticação necessária"
     },
     "signOut": {
+      "saveFailed": "Saída cancelada porque salvar \"{workflow}\" falhou.",
       "signOut": "Sair",
+      "signOutAnyway": "Sair mesmo assim",
       "success": "Logout realizado com sucesso",
       "successDetail": "Você saiu da sua conta.",
       "unsavedChangesMessage": "Você tem alterações não salvas que serão perdidas ao sair. Deseja continuar?",
@@ -407,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "Continuar Localmente",
     "exploreCloud": "Experimente a Nuvem Gratuitamente",
-    "feature1Title": "400 Créditos Grátis por Mês",
     "feature2Title": "Funciona em Qualquer Lugar, Instantaneamente",
     "feature3Title": "Modelos Prontos para Usar",
     "feature4Title": "Principais Pacotes de Nodes Personalizados Pré-instalados",
@@ -461,6 +463,12 @@
       "wantToRun": "Prefere rodar o ComfyUI localmente?"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "Por favor, escolha uma opção.",
+        "describeAnswer": "Por favor, descreva sua resposta.",
+        "selectAtLeastOne": "Por favor, selecione pelo menos uma opção."
+      },
+      "intro": "Ajude-nos a personalizar sua experiência no ComfyUI.",
       "options": {
         "familiarity": {
           "advanced": "Usuário avançado (fluxos de trabalho personalizados)",
@@ -469,45 +477,43 @@
           "new": "Novo no ComfyUI (nunca usei antes)",
           "starting": "Começando agora (seguindo tutoriais)"
         },
-        "industry": {
-          "architecture": "Arquitetura",
-          "education": "Educação",
-          "film_tv_animation": "Filmes, TV e animação",
-          "fine_art": "Belas artes e ilustração",
-          "gaming": "Jogos",
-          "marketing": "Marketing e publicidade",
-          "other": "Outro",
-          "otherPlaceholder": "Por favor, especifique",
-          "product_design": "Design de produto e gráfico",
-          "software": "Software e tecnologia"
-        },
-        "making": {
-          "3d": "Assets 3D",
+        "intent": {
+          "3d_game": "Assets 3D / assets para jogos",
+          "api": "Endpoints de API para executar workflows",
+          "apps": "Apps simplificados a partir de workflows",
           "audio": "Áudio / música",
-          "custom_nodes": "Nós e fluxos de trabalho personalizados",
+          "custom_nodes": "Nodes personalizados",
           "images": "Imagens",
-          "video": "Vídeo e animação"
+          "not_sure": "Não tenho certeza",
+          "videos": "Vídeos",
+          "workflows": "Workflows ou pipelines personalizados"
         },
-        "purpose": {
-          "client": "Trabalho para clientes (freelancer)",
-          "community": "Contribuições para a comunidade (nós, fluxos de trabalho, etc.)",
-          "inhouse": "No meu próprio local de trabalho (interno)",
-          "personal": "Projetos pessoais / hobby",
-          "research": "Pesquisa acadêmica"
+        "source": {
+          "conference": "Conferência ou evento",
+          "discord": "Discord / comunidade",
+          "friend": "Amigo ou colega",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "Newsletter ou blog",
+          "other": "Outro",
+          "reddit": "Reddit",
+          "search": "Google / busca",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
+        },
+        "usage": {
+          "education": "Educação (estudante ou educador)",
+          "personal": "Uso pessoal",
+          "work": "Trabalho"
         }
       },
       "placeholder": "Espaço reservado para perguntas da pesquisa",
-      "questions": {
-        "familiarity": "Qual o seu nível de familiaridade com o ComfyUI?",
-        "industry": "Qual é o seu setor principal?",
-        "making": "O que você planeja criar?",
-        "purpose": "Para que você pretende usar principalmente o ComfyUI?"
-      },
       "steps": {
         "familiarity": "Qual o seu nível de familiaridade com o ComfyUI?",
-        "industry": "Qual é o seu setor principal?",
-        "making": "O que você planeja criar?",
-        "purpose": "Para que você pretende usar principalmente o ComfyUI?"
+        "intent": "O que você deseja criar com o ComfyUI?",
+        "source": "Onde você ouviu falar do ComfyUI?",
+        "usage": "Como você pretende usar o ComfyUI?"
       },
       "title": "Pesquisa da Nuvem"
     }
@@ -522,9 +528,9 @@
   "cloudStart_title": "comece a criar em segundos",
   "cloudStart_wantToRun": "Prefere rodar o ComfyUI localmente?",
   "cloudSurvey_steps_familiarity": "Qual o seu nível de familiaridade com o ComfyUI?",
-  "cloudSurvey_steps_industry": "Qual é o seu setor principal?",
-  "cloudSurvey_steps_making": "O que você planeja criar?",
-  "cloudSurvey_steps_purpose": "Para que você pretende usar principalmente o ComfyUI?",
+  "cloudSurvey_steps_intent": "O que você deseja criar com o ComfyUI?",
+  "cloudSurvey_steps_source": "Onde você ouviu falar do ComfyUI?",
+  "cloudSurvey_steps_usage": "Como você pretende usar o ComfyUI?",
   "cloudWaitlist_contactLink": "aqui",
   "cloudWaitlist_questionsText": "Dúvidas? Entre em contato conosco",
   "color": {
@@ -778,6 +784,7 @@
     "AUDIO_ENCODER": "CODIFICADOR DE ÁUDIO",
     "AUDIO_ENCODER_OUTPUT": "SAÍDA DO CODIFICADOR DE ÁUDIO",
     "AUDIO_RECORD": "GRAVAÇÃO DE ÁUDIO",
+    "BACKGROUND_REMOVAL": "REMOÇÃO_DE_FUNDO",
     "BOOLEAN": "BOOLEANO",
     "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "CONTROLE DE CÂMERA",
@@ -793,6 +800,8 @@
     "CONTROL_NET": "controlnet",
     "CURVE": "CURVA",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "ARQUIVO_3D",
     "FILE_3D_FBX": "ARQUIVO_3D_FBX",
     "FILE_3D_GLB": "ARQUIVO_3D_GLB",
@@ -808,6 +817,7 @@
     "HISTOGRAM": "HISTOGRAMA",
     "HOOKS": "GANCHOS",
     "HOOK_KEYFRAMES": "QUADROS-CHAVE DE GANCHO",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "IMAGEM",
     "IMAGECOMPARE": "COMPARAR_IMAGEM",
     "INT": "INTEIRO",
@@ -828,9 +838,12 @@
     "MODEL": "MODELO",
     "MODEL_PATCH": "PATCH DE MODELO",
     "MODEL_TASK_ID": "ID DA TAREFA DO MODELO",
+    "MOGE_GEOMETRY": "MOGE_GEOMETRY",
+    "MOGE_MODEL": "MOGE_MODEL",
     "NOISE": "RUÍDO",
     "OPENAI_CHAT_CONFIG": "CONFIGURAÇÃO DE CHAT OPENAI",
     "OPENAI_INPUT_FILES": "ARQUIVOS DE ENTRADA OPENAI",
+    "OPTICAL_FLOW": "FLUX ÓPTICO",
     "PHOTOMAKER": "photomaker",
     "PIXVERSE_TEMPLATE": "MODELO PIXVERSE",
     "POSE_KEYPOINT": "POSE_KEYPOINT",
@@ -905,7 +918,8 @@
     "extensionFileHint": "Isso pode ser devido ao seguinte script",
     "loadWorkflowTitle": "Carregamento abortado devido a erro ao recarregar os dados do fluxo de trabalho",
     "noStackTrace": "Nenhum stacktrace disponível",
-    "promptExecutionError": "Falha na execução do prompt"
+    "promptExecutionError": "Falha na execução do prompt",
+    "queueOpenWorkflowFailedTitle": "Falha ao abrir o workflow"
   },
   "errorOverlay": {
     "errorCount": "{count} ERRO | {count} ERROS",
@@ -1033,6 +1047,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "Logo do ComfyOrg",
+    "comfyPackageOutdated": "A versão instalada de {name} ({installedVersion}) é inferior à versão necessária ({requiredVersion}).",
     "comingSoon": "Em breve",
     "command": "Comando",
     "commandProhibited": "O comando {command} é proibido. Entre em contato com um administrador para mais informações.",
@@ -1732,6 +1747,10 @@
     "outdatedVersionGeneric": "Este fluxo de trabalho foi criado com uma versão mais recente do ComfyUI. Alguns nós podem não funcionar corretamente.",
     "unknownVersion": "desconhecida"
   },
+  "logsTerminal": {
+    "loadError": "Não foi possível carregar os logs. Certifique-se de que você atualizou o backend do ComfyUI.",
+    "resyncError": "Não foi possível ressincronizar os logs após a reconexão do backend. Reabra o console para tentar novamente."
+  },
   "maintenance": {
     "None": "Nenhum",
     "OK": "OK",
@@ -2245,6 +2264,7 @@
     "": "",
     "3d": "3d",
     "3d_models": "modelos_3d",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
@@ -2259,7 +2279,6 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
@@ -2277,23 +2296,20 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
-    "_for_testing": "_for_testing",
     "advanced": "avançado",
-    "animation": "animação",
-    "api": "api",
     "api node": "nó da API",
     "attention_experiments": "experimentos_de_atenção",
     "audio": "áudio",
+    "background removal": "remoção de fundo",
     "batch": "lote",
-    "camera": "câmera",
     "chroma_radiance": "radiância_de_croma",
     "clip": "clip",
+    "color": "cor",
     "combine": "combinar",
     "compositing": "composição",
     "cond pair": "par_de_condições",
     "cond single": "condição_simples",
     "conditioning": "condicionamento",
-    "context": "contexto",
     "controlnet": "controlnet",
     "create": "criar",
     "custom_sampling": "amostragem_personalizada",
@@ -2302,7 +2318,10 @@
     "deprecated": "obsoleto",
     "detection": "detecção",
     "edit_models": "editar_modelos",
+    "experimental": "experimental",
+    "filters": "filtros",
     "flux": "flux",
+    "geometry_estimation": "geometry_estimation",
     "gligen": "gligen",
     "guidance": "orientação",
     "guiders": "guias",
@@ -2317,7 +2336,6 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "mask": "máscara",
-    "math": "matemática",
     "model": "modelo",
     "model_merging": "mesclagem_de_modelos",
     "model_patches": "correções_de_modelo",
@@ -2325,25 +2343,20 @@
     "noise": "ruído",
     "operations": "operações",
     "photomaker": "photomaker",
-    "postprocessing": "pós-processamento",
     "preprocessors": "pré-processadores",
     "primitive": "primitivo",
     "qwen": "qwen",
     "samplers": "amostradores",
     "sampling": "amostragem",
-    "save": "salvar",
     "schedulers": "agendadores",
     "scheduling": "agendamento",
-    "sd": "sd",
     "sd3": "sd3",
     "shader": "shader",
     "sigmas": "sigmas",
     "stable_cascade": "stable_cascade",
-    "string": "string",
     "style_model": "modelo_de_estilo",
     "supir": "supir",
     "text": "texto",
-    "textgen": "textgen",
     "training": "treinamento",
     "transform": "transformar",
     "unet": "unet",
@@ -2432,7 +2445,8 @@
     "nonPublicAssetsWarningLine1": "Este fluxo de trabalho possui ativos não públicos.",
     "nonPublicAssetsWarningLine2": "Eles serão importados para sua biblioteca ao abrir o fluxo de trabalho",
     "openWithoutImporting": "Abrir sem importar",
-    "openWorkflow": "Abrir fluxo de trabalho"
+    "openWorkflow": "Abrir fluxo de trabalho",
+    "opening": "Abrindo fluxo de trabalho compartilhado..."
   },
   "painter": {
     "background": "Fundo",
@@ -3159,6 +3173,7 @@
       "deleteFailedTitle": "Falha ao excluir",
       "deleted": "Workflow excluído",
       "dirtyClose": "Os arquivos abaixo foram alterados. Deseja salvá-los antes de fechar?",
+      "dirtyCloseAnyway": "Fechar mesmo assim",
       "dirtyCloseHint": "Segure Shift para fechar sem perguntar",
       "dirtyCloseTitle": "Salvar alterações?",
       "workflowTreeType": {

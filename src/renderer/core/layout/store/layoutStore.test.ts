@@ -6,9 +6,24 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
   LayoutChange,
+  LayoutOperation,
   NodeLayout,
   SlotLayout
 } from '@/renderer/core/layout/types'
+
+function getOperationsAddedBy(action: () => void): LayoutOperation[] {
+  const operationCount = layoutStore.getOperationsSince(0).length
+  action()
+  return layoutStore.getOperationsSince(0).slice(operationCount)
+}
+
+function expectSingleOperation(
+  operations: LayoutOperation[],
+  expectedOperation: Record<string, unknown>
+): void {
+  expect(operations).toHaveLength(1)
+  expect(operations[0]).toEqual(expect.objectContaining(expectedOperation))
+}
 
 describe('layoutStore CRDT operations', () => {
   beforeEach(() => {
@@ -576,9 +591,15 @@ describe('layoutStore CRDT operations', () => {
       actor: 'test'
     })
 
-    const originalTitleHeight = LiteGraph.NODE_TITLE_HEIGHT
-    // @ts-expect-error – intentionally simulate undefined runtime value
-    LiteGraph.NODE_TITLE_HEIGHT = undefined
+    const originalTitleHeightDescriptor = Object.getOwnPropertyDescriptor(
+      LiteGraph,
+      'NODE_TITLE_HEIGHT'
+    )
+    Object.defineProperty(LiteGraph, 'NODE_TITLE_HEIGHT', {
+      configurable: true,
+      value: undefined,
+      writable: true
+    })
 
     try {
       layoutStore.setSource(LayoutSource.DOM)
@@ -597,7 +618,13 @@ describe('layoutStore CRDT operations', () => {
       const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
       expect(nodeRef.value?.size.height).toBe(layout.size.height)
     } finally {
-      LiteGraph.NODE_TITLE_HEIGHT = originalTitleHeight
+      if (originalTitleHeightDescriptor) {
+        Object.defineProperty(
+          LiteGraph,
+          'NODE_TITLE_HEIGHT',
+          originalTitleHeightDescriptor
+        )
+      }
     }
   })
 
@@ -645,4 +672,229 @@ describe('layoutStore CRDT operations', () => {
       expect(layoutStore.getSlotLayout(slotKey)).toEqual(slotLayout)
     }
   )
+})
+
+describe('layoutStore getNodeLayoutRef setter', () => {
+  beforeEach(() => {
+    layoutStore.initializeFromLiteGraph([])
+  })
+
+  function baseLayout(): NodeLayout {
+    return {
+      id: 'ref-node',
+      position: { x: 10, y: 20 },
+      size: { width: 100, height: 50 },
+      zIndex: 0,
+      visible: true,
+      bounds: { x: 10, y: 20, width: 100, height: 50 }
+    }
+  }
+
+  it('creates a node when setter receives a layout for an unknown id', () => {
+    const ref = layoutStore.getNodeLayoutRef('ref-node')
+    const layout = baseLayout()
+    expect(ref.value).toBeNull()
+
+    const operations = getOperationsAddedBy(() => {
+      ref.value = layout
+    })
+
+    expectSingleOperation(operations, {
+      type: 'createNode',
+      nodeId: 'ref-node',
+      layout
+    })
+    expect(ref.value).toEqual(layout)
+  })
+
+  it.for<{
+    name: string
+    nextLayout: NodeLayout
+    expectedOperation: Record<string, unknown>
+  }>([
+    {
+      name: 'moveNode',
+      nextLayout: {
+        ...baseLayout(),
+        position: { x: 99, y: 88 },
+        bounds: { x: 99, y: 88, width: 100, height: 50 }
+      },
+      expectedOperation: {
+        type: 'moveNode',
+        nodeId: 'ref-node',
+        position: { x: 99, y: 88 },
+        previousPosition: baseLayout().position
+      }
+    },
+    {
+      name: 'resizeNode',
+      nextLayout: {
+        ...baseLayout(),
+        size: { width: 200, height: 80 },
+        bounds: { x: 10, y: 20, width: 200, height: 80 }
+      },
+      expectedOperation: {
+        type: 'resizeNode',
+        nodeId: 'ref-node',
+        size: { width: 200, height: 80 },
+        previousSize: baseLayout().size
+      }
+    },
+    {
+      name: 'setNodeZIndex',
+      nextLayout: { ...baseLayout(), zIndex: 5 },
+      expectedOperation: {
+        type: 'setNodeZIndex',
+        nodeId: 'ref-node',
+        zIndex: 5,
+        previousZIndex: 0
+      }
+    }
+  ])(
+    'emits a $name operation for layout-only updates',
+    ({ nextLayout, expectedOperation }) => {
+      const ref = layoutStore.getNodeLayoutRef('ref-node')
+      ref.value = baseLayout()
+
+      const operations = getOperationsAddedBy(() => {
+        ref.value = nextLayout
+      })
+
+      expectSingleOperation(operations, expectedOperation)
+      expect(ref.value).toEqual(nextLayout)
+    }
+  )
+
+  it('emits a deleteNode operation when setter receives null', () => {
+    const ref = layoutStore.getNodeLayoutRef('ref-node')
+    const layout = baseLayout()
+    ref.value = layout
+
+    const operations = getOperationsAddedBy(() => {
+      ref.value = null
+    })
+
+    expectSingleOperation(operations, {
+      type: 'deleteNode',
+      nodeId: 'ref-node',
+      previousLayout: layout
+    })
+    expect(ref.value).toBeNull()
+  })
+})
+
+describe('layoutStore queries', () => {
+  beforeEach(() => {
+    layoutStore.initializeFromLiteGraph([])
+  })
+
+  const seedNode = (id: string, x: number, y: number, z = 0) => {
+    const layout: NodeLayout = {
+      id,
+      position: { x, y },
+      size: { width: 100, height: 50 },
+      zIndex: z,
+      visible: true,
+      bounds: { x, y, width: 100, height: 50 }
+    }
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      nodeId: id,
+      layout,
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+  }
+
+  it('getNodesInBounds returns reactive node IDs that intersect bounds', () => {
+    seedNode('inside', 0, 0)
+    seedNode('outside', 1000, 1000)
+
+    const inBounds = layoutStore.getNodesInBounds({
+      x: 0,
+      y: 0,
+      width: 200,
+      height: 200
+    })
+
+    expect(inBounds.value).toContain('inside')
+    expect(inBounds.value).not.toContain('outside')
+  })
+
+  it('queryNodeAtPoint returns the top-zIndex node containing the point', () => {
+    seedNode('low', 0, 0, 0)
+    seedNode('high', 0, 0, 10)
+
+    const hit = layoutStore.queryNodeAtPoint({ x: 25, y: 25 })
+
+    expect(hit).toBe('high')
+  })
+
+  it('queryNodeAtPoint returns null when no node contains the point', () => {
+    seedNode('only', 0, 0)
+
+    const hit = layoutStore.queryNodeAtPoint({ x: 999, y: 999 })
+
+    expect(hit).toBeNull()
+  })
+})
+
+describe('layoutStore link layout updates', () => {
+  beforeEach(() => {
+    layoutStore.initializeFromLiteGraph([])
+  })
+
+  const stubPath = () => ({}) as unknown as Path2D
+  const baseLink = (path = stubPath()) => ({
+    id: 1 as const,
+    path,
+    bounds: { x: 0, y: 0, width: 50, height: 50 },
+    centerPos: { x: 25, y: 25 },
+    sourceNodeId: 'a',
+    targetNodeId: 'b',
+    sourceSlot: 0,
+    targetSlot: 0
+  })
+
+  it('updateLinkLayout short-circuits when bounds and centerPos are unchanged', () => {
+    layoutStore.updateLinkLayout(1, baseLink())
+    const newPath = stubPath()
+
+    layoutStore.updateLinkLayout(1, baseLink(newPath))
+
+    expect(layoutStore.getLinkLayout(1)?.path).toBe(newPath)
+  })
+
+  it('updateLinkLayout replaces stored layout when bounds change', () => {
+    layoutStore.updateLinkLayout(1, baseLink())
+    const moved = {
+      ...baseLink(),
+      bounds: { x: 10, y: 10, width: 50, height: 50 }
+    }
+
+    layoutStore.updateLinkLayout(1, moved)
+
+    expect(layoutStore.getLinkLayout(1)?.bounds.x).toBe(10)
+  })
+
+  it('deleteLinkLayout removes the link and its segment layouts', () => {
+    layoutStore.updateLinkLayout(1, baseLink())
+    layoutStore.updateLinkSegmentLayout(1, null, {
+      path: stubPath(),
+      bounds: { x: 0, y: 0, width: 5, height: 5 },
+      centerPos: { x: 1, y: 1 }
+    })
+
+    expect(layoutStore.queryLinkSegmentAtPoint({ x: 1, y: 1 })).toEqual({
+      linkId: 1,
+      rerouteId: null
+    })
+
+    layoutStore.deleteLinkLayout(1)
+
+    expect(layoutStore.getLinkLayout(1)).toBeNull()
+    expect(layoutStore.queryLinkSegmentAtPoint({ x: 1, y: 1 })).toBeNull()
+  })
 })

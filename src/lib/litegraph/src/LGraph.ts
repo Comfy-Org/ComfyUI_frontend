@@ -329,12 +329,6 @@ export class LGraph
     this.state.lastLinkId = value
   }
 
-  onAfterStep?(): void
-  onBeforeStep?(): void
-  onPlayEvent?(): void
-  onStopEvent?(): void
-  onAfterExecute?(): void
-  onExecuteStep?(): void
   onNodeAdded?(node: LGraphNode): void
   onNodeRemoved?(node: LGraphNode): void
   onTrigger?: LGraphTriggerHandler
@@ -506,8 +500,6 @@ export class LGraph
   start(interval?: number): void {
     if (this.status == LGraph.STATUS_RUNNING) return
     this.status = LGraph.STATUS_RUNNING
-
-    this.onPlayEvent?.()
     this.sendEventToAllNodes('onStart')
 
     // launch
@@ -525,9 +517,7 @@ export class LGraph
         if (this.execution_timer_id != -1) return
 
         window.requestAnimationFrame(on_frame)
-        this.onBeforeStep?.()
         this.runStep(1, !this.catch_errors)
-        this.onAfterStep?.()
       }
       this.execution_timer_id = -1
       on_frame()
@@ -536,9 +526,7 @@ export class LGraph
       // @ts-expect-error - Timer ID type mismatch needs fixing
       this.execution_timer_id = setInterval(() => {
         // execute
-        this.onBeforeStep?.()
         this.runStep(1, !this.catch_errors)
-        this.onAfterStep?.()
       }, interval)
     }
   }
@@ -551,9 +539,6 @@ export class LGraph
     if (this.status == LGraph.STATUS_STOPPED) return
 
     this.status = LGraph.STATUS_STOPPED
-
-    this.onStopEvent?.()
-
     if (this.execution_timer_id != null) {
       if (this.execution_timer_id != -1) {
         clearInterval(this.execution_timer_id)
@@ -594,10 +579,7 @@ export class LGraph
         }
 
         this.fixedtime += this.fixedtime_lapse
-        this.onExecuteStep?.()
       }
-
-      this.onAfterExecute?.()
     } else {
       try {
         // iterations
@@ -610,10 +592,7 @@ export class LGraph
           }
 
           this.fixedtime += this.fixedtime_lapse
-          this.onExecuteStep?.()
         }
-
-        this.onAfterExecute?.()
         this.errors_in_execution = false
       } catch (error) {
         this.errors_in_execution = true
@@ -1700,7 +1679,15 @@ export class LGraph
     this.beforeChange()
 
     try {
-      return this._convertToSubgraphImpl(items)
+      function extractNodes(item: Positionable): Positionable[] {
+        if (!(item instanceof LGraphNode) || !item.convertToNodes) return [item]
+
+        const innerNodes = item.convertToNodes()
+        for (const innerNode of innerNodes) innerNode.updateArea()
+        return innerNodes
+      }
+      const processedItems = new Set([...items].flatMap(extractNodes))
+      return this._convertToSubgraphImpl(processedItems)
     } finally {
       // Mark state change complete for proper undo support
       this.afterChange()
