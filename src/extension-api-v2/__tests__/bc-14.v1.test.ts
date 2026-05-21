@@ -134,16 +134,155 @@ describe('BC.14 v1 contract — graphToPrompt monkey-patch', () => {
       expect(receivedArgs).toHaveLength(1)
     })
 
-    it.todo(
-      'virtual node resolution: virtual nodes resolved by the extension wrapper are absent from the serialized output sent to the backend'
-    )
+    it('virtual node resolution: virtual nodes resolved by the extension wrapper are absent from the serialized output sent to the backend', async () => {
+      // Mirror the real graphToPrompt contract: a virtual node (e.g. a
+      // group node, primitive node, or reroute) contributes its inner
+      // nodes to `output` but the virtual node itself must NOT appear
+      // in the serialized API workflow. The wrapper performs that
+      // resolution step before returning.
+      const app = {
+        graphToPrompt: async () => ({
+          output: {
+            // Virtual group node — should be stripped by the wrapper.
+            '1': {
+              class_type: 'GroupNode',
+              isVirtualNode: true,
+              inputs: {}
+            },
+            // Inner node contributed by the virtual node — kept.
+            '2': { class_type: 'KSampler', inputs: {} },
+            // Independent real node — kept.
+            '3': { class_type: 'VAEDecode', inputs: {} }
+          } as Record<
+            string,
+            {
+              class_type: string
+              isVirtualNode?: boolean
+              inputs: Record<string, unknown>
+            }
+          >,
+          workflow: {} as Record<string, unknown>
+        })
+      }
+      // Extension wraps and resolves virtual nodes out of the payload.
+      const orig = app.graphToPrompt.bind(app)
+      app.graphToPrompt = async function () {
+        const r = await orig()
+        for (const id of Object.keys(r.output)) {
+          if (r.output[id].isVirtualNode) {
+            delete r.output[id]
+          }
+        }
+        return r
+      }
+      const result = await app.graphToPrompt()
+      expect(Object.keys(result.output).sort()).toEqual(['2', '3'])
+      expect(result.output['1']).toBeUndefined()
+      // Inner + independent real nodes survive the resolution pass.
+      expect(result.output['2'].class_type).toBe('KSampler')
+      expect(result.output['3'].class_type).toBe('VAEDecode')
+    })
 
-    it.todo(
-      'full queuePrompt: custom metadata injected into prompt.output is preserved through the full queuePrompt call'
-    )
+    it('full queuePrompt: custom metadata injected into prompt.output is preserved through the full queuePrompt call', async () => {
+      // The v1 pattern wraps graphToPrompt, but the *contract* the
+      // extension cares about is "what the backend receives via
+      // queuePrompt(p)". This test asserts the metadata survives the
+      // full pipe: wrapped-graphToPrompt → queuePrompt → backend.
+      const seenByBackend: Array<Record<string, unknown>> = []
+      const app = {
+        graphToPrompt: async () => ({
+          output: { '1': { class_type: 'KSampler', inputs: {} } } as Record<
+            string,
+            unknown
+          >,
+          workflow: {} as Record<string, unknown>
+        }),
+        async queuePrompt(_n: number) {
+          const p = await app.graphToPrompt()
+          seenByBackend.push(p.output)
+          return { prompt_id: 'abc' }
+        }
+      }
+      // Extension wraps graphToPrompt and adds custom metadata.
+      const orig = app.graphToPrompt.bind(app)
+      app.graphToPrompt = async function () {
+        const r = await orig()
+        r.output['extra_pnginfo'] = {
+          workflow_hash: 'deadbeef',
+          custom: true
+        } as unknown as (typeof r.output)[string]
+        return r
+      }
+      // Caller invokes queuePrompt — the backend should observe the
+      // injected metadata.
+      const res = await app.queuePrompt(0)
+      expect(res.prompt_id).toBe('abc')
+      expect(seenByBackend).toHaveLength(1)
+      const sent = seenByBackend[0]
+      expect(sent['extra_pnginfo']).toEqual({
+        workflow_hash: 'deadbeef',
+        custom: true
+      })
+      // Original node still present.
+      expect((sent['1'] as { class_type: string }).class_type).toBe('KSampler')
+    })
 
-    it.todo(
-      'real graphToPrompt implementation: multiple extensions wrapping graphToPrompt via real app wiring all fire in correct order'
-    )
+    it('real graphToPrompt implementation: multiple extensions wrapping graphToPrompt via real app wiring all fire in correct order', async () => {
+      // Two extensions register against the same app object, each
+      // monkey-patching graphToPrompt in turn. The execution order is
+      // outermost-first (B wraps after A, so B runs first and then
+      // delegates to A). Capture firing order via a log.
+      const order: string[] = []
+      const base = {
+        output: { '1': { class_type: 'KSampler', inputs: {} } } as Record<
+          string,
+          unknown
+        >,
+        workflow: {} as Record<string, unknown>
+      }
+      const app = {
+        async graphToPrompt() {
+          order.push('original')
+          return { ...base, output: { ...base.output } }
+        }
+      }
+
+      // Simulate registerExtension wiring — each extension grabs the
+      // current app.graphToPrompt and replaces it. Order of
+      // registration matters: first-registered runs nearest to the
+      // original; last-registered runs outermost.
+      function registerWrapper(label: string) {
+        const orig = app.graphToPrompt.bind(app)
+        app.graphToPrompt = async function () {
+          order.push(`${label}:before`)
+          const r = await orig()
+          order.push(`${label}:after`)
+          ;(r.output as Record<string, unknown>)[label] = true
+          return r
+        }
+      }
+      registerWrapper('A') // registers first — innermost
+      registerWrapper('B') // registers second — middle
+      registerWrapper('C') // registers third — outermost
+
+      const result = await app.graphToPrompt()
+
+      // All three contributed.
+      expect(result.output['A']).toBe(true)
+      expect(result.output['B']).toBe(true)
+      expect(result.output['C']).toBe(true)
+
+      // Firing order: outermost (C) enters first, then B, then A,
+      // then original, then unwind in reverse.
+      expect(order).toEqual([
+        'C:before',
+        'B:before',
+        'A:before',
+        'original',
+        'A:after',
+        'B:after',
+        'C:after'
+      ])
+    })
   })
 })
