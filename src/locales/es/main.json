@@ -800,6 +800,8 @@
     "CONTROL_NET": "RED_DE_CONTROL",
     "CURVE": "CURVA",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "ARCHIVO_3D",
     "FILE_3D_FBX": "ARCHIVO_3D_FBX",
     "FILE_3D_GLB": "ARCHIVO_3D_GLB",
@@ -2443,7 +2445,8 @@
     "nonPublicAssetsWarningLine1": "Este flujo de trabajo incluye recursos no públicos.",
     "nonPublicAssetsWarningLine2": "Estos se importarán a tu biblioteca al abrir el flujo de trabajo",
     "openWithoutImporting": "Abrir sin importar",
-    "openWorkflow": "Abrir flujo de trabajo"
+    "openWorkflow": "Abrir flujo de trabajo",
+    "opening": "Abriendo flujo de trabajo compartido..."
   },
   "painter": {
     "background": "Fondo",

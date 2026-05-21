@@ -800,6 +800,8 @@
     "CONTROL_NET": "CONTROL_NET",
     "CURVE": "КРИВАЯ",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -2443,7 +2445,8 @@
     "nonPublicAssetsWarningLine1": "Этот рабочий процесс содержит непубличные ресурсы.",
     "nonPublicAssetsWarningLine2": "Они будут импортированы в вашу библиотеку при открытии рабочего процесса",
     "openWithoutImporting": "Открыть без импорта",
-    "openWorkflow": "Открыть рабочий процесс"
+    "openWorkflow": "Открыть рабочий процесс",
+    "opening": "Открытие общего рабочего процесса..."
   },
   "painter": {
     "background": "Фон",

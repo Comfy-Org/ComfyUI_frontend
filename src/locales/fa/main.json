@@ -800,6 +800,8 @@
     "CONTROL_NET": "controlnet",
     "CURVE": "CURVE",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -2443,7 +2445,8 @@
     "nonPublicAssetsWarningLine1": "این گردش‌کار دارای دارایی‌های غیرعمومی است.",
     "nonPublicAssetsWarningLine2": "این موارد هنگام باز کردن گردش‌کار به کتابخانه شما وارد می‌شوند",
     "openWithoutImporting": "باز کردن بدون وارد کردن",
-    "openWorkflow": "باز کردن گردش‌کار"
+    "openWorkflow": "باز کردن گردش‌کار",
+    "opening": "در حال باز کردن گردش‌کار مشترک..."
   },
   "painter": {
     "background": "پس‌زمینه",

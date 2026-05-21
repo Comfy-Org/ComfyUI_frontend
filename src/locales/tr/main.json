@@ -800,6 +800,8 @@
     "CONTROL_NET": "KONTROL_AĞI",
     "CURVE": "EĞRİ",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -2443,7 +2445,8 @@
     "nonPublicAssetsWarningLine1": "Bu iş akışı herkese açık olmayan varlıklar içeriyor.",
     "nonPublicAssetsWarningLine2": "İş akışını açtığınızda bunlar kütüphanenize aktarılacak",
     "openWithoutImporting": "İçe aktarmadan aç",
-    "openWorkflow": "İş akışını aç"
+    "openWorkflow": "İş akışını aç",
+    "opening": "Paylaşılan iş akışı açılıyor..."
   },
   "painter": {
     "background": "Arka Plan",

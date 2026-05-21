@@ -20,7 +20,6 @@
     "tailwindcss": "catalog:",
     "typescript": "catalog:"
   },
-  "packageManager": "pnpm@10.17.1",
   "nx": {
     "tags": [
       "scope:shared",

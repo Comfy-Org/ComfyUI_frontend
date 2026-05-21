@@ -800,6 +800,8 @@
     "CONTROL_NET": "controlnet",
     "CURVE": "CURVA",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "ARQUIVO_3D",
     "FILE_3D_FBX": "ARQUIVO_3D_FBX",
     "FILE_3D_GLB": "ARQUIVO_3D_GLB",
@@ -2443,7 +2445,8 @@
     "nonPublicAssetsWarningLine1": "Este fluxo de trabalho possui ativos não públicos.",
     "nonPublicAssetsWarningLine2": "Eles serão importados para sua biblioteca ao abrir o fluxo de trabalho",
     "openWithoutImporting": "Abrir sem importar",
-    "openWorkflow": "Abrir fluxo de trabalho"
+    "openWorkflow": "Abrir fluxo de trabalho",
+    "opening": "Abrindo fluxo de trabalho compartilhado..."
   },
   "painter": {
     "background": "Fundo",

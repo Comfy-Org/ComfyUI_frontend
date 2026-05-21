@@ -1,3 +1,4 @@
+import { SparkRenderer } from '@sparkjsdev/spark'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
@@ -11,6 +12,7 @@ import {
 export class SceneManager implements SceneManagerInterface {
   scene!: THREE.Scene
   gridHelper: THREE.GridHelper
+  private sparkRenderer: SparkRenderer
 
   backgroundScene!: THREE.Scene
   backgroundCamera: THREE.OrthographicCamera
@@ -41,6 +43,12 @@ export class SceneManager implements SceneManagerInterface {
     this.scene.name = 'MainScene'
 
     this.getActiveCamera = getActiveCamera
+
+    // Spark 2.x requires a SparkRenderer in the scene tree to render SplatMesh
+    // (Gaussian splat) instances; without it splats are silent no-ops. Kept
+    // alive across model reloads by SceneModelManager.clearModel.
+    this.sparkRenderer = new SparkRenderer({ renderer })
+    this.scene.add(this.sparkRenderer)
 
     this.gridHelper = new THREE.GridHelper(20, 20)
     this.gridHelper.position.set(0, 0, 0)
@@ -277,8 +285,8 @@ export class SceneManager implements SceneManagerInterface {
 
     if (!material.map) return
 
-    const imageAspect =
-      backgroundTexture.image.width / backgroundTexture.image.height
+    const image = backgroundTexture.image as { width: number; height: number }
+    const imageAspect = image.width / image.height
     const targetAspect = targetWidth / targetHeight
 
     if (imageAspect > targetAspect) {
