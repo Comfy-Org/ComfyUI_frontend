@@ -391,7 +391,7 @@ function buildSlotMetadata(
 
     const slotInfo: WidgetSlotMetadata = {
       index,
-      linked: originNodeId != null,
+      linked: input.link != null,
       originNodeId,
       originOutputName,
       type: String(input.type)

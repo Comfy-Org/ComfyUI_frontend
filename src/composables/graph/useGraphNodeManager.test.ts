@@ -190,21 +190,27 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     expect(onChange).toHaveBeenCalledTimes(1)
   })
 
-  it('does not mark a slot as linked when the link references a non-resolvable upstream (e.g. SubgraphInput sentinel)', () => {
-    const graph = new LGraph()
+  it('marks a widget input slot as linked when connected to a SubgraphInput', () => {
+    // Per ADR_0009, linking to a SubgraphInput should be indistinguishable
+    // from a regular link: the widget must be disabled and the slot dot shown.
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'prompt', type: 'STRING' }]
+    })
     const node = new LGraphNode('test')
     node.addWidget('string', 'prompt', 'hello', () => undefined, {})
     const input = node.addInput('prompt', 'STRING')
     input.widget = { name: 'prompt' }
-    input.link = 9999
-    graph.add(node)
+    subgraph.add(node)
 
-    const { vueNodeData } = useGraphNodeManager(graph)
+    const link = subgraph.inputNode.slots[0].connect(input, node)
+    if (!link)
+      throw new Error('Expected SubgraphInput.connect to produce a link')
+
+    const { vueNodeData } = useGraphNodeManager(subgraph)
     const nodeData = vueNodeData.get(String(node.id))
     const widgetData = nodeData?.widgets?.find((w) => w.name === 'prompt')
 
-    expect(widgetData?.slotMetadata?.linked).toBe(false)
-    expect(widgetData?.slotMetadata?.originNodeId).toBeUndefined()
+    expect(widgetData?.slotMetadata?.linked).toBe(true)
   })
 
   it('resolves slotMetadata for promoted widgets where SafeWidgetData.name differs from input.widget.name', () => {
