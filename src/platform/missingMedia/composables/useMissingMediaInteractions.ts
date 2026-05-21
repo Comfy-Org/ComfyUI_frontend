@@ -1,6 +1,7 @@
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { getAssetDisplayFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type {
@@ -8,7 +9,6 @@ import type {
   MediaType
 } from '@/platform/missingMedia/types'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
-import { isCloud } from '@/platform/distribution/types'
 import { addToComboValues, resolveComboValues } from '@/utils/litegraphUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { st } from '@/i18n'
@@ -85,13 +85,13 @@ export function getNodeDisplayLabel(
 }
 
 /**
- * Resolve display name for a media file.
- * Cloud widgets store asset hashes as values; this resolves them to
- * human-readable names via assetsStore.getInputName().
+ * Resolve a media widget value (hash or filename) to a display label via the
+ * shared {@link getAssetDisplayFilename} fallback chain. Returns the input
+ * unchanged when no asset matches.
  */
 export function getMediaDisplayName(name: string): string {
-  if (!isCloud) return name
-  return useAssetsStore().getInputName(name)
+  const asset = useAssetsStore().inputAssetsByFilename.get(name)
+  return asset ? getAssetDisplayFilename(asset) : name
 }
 
 export function useMissingMediaInteractions() {
