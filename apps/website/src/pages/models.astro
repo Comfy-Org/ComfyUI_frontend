@@ -1,0 +1,16 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import ModelsHeroSection from '../components/models/ModelsHeroSection.vue'
+---
+
+<BaseLayout
+  title="Models — Comfy"
+  description="Run the world's leading AI models in ComfyUI. Browse every supported model with community workflow templates ready to run."
+>
+  <ModelsHeroSection
+    modelName="Grok Imagine"
+    ctaHref="/p/supported-models/grok-image"
+    mediaSrc="https://media.comfy.org/website/gallery/gallery.webp"
+    mediaAlt="Grok Imagine output created with ComfyUI"
+  />
+</BaseLayout>
