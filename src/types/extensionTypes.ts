@@ -49,7 +49,17 @@ export type BottomPanelExtension =
   | CustomBottomPanelExtension
 
 /**
- * Defines message options in Toast component.
+ * Defines message options in Toast component. Passed to {@link toast.show} /
+ * {@link toast.remove} to surface a transient message to the user.
+ *
+ * @publicAPI
+ * @stability experimental
+ * @example
+ * ```ts
+ * import { toast } from '@comfyorg/extension-api'
+ *
+ * toast.show({ severity: 'info', summary: 'Saved', life: 2000 })
+ * ```
  */
 export interface ToastMessageOptions {
   /**
@@ -180,6 +190,13 @@ export type CommandDefinition = ComfyCommand
  *
  * @publicAPI
  * @stability experimental
+ * @example
+ * ```ts
+ * import { defineCommand, defineHotkey } from '@comfyorg/extension-api'
+ *
+ * defineCommand({ id: 'my.cmd', function: () => {} })
+ * defineHotkey({ keys: 'mod+k', commandId: 'my.cmd' })
+ * ```
  */
 export interface HotkeyExtension {
   /**
@@ -206,6 +223,16 @@ export interface HotkeyExtension {
  *
  * @publicAPI
  * @stability experimental
+ * @example
+ * ```ts
+ * import { defineAboutBadge } from '@comfyorg/extension-api'
+ *
+ * defineAboutBadge({
+ *   label: 'GitHub',
+ *   url: 'https://github.com/me/my-ext',
+ *   icon: 'pi-github'
+ * })
+ * ```
  */
 export interface AboutBadgeExtension {
   /** Display label for the badge. */
@@ -246,6 +273,17 @@ export type SettingDefinition<TValue = unknown> = SettingParams<TValue>
  *
  * @publicAPI
  * @stability experimental
+ * @example
+ * ```ts
+ * import { defineToolbarButton } from '@comfyorg/extension-api'
+ *
+ * defineToolbarButton({
+ *   id: 'my.help',
+ *   icon: 'pi-question-circle',
+ *   tooltip: 'Get help',
+ *   onClick: () => openHelp()
+ * })
+ * ```
  */
 export interface ToolbarButtonExtension {
   /** Stable id for the button — used by `dispose()` to unregister. */
