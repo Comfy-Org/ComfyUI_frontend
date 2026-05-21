@@ -372,7 +372,6 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       errors: [
         {
           message: error.message,
-          details: error.details,
           ...resolvedDisplay
         }
       ]

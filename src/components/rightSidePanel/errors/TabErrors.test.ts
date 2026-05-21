@@ -115,7 +115,7 @@ describe('TabErrors.vue', () => {
         'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.'
       )
     ).toBeInTheDocument()
-    expect(screen.getByText('Error details')).toBeInTheDocument()
+    expect(screen.queryByText('Error details')).not.toBeInTheDocument()
   })
 
   it('renders node validation errors grouped by class_type', async () => {
