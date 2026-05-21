@@ -113,7 +113,7 @@
     "primevue": "catalog:",
     "reka-ui": "catalog:",
     "semver": "^7.7.2",
-    "three": "^0.170.0",
+    "three": "catalog:",
     "tiptap-markdown": "^0.8.10",
     "typegpu": "catalog:",
     "vee-validate": "catalog:",
