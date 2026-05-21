@@ -22,7 +22,7 @@
       :class="
         cn(
           WidgetInputBaseClass,
-          'size-full resize-none text-xs',
+          'size-full resize-none text-(length:--comfy-textarea-font-size) leading-normal',
           !hideLayoutField && 'pt-5',
           // Avoid overflow-auto when idle to prevent per-textarea compositing layers.
           'overflow-hidden hover:overflow-auto focus:overflow-auto'
