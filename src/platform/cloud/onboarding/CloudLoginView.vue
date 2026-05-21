@@ -116,6 +116,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useOAuthPostLoginRedirect } from '@/platform/cloud/oauth/useOAuthPostLoginRedirect'
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
 import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
 import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
@@ -127,6 +128,7 @@ const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const authActions = useAuthActions()
+const { resumeOAuthIfNeeded } = useOAuthPostLoginRedirect()
 const isSecureContext = globalThis.isSecureContext
 const authError = ref('')
 const toastStore = useToastStore()
@@ -152,6 +154,21 @@ const onSuccess = async () => {
     summary: 'Login Completed',
     life: 2000
   })
+
+  const oauthResume = await resumeOAuthIfNeeded(route.query)
+  if (oauthResume.kind === 'error') {
+    // authError renders only in email-form mode; surface the failure via
+    // a toast so social-login users (Google / GitHub) can see it too.
+    authError.value = oauthResume.message
+    toastStore.add({
+      severity: 'error',
+      summary: t('oauth.consent.sessionErrorToastSummary'),
+      detail: oauthResume.message,
+      life: 4000
+    })
+    return
+  }
+  if (oauthResume.kind === 'resumed') return
 
   const previousFullPath = getSafePreviousFullPath(route.query)
   if (previousFullPath) {
