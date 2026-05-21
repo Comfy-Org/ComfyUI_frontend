@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro'
 import ModelsHeroSection from '../components/models/ModelsHeroSection.vue'
 import ModelCreationsSection from '../components/models/ModelCreationsSection.vue'
+import ModelsShowcaseSection from '../components/models/ModelsShowcaseSection.vue'
 import ProductShowcaseSection from '../components/home/ProductShowcaseSection.vue'
 ---
 
@@ -16,5 +17,6 @@ import ProductShowcaseSection from '../components/home/ProductShowcaseSection.vu
     mediaAlt="Grok Imagine output created with ComfyUI"
   />
   <ModelCreationsSection client:load />
+  <ModelsShowcaseSection />
   <ProductShowcaseSection client:load />
 </BaseLayout>

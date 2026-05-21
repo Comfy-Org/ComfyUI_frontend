@@ -4489,6 +4489,39 @@ const translations = {
     en: 'COMFY HUB',
     'zh-CN': 'COMFY HUB'
   },
+  'models.showcase.label': { en: 'AI MODELS', 'zh-CN': 'AI 模型' },
+  'models.showcase.heading': {
+    en: 'Run the world’s\nleading AI models',
+    'zh-CN': '运行全球领先的\nAI 模型'
+  },
+  'models.showcase.subtitle': {
+    en: 'New models are added as they launch.',
+    'zh-CN': '新模型发布后会第一时间上线。'
+  },
+  'models.showcase.cta': {
+    en: 'EXPLORE WORKFLOWS',
+    'zh-CN': '探索工作流'
+  },
+  'models.showcase.card.grokImagine': {
+    en: 'Grok Imagine',
+    'zh-CN': 'Grok Imagine'
+  },
+  'models.showcase.card.nanoBananaPro': {
+    en: 'Nano Banana Pro',
+    'zh-CN': 'Nano Banana Pro'
+  },
+  'models.showcase.card.ltx23': {
+    en: 'LTX 2.3',
+    'zh-CN': 'LTX 2.3'
+  },
+  'models.showcase.card.qwenAdvancedEdit': {
+    en: 'Advanced image\nediting with Qwen',
+    'zh-CN': '使用 Qwen 进行\n高级图像编辑'
+  },
+  'models.showcase.card.wan22TextToVideo': {
+    en: 'Wan 2.2\ntext to video',
+    'zh-CN': 'Wan 2.2\n文字转视频'
+  },
   'models.list.contact.heading': {
     en: 'Pick a model and explore what the community has built. <a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Browse Comfy Hub</a> for the newest workflows.',
     'zh-CN':
