@@ -8435,6 +8435,20 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "加载 MediaPipe 人脸标记器",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "来自 models/mediapipe/ 的 Face Landmarker safetensors。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadMoGeModel": {
     "display_name": "加载 MoGe 模型",
     "inputs": {
@@ -9314,6 +9328,92 @@
     "inputs": {
       "mask": {
         "name": "遮罩"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceLandmarker": {
+    "display_name": "MediaPipe 人脸标记器",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "人脸检测器范围。'short' 适用于近距离人脸（距离相机约 2 米内）；'full' 适用于更远/更小的人脸（最多约 5 米），但速度较慢。'both' 同时运行两个检测器，并保留每帧检测到更多人脸的结果（检测成本约为 2 倍）。"
+      },
+      "face_landmarker": {
+        "name": "face_landmarker"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "BlazeFace 分数阈值。降低以捕捉较小/被遮挡的人脸。"
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "批量检测失败时每帧的处理方式。'empty' 表示该帧无人脸。'previous' 复制最近一次成功检测的结果。'interpolate' 在包围的成功帧之间插值地标/边框/混合形状。多脸：通过贪婪边框中心最近邻配对跨帧人脸。"
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "每帧返回的最大人脸数。0 = 不限制（返回所有检测到的人脸）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "display_name": "MediaPipe 人脸蒙版",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = face_oval+lips+eyes+irises 的并集（由于 face_oval 包含其他区域，最终为 face_oval）。'custom' = 可单独切换每个区域，组合如 lips+eyes。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "display_name": "MediaPipe 人脸网格可视化",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = oval+eyes+brows+lips+irises+nose。'fill' = 实心 face_oval 多边形（轮廓蒙版）。'custom' = 可单独切换每个特征（包括 'tesselation'，即完整的 2547 边线框）。"
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "如果未连接，将使用黑色画布。"
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "地标点像素半径。0 表示不绘制点。"
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "边线像素粗细。0 表示不绘制边线。"
       }
     },
     "outputs": {
@@ -16657,6 +16757,23 @@
     "outputs": {
       "0": {
         "name": "包含",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "与 Python 的字符串格式化方法相同。支持所有 Python 的格式化选项和功能。",
+    "display_name": "格式化文本",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

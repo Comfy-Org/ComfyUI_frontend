@@ -8435,6 +8435,20 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "Charger MediaPipe Face Landmarker",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "Face Landmarker safetensors depuis models/mediapipe/."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadMoGeModel": {
     "display_name": "Charger le modèle MoGe",
     "inputs": {
@@ -9314,6 +9328,92 @@
     "inputs": {
       "mask": {
         "name": "masque"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceLandmarker": {
+    "display_name": "MediaPipe Face Landmarker",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "Plage du détecteur de visage. 'short' est optimisé pour les visages en gros plan (à moins de ~2 m de la caméra) ; 'full' couvre des visages plus éloignés/petits (jusqu'à ~5 m) mais est plus lent. 'both' exécute les deux détecteurs et conserve celui qui a trouvé le plus de visages par image (coût de détection ~2×)."
+      },
+      "face_landmarker": {
+        "name": "face_landmarker"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "Seuil de score BlazeFace. Diminuez pour détecter les petits visages ou ceux partiellement cachés."
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "Comportement par image lorsque la détection échoue dans un lot. 'empty' laisse l'image sans visage. 'previous' copie la dernière détection réussie. 'interpolate' interpole les points de repère/boîte englobante/blendshapes entre les images réussies encadrantes. Multi-visage : associe les visages entre les images par appariement glouton du centre de la boîte englobante."
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "Nombre maximal de visages à retourner par image. 0 = pas de limite (retourne tous les visages détectés)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "display_name": "MediaPipe Face Mask",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = union de face_oval+lips+eyes+irises (qui se réduit à face_oval car il englobe le reste). 'custom' = activez chaque région individuellement pour des combinaisons comme lips+eyes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "display_name": "Visualisation du maillage facial MediaPipe",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = oval+eyes+brows+lips+irises+nose. 'fill' = polygone face_oval plein (masque de silhouette). 'custom' = activez chaque caractéristique individuellement (y compris 'tesselation', le fil de fer complet de 2547 arêtes)."
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Si non connecté, une toile noire sera utilisée."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "Rayon des points de repère en pixels. 0 désactive le tracé des points."
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "Épaisseur des lignes de contour en pixels. 0 désactive le tracé des contours."
       }
     },
     "outputs": {
@@ -16657,6 +16757,23 @@
     "outputs": {
       "0": {
         "name": "contient",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "Identique à la méthode de formatage de chaîne de Python. Prend en charge toutes les options et fonctionnalités de formatage de Python.",
+    "display_name": "Formater le texte",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

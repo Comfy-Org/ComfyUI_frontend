@@ -8435,6 +8435,20 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "بارگذاری MediaPipe Face Landmarker",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "safetensors مربوط به Face Landmarker از مسیر models/mediapipe/."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadMoGeModel": {
     "display_name": "بارگذاری مدل MoGe",
     "inputs": {
@@ -9314,6 +9328,92 @@
     "inputs": {
       "mask": {
         "name": "ماسک"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceLandmarker": {
+    "display_name": "MediaPipe Face Landmarker",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "محدوده تشخیص چهره. 'short' برای چهره‌های نزدیک (تا حدود ۲ متر از دوربین) تنظیم شده است؛ 'full' چهره‌های دورتر/کوچکتر (تا حدود ۵ متر) را پوشش می‌دهد اما کندتر است. 'both' هر دو تشخیص‌دهنده را اجرا می‌کند و هر کدام که چهره‌های بیشتری در هر فریم پیدا کند را نگه می‌دارد (هزینه تشخیص تقریباً ۲ برابر)."
+      },
+      "face_landmarker": {
+        "name": "face_landmarker"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "آستانه امتیاز BlazeFace. برای شناسایی چهره‌های کوچک یا پوشیده مقدار را کاهش دهید."
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "رفتار هر فریم زمانی که تشخیص در یک دسته ناموفق باشد. 'empty' فریم را بدون چهره باقی می‌گذارد. 'previous' آخرین تشخیص موفق را کپی می‌کند. 'interpolate' نقاط/باکس/شکل‌های ترکیبی را بین فریم‌های موفق مجاور میان‌یابی می‌کند. چند چهره: جفت‌سازی چهره‌ها بین فریم‌ها با نزدیک‌ترین مرکز باکس به صورت حریصانه."
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "حداکثر تعداد چهره برای بازگشت در هر فریم. ۰ = بدون محدودیت (همه چهره‌های شناسایی‌شده بازگردانده می‌شوند)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "display_name": "ماسک چهره MediaPipe",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = اجتماع face_oval+lips+eyes+irises (که به دلیل احاطه شدن توسط face_oval به همان face_oval تبدیل می‌شود). 'custom' = فعال/غیرفعال کردن هر ناحیه به صورت جداگانه برای ترکیب‌هایی مانند lips+eyes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "display_name": "بصری‌سازی Face Mesh MediaPipe",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = بیضی+چشم‌ها+ابروها+لب‌ها+عنبیه‌ها+بینی. 'fill' = چندضلعی face_oval پر (ماسک سیلوئت). 'custom' = فعال/غیرفعال کردن هر ویژگی به صورت جداگانه (شامل 'tesselation'، شبکه سیمی کامل با ۲۵۴۷ لبه)."
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "در صورت عدم اتصال، یک بوم سیاه استفاده خواهد شد."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "شعاع نقطه‌های نشانه‌گذاری بر حسب پیکسل. ۰ یعنی رسم نقطه غیرفعال است."
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "ضخامت خطوط لبه بر حسب پیکسل. ۰ یعنی رسم لبه غیرفعال است."
       }
     },
     "outputs": {
@@ -16657,6 +16757,23 @@
     "outputs": {
       "0": {
         "name": "شامل",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "همانند متد فرمت رشته در پایتون. از تمام گزینه‌ها و ویژگی‌های فرمت پایتون پشتیبانی می‌کند.",
+    "display_name": "فرمت متن",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

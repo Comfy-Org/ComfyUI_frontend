@@ -8435,6 +8435,20 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "Cargar MediaPipe Face Landmarker",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "Face Landmarker safetensors de models/mediapipe/."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadMoGeModel": {
     "display_name": "Cargar modelo MoGe",
     "inputs": {
@@ -9314,6 +9328,92 @@
     "inputs": {
       "mask": {
         "name": "máscara"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceLandmarker": {
+    "display_name": "MediaPipe Face Landmarker",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "Rango del detector facial. 'short' está ajustado para rostros cercanos (a menos de ~2 m de la cámara); 'full' cubre rostros más lejanos/pequeños (hasta ~5 m) pero es más lento. 'both' ejecuta ambos detectores y mantiene el que encontró más rostros por fotograma (costo de detección ~2×)."
+      },
+      "face_landmarker": {
+        "name": "face_landmarker"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "Umbral de puntuación BlazeFace. Disminuye para captar rostros pequeños/ocultos."
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "Comportamiento por fotograma cuando falla la detección en un lote. 'empty' deja el fotograma sin rostro. 'previous' copia la detección exitosa más reciente. 'interpolate' interpola puntos clave/bbox/blendshapes entre los fotogramas exitosos adyacentes. Multi-rostro: empareja rostros entre fotogramas por centro de bbox más cercano."
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "Máximo de rostros a devolver por fotograma. 0 = sin límite (devuelve todos los detectados)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "display_name": "MediaPipe Face Mask",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = unión de face_oval+lips+eyes+irises (que se reduce a face_oval ya que lo contiene todo). 'custom' = activa cada región individualmente para combinaciones como lips+eyes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "display_name": "Visualizar Malla Facial de MediaPipe",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = oval+eyes+brows+lips+irises+nose. 'fill' = polígono sólido face_oval (máscara de silueta). 'custom' = activa cada característica individualmente (incluyendo 'tesselation', el entramado completo de 2547 aristas)."
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Si no se conecta, se usará un lienzo negro."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "Radio de los puntos de referencia en píxeles. 0 desactiva el dibujo de puntos."
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "Grosor de línea de los bordes en píxeles. 0 desactiva el dibujo de bordes."
       }
     },
     "outputs": {
@@ -16657,6 +16757,23 @@
     "outputs": {
       "0": {
         "name": "contiene",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "Igual que el método de formato de cadenas de Python. Soporta todas las opciones y características de formato de Python.",
+    "display_name": "Formatear Texto",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

@@ -800,6 +800,8 @@
     "CONTROL_NET": "컨트롤넷",
     "CURVE": "곡선",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -2443,7 +2445,8 @@
     "nonPublicAssetsWarningLine1": "이 워크플로우에는 비공개 에셋이 포함되어 있습니다.",
     "nonPublicAssetsWarningLine2": "워크플로우를 열면 이 에셋들이 라이브러리에 가져와집니다",
     "openWithoutImporting": "가져오지 않고 열기",
-    "openWorkflow": "워크플로우 열기"
+    "openWorkflow": "워크플로우 열기",
+    "opening": "공유 워크플로우 열기 중..."
   },
   "painter": {
     "background": "배경",

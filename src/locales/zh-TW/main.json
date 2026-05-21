@@ -800,6 +800,8 @@
     "CONTROL_NET": "ControlNet",
     "CURVE": "曲線",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -2443,7 +2445,8 @@
     "nonPublicAssetsWarningLine1": "此工作流程包含非公開資產。",
     "nonPublicAssetsWarningLine2": "開啟工作流程時，這些資產將匯入你的媒體庫",
     "openWithoutImporting": "不匯入直接開啟",
-    "openWorkflow": "開啟工作流程"
+    "openWorkflow": "開啟工作流程",
+    "opening": "正在開啟共享工作流程..."
   },
   "painter": {
     "background": "背景",
