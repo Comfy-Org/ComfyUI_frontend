@@ -14,12 +14,19 @@ import {
   type NodeExecutedEvent,
   type WidgetValueChangeEvent
 } from '@/extension-api'
+import { useExtensionStore } from '@/stores/extensionStore'
 
 defineNode({
   name: 'Comfy.PreviewAny.V2',
   nodeTypes: ['PreviewAny'],
 
   nodeCreated(node: NodeHandle) {
+    // RFR-12144-1 strangler-fig guard (D6): v1 + v2 coexist as Phase A demos,
+    // but only one path runs per node. v1 adds the same three widgets via
+    // beforeRegisterNodeDef + onNodeCreated patching, so if v1 is registered
+    // we no-op to avoid duplicate widgets on the node.
+    if (useExtensionStore().isExtensionInstalled('Comfy.PreviewAny')) return
+
     const markdown = node.addWidget('MARKDOWN', 'preview_markdown', '', {
       hidden: true,
       readonly: true,
