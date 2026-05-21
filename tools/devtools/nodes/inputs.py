@@ -344,6 +344,31 @@ class NodeWithPriceBadge(IO.ComfyNode):
         return IO.NodeOutput()
 
 
+class NodeWithComboControlWidget:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "combo_option": (
+                    "COMBO",
+                    {
+                        "options": ["Option A", "Option B", "Option C"],
+                        "control_after_generate": True,
+                    },
+                ),
+            },
+        }
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "execute"
+    CATEGORY = "DevTools"
+    DESCRIPTION = "A node with a combo input that has control_after_generate, producing control widgets with a filter list"
+    OUTPUT_NODE = True
+
+    def execute(self, combo_option: str):
+        return (combo_option,)
+
+
 NODE_CLASS_MAPPINGS = {
     "DevToolsLongComboDropdown": LongComboDropdown,
     "DevToolsNodeWithOptionalInput": NodeWithOptionalInput,
@@ -359,6 +384,7 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithSeedInput": NodeWithSeedInput,
     "DevToolsNodeWithValidation": NodeWithValidation,
     "DevToolsNodeWithV2ComboInput": NodeWithV2ComboInput,
+    "DevToolsNodeWithComboControlWidget": NodeWithComboControlWidget,
     "DevToolsNodeWithLegacyWidget": NodeWithLegacyWidget,
     "DevToolsNodeWithPriceBadge": NodeWithPriceBadge,
 }
@@ -378,6 +404,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithSeedInput": "Node With Seed Input",
     "DevToolsNodeWithValidation": "Node With Validation",
     "DevToolsNodeWithV2ComboInput": "Node With V2 Combo Input",
+    "DevToolsNodeWithComboControlWidget": "Node With Combo Control Widget",
     "DevToolsNodeWithLegacyWidget": "Node With Legacy Widget",
     "DevToolsNodeWithPriceBadge": "Node With Price Badge",
 }
@@ -397,6 +424,7 @@ __all__ = [
     "NodeWithSeedInput",
     "NodeWithValidation",
     "NodeWithV2ComboInput",
+    "NodeWithComboControlWidget",
     "NODE_CLASS_MAPPINGS",
     "NODE_DISPLAY_NAME_MAPPINGS",
 ]
