@@ -54,7 +54,6 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
 
-      await comfyPage.canvasOps.doubleClick()
       await comfyPage.searchBoxV2.addNode('Note')
       await comfyPage.nextFrame()
 
