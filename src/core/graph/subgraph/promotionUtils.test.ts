@@ -31,9 +31,11 @@ import {
   autoExposeKnownPreviewNodes,
   demoteWidget,
   getPromotableWidgets,
+  getWidgetName,
   hasUnpromotedWidgets,
   isLinkedPromotion,
   isPreviewPseudoWidget,
+  isWidgetPromotedOnSubgraphNode,
   promoteValueWidgetViaSubgraphInput,
   promoteRecommendedWidgets,
   pruneDisconnected,
@@ -842,5 +844,135 @@ describe('demoteWidget — axiomatic projection retraction', () => {
 
     expect(host.subgraph.inputs).toHaveLength(0)
     expect(host.inputs).toHaveLength(0)
+  })
+})
+
+describe('disambiguated nested promotion identity', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  function linkedView(
+    sourceNodeId: string,
+    sourceWidgetName: string,
+    overrides: Record<string, unknown> = {}
+  ): IBaseWidget {
+    return {
+      sourceNodeId,
+      sourceWidgetName,
+      name: sourceWidgetName,
+      type: 'text',
+      value: '',
+      options: {},
+      y: 0,
+      ...overrides
+    } as unknown as IBaseWidget
+  }
+
+  function createSubgraphHost() {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text_1', type: 'STRING' }]
+    })
+    return createTestSubgraphNode(subgraph)
+  }
+
+  it('identifies a promoted nested view by its immediate slot name, not its deep source widget name', () => {
+    const host = createSubgraphHost()
+    // The host's _widget records the IMMEDIATE input name on the nested SubgraphNode
+    // (set by SubgraphNode._setWidget = interiorWidget.name).
+    host.inputs[0]._widget = linkedView('inner', 'text_1')
+
+    // The nested SubgraphNode's widget is itself a PromotedWidgetView: its
+    // exposed name is the disambiguated input slot name ('text_1'), while its
+    // sourceWidgetName peels back to the deep original ('text').
+    const interiorWidget = linkedView('inner', 'text', { name: 'text_1' })
+    const interiorNode = {
+      id: 'inner',
+      title: 'inner',
+      type: 'inner'
+    } as unknown as LGraphNode
+
+    const source = {
+      sourceNodeId: String(interiorNode.id),
+      sourceWidgetName: getWidgetName(interiorWidget)
+    }
+
+    expect(isWidgetPromotedOnSubgraphNode(host, source, interiorWidget)).toBe(
+      true
+    )
+  })
+
+  it('does not prune a promotion whose source is a nested SubgraphNode exposing a disambiguated widget', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text_1', type: 'STRING' }]
+    })
+    const host = createTestSubgraphNode(subgraph)
+
+    // Simulate a nested SubgraphNode as the interior node. Its widget is a
+    // PromotedWidgetView whose `.name` is the immediate slot name ('text_1'),
+    // with sourceWidgetName peeling back to the deep original ('text').
+    const nestedSubgraphNode = {
+      id: 'inner',
+      title: 'inner',
+      type: 'inner',
+      widgets: [linkedView('deep', 'text', { name: 'text_1' })]
+    } as unknown as LGraphNode
+    subgraph.add(nestedSubgraphNode)
+
+    host.inputs[0]._widget = linkedView('inner', 'text_1')
+
+    pruneDisconnected(host)
+
+    expect(host.subgraph.inputs).toHaveLength(1)
+    expect(host.subgraph.inputs[0]?.name).toBe('text_1')
+  })
+
+  it('preserves a real two-level promotion through the SubgraphEditor mount-time prune', () => {
+    // Inner subgraph: two interior nodes that both have a `text` widget.
+    // Promoting both to the inner boundary forces a `text` / `text_1` collision.
+    const innerSubgraph = createTestSubgraph()
+    const innerHost = createTestSubgraphNode(innerSubgraph)
+
+    const nodeA = new LGraphNode('SourceA')
+    innerSubgraph.add(nodeA)
+    const inputA = nodeA.addInput('text', 'STRING')
+    const widgetA = nodeA.addWidget('text', 'text', 'a', () => {})
+    inputA.widget = { name: widgetA.name }
+
+    const nodeB = new LGraphNode('SourceB')
+    innerSubgraph.add(nodeB)
+    const inputB = nodeB.addInput('text', 'STRING')
+    const widgetB = nodeB.addWidget('text', 'text', 'b', () => {})
+    inputB.widget = { name: widgetB.name }
+
+    expect(
+      promoteValueWidgetViaSubgraphInput(innerHost, nodeA, widgetA).ok
+    ).toBe(true)
+    expect(
+      promoteValueWidgetViaSubgraphInput(innerHost, nodeB, widgetB).ok
+    ).toBe(true)
+
+    // innerHost now exposes `text` and `text_1` boundary widgets.
+    const nestedNames = innerHost.widgets.map((w) => w.name).sort()
+    expect(nestedNames).toEqual(['text', 'text_1'])
+
+    // Outer subgraph hosts the inner SubgraphNode and tries to promote both
+    // boundary widgets again.
+    const outerSubgraph = createTestSubgraph()
+    const outerHost = createTestSubgraphNode(outerSubgraph)
+    outerSubgraph.add(innerHost)
+
+    for (const w of [...innerHost.widgets]) {
+      expect(
+        promoteValueWidgetViaSubgraphInput(outerHost, innerHost, w).ok
+      ).toBe(true)
+    }
+
+    const beforeCount = outerHost.subgraph.inputs.length
+    expect(beforeCount).toBe(2)
+
+    pruneDisconnected(outerHost)
+
+    expect(outerHost.subgraph.inputs).toHaveLength(beforeCount)
   })
 })

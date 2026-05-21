@@ -26,7 +26,7 @@ export type WidgetItem = [LGraphNode, IBaseWidget]
 export { CANVAS_IMAGE_PREVIEW_WIDGET }
 
 export function getWidgetName(w: IBaseWidget): string {
-  return isPromotedWidgetView(w) ? w.sourceWidgetName : w.name
+  return w.name
 }
 
 export function isLinkedPromotion(
@@ -524,6 +524,22 @@ export function pruneDisconnected(subgraphNode: SubgraphNode) {
   const staleInputs = subgraph.inputs.filter((input) => {
     const widget = input._widget
     if (!widget || !isPromotedWidgetView(widget)) return false
+
+    // If the SubgraphInput has any live link to an interior target slot that
+    // still has a widget, the promotion is alive — even when the widget's
+    // sourceNodeId points at a deeply-nested interior node that does not exist
+    // directly in `subgraph` (nested SubgraphNode promotions).
+    for (const linkId of input.linkIds) {
+      const link = subgraph.getLink(linkId)
+      if (!link) continue
+      const { inputNode } = link.resolve(subgraph)
+      if (!inputNode) continue
+      const targetInputSlot = inputNode.inputs?.find(
+        (slot) => slot.link === linkId
+      )
+      if (!targetInputSlot) continue
+      if (inputNode.getWidgetFromSlot(targetInputSlot)) return false
+    }
 
     const node = subgraph.getNodeById(widget.sourceNodeId)
     if (!node) {
