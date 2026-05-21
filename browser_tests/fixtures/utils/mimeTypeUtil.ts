@@ -12,5 +12,6 @@ export function getMimeType(fileName: string): string {
   if (name.endsWith('.ogg') || name.endsWith('.opus')) return 'audio/ogg'
   if (name.endsWith('.json')) return 'application/json'
   if (name.endsWith('.glb')) return 'model/gltf-binary'
+  if (name.endsWith('.ogg')) return 'audio/ogg'
   return 'application/octet-stream'
 }
