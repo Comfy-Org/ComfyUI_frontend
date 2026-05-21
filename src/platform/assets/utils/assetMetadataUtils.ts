@@ -172,15 +172,9 @@ export function getAssetFilename(asset: AssetItem): string {
 }
 
 /**
- * Gets the human-readable filename to render in UI surfaces.
- * Fallback chain: user_metadata.filename → metadata.filename →
- * asset.display_name → asset.name.
- *
- * `display_name` is the unified user-facing label emitted by both Core
- * and Cloud per the BE-808 Asset Identity RFC — required where
- * `asset.name` is a content hash (hash-keyed assets). Use this helper
- * for labels/titles only; for serialized identifiers use
- * {@link getAssetFilename}.
+ * Human-readable filename for UI labels.
+ * Fallback: user_metadata.filename → metadata.filename → display_name → asset.name.
+ * For serialized identifiers use {@link getAssetFilename}.
  */
 export function getAssetDisplayFilename(asset: AssetItem): string {
   return (

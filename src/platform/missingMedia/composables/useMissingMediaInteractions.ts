@@ -85,14 +85,9 @@ export function getNodeDisplayLabel(
 }
 
 /**
- * Resolve display name for a media file.
- * Widget values may be content hashes (Cloud) or filenames (OSS); look the
- * asset up in the unified `inputAssetsByFilename` map and delegate the
- * label resolution to {@link getAssetDisplayFilename} so this helper
- * shares the fallback chain (`user_metadata.filename` →
- * `metadata.filename` → `display_name` → `asset.name`) with the asset
- * card / browser surfaces. Falls through to the raw input when no asset
- * matches.
+ * Resolve a media widget value (hash or filename) to a display label via the
+ * shared {@link getAssetDisplayFilename} fallback chain. Returns the input
+ * unchanged when no asset matches.
  */
 export function getMediaDisplayName(name: string): string {
   const asset = useAssetsStore().inputAssetsByFilename.get(name)
