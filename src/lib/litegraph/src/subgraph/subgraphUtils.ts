@@ -504,6 +504,19 @@ export function reorderSubgraphInputs(
   const subgraph = subgraphNode.subgraph
   if (!subgraph) return
 
+  const n = subgraph.inputs.length
+  if (
+    orderedIndices.length !== n ||
+    new Set(orderedIndices).size !== orderedIndices.length ||
+    orderedIndices.some((i) => i < 0 || i >= n)
+  ) {
+    console.error(
+      `reorderSubgraphInputs: orderedIndices must be a permutation of 0..${n - 1}`,
+      orderedIndices
+    )
+    return
+  }
+
   const oldOrder = subgraph.inputs.map((i) => i.id)
 
   reorderInPlace(subgraph.inputs, orderedIndices)

@@ -25,6 +25,7 @@ import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composab
 import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
 
 import {
@@ -1199,6 +1200,28 @@ describe('SubgraphWidgetPromotion', () => {
         if (c.expectLiveUnchanged) {
           expect(hostNode.properties.previewExposures).toEqual(c.staleProperty)
         }
+      })
+
+      it('preserves an explicit empty previewExposures across reload, ignoring legacy locator entries', () => {
+        const hostNode = createTestSubgraphNode(createTestSubgraph())
+        const rootGraphId = hostNode.rootGraph.id
+        const hostLocator = String(hostNode.id)
+        const store = usePreviewExposureStore()
+
+        const serialized = hostNode.serialize()
+        expect(serialized.properties?.previewExposures).toEqual([])
+
+        const legacyKey = createNodeLocatorId(rootGraphId, hostNode.id)
+        store.setExposures(rootGraphId, legacyKey, [
+          { name: 'legacy', ...exposure12 }
+        ])
+        store.setExposures(rootGraphId, hostLocator, [])
+
+        hostNode.properties.previewExposures =
+          serialized.properties?.previewExposures
+        hostNode._internalConfigureAfterSlots()
+
+        expect(store.getExposures(rootGraphId, hostLocator)).toEqual([])
       })
 
       it('serializes preview exposures per host instance', () => {
