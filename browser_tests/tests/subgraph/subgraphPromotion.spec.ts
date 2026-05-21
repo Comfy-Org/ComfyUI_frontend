@@ -6,7 +6,8 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import {
   getPromotedWidgetNames,
-  getPromotedWidgetCount
+  getPromotedWidgetCount,
+  getPseudoPreviewWidgets
 } from '@e2e/fixtures/utils/promotedWidgets'
 
 async function expectPromotedWidgetNamesToContain(
@@ -92,6 +93,34 @@ test.describe(
           String(subgraphNode.id),
           'filename_prefix'
         )
+      })
+
+      test('LoadImage node gets $$canvas-image-preview pseudo-widget promoted', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow('default')
+
+        // Add a LoadImage node and convert to subgraph programmatically
+        const subgraphNodeId = await comfyPage.page.evaluate(() => {
+          const graph = window.app!.graph!
+          const node = window.LiteGraph!.createNode('LoadImage')!
+          node.pos = [300, 300]
+          graph.add(node)
+          const { node: subgraphNode } = graph.convertToSubgraph(
+            new Set([node])
+          )
+          return String(subgraphNode.id)
+        })
+        await comfyPage.nextFrame()
+
+        const pseudoWidgets = await getPseudoPreviewWidgets(
+          comfyPage,
+          subgraphNodeId
+        )
+        expect(pseudoWidgets.length).toBeGreaterThan(0)
+        expect(
+          pseudoWidgets.some(([, name]) => name === '$$canvas-image-preview')
+        ).toBe(true)
       })
     })
 
