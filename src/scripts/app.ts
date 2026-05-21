@@ -1505,7 +1505,7 @@ export class ComfyApp {
   ): Promise<void> {
     const missingMediaStore = useMissingMediaStore()
     const activeWf = useWorkspaceStore().workflow.activeWorkflow
-    const allCandidates = scanAllMediaCandidates(this.rootGraph, isCloud)
+    const allCandidates = scanAllMediaCandidates(this.rootGraph)
     // Drop candidates whose enclosing subgraph is muted/bypassed.
     const candidates = allCandidates.filter((c) =>
       isAncestorPathActive(this.rootGraph, String(c.nodeId))
@@ -1520,7 +1520,7 @@ export class ComfyApp {
     if (pending) {
       const controller = missingMediaStore.createVerificationAbortController()
       void verifyMediaCandidates(candidates, {
-        isCloud,
+        allowCompactSuffix: isCloud,
         signal: controller.signal
       })
         .then(() => {

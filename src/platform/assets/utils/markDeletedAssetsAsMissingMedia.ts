@@ -1,6 +1,5 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import { isCloud } from '@/platform/distribution/types'
 import { scanNodeMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
@@ -38,7 +37,7 @@ export function markDeletedAssetsAsMissingMedia(
       node.mode === LGraphEventMode.BYPASS
     )
       continue
-    for (const candidate of scanNodeMediaCandidates(rootGraph, node, isCloud)) {
+    for (const candidate of scanNodeMediaCandidates(rootGraph, node)) {
       if (!deletedValues.has(candidate.name)) continue
       candidates.push({ ...candidate, isMissing: true })
     }

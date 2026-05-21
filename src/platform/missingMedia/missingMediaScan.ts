@@ -17,7 +17,6 @@ import {
   getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import { resolveComboValues } from '@/utils/litegraphUtil'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isAbortError } from '@/utils/typeGuardUtil'
 import {
@@ -49,13 +48,13 @@ function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
 /**
  * Scan combo widgets on media nodes for file values that may be missing.
  *
- * OSS: `isMissing` is resolved immediately via widget options unless an
- * output annotation needs generated-history verification.
- * Cloud: `isMissing` left `undefined` for async verification.
+ * Candidates leave `isMissing` as `undefined`; resolution happens
+ * asynchronously in `verifyMediaCandidates` against the unified asset
+ * listing. Both backends consult the same oracle (per RFC BE-808 v2 /
+ * BE-933 + BE-934).
  */
 export function scanAllMediaCandidates(
-  rootGraph: LGraph,
-  isCloud: boolean
+  rootGraph: LGraph
 ): MissingMediaCandidate[] {
   if (!rootGraph) return []
 
@@ -71,17 +70,16 @@ export function scanAllMediaCandidates(
     )
       continue
 
-    candidates.push(...scanNodeMediaCandidates(rootGraph, node, isCloud))
+    candidates.push(...scanNodeMediaCandidates(rootGraph, node))
   }
 
   return candidates
 }
 
-/** Scan a single node for missing media candidates (OSS immediate resolution). */
+/** Scan a single node for missing media candidates (async resolution). */
 export function scanNodeMediaCandidates(
   rootGraph: LGraph,
-  node: LGraphNode,
-  isCloud: boolean
+  node: LGraphNode
 ): MissingMediaCandidate[] {
   if (!node.widgets?.length) return []
 
@@ -100,30 +98,13 @@ export function scanNodeMediaCandidates(
     const value = widget.value
     if (typeof value !== 'string' || !value.trim()) continue
 
-    let isMissing: boolean | undefined
-    if (isCloud) {
-      isMissing = undefined
-    } else {
-      const type = getAnnotatedMediaPathTypeForDetection(value)
-      if (type === 'output') {
-        isMissing = undefined
-      } else {
-        const options = resolveComboValues(widget)
-        const detectionNames = getMediaPathDetectionNames(value)
-        const existsInOptions = detectionNames.some((name) =>
-          options.includes(name)
-        )
-        isMissing = !existsInOptions
-      }
-    }
-
     candidates.push({
       nodeId: executionId as NodeId,
       nodeType: node.type,
       widgetName: widget.name,
       mediaType: mediaInfo.mediaType,
       name: value,
-      isMissing
+      isMissing: undefined
     })
   }
 
@@ -131,27 +112,32 @@ export function scanNodeMediaCandidates(
 }
 
 interface MediaVerificationOptions {
-  isCloud: boolean
+  /**
+   * Whether to accept compact `file.png[input]` suffix annotations in
+   * addition to the canonical spaced `file.png [input]` form. Cloud emits
+   * compact annotations on legacy widget values. Tracked as N1 in the
+   * RFC; retained until widget values stop being filenames.
+   */
+  allowCompactSuffix: boolean
   signal?: AbortSignal
   resolveAssetSources?: MissingMediaAssetResolver
 }
 
 /**
- * Verify media candidates against assets available to the current runtime.
+ * Verify media candidates against the unified asset listing.
  *
- * A candidate's `name` may be either a filename or an opaque asset hash.
- * Cloud-side `asset_hash` is not guaranteed to follow a single shape, so we
- * match against the union of `asset.name` and `asset.asset_hash`. Output
- * candidates are matched against Cloud output assets or Core generated-history
- * assets because Core resolves those annotations against output folders, not
- * input files.
- * Cloud accepts compact annotated media paths, so only Cloud verification
- * normalizes compact suffixes.
+ * A candidate's `name` is the widget-value string (filename or annotated
+ * path). It is matched against each asset's `file_path` (canonical key
+ * per RFC BE-808 v2) and, for assets where `file_path` is null
+ * (hash-only Core registrations, tagless Cloud rows, legacy data), the
+ * legacy union of `asset_hash` / `name` / `subfolder + name`. Output
+ * candidates match against generated assets; everything else against
+ * input assets.
  */
 export async function verifyMediaCandidates(
   candidates: MissingMediaCandidate[],
   {
-    isCloud,
+    allowCompactSuffix,
     signal,
     resolveAssetSources = resolveMissingMediaAssetSources
   }: MediaVerificationOptions
@@ -161,9 +147,7 @@ export async function verifyMediaCandidates(
   const pending = candidates.filter((c) => c.isMissing === undefined)
   if (pending.length === 0) return
 
-  // Core stores spaced annotations such as `file.png [output]`; Cloud also
-  // accepts compact forms such as `file.png[output]`.
-  const pathOptions = { allowCompactSuffix: isCloud }
+  const pathOptions = { allowCompactSuffix }
   const generatedMatchNames = getGeneratedCandidateMatchNames(
     pending,
     pathOptions
@@ -174,10 +158,9 @@ export async function verifyMediaCandidates(
   try {
     const assetSources = await resolveAssetSources({
       signal,
-      isCloud,
       includeGeneratedAssets: generatedMatchNames.size > 0,
       generatedMatchNames,
-      allowCompactSuffix: isCloud
+      allowCompactSuffix
     })
     inputAssets = assetSources.inputAssets
     generatedAssets = assetSources.generatedAssets
