@@ -57,11 +57,6 @@ describe('TabErrors.vue', () => {
               downloadAll: 'Download all',
               refresh: 'Refresh',
               refreshing: 'Refreshing missing models.'
-            },
-            promptErrors: {
-              prompt_no_outputs: {
-                desc: 'Prompt has no outputs'
-              }
             }
           }
         }
@@ -103,7 +98,7 @@ describe('TabErrors.vue', () => {
     expect(screen.getByText('No errors')).toBeInTheDocument()
   })
 
-  it('renders prompt-level errors (Group title = error message)', async () => {
+  it('renders prompt-level errors with resolved display message', async () => {
     renderComponent({
       executionError: {
         lastPromptError: {
@@ -115,8 +110,12 @@ describe('TabErrors.vue', () => {
     })
 
     expect(screen.getByText('Server Error: No outputs')).toBeInTheDocument()
-    expect(screen.getByText('Prompt has no outputs')).toBeInTheDocument()
-    expect(screen.queryByText('Error details')).not.toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.'
+      )
+    ).toBeInTheDocument()
+    expect(screen.getByText('Error details')).toBeInTheDocument()
   })
 
   it('renders node validation errors grouped by class_type', async () => {
