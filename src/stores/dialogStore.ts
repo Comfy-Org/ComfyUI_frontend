@@ -48,6 +48,11 @@ interface CustomDialogComponentProps {
    * PrimeVue path — use `pt` for that renderer.
    */
   contentClass?: HTMLAttributes['class']
+  /**
+   * Class applied to the Reka-UI `DialogOverlay` element. Ignored on the
+   * PrimeVue path — use `pt.mask` for that renderer.
+   */
+  overlayClass?: HTMLAttributes['class']
 }
 
 export type DialogComponentProps = ComponentAttrs<typeof GlobalDialog> &

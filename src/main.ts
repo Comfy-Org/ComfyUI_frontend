@@ -104,6 +104,12 @@ app.directive('tooltip', Tooltip)
 app
   .use(router)
   .use(PrimeVue, {
+    zIndex: {
+      modal: 1800,
+      overlay: 1800,
+      menu: 1800,
+      tooltip: 1800
+    },
     theme: {
       preset: ComfyUIPreset,
       options: {
