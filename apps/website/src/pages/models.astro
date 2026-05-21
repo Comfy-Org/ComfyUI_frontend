@@ -1,6 +1,8 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
 import ModelsHeroSection from '../components/models/ModelsHeroSection.vue'
+import ModelCreationsSection from '../components/models/ModelCreationsSection.vue'
+import ProductShowcaseSection from '../components/home/ProductShowcaseSection.vue'
 ---
 
 <BaseLayout
@@ -13,4 +15,6 @@ import ModelsHeroSection from '../components/models/ModelsHeroSection.vue'
     mediaSrc="https://media.comfy.org/website/gallery/gallery.webp"
     mediaAlt="Grok Imagine output created with ComfyUI"
   />
+  <ModelCreationsSection client:load />
+  <ProductShowcaseSection client:load />
 </BaseLayout>

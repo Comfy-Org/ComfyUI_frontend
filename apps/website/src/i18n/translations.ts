@@ -4464,6 +4464,14 @@ const translations = {
     en: 'Try {name} Now',
     'zh-CN': '立即试用 {name}'
   },
+  'models.list.creations.title': {
+    en: '{name} Image and Video Creations',
+    'zh-CN': '{name} 图像与视频创作'
+  },
+  'models.list.creations.cta': {
+    en: 'Explore Workflows',
+    'zh-CN': '探索工作流'
+  },
   'models.list.heroTitle.before': {
     en: 'Run the world’s leading AI models in',
     'zh-CN': '在以下平台运行世界领先的 AI 模型'
