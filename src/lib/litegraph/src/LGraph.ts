@@ -42,7 +42,6 @@ import type {
   DefaultConnectionColors,
   Dictionary,
   HasBoundingRect,
-  IContextMenuValue,
   INodeInputSlot,
   INodeOutputSlot,
   LinkNetwork,
@@ -332,16 +331,11 @@ export class LGraph
   onNodeAdded?(node: LGraphNode): void
   onNodeRemoved?(node: LGraphNode): void
   onTrigger?: LGraphTriggerHandler
-  onBeforeChange?(graph: LGraph, info?: LGraphNode): void
   onAfterChange?(graph: LGraph, info?: LGraphNode | null): void
   onConnectionChange?(node: LGraphNode): void
   on_change?(graph: LGraph): void
   onSerialize?(data: ISerialisedGraph | SerialisableGraph): void
   onConfigure?(data: ISerialisedGraph | SerialisableGraph): void
-  onGetNodeMenuOptions?(
-    options: (IContextMenuValue<unknown> | null)[],
-    node: LGraphNode
-  ): void
 
   // @ts-expect-error - Private property type needs fixing
   private _input_nodes?: LGraphNode[]
@@ -1370,8 +1364,7 @@ export class LGraph
   }
 
   // used for undo, called before any change is made to the graph
-  beforeChange(info?: LGraphNode): void {
-    this.onBeforeChange?.(this, info)
+  beforeChange(_info?: LGraphNode): void {
     this.canvasAction((c) => c.onBeforeChange?.(this))
   }
 
