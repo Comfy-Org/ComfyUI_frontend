@@ -1,14 +1,55 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { getMediaDisplayName } from '@/platform/missingMedia/composables/useMissingMediaInteractions'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import {
+  getMediaDisplayName,
+  useMissingMediaInteractions
+} from '@/platform/missingMedia/composables/useMissingMediaInteractions'
 
 const mockInputAssetsByFilename = new Map<string, AssetItem>()
 
 vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({
-    inputAssetsByFilename: mockInputAssetsByFilename
+    inputAssetsByFilename: mockInputAssetsByFilename,
+    updateInputs: vi.fn()
   })
+}))
+
+vi.mock('@/platform/missingMedia/missingMediaStore', () => ({
+  useMissingMediaStore: () => ({
+    expandState: {},
+    pendingSelection: {},
+    uploadState: {},
+    missingMediaCandidates: null,
+    removeMissingMediaByName: vi.fn()
+  })
+}))
+
+const mockGetNodeByExecutionId = vi.fn()
+vi.mock('@/utils/graphTraversalUtil', () => ({
+  getNodeByExecutionId: (...args: unknown[]) =>
+    mockGetNodeByExecutionId(...args)
+}))
+
+const mockResolveComboValues = vi.fn()
+vi.mock('@/utils/litegraphUtil', () => ({
+  resolveComboValues: (widget: unknown) => mockResolveComboValues(widget),
+  addToComboValues: vi.fn()
+}))
+
+vi.mock('@/scripts/app', () => ({
+  app: {
+    rootGraph: { id: 'mock-graph' }
+  }
+}))
+
+vi.mock('@/scripts/api', () => ({
+  api: { fetchApi: vi.fn() }
+}))
+
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: () => ({ addAlert: vi.fn() })
 }))
 
 const baseAsset: AssetItem = {
@@ -69,5 +110,103 @@ describe('getMediaDisplayName', () => {
       display_name: 'pretty.png'
     })
     expect(getMediaDisplayName(hash)).toBe('pretty.png')
+  })
+})
+
+describe('getLibraryOptions (integration with getMediaDisplayName)', () => {
+  const makeCandidate = (
+    overrides: Partial<MissingMediaCandidate> = {}
+  ): MissingMediaCandidate => ({
+    nodeId: 1,
+    nodeType: 'LoadImage',
+    widgetName: 'image',
+    mediaType: 'image',
+    name: 'missing.png',
+    isMissing: true,
+    ...overrides
+  })
+
+  const makeNode = (widgetType: string = 'combo') => ({
+    widgets: [
+      {
+        name: 'image',
+        type: widgetType,
+        value: '',
+        options: {}
+      }
+    ]
+  })
+
+  beforeEach(() => {
+    mockInputAssetsByFilename.clear()
+    mockGetNodeByExecutionId.mockReset()
+    mockResolveComboValues.mockReset()
+  })
+
+  it('returns empty array when the combo widget cannot be resolved', () => {
+    mockGetNodeByExecutionId.mockReturnValue(null)
+    const { getLibraryOptions } = useMissingMediaInteractions()
+
+    expect(getLibraryOptions(makeCandidate())).toEqual([])
+    expect(mockResolveComboValues).not.toHaveBeenCalled()
+  })
+
+  it('maps Cloud hash combo values to display_name via the shared helper chain', () => {
+    const candidateName = 'blake3:missing.png'
+    const hashA = 'blake3:aaa.png'
+    const hashB = 'blake3:bbb.png'
+    mockInputAssetsByFilename.set(hashA, {
+      ...baseAsset,
+      name: hashA,
+      asset_hash: hashA,
+      display_name: 'sunset.png'
+    })
+    mockInputAssetsByFilename.set(hashB, {
+      ...baseAsset,
+      name: hashB,
+      asset_hash: hashB,
+      metadata: { filename: 'beach.png' }
+    })
+    mockGetNodeByExecutionId.mockReturnValue(makeNode())
+    mockResolveComboValues.mockReturnValue([hashA, hashB, candidateName])
+
+    const { getLibraryOptions } = useMissingMediaInteractions()
+    const options = getLibraryOptions(makeCandidate({ name: candidateName }))
+
+    expect(options).toEqual([
+      { name: 'sunset.png', value: hashA },
+      { name: 'beach.png', value: hashB }
+    ])
+  })
+
+  it('passes OSS filename combo values through when no matching asset exists', () => {
+    mockGetNodeByExecutionId.mockReturnValue(makeNode())
+    mockResolveComboValues.mockReturnValue([
+      'kitten.png',
+      'puppy.png',
+      'missing.png'
+    ])
+
+    const { getLibraryOptions } = useMissingMediaInteractions()
+    const options = getLibraryOptions(makeCandidate({ name: 'missing.png' }))
+
+    expect(options).toEqual([
+      { name: 'kitten.png', value: 'kitten.png' },
+      { name: 'puppy.png', value: 'puppy.png' }
+    ])
+  })
+
+  it('filters out the candidate name from the alternatives list', () => {
+    mockGetNodeByExecutionId.mockReturnValue(makeNode())
+    mockResolveComboValues.mockReturnValue([
+      'other.png',
+      'missing.png',
+      'extra.png'
+    ])
+
+    const { getLibraryOptions } = useMissingMediaInteractions()
+    const options = getLibraryOptions(makeCandidate({ name: 'missing.png' }))
+
+    expect(options.map((o) => o.value)).toEqual(['other.png', 'extra.png'])
   })
 })
