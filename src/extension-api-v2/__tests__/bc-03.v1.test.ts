@@ -7,7 +7,12 @@
 // Note: loadedGraphNode hook exists in LiteGraph but is effectively unused in ComfyUI —
 //       onConfigure is the de-facto hydration surface.
 
-import { describe, expect, it, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+
 import {
   createMiniComfyApp,
   countEvidenceExcerpts,
@@ -122,9 +127,78 @@ describe('BC.03 v1 contract — node lifecycle: hydration from saved workflows',
       expect(onConfigure).not.toHaveBeenCalled()
     })
 
-    it.todo('fires during actual LiteGraph graph.configure()')
+    describe('fires during actual LiteGraph graph.configure()', () => {
+      // The v1 contract is: when graph.configure(serializedGraph) is called,
+      // each restored LGraphNode has its `onConfigure(info)` invoked with the
+      // raw serialized node payload — the de-facto hydration hook used by
+      // 51 consumers per W2F-1 (S2.N7 RED tier).
+      //
+      // We register a custom LGraphNode subclass whose prototype has an
+      // onConfigure spy, serialize a graph that contains an instance of it,
+      // then feed the serialized payload back through `graph.configure()`
+      // and assert the spy fires with the per-node info object.
 
-    it.todo('LoadedFromWorkflow ECS tag')
+      const registeredTypes: string[] = []
+
+      beforeEach(() => {
+        // LGraphNode constructor exercises LGraphNodeProperties which
+        // touches Pinia-backed stores in some code paths; activate a
+        // testing pinia to match the canonical LiteGraph test harness
+        // (see src/lib/litegraph/src/LGraph.repointAncestorPromotions.test.ts).
+        setActivePinia(createTestingPinia({ stubActions: false }))
+      })
+
+      afterEach(() => {
+        for (const t of registeredTypes) {
+          LiteGraph.unregisterNodeType(t)
+        }
+        registeredTypes.length = 0
+      })
+
+      function registerSpyNode(spy: (info: unknown) => void): string {
+        const type = `bc03/onconfigure-${Math.random().toString(36).slice(2)}`
+        class SpyNode extends LGraphNode {
+          constructor() {
+            super('SpyNode', type)
+          }
+          override onConfigure(info: unknown): void {
+            spy(info)
+          }
+        }
+        LiteGraph.registerNodeType(type, SpyNode)
+        registeredTypes.push(type)
+        return type
+      }
+
+      it('invokes onConfigure on each restored node with the serialized info object', () => {
+        const spy = vi.fn()
+        const type = registerSpyNode(spy)
+
+        // Seed graph with one node of our spy type.
+        const seedGraph = new LGraph()
+        const seedNode = LiteGraph.createNode(type)
+        expect(seedNode).not.toBeNull()
+        seedGraph.add(seedNode!)
+        const serialized = seedGraph.serialize()
+
+        // The spy was wired on the prototype; the seed instance's own
+        // .configure() was never called (we used .add(), not .configure()).
+        // Confirm hydration is what drives the call, not creation.
+        expect(spy).not.toHaveBeenCalled()
+
+        // Hydrate a fresh graph from the serialized payload.
+        const targetGraph = new LGraph()
+        targetGraph.configure(serialized)
+
+        expect(spy).toHaveBeenCalledTimes(1)
+        const info = spy.mock.calls[0][0] as Record<string, unknown>
+        expect(info.type).toBe(type)
+      })
+    })
+
+    it.todo(
+      'LoadedFromWorkflow ECS tag — needs world.dispatch (Phase B blocked, see I-TF.8.J1)'
+    )
   })
 
   describe('S1.H1 — beforeRegisterNodeDef hydration guard (synthetic)', () => {
