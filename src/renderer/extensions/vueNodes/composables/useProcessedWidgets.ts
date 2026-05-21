@@ -42,15 +42,18 @@ import {
   getExecutionIdFromNodeData,
   getLocatorIdFromNodeData
 } from '@/utils/graphTraversalUtil'
+import { isValidGridTrack } from '@/utils/widgetGridOverrides'
 
 interface ProcessedWidget {
   advanced: boolean
   handleContextMenu: (e: PointerEvent) => void
+  hasGridOverride: boolean
   hasLayoutSize: boolean
   hasError: boolean
   hidden: boolean
   id: string
   name: string
+  slotName?: string
   renderKey: string
   simplified: SimplifiedWidget
   tooltipConfig: TooltipOptions
@@ -332,9 +335,13 @@ export function computeProcessedWidgets({
       )
     }
 
+    const widgetKey = widget.slotName ?? widget.name
+    const hasGridOverride = !!nodeData.gridOverrides?.[widgetKey]
+
     result.push({
       advanced: mergedOptions.advanced ?? false,
       handleContextMenu,
+      hasGridOverride,
       hasLayoutSize: widget.hasLayoutSize ?? false,
       hasError: hasWidgetError(
         widget,
@@ -346,6 +353,7 @@ export function computeProcessedWidgets({
       hidden: mergedOptions.hidden ?? false,
       id: String(bareWidgetId),
       name: widget.name,
+      slotName: widget.slotName,
       renderKey,
       type: widget.type,
       vueComponent,
@@ -412,13 +420,16 @@ export function useProcessedWidgets(
     )
   )
 
-  const gridTemplateRows = computed((): string =>
-    visibleWidgets.value
-      .map((w) =>
-        shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
-      )
+  const gridTemplateRows = computed((): string => {
+    const overrides = nodeDataGetter()?.gridOverrides
+    return visibleWidgets.value
+      .map((w) => {
+        const override = overrides?.[w.slotName ?? w.name]
+        if (override && isValidGridTrack(override)) return override
+        return shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
+      })
       .join(' ')
-  )
+  })
 
   return {
     canSelectInputs,

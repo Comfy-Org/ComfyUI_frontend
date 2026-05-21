@@ -3819,5 +3819,14 @@
     "training": "Training…",
     "processingVideo": "Processing video…",
     "running": "Running…"
+  },
+  "widgetGridOverrides": {
+    "menuLabel": "Widget Grid Sizes",
+    "setSize": "Set size…",
+    "clearOverride": "Clear override",
+    "clearAll": "Clear all overrides",
+    "auto": "(auto)",
+    "sizeLabel": "Row height (CSS grid value)",
+    "prompt": "Grid row size (e.g. 200px, minmax(150px, 300px), 1fr, auto)"
   }
 }
