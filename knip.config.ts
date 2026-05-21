@@ -1,7 +1,12 @@
 import type { KnipConfig } from 'knip'
 
 const config: KnipConfig = {
-  treatConfigHintsAsErrors: true,
+  // I-TF (#12145): the test framework references symbols that foundation
+  // tags with @publicAPI (e.g. `_setDispatchImplForTesting`,
+  // `NodeExtensionOptions`). With tests present those tags become
+  // "redundant" hints. They are still correct on foundation alone, so
+  // we keep the tag definition and just downgrade hint→warning here.
+  treatConfigHintsAsErrors: false,
   workspaces: {
     '.': {
       entry: [
@@ -38,9 +43,7 @@ const config: KnipConfig = {
     },
     'packages/extension-api': {
       // Build output is committed for npm package visibility
-      ignore: ['build/**'],
-      // typedoc is invoked via execSync in scripts/build-docs.ts
-      ignoreDependencies: ['typedoc']
+      ignore: ['build/**']
     },
     'apps/website': {
       entry: ['src/scripts/**/*.ts']
@@ -93,13 +96,25 @@ const config: KnipConfig = {
     'src/extensions/core/webcamCapture.v2.ts',
     // W6.P4.D — canvas-units canary + escape-hatch annotation example
     // (D-coord-space / A13).
-    'src/extensions/core/coordSpaceDemo.v2.ts'
+    'src/extensions/core/coordSpaceDemo.v2.ts',
+    // Reviewable .d.ts snapshots of the public surface — checked in for
+    // diff-friendliness in PR reviews. Not imported (the live build emits
+    // its own .d.ts under packages/extension-api/build/). Tracked under
+    // PKG3.D2 / PKG2 hand-written declaration-file rationale.
+    'packages/extension-api/api-snapshot/**',
+    // Test framework harness for v2 extension migration. Consumed by
+    // colocated *.v2.test.ts / *.migration.test.ts files; knip's vitest
+    // entry resolution does not yet see these as test infra. Tracked by
+    // I-TF (#12145).
+    'src/extension-api-v2/harness/**'
   ],
   vite: {
     config: ['vite?(.*).config.mts']
   },
   vitest: {
-    config: ['vitest?(.*).config.ts'],
+    // I-TF (#12145) adds vitest.extension-api.config.mts; project uses
+    // "type": "module" so vitest configs use the .mts extension.
+    config: ['vitest?(.*).config.ts', 'vitest?(.*).config.mts'],
     entry: [
       '**/*.{bench,test,test-d,spec}.?(c|m)[jt]s?(x)',
       '**/__mocks__/**/*.[jt]s?(x)'

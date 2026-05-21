@@ -106,6 +106,14 @@ export interface ExtensionOptions {
   name: string
 
   /**
+   * Extension API version. Used for telemetry to track migration progress.
+   * Set to `'2'` when using the v2 API.
+   *
+   * @stability experimental
+   */
+  apiVersion?: string
+
+  /**
    * Runs once during app initialization (after the app is mounted but before
    * the first workflow is loaded). Equivalent to the v1 `ComfyExtension.init`.
    *

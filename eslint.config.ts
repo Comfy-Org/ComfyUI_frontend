@@ -82,6 +82,7 @@ export default defineConfig([
       'components.d.ts',
       'coverage/*',
       'dist/*',
+      'packages/extension-api/api-snapshot/**',
       'packages/registry-types/src/comfyRegistryTypes.ts',
       'playwright-report/*',
       'src/extensions/core/*',
@@ -105,7 +106,8 @@ export default defineConfig([
             'vite.electron.config.mts',
             'vite.types.config.mts',
             'packages/extension-api/scripts/build-docs.ts',
-            'packages/extension-api/vite.config.mts'
+            'packages/extension-api/vite.config.mts',
+            'vitest.extension-api.config.mts'
           ]
         }
       }
