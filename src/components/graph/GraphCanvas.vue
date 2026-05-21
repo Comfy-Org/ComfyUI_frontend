@@ -152,6 +152,7 @@ import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { usePaste } from '@/composables/usePaste'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useLiteGraphContextMenuTracking } from '@/platform/keybindings/raisedSurfaceLiteGraphBridge'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -460,6 +461,7 @@ useNodeBadge()
 
 useGlobalLitegraph()
 useContextMenuTranslation()
+useLiteGraphContextMenuTracking()
 useCopy()
 usePaste()
 useWorkflowAutoSave()
