@@ -859,9 +859,9 @@ export class ComfyApp {
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
     await useExtensionService().loadExtensions()
-    // Start the v2 node-extension reactive mount watcher (I-SR.3 / MIG1.E5).
-    // Must run after loadExtensions() so all defineNode() calls have
-    // pushed into nodeExtensions[] before the first watcher tick.
+    // Start the v2 node-extension reactive mount watcher. Must run after
+    // loadExtensions() so all defineNode() calls have pushed into
+    // nodeExtensions[] before the first watcher tick.
     startExtensionSystem()
 
     this.addProcessKeyHandler()
