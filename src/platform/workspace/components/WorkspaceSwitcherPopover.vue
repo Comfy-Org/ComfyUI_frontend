@@ -46,12 +46,10 @@
                           : workspace.name
                       }}
                     </span>
-                    <span
+                    <RoleBadge
                       v-if="resolveTierLabel(workspace)"
-                      class="rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
-                    >
-                      {{ resolveTierLabel(workspace) }}
-                    </span>
+                      :label="resolveTierLabel(workspace)!"
+                    />
                   </div>
                   <span class="text-xs text-muted-foreground">
                     {{ getRoleLabel(workspace.role) }}
@@ -112,6 +110,7 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import RoleBadge from '@/platform/workspace/components/RoleBadge.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'

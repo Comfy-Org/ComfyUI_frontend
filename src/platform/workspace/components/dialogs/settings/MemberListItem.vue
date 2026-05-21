@@ -22,7 +22,10 @@
               ({{ $t('g.you') }})
             </span>
           </span>
-          <RoleBadge v-if="showRoleBadge" :role="member.role" />
+          <RoleBadge
+            v-if="showRoleBadge"
+            :label="getRoleBadgeLabel(member.role)"
+          />
         </div>
         <span class="text-sm text-muted-foreground">
           {{ member.email }}
@@ -84,7 +87,13 @@ defineEmits<{
   showMenu: [event: Event]
 }>()
 
-const { d } = useI18n()
+const { d, t } = useI18n()
+
+function getRoleBadgeLabel(role: string): string {
+  return role === 'owner'
+    ? t('workspaceSwitcher.roleOwner')
+    : t('workspaceSwitcher.roleMember')
+}
 
 function formatDate(date: Date): string {
   return d(date, { dateStyle: 'medium' })
