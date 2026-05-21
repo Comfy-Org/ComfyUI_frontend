@@ -321,12 +321,9 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
       if (!outputType) throw new Error('invalid connection')
       this.outputs.forEach((output, idx) => {
         if (!(outputGroups?.[idx] == matchKey)) return
+        this.outputs[idx] = shallowReactive(this.outputs[idx])
         changeOutputType(this, output, outputType)
       })
-      // Force Vue reactivity update for output slot types.
-      // Outputs are wrapped in shallowReactive by useGraphNodeManager,
-      // so mutating output.type alone doesn't trigger re-render.
-      this.outputs = [...this.outputs]
       app.canvas?.setDirty(true, true)
     }
   )
