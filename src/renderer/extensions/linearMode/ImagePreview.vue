@@ -1,19 +1,27 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { ref, useTemplateRef } from 'vue'
 
-import ZoomPane from '@/components/ui/ZoomPane.vue'
 import { useExecutionStatus } from '@/renderer/extensions/linearMode/useExecutionStatus'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { executionStatusMessage } = useExecutionStatus()
 
 defineOptions({ inheritAttrs: false })
 
-const { src, showSize = true } = defineProps<{
+const {
+  src,
+  showSize = true,
+  hideInfo = false,
+  fit = 'contain'
+} = defineProps<{
   src: string
   mobile?: boolean
   label?: string
   showSize?: boolean
+  /** Hide the bottom size+label overlay (App Mode layout renders its own). */
+  hideInfo?: boolean
+  /** `cover` crops to fill the container; `contain` letterboxes. */
+  fit?: 'contain' | 'cover'
 }>()
 
 const imageRef = useTemplateRef('imageRef')
@@ -27,33 +35,43 @@ function onImageLoad() {
 }
 </script>
 <template>
-  <ZoomPane
+  <div
     v-if="!mobile"
-    v-slot="slotProps"
-    :class="cn('w-full flex-1', $attrs.class as string)"
+    :class="
+      cn(
+        'w-full flex-1 place-content-center contain-size',
+        $attrs.class as string
+      )
+    "
   >
     <img
       ref="imageRef"
       :src
-      v-bind="slotProps"
-      class="size-full object-contain"
+      :class="
+        cn('size-full', fit === 'cover' ? 'object-cover' : 'object-contain')
+      "
       @load="onImageLoad"
     />
-  </ZoomPane>
+  </div>
   <img
     v-else
     ref="imageRef"
-    class="grow object-contain contain-size"
+    :class="
+      cn(
+        'grow contain-size',
+        fit === 'cover' ? 'object-cover' : 'object-contain'
+      )
+    "
     :src
     @load="onImageLoad"
   />
   <span
-    v-if="executionStatusMessage"
+    v-if="!hideInfo && executionStatusMessage"
     class="animate-pulse self-center text-muted md:z-10"
   >
     {{ executionStatusMessage }}
   </span>
-  <span v-else-if="width && height" class="self-center md:z-10">
+  <span v-else-if="!hideInfo && width && height" class="self-center md:z-10">
     {{ `${width} x ${height}` }}
     <template v-if="label"> | {{ label }}</template>
   </span>

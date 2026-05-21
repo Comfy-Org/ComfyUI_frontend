@@ -79,9 +79,7 @@ function showApps() {
         <i class="icon-[lucide--send] size-4" />
       </Button>
 
-      <div
-        class="flex w-10 flex-col overflow-hidden rounded-lg bg-secondary-background"
-      >
+      <div class="flex w-10 flex-col overflow-hidden rounded-lg bg-layout-cell">
         <Button
           v-tooltip.right="{
             value: t('sideToolbar.mediaAssets.title'),
@@ -90,9 +88,7 @@ function showApps() {
           variant="textonly"
           size="unset"
           :aria-label="t('sideToolbar.mediaAssets.title')"
-          :class="
-            cn('size-10', isAssetsActive && 'bg-secondary-background-hover')
-          "
+          :class="cn('size-10', isAssetsActive && 'bg-layout-cell-hover')"
           @click="openAssets"
         >
           <i class="icon-[comfy--image-ai-edit] size-4" />
@@ -105,9 +101,7 @@ function showApps() {
           variant="textonly"
           size="unset"
           :aria-label="t('linearMode.appModeToolbar.apps')"
-          :class="
-            cn('size-10', isAppsActive && 'bg-secondary-background-hover')
-          "
+          :class="cn('size-10', isAppsActive && 'bg-layout-cell-hover')"
           @click="showApps"
         >
           <i class="icon-[lucide--panels-top-left] size-4" />
