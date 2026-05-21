@@ -25,6 +25,15 @@ export type { WidgetEntityId }
 /**
  * The union of all legal widget scalar values. Complex widgets (DOM, canvas)
  * may return their own serializable shapes.
+ *
+ * @example
+ * ```ts
+ * import type { WidgetValue } from '@comfyorg/extension-api'
+ *
+ * // `WidgetValue` is `string | number | boolean | null` — the four
+ * // primitive-widget value shapes.
+ * const val: WidgetValue = 42
+ * ```
  */
 export type WidgetValue = string | number | boolean | null
 
@@ -512,6 +521,20 @@ export interface WidgetHandle<T = WidgetValue> {
  * for those.
  *
  * @stability experimental
+ * @example
+ * ```ts
+ * import { defineWidget, type WidgetCleanup } from '@comfyorg/extension-api'
+ *
+ * defineWidget({
+ *   name: 'my-ext',
+ *   type: 'STRING',
+ *   mount(host): WidgetCleanup {
+ *     const input = document.createElement('input')
+ *     host.appendChild(input)
+ *     return () => input.remove()
+ *   }
+ * })
+ * ```
  */
 export type WidgetCleanup = () => void
 
@@ -571,6 +594,17 @@ export interface WidgetMountContext {
  *   remount fires `ctx.onBeforeRemount` / `ctx.onAfterRemount` instead.
  *
  * @stability experimental
+ * @example
+ * ```ts
+ * import type { WidgetMountFn } from '@comfyorg/extension-api'
+ *
+ * const mount: WidgetMountFn = (host, ctx) => {
+ *   const el = document.createElement('div')
+ *   el.textContent = String(ctx.widget.getValue() ?? '')
+ *   host.appendChild(el)
+ *   return () => el.remove()
+ * }
+ * ```
  */
 export type WidgetMountFn = (
   host: HTMLElement,

@@ -86,12 +86,14 @@ export interface NodeExtensionOptions {
  *
  * @example
  * ```ts
- * import { defineExtension } from '@comfyorg/extension-api'
+ * import { defineExtension, onMounted } from '@comfyorg/extension-api'
  *
  * export default defineExtension({
  *   name: 'my-org.my-extension',
- *   async setup() {
- *     // App is ready; register commands, sidebar tabs, etc.
+ *   setup() {
+ *     onMounted(() => {
+ *       // App is ready; register commands, sidebar tabs, etc.
+ *     })
  *   }
  * })
  * ```

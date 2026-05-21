@@ -57,19 +57,17 @@ import type {
  * ```ts
  * import { defineNode } from '@comfyorg/extension-api'
  *
- * // Assumes the Python `PreviewAny` node declares a hidden, read-only
- * // STRING input named `preview` in INPUT_TYPES. Runtime widget addition
- * // is forbidden per AXIOMS.md A15 / D-ban-runtime-addwidget — declare in
- * // INPUT_TYPES, then bind via getWidget().
+ * // Per AXIOMS.md §A1, nodes cannot enumerate widgets. To attach
+ * // per-widget behavior, register a widget type via `defineWidget` and
+ * // use the mount context's `ctx.widget` handle. This example reacts to
+ * // node-level execution only.
  * export default defineNode({
- *   name: 'Comfy.PreviewAny',
- *   nodeTypes: ['PreviewAny'],
+ *   name: 'my-org.executed-logger',
+ *   nodeTypes: ['KSampler'],
  *
  *   nodeCreated(node) {
- *     const preview = node.getWidget('preview')
- *     if (!preview) return
  *     node.on('executed', (e) => {
- *       preview.setValue(String(e.output['text'] ?? ''))
+ *       console.log('node executed:', e.output)
  *     })
  *   }
  * })
@@ -183,6 +181,30 @@ export declare function defineWidget(
  * setup context) throws in development and silently no-ops in production.
  *
  * See {@link onMounted} for full usage examples.
+ *
+ * @example
+ * ```ts
+ * import {
+ *   defineSidebarTab,
+ *   onMounted,
+ *   onUnmounted,
+ *   onActivated,
+ *   onDeactivated
+ * } from '@comfyorg/extension-api'
+ *
+ * defineSidebarTab({
+ *   id: 'my-tab',
+ *   title: 'My Tab',
+ *   type: 'vue',
+ *   component: MyTab,
+ *   setup() {
+ *     onMounted(() => console.log('tab mounted'))
+ *     onActivated(() => console.log('tab shown'))
+ *     onDeactivated(() => console.log('tab hidden'))
+ *     onUnmounted(() => console.log('tab unmounted'))
+ *   }
+ * })
+ * ```
  */
 export {
   onBeforeMount,

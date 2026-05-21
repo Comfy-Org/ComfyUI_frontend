@@ -22,6 +22,15 @@ export type Handler<E> = (event: E) => void
  * support async handling (currently only `beforeSerialize`).
  *
  * @typeParam E - The event payload type.
+ * @example
+ * ```ts
+ * import type { AsyncHandler, WidgetBeforeSerializeEvent } from '@comfyorg/extension-api'
+ *
+ * const handler: AsyncHandler<WidgetBeforeSerializeEvent> = async (e) => {
+ *   const frame = await captureFrame()
+ *   e.setSerializedValue(frame)
+ * }
+ * ```
  */
 export type AsyncHandler<E> = (event: E) => void | Promise<void>
 
@@ -76,12 +85,24 @@ import { getCurrentExtensionInstance } from '@/services/extension-api-service'
 export interface GraphEventPayloads {
   [event: string]: unknown
 }
+/**
+ * See {@link GraphEventPayloads | the augmentation example} —
+ * augment this interface the same way to narrow `execution.*` payloads.
+ */
 export interface ExecutionEventPayloads {
   [event: string]: unknown
 }
+/**
+ * See {@link GraphEventPayloads | the augmentation example} —
+ * augment this interface the same way to narrow `server.*` payloads.
+ */
 export interface ServerEventPayloads {
   [event: string]: unknown
 }
+/**
+ * See {@link GraphEventPayloads | the augmentation example} —
+ * augment this interface the same way to narrow `workbench.*` payloads.
+ */
 export interface WorkbenchEventPayloads {
   [event: string]: unknown
 }
@@ -179,6 +200,21 @@ export const graph: EventNamespace<GraphEventPayloads> = makeNamespace(
  *
  * @publicAPI
  * @stability experimental
+ * @example
+ * ```ts
+ * import { defineExtension, onMounted, execution } from '@comfyorg/extension-api'
+ *
+ * defineExtension({
+ *   name: 'my-ext',
+ *   setup() {
+ *     onMounted(() => {
+ *       execution.on('start', (e) => console.log('run started', e))
+ *       execution.on('progress', (e) => console.log('progress', e))
+ *       execution.on('end', () => console.log('run done'))
+ *     })
+ *   }
+ * })
+ * ```
  */
 export const execution: EventNamespace<ExecutionEventPayloads> = makeNamespace(
   (evt) => `execution_${evt}`
@@ -194,6 +230,19 @@ export const execution: EventNamespace<ExecutionEventPayloads> = makeNamespace(
  *
  * @publicAPI
  * @stability experimental
+ * @example
+ * ```ts
+ * import { defineExtension, onMounted, server } from '@comfyorg/extension-api'
+ *
+ * defineExtension({
+ *   name: 'my-ext',
+ *   setup() {
+ *     onMounted(() => {
+ *       server.on('reconnected', () => console.log('server back online'))
+ *     })
+ *   }
+ * })
+ * ```
  */
 export const server: EventNamespace<ServerEventPayloads> = makeNamespace(
   (evt) => evt
@@ -209,6 +258,19 @@ export const server: EventNamespace<ServerEventPayloads> = makeNamespace(
  *
  * @publicAPI
  * @stability experimental
+ * @example
+ * ```ts
+ * import { defineExtension, onMounted, workbench } from '@comfyorg/extension-api'
+ *
+ * defineExtension({
+ *   name: 'my-ext',
+ *   setup() {
+ *     onMounted(() => {
+ *       workbench.on('notification', (e) => console.log('workbench notif', e))
+ *     })
+ *   }
+ * })
+ * ```
  */
 export const workbench: EventNamespace<WorkbenchEventPayloads> = makeNamespace(
   (evt) => `workbench:${evt}`

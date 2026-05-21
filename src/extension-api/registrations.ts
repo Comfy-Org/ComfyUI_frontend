@@ -59,6 +59,20 @@ import type {
  *
  * @publicAPI
  * @stability experimental
+ * @example
+ * ```ts
+ * import { defineSidebarTab, type DisposableHandle } from '@comfyorg/extension-api'
+ *
+ * const handle: DisposableHandle = defineSidebarTab({
+ *   id: 'my-tab',
+ *   title: 'My Tab',
+ *   type: 'vue',
+ *   component: MyTab
+ * })
+ *
+ * // Later: tear down
+ * handle.dispose()
+ * ```
  */
 export interface DisposableHandle {
   dispose(): void

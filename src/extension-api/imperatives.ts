@@ -16,8 +16,7 @@
  * import {
  *   defineExtension,
  *   onMounted,
- *   toast,
- *   notify
+ *   toast
  * } from '@comfyorg/extension-api'
  *
  * defineExtension({
@@ -25,7 +24,6 @@
  *   setup() {
  *     onMounted(() => {
  *       toast.show({ severity: 'info', summary: 'Ready' })
- *       notify({ kind: 'info', message: 'Loaded' })
  *     })
  *   }
  * })
@@ -44,6 +42,8 @@ import type { ToastMessageOptions } from '@/types/extensionTypes'
  * {@link toast}. `kind` maps onto PrimeVue toast severities; `message` maps
  * to `summary`; `detail` is optional supplementary text.
  *
+ * @deprecated Use {@link ToastMessageOptions} via `toast.show(...)`. See
+ * D-notify-toast-consolidation.
  * @publicAPI
  * @stability experimental
  */
@@ -100,11 +100,21 @@ export const toast: {
  *
  * Fire-and-forget.
  *
+ * @deprecated Use {@link toast.show} — `notify` is a 1:1 wrapper sharing the
+ * same transport. See D-notify-toast-consolidation.
  * @publicAPI
  * @stability experimental
  * @example
  * ```ts
- * notify({ kind: 'error', message: 'Workflow failed', detail: err.message })
+ * // `notify` is deprecated — prefer `toast.show` directly. See
+ * // D-notify-toast-consolidation.
+ * import { toast } from '@comfyorg/extension-api'
+ *
+ * toast.show({
+ *   severity: 'error',
+ *   summary: 'Workflow failed',
+ *   detail: err.message
+ * })
  * ```
  */
 export function notify(opts: NotifyOptions): void {

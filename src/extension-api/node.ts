@@ -29,6 +29,14 @@ export type { NodeEntityId }
  * **Immutable tuple.** Attempts to
  * mutate via `node.getPosition()[0] = X` raise a TypeScript error. Use
  * {@link NodeHandle.setPosition} to move the node.
+ *
+ * @example
+ * ```ts
+ * import type { Point } from '@comfyorg/extension-api'
+ *
+ * // Per-pixel mouse coordinate from a canvas event
+ * const cursor: Point = [event.canvasX, event.canvasY]
+ * ```
  */
 export type Point = readonly [x: number, y: number]
 
@@ -38,6 +46,13 @@ export type Point = readonly [x: number, y: number]
  * **Immutable tuple.** Attempts to
  * mutate via `node.getSize()[0] = X` raise a TypeScript error. Use
  * {@link NodeHandle.setSize} to resize the node.
+ *
+ * @example
+ * ```ts
+ * import type { Size } from '@comfyorg/extension-api'
+ *
+ * const target: Size = [320, 240]
+ * ```
  */
 export type Size = readonly [width: number, height: number]
 
@@ -368,15 +383,19 @@ export interface NodeHandle {
    *
    * // AFTER (recommended — widget-level, schema-declared)
    * // Declare `_my_state` in the Python node's INPUT_TYPES as a hidden
-   * // STRING input; the widget will exist automatically. Then attach
-   * // the serialization transform to the widget:
-   * const stateWidget = node.getWidget('_my_state')!
-   * stateWidget.on('beforeSerialize', (e) => {
-   *   e.setSerializedValue(JSON.stringify(computeState()))
+   * // STRING input. Then attach the serialization transform inside
+   * // `defineWidget({mount})` — `ctx.widget` is the only legal handle:
+   * import { defineWidget } from '@comfyorg/extension-api'
+   *
+   * defineWidget({
+   *   name: 'my-org.state-shim',
+   *   type: 'STRING',
+   *   mount(_host, ctx) {
+   *     ctx.widget.on('beforeSerialize', (e) => {
+   *       e.setSerializedValue(JSON.stringify(computeState()))
+   *     })
+   *   }
    * })
-   * // Note: runtime widget addition is forbidden per AXIOMS.md A15 /
-   * // D-ban-runtime-addwidget — declare in INPUT_TYPES, do not call
-   * // node.addWidget().
    * ```
    *
    * @returns A cleanup function to remove the listener.
