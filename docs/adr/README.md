@@ -18,6 +18,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0006](0006-primitive-node-copy-paste-lifecycle.md)      | PrimitiveNode Copy/Paste Lifecycle       | Proposed | 2026-02-22 |
 | [0007](0007-node-execution-output-passthrough-schema.md) | NodeExecutionOutput Passthrough Schema   | Accepted | 2026-03-11 |
 | [0008](0008-entity-component-system.md)                  | Entity Component System                  | Proposed | 2026-03-23 |
+| [0009](0009-canvas-viewport-system.md)                   | Canvas Viewport System                   | Accepted | 2026-04-20 |
 
 ## Creating a New ADR
 
