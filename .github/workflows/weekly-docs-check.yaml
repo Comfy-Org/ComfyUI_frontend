@@ -40,11 +40,11 @@ jobs:
       - name: Install dependencies for analysis tools
         run: |
           # Check if packages are already available locally
-          if ! pnpm list typescript @vue/compiler-sfc >/dev/null 2>&1; then
+          if ! pnpm list -g typescript @vue/compiler-sfc >/dev/null 2>&1; then
             echo "Installing TypeScript and Vue compiler globally..."
-            pnpm install -g typescript @vue/compiler-sfc
+            pnpm add -g typescript @vue/compiler-sfc
           else
-            echo "TypeScript and Vue compiler already available locally"
+            echo "TypeScript and Vue compiler already available globally"
           fi
 
       - name: Run Claude Documentation Review
