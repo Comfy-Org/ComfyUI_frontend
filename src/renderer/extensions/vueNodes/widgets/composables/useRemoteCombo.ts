@@ -1,5 +1,5 @@
 import { computed, ref, toValue, watch } from 'vue'
-import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { MaybeRefOrGetter, Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -23,22 +23,7 @@ interface UseRemoteComboArgs {
   enabled?: MaybeRefOrGetter<boolean>
 }
 
-interface UseRemoteComboResult {
-  isOpen: Ref<boolean>
-  searchQuery: Ref<string>
-  items: ComputedRef<DropdownItemShape[]>
-  filteredItems: ComputedRef<DropdownItemShape[]>
-  isLoading: ComputedRef<boolean>
-  isFetching: ComputedRef<boolean>
-  errorMessage: ComputedRef<string | null>
-  refresh: () => Promise<void>
-  select: (id: string) => void
-  selectedValue: Ref<string | undefined>
-  fieldLabel: ComputedRef<string>
-  previewType: ComputedRef<RemoteComboPreviewType>
-}
-
-export function useRemoteCombo(args: UseRemoteComboArgs): UseRemoteComboResult {
+export function useRemoteCombo(args: UseRemoteComboArgs) {
   const { t } = useI18n()
   const isOpen = ref(false)
   const searchQuery = ref('')
