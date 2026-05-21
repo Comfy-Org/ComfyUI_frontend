@@ -135,7 +135,8 @@ export function addValueControlWidgets(
     {
       values: ['fixed', 'increment', 'decrement', 'randomize'],
       serialize: false, // Don't include this in prompt.
-      canvasOnly: true
+      canvasOnly: true,
+      __suppressDeprecationWarning: true
     }
   ) as IComboWidget
 
@@ -161,7 +162,8 @@ export function addValueControlWidgets(
       '',
       function () {},
       {
-        serialize: false // Don't include this in prompt.
+        serialize: false, // Don't include this in prompt.
+        __suppressDeprecationWarning: true
       }
     ) as IStringWidget
     updateControlWidgetLabel(comboFilter)

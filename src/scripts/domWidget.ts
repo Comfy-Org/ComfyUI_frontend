@@ -2,6 +2,7 @@ import _ from 'es-toolkit/compat'
 import { type Component, toRaw } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { ADD_WIDGET_DEPRECATION_MESSAGE } from '@/lib/litegraph/src/LGraphNode'
 import {
   LGraphNode,
   LegacyWidget,
@@ -11,6 +12,7 @@ import type {
   IBaseWidget,
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
+import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { usePromotionStore } from '@/stores/promotionStore'
@@ -358,6 +360,14 @@ export const addWidget = <W extends BaseDOMWidget<object | string>>(
   node: LGraphNode,
   widget: W
 ) => {
+  // Internal first-party registration path — silence the v1
+  // `addCustomWidget` deprecation warning per
+  // decisions/D-ban-runtime-addwidget.md. Third-party callers of
+  // `LGraphNode.addCustomWidget` still see the warning.
+  ;(widget as { options?: IWidgetOptions }).options ||= {}
+  ;(
+    widget as { options: IWidgetOptions }
+  ).options.__suppressDeprecationWarning = true
   node.addCustomWidget(widget)
 
   if (node.graph) {
@@ -378,6 +388,13 @@ export const addWidget = <W extends BaseDOMWidget<object | string>>(
   })
 }
 
+/**
+ * @deprecated Runtime DOM widget addition will be removed in v1.0 per
+ * **AXIOMS.md A15 (Widget Declarativity)**. Custom DOM widgets register
+ * via `defineWidget({ type, mount })` (D-widget-converge / Axiom A12) and
+ * are instantiated through schema declarations in Python `INPUT_TYPES`.
+ * See AXIOMS.md A15 and `decisions/D-ban-runtime-addwidget.md`.
+ */
 LGraphNode.prototype.addDOMWidget = function <
   T extends HTMLElement,
   V extends object | string
@@ -388,6 +405,9 @@ LGraphNode.prototype.addDOMWidget = function <
   element: T,
   options: DOMWidgetOptions<V> = {}
 ): DOMWidget<T, V> {
+  if (options.__suppressDeprecationWarning !== true) {
+    warnDeprecated(ADD_WIDGET_DEPRECATION_MESSAGE, this)
+  }
   const widget = new DOMWidgetImpl({
     node: this,
     name,

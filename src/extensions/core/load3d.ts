@@ -274,9 +274,15 @@ useExtensionService().registerExtension({
           await handleModelUpload(fileInput.files!, node)
         }
 
-        node.addWidget('button', 'upload 3d model', 'upload3dmodel', () => {
-          fileInput.click()
-        })
+        node.addWidget(
+          'button',
+          'upload 3d model',
+          'upload3dmodel',
+          () => {
+            fileInput.click()
+          },
+          { __suppressDeprecationWarning: true }
+        )
 
         const resourcesInput = createFileInput('*', true)
 
@@ -291,15 +297,24 @@ useExtensionService().registerExtension({
           'uploadExtraResources',
           () => {
             resourcesInput.click()
-          }
+          },
+          { __suppressDeprecationWarning: true }
         )
 
-        node.addWidget('button', 'clear', 'clear', () => {
-          const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
-          if (modelWidget) {
-            modelWidget.value = LOAD3D_NONE_MODEL
-          }
-        })
+        node.addWidget(
+          'button',
+          'clear',
+          'clear',
+          () => {
+            const modelWidget = node.widgets?.find(
+              (w) => w.name === 'model_file'
+            )
+            if (modelWidget) {
+              modelWidget.value = LOAD3D_NONE_MODEL
+            }
+          },
+          { __suppressDeprecationWarning: true }
+        )
 
         const widget = new ComponentWidgetImpl({
           node: node,
