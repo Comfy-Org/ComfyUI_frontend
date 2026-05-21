@@ -74,6 +74,7 @@ class Load3d {
   private renderLoop: RenderLoopHandle | null = null
   private loadingPromise: Promise<void> | null = null
   private _loadGeneration: number = 0
+  private currentLoadedUrl: string | null = null
   private onContextMenuCallback?: (event: MouseEvent) => void
   private getDimensionsCallback?: () => { width: number; height: number } | null
 
@@ -540,6 +541,18 @@ class Load3d {
   ): Promise<void> {
     this._loadGeneration += 1
 
+    const normalize = (u: string | null | undefined) =>
+      typeof u === 'string' ? u.replace(/[?&]rand=[^&]*/g, '') : ''
+
+    if (
+      !options?.force &&
+      this.currentLoadedUrl !== null &&
+      normalize(this.currentLoadedUrl) === normalize(url) &&
+      this.modelManager.currentModel
+    ) {
+      return
+    }
+
     if (this.loadingPromise) {
       try {
         await this.loadingPromise
@@ -574,6 +587,7 @@ class Load3d {
     this.gizmoManager.detach()
     this.modelManager.clearModel()
     this.animationManager.dispose()
+    this.currentLoadedUrl = null
 
     await this.loaderManager.loadModel(url, originalFileName, options)
 
@@ -583,6 +597,7 @@ class Load3d {
         this.modelManager.currentModel,
         this.modelManager.originalModel
       )
+      this.currentLoadedUrl = url
     }
 
     this.handleResize()
@@ -607,6 +622,7 @@ class Load3d {
     this.gizmoManager.detach()
     this.modelManager.clearModel()
     this.adapterRef.current = null
+    this.currentLoadedUrl = null
     this.forceRender()
   }
 
@@ -800,6 +816,52 @@ class Load3d {
   public setAnimationTime(time: number): void {
     this.animationManager.setAnimationTime(time)
     this.forceRender()
+  }
+
+  public async captureSceneFixedCamera(
+    width: number,
+    height: number,
+    cameraState?: CameraState
+  ): Promise<CaptureResult> {
+    if (!this.modelManager.currentModel) {
+      throw new Error('No model loaded for fixed-camera capture')
+    }
+
+    const savedGridVisible = this.sceneManager.gridHelper.visible
+
+    try {
+      this.sceneManager.gridHelper.visible = false
+
+      if (cameraState) {
+        if (
+          this.cameraManager.getCurrentCameraType() !== cameraState.cameraType
+        ) {
+          this.cameraManager.toggleCamera(cameraState.cameraType)
+        }
+        this.cameraManager.setCameraState(cameraState)
+      }
+
+      const result = await this.captureScene(width, height)
+
+      // Re-apply cameraState here, AFTER the await. useLoad3d's
+      // modelReady event handler kicks off its own captureThumbnail
+      // for asset-preview persistence concurrently with this call.
+      // captureScene's body is internally synchronous, but the
+      // await-continuations run as microtasks in registration order:
+      // captureThumbnail's continuation (its finally restores the
+      // pre-thumbnail camera state) runs BEFORE ours. Without this
+      // re-apply, that restore clobbers cameraState and the viewer
+      // snaps back to the model's default fit-to-bbox.
+      if (cameraState) {
+        this.cameraManager.setCameraState(cameraState)
+      }
+
+      return result
+    } finally {
+      this.sceneManager.gridHelper.visible = savedGridVisible
+      this.controlsManager.controls?.update()
+      this.forceRender()
+    }
   }
 
   public async captureThumbnail(

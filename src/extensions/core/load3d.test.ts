@@ -74,7 +74,12 @@ vi.mock('@/scripts/domWidget', () => ({
 }))
 
 vi.mock('@/scripts/api', () => ({
-  api: { apiURL: (p: string) => p }
+  api: {
+    apiURL: (p: string) => p,
+    addEventListener: vi.fn(),
+    addCustomEventListener: vi.fn(),
+    fetchApi: vi.fn()
+  }
 }))
 
 vi.mock('@/scripts/app', () => ({

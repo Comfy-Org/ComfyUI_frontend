@@ -212,6 +212,12 @@ export interface LoadModelOptions {
    * (e.g. shared workflows on a fresh machine).
    */
   silentOnNotFound?: boolean
+  /**
+   * Bypass the "same URL already loaded" short-circuit. Use when the
+   * file may have been overwritten on disk under the same name and the
+   * caller actually wants a fresh fetch + setupForModel pass.
+   */
+  force?: boolean
 }
 
 export interface LoaderManagerInterface {

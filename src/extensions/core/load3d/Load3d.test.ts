@@ -877,6 +877,235 @@ describe('Load3d', () => {
     })
   })
 
+  describe('captureSceneFixedCamera', () => {
+    function setupForFixedCapture() {
+      const cameraStub = {
+        toggleCamera: vi.fn(),
+        getCurrentCameraType: vi.fn().mockReturnValue('perspective'),
+        setCameraState: vi.fn()
+      }
+      const controlsStub = {
+        controls: { update: vi.fn() }
+      }
+      const captureResult = {
+        scene: 'data:image/png;base64,scene',
+        mask: 'data:image/png;base64,mask',
+        normal: 'data:image/png;base64,normal'
+      }
+      const sceneCaptureMock = vi.fn().mockResolvedValue(captureResult)
+      Object.assign(ctx.load3d, {
+        cameraManager: cameraStub,
+        controlsManager: controlsStub,
+        sceneManager: {
+          ...ctx.sceneManager,
+          gridHelper: { visible: true },
+          captureScene: sceneCaptureMock
+        },
+        modelManager: {
+          ...ctx.modelManager,
+          currentModel: new THREE.Object3D()
+        }
+      })
+      return { cameraStub, controlsStub, sceneCaptureMock, captureResult }
+    }
+
+    const makeCameraState = (
+      cameraType: 'perspective' | 'orthographic' = 'perspective'
+    ) => ({
+      position: new THREE.Vector3(1, 2, 3),
+      target: new THREE.Vector3(0, 0, 0),
+      zoom: 1,
+      cameraType
+    })
+
+    it('throws when no model is loaded', async () => {
+      Object.assign(ctx.load3d, {
+        modelManager: { ...ctx.modelManager, currentModel: null }
+      })
+
+      await expect(
+        ctx.load3d.captureSceneFixedCamera(512, 512)
+      ).rejects.toThrow('No model loaded for fixed-camera capture')
+    })
+
+    it('captures without setting any camera state when none is provided', async () => {
+      const { cameraStub, sceneCaptureMock, captureResult } =
+        setupForFixedCapture()
+
+      const result = await ctx.load3d.captureSceneFixedCamera(512, 512)
+
+      expect(result).toBe(captureResult)
+      expect(sceneCaptureMock).toHaveBeenCalledWith(512, 512)
+      expect(cameraStub.setCameraState).not.toHaveBeenCalled()
+      expect(cameraStub.toggleCamera).not.toHaveBeenCalled()
+    })
+
+    it('hides the grid during capture and restores its prior visibility afterward', async () => {
+      const { sceneCaptureMock } = setupForFixedCapture()
+      const visibilityDuringCapture: boolean[] = []
+      sceneCaptureMock.mockImplementation(async () => {
+        visibilityDuringCapture.push(
+          (ctx.load3d.sceneManager as { gridHelper: { visible: boolean } })
+            .gridHelper.visible
+        )
+        return { scene: 's', mask: 'm', normal: 'n' }
+      })
+
+      await ctx.load3d.captureSceneFixedCamera(512, 512)
+
+      expect(visibilityDuringCapture).toEqual([false])
+      expect(
+        (ctx.load3d.sceneManager as { gridHelper: { visible: boolean } })
+          .gridHelper.visible
+      ).toBe(true)
+    })
+
+    it('applies cameraState before capture when provided', async () => {
+      const { cameraStub, sceneCaptureMock } = setupForFixedCapture()
+      const cameraState = makeCameraState()
+      const setCameraBeforeCapture: number[] = []
+      cameraStub.setCameraState.mockImplementation(() =>
+        setCameraBeforeCapture.push(Date.now())
+      )
+
+      let captureRan = false
+      sceneCaptureMock.mockImplementation(async () => {
+        captureRan = true
+        // At least one setCameraState must have happened before render.
+        expect(setCameraBeforeCapture).toHaveLength(1)
+        return { scene: 's', mask: 'm', normal: 'n' }
+      })
+
+      await ctx.load3d.captureSceneFixedCamera(512, 512, cameraState)
+
+      expect(captureRan).toBe(true)
+    })
+
+    it('re-applies cameraState AFTER capture (race-defense against concurrent thumbnail capture)', async () => {
+      const { cameraStub } = setupForFixedCapture()
+      const cameraState = makeCameraState()
+
+      await ctx.load3d.captureSceneFixedCamera(512, 512, cameraState)
+
+      // The bridge fix: setCameraState must be called twice — once
+      // before the capture and once again after, so any racing
+      // captureThumbnail's finally cannot leave the viewer stuck on
+      // its restored pre-thumbnail state.
+      expect(cameraStub.setCameraState).toHaveBeenCalledTimes(2)
+      expect(cameraStub.setCameraState).toHaveBeenNthCalledWith(1, cameraState)
+      expect(cameraStub.setCameraState).toHaveBeenNthCalledWith(2, cameraState)
+    })
+
+    it('toggles the camera type when cameraState requests a different type', async () => {
+      const { cameraStub } = setupForFixedCapture()
+      cameraStub.getCurrentCameraType.mockReturnValue('perspective')
+      const cameraState = makeCameraState('orthographic')
+
+      await ctx.load3d.captureSceneFixedCamera(512, 512, cameraState)
+
+      expect(cameraStub.toggleCamera).toHaveBeenCalledWith('orthographic')
+    })
+
+    it('does not toggle the camera when cameraState matches the current type', async () => {
+      const { cameraStub } = setupForFixedCapture()
+      cameraStub.getCurrentCameraType.mockReturnValue('perspective')
+
+      await ctx.load3d.captureSceneFixedCamera(
+        512,
+        512,
+        makeCameraState('perspective')
+      )
+
+      expect(cameraStub.toggleCamera).not.toHaveBeenCalled()
+    })
+
+    it('still runs the grid + controls restore in finally when captureScene throws', async () => {
+      const { sceneCaptureMock } = setupForFixedCapture()
+      sceneCaptureMock.mockRejectedValueOnce(new Error('render error'))
+
+      await expect(
+        ctx.load3d.captureSceneFixedCamera(512, 512)
+      ).rejects.toThrow('render error')
+
+      expect(ctx.forceRender).toHaveBeenCalled()
+      expect(
+        (ctx.load3d.sceneManager as { gridHelper: { visible: boolean } })
+          .gridHelper.visible
+      ).toBe(true)
+    })
+  })
+
+  describe('loadModel same-URL short-circuit', () => {
+    function setupForLoad(currentLoadedUrl: string | null, hasModel: boolean) {
+      const internal = vi.fn().mockResolvedValue(undefined)
+      Object.assign(ctx.load3d, {
+        _loadGeneration: 0,
+        loadingPromise: null,
+        currentLoadedUrl,
+        _loadModelInternal: internal,
+        modelManager: {
+          ...ctx.modelManager,
+          currentModel: hasModel ? new THREE.Object3D() : null
+        }
+      })
+      return { internal }
+    }
+
+    it('does NOT call _loadModelInternal when URL matches and a model is loaded', async () => {
+      const { internal } = setupForLoad('/api/view?filename=a.glb', true)
+
+      await ctx.load3d.loadModel('/api/view?filename=a.glb')
+
+      expect(internal).not.toHaveBeenCalled()
+    })
+
+    it('still ticks _loadGeneration on short-circuit (callers tracking generation see the bump)', async () => {
+      setupForLoad('/api/view?filename=a.glb', true)
+      const baseline = ctx.load3d.currentLoadGeneration
+
+      await ctx.load3d.loadModel('/api/view?filename=a.glb')
+
+      expect(ctx.load3d.currentLoadGeneration).toBe(baseline + 1)
+    })
+
+    it('normalizes away the &rand=... cache-bust param so two URLs that only differ in rand still short-circuit', async () => {
+      const { internal } = setupForLoad(
+        '/api/view?filename=a.glb&rand=0.1',
+        true
+      )
+
+      await ctx.load3d.loadModel('/api/view?filename=a.glb&rand=0.9')
+
+      expect(internal).not.toHaveBeenCalled()
+    })
+
+    it('falls through to a full load when the URL genuinely differs', async () => {
+      const { internal } = setupForLoad('/api/view?filename=a.glb', true)
+
+      await ctx.load3d.loadModel('/api/view?filename=b.glb')
+
+      expect(internal).toHaveBeenCalledOnce()
+    })
+
+    it('falls through when there is no current model even if the URL matches', async () => {
+      const { internal } = setupForLoad('/api/view?filename=a.glb', false)
+
+      await ctx.load3d.loadModel('/api/view?filename=a.glb')
+
+      expect(internal).toHaveBeenCalledOnce()
+    })
+
+    it('falls through when force: true is passed even if the URL matches', async () => {
+      const { internal } = setupForLoad('/api/view?filename=a.glb', true)
+
+      await ctx.load3d.loadModel('/api/view?filename=a.glb', undefined, {
+        force: true
+      })
+
+      expect(internal).toHaveBeenCalledOnce()
+    })
+  })
+
   describe('exportModel', () => {
     beforeEach(() => {
       cloneSkinnedMock.mockReset()

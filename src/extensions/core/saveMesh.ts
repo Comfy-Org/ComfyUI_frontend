@@ -2,6 +2,10 @@ import { nextTick } from 'vue'
 
 import Load3D from '@/components/load3d/Load3D.vue'
 import { useLoad3d } from '@/composables/useLoad3d'
+import {
+  type CameraInfoSerialized,
+  toCameraState
+} from '@/extensions/core/load3d/cameraInfo'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -15,6 +19,7 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 type SaveMeshOutput = NodeOutputWith<{
   '3d'?: ResultItem[]
+  camera_info?: [CameraInfoSerialized]
 }>
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import {
@@ -34,7 +39,11 @@ const inputSpec: CustomInputSpec = {
   isPreview: true
 }
 
-function applySaveGLBOutput(node: LGraphNode, fileInfo: ResultItem): void {
+function applySaveGLBOutput(
+  node: LGraphNode,
+  fileInfo: ResultItem,
+  cameraInfo?: CameraInfoSerialized
+): void {
   const filePath = (fileInfo.subfolder ?? '') + '/' + (fileInfo.filename ?? '')
   const loadFolder = fileInfo.type as 'input' | 'output'
 
@@ -44,7 +53,8 @@ function applySaveGLBOutput(node: LGraphNode, fileInfo: ResultItem): void {
   if (
     modelWidget.value === filePath &&
     node.properties['Last Time Model File'] === filePath &&
-    node.properties['Last Time Model Folder'] === loadFolder
+    node.properties['Last Time Model Folder'] === loadFolder &&
+    !cameraInfo
   ) {
     return
   }
@@ -59,6 +69,13 @@ function applySaveGLBOutput(node: LGraphNode, fileInfo: ResultItem): void {
     config.configureForSaveMesh(loadFolder, filePath, {
       silentOnNotFound: true
     })
+
+    if (cameraInfo) {
+      void load3d
+        .whenLoadIdle()
+        .then(() => load3d.setCameraState(toCameraState(cameraInfo)))
+        .catch(() => {})
+    }
 
     if (isAssetPreviewSupported()) {
       const filename = fileInfo.filename ?? ''
@@ -95,7 +112,8 @@ useExtensionService().registerExtension({
       const node = getNodeByLocatorId(app.rootGraph, locatorId)
       if (!node || node.constructor.comfyClass !== 'SaveGLB') continue
 
-      applySaveGLBOutput(node, fileInfo)
+      const cameraInfo = (output as SaveMeshOutput).camera_info?.[0]
+      applySaveGLBOutput(node, fileInfo, cameraInfo)
     }
   },
 
@@ -183,16 +201,23 @@ useExtensionService().registerExtension({
 
           modelWidget.value = filePath
 
-          const config = new Load3DConfiguration(load3d, node.properties)
-
           const loadFolder = fileInfo.type as 'input' | 'output'
 
           node.properties['Last Time Model File'] = filePath
           node.properties['Last Time Model Folder'] = loadFolder
 
+          const config = new Load3DConfiguration(load3d, node.properties)
           config.configureForSaveMesh(loadFolder, filePath, {
             silentOnNotFound: true
           })
+
+          const cameraInfo = output.camera_info?.[0]
+          if (cameraInfo) {
+            void load3d
+              .whenLoadIdle()
+              .then(() => load3d.setCameraState(toCameraState(cameraInfo)))
+              .catch(() => {})
+          }
 
           if (isAssetPreviewSupported()) {
             const filename = fileInfo.filename ?? ''

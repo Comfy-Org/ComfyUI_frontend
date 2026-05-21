@@ -340,4 +340,119 @@ describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
 
     expect(configureForSaveMeshMock).not.toHaveBeenCalled()
   })
+
+  it('re-applies camera_info when present even if the same model is already loaded', async () => {
+    const setCameraStateMock = vi.fn()
+    waitForLoad3dMock.mockImplementation((cb: (load3d: unknown) => void) => {
+      cb({
+        whenLoadIdle: () => Promise.resolve(),
+        captureThumbnail: vi.fn(),
+        setCameraState: setCameraStateMock
+      })
+    })
+
+    const ext = await loadSaveMeshExtensionFresh()
+    const node = makeNode({
+      properties: {
+        'Last Time Model File': 'sub/mesh.glb',
+        'Last Time Model Folder': 'output'
+      }
+    })
+    ;(
+      node.widgets!.find((w) => w.name === 'image') as { value: string }
+    ).value = 'sub/mesh.glb'
+    getNodeByLocatorIdMock.mockReturnValue(node)
+
+    ext.onNodeOutputsUpdated!({
+      '7': {
+        '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }],
+        camera_info: [
+          {
+            position: { x: 1, y: 2, z: 3 },
+            target: { x: 0, y: 0, z: 0 },
+            zoom: 1,
+            cameraType: 'perspective'
+          }
+        ]
+      }
+    } as never)
+
+    // The early-return short-circuit must NOT trigger when cameraInfo is
+    // present — we need a full path through to setCameraState.
+    expect(configureForSaveMeshMock).toHaveBeenCalledOnce()
+    // setCameraState lives in a whenLoadIdle().then() chain — let it settle.
+    await new Promise((r) => setTimeout(r, 0))
+    expect(setCameraStateMock).toHaveBeenCalledOnce()
+    const state = setCameraStateMock.mock.calls[0][0]
+    expect(state.position.toArray()).toEqual([1, 2, 3])
+  })
+})
+
+describe('Comfy.SaveGLB.onExecuted with camera_info', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('applies output.camera_info via setCameraState after the load idles', async () => {
+    const setCameraStateMock = vi.fn()
+    const fakeLoad3d = {
+      whenLoadIdle: () => Promise.resolve(),
+      captureThumbnail: vi.fn(),
+      setCameraState: setCameraStateMock
+    }
+    waitForLoad3dMock.mockImplementation((cb: (load3d: unknown) => void) => {
+      cb(fakeLoad3d)
+    })
+    onLoad3dReadyMock.mockImplementation((cb: (load3d: unknown) => void) => {
+      cb(fakeLoad3d)
+    })
+
+    const ext = await loadSaveMeshExtensionFresh()
+    const node = makeNode()
+    await ext.nodeCreated(node)
+
+    node.onExecuted!({
+      '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }],
+      camera_info: [
+        {
+          position: { x: 9, y: 8, z: 7 },
+          target: { x: 0, y: 0, z: 0 },
+          zoom: 2,
+          cameraType: 'perspective'
+        }
+      ]
+    })
+
+    await new Promise((r) => setTimeout(r, 0))
+    expect(setCameraStateMock).toHaveBeenCalledOnce()
+    const state = setCameraStateMock.mock.calls[0][0]
+    expect(state.position.toArray()).toEqual([9, 8, 7])
+    expect(state.zoom).toBe(2)
+  })
+
+  it('does NOT call setCameraState when output has no camera_info', async () => {
+    const setCameraStateMock = vi.fn()
+    const fakeLoad3d = {
+      whenLoadIdle: () => Promise.resolve(),
+      captureThumbnail: vi.fn(),
+      setCameraState: setCameraStateMock
+    }
+    waitForLoad3dMock.mockImplementation((cb: (load3d: unknown) => void) => {
+      cb(fakeLoad3d)
+    })
+    onLoad3dReadyMock.mockImplementation((cb: (load3d: unknown) => void) => {
+      cb(fakeLoad3d)
+    })
+
+    const ext = await loadSaveMeshExtensionFresh()
+    const node = makeNode()
+    await ext.nodeCreated(node)
+
+    node.onExecuted!({
+      '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }]
+    })
+
+    await new Promise((r) => setTimeout(r, 0))
+    expect(setCameraStateMock).not.toHaveBeenCalled()
+  })
 })

@@ -4,6 +4,8 @@ import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import { nodeToLoad3dMap, useLoad3d } from '@/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
+// Side-effect import: registers the WS listener for preview3d.render_request.
+import '@/extensions/core/load3d/renderBridge'
 import type {
   CameraConfig,
   CameraState
@@ -79,7 +81,7 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
 
     useLoad3d(node).waitForLoad3d((load3d) => {
       try {
-        load3d.loadModel(modelUrl)
+        load3d.loadModel(modelUrl, undefined, { force: true })
       } catch (error) {
         useToastStore().addAlert(t('toastMessages.failedToLoadModel'))
       }
