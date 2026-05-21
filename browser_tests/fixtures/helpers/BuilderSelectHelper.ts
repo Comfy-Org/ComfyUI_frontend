@@ -120,20 +120,21 @@ export class BuilderSelectHelper {
     if (!nodeRef) throw new Error(`Node ${nodeTitle} not found`)
     await nodeRef.centerOnNode()
     const node = this.comfyPage.vueNodes.getNodeLocator(String(nodeRef.id))
-    // Grid-mode widgets (WidgetSelectDefault) expose aria-label on the input.
-    // Asset-mode widgets (WidgetSelectDropdown) render the name in a sibling
-    // [data-testid="widget-layout-field-label"] div instead, so fall back to
-    // clicking the dropdown trigger button in the same row.
-    const widgetLocator = node
-      .getByLabel(widgetName, { exact: true })
-      .or(
-        node
-          .getByTestId('widget-layout-field-label')
-          .filter({ hasText: widgetName })
-          .locator('..')
-          .locator('button')
-          .first()
-      )
+    // Grid-mode widgets (WidgetSelectDefault) and number widgets expose
+    // aria-label on a wrapper/input. Asset-mode widgets (WidgetSelectDropdown)
+    // do not — the widget name lives in a sibling
+    // [data-testid="widget-layout-field-label"] div, so fall back to clicking
+    // the dropdown trigger button in the same row.
+    const byAriaLabel = node.getByLabel(widgetName, { exact: true })
+    const widgetLocator =
+      (await byAriaLabel.count()) > 0
+        ? byAriaLabel
+        : node
+            .getByTestId('widget-layout-field-label')
+            .filter({ hasText: widgetName })
+            .locator('..')
+            .locator('button')
+            .first()
     // oxlint-disable-next-line playwright/no-force-option -- Node container has conditional pointer-events:none that blocks actionability
     await widgetLocator.click({ force: true })
     await this.comfyPage.nextFrame()
