@@ -23,9 +23,19 @@
           class="icon-[lucide--circle-alert] size-5 text-destructive-background"
         />
         <i
+          v-else-if="downloadStatus?.status === 'cancelled'"
+          aria-hidden="true"
+          class="icon-[lucide--circle-x] size-5 text-destructive-background"
+        />
+        <i
           v-else-if="downloadStatus?.status === 'completed'"
           aria-hidden="true"
           class="icon-[lucide--check-circle] size-5 text-success-background"
+        />
+        <i
+          v-else-if="downloadStatus?.status === 'paused'"
+          aria-hidden="true"
+          class="icon-[lucide--pause-circle] size-5 text-muted-foreground"
         />
         <i
           v-else-if="isDownloadActive"
@@ -58,6 +68,13 @@
           <template v-else-if="downloadStatus?.status === 'completed'">
             {{ t('rightSidePanel.missingModels.imported') }}
           </template>
+          <template v-else-if="downloadStatus?.status === 'paused'">
+            {{ t('electronFileDownload.paused') }}
+            {{ Math.round((downloadStatus?.progress ?? 0) * 100) }}%
+          </template>
+          <template v-else-if="downloadStatus?.status === 'cancelled'">
+            {{ t('electronFileDownload.cancelled') }}
+          </template>
           <template v-else-if="downloadStatus?.status === 'failed'">
             {{
               downloadStatus?.error ||
@@ -71,6 +88,7 @@
       </div>
 
       <Button
+        v-if="canCancelSelection"
         variant="textonly"
         size="icon-sm"
         :aria-label="t('rightSidePanel.missingModels.cancelSelection')"
@@ -86,18 +104,20 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
-import type { AssetDownload } from '@/stores/assetDownloadStore'
+import type { MissingModelDownloadStatus } from '@/platform/missingModel/types'
 
 const {
   modelName,
   isDownloadActive,
   downloadStatus = null,
-  categoryMismatch = null
+  categoryMismatch = null,
+  canCancelSelection = true
 } = defineProps<{
   modelName: string
   isDownloadActive: boolean
-  downloadStatus?: AssetDownload | null
+  downloadStatus?: MissingModelDownloadStatus | null
   categoryMismatch?: string | null
+  canCancelSelection?: boolean
 }>()
 
 const emit = defineEmits<{

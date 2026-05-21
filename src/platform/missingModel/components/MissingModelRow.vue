@@ -130,6 +130,7 @@
         :is-download-active="isDownloadActive"
         :download-status="downloadStatus"
         :category-mismatch="importCategoryMismatch[modelKey]"
+        :can-cancel-selection="!isActiveElectronDownload"
         @cancel="cancelLibrarySelect(modelKey)"
       />
     </TransitionCollapse>
@@ -175,7 +176,7 @@
             :model-value="getComboValue(model.representative)"
             :options="comboOptions"
             :show-divider="isAssetSupported || downloadable"
-            @select="handleComboSelect(modelKey, $event)"
+            @select="handleLibraryModelSelect"
           />
         </TransitionCollapse>
       </div>
@@ -184,7 +185,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -203,7 +204,7 @@ import {
 } from '@/platform/missingModel/composables/useMissingModelInteractions'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import {
   downloadModel,
   fetchModelMetadata,
@@ -225,6 +226,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
+const store = useMissingModelStore()
+const { selectedLibraryModel, importCategoryMismatch, urlInputs } =
+  storeToRefs(store)
 
 const modelKey = computed(() =>
   getModelStateKey(model.name, directory, isAssetSupported)
@@ -235,15 +239,19 @@ const comboOptions = computed(() => getComboOptions(model.representative))
 const canConfirm = computed(() => isSelectionConfirmable(modelKey.value))
 const expanded = computed(() => isModelExpanded(modelKey.value))
 const typeMismatch = computed(() => getTypeMismatch(modelKey.value, directory))
+const hasSeenElectronDownloadStatus = ref(false)
 const isDownloadActive = computed(
   () =>
     downloadStatus.value?.status === 'running' ||
     downloadStatus.value?.status === 'created'
 )
+const isActiveElectronDownload = computed(() => {
+  const downloadRef = store.downloadRefs[modelKey.value]
+  if (downloadRef?.kind !== 'electron-download') return false
 
-const store = useMissingModelStore()
-const { selectedLibraryModel, importCategoryMismatch, urlInputs } =
-  storeToRefs(store)
+  const status = downloadStatus.value?.status
+  return status === 'created' || status === 'running' || status === 'paused'
+})
 
 onMounted(() => {
   const url = model.representative.url
@@ -284,16 +292,30 @@ const downloadLabel = computed(() => {
   return size ? `${base} (${formatSize(size)})` : base
 })
 
-function handleDownload() {
+async function handleDownload() {
   const rep = model.representative
   if (rep.url && rep.directory) {
-    downloadModel(
+    const result = await downloadModel(
       { name: rep.name, url: rep.url, directory: rep.directory },
       store.folderPaths
     )
+
+    if (result.started && isDesktop) {
+      store.downloadRefs[modelKey.value] = {
+        kind: 'electron-download',
+        ...(result.downloadId ? { downloadId: result.downloadId } : {}),
+        url: rep.url
+      }
+      handleComboSelect(modelKey.value, rep.name)
+    }
   } else {
     console.warn('[MissingModelRow] Cannot download: missing url or directory')
   }
+}
+
+function handleLibraryModelSelect(value: string | undefined) {
+  delete store.downloadRefs[modelKey.value]
+  handleComboSelect(modelKey.value, value)
 }
 
 const {
@@ -307,6 +329,27 @@ const {
   getTypeMismatch,
   getDownloadStatus
 } = useMissingModelInteractions()
+
+watch(
+  () => ({
+    downloadRef: store.downloadRefs[modelKey.value],
+    downloadStatus: downloadStatus.value
+  }),
+  ({ downloadRef, downloadStatus }) => {
+    if (downloadRef?.kind !== 'electron-download') {
+      hasSeenElectronDownloadStatus.value = false
+      return
+    }
+    if (downloadStatus) {
+      hasSeenElectronDownloadStatus.value = true
+      return
+    }
+    if (downloadRef.downloadId || hasSeenElectronDownloadStatus.value) {
+      cancelLibrarySelect(modelKey.value)
+    }
+  },
+  { immediate: true }
+)
 
 function handleLibrarySelect() {
   confirmLibrarySelect(
