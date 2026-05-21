@@ -947,8 +947,6 @@ export class ComfyApp {
       }
     )
 
-    this.rootGraph.start()
-
     // Ensure the canvas fills the window
     useResizeObserver(this.canvasElRef, ([canvasEl]) => {
       if (canvasEl.target instanceof HTMLCanvasElement) {
