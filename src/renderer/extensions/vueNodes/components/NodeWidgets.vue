@@ -26,7 +26,12 @@
       <div
         v-if="!widget.hidden && (!widget.advanced || showAdvanced)"
         data-testid="node-widget"
-        class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
+        :class="
+          cn(
+            'lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch transition-opacity duration-150',
+            widget.advanced && isAdvancedHovered && 'opacity-30'
+          )
+        "
       >
         <!-- Widget Input Slot Dot -->
         <div
@@ -97,9 +102,10 @@ import InputSlot from './InputSlot.vue'
 
 interface NodeWidgetsProps {
   nodeData?: VueNodeData
+  isAdvancedHovered?: boolean
 }
 
-const { nodeData } = defineProps<NodeWidgetsProps>()
+const { nodeData, isAdvancedHovered = false } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()

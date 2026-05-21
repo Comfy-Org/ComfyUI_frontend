@@ -278,9 +278,7 @@ export function computeProcessedWidgets({
         disambiguatingSourceNodeId: promotionSourceNodeId
       })
         ? 'ring ring-component-node-widget-promoted'
-        : mergedOptions.advanced
-          ? 'ring ring-component-node-widget-advanced'
-          : undefined
+        : undefined
 
     const linkedUpstream: LinkedUpstreamInfo | undefined =
       slotMetadata?.linked && slotMetadata.originNodeId
