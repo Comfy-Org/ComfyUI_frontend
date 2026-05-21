@@ -384,7 +384,63 @@ describe('usePainter', () => {
         '/upload/image',
         expect.objectContaining({ method: 'POST' })
       )
-      expect(result).toBe('painter/uploaded.png [temp]')
+      expect(result).toBe('uploaded.png [input]')
+
+      const [, init] = fetchApiMock.mock.calls[0]
+      const body = init?.body as FormData
+      expect(body).toBeInstanceOf(FormData)
+      expect(body.get('type')).toBe('input')
+      expect(body.get('subfolder')).toBeNull()
+    })
+
+    it('throws when the upload response is missing a name', async () => {
+      const maskWidget = makeWidget('mask', '')
+      mockWidgets.push(maskWidget)
+
+      vi.mocked(api.fetchApi).mockResolvedValueOnce({
+        status: 200,
+        json: async () => ({})
+      } as Response)
+
+      const fakeCanvas = {
+        width: 4,
+        height: 4,
+        toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
+      } as unknown as HTMLCanvasElement
+
+      const { canvasEl } = mountPainter('test-node', '')
+      canvasEl.value = fakeCanvas
+      await nextTick()
+
+      await expect(
+        maskWidget.serializeValue!({} as LGraphNode, 0)
+      ).rejects.toThrow(/painter\.uploadError/)
+    })
+
+    it('throws when the upload response body is not valid JSON', async () => {
+      const maskWidget = makeWidget('mask', '')
+      mockWidgets.push(maskWidget)
+
+      vi.mocked(api.fetchApi).mockResolvedValueOnce({
+        status: 200,
+        json: async () => {
+          throw new SyntaxError('Unexpected token')
+        }
+      } as unknown as Response)
+
+      const fakeCanvas = {
+        width: 4,
+        height: 4,
+        toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
+      } as unknown as HTMLCanvasElement
+
+      const { canvasEl } = mountPainter('test-node', '')
+      canvasEl.value = fakeCanvas
+      await nextTick()
+
+      await expect(
+        maskWidget.serializeValue!({} as LGraphNode, 0)
+      ).rejects.toThrow(/painter\.uploadError/)
     })
 
     it('returns existing modelValue when canvas element is unmounted at serialize time', async () => {
