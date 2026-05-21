@@ -1160,6 +1160,10 @@
     "saveAsTemplate": "Save as template",
     "enterName": "Enter name"
   },
+  "logsTerminal": {
+    "loadError": "Unable to load logs, please ensure you have updated your ComfyUI backend.",
+    "resyncError": "Unable to resync logs after the backend reconnected. Reopen the console to retry."
+  },
   "workflowService": {
     "exportWorkflow": "Export Workflow",
     "enterFilename": "Enter the filename",
@@ -1671,7 +1675,7 @@
     "Bria": "Bria",
     "video": "video",
     "ByteDance": "ByteDance",
-    "preprocessors": "preprocessors",
+    "filters": "filters",
     "advanced": "advanced",
     "guidance": "guidance",
     "model_merging": "model_merging",
@@ -1682,7 +1686,6 @@
     "flux": "flux",
     "kandinsky5": "kandinsky5",
     "utils": "utils",
-    "postprocessing": "postprocessing",
     "hooks": "hooks",
     "combine": "combine",
     "logic": "logic",
@@ -1691,6 +1694,7 @@
     "inpaint": "inpaint",
     "scheduling": "scheduling",
     "create": "create",
+    "transform": "transform",
     "deprecated": "deprecated",
     "detection": "detection",
     "debug": "debug",
@@ -1703,7 +1707,6 @@
     "unet": "unet",
     "sigmas": "sigmas",
     "BFL": "BFL",
-    "": "",
     "Gemini": "Gemini",
     "gligen": "gligen",
     "shader": "shader",
@@ -1712,17 +1715,17 @@
     "HitPaw": "HitPaw",
     "3d_models": "3d_models",
     "Ideogram": "Ideogram",
-    "transform": "transform",
+    "compositing": "compositing",
     "color": "color",
     "upscaling": "upscaling",
     "instructpix2pix": "instructpix2pix",
-    "compositing": "compositing",
     "Kling": "Kling",
     "samplers": "samplers",
     "operations": "operations",
     "training": "training",
     "lotus": "lotus",
     "LTXV": "LTXV",
+    "preprocessors": "preprocessors",
     "Luma": "Luma",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
@@ -1742,8 +1745,6 @@
     "Reve": "Reve",
     "Rodin": "Rodin",
     "Runway": "Runway",
-    "animation": "animation",
-    "save": "save",
     "upscale_diffusion": "upscale_diffusion",
     "clip": "clip",
     "Sonilo": "Sonilo",
@@ -1756,6 +1757,7 @@
     "Tripo": "Tripo",
     "Veo": "Veo",
     "Vidu": "Vidu",
+    "": "",
     "WaveSpeed": "WaveSpeed",
     "zimage": "zimage"
   },
@@ -1781,6 +1783,8 @@
     "CONTROL_NET": "CONTROL_NET",
     "CURVE": "CURVE",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -2742,7 +2746,8 @@
       "placeholderMesh": "Select mesh...",
       "placeholderModel": "Select model...",
       "placeholderUnknown": "Select media...",
-      "maxSelectionReached": "Maximum selection limit reached"
+      "maxSelectionReached": "Maximum selection limit reached",
+      "topResult": "Top result: {result}"
     },
     "valueControl": {
       "header": {
@@ -3258,6 +3263,7 @@
     "copyAssetsAndOpen": "Import assets & open workflow",
     "openWorkflow": "Open workflow",
     "openWithoutImporting": "Open without importing",
+    "opening": "Opening shared workflow...",
     "importFailed": "Failed to import workflow assets",
     "loadError": "Could not load this shared workflow. Please try again later."
   },

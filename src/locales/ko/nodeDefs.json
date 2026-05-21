@@ -896,6 +896,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "description": "ByteDance의 Seed 2.0 모델로 텍스트 응답을 생성합니다. 텍스트 프롬프트와 선택적으로 하나 이상의 이미지 또는 비디오를 멀티모달 컨텍스트로 제공합니다.",
+    "display_name": "ByteDance Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "응답을 생성하는 데 사용되는 Seed 모델입니다."
+      },
+      "model_temperature": {
+        "name": "온도"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "모델에 입력할 텍스트입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "system_prompt": {
+        "name": "시스템 프롬프트",
+        "tooltip": "모델의 동작을 지시하는 기본 지침입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "description": "최대 4K 해상도까지 통합 텍스트-이미지 생성 및 정밀한 단일 문장 편집.",
     "display_name": "ByteDance Seedream 4",
@@ -7395,6 +7428,10 @@
   "LTXVAddGuide": {
     "display_name": "LTXV 가이드 추가",
     "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "선택적 픽셀 공간 마스크입니다. self-attention을 통해 각 영역별 조건 영향력을 strength 값과 곱하여 제어합니다."
+      },
       "frame_idx": {
         "name": "프레임 번호",
         "tooltip": "조건을 시작할 프레임 번호. 단일 프레임 이미지 또는 1-8 프레임의 비디오의 경우 어떤 프레임 번호 값도 허용됩니다. 9+ 프레임의 비디오의 경우, 프레임 번호는 8의 배수여야 합니다. 그렇지 않으면 가장 가까운 8의 배수로 내림됩니다. 음수 값은 비디오의 끝에서부터 계산됩니다."
@@ -8398,6 +8435,20 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "MediaPipe 얼굴 랜드마커 불러오기",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "models/mediapipe/의 Face Landmarker safetensors."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadMoGeModel": {
     "display_name": "MoGe 모델 불러오기",
     "inputs": {
@@ -9277,6 +9328,92 @@
     "inputs": {
       "mask": {
         "name": "마스크"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceLandmarker": {
+    "display_name": "MediaPipe 얼굴 랜드마커",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "얼굴 감지기 범위. 'short'는 카메라에서 약 2m 이내의 근접 얼굴에 최적화되어 있습니다. 'full'은 더 멀리 있거나 작은 얼굴(최대 약 5m)까지 감지하지만 느립니다. 'both'는 두 감지기를 모두 실행하여 프레임당 더 많은 얼굴을 찾은 결과를 사용합니다(감지 비용 약 2배)."
+      },
+      "face_landmarker": {
+        "name": "face_landmarker"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "BlazeFace 점수 임계값. 낮출수록 작거나 가려진 얼굴도 감지할 수 있습니다."
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "배치 내 감지 실패 시 프레임별 동작. 'empty'는 얼굴 없는 프레임으로 둡니다. 'previous'는 가장 최근의 성공한 감지 결과를 복사합니다. 'interpolate'는 성공한 프레임 사이에서 랜드마크/바운딩박스/블렌드셰이프를 보간합니다. 다중 얼굴: 프레임 간 바운딩박스 중심 NN으로 얼굴을 매칭합니다."
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "프레임당 반환할 최대 얼굴 수. 0 = 제한 없음(모든 감지된 얼굴 반환)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "display_name": "MediaPipe 얼굴 마스크",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = face_oval+lips+eyes+irises의 합집합(실제로는 face_oval이 나머지를 모두 포함하므로 face_oval로 축소됨). 'custom' = 각 영역을 개별적으로 토글하여 lips+eyes와 같은 조합 가능."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "display_name": "MediaPipe 얼굴 메시 시각화",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = oval+eyes+brows+lips+irises+nose. 'fill' = 실루엣 마스크로서의 단색 face_oval 폴리곤. 'custom' = 각 특징을 개별적으로 토글(2547개 엣지의 전체 와이어프레임인 'tesselation' 포함)."
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "연결되지 않은 경우 검은색 캔버스가 사용됩니다."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "랜드마크 점 반지름(픽셀 단위). 0이면 점 그리기 비활성화."
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "엣지 선 두께(픽셀 단위). 0이면 엣지 그리기 비활성화."
       }
     },
     "outputs": {
@@ -13952,6 +14089,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "배경 제거 모델을 사용하여 이미지에서 배경을 제거하기 위한 전경 마스크를 생성합니다.",
     "display_name": "배경 제거",
     "inputs": {
       "bg_removal_model": {
@@ -16619,6 +16757,23 @@
     "outputs": {
       "0": {
         "name": "포함 여부",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "Python의 문자열 포맷 메서드와 동일합니다. Python의 모든 포맷 옵션과 기능을 지원합니다.",
+    "display_name": "텍스트 포맷",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

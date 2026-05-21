@@ -896,6 +896,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "description": "Gere respostas de texto com os modelos Seed 2.0 da ByteDance. Forneça um prompt de texto e, opcionalmente, uma ou mais imagens ou vídeos para contexto multimodal.",
+    "display_name": "ByteDance Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo Seed utilizado para gerar a resposta."
+      },
+      "model_temperature": {
+        "name": "temperatura"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Entrada de texto para o modelo."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      },
+      "system_prompt": {
+        "name": "prompt do sistema",
+        "tooltip": "Instruções fundamentais que ditam o comportamento do modelo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "description": "Geração unificada de texto para imagem e edição precisa de frases únicas em até 4K de resolução.",
     "display_name": "ByteDance Seedream 4.5",
@@ -7395,6 +7428,10 @@
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "Máscara espacial opcional no espaço de pixels. Controla a influência do condicionamento por região via self-attention, multiplicada pela intensidade."
+      },
       "frame_idx": {
         "name": "frame_idx",
         "tooltip": "Índice do quadro para iniciar o condicionamento. Para imagens de um quadro ou vídeos com 1-8 quadros, qualquer valor de frame_idx é aceitável. Para vídeos com 9+ quadros, frame_idx deve ser divisível por 8, caso contrário será arredondado para baixo para o múltiplo de 8 mais próximo. Valores negativos são contados a partir do final do vídeo."
@@ -8398,6 +8435,20 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "Carregar MediaPipe Face Landmarker",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "Face Landmarker safetensors de models/mediapipe/."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadMoGeModel": {
     "display_name": "Carregar Modelo MoGe",
     "inputs": {
@@ -9277,6 +9328,92 @@
     "inputs": {
       "mask": {
         "name": "mask"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceLandmarker": {
+    "display_name": "MediaPipe Face Landmarker",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "Alcance do detector de rosto. 'short' é ajustado para rostos próximos (até ~2 m da câmera); 'full' cobre rostos mais distantes/menores (até ~5 m), mas é mais lento. 'both' executa ambos os detectores e mantém aquele que encontrou mais rostos por quadro (custo de detecção ~2×)."
+      },
+      "face_landmarker": {
+        "name": "face_landmarker"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "Limite de pontuação BlazeFace. Diminua para capturar rostos pequenos/ocultos."
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "Comportamento por quadro quando a detecção falha em um lote. 'empty' deixa o quadro sem rosto. 'previous' copia a detecção bem-sucedida mais recente. 'interpolate' interpola pontos/bbox/blendshapes entre quadros bem-sucedidos adjacentes. Multi-face: associa rostos entre quadros pelo centro da bbox mais próximo."
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "Máximo de rostos a retornar por quadro. 0 = sem limite (retorna todos os detectados)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "display_name": "MediaPipe Face Mask",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = união de face_oval+lips+eyes+irises (que se reduz a face_oval, pois engloba o restante). 'custom' = alterna cada região individualmente para combinações como lips+eyes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "display_name": "MediaPipe Face Mesh Visualize",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = oval+eyes+brows+lips+irises+nose. 'fill' = polígono sólido face_oval (máscara de silhueta). 'custom' = alterna cada característica individualmente (incluindo 'tesselation', a malha completa de 2547 arestas)."
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Se não conectado, uma tela preta será usada."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "Raio do ponto de referência em pixels. 0 desativa o desenho dos pontos."
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "Espessura da linha das bordas em pixels. 0 desativa o desenho das bordas."
       }
     },
     "outputs": {
@@ -13952,6 +14089,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "Gera uma máscara de primeiro plano para remover o fundo de uma imagem usando um modelo de remoção de fundo.",
     "display_name": "Remover Fundo",
     "inputs": {
       "bg_removal_model": {
@@ -16619,6 +16757,23 @@
     "outputs": {
       "0": {
         "name": "contém",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "Igual ao método de formatação de string do Python. Suporta todas as opções e recursos de formatação do Python.",
+    "display_name": "Formatar Texto",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

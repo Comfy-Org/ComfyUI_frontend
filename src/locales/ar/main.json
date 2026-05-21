@@ -800,6 +800,8 @@
     "CONTROL_NET": "ControlNet",
     "CURVE": "منحنى",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_LANDMARKS": "معالم الوجه",
     "FILE_3D": "ملف ثلاثي الأبعاد",
     "FILE_3D_FBX": "ملف FBX ثلاثي الأبعاد",
     "FILE_3D_GLB": "ملف GLB ثلاثي الأبعاد",
@@ -1745,6 +1747,10 @@
     "outdatedVersionGeneric": "تم إنشاء سير العمل هذا باستخدام إصدار أحدث من ComfyUI. قد لا تعمل بعض العقد بشكل صحيح.",
     "unknownVersion": "غير معروف"
   },
+  "logsTerminal": {
+    "loadError": "تعذر تحميل السجلات، يرجى التأكد من أنك قمت بتحديث الواجهة الخلفية لـ ComfyUI.",
+    "resyncError": "تعذر إعادة مزامنة السجلات بعد إعادة اتصال الواجهة الخلفية. أعد فتح وحدة التحكم للمحاولة مرة أخرى."
+  },
   "maintenance": {
     "None": "لا شيء",
     "OK": "حسنًا",
@@ -2291,7 +2297,6 @@
     "Wan": "وان",
     "WaveSpeed": "WaveSpeed",
     "advanced": "متقدم",
-    "animation": "الرسوم المتحركة",
     "api node": "عقدة API",
     "attention_experiments": "تجارب الانتباه",
     "audio": "صوت",
@@ -2314,6 +2319,7 @@
     "detection": "الكشف",
     "edit_models": "تحرير النماذج",
     "experimental": "تجريبي",
+    "filters": "مرشحات",
     "flux": "تدفق",
     "geometry_estimation": "تقدير الهندسة",
     "gligen": "gligen",
@@ -2337,13 +2343,11 @@
     "noise": "ضجيج",
     "operations": "العمليات",
     "photomaker": "صانع الصور",
-    "postprocessing": "المعالجة اللاحقة",
     "preprocessors": "المعالجون المسبقون",
     "primitive": "بدائي",
     "qwen": "تشي وين",
     "samplers": "أجهزة التجميع",
     "sampling": "التجميع",
-    "save": "حفظ",
     "schedulers": "الجدولة",
     "scheduling": "الجدولة",
     "sd3": "sd3",
@@ -2441,7 +2445,8 @@
     "nonPublicAssetsWarningLine1": "يأتي هذا سير العمل مع أصول غير عامة.",
     "nonPublicAssetsWarningLine2": "سيتم استيراد هذه الأصول إلى مكتبتك عند فتح سير العمل",
     "openWithoutImporting": "فتح بدون استيراد",
-    "openWorkflow": "فتح سير العمل"
+    "openWorkflow": "فتح سير العمل",
+    "opening": "جارٍ فتح سير العمل المشترك..."
   },
   "painter": {
     "background": "الخلفية",

@@ -896,6 +896,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "description": "Генерируйте текстовые ответы с помощью моделей Seed 2.0 от ByteDance. Введите текстовый запрос и при необходимости одно или несколько изображений или видео для мультимодального контекста.",
+    "display_name": "ByteDance Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель Seed, используемая для генерации ответа."
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый ввод для модели."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет тем, должен ли узел выполняться повторно; результаты всегда недетерминированы, независимо от значения seed."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Базовые инструкции, определяющие поведение модели."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "description": "Унифицированная генерация изображений из текста и точное редактирование одним предложением с разрешением до 4K.",
     "display_name": "ByteDance Seedream 4",
@@ -7395,6 +7428,10 @@
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "Необязательная пространственная маска в пиксельном пространстве. Управляет влиянием кондиционирования по регионам через self-attention, умноженным на силу."
+      },
       "frame_idx": {
         "name": "индекс кадра",
         "tooltip": "Индекс кадра для начала условия. Для однокадровых изображений или видео с 1-8 кадрами любое значение frame_idx приемлемо. Для видео с 9+ кадрами, frame_idx должен быть кратен 8, в противном случае он будет округлен вниз до ближайшего кратного 8. Отрицательные значения считаются с конца видео."
@@ -8398,6 +8435,20 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "Загрузить MediaPipe Face Landmarker",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "Face Landmarker safetensors из models/mediapipe/."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadMoGeModel": {
     "display_name": "Загрузить MoGe модель",
     "inputs": {
@@ -9277,6 +9328,92 @@
     "inputs": {
       "mask": {
         "name": "маска"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceLandmarker": {
+    "display_name": "MediaPipe Face Landmarker",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "Диапазон детектора лиц. 'short' оптимизирован для лиц крупным планом (до ~2 м от камеры); 'full' охватывает более дальние/мелкие лица (до ~5 м), но работает медленнее. 'both' запускает оба детектора и выбирает тот, который обнаружил больше лиц на кадре (~2× затрат на обнаружение)."
+      },
+      "face_landmarker": {
+        "name": "face_landmarker"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "Порог оценки BlazeFace. Уменьшите, чтобы находить маленькие/закрытые лица."
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "Поведение для каждого кадра при неудачном обнаружении в батче. 'empty' — оставить кадр без лиц. 'previous' — скопировать последнее успешное обнаружение. 'interpolate' — интерполировать landmarks/bbox/blendshapes между ближайшими успешными кадрами. Для нескольких лиц: сопоставляет лица между кадрами по ближайшему центру bbox."
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "Максимальное количество лиц на кадр. 0 = без ограничения (возвращать все обнаруженные)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "display_name": "MediaPipe Face Mask",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = объединение face_oval+lips+eyes+irises (что сводится к face_oval, так как он включает остальные). 'custom' = можно включать/выключать каждую область отдельно для комбинаций, например, lips+eyes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "display_name": "MediaPipe Face Mesh Визуализация",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = овал+глаза+брови+губы+радужки+нос. 'fill' = залитый полигон face_oval (силуэтная маска). 'custom' = можно включать/выключать каждую особенность отдельно (включая 'tesselation', полный wireframe из 2547 рёбер)."
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Если не подключено, будет использован чёрный холст."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "Радиус точек-ориентиров в пикселях. 0 — отключить отрисовку точек."
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "Толщина линий в пикселях. 0 — отключить отрисовку линий."
       }
     },
     "outputs": {
@@ -13952,6 +14089,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "Генерирует маску переднего плана для удаления фона с изображения с помощью модели удаления фона.",
     "display_name": "Удалить фон",
     "inputs": {
       "bg_removal_model": {
@@ -16619,6 +16757,23 @@
     "outputs": {
       "0": {
         "name": "содержит",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "Аналог метода форматирования строк в Python. Поддерживает все опции и возможности форматирования Python.",
+    "display_name": "Форматировать текст",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

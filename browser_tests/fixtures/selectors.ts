@@ -76,7 +76,15 @@ export const TestIds = {
     publishTabPanel: 'publish-tab-panel',
     apiSignin: 'api-signin-dialog',
     updatePassword: 'update-password-dialog',
-    cloudNotification: 'cloud-notification-dialog'
+    cloudNotification: 'cloud-notification-dialog',
+    openSharedWorkflow: 'open-shared-workflow-dialog',
+    openSharedWorkflowTitle: 'open-shared-workflow-title',
+    openSharedWorkflowClose: 'open-shared-workflow-close',
+    openSharedWorkflowErrorClose: 'open-shared-workflow-error-close',
+    openSharedWorkflowCancel: 'open-shared-workflow-cancel',
+    openSharedWorkflowOpenWithoutImporting:
+      'open-shared-workflow-open-without-importing',
+    openSharedWorkflowConfirm: 'open-shared-workflow-confirm'
   },
   keybindings: {
     presetMenu: 'keybinding-preset-menu'
@@ -226,7 +234,10 @@ export const TestIds = {
     currentUserIndicator: 'current-user-indicator'
   },
   queue: {
+    jobHistorySidebar: 'job-history-sidebar',
+    progressOverlay: 'queue-progress-overlay',
     overlayToggle: 'queue-overlay-toggle',
+    dockedJobHistoryAction: 'docked-job-history-action',
     jobDetailsPopover: 'queue-job-details-popover',
     clearHistoryAction: 'clear-history-action',
     jobAssetsList: 'job-assets-list',

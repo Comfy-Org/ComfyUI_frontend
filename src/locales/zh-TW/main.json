@@ -800,6 +800,8 @@
     "CONTROL_NET": "ControlNet",
     "CURVE": "曲線",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -1745,6 +1747,10 @@
     "outdatedVersionGeneric": "此工作流程是以較新版本的 ComfyUI 建立的。部分節點可能無法正確運作。",
     "unknownVersion": "未知"
   },
+  "logsTerminal": {
+    "loadError": "無法載入日誌，請確認您已更新 ComfyUI 後端。",
+    "resyncError": "後端重新連線後無法重新同步日誌。請重新開啟主控台以重試。"
+  },
   "maintenance": {
     "None": "無",
     "OK": "正常",
@@ -2291,7 +2297,6 @@
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
     "advanced": "進階",
-    "animation": "動畫",
     "api node": "API 節點",
     "attention_experiments": "注意力實驗",
     "audio": "音訊",
@@ -2314,6 +2319,7 @@
     "detection": "偵測",
     "edit_models": "編輯模型",
     "experimental": "實驗性",
+    "filters": "濾鏡",
     "flux": "Flux",
     "geometry_estimation": "幾何估算",
     "gligen": "GLIGEN",
@@ -2337,13 +2343,11 @@
     "noise": "雜訊",
     "operations": "操作",
     "photomaker": "photomaker",
-    "postprocessing": "後處理",
     "preprocessors": "前處理器",
     "primitive": "基礎元件",
     "qwen": "千問",
     "samplers": "取樣器",
     "sampling": "取樣",
-    "save": "儲存",
     "schedulers": "排程器",
     "scheduling": "排程",
     "sd3": "sd3",
@@ -2441,7 +2445,8 @@
     "nonPublicAssetsWarningLine1": "此工作流程包含非公開資產。",
     "nonPublicAssetsWarningLine2": "開啟工作流程時，這些資產將匯入你的媒體庫",
     "openWithoutImporting": "不匯入直接開啟",
-    "openWorkflow": "開啟工作流程"
+    "openWorkflow": "開啟工作流程",
+    "opening": "正在開啟共享工作流程..."
   },
   "painter": {
     "background": "背景",

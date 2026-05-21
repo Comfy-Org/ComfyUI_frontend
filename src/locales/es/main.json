@@ -800,6 +800,8 @@
     "CONTROL_NET": "RED_DE_CONTROL",
     "CURVE": "CURVA",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "ARCHIVO_3D",
     "FILE_3D_FBX": "ARCHIVO_3D_FBX",
     "FILE_3D_GLB": "ARCHIVO_3D_GLB",
@@ -1745,6 +1747,10 @@
     "outdatedVersionGeneric": "Este flujo de trabajo fue creado con una versión más reciente de ComfyUI. Es posible que algunos nodos no funcionen correctamente.",
     "unknownVersion": "desconocido"
   },
+  "logsTerminal": {
+    "loadError": "No se pueden cargar los registros, por favor asegúrate de haber actualizado tu backend de ComfyUI.",
+    "resyncError": "No se pueden resincronizar los registros después de que el backend se reconectó. Vuelve a abrir la consola para intentarlo de nuevo."
+  },
   "maintenance": {
     "None": "Ninguno",
     "OK": "OK",
@@ -2291,7 +2297,6 @@
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
     "advanced": "avanzado",
-    "animation": "animación",
     "api node": "nodo api",
     "attention_experiments": "experimentos_de_atención",
     "audio": "audio",
@@ -2314,6 +2319,7 @@
     "detection": "detección",
     "edit_models": "editar_modelos",
     "experimental": "experimental",
+    "filters": "filtros",
     "flux": "flux",
     "geometry_estimation": "estimación de geometría",
     "gligen": "gligen",
@@ -2337,13 +2343,11 @@
     "noise": "ruido",
     "operations": "operaciones",
     "photomaker": "photomaker",
-    "postprocessing": "postprocesamiento",
     "preprocessors": "preprocesadores",
     "primitive": "primitivo",
     "qwen": "qwen",
     "samplers": "muestreadores",
     "sampling": "muestreo",
-    "save": "guardar",
     "schedulers": "programadores",
     "scheduling": "programación",
     "sd3": "sd3",
@@ -2441,7 +2445,8 @@
     "nonPublicAssetsWarningLine1": "Este flujo de trabajo incluye recursos no públicos.",
     "nonPublicAssetsWarningLine2": "Estos se importarán a tu biblioteca al abrir el flujo de trabajo",
     "openWithoutImporting": "Abrir sin importar",
-    "openWorkflow": "Abrir flujo de trabajo"
+    "openWorkflow": "Abrir flujo de trabajo",
+    "opening": "Abriendo flujo de trabajo compartido..."
   },
   "painter": {
     "background": "Fondo",

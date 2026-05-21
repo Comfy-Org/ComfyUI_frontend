@@ -896,6 +896,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "description": "Générez des réponses textuelles avec les modèles Seed 2.0 de ByteDance. Fournissez une invite textuelle et, en option, une ou plusieurs images ou vidéos pour un contexte multimodal.",
+    "display_name": "ByteDance Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle Seed utilisé pour générer la réponse."
+      },
+      "model_temperature": {
+        "name": "température"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Entrée textuelle pour le modèle."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit le seed."
+      },
+      "system_prompt": {
+        "name": "invite système",
+        "tooltip": "Instructions fondamentales qui dictent le comportement du modèle."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "description": "Génération unifiée de texte à image et édition précise phrase par phrase jusqu'à une résolution 4K.",
     "display_name": "ByteDance Seedream 4",
@@ -7395,6 +7428,10 @@
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "Masque spatial optionnel dans l’espace pixel. Contrôle l’influence du conditionnement par région via l’auto-attention, multipliée par la force."
+      },
       "frame_idx": {
         "name": "indice_de_l'image",
         "tooltip": "Indice de l'image pour commencer le conditionnement. Pour les images uniques ou les vidéos de 1 à 8 images, toute valeur d'indice de l'image est acceptable. Pour les vidéos de 9 images ou plus, l'indice de l'image doit être divisible par 8, sinon il sera arrondi à la baisse au multiple de 8 le plus proche. Les valeurs négatives sont comptées à partir de la fin de la vidéo."
@@ -8398,6 +8435,20 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "Charger MediaPipe Face Landmarker",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "Face Landmarker safetensors depuis models/mediapipe/."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadMoGeModel": {
     "display_name": "Charger le modèle MoGe",
     "inputs": {
@@ -9277,6 +9328,92 @@
     "inputs": {
       "mask": {
         "name": "masque"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceLandmarker": {
+    "display_name": "MediaPipe Face Landmarker",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "Plage du détecteur de visage. 'short' est optimisé pour les visages en gros plan (à moins de ~2 m de la caméra) ; 'full' couvre des visages plus éloignés/petits (jusqu'à ~5 m) mais est plus lent. 'both' exécute les deux détecteurs et conserve celui qui a trouvé le plus de visages par image (coût de détection ~2×)."
+      },
+      "face_landmarker": {
+        "name": "face_landmarker"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "Seuil de score BlazeFace. Diminuez pour détecter les petits visages ou ceux partiellement cachés."
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "Comportement par image lorsque la détection échoue dans un lot. 'empty' laisse l'image sans visage. 'previous' copie la dernière détection réussie. 'interpolate' interpole les points de repère/boîte englobante/blendshapes entre les images réussies encadrantes. Multi-visage : associe les visages entre les images par appariement glouton du centre de la boîte englobante."
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "Nombre maximal de visages à retourner par image. 0 = pas de limite (retourne tous les visages détectés)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "display_name": "MediaPipe Face Mask",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = union de face_oval+lips+eyes+irises (qui se réduit à face_oval car il englobe le reste). 'custom' = activez chaque région individuellement pour des combinaisons comme lips+eyes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "display_name": "Visualisation du maillage facial MediaPipe",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = oval+eyes+brows+lips+irises+nose. 'fill' = polygone face_oval plein (masque de silhouette). 'custom' = activez chaque caractéristique individuellement (y compris 'tesselation', le fil de fer complet de 2547 arêtes)."
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Si non connecté, une toile noire sera utilisée."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "Rayon des points de repère en pixels. 0 désactive le tracé des points."
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "Épaisseur des lignes de contour en pixels. 0 désactive le tracé des contours."
       }
     },
     "outputs": {
@@ -13952,6 +14089,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "Génère un masque de premier plan pour supprimer l'arrière-plan d'une image à l'aide d'un modèle de suppression d'arrière-plan.",
     "display_name": "Supprimer l’arrière-plan",
     "inputs": {
       "bg_removal_model": {
@@ -16619,6 +16757,23 @@
     "outputs": {
       "0": {
         "name": "contient",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "Identique à la méthode de formatage de chaîne de Python. Prend en charge toutes les options et fonctionnalités de formatage de Python.",
+    "display_name": "Formater le texte",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
