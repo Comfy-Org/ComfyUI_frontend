@@ -1,0 +1,915 @@
+meta:
+  schema_version: 1
+  generated_from:
+    - database.yaml
+    - rollup.yaml
+    - star-cache.yaml
+  generated_by: scripts/build-behavior-categories.py (I-TF.1)
+  source_pattern_count: 62
+  category_count: 37
+  usage_weight_formula: sum_over_members(blast_radius * occurrences)
+  exemplar_ranking: repo_stars desc, then pattern blast_radius desc; distinct (repo, pattern_id)
+  notes:
+    - Categories cluster by intent, not by surface_family. S2 is split into creation / teardown / hydration / interaction /
+      drawing / connection / serialization / properties.
+    - S1 hooks are merged with their prototype-patching equivalents where intent matches (BC.20 node-type reg, BC.22 menus,
+      BC.03 hydration).
+    - S8.P1 isVirtualNode is a registration-time flag, so it lives in BC.20 alongside the node-type registration hooks.
+    - S10.D3 setSize and S15.OS1 dynamic outputs join S10.D1 in BC.09 dynamic-slot-mutation since they all describe runtime
+      topology mutation.
+    - S14.ID1 NodeLocatorId joins S11.G2 graph enumeration in BC.29 because both are about cross-scope node identity/resolution.
+    - S11.G1/G3/G4 (version, batching, setDirtyCanvas) collapse into BC.30 graph change-tracking — the v2 reactivity story replaces
+      all three.
+    - BC.21 (S1.H2 getCustomWidgets) has only 2 evidence rows in database.yaml; this is the 'small family — 2 + 1 minor variant'
+      acceptance carve-out. The two exemplars are kept as-is, no synthetic third row.
+    - BC.31 and BC.32 added 2026-05-08 from Notion API usage research (notion-api-research-evidence.yaml staging).
+      S16 is a new surface family (DOM injection) not previously tracked. S16.VUE1 grouped with BC.32 (embedded runtimes).
+      S3.C2 (ContextMenu replacement) added to BC.06 member list.
+    - Notion source also upgrades occurrence signal on BC.01/BC.02/BC.04/BC.06/BC.07/BC.09/BC.26/BC.29/BC.30 — reflected
+      in staging file; usage_weight values below are NOT yet updated (need re-run of rollup-blast-radius.py after merge).
+    - BC.33 (cross-ext DOM widget obs), BC.34 (settings dialog), BC.35 (pre-queue validation) added 2026-05-08 from Notion COM-3668.
+    - BC.36 (PrimeVue widget API surface) added 2026-05-08 from Notion Widget Component APIs page; was erroneously numbered BC.33 — corrected.
+    - BC.37 (VueNode bridge timing) added 2026-05-08 from Notion Frontend Architecture page (3536d73d). Captures the
+      nodeCreated→VueNode-not-yet-mounted hazard and the waitForLoad3d deferral pattern as a concrete test fixture.
+categories:
+  - category_id: BC.01
+    name: 'Node lifecycle: creation'
+    intent: Hooks fired when a node is constructed or attached to the graph (per-instance setup).
+    notes: >-
+      nodeCreated fires BEFORE the VueNode Vue component mounts. Extensions that need to access
+      VueNode-backed state (DOM widgets, Three.js renderers, etc.) must defer to onNodeMounted
+      (v2) or waitForLoad3d-style callbacks (v1). See BC.37 for the deferred-mount bridge pattern.
+      Source: Notion Frontend Architecture page (2026-05-08).
+    member_pattern_ids:
+      - S2.N1
+      - S2.N8
+    usage_weight: 37.56
+    exemplars:
+      - pattern_id: S2.N1
+        repo: Comfy-Org/ComfyUI_frontend
+        url: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/src/extensions/core/saveImageExtraOutput.ts#L31
+        stars: 1787
+      - pattern_id: S2.N8
+        repo: Azornes/Comfyui-LayerForge
+        url: https://github.com/Azornes/Comfyui-LayerForge/blob/main/src/CanvasView.ts#L1401
+        stars: 313
+      - pattern_id: S2.N1
+        repo: SKBv0/ComfyUI_SpideyReroute
+        url: https://github.com/SKBv0/ComfyUI_SpideyReroute/blob/main/js/SpideyReroute.js#L41
+        stars: 13
+  - category_id: BC.02
+    name: 'Node lifecycle: teardown'
+    intent: Single de-facto teardown surface for cleaning up DOM widgets, intervals, and observers when a node is removed.
+    member_pattern_ids:
+      - S2.N4
+    usage_weight: 29.35
+    exemplars:
+      - pattern_id: S2.N4
+        repo: Lightricks/ComfyUI-LTXVideo
+        url: https://github.com/Lightricks/ComfyUI-LTXVideo/blob/main/web/js/sparse_track_editor.js#L137
+        stars: 3581
+      - pattern_id: S2.N4
+        repo: kijai/ComfyUI-KJNodes
+        url: https://github.com/kijai/ComfyUI-KJNodes/blob/main/web/js/help_popup.js#L348
+        stars: 2568
+      - pattern_id: S2.N4
+        repo: Comfy-Org/ComfyUI_frontend
+        url: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/docs/architecture/ecs-migration-plan.md#L587
+        stars: 1787
+  - category_id: BC.03
+    name: 'Node lifecycle: hydration from saved workflows'
+    intent: React when a node is rehydrated from a stored workflow; the working replacement for the unused loadedGraphNode hook.
+    member_pattern_ids:
+      - S1.H1
+      - S2.N7
+    usage_weight: 15.42
+    exemplars:
+      - pattern_id: S1.H1
+        repo: Comfy-Org/ComfyUI_frontend
+        url: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/src/extensions/core/
+        stars: 1787
+      - pattern_id: S1.H1
+        repo: sofakid/dandy
+        url: https://github.com/sofakid/dandy/blob/main/web/main.js#L114
+        stars: 54
+      - pattern_id: S2.N7
+        repo: akawana/ComfyUI-Folded-Prompts
+        url: https://github.com/akawana/ComfyUI-Folded-Prompts/blob/main/js/FPFoldedPrompts.js#L1265
+        stars: 4
+  - category_id: BC.04
+    name: 'Node interaction: pointer, selection, resize'
+    intent: 'User-driven per-node events: mouse down for custom click regions, selection focus, and resize feedback for relayout.'
+    member_pattern_ids:
+      - S2.N10
+      - S2.N17
+      - S2.N19
+    usage_weight: 38.07
+    exemplars:
+      - pattern_id: S2.N10
+        repo: diodiogod/TTS-Audio-Suite
+        url: https://github.com/diodiogod/TTS-Audio-Suite/blob/main/web/chatterbox_voice_capture.js#L202
+        stars: 906
+      - pattern_id: S2.N10
+        repo: melMass/comfy_mtb
+        url: https://github.com/melMass/comfy_mtb/blob/main/web/comfy_shared.js#L1047
+        stars: 702
+      - pattern_id: S2.N10
+        repo: pixaroma/ComfyUI-Pixaroma
+        url: https://github.com/pixaroma/ComfyUI-Pixaroma/blob/main/js/compare/index.js#L360
+        stars: 137
+  - category_id: BC.05
+    name: Custom DOM widgets and node sizing
+    intent: Contribute DOM-backed widgets and override computeSize so the node reserves the right area for them.
+    member_pattern_ids:
+      - S4.W2
+      - S2.N11
+    usage_weight: 33.35
+    exemplars:
+      - pattern_id: S4.W2
+        repo: Lightricks/ComfyUI-LTXVideo
+        url: https://github.com/Lightricks/ComfyUI-LTXVideo/blob/main/web/js/sparse_track_editor.js#L218
+        stars: 3581
+      - pattern_id: S4.W2
+        repo: kijai/ComfyUI-KJNodes
+        url: https://github.com/kijai/ComfyUI-KJNodes/blob/main/web/js/editors/editor_base.js#L511
+        stars: 2568
+      - pattern_id: S2.N11
+        repo: o-l-l-i/ComfyUI-Olm-ImageAdjust
+        url: https://github.com/o-l-l-i/ComfyUI-Olm-ImageAdjust/blob/main/web/olm_imageadjust.js#L319
+        stars: 45
+  - category_id: BC.06
+    name: Custom canvas drawing (per-node and canvas-level)
+    intent:
+      Per-node onDrawForeground and full LGraphCanvas.prototype overrides for badges, indicators, keyboard, and custom
+      render passes. Includes global ContextMenu replacement (S3.C2) as the most destructive canvas-level override.
+    v1_scope_note: >-
+      Simon Tranter (COM-3668, 2025-05-12) explicitly vetoed canvas drawing overrides as "too hacky/specific
+      to implement APIs for". Confirmed out of v2 v1 scope. S3.C* patterns remain in DB for blast-radius
+      tracking and strangler-fig planning but v2 need not replace them 1:1. Supports D9 Phase C deferral.
+    member_pattern_ids:
+      - S2.N9
+      - S3.C1
+      - S3.C2
+    usage_weight: 58.97
+    exemplars:
+      - pattern_id: S3.C1
+        repo: kijai/ComfyUI-KJNodes
+        url: https://github.com/kijai/ComfyUI-KJNodes/blob/main/web/js/setgetnodes.js#L1256
+        stars: 2568
+      - pattern_id: S3.C1
+        repo: Comfy-Org/ComfyUI_frontend
+        url: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/src/extensions/core/simpleTouchSupport.ts#L174
+        stars: 1787
+      - pattern_id: S3.C1
+        repo: melMass/comfy_mtb
+        url: https://github.com/melMass/comfy_mtb/blob/main/web/note_plus.js#L1
+        stars: 702
+  - category_id: BC.07
+    name: Connection observation, intercept, and veto
+    intent:
+      Subscribe to link connect/disconnect events on a node and intercept incoming/outgoing connections before they are
+      wired to refuse them, mutate slots, or coerce types.
+    member_pattern_ids:
+      - S2.N3
+      - S2.N12
+      - S2.N13
+    usage_weight: 51.08
+    exemplars:
+      - pattern_id: S2.N13
+        repo: rgthree/rgthree-comfy
+        url: https://github.com/rgthree/rgthree-comfy/blob/main/web/comfyui/node_mode_relay.js#L90
+        stars: 3049
+      - pattern_id: S2.N12
+        repo: kijai/ComfyUI-KJNodes
+        url: https://github.com/kijai/ComfyUI-KJNodes/blob/main/web/js/jsnodes.js#L152
+        stars: 2568
+      - pattern_id: S2.N12
+        repo: Comfy-Org/ComfyUI_frontend
+        url: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/src/core/graph/widgets/dynamicWidgets.ts#L539
+        stars: 1787
+  - category_id: BC.08
+    name: Programmatic linking
+    intent: Extensions wire connections from code (workflow templates, auto-routing).
+    member_pattern_ids:
+      - S10.D2
+    usage_weight: 11.81
+    exemplars:
+      - pattern_id: S10.D2
+        repo: MockbaTheBorg/ComfyUI-Mockba
+        url: https://github.com/MockbaTheBorg/ComfyUI-Mockba/blob/main/js/slider.js#L1
+        stars: 1
+      - pattern_id: S10.D2
+        repo: vjumpkung/comfyui-infinitetalk-native-sampler
+        url: https://github.com/vjumpkung/comfyui-infinitetalk-native-sampler/blob/main/README.md#L1
+        stars: 1
+      - pattern_id: S10.D2
+        repo: goodtab/ComfyUI-Custom-Scripts
+        url: https://github.com/goodtab/ComfyUI-Custom-Scripts/blob/main/web/js/quickNodes.js#L138
+        stars: 0
+  - category_id: BC.09
+    name: Dynamic slot and output mutation
+    intent: Grow/shrink inputs and outputs at runtime, with the obligatory computeSize+setSize reflow that follows.
+    member_pattern_ids:
+      - S10.D1
+      - S10.D3
+      - S15.OS1
+    usage_weight: 38.63
+    exemplars:
+      - pattern_id: S10.D1
+        repo: Comfy-Org/ComfyUI_frontend
+        url: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/src/lib/litegraph/src/canvas/LinkConnector.core.test.ts#L121
+        stars: 1787
+      - pattern_id: S10.D1
+        repo: r-vage/ComfyUI_Eclipse
+        url: https://github.com/r-vage/ComfyUI_Eclipse/blob/main/js/eclipse-mode-nodes.js#L42
+        stars: 19
+      - pattern_id: S15.OS1
+        repo: yorkane/ComfyUI-KYNode
+        url: https://github.com/yorkane/ComfyUI-KYNode/blob/main/web/python-editor.js#L243
+        stars: 10
+  - category_id: BC.10
+    name: Widget value subscription
+    intent: Subscribe to widget value changes either at the widget (callback chain) or node (onWidgetChanged) level.
+    member_pattern_ids:
+      - S4.W1
+      - S2.N14
+    usage_weight: 32.22
+    exemplars:
+      - pattern_id: S2.N14
+        repo: Comfy-Org/ComfyUI_frontend
+        url: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/src/extensions/core/widgetInputs.ts#L317
+        stars: 1787
+      - pattern_id: S4.W1
+        repo: crom8505/ComfyUI-Dynamic-Sigmas
+        url: https://github.com/crom8505/ComfyUI-Dynamic-Sigmas/blob/main/web/js/graph_sigmas.js#L79
+        stars: 8
+      - pattern_id: S4.W1
+        repo: 834t/ComfyUI_834t_scene_composer
+        url: https://github.com/834t/ComfyUI_834t_scene_composer/blob/main/js/b34t_scene_composer.js#L148
+        stars: 5
+  - category_id: BC.11
+    name: Widget imperative state writes
+    intent: Imperatively mutate widget value, COMBO option lists, or the node.widgets array (insert/remove/reorder).
+    member_pattern_ids:
+      - S4.W4
+      - S4.W5
+      - S2.N16
+    usage_weight: 28.42
+    exemplars:
+      - pattern_id: S2.N16
+        repo: r-vage/ComfyUI_Eclipse
+        url: https://github.com/r-vage/ComfyUI_Eclipse/blob/main/js/eclipse-set-get.js#L9
+        stars: 19
+      - pattern_id: S4.W4
+        repo: EnragedAntelope/EA_LMStudio
+        url: https://github.com/EnragedAntelope/EA_LMStudio/blob/main/web/ea_lmstudio.js#L11
+        stars: 7
+      - pattern_id: S4.W4
+        repo: zzggi2024/shaobkj
+        url: https://github.com/zzggi2024/shaobkj/blob/main/js/dynamic_inputs.js#L374
+        stars: 1
+  - category_id: BC.12
+    name: Per-widget serialization transform
+    intent: Transform a widget's value at workflow-serialization time (dynamic prompts, hidden state, expand-on-save).
+    notes: >-
+      widget.options.serialize===false widgets (e.g. control_after_generate) still occupy a widgets_values
+      slot and still fire serializeValue — excluded only from the backend prompt by graphToPrompt(). Test
+      triple must cover this case explicitly. PR #10392 widgets_values_named is the v2 migration path;
+      WidgetHandle identity must be by name not position. See research/architecture/widget-serialization-historical-analysis.md.
+    member_pattern_ids:
+      - S4.W3
+    usage_weight: 27.94
+    exemplars:
+      - pattern_id: S4.W3
+        repo: Comfy-Org/ComfyUI_frontend
+        url: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/browser_tests/helpers/painter.ts#L70
+        stars: 1787
+      - pattern_id: S4.W3
+        repo: Raykosan/ComfyUI_RaykoStudio
+        url: https://github.com/Raykosan/ComfyUI_RaykoStudio/blob/main/web/rayko_lora_widget.js#L31
+        stars: 45
+      - pattern_id: S4.W3
+        repo: 834t/ComfyUI_834t_scene_composer
+        url: https://github.com/834t/ComfyUI_834t_scene_composer/blob/main/js/b34t_scene_composer.js#L135
+        stars: 5
+  - category_id: BC.13
+    name: Per-node serialization interception
+    intent: Intercept node-level serialize/onSerialize to inject custom workflow JSON fields.
+    notes: >-
+      Root cause: widgets_values is positional — prototype.serialize patchers consume/produce this array
+      directly. Three index-drift sources: control_after_generate slot occupancy, extension-injected
+      widgets, V3 IO.MultiType topology-dependent widget count. NaN→null pipeline produces silent
+      corruption (backend crash is first visible symptom). Test triple must cover: (a) positional v1
+      compat, (b) named-map v2 round-trip parity, (c) null-in-numeric-widget logs warning + substitutes
+      default. PR #11884 guard, PR #10392 named map. See research/architecture/widget-serialization-historical-analysis.md.
+    member_pattern_ids:
+      - S2.N6
+      - S2.N15
+    usage_weight: 47.07
+    exemplars:
+      - pattern_id: S2.N15
+        repo: Azornes/Comfyui-LayerForge
+        url: https://github.com/Azornes/Comfyui-LayerForge/blob/main/js/CanvasView.js#L1438
+        stars: 313
+      - pattern_id: S2.N15
+        repo: IAMCCS/IAMCCS-nodes
+        url: https://github.com/IAMCCS/IAMCCS-nodes/blob/main/web/iamccs_wan_motion_presets.js#L598
+        stars: 92
+      - pattern_id: S2.N15
+        repo: DazzleNodes/ComfyUI-Smart-Resolution-Calc
+        url: https://github.com/DazzleNodes/ComfyUI-Smart-Resolution-Calc/blob/main/web/utils/serialization.js#L32
+        stars: 7
+  - category_id: BC.14
+    name: Workflow → API serialization interception (graphToPrompt)
+    intent: Patch app.graphToPrompt to resolve virtual nodes, inject custom metadata, or rewrite the API payload before submit.
+    member_pattern_ids:
+      - S6.A1
+    usage_weight: 46.66
+    exemplars:
+      - pattern_id: S6.A1
+        repo: Comfy-Org/ComfyUI-Manager
+        url: https://github.com/Comfy-Org/ComfyUI-Manager/blob/main/js/components-manager.js#L781
+        stars: 14554
+      - pattern_id: S6.A1
+        repo: kijai/ComfyUI-KJNodes
+        url: https://github.com/kijai/ComfyUI-KJNodes/blob/main/web/js/setgetnodes.js#L1406
+        stars: 2568
+      - pattern_id: S6.A1
+        repo: m3rr/h4_Live
+        url: https://github.com/m3rr/h4_Live/blob/main/js/h4_datastream.js#L23
+        stars: 2
+  - category_id: BC.15
+    name: Workflow loading into the editor
+    intent: External/embed scenario where a workflow JSON is pushed into the running editor via app.loadGraphData.
+    member_pattern_ids:
+      - S6.A2
+    usage_weight: 20.31
+    exemplars:
+      - pattern_id: S6.A2
+        repo: Comfy-Org/ComfyUI_frontend
+        url: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/browser_tests/fixtures/helpers/WorkflowHelper.ts#L215
+        stars: 1787
+      - pattern_id: S6.A2
+        repo: BennyKok/comfyui-deploy
+        url: https://github.com/BennyKok/comfyui-deploy/blob/main/web-plugin/workflow-list.js#L456
+        stars: 1507
+      - pattern_id: S6.A2
+        repo: ketle-man/ComfyUI-Workflow-Studio
+        url: https://github.com/ketle-man/ComfyUI-Workflow-Studio/blob/main/static/js/workflow-tab.js#L67
+        stars: 2
+  - category_id: BC.16
+    name: Execution output consumption (per-node)
+    intent: Consume backend execution output on a specific node (text, JSON, image) to drive display.
+    member_pattern_ids:
+      - S2.N2
+    usage_weight: 5.74
+    exemplars:
+      - pattern_id: S2.N2
+        repo: andreszs/ComfyUI-Ultralytics-Studio
+        url: https://github.com/andreszs/ComfyUI-Ultralytics-Studio/blob/main/js/show_string.js#L9
+        stars: 3
+      - pattern_id: S2.N2
+        repo: AlexZ1967/ComfyUI_ALEXZ_tools
+        url: https://github.com/AlexZ1967/ComfyUI_ALEXZ_tools/blob/main/web/show_json.js#L49
+        stars: 0
+      - pattern_id: S2.N2
+        repo: becky3/comfyui-workspace
+        url: https://github.com/becky3/comfyui-workspace/blob/main/custom_nodes/ComfyUI-Becky3-Common/js/show_text.js#L33
+        stars: 0
+  - category_id: BC.17
+    name: Backend execution lifecycle and progress events
+    intent: Subscribe to api.addEventListener for execution_*, progress, status, and reconnecting events.
+    member_pattern_ids:
+      - S5.A1
+      - S5.A2
+      - S5.A3
+    usage_weight: 51.25
+    exemplars:
+      - pattern_id: S5.A2
+        repo: AIGODLIKE/AIGODLIKE-ComfyUI-Studio
+        url: https://github.com/AIGODLIKE/AIGODLIKE-ComfyUI-Studio/blob/main/loader/components/public/iconRenderer.js#L39
+        stars: 405
+      - pattern_id: S5.A3
+        repo: kyuz0/amd-strix-halo-comfyui-toolboxes
+        url: https://github.com/kyuz0/amd-strix-halo-comfyui-toolboxes/blob/main/scripts/benchmark_workflows.py#L52
+        stars: 109
+      - pattern_id: S5.A1
+        repo: ShakerSmith/ShakerNodesSuite
+        url: https://github.com/ShakerSmith/ShakerNodesSuite/blob/main/js/shaker_preview_ui.js#L58
+        stars: 8
+  - category_id: BC.18
+    name: Backend HTTP calls
+    intent: Call ComfyAPI.fetchApi as the canonical authenticated path to backend HTTP endpoints.
+    member_pattern_ids:
+      - S6.A3
+    usage_weight: 22.74
+    exemplars:
+      - pattern_id: S6.A3
+        repo: Comfy-Org/ComfyUI_frontend
+        url: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/src/components/common/BackgroundImageUpload.vue#L61
+        stars: 1787
+      - pattern_id: S6.A3
+        repo: akawana/ComfyUI-Folded-Prompts
+        url: https://github.com/akawana/ComfyUI-Folded-Prompts/blob/main/js/FPFoldedPrompts.js#L1227
+        stars: 4
+      - pattern_id: S6.A3
+        repo: zhupeter010903/ComfyUI-XYZ-prompt-library
+        url: https://github.com/zhupeter010903/ComfyUI-XYZ-prompt-library/blob/main/js/prompt_library_window.js#L1379
+        stars: 1
+  - category_id: BC.19
+    name: Workflow execution trigger
+    intent: Trigger or intercept queuePrompt for sidebar Run buttons, auth tokens, or payload mutation.
+    member_pattern_ids:
+      - S6.A4
+    usage_weight: 12.65
+    exemplars:
+      - pattern_id: S6.A4
+        repo: MajoorWaldi/ComfyUI-Majoor-AssetsManager
+        url: https://github.com/MajoorWaldi/ComfyUI-Majoor-AssetsManager/blob/main/js/features/viewer/workflowSidebar/sidebarRunButton.js#L317
+        stars: 97
+      - pattern_id: S6.A4
+        repo: gigici/ComfyUI_BlendPack
+        url: https://github.com/gigici/ComfyUI_BlendPack/blob/main/js/ui/NodeUI.js#L99
+        stars: 1
+      - pattern_id: S6.A4
+        repo: rohapa/comfyui-replay
+        url: https://github.com/rohapa/comfyui-replay/blob/main/README.md#L497
+        stars: 0
+  - category_id: BC.20
+    name: Custom node-type registration (frontend-only / virtual)
+    intent: Register pure-frontend or fully virtual node types and mark them with isVirtualNode so the backend ignores them.
+    member_pattern_ids:
+      - S1.H5
+      - S1.H6
+      - S8.P1
+    usage_weight: 27.49
+    exemplars:
+      - pattern_id: S1.H6
+        repo: Comfy-Org/ComfyUI_frontend
+        url: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/src/extensions/core/rerouteNode.ts
+        stars: 1787
+      - pattern_id: S1.H5
+        repo: Comfy-Org/ComfyUI_frontend
+        url: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/src/extensions/core/
+        stars: 1787
+      - pattern_id: S1.H6
+        repo: sofakid/dandy
+        url: https://github.com/sofakid/dandy/blob/main/web/main.js#L111
+        stars: 54
+  - category_id: BC.21
+    name: Custom widget-type registration
+    intent: Register new widget types (color picker, file uploader, custom inputs) via getCustomWidgets.
+    member_pattern_ids:
+      - S1.H2
+    usage_weight: 7.17
+    exemplars:
+      - pattern_id: S1.H2
+        repo: Comfy-Org/ComfyUI_frontend
+        url: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/src/extensions/core/
+        stars: 1787
+      - pattern_id: S1.H2
+        repo: haohaocreates/PR-rk-comfy-nodes-36d8f0a5
+        url: https://github.com/haohaocreates/PR-rk-comfy-nodes-36d8f0a5/blob/main/web/rk_nodes.ts#L22
+        stars: 0
+  - category_id: BC.22
+    name: Context menu contributions (node and canvas)
+    intent:
+      Contribute right-click menu items at both the node and canvas scope, including legacy prototype patches and the
+      supported v1 hooks.
+    member_pattern_ids:
+      - S2.N5
+      - S1.H3
+      - S1.H4
+    usage_weight: 19.53
+    exemplars:
+      - pattern_id: S1.H3
+        repo: Comfy-Org/ComfyUI_frontend
+        url: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/src/extensions/core/
+        stars: 1787
+      - pattern_id: S1.H4
+        repo: Comfy-Org/ComfyUI_frontend
+        url: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/src/extensions/core/
+        stars: 1787
+      - pattern_id: S1.H3
+        repo: r-vage/ComfyUI_Eclipse
+        url: https://github.com/r-vage/ComfyUI_Eclipse/blob/main/js/eclipse-canvas-utils.js#L2
+        stars: 19
+  - category_id: BC.23
+    name: Node property bag mutations
+    intent: React to mutations of node.properties — the persistent property bag that survives serialization.
+    member_pattern_ids:
+      - S2.N18
+    usage_weight: 14.42
+    exemplars:
+      - pattern_id: S2.N18
+        repo: rgthree/rgthree-comfy
+        url: https://github.com/rgthree/rgthree-comfy/blob/main/src_web/comfyui/seed.ts#L78
+        stars: 3049
+      - pattern_id: S2.N18
+        repo: rgthree/rgthree-comfy
+        url: https://github.com/rgthree/rgthree-comfy/blob/main/web/comfyui/seed.js#L26
+        stars: 3049
+      - pattern_id: S2.N18
+        repo: rgthree/rgthree-comfy
+        url: https://github.com/rgthree/rgthree-comfy/blob/main/web/comfyui/power_primitive.js#L142
+        stars: 3049
+  - category_id: BC.24
+    name: Node-def schema inspection
+    intent: Branch on ComfyNodeDef shape (input.required/optional/hidden, output, output_node, category) to drive UI.
+    member_pattern_ids:
+      - S13.SC1
+    usage_weight: 22.43
+    exemplars:
+      - pattern_id: S13.SC1
+        repo: BennyKok/comfyui-deploy
+        url: https://github.com/BennyKok/comfyui-deploy/blob/main/web-plugin/index.js#L1
+        stars: 1507
+      - pattern_id: S13.SC1
+        repo: StableLlama/ComfyUI-basic_data_handling
+        url: https://github.com/StableLlama/ComfyUI-basic_data_handling/blob/main/web/js/dynamicnode.js#L1
+        stars: 43
+      - pattern_id: S13.SC1
+        repo: xeinherjer-dev/ComfyUI-XENodes
+        url: https://github.com/xeinherjer-dev/ComfyUI-XENodes/blob/main/web/js/combo_selector.js#L1
+        stars: 1
+  - category_id: BC.25
+    name: Shell UI registration (commands, sidebars, toasts)
+    intent: Declarative shell-UI contributions through extensionManager / commandManager / sidebarTab / bottomPanel.
+    member_pattern_ids:
+      - S12.UI1
+    usage_weight: 10.98
+    exemplars:
+      - pattern_id: S12.UI1
+        repo: robertvoy/ComfyUI-Distributed
+        url: https://github.com/robertvoy/ComfyUI-Distributed/blob/main/web/main.js#L269
+        stars: 544
+      - pattern_id: S12.UI1
+        repo: maxi45274/ComfyUI_LinkFX
+        url: https://github.com/maxi45274/ComfyUI_LinkFX/blob/main/js/LinkFX.js#L707
+        stars: 3
+      - pattern_id: S12.UI1
+        repo: criskb/Comfypencil
+        url: https://github.com/criskb/Comfypencil/blob/main/web/comfy_pencil_extension.js#L955
+        stars: 0
+  - category_id: BC.26
+    name: Globals as ABI (window.LiteGraph, window.comfyAPI)
+    intent: Reach into the global namespace for LiteGraph constructors/enums or the module-as-global comfyAPI registry.
+    member_pattern_ids:
+      - S7.G1
+    usage_weight: 27.0
+    exemplars:
+      - pattern_id: S7.G1
+        repo: ryanontheinside/ComfyUI_RyanOnTheInside
+        url: https://github.com/ryanontheinside/ComfyUI_RyanOnTheInside/blob/main/web/js/index.js#L1
+        stars: 801
+      - pattern_id: S7.G1
+        repo: ArtHommage/HommageTools
+        url: https://github.com/ArtHommage/HommageTools/blob/main/web/js/index.js#L1
+        stars: 4
+      - pattern_id: S7.G1
+        repo: PROJECTMAD/PROJECT-MAD-NODES
+        url: https://github.com/PROJECTMAD/PROJECT-MAD-NODES/blob/main/web/js/index.js#L1
+        stars: 4
+  - category_id: BC.27
+    name: LiteGraph entity direct manipulation (reroute, group, link, slot)
+    intent: Direct read/mutation of reroutes, groups, links, and slots — no public extension API exists today.
+    member_pattern_ids:
+      - S9.R1
+      - S9.G1
+      - S9.L1
+      - S9.S1
+    usage_weight: 39.37
+    exemplars:
+      - pattern_id: S9.R1
+        repo: nodetool-ai/nodetool
+        url: https://github.com/nodetool-ai/nodetool/blob/main/subgraphs.md#L1
+        stars: 330
+      - pattern_id: S9.S1
+        repo: nodetool-ai/nodetool
+        url: https://github.com/nodetool-ai/nodetool/blob/main/subgraphs.md#L267
+        stars: 330
+      - pattern_id: S9.S1
+        repo: Stibo/comfyui-nifty-nodes
+        url: https://github.com/Stibo/comfyui-nifty-nodes/blob/main/js/nifty_nodes.js#L112
+        stars: 3
+  - category_id: BC.28
+    name: Subgraph fan-out via set/get virtual nodes
+    intent: Fan out a single named value across the graph without explicit links (KJNodes-style Set/Get nodes).
+    member_pattern_ids:
+      - S9.SG1
+    usage_weight: 16.89
+    exemplars:
+      - pattern_id: S9.SG1
+        repo: kijai/ComfyUI-KJNodes
+        url: https://github.com/kijai/ComfyUI-KJNodes/blob/main/web/js/setgetnodes.js#L1406
+        stars: 2568
+      - pattern_id: S9.SG1
+        repo: krismasdev/ComfyUI-Flux-Continuum
+        url: https://github.com/krismasdev/ComfyUI-Flux-Continuum/blob/main/web/hint.js#L1
+        stars: 0
+      - pattern_id: S9.SG1
+        repo: SpaceWarpStudio/ComfyUI-SetInputGetOutput
+        url: https://github.com/SpaceWarpStudio/ComfyUI-SetInputGetOutput/blob/main/web/js/setinputgetoutput.js#L1
+        stars: 0
+  - category_id: BC.29
+    name: Graph enumeration, mutation, and cross-scope identity
+    intent:
+      Enumerate or mutate the node set (graph.add/remove/findNodesByType/serialize/configure) and resolve cross-subgraph
+      references via NodeLocatorId / NodeExecutionId.
+    member_pattern_ids:
+      - S11.G2
+      - S14.ID1
+    usage_weight: 23.56
+    exemplars:
+      - pattern_id: S11.G2
+        repo: yolain/ComfyUI-Easy-Use
+        url: https://github.com/yolain/ComfyUI-Easy-Use/blob/main/web_version/v1/js/easy/easyExtraMenu.js#L439
+        stars: 2503
+      - pattern_id: S11.G2
+        repo: Comfy-Org/ComfyUI_frontend
+        url: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/browser_tests/tests/workflowPersistence.spec.ts#L351
+        stars: 1787
+      - pattern_id: S11.G2
+        repo: r-vage/ComfyUI_Eclipse
+        url: https://github.com/r-vage/ComfyUI_Eclipse/blob/main/js/eclipse-ui-enhancements.js#L29
+        stars: 19
+  - category_id: BC.30
+    name: Graph change tracking, batching, and reactivity flush
+    intent:
+      'Coordinate graph-level change: graph._version monotonic counter, beforeChange/afterChange batching, and the imperative
+      setDirtyCanvas redraw flush.'
+    member_pattern_ids:
+      - S11.G1
+      - S11.G3
+      - S11.G4
+    usage_weight: 34.38
+    exemplars:
+      - pattern_id: S11.G3
+        repo: nodetool-ai/nodetool
+        url: https://github.com/nodetool-ai/nodetool/blob/main/subgraphs.md#L1
+        stars: 330
+      - pattern_id: S11.G4
+        repo: akawana/ComfyUI-Folded-Prompts
+        url: https://github.com/akawana/ComfyUI-Folded-Prompts/blob/main/js/FPFoldedPrompts.js#L776
+        stars: 4
+      - pattern_id: S11.G3
+        repo: linjm8780860/ljm_comfyui
+        url: https://github.com/linjm8780860/ljm_comfyui/blob/main/src/utils/vintageClipboard.ts#L1
+        stars: 0
+
+  - category_id: BC.31
+    name: DOM injection and style management
+    intent:
+      Extensions add UI chrome, toolbars, and style overrides directly into the document outside any provided API —
+      style tags into head, arbitrary elements into body, innerHTML rendering, and external script loading.
+    member_pattern_ids:
+      - S16.DOM1
+      - S16.DOM2
+      - S16.DOM3
+      - S16.DOM4
+    usage_weight: 0.0
+    notes:
+      'usage_weight pending rollup-blast-radius.py re-run after database.yaml merge (I-N4.1). Notion counts: DOM1=354
+      occ, DOM2=364 occ, DOM3=443 occ, DOM4=232 occ across ~81 packages — among the highest raw occurrence counts in
+      the entire dataset. v2 replacements: injectStyles(), addPanel(), addToolbarItem(), safe HTML rendering API.'
+    exemplars:
+      - pattern_id: S16.DOM1
+        repo: kijai/ComfyUI-KJNodes
+        url: https://github.com/kijai/ComfyUI-KJNodes/blob/main/web/js/help_popup.js
+        stars: 2568
+      - pattern_id: S16.DOM2
+        repo: yolain/ComfyUI-Easy-Use
+        url: https://github.com/yolain/ComfyUI-Easy-Use/blob/main/web_version/v1/js/easy/easy.js
+        stars: 2503
+      - pattern_id: S16.DOM3
+        repo: '(aggregate — Notion §2.3)'
+        url: https://www.notion.so/comfy-org/ComfyUI-Custom-Node-Frontend-API-Usage-Research-3356d73d365080dbaacafe8e52d52692
+        stars: 0
+
+  - category_id: BC.32
+    name: Embedded framework runtimes and Vue widget bundling
+    intent:
+      Extensions bundle their own copy of Vue (or another framework) inside a DOM widget, bypassing the host app
+      instance and losing access to shared stores, i18n, and theme.
+    member_pattern_ids:
+      - S16.VUE1
+    usage_weight: 0.0
+    notes:
+      'usage_weight pending rollup-blast-radius.py re-run. 9 packages confirmed (Notion §2.9). v2 replacement:
+      registerVueWidget(nodeType, name, Component) sharing host Vue instance — already in plans/P1 §5 Custom widget type.
+      This BC provides the evidence base for that P1 design decision.'
+    exemplars:
+      - pattern_id: S16.VUE1
+        repo: ComfyUI-NKD-Sigmas-Curve
+        url: https://www.notion.so/comfy-org/ComfyUI-Custom-Node-Frontend-API-Usage-Research-3356d73d365080dbaacafe8e52d52692
+        stars: 0
+      - pattern_id: S16.VUE1
+        repo: '(aggregate — 9 packages, Notion §2.9)'
+        url: https://www.notion.so/comfy-org/ComfyUI-Custom-Node-Frontend-API-Usage-Research-3356d73d365080dbaacafe8e52d52692
+        stars: 0
+
+  # ── Categories added 2026-05-08 from Notion COM-3668 (Simon Tranter, Custom Scripts API requirements) ──
+
+  - category_id: BC.33
+    name: Cross-extension DOM widget creation observation
+    intent:
+      An extension observes when *any* DOM widget is created (by any other extension) so it can attach its own
+      listeners — the mechanism the Autocomplete extension needs to wire its input handler to every text widget.
+    member_pattern_ids:
+      - S4.W6
+    usage_weight: 0.0
+    notes: >-
+      Identified from COM-3668. Distinct from BC.05 (creating DOM widgets) and BC.10 (subscribing to value changes).
+      Gap: no v1 hook fires for cross-extension widget creation observation. v2 shape: onDOMWidgetCreated(handler)
+      in defineExtension setup context. usage_weight pending blast-radius re-run.
+    source: notion-COM-3668
+    exemplars:
+      - pattern_id: S4.W6
+        repo: goodtab/ComfyUI-Custom-Scripts
+        url: https://github.com/goodtab/ComfyUI-Custom-Scripts
+        stars: 0
+
+  - category_id: BC.34
+    name: Settings-panel custom dialog integration
+    intent: Extensions open custom modal dialogs triggered from the settings panel, rather than injecting raw DOM.
+    member_pattern_ids:
+      - S12.UI3
+    usage_weight: 0.0
+    notes: >-
+      Identified from COM-3668. Currently worked around via S16.DOM3 innerHTML injection. Distinct from S12.UI1
+      (sidebar/command registration) — this is about dialog lifecycle tied to settings entries. v2 shape:
+      app.ui.openDialog(Component) or settings entry type 'dialog-trigger'. usage_weight pending blast-radius re-run.
+    source: notion-COM-3668
+    exemplars:
+      - pattern_id: S12.UI3
+        repo: goodtab/ComfyUI-Custom-Scripts
+        url: https://github.com/goodtab/ComfyUI-Custom-Scripts
+        stars: 0
+
+  - category_id: BC.35
+    name: Pre-queue widget validation
+    intent:
+      Validate widget values before a workflow is submitted and surface typed errors to the user — rejecting
+      the queue rather than silently mutating or failing.
+    member_pattern_ids:
+      - S6.A5
+    usage_weight: 0.0
+    notes: >-
+      Identified from COM-3668. Currently worked around via S6.A4 queuePrompt monkey-patching (silent_breakage=true
+      when multiple extensions patch). Distinct from D5 beforeSerialize (transforms values) and BC.19 (triggers
+      execution). v2 needs explicit beforeQueue event with event.reject(message). usage_weight pending re-run.
+    source: notion-COM-3668
+    exemplars:
+      - pattern_id: S6.A5
+        repo: goodtab/ComfyUI-Custom-Scripts
+        url: https://github.com/goodtab/ComfyUI-Custom-Scripts
+        stars: 0
+
+  - category_id: BC.36
+    name: PrimeVue widget component API surface
+    intent: >-
+      Custom node authors configuring widget behavior via per-component prop subsets — the v2 replacement
+      for direct widget.options mutation (S4.W4, S4.W1) and DOM widget construction (S4.W5, S4.W6).
+      15 PrimeVue components are the authoritative widget-kind enumeration for v2.
+    member_pattern_ids:
+      - S4.W1
+      - S4.W4
+      - S4.W5
+    notes: >-
+      Source: Notion page "Widget Component APIs" (2026-05-08). 15 components: Button, InputText, Select,
+      ColorPicker, MultiSelect, SelectButton, Slider, Textarea, ToggleSwitch, Chart, Image, ImageCompare,
+      Galleria, FileUpload, TreeSelect. Exclusion rule (Pablo): strip style/class/dt/pt/*Class/*Style.
+      ToggleSwitch is the only component with completed Pick<> types so far (WIP).
+      Informs: D7 typed options bags (future pivot), I-TF.2 widget-kind test triples,
+      PKG2 WidgetHandle.getOption key surface. disabled/readonly map to D7 first-class fields,
+      not options bag.
+    usage_weight: 0.0
+    exemplars:
+      - pattern_id: S4.W4
+        repo: '(see database.yaml S4.W4 exemplars — widget.options.values mutation)'
+        url: https://www.notion.so/comfy-org/Widget-Component-APIs-2126d73d365080b0bf30f241c09dd756
+        stars: 0
+
+  - category_id: BC.37
+    name: VueNode bridge timing — deferred mount access
+    intent: >-
+      Extensions that register in nodeCreated but need to access Vue-component-backed state
+      (Three.js renderer, DOM widget, ComponentWidgetImpl value) must defer until the Vue
+      component's onMounted fires. The v1 pattern is waitForLoad3d(node, cb); the v2 pattern
+      is onNodeMounted(() => { ... }) inside defineNodeExtension.
+    member_pattern_ids:
+      - S4.W5
+    notes: >-
+      Source: Notion Frontend Architecture page 3536d73d (2026-05-08). nodeCreated gives the
+      LiteGraph node; the VueNode Vue component has NOT mounted yet. waitForLoad3d in
+      src/extensions/core/Load3D is the canonical v1 fixture. ComponentWidgetImpl dual-identity:
+      LiteGraph side (value/callback/name) vs Vue side (props/emits/lifecycle).
+      v2 contract: onNodeMounted() hook fires after Vue component mount — this is the correct
+      timing for accessing VueNode-backed resources.
+      Informs: I-SR.2.B2 (NodeInstanceScope must not sync-access VueNode at setup time),
+      I-TF.3.C1 (harness must simulate two-phase mount), I-TF.2 test triple for BC.37.
+      D8 relevance: app.rootGraph is not reactive (confirmed by this doc) — the exact gap D8 solves.
+    usage_weight: 0.0
+    source: notion-frontend-architecture-3536d73d
+    exemplars:
+      - pattern_id: S4.W5
+        repo: Comfy-Org/ComfyUI_frontend
+        url: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/src/extensions/core/load3d.ts
+        stars: 1787
+
+  - category_id: BC.38
+    name: Canvas mode observation
+    intent: >-
+      Detect and react to ComfyUI canvas mode transitions (graph / app / builder:inputs /
+      builder:outputs / builder:arrange). Custom nodes that adapt rendering, widget resize
+      behavior, or read-only state across modes need a stable event — not polling or heuristics
+      against internal Pinia store state.
+    member_pattern_ids:
+      - S17.AM1
+    mechanism: absent-api
+    notes: >-
+      appModeStore is a Pinia composable; JS extensions cannot use Vue composables. v2 gap:
+      no node.on('canvasModeChanged') exists yet in node.ts — distinct from NodeModeChangedEvent
+      (execution mode only). v2 contract: app-level or node-level canvasModeChanged event.
+      Flagged: Terry DX walkthrough A.1. Informs: node.ts overloads (add canvasModeChanged
+      or document as known gap), I-TF.2 test triple for BC.38.
+    usage_weight: 0.0
+    source: notion-pain-point-assessment
+    exemplars:
+      - pattern_id: S17.AM1
+        repo: (first-principles assessment — Terry Jia)
+        url: https://www.notion.so/comfy-org/Develop-a-custom-node-from-scratch-pain-point-assessment-33c6d73d365080f49126c0b5affa7559
+        stars: 0
+
+  - category_id: BC.39
+    name: Subgraph boundary event propagation
+    intent: >-
+      Custom node callbacks (onExecuted, MatchType, autogrow onConnectionsChange, promoted widget
+      callbacks) that must propagate across subgraph boundaries. Four distinct silent-failure modes
+      when custom nodes are placed inside subgraphs.
+    member_pattern_ids:
+      - S17.SB1
+    mechanism: absent-api
+    notes: >-
+      Requires D9 Phase B (post-Alex rebase on #11939). ECS substrate must forward SubgraphNode
+      execution events from internal nodes. MatchType and autogrow propagation require subgraph
+      boundary awareness in World dispatcher. Blocked: I-PG.B1. Short-term: @experimental on
+      affected NodeHandle events; subgraphCompatible flag in NodeExtensionOptions.
+      Intersects: ADR 0006 (I-NEW.1), Austin's fix-linked-widget-promotion.
+      Flagged: Terry DX walkthrough A.2.
+    usage_weight: 0.0
+    source: notion-pain-point-assessment
+    exemplars:
+      - pattern_id: S17.SB1
+        repo: (first-principles assessment — Terry Jia)
+        url: https://www.notion.so/comfy-org/Develop-a-custom-node-from-scratch-pain-point-assessment-33c6d73d365080f49126c0b5affa7559
+        stars: 0
+
+  - category_id: BC.40
+    name: File upload and asset URL construction
+    intent: >-
+      Upload files to ComfyUI backend and construct retrieval URLs. 32+ packages duplicate this
+      pattern from scratch — FormData construction, fetchApi('/upload/image'), /view?filename URL
+      assembly. A helper API would collapse this to comfyAPI.uploadFile() + comfyAPI.getFileUrl().
+    member_pattern_ids:
+      - S17.FA1
+    mechanism: absent-api
+    notes: >-
+      Out of scope for @comfyorg/extension-api (node extension surface). Belongs in future
+      @comfyorg/comfy-api package. 32+ packages affected; 9 implement video upload variants.
+      Upload timeout hardcoded 120s; large 3D/video fail silently. No temp file lifecycle.
+      Document as known gap in src/extension-api/README.md.
+      Flagged: Terry DX walkthrough A.3.
+    usage_weight: 0.0
+    source: notion-pain-point-assessment
+    exemplars:
+      - pattern_id: S17.FA1
+        repo: (first-principles assessment — Terry Jia)
+        url: https://www.notion.so/comfy-org/Develop-a-custom-node-from-scratch-pain-point-assessment-33c6d73d365080f49126c0b5affa7559
+        stars: 0
+
+  - category_id: BC.41
+    name: Widget values positional serialization fragility
+    intent: >-
+      Widget values serialized as positional array [v1, v2, v3] instead of named dict.
+      Any input definition change (add, reorder, rename, remove, required→optional) silently
+      misaligns values when loading existing workflows. Root cause of #1 user complaint:
+      "my workflow broke after I updated the custom node."
+    member_pattern_ids:
+      - S17.WV1
+    mechanism: positional-array
+    notes: >-
+      Blocked on workflow-schema-migration (out of v2 surface scope). D7 Part 4 (4→2
+      serialization collapse) + beforeSerialize as partial mitigation. Long-term fix: named dict
+      format { widgetName: value } — breaking JSON schema change requiring versioning +
+      migrateWidgetValues() callback. PR #10392 added widgets_values_named opt-in; PR #11884
+      null guard. v2 contract: name-keyed identity (WidgetHandle by name not position).
+      Intersects: ADR 0006, widget-serialization-historical-analysis.md, Austin's work.
+      Flagged: Terry DX walkthrough A.4.
+    usage_weight: 0.0
+    source: notion-pain-point-assessment
+    exemplars:
+      - pattern_id: S17.WV1
+        repo: Comfy-Org/ComfyUI_frontend
+        url: https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/src/utils/nodeDefOrderingUtil.ts
+        stars: 1787

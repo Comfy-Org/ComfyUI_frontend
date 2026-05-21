@@ -1,0 +1,184 @@
+/**
+ * @comfyorg/extension-api — Public Extension API for ComfyUI
+ *
+ * This barrel is the published package entry point. Every export here is
+ * part of the public contract that extension authors depend on.
+ *
+ * Import directly — no dependency on `window.app` at module evaluation time:
+ *
+ * ```ts
+ * import { defineNode, defineExtension } from '@comfyorg/extension-api'
+ * ```
+ *
+ * ## API surface overview
+ *
+ * | Export | Purpose |
+ * |--------|---------|
+ * | `defineNode` | Register a node-scoped extension (the primary entry point) |
+ * | `defineExtension` | Register an app-scoped extension (init, setup, shell UI) |
+ * | `onNodeMounted`, `onNodeRemoved` | Implicit-context lifecycle hooks (call inside nodeCreated) |
+ * | `NodeHandle` | Controlled access to node state and events |
+ * | `WidgetHandle` | Controlled access to widget state and events |
+ * | `WidgetBeforeQueueEvent` | Pre-queue validation event — call `reject(msg)` to cancel |
+ * | `SlotInfo` | Read-only slot snapshot |
+ * | Shell UI types | `SidebarTabExtension`, `BottomPanelExtension`, `CommandManager`, etc. |
+ * | Identity helpers | `NodeLocatorId`, `NodeExecutionId`, parsers, type guards |
+ *
+ * ## Identity (D20)
+ *
+ * Handles expose `id: string` and `equals(other)` — the 90% case never needs
+ * a branded type. The runtime `*EntityId` brands (`NodeEntityId`,
+ * `WidgetEntityId`, `SlotEntityId`) are an internal storage concern and are
+ * NOT re-exported from this barrel. Protocol-boundary identifiers
+ * (`NodeLocatorId` from workflow JSON, `NodeExecutionId` from websocket
+ * frames) remain public because authors **receive** them from event
+ * payloads.
+ *
+ * ## API style
+ *
+ * The public API is **event + getter/setter**, not signals. Vue reactivity is
+ * the internal engine; extension authors never import from Vue or use
+ * `ref`/`computed`/`effect` directly. State is read via methods (`getValue()`,
+ * `getPosition()`), mutated via command-dispatch methods (`setValue()`,
+ * `setPosition()`), and observed via typed event subscriptions (`on('executed', fn)`).
+ * Read-only invariants (set at construction, never change) are exposed as
+ * accessors (`get entityId`, `get type`).
+ *
+ * ## Barrel-file rule exception
+ *
+ * ComfyUI_frontend AGENTS.md rule #19 normally forbids barrel files in `/src`.
+ * This barrel is the **published package entry point** — not an internal
+ * re-export — and is the explicit exception documented in AGENTS.md.
+ *
+ * @packageDocumentation
+ */
+
+export type {
+  ExtensionOptions,
+  NodeExtensionOptions,
+  WidgetExtensionOptions
+} from './types'
+
+// Runtime implementations live in the service; the types above are the
+// public contract. The barrel re-exports the concrete fns from the service
+// so `import { defineNode } from '@comfyorg/extension-api'` works
+// at both typecheck and runtime.
+//
+// Note: startExtensionSystem is intentionally NOT exported here — it's an
+// internal boot function, not part of the extension author API. App wiring
+// imports it directly from @/services/extension-api-service.
+export {
+  defineExtension,
+  defineNode,
+  defineWidget
+} from '@/services/extension-api-service'
+
+export { onNodeMounted, onNodeRemoved } from './lifecycle'
+
+// context-scoped Vue-idiomatic lifecycle hooks
+// usable inside `defineExtension.setup` / `defineSidebarTab.setup` /
+// `defineBottomPanelTab.setup` bodies.
+export {
+  onBeforeMount,
+  onMounted,
+  onUnmounted,
+  onActivated,
+  onDeactivated
+} from './lifecycle'
+
+// four typed event-namespace handles.
+// Payload types default to `unknown` and are tightened via D5 module
+// augmentation in a follow-on PR. Custom-node events ride `server.on(...)`.
+export { graph, execution, server, workbench } from './events'
+export type {
+  GraphEventPayloads,
+  ExecutionEventPayloads,
+  ServerEventPayloads,
+  WorkbenchEventPayloads
+} from './events'
+
+export type {
+  NodeHandle,
+  SlotInfo,
+  SlotDirection,
+  NodeMode,
+  Point,
+  Size,
+  NodeExecutedEvent,
+  NodeConnectedEvent,
+  NodeDisconnectedEvent,
+  NodePositionChangedEvent,
+  NodeSizeChangedEvent,
+  NodeModeChangedEvent,
+  NodeBeforeSerializeEvent
+} from './node'
+
+export type {
+  WidgetHandle,
+  WidgetValue,
+  WidgetOptions,
+  WidgetValueChangeEvent,
+  WidgetOptionChangeEvent,
+  // WidgetPropertyChangeEvent removed per A16 (D-widget-serialization-simplification, wave-9)
+  WidgetBeforeSerializeEvent,
+  WidgetBeforeQueueEvent,
+  // Mount-lifecycle surface per D-widget-converge / Axiom A12 ────────────
+  WidgetCleanup,
+  WidgetMountContext,
+  WidgetMountFn
+} from './widget'
+
+export type { Handler, AsyncHandler, Unsubscribe } from './events'
+
+// Per D19 — VueExtension and CustomExtension are discriminated-union
+// ingredients of SidebarTabExtension / BottomPanelExtension and are NOT
+// part of the public surface.
+//
+// Note: ExtensionManager + CommandManager are
+// DROPPED from the public surface — the v2 model uses per-surface defineX
+// entries (defineSidebarTab, defineCommand, …) each returning a disposable,
+// not a centralized umbrella handle. Internal callers continue importing
+// the legacy umbrella types directly from '@/types/extensionTypes'.
+export type {
+  // Pre-existing
+  SidebarTabExtension,
+  BottomPanelExtension,
+  ToastMessageOptions,
+  ToastManager,
+  // Shell-UI arg types
+  CommandDefinition,
+  HotkeyExtension,
+  AboutBadgeExtension,
+  SettingDefinition,
+  ToolbarButtonExtension
+} from './shell'
+
+// per-surface defineX entries. Each
+// returns a DisposableHandle; carve-out: toast + notify remain inline
+// imperative (exported below from ./imperatives), NOT as defineX wrappers.
+export {
+  defineSidebarTab,
+  defineBottomPanelTab,
+  defineCommand,
+  defineHotkey,
+  defineSetting,
+  defineAboutBadge,
+  defineToolbarButton
+} from './registrations'
+export type { DisposableHandle } from './registrations'
+
+// inline imperative carve-out. Fire-and-forget;
+// no defineX wrapper, no DisposableHandle. Call from any setup() body or
+// hook closure.
+export { toast, notify } from './imperatives'
+export type { NotifyOptions } from './imperatives'
+
+export type { NodeLocatorId, NodeExecutionId } from './identifiers'
+export {
+  isNodeLocatorId,
+  isNodeExecutionId,
+  parseNodeLocatorId,
+  createNodeLocatorId,
+  parseNodeExecutionId,
+  createNodeExecutionId
+} from './identifiers'

@@ -59,6 +59,10 @@ import {
 } from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
+import {
+  invokeV2AppExtensions,
+  startExtensionSystem
+} from '@/services/extension-api-service'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -863,6 +867,10 @@ export class ComfyApp {
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
     await useExtensionService().loadExtensions()
+    // Start the v2 node-extension reactive mount watcher. Must run after
+    // loadExtensions() so all defineNode() calls have pushed into
+    // nodeExtensions[] before the first watcher tick.
+    startExtensionSystem()
 
     this.addProcessKeyHandler()
     this.addConfigureHandler()
@@ -957,11 +965,13 @@ export class ComfyApp {
     })
 
     await useExtensionService().invokeExtensionsAsync('init')
+    await invokeV2AppExtensions('init')
     await this.registerNodes()
 
     this.addDropHandler()
 
     await useExtensionService().invokeExtensionsAsync('setup')
+    await invokeV2AppExtensions('setup')
 
     this.positionConversion = useCanvasPositionConversion(
       this.canvasContainer,

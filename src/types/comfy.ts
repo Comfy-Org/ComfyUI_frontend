@@ -108,34 +108,75 @@ export interface ComfyExtension {
   name: string
   /**
    * The commands defined by the extension
+   *
+   * @deprecated Per D-shell-ui-entrypoints (W6.P5.C, ACCEPTED 2026-05-18): use
+   * the per-surface `defineCommand(...)` entry point from
+   * `@comfyorg/extension-api` instead. Each call returns a `DisposableHandle`
+   * for independent unregister. A codemod in `@comfyorg/extension-api` ships
+   * to perform the v1→v2 rewrite mechanically. The v1 slot is retained for
+   * back-compat during the deprecation window.
    */
   commands?: ComfyCommand[]
   /**
    * The keybindings defined by the extension
+   *
+   * @deprecated Per D-shell-ui-entrypoints (W6.P5.C, ACCEPTED 2026-05-18): use
+   * `defineHotkey(...)` from `@comfyorg/extension-api`. Each call returns a
+   * `DisposableHandle`. The v1 slot is retained for back-compat during the
+   * deprecation window.
    */
   keybindings?: Keybinding[]
   /**
    * Menu commands to add to the menu bar
+   *
+   * @deprecated Menu surface is out of scope for D-shell-ui-entrypoints
+   * (W6.P5.C) and will be addressed in a follow-on ADR (the prototype-patch
+   * `getExtraMenuOptions` tax is the load-bearing migration question and
+   * needs its own treatment). The v1 slot remains supported until that
+   * ADR ships.
    */
   menuCommands?: MenuCommandGroup[]
   /**
    * Settings to add to the settings menu
+   *
+   * @deprecated Per D-shell-ui-entrypoints (W6.P5.C, ACCEPTED 2026-05-18): use
+   * `defineSetting(...)` from `@comfyorg/extension-api`. The v1 slot is
+   * retained for back-compat during the deprecation window.
    */
   settings?: SettingParams[]
   /**
    * Bottom panel tabs to add to the bottom panel
+   *
+   * @deprecated Per D-shell-ui-entrypoints (W6.P5.C, ACCEPTED 2026-05-18): use
+   * `defineBottomPanelTab(...)` from `@comfyorg/extension-api`. The v1 slot
+   * is retained for back-compat during the deprecation window.
    */
   bottomPanelTabs?: BottomPanelExtension[]
   /**
    * Badges to add to the about page
+   *
+   * @deprecated Per D-shell-ui-entrypoints (W6.P5.C, ACCEPTED 2026-05-18): use
+   * `defineAboutBadge(...)` from `@comfyorg/extension-api`. The v1 slot is
+   * retained for back-compat during the deprecation window.
    */
   aboutPageBadges?: AboutPageBadge[]
   /**
    * Badges to add to the top bar
+   *
+   * @deprecated Per D-shell-ui-entrypoints (W6.P5.C, ACCEPTED 2026-05-18):
+   * topbar badges are not part of the W6.P5 scope (the R3 evidence sweep
+   * found this surface had effectively zero ecosystem use and was treated as
+   * an internal-only concern). A `defineTopbarBadge` entry may be added in
+   * a follow-on PR; the v1 slot remains supported until then.
    */
   topbarBadges?: TopbarBadge[]
   /**
    * Buttons to add to the action bar
+   *
+   * @deprecated Per D-shell-ui-entrypoints (W6.P5.C, ACCEPTED 2026-05-18): use
+   * `defineToolbarButton(...)` from `@comfyorg/extension-api`. Note this is
+   * a net-new surface (0 hits in the v1 R3 evidence sweep) — the v1 slot
+   * existed but was undocumented; any first-mover usage is greenfield.
    */
   actionBarButtons?: ActionBarButton[]
   /**

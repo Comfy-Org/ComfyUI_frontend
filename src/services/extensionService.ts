@@ -15,6 +15,9 @@ import type { AuthUserInfo } from '@/types/authTypes'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 
+// Tracks which extensions have already received the beforeRegisterNodeDef deprecation warning
+const _warnedBeforeRegisterNodeDef = new Set<string>()
+
 export const useExtensionService = () => {
   const extensionStore = useExtensionStore()
   const settingStore = useSettingStore()
@@ -207,6 +210,19 @@ export const useExtensionService = () => {
             // Set current extension name for legacy compatibility tracking
             if (method === 'setup') {
               legacyMenuCompat.setCurrentExtension(ext.name)
+            }
+
+            // DEP1: warn once per extension that uses beforeRegisterNodeDef
+            if (
+              method === 'beforeRegisterNodeDef' &&
+              !_warnedBeforeRegisterNodeDef.has(ext.name)
+            ) {
+              _warnedBeforeRegisterNodeDef.add(ext.name)
+              console.warn(
+                `[ComfyUI] Extension "${ext.name}" uses deprecated hook "beforeRegisterNodeDef". ` +
+                  'Use defineNode({ nodeCreated(handle) { ... } }) with a nodeTypes filter instead. ' +
+                  'See https://docs.comfy.org/extensions/api for the v2 API.'
+              )
             }
 
             const result = await fn.call(ext, ...args, app)
