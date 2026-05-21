@@ -75,11 +75,12 @@ const allErrors = computed(() =>
 
     return group.cards.flatMap((c) =>
       c.errors.map((e) => {
-        const details = e.displayDetails ?? e.details
-        const message = e.displayMessage ?? e.message
-        return details
-          ? `${c.title} (${details}): ${message}`
-          : `${c.title}: ${message}`
+        const resolvedMessage = e.displayDetails ?? e.displayMessage
+        if (resolvedMessage) return resolvedMessage
+
+        return e.details
+          ? `${c.title} (${e.details}): ${e.message}`
+          : `${c.title}: ${e.message}`
       })
     )
   })

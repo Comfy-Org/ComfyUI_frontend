@@ -28,10 +28,7 @@ export interface ResolvedErrorMessage {
   toastMessage?: string
 }
 
-export interface ResolvedMissingErrorMessage extends Omit<
-  ResolvedErrorMessage,
-  'displayTitle' | 'displayMessage'
-> {
+export type ResolvedMissingErrorMessage = ResolvedErrorMessage & {
   displayTitle: string
   displayMessage: string
 }
