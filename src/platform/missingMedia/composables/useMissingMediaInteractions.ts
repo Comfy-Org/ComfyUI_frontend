@@ -1,6 +1,7 @@
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { getAssetDisplayFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type {
@@ -8,7 +9,6 @@ import type {
   MediaType
 } from '@/platform/missingMedia/types'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
-import { isCloud } from '@/platform/distribution/types'
 import { addToComboValues, resolveComboValues } from '@/utils/litegraphUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { st } from '@/i18n'
@@ -86,12 +86,17 @@ export function getNodeDisplayLabel(
 
 /**
  * Resolve display name for a media file.
- * Cloud widgets store asset hashes as values; this resolves them to
- * human-readable names via assetsStore.getInputName().
+ * Widget values may be content hashes (Cloud) or filenames (OSS); look the
+ * asset up in the unified `inputAssetsByFilename` map and delegate the
+ * label resolution to {@link getAssetDisplayFilename} so this helper
+ * shares the fallback chain (`user_metadata.filename` →
+ * `metadata.filename` → `display_name` → `asset.name`) with the asset
+ * card / browser surfaces. Falls through to the raw input when no asset
+ * matches.
  */
 export function getMediaDisplayName(name: string): string {
-  if (!isCloud) return name
-  return useAssetsStore().getInputName(name)
+  const asset = useAssetsStore().inputAssetsByFilename.get(name)
+  return asset ? getAssetDisplayFilename(asset) : name
 }
 
 export function useMissingMediaInteractions() {
