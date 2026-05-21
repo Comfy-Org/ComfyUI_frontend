@@ -1,4 +1,5 @@
 import WorkflowTemplateSelectorDialog from '@/components/custom/widget/WorkflowTemplateSelectorDialog.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import type { TemplateLibraryMetadata } from '@/platform/telemetry/types'
 import { useDialogService } from '@/services/dialogService'
@@ -12,9 +13,14 @@ export const useWorkflowTemplateSelectorDialog = () => {
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
   const newUserService = useNewUserService()
+  const { flags } = useFeatureFlags()
 
   function hide() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
+  }
+
+  function newUserDefaultCategory() {
+    return flags.newUserDefaultTemplateTab ?? GETTING_STARTED_CATEGORY_ID
   }
 
   function show(
@@ -25,7 +31,7 @@ export const useWorkflowTemplateSelectorDialog = () => {
 
     const initialCategory =
       options?.initialCategory ??
-      (newUserService.isNewUser() ? GETTING_STARTED_CATEGORY_ID : 'all')
+      (newUserService.isNewUser() ? newUserDefaultCategory() : 'all')
 
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
