@@ -39,6 +39,7 @@ import NodePreview from '@/components/node/NodePreview.vue'
 import NodeTreeFolder from '@/components/sidebar/tabs/nodeLibrary/NodeTreeFolder.vue'
 import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -184,7 +185,8 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
         },
         handleClick(e: MouseEvent) {
           if (this.leaf && this.data) {
-            useLitegraphService().addNodeOnGraph(this.data)
+            const placed = useLitegraphService().addNodeOnGraph(this.data)
+            if (placed) useCanvasStore().canvas?.selectItems([placed])
           } else {
             toggleNodeOnEvent(e, node)
           }
