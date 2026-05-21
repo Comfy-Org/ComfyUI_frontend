@@ -2,7 +2,11 @@ import QuickLRU from '@alloc/quick-lru'
 import { useRouteHash } from '@vueuse/router'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import {
+  NavigationFailureType,
+  isNavigationFailure,
+  useRouter
+} from 'vue-router'
 
 import type { DragAndScaleState } from '@/lib/litegraph/src/DragAndScale'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -10,7 +14,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
-import { isValidSubgraphId } from '@/schemas/subgraphIdSchema'
+import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
@@ -201,23 +205,26 @@ export const useSubgraphNavigationStore = defineStore(
       { flush: 'sync' }
     )
 
-    //Allow navigation with forward/back buttons. Use a counter so that
-    //nested/overlapping async navigations don't release suppression early.
-    let blockHashUpdateDepth = 0
+    // Counter so nested/overlapping async navigations don't release
+    // suppression early; gates both the canvasStore.currentGraph watcher
+    // (updateHash) and the routeHash watcher to prevent re-entrant
+    // navigateToHash calls during router.replace().
+    let blockNavDepth = 0
     let initialLoad = true
 
-    async function withHashUpdateBlocked<T>(op: () => Promise<T>): Promise<T> {
-      blockHashUpdateDepth++
+    async function withNavBlocked<T>(op: () => Promise<T>): Promise<T> {
+      blockNavDepth++
       try {
         return await op()
       } finally {
-        blockHashUpdateDepth--
+        blockNavDepth--
       }
     }
 
     function ensureCanvasOnRoot() {
       const root = app.rootGraph
       const canvas = canvasStore.getCanvas()
+      if (!root || !canvas) return
       if (canvas.graph?.id !== root.id) canvas.setGraph(root)
     }
 
@@ -225,14 +232,17 @@ export const useSubgraphNavigationStore = defineStore(
       const root = app.rootGraph
       console.warn(`[subgraphNavigation] ${reason}; redirecting to root graph`)
       try {
-        await withHashUpdateBlocked(() => router.replace('#' + root.id))
+        await withNavBlocked(() => router.replace('#' + root.id))
       } catch (err) {
-        //Router failures shouldn't strand the canvas on a deleted subgraph;
-        //we still need to recover even when the URL update is rejected.
-        console.warn(
-          '[subgraphNavigation] router.replace rejected during recovery',
-          err
-        )
+        if (
+          !isNavigationFailure(err, NavigationFailureType.duplicated) &&
+          !isNavigationFailure(err, NavigationFailureType.cancelled)
+        ) {
+          console.warn(
+            '[subgraphNavigation] router.replace rejected during recovery',
+            err
+          )
+        }
       } finally {
         ensureCanvasOnRoot()
       }
@@ -246,7 +256,7 @@ export const useSubgraphNavigationStore = defineStore(
       const isRoot = locatorId === root.id
       const targetGraph = isRoot
         ? root
-        : isValidSubgraphId(locatorId)
+        : isUuidShapedSubgraphId(locatorId)
           ? root.subgraphs.get(locatorId)
           : undefined
       if (targetGraph) {
@@ -261,9 +271,12 @@ export const useSubgraphNavigationStore = defineStore(
         const subgraphs = activeState.definitions?.subgraphs ?? []
         for (const graph of [activeState, ...subgraphs]) {
           if (graph.id !== locatorId) continue
-          //This will trigger a navigation, which can break forward history
+          // This will trigger a navigation, which can break forward history.
+          // After openWorkflow resolves, app.rootGraph has been swapped, so we
+          // intentionally re-read app.rootGraph below instead of using the
+          // `root` captured at function entry.
           try {
-            await withHashUpdateBlocked(() =>
+            await withNavBlocked(() =>
               useWorkflowService().openWorkflow(workflow)
             )
           } catch (err) {
@@ -288,8 +301,18 @@ export const useSubgraphNavigationStore = defineStore(
       await redirectToRoot(`subgraph not found: ${locatorId}`)
     }
 
+    async function safeRouterCall(op: () => Promise<unknown>, label: string) {
+      try {
+        await op()
+      } catch (err) {
+        if (!isNavigationFailure(err, NavigationFailureType.duplicated)) {
+          console.warn(`[subgraphNavigation] ${label} rejected`, err)
+        }
+      }
+    }
+
     async function updateHash() {
-      if (blockHashUpdateDepth > 0) return
+      if (blockNavDepth > 0) return
       if (initialLoad) {
         initialLoad = false
         if (!routeHash.value) return
@@ -300,16 +323,22 @@ export const useSubgraphNavigationStore = defineStore(
       }
 
       const newId = canvasStore.getCanvas().graph?.id ?? ''
-      if (!routeHash.value) await router.replace('#' + app.rootGraph.id)
+      if (!routeHash.value) {
+        await safeRouterCall(
+          () => router.replace('#' + app.rootGraph.id),
+          'router.replace'
+        )
+      }
       const currentId = routeHash.value?.slice(1)
       if (!newId || newId === currentId) return
 
-      await router.push('#' + newId)
+      await safeRouterCall(() => router.push('#' + newId), 'router.push')
     }
-    //update navigation hash
-    //NOTE: Doesn't apply on workflow load
     watch(() => canvasStore.currentGraph, updateHash)
-    watch(routeHash, () => navigateToHash(String(routeHash.value)))
+    watch(routeHash, () => {
+      if (blockNavDepth > 0) return
+      void navigateToHash(String(routeHash.value))
+    })
 
     /** Save the current viewport for the active graph/workflow. Called by
      *  workflowService.beforeLoadNewGraph() before the canvas is overwritten. */

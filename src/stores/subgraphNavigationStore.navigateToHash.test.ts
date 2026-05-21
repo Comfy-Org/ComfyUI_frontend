@@ -4,6 +4,8 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
+import type * as VueRouter from 'vue-router'
+
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
@@ -27,9 +29,13 @@ const routerMocks = vi.hoisted(() => ({
 
 const routeHashRef = ref('')
 
-vi.mock('vue-router', () => ({
-  useRouter: () => routerMocks
-}))
+vi.mock('vue-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof VueRouter>()
+  return {
+    ...actual,
+    useRouter: () => routerMocks
+  }
+})
 
 vi.mock('@vueuse/router', () => ({
   useRouteHash: () => routeHashRef
@@ -70,10 +76,6 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
     getCanvas: () => app.canvas,
     currentGraph: null
   })
-}))
-
-vi.mock('@/utils/graphTraversalUtil', () => ({
-  findSubgraphPathById: vi.fn().mockReturnValue(null)
 }))
 
 vi.mock('@/services/litegraphService', () => ({
@@ -137,26 +139,26 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     expect(routerMocks.replace).not.toHaveBeenCalled()
   })
 
-  it('redirects URL to root when hash references a deleted subgraph', async () => {
+  it('redirects to root when hash references a deleted subgraph', async () => {
     useSubgraphNavigationStore()
 
     routeHashRef.value = `#${ids.deletedSubgraph}`
-    await flushHashWatcher()
-
-    expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+    await vi.waitFor(() =>
+      expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+    )
   })
 
-  it('redirects URL to root when hash is malformed (not a UUID)', async () => {
+  it('redirects to root when hash is malformed (not a UUID)', async () => {
     useSubgraphNavigationStore()
 
     routeHashRef.value = '#not-a-valid-uuid'
-    await flushHashWatcher()
-
-    expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+    await vi.waitFor(() =>
+      expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+    )
     expect(app.canvas.setGraph).not.toHaveBeenCalled()
   })
 
-  it('does not redirect when hash is a non-UUID root graph id (e.g. workflow slug)', async () => {
+  it('does not redirect when hash equals a non-UUID root graph id (loaded workflow slug)', async () => {
     const slugRootId = 'test-missing-models-in-subgraph'
     app.rootGraph.id = slugRootId
     app.canvas.graph = fromPartial<LGraph>({ id: slugRootId })
@@ -169,7 +171,16 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     expect(app.canvas.setGraph).not.toHaveBeenCalled()
   })
 
-  it('does not redirect or re-set graph when hash equals current graph', async () => {
+  it('redirects when hash is a non-UUID slug that does not match root', async () => {
+    useSubgraphNavigationStore()
+
+    routeHashRef.value = '#some-other-slug'
+    await vi.waitFor(() =>
+      expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+    )
+  })
+
+  it('does not redirect or re-set graph when hash equals current root graph', async () => {
     app.canvas.graph = fromPartial<LGraph>({ id: ids.root })
     useSubgraphNavigationStore()
 
@@ -180,74 +191,70 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     expect(routerMocks.replace).not.toHaveBeenCalled()
   })
 
-  it('redirects to root even when canvas still references a deleted subgraph (stale-graph guard)', async () => {
-    const stale = makeSubgraph(ids.deletedSubgraph)
-    app.canvas.graph = stale
-    useSubgraphNavigationStore()
-
-    routeHashRef.value = `#${ids.deletedSubgraph}`
-    await flushHashWatcher()
-    await flushHashWatcher()
-
-    expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
-    expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
-  })
-
-  it('recovers canvas to root even if router.replace rejects during redirect', async () => {
-    routerMocks.replace.mockRejectedValueOnce(new Error('navigation aborted'))
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const stale = makeSubgraph(ids.deletedSubgraph)
-    app.canvas.graph = stale
-    useSubgraphNavigationStore()
-
-    routeHashRef.value = `#${ids.deletedSubgraph}`
-    await flushHashWatcher()
-    await flushHashWatcher()
-
-    expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
-    warnSpy.mockRestore()
-  })
-
-  it('redirects to root when the empty-hash transition cannot resolve the locator', async () => {
-    routeHashRef.value = `#${ids.deletedSubgraph}`
+  it('does not redirect when transitioning to an empty hash on the root graph', async () => {
+    routeHashRef.value = `#${ids.root}`
+    app.canvas.graph = fromPartial<LGraph>({ id: ids.root })
     useSubgraphNavigationStore()
     await flushHashWatcher()
     routerMocks.replace.mockClear()
+    vi.mocked(app.canvas.setGraph).mockClear()
 
     routeHashRef.value = ''
     await flushHashWatcher()
 
     expect(routerMocks.replace).not.toHaveBeenCalled()
+    expect(app.canvas.setGraph).not.toHaveBeenCalled()
   })
 
-  it('redirects to root when a workflow loads but the target subgraph is still missing', async () => {
+  it('redirects when canvas still references a deleted subgraph (stale-graph guard)', async () => {
+    app.canvas.graph = makeSubgraph(ids.deletedSubgraph)
+    useSubgraphNavigationStore()
+
+    routeHashRef.value = `#${ids.deletedSubgraph}`
+    await vi.waitFor(() => {
+      expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+      expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
+    })
+  })
+
+  it('recovers canvas to root even if router.replace rejects', async () => {
+    routerMocks.replace.mockRejectedValueOnce(new Error('navigation aborted'))
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    app.canvas.graph = makeSubgraph(ids.deletedSubgraph)
+    useSubgraphNavigationStore()
+
+    routeHashRef.value = `#${ids.deletedSubgraph}`
+    await vi.waitFor(() =>
+      expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
+    )
+    warnSpy.mockRestore()
+  })
+
+  it('redirects when a workflow load resolves but the subgraph is still missing', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     workflowStoreState.openWorkflows = [
       fromPartial<ComfyWorkflow>({
         path: 'phantom-workflow.json',
-        filename: 'phantom-workflow.json',
         activeState: {
           id: ids.deletedSubgraph,
           definitions: { subgraphs: [] }
         }
       })
     ]
-
     useSubgraphNavigationStore()
 
     routeHashRef.value = `#${ids.deletedSubgraph}`
-    await flushHashWatcher()
-    await flushHashWatcher()
-
-    expect(workflowServiceMocks.openWorkflow).toHaveBeenCalled()
-    expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('subgraph not found after workflow load')
-    )
+    await vi.waitFor(() => {
+      expect(workflowServiceMocks.openWorkflow).toHaveBeenCalled()
+      expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('subgraph not found after workflow load')
+      )
+    })
     warnSpy.mockRestore()
   })
 
-  it('redirects to root when openWorkflow rejects', async () => {
+  it('redirects when openWorkflow rejects during recovery', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     workflowServiceMocks.openWorkflow.mockRejectedValueOnce(
       new Error('load failed')
@@ -255,24 +262,46 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     workflowStoreState.openWorkflows = [
       fromPartial<ComfyWorkflow>({
         path: 'broken-workflow.json',
-        filename: 'broken-workflow.json',
         activeState: {
           id: ids.deletedSubgraph,
           definitions: { subgraphs: [] }
         }
       })
     ]
-
     useSubgraphNavigationStore()
 
     routeHashRef.value = `#${ids.deletedSubgraph}`
-    await flushHashWatcher()
-    await flushHashWatcher()
+    await vi.waitFor(() => {
+      expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('workflow load failed')
+      )
+    })
+    warnSpy.mockRestore()
+  })
 
-    expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('workflow load failed')
-    )
+  it('routeHash watcher does not re-enter navigateToHash during recovery redirect', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    // Simulate the real router replace: trigger the routeHash watcher
+    // exactly the way vue-router does when the URL is replaced.
+    routerMocks.replace.mockImplementation((target) => {
+      const hash = typeof target === 'string' ? target : ''
+      routeHashRef.value = hash
+      return Promise.resolve(undefined)
+    })
+    app.canvas.graph = makeSubgraph(ids.deletedSubgraph)
+    useSubgraphNavigationStore()
+
+    routeHashRef.value = `#${ids.deletedSubgraph}`
+    await vi.waitFor(() => {
+      expect(routerMocks.replace).toHaveBeenCalledWith(`#${app.rootGraph.id}`)
+    })
+
+    // navigateToHash for the deleted id ran once and produced exactly one
+    // redirect. The watcher must NOT have fired again for the rewritten
+    // (root) hash and produced a second redirect.
+    expect(routerMocks.replace).toHaveBeenCalledTimes(1)
+    expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
     warnSpy.mockRestore()
   })
 })

@@ -3,8 +3,33 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
-async function expectCanvasOnRootGraph(comfyPage: { page: Page }) {
-  const state = await comfyPage.page.evaluate(() => ({
+async function waitForStoreInitialSync(page: Page) {
+  await expect
+    .poll(async () => {
+      const state = await page.evaluate(() => ({
+        rootId: window.app?.rootGraph?.id ?? '',
+        hash: window.location.hash
+      }))
+      return state.rootId !== '' && state.hash === `#${state.rootId}`
+    })
+    .toBe(true)
+}
+
+async function expectCanvasOnRootGraph(page: Page) {
+  await expect
+    .poll(async () =>
+      page.evaluate(() => ({
+        rootId: window.app!.rootGraph.id,
+        canvasGraphId: window.app!.canvas.graph?.id,
+        hash: window.location.hash
+      }))
+    )
+    .toEqual({
+      rootId: expect.any(String),
+      canvasGraphId: expect.stringMatching(/.+/),
+      hash: expect.stringMatching(/^#.+/)
+    })
+  const state = await page.evaluate(() => ({
     rootId: window.app!.rootGraph.id,
     canvasGraphId: window.app!.canvas.graph?.id,
     hash: window.location.hash
@@ -20,6 +45,7 @@ test.describe(
     test('redirects URL and canvas to root for a non-existent subgraph hash', async ({
       comfyPage
     }) => {
+      await waitForStoreInitialSync(comfyPage.page)
       const rootId = await comfyPage.page.evaluate(
         () => window.app!.rootGraph.id
       )
@@ -31,14 +57,17 @@ test.describe(
       }, `#${phantomId}`)
 
       await expect
-        .poll(() => comfyPage.page.evaluate(() => window.location.hash))
+        .poll(() => comfyPage.page.evaluate(() => window.location.hash), {
+          timeout: 5000
+        })
         .toBe(`#${rootId}`)
-      await expectCanvasOnRootGraph(comfyPage)
+      await expectCanvasOnRootGraph(comfyPage.page)
     })
 
     test('redirects URL and canvas to root when hash is malformed', async ({
       comfyPage
     }) => {
+      await waitForStoreInitialSync(comfyPage.page)
       const rootId = await comfyPage.page.evaluate(
         () => window.app!.rootGraph.id
       )
@@ -48,9 +77,11 @@ test.describe(
       })
 
       await expect
-        .poll(() => comfyPage.page.evaluate(() => window.location.hash))
+        .poll(() => comfyPage.page.evaluate(() => window.location.hash), {
+          timeout: 5000
+        })
         .toBe(`#${rootId}`)
-      await expectCanvasOnRootGraph(comfyPage)
+      await expectCanvasOnRootGraph(comfyPage.page)
     })
   }
 )

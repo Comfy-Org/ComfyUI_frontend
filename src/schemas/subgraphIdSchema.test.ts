@@ -2,18 +2,18 @@ import { describe, expect, it } from 'vitest'
 
 import { createUuidv4 } from '@/lib/litegraph/src/utils/uuid'
 
-import { isValidSubgraphId, zSubgraphId } from './subgraphIdSchema'
+import { isUuidShapedSubgraphId, zSubgraphId } from './subgraphIdSchema'
+
+const CANONICAL_UUID = '550e8400-e29b-41d4-a716-446655440000'
 
 describe('subgraphIdSchema', () => {
   describe('zSubgraphId', () => {
     it('accepts a freshly generated UUID v4', () => {
-      const id = createUuidv4()
-      expect(zSubgraphId.safeParse(id).success).toBe(true)
+      expect(zSubgraphId.safeParse(createUuidv4()).success).toBe(true)
     })
 
     it('accepts a canonical UUID string', () => {
-      const id = '550e8400-e29b-41d4-a716-446655440000'
-      expect(zSubgraphId.safeParse(id).success).toBe(true)
+      expect(zSubgraphId.safeParse(CANONICAL_UUID).success).toBe(true)
     })
 
     it.each([
@@ -22,8 +22,8 @@ describe('subgraphIdSchema', () => {
       ['plain word', 'subgraph'],
       ['hash leftover', '#abc'],
       ['hex but not UUID-shaped', 'abcdef0123456789'],
-      ['UUID with leading hash', '#550e8400-e29b-41d4-a716-446655440000'],
-      ['UUID with whitespace', ' 550e8400-e29b-41d4-a716-446655440000 ']
+      ['UUID with leading hash', `#${CANONICAL_UUID}`],
+      ['UUID with whitespace', ` ${CANONICAL_UUID} `]
     ])('rejects %s', (_label, value) => {
       expect(zSubgraphId.safeParse(value).success).toBe(false)
     })
@@ -38,15 +38,15 @@ describe('subgraphIdSchema', () => {
     })
   })
 
-  describe('isValidSubgraphId', () => {
+  describe('isUuidShapedSubgraphId', () => {
     it('returns true for a valid UUID', () => {
-      expect(isValidSubgraphId(createUuidv4())).toBe(true)
+      expect(isUuidShapedSubgraphId(createUuidv4())).toBe(true)
     })
 
     it('returns false for an invalid value', () => {
-      expect(isValidSubgraphId('not-a-uuid')).toBe(false)
-      expect(isValidSubgraphId(undefined)).toBe(false)
-      expect(isValidSubgraphId(42)).toBe(false)
+      expect(isUuidShapedSubgraphId('not-a-uuid')).toBe(false)
+      expect(isUuidShapedSubgraphId(undefined)).toBe(false)
+      expect(isUuidShapedSubgraphId(42)).toBe(false)
     })
   })
 })
