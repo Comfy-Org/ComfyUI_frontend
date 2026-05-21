@@ -79,3 +79,20 @@ describe('DOMWidget Y Position Preservation', () => {
     expect(clonedWidget.y).toBe(0)
   })
 })
+
+describe('BaseDOMWidgetImpl.isVisible', () => {
+  test('returns false when the widget is computedDisabled (its input slot is linked)', () => {
+    const node = new LGraphNode('test-node')
+    const widget = new DOMWidgetImpl({
+      node,
+      name: 'text',
+      type: 'text',
+      element: document.createElement('textarea'),
+      options: {}
+    })
+
+    widget.computedDisabled = true
+
+    expect(widget.isVisible()).toBe(false)
+  })
+})
