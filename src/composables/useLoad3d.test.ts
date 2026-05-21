@@ -75,7 +75,6 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 }))
 
 vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
-  isAssetPreviewSupported: vi.fn(() => false),
   persistThumbnail: vi.fn().mockResolvedValue(undefined)
 }))
 
@@ -1483,22 +1482,9 @@ describe('useLoad3d', () => {
       expect(composable).toBeDefined()
     })
 
-    it('does not call captureThumbnail when asset preview is unsupported', async () => {
-      const { isAssetPreviewSupported } =
+    it('captures thumbnail and persists it when a model_file widget has a value', async () => {
+      const { persistThumbnail } =
         await import('@/platform/assets/utils/assetPreviewUtil')
-      vi.mocked(isAssetPreviewSupported).mockReturnValue(false)
-
-      const { handler } = await getModelReadyHandler()
-      handler()
-      await Promise.resolve()
-
-      expect(mockLoad3d.captureThumbnail).not.toHaveBeenCalled()
-    })
-
-    it('captures thumbnail and persists it when asset preview is supported and a model_file widget has a value', async () => {
-      const { isAssetPreviewSupported, persistThumbnail } =
-        await import('@/platform/assets/utils/assetPreviewUtil')
-      vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
       vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
         '',
         'cube.glb'
@@ -1523,9 +1509,8 @@ describe('useLoad3d', () => {
     })
 
     it('skips persistence when the model widget has no value', async () => {
-      const { isAssetPreviewSupported, persistThumbnail } =
+      const { persistThumbnail } =
         await import('@/platform/assets/utils/assetPreviewUtil')
-      vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
       mockNode.widgets = [
         { name: 'model_file', value: '' } as unknown as IWidget
       ]
@@ -1539,9 +1524,8 @@ describe('useLoad3d', () => {
     })
 
     it('swallows captureThumbnail rejections silently', async () => {
-      const { isAssetPreviewSupported, persistThumbnail } =
+      const { persistThumbnail } =
         await import('@/platform/assets/utils/assetPreviewUtil')
-      vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
       vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
         '',
         'broken.glb'

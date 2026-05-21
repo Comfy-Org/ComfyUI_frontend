@@ -19,5 +19,8 @@ runs:
       run: |
         set -euo pipefail
         cp -r ./tools/devtools/* /ComfyUI/custom_nodes/ComfyUI_devtools/
-        cd /ComfyUI && python3 main.py --cpu --multi-user --front-end-root "${{ inputs.front_end_root }}" &
+        # TODO(FE-729): remove --enable-assets once BE-786 lands in the CI ComfyUI image
+        # (BE-786 removes the gate so /api/assets is always on). Until then, FE-729
+        # routes modelStore through assetService, which 503s without this flag.
+        cd /ComfyUI && python3 main.py --cpu --multi-user --enable-assets --front-end-root "${{ inputs.front_end_root }}" &
         wait-for-it --service 127.0.0.1:8188 -t ${{ inputs.timeout }}
