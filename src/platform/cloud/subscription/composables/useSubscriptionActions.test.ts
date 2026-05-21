@@ -6,7 +6,7 @@ import { useSubscriptionActions } from '@/platform/cloud/subscription/composable
 const mockFetchBalance = vi.fn()
 const mockFetchStatus = vi.fn()
 const mockShowTopUpCreditsDialog = vi.fn()
-const mockExecute = vi.fn()
+const mockOpenSupport = vi.fn()
 
 vi.mock('@/composables/auth/useAuthActions', () => ({
   useAuthActions: () => ({
@@ -32,9 +32,9 @@ vi.mock('@/services/dialogService', () => ({
   })
 }))
 
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({
-    execute: mockExecute
+vi.mock('@/platform/support/useSupportContext', () => ({
+  useSupportContext: () => ({
+    openSupport: mockOpenSupport
   })
 }))
 
@@ -59,26 +59,28 @@ describe('useSubscriptionActions', () => {
   })
 
   describe('handleMessageSupport', () => {
-    it('should execute support command and manage loading state', async () => {
+    it('opens the Pylon billing form and resets loading state', () => {
       const { handleMessageSupport, isLoadingSupport } =
         useSubscriptionActions()
 
       expect(isLoadingSupport.value).toBe(false)
 
-      const promise = handleMessageSupport()
-      expect(isLoadingSupport.value).toBe(true)
+      handleMessageSupport()
 
-      await promise
-      expect(mockExecute).toHaveBeenCalledWith('Comfy.ContactSupport')
+      expect(mockOpenSupport).toHaveBeenCalledWith('billing-refund-issue', {
+        productArea: 'Billing'
+      })
       expect(isLoadingSupport.value).toBe(false)
     })
 
-    it('should handle errors gracefully', async () => {
-      mockExecute.mockRejectedValueOnce(new Error('Command failed'))
+    it('handles errors gracefully', () => {
+      mockOpenSupport.mockImplementationOnce(() => {
+        throw new Error('open failed')
+      })
       const { handleMessageSupport, isLoadingSupport } =
         useSubscriptionActions()
 
-      await handleMessageSupport()
+      handleMessageSupport()
       expect(isLoadingSupport.value).toBe(false)
     })
   })

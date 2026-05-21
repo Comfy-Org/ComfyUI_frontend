@@ -15,7 +15,7 @@
       {{ t('auth.login.privacyLink') }}
     </a>
     <a
-      href="https://support.comfy.org"
+      :href="supportUrl"
       class="cursor-pointer text-sm text-gray-600 no-underline"
       target="_blank"
       rel="noopener noreferrer"
@@ -28,5 +28,11 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import { SupportForm, buildSupportUrl } from '@/platform/support/config'
+
 const { t } = useI18n()
+
+const supportUrl = buildSupportUrl(SupportForm.Question, {
+  productArea: 'Cloud Onboarding'
+})
 </script>

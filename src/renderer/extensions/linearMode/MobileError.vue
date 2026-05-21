@@ -8,7 +8,8 @@ import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { buildSupportUrl } from '@/platform/support/config'
+import { SupportForm, buildSupportUrl } from '@/platform/support/config'
+import { useSupportContext } from '@/platform/support/useSupportContext'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
@@ -25,7 +26,11 @@ const { copyToClipboard } = useCopyToClipboard()
 const guideUrl = buildDocsUrl('troubleshooting/overview', {
   includeLocale: true
 })
-const supportUrl = buildSupportUrl()
+const { buildPrefill } = useSupportContext()
+const supportUrl = buildSupportUrl(
+  SupportForm.Bug,
+  buildPrefill({ productArea: 'Linear Mode' })
+)
 
 const inputNodeIds = computed(() => {
   const ids = new Set()

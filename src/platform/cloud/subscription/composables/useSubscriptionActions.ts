@@ -3,9 +3,10 @@ import { onMounted, ref } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { isCloud } from '@/platform/distribution/types'
+import { SupportForm } from '@/platform/support/config'
+import { useSupportContext } from '@/platform/support/useSupportContext'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
-import { useCommandStore } from '@/stores/commandStore'
 
 /**
  * Composable for handling subscription panel actions and loading states
@@ -13,7 +14,7 @@ import { useCommandStore } from '@/stores/commandStore'
 export function useSubscriptionActions() {
   const dialogService = useDialogService()
   const authActions = useAuthActions()
-  const commandStore = useCommandStore()
+  const { openSupport } = useSupportContext()
   const telemetry = useTelemetry()
   const { fetchStatus } = useBillingContext()
 
@@ -27,7 +28,7 @@ export function useSubscriptionActions() {
     void dialogService.showTopUpCreditsDialog()
   }
 
-  const handleMessageSupport = async () => {
+  const handleMessageSupport = () => {
     try {
       isLoadingSupport.value = true
       if (isCloud) {
@@ -37,7 +38,7 @@ export function useSubscriptionActions() {
           source: 'subscription'
         })
       }
-      await commandStore.execute('Comfy.ContactSupport')
+      openSupport(SupportForm.Billing, { productArea: 'Billing' })
     } catch (error) {
       console.error('[useSubscriptionActions] Error contacting support:', error)
     } finally {
