@@ -1,0 +1,65 @@
+# Description: Typecheck and build the @comfyorg/extension-api package.
+# Runs on PRs and pushes touching the public type surface, the core .v2.ts
+# implementations, or the package scaffold — so regressions in the published
+# contract are caught before merge.
+#
+# PKG4.D3 (MIG1 / Phase A — surface-only shim)
+name: 'Extension API: Typecheck'
+
+on:
+  push:
+    branches: [main, master, dev*, core/*, extension-v2*]
+    paths:
+      - 'src/extension-api/**'
+      - 'src/extensions/core/*.v2.ts'
+      - 'src/services/extension-api-service.ts'
+      - 'packages/extension-api/**'
+      - '.github/workflows/extension-api-*.yml'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+    paths:
+      - 'src/extension-api/**'
+      - 'src/extensions/core/*.v2.ts'
+      - 'src/services/extension-api-service.ts'
+      - 'packages/extension-api/**'
+      - '.github/workflows/extension-api-*.yml'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    name: Build + typecheck @comfyorg/extension-api
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Build package (emit declarations)
+        run: pnpm --filter @comfyorg/extension-api build
+
+      - name: Typecheck package
+        run: pnpm --filter @comfyorg/extension-api typecheck
+
+      - name: Smoke-test consumer (tsc --noEmit on minimal extension)
+        # Verifies the published types are consumable from an external module
+        # that imports from '@comfyorg/extension-api'. Uses a minimal fixture
+        # checked in to packages/extension-api/test/smoke/.
+        run: |
+          cd packages/extension-api
+          if [ -d test/smoke ]; then
+            pnpm exec tsc --noEmit --project test/smoke/tsconfig.json
+          else
+            echo "No smoke test found — skipping (add packages/extension-api/test/smoke/ to enable)"
+          fi

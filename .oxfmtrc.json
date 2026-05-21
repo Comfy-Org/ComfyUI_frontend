@@ -6,6 +6,7 @@
   "trailingComma": "none",
   "printWidth": 80,
   "ignorePatterns": [
+    "packages/extension-api/build/**",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "public/materialdesignicons.min.css",
     "src/types/generatedManagerTypes.ts",
