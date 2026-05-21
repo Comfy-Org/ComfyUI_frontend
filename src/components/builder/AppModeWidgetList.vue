@@ -24,6 +24,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { resolveNodeWidget } from '@/utils/litegraphUtil'
+import { friendlyNodeLabel } from '@/utils/nodeTitleUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
 import { promptRenameWidget } from '@/utils/widgetUtil'
@@ -65,7 +66,10 @@ useEventListener(
 )
 
 const mappedSelections = computed((): WidgetEntry[] => {
-  void graphNodes.value
+  // Reading `graphNodes.value` registers the dep so the computed
+  // re-runs when `app.rootGraph` is re-bound. Typed as an array so
+  // the early return is just an explicit no-op guard.
+  if (!graphNodes.value) return []
   const nodeDataByNode = new Map<
     LGraphNode,
     ReturnType<typeof nodeToNodeData>
@@ -88,7 +92,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
       const storeNodeId = vueWidget.storeNodeId?.split(':')?.[1] ?? ''
       return (
         isPromotedWidgetView(widget) &&
-        widget.sourceNodeId == storeNodeId &&
+        String(widget.sourceNodeId) === storeNodeId &&
         widget.sourceWidgetName === vueWidget.storeName
       )
     })
@@ -179,6 +183,7 @@ defineExpose({ handleDragDrop })
     :key
     :class="
       cn(
+        'flex flex-col gap-[10px]',
         builderMode &&
           'draggable-item drag-handle pointer-events-auto relative cursor-grab [&.is-draggable]:cursor-grabbing'
       )
@@ -194,24 +199,30 @@ defineExpose({ handleDragDrop })
     <div
       :class="
         cn(
-          'mt-1.5 flex min-h-8 items-center gap-1 px-3',
+          'app-mode-widget-header flex min-h-8 items-center gap-2 px-3',
           builderMode && 'drag-handle'
         )
       "
     >
       <span
-        :class="cn('truncate text-sm/8', builderMode && 'pointer-events-none')"
+        :class="
+          cn(
+            'app-mode-widget-label truncate leading-8',
+            builderMode && 'pointer-events-none'
+          )
+        "
         data-testid="builder-widget-label"
       >
         {{ action.widget.label || action.widget.name }}
       </span>
+      <!-- Node-title subtitle — same base size as the main label; color
+           alone carries the hierarchy so users can tell two "text"
+           inputs apart (e.g. positive vs negative prompt). -->
       <span
-        v-if="builderMode"
-        class="pointer-events-none mx-1 min-w-10 flex-1 truncate text-right text-xs text-muted-foreground"
+        class="app-mode-widget-subtitle pointer-events-none mx-1 min-w-10 flex-1 truncate text-right"
       >
-        {{ action.node.title }}
+        {{ friendlyNodeLabel(action.node.title) }}
       </span>
-      <div v-else class="flex-1" />
       <Popover
         :class="cn('shrink-0', builderMode && 'pointer-events-auto')"
         :entries="[
@@ -274,3 +285,34 @@ defineExpose({ handleDragDrop })
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Match InputCell (the App-Mode-panel block renderer) so builder and
+   App Mode read identically. Label + subtitle share the base size;
+   color alone separates primary from secondary. */
+.app-mode-widget-label {
+  font-size: var(--text-layout-md);
+  color: var(--color-base-foreground);
+}
+
+.app-mode-widget-subtitle {
+  font-size: var(--text-layout-md);
+  color: var(--color-muted-foreground);
+}
+
+[data-testid='builder-widget-item'] :deep(textarea),
+[data-testid='builder-widget-item'] :deep(input),
+[data-testid='app-mode-widget-item'] :deep(textarea),
+[data-testid='app-mode-widget-item'] :deep(input) {
+  font-size: var(--text-layout-md);
+}
+
+/* Between-widget vertical rhythm — 10px matches the header→body gap
+   inside each widget so input-bottom → next-label-top equals
+   label-bottom → input-top. Uniform vertical rhythm without needing
+   a flex parent around the v-for. */
+[data-testid='builder-widget-item'] + [data-testid='builder-widget-item'],
+[data-testid='app-mode-widget-item'] + [data-testid='app-mode-widget-item'] {
+  margin-top: 10px;
+}
+</style>

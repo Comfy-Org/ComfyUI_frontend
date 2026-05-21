@@ -4,7 +4,7 @@
       <div
         :class="
           cn(
-            'relative shrink-0 items-center rounded-[4px]',
+            'relative shrink-0 items-center rounded-layout-cell',
             showsCompletionPreview && showThumbnails
               ? 'flex h-8 overflow-visible p-0'
               : showsCompletionPreview
@@ -20,7 +20,7 @@
               :key="`completion-preview-${index}`"
               :class="
                 cn(
-                  'relative size-8 shrink-0 overflow-hidden rounded-[4px]',
+                  'relative size-8 shrink-0 overflow-hidden rounded-layout-cell',
                   index > 0 && '-ml-3 ring-2 ring-secondary-background'
                 )
               "
