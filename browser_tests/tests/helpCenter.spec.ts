@@ -99,26 +99,28 @@ test.describe('Help Center', () => {
       expect(url.pathname).toBe('/Comfy-Org/ComfyUI')
     })
 
-    test('Help & Support item opens the Zendesk support form with OSS tag', async ({
+    test('Help & Support item opens the Pylon question form tagged as OSS', async ({
       helpCenter
     }) => {
       const url = await waitForPopup(helpCenter.page, () =>
         helpCenter.menuItem('help').click()
       )
 
-      expect(url.hostname).toBe('support.comfy.org')
-      expect(url.searchParams.get('tf_42243568391700')).toBe('oss')
+      expect(url.hostname).toBe('portal.usepylon.com')
+      expect(url.pathname).toBe('/comfy-org/forms/question')
+      expect(url.searchParams.get('comfy_environment')).toBe('oss')
     })
 
-    test('Give Feedback item opens Contact Support in OSS mode', async ({
+    test('Give Feedback item opens the Pylon question form in OSS mode', async ({
       helpCenter
     }) => {
       const url = await waitForPopup(helpCenter.page, () =>
         helpCenter.menuItem('feedback').click()
       )
 
-      expect(url.hostname).toBe('support.comfy.org')
-      expect(url.searchParams.get('tf_42243568391700')).toBe('oss')
+      expect(url.hostname).toBe('portal.usepylon.com')
+      expect(url.pathname).toBe('/comfy-org/forms/question')
+      expect(url.searchParams.get('comfy_environment')).toBe('oss')
     })
   })
 

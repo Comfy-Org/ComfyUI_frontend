@@ -49,6 +49,13 @@ vi.mock('@/stores/commandStore', () => ({
   }))
 }))
 
+const mockOpenSupport = vi.fn()
+vi.mock('@/platform/support/useSupportContext', () => ({
+  useSupportContext: vi.fn(() => ({
+    openSupport: mockOpenSupport
+  }))
+}))
+
 vi.mock('@/composables/useExternalLink', () => ({
   useExternalLink: vi.fn(() => ({
     staticUrls: {
@@ -353,7 +360,7 @@ describe('ErrorNodeCard.vue', () => {
     openSpy.mockRestore()
   })
 
-  it('executes ContactSupport command when Get Help button is clicked', async () => {
+  it('opens the Pylon bug-report form when Get Help button is clicked', async () => {
     const { user } = renderCard(makeRuntimeErrorCard())
 
     await waitFor(() => {
@@ -362,7 +369,9 @@ describe('ErrorNodeCard.vue', () => {
 
     await user.click(screen.getByRole('button', { name: /Get Help/ }))
 
-    expect(mockExecuteCommand).toHaveBeenCalledWith('Comfy.ContactSupport')
+    expect(mockOpenSupport).toHaveBeenCalledWith('report-a-bug', {
+      productArea: 'Workflow Error'
+    })
     expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith(
       expect.objectContaining({
         resource_type: 'help_feedback',
