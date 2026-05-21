@@ -8014,6 +8014,20 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "Load MediaPipe Face Landmarker",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "Face Landmarker safetensors from models/mediapipe/."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadMoGeModel": {
     "display_name": "Load MoGe Model",
     "inputs": {
@@ -9314,6 +9328,92 @@
     "inputs": {
       "mask": {
         "name": "mask"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceLandmarker": {
+    "display_name": "MediaPipe Face Landmarker",
+    "inputs": {
+      "face_landmarker": {
+        "name": "face_landmarker"
+      },
+      "image": {
+        "name": "image"
+      },
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "Face detector range. 'short' is tuned for close-up faces (within ~2 m of the camera); 'full' covers farther / smaller faces (up to ~5 m) but is slower. 'both' runs both detectors and keeps whichever found more faces per frame (~2× detection cost)."
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "Maximum faces to return per frame. 0 = no cap (return all detected)."
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "BlazeFace score threshold. Lower to catch small/occluded faces."
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "Per-frame behaviour when detection fails in a batch. 'empty' leaves the frame faceless. 'previous' copies the most recent successful detection. 'interpolate' lerps landmarks/bbox/blendshapes between bracketing successful frames. Multi-face: pairs faces across frames by greedy bbox-centre NN."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "display_name": "MediaPipe Face Mask",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = union of face_oval+lips+eyes+irises (which collapses to face_oval since it encloses the rest). 'custom' = toggle each region individually for combos like lips+eyes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "display_name": "MediaPipe Face Mesh Visualize",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = oval+eyes+brows+lips+irises+nose. 'fill' = solid face_oval polygon (silhouette mask). 'custom' = toggle each feature individually (including 'tesselation', the full 2547-edge wireframe)."
+      },
+      "color": {
+        "name": "color"
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "Edge line thickness in pixels. 0 disables edge drawing."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "Landmark dot radius in pixels. 0 disables point drawing."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "If not connected, a black canvas will be used."
       }
     },
     "outputs": {
@@ -16536,6 +16636,23 @@
     "outputs": {
       "0": {
         "name": "contains",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "display_name": "Format Text",
+    "description": "Same as Python's string format method. Supports all of Python's format options and features.",
+    "inputs": {
+      "values": {
+        "name": "values"
+      },
+      "f_string": {
+        "name": "f_string"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

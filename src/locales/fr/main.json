@@ -800,6 +800,8 @@
     "CONTROL_NET": "RESEAU_DE_CONTROLE",
     "CURVE": "COURBE",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FICHIER_3D",
     "FILE_3D_FBX": "FICHIER_3D_FBX",
     "FILE_3D_GLB": "FICHIER_3D_GLB",
@@ -2443,7 +2445,8 @@
     "nonPublicAssetsWarningLine1": "Ce workflow contient des ressources non publiques.",
     "nonPublicAssetsWarningLine2": "Celles-ci seront importées dans votre bibliothèque lors de l'ouverture du workflow",
     "openWithoutImporting": "Ouvrir sans importer",
-    "openWorkflow": "Ouvrir le workflow"
+    "openWorkflow": "Ouvrir le workflow",
+    "opening": "Ouverture du workflow partagé..."
   },
   "painter": {
     "background": "Arrière-plan",
