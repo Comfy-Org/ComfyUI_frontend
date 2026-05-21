@@ -927,6 +927,25 @@ describe('disambiguated nested promotion identity', () => {
     expect(host.subgraph.inputs[0]?.name).toBe('text_1')
   })
 
+  it('marks a promoted interior widget as computedDisabled so the connection dot replaces its UI', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+
+    const interiorNode = new LGraphNode('Source')
+    subgraph.add(interiorNode)
+    const interiorInput = interiorNode.addInput('text', 'STRING')
+    const interiorWidget = interiorNode.addWidget('text', 'text', '', () => {})
+    interiorInput.widget = { name: interiorWidget.name }
+
+    expect(
+      promoteValueWidgetViaSubgraphInput(host, interiorNode, interiorWidget).ok
+    ).toBe(true)
+
+    interiorNode.updateComputedDisabled()
+
+    expect(interiorWidget.computedDisabled).toBe(true)
+  })
+
   it('preserves a real two-level promotion through the SubgraphEditor mount-time prune', () => {
     // Inner subgraph: two interior nodes that both have a `text` widget.
     // Promoting both to the inner boundary forces a `text` / `text_1` collision.
