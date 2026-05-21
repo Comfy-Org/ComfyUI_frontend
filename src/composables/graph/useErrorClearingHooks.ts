@@ -246,7 +246,7 @@ function scanSingleNodeMedia(node: LGraphNode): void {
   if (!app.rootGraph) return
   if (!getActiveExecutionId(node)) return
 
-  const mediaCandidates = scanNodeMediaCandidates(app.rootGraph, node, isCloud)
+  const mediaCandidates = scanNodeMediaCandidates(app.rootGraph, node)
   const confirmedMedia = mediaCandidates.filter((c) => c.isMissing === true)
   if (confirmedMedia.length) {
     useMissingMediaStore().addMissingMedia(confirmedMedia)
@@ -302,7 +302,7 @@ async function verifyAndAddPendingMedia(
 ): Promise<void> {
   const rootGraphAtScan = app.rootGraph
   try {
-    await verifyMediaCandidates(pending, { isCloud })
+    await verifyMediaCandidates(pending, { allowCompactSuffix: isCloud })
     if (app.rootGraph !== rootGraphAtScan) return
     const verified = pending.filter(
       (c) => c.isMissing === true && isCandidateStillActive(c.nodeId)
