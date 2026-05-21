@@ -1,8 +1,10 @@
 import { z } from 'zod'
 
-import { LinkMarkerShape } from '@/lib/litegraph/src/litegraph'
+import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
 import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { colorPalettesSchema } from '@/schemas/colorPaletteSchema'
+import { resultItemType } from '@/schemas/resultItemTypeSchema'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { zKeybinding } from '@/platform/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
@@ -10,8 +12,8 @@ import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 const zNodeType = z.string()
 const zJobId = z.string()
 export type JobId = z.infer<typeof zJobId>
-export const resultItemType = z.enum(['input', 'output', 'temp'])
-export type ResultItemType = z.infer<typeof resultItemType>
+export { resultItemType }
+export type { ResultItemType }
 
 const zCustomNodesI18n = z.record(z.string(), z.unknown())
 export type CustomNodesI18n = z.infer<typeof zCustomNodesI18n>

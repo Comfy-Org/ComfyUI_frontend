@@ -9,22 +9,23 @@ test.describe('Vue Widget Reactivity', { tag: '@vue-nodes' }, () => {
     const loadCheckpointNode = comfyPage.page.locator(
       'css=[data-testid="node-body-4"] > .lg-node-widgets > div'
     )
+    await expect(loadCheckpointNode).toHaveCount(1)
     await comfyPage.page.evaluate(() => {
       const graph = window.graph as TestGraphAccess
       const node = graph._nodes_by_id['4']
-      node.widgets!.push(node.widgets![0])
+      node.addWidget('text', 'extra_widget_a', '', () => {})
     })
     await expect(loadCheckpointNode).toHaveCount(2)
     await comfyPage.page.evaluate(() => {
       const graph = window.graph as TestGraphAccess
       const node = graph._nodes_by_id['4']
-      node.widgets![2] = node.widgets![0]
+      node.addWidget('text', 'extra_widget_b', '', () => {})
     })
     await expect(loadCheckpointNode).toHaveCount(3)
     await comfyPage.page.evaluate(() => {
       const graph = window.graph as TestGraphAccess
       const node = graph._nodes_by_id['4']
-      node.widgets!.splice(0, 0, node.widgets![0])
+      node.addWidget('text', 'extra_widget_c', '', () => {})
     })
     await expect(loadCheckpointNode).toHaveCount(4)
   })

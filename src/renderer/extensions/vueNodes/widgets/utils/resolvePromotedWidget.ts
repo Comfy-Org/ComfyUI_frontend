@@ -1,6 +1,6 @@
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { ResolvedPromotedWidget } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 export function resolveWidgetFromHostNode(
