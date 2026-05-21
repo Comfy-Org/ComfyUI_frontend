@@ -880,6 +880,153 @@ export const zJwkKey = z.object({
 })
 
 /**
+ * RFC 6749 §5.2 error response.
+ */
+export const zOAuthTokenError = z.object({
+  error: z.string(),
+  error_description: z.string().optional()
+})
+
+/**
+ * RFC 6749 §5.1 successful token response.
+ */
+export const zOAuthTokenResponse = z.object({
+  access_token: z.string(),
+  token_type: z.enum(['Bearer']),
+  expires_in: z.number().int(),
+  refresh_token: z.string(),
+  scope: z.string()
+})
+
+/**
+ * One workspace option presented in the OAuth consent challenge. Promoted to a named schema so the generated Go type is referenceable in handlers and tests rather than re-declared as an anonymous struct at every callsite.
+ *
+ */
+export const zOAuthConsentChallengeWorkspace = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.enum(['personal', 'team']),
+  role: z.enum(['owner', 'member'])
+})
+
+/**
+ * Redirect target produced after a JSON consent submission. The frontend must navigate the browser to this URL so custom-scheme client callbacks work without relying on fetch-visible 302 headers.
+ */
+export const zOAuthAuthorizeRedirectResponse = z.object({
+  redirect_url: z.string().url()
+})
+
+/**
+ * Server-side state describing the OAuth consent decision the user is being asked to make. Returned by GET /oauth/authorize when a valid Cloud session exists; the frontend renders the consent UI from this payload and POSTs the decision back. Browser never sees the original OAuth params on resume.
+ *
+ */
+export const zOAuthConsentChallenge = z.object({
+  oauth_request_id: z.string().uuid(),
+  csrf_token: z.string(),
+  client_display_name: z.string(),
+  resource_display_name: z.string(),
+  scopes: z.array(z.string()),
+  workspaces: z.array(zOAuthConsentChallengeWorkspace)
+})
+
+/**
+ * OAuth 2.1 protected-resource metadata (RFC 9728).
+ */
+export const zOAuthProtectedResourceMetadata = z.object({
+  resource: z.string().url(),
+  authorization_servers: z.array(z.string().url()),
+  scopes_supported: z.array(z.string()),
+  bearer_methods_supported: z.array(z.string()).optional()
+})
+
+/**
+ * RFC 7591 §3.2.2 error response.
+ */
+export const zOAuthRegisterError = z.object({
+  error: z.enum(['invalid_redirect_uri', 'invalid_client_metadata']),
+  error_description: z.string().nullish()
+})
+
+/**
+ * Error shape returned when request binding or validation fails before the handler runs.
+ */
+export const zBindingErrorResponse = z.object({
+  message: z.string()
+})
+
+/**
+ * Union of the two 400 shapes /oauth/register can emit. `OAuthRegisterError` is the handler-shaped RFC 7591 §3.2.2 error; `BindingErrorResponse` is the strict-server binding-layer error fired when the request body fails OpenAPI-schema validation before the handler runs.
+ *
+ */
+export const zOAuthRegisterBadRequestResponse = z.union([
+  zOAuthRegisterError,
+  zBindingErrorResponse
+])
+
+/**
+ * RFC 7591 §3.2.1 successful registration response.
+ */
+export const zOAuthRegisterResponse = z.object({
+  client_id: z.string(),
+  client_id_issued_at: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  client_name: z.string().optional(),
+  redirect_uris: z.array(z.string()),
+  grant_types: z.array(z.string()),
+  response_types: z.array(z.string()),
+  token_endpoint_auth_method: z.enum(['none']),
+  application_type: z.enum(['native', 'web'])
+})
+
+/**
+ * RFC 7591 §2 client metadata document. Only the fields the server honors are listed; presence of `scope` or `resource_grants` in the request is rejected (`invalid_client_metadata`) because those are server-owned for dynamic clients. `additionalProperties: false` mirrors the runtime middleware that rejects any unknown metadata key.
+ *
+ */
+export const zOAuthRegisterRequest = z.object({
+  redirect_uris: z.array(z.string()).min(1).max(5),
+  client_name: z.string().max(100).optional(),
+  application_type: z.enum(['native', 'web']),
+  token_endpoint_auth_method: z.enum(['none']).optional(),
+  grant_types: z
+    .array(z.enum(['authorization_code', 'refresh_token']))
+    .optional(),
+  response_types: z.array(z.enum(['code'])).optional(),
+  scope: z.string().nullish(),
+  resource_grants: z.record(z.array(z.string())).nullish(),
+  client_uri: z.string().nullish(),
+  logo_uri: z.string().nullish(),
+  tos_uri: z.string().nullish(),
+  policy_uri: z.string().nullish(),
+  software_id: z.string().nullish(),
+  software_version: z.string().nullish(),
+  contacts: z.array(z.string()).nullish(),
+  jwks: z.record(z.unknown()).nullish(),
+  jwks_uri: z.string().nullish()
+})
+
+/**
+ * OAuth 2.1 authorization-server metadata (RFC 8414).
+ */
+export const zOAuthAuthorizationServerMetadata = z.object({
+  issuer: z.string().url(),
+  authorization_endpoint: z.string().url(),
+  token_endpoint: z.string().url(),
+  jwks_uri: z.string().url(),
+  registration_endpoint: z.string().url().optional(),
+  response_types_supported: z.array(z.string()),
+  grant_types_supported: z.array(z.string()),
+  code_challenge_methods_supported: z.array(z.string()),
+  token_endpoint_auth_methods_supported: z.array(z.string()),
+  scopes_supported: z.array(z.string()).optional()
+})
+
+/**
  * JSON Web Key Set containing the public keys used to verify Cloud JWTs.
  */
 export const zJwksResponse = z.object({
@@ -940,6 +1087,7 @@ export const zWorkspaceApiKeyInfo = z.object({
   workspace_id: z.string(),
   user_id: z.string(),
   name: z.string(),
+  description: z.string().max(5000),
   key_prefix: z.string(),
   expires_at: z.string().datetime().optional(),
   last_used_at: z.string().datetime().optional(),
@@ -960,6 +1108,7 @@ export const zListWorkspaceApiKeysResponse = z.object({
 export const zCreateWorkspaceApiKeyResponse = z.object({
   id: z.string().uuid(),
   name: z.string(),
+  description: z.string().max(5000),
   key: z.string(),
   key_prefix: z.string(),
   expires_at: z.string().datetime().optional(),
@@ -971,6 +1120,7 @@ export const zCreateWorkspaceApiKeyResponse = z.object({
  */
 export const zCreateWorkspaceApiKeyRequest = z.object({
   name: z.string(),
+  description: z.string().max(5000).optional(),
   expires_at: z.string().datetime().optional()
 })
 
@@ -1353,6 +1503,7 @@ export const zListTagsResponse = z.object({
 export const zAsset = z.object({
   id: z.string().uuid(),
   name: z.string(),
+  display_name: z.string().nullish(),
   asset_hash: z
     .string()
     .regex(/^blake3:[a-f0-9]{64}$/)
@@ -1385,7 +1536,8 @@ export const zAsset = z.object({
 export const zListAssetsResponse = z.object({
   assets: z.array(zAsset),
   total: z.number().int(),
-  has_more: z.boolean()
+  has_more: z.boolean(),
+  next_cursor: z.string().optional()
 })
 
 /**
@@ -1394,6 +1546,7 @@ export const zListAssetsResponse = z.object({
 export const zAssetUpdated = z.object({
   id: z.string().uuid(),
   name: z.string().optional(),
+  display_name: z.string().nullish(),
   asset_hash: z
     .string()
     .regex(/^blake3:[a-f0-9]{64}$/)
@@ -1754,13 +1907,6 @@ export const zExportDownloadUrlResponse = z.object({
 })
 
 /**
- * Error shape returned when request binding or validation fails before the handler runs.
- */
-export const zBindingErrorResponse = z.object({
-  message: z.string()
-})
-
-/**
  * Standard error response with a machine-readable code and human-readable message.
  */
 export const zErrorResponse = z.object({
@@ -1796,6 +1942,7 @@ export const zPromptRequest = z.object({
 export const zAssetWritable = z.object({
   id: z.string().uuid(),
   name: z.string(),
+  display_name: z.string().nullish(),
   asset_hash: z
     .string()
     .regex(/^blake3:[a-f0-9]{64}$/)
@@ -1827,7 +1974,8 @@ export const zAssetWritable = z.object({
 export const zListAssetsResponseWritable = z.object({
   assets: z.array(zAssetWritable),
   total: z.number().int(),
-  has_more: z.boolean()
+  has_more: z.boolean(),
+  next_cursor: z.string().optional()
 })
 
 /**
@@ -2132,9 +2280,9 @@ export const zListAssetsData = z.object({
         .enum(['name', 'created_at', 'updated_at', 'size', 'last_access_time'])
         .optional(),
       order: z.enum(['asc', 'desc']).optional(),
-      job_ids: z.array(z.string().uuid()).optional(),
       include_public: z.boolean().optional().default(true),
-      asset_hash: z.string().optional()
+      asset_hash: z.string().optional(),
+      after: z.string().optional()
     })
     .optional()
 })
@@ -2773,6 +2921,101 @@ export const zGetJwksData = z.object({
  * JWKS response
  */
 export const zGetJwksResponse = zJwksResponse
+
+export const zGetOAuthAuthorizationServerData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Authorization-server metadata
+ */
+export const zGetOAuthAuthorizationServerResponse =
+  zOAuthAuthorizationServerMetadata
+
+export const zGetOAuthProtectedResourceData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Protected-resource metadata
+ */
+export const zGetOAuthProtectedResourceResponse =
+  zOAuthProtectedResourceMetadata
+
+export const zGetOAuthAuthorizeData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z
+    .object({
+      response_type: z.string().optional(),
+      client_id: z.string().optional(),
+      redirect_uri: z.string().optional(),
+      scope: z.string().optional(),
+      state: z.string().optional(),
+      code_challenge: z.string().optional(),
+      code_challenge_method: z.string().optional(),
+      resource: z.string().optional(),
+      oauth_request_id: z.string().optional()
+    })
+    .optional()
+})
+
+/**
+ * Consent challenge payload (cookie present, email verified). Frontend renders the consent UI from this payload and POSTs back to /oauth/authorize.
+ *
+ */
+export const zGetOAuthAuthorizeResponse = zOAuthConsentChallenge
+
+export const zPostOAuthAuthorizeData = z.object({
+  body: z.object({
+    oauth_request_id: z.string().uuid(),
+    csrf_token: z.string(),
+    decision: z.enum(['allow', 'deny']),
+    workspace_id: z.string()
+  }),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Redirect URL for the frontend to navigate to (allow → with code+state; deny → with error+state)
+ */
+export const zPostOAuthAuthorizeResponse = zOAuthAuthorizeRedirectResponse
+
+export const zPostOAuthTokenData = z.object({
+  body: z.object({
+    grant_type: z.enum(['authorization_code', 'refresh_token']),
+    client_id: z.string(),
+    code: z.string().optional(),
+    redirect_uri: z.string().optional(),
+    code_verifier: z.string().optional(),
+    refresh_token: z.string().optional(),
+    scope: z.string().optional(),
+    client_secret: z.string().optional()
+  }),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * New token pair
+ */
+export const zPostOAuthTokenResponse = zOAuthTokenResponse
+
+export const zPostOAuthRegisterData = z.object({
+  body: zOAuthRegisterRequest,
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Registered. Body echoes the metadata RFC 7591 §3.2.1 requires.
+ */
+export const zPostOAuthRegisterResponse = zOAuthRegisterResponse
 
 export const zListWorkspacesData = z.object({
   body: z.never().optional(),
@@ -3670,12 +3913,6 @@ export const zGetHealthData = z.object({
  * Service is healthy
  */
 export const zGetHealthResponse = z.string()
-
-export const zGetOpenapiSpecData = z.object({
-  body: z.never().optional(),
-  path: z.never().optional(),
-  query: z.never().optional()
-})
 
 export const zGetMonitoringTasksData = z.object({
   body: z.never().optional(),
