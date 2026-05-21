@@ -18,6 +18,5 @@
   },
   "devDependencies": {
     "typescript": "catalog:"
-  },
-  "packageManager": "pnpm@10.17.1"
+  }
 }

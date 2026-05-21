@@ -800,6 +800,8 @@
     "CONTROL_NET": "ControlNet",
     "CURVE": "منحنى",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_LANDMARKS": "معالم الوجه",
     "FILE_3D": "ملف ثلاثي الأبعاد",
     "FILE_3D_FBX": "ملف FBX ثلاثي الأبعاد",
     "FILE_3D_GLB": "ملف GLB ثلاثي الأبعاد",
@@ -2443,7 +2445,8 @@
     "nonPublicAssetsWarningLine1": "يأتي هذا سير العمل مع أصول غير عامة.",
     "nonPublicAssetsWarningLine2": "سيتم استيراد هذه الأصول إلى مكتبتك عند فتح سير العمل",
     "openWithoutImporting": "فتح بدون استيراد",
-    "openWorkflow": "فتح سير العمل"
+    "openWorkflow": "فتح سير العمل",
+    "opening": "جارٍ فتح سير العمل المشترك..."
   },
   "painter": {
     "background": "الخلفية",

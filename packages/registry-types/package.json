@@ -6,7 +6,6 @@
   "exports": {
     ".": "./src/comfyRegistryTypes.ts"
   },
-  "packageManager": "pnpm@10.17.1",
   "nx": {
     "tags": [
       "scope:shared",

@@ -8435,6 +8435,20 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "تحميل MediaPipe Face Landmarker",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "ملف safetensors الخاص بـ Face Landmarker من models/mediapipe/."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadMoGeModel": {
     "display_name": "تحميل نموذج MoGe",
     "inputs": {
@@ -9314,6 +9328,92 @@
     "inputs": {
       "mask": {
         "name": "قناع"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceLandmarker": {
+    "display_name": "MediaPipe Face Landmarker",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "نطاق كاشف الوجه. 'short' مخصص للوجوه القريبة (ضمن ~٢ متر من الكاميرا)؛ 'full' يغطي الوجوه البعيدة/الأصغر (حتى ~٥ متر) لكنه أبطأ. 'both' يشغل كلا الكاشفين ويحتفظ بالكاشف الذي وجد وجوهًا أكثر في كل إطار (تكلفة كشف مضاعفة تقريبًا)."
+      },
+      "face_landmarker": {
+        "name": "face_landmarker"
+      },
+      "image": {
+        "name": "الصورة"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "عتبة درجة BlazeFace. خفضها لالتقاط الوجوه الصغيرة/المحجوبة."
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "سلوك كل إطار عند فشل الكشف في دفعة. 'empty' يترك الإطار بدون وجه. 'previous' ينسخ آخر كشف ناجح. 'interpolate' يقوم بتقريب المعالم/الصندوق/أشكال المزج بين الإطارات الناجحة المحيطة. في حالة تعدد الوجوه: يتم إقران الوجوه عبر الإطارات بأقرب مركز صندوق."
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "أقصى عدد للوجوه التي يتم إرجاعها في كل إطار. ٠ = بدون حد (إرجاع جميع الوجوه المكتشفة)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "display_name": "MediaPipe Face Mask",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = اتحاد face_oval+lips+eyes+irises (والذي يختصر إلى face_oval لأنه يحيط بالباقي). 'custom' = تفعيل كل منطقة بشكل فردي لتكوينات مثل lips+eyes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "display_name": "تصوير شبكة وجه MediaPipe",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = oval+eyes+brows+lips+irises+nose. 'fill' = مضلع face_oval صلب (قناع صورة ظلية). 'custom' = تفعيل كل ميزة بشكل فردي (بما في ذلك 'tesselation'، شبكة الأسلاك الكاملة ذات ٢٥٤٧ حافة)."
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "الصورة",
+        "tooltip": "إذا لم يتم توصيلها، سيتم استخدام لوحة سوداء."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "نصف قطر نقطة المعلم بالبكسل. ٠ يعطل رسم النقاط."
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "سُمك خط الحافة بالبكسل. ٠ يعطل رسم الحواف."
       }
     },
     "outputs": {
@@ -16657,6 +16757,23 @@
     "outputs": {
       "0": {
         "name": "يحتوي على",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "مماثل لطريقة تنسيق السلاسل النصية في بايثون. يدعم جميع خيارات وميزات التنسيق في بايثون.",
+    "display_name": "تنسيق النص",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
