@@ -2709,7 +2709,8 @@
       "placeholderMesh": "Select mesh...",
       "placeholderModel": "Select model...",
       "placeholderUnknown": "Select media...",
-      "maxSelectionReached": "Maximum selection limit reached"
+      "maxSelectionReached": "Maximum selection limit reached",
+      "topResult": "Top result: {result}"
     },
     "valueControl": {
       "header": {

@@ -745,20 +745,19 @@ test('Link already promoted widget @vue-nodes', async ({ comfyPage }) => {
 })
 
 test('Can promote multiple previews @vue-nodes', async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'v1 (legacy)')
   await comfyPage.menu.topbar.newWorkflowButton.click()
   await comfyPage.nextFrame()
 
   await test.step('Add and rename a Load Image node', async () => {
-    await comfyPage.page.mouse.dblclick(300, 300, { delay: 5 })
-    await comfyPage.searchBox.fillAndSelectFirstNode('Load Image')
+    const position = { x: 300, y: 300 }
+    await comfyPage.searchBoxV2.addNode('Load Image', { position })
     const loadImage = await comfyPage.vueNodes.getFixtureByTitle('Load Image')
     await loadImage.setTitle('Character Reference')
   })
 
   await test.step('Add a second Load Image node', async () => {
-    await comfyPage.page.mouse.dblclick(600, 300, { delay: 5 })
-    await comfyPage.searchBox.fillAndSelectFirstNode('Load Image')
+    const position = { x: 600, y: 300 }
+    await comfyPage.searchBoxV2.addNode('Load Image', { position })
   })
 
   await test.step('Convert both nodes to subgraph', async () => {
