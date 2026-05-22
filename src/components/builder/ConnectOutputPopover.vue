@@ -5,8 +5,10 @@
     </PopoverTrigger>
     <PopoverContent
       side="bottom"
-      :side-offset="8"
+      align="end"
+      :side-offset="18"
       :collision-padding="10"
+      data-testid="builder-connect-output-popover"
       class="data-[state=open]:data-[side=bottom]:animate-slideUpAndFade z-1001 w-80 rounded-xl border border-border-default bg-base-background shadow-interface will-change-[transform,opacity]"
     >
       <div class="flex h-12 items-center justify-between px-4">
@@ -45,7 +47,12 @@
             </Button>
           </PopoverClose>
           <PopoverClose as-child>
-            <Button variant="secondary" size="md" @click="emit('switch')">
+            <Button
+              variant="secondary"
+              size="md"
+              data-testid="builder-connect-output-switch"
+              @click="emit('switch')"
+            >
               {{ t('builderToolbar.switchToOutputs') }}
             </Button>
           </PopoverClose>

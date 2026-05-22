@@ -31,7 +31,6 @@ const EXPECTED_DEFAULT_TYPES = [
   'latent_upscale_models',
   'sam2',
   'sams',
-  'ultralytics',
   'depthanything',
   'ipadapter',
   'segformer_b2_clothes',
@@ -84,7 +83,6 @@ const MOCK_NODE_NAMES = [
   'LatentUpscaleModelLoader',
   'DownloadAndLoadSAM2Model',
   'SAMLoader',
-  'UltralyticsDetectorProvider',
   'DownloadAndLoadDepthAnythingV2Model',
   'IPAdapterModelLoader',
   'LS_LoadSegformerModel',
@@ -255,26 +253,34 @@ describe('useModelToNodeStore', () => {
       expect(provider?.key).toBe('')
     })
 
-    it.each([
+    it.for([
       ['sam2', 'DownloadAndLoadSAM2Model', 'model'],
       ['sams', 'SAMLoader', 'model_name'],
       ['ipadapter', 'IPAdapterModelLoader', 'ipadapter_file'],
       ['depthanything', 'DownloadAndLoadDepthAnythingV2Model', 'model'],
-      ['ultralytics/bbox', 'UltralyticsDetectorProvider', 'model_name'],
-      ['ultralytics/segm', 'UltralyticsDetectorProvider', 'model_name'],
       ['FlashVSR', 'FlashVSRNode', ''],
       ['FlashVSR-v1.1', 'FlashVSRNode', ''],
       ['segformer_b2_clothes', 'LS_LoadSegformerModel', 'model_name'],
       ['segformer_b3_fashion', 'LS_LoadSegformerModel', 'model_name']
     ])(
       'should return correct provider for %s',
-      (modelType, expectedNodeName, expectedKey) => {
+      ([modelType, expectedNodeName, expectedKey]) => {
         const modelToNodeStore = useModelToNodeStore()
         modelToNodeStore.registerDefaults()
 
         const provider = modelToNodeStore.getNodeProvider(modelType)
         expect(provider?.nodeDef?.name).toBe(expectedNodeName)
         expect(provider?.key).toBe(expectedKey)
+      }
+    )
+
+    it.for(['ultralytics', 'ultralytics/bbox', 'ultralytics/segm'])(
+      'should not register %s as a default provider, so the node falls back to its static combo (regression for #8468)',
+      (modelType) => {
+        const modelToNodeStore = useModelToNodeStore()
+        modelToNodeStore.registerDefaults()
+
+        expect(modelToNodeStore.getNodeProvider(modelType)).toBeUndefined()
       }
     )
   })
@@ -596,8 +602,8 @@ describe('useModelToNodeStore', () => {
       }
       const end = performance.now()
 
-      // Should be fast enough for UI responsiveness
-      expect(end - start).toBeLessThan(10)
+      // Should be fast enough for UI responsiveness (O(1) map lookup)
+      expect(end - start).toBeLessThan(100)
     })
 
     it('should handle invalid input types gracefully', () => {

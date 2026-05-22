@@ -11,6 +11,7 @@ import {
   getPromotableWidgets,
   getSourceNodeId,
   getWidgetName,
+  isLinkedPromotion,
   isRecommendedWidget,
   promoteWidget,
   pruneDisconnected
@@ -19,11 +20,11 @@ import type { WidgetItem } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
+import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePromotionStore } from '@/stores/promotionStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
 
@@ -88,14 +89,13 @@ const activeWidgets = computed<WidgetItem[]>({
     promotionStore.setPromotions(
       node.rootGraph.id,
       node.id,
-      value.map(([n, w]) => {
-        const sid = getSourceNodeId(w)
-        return {
-          sourceNodeId: String(n.id),
-          sourceWidgetName: getWidgetName(w),
-          ...(sid && { disambiguatingSourceNodeId: sid })
-        }
-      })
+      value.map(([n, w]) => ({
+        sourceNodeId: String(n.id),
+        sourceWidgetName: getWidgetName(w),
+        disambiguatingSourceNodeId: isPromotedWidgetView(w)
+          ? w.disambiguatingSourceNodeId
+          : undefined
+      }))
     )
     refreshPromotedWidgetRendering()
   }
@@ -123,7 +123,9 @@ const candidateWidgets = computed<WidgetItem[]>(() => {
       !promotionStore.isPromoted(node.rootGraph.id, node.id, {
         sourceNodeId: String(n.id),
         sourceWidgetName: getWidgetName(w),
-        disambiguatingSourceNodeId: getSourceNodeId(w)
+        disambiguatingSourceNodeId: isPromotedWidgetView(w)
+          ? w.disambiguatingSourceNodeId
+          : undefined
       })
   )
 })
@@ -162,6 +164,18 @@ function refreshPromotedWidgetRendering() {
   canvasStore.canvas?.setDirty(true, true)
 }
 
+function isItemLinked([node, widget]: WidgetItem): boolean {
+  return (
+    node.id === -1 ||
+    (!!activeNode.value &&
+      isLinkedPromotion(
+        activeNode.value,
+        String(node.id),
+        getWidgetName(widget)
+      ))
+  )
+}
+
 function toKey(item: WidgetItem) {
   const sid = getSourceNodeId(item[1])
   return sid
@@ -187,8 +201,14 @@ function showAll() {
   }
 }
 function hideAll() {
+  const node = activeNode.value
   for (const item of filteredActive.value) {
     if (String(item[0].id) === '-1') continue
+    if (
+      node &&
+      isLinkedPromotion(node, String(item[0].id), getWidgetName(item[1]))
+    )
+      continue
     demote(item)
   }
 }
@@ -206,7 +226,7 @@ onMounted(() => {
 <template>
   <div v-if="activeNode" class="subgraph-edit-section flex h-full flex-col">
     <div class="flex gap-2 border-b border-interface-stroke px-4 pt-1 pb-4">
-      <FormSearchInput v-model="searchQuery" />
+      <AsyncSearchInput v-model="searchQuery" />
     </div>
 
     <div class="flex-1">
@@ -223,6 +243,7 @@ onMounted(() => {
 
       <div
         v-if="filteredActive.length"
+        data-testid="subgraph-editor-shown-section"
         class="flex flex-col border-b border-interface-stroke"
       >
         <div
@@ -242,10 +263,11 @@ onMounted(() => {
           <SubgraphNodeWidget
             v-for="[node, widget] in filteredActive"
             :key="toKey([node, widget])"
+            :data-nodeid="node.id"
             :class="cn(!searchQuery && dragClass, 'bg-comfy-menu-bg')"
             :node-title="node.title"
-            :widget-name="widget.name"
-            :is-physical="node.id === -1"
+            :widget-name="widget.label || widget.name"
+            :is-physical="isItemLinked([node, widget])"
             :is-draggable="!searchQuery"
             @toggle-visibility="demote([node, widget])"
           />
@@ -254,6 +276,7 @@ onMounted(() => {
 
       <div
         v-if="filteredCandidates.length"
+        data-testid="subgraph-editor-hidden-section"
         class="flex flex-col border-b border-interface-stroke"
       >
         <div
@@ -273,6 +296,7 @@ onMounted(() => {
           <SubgraphNodeWidget
             v-for="[node, widget] in filteredCandidates"
             :key="toKey([node, widget])"
+            :data-nodeid="node.id"
             class="bg-comfy-menu-bg"
             :node-title="node.title"
             :widget-name="widget.name"

@@ -62,7 +62,7 @@
                 </span>
                 <span
                   v-if="tierLabels.get(workspace.id)"
-                  class="shrink-0 rounded-full bg-base-foreground px-1 py-0.5 text-[10px] font-bold text-base-background uppercase"
+                  class="shrink-0 rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
                 >
                   {{ tierLabels.get(workspace.id) }}
                 </span>
@@ -201,28 +201,30 @@ async function handleSwitch(workspaceId: string) {
 async function onCreate() {
   if (!isValidName.value || loading.value) return
   loading.value = true
-  const name = workspaceName.value.trim()
   try {
-    await workspaceStore.createWorkspace(name)
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('workspacePanel.toast.failedToCreateWorkspace'),
-      detail: error instanceof Error ? error.message : t('g.unknownError')
-    })
+    const name = workspaceName.value.trim()
+    try {
+      await workspaceStore.createWorkspace(name)
+    } catch (error) {
+      toast.add({
+        severity: 'error',
+        summary: t('workspacePanel.toast.failedToCreateWorkspace'),
+        detail: error instanceof Error ? error.message : t('g.unknownError')
+      })
+      return
+    }
+    try {
+      await onConfirm?.(name)
+    } catch (error) {
+      toast.add({
+        severity: 'error',
+        summary: t('teamWorkspacesDialog.confirmCallbackFailed'),
+        detail: error instanceof Error ? error.message : t('g.unknownError')
+      })
+    }
+    dialogStore.closeDialog({ key: DIALOG_KEY })
+  } finally {
     loading.value = false
-    return
   }
-  try {
-    await onConfirm?.(name)
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('teamWorkspacesDialog.confirmCallbackFailed'),
-      detail: error instanceof Error ? error.message : t('g.unknownError')
-    })
-  }
-  dialogStore.closeDialog({ key: DIALOG_KEY })
-  loading.value = false
 }
 </script>

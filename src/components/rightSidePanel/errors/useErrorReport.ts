@@ -1,4 +1,4 @@
-import { computed, onMounted, onUnmounted, reactive, toValue } from 'vue'
+import { computed, reactive, toValue, watch } from 'vue'
 
 import type { MaybeRefOrGetter } from 'vue'
 
@@ -28,66 +28,73 @@ export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
     )
   })
 
-  let cancelled = false
-  onUnmounted(() => {
-    cancelled = true
-  })
+  watch(
+    () => toValue(cardSource),
+    async (card, _, onCleanup) => {
+      let cancelled = false
+      onCleanup(() => {
+        cancelled = true
+      })
 
-  onMounted(async () => {
-    const card = toValue(cardSource)
-    const runtimeErrors = card.errors
-      .map((error, idx) => ({ error, idx }))
-      .filter(({ error }) => error.isRuntimeError)
+      for (const key of Object.keys(enrichedDetails)) {
+        delete enrichedDetails[key as unknown as number]
+      }
 
-    if (runtimeErrors.length === 0) return
+      const runtimeErrors = card.errors
+        .map((error, idx) => ({ error, idx }))
+        .filter(({ error }) => error.isRuntimeError)
 
-    if (!systemStatsStore.systemStats) {
-      if (systemStatsStore.isLoading) {
-        await until(systemStatsStore.isLoading).toBe(false)
-      } else {
-        try {
-          await systemStatsStore.refetchSystemStats()
-        } catch (e) {
-          console.warn('Failed to fetch system stats for error report:', e)
-          return
+      if (runtimeErrors.length === 0) return
+
+      if (!systemStatsStore.systemStats) {
+        if (systemStatsStore.isLoading) {
+          await until(() => systemStatsStore.isLoading).toBe(false)
+        } else {
+          try {
+            await systemStatsStore.refetchSystemStats()
+          } catch (e) {
+            console.warn('Failed to fetch system stats for error report:', e)
+            return
+          }
         }
       }
-    }
-    if (!systemStatsStore.systemStats || cancelled) return
+      if (!systemStatsStore.systemStats || cancelled) return
 
-    const logs = await api
-      .getLogs()
-      .catch(() => 'Failed to retrieve server logs')
-    if (cancelled) return
+      const logs = await api
+        .getLogs()
+        .catch(() => 'Failed to retrieve server logs')
+      if (cancelled) return
 
-    const workflow = (() => {
-      try {
-        return app.rootGraph.serialize()
-      } catch (e) {
-        console.warn('Failed to serialize workflow for error report:', e)
-        return null
+      const workflow = (() => {
+        try {
+          return app.rootGraph.serialize()
+        } catch (e) {
+          console.warn('Failed to serialize workflow for error report:', e)
+          return null
+        }
+      })()
+      if (!workflow) return
+
+      for (const { error, idx } of runtimeErrors) {
+        try {
+          const report = generateErrorReport({
+            exceptionType: error.exceptionType ?? FALLBACK_EXCEPTION_TYPE,
+            exceptionMessage: error.message,
+            traceback: error.details,
+            nodeId: card.nodeId,
+            nodeType: card.title,
+            systemStats: systemStatsStore.systemStats,
+            serverLogs: logs,
+            workflow
+          })
+          enrichedDetails[idx] = report
+        } catch (e) {
+          console.warn('Failed to generate error report:', e)
+        }
       }
-    })()
-    if (!workflow) return
-
-    for (const { error, idx } of runtimeErrors) {
-      try {
-        const report = generateErrorReport({
-          exceptionType: error.exceptionType ?? FALLBACK_EXCEPTION_TYPE,
-          exceptionMessage: error.message,
-          traceback: error.details,
-          nodeId: card.nodeId,
-          nodeType: card.title,
-          systemStats: systemStatsStore.systemStats,
-          serverLogs: logs,
-          workflow
-        })
-        enrichedDetails[idx] = report
-      } catch (e) {
-        console.warn('Failed to generate error report:', e)
-      }
-    }
-  })
+    },
+    { immediate: true }
+  )
 
   return { displayedDetailsMap }
 }

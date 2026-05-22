@@ -11,7 +11,7 @@ import {
 import { ref } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const props = defineProps<
   // eslint-disable-next-line vue/no-unused-properties

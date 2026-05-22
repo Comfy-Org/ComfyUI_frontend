@@ -16,6 +16,7 @@ import type {
   SettingChangedMetadata,
   ShareFlowMetadata,
   SubscriptionMetadata,
+  SubscriptionSuccessMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryProvider,
@@ -135,17 +136,19 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   }
 
   trackAuth(metadata: AuthMetadata): void {
-    const basePayload = {
+    const payload = {
       method: metadata.method,
-      ...(metadata.user_id ? { user_id: metadata.user_id } : {})
+      ...(metadata.user_id ? { user_id: metadata.user_id } : {}),
+      ...(metadata.email
+        ? {
+            user_data: {
+              email: metadata.email.trim().toLowerCase()
+            }
+          }
+        : {})
     }
 
-    if (metadata.is_new_user) {
-      this.pushEvent('sign_up', basePayload)
-      return
-    }
-
-    this.pushEvent('login', basePayload)
+    this.pushEvent(metadata.is_new_user ? 'sign_up' : 'login', payload)
   }
 
   trackBeginCheckout(metadata: BeginCheckoutMetadata): void {
@@ -165,8 +168,17 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     this.pushEvent('signup_opened')
   }
 
-  trackMonthlySubscriptionSucceeded(): void {
-    this.pushEvent('subscription_success')
+  trackMonthlySubscriptionSucceeded(
+    metadata?: SubscriptionSuccessMetadata
+  ): void {
+    if (this.initialized && metadata?.ecommerce) {
+      window.dataLayer?.push({ ecommerce: null })
+    }
+
+    this.pushEvent(
+      'subscription_success',
+      metadata ? { ...metadata } : undefined
+    )
   }
 
   trackRunButton(options?: {

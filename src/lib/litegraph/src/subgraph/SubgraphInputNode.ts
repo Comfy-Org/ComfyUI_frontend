@@ -187,7 +187,7 @@ export class SubgraphInputNode
 
     const subgraphInputIndex = link.origin_slot
     link.disconnect(subgraph, 'output')
-    subgraph._version++
+    subgraph.incrementVersion()
 
     const subgraphInput = this.slots.at(subgraphInputIndex)
     if (!subgraphInput) {
@@ -209,6 +209,14 @@ export class SubgraphInputNode
         link.id
       )
     }
+
+    if (subgraphInput.linkIds.length === 0) {
+      subgraphInput._widget = undefined
+    }
+    subgraphInput.events.dispatch('input-disconnected', {
+      input: subgraphInput
+    })
+
     const slotIndex = node.inputs.findIndex((inp) => inp === input)
     if (slotIndex !== -1) {
       node.onConnectionsChange?.(
@@ -218,6 +226,13 @@ export class SubgraphInputNode
         link,
         subgraphInput
       )
+      subgraph.trigger('node:slot-links:changed', {
+        nodeId: node.id,
+        slotType: NodeSlotType.INPUT,
+        slotIndex: slotIndex,
+        connected: false,
+        linkId: link.id
+      })
     }
   }
 

@@ -3,9 +3,11 @@ import type {
   LGraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   createNodeLocatorId,
+  getParentExecutionIds,
   parseNodeLocatorId
 } from '@/types/nodeIdentification'
 
@@ -360,6 +362,79 @@ export function getExecutionIdByNode(
   if (parentPath === undefined) return null
 
   return `${parentPath}:${node.id}`
+}
+
+/**
+ * True when every ancestor container in the execution path is active
+ * (not muted, not bypassed). Self is not checked — caller is expected to
+ * have already verified the target node's own mode.
+ *
+ * For root-level nodes (single-segment execution ID) there are no
+ * ancestors and the result is always true.
+ *
+ * Use after an initial full-graph scan to suppress missing-asset entries
+ * whose enclosing subgraph is muted/bypassed. At scan time only each
+ * node's own mode is checked; ancestor context is applied here so the
+ * effect cascades to interior nodes without requiring every scanner to
+ * carry the ancestor flag.
+ */
+export function isAncestorPathActive(
+  rootGraph: LGraph | null | undefined,
+  executionId: string
+): boolean {
+  if (!rootGraph) return true
+  for (const ancestorId of getParentExecutionIds(executionId)) {
+    const ancestor = getNodeByExecutionId(rootGraph, ancestorId)
+    if (!ancestor) continue
+    if (
+      ancestor.mode === LGraphEventMode.NEVER ||
+      ancestor.mode === LGraphEventMode.BYPASS
+    ) {
+      return false
+    }
+  }
+  return true
+}
+
+/**
+ * Predicate used after async verification resolves: a missing-asset
+ * candidate is surfaceable when it is confirmed missing and its
+ * enclosing subgraph is still active. Null `nodeId` (workflow-level
+ * models) bypasses the ancestor check since it has no scope to
+ * validate. Unified helper so the initial pipeline post-filter and the
+ * three async-resolution call sites cannot drift.
+ */
+export function isMissingCandidateActive(
+  rootGraph: LGraph | null | undefined,
+  candidate: {
+    nodeId?: string | number | null | undefined
+    isMissing?: boolean | undefined
+  }
+): boolean {
+  if (candidate.isMissing !== true) return false
+  if (candidate.nodeId == null) return true
+  return isAncestorPathActive(rootGraph, String(candidate.nodeId))
+}
+
+/**
+ * Returns the execution ID for a node identified by its (graph, nodeId) pair.
+ *
+ * Unlike {@link getExecutionIdByNode}, this does not rely on `node.graph`.
+ * Use this when the node reference may be detached (e.g. inside
+ * `onNodeRemoved`, which LiteGraph fires after clearing `node.graph`).
+ *
+ * @param rootGraph - The root graph to resolve from
+ * @param graph     - The graph the node currently lives in (or lived in)
+ * @param nodeId    - The local node ID within `graph`
+ */
+export function getExecutionIdForNodeInGraph(
+  rootGraph: LGraph,
+  graph: LGraph | Subgraph,
+  nodeId: string | number
+): string {
+  if (graph === rootGraph || graph.isRootGraph) return String(nodeId)
+  const parentPath = findPartialExecutionPathToGraph(graph as LGraph, rootGraph)
+  return parentPath !== undefined ? `${parentPath}:${nodeId}` : String(nodeId)
 }
 
 /**

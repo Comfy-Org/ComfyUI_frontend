@@ -1,5 +1,6 @@
 <template>
   <footer
+    data-testid="publish-footer"
     class="flex shrink items-center justify-end gap-4 border-t border-border-default px-6 py-4"
   >
     <Button v-if="!isFirstStep" size="lg" @click="$emit('back')">

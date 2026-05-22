@@ -1,10 +1,14 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col gap-6 px-6 py-4">
+  <div
+    data-testid="publish-describe-step"
+    class="flex min-h-0 flex-1 flex-col gap-6 px-6 py-4"
+  >
     <label class="flex flex-col gap-2">
       <span class="text-sm text-base-foreground">
         {{ $t('comfyHubPublish.workflowName') }}
       </span>
       <Input
+        data-testid="publish-name-input"
         :model-value="name"
         :placeholder="$t('comfyHubPublish.workflowNamePlaceholder')"
         @update:model-value="$emit('update:name', String($event))"
@@ -29,6 +33,7 @@
       </span>
       <TagsInput
         v-slot="{ isEmpty }"
+        data-testid="publish-tags-input"
         always-editing
         class="bg-secondary-background select-none"
         :model-value="tags"
@@ -89,7 +94,8 @@ import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.
 import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { COMFY_HUB_TAG_OPTIONS } from '@/platform/workflow/sharing/constants/comfyHubTags'
-import { computed, ref } from 'vue'
+import { useComfyHubService } from '@/platform/workflow/sharing/services/comfyHubService'
+import { computed, onMounted, ref } from 'vue'
 import { vAutoAnimate } from '@formkit/auto-animate/vue'
 
 const { tags } = defineProps<{
@@ -107,9 +113,20 @@ const emit = defineEmits<{
 const INITIAL_TAG_SUGGESTION_COUNT = 10
 
 const showAllSuggestions = ref(false)
+const tagOptions = ref<string[]>(COMFY_HUB_TAG_OPTIONS)
+
+const { fetchTagLabels } = useComfyHubService()
+
+onMounted(async () => {
+  try {
+    tagOptions.value = await fetchTagLabels()
+  } catch {
+    // Fall back to hardcoded tags
+  }
+})
 
 const availableSuggestions = computed(() =>
-  COMFY_HUB_TAG_OPTIONS.filter((tag) => !tags.includes(tag))
+  tagOptions.value.filter((tag) => !tags.includes(tag))
 )
 
 const displayedSuggestions = computed(() =>

@@ -1,0 +1,65 @@
+name: Find Workflow Run
+description: Finds a workflow run for a given commit SHA and outputs its status and run ID.
+
+inputs:
+  workflow-id:
+    description: The workflow filename (e.g., 'ci-size-data.yaml')
+    required: true
+  head-sha:
+    description: The commit SHA to find runs for
+    required: true
+  not-found-status:
+    description: Status to output when no run exists
+    required: false
+    default: pending
+  token:
+    description: GitHub token for API access
+    required: true
+
+outputs:
+  status:
+    description: One of 'ready', 'pending', 'failed', or the not-found-status value
+    value: ${{ steps.find.outputs.status }}
+  run-id:
+    description: The workflow run ID (only set when status is 'ready')
+    value: ${{ steps.find.outputs.run-id }}
+
+runs:
+  using: composite
+  steps:
+    - name: Find workflow run
+      id: find
+      uses: actions/github-script@v8
+      env:
+        WORKFLOW_ID: ${{ inputs.workflow-id }}
+        HEAD_SHA: ${{ inputs.head-sha }}
+        NOT_FOUND_STATUS: ${{ inputs.not-found-status }}
+      with:
+        github-token: ${{ inputs.token }}
+        script: |
+          const { data: runs } = await github.rest.actions.listWorkflowRuns({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            workflow_id: process.env.WORKFLOW_ID,
+            head_sha: process.env.HEAD_SHA,
+            per_page: 1,
+          });
+
+          const run = runs.workflow_runs[0];
+          if (!run) {
+            core.setOutput('status', process.env.NOT_FOUND_STATUS);
+            return;
+          }
+
+          if (run.status !== 'completed') {
+            core.setOutput('status', 'pending');
+            return;
+          }
+
+          if (run.conclusion !== 'success') {
+            core.setOutput('status', 'failed');
+            return;
+          }
+
+          core.setOutput('status', 'ready');
+          core.setOutput('run-id', String(run.id));

@@ -1,8 +1,9 @@
 import { createTestingPinia } from '@pinia/testing'
-import { shallowMount } from '@vue/test-utils'
 import { setActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { render, screen } from '@testing-library/vue'
 
 import OutputHistoryActiveQueueItem from './OutputHistoryActiveQueueItem.vue'
 
@@ -15,8 +16,8 @@ vi.mock('@/stores/commandStore', () => ({
   })
 }))
 
-function mountComponent(queueCount: number) {
-  return shallowMount(OutputHistoryActiveQueueItem, {
+function renderComponent(queueCount: number) {
+  return render(OutputHistoryActiveQueueItem, {
     props: { queueCount },
     global: { plugins: [i18n] }
   })
@@ -24,21 +25,17 @@ function mountComponent(queueCount: number) {
 
 describe('OutputHistoryActiveQueueItem', () => {
   it('hides badge when queueCount is 1', () => {
-    const wrapper = mountComponent(1)
-    const badge = wrapper.find('[aria-hidden="true"]')
-    expect(badge.exists()).toBe(false)
+    renderComponent(1)
+    expect(screen.queryByText('1')).not.toBeInTheDocument()
   })
 
   it('shows badge with correct count when queueCount is 3', () => {
-    const wrapper = mountComponent(3)
-    const badge = wrapper.find('[aria-hidden="true"]')
-    expect(badge.exists()).toBe(true)
-    expect(badge.text()).toBe('3')
+    renderComponent(3)
+    expect(screen.getByText('3')).toBeInTheDocument()
   })
 
   it('hides badge when queueCount is 0', () => {
-    const wrapper = mountComponent(0)
-    const badge = wrapper.find('[aria-hidden="true"]')
-    expect(badge.exists()).toBe(false)
+    renderComponent(0)
+    expect(screen.queryByText('0')).not.toBeInTheDocument()
   })
 })

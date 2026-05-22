@@ -103,6 +103,7 @@ async function rerun(e: Event) {
     </Button>
     <Button
       v-if="isWorkflowActive && !selectedItem"
+      data-testid="linear-cancel-run"
       variant="destructive"
       @click="cancelActiveWorkflowJobs()"
     >

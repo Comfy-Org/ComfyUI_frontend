@@ -1,0 +1,12 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import PaymentStatusSection from '../../components/payment/PaymentStatusSection.vue'
+---
+
+<BaseLayout
+  title="Payment Failed — Comfy"
+  description="Your payment was not completed."
+  noindex
+>
+  <PaymentStatusSection status="failed" />
+</BaseLayout>

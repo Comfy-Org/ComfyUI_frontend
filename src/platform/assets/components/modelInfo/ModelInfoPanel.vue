@@ -32,7 +32,9 @@
         </div>
       </ModelInfoField>
       <ModelInfoField :label="t('assetBrowser.modelInfo.fileName')">
-        <span class="break-all text-muted-foreground">{{ asset.name }}</span>
+        <span class="break-all text-muted-foreground">{{
+          getAssetFilename(asset)
+        }}</span>
       </ModelInfoField>
       <ModelInfoField
         v-if="sourceUrl"
@@ -75,7 +77,7 @@
               :placeholder="t('assetBrowser.modelInfo.selectModelType')"
             />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent :style="selectContentStyle">
             <SelectItem
               v-for="option in modelTypes"
               :key="option.value"
@@ -194,7 +196,7 @@
           rows="3"
           :class="
             cn(
-              'w-full resize-y rounded-lg border border-transparent bg-transparent px-3 py-2 text-sm text-component-node-foreground transition-colors outline-none focus:bg-component-node-widget-background',
+              'w-full resize-y scrollbar-gutter-stable rounded-lg border border-transparent bg-transparent px-3 py-2 text-sm text-component-node-foreground transition-colors outline-none focus:bg-component-node-widget-background',
               isImmutable && 'cursor-not-allowed'
             )
           "
@@ -208,6 +210,7 @@
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
+import type { StyleValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
@@ -232,6 +235,7 @@ import {
   getAssetBaseModels,
   getAssetDescription,
   getAssetDisplayName,
+  getAssetFilename,
   getAssetModelType,
   getAssetSourceUrl,
   getAssetTriggerPhrases,
@@ -239,7 +243,7 @@ import {
   getSourceName
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import ModelInfoField from './ModelInfoField.vue'
 
@@ -254,9 +258,10 @@ const accordionClass = cn(
   'border-t border-border-default bg-modal-panel-background'
 )
 
-const { asset, cacheKey } = defineProps<{
+const { asset, cacheKey, selectContentStyle } = defineProps<{
   asset: AssetDisplayItem
   cacheKey?: string
+  selectContentStyle?: StyleValue
 }>()
 
 const assetsStore = useAssetsStore()

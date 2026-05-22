@@ -6,13 +6,9 @@
     <template v-if="showUI" #workflow-tabs>
       <div
         v-if="workflowTabsPosition === 'Topbar'"
+        data-testid="topbar-workflow-tabs"
         class="workflow-tabs-container pointer-events-auto relative h-(--workflow-tabs-height) w-full"
       >
-        <!-- Native drag area for Electron -->
-        <div
-          v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
-          class="app-drag fixed top-0 left-0 z-10 h-(--comfy-topbar-height) w-full"
-        />
         <div
           class="flex h-full items-center border-b border-interface-stroke bg-comfy-menu-bg shadow-interface"
         >
@@ -189,7 +185,6 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { isNativeWindow } from '@/utils/envUtil'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import SelectionRectangle from './SelectionRectangle.vue'
@@ -546,31 +541,25 @@ onMounted(async () => {
     }
 
     vueNodeLifecycle.setupEmptyGraphListener()
+
+    // Load color palette
+    colorPaletteStore.customPalettes = settingStore.get(
+      'Comfy.CustomColorPalettes'
+    )
+
+    // Restore saved workflow and workflow tabs state
+    await workflowPersistence.initializeWorkflow()
+    await workflowPersistence.restoreWorkflowTabsState()
+    await workflowPersistence.loadTemplateFromUrlIfPresent()
   } finally {
     workspaceStore.spinner = false
   }
+  await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
 
   comfyApp.canvas.onSelectionChange = useChainCallback(
     comfyApp.canvas.onSelectionChange,
     () => canvasStore.updateSelectedItems()
   )
-
-  // Load color palette
-  colorPaletteStore.customPalettes = settingStore.get(
-    'Comfy.CustomColorPalettes'
-  )
-
-  // Restore saved workflow and workflow tabs state
-  await workflowPersistence.initializeWorkflow()
-  await workflowPersistence.restoreWorkflowTabsState()
-
-  const sharedWorkflowLoadStatus =
-    await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
-
-  // Load template from URL if present
-  if (sharedWorkflowLoadStatus === 'not-present') {
-    await workflowPersistence.loadTemplateFromUrlIfPresent()
-  }
 
   // Accept workspace invite from URL if present (e.g., ?invite=TOKEN)
   // WorkspaceAuthGate ensures flag state is resolved before GraphCanvas mounts

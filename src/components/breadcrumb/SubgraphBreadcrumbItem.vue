@@ -5,6 +5,8 @@
       value: tooltipText,
       showDelay: 512
     }"
+    :data-testid="`subgraph-breadcrumb-item-${item.key}`"
+    :data-active="isActive ? '' : undefined"
     draggable="false"
     class="p-breadcrumb-item-link h-8 cursor-pointer px-2"
     :class="{
@@ -17,11 +19,17 @@
   >
     <i
       v-if="hasMissingNodes && isRoot"
+      data-testid="subgraph-breadcrumb-missing-nodes-icon"
       class="icon-[lucide--triangle-alert] text-warning-background"
     />
     <span class="p-breadcrumb-item-label px-2">{{ item.label }}</span>
-    <Tag v-if="item.isBlueprint" value="Blueprint" severity="primary" />
-    <i v-if="isActive" class="pi pi-angle-down text-[10px]"></i>
+    <Tag
+      v-if="item.isBlueprint"
+      data-testid="subgraph-breadcrumb-blueprint-tag"
+      :value="t('breadcrumbsMenu.blueprint')"
+      severity="primary"
+    />
+    <i v-if="isActive" class="pi pi-angle-down text-2xs"></i>
   </div>
   <Menu
     v-if="isActive || isRoot"
@@ -30,6 +38,7 @@
     :popup="true"
     :pt="{
       root: {
+        'data-testid': `subgraph-breadcrumb-menu-${item.key}`,
         style: 'background-color: var(--comfy-menu-bg)'
       },
       itemLink: {
@@ -41,6 +50,7 @@
     v-if="isEditing"
     ref="itemInputRef"
     v-model="itemLabel"
+    data-testid="subgraph-breadcrumb-rename-input"
     class="fixed z-10000 p-2 text-[.8rem]"
     @blur="inputBlur(false)"
     @click.stop

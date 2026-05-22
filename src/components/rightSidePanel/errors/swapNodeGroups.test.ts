@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -159,7 +160,7 @@ describe('swapNodeGroups computed', () => {
 
   it('excludes string nodeType entries', async () => {
     const swap = getSwapNodeGroups([
-      'StringGroupNode' as unknown as MissingNodeType,
+      fromAny<MissingNodeType, unknown>('StringGroupNode'),
       makeMissingNodeType('OldNode', {
         nodeId: '1',
         isReplaceable: true,

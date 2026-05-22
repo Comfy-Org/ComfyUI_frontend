@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { TestIds } from '../fixtures/selectors'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -24,25 +24,25 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
         TestIds.canvas.toggleLinkVisibilityButton
       )
       await button.click()
-      await comfyPage.nextFrame()
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        comfyPage.canvas,
         'canvas-with-hidden-links.png'
       )
       const hiddenLinkRenderMode = await comfyPage.page.evaluate(() => {
         return window.LiteGraph!.HIDDEN_LINK
       })
-      expect(await comfyPage.settings.getSetting('Comfy.LinkRenderMode')).toBe(
-        hiddenLinkRenderMode
-      )
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.LinkRenderMode'))
+        .toBe(hiddenLinkRenderMode)
 
       await button.click()
-      await comfyPage.nextFrame()
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await comfyPage.expectScreenshot(
+        comfyPage.canvas,
         'canvas-with-visible-links.png'
       )
-      expect(
-        await comfyPage.settings.getSetting('Comfy.LinkRenderMode')
-      ).not.toBe(hiddenLinkRenderMode)
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.LinkRenderMode'))
+        .not.toBe(hiddenLinkRenderMode)
     }
   )
 
@@ -92,9 +92,8 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
     // Click backdrop to close
     const backdrop = comfyPage.page.locator('.fixed.inset-0').first()
     await backdrop.click()
-    await comfyPage.nextFrame()
 
     // Modal should be hidden
-    await expect(zoomModal).not.toBeVisible()
+    await expect(zoomModal).toBeHidden()
   })
 })

@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, reactive } from 'vue'
-import type { EffectScope } from 'vue'
 
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 
@@ -14,25 +13,18 @@ vi.mock('@/i18n', () => ({
 const executionStore = reactive<{
   isIdle: boolean
   executionProgress: number
-  executingNode: unknown
+  executingNode: null | {
+    title?: string
+    type?: string
+  }
   executingNodeProgress: number
   nodeProgressStates: Record<string, unknown>
-  activeJob: {
-    workflow: {
-      changeTracker: {
-        activeState: {
-          nodes: { id: number; type: string }[]
-        }
-      }
-    }
-  } | null
 }>({
   isIdle: true,
   executionProgress: 0,
   executingNode: null,
   executingNodeProgress: 0,
-  nodeProgressStates: {},
-  activeJob: null
+  nodeProgressStates: {}
 })
 vi.mock('@/stores/executionStore', () => ({
   useExecutionStore: () => executionStore
@@ -76,7 +68,6 @@ describe('useBrowserTabTitle', () => {
     executionStore.executingNode = null
     executionStore.executingNodeProgress = 0
     executionStore.nodeProgressStates = {}
-    executionStore.activeJob = null
 
     // reset setting and workflow stores
     vi.mocked(settingStore.get).mockReturnValue('Enabled')
@@ -88,7 +79,7 @@ describe('useBrowserTabTitle', () => {
   })
 
   it('sets default title when idle and no workflow', () => {
-    const scope: EffectScope = effectScope()
+    const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     expect(document.title).toBe('ComfyUI')
     scope.stop()
@@ -101,7 +92,7 @@ describe('useBrowserTabTitle', () => {
       isModified: false,
       isPersisted: true
     }
-    const scope: EffectScope = effectScope()
+    const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     await nextTick()
     expect(document.title).toBe('myFlow - ComfyUI')
@@ -115,7 +106,7 @@ describe('useBrowserTabTitle', () => {
       isModified: true,
       isPersisted: true
     }
-    const scope: EffectScope = effectScope()
+    const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     await nextTick()
     expect(document.title).toBe('*myFlow - ComfyUI')
@@ -133,9 +124,11 @@ describe('useBrowserTabTitle', () => {
       isModified: true,
       isPersisted: true
     }
-    useBrowserTabTitle()
+    const scope = effectScope()
+    scope.run(() => useBrowserTabTitle())
     await nextTick()
     expect(document.title).toBe('myFlow - ComfyUI')
+    scope.stop()
   })
 
   it('hides asterisk while Shift key is held', async () => {
@@ -150,21 +143,21 @@ describe('useBrowserTabTitle', () => {
       isModified: true,
       isPersisted: true
     }
-    useBrowserTabTitle()
+    const scope = effectScope()
+    scope.run(() => useBrowserTabTitle())
     await nextTick()
     expect(document.title).toBe('myFlow - ComfyUI')
+    scope.stop()
   })
 
-  // Fails when run together with other tests. Suspect to be caused by leaked
-  // state from previous tests.
-  it.skip('disables workflow title when menu disabled', async () => {
+  it('disables workflow title when menu disabled', async () => {
     vi.mocked(settingStore.get).mockReturnValue('Disabled')
     workflowStore.activeWorkflow = {
       filename: 'myFlow',
       isModified: false,
       isPersisted: true
     }
-    const scope: EffectScope = effectScope()
+    const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     await nextTick()
     expect(document.title).toBe('ComfyUI')
@@ -174,7 +167,7 @@ describe('useBrowserTabTitle', () => {
   it('shows execution progress when not idle without workflow', async () => {
     executionStore.isIdle = false
     executionStore.executionProgress = 0.3
-    const scope: EffectScope = effectScope()
+    const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     await nextTick()
     expect(document.title).toBe('[30%]ComfyUI')
@@ -184,19 +177,13 @@ describe('useBrowserTabTitle', () => {
   it('shows node execution title when executing a node using nodeProgressStates', async () => {
     executionStore.isIdle = false
     executionStore.executionProgress = 0.4
+    executionStore.executingNode = {
+      type: 'Foo'
+    }
     executionStore.nodeProgressStates = {
       '1': { state: 'running', value: 5, max: 10, node: '1', prompt_id: 'test' }
     }
-    executionStore.activeJob = {
-      workflow: {
-        changeTracker: {
-          activeState: {
-            nodes: [{ id: 1, type: 'Foo' }]
-          }
-        }
-      }
-    }
-    const scope: EffectScope = effectScope()
+    const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     await nextTick()
     expect(document.title).toBe('[40%][50%] Foo')
@@ -216,7 +203,7 @@ describe('useBrowserTabTitle', () => {
       },
       '2': { state: 'running', value: 8, max: 10, node: '2', prompt_id: 'test' }
     }
-    const scope: EffectScope = effectScope()
+    const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     await nextTick()
     expect(document.title).toBe('[40%][2 nodes running]')

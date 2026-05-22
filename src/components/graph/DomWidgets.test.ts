@@ -1,4 +1,6 @@
-import { mount } from '@vue/test-utils'
+import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { render } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -9,7 +11,6 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import { createTestingPinia } from '@pinia/testing'
 
 type TestWidget = BaseDOMWidget<object | string>
 
@@ -28,7 +29,7 @@ function createNode(
 }
 
 function createWidget(id: string, node: LGraphNode, y = 12): TestWidget {
-  return {
+  return fromPartial<TestWidget>({
     id,
     node,
     name: 'test_widget',
@@ -40,16 +41,16 @@ function createWidget(id: string, node: LGraphNode, y = 12): TestWidget {
     computedHeight: 40,
     margin: 10,
     isVisible: () => true
-  } as unknown as TestWidget
+  })
 }
 
 function createCanvas(graph: LGraph): LGraphCanvas {
-  return {
+  return fromPartial<LGraphCanvas>({
     graph,
     low_quality: false,
     read_only: false,
     isNodeVisible: vi.fn(() => true)
-  } as unknown as LGraphCanvas
+  })
 }
 
 function drawFrame(canvas: LGraphCanvas) {
@@ -88,7 +89,7 @@ describe('DomWidgets transition grace characterization', () => {
     const canvas = createCanvas(graphA)
     canvasStore.canvas = canvas
 
-    mount(DomWidgets, {
+    render(DomWidgets, {
       global: {
         stubs: {
           DomWidget: true
@@ -133,7 +134,7 @@ describe('DomWidgets transition grace characterization', () => {
     const canvas = createCanvas(graphB)
     canvasStore.canvas = canvas
 
-    mount(DomWidgets, {
+    render(DomWidgets, {
       global: {
         stubs: {
           DomWidget: true
@@ -159,7 +160,7 @@ describe('DomWidgets transition grace characterization', () => {
     const canvas = createCanvas(graphA)
     canvasStore.canvas = canvas
 
-    mount(DomWidgets, {
+    render(DomWidgets, {
       global: {
         stubs: {
           DomWidget: true

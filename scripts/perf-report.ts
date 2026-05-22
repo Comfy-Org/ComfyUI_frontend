@@ -29,6 +29,8 @@ interface PerfMeasurement {
   eventListeners: number
   totalBlockingTimeMs: number
   frameDurationMs: number
+  p95FrameDurationMs: number
+  allFrameDurationsMs?: number[]
 }
 
 interface PerfReport {
@@ -53,6 +55,7 @@ type MetricKey =
   | 'eventListeners'
   | 'totalBlockingTimeMs'
   | 'frameDurationMs'
+  | 'p95FrameDurationMs'
   | 'heapUsedBytes'
 
 interface MetricDef {
@@ -64,6 +67,8 @@ interface MetricDef {
 }
 
 const REPORTED_METRICS: MetricDef[] = [
+  { key: 'frameDurationMs', label: 'avg frame time', unit: 'ms' },
+  { key: 'p95FrameDurationMs', label: 'p95 frame time', unit: 'ms' },
   { key: 'layoutDurationMs', label: 'layout duration', unit: 'ms' },
   {
     key: 'styleRecalcDurationMs',
@@ -80,11 +85,14 @@ const REPORTED_METRICS: MetricDef[] = [
   { key: 'taskDurationMs', label: 'task duration', unit: 'ms' },
   { key: 'scriptDurationMs', label: 'script duration', unit: 'ms' },
   { key: 'totalBlockingTimeMs', label: 'TBT', unit: 'ms' },
-  { key: 'frameDurationMs', label: 'frame duration', unit: 'ms' },
   { key: 'heapUsedBytes', label: 'heap used', unit: 'bytes' },
   { key: 'domNodes', label: 'DOM nodes', unit: '', minAbsDelta: 5 },
   { key: 'eventListeners', label: 'event listeners', unit: '', minAbsDelta: 5 }
 ]
+
+/** Target: P5 FPS ≥ 52 → P95 frame time ≤ 19.2ms */
+const TARGET_P95_FRAME_MS = 19.2
+const TARGET_P5_FPS = 52
 
 function groupByName(
   measurements: PerfMeasurement[]
@@ -205,6 +213,46 @@ function formatBytes(bytes: number): string {
   if (Math.abs(bytes) < 1024) return `${bytes} B`
   if (Math.abs(bytes) < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function frameTimeToFps(ms: number): number {
+  return ms > 0 ? 1000 / ms : 0
+}
+
+function renderHeadlineSummary(
+  prGroups: Map<string, PerfMeasurement[]>
+): string[] {
+  const lines: string[] = []
+  const summaries: string[] = []
+
+  for (const [testName, prSamples] of prGroups) {
+    const avgFrame = medianMetric(prSamples, 'frameDurationMs')
+    const p95Frame = medianMetric(prSamples, 'p95FrameDurationMs')
+    const tbt = medianMetric(prSamples, 'totalBlockingTimeMs')
+    const heap = medianMetric(prSamples, 'heapUsedBytes')
+
+    const avgFps = avgFrame !== null ? frameTimeToFps(avgFrame) : null
+    const p5Fps = p95Frame !== null ? frameTimeToFps(p95Frame) : null
+
+    const parts: string[] = [`**${testName}**:`]
+    if (avgFps !== null) parts.push(`${avgFps.toFixed(1)} avg FPS`)
+    if (p5Fps !== null) {
+      const pass = p5Fps >= TARGET_P5_FPS
+      parts.push(
+        `${p5Fps.toFixed(1)} P5 FPS ${pass ? '✅' : '❌'} (target: ≥${TARGET_P5_FPS})`
+      )
+    }
+    if (tbt !== null) parts.push(`${tbt.toFixed(0)}ms TBT`)
+    if (heap !== null) parts.push(`${formatBytes(heap)} heap`)
+
+    if (parts.length > 1) summaries.push(parts.join(' · '))
+  }
+
+  if (summaries.length > 0) {
+    lines.push('> ' + summaries.join('\n> '), '')
+  }
+
+  return lines
 }
 
 function renderFullReport(
@@ -423,6 +471,7 @@ function main() {
 
   const lines: string[] = []
   lines.push('## ⚡ Performance Report\n')
+  lines.push(...renderHeadlineSummary(prGroups))
 
   if (baseline && historical.length >= 2) {
     lines.push(...renderFullReport(prGroups, baseline, historical))
@@ -432,9 +481,15 @@ function main() {
     lines.push(...renderNoBaselineReport(prGroups))
   }
 
+  const rawData = {
+    ...current,
+    measurements: current.measurements.map(
+      ({ allFrameDurationsMs: _, ...rest }) => rest
+    )
+  }
   lines.push('\n<details><summary>Raw data</summary>\n')
   lines.push('```json')
-  lines.push(JSON.stringify(current, null, 2))
+  lines.push(JSON.stringify(rawData, null, 2))
   lines.push('```')
   lines.push('\n</details>')
 

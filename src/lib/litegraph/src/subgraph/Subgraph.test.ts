@@ -6,12 +6,12 @@
  * and basic I/O management.
  */
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { createUuidv4, Subgraph } from '@/lib/litegraph/src/litegraph'
-
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
   assertSubgraphStructure,
@@ -48,7 +48,7 @@ describe('Subgraph Construction', () => {
   it('should require a root graph', () => {
     const subgraphData = createTestSubgraphData()
     const createWithoutRoot = () =>
-      new Subgraph(null as unknown as LGraph, subgraphData)
+      new Subgraph(fromAny<LGraph, unknown>(null), subgraphData)
 
     expect(createWithoutRoot).toThrow('Root graph is required')
   })

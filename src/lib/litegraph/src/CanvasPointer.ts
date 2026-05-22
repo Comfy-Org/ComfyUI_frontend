@@ -23,8 +23,19 @@ import type { CanvasPointerEvent } from './types/events'
  * - {@link LGraphCanvas.processMouseUp}
  */
 export class CanvasPointer {
-  /** Maximum time in milliseconds to ignore click drift */
-  static bufferTime = 150
+  /**
+   * Maximum time in milliseconds to ignore click drift.
+   *
+   * This is the upper bound on how long after pointerdown the system will wait
+   * before deciding "this is a drag, not a click" when the pointer hasn't moved
+   * past {@link maxClickDrift}. Keep this short — drags should feel instant.
+   * Disambiguation between click and drag is primarily handled by distance
+   * ({@link maxClickDrift}); this time threshold only matters when the user
+   * holds the pointer still then releases. ~2 frames at 60fps is plenty.
+   *
+   * Overridden at runtime by the `Comfy.Pointer.ClickBufferTime` user setting.
+   */
+  static bufferTime = 32
 
   /** Maximum gap between pointerup and pointerdown events to be considered as a double click */
   static doubleClickTime = 300

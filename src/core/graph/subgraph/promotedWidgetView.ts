@@ -560,7 +560,7 @@ function drawDisconnectedPlaceholder(
     '#333'
   )
   const textColor = readDesignToken('--color-text-secondary', '#999')
-  const fontSize = readDesignToken('--text-xxs', '11px')
+  const fontSize = readDesignToken('--text-2xs', '11px')
   const fontFamily = readDesignToken('--font-inter', 'sans-serif')
 
   ctx.save()

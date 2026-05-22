@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -57,8 +58,10 @@ vi.mock(
   })
 )
 
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useErrorGroups } from './useErrorGroups'
 
 function makeMissingNodeType(
@@ -215,7 +218,7 @@ describe('useErrorGroups', () => {
       const { groups } = createErrorGroups()
       const missingNodesStore = useMissingNodesErrorStore()
       missingNodesStore.setMissingNodeTypes([
-        'StringGroupNode' as unknown as MissingNodeType
+        fromAny<MissingNodeType, unknown>('StringGroupNode')
       ])
       await nextTick()
 
@@ -751,6 +754,50 @@ describe('useErrorGroups', () => {
       expect(
         groups.missingModelGroups.value.every((g) => g.isAssetSupported)
       ).toBe(true)
+    })
+  })
+
+  describe('unfiltered vs selection-filtered model/media groups', () => {
+    it('exposes both unfiltered (missingModelGroups) and filtered (filteredMissingModelGroups)', () => {
+      const { groups } = createErrorGroups()
+      expect(groups.missingModelGroups).toBeDefined()
+      expect(groups.filteredMissingModelGroups).toBeDefined()
+      expect(groups.missingMediaGroups).toBeDefined()
+      expect(groups.filteredMissingMediaGroups).toBeDefined()
+    })
+
+    it('missingModelGroups returns total candidates regardless of selection (ErrorOverlay contract)', async () => {
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingModels([
+        makeModel('a.safetensors', { nodeId: '1', directory: 'checkpoints' }),
+        makeModel('b.safetensors', { nodeId: '2', directory: 'checkpoints' })
+      ])
+      // Simulate canvas selection of a single node so the filtered
+      // variant actually narrows. Without this, both sides return the
+      // same value trivially and the test can't prove the contract.
+      vi.mocked(isLGraphNode).mockReturnValue(true)
+      const canvasStore = useCanvasStore()
+      canvasStore.selectedItems = fromAny<
+        typeof canvasStore.selectedItems,
+        unknown
+      >([{ id: '1' }])
+      await nextTick()
+
+      // Unfiltered total stays at one group of two models regardless of
+      // the selection — ErrorOverlay reads this for the overlay label
+      // and must not shrink with canvas selection.
+      expect(groups.missingModelGroups.value).toHaveLength(1)
+      expect(groups.missingModelGroups.value[0].models).toHaveLength(2)
+
+      // Filtered variant does narrow under the same selection state —
+      // this is how the errors tab scopes cards to the selected node.
+      // Exact filtered output depends on the app.rootGraph lookup
+      // (mocked to return undefined here); what matters is that the
+      // filtered shape is a different reference and does not blindly
+      // mirror the unfiltered one.
+      expect(groups.filteredMissingModelGroups.value).not.toBe(
+        groups.missingModelGroups.value
+      )
     })
   })
 })

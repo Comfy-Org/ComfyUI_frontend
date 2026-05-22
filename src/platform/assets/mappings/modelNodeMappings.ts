@@ -52,9 +52,6 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   // ---- SAM3 3D segmentation (comfyui-sam3) ----
   ['sam3', 'LoadSAM3Model', 'model_path'],
 
-  // ---- Ultralytics detection (comfyui-impact-subpack) ----
-  ['ultralytics', 'UltralyticsDetectorProvider', 'model_name'],
-
   // ---- DepthAnything (comfyui-depthanythingv2, comfyui-depthanythingv3) ----
   ['depthanything', 'DownloadAndLoadDepthAnythingV2Model', 'model'],
   ['depthanything3', 'DownloadAndLoadDepthAnythingV3Model', 'model'],
@@ -170,5 +167,54 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
     'LLM/Florence-2-large-PromptGen-v2.0',
     'LTXVPromptEnhancerLoader',
     'image_captioner_name'
-  ]
+  ],
+
+  // ---- BiRefNet background removal (comfyui_layerstyle) ----
+  ['BiRefNet', 'LayerMask: LoadBiRefNetModelV2', 'version'],
+
+  // ---- EVF-SAM segmentation (comfyui_layerstyle) ----
+  ['EVF-SAM', 'LayerMask: EVFSAMUltra', 'model'],
+
+  // ---- Florence2 vision-language (comfyui-florence2) ----
+  ['florence2', 'DownloadAndLoadFlorence2Model', 'model'],
+
+  // ---- GIMM-VFI frame interpolation (ComfyUI-GIMM-VFI) ----
+  ['interpolation', 'DownloadAndLoadGIMMVFIModel', 'model'],
+
+  // ---- RMBG background removal (comfyui-rmbg) ----
+  ['rmbg', 'RMBG', 'model'],
+
+  // ---- SmolLM2/SmolVLM language models (comfyui_layerstyle) ----
+  ['smol', 'LayerUtility: LoadSmolLM2Model', 'model'],
+
+  // ---- Transparent background removal (comfyui_layerstyle) ----
+  ['transparent-background', 'LayerMask: TransparentBackgroundUltra', 'model'],
+
+  // ---- YOLO object detection (comfyui_layerstyle) ----
+  ['yolo', 'LayerMask: ObjectDetectorYOLO8', 'yolo_model'],
+
+  // ---- MediaPipe face detection (comfyui-liveportrait) ----
+  ['mediapipe', 'LivePortraitLoadMediaPipeCropper', ''],
+
+  // ---- Superprompt text enhancement ----
+  ['superprompt-v1', 'Superprompt', ''],
+
+  // ---- ComfyUI core background removal (v0.21+) ----
+  ['background_removal', 'LoadBackgroundRemovalModel', 'bg_removal_name'],
+
+  // ---- ComfyUI core frame interpolation (v0.21+) ----
+  ['frame_interpolation', 'FrameInterpolationModelLoader', 'model_name'],
+
+  // ---- FILM frame interpolation (ComfyUI-Frame-Interpolation) ----
+  ['film', 'FILM VFI', 'ckpt_name'],
+
+  // ---- Ultralytics YOLO detectors (ComfyUI-Impact-Pack) ----
+  ['ultralytics/bbox', 'UltralyticsDetectorProvider', 'model_name'],
+  ['ultralytics/segm', 'UltralyticsDetectorProvider', 'model_name'],
+
+  // ---- ComfyUI core geometry estimation (MoGe) ----
+  ['geometry_estimation', 'LoadMoGeModel', 'model_name'],
+
+  // ---- ComfyUI core optical flow (RAFT) ----
+  ['optical_flow', 'OpticalFlowLoader', 'model_name']
 ] as const satisfies ReadonlyArray<readonly [string, string, string]>

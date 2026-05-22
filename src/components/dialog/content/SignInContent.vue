@@ -49,6 +49,7 @@
       <div class="flex flex-col gap-6">
         <template v-if="ssoAllowed">
           <Button
+            v-if="!googleSsoBlockedReason"
             type="button"
             class="h-10"
             variant="secondary"
@@ -147,7 +148,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import {
   configValueOrDefault,
@@ -157,6 +158,7 @@ import type { SignInData, SignUpData } from '@/schemas/signInSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
 import { isInChina } from '@/utils/networkUtil'
+import { getGoogleSsoBlockedReason } from '@/base/webviewDetection'
 
 import ApiKeyForm from './signin/ApiKeyForm.vue'
 import SignInForm from './signin/SignInForm.vue'
@@ -167,11 +169,12 @@ const { onSuccess } = defineProps<{
 }>()
 
 const { t } = useI18n()
-const authActions = useFirebaseAuthActions()
+const authActions = useAuthActions()
 const isSecureContext = window.isSecureContext
 const isSignIn = ref(true)
 const showApiKeyForm = ref(false)
 const ssoAllowed = isHostWhitelisted(normalizeHost(window.location.hostname))
+const googleSsoBlockedReason = getGoogleSsoBlockedReason()
 const comfyPlatformBaseUrl = computed(() =>
   configValueOrDefault(
     remoteConfig.value,

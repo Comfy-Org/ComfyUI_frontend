@@ -59,7 +59,7 @@ defineProps<{ itemClass: string; contentClass: string; item: MenuItem }>()
     <i v-if="item.checked" class="icon-[lucide--check] shrink-0" />
     <div
       v-else-if="item.new"
-      class="flex shrink-0 items-center rounded-full bg-primary-background px-1 text-xxs leading-none font-bold"
+      class="flex shrink-0 items-center rounded-full bg-primary-background px-1 text-2xs leading-none font-bold"
       v-text="t('contextMenu.new')"
     />
   </DropdownMenuItem>

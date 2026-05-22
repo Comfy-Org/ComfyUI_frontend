@@ -99,13 +99,13 @@
                 </Button>
               </template>
               <template #bottom-right>
-                <SquareChip label="png" />
-                <SquareChip label="1.2 MB" />
-                <SquareChip label="LoRA">
+                <Tag label="png" shape="overlay" />
+                <Tag label="1.2 MB" shape="overlay" />
+                <Tag label="LoRA" shape="overlay">
                   <template #icon>
                     <i class="icon-[lucide--folder]" />
                   </template>
-                </SquareChip>
+                </Tag>
               </template>
             </CardTop>
           </template>
@@ -129,10 +129,10 @@ import MoreButton from '@/components/button/MoreButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
-import SquareChip from '@/components/chip/SquareChip.vue'
+import Tag from '@/components/chip/Tag.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import MultiSelect from '@/components/input/MultiSelect.vue'
-import SingleSelect from '@/components/input/SingleSelect.vue'
+import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
+import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'

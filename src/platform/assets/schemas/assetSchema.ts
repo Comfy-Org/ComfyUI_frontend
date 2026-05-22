@@ -1,3 +1,4 @@
+import { zListAssetsResponse } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 // Zod schemas for asset API validation matching ComfyUI Assets REST API spec
@@ -20,11 +21,11 @@ const zAsset = z.object({
   user_metadata: z.record(z.unknown()).optional() // API allows arbitrary key-value pairs
 })
 
-const zAssetResponse = z.object({
-  assets: z.array(zAsset).optional(),
-  total: z.number().optional(),
-  has_more: z.boolean().optional()
-})
+const zAssetResponse = zListAssetsResponse
+  .pick({ total: true, has_more: true })
+  .extend({
+    assets: z.array(zAsset)
+  })
 
 const zModelFolder = z.object({
   name: z.string(),
@@ -84,6 +85,15 @@ export const assetFilenameSchema = z
 export const assetItemSchema = zAsset
 export const assetResponseSchema = zAssetResponse
 export const asyncUploadResponseSchema = zAsyncUploadResponse
+
+/**
+ * Identifier for a single asset record.
+ *
+ * Backed by `AssetItem.id` which the API serialises as a string. This alias
+ * names that primitive at use sites (services, stores, composables) without
+ * changing structural typing.
+ */
+export type AssetId = string
 
 // Export types derived from Zod schemas
 export type AssetItem = z.infer<typeof zAsset>

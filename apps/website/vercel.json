@@ -1,0 +1,41 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm --filter @comfyorg/website build",
+  "outputDirectory": "dist",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "framework": null,
+  "github": {
+    "enabled": false
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "has": [
+        { "type": "host", "value": "website-frontend-comfyui.vercel.app" }
+      ],
+      "headers": [{ "key": "X-Robots-Tag", "value": "index, follow" }]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/pricing",
+      "destination": "/cloud/pricing",
+      "permanent": true
+    },
+    {
+      "source": "/enterprise",
+      "destination": "/cloud/enterprise",
+      "permanent": true
+    },
+    {
+      "source": "/blog",
+      "destination": "https://blog.comfy.org/",
+      "permanent": true
+    },
+    {
+      "source": "/press",
+      "destination": "/about",
+      "permanent": true
+    }
+  ]
+}

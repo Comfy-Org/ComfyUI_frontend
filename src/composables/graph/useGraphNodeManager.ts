@@ -45,7 +45,10 @@ export interface WidgetSlotMetadata {
   linked: boolean
   originNodeId?: string
   originOutputName?: string
+  type: string
 }
+
+type Badges = (LGraphBadge | (() => LGraphBadge))[]
 
 /**
  * Minimal render-specific widget data extracted from LiteGraph widgets.
@@ -106,7 +109,7 @@ export interface VueNodeData {
   title: string
   type: string
   apiNode?: boolean
-  badges?: (LGraphBadge | (() => LGraphBadge))[]
+  badges?: Badges
   bgcolor?: string
   color?: string
   flags?: {
@@ -395,7 +398,8 @@ function buildSlotMetadata(
       index,
       linked: input.link != null,
       originNodeId,
-      originOutputName
+      originOutputName,
+      type: String(input.type)
     }
     if (input.name) metadata.set(input.name, slotInfo)
     if (input.widget?.name) metadata.set(input.widget.name, slotInfo)
@@ -782,6 +786,12 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
               vueNodeData.set(nodeId, {
                 ...currentData,
                 showAdvanced: Boolean(propertyEvent.newValue)
+              })
+              break
+            case 'badges':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                badges: propertyEvent.newValue as Badges
               })
               break
           }

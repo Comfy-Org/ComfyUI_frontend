@@ -272,6 +272,10 @@
       "v1 (legacy)": "v1（旧版）"
     }
   },
+  "Comfy_NodeSearchBoxImpl_FollowCursor": {
+    "name": "新增节点跟随光标",
+    "tooltip": "启用后，从搜索框添加的节点会跟随光标，直到点击以放置。仅适用于默认实现。"
+  },
   "Comfy_NodeSearchBoxImpl_NodePreview": {
     "name": "显示节点预览",
     "tooltip": "仅适用于默认框架"
@@ -424,11 +428,11 @@
     "name": "校验工作流"
   },
   "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "自动缩放布局（Vue节点）",
+    "name": "自动缩放布局（Nodes 2.0）",
     "tooltip": "切换到Vue渲染时自动缩放节点位置以防止重叠"
   },
   "Comfy_VueNodes_Enabled": {
-    "name": "现代节点设计（Vue节点）",
+    "name": "现代节点设计（Nodes 2.0）",
     "tooltip": "现代：基于DOM的渲染，具有增强的交互性、原生浏览器功能和更新的视觉设计。经典：传统的画布渲染。"
   },
   "Comfy_WidgetControlMode": {

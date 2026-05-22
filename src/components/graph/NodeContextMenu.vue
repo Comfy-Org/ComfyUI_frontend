@@ -10,7 +10,7 @@
       <a
         v-bind="props.action"
         class="flex items-center gap-2 px-3 py-1.5"
-        @click="item.isColorSubmenu ? showColorPopover($event) : undefined"
+        @click="onItemClick($event, item)"
       >
         <i v-if="item.icon" :class="[item.icon, 'size-4']" />
         <span class="flex-1">{{ item.label }}</span>
@@ -21,20 +21,27 @@
           {{ item.shortcut }}
         </span>
         <i
-          v-if="hasSubmenu || item.isColorSubmenu"
+          v-if="hasSubmenu || item.isColorSubmenu || item.isShapeSubmenu"
           class="icon-[lucide--chevron-right] size-4 opacity-60"
         />
       </a>
     </template>
   </ContextMenu>
 
-  <!-- Color picker menu (custom with color circles) -->
-  <ColorPickerMenu
+  <SubmenuPopover
     v-if="colorOption"
-    ref="colorPickerMenu"
-    key="color-picker-menu"
+    ref="colorSubmenu"
+    key="color-submenu"
     :option="colorOption"
-    @submenu-click="handleColorSelect"
+    @submenu-click="handleSubmenuSelect"
+  />
+
+  <SubmenuPopover
+    v-if="shapeOption"
+    ref="shapeSubmenu"
+    key="shape-submenu"
+    :option="shapeOption"
+    @submenu-click="handleSubmenuSelect"
   />
 </template>
 
@@ -54,16 +61,18 @@ import type {
 } from '@/composables/graph/useMoreOptionsMenu'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
-import ColorPickerMenu from './selectionToolbox/ColorPickerMenu.vue'
+import SubmenuPopover from './selectionToolbox/SubmenuPopover.vue'
 
 interface ExtendedMenuItem extends MenuItem {
   isColorSubmenu?: boolean
+  isShapeSubmenu?: boolean
   shortcut?: string
   originalOption?: MenuOption
 }
 
 const contextMenu = ref<InstanceType<typeof ContextMenu>>()
-const colorPickerMenu = ref<InstanceType<typeof ColorPickerMenu>>()
+const colorSubmenu = ref<InstanceType<typeof SubmenuPopover>>()
+const shapeSubmenu = ref<InstanceType<typeof SubmenuPopover>>()
 const isOpen = ref(false)
 
 const { menuOptions, bump } = useMoreOptionsMenu()
@@ -150,21 +159,20 @@ useEventListener(
   { passive: true }
 )
 
-// Find color picker option
 const colorOption = computed(() =>
   menuOptions.value.find((opt) => opt.isColorPicker)
 )
 
-// Check if option is the color picker
-function isColorOption(option: MenuOption): boolean {
-  return Boolean(option.isColorPicker)
-}
+const shapeOption = computed(() =>
+  menuOptions.value.find((opt) => opt.isShapePicker)
+)
 
-// Convert MenuOption to PrimeVue MenuItem
 function convertToMenuItem(option: MenuOption): ExtendedMenuItem {
   if (option.type === 'divider') return { separator: true }
 
-  const isColor = isColorOption(option)
+  const isColor = Boolean(option.isColorPicker)
+  const isShape = Boolean(option.isShapePicker)
+  const usesPopover = isColor || isShape
 
   const item: ExtendedMenuItem = {
     label: option.label,
@@ -172,11 +180,14 @@ function convertToMenuItem(option: MenuOption): ExtendedMenuItem {
     disabled: option.disabled,
     shortcut: option.shortcut,
     isColorSubmenu: isColor,
+    isShapeSubmenu: isShape,
     originalOption: option
   }
 
-  // Native submenus for non-color options
-  if (option.hasSubmenu && option.submenu && !isColor) {
+  // Submenus opened via popover (color, shape) deliberately omit `items` so
+  // PrimeVue does not render a nested <ul> inside the scrollable root list,
+  // which would be clipped when the menu overflows the viewport (FE-570).
+  if (option.hasSubmenu && option.submenu && !usesPopover) {
     item.items = option.submenu.map((sub) => ({
       label: sub.label,
       icon: sub.icon,
@@ -188,7 +199,6 @@ function convertToMenuItem(option: MenuOption): ExtendedMenuItem {
     }))
   }
 
-  // Regular action items
   if (!option.hasSubmenu && option.action) {
     item.command = () => {
       option.action?.()
@@ -245,23 +255,60 @@ function toggle(event: Event) {
 
 defineExpose({ toggle, hide, isOpen, show })
 
-function showColorPopover(event: MouseEvent) {
-  event.stopPropagation()
-  event.preventDefault()
-  const target = Array.from((event.currentTarget as HTMLElement).children).find(
-    (el) => el.classList.contains('icon-[lucide--chevron-right]')
-  ) as HTMLElement
-  colorPickerMenu.value?.toggle(event, target)
+function onItemClick(event: MouseEvent, item: ExtendedMenuItem) {
+  if (item.isColorSubmenu) {
+    openSubmenuPopover(event, colorSubmenu.value, shapeSubmenu.value)
+  } else if (item.isShapeSubmenu) {
+    openSubmenuPopover(event, shapeSubmenu.value, colorSubmenu.value)
+  }
 }
 
-// Handle color selection
-function handleColorSelect(subOption: SubMenuOption) {
+function openSubmenuPopover(
+  event: MouseEvent,
+  target: InstanceType<typeof SubmenuPopover> | undefined,
+  other: InstanceType<typeof SubmenuPopover> | undefined
+) {
+  if (!target) return
+  event.stopPropagation()
+  event.preventDefault()
+  other?.hide()
+  const anchor = Array.from((event.currentTarget as HTMLElement).children).find(
+    (el) => el.classList.contains('icon-[lucide--chevron-right]')
+  ) as HTMLElement
+  target.toggle(event, anchor)
+}
+
+function handleSubmenuSelect(subOption: SubMenuOption) {
   subOption.action()
   hide()
 }
 
+function constrainMenuHeight() {
+  const menuInstance = contextMenu.value as unknown as {
+    container?: HTMLElement
+  }
+  const rootList = menuInstance?.container?.querySelector(
+    ':scope > ul'
+  ) as HTMLElement | null
+  if (!rootList) return
+
+  const rect = rootList.getBoundingClientRect()
+  const availableHeight = window.innerHeight - rect.top - 8
+  if (availableHeight <= 0) return
+
+  // Setting overflow-y to auto/scroll on the root <ul> coerces overflow-x
+  // to a non-visible value too (CSS spec), which clips horizontally-opening
+  // submenus like Shape. Only apply the constraint when content truly
+  // overflows so the common case keeps overflow visible.
+  if (rootList.scrollHeight <= availableHeight) return
+
+  rootList.style.maxHeight = `${availableHeight}px`
+  rootList.style.overflowY = 'auto'
+}
+
 function onMenuShow() {
   isOpen.value = true
+  requestAnimationFrame(constrainMenuHeight)
 }
 
 function onMenuHide() {

@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { getSourceNodeId } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { usePromotionStore } from '@/stores/promotionStore'
@@ -13,7 +12,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { isGroupNode } from '@/utils/executableGroupNodeDto'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getWidgetDefaultValue } from '@/utils/widgetUtil'
@@ -79,7 +78,6 @@ function isWidgetShownOnParents(
 ): boolean {
   return parents.some((parent) => {
     if (isPromotedWidgetView(widget)) {
-      const sourceNodeId = getSourceNodeId(widget)
       const interiorNodeId =
         String(widgetNode.id) === String(parent.id)
           ? widget.sourceNodeId
@@ -88,7 +86,7 @@ function isWidgetShownOnParents(
       return promotionStore.isPromoted(parent.rootGraph.id, parent.id, {
         sourceNodeId: interiorNodeId,
         sourceWidgetName: widget.sourceWidgetName,
-        disambiguatingSourceNodeId: sourceNodeId
+        disambiguatingSourceNodeId: widget.disambiguatingSourceNodeId
       })
     }
     return promotionStore.isPromoted(parent.rootGraph.id, parent.id, {

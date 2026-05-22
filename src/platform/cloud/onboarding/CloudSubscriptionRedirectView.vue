@@ -6,7 +6,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
@@ -16,7 +16,7 @@ import type { BillingCycle } from '../subscription/utils/subscriptionTierRank'
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const { reportError, accessBillingPortal } = useFirebaseAuthActions()
+const { reportError, accessBillingPortal } = useAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
 const { isActiveSubscription, isInitialized, initialize } = useBillingContext()
