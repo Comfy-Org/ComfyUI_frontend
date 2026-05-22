@@ -112,7 +112,7 @@ const specDescriptor = computed<{
 const isAssetMode = computed(
   () =>
     assetService.shouldUseAssetBrowser(props.nodeType, props.widget.name) ||
-    (assetService.isAssetAPIEnabled() && props.widget.type === 'asset')
+    props.widget.type === 'asset'
 )
 
 const assetKind = computed(() => specDescriptor.value.kind)

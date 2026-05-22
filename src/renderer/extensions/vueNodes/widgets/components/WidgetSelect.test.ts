@@ -17,12 +17,10 @@ const i18n = createI18n({
 
 // Mock state for asset service
 const mockShouldUseAssetBrowser = vi.hoisted(() => vi.fn(() => false))
-const mockIsAssetAPIEnabled = vi.hoisted(() => vi.fn(() => false))
 
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
-    shouldUseAssetBrowser: mockShouldUseAssetBrowser,
-    isAssetAPIEnabled: mockIsAssetAPIEnabled
+    shouldUseAssetBrowser: mockShouldUseAssetBrowser
   }
 }))
 
@@ -68,7 +66,6 @@ const globalConfig = {
 describe('WidgetSelect Value Binding', () => {
   beforeEach(() => {
     mockShouldUseAssetBrowser.mockReturnValue(false)
-    mockIsAssetAPIEnabled.mockReturnValue(false)
     vi.clearAllMocks()
   })
 

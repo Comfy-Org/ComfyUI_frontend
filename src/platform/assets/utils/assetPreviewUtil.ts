@@ -10,12 +10,6 @@ interface AssetRecord {
   preview_id?: string | null
 }
 
-export function isAssetPreviewSupported(): boolean {
-  return (
-    assetService.isAssetAPIEnabled() || api.getServerFeature('assets', false)
-  )
-}
-
 async function fetchAssets(
   params: Record<string, string>
 ): Promise<AssetRecord[]> {

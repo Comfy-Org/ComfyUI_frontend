@@ -18,8 +18,7 @@ const flushPromises = () =>
 
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
-    shouldUseAssetBrowser: vi.fn(() => true),
-    isAssetAPIEnabled: vi.fn(() => true)
+    shouldUseAssetBrowser: vi.fn(() => true)
   }
 }))
 
