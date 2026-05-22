@@ -2,11 +2,12 @@ import type * as THREE from 'three'
 
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { isGaussianSplatPLY } from '@/scripts/metadata/ply'
 
 import { MeshModelAdapter } from './MeshModelAdapter'
-import { createAdapterRef } from './ModelAdapter'
+import { createAdapterRef, fetchModelData } from './ModelAdapter'
 import type { AdapterRef, ModelAdapter, ModelLoadContext } from './ModelAdapter'
-import { PointCloudModelAdapter, getPLYEngine } from './PointCloudModelAdapter'
+import { PointCloudModelAdapter } from './PointCloudModelAdapter'
 import { SplatModelAdapter } from './SplatModelAdapter'
 import type {
   EventManagerInterface,
@@ -138,18 +139,10 @@ export class LoaderManager implements LoaderManagerInterface {
   }
 
   private pickAdapter(extension: string): ModelAdapter | null {
-    const match = this.adapters.find((adapter) =>
-      adapter.extensions.includes(extension)
+    return (
+      this.adapters.find((adapter) => adapter.extensions.includes(extension)) ??
+      null
     )
-    if (!match) return null
-
-    // PLY may be routed through the splat adapter when the PLYEngine setting
-    // is sparkjs. Only honor the routing when both adapters are registered.
-    if (match.kind === 'pointCloud' && getPLYEngine() === 'sparkjs') {
-      const splat = this.adapters.find((adapter) => adapter.kind === 'splat')
-      if (splat) return splat
-    }
-    return match
   }
 
   private createLoadContext(): ModelLoadContext {
@@ -187,6 +180,22 @@ export class LoaderManager implements LoaderManagerInterface {
       '&subfolder=' +
       encodeURIComponent(subfolder) +
       '&filename='
+
+    if (fileExtension === 'ply') {
+      const fileBytes = await fetchModelData(path, filename)
+      const targetKind = (await isGaussianSplatPLY(fileBytes))
+        ? 'splat'
+        : 'pointCloud'
+      const chosen = this.adapters.find((a) => a.kind === targetKind)
+      if (!chosen) return null
+      const model = await chosen.load(
+        this.createLoadContext(),
+        path,
+        filename,
+        fileBytes
+      )
+      return model ? { model, adapter: chosen } : null
+    }
 
     const adapter = this.pickAdapter(fileExtension)
     if (!adapter) return null

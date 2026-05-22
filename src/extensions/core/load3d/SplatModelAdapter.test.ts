@@ -6,7 +6,7 @@ import type { ModelLoadContext } from './ModelAdapter'
 import { SplatModelAdapter } from './SplatModelAdapter'
 
 const splatMeshSpies = {
-  ctor: vi.fn<(opts: { fileBytes: ArrayBuffer }) => void>(),
+  ctor: vi.fn<(opts: { fileBytes: ArrayBuffer; fileName?: string }) => void>(),
   dispose: vi.fn(),
   getBoundingBox: vi.fn(
     () =>
@@ -23,7 +23,7 @@ vi.mock('@sparkjsdev/spark', async () => {
       dispose = splatMeshSpies.dispose
       getBoundingBox = splatMeshSpies.getBoundingBox
 
-      constructor(opts: { fileBytes: ArrayBuffer }) {
+      constructor(opts: { fileBytes: ArrayBuffer; fileName?: string }) {
         super()
         splatMeshSpies.ctor(opts)
       }
@@ -85,7 +85,10 @@ describe('SplatModelAdapter', () => {
       '/api/view?',
       'scene.splat'
     )
-    expect(splatMeshSpies.ctor).toHaveBeenCalledWith({ fileBytes: buf })
+    expect(splatMeshSpies.ctor).toHaveBeenCalledWith({
+      fileBytes: buf,
+      fileName: 'scene.splat'
+    })
     expect(result).toBeInstanceOf(THREE.Group)
     expect(result.children).toHaveLength(1)
 

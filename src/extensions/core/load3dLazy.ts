@@ -15,7 +15,13 @@ import { useExtensionStore } from '@/stores/extensionStore'
 
 import type { ComfyExtension } from '@/types/comfy'
 
-const LOAD3D_NODE_TYPES = new Set(['Load3D', 'Preview3D', 'SaveGLB'])
+const LOAD3D_NODE_TYPES = new Set([
+  'Load3D',
+  'Preview3D',
+  'PreviewGaussianSplat',
+  'PreviewPointCloud',
+  'SaveGLB'
+])
 
 let load3dExtensionsLoaded = false
 let load3dExtensionsLoading: Promise<ComfyExtension[]> | null = null
@@ -34,8 +40,12 @@ async function loadLoad3dExtensions(): Promise<ComfyExtension[]> {
 
   load3dExtensionsLoading = (async () => {
     const before = new Set(useExtensionStore().enabledExtensions)
-    // Import both extensions - they will self-register via useExtensionService()
-    await Promise.all([import('./load3d'), import('./saveMesh')])
+    // Import extensions - they self-register via useExtensionService()
+    await Promise.all([
+      import('./load3d'),
+      import('./load3dPreviewExtensions'),
+      import('./saveMesh')
+    ])
     load3dExtensionsLoaded = true
     return useExtensionStore().enabledExtensions.filter(
       (ext) => !before.has(ext)

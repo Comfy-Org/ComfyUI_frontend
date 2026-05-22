@@ -45,8 +45,7 @@ export class SceneManager implements SceneManagerInterface {
     this.getActiveCamera = getActiveCamera
 
     // Spark 2.x requires a SparkRenderer in the scene tree to render SplatMesh
-    // (Gaussian splat) instances; without it splats are silent no-ops. Kept
-    // alive across model reloads by SceneModelManager.clearModel.
+    // instances; without it splats are silent no-ops.
     this.sparkRenderer = new SparkRenderer({ renderer })
     this.scene.add(this.sparkRenderer)
 

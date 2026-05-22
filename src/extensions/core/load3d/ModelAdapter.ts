@@ -81,7 +81,8 @@ export interface ModelAdapter {
   load(
     ctx: ModelLoadContext,
     path: string,
-    filename: string
+    filename: string,
+    fileBytes?: ArrayBuffer
   ): Promise<THREE.Object3D | null>
   /**
    * Optional. Return a world-space AABB for the given model. Adapters for

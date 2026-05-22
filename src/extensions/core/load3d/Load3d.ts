@@ -161,9 +161,29 @@ class Load3d {
     this.handleResize()
     this.startAnimation()
 
+    this.eventManager.addEventListener('modelReady', () => {
+      this.startPostLoadRenderBurst()
+    })
+
     setTimeout(() => {
       this.forceRender()
     }, 100)
+  }
+
+  private postLoadBurstEndsAt = 0
+  private postLoadBurstFrameId: number | null = null
+  private startPostLoadRenderBurst(): void {
+    this.postLoadBurstEndsAt = performance.now() + 2000
+    if (this.postLoadBurstFrameId !== null) return
+    const tick = () => {
+      this.forceRender()
+      if (performance.now() < this.postLoadBurstEndsAt) {
+        this.postLoadBurstFrameId = requestAnimationFrame(tick)
+      } else {
+        this.postLoadBurstFrameId = null
+      }
+    }
+    this.postLoadBurstFrameId = requestAnimationFrame(tick)
   }
 
   private initResizeObserver(container: Element | HTMLElement): void {
@@ -924,10 +944,31 @@ class Load3d {
     this.forceRender()
   }
 
+  public centerCameraOnModel(): void {
+    const bounds = this.modelManager.getCurrentBounds()
+    if (!bounds || bounds.isEmpty()) return
+
+    const center = bounds.getCenter(new THREE.Vector3())
+    const camera = this.cameraManager.activeCamera
+    const controls = this.controlsManager.controls
+    const offset = center.clone().sub(camera.position)
+
+    camera.position.add(offset)
+    controls.target.add(offset)
+    camera.updateMatrixWorld(true)
+    controls.update()
+    this.forceRender()
+  }
+
   public remove(): void {
     if (this.resizeObserver) {
       this.resizeObserver.disconnect()
       this.resizeObserver = null
+    }
+
+    if (this.postLoadBurstFrameId !== null) {
+      cancelAnimationFrame(this.postLoadBurstFrameId)
+      this.postLoadBurstFrameId = null
     }
 
     this.disposeContextMenuGuard?.()

@@ -1,6 +1,94 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import { isPLYAsciiFormat, parseASCIIPLY } from '@/scripts/metadata/ply'
+// vitest.setup.ts globally mocks @sparkjsdev/spark without exporting
+// PlyReader (the real one pulls in WASM that doesn't run under Node).
+// Override the global mock here with a header-only PlyReader stub that
+// mirrors the real parseHeader() — same accepted formats, same element /
+// property dictionary shape — so isGaussianSplatPLY exercises the real
+// reuse path in tests.
+vi.mock('@sparkjsdev/spark', () => {
+  type StubProperty = { isList: boolean; type: string }
+  type StubElement = {
+    name: string
+    count: number
+    properties: Record<string, StubProperty>
+  }
+
+  class PlyReader {
+    fileBytes: Uint8Array
+    elements: Record<string, StubElement> = {}
+
+    constructor({ fileBytes }: { fileBytes: ArrayBuffer | Uint8Array }) {
+      this.fileBytes =
+        fileBytes instanceof ArrayBuffer ? new Uint8Array(fileBytes) : fileBytes
+    }
+
+    parseHeader(): Promise<void> {
+      const text = new TextDecoder().decode(this.fileBytes.slice(0, 65536))
+      const terminator = 'end_header\n'
+      const endIdx = text.indexOf(terminator)
+      if (endIdx < 0) {
+        return Promise.reject(new Error('Failed to read header'))
+      }
+      const header = text.slice(0, endIdx)
+      const lines = header.split('\n')
+      if (lines[0]?.trim() !== 'ply') {
+        return Promise.reject(new Error('Invalid PLY header'))
+      }
+      let curElement: StubElement | null = null
+      for (const line of lines.slice(1)) {
+        const fields = line.trim().split(' ')
+        switch (fields[0]) {
+          case 'format':
+            if (
+              fields[1] !== 'binary_little_endian' &&
+              fields[1] !== 'binary_big_endian'
+            ) {
+              return Promise.reject(
+                new Error(`Unsupported PLY format: ${fields[1]}`)
+              )
+            }
+            break
+          case 'element':
+            curElement = {
+              name: fields[1],
+              count: Number.parseInt(fields[2]),
+              properties: {}
+            }
+            this.elements[fields[1]] = curElement
+            break
+          case 'property':
+            if (!curElement) {
+              return Promise.reject(
+                new Error('Property must be inside an element')
+              )
+            }
+            if (fields[1] === 'list') {
+              curElement.properties[fields[4]] = {
+                isList: true,
+                type: fields[3]
+              }
+            } else {
+              curElement.properties[fields[2]] = {
+                isList: false,
+                type: fields[1]
+              }
+            }
+            break
+        }
+      }
+      return Promise.resolve()
+    }
+  }
+
+  return { PlyReader }
+})
+
+import {
+  isGaussianSplatPLY,
+  isPLYAsciiFormat,
+  parseASCIIPLY
+} from '@/scripts/metadata/ply'
 
 function createPLYBuffer(content: string): ArrayBuffer {
   return new TextEncoder().encode(content).buffer
@@ -50,6 +138,90 @@ end_header`
     it('should handle empty buffer', () => {
       const buffer = new ArrayBuffer(0)
       expect(isPLYAsciiFormat(buffer)).toBe(false)
+    })
+  })
+
+  describe('isGaussianSplatPLY', () => {
+    it('detects a 3DGS PLY by scale_0..2 + rot_0..3 properties on the vertex element', async () => {
+      const ply = `ply
+format binary_little_endian 1.0
+element vertex 1
+property float x
+property float y
+property float z
+property float nx
+property float ny
+property float nz
+property float f_dc_0
+property float f_dc_1
+property float f_dc_2
+property float opacity
+property float scale_0
+property float scale_1
+property float scale_2
+property float rot_0
+property float rot_1
+property float rot_2
+property float rot_3
+end_header
+`
+      expect(await isGaussianSplatPLY(createPLYBuffer(ply))).toBe(true)
+    })
+
+    it('returns false for a binary point-cloud PLY with no scale/rot properties', async () => {
+      const ply = `ply
+format binary_little_endian 1.0
+element vertex 1
+property float x
+property float y
+property float z
+property uchar red
+property uchar green
+property uchar blue
+end_header
+`
+      expect(await isGaussianSplatPLY(createPLYBuffer(ply))).toBe(false)
+    })
+
+    it('returns false when only the f_dc_* DC term is present (no scale/rot)', async () => {
+      const ply = `ply
+format binary_little_endian 1.0
+element vertex 1
+property float x
+property float y
+property float z
+property float f_dc_0
+property float f_dc_1
+property float f_dc_2
+end_header
+`
+      expect(await isGaussianSplatPLY(createPLYBuffer(ply))).toBe(false)
+    })
+
+    it('returns false for an ASCII PLY (sparkjs PlyReader rejects ASCII by design)', async () => {
+      const ply = `ply
+format ascii 1.0
+element vertex 3
+property float x
+property float y
+property float z
+end_header
+0 0 0
+1 0 0
+0 1 0`
+      expect(await isGaussianSplatPLY(createPLYBuffer(ply))).toBe(false)
+    })
+
+    it('returns false when end_header is missing', async () => {
+      expect(
+        await isGaussianSplatPLY(
+          createPLYBuffer('ply\nformat binary_little_endian 1.0\n')
+        )
+      ).toBe(false)
+    })
+
+    it('returns false for an empty buffer', async () => {
+      expect(await isGaussianSplatPLY(new ArrayBuffer(0))).toBe(false)
     })
   })
 

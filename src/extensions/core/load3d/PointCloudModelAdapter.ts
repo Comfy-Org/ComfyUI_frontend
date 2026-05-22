@@ -13,21 +13,28 @@ import type {
 import type { MaterialMode } from './interfaces'
 import { FastPLYLoader } from './loader/FastPLYLoader'
 
-export function getPLYEngine(): string {
+function getPLYEngine(): string {
   return useSettingStore().get('Comfy.Load3D.PLYEngine') as string
 }
 
 export class PointCloudModelAdapter implements ModelAdapter {
   readonly kind = 'pointCloud' as const
   readonly extensions = ['ply'] as const
-  readonly capabilities: ModelAdapterCapabilities = {
-    fitToViewer: true,
-    requiresMaterialRebuild: true,
-    gizmoTransform: false,
-    lighting: true,
-    exportable: true,
-    materialModes: ['original', 'pointCloud', 'normal', 'wireframe'],
-    fitTargetSize: 5
+
+  private hasFaces: boolean = true
+
+  get capabilities(): ModelAdapterCapabilities {
+    return {
+      fitToViewer: true,
+      requiresMaterialRebuild: true,
+      gizmoTransform: false,
+      lighting: true,
+      exportable: true,
+      materialModes: this.hasFaces
+        ? ['original', 'pointCloud', 'normal', 'wireframe']
+        : ['pointCloud'],
+      fitTargetSize: 5
+    }
   }
 
   private readonly plyLoader = new PLYLoader()
@@ -36,9 +43,10 @@ export class PointCloudModelAdapter implements ModelAdapter {
   async load(
     ctx: ModelLoadContext,
     path: string,
-    filename: string
+    filename: string,
+    fileBytes?: ArrayBuffer
   ): Promise<THREE.Object3D | null> {
-    const arrayBuffer = await fetchModelData(path, filename)
+    const arrayBuffer = fileBytes ?? (await fetchModelData(path, filename))
     const isASCII = isPLYAsciiFormat(arrayBuffer)
 
     const plyGeometry =
@@ -50,8 +58,9 @@ export class PointCloudModelAdapter implements ModelAdapter {
     plyGeometry.computeVertexNormals()
 
     const hasVertexColors = plyGeometry.attributes.color !== undefined
+    this.hasFaces = (plyGeometry.index?.count ?? 0) > 0
 
-    if (ctx.materialMode === 'pointCloud') {
+    if (ctx.materialMode === 'pointCloud' || !this.hasFaces) {
       return buildPointsGroup(ctx, plyGeometry, hasVertexColors)
     }
 

@@ -368,7 +368,10 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         | LightConfig
         | undefined
 
-      isPreview.value = node.type === 'Preview3D'
+      isPreview.value =
+        node.type === 'Preview3D' ||
+        node.type === 'PreviewGaussianSplat' ||
+        node.type === 'PreviewPointCloud'
 
       if (sceneConfig) {
         backgroundColor.value =

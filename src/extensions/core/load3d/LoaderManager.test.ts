@@ -41,14 +41,21 @@ function makeModelManagerStub(): ModelManagerStub {
   }
 }
 
-const { meshLoad, splatLoad, pointCloudLoad, getPLYEngineMock, addAlert } =
-  vi.hoisted(() => ({
-    meshLoad: vi.fn(),
-    splatLoad: vi.fn(),
-    pointCloudLoad: vi.fn(),
-    getPLYEngineMock: vi.fn<() => string>(),
-    addAlert: vi.fn()
-  }))
+const {
+  meshLoad,
+  splatLoad,
+  pointCloudLoad,
+  fetchModelDataMock,
+  isGaussianSplatPLYMock,
+  addAlert
+} = vi.hoisted(() => ({
+  meshLoad: vi.fn(),
+  splatLoad: vi.fn(),
+  pointCloudLoad: vi.fn(),
+  fetchModelDataMock: vi.fn<() => Promise<ArrayBuffer>>(),
+  isGaussianSplatPLYMock: vi.fn<(b: ArrayBuffer) => Promise<boolean>>(),
+  addAlert: vi.fn()
+}))
 
 vi.mock('./MeshModelAdapter', () => ({
   MeshModelAdapter: class {
@@ -65,8 +72,7 @@ vi.mock('./PointCloudModelAdapter', () => ({
     readonly extensions = ['ply'] as const
     readonly capabilities = {}
     load = pointCloudLoad
-  },
-  getPLYEngine: () => getPLYEngineMock()
+  }
 }))
 
 vi.mock('./SplatModelAdapter', () => ({
@@ -76,6 +82,16 @@ vi.mock('./SplatModelAdapter', () => ({
     readonly capabilities = {}
     load = splatLoad
   }
+}))
+
+vi.mock('./ModelAdapter', async () => {
+  const actual =
+    await vi.importActual<typeof import('./ModelAdapter')>('./ModelAdapter')
+  return { ...actual, fetchModelData: fetchModelDataMock }
+})
+
+vi.mock('@/scripts/metadata/ply', () => ({
+  isGaussianSplatPLY: isGaussianSplatPLYMock
 }))
 
 vi.mock('@/i18n', () => ({
@@ -109,10 +125,11 @@ function makeLoaderManager() {
 describe('LoaderManager', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    getPLYEngineMock.mockReturnValue('three')
     meshLoad.mockResolvedValue(null)
     splatLoad.mockResolvedValue(null)
     pointCloudLoad.mockResolvedValue(null)
+    fetchModelDataMock.mockResolvedValue(new ArrayBuffer(0))
+    isGaussianSplatPLYMock.mockResolvedValue(false)
   })
 
   describe('getCurrentAdapter', () => {
@@ -257,22 +274,9 @@ describe('LoaderManager', () => {
       }
     )
 
-    it('routes .ply to the point-cloud adapter for the default three engine', () => {
-      getPLYEngineMock.mockReturnValue('three')
+    it('returns the point-cloud adapter for .ply by extension lookup (the actual .ply load path bypasses pickAdapter and dispatches by header content)', () => {
       const { pick } = makeLoaderManager()
       expect(pick('ply')?.kind).toBe('pointCloud')
-    })
-
-    it('routes .ply to the point-cloud adapter for the fastply engine', () => {
-      getPLYEngineMock.mockReturnValue('fastply')
-      const { pick } = makeLoaderManager()
-      expect(pick('ply')?.kind).toBe('pointCloud')
-    })
-
-    it('routes .ply to the splat adapter when the engine setting is sparkjs', () => {
-      getPLYEngineMock.mockReturnValue('sparkjs')
-      const { pick } = makeLoaderManager()
-      expect(pick('ply')?.kind).toBe('splat')
     })
 
     it('returns null for unknown extensions', () => {
@@ -407,8 +411,20 @@ describe('LoaderManager', () => {
       )
     })
 
-    it('routes .ply through the splat adapter when the engine setting is sparkjs', async () => {
-      getPLYEngineMock.mockReturnValue('sparkjs')
+    it('routes .ply to the point-cloud adapter when the header does not look like 3DGS', async () => {
+      isGaussianSplatPLYMock.mockResolvedValue(false)
+      const { lm } = makeLoaderManager()
+      pointCloudLoad.mockResolvedValueOnce(new THREE.Object3D())
+
+      await lm.loadModel('api/view?filename=scan.ply')
+
+      expect(pointCloudLoad).toHaveBeenCalled()
+      expect(splatLoad).not.toHaveBeenCalled()
+      expect(lm.getCurrentAdapter()?.kind).toBe('pointCloud')
+    })
+
+    it('reroutes .ply through the splat adapter when the header looks like 3DGS', async () => {
+      isGaussianSplatPLYMock.mockResolvedValue(true)
       const { lm } = makeLoaderManager()
       splatLoad.mockResolvedValueOnce(new THREE.Object3D())
 
@@ -416,6 +432,61 @@ describe('LoaderManager', () => {
 
       expect(splatLoad).toHaveBeenCalled()
       expect(pointCloudLoad).not.toHaveBeenCalled()
+      expect(lm.getCurrentAdapter()?.kind).toBe('splat')
+    })
+
+    it('forwards the fetched bytes to the chosen adapter so .ply is not re-downloaded', async () => {
+      const buf = new ArrayBuffer(16)
+      fetchModelDataMock.mockResolvedValueOnce(buf)
+      isGaussianSplatPLYMock.mockResolvedValue(true)
+      const { lm } = makeLoaderManager()
+      splatLoad.mockResolvedValueOnce(new THREE.Object3D())
+
+      await lm.loadModel('api/view?filename=scan.ply')
+
+      expect(splatLoad).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.any(String),
+        'scan.ply',
+        buf
+      )
+      expect(fetchModelDataMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('dispatches .ply by adapter kind, not extension order — a splat adapter that also claims .ply does NOT bypass detection', async () => {
+      const modelManager =
+        makeModelManagerStub() as unknown as ConstructorParameters<
+          typeof LoaderManager
+        >[0]
+      const eventManager = makeEventManagerStub()
+      // Pathological adapter list: a splat adapter also claims '.ply'
+      // and is listed first. With a plain extension-first match, .ply
+      // would skip the 3DGS detection. The kind-based dispatch should
+      // still run isGaussianSplatPLY and pick the point-cloud adapter.
+      const splatAdapter = {
+        kind: 'splat' as const,
+        extensions: ['ply', 'spz', 'splat', 'ksplat'] as const,
+        capabilities: {} as never,
+        load: splatLoad
+      }
+      const pointCloudAdapter = {
+        kind: 'pointCloud' as const,
+        extensions: ['ply'] as const,
+        capabilities: {} as never,
+        load: pointCloudLoad
+      }
+      const lm = new LoaderManager(modelManager, eventManager, [
+        splatAdapter,
+        pointCloudAdapter
+      ])
+      isGaussianSplatPLYMock.mockResolvedValue(false)
+      pointCloudLoad.mockResolvedValueOnce(new THREE.Object3D())
+
+      await lm.loadModel('api/view?filename=scan.ply')
+
+      expect(pointCloudLoad).toHaveBeenCalled()
+      expect(splatLoad).not.toHaveBeenCalled()
+      expect(lm.getCurrentAdapter()?.kind).toBe('pointCloud')
     })
 
     it('handles adapter errors by alerting and still emitting modelLoadingEnd', async () => {

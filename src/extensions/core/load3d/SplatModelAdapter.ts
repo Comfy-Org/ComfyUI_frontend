@@ -24,11 +24,15 @@ export class SplatModelAdapter implements ModelAdapter {
   async load(
     ctx: ModelLoadContext,
     path: string,
-    filename: string
+    filename: string,
+    fileBytes?: ArrayBuffer
   ): Promise<THREE.Object3D> {
-    const arrayBuffer = await fetchModelData(path, filename)
+    const arrayBuffer = fileBytes ?? (await fetchModelData(path, filename))
 
-    const splatMesh = new SplatMesh({ fileBytes: arrayBuffer })
+    const splatMesh = new SplatMesh({
+      fileBytes: arrayBuffer,
+      fileName: filename
+    })
     await splatMesh.initialized
     splatMesh.quaternion.set(1, 0, 0, 0)
     ctx.setOriginalModel(splatMesh)
