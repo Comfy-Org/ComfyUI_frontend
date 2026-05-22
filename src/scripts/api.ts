@@ -1313,6 +1313,65 @@ export class ComfyApi extends EventTarget {
     return response.data
   }
 
+  async downloadModelToServer(model: {
+    name: string
+    url: string
+    directory: string
+  }): Promise<{
+    status: 'downloaded' | 'already_exists'
+    name: string
+    directory: string
+    path: string
+    size?: number
+  }> {
+    const response = await fetch(this.internalURL('/models/download'), {
+      method: 'POST',
+      cache: 'no-cache',
+      headers: {
+        'Content-Type': 'application/json',
+        'Comfy-User': this.user
+      },
+      body: JSON.stringify(model)
+    })
+    const rawBody = await response.text()
+    let data: unknown = null
+    if (rawBody) {
+      try {
+        data = JSON.parse(rawBody)
+      } catch {
+        // Leave `data` as null so the error branch falls back to raw body
+        // or status. Non-JSON bodies typically come from reverse proxies
+        // (502 HTML, plain-text 503, etc.) and the operator needs to see
+        // them to diagnose the failure.
+      }
+    }
+    if (!response.ok) {
+      const errorFromJson =
+        data &&
+        typeof data === 'object' &&
+        'error' in data &&
+        typeof (data as { error: unknown }).error === 'string'
+          ? (data as { error: string }).error
+          : null
+      const rawFallback = rawBody.trim()
+      const statusFallback =
+        `${response.status} ${response.statusText}`.trim() ||
+        String(response.status)
+      const message =
+        errorFromJson ||
+        (rawFallback.length > 0 ? rawFallback : statusFallback) ||
+        'Failed to download model to server.'
+      throw new Error(message)
+    }
+    return data as {
+      status: 'downloaded' | 'already_exists'
+      name: string
+      directory: string
+      path: string
+      size?: number
+    }
+  }
+
   /* Frees memory by unloading models and optionally freeing execution cache
    * @param {Object} options - The options object
    * @param {boolean} options.freeExecutionCache - If true, also frees execution cache
