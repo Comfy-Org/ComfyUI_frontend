@@ -508,6 +508,32 @@ describe('verifyMediaCandidates', () => {
     expect(candidates[1].isMissing).toBe(true)
   })
 
+  it('matches a bare-filename widget value against a file_path-emitting asset (BE-808 deprecation window)', async () => {
+    // Pre-BE-933/934 workflow: widget value is the bare filename the user
+    // originally picked. Post-BE-933/934 asset: emits a namespace-rooted
+    // `file_path`. The two shapes must still match — workflow JSON does
+    // not auto-upgrade when the backend response shape changes.
+    const candidates = [
+      makeCandidate('1', 'photo.png', { isMissing: undefined })
+    ]
+    const assetPostBE: AssetItem = {
+      id: 'asset-1',
+      name: 'photo.png',
+      asset_hash: null,
+      file_path: 'input/sub/photo.png',
+      mime_type: null,
+      tags: ['input']
+    }
+    const resolveAssetSources = makeAssetResolver([assetPostBE])
+
+    await verifyMediaCandidates(candidates, {
+      allowCompactSuffix: true,
+      resolveAssetSources
+    })
+
+    expect(candidates[0].isMissing).toBe(false)
+  })
+
   it('matches annotated candidate names against clean asset names', async () => {
     const candidates = [
       makeCandidate('1', 'photo.png [input]', { isMissing: undefined }),

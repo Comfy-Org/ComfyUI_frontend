@@ -77,15 +77,15 @@ interface FetchGeneratedAssetsOptions {
 /**
  * Derive comparison keys for matching workflow widget values against an asset.
  *
- * Per RFC BE-808 v2 (Asset Identity Semantics), `file_path` is the canonical
- * namespace-rooted locator (e.g. `input/sub/image.png`,
- * `models/checkpoints/flux.safetensors`) and the primary match key when
- * emitted by BE-933 / BE-934. For assets where `file_path` is null —
- * hash-only registrations via `POST /assets/from-hash` on Core, or assets
- * Cloud could not derive a category-rooted path for — fall back to the
- * legacy union of `asset_hash` / `name` / `subfolder + name`. Both BE PRs
- * round-trip `name` through the deprecation window, so the fallback stays
- * valid.
+ * Per RFC BE-808 v2 (Asset Identity Semantics), `id` is the identity field;
+ * `file_path` is a namespace-rooted locator/display string emitted on a
+ * BEST EFFORT basis by BE-933 / BE-934. Workflow widget values predate the
+ * `file_path` rollout and may still be bare filenames, hashes, or annotated
+ * paths, so detection keys union `file_path`, `asset_hash`, `name`, and
+ * `subfolder + name` variants — a widget value in any of those legacy
+ * shapes must keep matching once an asset starts emitting `file_path`.
+ * Both backends round-trip `name` through the BE-792 deprecation window,
+ * so the legacy keys stay valid.
  */
 export function getAssetDetectionNames(
   asset: AssetItem,
@@ -93,11 +93,7 @@ export function getAssetDetectionNames(
 ): string[] {
   const names = new Set<string>()
 
-  if (asset.file_path) {
-    addPathDetectionNames(names, asset.file_path, options)
-    return Array.from(names)
-  }
-
+  addPathDetectionNames(names, asset.file_path, options)
   addPathDetectionNames(names, asset.asset_hash, options)
   addPathDetectionNames(names, asset.name, options)
 

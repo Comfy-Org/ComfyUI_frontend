@@ -312,7 +312,7 @@ describe('resolveMissingMediaAssetSources', () => {
 })
 
 describe('getAssetDetectionNames', () => {
-  it('uses file_path alone when present, ignoring legacy fallback keys', () => {
+  it('unions file_path with legacy keys so deprecation-window widget values keep matching', () => {
     const names = getAssetDetectionNames(
       {
         id: 'a1',
@@ -326,7 +326,17 @@ describe('getAssetDetectionNames', () => {
       { allowCompactSuffix: true }
     )
 
-    expect(names).toEqual(['input/sub/photo.png'])
+    // A widget value in any of these legacy shapes (or the new file_path
+    // shape) must match — BE-808 RFC §4 says file_path is a locator, not the
+    // identity, and workflow widget values do not auto-upgrade.
+    expect(names).toEqual(
+      expect.arrayContaining([
+        'input/sub/photo.png',
+        'blake3:abc',
+        'legacy.png',
+        'old-subfolder/legacy.png'
+      ])
+    )
   })
 
   it('falls back to the legacy union when file_path is null', () => {
