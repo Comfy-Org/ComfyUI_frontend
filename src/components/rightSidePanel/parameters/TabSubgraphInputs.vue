@@ -1,30 +1,19 @@
 <script setup lang="ts">
-import { useMounted, watchDebounced } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  shallowRef,
-  useTemplateRef,
-  watch
-} from 'vue'
+import { computed, nextTick, ref, shallowRef, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   getWidgetName,
   isWidgetPromotedOnSubgraphNode,
-  reorderSubgraphInputAtIndex
+  reorderSubgraphInputsByWidgetOrder
 } from '@/core/graph/subgraph/promotionUtils'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
-import { DraggableList } from '@/scripts/ui/draggableList'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 import { searchWidgets } from '../shared'
@@ -54,8 +43,6 @@ const isAllCollapsed = computed({
     advancedInputsCollapsed.value = collapse
   }
 })
-const draggableList = ref<DraggableList | undefined>(undefined)
-const sectionWidgetsRef = useTemplateRef('sectionWidgetsRef')
 const advancedInputsSectionRef = useTemplateRef('advancedInputsSectionRef')
 
 function isSamePromotedWidget(a: IBaseWidget, b: IBaseWidget): boolean {
@@ -138,60 +125,21 @@ async function searcher(query: string) {
   searchedWidgetsList.value = searchWidgets(widgetsList.value, query)
 }
 
-const isMounted = useMounted()
+function handleReorder({
+  fromIndex,
+  toIndex
+}: {
+  fromIndex: number
+  toIndex: number
+}) {
+  const widgets = searchedWidgetsList.value.map((row) => row.widget)
+  const [moved] = widgets.splice(fromIndex, 1)
+  if (!moved) return
+  widgets.splice(toIndex, 0, moved)
 
-function setDraggableState() {
-  if (!isMounted.value) return
-
-  draggableList.value?.dispose()
-  const container = sectionWidgetsRef.value?.widgetsContainer
-  if (isSearching.value || !container?.children?.length) return
-
-  draggableList.value = new DraggableList(container, '.draggable-item')
-
-  draggableList.value.applyNewItemsOrder = function () {
-    const reorderedItems: HTMLElement[] = []
-
-    let oldPosition = -1
-    this.getAllItems().forEach((item, index) => {
-      if (item === this.draggableItem) {
-        oldPosition = index
-        return
-      }
-      if (!this.isItemToggled(item)) {
-        reorderedItems[index] = item
-        return
-      }
-      const newIndex = this.isItemAbove(item) ? index + 1 : index - 1
-      reorderedItems[newIndex] = item
-    })
-
-    if (oldPosition === -1) {
-      console.error('[TabSubgraphInputs] draggableItem not found in items')
-      return
-    }
-
-    for (let index = 0; index < this.getAllItems().length; index++) {
-      const item = reorderedItems[index]
-      if (typeof item === 'undefined') {
-        reorderedItems[index] = this.draggableItem as HTMLElement
-      }
-    }
-
-    const newPosition = reorderedItems.indexOf(
-      this.draggableItem as HTMLElement
-    )
-
-    reorderSubgraphInputAtIndex(node, oldPosition, newPosition)
-    canvasStore.canvas?.setDirty(true, true)
-  }
+  reorderSubgraphInputsByWidgetOrder(node, widgets)
+  canvasStore.canvas?.setDirty(true, true)
 }
-
-watchDebounced(searchedWidgetsList, () => setDraggableState(), {
-  debounce: 100
-})
-onMounted(() => setDraggableState())
-onBeforeUnmount(() => draggableList.value?.dispose())
 
 const label = computed(() => {
   return searchedWidgetsList.value.length !== 0
@@ -216,7 +164,6 @@ const label = computed(() => {
     />
   </div>
   <SectionWidgets
-    ref="sectionWidgetsRef"
     :collapse="firstSectionCollapsed && !isSearching"
     :node
     :label
@@ -230,12 +177,8 @@ const label = computed(() => {
         : t('rightSidePanel.inputsNoneTooltip')
     "
     class="border-b border-interface-stroke"
-    @update:collapse="
-      (v) => {
-        firstSectionCollapsed = v
-        nextTick(setDraggableState)
-      }
-    "
+    @update:collapse="(v) => (firstSectionCollapsed = v)"
+    @reorder="handleReorder"
   >
     <template #empty>
       <div class="px-4 pt-5 pb-15 text-center text-sm text-muted-foreground">
