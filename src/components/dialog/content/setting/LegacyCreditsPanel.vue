@@ -118,9 +118,10 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
+import { SupportForm } from '@/platform/support/config'
+import { useSupportContext } from '@/platform/support/useSupportContext'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
-import { useCommandStore } from '@/stores/commandStore'
 import { useAuthStore } from '@/stores/authStore'
 import { formatMetronomeCurrency } from '@/utils/formatUtil'
 
@@ -135,7 +136,7 @@ const { buildDocsUrl, docsPaths } = useExternalLink()
 const dialogService = useDialogService()
 const authStore = useAuthStore()
 const authActions = useAuthActions()
-const commandStore = useCommandStore()
+const { openSupport } = useSupportContext()
 const telemetry = useTelemetry()
 const { isActiveSubscription } = useBillingContext()
 const loading = computed(() => authStore.loading)
@@ -168,13 +169,13 @@ const handleCreditsHistoryClick = async () => {
   await authActions.accessBillingPortal()
 }
 
-const handleMessageSupport = async () => {
+const handleMessageSupport = () => {
   telemetry?.trackHelpResourceClicked({
     resource_type: 'help_feedback',
     is_external: true,
     source: 'credits_panel'
   })
-  await commandStore.execute('Comfy.ContactSupport')
+  openSupport(SupportForm.Billing, { productArea: 'Credits' })
 }
 
 const handleFaqClick = () => {

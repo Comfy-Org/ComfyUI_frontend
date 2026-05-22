@@ -5,7 +5,7 @@ import { useErrorActions } from './useErrorActions'
 const mocks = vi.hoisted(() => ({
   trackUiButtonClicked: vi.fn(),
   trackHelpResourceClicked: vi.fn(),
-  execute: vi.fn(),
+  openSupport: vi.fn(),
   telemetry: null as {
     trackUiButtonClicked: ReturnType<typeof vi.fn>
     trackHelpResourceClicked: ReturnType<typeof vi.fn>
@@ -15,9 +15,9 @@ const mocks = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({
-    execute: mocks.execute
+vi.mock('@/platform/support/useSupportContext', () => ({
+  useSupportContext: () => ({
+    openSupport: mocks.openSupport
   })
 }))
 
@@ -41,7 +41,7 @@ describe('useErrorActions', () => {
     }
     mocks.trackUiButtonClicked.mockReset()
     mocks.trackHelpResourceClicked.mockReset()
-    mocks.execute.mockReset()
+    mocks.openSupport.mockReset()
     windowOpenSpy = vi
       .spyOn(window, 'open')
       .mockImplementation(() => null as unknown as Window)
@@ -83,36 +83,31 @@ describe('useErrorActions', () => {
   })
 
   describe('contactSupport', () => {
-    it('tracks the help resource click and executes the contact support command', () => {
-      mocks.execute.mockReturnValue('executed')
+    it('tracks the help resource click and opens the Pylon bug-report form', () => {
       const { contactSupport } = useErrorActions()
 
-      const result = contactSupport()
+      contactSupport()
 
       expect(mocks.trackHelpResourceClicked).toHaveBeenCalledWith({
         resource_type: 'help_feedback',
         is_external: true,
         source: 'error_dialog'
       })
-      expect(mocks.execute).toHaveBeenCalledWith('Comfy.ContactSupport')
-      expect(result).toBe('executed')
+      expect(mocks.openSupport).toHaveBeenCalledWith('report-a-bug', {
+        productArea: 'Workflow Error'
+      })
     })
 
-    it('returns the execute promise when the command is async', async () => {
-      mocks.execute.mockResolvedValue('done')
-      const { contactSupport } = useErrorActions()
-
-      await expect(contactSupport()).resolves.toBe('done')
-    })
-
-    it('still executes the command when telemetry is unavailable', () => {
+    it('still opens the support form when telemetry is unavailable', () => {
       mocks.telemetry = null
       const { contactSupport } = useErrorActions()
 
-      void contactSupport()
+      contactSupport()
 
       expect(mocks.trackHelpResourceClicked).not.toHaveBeenCalled()
-      expect(mocks.execute).toHaveBeenCalledWith('Comfy.ContactSupport')
+      expect(mocks.openSupport).toHaveBeenCalledWith('report-a-bug', {
+        productArea: 'Workflow Error'
+      })
     })
   })
 

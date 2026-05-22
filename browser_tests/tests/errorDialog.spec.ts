@@ -122,9 +122,15 @@ test.describe('Error dialog', () => {
     await popup.close()
   })
 
-  test('Should open contact support when "Help Fix This" is clicked', async ({
+  test('Should open the Pylon bug-report form when "Help Fix This" is clicked', async ({
     comfyPage
   }) => {
+    await comfyPage.page
+      .context()
+      .route('https://portal.usepylon.com/**', (route) =>
+        route.fulfill({ body: '<html></html>', contentType: 'text/html' })
+      )
+
     const errorDialog = await triggerConfigureError(comfyPage)
     await expect(errorDialog).toBeVisible()
 
@@ -133,7 +139,9 @@ test.describe('Error dialog', () => {
     )
 
     const url = new URL(popup.url())
-    expect(url.hostname).toBe('support.comfy.org')
+    expect(url.hostname).toBe('portal.usepylon.com')
+    expect(url.pathname).toBe('/comfy-org/forms/report-a-bug')
+    expect(url.searchParams.get('product_area')).toBe('Workflow Error')
 
     await popup.close()
   })

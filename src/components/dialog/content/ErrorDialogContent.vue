@@ -70,10 +70,11 @@ import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { SupportForm } from '@/platform/support/config'
+import { useSupportContext } from '@/platform/support/useSupportContext'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useCommandStore } from '@/stores/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { generateErrorReport } from '@/utils/errorReportUtil'
 import type { ErrorReportData } from '@/utils/errorReportUtil'
@@ -114,16 +115,18 @@ const title = computed<string>(
   () => error.nodeType ?? error.exceptionType ?? t('errorDialog.defaultTitle')
 )
 
+const { openSupport } = useSupportContext()
+
 /**
  * Open contact support flow from error dialog and track telemetry.
  */
-const showContactSupport = async () => {
+const showContactSupport = () => {
   telemetry?.trackHelpResourceClicked({
     resource_type: 'help_feedback',
     is_external: true,
     source: 'error_dialog'
   })
-  await useCommandStore().execute('Comfy.ContactSupport')
+  openSupport(SupportForm.Bug, { productArea: 'Workflow Error' })
 }
 
 onMounted(async () => {

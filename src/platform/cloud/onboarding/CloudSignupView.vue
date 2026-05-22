@@ -120,7 +120,7 @@
       <p class="mt-2 text-sm text-gray-600">
         {{ t('cloudWaitlist_questionsText') }}
         <a
-          href="https://support.comfy.org"
+          :href="supportUrl"
           class="cursor-pointer text-blue-400 no-underline"
           target="_blank"
           rel="noopener noreferrer"
@@ -144,6 +144,7 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
 import { isCloud } from '@/platform/distribution/types'
+import { SupportForm, buildSupportUrl } from '@/platform/support/config'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SignUpData } from '@/schemas/signInSchema'
 import { isInChina } from '@/utils/networkUtil'
@@ -169,6 +170,10 @@ const { onAuthSuccess } = usePostAuthRedirect({
   authError,
   successSummary: 'Sign up Completed',
   defaultRedirect: () => ({ path: '/', query: route.query })
+})
+
+const supportUrl = buildSupportUrl(SupportForm.Question, {
+  productArea: 'Cloud Onboarding'
 })
 
 const navigateToLogin = async () => {

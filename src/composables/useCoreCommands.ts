@@ -1,4 +1,3 @@
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
@@ -22,7 +21,8 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { buildSupportUrl } from '@/platform/support/config'
+import { SupportForm } from '@/platform/support/config'
+import { useSupportContext } from '@/platform/support/useSupportContext'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ExecutionTriggerSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -862,12 +862,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Contact Support',
       versionAdded: '1.17.8',
       function: () => {
-        const { userEmail, resolvedUserInfo } = useCurrentUser()
-        const supportUrl = buildSupportUrl({
-          userEmail: userEmail.value,
-          userId: resolvedUserInfo.value?.id
-        })
-        window.open(supportUrl, '_blank', 'noopener,noreferrer')
+        useSupportContext().openSupport(SupportForm.Question)
       }
     },
     {

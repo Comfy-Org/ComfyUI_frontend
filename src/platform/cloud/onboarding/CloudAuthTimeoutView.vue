@@ -51,7 +51,7 @@
       <p class="mb-5 text-center text-sm text-gray-600">
         {{ $t('cloudOnboarding.authTimeout.helpText') }}
         <a
-          href="https://support.comfy.org"
+          :href="supportUrl"
           class="cursor-pointer text-blue-400 no-underline"
           target="_blank"
           rel="noopener noreferrer"
@@ -75,6 +75,7 @@ import { useRouter } from 'vue-router'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { SupportForm, buildSupportUrl } from '@/platform/support/config'
 
 interface Props {
   errorMessage?: string
@@ -85,6 +86,10 @@ defineProps<Props>()
 const router = useRouter()
 const { logout } = useAuthActions()
 const showTechnicalDetails = ref(false)
+
+const supportUrl = buildSupportUrl(SupportForm.Question, {
+  productArea: 'Cloud Onboarding'
+})
 
 const handleRestart = async () => {
   await logout()

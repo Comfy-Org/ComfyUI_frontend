@@ -1,10 +1,11 @@
-import { useCommandStore } from '@/stores/commandStore'
 import { useExternalLink } from '@/composables/useExternalLink'
+import { SupportForm } from '@/platform/support/config'
+import { useSupportContext } from '@/platform/support/useSupportContext'
 import { useTelemetry } from '@/platform/telemetry'
 
 export function useErrorActions() {
   const telemetry = useTelemetry()
-  const commandStore = useCommandStore()
+  const { openSupport } = useSupportContext()
   const { staticUrls } = useExternalLink()
 
   function openGitHubIssues() {
@@ -20,7 +21,7 @@ export function useErrorActions() {
       is_external: true,
       source: 'error_dialog'
     })
-    return commandStore.execute('Comfy.ContactSupport')
+    openSupport(SupportForm.Bug, { productArea: 'Workflow Error' })
   }
 
   function findOnGitHub(errorMessage: string) {
