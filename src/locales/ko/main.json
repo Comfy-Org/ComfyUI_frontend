@@ -800,7 +800,7 @@
     "CONTROL_NET": "컨트롤넷",
     "CURVE": "곡선",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
-    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_DETECTION_MODEL": "얼굴 감지 모델",
     "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
@@ -2280,6 +2280,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2296,6 +2297,7 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "조정",
     "advanced": "고급",
     "api node": "api 노드",
     "attention_experiments": "어텐션 실험",
@@ -3623,7 +3625,8 @@
       "placeholderMesh": "메시 선택...",
       "placeholderModel": "모델 선택...",
       "placeholderUnknown": "미디어 선택...",
-      "placeholderVideo": "비디오 선택..."
+      "placeholderVideo": "비디오 선택...",
+      "topResult": "최상위 결과: {result}"
     },
     "valueControl": {
       "decrement": "값 감소",

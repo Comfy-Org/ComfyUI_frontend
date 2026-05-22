@@ -214,6 +214,11 @@ export default defineConfig({
         }
       },
 
+      '/oauth': {
+        target: DEV_SERVER_COMFYUI_URL,
+        ...cloudProxyConfig
+      },
+
       '/ws': {
         target: DEV_SERVER_COMFYUI_URL,
         ws: true,
