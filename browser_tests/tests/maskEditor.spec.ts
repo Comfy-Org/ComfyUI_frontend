@@ -312,6 +312,7 @@ test('Will not use stale litegraph previews', async ({ comfyPage }) => {
       const detail = { node: '1', output, prompt_id: '', display_node: '1' }
       console.error(JSON.stringify(detail))
       app!.api.dispatchCustomEvent('executed', detail)
+      app!.canvas.setDirty(true)
     }, image)
   }
   async function getNodeOutput() {
@@ -325,6 +326,6 @@ test('Will not use stale litegraph previews', async ({ comfyPage }) => {
 
   await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
 
-  await simulateExecuted({ filename: 'test2.png' })
-  await expect.poll(getNodeOutput).toBe('test2.png')
+  await simulateExecuted({ filename: 'example.png', type: 'input' })
+  await expect.poll(getNodeOutput).toBe('example.png')
 })
