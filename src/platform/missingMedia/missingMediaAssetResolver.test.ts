@@ -179,41 +179,40 @@ describe('resolveMissingMediaAssetSources', () => {
     expect(mockGetAssetsPageByTag).toHaveBeenCalledOnce()
   })
 
-  it('aborts cloud output asset loading when input asset loading fails', async () => {
+  it('returns empty inputAssets and keeps generated fetch alive when input fails (soft degrade)', async () => {
     isCloudHolder.value = true
-    const inputError = new Error('input failed')
-    let rejectInputAssets!: (err: Error) => void
-    let resolveOutputAssets!: (page: ReturnType<typeof makeAssetPage>) => void
-    mockGetInputAssetsIncludingPublic.mockReturnValueOnce(
-      new Promise<AssetItem[]>((_, reject) => {
-        rejectInputAssets = reject
-      })
-    )
-    mockGetAssetsPageByTag.mockReturnValueOnce(
-      new Promise((resolve) => {
-        resolveOutputAssets = resolve
-      })
+    const inputError = new Error('GET /api/assets 404')
+    mockGetInputAssetsIncludingPublic.mockRejectedValueOnce(inputError)
+    mockGetAssetsPageByTag.mockResolvedValueOnce(
+      makeAssetPage([makeAsset('survivor.png')])
     )
 
-    const promise = resolveMissingMediaAssetSources({
+    const result = await resolveMissingMediaAssetSources({
       includeGeneratedAssets: true,
-      generatedMatchNames: new Set(['target.png']),
+      generatedMatchNames: new Set(['survivor.png']),
       allowCompactSuffix: true
     })
 
-    await Promise.resolve()
-    expect(mockGetAssetsPageByTag).toHaveBeenCalledOnce()
-
-    rejectInputAssets(inputError)
-    await expect(promise).rejects.toBe(inputError)
-
-    resolveOutputAssets(makeAssetPage([makeAsset('other.png')]))
-    await Promise.resolve()
-
-    const outputSignal = mockGetAssetsPageByTag.mock.calls[0]?.[2]?.signal
-    expect(outputSignal).toBeInstanceOf(AbortSignal)
-    expect(outputSignal.aborted).toBe(true)
+    // Input oracle failed: degrade to empty. Generated oracle is independent
+    // and must keep running so output candidates can still verify.
+    expect(result.inputAssets).toEqual([])
+    expect(result.generatedAssets).toEqual([makeAsset('survivor.png')])
     expect(mockFetchHistoryPage).not.toHaveBeenCalled()
+  })
+
+  it('returns empty generatedAssets when history fetch fails but inputs succeed', async () => {
+    const inputAsset = makeAsset('local-photo.png')
+    mockGetInputAssetsIncludingPublic.mockResolvedValueOnce([inputAsset])
+    mockFetchHistoryPage.mockRejectedValueOnce(new Error('500 history'))
+
+    const result = await resolveMissingMediaAssetSources({
+      includeGeneratedAssets: true,
+      generatedMatchNames: new Set(['rendered.png']),
+      allowCompactSuffix: true
+    })
+
+    expect(result.inputAssets).toEqual([inputAsset])
+    expect(result.generatedAssets).toEqual([])
   })
 
   it('stops reading generated history once all requested names are found', async () => {
@@ -312,7 +311,7 @@ describe('resolveMissingMediaAssetSources', () => {
 })
 
 describe('getAssetDetectionNames', () => {
-  it('uses file_path alone when present, ignoring legacy fallback keys', () => {
+  it('unions file_path with legacy keys so deprecation-window widget values keep matching', () => {
     const names = getAssetDetectionNames(
       {
         id: 'a1',
@@ -326,7 +325,17 @@ describe('getAssetDetectionNames', () => {
       { allowCompactSuffix: true }
     )
 
-    expect(names).toEqual(['input/sub/photo.png'])
+    // A widget value in any of these legacy shapes (or the new file_path
+    // shape) must match — BE-808 RFC §4 says file_path is a locator, not the
+    // identity, and workflow widget values do not auto-upgrade.
+    expect(names).toEqual(
+      expect.arrayContaining([
+        'input/sub/photo.png',
+        'blake3:abc',
+        'legacy.png',
+        'old-subfolder/legacy.png'
+      ])
+    )
   })
 
   it('falls back to the legacy union when file_path is null', () => {

@@ -5,6 +5,7 @@ import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
 import { getFilePathSeparatorVariants, joinFilePath } from '@/utils/formatUtil'
+import { isAbortError } from '@/utils/typeGuardUtil'
 import { getMediaPathDetectionNames } from './mediaPathDetectionUtil'
 
 const HISTORY_MEDIA_ASSETS_PAGE_SIZE = 200
@@ -47,26 +48,46 @@ export async function resolveMissingMediaAssetSources({
   }
 
   try {
-    const [inputAssets, generatedAssets] = await Promise.all([
-      abortSiblingsOnFailure(
-        assetService.getInputAssetsIncludingPublic(controller.signal),
-        controller
-      ),
-      abortSiblingsOnFailure(
-        includeGeneratedAssets
-          ? fetchGeneratedAssets(controller.signal, {
-              generatedMatchNames,
-              pathOptions
-            })
-          : Promise.resolve<AssetItem[]>([]),
-        controller
-      )
+    // Input assets (`/api/assets`) and generated assets (Cloud asset API or
+    // OSS `/history`) are independent oracles. Use `allSettled` so a failure
+    // in one — e.g. `/api/assets` 404 on a pre-BE-786 OSS instance, or zod
+    // schema skew during a BE-934 partial deploy — doesn't take down the
+    // other path. Each branch soft-degrades to an empty list; the caller
+    // then marks affected candidates missing instead of swallowing the
+    // whole verification with a toast.
+    const [inputResult, generatedResult] = await Promise.allSettled([
+      assetService.getInputAssetsIncludingPublic(controller.signal),
+      includeGeneratedAssets
+        ? fetchGeneratedAssets(controller.signal, {
+            generatedMatchNames,
+            pathOptions
+          })
+        : Promise.resolve<AssetItem[]>([])
     ])
 
-    return { inputAssets, generatedAssets }
+    return {
+      inputAssets: unwrapAssetFetchResult(inputResult, 'inputAssets'),
+      generatedAssets: unwrapAssetFetchResult(
+        generatedResult,
+        'generatedAssets'
+      )
+    }
   } finally {
     signal?.removeEventListener('abort', abortFromCaller)
   }
+}
+
+function unwrapAssetFetchResult(
+  result: PromiseSettledResult<AssetItem[]>,
+  label: 'inputAssets' | 'generatedAssets'
+): AssetItem[] {
+  if (result.status === 'fulfilled') return result.value
+  if (isAbortError(result.reason)) return []
+  console.warn(
+    `[missingMedia] ${label} fetch failed; degrading to empty list.`,
+    result.reason
+  )
+  return []
 }
 
 interface FetchGeneratedAssetsOptions {
@@ -77,15 +98,15 @@ interface FetchGeneratedAssetsOptions {
 /**
  * Derive comparison keys for matching workflow widget values against an asset.
  *
- * Per RFC BE-808 v2 (Asset Identity Semantics), `file_path` is the canonical
- * namespace-rooted locator (e.g. `input/sub/image.png`,
- * `models/checkpoints/flux.safetensors`) and the primary match key when
- * emitted by BE-933 / BE-934. For assets where `file_path` is null —
- * hash-only registrations via `POST /assets/from-hash` on Core, or assets
- * Cloud could not derive a category-rooted path for — fall back to the
- * legacy union of `asset_hash` / `name` / `subfolder + name`. Both BE PRs
- * round-trip `name` through the deprecation window, so the fallback stays
- * valid.
+ * Per RFC BE-808 v2 (Asset Identity Semantics), `id` is the identity field;
+ * `file_path` is a namespace-rooted locator/display string emitted on a
+ * BEST EFFORT basis by BE-933 / BE-934. Workflow widget values predate the
+ * `file_path` rollout and may still be bare filenames, hashes, or annotated
+ * paths, so detection keys union `file_path`, `asset_hash`, `name`, and
+ * `subfolder + name` variants — a widget value in any of those legacy
+ * shapes must keep matching once an asset starts emitting `file_path`.
+ * Both backends round-trip `name` through the BE-792 deprecation window,
+ * so the legacy keys stay valid.
  */
 export function getAssetDetectionNames(
   asset: AssetItem,
@@ -93,11 +114,7 @@ export function getAssetDetectionNames(
 ): string[] {
   const names = new Set<string>()
 
-  if (asset.file_path) {
-    addPathDetectionNames(names, asset.file_path, options)
-    return Array.from(names)
-  }
-
+  addPathDetectionNames(names, asset.file_path, options)
   addPathDetectionNames(names, asset.asset_hash, options)
   addPathDetectionNames(names, asset.name, options)
 
@@ -229,18 +246,6 @@ async function fetchGeneratedHistoryAssets(
     }
 
     offset = requestedOffset + historyPage.jobs.length
-  }
-}
-
-async function abortSiblingsOnFailure<T>(
-  promise: Promise<T>,
-  controller: AbortController
-): Promise<T> {
-  try {
-    return await promise
-  } catch (err) {
-    if (!controller.signal.aborted) controller.abort(err)
-    throw err
   }
 }
 
