@@ -68,7 +68,7 @@ test.describe('Sign In dialog', { tag: '@ui' }, () => {
     await expect(dialog.privacyLink).toBeVisible()
     await expect(dialog.privacyLink).toHaveAttribute(
       'href',
-      'https://www.comfy.org/privacy'
+      'https://www.comfy.org/privacy-policy'
     )
   })
 
