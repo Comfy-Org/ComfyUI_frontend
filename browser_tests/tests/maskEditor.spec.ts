@@ -301,3 +301,30 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     }
   )
 })
+
+test('Will not use stale litegraph previews', async ({ comfyPage }) => {
+  await comfyPage.menu.topbar.newWorkflowButton.click()
+  await comfyPage.searchBoxV2.addNode('Preview Image')
+
+  async function simulateExecuted(image: object) {
+    await comfyPage.page.evaluate((pageImage) => {
+      const output = { images: [pageImage] }
+      const detail = { node: '1', output, prompt_id: '', display_node: '1' }
+      console.error(JSON.stringify(detail))
+      app!.api.dispatchCustomEvent('executed', detail)
+    }, image)
+  }
+  async function getNodeOutput() {
+    return await comfyPage.page.evaluate(
+      () => graph!.getNodeById('1')!.images?.[0]?.filename
+    )
+  }
+
+  await simulateExecuted({ filename: 'test1.png' })
+  await expect.poll(getNodeOutput).toBe('test1.png')
+
+  await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+
+  await simulateExecuted({ filename: 'test2.png' })
+  await expect.poll(getNodeOutput).toBe('test2.png')
+})
