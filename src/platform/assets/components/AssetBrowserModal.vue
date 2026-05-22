@@ -128,7 +128,7 @@ const props = defineProps<{
   showLeftPanel?: boolean
   title?: string
   /**
-   * Storybook/test seam: when provided, bypasses the cloud-only
+   * Storybook/test seam: when provided, bypasses the
    * `assetsStore.getAssets(cacheKey)` fetch and renders this list directly.
    * Production callers should leave this undefined and rely on the store.
    */

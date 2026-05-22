@@ -1996,7 +1996,6 @@
     "deleteAssetTitle": "حذف هذا الأصل؟",
     "deleteSelectedDescription": "سيتم إزالة {count} أصل(أصول) بشكل دائم.",
     "deleteSelectedTitle": "حذف الأصول المحددة؟",
-    "deletingImportedFilesCloudOnly": "حذف الملفات المستوردة مدعوم فقط في النسخة السحابية",
     "failedToCreateNode": "فشل في إنشاء العقدة",
     "failedToDeleteAsset": "فشل في حذف الأصل",
     "failedToExportWorkflow": "فشل في تصدير سير العمل",

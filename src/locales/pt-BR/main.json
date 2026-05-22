@@ -1996,7 +1996,6 @@
     "deleteAssetTitle": "Excluir este recurso?",
     "deleteSelectedDescription": "{count} recurso(s) será(ão) removido(s) permanentemente.",
     "deleteSelectedTitle": "Excluir recursos selecionados?",
-    "deletingImportedFilesCloudOnly": "A exclusão de arquivos importados é suportada apenas na versão em nuvem",
     "failedToCreateNode": "Falha ao criar nó",
     "failedToDeleteAsset": "Falha ao excluir o recurso",
     "failedToExportWorkflow": "Falha ao exportar fluxo de trabalho",

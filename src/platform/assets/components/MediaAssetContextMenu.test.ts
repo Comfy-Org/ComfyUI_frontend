@@ -105,7 +105,7 @@ interface MediaAssetContextMenuExposed {
 
 let capturedRef: MediaAssetContextMenuExposed | null = null
 
-function mountComponent() {
+function mountComponent(assetType: 'output' | 'input' = 'output') {
   const onHide = vi.fn()
   const { container, unmount } = render(
     defineComponent({
@@ -115,10 +115,10 @@ function mountComponent() {
         onMounted(() => {
           capturedRef = menuRef.value
         })
-        return { menuRef, asset, onHide }
+        return { menuRef, asset, onHide, assetType }
       },
       template:
-        '<MediaAssetContextMenu ref="menuRef" :asset="asset" asset-type="output" file-kind="image" @hide="onHide" />'
+        '<MediaAssetContextMenu ref="menuRef" :asset="asset" :asset-type="assetType" file-kind="image" @hide="onHide" />'
     }),
     {
       global: {
@@ -195,6 +195,19 @@ describe('MediaAssetContextMenu', () => {
     })
 
     expect(mediaAssetActions.downloadAssets).toHaveBeenCalledWith([asset])
+
+    unmount()
+  })
+
+  it('shows Delete for input assets regardless of cloud mode (FE-732)', async () => {
+    const { container, unmount } = mountComponent('input')
+    await showMenu(container)
+
+    const deleteItem = capturedMenu.model.find(
+      (item) => item.label === 'mediaAsset.actions.delete'
+    )
+
+    expect(deleteItem).toBeDefined()
 
     unmount()
   })

@@ -1996,7 +1996,6 @@
     "deleteAssetTitle": "删除此资产？",
     "deleteSelectedDescription": "{count} 项资产将被永久删除。",
     "deleteSelectedTitle": "删除所选资产？",
-    "deletingImportedFilesCloudOnly": "删除导入文件仅支持云版本",
     "failedToCreateNode": "创建节点失败",
     "failedToDeleteAsset": "删除资产失败",
     "failedToExportWorkflow": "工作流导出失败",

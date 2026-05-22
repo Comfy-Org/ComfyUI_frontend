@@ -1996,7 +1996,6 @@
     "deleteAssetTitle": "Удалить этот ресурс?",
     "deleteSelectedDescription": "{count} ресурс(ов) будет удален безвозвратно.",
     "deleteSelectedTitle": "Удалить выбранные ресурсы?",
-    "deletingImportedFilesCloudOnly": "Удаление импортированных файлов поддерживается только в облачной версии",
     "failedToCreateNode": "Не удалось создать узел",
     "failedToDeleteAsset": "Не удалось удалить ресурс",
     "failedToExportWorkflow": "Не удалось экспортировать рабочий процесс",
