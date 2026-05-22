@@ -128,6 +128,7 @@
         <a
           href="https://www.comfy.org/privacy-policy"
           target="_blank"
+          rel="noopener noreferrer"
           class="cursor-pointer text-blue-500"
         >
           {{ t('auth.login.privacyLink') }} </a
