@@ -50,7 +50,7 @@ function computeFocusDistance(
   return radius * HIT_OBJECT_FOCUS_FACTOR * fovScale
 }
 
-function getNDCFromPointer(
+export function getNDCFromPointer(
   canvas: HTMLCanvasElement,
   region: RenderRegion,
   pointer: { x: number; y: number }
