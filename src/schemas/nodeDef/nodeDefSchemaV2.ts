@@ -87,23 +87,15 @@ const zChartInputSpec = zBaseInputOptions.extend({
   type: z.literal('CHART'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  options: z
-    .object({
-      type: z.enum(['bar', 'line']).optional(),
-      data: z.object({}).optional()
-    })
-    .optional()
+  chartType: z.enum(['bar', 'line']).optional(),
+  data: z.object({}).optional()
 })
 
 const zGalleriaInputSpec = zBaseInputOptions.extend({
   type: z.literal('GALLERIA'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  options: z
-    .object({
-      images: z.array(z.string()).optional()
-    })
-    .optional()
+  images: z.array(z.string()).optional()
 })
 
 const zTextareaInputSpec = zBaseInputOptions.extend({
@@ -211,9 +203,9 @@ export type ComboInputSpec = z.infer<typeof zComboInputSpec>
 export type ColorInputSpec = z.infer<typeof zColorInputSpec>
 export type ImageCompareInputSpec = z.infer<typeof zImageCompareInputSpec>
 export type BoundingBoxInputSpec = z.infer<typeof zBoundingBoxInputSpec>
-export type ChartInputSpec = z.infer<typeof zChartInputSpec>
-export type GalleriaInputSpec = z.infer<typeof zGalleriaInputSpec>
-export type TextareaInputSpec = z.infer<typeof zTextareaInputSpec>
+type ChartInputSpec = z.infer<typeof zChartInputSpec>
+type GalleriaInputSpec = z.infer<typeof zGalleriaInputSpec>
+type TextareaInputSpec = z.infer<typeof zTextareaInputSpec>
 export type CurveInputSpec = z.infer<typeof zCurveInputSpec>
 export type RangeInputSpec = z.infer<typeof zRangeInputSpec>
 export type CustomInputSpec = z.infer<typeof zCustomInputSpec>
@@ -256,4 +248,22 @@ export const isChartInputSpec = (
   inputSpec: InputSpec
 ): inputSpec is ChartInputSpec => {
   return inputSpec.type === 'CHART'
+}
+
+export const isColorInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is ColorInputSpec => {
+  return inputSpec.type === 'COLOR'
+}
+
+export const isTextareaInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is TextareaInputSpec => {
+  return inputSpec.type === 'TEXTAREA'
+}
+
+export const isGalleriaInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is GalleriaInputSpec => {
+  return inputSpec.type === 'GALLERIA'
 }
