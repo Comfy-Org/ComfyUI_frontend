@@ -2002,7 +2002,6 @@
     "deleteAssetTitle": "このアセットを削除しますか？",
     "deleteSelectedDescription": "{count} 個のアセットが完全に削除されます。",
     "deleteSelectedTitle": "選択したアセットを削除しますか？",
-    "deletingImportedFilesCloudOnly": "インポートしたファイルの削除はクラウド版でのみサポートされています",
     "failedToCreateNode": "ノードの作成に失敗しました",
     "failedToDeleteAsset": "アセットの削除に失敗しました",
     "failedToExportWorkflow": "ワークフローのエクスポートに失敗しました",

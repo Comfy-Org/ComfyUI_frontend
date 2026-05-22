@@ -2002,7 +2002,6 @@
     "deleteAssetTitle": "이 에셋을 삭제하시겠습니까?",
     "deleteSelectedDescription": "{count}개의 에셋이 영구적으로 제거됩니다.",
     "deleteSelectedTitle": "선택한 에셋을 삭제하시겠습니까?",
-    "deletingImportedFilesCloudOnly": "가져온 파일 삭제는 클라우드 버전에서만 지원됩니다",
     "failedToCreateNode": "노드 생성에 실패했습니다",
     "failedToDeleteAsset": "에셋 삭제 실패",
     "failedToExportWorkflow": "워크플로우 내보내기에 실패했습니다",

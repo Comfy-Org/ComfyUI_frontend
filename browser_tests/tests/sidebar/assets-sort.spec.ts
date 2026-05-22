@@ -8,13 +8,14 @@ import type {
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { createJobsWithExecutionTimes } from '@e2e/fixtures/helpers/AssetsHelper'
 
-// The assets sidebar's sort options live inside the settings popover and are
-// only rendered in cloud mode (`MediaAssetFilterBar.vue`:
-// `:show-sort-options="isCloud"`). We tag tests `@cloud` so they run against
-// the cloud Playwright project, and register `/api/assets`, `/api/jobs`, and
-// `/internal/files/input` route handlers as auto fixtures — Playwright runs
-// auto fixtures before the `comfyPage` fixture's internal `setup()`, so the
-// page first-loads with mocks already in place.
+// Post-FE-732 the sort options inside the settings popover render
+// unconditionally on both Cloud and OSS builds. These tests keep the
+// `@cloud` tag because the `/api/jobs` dependency (used by the generation-
+// time sort) is still cloud-only; once OSS exposes equivalent jobs data we
+// can drop the tag. Auto fixtures register `/api/assets`, `/api/jobs`, and
+// `/internal/files/input` route handlers — Playwright runs auto fixtures
+// before the `comfyPage` fixture's internal `setup()`, so the page first-
+// loads with mocks already in place.
 
 // Three jobs whose `(create_time, duration)` axes are intentionally
 // misaligned so newest/oldest and longest/fastest sorts produce *different*

@@ -2002,7 +2002,6 @@
     "deleteAssetTitle": "Bu varlık silinsin mi?",
     "deleteSelectedDescription": "{count} varlık kalıcı olarak kaldırılacak.",
     "deleteSelectedTitle": "Seçilen varlıklar silinsin mi?",
-    "deletingImportedFilesCloudOnly": "İçe aktarılan dosyaların silinmesi yalnızca bulut sürümünde desteklenir",
     "failedToCreateNode": "Düğüm oluşturulamadı",
     "failedToDeleteAsset": "Varlık silinemedi",
     "failedToExportWorkflow": "İş akışı dışa aktarılamadı",

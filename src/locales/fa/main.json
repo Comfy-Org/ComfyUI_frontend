@@ -2002,7 +2002,6 @@
     "deleteAssetTitle": "حذف این دارایی؟",
     "deleteSelectedDescription": "{count} دارایی به طور دائمی حذف خواهد شد.",
     "deleteSelectedTitle": "حذف دارایی‌های انتخاب‌شده؟",
-    "deletingImportedFilesCloudOnly": "حذف فایل‌های واردشده فقط در نسخه ابری پشتیبانی می‌شود",
     "failedToCreateNode": "ایجاد node ناموفق بود",
     "failedToDeleteAsset": "حذف دارایی ناموفق بود",
     "failedToExportWorkflow": "خروجی گرفتن از workflow ناموفق بود",

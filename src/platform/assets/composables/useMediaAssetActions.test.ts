@@ -898,6 +898,49 @@ describe('useMediaAssetActions', () => {
     })
   })
 
+  describe('deleteAssets - input asset cross-backend support (FE-732)', () => {
+    beforeEach(() => {
+      mockGetAssetType.mockReturnValue('input')
+      mockDeleteAsset.mockReset()
+      mockDeleteAsset.mockResolvedValue(undefined)
+      mockShowDialog.mockImplementation(
+        ({ props }: { props: { onConfirm: () => Promise<void> } }) => {
+          void props.onConfirm()
+        }
+      )
+    })
+
+    it('deletes input assets in OSS mode (isCloud = false)', async () => {
+      mockIsCloud.value = false
+      const actions = useMediaAssetActions()
+
+      const inputAsset = createMockAsset({
+        id: 'input-oss-1',
+        name: 'local-input.png',
+        tags: ['input']
+      })
+
+      await actions.deleteAssets(inputAsset)
+
+      expect(mockDeleteAsset).toHaveBeenCalledWith('input-oss-1')
+    })
+
+    it('deletes input assets in Cloud mode (isCloud = true)', async () => {
+      mockIsCloud.value = true
+      const actions = useMediaAssetActions()
+
+      const inputAsset = createMockAsset({
+        id: 'input-cloud-1',
+        name: 'cloud-input.png',
+        tags: ['input']
+      })
+
+      await actions.deleteAssets(inputAsset)
+
+      expect(mockDeleteAsset).toHaveBeenCalledWith('input-cloud-1')
+    })
+  })
+
   describe('deleteAssets - confirmation dialog item names', () => {
     beforeEach(() => {
       mockIsCloud.value = true

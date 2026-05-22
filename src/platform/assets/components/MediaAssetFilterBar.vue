@@ -9,7 +9,6 @@
     />
     <template #actions>
       <MediaAssetFilterButton
-        v-if="isCloud"
         v-tooltip.top="{ value: $t('assetBrowser.filterBy') }"
       >
         <template #default="{ close }">
@@ -27,7 +26,7 @@
           <MediaAssetSettingsMenu
             v-model:view-mode="viewMode"
             v-model:sort-by="sortBy"
-            :show-sort-options="isCloud"
+            :show-sort-options="true"
             :show-generation-time-sort
           />
         </template>
@@ -39,7 +38,6 @@
 <script setup lang="ts">
 import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import { isCloud } from '@/platform/distribution/types'
 
 import MediaAssetFilterButton from './MediaAssetFilterButton.vue'
 import MediaAssetFilterMenu from './MediaAssetFilterMenu.vue'

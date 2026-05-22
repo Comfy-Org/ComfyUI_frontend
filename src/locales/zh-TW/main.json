@@ -2002,7 +2002,6 @@
     "deleteAssetTitle": "刪除此資源？",
     "deleteSelectedDescription": "{count} 個資源將被永久移除。",
     "deleteSelectedTitle": "刪除選取的資源？",
-    "deletingImportedFilesCloudOnly": "僅雲端版本支援刪除匯入的檔案",
     "failedToCreateNode": "建立節點失敗",
     "failedToDeleteAsset": "刪除資源失敗",
     "failedToExportWorkflow": "匯出工作流程失敗",

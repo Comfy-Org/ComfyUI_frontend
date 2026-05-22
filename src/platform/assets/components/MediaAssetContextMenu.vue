@@ -37,7 +37,6 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
-import { isCloud } from '@/platform/distribution/types'
 import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { isPreviewableMediaType } from '@/utils/formatUtil'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
@@ -51,7 +50,7 @@ const {
   asset,
   assetType,
   fileKind,
-  showDeleteButton,
+  showDeleteButton = true,
   selectedAssets,
   isBulkMode
 } = defineProps<{
@@ -122,11 +121,8 @@ const showCopyJobId = computed(() => {
 })
 
 const shouldShowDeleteButton = computed(() => {
-  const propAllows = showDeleteButton ?? true
-  const typeAllows =
-    assetType === 'output' || (assetType === 'input' && isCloud)
-
-  return propAllows && typeAllows
+  const typeAllows = assetType === 'output' || assetType === 'input'
+  return showDeleteButton && typeAllows
 })
 
 // Context menu items

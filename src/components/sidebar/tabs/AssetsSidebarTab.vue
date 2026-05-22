@@ -141,7 +141,6 @@
           <template v-if="isCompact">
             <!-- Compact mode: Icon only -->
             <Button
-              v-if="shouldShowDeleteButton"
               size="icon"
               data-testid="assets-delete-selected"
               @click="handleDeleteSelected"
@@ -159,7 +158,6 @@
           <template v-else>
             <!-- Normal mode: Icon + Text -->
             <Button
-              v-if="shouldShowDeleteButton"
               variant="secondary"
               data-testid="assets-delete-selected"
               @click="handleDeleteSelected"
@@ -190,7 +188,6 @@
     :asset="contextMenuAsset"
     :asset-type="contextMenuAssetType"
     :file-kind="contextMenuFileKind"
-    :show-delete-button="shouldShowDeleteButton"
     :selected-assets="selectedAssets"
     :is-bulk-mode="isBulkMode"
     @zoom="handleZoomClick(contextMenuAsset)"
@@ -249,7 +246,6 @@ import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
-import { isCloud } from '@/platform/distribution/types'
 import { useDialogStore } from '@/stores/dialogStore'
 import { ResultItemImpl } from '@/stores/queueStore'
 import {
@@ -280,13 +276,6 @@ const isListView = computed(() => viewMode.value === 'list')
 
 const contextMenuRef = ref<InstanceType<typeof MediaAssetContextMenu>>()
 const contextMenuAsset = ref<AssetItem | null>(null)
-
-// Determine if delete button should be shown
-// Hide delete button when in input tab and not in cloud (OSS mode - files are from local folders)
-const shouldShowDeleteButton = computed(() => {
-  if (activeTab.value === 'input' && !isCloud) return false
-  return true
-})
 
 const contextMenuAssetType = computed(() =>
   contextMenuAsset.value ? getAssetType(contextMenuAsset.value.tags) : 'input'

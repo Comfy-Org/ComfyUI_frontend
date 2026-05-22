@@ -95,10 +95,6 @@ export function useMediaAssetActions() {
       }
       await api.deleteItem('history', jobId)
     } else {
-      // Input assets can only be deleted in cloud environment
-      if (!isCloud) {
-        throw new Error(t('mediaAsset.deletingImportedFilesCloudOnly'))
-      }
       await assetService.deleteAsset(asset.id)
     }
   }
