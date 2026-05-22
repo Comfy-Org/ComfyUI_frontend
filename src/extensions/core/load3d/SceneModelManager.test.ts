@@ -1,3 +1,4 @@
+import { SparkRenderer } from '@sparkjsdev/spark'
 import * as THREE from 'three'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -354,6 +355,20 @@ describe('SceneModelManager', () => {
 
       expect(geoDispose).toHaveBeenCalled()
       expect(matDispose).toHaveBeenCalled()
+    })
+
+    it('preserves SparkRenderer across model reloads', async () => {
+      const { manager, scene } = createManager()
+      const sparkRenderer = new SparkRenderer({
+        renderer: {} as THREE.WebGLRenderer
+      })
+      scene.add(sparkRenderer)
+
+      const model = createMeshModel()
+      await manager.setupModel(model)
+      manager.clearModel()
+
+      expect(scene.children).toContain(sparkRenderer)
     })
   })
 

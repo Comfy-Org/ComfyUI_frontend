@@ -800,6 +800,8 @@
     "CONTROL_NET": "RESEAU_DE_CONTROLE",
     "CURVE": "COURBE",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "MODÈLE_DE_DÉTECTION_DE_VISAGE",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FICHIER_3D",
     "FILE_3D_FBX": "FICHIER_3D_FBX",
     "FILE_3D_GLB": "FICHIER_3D_GLB",
@@ -2278,6 +2280,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2294,6 +2297,7 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "ajustements",
     "advanced": "avancé",
     "api node": "nœud api",
     "attention_experiments": "expériences_d'attention",
@@ -2443,7 +2447,8 @@
     "nonPublicAssetsWarningLine1": "Ce workflow contient des ressources non publiques.",
     "nonPublicAssetsWarningLine2": "Celles-ci seront importées dans votre bibliothèque lors de l'ouverture du workflow",
     "openWithoutImporting": "Ouvrir sans importer",
-    "openWorkflow": "Ouvrir le workflow"
+    "openWorkflow": "Ouvrir le workflow",
+    "opening": "Ouverture du workflow partagé..."
   },
   "painter": {
     "background": "Arrière-plan",
@@ -3620,7 +3625,8 @@
       "placeholderMesh": "Sélectionner un mesh...",
       "placeholderModel": "Sélectionner un modèle...",
       "placeholderUnknown": "Sélectionner un média...",
-      "placeholderVideo": "Sélectionner une vidéo..."
+      "placeholderVideo": "Sélectionner une vidéo...",
+      "topResult": "Meilleur résultat : {result}"
     },
     "valueControl": {
       "decrement": "Décrémenter la valeur",

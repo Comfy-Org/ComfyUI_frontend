@@ -2,6 +2,7 @@ import { toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
 
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
+import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
@@ -3306,11 +3307,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (result != null) this.dirty_canvas = result
       }
     }
+    const firstLink: RenderLink | undefined = linkConnector.renderLinks.at(0)
+    const isSubgraphIOLink =
+      linkConnector.isConnecting && firstLink?.isIoNodeLink
 
     // get node over
-    const node = LiteGraph.vueNodesMode
-      ? null
-      : graph.getNodeOnPos(x, y, this.visible_nodes)
+    const node =
+      LiteGraph.vueNodesMode && !isSubgraphIOLink
+        ? null
+        : graph.getNodeOnPos(x, y, this.visible_nodes)
 
     const dragRect = this.dragging_rectangle
     if (dragRect) {
@@ -3401,8 +3406,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
           // Check if link is over anything it could connect to - record position of valid target for snap / highlight
           if (linkConnector.isConnecting) {
-            const firstLink = linkConnector.renderLinks.at(0)
-
             // Default: nothing highlighted
             let highlightPos: Point | undefined
             let highlightInput: INodeInputSlot | undefined
@@ -3453,7 +3456,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
                   highlightInput = node.inputs[inputId]
                 }
 
-                if (highlightInput) {
+                if (highlightInput && !LiteGraph.vueNodesMode) {
                   const widget = node.getWidgetFromSlot(highlightInput)
                   if (widget) linkConnector.overWidget = widget
                 }

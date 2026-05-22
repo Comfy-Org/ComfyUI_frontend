@@ -800,6 +800,8 @@
     "CONTROL_NET": "KONTROL_AĞI",
     "CURVE": "EĞRİ",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "YÜZ_TESPİT_MODELİ",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -2278,6 +2280,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2294,6 +2297,7 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "ayarlar",
     "advanced": "gelişmiş",
     "api node": "api düğümü",
     "attention_experiments": "dikkat_deneyleri",
@@ -2443,7 +2447,8 @@
     "nonPublicAssetsWarningLine1": "Bu iş akışı herkese açık olmayan varlıklar içeriyor.",
     "nonPublicAssetsWarningLine2": "İş akışını açtığınızda bunlar kütüphanenize aktarılacak",
     "openWithoutImporting": "İçe aktarmadan aç",
-    "openWorkflow": "İş akışını aç"
+    "openWorkflow": "İş akışını aç",
+    "opening": "Paylaşılan iş akışı açılıyor..."
   },
   "painter": {
     "background": "Arka Plan",
@@ -3620,7 +3625,8 @@
       "placeholderMesh": "Ağ seç...",
       "placeholderModel": "Model seç...",
       "placeholderUnknown": "Medya seç...",
-      "placeholderVideo": "Video seç..."
+      "placeholderVideo": "Video seç...",
+      "topResult": "En iyi sonuç: {result}"
     },
     "valueControl": {
       "decrement": "Değeri Azalt",

@@ -800,6 +800,8 @@
     "CONTROL_NET": "ControlNet",
     "CURVE": "曲线",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "人脸检测模型",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -2278,6 +2280,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2294,6 +2297,7 @@
     "Vidu": "Vidu",
     "Wan": "Wan万相",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "调整",
     "advanced": "高级",
     "api node": "api 节点",
     "attention_experiments": "注意力实验",
@@ -2443,7 +2447,8 @@
     "nonPublicAssetsWarningLine1": "此工作流包含非公开资源。",
     "nonPublicAssetsWarningLine2": "打开工作流时，这些资源将被导入到你的库中",
     "openWithoutImporting": "不导入直接打开",
-    "openWorkflow": "打开工作流"
+    "openWorkflow": "打开工作流",
+    "opening": "正在打开共享工作流..."
   },
   "painter": {
     "background": "背景",
@@ -3632,7 +3637,8 @@
       "placeholderMesh": "选择网格...",
       "placeholderModel": "请选择模型...",
       "placeholderUnknown": "请选择媒体...",
-      "placeholderVideo": "请选择视频..."
+      "placeholderVideo": "请选择视频...",
+      "topResult": "最佳结果：{result}"
     },
     "valueControl": {
       "decrement": "递减值",

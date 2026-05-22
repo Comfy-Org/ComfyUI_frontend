@@ -800,6 +800,8 @@
     "CONTROL_NET": "コントロールネット",
     "CURVE": "カーブ",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "顔検出モデル",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -2278,6 +2280,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2294,6 +2297,7 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "調整",
     "advanced": "高度な機能",
     "api node": "apiノード",
     "attention_experiments": "アテンション実験",
@@ -2443,7 +2447,8 @@
     "nonPublicAssetsWarningLine1": "このワークフローには非公開のアセットが含まれています。",
     "nonPublicAssetsWarningLine2": "ワークフローを開くと、これらがライブラリにインポートされます",
     "openWithoutImporting": "インポートせずに開く",
-    "openWorkflow": "ワークフローを開く"
+    "openWorkflow": "ワークフローを開く",
+    "opening": "共有ワークフローを開いています..."
   },
   "painter": {
     "background": "背景",
@@ -3620,7 +3625,8 @@
       "placeholderMesh": "メッシュを選択...",
       "placeholderModel": "モデルを選択...",
       "placeholderUnknown": "メディアを選択...",
-      "placeholderVideo": "動画を選択..."
+      "placeholderVideo": "動画を選択...",
+      "topResult": "最上位の結果: {result}"
     },
     "valueControl": {
       "decrement": "値を減少",

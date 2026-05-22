@@ -800,6 +800,8 @@
     "CONTROL_NET": "controlnet",
     "CURVE": "CURVE",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "مدل تشخیص چهره",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -2278,6 +2280,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2294,6 +2297,7 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "تنظیمات",
     "advanced": "پیشرفته",
     "api node": "گره API",
     "attention_experiments": "آزمایش‌های توجه",
@@ -2443,7 +2447,8 @@
     "nonPublicAssetsWarningLine1": "این گردش‌کار دارای دارایی‌های غیرعمومی است.",
     "nonPublicAssetsWarningLine2": "این موارد هنگام باز کردن گردش‌کار به کتابخانه شما وارد می‌شوند",
     "openWithoutImporting": "باز کردن بدون وارد کردن",
-    "openWorkflow": "باز کردن گردش‌کار"
+    "openWorkflow": "باز کردن گردش‌کار",
+    "opening": "در حال باز کردن گردش‌کار مشترک..."
   },
   "painter": {
     "background": "پس‌زمینه",
@@ -3632,7 +3637,8 @@
       "placeholderMesh": "مش را انتخاب کنید...",
       "placeholderModel": "انتخاب مدل...",
       "placeholderUnknown": "انتخاب رسانه...",
-      "placeholderVideo": "انتخاب ویدیو..."
+      "placeholderVideo": "انتخاب ویدیو...",
+      "topResult": "نتیجه برتر: {result}"
     },
     "valueControl": {
       "decrement": "کاهش مقدار",

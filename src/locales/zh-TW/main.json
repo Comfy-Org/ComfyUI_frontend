@@ -800,6 +800,8 @@
     "CONTROL_NET": "ControlNet",
     "CURVE": "曲線",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "人臉偵測模型",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -2278,6 +2280,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2294,6 +2297,7 @@
     "Vidu": "維度",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "調整",
     "advanced": "進階",
     "api node": "API 節點",
     "attention_experiments": "注意力實驗",
@@ -2443,7 +2447,8 @@
     "nonPublicAssetsWarningLine1": "此工作流程包含非公開資產。",
     "nonPublicAssetsWarningLine2": "開啟工作流程時，這些資產將匯入你的媒體庫",
     "openWithoutImporting": "不匯入直接開啟",
-    "openWorkflow": "開啟工作流程"
+    "openWorkflow": "開啟工作流程",
+    "opening": "正在開啟共享工作流程..."
   },
   "painter": {
     "background": "背景",
@@ -3620,7 +3625,8 @@
       "placeholderMesh": "選擇網格...",
       "placeholderModel": "選擇模型...",
       "placeholderUnknown": "選擇媒體...",
-      "placeholderVideo": "選擇影片..."
+      "placeholderVideo": "選擇影片...",
+      "topResult": "最佳結果：{result}"
     },
     "valueControl": {
       "decrement": "減少數值",
