@@ -97,27 +97,6 @@ export function reorderSubgraphInputsByWidgetOrder(
   applySubgraphInputOrder(subgraphNode, orderedIndices)
 }
 
-export function reorderSubgraphInputAtIndex(
-  subgraphNode: SubgraphNode,
-  oldPosition: number,
-  newPosition: number
-): void {
-  if (
-    oldPosition < 0 ||
-    newPosition < 0 ||
-    oldPosition >= subgraphNode.subgraph.inputs.length ||
-    newPosition >= subgraphNode.subgraph.inputs.length
-  )
-    return
-
-  const orderedIndices = subgraphNode.subgraph.inputs.map((_, index) => index)
-  const [movedIndex] = orderedIndices.splice(oldPosition, 1)
-  if (movedIndex !== undefined)
-    orderedIndices.splice(newPosition, 0, movedIndex)
-
-  applySubgraphInputOrder(subgraphNode, orderedIndices)
-}
-
 function applySubgraphInputOrder(
   subgraphNode: SubgraphNode,
   orderedIndices: readonly number[]

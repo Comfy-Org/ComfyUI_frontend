@@ -16,10 +16,7 @@ import {
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import {
-  reorderSubgraphInputAtIndex,
-  reorderSubgraphInputsByName
-} from '@/core/graph/subgraph/promotionUtils'
+import { reorderSubgraphInputsByName } from '@/core/graph/subgraph/promotionUtils'
 import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
@@ -619,10 +616,7 @@ describe('SubgraphWidgetPromotion', () => {
         index: number
         value: EditValue
       }
-      type ReorderSpec =
-        | { kind: 'none' }
-        | { kind: 'byName'; order: string[] }
-        | { kind: 'atIndex'; from: number; to: number }
+      type ReorderSpec = { kind: 'none' } | { kind: 'byName'; order: string[] }
 
       const text = (inputName: string, title: string): SourceSpec => ({
         inputName,
@@ -719,8 +713,6 @@ describe('SubgraphWidgetPromotion', () => {
         r: ReorderSpec
       ) {
         if (r.kind === 'byName') reorderSubgraphInputsByName(host, r.order)
-        else if (r.kind === 'atIndex')
-          reorderSubgraphInputAtIndex(host, r.from, r.to)
       }
 
       function makeControlWidget(
@@ -771,14 +763,14 @@ describe('SubgraphWidgetPromotion', () => {
           promptByIndex: { 0: 'first value', 1: 'second value' }
         },
         {
-          name: 'mixed text/text/seed via ViewKey, atIndex seed up',
+          name: 'mixed text/text/seed via ViewKey, swap seed up by name',
           sources: TEXT_TEXT_SEED,
           edits: [
             { via: 'viewKey', index: 0, value: 'positive prompt' },
             { via: 'viewKey', index: 1, value: 'negative prompt' },
             { via: 'viewKey', index: 2, value: 123456 }
           ],
-          reorder: { kind: 'atIndex', from: 2, to: 1 },
+          reorder: { kind: 'byName', order: ['text_1', 'seed', 'text'] },
           expectedWidgetsValues: ['positive prompt', 123456, 'negative prompt'],
           promptByIndex: {
             0: 'positive prompt',
@@ -787,14 +779,14 @@ describe('SubgraphWidgetPromotion', () => {
           }
         },
         {
-          name: 'mixed text/text/seed via Vue, atIndex seed up',
+          name: 'mixed text/text/seed via Vue, swap seed up by name',
           sources: TEXT_TEXT_SEED,
           edits: [
             { via: 'vue', index: 0, value: 'positive prompt' },
             { via: 'vue', index: 1, value: 'negative prompt' },
             { via: 'vue', index: 2, value: 123456 }
           ],
-          reorder: { kind: 'atIndex', from: 2, to: 1 },
+          reorder: { kind: 'byName', order: ['text_1', 'seed', 'text'] },
           expectedWidgetsValues: ['positive prompt', 123456, 'negative prompt'],
           promptByIndex: {
             0: 'positive prompt',
@@ -919,7 +911,7 @@ describe('SubgraphWidgetPromotion', () => {
           vueEdit(host, 2, c.seedHostValue)
         }
 
-        reorderSubgraphInputAtIndex(host, 2, 1)
+        reorderSubgraphInputsByName(host, ['text_1', 'seed', 'text'])
 
         if (c.mutateSourceSeedAfterReorder !== undefined) {
           seed.widget.value = c.mutateSourceSeedAfterReorder
@@ -973,7 +965,7 @@ describe('SubgraphWidgetPromotion', () => {
           makeControlWidget('increment', true) as never
         ]
         host.widgets[2].value = 2
-        reorderSubgraphInputAtIndex(host, 2, 1)
+        reorderSubgraphInputsByName(host, ['text_1', 'seed', 'text'])
 
         const seedSlot = host.getSlotFromWidget(host.widgets[1])
         expect(seedSlot).toBeDefined()
