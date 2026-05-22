@@ -124,6 +124,15 @@ export const zComboInputOptions = zBaseInputOptions.extend({
   multi_select: zMultiSelectOption.optional()
 })
 
+export const zComboInputOptionsValidated = zComboInputOptions.refine(
+  (opts) => !(opts.remote && opts.remote_combo),
+  {
+    message:
+      'Combo input cannot specify both `remote` and `remote_combo`; pick one.',
+    path: ['remote_combo']
+  }
+)
+
 const zIntInputSpec = z.tuple([z.literal('INT'), zIntInputOptions.optional()])
 const zFloatInputSpec = z.tuple([
   z.literal('FLOAT'),
@@ -143,11 +152,11 @@ const zStringInputSpec = z.tuple([
  */
 const zComboInputSpec = z.tuple([
   z.array(zComboOption),
-  zComboInputOptions.optional()
+  zComboInputOptionsValidated.optional()
 ])
 const zComboInputSpecV2 = z.tuple([
   z.literal('COMBO'),
-  zComboInputOptions.optional()
+  zComboInputOptionsValidated.optional()
 ])
 
 export function isComboInputSpecV1(
