@@ -1,5 +1,6 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
+import { isCloud } from '@/platform/distribution/types'
 import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
@@ -20,7 +21,6 @@ export interface MissingMediaAssetSources {
 
 export interface ResolveMissingMediaAssetSourcesOptions {
   signal?: AbortSignal
-  isCloud: boolean
   includeGeneratedAssets: boolean
   generatedMatchNames: ReadonlySet<string>
   allowCompactSuffix: boolean
@@ -32,7 +32,6 @@ export type MissingMediaAssetResolver = (
 
 export async function resolveMissingMediaAssetSources({
   signal,
-  isCloud,
   includeGeneratedAssets,
   generatedMatchNames,
   allowCompactSuffix
@@ -50,15 +49,12 @@ export async function resolveMissingMediaAssetSources({
   try {
     const [inputAssets, generatedAssets] = await Promise.all([
       abortSiblingsOnFailure(
-        isCloud
-          ? assetService.getInputAssetsIncludingPublic(controller.signal)
-          : Promise.resolve<AssetItem[]>([]),
+        assetService.getInputAssetsIncludingPublic(controller.signal),
         controller
       ),
       abortSiblingsOnFailure(
         includeGeneratedAssets
           ? fetchGeneratedAssets(controller.signal, {
-              isCloud,
               generatedMatchNames,
               pathOptions
             })
@@ -74,17 +70,34 @@ export async function resolveMissingMediaAssetSources({
 }
 
 interface FetchGeneratedAssetsOptions {
-  isCloud: boolean
   generatedMatchNames: ReadonlySet<string>
   pathOptions: MediaPathDetectionOptions
 }
 
+/**
+ * Derive comparison keys for matching workflow widget values against an asset.
+ *
+ * Per RFC BE-808 v2 (Asset Identity Semantics), `file_path` is the canonical
+ * namespace-rooted locator (e.g. `input/sub/image.png`,
+ * `models/checkpoints/flux.safetensors`) and the primary match key when
+ * emitted by BE-933 / BE-934. For assets where `file_path` is null —
+ * hash-only registrations via `POST /assets/from-hash` on Core, or assets
+ * Cloud could not derive a category-rooted path for — fall back to the
+ * legacy union of `asset_hash` / `name` / `subfolder + name`. Both BE PRs
+ * round-trip `name` through the deprecation window, so the fallback stays
+ * valid.
+ */
 export function getAssetDetectionNames(
   asset: AssetItem,
   options: MediaPathDetectionOptions
 ): string[] {
   const names = new Set<string>()
-  // Treat names and hashes as opaque match keys because Cloud may use either in widget values.
+
+  if (asset.file_path) {
+    addPathDetectionNames(names, asset.file_path, options)
+    return Array.from(names)
+  }
+
   addPathDetectionNames(names, asset.asset_hash, options)
   addPathDetectionNames(names, asset.name, options)
 
@@ -96,9 +109,16 @@ export function getAssetDetectionNames(
   return Array.from(names)
 }
 
+/**
+ * Pick the generated-assets oracle by runtime. Cloud queries
+ * `/api/assets?include_tags=output`; Core synthesizes `AssetItem` shells
+ * from job-execution history because OSS does not auto-register output
+ * files as assets (pre-BE-786). Unifying this oracle is a separate
+ * concern — track as a follow-up to FE-746.
+ */
 async function fetchGeneratedAssets(
   signal: AbortSignal | undefined,
-  { isCloud, generatedMatchNames, pathOptions }: FetchGeneratedAssetsOptions
+  { generatedMatchNames, pathOptions }: FetchGeneratedAssetsOptions
 ): Promise<AssetItem[]> {
   if (isCloud) {
     return await fetchCloudGeneratedAssets(

@@ -20,6 +20,18 @@ const { mockFetchHistoryPage } = vi.hoisted(() => ({
   mockFetchHistoryPage: vi.fn()
 }))
 
+// Mutable holder so each test can flip the runtime `isCloud` to drive the
+// resolver's generated-assets oracle selection (Cloud /api/assets vs OSS
+// job history). The named-import binding into the resolver re-reads the
+// getter on each access (ESM live binding semantics).
+const isCloudHolder = vi.hoisted(() => ({ value: false }))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return isCloudHolder.value
+  }
+}))
+
 vi.mock('@/platform/assets/services/assetService', async () => {
   const actual = await vi.importActual<typeof AssetServiceModule>(
     '@/platform/assets/services/assetService'
@@ -102,17 +114,17 @@ function makeAssetPage(
 describe('resolveMissingMediaAssetSources', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    isCloudHolder.value = false
     mockGetInputAssetsIncludingPublic.mockResolvedValue([])
     mockGetAssetsPageByTag.mockResolvedValue(makeAssetPage([]))
     mockFetchHistoryPage.mockResolvedValue(makeHistoryPage([]))
   })
 
-  it('loads cloud input assets when requested', async () => {
+  it('loads input assets from the unified listing on both backends', async () => {
     const inputAsset = makeAsset('photo.png')
     mockGetInputAssetsIncludingPublic.mockResolvedValue([inputAsset])
 
     const result = await resolveMissingMediaAssetSources({
-      isCloud: true,
       includeGeneratedAssets: false,
       generatedMatchNames: new Set(),
       allowCompactSuffix: true
@@ -127,11 +139,11 @@ describe('resolveMissingMediaAssetSources', () => {
   })
 
   it('loads cloud output assets by tag when generated candidates need verification', async () => {
+    isCloudHolder.value = true
     const outputAsset = makeAsset('output.png')
     mockGetAssetsPageByTag.mockResolvedValue(makeAssetPage([outputAsset]))
 
     const result = await resolveMissingMediaAssetSources({
-      isCloud: true,
       includeGeneratedAssets: true,
       generatedMatchNames: new Set(['output.png']),
       allowCompactSuffix: true
@@ -151,13 +163,13 @@ describe('resolveMissingMediaAssetSources', () => {
   })
 
   it('stops reading cloud output asset pages once all requested names are found', async () => {
+    isCloudHolder.value = true
     const target = 'target-output.png'
     mockGetAssetsPageByTag.mockResolvedValueOnce(
       makeAssetPage([makeAsset(target)], { hasMore: true, total: 501 })
     )
 
     const result = await resolveMissingMediaAssetSources({
-      isCloud: true,
       includeGeneratedAssets: true,
       generatedMatchNames: new Set([target]),
       allowCompactSuffix: true
@@ -168,6 +180,7 @@ describe('resolveMissingMediaAssetSources', () => {
   })
 
   it('aborts cloud output asset loading when input asset loading fails', async () => {
+    isCloudHolder.value = true
     const inputError = new Error('input failed')
     let rejectInputAssets!: (err: Error) => void
     let resolveOutputAssets!: (page: ReturnType<typeof makeAssetPage>) => void
@@ -183,7 +196,6 @@ describe('resolveMissingMediaAssetSources', () => {
     )
 
     const promise = resolveMissingMediaAssetSources({
-      isCloud: true,
       includeGeneratedAssets: true,
       generatedMatchNames: new Set(['target.png']),
       allowCompactSuffix: true
@@ -214,7 +226,6 @@ describe('resolveMissingMediaAssetSources', () => {
     )
 
     const result = await resolveMissingMediaAssetSources({
-      isCloud: false,
       includeGeneratedAssets: true,
       generatedMatchNames: new Set([target]),
       allowCompactSuffix: true
@@ -245,7 +256,6 @@ describe('resolveMissingMediaAssetSources', () => {
       )
 
     await resolveMissingMediaAssetSources({
-      isCloud: false,
       includeGeneratedAssets: true,
       generatedMatchNames: new Set([target]),
       allowCompactSuffix: true
@@ -271,7 +281,6 @@ describe('resolveMissingMediaAssetSources', () => {
     )
 
     const result = await resolveMissingMediaAssetSources({
-      isCloud: false,
       includeGeneratedAssets: true,
       generatedMatchNames: new Set(['missing.png']),
       allowCompactSuffix: true
@@ -292,7 +301,6 @@ describe('resolveMissingMediaAssetSources', () => {
       )
 
     const result = await resolveMissingMediaAssetSources({
-      isCloud: false,
       includeGeneratedAssets: true,
       generatedMatchNames: new Set(['missing.png']),
       allowCompactSuffix: true
@@ -301,8 +309,59 @@ describe('resolveMissingMediaAssetSources', () => {
     expect(result.generatedAssets).toHaveLength(1)
     expect(mockFetchHistoryPage).toHaveBeenCalledTimes(2)
   })
+})
 
-  it('includes slash and backslash subfolder identifiers for detection', () => {
+describe('getAssetDetectionNames', () => {
+  it('uses file_path alone when present, ignoring legacy fallback keys', () => {
+    const names = getAssetDetectionNames(
+      {
+        id: 'a1',
+        name: 'legacy.png',
+        asset_hash: 'blake3:abc',
+        file_path: 'input/sub/photo.png',
+        mime_type: null,
+        tags: ['input'],
+        user_metadata: { subfolder: 'old-subfolder' }
+      },
+      { allowCompactSuffix: true }
+    )
+
+    expect(names).toEqual(['input/sub/photo.png'])
+  })
+
+  it('falls back to the legacy union when file_path is null', () => {
+    const names = getAssetDetectionNames(
+      {
+        id: 'a1',
+        name: 'legacy.png',
+        asset_hash: 'blake3:abc',
+        file_path: null,
+        mime_type: null,
+        tags: ['input']
+      },
+      { allowCompactSuffix: true }
+    )
+
+    expect(names).toEqual(expect.arrayContaining(['legacy.png', 'blake3:abc']))
+  })
+
+  it('returns an empty list when file_path, asset_hash, and name are all absent', () => {
+    const names = getAssetDetectionNames(
+      {
+        id: 'a1',
+        name: '',
+        asset_hash: null,
+        file_path: null,
+        mime_type: null,
+        tags: []
+      },
+      { allowCompactSuffix: true }
+    )
+
+    expect(names).toEqual([])
+  })
+
+  it('includes slash and backslash subfolder identifiers when file_path is null', () => {
     const names = getAssetDetectionNames(
       {
         ...makeAsset('child\\photo.png', 'hash.png'),
