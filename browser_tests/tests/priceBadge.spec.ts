@@ -5,7 +5,6 @@ import {
 
 test('Price badge displays on subgraphs @vue-nodes', async ({ comfyPage }) => {
   const apiNodeName = 'Node With Price Badge'
-  await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'v1 (legacy)')
 
   const priceBadge = comfyPage.page.locator('.lg-node-header i + span')
   const apiNode = comfyPage.vueNodes.getNodeByTitle(apiNodeName)
@@ -13,9 +12,7 @@ test('Price badge displays on subgraphs @vue-nodes', async ({ comfyPage }) => {
   await comfyPage.menu.topbar.newWorkflowButton.click()
   await comfyPage.nextFrame()
 
-  await comfyPage.page.mouse.dblclick(500, 500, { delay: 5 })
-  await comfyPage.searchBox.fillAndSelectFirstNode(apiNodeName)
-  await expect(comfyPage.searchBox.input).toBeHidden()
+  await comfyPage.searchBoxV2.addNode(apiNodeName)
   await expect(apiNode, 'Add partner node').toBeVisible()
   await expect(apiNode.locator(priceBadge), 'Has price badge').toBeVisible()
 
