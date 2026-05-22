@@ -800,7 +800,7 @@
     "CONTROL_NET": "KONTROL_AĞI",
     "CURVE": "EĞRİ",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
-    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_DETECTION_MODEL": "YÜZ_TESPİT_MODELİ",
     "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
@@ -2280,6 +2280,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2296,6 +2297,7 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "ayarlar",
     "advanced": "gelişmiş",
     "api node": "api düğümü",
     "attention_experiments": "dikkat_deneyleri",
@@ -3623,7 +3625,8 @@
       "placeholderMesh": "Ağ seç...",
       "placeholderModel": "Model seç...",
       "placeholderUnknown": "Medya seç...",
-      "placeholderVideo": "Video seç..."
+      "placeholderVideo": "Video seç...",
+      "topResult": "En iyi sonuç: {result}"
     },
     "valueControl": {
       "decrement": "Değeri Azalt",

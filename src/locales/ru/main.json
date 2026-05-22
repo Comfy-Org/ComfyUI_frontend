@@ -800,7 +800,7 @@
     "CONTROL_NET": "CONTROL_NET",
     "CURVE": "КРИВАЯ",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
-    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_DETECTION_MODEL": "МОДЕЛЬ_ОПРЕДЕЛЕНИЯ_ЛИЦА",
     "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
@@ -2280,6 +2280,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2296,6 +2297,7 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "корректировки",
     "advanced": "расширенный",
     "api node": "api-узел",
     "attention_experiments": "эксперименты_внимания",
@@ -3623,7 +3625,8 @@
       "placeholderMesh": "Выберите mesh...",
       "placeholderModel": "Выбрать модель...",
       "placeholderUnknown": "Выбрать медиа...",
-      "placeholderVideo": "Выбрать видео..."
+      "placeholderVideo": "Выбрать видео...",
+      "topResult": "Лучший результат: {result}"
     },
     "valueControl": {
       "decrement": "Уменьшить значение",

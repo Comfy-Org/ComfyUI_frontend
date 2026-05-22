@@ -22,7 +22,7 @@
     }
   },
   "AddTextPrefix": {
-    "display_name": "Add Text Prefix",
+    "display_name": "Add Text Prefix (DEPRECATED)",
     "inputs": {
       "texts": {
         "name": "texts",
@@ -41,7 +41,7 @@
     }
   },
   "AddTextSuffix": {
-    "display_name": "Add Text Suffix",
+    "display_name": "Add Text Suffix (DEPRECATED)",
     "inputs": {
       "texts": {
         "name": "texts",
@@ -61,6 +61,7 @@
   },
   "AdjustBrightness": {
     "display_name": "Adjust Brightness",
+    "description": "Adjust the brightness of an image.",
     "inputs": {
       "images": {
         "name": "images",
@@ -80,6 +81,7 @@
   },
   "AdjustContrast": {
     "display_name": "Adjust Contrast",
+    "description": "Adjust the contrast of an image.",
     "inputs": {
       "images": {
         "name": "images",
@@ -176,7 +178,8 @@
     }
   },
   "AudioAdjustVolume": {
-    "display_name": "Audio Adjust Volume",
+    "display_name": "Adjust Audio Volume",
+    "description": "Adjust the volume of the audio by a specified amount in decibels (dB).",
     "inputs": {
       "audio": {
         "name": "audio"
@@ -193,7 +196,7 @@
     }
   },
   "AudioConcat": {
-    "display_name": "Audio Concat",
+    "display_name": "Concatenate Audio",
     "description": "Concatenates the audio1 to audio2 in the specified direction.",
     "inputs": {
       "audio1": {
@@ -284,7 +287,7 @@
     }
   },
   "AudioMerge": {
-    "display_name": "Audio Merge",
+    "display_name": "Merge Audio",
     "description": "Combine two audio tracks by overlaying their waveforms.",
     "inputs": {
       "audio1": {
@@ -584,6 +587,9 @@
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
+      },
+      "model_auto_upscale": {
+        "name": "auto_upscale"
       },
       "model_duration": {
         "name": "duration"
@@ -1115,7 +1121,8 @@
     }
   },
   "CenterCropImages": {
-    "display_name": "Center Crop Images",
+    "display_name": "Crop Image (Center)",
+    "description": "Center crop an image to the specified dimensions.",
     "inputs": {
       "images": {
         "name": "images",
@@ -1298,6 +1305,9 @@
       },
       "model_max_tokens": {
         "name": "max_tokens"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
       },
       "model_temperature": {
         "name": "temperature"
@@ -5700,6 +5710,7 @@
   },
   "ImageCropV2": {
     "display_name": "Crop Image",
+    "description": "Crop an image to the specified dimensions.",
     "inputs": {
       "image": {
         "name": "image"
@@ -5719,7 +5730,8 @@
     }
   },
   "ImageDeduplication": {
-    "display_name": "Image Deduplication",
+    "display_name": "Deduplicate Images",
+    "description": "Remove duplicate or very similar images from a list.",
     "inputs": {
       "images": {
         "name": "images",
@@ -5773,7 +5785,8 @@
     }
   },
   "ImageGrid": {
-    "display_name": "Image Grid",
+    "display_name": "Make Image Grid",
+    "description": "Arrange multiple images into a grid layout.",
     "inputs": {
       "images": {
         "name": "images",
@@ -7945,7 +7958,8 @@
     }
   },
   "LoadImageDataSetFromFolder": {
-    "display_name": "Load Image Dataset from Folder",
+    "display_name": "Load Image (from Folder)",
+    "description": "Load a dataset of images from a specified folder and return a list of images. Supported formats: PNG, JPG, JPEG, WEBP.",
     "inputs": {
       "folder": {
         "name": "folder",
@@ -7988,11 +8002,12 @@
     }
   },
   "LoadImageTextDataSetFromFolder": {
-    "display_name": "Load Image and Text Dataset from Folder",
+    "display_name": "Load Image-Text (from Folder)",
+    "description": "Load a dataset of pairs of images and text captions from a specified folder and return them as a list. Supported formats: PNG, JPG, JPEG, WEBP.",
     "inputs": {
       "folder": {
         "name": "folder",
-        "tooltip": "The folder to load images from."
+        "tooltip": "The folder to load images and text captions from."
       }
     },
     "outputs": {
@@ -8015,11 +8030,11 @@
     }
   },
   "LoadMediaPipeFaceLandmarker": {
-    "display_name": "Load MediaPipe Face Landmarker",
+    "display_name": "Load Face Detection Model (MediaPipe)",
     "inputs": {
       "model_name": {
         "name": "model_name",
-        "tooltip": "Face Landmarker safetensors from models/mediapipe/."
+        "tooltip": "Face detection model from models/detection/."
       }
     },
     "outputs": {
@@ -8043,6 +8058,7 @@
   },
   "LoadTrainingDataset": {
     "display_name": "Load Training Dataset",
+    "description": "Load encoded training dataset (latents + conditioning) from disk for use in training.",
     "inputs": {
       "folder_name": {
         "name": "folder_name",
@@ -8431,7 +8447,7 @@
     }
   },
   "LTXVAudioVAELoader": {
-    "display_name": "LTXV Audio VAE Loader",
+    "display_name": "Load LTXV Audio VAE",
     "inputs": {
       "ckpt_name": {
         "name": "ckpt_name",
@@ -9247,6 +9263,7 @@
   },
   "MakeTrainingDataset": {
     "display_name": "Make Training Dataset",
+    "description": "Encode images with VAE and texts with CLIP to create a training dataset of latents and conditionings.",
     "inputs": {
       "images": {
         "name": "images",
@@ -9337,10 +9354,11 @@
     }
   },
   "MediaPipeFaceLandmarker": {
-    "display_name": "MediaPipe Face Landmarker",
+    "display_name": "Detect Face Landmarks (MediaPipe)",
+    "description": "Detects facial landmarks using MediaPipe model.",
     "inputs": {
-      "face_landmarker": {
-        "name": "face_landmarker"
+      "face_detection_model": {
+        "name": "face_detection_model"
       },
       "image": {
         "name": "image"
@@ -9374,7 +9392,8 @@
     }
   },
   "MediaPipeFaceMask": {
-    "display_name": "MediaPipe Face Mask",
+    "display_name": "Draw Face Mask (MediaPipe)",
+    "description": "Draws a mask from face landmarks.",
     "inputs": {
       "face_landmarks": {
         "name": "face_landmarks"
@@ -9391,7 +9410,8 @@
     }
   },
   "MediaPipeFaceMeshVisualize": {
-    "display_name": "MediaPipe Face Mesh Visualize",
+    "display_name": "Visualize Face Landmarks (MediaPipe)",
+    "description": "Draws face landmarks mesh on the input image.",
     "inputs": {
       "face_landmarks": {
         "name": "face_landmarks"
@@ -9423,7 +9443,8 @@
     }
   },
   "MergeImageLists": {
-    "display_name": "Merge Image Lists",
+    "display_name": "Merge Image Lists (DEPRECATED)",
+    "description": "Concatenate multiple image lists into one.",
     "inputs": {
       "images": {
         "name": "images",
@@ -9438,7 +9459,7 @@
     }
   },
   "MergeTextLists": {
-    "display_name": "Merge Text Lists",
+    "display_name": "Merge Text Lists (DEPRECATED)",
     "inputs": {
       "texts": {
         "name": "texts",
@@ -12103,7 +12124,8 @@
     }
   },
   "MoGeInference": {
-    "display_name": "MoGe Inference",
+    "display_name": "Run MoGe Inference",
+    "description": "Run MoGe on a single image to estimate depth and geometry.",
     "inputs": {
       "moge_model": {
         "name": "moge_model"
@@ -12139,7 +12161,8 @@
     }
   },
   "MoGePanoramaInference": {
-    "display_name": "MoGe Panorama Inference",
+    "display_name": "Run MoGe Panorama Inference",
+    "description": "Run MoGe on an equirectangular panorama by splitting it into 12 perspective views, running inference on each, and merging the results into a single depth map.",
     "inputs": {
       "moge_model": {
         "name": "moge_model"
@@ -12173,7 +12196,8 @@
     }
   },
   "MoGePointMapToMesh": {
-    "display_name": "MoGe Point Map to Mesh",
+    "display_name": "Convert MoGe Point Map to Mesh",
+    "description": "Convert a MoGe point map into a 3D mesh.",
     "inputs": {
       "moge_geometry": {
         "name": "moge_geometry"
@@ -12202,7 +12226,8 @@
     }
   },
   "MoGeRender": {
-    "display_name": "MoGe Render",
+    "display_name": "Render MoGe Geometry",
+    "description": "Render a depth map or normal map from geometry data",
     "inputs": {
       "moge_geometry": {
         "name": "moge_geometry"
@@ -12264,7 +12289,8 @@
     }
   },
   "NormalizeImages": {
-    "display_name": "Normalize Images",
+    "display_name": "Normalize Image Colors",
+    "description": "Normalize images using mean and standard deviation.",
     "inputs": {
       "images": {
         "name": "images",
@@ -12585,6 +12611,39 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterLLMNode": {
+    "display_name": "OpenRouter LLM",
+    "description": "Generate text responses through OpenRouter. Routes to a curated set of popular models from xAI, DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi), and Perplexity Sonar.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text input to the model."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The OpenRouter model used to generate the response."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for sampling. Set to 0 to omit. Most models treat this as a hint only."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Foundational instructions that dictate the model's behavior."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
       }
     },
     "outputs": {
@@ -13378,7 +13437,8 @@
     }
   },
   "RandomCropImages": {
-    "display_name": "Random Crop Images",
+    "display_name": "Crop Image (Random)",
+    "description": "Randomly crop an image to the specified dimensions.",
     "inputs": {
       "images": {
         "name": "images",
@@ -14127,7 +14187,7 @@
     }
   },
   "ReplaceText": {
-    "display_name": "Replace Text",
+    "display_name": "Replace Text (DEPRECATED)",
     "inputs": {
       "texts": {
         "name": "texts",
@@ -14240,7 +14300,8 @@
     }
   },
   "ResizeImagesByLongerEdge": {
-    "display_name": "Resize Images by Longer Edge",
+    "display_name": "Resize Images by Longer Edge (DEPRECATED)",
+    "description": "Resize images so that the longer edge matches the specified dimension while preserving aspect ratio.",
     "inputs": {
       "images": {
         "name": "images",
@@ -14248,7 +14309,7 @@
       },
       "longer_edge": {
         "name": "longer_edge",
-        "tooltip": "Target length for the longer edge."
+        "tooltip": "Target dimension for the longer edge."
       }
     },
     "outputs": {
@@ -14259,7 +14320,8 @@
     }
   },
   "ResizeImagesByShorterEdge": {
-    "display_name": "Resize Images by Shorter Edge",
+    "display_name": "Resize Images by Shorter Edge (DEPRECATED)",
+    "description": "Resize images so that the shorter edge matches the specified dimension while preserving aspect ratio.",
     "inputs": {
       "images": {
         "name": "images",
@@ -14267,7 +14329,7 @@
       },
       "shorter_edge": {
         "name": "shorter_edge",
-        "tooltip": "Target length for the shorter edge."
+        "tooltip": "Target dimension for the shorter edge."
       }
     },
     "outputs": {
@@ -14279,6 +14341,7 @@
   },
   "ResolutionBucket": {
     "display_name": "Resolution Bucket",
+    "description": "Group latents and conditionings into buckets",
     "inputs": {
       "latents": {
         "name": "latents",
@@ -15392,7 +15455,8 @@
     }
   },
   "SaveImageDataSetToFolder": {
-    "display_name": "Save Image Dataset to Folder",
+    "display_name": "Save Image (to Folder) (DEPRECATED)",
+    "description": "Save a dataset of images to a specified folder. Supported formats: PNG.",
     "inputs": {
       "images": {
         "name": "images",
@@ -15409,15 +15473,12 @@
     }
   },
   "SaveImageTextDataSetToFolder": {
-    "display_name": "Save Image and Text Dataset to Folder",
+    "display_name": "Save Image-Text (to Folder)",
+    "description": "Save a dataset of pairs of images and text captions to a specified folder. Images are saved as PNG files and captions are saved as TXT files with the same filename_prefix.",
     "inputs": {
       "images": {
         "name": "images",
         "tooltip": "List of images to save."
-      },
-      "texts": {
-        "name": "texts",
-        "tooltip": "List of text captions to save."
       },
       "folder_name": {
         "name": "folder_name",
@@ -15426,6 +15487,10 @@
       "filename_prefix": {
         "name": "filename_prefix",
         "tooltip": "Prefix for saved image filenames."
+      },
+      "texts": {
+        "name": "texts",
+        "tooltip": "List of text captions to save."
       }
     }
   },
@@ -15480,6 +15545,7 @@
   },
   "SaveTrainingDataset": {
     "display_name": "Save Training Dataset",
+    "description": "Save encoded training dataset (latents + conditioning) to disk for efficient loading during training.",
     "inputs": {
       "latents": {
         "name": "latents",
@@ -15802,7 +15868,8 @@
     }
   },
   "ShuffleDataset": {
-    "display_name": "Shuffle Image Dataset",
+    "display_name": "Shuffle Images List",
+    "description": "Randomly shuffle the order of images in a list.",
     "inputs": {
       "images": {
         "name": "images",
@@ -15824,7 +15891,8 @@
     }
   },
   "ShuffleImageTextDataset": {
-    "display_name": "Shuffle Image-Text Dataset",
+    "display_name": "Shuffle Pairs of Image-Text",
+    "description": "Randomly shuffle the order of pairs of image-text in a list.",
     "inputs": {
       "images": {
         "name": "images",
@@ -16726,7 +16794,7 @@
     }
   },
   "StripWhitespace": {
-    "display_name": "Strip Whitespace",
+    "display_name": "Strip Whitespace (DEPRECATED)",
     "inputs": {
       "texts": {
         "name": "texts",
@@ -17493,7 +17561,7 @@
     }
   },
   "TextToLowercase": {
-    "display_name": "Text to Lowercase",
+    "display_name": "Convert Text to Lowercase (DEPRECATED)",
     "inputs": {
       "texts": {
         "name": "texts",
@@ -17508,7 +17576,7 @@
     }
   },
   "TextToUppercase": {
-    "display_name": "Text to Uppercase",
+    "display_name": "Convert Text to Uppercase (DEPRECATED)",
     "inputs": {
       "texts": {
         "name": "texts",
@@ -19449,6 +19517,7 @@
   },
   "VoxelToMesh": {
     "display_name": "Voxel to Mesh",
+    "description": "Converts a voxel grid to a mesh.",
     "inputs": {
       "voxel": {
         "name": "voxel"
@@ -19467,7 +19536,8 @@
     }
   },
   "VoxelToMeshBasic": {
-    "display_name": "Voxel to Mesh (Basic)",
+    "display_name": "Voxel to Mesh (Basic) (DEPRECATED)",
+    "description": "Converts a voxel grid to a mesh.",
     "inputs": {
       "voxel": {
         "name": "voxel"
