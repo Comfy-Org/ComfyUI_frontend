@@ -10,6 +10,7 @@ import {
   getAssetDisplayFilename,
   getAssetDisplayName,
   getAssetFilename,
+  getAssetMetadataDimensions,
   getAssetModelType,
   getAssetSourceUrl,
   getAssetStoredFilename,
@@ -414,6 +415,41 @@ describe('assetMetadataUtils', () => {
         display_name: 'pretty.png'
       }
       expect(getAssetCardTitle(asset)).toBe('pretty.png')
+    })
+  })
+
+  describe('getAssetMetadataDimensions', () => {
+    it('returns dimensions when width/height are positive integers', () => {
+      const asset = { ...mockAsset, metadata: { width: 1024, height: 768 } }
+      expect(getAssetMetadataDimensions(asset)).toEqual({
+        width: 1024,
+        height: 768
+      })
+    })
+
+    it.for([
+      { name: 'NaN width', width: Number.NaN, height: 768 },
+      {
+        name: 'Infinity height',
+        width: 1024,
+        height: Number.POSITIVE_INFINITY
+      },
+      { name: 'zero width', width: 0, height: 768 },
+      { name: 'negative height', width: 1024, height: -1 },
+      { name: 'fractional width', width: 1024.5, height: 768 },
+      { name: 'string width', width: '1024', height: 768 },
+      { name: 'missing width', width: undefined, height: 768 }
+    ])('returns undefined for invalid shape: $name', ({ width, height }) => {
+      const asset = { ...mockAsset, metadata: { width, height } }
+      expect(getAssetMetadataDimensions(asset)).toBeUndefined()
+    })
+
+    it('returns undefined when metadata is absent', () => {
+      expect(getAssetMetadataDimensions(mockAsset)).toBeUndefined()
+    })
+
+    it('returns undefined when asset itself is undefined', () => {
+      expect(getAssetMetadataDimensions(undefined)).toBeUndefined()
     })
   })
 })
