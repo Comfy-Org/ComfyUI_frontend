@@ -800,6 +800,8 @@
     "CONTROL_NET": "ControlNet",
     "CURVE": "曲線",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "人臉偵測模型",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -815,6 +817,7 @@
     "HISTOGRAM": "直方圖",
     "HOOKS": "掛鉤",
     "HOOK_KEYFRAMES": "關鍵影格掛鉤",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "影像",
     "IMAGECOMPARE": "圖像比較",
     "INT": "整數",
@@ -835,6 +838,8 @@
     "MODEL": "模型",
     "MODEL_PATCH": "模型修補",
     "MODEL_TASK_ID": "模型任務ID",
+    "MOGE_GEOMETRY": "MOGE_幾何",
+    "MOGE_MODEL": "MOGE_模型",
     "NOISE": "雜訊",
     "OPENAI_CHAT_CONFIG": "OpenAI聊天配置",
     "OPENAI_INPUT_FILES": "OpenAI輸入檔案",
@@ -1742,6 +1747,10 @@
     "outdatedVersionGeneric": "此工作流程是以較新版本的 ComfyUI 建立的。部分節點可能無法正確運作。",
     "unknownVersion": "未知"
   },
+  "logsTerminal": {
+    "loadError": "無法載入日誌，請確認您已更新 ComfyUI 後端。",
+    "resyncError": "後端重新連線後無法重新同步日誌。請重新開啟主控台以重試。"
+  },
   "maintenance": {
     "None": "無",
     "OK": "正常",
@@ -2271,6 +2280,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2287,8 +2297,8 @@
     "Vidu": "維度",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "調整",
     "advanced": "進階",
-    "animation": "動畫",
     "api node": "API 節點",
     "attention_experiments": "注意力實驗",
     "audio": "音訊",
@@ -2311,7 +2321,9 @@
     "detection": "偵測",
     "edit_models": "編輯模型",
     "experimental": "實驗性",
+    "filters": "濾鏡",
     "flux": "Flux",
+    "geometry_estimation": "幾何估算",
     "gligen": "GLIGEN",
     "guidance": "引導",
     "guiders": "引導器",
@@ -2333,13 +2345,11 @@
     "noise": "雜訊",
     "operations": "操作",
     "photomaker": "photomaker",
-    "postprocessing": "後處理",
     "preprocessors": "前處理器",
     "primitive": "基礎元件",
     "qwen": "千問",
     "samplers": "取樣器",
     "sampling": "取樣",
-    "save": "儲存",
     "schedulers": "排程器",
     "scheduling": "排程",
     "sd3": "sd3",
@@ -2437,7 +2447,8 @@
     "nonPublicAssetsWarningLine1": "此工作流程包含非公開資產。",
     "nonPublicAssetsWarningLine2": "開啟工作流程時，這些資產將匯入你的媒體庫",
     "openWithoutImporting": "不匯入直接開啟",
-    "openWorkflow": "開啟工作流程"
+    "openWorkflow": "開啟工作流程",
+    "opening": "正在開啟共享工作流程..."
   },
   "painter": {
     "background": "背景",
@@ -3614,7 +3625,8 @@
       "placeholderMesh": "選擇網格...",
       "placeholderModel": "選擇模型...",
       "placeholderUnknown": "選擇媒體...",
-      "placeholderVideo": "選擇影片..."
+      "placeholderVideo": "選擇影片...",
+      "topResult": "最佳結果：{result}"
     },
     "valueControl": {
       "decrement": "減少數值",

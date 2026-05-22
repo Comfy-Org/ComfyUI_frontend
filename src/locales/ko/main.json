@@ -800,6 +800,8 @@
     "CONTROL_NET": "컨트롤넷",
     "CURVE": "곡선",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "얼굴 감지 모델",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -815,6 +817,7 @@
     "HISTOGRAM": "히스토그램",
     "HOOKS": "후크",
     "HOOK_KEYFRAMES": "후크 키프레임",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "이미지",
     "IMAGECOMPARE": "이미지 비교",
     "INT": "정수",
@@ -835,6 +838,8 @@
     "MODEL": "모델",
     "MODEL_PATCH": "모델 패치",
     "MODEL_TASK_ID": "모델 작업 ID",
+    "MOGE_GEOMETRY": "MOGE_GEOMETRY",
+    "MOGE_MODEL": "MOGE_MODEL",
     "NOISE": "노이즈",
     "OPENAI_CHAT_CONFIG": "OpenAI 채팅 설정",
     "OPENAI_INPUT_FILES": "OpenAI 입력 파일",
@@ -1742,6 +1747,10 @@
     "outdatedVersionGeneric": "이 워크플로우는 더 최신 버전의 ComfyUI에서 생성되었습니다. 일부 노드는 제대로 작동하지 않을 수 있습니다.",
     "unknownVersion": "알 수 없음"
   },
+  "logsTerminal": {
+    "loadError": "로그를 불러올 수 없습니다. ComfyUI 백엔드가 최신인지 확인해 주세요.",
+    "resyncError": "백엔드 재연결 후 로그를 다시 동기화할 수 없습니다. 다시 시도하려면 콘솔을 다시 여세요."
+  },
   "maintenance": {
     "None": "없음",
     "OK": "확인",
@@ -2271,6 +2280,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2287,8 +2297,8 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "조정",
     "advanced": "고급",
-    "animation": "애니메이션",
     "api node": "api 노드",
     "attention_experiments": "어텐션 실험",
     "audio": "오디오",
@@ -2311,7 +2321,9 @@
     "detection": "감지",
     "edit_models": "edit_models",
     "experimental": "실험적",
+    "filters": "필터",
     "flux": "flux",
+    "geometry_estimation": "geometry_estimation",
     "gligen": "글리젠",
     "guidance": "가이드",
     "guiders": "가이드",
@@ -2333,13 +2345,11 @@
     "noise": "노이즈",
     "operations": "연산",
     "photomaker": "포토메이커",
-    "postprocessing": "후처리",
     "preprocessors": "전처리기",
     "primitive": "기본 입력",
     "qwen": "qwen",
     "samplers": "샘플러",
     "sampling": "샘플링",
-    "save": "저장",
     "schedulers": "스케줄러",
     "scheduling": "스케줄링",
     "sd3": "sd3",
@@ -2437,7 +2447,8 @@
     "nonPublicAssetsWarningLine1": "이 워크플로우에는 비공개 에셋이 포함되어 있습니다.",
     "nonPublicAssetsWarningLine2": "워크플로우를 열면 이 에셋들이 라이브러리에 가져와집니다",
     "openWithoutImporting": "가져오지 않고 열기",
-    "openWorkflow": "워크플로우 열기"
+    "openWorkflow": "워크플로우 열기",
+    "opening": "공유 워크플로우 열기 중..."
   },
   "painter": {
     "background": "배경",
@@ -3614,7 +3625,8 @@
       "placeholderMesh": "메시 선택...",
       "placeholderModel": "모델 선택...",
       "placeholderUnknown": "미디어 선택...",
-      "placeholderVideo": "비디오 선택..."
+      "placeholderVideo": "비디오 선택...",
+      "topResult": "최상위 결과: {result}"
     },
     "valueControl": {
       "decrement": "값 감소",

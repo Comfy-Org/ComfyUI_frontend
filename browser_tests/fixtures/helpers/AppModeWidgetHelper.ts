@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
 
 /**
  * Helper for interacting with widgets rendered in app mode (linear view).
@@ -22,6 +23,11 @@ export class AppModeWidgetHelper {
   /** Get a widget item container by its key (e.g. "6:text", "3:seed"). */
   getWidgetItem(key: string): Locator {
     return this.container.locator(`[data-widget-key="${key}"]`)
+  }
+
+  /** Get a FormDropdown widget by its key (e.g. "10:image"). */
+  getSelectDropdown(key: string): WidgetSelectDropdownFixture {
+    return new WidgetSelectDropdownFixture(this.getWidgetItem(key))
   }
 
   /** Fill a textarea widget (e.g. CLIP Text Encode prompt). */

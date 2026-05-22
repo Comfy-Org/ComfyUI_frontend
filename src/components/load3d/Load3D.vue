@@ -4,8 +4,6 @@
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
     @pointerdown.stop
-    @pointermove.stop
-    @pointerup.stop
   >
     <Load3DScene
       v-if="node"

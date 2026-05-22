@@ -6,6 +6,7 @@ import type {
   WorkflowPublishResult,
   WorkflowPublishStatus
 } from '@/platform/workflow/sharing/types/shareTypes'
+import { assetService } from '@/platform/assets/services/assetService'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -275,6 +276,8 @@ export function useWorkflowShareService() {
     if (!response.ok) {
       throw new Error(`Failed to import assets: ${response.status}`)
     }
+
+    assetService.invalidateInputAssetsIncludingPublic()
   }
 
   return {

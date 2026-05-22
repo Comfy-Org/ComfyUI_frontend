@@ -800,6 +800,8 @@
     "CONTROL_NET": "KONTROL_AĞI",
     "CURVE": "EĞRİ",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "YÜZ_TESPİT_MODELİ",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -815,6 +817,7 @@
     "HISTOGRAM": "HİSTOGRAM",
     "HOOKS": "Kancalar",
     "HOOK_KEYFRAMES": "Kanca_anahtar_kareleri",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "GÖRÜNTÜ",
     "IMAGECOMPARE": "GÖRSELKARŞILAŞTIR",
     "INT": "TAMSAYI",
@@ -835,6 +838,8 @@
     "MODEL": "MODEL",
     "MODEL_PATCH": "MODEL_YAMASI",
     "MODEL_TASK_ID": "MODEL_GÖREV_ID",
+    "MOGE_GEOMETRY": "MOGE_GEOMETRY",
+    "MOGE_MODEL": "MOGE_MODEL",
     "NOISE": "GÜRÜLTÜ",
     "OPENAI_CHAT_CONFIG": "OPENAI_SOHBET_YAPILANDIRMASI",
     "OPENAI_INPUT_FILES": "OPENAI_GİRİŞ_DOSYALARI",
@@ -1742,6 +1747,10 @@
     "outdatedVersionGeneric": "Bu iş akışı ComfyUI'nin daha yeni bir sürümüyle oluşturulmuş. Bazı düğümler düzgün çalışmayabilir.",
     "unknownVersion": "bilinmeyen"
   },
+  "logsTerminal": {
+    "loadError": "Kayıtlar yüklenemiyor, lütfen ComfyUI arka ucunuzu güncellediğinizden emin olun.",
+    "resyncError": "Arka uç yeniden bağlandıktan sonra kayıtlar yeniden eşitlenemedi. Tekrar denemek için konsolu yeniden açın."
+  },
   "maintenance": {
     "None": "Yok",
     "OK": "Tamam",
@@ -2271,6 +2280,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2287,8 +2297,8 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "ayarlar",
     "advanced": "gelişmiş",
-    "animation": "animasyon",
     "api node": "api düğümü",
     "attention_experiments": "dikkat_deneyleri",
     "audio": "ses",
@@ -2311,7 +2321,9 @@
     "detection": "tespit",
     "edit_models": "modelleri_düzenle",
     "experimental": "deneysel",
+    "filters": "filtreler",
     "flux": "flux",
+    "geometry_estimation": "geometri_tahmini",
     "gligen": "gligen",
     "guidance": "rehberlik",
     "guiders": "rehberler",
@@ -2333,13 +2345,11 @@
     "noise": "gürültü",
     "operations": "işlemler",
     "photomaker": "photomaker",
-    "postprocessing": "son işleme",
     "preprocessors": "ön işlemciler",
     "primitive": "ilkel",
     "qwen": "qwen",
     "samplers": "örnekleyiciler",
     "sampling": "örnekleme",
-    "save": "kaydet",
     "schedulers": "zamanlayıcılar",
     "scheduling": "zamanlama",
     "sd3": "sd3",
@@ -2437,7 +2447,8 @@
     "nonPublicAssetsWarningLine1": "Bu iş akışı herkese açık olmayan varlıklar içeriyor.",
     "nonPublicAssetsWarningLine2": "İş akışını açtığınızda bunlar kütüphanenize aktarılacak",
     "openWithoutImporting": "İçe aktarmadan aç",
-    "openWorkflow": "İş akışını aç"
+    "openWorkflow": "İş akışını aç",
+    "opening": "Paylaşılan iş akışı açılıyor..."
   },
   "painter": {
     "background": "Arka Plan",
@@ -3614,7 +3625,8 @@
       "placeholderMesh": "Ağ seç...",
       "placeholderModel": "Model seç...",
       "placeholderUnknown": "Medya seç...",
-      "placeholderVideo": "Video seç..."
+      "placeholderVideo": "Video seç...",
+      "topResult": "En iyi sonuç: {result}"
     },
     "valueControl": {
       "decrement": "Değeri Azalt",

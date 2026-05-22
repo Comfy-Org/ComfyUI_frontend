@@ -10,14 +10,16 @@ const {
   onLoad3dReadyMock,
   configureMock,
   getLoad3dMock,
-  toastAddAlertMock
+  toastAddAlertMock,
+  getNodeByLocatorIdMock
 } = vi.hoisted(() => ({
   registerExtensionMock: vi.fn(),
   waitForLoad3dMock: vi.fn(),
   onLoad3dReadyMock: vi.fn(),
   configureMock: vi.fn(),
   getLoad3dMock: vi.fn(),
-  toastAddAlertMock: vi.fn()
+  toastAddAlertMock: vi.fn(),
+  getNodeByLocatorIdMock: vi.fn()
 }))
 
 vi.mock('@/services/extensionService', () => ({
@@ -76,8 +78,12 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 vi.mock('@/scripts/app', () => ({
-  app: { canvas: { selected_nodes: {} } },
+  app: { canvas: { selected_nodes: {} }, rootGraph: {} },
   ComfyApp: { copyToClipspace: vi.fn(), clipspace_return_node: null }
+}))
+
+vi.mock('@/utils/graphTraversalUtil', () => ({
+  getNodeByLocatorId: getNodeByLocatorIdMock
 }))
 
 vi.mock('@/i18n', () => ({
@@ -107,6 +113,9 @@ type ExtCreated = ComfyExtension & {
     nodeData: ComfyNodeDef
   ) => Promise<void>
   getNodeMenuItems: (node: LGraphNode) => unknown[]
+  onNodeOutputsUpdated: (
+    nodeOutputs: Record<string, Record<string, unknown>>
+  ) => void
 }
 
 async function loadExtensionsFresh(): Promise<{
@@ -515,5 +524,88 @@ describe('getNodeMenuItems', () => {
     } as unknown as LGraphNode
 
     expect(preview3DExt.getNodeMenuItems(node)).toEqual([{ content: 'Export' }])
+  })
+})
+
+describe('Comfy.Preview3D.onNodeOutputsUpdated', () => {
+  beforeEach(setupBaseMocks)
+
+  it('rehydrates a Preview3D node from restored outputs', async () => {
+    const { preview3DExt } = await loadExtensionsFresh()
+    const node = makePreview3DNode()
+    getNodeByLocatorIdMock.mockReturnValue(node)
+
+    preview3DExt.onNodeOutputsUpdated!({
+      '7': { result: ['sub\\nested\\mesh.glb', { position: [1, 2, 3] }] }
+    } as never)
+
+    const modelWidget = node.widgets!.find((w) => w.name === 'model_file')!
+    expect(modelWidget.value).toBe('sub/nested/mesh.glb')
+    expect(node.properties['Last Time Model File']).toBe('sub/nested/mesh.glb')
+    expect(configureMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        loadFolder: 'output',
+        cameraState: { position: [1, 2, 3] },
+        silentOnNotFound: true
+      })
+    )
+  })
+
+  it('skips entries with no result file path', async () => {
+    const { preview3DExt } = await loadExtensionsFresh()
+    const node = makePreview3DNode()
+    getNodeByLocatorIdMock.mockReturnValue(node)
+
+    preview3DExt.onNodeOutputsUpdated!({
+      '7': { result: [undefined] }
+    } as never)
+
+    expect(getNodeByLocatorIdMock).not.toHaveBeenCalled()
+    expect(configureMock).not.toHaveBeenCalled()
+  })
+
+  it('skips entries whose node is not in the active rootGraph', async () => {
+    const { preview3DExt } = await loadExtensionsFresh()
+    getNodeByLocatorIdMock.mockReturnValue(null)
+
+    preview3DExt.onNodeOutputsUpdated!({
+      '7': { result: ['mesh.glb'] }
+    } as never)
+
+    expect(configureMock).not.toHaveBeenCalled()
+  })
+
+  it('skips nodes whose comfyClass is not Preview3D', async () => {
+    const { preview3DExt } = await loadExtensionsFresh()
+    const node = makePreview3DNode({ comfyClass: 'Load3D' })
+    getNodeByLocatorIdMock.mockReturnValue(node)
+
+    preview3DExt.onNodeOutputsUpdated!({
+      '7': { result: ['mesh.glb'] }
+    } as never)
+
+    expect(configureMock).not.toHaveBeenCalled()
+  })
+
+  it('re-applies even when the file path is unchanged so camera/bg updates do not get dropped', async () => {
+    const { preview3DExt } = await loadExtensionsFresh()
+    const node = makePreview3DNode({
+      properties: { 'Last Time Model File': 'mesh.glb' },
+      widgets: [{ name: 'model_file', value: 'mesh.glb' }]
+    })
+    getNodeByLocatorIdMock.mockReturnValue(node)
+
+    preview3DExt.onNodeOutputsUpdated!({
+      '7': {
+        result: ['mesh.glb', { position: [9, 9, 9] }, 'new-bg.png']
+      }
+    } as never)
+
+    expect(configureMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cameraState: { position: [9, 9, 9] },
+        bgImagePath: 'new-bg.png'
+      })
+    )
   })
 })

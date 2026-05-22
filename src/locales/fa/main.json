@@ -800,6 +800,8 @@
     "CONTROL_NET": "controlnet",
     "CURVE": "CURVE",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "مدل تشخیص چهره",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -815,6 +817,7 @@
     "HISTOGRAM": "HISTOGRAM",
     "HOOKS": "hookها",
     "HOOK_KEYFRAMES": "کلیدفریم‌های hook",
+    "IC_LORA_PARAMETERS": "پارامترهای IC_LORA",
     "IMAGE": "تصویر",
     "IMAGECOMPARE": "مقایسه تصویر",
     "INT": "عدد صحیح",
@@ -835,6 +838,8 @@
     "MODEL": "مدل",
     "MODEL_PATCH": "وصله مدل",
     "MODEL_TASK_ID": "شناسه وظیفه مدل",
+    "MOGE_GEOMETRY": "هندسه MOGE",
+    "MOGE_MODEL": "مدل MOGE",
     "NOISE": "نویز",
     "OPENAI_CHAT_CONFIG": "پیکربندی گفتگوی OpenAI",
     "OPENAI_INPUT_FILES": "فایل‌های ورودی OpenAI",
@@ -1742,6 +1747,10 @@
     "outdatedVersionGeneric": "این workflow با نسخه جدیدتری از ComfyUI ایجاد شده است. برخی nodeها ممکن است به درستی کار نکنند.",
     "unknownVersion": "نامشخص"
   },
+  "logsTerminal": {
+    "loadError": "امکان بارگذاری لاگ‌ها وجود ندارد، لطفاً اطمینان حاصل کنید که ComfyUI backend خود را به‌روزرسانی کرده‌اید.",
+    "resyncError": "امکان همگام‌سازی مجدد لاگ‌ها پس از اتصال مجدد backend وجود ندارد. برای تلاش مجدد، کنسول را دوباره باز کنید."
+  },
   "maintenance": {
     "None": "هیچ‌کدام",
     "OK": "مناسب",
@@ -2271,6 +2280,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2287,8 +2297,8 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "تنظیمات",
     "advanced": "پیشرفته",
-    "animation": "انیمیشن",
     "api node": "گره API",
     "attention_experiments": "آزمایش‌های توجه",
     "audio": "صدا",
@@ -2311,7 +2321,9 @@
     "detection": "شناسایی",
     "edit_models": "ویرایش مدل‌ها",
     "experimental": "آزمایشی",
+    "filters": "فیلترها",
     "flux": "flux",
+    "geometry_estimation": "برآورد هندسه",
     "gligen": "gligen",
     "guidance": "راهنمایی",
     "guiders": "راهنماها",
@@ -2333,13 +2345,11 @@
     "noise": "نویز",
     "operations": "عملیات",
     "photomaker": "photomaker",
-    "postprocessing": "پس‌پردازش",
     "preprocessors": "پیش‌پردازنده‌ها",
     "primitive": "ابتدایی",
     "qwen": "qwen",
     "samplers": "نمونه‌گیرها",
     "sampling": "نمونه‌گیری",
-    "save": "ذخیره",
     "schedulers": "زمان‌بندی‌ها",
     "scheduling": "زمان‌بندی",
     "sd3": "sd3",
@@ -2437,7 +2447,8 @@
     "nonPublicAssetsWarningLine1": "این گردش‌کار دارای دارایی‌های غیرعمومی است.",
     "nonPublicAssetsWarningLine2": "این موارد هنگام باز کردن گردش‌کار به کتابخانه شما وارد می‌شوند",
     "openWithoutImporting": "باز کردن بدون وارد کردن",
-    "openWorkflow": "باز کردن گردش‌کار"
+    "openWorkflow": "باز کردن گردش‌کار",
+    "opening": "در حال باز کردن گردش‌کار مشترک..."
   },
   "painter": {
     "background": "پس‌زمینه",
@@ -3626,7 +3637,8 @@
       "placeholderMesh": "مش را انتخاب کنید...",
       "placeholderModel": "انتخاب مدل...",
       "placeholderUnknown": "انتخاب رسانه...",
-      "placeholderVideo": "انتخاب ویدیو..."
+      "placeholderVideo": "انتخاب ویدیو...",
+      "topResult": "نتیجه برتر: {result}"
     },
     "valueControl": {
       "decrement": "کاهش مقدار",

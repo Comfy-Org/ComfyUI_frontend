@@ -904,6 +904,7 @@
         "alphabetical": "A-Z",
         "alphabeticalDesc": "Sort alphabetically within groups"
       },
+      "noMatchingNodes": "No nodes match \"{query}\"",
       "sections": {
         "favorites": "Bookmarks",
         "favoriteNode": "Bookmark Node",
@@ -1112,7 +1113,6 @@
       "alphabetical": "A → Z",
       "newest": "Newest",
       "searchPlaceholder": "Search...",
-      "vramLowToHigh": "VRAM Usage (Low to High)",
       "modelSizeLowToHigh": "Model Size (Low to High)",
       "default": "Default"
     },
@@ -1159,6 +1159,10 @@
   "nodeTemplates": {
     "saveAsTemplate": "Save as template",
     "enterName": "Enter name"
+  },
+  "logsTerminal": {
+    "loadError": "Unable to load logs, please ensure you have updated your ComfyUI backend.",
+    "resyncError": "Unable to resync logs after the backend reconnected. Reopen the console to retry."
   },
   "workflowService": {
     "exportWorkflow": "Export Workflow",
@@ -1657,6 +1661,7 @@
     "dataset": "dataset",
     "text": "text",
     "image": "image",
+    "adjustments": "adjustments",
     "sampling": "sampling",
     "schedulers": "schedulers",
     "conditioning": "conditioning",
@@ -1671,7 +1676,8 @@
     "Bria": "Bria",
     "video": "video",
     "ByteDance": "ByteDance",
-    "preprocessors": "preprocessors",
+    "filters": "filters",
+    "transform": "transform",
     "advanced": "advanced",
     "guidance": "guidance",
     "model_merging": "model_merging",
@@ -1682,7 +1688,6 @@
     "flux": "flux",
     "kandinsky5": "kandinsky5",
     "utils": "utils",
-    "postprocessing": "postprocessing",
     "hooks": "hooks",
     "combine": "combine",
     "logic": "logic",
@@ -1703,7 +1708,6 @@
     "unet": "unet",
     "sigmas": "sigmas",
     "BFL": "BFL",
-    "": "",
     "Gemini": "Gemini",
     "gligen": "gligen",
     "shader": "shader",
@@ -1712,24 +1716,26 @@
     "HitPaw": "HitPaw",
     "3d_models": "3d_models",
     "Ideogram": "Ideogram",
-    "transform": "transform",
+    "compositing": "compositing",
     "color": "color",
     "upscaling": "upscaling",
     "instructpix2pix": "instructpix2pix",
-    "compositing": "compositing",
     "Kling": "Kling",
     "samplers": "samplers",
     "operations": "operations",
     "training": "training",
     "lotus": "lotus",
     "LTXV": "LTXV",
+    "preprocessors": "preprocessors",
     "Luma": "Luma",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "model_specific": "model_specific",
+    "geometry_estimation": "geometry_estimation",
     "OpenAI": "OpenAI",
     "Sora": "Sora",
+    "OpenRouter": "OpenRouter",
     "cond pair": "cond pair",
     "photomaker": "photomaker",
     "PixVerse": "PixVerse",
@@ -1741,8 +1747,6 @@
     "Reve": "Reve",
     "Rodin": "Rodin",
     "Runway": "Runway",
-    "animation": "animation",
-    "save": "save",
     "upscale_diffusion": "upscale_diffusion",
     "clip": "clip",
     "Sonilo": "Sonilo",
@@ -1755,6 +1759,7 @@
     "Tripo": "Tripo",
     "Veo": "Veo",
     "Vidu": "Vidu",
+    "": "",
     "WaveSpeed": "WaveSpeed",
     "zimage": "zimage"
   },
@@ -1780,6 +1785,8 @@
     "CONTROL_NET": "CONTROL_NET",
     "CURVE": "CURVE",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "FACE_DETECTION_MODEL",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -1795,6 +1802,7 @@
     "HISTOGRAM": "HISTOGRAM",
     "HOOK_KEYFRAMES": "HOOK_KEYFRAMES",
     "HOOKS": "HOOKS",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "IMAGE",
     "IMAGECOMPARE": "IMAGECOMPARE",
     "INT": "INT",
@@ -1815,6 +1823,8 @@
     "MODEL": "MODEL",
     "MODEL_PATCH": "MODEL_PATCH",
     "MODEL_TASK_ID": "MODEL_TASK_ID",
+    "MOGE_GEOMETRY": "MOGE_GEOMETRY",
+    "MOGE_MODEL": "MOGE_MODEL",
     "NOISE": "NOISE",
     "OPENAI_CHAT_CONFIG": "OPENAI_CHAT_CONFIG",
     "OPENAI_INPUT_FILES": "OPENAI_INPUT_FILES",
@@ -2128,6 +2138,43 @@
     "header": "Node Header Error",
     "slots": "Node Slots Error",
     "widgets": "Node Widgets Error"
+  },
+  "oauth": {
+    "consent": {
+      "allow": "Continue",
+      "deny": "Cancel",
+      "genericError": "OAuth request failed. Please restart from the client app.",
+      "loading": "Loading authorization request…",
+      "missingRequest": "This authorization request is missing. Please restart from the client app.",
+      "noWorkspaces": "No eligible workspaces are available for this request.",
+      "title": "{client} wants access",
+      "subtitle": "Sign in to {resource} to continue",
+      "resourceFallback": "this app",
+      "workspaceLabel": "Workspace",
+      "permissionsHeader": "Permissions",
+      "workspaceHelp": "Permissions apply to this workspace only.",
+      "redirectNotice": "You'll be redirected to",
+      "appTypeNative": "Native app",
+      "appTypeWeb": "Web app",
+      "errorExpired": "This consent request has expired or has already been used. Please restart from the client app.",
+      "errorScopeBroadening": "The previously approved permissions don't cover this request. You'll need to re-authorize with the new permissions.",
+      "errorUnavailable": "This feature isn't available right now. Please contact support if the problem persists.",
+      "sessionError": "Failed to establish session. Please try again.",
+      "sessionErrorToastSummary": "Couldn't continue OAuth sign-in"
+    },
+    "scopes": {
+      "mcp:tools:read": {
+        "label": "View available workflow tools"
+      },
+      "mcp:tools:call": {
+        "label": "Run workflows on your behalf"
+      }
+    },
+    "workspace": {
+      "personal": "Personal",
+      "owner": "Owner",
+      "member": "Member"
+    }
   },
   "auth": {
     "apiKey": {
@@ -2701,7 +2748,8 @@
       "placeholderMesh": "Select mesh...",
       "placeholderModel": "Select model...",
       "placeholderUnknown": "Select media...",
-      "maxSelectionReached": "Maximum selection limit reached"
+      "maxSelectionReached": "Maximum selection limit reached",
+      "topResult": "Top result: {result}"
     },
     "valueControl": {
       "header": {
@@ -3217,6 +3265,7 @@
     "copyAssetsAndOpen": "Import assets & open workflow",
     "openWorkflow": "Open workflow",
     "openWithoutImporting": "Open without importing",
+    "opening": "Opening shared workflow...",
     "importFailed": "Failed to import workflow assets",
     "loadError": "Could not load this shared workflow. Please try again later."
   },

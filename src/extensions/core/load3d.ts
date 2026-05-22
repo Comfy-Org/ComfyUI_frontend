@@ -19,8 +19,10 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { NodeOutputWith } from '@/schemas/apiSchema'
+import type { NodeExecutionOutput, NodeOutputWith } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 type Matrix = number[][]
 type Load3dPreviewOutput = NodeOutputWith<{
@@ -426,6 +428,59 @@ useExtensionService().registerExtension({
   }
 })
 
+function applyPreview3DOutput(
+  node: LGraphNode,
+  result: NonNullable<Load3dPreviewOutput['result']>
+): void {
+  const filePath = result[0]
+  const cameraState = result[1]
+  const bgImagePath = result[2]
+  const extrinsics = result[3]
+  const intrinsics = result[4]
+  if (!filePath) return
+
+  const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
+  if (!modelWidget) return
+
+  const normalizedPath = filePath.replaceAll('\\', '/')
+
+  // Always re-apply, even when the file path matches: the same model file
+  // can arrive with a new camera state, background image, or matrices, and
+  // a path-only guard would silently drop those updates and diverge from
+  // the active `node.onExecuted` path which always reapplies.
+  modelWidget.value = normalizedPath
+  node.properties['Last Time Model File'] = normalizedPath
+
+  useLoad3d(node).waitForLoad3d((load3d) => {
+    const config = new Load3DConfiguration(load3d, node.properties)
+    config.configure({
+      loadFolder: 'output',
+      modelWidget,
+      cameraState,
+      bgImagePath,
+      silentOnNotFound: true
+    })
+
+    if (bgImagePath) load3d.setBackgroundImage(bgImagePath)
+
+    if (extrinsics && intrinsics) {
+      const targetGeneration = load3d.currentLoadGeneration
+      void load3d
+        .whenLoadIdle()
+        .then(() => {
+          if (load3d.currentLoadGeneration !== targetGeneration) return
+          load3d.setCameraFromMatrices(extrinsics, intrinsics)
+        })
+        .catch((error) => {
+          console.error(
+            'Failed to apply camera matrices from Preview3D output:',
+            error
+          )
+        })
+    }
+  })
+}
+
 useExtensionService().registerExtension({
   name: 'Comfy.Preview3D',
 
@@ -436,6 +491,20 @@ useExtensionService().registerExtension({
     if ('Preview3D' === nodeData.name) {
       // @ts-expect-error InputSpec is not typed correctly
       nodeData.input.required.image = ['PREVIEW_3D']
+    }
+  },
+
+  onNodeOutputsUpdated(
+    nodeOutputs: Record<NodeLocatorId, NodeExecutionOutput>
+  ) {
+    for (const [locatorId, output] of Object.entries(nodeOutputs)) {
+      const result = (output as Load3dPreviewOutput).result
+      if (!result?.[0]) continue
+
+      const node = getNodeByLocatorId(app.rootGraph, locatorId)
+      if (!node || node.constructor.comfyClass !== 'Preview3D') continue
+
+      applyPreview3DOutput(node, result)
     }
   },
 
