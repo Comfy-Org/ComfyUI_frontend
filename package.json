@@ -14,6 +14,8 @@
     "build:types": "cross-env NODE_OPTIONS='--max-old-space-size=8192' vite build --config vite.types.config.mts && node scripts/prepare-types.js",
     "build:analyze": "cross-env ANALYZE_BUNDLE=true pnpm build",
     "build": "cross-env NODE_OPTIONS='--max-old-space-size=8192' pnpm typecheck && vite build --config vite.config.mts",
+    "clean": "pnpm dlx rimraf dist dist-ssr coverage playwright-report blob-report test-results node_modules/.vite apps/desktop-ui/dist apps/website/dist",
+    "clean:all": "pnpm clean && pnpm dlx rimraf node_modules",
     "size:collect": "node scripts/size-collect.js",
     "size:report": "node scripts/size-report.js",
     "collect-i18n": "pnpm exec playwright test --config=playwright.i18n.config.ts",

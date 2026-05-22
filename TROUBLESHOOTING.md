@@ -21,9 +21,9 @@ flowchart TD
 
     C --> G{Tried quick fixes?}
     G -->|No| H[Run: pnpm i]
-    G -->|Still stuck| I[Run: pnpm dlx rimraf dist dist-ssr coverage playwright-report blob-report test-results node_modules/.vite apps/desktop-ui/dist apps/website/dist .turbo]
+    G -->|Still stuck| I[Run: pnpm clean]
     I --> J{Still stuck?}
-    J -->|Yes| K[Nuclear option:<br/>pnpm dlx rimraf node_modules<br/>&& pnpm i]
+    J -->|Yes| K[Nuclear option:<br/>pnpm clean:all<br/>&& pnpm i]
     J -->|No| L[Fixed!]
     H --> L
 
@@ -60,12 +60,12 @@ flowchart TD
 2. **Second attempt - Clean build cache:**
 
    ```bash
-   pnpm dlx rimraf dist dist-ssr coverage playwright-report blob-report test-results node_modules/.vite apps/desktop-ui/dist apps/website/dist .turbo
+   pnpm clean
    ```
 
 3. **Last resort - Full node_modules reset:**
    ```bash
-   pnpm dlx rimraf node_modules && pnpm i
+   pnpm clean:all && pnpm i
    ```
 
 **Why this happens:**
@@ -127,7 +127,7 @@ flowchart TD
 2. **Clean and reinstall:**
 
    ```bash
-   pnpm dlx rimraf dist dist-ssr coverage playwright-report blob-report test-results node_modules/.vite apps/desktop-ui/dist apps/website/dist .turbo && pnpm i
+   pnpm clean && pnpm i
    ```
 
 3. **Restart your IDE's TypeScript server**

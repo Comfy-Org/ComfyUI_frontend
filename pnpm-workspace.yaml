@@ -150,7 +150,6 @@ allowBuilds:
   '@tailwindcss/oxide': true
   core-js: false
   esbuild: true
-  nx: set this to true or false
   oxc-resolver: true
   protobufjs: false
   sharp: false
