@@ -233,5 +233,8 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   ['geometry_estimation', 'LoadMoGeModel', 'model_name'],
 
   // ---- ComfyUI core optical flow (RAFT) ----
-  ['optical_flow', 'OpticalFlowLoader', 'model_name']
+  ['optical_flow', 'OpticalFlowLoader', 'model_name'],
+
+  // ---- WanVideo (ComfyUI-WanVideoWrapper) ----
+  ['loras', 'WanVideoLoraSelect', 'lora']
 ] as const satisfies ReadonlyArray<readonly [string, string, string]>
