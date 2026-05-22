@@ -24,13 +24,6 @@
           <p class="m-0 text-sm text-muted">
             {{ t('oauth.consent.subtitle', { resource: resourceName }) }}
           </p>
-          <span
-            v-if="appTypeBadge"
-            class="mt-1 inline-flex items-center gap-1 rounded-full border border-solid border-muted px-2 py-0.5 text-xs text-muted"
-          >
-            <i :class="appTypeBadge.icon" aria-hidden="true" />
-            {{ appTypeBadge.label }}
-          </span>
         </div>
       </header>
 
@@ -219,23 +212,6 @@ const resourceName = computed(
     t('oauth.consent.resourceFallback')
 )
 
-const appTypeBadge = computed(() => {
-  const appType = challenge.value?.client_application_type
-  if (appType === 'native') {
-    return {
-      label: t('oauth.consent.appTypeNative'),
-      icon: 'icon-[lucide--monitor] size-3'
-    }
-  }
-  if (appType === 'web') {
-    return {
-      label: t('oauth.consent.appTypeWeb'),
-      icon: 'icon-[lucide--globe] size-3'
-    }
-  }
-  return null
-})
-
 const selectedWorkspaceIsValid = computed(() =>
   Boolean(
     selectedWorkspaceId.value &&
@@ -286,9 +262,7 @@ function messageForError(error: unknown): string {
     if (error.status === 403) return t('oauth.consent.errorScopeBroadening')
     if (error.status === 404) return t('oauth.consent.errorUnavailable')
   }
-  return error instanceof Error
-    ? error.message
-    : t('oauth.consent.genericError')
+  return t('oauth.consent.genericError')
 }
 
 async function submit(decision: 'allow' | 'deny') {

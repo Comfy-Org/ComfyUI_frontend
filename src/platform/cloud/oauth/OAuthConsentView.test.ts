@@ -73,8 +73,8 @@ const i18n = createI18n({
 const challenge: OAuthConsentChallenge = {
   oauth_request_id: '550e8400-e29b-41d4-a716-446655440000',
   csrf_token: 'csrf-token',
-  client_display_name: 'Cursor',
-  resource_display_name: 'ComfyUI MCP',
+  client_display_name: 'Comfy Desktop',
+  resource_display_name: 'Comfy Cloud',
   redirect_uri: 'http://127.0.0.1:50632/cb',
   client_application_type: 'native',
   scopes: ['mcp:tools:read', 'mcp:tools:call', 'mcp:unknown:test'],
@@ -112,8 +112,8 @@ describe('OAuthConsentView', () => {
 
     // Title is "<client> wants access". Subtitle is "Sign in to <resource>
     // to continue". Both are short and avoid repeating any brand name twice.
-    expect(screen.getByText('Cursor wants access')).toBeVisible()
-    expect(screen.getByText('Sign in to ComfyUI MCP to continue')).toBeVisible()
+    expect(screen.getByText('Comfy Desktop wants access')).toBeVisible()
+    expect(screen.getByText('Sign in to Comfy Cloud to continue')).toBeVisible()
     // Permissions section header is just the static word "Permissions".
     expect(screen.getByText('Permissions')).toBeVisible()
     // Known scopes render their human-readable labels. We deliberately
@@ -133,22 +133,6 @@ describe('OAuthConsentView', () => {
     // and verify it's the localhost callback their CLI is listening on.
     expect(screen.getByText('http://127.0.0.1:50632/cb')).toBeVisible()
     expect(screen.getByText("You'll be redirected to")).toBeVisible()
-  })
-
-  it('renders a Native badge when client_application_type is "native"', () => {
-    renderConsent()
-    expect(screen.getByText('Native app')).toBeVisible()
-  })
-
-  it('renders a Web badge when client_application_type is "web"', () => {
-    renderConsent({ client_application_type: 'web' })
-    expect(screen.getByText('Web app')).toBeVisible()
-  })
-
-  it('hides the application-type badge for legacy seeded clients', () => {
-    renderConsent({ client_application_type: undefined })
-    expect(screen.queryByText('Native app')).not.toBeInTheDocument()
-    expect(screen.queryByText('Web app')).not.toBeInTheDocument()
   })
 
   it('preselects the only workspace and submits with it', async () => {

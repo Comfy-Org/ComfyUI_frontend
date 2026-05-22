@@ -116,11 +116,9 @@ import { useRoute, useRouter } from 'vue-router'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { useOAuthPostLoginRedirect } from '@/platform/cloud/oauth/useOAuthPostLoginRedirect'
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
 import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
-import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
 import type { SignInData } from '@/schemas/signInSchema'
 import { getGoogleSsoBlockedReason } from '@/base/webviewDetection'
 
@@ -128,13 +126,16 @@ const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const authActions = useAuthActions()
-const { resumeOAuthIfNeeded } = useOAuthPostLoginRedirect()
 const isSecureContext = globalThis.isSecureContext
 const authError = ref('')
-const toastStore = useToastStore()
 const showEmailForm = ref(false)
 const { isFreeTierEnabled, freeTierCredits } = useFreeTierOnboarding()
 const googleSsoBlockedReason = getGoogleSsoBlockedReason()
+const { onAuthSuccess } = usePostAuthRedirect({
+  authError,
+  successSummary: 'Login Completed',
+  defaultRedirect: () => ({ name: 'cloud-user-check' })
+})
 
 function switchToEmailForm() {
   showEmailForm.value = true
@@ -148,55 +149,24 @@ const navigateToSignup = async () => {
   await router.push({ name: 'cloud-signup', query: route.query })
 }
 
-const onSuccess = async () => {
-  toastStore.add({
-    severity: 'success',
-    summary: 'Login Completed',
-    life: 2000
-  })
-
-  const oauthResume = await resumeOAuthIfNeeded(route.query)
-  if (oauthResume.kind === 'error') {
-    // authError renders only in email-form mode; surface the failure via
-    // a toast so social-login users (Google / GitHub) can see it too.
-    authError.value = oauthResume.message
-    toastStore.add({
-      severity: 'error',
-      summary: t('oauth.consent.sessionErrorToastSummary'),
-      detail: oauthResume.message,
-      life: 4000
-    })
-    return
-  }
-  if (oauthResume.kind === 'resumed') return
-
-  const previousFullPath = getSafePreviousFullPath(route.query)
-  if (previousFullPath) {
-    await router.replace(previousFullPath)
-    return
-  }
-
-  await router.push({ name: 'cloud-user-check' })
-}
-
 const signInWithGoogle = async () => {
   authError.value = ''
   if (await authActions.signInWithGoogle()) {
-    await onSuccess()
+    await onAuthSuccess()
   }
 }
 
 const signInWithGithub = async () => {
   authError.value = ''
   if (await authActions.signInWithGithub()) {
-    await onSuccess()
+    await onAuthSuccess()
   }
 }
 
 const signInWithEmail = async (values: SignInData) => {
   authError.value = ''
   if (await authActions.signInWithEmail(values.email, values.password)) {
-    await onSuccess()
+    await onAuthSuccess()
   }
 }
 </script>

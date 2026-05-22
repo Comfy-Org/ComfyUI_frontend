@@ -1,5 +1,4 @@
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { clearOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
@@ -107,7 +106,6 @@ export const useSessionCookie = () => {
    */
   const deleteSession = async (): Promise<void> => {
     if (!isCloud) return
-    clearOAuthRequestId()
 
     try {
       const response = await fetch(api.apiURL('/auth/session'), {

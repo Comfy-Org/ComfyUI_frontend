@@ -6,10 +6,9 @@ import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
 const baseChallenge: OAuthConsentChallenge = {
   oauth_request_id: '550e8400-e29b-41d4-a716-446655440000',
   csrf_token: 'preview-csrf-token',
-  client_display_name: 'Cursor',
-  resource_display_name: 'Comfy Cloud MCP',
+  client_display_name: 'Comfy Desktop',
+  resource_display_name: 'Comfy Cloud',
   redirect_uri: 'http://127.0.0.1:50632/cb',
-  client_application_type: 'native',
   scopes: ['mcp:tools:read', 'mcp:tools:call'],
   workspaces: [
     {
@@ -71,6 +70,15 @@ export const ManyWorkspaces: Story = {
   }
 }
 
+export const NoWorkspaces: Story = {
+  args: {
+    initialChallenge: {
+      ...baseChallenge,
+      workspaces: []
+    }
+  }
+}
+
 export const UnknownScope: Story = {
   args: {
     initialChallenge: {
@@ -80,33 +88,11 @@ export const UnknownScope: Story = {
   }
 }
 
-export const ClaudeDesktop: Story = {
+export const ComfyCli: Story = {
   args: {
     initialChallenge: {
       ...baseChallenge,
-      client_display_name: 'Claude Desktop'
-    }
-  }
-}
-
-export const WebClient: Story = {
-  args: {
-    initialChallenge: {
-      ...baseChallenge,
-      client_display_name: 'Comfy Studio',
-      client_application_type: 'web',
-      redirect_uri: 'https://studio.example.com/oauth/cb'
-    }
-  }
-}
-
-export const LegacyClientNoBadge: Story = {
-  args: {
-    // Pre-DCR seeded clients have no application_type — UI should hide
-    // the badge entirely rather than guess.
-    initialChallenge: {
-      ...baseChallenge,
-      client_application_type: undefined
+      client_display_name: 'Comfy CLI'
     }
   }
 }
