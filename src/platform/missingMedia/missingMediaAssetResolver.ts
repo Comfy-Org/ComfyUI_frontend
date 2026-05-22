@@ -5,6 +5,7 @@ import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
 import { getFilePathSeparatorVariants, joinFilePath } from '@/utils/formatUtil'
+import { isAbortError } from '@/utils/typeGuardUtil'
 import { getMediaPathDetectionNames } from './mediaPathDetectionUtil'
 
 const HISTORY_MEDIA_ASSETS_PAGE_SIZE = 200
@@ -47,26 +48,46 @@ export async function resolveMissingMediaAssetSources({
   }
 
   try {
-    const [inputAssets, generatedAssets] = await Promise.all([
-      abortSiblingsOnFailure(
-        assetService.getInputAssetsIncludingPublic(controller.signal),
-        controller
-      ),
-      abortSiblingsOnFailure(
-        includeGeneratedAssets
-          ? fetchGeneratedAssets(controller.signal, {
-              generatedMatchNames,
-              pathOptions
-            })
-          : Promise.resolve<AssetItem[]>([]),
-        controller
-      )
+    // Input assets (`/api/assets`) and generated assets (Cloud asset API or
+    // OSS `/history`) are independent oracles. Use `allSettled` so a failure
+    // in one — e.g. `/api/assets` 404 on a pre-BE-786 OSS instance, or zod
+    // schema skew during a BE-934 partial deploy — doesn't take down the
+    // other path. Each branch soft-degrades to an empty list; the caller
+    // then marks affected candidates missing instead of swallowing the
+    // whole verification with a toast.
+    const [inputResult, generatedResult] = await Promise.allSettled([
+      assetService.getInputAssetsIncludingPublic(controller.signal),
+      includeGeneratedAssets
+        ? fetchGeneratedAssets(controller.signal, {
+            generatedMatchNames,
+            pathOptions
+          })
+        : Promise.resolve<AssetItem[]>([])
     ])
 
-    return { inputAssets, generatedAssets }
+    return {
+      inputAssets: unwrapAssetFetchResult(inputResult, 'inputAssets'),
+      generatedAssets: unwrapAssetFetchResult(
+        generatedResult,
+        'generatedAssets'
+      )
+    }
   } finally {
     signal?.removeEventListener('abort', abortFromCaller)
   }
+}
+
+function unwrapAssetFetchResult(
+  result: PromiseSettledResult<AssetItem[]>,
+  label: 'inputAssets' | 'generatedAssets'
+): AssetItem[] {
+  if (result.status === 'fulfilled') return result.value
+  if (isAbortError(result.reason)) return []
+  console.warn(
+    `[missingMedia] ${label} fetch failed; degrading to empty list.`,
+    result.reason
+  )
+  return []
 }
 
 interface FetchGeneratedAssetsOptions {
@@ -225,18 +246,6 @@ async function fetchGeneratedHistoryAssets(
     }
 
     offset = requestedOffset + historyPage.jobs.length
-  }
-}
-
-async function abortSiblingsOnFailure<T>(
-  promise: Promise<T>,
-  controller: AbortController
-): Promise<T> {
-  try {
-    return await promise
-  } catch (err) {
-    if (!controller.signal.aborted) controller.abort(err)
-    throw err
   }
 }
 
