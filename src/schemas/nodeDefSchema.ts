@@ -160,11 +160,11 @@ const zStringInputSpec = z.tuple([
  */
 const zComboInputSpec = z.tuple([
   z.array(zComboOption),
-  zComboInputOptions.optional()
+  zComboInputOptionsValidated.optional()
 ])
 const zComboInputSpecV2 = z.tuple([
   z.literal('COMBO'),
-  zComboInputOptions.optional()
+  zComboInputOptionsValidated.optional()
 ])
 
 export function isComboInputSpecV1(

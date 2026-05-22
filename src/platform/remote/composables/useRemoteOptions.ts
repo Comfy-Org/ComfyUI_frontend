@@ -35,6 +35,9 @@ async function executeRemoteRequest(
   if (descriptor.client === 'comfyApi') {
     const authStore = useAuthStore()
     const authHeader = await authStore.getAuthHeader()
+    if (signal.aborted) {
+      throw new DOMException('Aborted', 'AbortError')
+    }
     headers = authHeader ? { ...authHeader } : undefined
   }
   const url = resolveUrl(descriptor, getComfyApiBaseUrl())
