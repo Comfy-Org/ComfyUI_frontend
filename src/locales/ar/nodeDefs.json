@@ -119,6 +119,7 @@
     }
   },
   "AdjustBrightness": {
+    "description": "ضبط سطوع الصورة.",
     "display_name": "ضبط السطوع",
     "inputs": {
       "factor": {
@@ -138,6 +139,7 @@
     }
   },
   "AdjustContrast": {
+    "description": "ضبط تباين الصورة.",
     "display_name": "ضبط التباين",
     "inputs": {
       "factor": {
@@ -176,6 +178,7 @@
     }
   },
   "AudioAdjustVolume": {
+    "description": "ضبط مستوى صوت الملف الصوتي بمقدار محدد بوحدة ديسيبل (dB).",
     "display_name": "ضبط مستوى الصوت",
     "inputs": {
       "audio": {
@@ -576,6 +579,9 @@
       },
       "model_auto_downscale": {
         "name": "التقليل التلقائي للحجم"
+      },
+      "model_auto_upscale": {
+        "name": "auto_upscale"
       },
       "model_duration": {
         "name": "المدة"
@@ -1547,6 +1553,7 @@
     }
   },
   "CenterCropImages": {
+    "description": "قص الصورة من المنتصف إلى الأبعاد المحددة.",
     "display_name": "قص الصور من المنتصف",
     "inputs": {
       "height": {
@@ -1665,6 +1672,9 @@
       },
       "model_max_tokens": {
         "name": "max_tokens"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
       },
       "model_temperature": {
         "name": "temperature"
@@ -5699,6 +5709,7 @@
     }
   },
   "ImageCropV2": {
+    "description": "قص الصورة إلى الأبعاد المحددة.",
     "display_name": "قص الصورة",
     "inputs": {
       "crop_region": {
@@ -5719,6 +5730,7 @@
     }
   },
   "ImageDeduplication": {
+    "description": "إزالة الصور المكررة أو المتشابهة جداً من القائمة.",
     "display_name": "إزالة تكرار الصور",
     "inputs": {
       "images": {
@@ -5773,6 +5785,7 @@
     }
   },
   "ImageGrid": {
+    "description": "ترتيب عدة صور في شبكة.",
     "display_name": "شبكة الصور",
     "inputs": {
       "cell_height": {
@@ -8366,6 +8379,7 @@
     }
   },
   "LoadImageDataSetFromFolder": {
+    "description": "تحميل مجموعة بيانات من الصور من مجلد محدد وإرجاع قائمة بالصور. الصيغ المدعومة: PNG، JPG، JPEG، WEBP.",
     "display_name": "تحميل مجموعة بيانات الصور من مجلد",
     "inputs": {
       "folder": {
@@ -8409,6 +8423,7 @@
     }
   },
   "LoadImageTextDataSetFromFolder": {
+    "description": "تحميل مجموعة بيانات من أزواج الصور والتعليقات النصية من مجلد محدد وإرجاعها كقائمة. الصيغ المدعومة: PNG، JPG، JPEG، WEBP.",
     "display_name": "تحميل مجموعة بيانات الصور والنصوص من مجلد",
     "inputs": {
       "folder": {
@@ -8463,6 +8478,7 @@
     }
   },
   "LoadTrainingDataset": {
+    "description": "تحميل مجموعة بيانات التدريب المشفرة (الفضاء الكامن + الشروط) من القرص لاستخدامها في التدريب.",
     "display_name": "تحميل مجموعة بيانات التدريب",
     "inputs": {
       "folder_name": {
@@ -9246,6 +9262,7 @@
     }
   },
   "MakeTrainingDataset": {
+    "description": "ترميز الصور باستخدام VAE والنصوص باستخدام CLIP لإنشاء مجموعة بيانات تدريبية من الفضاء الكامن والشروط.",
     "display_name": "إنشاء مجموعة بيانات تدريبية",
     "inputs": {
       "clip": {
@@ -9337,14 +9354,15 @@
     }
   },
   "MediaPipeFaceLandmarker": {
+    "description": "اكتشاف معالم الوجه باستخدام نموذج MediaPipe.",
     "display_name": "MediaPipe Face Landmarker",
     "inputs": {
       "detector_variant": {
         "name": "detector_variant",
         "tooltip": "نطاق كاشف الوجه. 'short' مخصص للوجوه القريبة (ضمن ~٢ متر من الكاميرا)؛ 'full' يغطي الوجوه البعيدة/الأصغر (حتى ~٥ متر) لكنه أبطأ. 'both' يشغل كلا الكاشفين ويحتفظ بالكاشف الذي وجد وجوهًا أكثر في كل إطار (تكلفة كشف مضاعفة تقريبًا)."
       },
-      "face_landmarker": {
-        "name": "face_landmarker"
+      "face_detection_model": {
+        "name": "face_detection_model"
       },
       "image": {
         "name": "الصورة"
@@ -9374,6 +9392,7 @@
     }
   },
   "MediaPipeFaceMask": {
+    "description": "رسم قناع باستخدام معالم الوجه.",
     "display_name": "MediaPipe Face Mask",
     "inputs": {
       "face_landmarks": {
@@ -9391,6 +9410,7 @@
     }
   },
   "MediaPipeFaceMeshVisualize": {
+    "description": "رسم شبكة معالم الوجه على الصورة المدخلة.",
     "display_name": "تصوير شبكة وجه MediaPipe",
     "inputs": {
       "color": {
@@ -9423,6 +9443,7 @@
     }
   },
   "MergeImageLists": {
+    "description": "دمج عدة قوائم صور في قائمة واحدة.",
     "display_name": "دمج قوائم الصور",
     "inputs": {
       "images": {
@@ -9877,6 +9898,7 @@
     }
   },
   "MoGeInference": {
+    "description": "تشغيل MoGe على صورة واحدة لتقدير العمق والهندسة.",
     "display_name": "استدلال MoGe",
     "inputs": {
       "apply_mask": {
@@ -9913,6 +9935,7 @@
     }
   },
   "MoGePanoramaInference": {
+    "description": "تشغيل MoGe على صورة بانورامية إكويركتانجولار عن طريق تقسيمها إلى ١٢ منظوراً، إجراء الاستدلال على كل منها، ودمج النتائج في خريطة عمق واحدة.",
     "display_name": "استدلال MoGe بانوراما",
     "inputs": {
       "batch_size": {
@@ -9947,6 +9970,7 @@
     }
   },
   "MoGePointMapToMesh": {
+    "description": "تحويل خريطة نقاط MoGe إلى شبكة ثلاثية الأبعاد.",
     "display_name": "MoGe تحويل خريطة النقاط إلى شبكة",
     "inputs": {
       "batch_index": {
@@ -9976,6 +10000,7 @@
     }
   },
   "MoGeRender": {
+    "description": "عرض خريطة عمق أو خريطة عادية من بيانات الهندسة.",
     "display_name": "MoGe عرض",
     "inputs": {
       "moge_geometry": {
@@ -12264,6 +12289,7 @@
     }
   },
   "NormalizeImages": {
+    "description": "تطبيع الصور باستخدام المتوسط والانحراف المعياري.",
     "display_name": "تطبيع الصور",
     "inputs": {
       "images": {
@@ -12585,6 +12611,39 @@
       },
       "size": {
         "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterLLMNode": {
+    "description": "توليد ردود نصية عبر OpenRouter. يوجه إلى مجموعة مختارة من النماذج الشهيرة من xAI، DeepSeek، Qwen، Mistral، Z.AI (GLM)، Moonshot (Kimi)، وPerplexity Sonar.",
+    "display_name": "OpenRouter LLM",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "نموذج OpenRouter المستخدم لتوليد الرد."
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "إدخال نصي للنموذج."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذرة العينة. اضبطها على 0 للتجاهل. معظم النماذج تعتبرها مجرد إشارة."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "تعليمات أساسية تحدد سلوك النموذج."
       }
     },
     "outputs": {
@@ -13406,6 +13465,7 @@
     }
   },
   "RandomCropImages": {
+    "description": "قص الصورة بشكل عشوائي إلى الأبعاد المحددة.",
     "display_name": "قص عشوائي للصور",
     "inputs": {
       "control_after_generate": {
@@ -14268,6 +14328,7 @@
     }
   },
   "ResizeImagesByLongerEdge": {
+    "description": "تغيير حجم الصور بحيث يتطابق الحافة الأطول مع البعد المحدد مع الحفاظ على نسبة العرض إلى الارتفاع.",
     "display_name": "تغيير حجم الصور حسب الحافة الأطول",
     "inputs": {
       "images": {
@@ -14287,6 +14348,7 @@
     }
   },
   "ResizeImagesByShorterEdge": {
+    "description": "تغيير حجم الصور بحيث يتطابق الحافة الأقصر مع البُعد المحدد مع الحفاظ على نسبة العرض إلى الارتفاع.",
     "display_name": "تغيير حجم الصور حسب الحافة الأقصر",
     "inputs": {
       "images": {
@@ -14306,6 +14368,7 @@
     }
   },
   "ResolutionBucket": {
+    "description": "تجميع الـ latent والتهيئات في مجموعات (buckets)",
     "display_name": "تجميع الدقة",
     "inputs": {
       "conditioning": {
@@ -15650,6 +15713,7 @@
     }
   },
   "SaveImageDataSetToFolder": {
+    "description": "حفظ مجموعة بيانات من الصور في مجلد محدد. الصيغ المدعومة: PNG.",
     "display_name": "حفظ مجموعة بيانات الصور في مجلد",
     "inputs": {
       "filename_prefix": {
@@ -15667,6 +15731,7 @@
     }
   },
   "SaveImageTextDataSetToFolder": {
+    "description": "حفظ مجموعة بيانات من أزواج الصور والتعليقات النصية في مجلد محدد. تُحفظ الصور كملفات PNG والتعليقات كملفات TXT بنفس بادئة اسم الملف.",
     "display_name": "حفظ مجموعة بيانات الصور والنصوص في مجلد",
     "inputs": {
       "filename_prefix": {
@@ -15737,6 +15802,7 @@
     }
   },
   "SaveTrainingDataset": {
+    "description": "حفظ مجموعة بيانات التدريب المشفرة (latents + التهيئة) على القرص لتحميلها بكفاءة أثناء التدريب.",
     "display_name": "حفظ مجموعة بيانات التدريب",
     "inputs": {
       "conditioning": {
@@ -15923,6 +15989,7 @@
     }
   },
   "ShuffleDataset": {
+    "description": "تبديل ترتيب الصور في القائمة بشكل عشوائي.",
     "display_name": "تبديل ترتيب مجموعة بيانات الصور",
     "inputs": {
       "control_after_generate": {
@@ -15945,6 +16012,7 @@
     }
   },
   "ShuffleImageTextDataset": {
+    "description": "تبديل ترتيب أزواج الصورة والنص في القائمة بشكل عشوائي.",
     "display_name": "تبديل ترتيب مجموعة بيانات الصور والنصوص",
     "inputs": {
       "control_after_generate": {
@@ -19445,6 +19513,7 @@
     }
   },
   "VoxelToMesh": {
+    "description": "تحويل شبكة فوكسل إلى شبكة مضلعة (mesh).",
     "display_name": "تحويل الفوكسل إلى شبكة",
     "inputs": {
       "algorithm": {
@@ -19464,6 +19533,7 @@
     }
   },
   "VoxelToMeshBasic": {
+    "description": "تحويل شبكة فوكسل إلى شبكة مضلعة (mesh).",
     "display_name": "تحويل الفوكسل إلى شبكة أساسية",
     "inputs": {
       "threshold": {

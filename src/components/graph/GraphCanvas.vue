@@ -541,31 +541,25 @@ onMounted(async () => {
     }
 
     vueNodeLifecycle.setupEmptyGraphListener()
+
+    // Load color palette
+    colorPaletteStore.customPalettes = settingStore.get(
+      'Comfy.CustomColorPalettes'
+    )
+
+    // Restore saved workflow and workflow tabs state
+    await workflowPersistence.initializeWorkflow()
+    await workflowPersistence.restoreWorkflowTabsState()
+    await workflowPersistence.loadTemplateFromUrlIfPresent()
   } finally {
     workspaceStore.spinner = false
   }
+  await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
 
   comfyApp.canvas.onSelectionChange = useChainCallback(
     comfyApp.canvas.onSelectionChange,
     () => canvasStore.updateSelectedItems()
   )
-
-  // Load color palette
-  colorPaletteStore.customPalettes = settingStore.get(
-    'Comfy.CustomColorPalettes'
-  )
-
-  // Restore saved workflow and workflow tabs state
-  await workflowPersistence.initializeWorkflow()
-  await workflowPersistence.restoreWorkflowTabsState()
-
-  const sharedWorkflowLoadStatus =
-    await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
-
-  // Load template from URL if present
-  if (sharedWorkflowLoadStatus === 'not-present') {
-    await workflowPersistence.loadTemplateFromUrlIfPresent()
-  }
 
   // Accept workspace invite from URL if present (e.g., ?invite=TOKEN)
   // WorkspaceAuthGate ensures flag state is resolved before GraphCanvas mounts

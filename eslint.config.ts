@@ -76,7 +76,6 @@ export default defineConfig([
   {
     ignores: [
       '.i18nrc.cjs',
-      '.nx/*',
       '**/vite.config.*.timestamp*',
       '**/vitest.config.*.timestamp*',
       'components.d.ts',

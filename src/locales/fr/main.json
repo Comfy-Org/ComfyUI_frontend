@@ -800,7 +800,7 @@
     "CONTROL_NET": "RESEAU_DE_CONTROLE",
     "CURVE": "COURBE",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
-    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_DETECTION_MODEL": "MODÈLE_DE_DÉTECTION_DE_VISAGE",
     "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FICHIER_3D",
     "FILE_3D_FBX": "FICHIER_3D_FBX",
@@ -2280,6 +2280,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2296,6 +2297,7 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "ajustements",
     "advanced": "avancé",
     "api node": "nœud api",
     "attention_experiments": "expériences_d'attention",
@@ -3623,7 +3625,8 @@
       "placeholderMesh": "Sélectionner un mesh...",
       "placeholderModel": "Sélectionner un modèle...",
       "placeholderUnknown": "Sélectionner un média...",
-      "placeholderVideo": "Sélectionner une vidéo..."
+      "placeholderVideo": "Sélectionner une vidéo...",
+      "topResult": "Meilleur résultat : {result}"
     },
     "valueControl": {
       "decrement": "Décrémenter la valeur",
