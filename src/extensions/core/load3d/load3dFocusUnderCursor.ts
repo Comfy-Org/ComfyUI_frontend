@@ -55,6 +55,7 @@ function getNDCFromPointer(
   region: RenderRegion,
   pointer: { x: number; y: number }
 ): THREE.Vector2 | null {
+  if (region.width <= 0 || region.height <= 0) return null
   const rect = canvas.getBoundingClientRect()
   // rect dimensions reflect any ancestor CSS transforms (e.g. graph zoom),
   // while clientWidth/Height stay in logical CSS px. Convert the pointer back

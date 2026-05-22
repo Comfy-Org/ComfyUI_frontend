@@ -53,6 +53,7 @@ export class ControlsManager implements ControlsManagerInterface {
       this.controls.target.copy(endTarget)
       this.camera.position.copy(endPosition)
       this.controls.update()
+      this.requestRender?.()
       this.eventManager.emitEvent('cameraChanged', this.buildCameraState())
       return
     }
