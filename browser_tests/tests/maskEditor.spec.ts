@@ -310,7 +310,6 @@ test('Will not use stale litegraph previews', async ({ comfyPage }) => {
     await comfyPage.page.evaluate((pageImage) => {
       const output = { images: [pageImage] }
       const detail = { node: '1', output, prompt_id: '', display_node: '1' }
-      console.error(JSON.stringify(detail))
       app!.api.dispatchCustomEvent('executed', detail)
       app!.canvas.setDirty(true)
     }, image)
