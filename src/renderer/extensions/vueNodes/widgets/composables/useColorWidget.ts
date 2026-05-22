@@ -8,9 +8,8 @@ import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 
 export const useColorWidget = (): ComfyWidgetConstructorV2 => {
   return (node: LGraphNode, inputSpec: InputSpecV2): IColorWidget => {
-    const colorSpec = inputSpec as ColorInputSpec
-    const { name, options } = colorSpec
-    const defaultValue = colorSpec.default ?? options?.default ?? '#000000'
+    const { name, default: defaultValue = '#000000' } =
+      inputSpec as ColorInputSpec
 
     const widget = node.addWidget('color', name, defaultValue, () => {}, {
       serialize: true

@@ -44,11 +44,7 @@ const zColorInputSpec = zBaseInputOptions.extend({
   type: z.literal('COLOR'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  options: z
-    .object({
-      default: z.string().optional()
-    })
-    .optional()
+  default: z.string().optional()
 })
 
 const zImageInputSpec = zBaseInputOptions.extend({
@@ -84,11 +80,7 @@ const zMarkdownInputSpec = zBaseInputOptions.extend({
   type: z.literal('MARKDOWN'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  options: z
-    .object({
-      content: z.string().optional()
-    })
-    .optional()
+  default: z.string().optional()
 })
 
 const zChartInputSpec = zBaseInputOptions.extend({
@@ -118,13 +110,9 @@ const zTextareaInputSpec = zBaseInputOptions.extend({
   type: z.literal('TEXTAREA'),
   name: z.string(),
   isOptional: z.boolean().optional(),
-  options: z
-    .object({
-      rows: z.number().optional(),
-      cols: z.number().optional(),
-      default: z.string().optional()
-    })
-    .optional()
+  rows: z.number().optional(),
+  cols: z.number().optional(),
+  default: z.string().optional()
 })
 
 const zCurvePoint = z.tuple([z.number(), z.number()])

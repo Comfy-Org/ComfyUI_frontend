@@ -8,20 +8,17 @@ import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 
 export const useTextareaWidget = (): ComfyWidgetConstructorV2 => {
   return (node: LGraphNode, inputSpec: InputSpecV2): ITextareaWidget => {
-    const { name, options = {} } = inputSpec as TextareaInputSpec
+    const textareaSpec = inputSpec as TextareaInputSpec
+    const { name, default: defaultValue = '' } = textareaSpec
+    const widgetOptions = {
+      rows: textareaSpec.rows ?? 5,
+      cols: textareaSpec.cols ?? 50
+    }
 
-    const widget = node.addWidget(
-      'textarea',
-      name,
-      options.default || '',
-      () => {},
-      {
-        serialize: true,
-        rows: options.rows || 5,
-        cols: options.cols || 50,
-        ...options
-      }
-    ) as ITextareaWidget
+    const widget = node.addWidget('textarea', name, defaultValue, () => {}, {
+      serialize: true,
+      ...widgetOptions
+    }) as ITextareaWidget
 
     return widget
   }
