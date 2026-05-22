@@ -1,4 +1,5 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { isCloud } from '@/platform/distribution/types'
 import { isCivitaiUrl } from '@/utils/formatUtil'
 
 /**
@@ -169,6 +170,24 @@ export function getAssetUserDescription(asset: AssetItem): string {
  */
 export function getAssetFilename(asset: AssetItem): string {
   return getStringProperty(asset, 'filename') ?? asset.name
+}
+
+/**
+ * Resolves the *stored* filename for an asset — the filename used to
+ * construct asset paths (for /view URLs, widget values), not the
+ * user-facing display name.
+ *
+ * Cloud stores assets with `asset_hash` as the filename (content-
+ * addressed); OSS uses `name` (filesystem-backed). After BE-933/934
+ * emit `file_path` on both backends and the cloud spec sync brings
+ * the field into generated types, this collapses to
+ * `asset.file_path ?? asset.name` (no isCloud branch).
+ *
+ * For display use {@link getAssetDisplayFilename}; for serialized
+ * identifiers use {@link getAssetFilename}.
+ */
+export function getAssetStoredFilename(asset: AssetItem): string {
+  return isCloud && asset.asset_hash ? asset.asset_hash : asset.name
 }
 
 /**
