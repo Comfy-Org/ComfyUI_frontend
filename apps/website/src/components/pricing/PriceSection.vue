@@ -121,7 +121,7 @@ const activePlanIndex = ref(0)
 </script>
 
 <template>
-  <section class="px-4 py-16 lg:px-20 lg:py-14">
+  <section class="max-w-9xl mx-auto px-4 py-16 lg:px-20 lg:py-14">
     <!-- Header -->
     <div class="mx-auto mb-8 max-w-3xl text-center lg:mb-10">
       <h1
@@ -135,7 +135,7 @@ const activePlanIndex = ref(0)
     </div>
 
     <!-- Mobile plan tabs -->
-    <div class="scrollbar-none mb-6 flex gap-2 overflow-x-auto lg:hidden">
+    <div class="mb-6 flex scrollbar-none gap-2 overflow-x-auto lg:hidden">
       <button
         v-for="(plan, index) in plans"
         :key="plan.id"
