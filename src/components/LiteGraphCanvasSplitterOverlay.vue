@@ -196,12 +196,12 @@ const centerPanelDefaultSize = computed(() =>
   bothSidePanelsVisible.value ? 100 - 2 * SIDE_PANEL_SIZE : CENTER_PANEL_SIZE
 )
 
-const sidebarTabKey = computed(() => {
-  return unifiedWidth.value
+const sidebarTabKey = computed(() =>
+  unifiedWidth.value
     ? 'unified-sidebar'
     : // When no tab is active, use a default key to maintain state
       (activeSidebarTabId.value ?? 'default-sidebar')
-})
+)
 
 const sidebarStateKey = computed(() => {
   const base = sidebarTabKey.value

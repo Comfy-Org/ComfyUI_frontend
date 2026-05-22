@@ -1,4 +1,4 @@
-import type { EssentialsCategory } from '@/constants/essentialsNodes'
+import type { EssentialsPath } from '@/constants/essentialsNodes'
 import { t } from '@/i18n'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
@@ -60,26 +60,35 @@ const EXACT_NAME_MAP: Record<string, string> = {
  * (after removing the SubgraphBlueprint. prefix) starts with the key.
  * Ordered longest-first so more specific prefixes match before shorter ones.
  */
+const GENERATE_IMAGE: EssentialsPath = {
+  section: 'Generate',
+  subgroup: 'Image'
+}
+const GENERATE_VIDEO: EssentialsPath = {
+  section: 'Generate',
+  subgroup: 'Video'
+}
+
 const BLUEPRINT_PREFIX_MAP: [
   prefix: string,
   displayNameKey: string,
-  category: EssentialsCategory
+  path: EssentialsPath
 ][] = [
-  // Image Generation
-  ['image_inpainting_', 'essentials.inpaintImage', 'image generation'],
-  ['image_outpainting_', 'essentials.outpaintImage', 'image generation'],
-  ['image_edit', 'essentials.imageToImage', 'image generation'],
-  ['text_to_image', 'essentials.textToImage', 'image generation'],
-  ['pose_to_image', 'essentials.poseToImage', 'image generation'],
-  ['canny_to_image', 'essentials.cannyToImage', 'image generation'],
-  ['depth_to_image', 'essentials.depthToImage', 'image generation'],
+  // Generate / Image
+  ['image_inpainting_', 'essentials.inpaintImage', GENERATE_IMAGE],
+  ['image_outpainting_', 'essentials.outpaintImage', GENERATE_IMAGE],
+  ['image_edit', 'essentials.imageToImage', GENERATE_IMAGE],
+  ['text_to_image', 'essentials.textToImage', GENERATE_IMAGE],
+  ['pose_to_image', 'essentials.poseToImage', GENERATE_IMAGE],
+  ['canny_to_image', 'essentials.cannyToImage', GENERATE_IMAGE],
+  ['depth_to_image', 'essentials.depthToImage', GENERATE_IMAGE],
 
-  // Video Generation
-  ['text_to_video', 'essentials.textToVideo', 'video generation'],
-  ['image_to_video', 'essentials.imageToVideo', 'video generation'],
-  ['pose_to_video', 'essentials.poseToVideo', 'video generation'],
-  ['canny_to_video', 'essentials.cannyToVideo', 'video generation'],
-  ['depth_to_video', 'essentials.depthToVideo', 'video generation']
+  // Generate / Video
+  ['text_to_video', 'essentials.textToVideo', GENERATE_VIDEO],
+  ['image_to_video', 'essentials.imageToVideo', GENERATE_VIDEO],
+  ['pose_to_video', 'essentials.poseToVideo', GENERATE_VIDEO],
+  ['canny_to_video', 'essentials.cannyToVideo', GENERATE_VIDEO],
+  ['depth_to_video', 'essentials.depthToVideo', GENERATE_VIDEO]
 ]
 
 function resolveBlueprintDisplayName(
@@ -112,6 +121,7 @@ export function resolveBlueprintIcon(nodeName: string): string | undefined {
 /**
  * Extracts the provider/model suffix from a blueprint name for disambiguation.
  * E.g. `SubgraphBlueprint.text_to_image_flux_1` → `"Flux 1"`
+ * @knipIgnoreUsedByStackedPR
  */
 export function resolveBlueprintSuffix(nodeName: string): string | undefined {
   if (!nodeName.startsWith(BLUEPRINT_PREFIX)) return undefined
@@ -130,17 +140,17 @@ export function resolveBlueprintSuffix(nodeName: string): string | undefined {
 }
 
 /**
- * Returns the essentials category for a blueprint node based on its name,
+ * Returns the essentials path for a blueprint node based on its name,
  * or `undefined` if the blueprint doesn't belong in the essentials tab.
  */
-export function resolveBlueprintEssentialsCategory(
+export function resolveBlueprintEssentialsPath(
   nodeName: string
-): EssentialsCategory | undefined {
+): EssentialsPath | undefined {
   if (!nodeName.startsWith(BLUEPRINT_PREFIX)) return undefined
   const blueprintName = nodeName.slice(BLUEPRINT_PREFIX.length)
-  for (const [prefix, , category] of BLUEPRINT_PREFIX_MAP) {
+  for (const [prefix, , path] of BLUEPRINT_PREFIX_MAP) {
     if (blueprintName.startsWith(prefix)) {
-      return category
+      return path
     }
   }
   return undefined
