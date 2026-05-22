@@ -220,17 +220,6 @@ export function useTemplateFiltering(
     })
   })
 
-  const getVramMetric = (template: TemplateInfo) => {
-    if (
-      typeof template.vram === 'number' &&
-      Number.isFinite(template.vram) &&
-      template.vram > 0
-    ) {
-      return template.vram
-    }
-    return Number.POSITIVE_INFINITY
-  }
-
   watch(
     filteredByRunsOn,
     (templates) => {
@@ -278,22 +267,6 @@ export function useTemplateFiltering(
           const dateA = new Date(a.date || '1970-01-01')
           const dateB = new Date(b.date || '1970-01-01')
           return dateB.getTime() - dateA.getTime()
-        })
-      case 'vram-low-to-high':
-        return templates.sort((a, b) => {
-          const vramA = getVramMetric(a)
-          const vramB = getVramMetric(b)
-
-          if (vramA === vramB) {
-            const nameA = a.title || a.name || ''
-            const nameB = b.title || b.name || ''
-            return nameA.localeCompare(nameB)
-          }
-
-          if (vramA === Number.POSITIVE_INFINITY) return 1
-          if (vramB === Number.POSITIVE_INFINITY) return -1
-
-          return vramA - vramB
         })
       case 'model-size-low-to-high':
         return templates.sort((a, b) => {
