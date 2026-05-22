@@ -159,49 +159,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
   set value(value: IBaseWidget['value']) {
     this.setHostWidgetState(value)
-
-    const linkedWidgets = this.getLinkedInputWidgets()
-    if (linkedWidgets.length > 0) {
-      const widgetStore = useWidgetValueStore()
-      let didUpdateState = false
-      for (const linkedWidget of linkedWidgets) {
-        const state = widgetStore.getWidget(
-          this.graphId,
-          linkedWidget.nodeId,
-          linkedWidget.widgetName
-        )
-        if (state) {
-          state.value = value
-          didUpdateState = true
-        }
-      }
-
-      const resolved = this.resolveDeepest()
-      if (resolved) {
-        const resolvedState = widgetStore.getWidget(
-          this.graphId,
-          stripGraphPrefix(String(resolved.node.id)),
-          resolved.widget.name
-        )
-        if (resolvedState) {
-          resolvedState.value = value
-          didUpdateState = true
-        }
-      }
-
-      if (didUpdateState) return
-    }
-
-    const state = this.getWidgetState()
-    if (state) {
-      state.value = value
-      return
-    }
-
-    const resolved = this.resolveAtHost()
-    if (resolved && isWidgetValue(value)) {
-      resolved.widget.value = value
-    }
   }
 
   private getHostWidgetState(): WidgetState | undefined {

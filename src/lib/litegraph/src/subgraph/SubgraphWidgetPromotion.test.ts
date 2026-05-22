@@ -854,12 +854,12 @@ describe('SubgraphWidgetPromotion', () => {
           expect: { promptSeed: 123456 }
         },
         {
-          name: 'Vue + fixed: pushes Vue value to source seed',
+          name: 'Vue + fixed: host-wins — does not push Vue value into source seed (ADR 0009)',
           editVia: 'vue',
           controlMode: 'fixed',
           controlMarker: false,
           seedHostValue: 123456,
-          expect: { sourceSeed: 123456 }
+          expect: { sourceSeed: 0 }
         },
         {
           name: 'Vue + increment + afterQueued: processed widgets reflect increment',
