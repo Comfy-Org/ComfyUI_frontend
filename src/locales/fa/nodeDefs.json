@@ -119,6 +119,7 @@
     }
   },
   "AdjustBrightness": {
+    "description": "تنظیم روشنایی یک تصویر.",
     "display_name": "تنظیم روشنایی",
     "inputs": {
       "factor": {
@@ -138,6 +139,7 @@
     }
   },
   "AdjustContrast": {
+    "description": "تنظیم کنتراست یک تصویر.",
     "display_name": "تنظیم کنتراست",
     "inputs": {
       "factor": {
@@ -176,6 +178,7 @@
     }
   },
   "AudioAdjustVolume": {
+    "description": "تنظیم حجم صدا به میزان مشخص بر حسب دسی‌بل (dB).",
     "display_name": "تنظیم حجم صدا",
     "inputs": {
       "audio": {
@@ -576,6 +579,9 @@
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
+      },
+      "model_auto_upscale": {
+        "name": "auto_upscale"
       },
       "model_duration": {
         "name": "مدت زمان"
@@ -1547,6 +1553,7 @@
     }
   },
   "CenterCropImages": {
+    "description": "برش مرکزی تصویر به ابعاد مشخص شده.",
     "display_name": "برش مرکزی تصاویر",
     "inputs": {
       "height": {
@@ -1665,6 +1672,9 @@
       },
       "model_max_tokens": {
         "name": "حداکثر توکن‌ها"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
       },
       "model_temperature": {
         "name": "دمای مدل"
@@ -5699,6 +5709,7 @@
     }
   },
   "ImageCropV2": {
+    "description": "برش تصویر به ابعاد مشخص شده.",
     "display_name": "برش تصویر",
     "inputs": {
       "crop_region": {
@@ -5719,6 +5730,7 @@
     }
   },
   "ImageDeduplication": {
+    "description": "حذف تصاویر تکراری یا بسیار مشابه از یک لیست.",
     "display_name": "حذف تصاویر تکراری",
     "inputs": {
       "images": {
@@ -5773,6 +5785,7 @@
     }
   },
   "ImageGrid": {
+    "description": "چیدمان چندین تصویر در یک ساختار شبکه‌ای.",
     "display_name": "شبکه تصاویر",
     "inputs": {
       "cell_height": {
@@ -8366,6 +8379,7 @@
     }
   },
   "LoadImageDataSetFromFolder": {
+    "description": "بارگذاری مجموعه‌ای از تصاویر از یک پوشه مشخص و بازگرداندن لیستی از تصاویر. فرمت‌های پشتیبانی‌شده: PNG، JPG، JPEG، WEBP.",
     "display_name": "بارگذاری مجموعه تصاویر از پوشه",
     "inputs": {
       "folder": {
@@ -8409,6 +8423,7 @@
     }
   },
   "LoadImageTextDataSetFromFolder": {
+    "description": "بارگذاری مجموعه‌ای از جفت‌های تصویر و کپشن متنی از یک پوشه مشخص و بازگرداندن آن‌ها به صورت لیست. فرمت‌های پشتیبانی‌شده: PNG، JPG، JPEG، WEBP.",
     "display_name": "بارگذاری مجموعه داده تصویر و متن از پوشه",
     "inputs": {
       "folder": {
@@ -8435,6 +8450,20 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "بارگذاری MediaPipe Face Landmarker",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "safetensors مربوط به Face Landmarker از مسیر models/mediapipe/."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadMoGeModel": {
     "display_name": "بارگذاری مدل MoGe",
     "inputs": {
@@ -8449,6 +8478,7 @@
     }
   },
   "LoadTrainingDataset": {
+    "description": "بارگذاری دیتاست آموزش رمزگذاری‌شده (latents + conditioning) از دیسک برای استفاده در آموزش.",
     "display_name": "بارگذاری مجموعه داده آموزشی",
     "inputs": {
       "folder_name": {
@@ -9232,6 +9262,7 @@
     }
   },
   "MakeTrainingDataset": {
+    "description": "رمزگذاری تصاویر با VAE و متون با CLIP برای ساخت دیتاست آموزشی از latents و conditioning.",
     "display_name": "ایجاد دیتاست آموزش",
     "inputs": {
       "clip": {
@@ -9322,7 +9353,97 @@
       }
     }
   },
+  "MediaPipeFaceLandmarker": {
+    "description": "شناسایی نقاط کلیدی صورت با استفاده از مدل MediaPipe.",
+    "display_name": "MediaPipe Face Landmarker",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "محدوده تشخیص چهره. 'short' برای چهره‌های نزدیک (تا حدود ۲ متر از دوربین) تنظیم شده است؛ 'full' چهره‌های دورتر/کوچکتر (تا حدود ۵ متر) را پوشش می‌دهد اما کندتر است. 'both' هر دو تشخیص‌دهنده را اجرا می‌کند و هر کدام که چهره‌های بیشتری در هر فریم پیدا کند را نگه می‌دارد (هزینه تشخیص تقریباً ۲ برابر)."
+      },
+      "face_detection_model": {
+        "name": "face_detection_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "آستانه امتیاز BlazeFace. برای شناسایی چهره‌های کوچک یا پوشیده مقدار را کاهش دهید."
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "رفتار هر فریم زمانی که تشخیص در یک دسته ناموفق باشد. 'empty' فریم را بدون چهره باقی می‌گذارد. 'previous' آخرین تشخیص موفق را کپی می‌کند. 'interpolate' نقاط/باکس/شکل‌های ترکیبی را بین فریم‌های موفق مجاور میان‌یابی می‌کند. چند چهره: جفت‌سازی چهره‌ها بین فریم‌ها با نزدیک‌ترین مرکز باکس به صورت حریصانه."
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "حداکثر تعداد چهره برای بازگشت در هر فریم. ۰ = بدون محدودیت (همه چهره‌های شناسایی‌شده بازگردانده می‌شوند)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "description": "ترسیم ماسک از نقاط کلیدی صورت.",
+    "display_name": "ماسک چهره MediaPipe",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = اجتماع face_oval+lips+eyes+irises (که به دلیل احاطه شدن توسط face_oval به همان face_oval تبدیل می‌شود). 'custom' = فعال/غیرفعال کردن هر ناحیه به صورت جداگانه برای ترکیب‌هایی مانند lips+eyes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "description": "ترسیم مش نقاط کلیدی صورت روی تصویر ورودی.",
+    "display_name": "بصری‌سازی Face Mesh MediaPipe",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = بیضی+چشم‌ها+ابروها+لب‌ها+عنبیه‌ها+بینی. 'fill' = چندضلعی face_oval پر (ماسک سیلوئت). 'custom' = فعال/غیرفعال کردن هر ویژگی به صورت جداگانه (شامل 'tesselation'، شبکه سیمی کامل با ۲۵۴۷ لبه)."
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "در صورت عدم اتصال، یک بوم سیاه استفاده خواهد شد."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "شعاع نقطه‌های نشانه‌گذاری بر حسب پیکسل. ۰ یعنی رسم نقطه غیرفعال است."
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "ضخامت خطوط لبه بر حسب پیکسل. ۰ یعنی رسم لبه غیرفعال است."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MergeImageLists": {
+    "description": "ادغام چندین لیست تصویر در یک لیست.",
     "display_name": "ادغام فهرست تصاویر",
     "inputs": {
       "images": {
@@ -9777,6 +9898,7 @@
     }
   },
   "MoGeInference": {
+    "description": "اجرای MoGe روی یک تصویر برای تخمین عمق و هندسه.",
     "display_name": "استنتاج MoGe",
     "inputs": {
       "apply_mask": {
@@ -9813,6 +9935,7 @@
     }
   },
   "MoGePanoramaInference": {
+    "description": "اجرای MoGe روی یک پانورامای equirectangular با تقسیم آن به ۱۲ نمای پرسپکتیو، اجرای inference روی هر کدام و ادغام نتایج در یک نقشه عمق واحد.",
     "display_name": "استنتاج پانورامای MoGe",
     "inputs": {
       "batch_size": {
@@ -9847,6 +9970,7 @@
     }
   },
   "MoGePointMapToMesh": {
+    "description": "تبدیل نقشه نقاط MoGe به یک مش سه‌بعدی.",
     "display_name": "MoGe Point Map to Mesh",
     "inputs": {
       "batch_index": {
@@ -9876,6 +10000,7 @@
     }
   },
   "MoGeRender": {
+    "description": "رندر نقشه عمق یا نقشه نرمال از داده‌های هندسی.",
     "display_name": "MoGe Render",
     "inputs": {
       "moge_geometry": {
@@ -12164,6 +12289,7 @@
     }
   },
   "NormalizeImages": {
+    "description": "نرمال‌سازی تصاویر با استفاده از میانگین و انحراف معیار.",
     "display_name": "نرمال‌سازی تصاویر",
     "inputs": {
       "images": {
@@ -12485,6 +12611,39 @@
       },
       "size": {
         "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterLLMNode": {
+    "description": "تولید پاسخ متنی از طریق OpenRouter. مسیریابی به مجموعه‌ای منتخب از مدل‌های محبوب xAI، DeepSeek، Qwen، Mistral، Z.AI (GLM)، Moonshot (Kimi) و Perplexity Sonar.",
+    "display_name": "OpenRouter LLM",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدل OpenRouter مورد استفاده برای تولید پاسخ."
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "ورودی متنی برای مدل."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذر نمونه‌گیری. برای حذف، مقدار ۰ را قرار دهید. اکثر مدل‌ها این مقدار را فقط به عنوان راهنما در نظر می‌گیرند."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "دستورالعمل‌های پایه که رفتار مدل را تعیین می‌کند."
       }
     },
     "outputs": {
@@ -13306,6 +13465,7 @@
     }
   },
   "RandomCropImages": {
+    "description": "برش تصادفی تصویر به ابعاد مشخص شده.",
     "display_name": "برش تصادفی تصاویر",
     "inputs": {
       "control_after_generate": {
@@ -13989,6 +14149,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "یک ماسک پیش‌زمینه ایجاد می‌کند تا پس‌زمینه را با استفاده از مدل حذف پس‌زمینه از تصویر حذف کند.",
     "display_name": "حذف پس‌زمینه",
     "inputs": {
       "bg_removal_model": {
@@ -14167,6 +14328,7 @@
     }
   },
   "ResizeImagesByLongerEdge": {
+    "description": "تغییر اندازه تصاویر به گونه‌ای که لبه بلندتر با بعد مشخص شده مطابقت داشته باشد و نسبت ابعاد حفظ شود.",
     "display_name": "تغییر اندازه تصاویر بر اساس ضلع بلندتر",
     "inputs": {
       "images": {
@@ -14186,6 +14348,7 @@
     }
   },
   "ResizeImagesByShorterEdge": {
+    "description": "تغییر اندازه تصاویر به گونه‌ای که لبه کوتاه‌تر با ابعاد مشخص شده مطابقت داشته باشد و نسبت ابعاد حفظ شود.",
     "display_name": "تغییر اندازه تصاویر بر اساس ضلع کوتاه‌تر",
     "inputs": {
       "images": {
@@ -14205,6 +14368,7 @@
     }
   },
   "ResolutionBucket": {
+    "description": "گروه‌بندی latentها و conditioningها در سطل‌ها",
     "display_name": "دسته‌بندی بر اساس وضوح",
     "inputs": {
       "conditioning": {
@@ -15549,6 +15713,7 @@
     }
   },
   "SaveImageDataSetToFolder": {
+    "description": "ذخیره یک مجموعه داده تصویر در پوشه‌ای مشخص. فرمت‌های پشتیبانی‌شده: PNG.",
     "display_name": "ذخیره مجموعه تصاویر در پوشه",
     "inputs": {
       "filename_prefix": {
@@ -15566,6 +15731,7 @@
     }
   },
   "SaveImageTextDataSetToFolder": {
+    "description": "ذخیره یک مجموعه داده شامل جفت‌های تصویر و کپشن متنی در پوشه‌ای مشخص. تصاویر به صورت فایل PNG و کپشن‌ها به صورت فایل TXT با همان پیشوند نام فایل ذخیره می‌شوند.",
     "display_name": "ذخیره مجموعه تصویر و متن در پوشه",
     "inputs": {
       "filename_prefix": {
@@ -15636,6 +15802,7 @@
     }
   },
   "SaveTrainingDataset": {
+    "description": "ذخیره مجموعه داده آموزش کدگذاری‌شده (latentها + conditioning) روی دیسک برای بارگذاری سریع‌تر در زمان آموزش.",
     "display_name": "ذخیره مجموعه داده آموزشی",
     "inputs": {
       "conditioning": {
@@ -15822,6 +15989,7 @@
     }
   },
   "ShuffleDataset": {
+    "description": "ترتیب تصاویر را در یک لیست به صورت تصادفی جابجا می‌کند.",
     "display_name": "درهم‌ریختن دیتاست تصویر",
     "inputs": {
       "control_after_generate": {
@@ -15844,6 +16012,7 @@
     }
   },
   "ShuffleImageTextDataset": {
+    "description": "ترتیب جفت‌های تصویر-متن را در یک لیست به صورت تصادفی جابجا می‌کند.",
     "display_name": "درهم‌ریختن دیتاست تصویر-متن",
     "inputs": {
       "control_after_generate": {
@@ -16656,6 +16825,23 @@
     "outputs": {
       "0": {
         "name": "شامل",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "همانند متد فرمت رشته در پایتون. از تمام گزینه‌ها و ویژگی‌های فرمت پایتون پشتیبانی می‌کند.",
+    "display_name": "فرمت متن",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -19327,6 +19513,7 @@
     }
   },
   "VoxelToMesh": {
+    "description": "تبدیل شبکه voxel به mesh.",
     "display_name": "VoxelToMesh",
     "inputs": {
       "algorithm": {
@@ -19346,6 +19533,7 @@
     }
   },
   "VoxelToMeshBasic": {
+    "description": "تبدیل شبکه voxel به mesh.",
     "display_name": "VoxelToMeshBasic",
     "inputs": {
       "threshold": {

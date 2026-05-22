@@ -800,6 +800,8 @@
     "CONTROL_NET": "コントロールネット",
     "CURVE": "カーブ",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "顔検出モデル",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -1745,6 +1747,10 @@
     "outdatedVersionGeneric": "このワークフローは新しいバージョンのComfyUIで作成されました。一部のノードが正しく動作しない場合があります。",
     "unknownVersion": "不明"
   },
+  "logsTerminal": {
+    "loadError": "ログを読み込めません。ComfyUI バックエンドが最新であることを確認してください。",
+    "resyncError": "バックエンド再接続後にログを再同期できませんでした。再度コンソールを開いて再試行してください。"
+  },
   "maintenance": {
     "None": "なし",
     "OK": "OK",
@@ -2274,6 +2280,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2290,8 +2297,8 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "調整",
     "advanced": "高度な機能",
-    "animation": "アニメーション",
     "api node": "apiノード",
     "attention_experiments": "アテンション実験",
     "audio": "オーディオ",
@@ -2314,6 +2321,7 @@
     "detection": "検出",
     "edit_models": "モデル編集",
     "experimental": "実験的",
+    "filters": "フィルター",
     "flux": "flux",
     "geometry_estimation": "geometry_estimation",
     "gligen": "グライジェン",
@@ -2337,13 +2345,11 @@
     "noise": "ノイズ",
     "operations": "操作",
     "photomaker": "photomaker",
-    "postprocessing": "ポストプロセッシング",
     "preprocessors": "前処理",
     "primitive": "プリミティブ",
     "qwen": "qwen",
     "samplers": "サンプラー",
     "sampling": "サンプリング",
-    "save": "保存",
     "schedulers": "スケジューラー",
     "scheduling": "スケジューリング",
     "sd3": "SD3",
@@ -2441,7 +2447,8 @@
     "nonPublicAssetsWarningLine1": "このワークフローには非公開のアセットが含まれています。",
     "nonPublicAssetsWarningLine2": "ワークフローを開くと、これらがライブラリにインポートされます",
     "openWithoutImporting": "インポートせずに開く",
-    "openWorkflow": "ワークフローを開く"
+    "openWorkflow": "ワークフローを開く",
+    "opening": "共有ワークフローを開いています..."
   },
   "painter": {
     "background": "背景",
@@ -3618,7 +3625,8 @@
       "placeholderMesh": "メッシュを選択...",
       "placeholderModel": "モデルを選択...",
       "placeholderUnknown": "メディアを選択...",
-      "placeholderVideo": "動画を選択..."
+      "placeholderVideo": "動画を選択...",
+      "topResult": "最上位の結果: {result}"
     },
     "valueControl": {
       "decrement": "値を減少",

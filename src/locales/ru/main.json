@@ -800,6 +800,8 @@
     "CONTROL_NET": "CONTROL_NET",
     "CURVE": "КРИВАЯ",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "МОДЕЛЬ_ОПРЕДЕЛЕНИЯ_ЛИЦА",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -1745,6 +1747,10 @@
     "outdatedVersionGeneric": "Этот рабочий процесс был создан в более новой версии ComfyUI. Некоторые узлы могут работать некорректно.",
     "unknownVersion": "неизвестно"
   },
+  "logsTerminal": {
+    "loadError": "Не удалось загрузить логи, пожалуйста, убедитесь, что вы обновили ваш ComfyUI backend.",
+    "resyncError": "Не удалось повторно синхронизировать логи после переподключения backend. Откройте консоль заново, чтобы повторить попытку."
+  },
   "maintenance": {
     "None": "Нет",
     "OK": "OK",
@@ -2274,6 +2280,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2290,8 +2297,8 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "корректировки",
     "advanced": "расширенный",
-    "animation": "анимация",
     "api node": "api-узел",
     "attention_experiments": "эксперименты_внимания",
     "audio": "аудио",
@@ -2314,6 +2321,7 @@
     "detection": "детекция",
     "edit_models": "редактировать_модели",
     "experimental": "экспериментальное",
+    "filters": "фильтры",
     "flux": "flux",
     "geometry_estimation": "оценка_геометрии",
     "gligen": "gligen",
@@ -2337,13 +2345,11 @@
     "noise": "шум",
     "operations": "операции",
     "photomaker": "photomaker",
-    "postprocessing": "постобработка",
     "preprocessors": "предобработчики",
     "primitive": "примитив",
     "qwen": "qwen",
     "samplers": "семплеры",
     "sampling": "выборка",
-    "save": "сохранить",
     "schedulers": "schedulers",
     "scheduling": "scheduling",
     "sd3": "sd3",
@@ -2441,7 +2447,8 @@
     "nonPublicAssetsWarningLine1": "Этот рабочий процесс содержит непубличные ресурсы.",
     "nonPublicAssetsWarningLine2": "Они будут импортированы в вашу библиотеку при открытии рабочего процесса",
     "openWithoutImporting": "Открыть без импорта",
-    "openWorkflow": "Открыть рабочий процесс"
+    "openWorkflow": "Открыть рабочий процесс",
+    "opening": "Открытие общего рабочего процесса..."
   },
   "painter": {
     "background": "Фон",
@@ -3618,7 +3625,8 @@
       "placeholderMesh": "Выберите mesh...",
       "placeholderModel": "Выбрать модель...",
       "placeholderUnknown": "Выбрать медиа...",
-      "placeholderVideo": "Выбрать видео..."
+      "placeholderVideo": "Выбрать видео...",
+      "topResult": "Лучший результат: {result}"
     },
     "valueControl": {
       "decrement": "Уменьшить значение",

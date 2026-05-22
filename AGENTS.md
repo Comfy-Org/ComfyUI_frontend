@@ -35,7 +35,7 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 
 ## Monorepo Architecture
 
-The project uses **Nx** for build orchestration and task management
+The project uses **pnpm workspaces** for monorepo organization and native tool CLIs for task execution
 
 ## Package Manager
 
@@ -237,7 +237,6 @@ See @docs/testing/\*.md for detailed patterns.
 - ComfyUI: <https://docs.comfy.org>
 - Electron: <https://www.electronjs.org/docs/latest/>
 - Wiki: <https://deepwiki.com/Comfy-Org/ComfyUI_frontend/1-overview>
-- Nx: <https://nx.dev/docs/reference/nx-commands>
 - [Practical Test Pyramid](https://martinfowler.com/articles/practical-test-pyramid.html)
 
 ## Architecture Decision Records

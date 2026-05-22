@@ -800,6 +800,8 @@
     "CONTROL_NET": "ControlNet",
     "CURVE": "曲线",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "人脸检测模型",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -1745,6 +1747,10 @@
     "outdatedVersionGeneric": "这个工作流由新版 ComfyUI 创建，部分节点可能无法正常运行。",
     "unknownVersion": "未知"
   },
+  "logsTerminal": {
+    "loadError": "无法加载日志，请确保已更新您的ComfyUI后端。",
+    "resyncError": "后端重新连接后无法重新同步日志。请重新打开控制台以重试。"
+  },
   "maintenance": {
     "None": "无",
     "OK": "确定",
@@ -2274,6 +2280,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2290,8 +2297,8 @@
     "Vidu": "Vidu",
     "Wan": "Wan万相",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "调整",
     "advanced": "高级",
-    "animation": "动画",
     "api node": "api 节点",
     "attention_experiments": "注意力实验",
     "audio": "音频",
@@ -2314,6 +2321,7 @@
     "detection": "检测",
     "edit_models": "编辑模型",
     "experimental": "实验性",
+    "filters": "滤镜",
     "flux": "Flux",
     "geometry_estimation": "几何估计",
     "gligen": "GLIGEN",
@@ -2337,13 +2345,11 @@
     "noise": "噪波",
     "operations": "操作",
     "photomaker": "PhotoMaker",
-    "postprocessing": "后处理",
     "preprocessors": "预处理器",
     "primitive": "基础",
     "qwen": "Qwen千问",
     "samplers": "采样器",
     "sampling": "采样",
-    "save": "保存",
     "schedulers": "调度器",
     "scheduling": "调度",
     "sd3": "SD3",
@@ -2441,7 +2447,8 @@
     "nonPublicAssetsWarningLine1": "此工作流包含非公开资源。",
     "nonPublicAssetsWarningLine2": "打开工作流时，这些资源将被导入到你的库中",
     "openWithoutImporting": "不导入直接打开",
-    "openWorkflow": "打开工作流"
+    "openWorkflow": "打开工作流",
+    "opening": "正在打开共享工作流..."
   },
   "painter": {
     "background": "背景",
@@ -3630,7 +3637,8 @@
       "placeholderMesh": "选择网格...",
       "placeholderModel": "请选择模型...",
       "placeholderUnknown": "请选择媒体...",
-      "placeholderVideo": "请选择视频..."
+      "placeholderVideo": "请选择视频...",
+      "topResult": "最佳结果：{result}"
     },
     "valueControl": {
       "decrement": "递减值",

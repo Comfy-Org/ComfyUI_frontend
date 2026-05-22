@@ -119,6 +119,7 @@
     }
   },
   "AdjustBrightness": {
+    "description": "Bir görüntünün parlaklığını ayarla.",
     "display_name": "Parlaklığı Ayarla",
     "inputs": {
       "factor": {
@@ -138,6 +139,7 @@
     }
   },
   "AdjustContrast": {
+    "description": "Bir görüntünün kontrastını ayarla.",
     "display_name": "Kontrastı Ayarla",
     "inputs": {
       "factor": {
@@ -176,6 +178,7 @@
     }
   },
   "AudioAdjustVolume": {
+    "description": "Sesin seviyesini belirtilen desibel (dB) miktarında ayarla.",
     "display_name": "Ses Ses Seviyesi Ayarla",
     "inputs": {
       "audio": {
@@ -576,6 +579,9 @@
       },
       "model_auto_downscale": {
         "name": "otomatik_küçültme"
+      },
+      "model_auto_upscale": {
+        "name": "auto_upscale"
       },
       "model_duration": {
         "name": "süre"
@@ -1547,6 +1553,7 @@
     }
   },
   "CenterCropImages": {
+    "description": "Bir görüntüyü belirtilen boyutlara merkezden kırp.",
     "display_name": "Ortadan Kırp Görseller",
     "inputs": {
       "height": {
@@ -1665,6 +1672,9 @@
       },
       "model_max_tokens": {
         "name": "maksimum_token"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
       },
       "model_temperature": {
         "name": "sıcaklık"
@@ -5699,6 +5709,7 @@
     }
   },
   "ImageCropV2": {
+    "description": "Bir görüntüyü belirtilen boyutlara kırp.",
     "display_name": "Görüntü Kırpma",
     "inputs": {
       "crop_region": {
@@ -5719,6 +5730,7 @@
     }
   },
   "ImageDeduplication": {
+    "description": "Bir listedeki yinelenen veya çok benzer görüntüleri kaldır.",
     "display_name": "Görsel Çoğaltma Kaldırma",
     "inputs": {
       "images": {
@@ -5773,6 +5785,7 @@
     }
   },
   "ImageGrid": {
+    "description": "Birden fazla görüntüyü bir ızgara düzeninde yerleştir.",
     "display_name": "Görsel Izgarası",
     "inputs": {
       "cell_height": {
@@ -8366,6 +8379,7 @@
     }
   },
   "LoadImageDataSetFromFolder": {
+    "description": "Belirtilen bir klasörden bir görüntü veri seti yükle ve bir görüntü listesi olarak döndür. Desteklenen formatlar: PNG, JPG, JPEG, WEBP.",
     "display_name": "Klasörden Görsel Veri Kümesi Yükle",
     "inputs": {
       "folder": {
@@ -8409,6 +8423,7 @@
     }
   },
   "LoadImageTextDataSetFromFolder": {
+    "description": "Belirtilen bir klasörden görüntü ve metin başlığı çiftlerinden oluşan bir veri seti yükle ve bunları bir liste olarak döndür. Desteklenen formatlar: PNG, JPG, JPEG, WEBP.",
     "display_name": "Klasörden Görsel ve Metin Veri Kümesi Yükle",
     "inputs": {
       "folder": {
@@ -8435,6 +8450,20 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "MediaPipe Yüz İşaretleyicisini Yükle",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "models/mediapipe/ klasöründen Face Landmarker safetensors dosyası."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadMoGeModel": {
     "display_name": "MoGe Modelini Yükle",
     "inputs": {
@@ -8449,6 +8478,7 @@
     }
   },
   "LoadTrainingDataset": {
+    "description": "Eğitimde kullanılmak üzere diskten kodlanmış eğitim veri setini (latentler + koşullandırma) yükle.",
     "display_name": "Eğitim Verisetini Yükle",
     "inputs": {
       "folder_name": {
@@ -9232,6 +9262,7 @@
     }
   },
   "MakeTrainingDataset": {
+    "description": "Görüntüleri VAE ile ve metinleri CLIP ile kodlayarak latentler ve koşullandırmalardan oluşan bir eğitim veri seti oluştur.",
     "display_name": "Eğitim Veriseti Oluştur",
     "inputs": {
       "clip": {
@@ -9322,7 +9353,97 @@
       }
     }
   },
+  "MediaPipeFaceLandmarker": {
+    "description": "MediaPipe modeli kullanarak yüz işaret noktalarını tespit eder.",
+    "display_name": "MediaPipe Yüz İşaretleyici",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "Yüz algılayıcı aralığı. 'short' yakın yüzler için ayarlanmıştır (kamera ~2 m içinde); 'full' daha uzak/küçük yüzleri kapsar (en fazla ~5 m) fakat daha yavaştır. 'both' her iki algılayıcıyı da çalıştırır ve kare başına daha fazla yüz bulanı seçer (~2× algılama maliyeti)."
+      },
+      "face_detection_model": {
+        "name": "face_detection_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "BlazeFace skor eşiği. Küçük/gizli yüzleri yakalamak için düşürün."
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "Bir toplu işlemde algılama başarısız olduğunda kare başına davranış. 'empty' kareyi yüzsüz bırakır. 'previous' en son başarılı algılamayı kopyalar. 'interpolate' başarılı kareler arasında landmark/bbox/blendshape'leri enterpole eder. Çoklu yüz: kareler arasında yüzleri açgözlü bbox-merkez NN ile eşleştirir."
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "Kare başına döndürülecek maksimum yüz sayısı. 0 = sınır yok (tüm algılananları döndür)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "description": "Yüz işaret noktalarından bir maske çizer.",
+    "display_name": "MediaPipe Yüz Maskesi",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = face_oval+lips+eyes+irises birleşimi (hepsini kapsadığı için face_oval'a indirgenir). 'custom' = her bölgeyi ayrı ayrı açıp kapatmak için, örneğin dudak+göz gibi kombinasyonlar."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "description": "Girdi görüntüsü üzerinde yüz işaret noktaları ağını çizer.",
+    "display_name": "MediaPipe Yüz Ağı Görselleştir",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = oval+gözler+kaşlar+dudaklar+irisler+burun. 'fill' = dolu face_oval çokgeni (silüet maskesi). 'custom' = her özelliği ayrı ayrı açıp kapatmak için (2547 kenarlı tam tel kafes için 'tesselation' dahil)."
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Bağlanmazsa siyah bir tuval kullanılır."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "Landmark nokta yarıçapı (piksel cinsinden). 0 nokta çizimini devre dışı bırakır."
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "Kenar çizgi kalınlığı (piksel cinsinden). 0 kenar çizimini devre dışı bırakır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MergeImageLists": {
+    "description": "Birden fazla görüntü listesini birleştir.",
     "display_name": "Görüntü Listelerini Birleştir",
     "inputs": {
       "images": {
@@ -9777,6 +9898,7 @@
     }
   },
   "MoGeInference": {
+    "description": "Tek bir görüntü üzerinde MoGe çalıştırarak derinlik ve geometrisini tahmin et.",
     "display_name": "MoGe Çıkarımı",
     "inputs": {
       "apply_mask": {
@@ -9813,6 +9935,7 @@
     }
   },
   "MoGePanoramaInference": {
+    "description": "MoGe'yi equirectangular bir panoramada çalıştırmak için görüntüyü 12 perspektif görünüme böl, her birinde çıkarım yap ve sonuçları tek bir derinlik haritasında birleştir.",
     "display_name": "MoGe Panorama Çıkarımı",
     "inputs": {
       "batch_size": {
@@ -9847,6 +9970,7 @@
     }
   },
   "MoGePointMapToMesh": {
+    "description": "Bir MoGe nokta haritasını 3B mesh'e dönüştür.",
     "display_name": "MoGe Nokta Haritasından Mesh'e",
     "inputs": {
       "batch_index": {
@@ -9876,6 +10000,7 @@
     }
   },
   "MoGeRender": {
+    "description": "Geometri verisinden bir derinlik haritası veya normal haritası oluştur.",
     "display_name": "MoGe Render",
     "inputs": {
       "moge_geometry": {
@@ -12164,6 +12289,7 @@
     }
   },
   "NormalizeImages": {
+    "description": "Görüntüleri ortalama ve standart sapma ile normalize et.",
     "display_name": "Görüntüleri Normalleştir",
     "inputs": {
       "images": {
@@ -12485,6 +12611,39 @@
       },
       "size": {
         "name": "boyut"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterLLMNode": {
+    "description": "OpenRouter üzerinden metin yanıtları üret. xAI, DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi) ve Perplexity Sonar gibi popüler modellerden seçilmiş bir gruba yönlendirir.",
+    "display_name": "OpenRouter LLM",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Yanıtı üretmek için kullanılan OpenRouter modeli."
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Model için metin girişi."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Örnekleme için tohum. 0 olarak ayarlanırsa atlanır. Çoğu model bunu yalnızca bir ipucu olarak kullanır."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Modelin davranışını belirleyen temel talimatlar."
       }
     },
     "outputs": {
@@ -13306,6 +13465,7 @@
     }
   },
   "RandomCropImages": {
+    "description": "Bir görüntüyü rastgele belirtilen boyutlara kırp.",
     "display_name": "Rastgele Kırpılmış Görseller",
     "inputs": {
       "control_after_generate": {
@@ -13989,6 +14149,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "Bir arka plan kaldırma modeli kullanarak bir görüntüden arka planı kaldırmak için bir ön plan maskesi oluşturur.",
     "display_name": "Arka Planı Kaldır",
     "inputs": {
       "bg_removal_model": {
@@ -14167,6 +14328,7 @@
     }
   },
   "ResizeImagesByLongerEdge": {
+    "description": "Görüntüleri, uzun kenarı belirtilen boyuta gelecek şekilde oranı koruyarak yeniden boyutlandır.",
     "display_name": "Görüntüleri Uzun Kenara Göre Yeniden Boyutlandır",
     "inputs": {
       "images": {
@@ -14186,6 +14348,7 @@
     }
   },
   "ResizeImagesByShorterEdge": {
+    "description": "Görüntüleri, kısa kenarı belirtilen boyuta uyacak şekilde oranı koruyarak yeniden boyutlandır.",
     "display_name": "Görüntüleri Kısa Kenara Göre Yeniden Boyutlandır",
     "inputs": {
       "images": {
@@ -14205,6 +14368,7 @@
     }
   },
   "ResolutionBucket": {
+    "description": "Latentleri ve koşullandırmaları gruplara ayır",
     "display_name": "Çözünürlük Kovası",
     "inputs": {
       "conditioning": {
@@ -15549,6 +15713,7 @@
     }
   },
   "SaveImageDataSetToFolder": {
+    "description": "Bir görüntü veri setini belirtilen klasöre kaydet. Desteklenen formatlar: PNG.",
     "display_name": "Görüntü Veri Setini Klasöre Kaydet",
     "inputs": {
       "filename_prefix": {
@@ -15566,6 +15731,7 @@
     }
   },
   "SaveImageTextDataSetToFolder": {
+    "description": "Görüntü ve metin başlıklarından oluşan çiftleri belirtilen klasöre kaydet. Görüntüler PNG dosyası olarak, başlıklar ise aynı dosya adı ön ekiyle TXT dosyası olarak kaydedilir.",
     "display_name": "Görüntü ve Metin Veri Setini Klasöre Kaydet",
     "inputs": {
       "filename_prefix": {
@@ -15636,6 +15802,7 @@
     }
   },
   "SaveTrainingDataset": {
+    "description": "Kodlanmış eğitim veri setini (latentler + koşullandırma) eğitim sırasında verimli yükleme için diske kaydet.",
     "display_name": "Eğitim Veri Setini Kaydet",
     "inputs": {
       "conditioning": {
@@ -15822,6 +15989,7 @@
     }
   },
   "ShuffleDataset": {
+    "description": "Bir listedeki görüntülerin sırasını rastgele karıştır.",
     "display_name": "Görüntü Veri Setini Karıştır",
     "inputs": {
       "control_after_generate": {
@@ -15844,6 +16012,7 @@
     }
   },
   "ShuffleImageTextDataset": {
+    "description": "Bir listedeki görüntü-metin çiftlerinin sırasını rastgele karıştır.",
     "display_name": "Görüntü-Metin Veri Setini Karıştır",
     "inputs": {
       "control_after_generate": {
@@ -16656,6 +16825,23 @@
     "outputs": {
       "0": {
         "name": "içerir",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "Python'un string format metoduyla aynıdır. Python'un tüm biçimlendirme seçeneklerini ve özelliklerini destekler.",
+    "display_name": "Metni Biçimlendir",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -19327,6 +19513,7 @@
     }
   },
   "VoxelToMesh": {
+    "description": "Bir voxel ızgarasını mesh'e dönüştürür.",
     "display_name": "VokseldenAğa",
     "inputs": {
       "algorithm": {
@@ -19346,6 +19533,7 @@
     }
   },
   "VoxelToMeshBasic": {
+    "description": "Bir voxel ızgarasını mesh'e dönüştürür.",
     "display_name": "TemelVokseldenAğa",
     "inputs": {
       "threshold": {

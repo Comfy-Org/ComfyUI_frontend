@@ -119,6 +119,7 @@
     }
   },
   "AdjustBrightness": {
+    "description": "画像の明るさを調整します。",
     "display_name": "明るさを調整",
     "inputs": {
       "factor": {
@@ -138,6 +139,7 @@
     }
   },
   "AdjustContrast": {
+    "description": "画像のコントラストを調整します。",
     "display_name": "コントラストを調整",
     "inputs": {
       "factor": {
@@ -176,6 +178,7 @@
     }
   },
   "AudioAdjustVolume": {
+    "description": "オーディオの音量をデシベル（dB）単位で指定した量だけ調整します。",
     "display_name": "オーディオ音量調整",
     "inputs": {
       "audio": {
@@ -576,6 +579,9 @@
       },
       "model_auto_downscale": {
         "name": "自動ダウンスケール"
+      },
+      "model_auto_upscale": {
+        "name": "auto_upscale"
       },
       "model_duration": {
         "name": "継続時間"
@@ -1547,6 +1553,7 @@
     }
   },
   "CenterCropImages": {
+    "description": "画像を指定したサイズで中央から切り抜きます。",
     "display_name": "中央で画像を切り抜き",
     "inputs": {
       "height": {
@@ -1665,6 +1672,9 @@
       },
       "model_max_tokens": {
         "name": "最大トークン数"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
       },
       "model_temperature": {
         "name": "温度"
@@ -5699,6 +5709,7 @@
     }
   },
   "ImageCropV2": {
+    "description": "画像を指定したサイズに切り抜きます。",
     "display_name": "画像切り抜き",
     "inputs": {
       "crop_region": {
@@ -5719,6 +5730,7 @@
     }
   },
   "ImageDeduplication": {
+    "description": "リストから重複または非常に類似した画像を削除します。",
     "display_name": "画像の重複排除",
     "inputs": {
       "images": {
@@ -5773,6 +5785,7 @@
     }
   },
   "ImageGrid": {
+    "description": "複数の画像をグリッドレイアウトで配置します。",
     "display_name": "画像グリッド",
     "inputs": {
       "cell_height": {
@@ -8366,6 +8379,7 @@
     }
   },
   "LoadImageDataSetFromFolder": {
+    "description": "指定したフォルダから画像データセットを読み込み、画像のリストとして返します。対応フォーマット：PNG、JPG、JPEG、WEBP。",
     "display_name": "フォルダから画像データセットを読み込む",
     "inputs": {
       "folder": {
@@ -8409,6 +8423,7 @@
     }
   },
   "LoadImageTextDataSetFromFolder": {
+    "description": "指定したフォルダから画像とテキストキャプションのペアのデータセットを読み込み、リストとして返します。対応フォーマット：PNG、JPG、JPEG、WEBP。",
     "display_name": "フォルダから画像とテキストデータセットを読み込む",
     "inputs": {
       "folder": {
@@ -8435,6 +8450,20 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "MediaPipe Face Landmarker を読み込む",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "models/mediapipe/ からの Face Landmarker safetensors。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadMoGeModel": {
     "display_name": "MoGeモデルの読み込み",
     "inputs": {
@@ -8449,6 +8478,7 @@
     }
   },
   "LoadTrainingDataset": {
+    "description": "トレーニング用にディスクからエンコード済みのトレーニングデータセット（latent＋conditioning）を読み込みます。",
     "display_name": "トレーニングデータセットの読み込み",
     "inputs": {
       "folder_name": {
@@ -9232,6 +9262,7 @@
     }
   },
   "MakeTrainingDataset": {
+    "description": "画像をVAEで、テキストをCLIPでエンコードし、latentとconditioningのトレーニングデータセットを作成します。",
     "display_name": "トレーニングデータセットを作成",
     "inputs": {
       "clip": {
@@ -9322,7 +9353,97 @@
       }
     }
   },
+  "MediaPipeFaceLandmarker": {
+    "description": "MediaPipeモデルを使用して顔のランドマークを検出します。",
+    "display_name": "MediaPipe Face Landmarker",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "顔検出器の範囲。「short」はカメラから約2m以内の顔に最適化。「full」は最大約5mまでの遠く/小さい顔も検出（遅くなる）。「both」は両方の検出器を実行し、フレームごとにより多くの顔を検出した方を採用（検出コスト約2倍）。"
+      },
+      "face_detection_model": {
+        "name": "face_detection_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "BlazeFace のスコア閾値。値を下げると小さい/隠れた顔も検出しやすくなります。"
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "バッチ内で検出に失敗したフレームごとの動作。「empty」は顔なしのまま。「previous」は直近の検出結果をコピー。「interpolate」は前後の検出結果からランドマーク/バウンディングボックス/ブレンドシェイプを補間。複数顔の場合は、フレーム間でバウンディングボックス中心の最近傍でペアリング。"
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "フレームごとに返す最大顔数。0 = 上限なし（検出されたすべてを返す）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "description": "顔のランドマークからマスクを描画します。",
+    "display_name": "MediaPipe Face Mask",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "「all」= face_oval+lips+eyes+irises の合体（face_oval が他を囲むため実質 face_oval）。「custom」= 各領域を個別に切り替えて lips+eyes などの組み合わせも可能。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "description": "入力画像に顔のランドマークメッシュを描画します。",
+    "display_name": "MediaPipe Face Mesh 可視化",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "「all」= oval+eyes+brows+lips+irises+nose。「fill」= face_oval の塗りつぶしポリゴン（シルエットマスク）。「custom」= 各特徴を個別に切り替え（「tesselation」は全2547エッジのワイヤーフレーム）。"
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "未接続の場合は黒いキャンバスが使用されます。"
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "ランドマーク点の半径（ピクセル単位）。0で点描画を無効化。"
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "エッジ線の太さ（ピクセル単位）。0でエッジ描画を無効化。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MergeImageLists": {
+    "description": "複数の画像リストを1つに結合します。",
     "display_name": "画像リストを結合",
     "inputs": {
       "images": {
@@ -9777,6 +9898,7 @@
     }
   },
   "MoGeInference": {
+    "description": "MoGeを単一画像に実行し、深度とジオメトリを推定します。",
     "display_name": "MoGe推論",
     "inputs": {
       "apply_mask": {
@@ -9813,6 +9935,7 @@
     }
   },
   "MoGePanoramaInference": {
+    "description": "MoGeを正距円筒パノラマ画像に対して、12の視点に分割して推論を行い、結果を1つの深度マップに統合します。",
     "display_name": "MoGeパノラマ推論",
     "inputs": {
       "batch_size": {
@@ -9847,6 +9970,7 @@
     }
   },
   "MoGePointMapToMesh": {
+    "description": "MoGeのポイントマップを3Dメッシュに変換します。",
     "display_name": "MoGe ポイントマップからメッシュへ",
     "inputs": {
       "batch_index": {
@@ -9876,6 +10000,7 @@
     }
   },
   "MoGeRender": {
+    "description": "ジオメトリデータから深度マップまたは法線マップをレンダリングします。",
     "display_name": "MoGe レンダリング",
     "inputs": {
       "moge_geometry": {
@@ -12164,6 +12289,7 @@
     }
   },
   "NormalizeImages": {
+    "description": "平均値と標準偏差を用いて画像を正規化します。",
     "display_name": "画像を正規化",
     "inputs": {
       "images": {
@@ -12485,6 +12611,39 @@
       },
       "size": {
         "name": "サイズ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterLLMNode": {
+    "description": "OpenRouterを通じてテキスト応答を生成します。xAI、DeepSeek、Qwen、Mistral、Z.AI（GLM）、Moonshot（Kimi）、Perplexity Sonarなどの人気モデルを厳選してルーティングします。",
+    "display_name": "OpenRouter LLM",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "応答生成に使用するOpenRouterモデル。"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "モデルへのテキスト入力。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "サンプリング用のシード値。0に設定すると省略されます。ほとんどのモデルでは参考値として扱われます。"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "モデルの挙動を指示する基本的な指示文。"
       }
     },
     "outputs": {
@@ -13306,6 +13465,7 @@
     }
   },
   "RandomCropImages": {
+    "description": "画像を指定したサイズでランダムに切り抜きます。",
     "display_name": "ランダムクロップ画像",
     "inputs": {
       "control_after_generate": {
@@ -13989,6 +14149,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "背景除去モデルを使用して画像から背景を削除するための前景マスクを生成します。",
     "display_name": "背景を除去",
     "inputs": {
       "bg_removal_model": {
@@ -14167,6 +14328,7 @@
     }
   },
   "ResizeImagesByLongerEdge": {
+    "description": "画像のアスペクト比を維持したまま、長辺が指定したサイズになるようにリサイズします。",
     "display_name": "長辺で画像をリサイズ",
     "inputs": {
       "images": {
@@ -14186,6 +14348,7 @@
     }
   },
   "ResizeImagesByShorterEdge": {
+    "description": "画像の短辺が指定した寸法になるようにリサイズし、アスペクト比を維持します。",
     "display_name": "短辺で画像をリサイズ",
     "inputs": {
       "images": {
@@ -14205,6 +14368,7 @@
     }
   },
   "ResolutionBucket": {
+    "description": "latentとconditioningをバケットにグループ化します",
     "display_name": "解像度バケット",
     "inputs": {
       "conditioning": {
@@ -15549,6 +15713,7 @@
     }
   },
   "SaveImageDataSetToFolder": {
+    "description": "画像データセットを指定したフォルダーに保存します。対応フォーマット：PNG。",
     "display_name": "画像データセットをフォルダに保存",
     "inputs": {
       "filename_prefix": {
@@ -15566,6 +15731,7 @@
     }
   },
   "SaveImageTextDataSetToFolder": {
+    "description": "画像とテキストキャプションのペアのデータセットを指定したフォルダーに保存します。画像はPNGファイルとして、キャプションは同じファイル名プレフィックスのTXTファイルとして保存されます。",
     "display_name": "画像とテキストのデータセットをフォルダに保存",
     "inputs": {
       "filename_prefix": {
@@ -15636,6 +15802,7 @@
     }
   },
   "SaveTrainingDataset": {
+    "description": "エンコード済みのトレーニングデータセット（latent＋conditioning）をディスクに保存し、トレーニング時の効率的な読み込みを可能にします。",
     "display_name": "学習データセットを保存",
     "inputs": {
       "conditioning": {
@@ -15822,6 +15989,7 @@
     }
   },
   "ShuffleDataset": {
+    "description": "リスト内の画像の順序をランダムにシャッフルします。",
     "display_name": "画像データセットをシャッフル",
     "inputs": {
       "control_after_generate": {
@@ -15844,6 +16012,7 @@
     }
   },
   "ShuffleImageTextDataset": {
+    "description": "リスト内の画像とテキストのペアの順序をランダムにシャッフルします。",
     "display_name": "画像・テキストデータセットをシャッフル",
     "inputs": {
       "control_after_generate": {
@@ -16656,6 +16825,23 @@
     "outputs": {
       "0": {
         "name": "contains",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "Python の string format メソッドと同様。Python のすべてのフォーマットオプションと機能に対応。",
+    "display_name": "テキスト整形",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -19327,6 +19513,7 @@
     }
   },
   "VoxelToMesh": {
+    "description": "ボクセルグリッドをメッシュに変換します。",
     "display_name": "VoxelToMesh",
     "inputs": {
       "algorithm": {
@@ -19346,6 +19533,7 @@
     }
   },
   "VoxelToMeshBasic": {
+    "description": "ボクセルグリッドをメッシュに変換します。",
     "display_name": "VoxelToMeshBasic",
     "inputs": {
       "threshold": {

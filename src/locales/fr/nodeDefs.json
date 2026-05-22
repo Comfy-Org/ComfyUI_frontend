@@ -119,6 +119,7 @@
     }
   },
   "AdjustBrightness": {
+    "description": "Ajuster la luminosité d'une image.",
     "display_name": "Ajuster la luminosité",
     "inputs": {
       "factor": {
@@ -138,6 +139,7 @@
     }
   },
   "AdjustContrast": {
+    "description": "Ajuster le contraste d'une image.",
     "display_name": "Ajuster le contraste",
     "inputs": {
       "factor": {
@@ -176,6 +178,7 @@
     }
   },
   "AudioAdjustVolume": {
+    "description": "Ajuster le volume de l'audio d'une valeur spécifiée en décibels (dB).",
     "display_name": "Ajuster le Volume Audio",
     "inputs": {
       "audio": {
@@ -576,6 +579,9 @@
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
+      },
+      "model_auto_upscale": {
+        "name": "auto_upscale"
       },
       "model_duration": {
         "name": "durée"
@@ -1547,6 +1553,7 @@
     }
   },
   "CenterCropImages": {
+    "description": "Rogner une image au centre selon les dimensions spécifiées.",
     "display_name": "Rogner les images au centre",
     "inputs": {
       "height": {
@@ -1665,6 +1672,9 @@
       },
       "model_max_tokens": {
         "name": "max_tokens"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
       },
       "model_temperature": {
         "name": "température"
@@ -5699,6 +5709,7 @@
     }
   },
   "ImageCropV2": {
+    "description": "Rogner une image selon les dimensions spécifiées.",
     "display_name": "Rogner l'image",
     "inputs": {
       "crop_region": {
@@ -5719,6 +5730,7 @@
     }
   },
   "ImageDeduplication": {
+    "description": "Supprimer les images dupliquées ou très similaires d'une liste.",
     "display_name": "Déduplication d'image",
     "inputs": {
       "images": {
@@ -5773,6 +5785,7 @@
     }
   },
   "ImageGrid": {
+    "description": "Organiser plusieurs images dans une disposition en grille.",
     "display_name": "Grille d'images",
     "inputs": {
       "cell_height": {
@@ -8366,6 +8379,7 @@
     }
   },
   "LoadImageDataSetFromFolder": {
+    "description": "Charger un jeu de données d'images à partir d'un dossier spécifié et retourner une liste d'images. Formats pris en charge : PNG, JPG, JPEG, WEBP.",
     "display_name": "Charger un Jeu de Données d'Images depuis un Dossier",
     "inputs": {
       "folder": {
@@ -8409,6 +8423,7 @@
     }
   },
   "LoadImageTextDataSetFromFolder": {
+    "description": "Charger un jeu de données de paires images et légendes textuelles à partir d'un dossier spécifié et les retourner sous forme de liste. Formats pris en charge : PNG, JPG, JPEG, WEBP.",
     "display_name": "Charger un Jeu de Données Images et Textes depuis un Dossier",
     "inputs": {
       "folder": {
@@ -8435,6 +8450,20 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "Charger MediaPipe Face Landmarker",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "Face Landmarker safetensors depuis models/mediapipe/."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadMoGeModel": {
     "display_name": "Charger le modèle MoGe",
     "inputs": {
@@ -8449,6 +8478,7 @@
     }
   },
   "LoadTrainingDataset": {
+    "description": "Charger un jeu de données d'entraînement encodé (latents + conditionnements) depuis le disque pour l'utiliser lors de l'entraînement.",
     "display_name": "Charger le jeu de données d'entraînement",
     "inputs": {
       "folder_name": {
@@ -9232,6 +9262,7 @@
     }
   },
   "MakeTrainingDataset": {
+    "description": "Encoder les images avec VAE et les textes avec CLIP pour créer un jeu de données d'entraînement de latents et de conditionnements.",
     "display_name": "Créer un jeu de données d’entraînement",
     "inputs": {
       "clip": {
@@ -9322,7 +9353,97 @@
       }
     }
   },
+  "MediaPipeFaceLandmarker": {
+    "description": "Détecte les points de repère du visage à l'aide du modèle MediaPipe.",
+    "display_name": "MediaPipe Face Landmarker",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "Plage du détecteur de visage. 'short' est optimisé pour les visages en gros plan (à moins de ~2 m de la caméra) ; 'full' couvre des visages plus éloignés/petits (jusqu'à ~5 m) mais est plus lent. 'both' exécute les deux détecteurs et conserve celui qui a trouvé le plus de visages par image (coût de détection ~2×)."
+      },
+      "face_detection_model": {
+        "name": "face_detection_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "Seuil de score BlazeFace. Diminuez pour détecter les petits visages ou ceux partiellement cachés."
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "Comportement par image lorsque la détection échoue dans un lot. 'empty' laisse l'image sans visage. 'previous' copie la dernière détection réussie. 'interpolate' interpole les points de repère/boîte englobante/blendshapes entre les images réussies encadrantes. Multi-visage : associe les visages entre les images par appariement glouton du centre de la boîte englobante."
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "Nombre maximal de visages à retourner par image. 0 = pas de limite (retourne tous les visages détectés)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "description": "Dessine un masque à partir des points de repère du visage.",
+    "display_name": "MediaPipe Face Mask",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = union de face_oval+lips+eyes+irises (qui se réduit à face_oval car il englobe le reste). 'custom' = activez chaque région individuellement pour des combinaisons comme lips+eyes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "description": "Dessine le maillage des points de repère du visage sur l'image d'entrée.",
+    "display_name": "Visualisation du maillage facial MediaPipe",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = oval+eyes+brows+lips+irises+nose. 'fill' = polygone face_oval plein (masque de silhouette). 'custom' = activez chaque caractéristique individuellement (y compris 'tesselation', le fil de fer complet de 2547 arêtes)."
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Si non connecté, une toile noire sera utilisée."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "Rayon des points de repère en pixels. 0 désactive le tracé des points."
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "Épaisseur des lignes de contour en pixels. 0 désactive le tracé des contours."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MergeImageLists": {
+    "description": "Concaténer plusieurs listes d'images en une seule.",
     "display_name": "Fusionner les listes d’images",
     "inputs": {
       "images": {
@@ -9777,6 +9898,7 @@
     }
   },
   "MoGeInference": {
+    "description": "Exécuter MoGe sur une seule image pour estimer la profondeur et la géométrie.",
     "display_name": "Inférence MoGe",
     "inputs": {
       "apply_mask": {
@@ -9813,6 +9935,7 @@
     }
   },
   "MoGePanoramaInference": {
+    "description": "Exécuter MoGe sur un panorama équirectangulaire en le divisant en 12 vues en perspective, en effectuant l'inférence sur chacune, puis en fusionnant les résultats en une seule carte de profondeur.",
     "display_name": "Inférence panorama MoGe",
     "inputs": {
       "batch_size": {
@@ -9847,6 +9970,7 @@
     }
   },
   "MoGePointMapToMesh": {
+    "description": "Convertir une carte de points MoGe en un maillage 3D.",
     "display_name": "MoGe Point Map vers Mesh",
     "inputs": {
       "batch_index": {
@@ -9876,6 +10000,7 @@
     }
   },
   "MoGeRender": {
+    "description": "Rendre une carte de profondeur ou une carte de normales à partir des données de géométrie",
     "display_name": "MoGe Render",
     "inputs": {
       "moge_geometry": {
@@ -12164,6 +12289,7 @@
     }
   },
   "NormalizeImages": {
+    "description": "Normaliser les images en utilisant la moyenne et l'écart type.",
     "display_name": "Normaliser les images",
     "inputs": {
       "images": {
@@ -12485,6 +12611,39 @@
       },
       "size": {
         "name": "taille"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterLLMNode": {
+    "description": "Générer des réponses textuelles via OpenRouter. Redirige vers un ensemble sélectionné de modèles populaires de xAI, DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi) et Perplexity Sonar.",
+    "display_name": "OpenRouter LLM",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Le modèle OpenRouter utilisé pour générer la réponse."
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Entrée textuelle pour le modèle."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine pour l'échantillonnage. Mettre à 0 pour omettre. La plupart des modèles considèrent ceci comme une indication seulement."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Instructions fondamentales qui dictent le comportement du modèle."
       }
     },
     "outputs": {
@@ -13306,6 +13465,7 @@
     }
   },
   "RandomCropImages": {
+    "description": "Rogner aléatoirement une image selon les dimensions spécifiées.",
     "display_name": "Rogner aléatoirement des images",
     "inputs": {
       "control_after_generate": {
@@ -13989,6 +14149,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "Génère un masque de premier plan pour supprimer l'arrière-plan d'une image à l'aide d'un modèle de suppression d'arrière-plan.",
     "display_name": "Supprimer l’arrière-plan",
     "inputs": {
       "bg_removal_model": {
@@ -14167,6 +14328,7 @@
     }
   },
   "ResizeImagesByLongerEdge": {
+    "description": "Redimensionner les images pour que le côté le plus long corresponde à la dimension spécifiée tout en préservant le ratio d'aspect.",
     "display_name": "Redimensionner les images par le bord le plus long",
     "inputs": {
       "images": {
@@ -14186,6 +14348,7 @@
     }
   },
   "ResizeImagesByShorterEdge": {
+    "description": "Redimensionner les images afin que le bord le plus court corresponde à la dimension spécifiée tout en préservant le rapport d'aspect.",
     "display_name": "Redimensionner les images par le bord le plus court",
     "inputs": {
       "images": {
@@ -14205,6 +14368,7 @@
     }
   },
   "ResolutionBucket": {
+    "description": "Regrouper les latents et les conditionnements en ensembles",
     "display_name": "Regroupement par résolution",
     "inputs": {
       "conditioning": {
@@ -15549,6 +15713,7 @@
     }
   },
   "SaveImageDataSetToFolder": {
+    "description": "Enregistrer un ensemble d'images dans un dossier spécifié. Formats pris en charge : PNG.",
     "display_name": "Enregistrer l'ensemble d'images dans un dossier",
     "inputs": {
       "filename_prefix": {
@@ -15566,6 +15731,7 @@
     }
   },
   "SaveImageTextDataSetToFolder": {
+    "description": "Enregistrer un ensemble de paires image-texte dans un dossier spécifié. Les images sont enregistrées au format PNG et les légendes au format TXT avec le même préfixe de nom de fichier.",
     "display_name": "Enregistrer l'ensemble d'images et de textes dans un dossier",
     "inputs": {
       "filename_prefix": {
@@ -15636,6 +15802,7 @@
     }
   },
   "SaveTrainingDataset": {
+    "description": "Enregistrer l'ensemble d'entraînement encodé (latents + conditionnement) sur le disque pour un chargement efficace pendant l'entraînement.",
     "display_name": "Enregistrer l'ensemble d'entraînement",
     "inputs": {
       "conditioning": {
@@ -15822,6 +15989,7 @@
     }
   },
   "ShuffleDataset": {
+    "description": "Mélanger aléatoirement l'ordre des images dans une liste.",
     "display_name": "Mélanger l'ensemble d'images",
     "inputs": {
       "control_after_generate": {
@@ -15844,6 +16012,7 @@
     }
   },
   "ShuffleImageTextDataset": {
+    "description": "Mélanger aléatoirement l'ordre des paires image-texte dans une liste.",
     "display_name": "Mélanger l'ensemble image-texte",
     "inputs": {
       "control_after_generate": {
@@ -16656,6 +16825,23 @@
     "outputs": {
       "0": {
         "name": "contient",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "Identique à la méthode de formatage de chaîne de Python. Prend en charge toutes les options et fonctionnalités de formatage de Python.",
+    "display_name": "Formater le texte",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -19327,6 +19513,7 @@
     }
   },
   "VoxelToMesh": {
+    "description": "Convertit une grille de voxels en maillage.",
     "display_name": "VoxelToMesh",
     "inputs": {
       "algorithm": {
@@ -19346,6 +19533,7 @@
     }
   },
   "VoxelToMeshBasic": {
+    "description": "Convertit une grille de voxels en maillage.",
     "display_name": "VoxelToMeshBasic",
     "inputs": {
       "threshold": {

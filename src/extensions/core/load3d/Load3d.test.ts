@@ -4,6 +4,33 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import type { GizmoMode } from '@/extensions/core/load3d/interfaces'
 
+const {
+  cloneSkinnedMock,
+  exportGLBMock,
+  exportOBJMock,
+  exportSTLMock,
+  exportFBXMock
+} = vi.hoisted(() => ({
+  cloneSkinnedMock: vi.fn(),
+  exportGLBMock: vi.fn(),
+  exportOBJMock: vi.fn(),
+  exportSTLMock: vi.fn(),
+  exportFBXMock: vi.fn()
+}))
+
+vi.mock('three/examples/jsm/utils/SkeletonUtils.js', () => ({
+  clone: cloneSkinnedMock
+}))
+
+vi.mock('@/extensions/core/load3d/ModelExporter', () => ({
+  ModelExporter: {
+    exportGLB: exportGLBMock,
+    exportOBJ: exportOBJMock,
+    exportSTL: exportSTLMock,
+    exportFBX: exportFBXMock
+  }
+}))
+
 type GizmoStub = {
   setEnabled: ReturnType<typeof vi.fn>
   setMode: ReturnType<typeof vi.fn>
@@ -847,6 +874,191 @@ describe('Load3d', () => {
 
       await expect(ctx.load3d.captureThumbnail(64, 64)).rejects.toThrow('boom')
       expect(ctx.forceRender).toHaveBeenCalled()
+    })
+  })
+
+  describe('exportModel', () => {
+    beforeEach(() => {
+      cloneSkinnedMock.mockReset()
+      exportGLBMock.mockReset()
+      exportOBJMock.mockReset()
+      exportSTLMock.mockReset()
+      exportFBXMock.mockReset()
+    })
+
+    function setupForExport(overrides: {
+      currentModel: THREE.Object3D | null
+      originalModel?: THREE.Object3D | null
+      originalFileName?: string | null
+      originalURL?: string | null
+    }) {
+      Object.assign(ctx.load3d, {
+        modelManager: {
+          ...ctx.modelManager,
+          currentModel: overrides.currentModel,
+          originalModel: overrides.originalModel ?? null,
+          originalFileName: overrides.originalFileName ?? 'cube',
+          originalURL: overrides.originalURL ?? null
+        }
+      })
+    }
+
+    it('throws when no model is loaded', async () => {
+      setupForExport({ currentModel: null })
+
+      await expect(ctx.load3d.exportModel('fbx')).rejects.toThrow(
+        'No model to export'
+      )
+    })
+
+    it('zeroes the source transform during export, then restores it', async () => {
+      const model = new THREE.Object3D()
+      model.position.set(5, 6, 7)
+      model.rotation.set(0.1, 0.2, 0.3)
+      model.scale.set(2, 3, 4)
+
+      let transformDuringExport: {
+        position: THREE.Vector3
+        rotation: THREE.Euler
+        scale: THREE.Vector3
+      } | null = null
+      exportGLBMock.mockImplementation(async () => {
+        transformDuringExport = {
+          position: model.position.clone(),
+          rotation: model.rotation.clone(),
+          scale: model.scale.clone()
+        }
+      })
+
+      setupForExport({ currentModel: model })
+
+      await ctx.load3d.exportModel('glb')
+
+      expect(transformDuringExport!.position.x).toBe(0)
+      expect(transformDuringExport!.position.y).toBe(0)
+      expect(transformDuringExport!.position.z).toBe(0)
+      expect(transformDuringExport!.rotation.x).toBe(0)
+      expect(transformDuringExport!.scale.x).toBe(1)
+      expect(transformDuringExport!.scale.y).toBe(1)
+      expect(transformDuringExport!.scale.z).toBe(1)
+
+      expect(model.position.x).toBe(5)
+      expect(model.position.y).toBe(6)
+      expect(model.position.z).toBe(7)
+      expect(model.rotation.x).toBeCloseTo(0.1)
+      expect(model.scale.x).toBe(2)
+      expect(model.scale.z).toBe(4)
+    })
+
+    it('restores the source transform even when the exporter throws', async () => {
+      const model = new THREE.Object3D()
+      model.position.set(3, 4, 5)
+      model.scale.set(7, 7, 7)
+      exportGLBMock.mockRejectedValueOnce(new Error('boom'))
+
+      setupForExport({ currentModel: model })
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await expect(ctx.load3d.exportModel('glb')).rejects.toThrow('boom')
+
+      expect(model.position.x).toBe(3)
+      expect(model.scale.x).toBe(7)
+    })
+
+    it('routes fbx through SkeletonUtils.clone and attaches the source animations', async () => {
+      const model = new THREE.Object3D()
+      const clip = { name: 'walk' } as unknown as THREE.AnimationClip
+      model.animations = [clip]
+      const cloned = new THREE.Object3D()
+      cloneSkinnedMock.mockReturnValueOnce(cloned)
+
+      setupForExport({
+        currentModel: model,
+        originalFileName: 'rig',
+        originalURL: 'http://example.com/api/view?filename=rig.fbx'
+      })
+
+      await ctx.load3d.exportModel('fbx')
+
+      expect(cloneSkinnedMock).toHaveBeenCalledWith(model)
+      expect(exportFBXMock).toHaveBeenCalledOnce()
+      const [exportedModel, filename, originalURL] = exportFBXMock.mock
+        .calls[0] as [
+        THREE.Object3D & { animations: THREE.AnimationClip[] },
+        string,
+        string | null
+      ]
+      expect(exportedModel).toBe(cloned)
+      expect(exportedModel.animations).toEqual([clip])
+      expect(filename).toBe('rig.fbx')
+      expect(originalURL).toBe('http://example.com/api/view?filename=rig.fbx')
+    })
+
+    it('falls back to originalModel.animations when the working model has none (fbx)', async () => {
+      const model = new THREE.Object3D()
+      const original = new THREE.Object3D()
+      const clip = { name: 'idle' } as unknown as THREE.AnimationClip
+      original.animations = [clip]
+      const cloned = new THREE.Object3D()
+      cloneSkinnedMock.mockReturnValueOnce(cloned)
+
+      setupForExport({ currentModel: model, originalModel: original })
+
+      await ctx.load3d.exportModel('fbx')
+
+      const [exportedModel] = exportFBXMock.mock.calls[0] as [
+        THREE.Object3D & { animations: THREE.AnimationClip[] }
+      ]
+      expect(exportedModel.animations).toEqual([clip])
+    })
+
+    it('uses Object3D.clone (not SkeletonUtils) for non-fbx formats', async () => {
+      const model = new THREE.Object3D()
+      const cloneSpy = vi.spyOn(model, 'clone')
+
+      setupForExport({
+        currentModel: model,
+        originalFileName: 'cube',
+        originalURL: null
+      })
+
+      await ctx.load3d.exportModel('glb')
+
+      expect(cloneSpy).toHaveBeenCalled()
+      expect(cloneSkinnedMock).not.toHaveBeenCalled()
+      expect(exportGLBMock).toHaveBeenCalledOnce()
+      const [, filename] = exportGLBMock.mock.calls[0] as [
+        unknown,
+        string,
+        unknown
+      ]
+      expect(filename).toBe('cube.glb')
+    })
+
+    it('emits exportLoadingStart and exportLoadingEnd around the export', async () => {
+      const model = new THREE.Object3D()
+      setupForExport({ currentModel: model })
+
+      await ctx.load3d.exportModel('glb')
+
+      expect(ctx.eventManager.emitEvent).toHaveBeenCalledWith(
+        'exportLoadingStart',
+        'Exporting as GLB...'
+      )
+      expect(ctx.eventManager.emitEvent).toHaveBeenCalledWith(
+        'exportLoadingEnd',
+        null
+      )
+    })
+
+    it('throws on unsupported format', async () => {
+      const model = new THREE.Object3D()
+      setupForExport({ currentModel: model })
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await expect(ctx.load3d.exportModel('xyz')).rejects.toThrow(
+        'Unsupported export format: xyz'
+      )
     })
   })
 })

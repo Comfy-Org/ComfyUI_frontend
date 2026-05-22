@@ -119,6 +119,7 @@
     }
   },
   "AdjustBrightness": {
+    "description": "调整图像的亮度。",
     "display_name": "调整亮度",
     "inputs": {
       "factor": {
@@ -138,6 +139,7 @@
     }
   },
   "AdjustContrast": {
+    "description": "调整图像的对比度。",
     "display_name": "调整对比度",
     "inputs": {
       "factor": {
@@ -176,6 +178,7 @@
     }
   },
   "AudioAdjustVolume": {
+    "description": "按指定的分贝（dB）调整音频音量。",
     "display_name": "音频调整音量",
     "inputs": {
       "audio": {
@@ -576,6 +579,9 @@
       },
       "model_auto_downscale": {
         "name": "自动降采样"
+      },
+      "model_auto_upscale": {
+        "name": "auto_upscale"
       },
       "model_duration": {
         "name": "时长"
@@ -1547,6 +1553,7 @@
     }
   },
   "CenterCropImages": {
+    "description": "将图像居中裁剪为指定尺寸。",
     "display_name": "裁剪图像（中心）",
     "inputs": {
       "height": {
@@ -1665,6 +1672,9 @@
       },
       "model_max_tokens": {
         "name": "最大tokens数"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
       },
       "model_temperature": {
         "name": "temperature"
@@ -5699,6 +5709,7 @@
     }
   },
   "ImageCropV2": {
+    "description": "将图像裁剪为指定尺寸。",
     "display_name": "图像裁剪",
     "inputs": {
       "crop_region": {
@@ -5719,6 +5730,7 @@
     }
   },
   "ImageDeduplication": {
+    "description": "从列表中移除重复或非常相似的图像。",
     "display_name": "图像去重",
     "inputs": {
       "images": {
@@ -5773,6 +5785,7 @@
     }
   },
   "ImageGrid": {
+    "description": "将多张图像排列为网格布局。",
     "display_name": "图像表格",
     "inputs": {
       "cell_height": {
@@ -8366,6 +8379,7 @@
     }
   },
   "LoadImageDataSetFromFolder": {
+    "description": "从指定文件夹加载图像数据集并返回图像列表。支持格式：PNG、JPG、JPEG、WEBP。",
     "display_name": "加载图像数据集",
     "inputs": {
       "folder": {
@@ -8409,6 +8423,7 @@
     }
   },
   "LoadImageTextDataSetFromFolder": {
+    "description": "从指定文件夹加载图像与文本描述对的数据集，并以列表形式返回。支持格式：PNG、JPG、JPEG、WEBP。",
     "display_name": "加载图像和文本数据集",
     "inputs": {
       "folder": {
@@ -8435,6 +8450,20 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "加载 MediaPipe 人脸标记器",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "来自 models/mediapipe/ 的 Face Landmarker safetensors。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadMoGeModel": {
     "display_name": "加载 MoGe 模型",
     "inputs": {
@@ -8449,6 +8478,7 @@
     }
   },
   "LoadTrainingDataset": {
+    "description": "从磁盘加载已编码的训练数据集（latent + 条件信息），用于训练。",
     "display_name": "加载训练数据集",
     "inputs": {
       "folder_name": {
@@ -9232,6 +9262,7 @@
     }
   },
   "MakeTrainingDataset": {
+    "description": "使用VAE对图像编码，使用CLIP对文本编码，生成包含latent和条件信息的训练数据集。",
     "display_name": "制作训练数据集",
     "inputs": {
       "clip": {
@@ -9322,7 +9353,97 @@
       }
     }
   },
+  "MediaPipeFaceLandmarker": {
+    "description": "使用MediaPipe模型检测人脸关键点。",
+    "display_name": "MediaPipe 人脸标记器",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "人脸检测器范围。'short' 适用于近距离人脸（距离相机约 2 米内）；'full' 适用于更远/更小的人脸（最多约 5 米），但速度较慢。'both' 同时运行两个检测器，并保留每帧检测到更多人脸的结果（检测成本约为 2 倍）。"
+      },
+      "face_detection_model": {
+        "name": "face_detection_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "BlazeFace 分数阈值。降低以捕捉较小/被遮挡的人脸。"
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "批量检测失败时每帧的处理方式。'empty' 表示该帧无人脸。'previous' 复制最近一次成功检测的结果。'interpolate' 在包围的成功帧之间插值地标/边框/混合形状。多脸：通过贪婪边框中心最近邻配对跨帧人脸。"
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "每帧返回的最大人脸数。0 = 不限制（返回所有检测到的人脸）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "description": "根据人脸关键点绘制mask。",
+    "display_name": "MediaPipe 人脸蒙版",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = face_oval+lips+eyes+irises 的并集（由于 face_oval 包含其他区域，最终为 face_oval）。'custom' = 可单独切换每个区域，组合如 lips+eyes。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "description": "在输入图像上绘制人脸关键点网格。",
+    "display_name": "MediaPipe 人脸网格可视化",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = oval+eyes+brows+lips+irises+nose。'fill' = 实心 face_oval 多边形（轮廓蒙版）。'custom' = 可单独切换每个特征（包括 'tesselation'，即完整的 2547 边线框）。"
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "如果未连接，将使用黑色画布。"
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "地标点像素半径。0 表示不绘制点。"
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "边线像素粗细。0 表示不绘制边线。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MergeImageLists": {
+    "description": "将多个图像列表合并为一个。",
     "display_name": "融合图像序列",
     "inputs": {
       "images": {
@@ -9777,6 +9898,7 @@
     }
   },
   "MoGeInference": {
+    "description": "在单张图像上运行MoGe以估算深度和几何信息。",
     "display_name": "MoGe 推理",
     "inputs": {
       "apply_mask": {
@@ -9813,6 +9935,7 @@
     }
   },
   "MoGePanoramaInference": {
+    "description": "将全景图像分割为12个透视视图，分别运行MoGe推理，并将结果合并为单一深度图。",
     "display_name": "MoGe 全景推理",
     "inputs": {
       "batch_size": {
@@ -9847,6 +9970,7 @@
     }
   },
   "MoGePointMapToMesh": {
+    "description": "将MoGe点图转换为3D网格。",
     "display_name": "MoGe 点云映射到网格",
     "inputs": {
       "batch_index": {
@@ -9876,6 +10000,7 @@
     }
   },
   "MoGeRender": {
+    "description": "根据几何数据渲染深度图或法线图。",
     "display_name": "MoGe 渲染",
     "inputs": {
       "moge_geometry": {
@@ -12164,6 +12289,7 @@
     }
   },
   "NormalizeImages": {
+    "description": "使用均值和标准差对图像进行归一化处理。",
     "display_name": "规格化图像",
     "inputs": {
       "images": {
@@ -12485,6 +12611,39 @@
       },
       "size": {
         "name": "尺寸"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterLLMNode": {
+    "description": "通过OpenRouter生成文本回复。路由到xAI、DeepSeek、Qwen、Mistral、Z.AI（GLM）、Moonshot（Kimi）、Perplexity Sonar等精选热门模型。",
+    "display_name": "OpenRouter LLM",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于生成回复的OpenRouter模型。"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "模型的文本输入。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "采样种子。设为0表示不使用。大多数模型仅将其作为参考。"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "决定模型行为的基础指令。"
       }
     },
     "outputs": {
@@ -13306,6 +13465,7 @@
     }
   },
   "RandomCropImages": {
+    "description": "随机裁剪图像为指定尺寸。",
     "display_name": "裁剪图像（随机）",
     "inputs": {
       "control_after_generate": {
@@ -13989,6 +14149,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "使用背景移除模型生成前景mask，从图像中移除背景。",
     "display_name": "移除背景",
     "inputs": {
       "bg_removal_model": {
@@ -14167,6 +14328,7 @@
     }
   },
   "ResizeImagesByLongerEdge": {
+    "description": "调整图像尺寸，使较长边匹配指定长度，同时保持宽高比。",
     "display_name": "缩放图像（长边）",
     "inputs": {
       "images": {
@@ -14186,6 +14348,7 @@
     }
   },
   "ResizeImagesByShorterEdge": {
+    "description": "调整图像尺寸，使较短边与指定尺寸相同，同时保持宽高比。",
     "display_name": "Resize Images by Shorter Edge",
     "inputs": {
       "images": {
@@ -14205,6 +14368,7 @@
     }
   },
   "ResolutionBucket": {
+    "description": "将latent和conditioning分组到不同的桶中",
     "display_name": "分辨率 Bucket",
     "inputs": {
       "conditioning": {
@@ -15549,6 +15713,7 @@
     }
   },
   "SaveImageDataSetToFolder": {
+    "description": "将图像数据集保存到指定文件夹。支持的格式：PNG。",
     "display_name": "保存图像数据集",
     "inputs": {
       "filename_prefix": {
@@ -15566,6 +15731,7 @@
     }
   },
   "SaveImageTextDataSetToFolder": {
+    "description": "将图像和文本描述对的数据集保存到指定文件夹。图像以PNG格式保存，描述以与文件名前缀相同的TXT文件保存。",
     "display_name": "保存图像文本数据集",
     "inputs": {
       "filename_prefix": {
@@ -15636,6 +15802,7 @@
     }
   },
   "SaveTrainingDataset": {
+    "description": "将编码后的训练数据集（latent + conditioning）保存到磁盘，以便训练时高效加载。",
     "display_name": "保存训练数据集",
     "inputs": {
       "conditioning": {
@@ -15822,6 +15989,7 @@
     }
   },
   "ShuffleDataset": {
+    "description": "随机打乱列表中图像的顺序。",
     "display_name": "打乱图像数据集",
     "inputs": {
       "control_after_generate": {
@@ -15844,6 +16012,7 @@
     }
   },
   "ShuffleImageTextDataset": {
+    "description": "随机打乱列表中图像-文本对的顺序。",
     "display_name": "打乱图像文本数据集",
     "inputs": {
       "control_after_generate": {
@@ -16656,6 +16825,23 @@
     "outputs": {
       "0": {
         "name": "包含",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "与 Python 的字符串格式化方法相同。支持所有 Python 的格式化选项和功能。",
+    "display_name": "格式化文本",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -19327,6 +19513,7 @@
     }
   },
   "VoxelToMesh": {
+    "description": "将体素网格转换为网格模型。",
     "display_name": "体素到网格",
     "inputs": {
       "algorithm": {
@@ -19346,6 +19533,7 @@
     }
   },
   "VoxelToMeshBasic": {
+    "description": "将体素网格转换为网格模型。",
     "display_name": "体素到网格（基础）",
     "inputs": {
       "threshold": {

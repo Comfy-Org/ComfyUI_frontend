@@ -8,6 +8,7 @@ import {
 } from '@comfyorg/ingest-types/zod'
 
 import type {
+  JobDetail,
   JobStatus,
   RawJobListItem,
   zJobsListResponse
@@ -40,7 +41,7 @@ interface JobsListRoute {
   responseLimit?: number
 }
 
-interface JobsScenario {
+export interface JobsScenario {
   history?: readonly RawJobListItem[]
   queue?: readonly RawJobListItem[]
 }
@@ -180,6 +181,24 @@ export class JobsRouteMocker {
 
   async mockClearHistory(): Promise<HistoryManageRequest[]> {
     return await this.mockPostManageRoute('history', zHistoryManageRequest, {})
+  }
+
+  async mockDeleteHistory(): Promise<HistoryManageRequest[]> {
+    return await this.mockPostManageRoute('history', zHistoryManageRequest, {})
+  }
+
+  async mockJobDetail(jobId: string, detail: JobDetail): Promise<void> {
+    await this.page.route(
+      (url) => url.pathname.endsWith(`/api/jobs/${encodeURIComponent(jobId)}`),
+      async (requestRoute) => {
+        if (requestRoute.request().method().toUpperCase() !== 'GET') {
+          await requestRoute.fallback()
+          return
+        }
+
+        await requestRoute.fulfill({ json: detail })
+      }
+    )
   }
 
   private async mockPostManageRoute<TRequest>(

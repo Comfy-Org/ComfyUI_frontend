@@ -119,6 +119,7 @@
     }
   },
   "AdjustBrightness": {
+    "description": "Ajusta el brillo de una imagen.",
     "display_name": "Ajustar brillo",
     "inputs": {
       "factor": {
@@ -138,6 +139,7 @@
     }
   },
   "AdjustContrast": {
+    "description": "Ajusta el contraste de una imagen.",
     "display_name": "Ajustar contraste",
     "inputs": {
       "factor": {
@@ -176,6 +178,7 @@
     }
   },
   "AudioAdjustVolume": {
+    "description": "Ajusta el volumen del audio en una cantidad especificada en decibelios (dB).",
     "display_name": "Ajustar Volumen de Audio",
     "inputs": {
       "audio": {
@@ -576,6 +579,9 @@
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
+      },
+      "model_auto_upscale": {
+        "name": "auto_upscale"
       },
       "model_duration": {
         "name": "duración"
@@ -1547,6 +1553,7 @@
     }
   },
   "CenterCropImages": {
+    "description": "Recorta una imagen al centro con las dimensiones especificadas.",
     "display_name": "Recorte central de imágenes",
     "inputs": {
       "height": {
@@ -1665,6 +1672,9 @@
       },
       "model_max_tokens": {
         "name": "max_tokens"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
       },
       "model_temperature": {
         "name": "temperature"
@@ -5699,6 +5709,7 @@
     }
   },
   "ImageCropV2": {
+    "description": "Recorta una imagen a las dimensiones especificadas.",
     "display_name": "Recorte de Imagen",
     "inputs": {
       "crop_region": {
@@ -5719,6 +5730,7 @@
     }
   },
   "ImageDeduplication": {
+    "description": "Elimina imágenes duplicadas o muy similares de una lista.",
     "display_name": "Eliminación de Imágenes Duplicadas",
     "inputs": {
       "images": {
@@ -5773,6 +5785,7 @@
     }
   },
   "ImageGrid": {
+    "description": "Organiza varias imágenes en una cuadrícula.",
     "display_name": "Cuadrícula de Imágenes",
     "inputs": {
       "cell_height": {
@@ -8366,6 +8379,7 @@
     }
   },
   "LoadImageDataSetFromFolder": {
+    "description": "Carga un conjunto de datos de imágenes desde una carpeta especificada y devuelve una lista de imágenes. Formatos soportados: PNG, JPG, JPEG, WEBP.",
     "display_name": "Cargar conjunto de imágenes desde carpeta",
     "inputs": {
       "folder": {
@@ -8409,6 +8423,7 @@
     }
   },
   "LoadImageTextDataSetFromFolder": {
+    "description": "Carga un conjunto de datos de pares de imágenes y textos desde una carpeta especificada y los devuelve como una lista. Formatos soportados: PNG, JPG, JPEG, WEBP.",
     "display_name": "Cargar conjunto de imágenes y texto desde carpeta",
     "inputs": {
       "folder": {
@@ -8435,6 +8450,20 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "Cargar MediaPipe Face Landmarker",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "Face Landmarker safetensors de models/mediapipe/."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadMoGeModel": {
     "display_name": "Cargar modelo MoGe",
     "inputs": {
@@ -8449,6 +8478,7 @@
     }
   },
   "LoadTrainingDataset": {
+    "description": "Carga un conjunto de datos de entrenamiento codificado (latentes + condicionamiento) desde el disco para su uso en entrenamiento.",
     "display_name": "Cargar conjunto de datos de entrenamiento",
     "inputs": {
       "folder_name": {
@@ -9232,6 +9262,7 @@
     }
   },
   "MakeTrainingDataset": {
+    "description": "Codifica imágenes con VAE y textos con CLIP para crear un conjunto de datos de latentes y condicionamientos para entrenamiento.",
     "display_name": "Crear Conjunto de Datos de Entrenamiento",
     "inputs": {
       "clip": {
@@ -9322,7 +9353,97 @@
       }
     }
   },
+  "MediaPipeFaceLandmarker": {
+    "description": "Detecta puntos de referencia faciales usando el modelo MediaPipe.",
+    "display_name": "MediaPipe Face Landmarker",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "Rango del detector facial. 'short' está ajustado para rostros cercanos (a menos de ~2 m de la cámara); 'full' cubre rostros más lejanos/pequeños (hasta ~5 m) pero es más lento. 'both' ejecuta ambos detectores y mantiene el que encontró más rostros por fotograma (costo de detección ~2×)."
+      },
+      "face_detection_model": {
+        "name": "face_detection_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "Umbral de puntuación BlazeFace. Disminuye para captar rostros pequeños/ocultos."
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "Comportamiento por fotograma cuando falla la detección en un lote. 'empty' deja el fotograma sin rostro. 'previous' copia la detección exitosa más reciente. 'interpolate' interpola puntos clave/bbox/blendshapes entre los fotogramas exitosos adyacentes. Multi-rostro: empareja rostros entre fotogramas por centro de bbox más cercano."
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "Máximo de rostros a devolver por fotograma. 0 = sin límite (devuelve todos los detectados)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "description": "Dibuja una máscara a partir de los puntos de referencia faciales.",
+    "display_name": "MediaPipe Face Mask",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = unión de face_oval+lips+eyes+irises (que se reduce a face_oval ya que lo contiene todo). 'custom' = activa cada región individualmente para combinaciones como lips+eyes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "description": "Dibuja la malla de puntos de referencia faciales sobre la imagen de entrada.",
+    "display_name": "Visualizar Malla Facial de MediaPipe",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = oval+eyes+brows+lips+irises+nose. 'fill' = polígono sólido face_oval (máscara de silueta). 'custom' = activa cada característica individualmente (incluyendo 'tesselation', el entramado completo de 2547 aristas)."
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Si no se conecta, se usará un lienzo negro."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "Radio de los puntos de referencia en píxeles. 0 desactiva el dibujo de puntos."
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "Grosor de línea de los bordes en píxeles. 0 desactiva el dibujo de bordes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MergeImageLists": {
+    "description": "Concatena varias listas de imágenes en una sola.",
     "display_name": "Unir Listas de Imágenes",
     "inputs": {
       "images": {
@@ -9777,6 +9898,7 @@
     }
   },
   "MoGeInference": {
+    "description": "Ejecuta MoGe en una sola imagen para estimar profundidad y geometría.",
     "display_name": "Inferencia MoGe",
     "inputs": {
       "apply_mask": {
@@ -9813,6 +9935,7 @@
     }
   },
   "MoGePanoramaInference": {
+    "description": "Ejecuta MoGe en una panorámica equirectangular dividiéndola en 12 vistas en perspectiva, ejecutando inferencia en cada una y fusionando los resultados en un solo mapa de profundidad.",
     "display_name": "Inferencia panorámica MoGe",
     "inputs": {
       "batch_size": {
@@ -9847,6 +9970,7 @@
     }
   },
   "MoGePointMapToMesh": {
+    "description": "Convierte un mapa de puntos MoGe en una malla 3D.",
     "display_name": "MoGe Point Map a Malla",
     "inputs": {
       "batch_index": {
@@ -9876,6 +10000,7 @@
     }
   },
   "MoGeRender": {
+    "description": "Renderiza un mapa de profundidad o un mapa normal a partir de datos de geometría",
     "display_name": "MoGe Renderizado",
     "inputs": {
       "moge_geometry": {
@@ -12164,6 +12289,7 @@
     }
   },
   "NormalizeImages": {
+    "description": "Normaliza imágenes usando la media y la desviación estándar.",
     "display_name": "Normalizar Imágenes",
     "inputs": {
       "images": {
@@ -12485,6 +12611,39 @@
       },
       "size": {
         "name": "tamaño"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterLLMNode": {
+    "description": "Genera respuestas de texto a través de OpenRouter. Redirige a un conjunto seleccionado de modelos populares de xAI, DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi) y Perplexity Sonar.",
+    "display_name": "OpenRouter LLM",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "El modelo de OpenRouter utilizado para generar la respuesta."
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Entrada de texto para el modelo."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Semilla para muestreo. Establecer en 0 para omitir. La mayoría de los modelos lo toman solo como sugerencia."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Instrucciones fundamentales que dictan el comportamiento del modelo."
       }
     },
     "outputs": {
@@ -13306,6 +13465,7 @@
     }
   },
   "RandomCropImages": {
+    "description": "Recorta aleatoriamente una imagen a las dimensiones especificadas.",
     "display_name": "Recorte Aleatorio de Imágenes",
     "inputs": {
       "control_after_generate": {
@@ -13989,6 +14149,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "Genera una máscara de primer plano para eliminar el fondo de una imagen utilizando un modelo de eliminación de fondo.",
     "display_name": "Eliminar fondo",
     "inputs": {
       "bg_removal_model": {
@@ -14167,6 +14328,7 @@
     }
   },
   "ResizeImagesByLongerEdge": {
+    "description": "Redimensiona imágenes para que el borde más largo coincida con la dimensión especificada, manteniendo la relación de aspecto.",
     "display_name": "Redimensionar imágenes por el borde más largo",
     "inputs": {
       "images": {
@@ -14186,6 +14348,7 @@
     }
   },
   "ResizeImagesByShorterEdge": {
+    "description": "Redimensiona las imágenes para que el borde más corto coincida con la dimensión especificada, manteniendo la proporción de aspecto.",
     "display_name": "Redimensionar imágenes por el borde más corto",
     "inputs": {
       "images": {
@@ -14205,6 +14368,7 @@
     }
   },
   "ResolutionBucket": {
+    "description": "Agrupa latents y condicionamientos en buckets",
     "display_name": "Agrupación por resolución",
     "inputs": {
       "conditioning": {
@@ -15549,6 +15713,7 @@
     }
   },
   "SaveImageDataSetToFolder": {
+    "description": "Guarda un conjunto de imágenes en una carpeta especificada. Formatos soportados: PNG.",
     "display_name": "Guardar conjunto de imágenes en carpeta",
     "inputs": {
       "filename_prefix": {
@@ -15566,6 +15731,7 @@
     }
   },
   "SaveImageTextDataSetToFolder": {
+    "description": "Guarda un conjunto de pares de imágenes y subtítulos de texto en una carpeta especificada. Las imágenes se guardan como archivos PNG y los subtítulos como archivos TXT con el mismo prefijo de nombre de archivo.",
     "display_name": "Guardar conjunto de imágenes y textos en carpeta",
     "inputs": {
       "filename_prefix": {
@@ -15636,6 +15802,7 @@
     }
   },
   "SaveTrainingDataset": {
+    "description": "Guarda el conjunto de datos de entrenamiento codificado (latents + conditioning) en disco para una carga eficiente durante el entrenamiento.",
     "display_name": "Guardar conjunto de datos de entrenamiento",
     "inputs": {
       "conditioning": {
@@ -15822,6 +15989,7 @@
     }
   },
   "ShuffleDataset": {
+    "description": "Mezcla aleatoriamente el orden de las imágenes en una lista.",
     "display_name": "Barajar conjunto de imágenes",
     "inputs": {
       "control_after_generate": {
@@ -15844,6 +16012,7 @@
     }
   },
   "ShuffleImageTextDataset": {
+    "description": "Mezcla aleatoriamente el orden de los pares imagen-texto en una lista.",
     "display_name": "Barajar conjunto de imágenes y textos",
     "inputs": {
       "control_after_generate": {
@@ -16656,6 +16825,23 @@
     "outputs": {
       "0": {
         "name": "contiene",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "Igual que el método de formato de cadenas de Python. Soporta todas las opciones y características de formato de Python.",
+    "display_name": "Formatear Texto",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -19327,6 +19513,7 @@
     }
   },
   "VoxelToMesh": {
+    "description": "Convierte una cuadrícula de vóxeles en una malla.",
     "display_name": "VoxelToMesh",
     "inputs": {
       "algorithm": {
@@ -19346,6 +19533,7 @@
     }
   },
   "VoxelToMeshBasic": {
+    "description": "Convierte una cuadrícula de vóxeles en una malla.",
     "display_name": "VoxelAMallaBásico",
     "inputs": {
       "threshold": {
