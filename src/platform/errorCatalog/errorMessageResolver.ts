@@ -20,27 +20,17 @@ const KNOWN_PROMPT_ERROR_TYPES = new Set([
   'prompt_outputs_failed_validation'
 ])
 
-interface CatalogCopyFallbacks {
+interface ValidationCatalogRule {
   catalogId: string
-  title: string
-  message: string
-  details?: string
-  itemLabel?: string
-  toastTitle?: string
-  toastMessage?: string
+  key: string
+  itemLabel: 'node' | 'nodeInput'
 }
 
-interface RuntimeCopyFallbacks {
+interface RuntimeCatalogRule {
   catalogId: string
-  title: string
-  messageLocal?: string
-  messageCloud?: string
-  message?: string
-  itemLabel?: string
-  toastTitle?: string
-  toastMessageLocal?: string
-  toastMessageCloud?: string
-  toastMessage?: string
+  key: string
+  messageKey: 'message' | 'messageByEnvironment'
+  toastMessageKey: 'toastMessage' | 'toastMessageByEnvironment'
 }
 
 interface ErrorResolveContext {
@@ -59,6 +49,15 @@ function translateCatalogMessage(
   return fallback.replace(/\{(\w+)\}/g, (match, paramName) =>
     params[paramName] === undefined ? match : String(params[paramName])
   )
+}
+
+function translateOptionalCatalogMessage(
+  key: string,
+  fallback?: string,
+  params?: Record<string, string | number>
+): string | undefined {
+  if (te(key)) return params ? t(key, params) : t(key)
+  return fallback?.trim() ? fallback : undefined
 }
 
 function normalizeNodeName(nodeDisplayName: string | undefined): string {
@@ -106,289 +105,151 @@ function isImageNotLoadedValidationError(error: NodeValidationError): boolean {
   )
 }
 
-function resolveCatalogCopy(
-  keyPrefix: string,
-  fallback: CatalogCopyFallbacks,
-  params?: Record<string, string | number>
-): ResolvedErrorMessage {
-  return {
-    catalogId: fallback.catalogId,
-    displayTitle: translateCatalogMessage(
-      `${keyPrefix}.title`,
-      fallback.title,
-      params
-    ),
-    displayMessage: translateCatalogMessage(
-      `${keyPrefix}.message`,
-      fallback.message,
-      params
-    ),
-    ...(fallback.details
-      ? {
-          displayDetails: translateCatalogMessage(
-            `${keyPrefix}.details`,
-            fallback.details,
-            params
-          )
-        }
-      : {}),
-    ...(fallback.itemLabel
-      ? {
-          displayItemLabel: translateCatalogMessage(
-            `${keyPrefix}.itemLabel`,
-            fallback.itemLabel,
-            params
-          )
-        }
-      : {}),
-    ...(fallback.toastTitle
-      ? {
-          toastTitle: translateCatalogMessage(
-            `${keyPrefix}.toastTitle`,
-            fallback.toastTitle,
-            params
-          )
-        }
-      : {}),
-    ...(fallback.toastMessage
-      ? {
-          toastMessage: translateCatalogMessage(
-            `${keyPrefix}.toastMessage`,
-            fallback.toastMessage,
-            params
-          )
-        }
-      : {})
-  }
+function nodeInputItemLabel(nodeName: string, inputName: string): string {
+  return `${nodeName} - ${inputName}`
 }
 
-function resolveRuntimeCatalogCopy(
-  keyPrefix: string,
-  fallback: RuntimeCopyFallbacks,
-  params: Record<string, string | number>,
-  isCloud?: boolean
-): ResolvedErrorMessage {
-  const messageKey = isCloud ? 'messageCloud' : 'messageLocal'
-  const toastMessageKey = isCloud ? 'toastMessageCloud' : 'toastMessageLocal'
-  const messageFallback =
-    (isCloud ? fallback.messageCloud : fallback.messageLocal) ??
-    fallback.message ??
-    ''
-  const toastMessageFallback =
-    (isCloud ? fallback.toastMessageCloud : fallback.toastMessageLocal) ??
-    fallback.toastMessage
-
-  return {
-    catalogId: fallback.catalogId,
-    displayTitle: translateCatalogMessage(
-      `${keyPrefix}.title`,
-      fallback.title,
-      params
-    ),
-    ...(messageFallback
-      ? {
-          displayMessage: translateCatalogMessage(
-            `${keyPrefix}.${fallback.message ? 'message' : messageKey}`,
-            messageFallback,
-            params
-          )
-        }
-      : {}),
-    ...(fallback.itemLabel
-      ? {
-          displayItemLabel: translateCatalogMessage(
-            `${keyPrefix}.itemLabel`,
-            fallback.itemLabel,
-            params
-          )
-        }
-      : {}),
-    ...(fallback.toastTitle
-      ? {
-          toastTitle: translateCatalogMessage(
-            `${keyPrefix}.toastTitle`,
-            fallback.toastTitle,
-            params
-          )
-        }
-      : {}),
-    ...(toastMessageFallback
-      ? {
-          toastMessage: translateCatalogMessage(
-            `${keyPrefix}.${fallback.toastMessage ? 'toastMessage' : toastMessageKey}`,
-            toastMessageFallback,
-            params
-          )
-        }
-      : {})
-  }
+function rawExecutionMessage(
+  error: Extract<RunErrorMessageSource, { kind: 'execution' }>['error']
+): string {
+  return error.exception_type
+    ? `${error.exception_type}: ${error.exception_message}`
+    : error.exception_message
 }
 
-const VALIDATION_ERROR_COPY: Record<string, CatalogCopyFallbacks> = {
+const VALIDATION_ERROR_RULES: Record<string, ValidationCatalogRule> = {
   [REQUIRED_INPUT_MISSING_TYPE]: {
     catalogId: REQUIRED_INPUT_MISSING_CATALOG_ID,
-    title: 'Missing connection',
-    message: 'Required input slots have no connection feeding them.',
-    details: '{nodeName} is missing a required input: {inputName}',
-    itemLabel: '{nodeName} - {inputName}',
-    toastTitle: 'Required input missing',
-    toastMessage: '{nodeName} is missing a required input: {inputName}'
+    key: REQUIRED_INPUT_MISSING_TYPE,
+    itemLabel: 'nodeInput'
   },
   bad_linked_input: {
     catalogId: 'bad_linked_input',
-    title: 'Invalid connection',
-    message: 'A linked input connection is malformed.',
-    details: '{nodeName} has an invalid connection for {inputName}.',
-    itemLabel: '{nodeName} - {inputName}',
-    toastTitle: 'Invalid connection',
-    toastMessage: '{nodeName} has an invalid connection for {inputName}.'
+    key: 'bad_linked_input',
+    itemLabel: 'nodeInput'
   },
   return_type_mismatch: {
     catalogId: 'return_type_mismatch',
-    title: 'Invalid connection',
-    message: 'Connected nodes are using incompatible input and output types.',
-    details: '{nodeName} has an incompatible connection for {inputName}.',
-    itemLabel: '{nodeName} - {inputName}',
-    toastTitle: 'Invalid connection',
-    toastMessage: '{nodeName} has an incompatible connection for {inputName}.'
+    key: 'return_type_mismatch',
+    itemLabel: 'nodeInput'
   },
   invalid_input_type: {
     catalogId: 'invalid_input_type',
-    title: 'Invalid input',
-    message: 'An input value has the wrong type.',
-    details: "{nodeName} couldn't convert {inputName} to the expected type.",
-    itemLabel: '{nodeName} - {inputName}',
-    toastTitle: 'Invalid input',
-    toastMessage:
-      "{nodeName} couldn't convert {inputName} to the expected type."
+    key: 'invalid_input_type',
+    itemLabel: 'nodeInput'
   },
   value_smaller_than_min: {
     catalogId: 'value_smaller_than_min',
-    title: 'Input out of range',
-    message: 'Some input values are outside the allowed range.',
-    details: '{nodeName} has a value below the minimum for {inputName}.',
-    itemLabel: '{nodeName} - {inputName}',
-    toastTitle: 'Input out of range',
-    toastMessage: '{nodeName} has a value below the minimum for {inputName}.'
+    key: 'value_smaller_than_min',
+    itemLabel: 'nodeInput'
   },
   value_bigger_than_max: {
     catalogId: 'value_bigger_than_max',
-    title: 'Input out of range',
-    message: 'Some input values are outside the allowed range.',
-    details: '{nodeName} has a value above the maximum for {inputName}.',
-    itemLabel: '{nodeName} - {inputName}',
-    toastTitle: 'Input out of range',
-    toastMessage: '{nodeName} has a value above the maximum for {inputName}.'
+    key: 'value_bigger_than_max',
+    itemLabel: 'nodeInput'
   },
   value_not_in_list: {
     catalogId: 'value_not_in_list',
-    title: 'Invalid input',
-    message: 'Some input values are not available for this node.',
-    details: '{nodeName} has an unsupported value for {inputName}.',
-    itemLabel: '{nodeName} - {inputName}',
-    toastTitle: 'Invalid input',
-    toastMessage: '{nodeName} has an unsupported value for {inputName}.'
+    key: 'value_not_in_list',
+    itemLabel: 'nodeInput'
   },
   custom_validation_failed: {
     catalogId: 'custom_validation_failed',
-    title: 'Invalid input',
-    message: 'A node rejected one or more input values.',
-    details: '{nodeName} rejected the value for {inputName}.',
-    itemLabel: '{nodeName} - {inputName}',
-    toastTitle: 'Invalid input',
-    toastMessage: '{nodeName} rejected the value for {inputName}.'
+    key: 'custom_validation_failed',
+    itemLabel: 'nodeInput'
   },
   exception_during_inner_validation: {
     catalogId: 'exception_during_inner_validation',
-    title: 'Validation failed',
-    message: "The workflow couldn't validate a connected node.",
-    details: "{nodeName} couldn't validate {inputName}.",
-    itemLabel: '{nodeName} - {inputName}',
-    toastTitle: 'Validation failed',
-    toastMessage: "{nodeName} couldn't validate {inputName}."
+    key: 'exception_during_inner_validation',
+    itemLabel: 'nodeInput'
   },
   exception_during_validation: {
     catalogId: 'exception_during_validation',
-    title: 'Validation failed',
-    message: 'The node could not be validated.',
-    details: '{nodeName} could not be validated.',
-    itemLabel: '{nodeName}',
-    toastTitle: 'Validation failed',
-    toastMessage: '{nodeName} could not be validated.'
+    key: 'exception_during_validation',
+    itemLabel: 'node'
   },
   dependency_cycle: {
     catalogId: 'dependency_cycle',
-    title: 'Invalid workflow',
-    message: 'The workflow has a circular node connection.',
-    details: '{nodeName} is part of a circular connection.',
-    itemLabel: '{nodeName}',
-    toastTitle: 'Invalid workflow',
-    toastMessage: '{nodeName} is part of a circular connection.'
+    key: 'dependency_cycle',
+    itemLabel: 'node'
   }
 }
 
-const IMAGE_NOT_LOADED_VALIDATION_COPY = {
+const IMAGE_NOT_LOADED_VALIDATION_RULE = {
   catalogId: IMAGE_NOT_LOADED_CATALOG_ID,
-  title: 'Image not loaded',
-  message: "The system couldn't load this image.",
-  details: "The image for {nodeName} couldn't be loaded. Try adding it again.",
-  itemLabel: '{nodeName}',
-  toastTitle: "Input image couldn't be loaded",
-  toastMessage:
-    "The image for {nodeName} couldn't be loaded. Try adding it again."
-} satisfies CatalogCopyFallbacks
+  key: 'image_not_loaded',
+  itemLabel: 'node'
+} satisfies ValidationCatalogRule
 
-const RUNTIME_ERROR_COPY = {
+const RUNTIME_ERROR_RULES = {
   execution_failed: {
     catalogId: EXECUTION_FAILED_CATALOG_ID,
-    title: 'Execution failed',
-    messageLocal: 'Node threw an error during execution.',
-    messageCloud: 'Node threw an error during execution. No credits charged.',
-    itemLabel: '{nodeName}',
-    toastTitle: '{nodeName} failed',
-    toastMessageLocal:
-      'This node threw an error during execution. Check its inputs or try a different configuration.',
-    toastMessageCloud:
-      'This node threw an error during execution. Check its inputs or try a different configuration. No credits charged.'
+    key: 'execution_failed',
+    messageKey: 'messageByEnvironment',
+    toastMessageKey: 'toastMessageByEnvironment'
   },
   image_not_loaded: {
     catalogId: IMAGE_NOT_LOADED_CATALOG_ID,
-    title: 'Image not loaded',
-    message: "The system couldn't load this image.",
-    itemLabel: '{nodeName}',
-    toastTitle: "Input image couldn't be loaded",
-    toastMessage:
-      "The image for {nodeName} couldn't be loaded. Try adding it again."
+    key: 'image_not_loaded',
+    messageKey: 'message',
+    toastMessageKey: 'toastMessage'
   },
   out_of_memory: {
     catalogId: OUT_OF_MEMORY_CATALOG_ID,
-    title: 'Generation failed',
-    messageLocal:
-      'Not enough GPU memory. Try reducing complexity and run again.',
-    messageCloud:
-      'Not enough GPU memory. Try reducing complexity and run again. No credits charged.',
-    itemLabel: '{nodeName}',
-    toastTitle: 'Generation failed',
-    toastMessageLocal:
-      'Not enough GPU memory. Try reducing complexity and run again.',
-    toastMessageCloud:
-      'Not enough GPU memory. Try reducing complexity and run again. No credits charged.'
+    key: 'out_of_memory',
+    messageKey: 'messageByEnvironment',
+    toastMessageKey: 'toastMessageByEnvironment'
   }
-} satisfies Record<string, RuntimeCopyFallbacks>
+} satisfies Record<string, RuntimeCatalogRule>
 
 function resolveValidationCatalogCopy(
   error: NodeValidationError,
   context: ErrorResolveContext,
-  errorTypeKey: string,
-  fallback: CatalogCopyFallbacks
+  rule: ValidationCatalogRule
 ): ResolvedErrorMessage {
   const nodeName = normalizeNodeName(context.nodeDisplayName)
   const inputName = getInputName(error)
-  return resolveCatalogCopy(
-    `errorCatalog.validationErrors.${errorTypeKey}`,
-    fallback,
-    { nodeName, inputName }
-  )
+  const params = { nodeName, inputName }
+  const keyPrefix = `errorCatalog.validationErrors.${rule.key}`
+  const titleFallback = error.type || error.message
+  const itemLabelFallback =
+    rule.itemLabel === 'node'
+      ? nodeName
+      : nodeInputItemLabel(nodeName, inputName)
+
+  return {
+    catalogId: rule.catalogId,
+    displayTitle: translateCatalogMessage(
+      `${keyPrefix}.title`,
+      titleFallback,
+      params
+    ),
+    displayMessage: translateCatalogMessage(
+      `${keyPrefix}.message`,
+      error.message,
+      params
+    ),
+    displayDetails: translateOptionalCatalogMessage(
+      `${keyPrefix}.details`,
+      error.details,
+      params
+    ),
+    displayItemLabel: translateCatalogMessage(
+      `${keyPrefix}.itemLabel`,
+      itemLabelFallback,
+      params
+    ),
+    toastTitle: translateCatalogMessage(
+      `${keyPrefix}.toastTitle`,
+      titleFallback,
+      params
+    ),
+    toastMessage: translateCatalogMessage(
+      `${keyPrefix}.toastMessage`,
+      error.message,
+      params
+    )
+  }
 }
 
 function resolveNodeValidationErrorMessage(
@@ -399,51 +260,97 @@ function resolveNodeValidationErrorMessage(
     return resolveValidationCatalogCopy(
       error,
       context,
-      'image_not_loaded',
-      IMAGE_NOT_LOADED_VALIDATION_COPY
+      IMAGE_NOT_LOADED_VALIDATION_RULE
     )
   }
 
-  const fallback = VALIDATION_ERROR_COPY[error.type]
-  if (!fallback) return {}
+  const rule = VALIDATION_ERROR_RULES[error.type]
+  if (!rule) return {}
 
-  return resolveValidationCatalogCopy(error, context, error.type, fallback)
+  return resolveValidationCatalogCopy(error, context, rule)
+}
+
+function resolveRuntimeCatalogCopy(
+  error: Extract<RunErrorMessageSource, { kind: 'execution' }>['error'],
+  rule: RuntimeCatalogRule,
+  context: ErrorResolveContext
+): ResolvedErrorMessage {
+  const nodeName = normalizeNodeName(context.nodeDisplayName)
+  const params = { nodeName }
+  const keyPrefix = `errorCatalog.runtimeErrors.${rule.key}`
+  const messageKey =
+    rule.messageKey === 'message'
+      ? 'message'
+      : context.isCloud
+        ? 'messageCloud'
+        : 'messageLocal'
+  const toastMessageKey =
+    rule.toastMessageKey === 'toastMessage'
+      ? 'toastMessage'
+      : context.isCloud
+        ? 'toastMessageCloud'
+        : 'toastMessageLocal'
+  const titleFallback = error.exception_type || error.exception_message
+  const messageFallback = rawExecutionMessage(error)
+
+  return {
+    catalogId: rule.catalogId,
+    displayTitle: translateCatalogMessage(
+      `${keyPrefix}.title`,
+      titleFallback,
+      params
+    ),
+    displayMessage: translateCatalogMessage(
+      `${keyPrefix}.${messageKey}`,
+      messageFallback,
+      params
+    ),
+    displayItemLabel: translateCatalogMessage(
+      `${keyPrefix}.itemLabel`,
+      nodeName,
+      params
+    ),
+    toastTitle: translateCatalogMessage(
+      `${keyPrefix}.toastTitle`,
+      titleFallback,
+      params
+    ),
+    toastMessage: translateCatalogMessage(
+      `${keyPrefix}.${toastMessageKey}`,
+      messageFallback,
+      params
+    )
+  }
 }
 
 function resolveExecutionErrorMessage(
   error: Extract<RunErrorMessageSource, { kind: 'execution' }>['error'],
   context: ErrorResolveContext
 ): ResolvedErrorMessage {
-  const nodeName = normalizeNodeName(context.nodeDisplayName)
-  const params = { nodeName }
   const errorText = getErrorText(error)
-
   if (
     error.exception_type === 'ImageDownloadError' ||
     isImageNotLoadedText(errorText)
   ) {
     return resolveRuntimeCatalogCopy(
-      'errorCatalog.runtimeErrors.image_not_loaded',
-      RUNTIME_ERROR_COPY.image_not_loaded,
-      params,
-      context.isCloud
+      error,
+      RUNTIME_ERROR_RULES.image_not_loaded,
+      context
     )
   }
 
   if (error.exception_type === 'OOMError' || isOutOfMemoryText(errorText)) {
     return resolveRuntimeCatalogCopy(
-      'errorCatalog.runtimeErrors.out_of_memory',
-      RUNTIME_ERROR_COPY.out_of_memory,
-      params,
-      context.isCloud
+      error,
+      RUNTIME_ERROR_RULES.out_of_memory,
+      context
     )
   }
 
   return resolveRuntimeCatalogCopy(
-    'errorCatalog.runtimeErrors.execution_failed',
-    RUNTIME_ERROR_COPY.execution_failed,
-    params,
-    context.isCloud
+    error,
+    RUNTIME_ERROR_RULES.execution_failed,
+    context
   )
 }
 
@@ -456,11 +363,11 @@ function resolvePromptErrorMessage(
       catalogId: IMAGE_NOT_LOADED_CATALOG_ID,
       displayTitle: st(
         'errorCatalog.promptErrors.image_not_loaded.title',
-        'Image not loaded'
+        error.type || error.message
       ),
       displayMessage: st(
         'errorCatalog.promptErrors.image_not_loaded.desc',
-        "The system couldn't load this image."
+        error.message
       )
     }
   }
@@ -469,17 +376,14 @@ function resolvePromptErrorMessage(
     const messageKey = context.isCloud
       ? 'errorCatalog.promptErrors.out_of_memory.descCloud'
       : 'errorCatalog.promptErrors.out_of_memory.descLocal'
-    const messageFallback = context.isCloud
-      ? 'Not enough GPU memory. Try reducing complexity and run again. No credits charged.'
-      : 'Not enough GPU memory. Try reducing complexity and run again.'
 
     return {
       catalogId: OUT_OF_MEMORY_CATALOG_ID,
       displayTitle: st(
         'errorCatalog.promptErrors.out_of_memory.title',
-        'Generation failed'
+        error.type || error.message
       ),
-      displayMessage: st(messageKey, messageFallback)
+      displayMessage: st(messageKey, error.message)
     }
   }
 
@@ -493,11 +397,10 @@ function resolvePromptErrorMessage(
       : error.type
 
   return {
-    ...(te(`errorCatalog.promptErrors.${errorTypeKey}.title`)
-      ? {
-          displayTitle: t(`errorCatalog.promptErrors.${errorTypeKey}.title`)
-        }
-      : {}),
+    displayTitle: translateCatalogMessage(
+      `errorCatalog.promptErrors.${errorTypeKey}.title`,
+      error.type || error.message
+    ),
     displayMessage: st(
       `errorCatalog.promptErrors.${errorTypeKey}.desc`,
       error.message

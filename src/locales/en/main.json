@@ -3787,15 +3787,19 @@
     },
     "promptErrors": {
       "prompt_no_outputs": {
+        "title": "Prompt has no outputs",
         "desc": "The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result."
       },
       "no_prompt": {
+        "title": "Workflow data is empty",
         "desc": "The workflow data sent to the server is empty. This may be an unexpected system error."
       },
       "server_error_local": {
+        "title": "Server error",
         "desc": "The server encountered an unexpected error. Please check the server logs."
       },
       "server_error_cloud": {
+        "title": "Server error",
         "desc": "The server encountered an unexpected error. Please try again later."
       },
       "missing_node_type": {

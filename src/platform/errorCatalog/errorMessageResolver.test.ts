@@ -83,7 +83,7 @@ describe('errorMessageResolver', () => {
     })
   })
 
-  it('interpolates fallback templates when catalog keys are missing in the active locale', () => {
+  it('falls back to raw API copy when catalog keys are missing in the active locale', () => {
     const originalLocale = i18n.global.locale.value
     const originalKoMessages = i18n.global.getLocaleMessage('ko')
 
@@ -98,9 +98,12 @@ describe('errorMessageResolver', () => {
           nodeDisplayName: '0'
         })
       ).toMatchObject({
-        displayDetails: '0 is missing a required input: seed',
+        displayTitle: 'required_input_missing',
+        displayMessage: 'Required input is missing',
+        displayDetails: 'seed',
         displayItemLabel: '0 - seed',
-        toastMessage: '0 is missing a required input: seed'
+        toastTitle: 'required_input_missing',
+        toastMessage: 'Required input is missing'
       })
     } finally {
       i18n.global.setLocaleMessage('ko', originalKoMessages)
@@ -295,6 +298,7 @@ describe('errorMessageResolver', () => {
         }
       })
     ).toEqual({
+      displayTitle: 'Prompt has no outputs',
       displayMessage:
         'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.'
     })
