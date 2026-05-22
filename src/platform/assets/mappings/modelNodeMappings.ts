@@ -210,5 +210,11 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
 
   // ---- Ultralytics YOLO detectors (ComfyUI-Impact-Pack) ----
   ['ultralytics/bbox', 'UltralyticsDetectorProvider', 'model_name'],
-  ['ultralytics/segm', 'UltralyticsDetectorProvider', 'model_name']
+  ['ultralytics/segm', 'UltralyticsDetectorProvider', 'model_name'],
+
+  // ---- ComfyUI core geometry estimation (MoGe) ----
+  ['geometry_estimation', 'LoadMoGeModel', 'model_name'],
+
+  // ---- ComfyUI core optical flow (RAFT) ----
+  ['optical_flow', 'OpticalFlowLoader', 'model_name']
 ] as const satisfies ReadonlyArray<readonly [string, string, string]>

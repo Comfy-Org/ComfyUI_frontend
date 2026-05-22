@@ -8435,6 +8435,20 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "MediaPipe Yüz İşaretleyicisini Yükle",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "models/mediapipe/ klasöründen Face Landmarker safetensors dosyası."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadMoGeModel": {
     "display_name": "MoGe Modelini Yükle",
     "inputs": {
@@ -9314,6 +9328,92 @@
     "inputs": {
       "mask": {
         "name": "maske"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceLandmarker": {
+    "display_name": "MediaPipe Yüz İşaretleyici",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "Yüz algılayıcı aralığı. 'short' yakın yüzler için ayarlanmıştır (kamera ~2 m içinde); 'full' daha uzak/küçük yüzleri kapsar (en fazla ~5 m) fakat daha yavaştır. 'both' her iki algılayıcıyı da çalıştırır ve kare başına daha fazla yüz bulanı seçer (~2× algılama maliyeti)."
+      },
+      "face_landmarker": {
+        "name": "face_landmarker"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "BlazeFace skor eşiği. Küçük/gizli yüzleri yakalamak için düşürün."
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "Bir toplu işlemde algılama başarısız olduğunda kare başına davranış. 'empty' kareyi yüzsüz bırakır. 'previous' en son başarılı algılamayı kopyalar. 'interpolate' başarılı kareler arasında landmark/bbox/blendshape'leri enterpole eder. Çoklu yüz: kareler arasında yüzleri açgözlü bbox-merkez NN ile eşleştirir."
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "Kare başına döndürülecek maksimum yüz sayısı. 0 = sınır yok (tüm algılananları döndür)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "display_name": "MediaPipe Yüz Maskesi",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = face_oval+lips+eyes+irises birleşimi (hepsini kapsadığı için face_oval'a indirgenir). 'custom' = her bölgeyi ayrı ayrı açıp kapatmak için, örneğin dudak+göz gibi kombinasyonlar."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "display_name": "MediaPipe Yüz Ağı Görselleştir",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = oval+gözler+kaşlar+dudaklar+irisler+burun. 'fill' = dolu face_oval çokgeni (silüet maskesi). 'custom' = her özelliği ayrı ayrı açıp kapatmak için (2547 kenarlı tam tel kafes için 'tesselation' dahil)."
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Bağlanmazsa siyah bir tuval kullanılır."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "Landmark nokta yarıçapı (piksel cinsinden). 0 nokta çizimini devre dışı bırakır."
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "Kenar çizgi kalınlığı (piksel cinsinden). 0 kenar çizimini devre dışı bırakır."
       }
     },
     "outputs": {
@@ -13989,6 +14089,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "Bir arka plan kaldırma modeli kullanarak bir görüntüden arka planı kaldırmak için bir ön plan maskesi oluşturur.",
     "display_name": "Arka Planı Kaldır",
     "inputs": {
       "bg_removal_model": {
@@ -16656,6 +16757,23 @@
     "outputs": {
       "0": {
         "name": "içerir",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "Python'un string format metoduyla aynıdır. Python'un tüm biçimlendirme seçeneklerini ve özelliklerini destekler.",
+    "display_name": "Metni Biçimlendir",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

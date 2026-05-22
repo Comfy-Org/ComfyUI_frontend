@@ -8435,6 +8435,20 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "MediaPipe Face Landmarker を読み込む",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "models/mediapipe/ からの Face Landmarker safetensors。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadMoGeModel": {
     "display_name": "MoGeモデルの読み込み",
     "inputs": {
@@ -9314,6 +9328,92 @@
     "inputs": {
       "mask": {
         "name": "マスク"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceLandmarker": {
+    "display_name": "MediaPipe Face Landmarker",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "顔検出器の範囲。「short」はカメラから約2m以内の顔に最適化。「full」は最大約5mまでの遠く/小さい顔も検出（遅くなる）。「both」は両方の検出器を実行し、フレームごとにより多くの顔を検出した方を採用（検出コスト約2倍）。"
+      },
+      "face_landmarker": {
+        "name": "face_landmarker"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "BlazeFace のスコア閾値。値を下げると小さい/隠れた顔も検出しやすくなります。"
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "バッチ内で検出に失敗したフレームごとの動作。「empty」は顔なしのまま。「previous」は直近の検出結果をコピー。「interpolate」は前後の検出結果からランドマーク/バウンディングボックス/ブレンドシェイプを補間。複数顔の場合は、フレーム間でバウンディングボックス中心の最近傍でペアリング。"
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "フレームごとに返す最大顔数。0 = 上限なし（検出されたすべてを返す）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "display_name": "MediaPipe Face Mask",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "「all」= face_oval+lips+eyes+irises の合体（face_oval が他を囲むため実質 face_oval）。「custom」= 各領域を個別に切り替えて lips+eyes などの組み合わせも可能。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "display_name": "MediaPipe Face Mesh 可視化",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "「all」= oval+eyes+brows+lips+irises+nose。「fill」= face_oval の塗りつぶしポリゴン（シルエットマスク）。「custom」= 各特徴を個別に切り替え（「tesselation」は全2547エッジのワイヤーフレーム）。"
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "未接続の場合は黒いキャンバスが使用されます。"
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "ランドマーク点の半径（ピクセル単位）。0で点描画を無効化。"
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "エッジ線の太さ（ピクセル単位）。0でエッジ描画を無効化。"
       }
     },
     "outputs": {
@@ -13989,6 +14089,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "背景除去モデルを使用して画像から背景を削除するための前景マスクを生成します。",
     "display_name": "背景を除去",
     "inputs": {
       "bg_removal_model": {
@@ -16656,6 +16757,23 @@
     "outputs": {
       "0": {
         "name": "contains",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "Python の string format メソッドと同様。Python のすべてのフォーマットオプションと機能に対応。",
+    "display_name": "テキスト整形",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
