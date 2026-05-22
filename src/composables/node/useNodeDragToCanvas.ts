@@ -21,6 +21,7 @@ function updatePosition(e: PointerEvent) {
 // (0, 0). dragover on the target reliably reports real client coords.
 // https://bugzilla.mozilla.org/show_bug.cgi?id=1773886
 function trackNativeDragPosition(e: DragEvent) {
+  if (dragMode.value !== 'native') return
   if (e.clientX === 0 && e.clientY === 0) return
   lastNativeDragPosition.value = { x: e.clientX, y: e.clientY }
 }

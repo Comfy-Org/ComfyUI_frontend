@@ -523,6 +523,21 @@ describe('useNodeDragToCanvas', () => {
       })
     })
 
+    it('should ignore dragover events fired before startDrag', () => {
+      const { startDrag, setupGlobalListeners, handleNativeDrop } =
+        useNodeDragToCanvas()
+      setupGlobalListeners()
+
+      fireDrag(250, 250)
+      startDrag(mockNodeDef, 'native')
+      handleNativeDrop(300, 300)
+
+      expect(mockConvertEventToCanvasOffset).toHaveBeenCalledWith({
+        clientX: 300,
+        clientY: 300
+      })
+    })
+
     it('should clear tracked position between drags', () => {
       const { startDrag, setupGlobalListeners, handleNativeDrop } =
         useNodeDragToCanvas()
