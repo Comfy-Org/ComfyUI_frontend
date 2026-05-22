@@ -690,43 +690,6 @@ test(
       await expect.poll(isConnected).toBe(true)
 
       await comfyPage.subgraph.exitViaBreadcrumb()
-  })
-
-  await expect(steps).toHaveCount(1)
-})
-
-test('Can promote multiple previews @vue-nodes', async ({ comfyPage }) => {
-  await comfyPage.menu.topbar.newWorkflowButton.click()
-  await comfyPage.nextFrame()
-
-  await test.step('Add and rename a Load Image node', async () => {
-    const position = { x: 300, y: 300 }
-    await comfyPage.searchBoxV2.addNode('Load Image', { position })
-    const loadImage = await comfyPage.vueNodes.getFixtureByTitle('Load Image')
-    await loadImage.setTitle('Character Reference')
-  })
-
-  await test.step('Add a second Load Image node', async () => {
-    const position = { x: 600, y: 300 }
-    await comfyPage.searchBoxV2.addNode('Load Image', { position })
-  })
-
-  await test.step('Convert both nodes to subgraph', async () => {
-    await comfyPage.canvas.focus()
-    await comfyPage.page.keyboard.press('Control+a')
-    await comfyPage.contextMenu
-      .openFor(comfyPage.vueNodes.getNodeLocator('1'))
-      .then((m) => m.clickMenuItemExact('Convert to Subgraph'))
-  })
-
-  const { editor } = comfyPage.subgraph
-  const subgraph = await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
-
-  await test.step('Promote both image previews', async () => {
-    await editor.togglePromotion(subgraph.root, {
-      nodeId: '1',
-      widgetName: '$$canvas-image-preview',
-      toState: true
     })
 
     await expect(steps).toHaveCount(1)
@@ -737,23 +700,19 @@ test(
   'Can promote multiple previews',
   { tag: ['@vue-nodes'] },
   async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.NodeSearchBoxImpl',
-      'v1 (legacy)'
-    )
     await comfyPage.menu.topbar.newWorkflowButton.click()
     await comfyPage.nextFrame()
 
     await test.step('Add and rename a Load Image node', async () => {
-      await comfyPage.page.mouse.dblclick(300, 300, { delay: 5 })
-      await comfyPage.searchBox.fillAndSelectFirstNode('Load Image')
+      const position = { x: 300, y: 300 }
+      await comfyPage.searchBoxV2.addNode('Load Image', { position })
       const loadImage = await comfyPage.vueNodes.getFixtureByTitle('Load Image')
       await loadImage.setTitle('Character Reference')
     })
 
     await test.step('Add a second Load Image node', async () => {
-      await comfyPage.page.mouse.dblclick(600, 300, { delay: 5 })
-      await comfyPage.searchBox.fillAndSelectFirstNode('Load Image')
+      const position = { x: 600, y: 300 }
+      await comfyPage.searchBoxV2.addNode('Load Image', { position })
     })
 
     await test.step('Convert both nodes to subgraph', async () => {
