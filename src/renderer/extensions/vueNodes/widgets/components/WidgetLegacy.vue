@@ -6,6 +6,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
@@ -99,7 +100,12 @@ function draw() {
   containerHeight.value = height
   node.canvasHeight = height
   widgetInstance.y = 0
-  widgetInstance.width = width
+  // Only set widget.width in Vue nodes mode.  In LiteGraph mode the canvas
+  // renderer derives width from node.size[0]; persisting a pixel value here
+  // causes widgets to ignore subsequent node resizes.
+  if (LiteGraph.vueNodesMode) {
+    widgetInstance.width = width
+  }
   canvasEl.value.height = height === 0 ? 0 : (height + 2) * scaleFactor
   canvasEl.value.width = width * scaleFactor
   const ctx = canvasEl.value.getContext('2d')
