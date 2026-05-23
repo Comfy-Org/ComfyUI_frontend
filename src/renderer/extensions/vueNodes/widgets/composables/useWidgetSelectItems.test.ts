@@ -292,6 +292,20 @@ describe('useWidgetSelectItems', () => {
       )
       expect(dropdownItems.value[0].preview_url).toContain('type=input')
     })
+
+    it('splits subfolder from filename in preview URL', () => {
+      const { dropdownItems } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => ['subfolder/nested/img_001.png'],
+          modelValue: ref('subfolder/nested/img_001.png'),
+          assetKind: () => 'image'
+        })
+      )
+      const url = dropdownItems.value[0].preview_url
+      expect(url).toContain('filename=img_001.png')
+      expect(url).toContain('subfolder=subfolder%2Fnested')
+      expect(url).toContain('type=input')
+    })
   })
 
   describe('cloud asset mode', () => {
