@@ -911,6 +911,44 @@
     "paused": "تم الإيقاف مؤقتًا",
     "resume": "استئناف التنزيل"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "مدخل غير معروف",
+      "nodeName": "هذه العقدة"
+    },
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "بيانات سير العمل المرسلة إلى الخادم فارغة. قد يكون هذا خطأ غير متوقع في النظام."
+      },
+      "prompt_no_outputs": {
+        "desc": "سير العمل لا يحتوي على أي عقدة إخراج (مثل حفظ الصورة أو معاينة الصورة) لإنتاج نتيجة."
+      },
+      "server_error_cloud": {
+        "desc": "واجه الخادم خطأ غير متوقع. يرجى المحاولة لاحقاً."
+      },
+      "server_error_local": {
+        "desc": "واجه الخادم خطأ غير متوقع. يرجى مراجعة سجلات الخادم."
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastMessageCloud": "حدث خطأ أثناء تنفيذ هذه العقدة. تحقق من المدخلات أو جرّب إعداداً مختلفاً. لم يتم خصم أي رصيد.",
+        "toastMessageLocal": "حدث خطأ أثناء تنفيذ هذه العقدة. تحقق من المدخلات أو جرّب إعداداً مختلفاً.",
+        "toastTitle": "فشل {nodeName}"
+      }
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "details": "{nodeName} تفتقد إلى مدخل مطلوب: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "بعض منافذ الإدخال المطلوبة غير متصلة.",
+        "title": "الاتصال مفقود",
+        "toastMessage": "{nodeName} تفتقد إلى مدخل مطلوب: {inputName}",
+        "toastTitle": "مدخل مطلوب مفقود"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "accessRestrictedTitle": "Access Restricted",
@@ -2437,6 +2475,43 @@
     },
     "title": "جهازك غير مدعوم"
   },
+  "oauth": {
+    "consent": {
+      "allow": "متابعة",
+      "appTypeNative": "تطبيق أصلي",
+      "appTypeWeb": "تطبيق ويب",
+      "deny": "إلغاء",
+      "errorExpired": "انتهت صلاحية طلب الموافقة هذا أو تم استخدامه بالفعل. يرجى إعادة البدء من تطبيق العميل.",
+      "errorScopeBroadening": "الأذونات التي تمت الموافقة عليها سابقًا لا تغطي هذا الطلب. ستحتاج إلى إعادة التفويض بالأذونات الجديدة.",
+      "errorUnavailable": "هذه الميزة غير متوفرة حاليًا. يرجى التواصل مع الدعم إذا استمرت المشكلة.",
+      "genericError": "فشل طلب OAuth. يرجى إعادة البدء من تطبيق العميل.",
+      "loading": "جارٍ تحميل طلب التفويض…",
+      "missingRequest": "هذا الطلب التفويضي غير موجود. يرجى إعادة البدء من تطبيق العميل.",
+      "noWorkspaces": "لا توجد مساحات عمل مؤهلة لهذا الطلب.",
+      "permissionsHeader": "الأذونات",
+      "redirectNotice": "سيتم إعادة توجيهك إلى",
+      "resourceFallback": "هذا التطبيق",
+      "sessionError": "فشل في إنشاء الجلسة. يرجى المحاولة مرة أخرى.",
+      "sessionErrorToastSummary": "تعذر متابعة تسجيل الدخول عبر OAuth",
+      "subtitle": "سجّل الدخول إلى {resource} للمتابعة",
+      "title": "{client} يطلب الوصول",
+      "workspaceHelp": "تنطبق الأذونات على مساحة العمل هذه فقط.",
+      "workspaceLabel": "مساحة العمل"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "تشغيل سير العمل نيابةً عنك"
+      },
+      "mcp:tools:read": {
+        "label": "عرض أدوات سير العمل المتاحة"
+      }
+    },
+    "workspace": {
+      "member": "عضو",
+      "owner": "المالك",
+      "personal": "شخصي"
+    }
+  },
   "openSharedWorkflow": {
     "author": "المؤلف:",
     "copyAssetsAndOpen": "استيراد الأصول وفتح سير العمل",
@@ -2664,20 +2739,6 @@
     "normal": "عادي",
     "parameters": "المعلمات",
     "pinned": "مثبت",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "بيانات سير العمل المرسلة إلى الخادم فارغة. قد يكون هذا خطأ غير متوقع في النظام."
-      },
-      "prompt_no_outputs": {
-        "desc": "سير العمل لا يحتوي على أي عقدة إخراج (مثل حفظ الصورة، معاينة الصورة) لإنتاج نتيجة."
-      },
-      "server_error_cloud": {
-        "desc": "واجه الخادم خطأ غير متوقع. يرجى المحاولة لاحقاً."
-      },
-      "server_error_local": {
-        "desc": "واجه الخادم خطأ غير متوقع. يرجى مراجعة سجلات الخادم."
-      }
-    },
     "properties": "الخصائص",
     "removeFavorite": "إزالة من المفضلة",
     "resetAllParameters": "إعادة تعيين جميع المعلمات",
@@ -3075,6 +3136,7 @@
         "sourceDesc": "التجميع حسب نوع المصدر (أساسي، مخصص، API)"
       },
       "noBookmarkedNodes": "لا توجد مفضلات بعد",
+      "noMatchingNodes": "لا توجد عقد تطابق \"{query}\"",
       "resetView": "إعادة تعيين العرض إلى الافتراضي",
       "sections": {
         "bookmarked": "المفضلة",
@@ -3460,8 +3522,7 @@
       "newest": "الأحدث",
       "popular": "الأكثر شيوعًا",
       "recommended": "موصى به",
-      "searchPlaceholder": "بحث...",
-      "vramLowToHigh": "استخدام VRAM (من الأقل إلى الأعلى)"
+      "searchPlaceholder": "بحث..."
     },
     "sorting": "ترتيب حسب",
     "title": "ابدأ باستخدام قالب",

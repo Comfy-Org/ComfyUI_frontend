@@ -911,6 +911,44 @@
     "paused": "Pausado",
     "resume": "Retomar download"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "entrada desconhecida",
+      "nodeName": "Este nó"
+    },
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "Os dados do fluxo de trabalho enviados ao servidor estão vazios. Isso pode ser um erro inesperado do sistema."
+      },
+      "prompt_no_outputs": {
+        "desc": "O fluxo de trabalho não contém nenhum nó de saída (ex: Salvar Imagem, Visualizar Imagem) para produzir um resultado."
+      },
+      "server_error_cloud": {
+        "desc": "O servidor encontrou um erro inesperado. Por favor, tente novamente mais tarde."
+      },
+      "server_error_local": {
+        "desc": "O servidor encontrou um erro inesperado. Por favor, verifique os logs do servidor."
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastMessageCloud": "Este nó gerou um erro durante a execução. Verifique suas entradas ou tente uma configuração diferente. Nenhum crédito foi cobrado.",
+        "toastMessageLocal": "Este nó gerou um erro durante a execução. Verifique suas entradas ou tente uma configuração diferente.",
+        "toastTitle": "{nodeName} falhou"
+      }
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "details": "{nodeName} está sem uma entrada obrigatória: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Entradas obrigatórias não possuem conexão.",
+        "title": "Conexão ausente",
+        "toastMessage": "{nodeName} está sem uma entrada obrigatória: {inputName}",
+        "toastTitle": "Entrada obrigatória ausente"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "accessRestrictedTitle": "Access Restricted",
@@ -2437,6 +2475,43 @@
     },
     "title": "Seu dispositivo não é suportado"
   },
+  "oauth": {
+    "consent": {
+      "allow": "Continuar",
+      "appTypeNative": "Aplicativo nativo",
+      "appTypeWeb": "Aplicativo web",
+      "deny": "Cancelar",
+      "errorExpired": "Esta solicitação de consentimento expirou ou já foi utilizada. Por favor, reinicie a partir do aplicativo cliente.",
+      "errorScopeBroadening": "As permissões previamente aprovadas não cobrem esta solicitação. Você precisará autorizar novamente com as novas permissões.",
+      "errorUnavailable": "Este recurso não está disponível no momento. Por favor, entre em contato com o suporte se o problema persistir.",
+      "genericError": "A solicitação OAuth falhou. Por favor, reinicie a partir do aplicativo cliente.",
+      "loading": "Carregando solicitação de autorização…",
+      "missingRequest": "Esta solicitação de autorização está ausente. Por favor, reinicie a partir do aplicativo cliente.",
+      "noWorkspaces": "Nenhum workspace elegível está disponível para esta solicitação.",
+      "permissionsHeader": "Permissões",
+      "redirectNotice": "Você será redirecionado para",
+      "resourceFallback": "este aplicativo",
+      "sessionError": "Falha ao estabelecer sessão. Por favor, tente novamente.",
+      "sessionErrorToastSummary": "Não foi possível continuar o login OAuth",
+      "subtitle": "Faça login em {resource} para continuar",
+      "title": "{client} deseja acesso",
+      "workspaceHelp": "As permissões se aplicam somente a este workspace.",
+      "workspaceLabel": "Workspace"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "Executar workflows em seu nome"
+      },
+      "mcp:tools:read": {
+        "label": "Visualizar ferramentas de workflow disponíveis"
+      }
+    },
+    "workspace": {
+      "member": "Membro",
+      "owner": "Proprietário",
+      "personal": "Pessoal"
+    }
+  },
   "openSharedWorkflow": {
     "author": "Autor:",
     "copyAssetsAndOpen": "Importar ativos e abrir fluxo de trabalho",
@@ -2664,20 +2739,6 @@
     "normal": "Normal",
     "parameters": "Parâmetros",
     "pinned": "Fixado",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "Os dados do fluxo de trabalho enviados ao servidor estão vazios. Isso pode ser um erro de sistema inesperado."
-      },
-      "prompt_no_outputs": {
-        "desc": "O fluxo de trabalho não contém nenhum nó de saída (por exemplo, Salvar Imagem, Visualizar Imagem) para produzir um resultado."
-      },
-      "server_error_cloud": {
-        "desc": "O servidor encontrou um erro inesperado. Por favor, tente novamente mais tarde."
-      },
-      "server_error_local": {
-        "desc": "O servidor encontrou um erro inesperado. Por favor, verifique os logs do servidor."
-      }
-    },
     "properties": "Propriedades",
     "removeFavorite": "Desfavoritar",
     "resetAllParameters": "Redefinir todos os parâmetros",
@@ -3087,6 +3148,7 @@
         "sourceDesc": "Agrupar por tipo de fonte (Core, Custom, API)"
       },
       "noBookmarkedNodes": "Nenhum favorito ainda",
+      "noMatchingNodes": "Nenhum nó corresponde a \"{query}\"",
       "resetView": "Restaurar visualização padrão",
       "sections": {
         "bookmarked": "Favoritos",
@@ -3472,8 +3534,7 @@
       "newest": "Mais Recentes",
       "popular": "Popular",
       "recommended": "Recomendado",
-      "searchPlaceholder": "Buscar...",
-      "vramLowToHigh": "Uso de VRAM (Menor para Maior)"
+      "searchPlaceholder": "Buscar..."
     },
     "sorting": "Ordenar por",
     "title": "Comece com um Modelo",

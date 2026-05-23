@@ -911,6 +911,44 @@
     "paused": "已暫停",
     "resume": "繼續下載"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "未知輸入",
+      "nodeName": "此節點"
+    },
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "傳送到伺服器的工作流程資料為空。這可能是系統的非預期錯誤。"
+      },
+      "prompt_no_outputs": {
+        "desc": "工作流程中沒有包含任何輸出節點（例如：儲存圖像、預覽圖像），無法產生結果。"
+      },
+      "server_error_cloud": {
+        "desc": "伺服器發生非預期錯誤。請稍後再試。"
+      },
+      "server_error_local": {
+        "desc": "伺服器發生非預期錯誤。請檢查伺服器日誌。"
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastMessageCloud": "此節點在執行時發生錯誤。請檢查其輸入或嘗試其他設定。未扣除點數。",
+        "toastMessageLocal": "此節點在執行時發生錯誤。請檢查其輸入或嘗試其他設定。",
+        "toastTitle": "{nodeName} 執行失敗"
+      }
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "details": "{nodeName} 缺少必要的輸入：{inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "必要的輸入插槽沒有連接來源。",
+        "title": "缺少連接",
+        "toastMessage": "{nodeName} 缺少必要的輸入：{inputName}",
+        "toastTitle": "缺少必要輸入"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "您的帳戶無權使用此功能。",
     "accessRestrictedTitle": "存取受限",
@@ -2437,6 +2475,43 @@
     },
     "title": "您的裝置不受支援"
   },
+  "oauth": {
+    "consent": {
+      "allow": "繼續",
+      "appTypeNative": "原生應用程式",
+      "appTypeWeb": "網頁應用程式",
+      "deny": "取消",
+      "errorExpired": "此授權請求已過期或已被使用。請從用戶端應用程式重新啟動。",
+      "errorScopeBroadening": "先前核准的權限不涵蓋此請求。您需要以新權限重新授權。",
+      "errorUnavailable": "此功能目前無法使用。如問題持續，請聯絡客服。",
+      "genericError": "OAuth 請求失敗。請從用戶端應用程式重新啟動。",
+      "loading": "正在載入授權請求…",
+      "missingRequest": "找不到此授權請求。請從用戶端應用程式重新啟動。",
+      "noWorkspaces": "此請求沒有可用的合格工作區。",
+      "permissionsHeader": "權限",
+      "redirectNotice": "您將被重新導向至",
+      "resourceFallback": "此應用程式",
+      "sessionError": "建立工作階段失敗。請再試一次。",
+      "sessionErrorToastSummary": "無法繼續 OAuth 登入",
+      "subtitle": "登入 {resource} 以繼續",
+      "title": "{client} 想要存取",
+      "workspaceHelp": "權限僅適用於此工作區。",
+      "workspaceLabel": "工作區"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "代表您執行工作流程"
+      },
+      "mcp:tools:read": {
+        "label": "檢視可用的工作流程工具"
+      }
+    },
+    "workspace": {
+      "member": "成員",
+      "owner": "擁有者",
+      "personal": "個人"
+    }
+  },
   "openSharedWorkflow": {
     "author": "作者：",
     "copyAssetsAndOpen": "匯入資產並開啟工作流程",
@@ -2664,20 +2739,6 @@
     "normal": "一般",
     "parameters": "參數",
     "pinned": "已釘選",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "傳送到伺服器的工作流程資料為空。這可能是系統發生了非預期的錯誤。"
-      },
-      "prompt_no_outputs": {
-        "desc": "工作流程中沒有任何輸出節點（例如：儲存圖像、預覽圖像），無法產生結果。"
-      },
-      "server_error_cloud": {
-        "desc": "伺服器發生非預期錯誤。請稍後再試。"
-      },
-      "server_error_local": {
-        "desc": "伺服器發生非預期錯誤。請檢查伺服器日誌。"
-      }
-    },
     "properties": "屬性",
     "removeFavorite": "取消收藏",
     "resetAllParameters": "重設所有參數",
@@ -3075,6 +3136,7 @@
         "sourceDesc": "依來源類型分組（核心、自訂、API）"
       },
       "noBookmarkedNodes": "尚未有收藏",
+      "noMatchingNodes": "沒有符合「{query}」的節點",
       "resetView": "重設檢視為預設值",
       "sections": {
         "bookmarked": "已收藏",
@@ -3460,8 +3522,7 @@
       "newest": "最新",
       "popular": "熱門",
       "recommended": "推薦",
-      "searchPlaceholder": "搜尋...",
-      "vramLowToHigh": "VRAM 使用量 (低到高)"
+      "searchPlaceholder": "搜尋..."
     },
     "sorting": "排序依據",
     "title": "從範本開始",

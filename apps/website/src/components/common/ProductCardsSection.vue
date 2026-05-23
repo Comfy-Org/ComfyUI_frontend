@@ -46,7 +46,9 @@ const cards = excludeProduct
 </script>
 
 <template>
-  <section class="bg-primary-comfy-ink px-0 py-20 lg:px-20 lg:py-24">
+  <section
+    class="bg-primary-comfy-ink max-w-9xl mx-auto px-0 py-20 lg:px-20 lg:py-24"
+  >
     <!-- Header -->
     <div class="flex flex-col items-center px-4 text-center">
       <SectionLabel v-if="labelKey">

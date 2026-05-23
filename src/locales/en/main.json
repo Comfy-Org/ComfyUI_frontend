@@ -3571,20 +3571,6 @@
     "getHelpTooltip": "Report this error and we'll help you resolve it",
     "enterSubgraph": "Enter subgraph",
     "seeError": "See Error",
-    "promptErrors": {
-      "prompt_no_outputs": {
-        "desc": "The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result."
-      },
-      "no_prompt": {
-        "desc": "The workflow data sent to the server is empty. This may be an unexpected system error."
-      },
-      "server_error_local": {
-        "desc": "The server encountered an unexpected error. Please check the server logs."
-      },
-      "server_error_cloud": {
-        "desc": "The server encountered an unexpected error. Please try again later."
-      }
-    },
     "errorHelp": "For more help, {github} or {support}",
     "errorHelpGithub": "submit a GitHub issue",
     "errorHelpSupport": "contact our support",
@@ -3668,6 +3654,44 @@
     "missingModels": "{count} required model is missing | {count} required models are missing",
     "swapNodes": "Some nodes can be replaced with alternatives",
     "missingMedia": "Some nodes are missing required inputs"
+  },
+  "errorCatalog": {
+    "fallbacks": {
+      "nodeName": "This node",
+      "inputName": "unknown input"
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "title": "Missing connection",
+        "message": "Required input slots have no connection feeding them.",
+        "details": "{nodeName} is missing a required input: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastTitle": "Required input missing",
+        "toastMessage": "{nodeName} is missing a required input: {inputName}"
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastTitle": "{nodeName} failed",
+        "toastMessageLocal": "This node threw an error during execution. Check its inputs or try a different configuration.",
+        "toastMessageCloud": "This node threw an error during execution. Check its inputs or try a different configuration. No credits charged."
+      }
+    },
+    "promptErrors": {
+      "prompt_no_outputs": {
+        "desc": "The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result."
+      },
+      "no_prompt": {
+        "desc": "The workflow data sent to the server is empty. This may be an unexpected system error."
+      },
+      "server_error_local": {
+        "desc": "The server encountered an unexpected error. Please check the server logs."
+      },
+      "server_error_cloud": {
+        "desc": "The server encountered an unexpected error. Please try again later."
+      }
+    }
   },
   "help": {
     "recentReleases": "Recent releases",

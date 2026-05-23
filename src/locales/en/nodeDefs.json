@@ -1800,6 +1800,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "display_name": "And",
+    "description": "Logical AND operation. Returns true if all of the values are truthy. Uses Python's rules for truthiness.",
+    "inputs": {
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "Math Expression",
     "inputs": {
@@ -1823,6 +1837,20 @@
       }
     }
   },
+  "ComfyNotNode": {
+    "display_name": "Not",
+    "description": "Logical NOT operation. Returns true if the value is falsy. Uses Python's rules for truthiness.",
+    "inputs": {
+      "value": {
+        "name": "value"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyNumberConvert": {
     "display_name": "Convert Number",
     "inputs": {
@@ -1835,6 +1863,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "display_name": "Or",
+    "description": "Logical OR operation. Returns true if any of the values are truthy. Uses Python's rules for truthiness.",
+    "inputs": {
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -14569,6 +14611,164 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Image": {
+    "display_name": "Rodin 3D Gen-2.5 - Image to 3D",
+    "description": "Generate a 3D model from 1-5 reference images via Rodin Gen-2.5. Pick a mode (Fast / Regular / Extreme-High) to tune quality vs. cost.",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "1-5 images. The first image is used for materials when multi-view."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Generation mode. Regular = balanced. Fast = 1K-20K faces for rapid prototyping. Extreme-High = 20K-2M faces with optional micro details."
+      },
+      "material": {
+        "name": "material"
+      },
+      "geometry_file_format": {
+        "name": "geometry_file_format"
+      },
+      "texture_mode": {
+        "name": "texture_mode",
+        "tooltip": "Texture quality preset. 'Default' uses the server's default for the selected tier."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "T/A pose for human-like models."
+      },
+      "hd_texture": {
+        "name": "hd_texture",
+        "tooltip": "High-quality texture enhancement."
+      },
+      "texture_delight": {
+        "name": "texture_delight",
+        "tooltip": "Remove baked lighting from textures."
+      },
+      "use_original_alpha": {
+        "name": "use_original_alpha",
+        "tooltip": "Preserve image transparency."
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "HighPack addon: 4K textures and ~16x faces in Quad mode."
+      },
+      "bbox_width": {
+        "name": "bbox_width",
+        "tooltip": "Bounding-box width (Y axis). Set to 0 with the others to skip bbox."
+      },
+      "bbox_height": {
+        "name": "bbox_height",
+        "tooltip": "Bounding-box height (Z axis)."
+      },
+      "bbox_length": {
+        "name": "bbox_length",
+        "tooltip": "Bounding-box length (X axis)."
+      },
+      "height_cm": {
+        "name": "height_cm",
+        "tooltip": "Approximate model height in centimeters (0 to skip)."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "mode_creative": {
+        "name": "creative"
+      },
+      "mode_polygon_count": {
+        "name": "polygon_count"
+      },
+      "mode_tier": {
+        "name": "tier"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "display_name": "Rodin 3D Gen-2.5 - Text to 3D",
+    "description": "Generate a 3D model from a text prompt via Rodin Gen-2.5. Pick a mode (Fast / Regular / Extreme-High) to tune quality vs. cost.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for the 3D model."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Generation mode. Regular = balanced. Fast = 1K-20K faces for rapid prototyping. Extreme-High = 20K-2M faces with optional micro details."
+      },
+      "material": {
+        "name": "material"
+      },
+      "geometry_file_format": {
+        "name": "geometry_file_format"
+      },
+      "texture_mode": {
+        "name": "texture_mode",
+        "tooltip": "Texture quality preset. 'Default' uses the server's default for the selected tier."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "T/A pose for human-like models."
+      },
+      "hd_texture": {
+        "name": "hd_texture",
+        "tooltip": "High-quality texture enhancement."
+      },
+      "texture_delight": {
+        "name": "texture_delight",
+        "tooltip": "Remove baked lighting from textures."
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "HighPack addon: 4K textures and ~16x faces in Quad mode."
+      },
+      "bbox_width": {
+        "name": "bbox_width",
+        "tooltip": "Bounding-box width (Y axis). Set to 0 with the others to skip bbox."
+      },
+      "bbox_height": {
+        "name": "bbox_height",
+        "tooltip": "Bounding-box height (Z axis)."
+      },
+      "bbox_length": {
+        "name": "bbox_length",
+        "tooltip": "Bounding-box length (X axis)."
+      },
+      "height_cm": {
+        "name": "height_cm",
+        "tooltip": "Approximate model height in centimeters (0 to skip)."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "mode_creative": {
+        "name": "creative"
+      },
+      "mode_polygon_count": {
+        "name": "polygon_count"
+      },
+      "mode_tier": {
+        "name": "tier"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
       }
     }
