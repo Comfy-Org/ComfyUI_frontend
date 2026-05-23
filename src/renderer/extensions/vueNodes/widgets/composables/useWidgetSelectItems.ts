@@ -28,6 +28,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import type { AssetKind } from '@/types/widgetTypes'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { parseImageWidgetValue } from '@/utils/imageUtil'
 import type { PagedList } from '@/utils/pagedList'
 
 function getDisplayLabel(
@@ -48,13 +49,19 @@ function assetKindToMediaType(kind: AssetKind): string {
   return kind === 'mesh' ? '3D' : kind
 }
 
+/** Builds an `/api/view` preview URL, splitting any subfolder prefix out of `filename`. */
 function getMediaUrl(
   filename: string,
   type: 'input' | 'output',
   assetKind: AssetKind | undefined
 ): string {
   if (!['image', 'video', 'audio'].includes(assetKind ?? '')) return ''
-  const params = new URLSearchParams({ filename, type })
+  const parsed = parseImageWidgetValue(filename)
+  const params = new URLSearchParams({
+    filename: parsed.filename,
+    type: parsed.type !== 'input' ? parsed.type : type
+  })
+  if (parsed.subfolder) params.set('subfolder', parsed.subfolder)
   appendCloudResParam(params, filename)
   return `/api/view?${params}`
 }
