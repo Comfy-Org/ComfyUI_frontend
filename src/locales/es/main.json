@@ -911,6 +911,44 @@
     "paused": "Pausado",
     "resume": "Reanudar descarga"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "entrada desconocida",
+      "nodeName": "Este nodo"
+    },
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "Los datos del flujo de trabajo enviados al servidor están vacíos. Esto puede ser un error inesperado del sistema."
+      },
+      "prompt_no_outputs": {
+        "desc": "El flujo de trabajo no contiene ningún nodo de salida (por ejemplo, Guardar imagen, Vista previa de imagen) para producir un resultado."
+      },
+      "server_error_cloud": {
+        "desc": "El servidor encontró un error inesperado. Por favor, inténtalo de nuevo más tarde."
+      },
+      "server_error_local": {
+        "desc": "El servidor encontró un error inesperado. Por favor, revisa los registros del servidor."
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastMessageCloud": "Este nodo generó un error durante la ejecución. Revisa sus entradas o prueba una configuración diferente. No se cobraron créditos.",
+        "toastMessageLocal": "Este nodo generó un error durante la ejecución. Revisa sus entradas o prueba una configuración diferente.",
+        "toastTitle": "{nodeName} falló"
+      }
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "details": "{nodeName} carece de una entrada requerida: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Las ranuras de entrada requeridas no tienen ninguna conexión.",
+        "title": "Conexión faltante",
+        "toastMessage": "{nodeName} carece de una entrada requerida: {inputName}",
+        "toastTitle": "Falta entrada requerida"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "accessRestrictedTitle": "Access Restricted",
@@ -2701,20 +2739,6 @@
     "normal": "Normal",
     "parameters": "Parámetros",
     "pinned": "Fijado",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "Los datos del flujo de trabajo enviados al servidor están vacíos. Esto puede ser un error inesperado del sistema."
-      },
-      "prompt_no_outputs": {
-        "desc": "El flujo de trabajo no contiene ningún nodo de salida (por ejemplo, Guardar imagen, Vista previa de imagen) para producir un resultado."
-      },
-      "server_error_cloud": {
-        "desc": "El servidor encontró un error inesperado. Por favor, inténtalo de nuevo más tarde."
-      },
-      "server_error_local": {
-        "desc": "El servidor encontró un error inesperado. Por favor, revisa los registros del servidor."
-      }
-    },
     "properties": "Propiedades",
     "removeFavorite": "Quitar de favoritos",
     "resetAllParameters": "Restablecer todos los parámetros",

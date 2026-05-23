@@ -911,6 +911,44 @@
     "paused": "En pause",
     "resume": "Reprendre le téléchargement"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "entrée inconnue",
+      "nodeName": "Ce nœud"
+    },
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "Les données du workflow envoyées au serveur sont vides. Il peut s’agir d’une erreur système inattendue."
+      },
+      "prompt_no_outputs": {
+        "desc": "Le workflow ne contient aucun nœud de sortie (par exemple, Enregistrer l’image, Prévisualiser l’image) pour produire un résultat."
+      },
+      "server_error_cloud": {
+        "desc": "Le serveur a rencontré une erreur inattendue. Veuillez réessayer plus tard."
+      },
+      "server_error_local": {
+        "desc": "Le serveur a rencontré une erreur inattendue. Veuillez consulter les journaux du serveur."
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastMessageCloud": "Ce nœud a généré une erreur lors de l’exécution. Vérifiez ses entrées ou essayez une autre configuration. Aucun crédit n’a été déduit.",
+        "toastMessageLocal": "Ce nœud a généré une erreur lors de l’exécution. Vérifiez ses entrées ou essayez une autre configuration.",
+        "toastTitle": "Échec de {nodeName}"
+      }
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "details": "{nodeName} nécessite une entrée obligatoire : {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Des entrées requises ne sont pas connectées.",
+        "title": "Connexion manquante",
+        "toastMessage": "{nodeName} nécessite une entrée obligatoire : {inputName}",
+        "toastTitle": "Entrée requise manquante"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "accessRestrictedTitle": "Access Restricted",
@@ -2701,20 +2739,6 @@
     "normal": "Normal",
     "parameters": "Paramètres",
     "pinned": "Épinglé",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "Les données du flux de travail envoyées au serveur sont vides. Il peut s'agir d'une erreur système inattendue."
-      },
-      "prompt_no_outputs": {
-        "desc": "Le flux de travail ne contient aucun nœud de sortie (par exemple, Enregistrer l'image, Prévisualiser l'image) pour produire un résultat."
-      },
-      "server_error_cloud": {
-        "desc": "Le serveur a rencontré une erreur inattendue. Veuillez réessayer plus tard."
-      },
-      "server_error_local": {
-        "desc": "Le serveur a rencontré une erreur inattendue. Veuillez consulter les journaux du serveur."
-      }
-    },
     "properties": "Propriétés",
     "removeFavorite": "Retirer des favoris",
     "resetAllParameters": "Réinitialiser tous les paramètres",
