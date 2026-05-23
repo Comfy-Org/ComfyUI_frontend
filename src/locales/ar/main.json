@@ -800,7 +800,7 @@
     "CONTROL_NET": "ControlNet",
     "CURVE": "منحنى",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
-    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_DETECTION_MODEL": "نموذج كشف الوجه",
     "FACE_LANDMARKS": "معالم الوجه",
     "FILE_3D": "ملف ثلاثي الأبعاد",
     "FILE_3D_FBX": "ملف FBX ثلاثي الأبعاد",
@@ -2280,6 +2280,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2296,6 +2297,7 @@
     "Vidu": "فيدو",
     "Wan": "وان",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "تعديلات",
     "advanced": "متقدم",
     "api node": "عقدة API",
     "attention_experiments": "تجارب الانتباه",
@@ -3623,7 +3625,8 @@
       "placeholderMesh": "اختر شبكة...",
       "placeholderModel": "اختر نموذج...",
       "placeholderUnknown": "اختر وسائط...",
-      "placeholderVideo": "اختر فيديو..."
+      "placeholderVideo": "اختر فيديو...",
+      "topResult": "أفضل نتيجة: {result}"
     },
     "valueControl": {
       "decrement": "إنقاص القيمة",

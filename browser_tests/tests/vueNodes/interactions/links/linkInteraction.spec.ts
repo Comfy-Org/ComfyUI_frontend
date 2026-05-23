@@ -1082,17 +1082,10 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.NodeSearchBoxImpl',
-        'v1 (legacy)'
-      )
-
       // Setup workflow with a KSampler node
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
       await comfyPage.nodeOps.waitForGraphNodes(0)
-      await comfyPage.command.executeCommand('Workspace.SearchBox.Toggle')
-      await comfyPage.nextFrame()
-      await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
+      await comfyPage.searchBoxV2.addNode('KSampler')
       await comfyPage.nodeOps.waitForGraphNodes(1)
 
       // Convert the KSampler node to a subgraph

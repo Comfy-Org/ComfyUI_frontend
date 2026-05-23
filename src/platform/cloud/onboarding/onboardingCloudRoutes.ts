@@ -1,5 +1,20 @@
 import type { RouteRecordRaw } from 'vue-router'
 
+import { getOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
+
+// `oauth_request_id` capture lives in the global router.beforeEach guard
+// (src/router.ts), which runs before any per-route beforeEnter. Per-route
+// guards read it back via getOAuthRequestId().
+function oauthConsentRedirect() {
+  const oauthRequestId = getOAuthRequestId()
+  return oauthRequestId
+    ? {
+        name: 'cloud-oauth-consent',
+        query: { oauth_request_id: oauthRequestId }
+      }
+    : { name: 'cloud-user-check' }
+}
+
 export const cloudOnboardingRoutes: RouteRecordRaw[] = [
   {
     path: '/cloud',
@@ -19,9 +34,7 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
             const { isLoggedIn } = useCurrentUser()
 
             if (isLoggedIn.value) {
-              // User is already logged in, redirect to user-check
-              // user-check will handle survey, or main page routing
-              return next({ name: 'cloud-user-check' })
+              return next(oauthConsentRedirect())
             }
           }
           next()
@@ -39,7 +52,7 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
             const { isLoggedIn } = useCurrentUser()
 
             if (isLoggedIn.value) {
-              return next({ name: 'cloud-user-check' })
+              return next(oauthConsentRedirect())
             }
           }
           next()
@@ -57,6 +70,11 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         component: () =>
           import('@/platform/cloud/onboarding/CloudSurveyView.vue'),
         meta: { requiresAuth: true }
+      },
+      {
+        path: 'oauth/consent',
+        name: 'cloud-oauth-consent',
+        component: () => import('@/platform/cloud/oauth/OAuthConsentView.vue')
       },
       {
         path: 'user-check',

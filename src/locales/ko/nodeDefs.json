@@ -119,6 +119,7 @@
     }
   },
   "AdjustBrightness": {
+    "description": "이미지의 밝기를 조절합니다.",
     "display_name": "밝기 조정",
     "inputs": {
       "factor": {
@@ -138,6 +139,7 @@
     }
   },
   "AdjustContrast": {
+    "description": "이미지의 대비를 조절합니다.",
     "display_name": "명암 조정",
     "inputs": {
       "factor": {
@@ -176,6 +178,7 @@
     }
   },
   "AudioAdjustVolume": {
+    "description": "오디오의 볼륨을 데시벨(dB) 단위로 지정한 만큼 조절합니다.",
     "display_name": "오디오 볼륨 조절",
     "inputs": {
       "audio": {
@@ -576,6 +579,9 @@
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
+      },
+      "model_auto_upscale": {
+        "name": "auto_upscale"
       },
       "model_duration": {
         "name": "duration"
@@ -1547,6 +1553,7 @@
     }
   },
   "CenterCropImages": {
+    "description": "이미지를 지정한 크기로 중앙에서 자릅니다.",
     "display_name": "중앙 자르기",
     "inputs": {
       "height": {
@@ -1665,6 +1672,9 @@
       },
       "model_max_tokens": {
         "name": "최대 토큰"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
       },
       "model_temperature": {
         "name": "온도"
@@ -5699,6 +5709,7 @@
     }
   },
   "ImageCropV2": {
+    "description": "이미지를 지정한 크기로 자릅니다.",
     "display_name": "이미지 자르기",
     "inputs": {
       "crop_region": {
@@ -5719,6 +5730,7 @@
     }
   },
   "ImageDeduplication": {
+    "description": "목록에서 중복되거나 매우 유사한 이미지를 제거합니다.",
     "display_name": "이미지 중복 제거",
     "inputs": {
       "images": {
@@ -5773,6 +5785,7 @@
     }
   },
   "ImageGrid": {
+    "description": "여러 이미지를 그리드 레이아웃으로 배열합니다.",
     "display_name": "이미지 그리드",
     "inputs": {
       "cell_height": {
@@ -8366,6 +8379,7 @@
     }
   },
   "LoadImageDataSetFromFolder": {
+    "description": "지정한 폴더에서 이미지 데이터셋을 불러와 이미지 목록으로 반환합니다. 지원 포맷: PNG, JPG, JPEG, WEBP.",
     "display_name": "폴더에서 이미지 데이터셋 불러오기",
     "inputs": {
       "folder": {
@@ -8409,6 +8423,7 @@
     }
   },
   "LoadImageTextDataSetFromFolder": {
+    "description": "지정한 폴더에서 이미지와 텍스트 캡션 쌍의 데이터셋을 불러와 목록으로 반환합니다. 지원 포맷: PNG, JPG, JPEG, WEBP.",
     "display_name": "폴더에서 이미지 및 텍스트 데이터셋 불러오기",
     "inputs": {
       "folder": {
@@ -8463,6 +8478,7 @@
     }
   },
   "LoadTrainingDataset": {
+    "description": "디스크에서 인코딩된 학습 데이터셋(latents + conditioning)을 불러와 학습에 사용합니다.",
     "display_name": "학습 데이터셋 불러오기",
     "inputs": {
       "folder_name": {
@@ -9246,6 +9262,7 @@
     }
   },
   "MakeTrainingDataset": {
+    "description": "이미지를 VAE로, 텍스트를 CLIP으로 인코딩하여 latents와 conditioning으로 구성된 학습 데이터셋을 생성합니다.",
     "display_name": "학습 데이터셋 만들기",
     "inputs": {
       "clip": {
@@ -9337,14 +9354,15 @@
     }
   },
   "MediaPipeFaceLandmarker": {
+    "description": "MediaPipe 모델을 사용하여 얼굴 랜드마크를 감지합니다.",
     "display_name": "MediaPipe 얼굴 랜드마커",
     "inputs": {
       "detector_variant": {
         "name": "detector_variant",
         "tooltip": "얼굴 감지기 범위. 'short'는 카메라에서 약 2m 이내의 근접 얼굴에 최적화되어 있습니다. 'full'은 더 멀리 있거나 작은 얼굴(최대 약 5m)까지 감지하지만 느립니다. 'both'는 두 감지기를 모두 실행하여 프레임당 더 많은 얼굴을 찾은 결과를 사용합니다(감지 비용 약 2배)."
       },
-      "face_landmarker": {
-        "name": "face_landmarker"
+      "face_detection_model": {
+        "name": "face_detection_model"
       },
       "image": {
         "name": "image"
@@ -9374,6 +9392,7 @@
     }
   },
   "MediaPipeFaceMask": {
+    "description": "얼굴 랜드마크로부터 마스크를 그립니다.",
     "display_name": "MediaPipe 얼굴 마스크",
     "inputs": {
       "face_landmarks": {
@@ -9391,6 +9410,7 @@
     }
   },
   "MediaPipeFaceMeshVisualize": {
+    "description": "입력 이미지에 얼굴 랜드마크 메시(mesh)를 그립니다.",
     "display_name": "MediaPipe 얼굴 메시 시각화",
     "inputs": {
       "color": {
@@ -9423,6 +9443,7 @@
     }
   },
   "MergeImageLists": {
+    "description": "여러 이미지 목록을 하나로 합칩니다.",
     "display_name": "이미지 리스트 병합",
     "inputs": {
       "images": {
@@ -9877,6 +9898,7 @@
     }
   },
   "MoGeInference": {
+    "description": "단일 이미지에서 MoGe를 실행하여 깊이와 기하 정보를 추정합니다.",
     "display_name": "MoGe 추론",
     "inputs": {
       "apply_mask": {
@@ -9913,6 +9935,7 @@
     }
   },
   "MoGePanoramaInference": {
+    "description": "MoGe를 사용하여 등각 파노라마 이미지를 12개의 투시 뷰로 분할하고, 각 뷰에 대해 추론을 실행한 후 결과를 하나의 깊이 맵으로 병합합니다.",
     "display_name": "MoGe 파노라마 추론",
     "inputs": {
       "batch_size": {
@@ -9947,6 +9970,7 @@
     }
   },
   "MoGePointMapToMesh": {
+    "description": "MoGe 포인트 맵을 3D 메시(mesh)로 변환합니다.",
     "display_name": "MoGe 포인트 맵 → 메시",
     "inputs": {
       "batch_index": {
@@ -9976,6 +10000,7 @@
     }
   },
   "MoGeRender": {
+    "description": "기하 데이터로부터 깊이 맵 또는 노멀 맵을 렌더링합니다.",
     "display_name": "MoGe 렌더",
     "inputs": {
       "moge_geometry": {
@@ -12264,6 +12289,7 @@
     }
   },
   "NormalizeImages": {
+    "description": "평균과 표준편차를 사용하여 이미지를 정규화합니다.",
     "display_name": "이미지 정규화",
     "inputs": {
       "images": {
@@ -12585,6 +12611,39 @@
       },
       "size": {
         "name": "크기"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterLLMNode": {
+    "description": "OpenRouter를 통해 텍스트 응답을 생성합니다. xAI, DeepSeek, Qwen, Mistral, Z.AI(GLM), Moonshot(Kimi), Perplexity Sonar 등에서 엄선된 인기 모델로 라우팅됩니다.",
+    "display_name": "OpenRouter LLM",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "응답 생성을 위해 사용되는 OpenRouter 모델입니다."
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "모델에 입력할 텍스트입니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "샘플링을 위한 시드 값입니다. 0으로 설정하면 생략됩니다. 대부분의 모델은 이를 참고 값으로만 사용합니다."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "모델의 동작을 지시하는 기본 지침입니다."
       }
     },
     "outputs": {
@@ -13406,6 +13465,7 @@
     }
   },
   "RandomCropImages": {
+    "description": "이미지를 지정한 크기로 무작위로 자릅니다.",
     "display_name": "무작위 이미지 자르기",
     "inputs": {
       "control_after_generate": {
@@ -14268,6 +14328,7 @@
     }
   },
   "ResizeImagesByLongerEdge": {
+    "description": "이미지의 긴 변이 지정한 크기에 맞도록 비율을 유지하며 크기를 조정합니다.",
     "display_name": "긴 변 기준 이미지 크기 조정",
     "inputs": {
       "images": {
@@ -14287,6 +14348,7 @@
     }
   },
   "ResizeImagesByShorterEdge": {
+    "description": "이미지의 짧은 변이 지정된 크기에 맞도록 크기를 조정하며, 비율을 유지합니다.",
     "display_name": "짧은 변 기준 이미지 크기 조정",
     "inputs": {
       "images": {
@@ -14306,6 +14368,7 @@
     }
   },
   "ResolutionBucket": {
+    "description": "latent 및 conditioning을 버킷으로 그룹화합니다.",
     "display_name": "해상도 버킷",
     "inputs": {
       "conditioning": {
@@ -15650,6 +15713,7 @@
     }
   },
   "SaveImageDataSetToFolder": {
+    "description": "이미지 데이터셋을 지정한 폴더에 저장합니다. 지원 포맷: PNG.",
     "display_name": "이미지 데이터셋을 폴더에 저장",
     "inputs": {
       "filename_prefix": {
@@ -15667,6 +15731,7 @@
     }
   },
   "SaveImageTextDataSetToFolder": {
+    "description": "이미지와 텍스트 캡션 쌍의 데이터셋을 지정한 폴더에 저장합니다. 이미지는 PNG 파일로, 캡션은 동일한 파일명 접두사를 가진 TXT 파일로 저장됩니다.",
     "display_name": "이미지 및 텍스트 데이터셋을 폴더에 저장",
     "inputs": {
       "filename_prefix": {
@@ -15737,6 +15802,7 @@
     }
   },
   "SaveTrainingDataset": {
+    "description": "인코딩된 학습 데이터셋(latent + conditioning)을 디스크에 저장하여 학습 시 효율적으로 불러올 수 있습니다.",
     "display_name": "학습 데이터셋 저장",
     "inputs": {
       "conditioning": {
@@ -15923,6 +15989,7 @@
     }
   },
   "ShuffleDataset": {
+    "description": "목록 내 이미지의 순서를 무작위로 섞습니다.",
     "display_name": "이미지 데이터셋 섞기",
     "inputs": {
       "control_after_generate": {
@@ -15945,6 +16012,7 @@
     }
   },
   "ShuffleImageTextDataset": {
+    "description": "목록 내 이미지-텍스트 쌍의 순서를 무작위로 섞습니다.",
     "display_name": "이미지-텍스트 데이터셋 섞기",
     "inputs": {
       "control_after_generate": {
@@ -19445,6 +19513,7 @@
     }
   },
   "VoxelToMesh": {
+    "description": "voxel 그리드를 mesh로 변환합니다.",
     "display_name": "복셀 → 매시",
     "inputs": {
       "algorithm": {
@@ -19464,6 +19533,7 @@
     }
   },
   "VoxelToMeshBasic": {
+    "description": "voxel 그리드를 mesh로 변환합니다.",
     "display_name": "복셀 → 매시 (기본)",
     "inputs": {
       "threshold": {

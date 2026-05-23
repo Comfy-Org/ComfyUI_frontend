@@ -1,3 +1,4 @@
+import { SparkRenderer } from '@sparkjsdev/spark'
 import * as THREE from 'three'
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
 
@@ -317,6 +318,7 @@ export class SceneModelManager implements ModelManagerInterface {
         object instanceof THREE.GridHelper ||
         object instanceof THREE.Light ||
         object instanceof THREE.Camera ||
+        object instanceof SparkRenderer ||
         object.name === 'GizmoTransformControls'
 
       if (!isEnvironmentObject) {
