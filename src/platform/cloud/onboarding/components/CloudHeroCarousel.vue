@@ -134,15 +134,15 @@
       <p class="m-0 hidden text-sm text-sand-500/90 md:block">
         {{ t('cloudStart_wantToRun') }}
       </p>
-      <Button
-        type="button"
-        variant="secondary"
-        class="rounded-lg border border-sand-500/20 bg-charcoal-500 font-medium text-sand-500 hover:bg-charcoal-500/80"
-        @click="handleDownloadClick"
+      <a
+        href="https://www.comfy.org/download"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex h-8 items-center gap-2 rounded-lg border border-sand-500/20 bg-charcoal-500 p-2 text-xs font-medium text-sand-500 no-underline hover:bg-charcoal-500/80"
       >
         <i class="pi pi-download text-xs text-sand-500/90" />
         {{ t('cloudStart_download') }}
-      </Button>
+      </a>
     </div>
   </div>
 </template>
@@ -186,8 +186,4 @@ const goNext = () => goTo(currentIndex.value + 1)
 const goPrev = () => goTo(currentIndex.value - 1)
 
 const { pause, resume } = useIntervalFn(goNext, 6000)
-
-const handleDownloadClick = () => {
-  window.open('https://www.comfy.org/download', '_blank')
-}
 </script>
