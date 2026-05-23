@@ -24,6 +24,7 @@
 
 @theme {
   --shadow-interface: var(--interface-panel-box-shadow);
+  --shadow-inset-highlight: inset 0 1px 0 0 rgb(from white r g b / 0.1);
 
   --text-2xs: 0.625rem;
   --text-2xs--line-height: calc(1 / 0.625);
@@ -42,6 +43,7 @@
   --color-charcoal-500: #2d2e32;
   --color-charcoal-600: #262729;
   --color-charcoal-700: #202121;
+  --color-charcoal-750: #211927;
   --color-charcoal-800: #171718;
 
   --color-neutral-550: #636363;
@@ -67,6 +69,7 @@
   --color-sand-200: #fff7d5;
   --color-sand-300: #888682;
   --color-sand-400: #eed7ac;
+  --color-sand-500: #c2bfb9;
 
   --color-slate-100: #9c9eab;
   --color-slate-200: #9fa2bd;
