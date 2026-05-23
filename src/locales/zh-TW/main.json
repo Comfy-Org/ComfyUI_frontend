@@ -911,6 +911,44 @@
     "paused": "已暫停",
     "resume": "繼續下載"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "未知輸入",
+      "nodeName": "此節點"
+    },
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "傳送到伺服器的工作流程資料為空。這可能是系統的非預期錯誤。"
+      },
+      "prompt_no_outputs": {
+        "desc": "工作流程中沒有包含任何輸出節點（例如：儲存圖像、預覽圖像），無法產生結果。"
+      },
+      "server_error_cloud": {
+        "desc": "伺服器發生非預期錯誤。請稍後再試。"
+      },
+      "server_error_local": {
+        "desc": "伺服器發生非預期錯誤。請檢查伺服器日誌。"
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastMessageCloud": "此節點在執行時發生錯誤。請檢查其輸入或嘗試其他設定。未扣除點數。",
+        "toastMessageLocal": "此節點在執行時發生錯誤。請檢查其輸入或嘗試其他設定。",
+        "toastTitle": "{nodeName} 執行失敗"
+      }
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "details": "{nodeName} 缺少必要的輸入：{inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "必要的輸入插槽沒有連接來源。",
+        "title": "缺少連接",
+        "toastMessage": "{nodeName} 缺少必要的輸入：{inputName}",
+        "toastTitle": "缺少必要輸入"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "您的帳戶無權使用此功能。",
     "accessRestrictedTitle": "存取受限",
@@ -2701,20 +2739,6 @@
     "normal": "一般",
     "parameters": "參數",
     "pinned": "已釘選",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "傳送到伺服器的工作流程資料為空。這可能是系統發生了非預期的錯誤。"
-      },
-      "prompt_no_outputs": {
-        "desc": "工作流程中沒有任何輸出節點（例如：儲存圖像、預覽圖像），無法產生結果。"
-      },
-      "server_error_cloud": {
-        "desc": "伺服器發生非預期錯誤。請稍後再試。"
-      },
-      "server_error_local": {
-        "desc": "伺服器發生非預期錯誤。請檢查伺服器日誌。"
-      }
-    },
     "properties": "屬性",
     "removeFavorite": "取消收藏",
     "resetAllParameters": "重設所有參數",

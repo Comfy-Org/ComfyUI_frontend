@@ -2,7 +2,10 @@ import * as THREE from 'three'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import Load3d from '@/extensions/core/load3d/Load3d'
-import type { GizmoMode } from '@/extensions/core/load3d/interfaces'
+import type {
+  CameraState,
+  GizmoMode
+} from '@/extensions/core/load3d/interfaces'
 
 const {
   cloneSkinnedMock,
@@ -766,6 +769,133 @@ describe('Load3d', () => {
       const apply = vi.fn()
       if (ctx.load3d.currentLoadGeneration === aTarget) apply()
       expect(apply).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('retainViewOnReload', () => {
+    function setupLoadInternal(initialFlag: boolean) {
+      const getCameraState = vi.fn<() => CameraState>(() => ({
+        position: new THREE.Vector3(1, 2, 3),
+        target: new THREE.Vector3(),
+        zoom: 1,
+        cameraType: 'perspective'
+      }))
+      const setCameraState = vi.fn()
+      const getCurrentCameraType = vi.fn(() => 'perspective' as const)
+      const loaderLoadModel = vi.fn().mockResolvedValue(undefined)
+      Object.assign(ctx.load3d, {
+        cameraManager: {
+          ...ctx.cameraManager,
+          getCameraState,
+          setCameraState,
+          getCurrentCameraType
+        },
+        controlsManager: { ...ctx.controlsManager, reset: vi.fn() },
+        loaderManager: { loadModel: loaderLoadModel },
+        modelManager: {
+          ...ctx.modelManager,
+          currentModel: new THREE.Group(),
+          originalModel: null
+        },
+        animationManager: {
+          ...ctx.animationManager,
+          setupModelAnimations: vi.fn()
+        },
+        handleResize: vi.fn(),
+        retainViewOnReload: initialFlag,
+        hasLoadedModel: false
+      })
+      return { getCameraState, setCameraState, getCurrentCameraType }
+    }
+
+    it('first load uses default framing even with retain enabled', async () => {
+      const mocks = setupLoadInternal(true)
+
+      await ctx.load3d.loadModel('a.glb')
+
+      // hasLoadedModel started false, so retain shouldn't kick in yet.
+      expect(ctx.cameraManager.reset).toHaveBeenCalledOnce()
+      expect(mocks.getCameraState).not.toHaveBeenCalled()
+      expect(mocks.setCameraState).not.toHaveBeenCalled()
+    })
+
+    it('subsequent load captures camera state, skips reset, and restores it', async () => {
+      const mocks = setupLoadInternal(true)
+
+      await ctx.load3d.loadModel('a.glb')
+      ;(ctx.cameraManager.reset as ReturnType<typeof vi.fn>).mockClear()
+      mocks.getCameraState.mockClear()
+      mocks.setCameraState.mockClear()
+
+      await ctx.load3d.loadModel('b.glb')
+
+      expect(ctx.cameraManager.reset).not.toHaveBeenCalled()
+      expect(mocks.getCameraState).toHaveBeenCalledOnce()
+      expect(mocks.setCameraState).toHaveBeenCalledOnce()
+    })
+
+    it('does not retain when the flag is off, even after a prior load', async () => {
+      const mocks = setupLoadInternal(false)
+
+      await ctx.load3d.loadModel('a.glb')
+      ;(ctx.cameraManager.reset as ReturnType<typeof vi.fn>).mockClear()
+      mocks.getCameraState.mockClear()
+      mocks.setCameraState.mockClear()
+
+      await ctx.load3d.loadModel('b.glb')
+
+      expect(ctx.cameraManager.reset).toHaveBeenCalledOnce()
+      expect(mocks.getCameraState).not.toHaveBeenCalled()
+      expect(mocks.setCameraState).not.toHaveBeenCalled()
+    })
+
+    it('toggles to the saved camera type before restoring state when types differ', async () => {
+      const mocks = setupLoadInternal(true)
+      mocks.getCameraState.mockImplementation(() => ({
+        position: new THREE.Vector3(0, 0, 5),
+        target: new THREE.Vector3(),
+        zoom: 1,
+        cameraType: 'orthographic'
+      }))
+      // First load (active type stays perspective per the default mock).
+      await ctx.load3d.loadModel('a.glb')
+      ;(ctx.cameraManager.toggleCamera as ReturnType<typeof vi.fn>).mockClear()
+
+      await ctx.load3d.loadModel('b.glb')
+
+      expect(ctx.cameraManager.toggleCamera).toHaveBeenCalledWith(
+        'orthographic'
+      )
+      expect(mocks.setCameraState).toHaveBeenCalledOnce()
+    })
+
+    it('resets hasLoadedModel on clearModel so the next load uses default framing', async () => {
+      const mocks = setupLoadInternal(true)
+      await ctx.load3d.loadModel('a.glb')
+      ctx.load3d.clearModel()
+      ;(ctx.cameraManager.reset as ReturnType<typeof vi.fn>).mockClear()
+      mocks.getCameraState.mockClear()
+
+      await ctx.load3d.loadModel('b.glb')
+
+      expect(ctx.cameraManager.reset).toHaveBeenCalledOnce()
+      expect(mocks.getCameraState).not.toHaveBeenCalled()
+    })
+
+    it('setRetainViewOnReload flips the runtime behavior between loads', async () => {
+      const mocks = setupLoadInternal(false)
+
+      await ctx.load3d.loadModel('a.glb')
+      ctx.load3d.setRetainViewOnReload(true)
+      ;(ctx.cameraManager.reset as ReturnType<typeof vi.fn>).mockClear()
+      mocks.getCameraState.mockClear()
+      mocks.setCameraState.mockClear()
+
+      await ctx.load3d.loadModel('b.glb')
+
+      expect(ctx.cameraManager.reset).not.toHaveBeenCalled()
+      expect(mocks.getCameraState).toHaveBeenCalledOnce()
+      expect(mocks.setCameraState).toHaveBeenCalledOnce()
     })
   })
 

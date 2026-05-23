@@ -911,6 +911,44 @@
     "paused": "Duraklatıldı",
     "resume": "İndirmeye Devam Et"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "bilinmeyen giriş",
+      "nodeName": "Bu düğüm"
+    },
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "Sunucuya gönderilen çalışma akışı verisi boş. Bu beklenmeyen bir sistem hatası olabilir."
+      },
+      "prompt_no_outputs": {
+        "desc": "Çalışma akışında sonuç üretecek herhangi bir çıktı düğümü (örn. Görseli Kaydet, Görseli Önizle) bulunmuyor."
+      },
+      "server_error_cloud": {
+        "desc": "Sunucuda beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin."
+      },
+      "server_error_local": {
+        "desc": "Sunucuda beklenmeyen bir hata oluştu. Lütfen sunucu günlüklerini kontrol edin."
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastMessageCloud": "Bu düğüm çalıştırılırken bir hata oluştu. Girişlerini kontrol edin veya farklı bir yapılandırmayı deneyin. Kredi harcanmadı.",
+        "toastMessageLocal": "Bu düğüm çalıştırılırken bir hata oluştu. Girişlerini kontrol edin veya farklı bir yapılandırmayı deneyin.",
+        "toastTitle": "{nodeName} başarısız oldu"
+      }
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "details": "{nodeName} için gerekli bir giriş eksik: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Gerekli giriş yuvalarına bağlantı yapılmamış.",
+        "title": "Eksik bağlantı",
+        "toastMessage": "{nodeName} için gerekli bir giriş eksik: {inputName}",
+        "toastTitle": "Gerekli giriş eksik"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "accessRestrictedTitle": "Access Restricted",
@@ -2701,20 +2739,6 @@
     "normal": "Normal",
     "parameters": "Parametreler",
     "pinned": "Sabitlendi",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "Sunucuya gönderilen çalışma akışı verisi boş. Bu beklenmeyen bir sistem hatası olabilir."
-      },
-      "prompt_no_outputs": {
-        "desc": "Çalışma akışında sonuç üretecek herhangi bir çıktı düğümü (ör. Görüntüyü Kaydet, Görüntüyü Önizle) bulunmuyor."
-      },
-      "server_error_cloud": {
-        "desc": "Sunucu beklenmeyen bir hata ile karşılaştı. Lütfen daha sonra tekrar deneyin."
-      },
-      "server_error_local": {
-        "desc": "Sunucu beklenmeyen bir hata ile karşılaştı. Lütfen sunucu günlüklerini kontrol edin."
-      }
-    },
     "properties": "Özellikler",
     "removeFavorite": "Favorilerden Kaldır",
     "resetAllParameters": "Tüm parametreleri sıfırla",

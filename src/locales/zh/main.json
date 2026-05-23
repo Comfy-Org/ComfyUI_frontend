@@ -911,6 +911,44 @@
     "paused": "已暂停",
     "resume": "恢复下载"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "未知输入",
+      "nodeName": "此节点"
+    },
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "发送到服务器的工作流数据为空。这可能是系统的意外错误。"
+      },
+      "prompt_no_outputs": {
+        "desc": "工作流未包含任何输出节点（如保存图像、预览图像），无法生成结果。"
+      },
+      "server_error_cloud": {
+        "desc": "服务器遇到意外错误。请稍后再试。"
+      },
+      "server_error_local": {
+        "desc": "服务器遇到意外错误。请检查服务器日志。"
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastMessageCloud": "此节点在执行过程中发生错误。请检查其输入或尝试其他配置。未扣除积分。",
+        "toastMessageLocal": "此节点在执行过程中发生错误。请检查其输入或尝试其他配置。",
+        "toastTitle": "{nodeName} 执行失败"
+      }
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "details": "{nodeName} 缺少必需的输入：{inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "必需的输入插槽没有连接。",
+        "title": "缺少连接",
+        "toastMessage": "{nodeName} 缺少必需的输入：{inputName}",
+        "toastTitle": "缺少必需输入"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "您的账户无权使用此功能。",
     "accessRestrictedTitle": "访问受限",
@@ -2701,20 +2739,6 @@
     "normal": "正常",
     "parameters": "参数",
     "pinned": "顶固",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "发送到服务器的工作流数据为空。这可能是一个意外的系统错误。"
-      },
-      "prompt_no_outputs": {
-        "desc": "工作流中没有包含任何输出节点（例如：保存图像、预览图像），无法生成结果。"
-      },
-      "server_error_cloud": {
-        "desc": "服务器遇到意外错误。请稍后再试。"
-      },
-      "server_error_local": {
-        "desc": "服务器遇到意外错误。请检查服务器日志。"
-      }
-    },
     "properties": "属性",
     "removeFavorite": "取消收藏",
     "resetAllParameters": "重置所有参数",
