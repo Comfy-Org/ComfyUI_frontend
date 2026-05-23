@@ -2849,6 +2849,29 @@
   "cloudStart_learnAboutButton": "Learn about Cloud",
   "cloudStart_wantToRun": "Want to run ComfyUI locally instead?",
   "cloudStart_download": "Download ComfyUI",
+  "cloudHero": {
+    "previousSlide": "Previous slide",
+    "nextSlide": "Next slide",
+    "slidePagerLabel": "Go to slide {index}",
+    "slides": {
+      "cloud": {
+        "title": "Cloud",
+        "description": "Best for most users who want to work from anywhere with models verified for commercial license."
+      },
+      "workflows": {
+        "title": "Workflows",
+        "description": "From idea to output in minutes. Generate multiple variations side by side."
+      },
+      "team": {
+        "title": "Team",
+        "description": "Onboard your team today. Share workflows and assets across your organization."
+      },
+      "models": {
+        "title": "Models",
+        "description": "Curated, commercially licensed models ready to run with zero setup."
+      }
+    }
+  },
   "cloudWaitlist_questionsText": "Questions? Contact us",
   "cloudWaitlist_contactLink": "here",
   "cloudSorryContactSupport_title": "Sorry, contact support",
