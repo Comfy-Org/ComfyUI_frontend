@@ -569,17 +569,21 @@ describe('useLoad3d', () => {
 
       vi.mocked(mockLoad3d.toggleCamera!).mockClear()
       vi.mocked(mockLoad3d.setFOV!).mockClear()
+      vi.mocked(mockLoad3d.setRetainViewOnReload!).mockClear()
 
       composable.cameraConfig.value.cameraType = 'orthographic'
       composable.cameraConfig.value.fov = 90
+      composable.cameraConfig.value.retainViewOnReload = true
       await nextTick()
 
       expect(mockLoad3d.toggleCamera).toHaveBeenCalledWith('orthographic')
       expect(mockLoad3d.setFOV).toHaveBeenCalledWith(90)
+      expect(mockLoad3d.setRetainViewOnReload).toHaveBeenCalledWith(true)
       expect(mockNode.properties['Camera Config']).toEqual({
         cameraType: 'orthographic',
         fov: 90,
-        state: null
+        state: null,
+        retainViewOnReload: true
       })
     })
 
