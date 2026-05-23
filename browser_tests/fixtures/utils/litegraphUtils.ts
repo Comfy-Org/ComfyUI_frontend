@@ -511,8 +511,7 @@ export class NodeReference {
   }
   async clickContextMenuOption(optionText: string) {
     await this.click('title', { button: 'right' })
-    const ctx = this.comfyPage.page.locator('.litecontextmenu')
-    await ctx.getByText(optionText).click()
+    await this.comfyPage.contextMenu.clickMenuItem(optionText)
   }
   async convertToGroupNode(groupNodeName: string = 'GroupNode') {
     await this.clickContextMenuOption('Convert to Group Node')
