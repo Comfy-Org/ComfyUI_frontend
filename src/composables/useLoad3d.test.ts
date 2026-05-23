@@ -144,6 +144,7 @@ describe('useLoad3d', () => {
       setMaterialMode: vi.fn(),
       toggleCamera: vi.fn(),
       setFOV: vi.fn(),
+      setRetainViewOnReload: vi.fn(),
       setLightIntensity: vi.fn(),
       setCameraState: vi.fn(),
       loadModel: vi.fn().mockResolvedValue(undefined),
