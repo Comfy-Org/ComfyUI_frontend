@@ -1800,6 +1800,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "description": "論理積（AND）演算。すべての値が真の場合に true を返します。Python の真偽値判定ルールを使用します。",
+    "display_name": "And",
+    "inputs": {
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "数式",
     "inputs": {
@@ -1823,6 +1837,20 @@
       }
     }
   },
+  "ComfyNotNode": {
+    "description": "論理否定（NOT）演算。値が偽の場合に true を返します。Python の真偽値判定ルールを使用します。",
+    "display_name": "Not",
+    "inputs": {
+      "value": {
+        "name": "value"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyNumberConvert": {
     "display_name": "数値変換",
     "inputs": {
@@ -1835,6 +1863,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "description": "論理和（OR）演算。いずれかの値が真の場合に true を返します。Python の真偽値判定ルールを使用します。",
+    "display_name": "Or",
+    "inputs": {
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -14597,6 +14639,164 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Image": {
+    "description": "Rodin Gen-2.5 を使って1～5枚の参照画像から3Dモデルを生成します。モード（高速／通常／超高）を選択して品質とコストを調整できます。",
+    "display_name": "Rodin 3D Gen-2.5 - 画像から3D生成",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "人型モデル用のT/Aポーズ。"
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "HighPackアドオン：4KテクスチャとQuadモードで約16倍のポリゴン数。"
+      },
+      "bbox_height": {
+        "name": "bbox_height",
+        "tooltip": "バウンディングボックスの高さ（Z軸）。"
+      },
+      "bbox_length": {
+        "name": "bbox_length",
+        "tooltip": "バウンディングボックスの長さ（X軸）。"
+      },
+      "bbox_width": {
+        "name": "bbox_width",
+        "tooltip": "バウンディングボックスの幅（Y軸）。他と合わせて0にするとバウンディングボックスをスキップします。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "geometry_file_format": {
+        "name": "geometry_file_format"
+      },
+      "hd_texture": {
+        "name": "hd_texture",
+        "tooltip": "高品質テクスチャ強化。"
+      },
+      "height_cm": {
+        "name": "height_cm",
+        "tooltip": "モデルのおおよその高さ（cm単位、0でスキップ）。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "1～5枚の画像。マルチビュー時は最初の画像がマテリアルに使用されます。"
+      },
+      "material": {
+        "name": "material"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "生成モード。通常＝バランス型。高速＝1K～20Kポリゴンで高速プロトタイピング向け。超高＝20K～200万ポリゴン、オプションでマイクロディテール対応。"
+      },
+      "mode_creative": {
+        "name": "creative"
+      },
+      "mode_polygon_count": {
+        "name": "polygon_count"
+      },
+      "mode_tier": {
+        "name": "tier"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "texture_delight": {
+        "name": "texture_delight",
+        "tooltip": "テクスチャから焼き付けられたライティングを除去します。"
+      },
+      "texture_mode": {
+        "name": "texture_mode",
+        "tooltip": "テクスチャ品質プリセット。「Default」は選択したティアのサーバーデフォルトを使用します。"
+      },
+      "use_original_alpha": {
+        "name": "use_original_alpha",
+        "tooltip": "画像の透明度を保持します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "description": "Rodin Gen-2.5を使ってテキストプロンプトから3Dモデルを生成します。モード（高速 / 通常 / 超高精細）を選択して、品質とコストのバランスを調整できます。",
+    "display_name": "Rodin 3D Gen-2.5 - テキストから3D生成",
+    "inputs": {
+      "TAPose": {
+        "name": "T/Aポーズ",
+        "tooltip": "人型モデル用のT/Aポーズ。"
+      },
+      "addon_highpack": {
+        "name": "HighPackアドオン",
+        "tooltip": "HighPackアドオン：4KテクスチャとQuadモードで約16倍のフェイス数。"
+      },
+      "bbox_height": {
+        "name": "バウンディングボックス高さ",
+        "tooltip": "バウンディングボックスの高さ（Z軸）。"
+      },
+      "bbox_length": {
+        "name": "バウンディングボックス長さ",
+        "tooltip": "バウンディングボックスの長さ（X軸）。"
+      },
+      "bbox_width": {
+        "name": "バウンディングボックス幅",
+        "tooltip": "バウンディングボックスの幅（Y軸）。他と合わせて0にするとバウンディングボックスをスキップします。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "geometry_file_format": {
+        "name": "ジオメトリファイル形式"
+      },
+      "hd_texture": {
+        "name": "高精細テクスチャ",
+        "tooltip": "高品質テクスチャの強化。"
+      },
+      "height_cm": {
+        "name": "高さ（cm）",
+        "tooltip": "モデルのおおよその高さ（センチメートル）。0でスキップ。"
+      },
+      "material": {
+        "name": "マテリアル"
+      },
+      "mode": {
+        "name": "モード",
+        "tooltip": "生成モード。通常＝バランス型。高速＝1K～20Kフェイスで迅速なプロトタイピング向け。超高精細＝20K～200万フェイス、オプションでマイクロディテール対応。"
+      },
+      "mode_creative": {
+        "name": "クリエイティブ"
+      },
+      "mode_polygon_count": {
+        "name": "ポリゴン数"
+      },
+      "mode_tier": {
+        "name": "ティア"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "3Dモデル用のテキストプロンプト。"
+      },
+      "seed": {
+        "name": "シード"
+      },
+      "texture_delight": {
+        "name": "テクスチャデライト",
+        "tooltip": "テクスチャから焼き付けられたライティングを除去します。"
+      },
+      "texture_mode": {
+        "name": "テクスチャモード",
+        "tooltip": "テクスチャ品質プリセット。「デフォルト」は選択したティアのサーバーデフォルトを使用します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデルファイル",
         "tooltip": null
       }
     }

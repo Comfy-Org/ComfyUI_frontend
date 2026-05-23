@@ -1800,6 +1800,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "description": "Operação lógica AND. Retorna verdadeiro se todos os valores forem verdadeiros. Usa as regras de veracidade do Python.",
+    "display_name": "And",
+    "inputs": {
+      "values": {
+        "name": "valores"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "Expressão Matemática",
     "inputs": {
@@ -1823,6 +1837,20 @@
       }
     }
   },
+  "ComfyNotNode": {
+    "description": "Operação lógica NOT. Retorna verdadeiro se o valor for falso. Usa as regras de veracidade do Python.",
+    "display_name": "Not",
+    "inputs": {
+      "value": {
+        "name": "valor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyNumberConvert": {
     "display_name": "Conversão de Número",
     "inputs": {
@@ -1835,6 +1863,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "description": "Operação lógica OR. Retorna verdadeiro se algum dos valores for verdadeiro. Usa as regras de veracidade do Python.",
+    "display_name": "Or",
+    "inputs": {
+      "values": {
+        "name": "valores"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -14597,6 +14639,164 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Image": {
+    "description": "Gere um modelo 3D a partir de 1 a 5 imagens de referência via Rodin Gen-2.5. Escolha um modo (Rápido / Regular / Extremo-Alto) para ajustar qualidade versus custo.",
+    "display_name": "Rodin 3D Gen-2.5 - Imagem para 3D",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "Pose T/A para modelos humanoides."
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "Addon HighPack: texturas 4K e ~16x faces no modo Quad."
+      },
+      "bbox_height": {
+        "name": "altura_bbox",
+        "tooltip": "Altura da caixa delimitadora (eixo Z)."
+      },
+      "bbox_length": {
+        "name": "comprimento_bbox",
+        "tooltip": "Comprimento da caixa delimitadora (eixo X)."
+      },
+      "bbox_width": {
+        "name": "largura_bbox",
+        "tooltip": "Largura da caixa delimitadora (eixo Y). Defina como 0 junto com os outros para pular a bbox."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "geometry_file_format": {
+        "name": "formato_arquivo_geometria"
+      },
+      "hd_texture": {
+        "name": "textura_hd",
+        "tooltip": "Aprimoramento de textura de alta qualidade."
+      },
+      "height_cm": {
+        "name": "altura_cm",
+        "tooltip": "Altura aproximada do modelo em centímetros (0 para ignorar)."
+      },
+      "images": {
+        "name": "imagens",
+        "tooltip": "1 a 5 imagens. A primeira imagem é usada para materiais quando em multi-visão."
+      },
+      "material": {
+        "name": "material"
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Modo de geração. Regular = equilibrado. Rápido = 1K-20K faces para prototipagem rápida. Extremo-Alto = 20K-2M faces com detalhes micro opcionais."
+      },
+      "mode_creative": {
+        "name": "criativo"
+      },
+      "mode_polygon_count": {
+        "name": "contagem_de_polígonos"
+      },
+      "mode_tier": {
+        "name": "nível"
+      },
+      "seed": {
+        "name": "semente"
+      },
+      "texture_delight": {
+        "name": "remover_iluminação_textura",
+        "tooltip": "Remove iluminação embutida das texturas."
+      },
+      "texture_mode": {
+        "name": "modo_textura",
+        "tooltip": "Predefinição de qualidade de textura. 'Padrão' usa o padrão do servidor para o nível selecionado."
+      },
+      "use_original_alpha": {
+        "name": "preservar_alpha_original",
+        "tooltip": "Preservar a transparência da imagem."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "arquivo_modelo",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "description": "Gere um modelo 3D a partir de um prompt de texto via Rodin Gen-2.5. Escolha um modo (Rápido / Regular / Extremo-Alto) para ajustar qualidade versus custo.",
+    "display_name": "Rodin 3D Gen-2.5 - Texto para 3D",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "Pose T/A para modelos humanoides."
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "Addon HighPack: texturas 4K e ~16x faces no modo Quad."
+      },
+      "bbox_height": {
+        "name": "altura_bbox",
+        "tooltip": "Altura da caixa delimitadora (eixo Z)."
+      },
+      "bbox_length": {
+        "name": "comprimento_bbox",
+        "tooltip": "Comprimento da caixa delimitadora (eixo X)."
+      },
+      "bbox_width": {
+        "name": "largura_bbox",
+        "tooltip": "Largura da caixa delimitadora (eixo Y). Defina como 0 junto com os outros para pular a bbox."
+      },
+      "control_after_generate": {
+        "name": "controle_após_gerar"
+      },
+      "geometry_file_format": {
+        "name": "formato_arquivo_geometria"
+      },
+      "hd_texture": {
+        "name": "textura_hd",
+        "tooltip": "Aprimoramento de textura em alta qualidade."
+      },
+      "height_cm": {
+        "name": "altura_cm",
+        "tooltip": "Altura aproximada do modelo em centímetros (0 para ignorar)."
+      },
+      "material": {
+        "name": "material"
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Modo de geração. Regular = equilibrado. Rápido = 1K-20K faces para prototipagem rápida. Extremo-Alto = 20K-2M faces com microdetalhes opcionais."
+      },
+      "mode_creative": {
+        "name": "criativo"
+      },
+      "mode_polygon_count": {
+        "name": "contagem_de_polígonos"
+      },
+      "mode_tier": {
+        "name": "nível"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto para o modelo 3D."
+      },
+      "seed": {
+        "name": "semente"
+      },
+      "texture_delight": {
+        "name": "remover_iluminação_textura",
+        "tooltip": "Remover iluminação embutida das texturas."
+      },
+      "texture_mode": {
+        "name": "modo_textura",
+        "tooltip": "Predefinição de qualidade de textura. 'Padrão' usa o padrão do servidor para o nível selecionado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "arquivo_modelo",
         "tooltip": null
       }
     }

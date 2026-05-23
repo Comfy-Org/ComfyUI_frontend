@@ -1800,6 +1800,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "description": "Логическая операция И. Возвращает true, если все значения истинны. Использует правила истинности Python.",
+    "display_name": "И",
+    "inputs": {
+      "values": {
+        "name": "значения"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "Математическое выражение",
     "inputs": {
@@ -1823,6 +1837,20 @@
       }
     }
   },
+  "ComfyNotNode": {
+    "description": "Логическая операция НЕ. Возвращает true, если значение ложно. Использует правила истинности Python.",
+    "display_name": "Не",
+    "inputs": {
+      "value": {
+        "name": "значение"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyNumberConvert": {
     "display_name": "Преобразование числа",
     "inputs": {
@@ -1835,6 +1863,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "description": "Логическая операция ИЛИ. Возвращает true, если хотя бы одно из значений истинно. Использует правила истинности Python.",
+    "display_name": "ИЛИ",
+    "inputs": {
+      "values": {
+        "name": "значения"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -14597,6 +14639,164 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Image": {
+    "description": "Создайте 3D-модель по 1-5 референсным изображениям с помощью Rodin Gen-2.5. Выберите режим (Быстрый / Обычный / Экстремально высокий) для настройки баланса качества и стоимости.",
+    "display_name": "Rodin 3D Gen-2.5 - Изображение в 3D",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "T/A поза для гуманоидных моделей."
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "Дополнение HighPack: 4K текстуры и ~16x полигонов в Quad режиме."
+      },
+      "bbox_height": {
+        "name": "bbox_height",
+        "tooltip": "Высота ограничивающего прямоугольника (ось Z)."
+      },
+      "bbox_length": {
+        "name": "bbox_length",
+        "tooltip": "Длина ограничивающего прямоугольника (ось X)."
+      },
+      "bbox_width": {
+        "name": "bbox_width",
+        "tooltip": "Ширина ограничивающего прямоугольника (ось Y). Установите 0 вместе с остальными, чтобы пропустить bbox."
+      },
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "geometry_file_format": {
+        "name": "формат_файла_геометрии"
+      },
+      "hd_texture": {
+        "name": "hd_texture",
+        "tooltip": "Улучшение качества текстуры."
+      },
+      "height_cm": {
+        "name": "height_cm",
+        "tooltip": "Примерная высота модели в сантиметрах (0 — чтобы пропустить)."
+      },
+      "images": {
+        "name": "изображения",
+        "tooltip": "1-5 изображений. Первое изображение используется для материалов при мульти-ракурсе."
+      },
+      "material": {
+        "name": "материал"
+      },
+      "mode": {
+        "name": "режим",
+        "tooltip": "Режим генерации. Обычный = сбалансированный. Быстрый = 1K-20K полигонов для быстрого прототипирования. Экстремально высокий = 20K-2M полигонов с опциональными микро-деталями."
+      },
+      "mode_creative": {
+        "name": "креативный"
+      },
+      "mode_polygon_count": {
+        "name": "количество_полигонов"
+      },
+      "mode_tier": {
+        "name": "уровень"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "texture_delight": {
+        "name": "texture_delight",
+        "tooltip": "Удалить запечённое освещение с текстур."
+      },
+      "texture_mode": {
+        "name": "режим_текстуры",
+        "tooltip": "Пресет качества текстуры. 'По умолчанию' использует стандарт сервера для выбранного уровня."
+      },
+      "use_original_alpha": {
+        "name": "use_original_alpha",
+        "tooltip": "Сохранить прозрачность изображения."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "файл_модели",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "description": "Создайте 3D-модель по текстовому запросу с помощью Rodin Gen-2.5. Выберите режим (Быстрый / Обычный / Экстремально высокий), чтобы настроить баланс между качеством и стоимостью.",
+    "display_name": "Rodin 3D Gen-2.5 — Текст в 3D",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "T/A-поза для гуманоидных моделей."
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "Дополнение HighPack: 4K текстуры и ~16x полигонов в Quad-режиме."
+      },
+      "bbox_height": {
+        "name": "bbox_height",
+        "tooltip": "Высота ограничивающего прямоугольника (ось Z)."
+      },
+      "bbox_length": {
+        "name": "bbox_length",
+        "tooltip": "Длина ограничивающего прямоугольника (ось X)."
+      },
+      "bbox_width": {
+        "name": "bbox_width",
+        "tooltip": "Ширина ограничивающего прямоугольника (ось Y). Установите 0 вместе с остальными, чтобы пропустить bbox."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "geometry_file_format": {
+        "name": "geometry_file_format"
+      },
+      "hd_texture": {
+        "name": "hd_texture",
+        "tooltip": "Улучшение текстуры высокого качества."
+      },
+      "height_cm": {
+        "name": "height_cm",
+        "tooltip": "Примерная высота модели в сантиметрах (0 — пропустить)."
+      },
+      "material": {
+        "name": "material"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Режим генерации. Обычный = сбалансированный. Быстрый = 1K-20K полигонов для быстрого прототипирования. Экстремально высокий = 20K-2M полигонов с возможностью микродетализации."
+      },
+      "mode_creative": {
+        "name": "creative"
+      },
+      "mode_polygon_count": {
+        "name": "polygon_count"
+      },
+      "mode_tier": {
+        "name": "tier"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый запрос для 3D-модели."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "texture_delight": {
+        "name": "texture_delight",
+        "tooltip": "Удалить запечённое освещение с текстур."
+      },
+      "texture_mode": {
+        "name": "texture_mode",
+        "tooltip": "Пресет качества текстуры. 'По умолчанию' использует стандарт сервера для выбранного уровня."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
       }
     }
