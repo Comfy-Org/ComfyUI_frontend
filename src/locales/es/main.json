@@ -2437,6 +2437,43 @@
     },
     "title": "Tu dispositivo no es compatible"
   },
+  "oauth": {
+    "consent": {
+      "allow": "Continuar",
+      "appTypeNative": "Aplicación nativa",
+      "appTypeWeb": "Aplicación web",
+      "deny": "Cancelar",
+      "errorExpired": "Esta solicitud de consentimiento ha expirado o ya ha sido utilizada. Por favor, reinicia desde la aplicación cliente.",
+      "errorScopeBroadening": "Los permisos aprobados previamente no cubren esta solicitud. Necesitas volver a autorizar con los nuevos permisos.",
+      "errorUnavailable": "Esta función no está disponible en este momento. Por favor, contacta con soporte si el problema persiste.",
+      "genericError": "La solicitud OAuth ha fallado. Por favor, reinicia desde la aplicación cliente.",
+      "loading": "Cargando solicitud de autorización…",
+      "missingRequest": "Falta esta solicitud de autorización. Por favor, reinicia desde la aplicación cliente.",
+      "noWorkspaces": "No hay espacios de trabajo elegibles disponibles para esta solicitud.",
+      "permissionsHeader": "Permisos",
+      "redirectNotice": "Serás redirigido a",
+      "resourceFallback": "esta aplicación",
+      "sessionError": "No se pudo establecer la sesión. Por favor, inténtalo de nuevo.",
+      "sessionErrorToastSummary": "No se pudo continuar con el inicio de sesión OAuth",
+      "subtitle": "Inicia sesión en {resource} para continuar",
+      "title": "{client} quiere acceder",
+      "workspaceHelp": "Los permisos se aplican solo a este espacio de trabajo.",
+      "workspaceLabel": "Espacio de trabajo"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "Ejecutar flujos de trabajo en tu nombre"
+      },
+      "mcp:tools:read": {
+        "label": "Ver herramientas de flujo de trabajo disponibles"
+      }
+    },
+    "workspace": {
+      "member": "Miembro",
+      "owner": "Propietario",
+      "personal": "Personal"
+    }
+  },
   "openSharedWorkflow": {
     "author": "Autor:",
     "copyAssetsAndOpen": "Importar recursos y abrir flujo de trabajo",
@@ -3075,6 +3112,7 @@
         "sourceDesc": "Agrupar por tipo de fuente (Core, Custom, API)"
       },
       "noBookmarkedNodes": "Aún no hay favoritos",
+      "noMatchingNodes": "No hay nodos que coincidan con \"{query}\"",
       "resetView": "Restablecer vista a la predeterminada",
       "sections": {
         "bookmarked": "Favoritos",
@@ -3460,8 +3498,7 @@
       "newest": "Más reciente",
       "popular": "Popular",
       "recommended": "Recomendado",
-      "searchPlaceholder": "Buscar...",
-      "vramLowToHigh": "Uso de VRAM (de bajo a alto)"
+      "searchPlaceholder": "Buscar..."
     },
     "sorting": "Ordenar por",
     "title": "Comienza con una Plantilla",

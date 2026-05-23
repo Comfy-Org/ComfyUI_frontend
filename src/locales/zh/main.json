@@ -2437,6 +2437,43 @@
     },
     "title": "您的设备不受支持"
   },
+  "oauth": {
+    "consent": {
+      "allow": "继续",
+      "appTypeNative": "本地应用",
+      "appTypeWeb": "网页应用",
+      "deny": "取消",
+      "errorExpired": "此授权请求已过期或已被使用。请从客户端应用重新开始。",
+      "errorScopeBroadening": "之前批准的权限不包含此次请求。您需要使用新权限重新授权。",
+      "errorUnavailable": "此功能当前不可用。如问题持续，请联系支持。",
+      "genericError": "OAuth 请求失败。请从客户端应用重新开始。",
+      "loading": "正在加载授权请求…",
+      "missingRequest": "缺少此授权请求。请从客户端应用重新开始。",
+      "noWorkspaces": "此请求没有可用的工作区。",
+      "permissionsHeader": "权限",
+      "redirectNotice": "您将被重定向到",
+      "resourceFallback": "此应用",
+      "sessionError": "建立会话失败。请重试。",
+      "sessionErrorToastSummary": "无法继续 OAuth 登录",
+      "subtitle": "登录 {resource} 以继续",
+      "title": "{client} 请求访问权限",
+      "workspaceHelp": "权限仅适用于此工作区。",
+      "workspaceLabel": "工作区"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "代表您运行工作流"
+      },
+      "mcp:tools:read": {
+        "label": "查看可用的工作流工具"
+      }
+    },
+    "workspace": {
+      "member": "成员",
+      "owner": "所有者",
+      "personal": "个人"
+    }
+  },
   "openSharedWorkflow": {
     "author": "作者：",
     "copyAssetsAndOpen": "导入资源并打开工作流",
@@ -3087,6 +3124,7 @@
         "sourceDesc": "按来源类型分组（核心，自定义，API）"
       },
       "noBookmarkedNodes": "暂无收藏",
+      "noMatchingNodes": "没有与“{query}”匹配的节点",
       "resetView": "重置视图为默认",
       "sections": {
         "bookmarked": "已收藏",
@@ -3472,8 +3510,7 @@
       "newest": "最新",
       "popular": "热门",
       "recommended": "推荐",
-      "searchPlaceholder": "搜索...",
-      "vramLowToHigh": "VRAM 使用量（从低到高）"
+      "searchPlaceholder": "搜索..."
     },
     "sorting": "排序方式",
     "title": "从模板开始",

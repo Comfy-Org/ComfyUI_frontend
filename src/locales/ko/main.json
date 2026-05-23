@@ -2437,6 +2437,43 @@
     },
     "title": "이 장치는 지원되지 않습니다."
   },
+  "oauth": {
+    "consent": {
+      "allow": "계속",
+      "appTypeNative": "네이티브 앱",
+      "appTypeWeb": "웹 앱",
+      "deny": "취소",
+      "errorExpired": "이 동의 요청이 만료되었거나 이미 사용되었습니다. 클라이언트 앱에서 다시 시작해 주세요.",
+      "errorScopeBroadening": "이전에 승인된 권한이 이 요청을 포함하지 않습니다. 새로운 권한으로 다시 인증해야 합니다.",
+      "errorUnavailable": "이 기능은 현재 사용할 수 없습니다. 문제가 계속되면 지원팀에 문의해 주세요.",
+      "genericError": "OAuth 요청에 실패했습니다. 클라이언트 앱에서 다시 시작해 주세요.",
+      "loading": "인증 요청을 불러오는 중…",
+      "missingRequest": "이 인증 요청이 누락되었습니다. 클라이언트 앱에서 다시 시작해 주세요.",
+      "noWorkspaces": "이 요청에 사용할 수 있는 워크스페이스가 없습니다.",
+      "permissionsHeader": "권한",
+      "redirectNotice": "다음으로 리디렉션됩니다",
+      "resourceFallback": "이 앱",
+      "sessionError": "세션을 설정하지 못했습니다. 다시 시도해 주세요.",
+      "sessionErrorToastSummary": "OAuth 로그인 진행을 계속할 수 없습니다",
+      "subtitle": "계속하려면 {resource}에 로그인하세요",
+      "title": "{client}에서 접근을 요청합니다",
+      "workspaceHelp": "권한은 이 워크스페이스에만 적용됩니다.",
+      "workspaceLabel": "워크스페이스"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "워크플로를 대신 실행"
+      },
+      "mcp:tools:read": {
+        "label": "사용 가능한 워크플로 도구 보기"
+      }
+    },
+    "workspace": {
+      "member": "멤버",
+      "owner": "소유자",
+      "personal": "개인"
+    }
+  },
   "openSharedWorkflow": {
     "author": "작성자:",
     "copyAssetsAndOpen": "에셋 가져오기 및 워크플로우 열기",
@@ -3075,6 +3112,7 @@
         "sourceDesc": "소스 유형(Core, Custom, API)별로 그룹화"
       },
       "noBookmarkedNodes": "아직 즐겨찾기가 없습니다",
+      "noMatchingNodes": "\"{query}\"에 일치하는 노드가 없습니다",
       "resetView": "기본 보기로 재설정",
       "sections": {
         "bookmarked": "즐겨찾기",
@@ -3460,8 +3498,7 @@
       "newest": "최신순",
       "popular": "인기",
       "recommended": "권장",
-      "searchPlaceholder": "검색...",
-      "vramLowToHigh": "VRAM 사용량 (낮음에서 높음 순)"
+      "searchPlaceholder": "검색..."
     },
     "sorting": "정렬 기준",
     "title": "템플릿으로 시작하기",

@@ -1800,6 +1800,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "description": "邏輯 AND 運算。若所有值皆為真則回傳 true。依據 Python 的真值規則判斷。",
+    "display_name": "And",
+    "inputs": {
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "數學運算式",
     "inputs": {
@@ -1823,6 +1837,20 @@
       }
     }
   },
+  "ComfyNotNode": {
+    "description": "邏輯 NOT 運算。若值為假則回傳 true。依據 Python 的真值規則判斷。",
+    "display_name": "Not",
+    "inputs": {
+      "value": {
+        "name": "value"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyNumberConvert": {
     "display_name": "數值轉換",
     "inputs": {
@@ -1835,6 +1863,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "description": "邏輯 OR 運算。若任一值為真則回傳 true。依據 Python 的真值規則判斷。",
+    "display_name": "Or",
+    "inputs": {
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -14597,6 +14639,164 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Image": {
+    "description": "透過 Rodin Gen-2.5，從 1-5 張參考圖像生成 3D 模型。選擇模式（快速／標準／極高）以調整品質與成本。",
+    "display_name": "Rodin 3D Gen-2.5 - 圖像轉 3D",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "人形模型的 T/A 姿勢。"
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "HighPack 附加功能：4K 材質與 Quad 模式下約 16 倍面數。"
+      },
+      "bbox_height": {
+        "name": "bbox_height",
+        "tooltip": "包圍盒高度（Z 軸）。"
+      },
+      "bbox_length": {
+        "name": "bbox_length",
+        "tooltip": "包圍盒長度（X 軸）。"
+      },
+      "bbox_width": {
+        "name": "bbox_width",
+        "tooltip": "包圍盒寬度（Y 軸）。與其他設為 0 可跳過包圍盒。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "geometry_file_format": {
+        "name": "geometry_file_format"
+      },
+      "hd_texture": {
+        "name": "hd_texture",
+        "tooltip": "高品質材質增強。"
+      },
+      "height_cm": {
+        "name": "height_cm",
+        "tooltip": "模型大約高度（公分，0 為跳過）。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "1-5 張圖像。多視角時，第一張圖像用於材質。"
+      },
+      "material": {
+        "name": "material"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "生成模式。標準＝平衡。快速＝1K-20K 面，適合快速原型。極高＝20K-2M 面，可選微細節。"
+      },
+      "mode_creative": {
+        "name": "creative"
+      },
+      "mode_polygon_count": {
+        "name": "polygon_count"
+      },
+      "mode_tier": {
+        "name": "tier"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "texture_delight": {
+        "name": "texture_delight",
+        "tooltip": "移除材質中的烘焙光影。"
+      },
+      "texture_mode": {
+        "name": "texture_mode",
+        "tooltip": "材質品質預設。『預設』會使用伺服器針對所選等級的預設值。"
+      },
+      "use_original_alpha": {
+        "name": "use_original_alpha",
+        "tooltip": "保留圖像透明度。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "description": "透過 Rodin Gen-2.5，根據文字提示生成 3D 模型。請選擇模式（快速 / 標準 / 極高）以調整品質與成本。",
+    "display_name": "Rodin 3D Gen-2.5 - 文字轉3D",
+    "inputs": {
+      "TAPose": {
+        "name": "T/A 姿勢",
+        "tooltip": "適用於類人模型的 T/A 姿勢。"
+      },
+      "addon_highpack": {
+        "name": "HighPack 附加包",
+        "tooltip": "HighPack 附加包：4K 材質與 Quad 模式下約 16 倍面數。"
+      },
+      "bbox_height": {
+        "name": "包圍盒高度",
+        "tooltip": "包圍盒高度（Z 軸）。"
+      },
+      "bbox_length": {
+        "name": "包圍盒長度",
+        "tooltip": "包圍盒長度（X 軸）。"
+      },
+      "bbox_width": {
+        "name": "包圍盒寬度",
+        "tooltip": "包圍盒寬度（Y 軸）。與其他設為 0 可跳過包圍盒。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "geometry_file_format": {
+        "name": "幾何檔案格式"
+      },
+      "hd_texture": {
+        "name": "高畫質材質",
+        "tooltip": "高品質材質增強。"
+      },
+      "height_cm": {
+        "name": "模型高度（公分）",
+        "tooltip": "模型大約高度（公分，0 表示略過）。"
+      },
+      "material": {
+        "name": "材質"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "生成模式。標準 = 平衡。快速 = 1K-20K 面數，適合快速原型。極高 = 20K-2M 面數，可選微細節。"
+      },
+      "mode_creative": {
+        "name": "創意"
+      },
+      "mode_polygon_count": {
+        "name": "多邊形數"
+      },
+      "mode_tier": {
+        "name": "等級"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "3D 模型的文字提示。"
+      },
+      "seed": {
+        "name": "隨機種子"
+      },
+      "texture_delight": {
+        "name": "材質去光照",
+        "tooltip": "移除材質中的烘焙光照。"
+      },
+      "texture_mode": {
+        "name": "材質品質",
+        "tooltip": "材質品質預設。『預設』會使用伺服器針對所選等級的預設值。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型檔案",
         "tooltip": null
       }
     }

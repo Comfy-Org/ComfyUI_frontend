@@ -2437,6 +2437,43 @@
     },
     "title": "جهازك غير مدعوم"
   },
+  "oauth": {
+    "consent": {
+      "allow": "متابعة",
+      "appTypeNative": "تطبيق أصلي",
+      "appTypeWeb": "تطبيق ويب",
+      "deny": "إلغاء",
+      "errorExpired": "انتهت صلاحية طلب الموافقة هذا أو تم استخدامه بالفعل. يرجى إعادة البدء من تطبيق العميل.",
+      "errorScopeBroadening": "الأذونات التي تمت الموافقة عليها سابقًا لا تغطي هذا الطلب. ستحتاج إلى إعادة التفويض بالأذونات الجديدة.",
+      "errorUnavailable": "هذه الميزة غير متوفرة حاليًا. يرجى التواصل مع الدعم إذا استمرت المشكلة.",
+      "genericError": "فشل طلب OAuth. يرجى إعادة البدء من تطبيق العميل.",
+      "loading": "جارٍ تحميل طلب التفويض…",
+      "missingRequest": "هذا الطلب التفويضي غير موجود. يرجى إعادة البدء من تطبيق العميل.",
+      "noWorkspaces": "لا توجد مساحات عمل مؤهلة لهذا الطلب.",
+      "permissionsHeader": "الأذونات",
+      "redirectNotice": "سيتم إعادة توجيهك إلى",
+      "resourceFallback": "هذا التطبيق",
+      "sessionError": "فشل في إنشاء الجلسة. يرجى المحاولة مرة أخرى.",
+      "sessionErrorToastSummary": "تعذر متابعة تسجيل الدخول عبر OAuth",
+      "subtitle": "سجّل الدخول إلى {resource} للمتابعة",
+      "title": "{client} يطلب الوصول",
+      "workspaceHelp": "تنطبق الأذونات على مساحة العمل هذه فقط.",
+      "workspaceLabel": "مساحة العمل"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "تشغيل سير العمل نيابةً عنك"
+      },
+      "mcp:tools:read": {
+        "label": "عرض أدوات سير العمل المتاحة"
+      }
+    },
+    "workspace": {
+      "member": "عضو",
+      "owner": "المالك",
+      "personal": "شخصي"
+    }
+  },
   "openSharedWorkflow": {
     "author": "المؤلف:",
     "copyAssetsAndOpen": "استيراد الأصول وفتح سير العمل",
@@ -3075,6 +3112,7 @@
         "sourceDesc": "التجميع حسب نوع المصدر (أساسي، مخصص، API)"
       },
       "noBookmarkedNodes": "لا توجد مفضلات بعد",
+      "noMatchingNodes": "لا توجد عقد تطابق \"{query}\"",
       "resetView": "إعادة تعيين العرض إلى الافتراضي",
       "sections": {
         "bookmarked": "المفضلة",
@@ -3460,8 +3498,7 @@
       "newest": "الأحدث",
       "popular": "الأكثر شيوعًا",
       "recommended": "موصى به",
-      "searchPlaceholder": "بحث...",
-      "vramLowToHigh": "استخدام VRAM (من الأقل إلى الأعلى)"
+      "searchPlaceholder": "بحث..."
     },
     "sorting": "ترتيب حسب",
     "title": "ابدأ باستخدام قالب",

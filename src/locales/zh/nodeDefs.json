@@ -1800,6 +1800,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "description": "逻辑与操作。如果所有值都为真，则返回 true。使用 Python 的真值规则。",
+    "display_name": "与",
+    "inputs": {
+      "values": {
+        "name": "值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "数学表达式",
     "inputs": {
@@ -1823,6 +1837,20 @@
       }
     }
   },
+  "ComfyNotNode": {
+    "description": "逻辑非操作。如果值为假，则返回 true。使用 Python 的真值规则。",
+    "display_name": "非",
+    "inputs": {
+      "value": {
+        "name": "值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyNumberConvert": {
     "display_name": "数字转换",
     "inputs": {
@@ -1835,6 +1863,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "description": "逻辑或操作。如果任意值为真，则返回 true。使用 Python 的真值规则。",
+    "display_name": "或",
+    "inputs": {
+      "values": {
+        "name": "值"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -14597,6 +14639,164 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Image": {
+    "description": "通过 Rodin Gen-2.5 从 1-5 张参考图像生成 3D 模型。选择模式（快速 / 常规 / 极高）以平衡质量与成本。",
+    "display_name": "Rodin 3D Gen-2.5 - 图像转3D",
+    "inputs": {
+      "TAPose": {
+        "name": "T/A 姿势",
+        "tooltip": "用于类人模型的 T/A 姿势。"
+      },
+      "addon_highpack": {
+        "name": "HighPack 插件",
+        "tooltip": "HighPack 插件：4K 贴图和 Quad 模式下约 16 倍面数。"
+      },
+      "bbox_height": {
+        "name": "包围盒高度",
+        "tooltip": "包围盒高度（Z 轴）。"
+      },
+      "bbox_length": {
+        "name": "包围盒长度",
+        "tooltip": "包围盒长度（X 轴）。"
+      },
+      "bbox_width": {
+        "name": "包围盒宽度",
+        "tooltip": "包围盒宽度（Y 轴）。与其他设置为 0 可跳过包围盒。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "geometry_file_format": {
+        "name": "几何文件格式"
+      },
+      "hd_texture": {
+        "name": "高清贴图",
+        "tooltip": "高质量贴图增强。"
+      },
+      "height_cm": {
+        "name": "模型高度（厘米）",
+        "tooltip": "模型大致高度（厘米，0 表示跳过）。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "1-5 张图像。多视角时第一张图像用于材质。"
+      },
+      "material": {
+        "name": "材质"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "生成模式。常规 = 平衡。快速 = 1K-20K 面，适合快速原型。极高 = 20K-200 万面，可选微细节。"
+      },
+      "mode_creative": {
+        "name": "创意"
+      },
+      "mode_polygon_count": {
+        "name": "面数"
+      },
+      "mode_tier": {
+        "name": "档位"
+      },
+      "seed": {
+        "name": "种子"
+      },
+      "texture_delight": {
+        "name": "贴图去光照",
+        "tooltip": "去除贴图中的烘焙光照。"
+      },
+      "texture_mode": {
+        "name": "贴图模式",
+        "tooltip": "贴图质量预设。'默认'使用服务器为所选档位设置的默认值。"
+      },
+      "use_original_alpha": {
+        "name": "保留原始透明度",
+        "tooltip": "保留图像透明通道。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "description": "通过 Rodin Gen-2.5 根据文本提示生成3D模型。选择模式（快速 / 常规 / 极高）以平衡质量与成本。",
+    "display_name": "Rodin 3D Gen-2.5 - 文本转3D",
+    "inputs": {
+      "TAPose": {
+        "name": "T/A 姿势",
+        "tooltip": "用于类人模型的T/A姿势。"
+      },
+      "addon_highpack": {
+        "name": "HighPack 插件",
+        "tooltip": "HighPack 插件：4K贴图和Quad模式下约16倍面数。"
+      },
+      "bbox_height": {
+        "name": "包围盒高度",
+        "tooltip": "包围盒高度（Z轴）。"
+      },
+      "bbox_length": {
+        "name": "包围盒长度",
+        "tooltip": "包围盒长度（X轴）。"
+      },
+      "bbox_width": {
+        "name": "包围盒宽度",
+        "tooltip": "包围盒宽度（Y轴）。与其他设置为0可跳过包围盒。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "geometry_file_format": {
+        "name": "几何文件格式"
+      },
+      "hd_texture": {
+        "name": "高清贴图",
+        "tooltip": "高质量贴图增强。"
+      },
+      "height_cm": {
+        "name": "模型高度（厘米）",
+        "tooltip": "模型近似高度（厘米，0为跳过）。"
+      },
+      "material": {
+        "name": "材质"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "生成模式。常规 = 平衡。快速 = 1K-20K面数，适合快速原型。极高 = 20K-200万面数，可选微细节。"
+      },
+      "mode_creative": {
+        "name": "创意"
+      },
+      "mode_polygon_count": {
+        "name": "面数"
+      },
+      "mode_tier": {
+        "name": "档位"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于生成3D模型的文本提示。"
+      },
+      "seed": {
+        "name": "随机种子"
+      },
+      "texture_delight": {
+        "name": "贴图去光照",
+        "tooltip": "移除贴图中的烘焙光照。"
+      },
+      "texture_mode": {
+        "name": "贴图模式",
+        "tooltip": "贴图质量预设。“默认”将使用所选档位的服务器默认值。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型文件",
         "tooltip": null
       }
     }

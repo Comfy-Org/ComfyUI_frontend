@@ -2437,6 +2437,43 @@
     },
     "title": "Cihazınız desteklenmiyor"
   },
+  "oauth": {
+    "consent": {
+      "allow": "Devam Et",
+      "appTypeNative": "Yerel uygulama",
+      "appTypeWeb": "Web uygulaması",
+      "deny": "İptal",
+      "errorExpired": "Bu onay isteğinin süresi doldu veya zaten kullanıldı. Lütfen istemci uygulamasından tekrar başlatın.",
+      "errorScopeBroadening": "Önceden onaylanan izinler bu isteği kapsamıyor. Yeni izinlerle tekrar yetkilendirmeniz gerekiyor.",
+      "errorUnavailable": "Bu özellik şu anda kullanılamıyor. Sorun devam ederse lütfen destek ile iletişime geçin.",
+      "genericError": "OAuth isteği başarısız oldu. Lütfen istemci uygulamasından tekrar başlatın.",
+      "loading": "Yetkilendirme isteği yükleniyor…",
+      "missingRequest": "Bu yetkilendirme isteği eksik. Lütfen istemci uygulamasından tekrar başlatın.",
+      "noWorkspaces": "Bu istek için uygun çalışma alanı yok.",
+      "permissionsHeader": "İzinler",
+      "redirectNotice": "Yönlendirileceksiniz:",
+      "resourceFallback": "bu uygulama",
+      "sessionError": "Oturum başlatılamadı. Lütfen tekrar deneyin.",
+      "sessionErrorToastSummary": "OAuth oturum açma devam ettirilemedi",
+      "subtitle": "Devam etmek için {resource} hesabınızla oturum açın",
+      "title": "{client} erişim istiyor",
+      "workspaceHelp": "İzinler yalnızca bu çalışma alanı için geçerlidir.",
+      "workspaceLabel": "Çalışma Alanı"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "Sizin adınıza iş akışlarını çalıştır"
+      },
+      "mcp:tools:read": {
+        "label": "Mevcut iş akışı araçlarını görüntüle"
+      }
+    },
+    "workspace": {
+      "member": "Üye",
+      "owner": "Sahip",
+      "personal": "Kişisel"
+    }
+  },
   "openSharedWorkflow": {
     "author": "Yazar:",
     "copyAssetsAndOpen": "Varlıkları içe aktar ve iş akışını aç",
@@ -3075,6 +3112,7 @@
         "sourceDesc": "Kaynak türüne göre gruplandır (Çekirdek, Özel, API)"
       },
       "noBookmarkedNodes": "Henüz favori yok",
+      "noMatchingNodes": "\"{query}\" ile eşleşen düğüm yok",
       "resetView": "Görünümü Varsayılana Sıfırla",
       "sections": {
         "bookmarked": "Favoriler",
@@ -3460,8 +3498,7 @@
       "newest": "En Yeni",
       "popular": "Popüler",
       "recommended": "Önerilen",
-      "searchPlaceholder": "Ara...",
-      "vramLowToHigh": "VRAM Kullanımı (Düşükten Yükseğe)"
+      "searchPlaceholder": "Ara..."
     },
     "sorting": "Sıralama ölçütü",
     "title": "Bir Şablonla Başlayın",
