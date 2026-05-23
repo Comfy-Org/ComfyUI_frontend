@@ -115,7 +115,7 @@ describe('resolvePromotedWidgetAtHost', () => {
 
     expect(resolved).toBeDefined()
     expect(
-      (resolved?.widget as PromotedWidgetStub).disambiguatingSourceNodeId
+      (resolved!.widget as PromotedWidgetStub).disambiguatingSourceNodeId
     ).toBe('2')
   })
 })

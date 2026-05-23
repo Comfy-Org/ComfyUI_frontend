@@ -27,7 +27,10 @@
 
       <div class="flex w-full flex-col gap-4 pt-5 pb-2">
         <template v-if="!showEmailForm">
-          <p v-if="isFreeTierEnabled" class="m-0 text-sm text-sand-500/70">
+          <p
+            v-if="isFreeTierEnabled && !googleSsoBlockedReason"
+            class="m-0 text-sm text-sand-500/70"
+          >
             {{
               freeTierCredits
                 ? t('auth.login.freeTierDescription', {
@@ -37,7 +40,7 @@
             }}
           </p>
 
-          <div class="relative">
+          <div v-if="!googleSsoBlockedReason" class="relative">
             <Button
               type="button"
               variant="secondary"
@@ -93,7 +96,11 @@
             class="mt-1 h-10 w-full rounded-md border-none bg-smoke-800/5 text-sm/5 font-normal tracking-[-0.011em] text-sand-500/55 hover:bg-sand-300/10"
             @click="switchToSocialLogin"
           >
-            {{ t('auth.login.backToSocialLogin') }}
+            {{
+              googleSsoBlockedReason
+                ? t('auth.login.backToGithubLogin')
+                : t('auth.login.backToSocialLogin')
+            }}
           </Button>
         </template>
       </div>
@@ -145,12 +152,12 @@ import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
-import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
+import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SignUpData } from '@/schemas/signInSchema'
 import { isInChina } from '@/utils/networkUtil'
+import { getGoogleSsoBlockedReason } from '@/base/webviewDetection'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -159,7 +166,6 @@ const authActions = useAuthActions()
 const isSecureContext = globalThis.isSecureContext
 const authError = ref('')
 const userIsInChina = ref(false)
-const toastStore = useToastStore()
 const telemetry = useTelemetry()
 const {
   showEmailForm,
@@ -168,46 +174,35 @@ const {
   switchToEmailForm,
   switchToSocialLogin
 } = useFreeTierOnboarding()
+const googleSsoBlockedReason = getGoogleSsoBlockedReason()
+const { onAuthSuccess } = usePostAuthRedirect({
+  authError,
+  successSummary: 'Sign up Completed',
+  defaultRedirect: () => ({ path: '/', query: route.query })
+})
 
 const navigateToLogin = async () => {
   await router.push({ name: 'cloud-login', query: route.query })
 }
 
-const onSuccess = async () => {
-  toastStore.add({
-    severity: 'success',
-    summary: 'Sign up Completed',
-    life: 2000
-  })
-
-  const previousFullPath = getSafePreviousFullPath(route.query)
-  if (previousFullPath) {
-    await router.replace(previousFullPath)
-    return
-  }
-
-  // Default redirect to the normal onboarding flow
-  await router.push({ path: '/', query: route.query })
-}
-
 const signInWithGoogle = async () => {
   authError.value = ''
   if (await authActions.signInWithGoogle({ isNewUser: true })) {
-    await onSuccess()
+    await onAuthSuccess()
   }
 }
 
 const signInWithGithub = async () => {
   authError.value = ''
   if (await authActions.signInWithGithub({ isNewUser: true })) {
-    await onSuccess()
+    await onAuthSuccess()
   }
 }
 
 const signUpWithEmail = async (values: SignUpData) => {
   authError.value = ''
   if (await authActions.signUpWithEmail(values.email, values.password)) {
-    await onSuccess()
+    await onAuthSuccess()
   }
 }
 

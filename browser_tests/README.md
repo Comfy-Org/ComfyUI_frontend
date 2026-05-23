@@ -51,6 +51,7 @@ DISABLE_VUE_PLUGINS=true
 # Test against dev server (recommended) or backend directly
 PLAYWRIGHT_TEST_URL=http://localhost:5173  # Dev server
 # PLAYWRIGHT_TEST_URL=http://localhost:8188  # Direct backend
+PLAYWRIGHT_SETUP_API_URL=http://localhost:8188  # Setup/auth API when using the dev server URL above
 
 # Path to ComfyUI for backing up user data/settings before tests
 TEST_COMFYUI_DIR=/path/to/your/ComfyUI
@@ -95,6 +96,17 @@ pnpm test:browser:local                    # Run all tests
 pnpm test:browser:local widget.spec.ts     # Run specific test file
 ```
 
+### Slowing the browser down for debugging
+
+When running with `--headed` (or `--ui`), set `SLOW_MO` to a millisecond delay
+to slow every Playwright action down so you can watch what is happening. The
+delay only applies when `PLAYWRIGHT_LOCAL` is set (the default for the
+`pnpm test:browser:local` script).
+
+```bash
+SLOW_MO=250 pnpm test:browser:local --headed widget.spec.ts
+```
+
 ## Test Structure
 
 Browser tests in this project follow a specific organization pattern:
@@ -119,7 +131,7 @@ When writing new tests, follow these patterns:
 
 ```typescript
 // Import the test fixture
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Feature Name', () => {
   // Set up test environment if needed
@@ -139,14 +151,17 @@ Always check for existing helpers and fixtures before implementing new ones:
 
 - **ComfyPage**: Main fixture with methods for canvas interaction and node management
 - **ComfyMouse**: Helper for precise mouse operations on the canvas
-- **Helpers**: Check `browser_tests/helpers/` for specialized helpers like:
-  - `actionbar.ts`: Interact with the action bar
-  - `manageGroupNode.ts`: Group node management operations
-  - `templates.ts`: Template workflows operations
-- **Component Fixtures**: Check `browser_tests/fixtures/components/` for UI component helpers
-- **Utility Functions**: Check `browser_tests/utils/` and `browser_tests/fixtures/utils/` for shared utilities
+- **Component Fixtures**: Check `browser_tests/fixtures/components/` for UI component page objects (e.g. `Actionbar.ts`, `Templates.ts`, `ContextMenu.ts`)
+- **Helper Classes**: Check `browser_tests/fixtures/helpers/` for domain-specific helper classes wired into ComfyPage (e.g. `CanvasHelper.ts`, `WorkflowHelper.ts`)
+- **Utility Functions**: Check `browser_tests/fixtures/utils/` for standalone utilities (e.g. `fitToView.ts`, `clipboardSpy.ts`, `builderTestUtils.ts`)
 
 Most common testing needs are already addressed by these helpers, which will make your tests more consistent and reliable.
+
+### Import Conventions
+
+- Prefer `@e2e/*` for imports within `browser_tests/`
+- Continue using `@/*` for imports from `src/`
+- Avoid introducing new deep relative imports within `browser_tests/` when the alias is available
 
 ### Key Testing Patterns
 
@@ -196,7 +211,7 @@ Most common testing needs are already addressed by these helpers, which will mak
    await comfyPage.setSetting('Comfy.NodeBadge.NodeIdBadgeMode', 'None')
 
    // Clean up uploaded files if needed
-   await comfyPage.request.delete(`${comfyPage.url}/api/delete/image.png`)
+   comfyPage.deleteFileAfterTest({ filename: 'image.png' })
    ```
 
 6. **Prefer functional assertions over screenshots**:
@@ -204,8 +219,8 @@ Most common testing needs are already addressed by these helpers, which will mak
 
    ```typescript
    // Prefer this:
-   expect(await node.isPinned()).toBe(true)
-   expect(await node.getProperty('title')).toBe('Expected Title')
+   await expect.poll(() => node.isPinned()).toBe(true)
+   await expect.poll(() => node.getProperty('title')).toBe('Expected Title')
 
    // Over this - only use when needed:
    await expect(comfyPage.canvas).toHaveScreenshot('state.png')

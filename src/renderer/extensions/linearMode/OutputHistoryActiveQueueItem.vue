@@ -58,6 +58,7 @@ function clearQueue(close: () => void) {
     <div
       v-if="queueCount > 1"
       aria-hidden="true"
+      data-testid="linear-job-badge"
       class="absolute top-0 right-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-background text-xs text-text-primary"
       v-text="queueCount"
     />

@@ -103,12 +103,9 @@
             <i class="icon-[lucide--download] size-3" />
             {{ asset.stats.downloadCount }}
           </span>
-          <span
-            v-if="asset.stats.formattedDate"
-            class="flex items-center gap-1"
-          >
+          <span v-if="formattedDate" class="flex items-center gap-1">
             <i class="icon-[lucide--clock] size-3" />
-            {{ asset.stats.formattedDate }}
+            {{ formattedDate }}
           </span>
         </div>
         <Button
@@ -143,11 +140,11 @@ import Button from '@/components/ui/button/Button.vue'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
-import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
+import { getAssetCardTitle } from '@/platform/assets/utils/assetMetadataUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { asset, interactive, focused } = defineProps<{
   asset: AssetDisplayItem
@@ -162,7 +159,7 @@ const emit = defineEmits<{
   showInfo: [asset: AssetDisplayItem]
 }>()
 
-const { t } = useI18n()
+const { t, d } = useI18n()
 const settingStore = useSettingStore()
 const { closeDialog } = useDialogStore()
 const { isDownloadedThisSession, acknowledgeAsset } = useAssetDownloadStore()
@@ -174,7 +171,16 @@ const dropdownMenuButton = useTemplateRef<InstanceType<typeof MoreButton>>(
 const titleId = useId()
 const descId = useId()
 
-const displayName = computed(() => getAssetDisplayName(asset))
+const displayName = computed(() => getAssetCardTitle(asset))
+
+// Format at render so locale switches re-flow; the upstream WeakMap caches
+// AssetItem -> AssetDisplayItem by reference, which would otherwise pin the
+// formatted string to whichever locale was active when first transformed.
+const formattedDate = computed(() =>
+  asset.created_at
+    ? d(new Date(asset.created_at), { dateStyle: 'short' })
+    : undefined
+)
 
 const isNewlyImported = computed(() => isDownloadedThisSession(asset.id))
 

@@ -1,10 +1,8 @@
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { buildFeedbackUrl } from '@/platform/support/config'
+import { buildFeedbackTypeformUrl } from '@/platform/support/config'
 import { useExtensionService } from '@/services/extensionService'
 import type { ActionBarButton } from '@/types/comfy'
-
-const feedbackUrl = buildFeedbackUrl()
 
 const buttons: ActionBarButton[] = [
   {
@@ -12,7 +10,11 @@ const buttons: ActionBarButton[] = [
     label: t('actionbar.feedback'),
     tooltip: t('actionbar.feedbackTooltip'),
     onClick: () => {
-      window.open(feedbackUrl, '_blank', 'noopener,noreferrer')
+      window.open(
+        buildFeedbackTypeformUrl('action-bar'),
+        '_blank',
+        'noopener,noreferrer'
+      )
     }
   }
 ]

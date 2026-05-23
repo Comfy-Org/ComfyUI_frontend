@@ -593,7 +593,7 @@ describe('useAuthStore', () => {
         )
       })
 
-      it.each(['loginWithGoogle', 'loginWithGithub'] as const)(
+      it.for(['loginWithGoogle', 'loginWithGithub'] as const)(
         '%s should track is_new_user=true when Firebase says new user',
         async (method) => {
           vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue({
@@ -610,7 +610,7 @@ describe('useAuthStore', () => {
         }
       )
 
-      it.each(['loginWithGoogle', 'loginWithGithub'] as const)(
+      it.for(['loginWithGoogle', 'loginWithGithub'] as const)(
         '%s should track is_new_user=true when UI options say new user',
         async (method) => {
           vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue({
@@ -627,7 +627,7 @@ describe('useAuthStore', () => {
         }
       )
 
-      it.each(['loginWithGoogle', 'loginWithGithub'] as const)(
+      it.for(['loginWithGoogle', 'loginWithGithub'] as const)(
         '%s should track is_new_user=false when neither source says new user',
         async (method) => {
           vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue({
@@ -644,7 +644,7 @@ describe('useAuthStore', () => {
         }
       )
 
-      it.each(['loginWithGoogle', 'loginWithGithub'] as const)(
+      it.for(['loginWithGoogle', 'loginWithGithub'] as const)(
         '%s should track is_new_user=false when getAdditionalUserInfo returns null',
         async (method) => {
           vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue(null)
@@ -727,6 +727,39 @@ describe('useAuthStore', () => {
       )
 
       await expect(store.accessBillingPortal()).rejects.toThrow()
+    })
+  })
+
+  describe('getAuthHeaderOrThrow', () => {
+    it('returns auth header when authenticated', async () => {
+      const header = await store.getAuthHeaderOrThrow()
+      expect(header).toEqual({ Authorization: 'Bearer mock-id-token' })
+    })
+
+    it('throws AuthStoreError when not authenticated', async () => {
+      authStateCallback(null)
+      mockApiKeyGetAuthHeader.mockReturnValue(null)
+
+      await expect(store.getAuthHeaderOrThrow()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: 'toastMessages.userNotAuthenticated'
+      })
+    })
+  })
+
+  describe('getFirebaseAuthHeaderOrThrow', () => {
+    it('returns Firebase auth header when authenticated', async () => {
+      const header = await store.getFirebaseAuthHeaderOrThrow()
+      expect(header).toEqual({ Authorization: 'Bearer mock-id-token' })
+    })
+
+    it('throws AuthStoreError when not authenticated', async () => {
+      authStateCallback(null)
+
+      await expect(store.getFirebaseAuthHeaderOrThrow()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: 'toastMessages.userNotAuthenticated'
+      })
     })
   })
 

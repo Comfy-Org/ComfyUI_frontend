@@ -1,18 +1,23 @@
-import { mount } from '@vue/test-utils'
+import { createTestingPinia } from '@pinia/testing'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type {
   MissingModelGroup,
   MissingModelViewModel
 } from '@/platform/missingModel/types'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 
 vi.mock('./MissingModelRow.vue', () => ({
   default: {
     name: 'MissingModelRow',
-    template: '<div class="model-row" />',
+    template:
+      '<div class="model-row" :data-show-node-id-badge="showNodeIdBadge" :data-is-asset-supported="isAssetSupported" :data-directory="directory"><button class="locate-trigger" @click="$emit(\'locate-model\', model?.representative?.nodeId)">Locate</button></div>',
     props: ['model', 'directory', 'showNodeIdBadge', 'isAssetSupported'],
     emits: ['locate-model']
   }
@@ -37,7 +42,10 @@ const i18n = createI18n({
           importNotSupported: 'Import Not Supported',
           customNodeDownloadDisabled:
             'Cloud environment does not support model imports for custom nodes.',
-          unknownCategory: 'Unknown Category'
+          unknownCategory: 'Unknown Category',
+          downloadAll: 'Download all',
+          refresh: 'Refresh',
+          refreshing: 'Refreshing missing models.'
         }
       }
     }
@@ -48,7 +56,11 @@ const i18n = createI18n({
 
 function makeViewModel(
   name: string,
-  nodeId: string = '1'
+  nodeId: string = '1',
+  opts: {
+    url?: string
+    directory?: string
+  } = {}
 ): MissingModelViewModel {
   return {
     name,
@@ -58,7 +70,9 @@ function makeViewModel(
       nodeType: 'CheckpointLoaderSimple',
       widgetName: 'ckpt_name',
       isAssetSupported: true,
-      isMissing: true
+      isMissing: true,
+      url: opts.url,
+      directory: opts.directory
     },
     referencingNodes: [{ nodeId, widgetName: 'ckpt_name' }]
   }
@@ -69,13 +83,23 @@ function makeGroup(
     directory?: string | null
     isAssetSupported?: boolean
     modelNames?: string[]
+    withDownloadUrls?: boolean
   } = {}
 ): MissingModelGroup {
   const names = opts.modelNames ?? ['model.safetensors']
+  const directory =
+    'directory' in opts ? (opts.directory ?? null) : 'checkpoints'
   return {
-    directory: 'directory' in opts ? (opts.directory ?? null) : 'checkpoints',
+    directory,
     isAssetSupported: opts.isAssetSupported ?? true,
-    models: names.map((n, i) => makeViewModel(n, String(i + 1)))
+    models: names.map((n, i) =>
+      makeViewModel(n, String(i + 1), {
+        url: opts.withDownloadUrls
+          ? `https://huggingface.co/comfy/test/resolve/main/${n}`
+          : undefined,
+        directory: directory ?? undefined
+      })
+    )
   }
 }
 
@@ -83,16 +107,19 @@ function mountCard(
   props: Partial<{
     missingModelGroups: MissingModelGroup[]
     showNodeIdBadge: boolean
-  }> = {}
+  }> = {},
+  onLocateModel?: (nodeId: string) => void
 ) {
-  return mount(MissingModelCard, {
+  const pinia = createTestingPinia({ createSpy: vi.fn })
+  return render(MissingModelCard, {
     props: {
       missingModelGroups: [makeGroup()],
       showNodeIdBadge: false,
-      ...props
+      ...props,
+      ...(onLocateModel ? { onLocateModel } : {})
     },
     global: {
-      plugins: [PrimeVue, i18n]
+      plugins: [pinia, PrimeVue, i18n]
     }
   })
 }
@@ -104,90 +131,100 @@ describe('MissingModelCard', () => {
 
   describe('Rendering & Props', () => {
     it('renders directory name in category header', () => {
-      const wrapper = mountCard({
+      const { container } = mountCard({
         missingModelGroups: [makeGroup({ directory: 'loras' })]
       })
-      expect(wrapper.text()).toContain('loras')
+      expect(container.textContent).toContain('loras')
     })
 
     it('renders translated unknown category when directory is null', () => {
-      const wrapper = mountCard({
+      const { container } = mountCard({
         missingModelGroups: [makeGroup({ directory: null })]
       })
-      expect(wrapper.text()).toContain('Unknown Category')
+      expect(container.textContent).toContain('Unknown Category')
     })
 
     it('renders model count in category header', () => {
-      const wrapper = mountCard({
+      const { container } = mountCard({
         missingModelGroups: [
           makeGroup({ modelNames: ['a.safetensors', 'b.safetensors'] })
         ]
       })
-      expect(wrapper.text()).toContain('(2)')
+      expect(container.textContent).toContain('(2)')
     })
 
     it('renders correct number of MissingModelRow components', () => {
-      const wrapper = mountCard({
+      const { container } = mountCard({
         missingModelGroups: [
           makeGroup({
             modelNames: ['a.safetensors', 'b.safetensors', 'c.safetensors']
           })
         ]
       })
-      expect(
-        wrapper.findAllComponents({ name: 'MissingModelRow' })
-      ).toHaveLength(3)
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      expect(container.querySelectorAll('.model-row')).toHaveLength(3)
     })
 
     it('renders multiple groups', () => {
-      const wrapper = mountCard({
+      const { container } = mountCard({
         missingModelGroups: [
           makeGroup({ directory: 'checkpoints' }),
           makeGroup({ directory: 'loras' })
         ]
       })
-      expect(wrapper.text()).toContain('checkpoints')
-      expect(wrapper.text()).toContain('loras')
+      expect(container.textContent).toContain('checkpoints')
+      expect(container.textContent).toContain('loras')
     })
 
     it('renders zero rows when missingModelGroups is empty', () => {
-      const wrapper = mountCard({ missingModelGroups: [] })
+      const { container } = mountCard({ missingModelGroups: [] })
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      expect(container.querySelectorAll('.model-row')).toHaveLength(0)
+    })
+
+    it('hides bulk actions in cloud', () => {
+      mountCard({
+        missingModelGroups: [makeGroup({ withDownloadUrls: true })]
+      })
+
       expect(
-        wrapper.findAllComponents({ name: 'MissingModelRow' })
-      ).toHaveLength(0)
+        screen.queryByTestId('missing-model-actions')
+      ).not.toBeInTheDocument()
     })
 
     it('passes props correctly to MissingModelRow children', () => {
-      const wrapper = mountCard({ showNodeIdBadge: true })
-      const row = wrapper.findComponent({ name: 'MissingModelRow' })
-      expect(row.props('showNodeIdBadge')).toBe(true)
-      expect(row.props('isAssetSupported')).toBe(true)
-      expect(row.props('directory')).toBe('checkpoints')
+      const { container } = mountCard({ showNodeIdBadge: true })
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      const row = container.querySelector('.model-row')
+      expect(row).not.toBeNull()
+      expect(row!.getAttribute('data-show-node-id-badge')).toBe('true')
+      expect(row!.getAttribute('data-is-asset-supported')).toBe('true')
+      expect(row!.getAttribute('data-directory')).toBe('checkpoints')
     })
   })
 
   describe('Asset Unsupported Group', () => {
     it('shows "Import Not Supported" header for unsupported groups', () => {
-      const wrapper = mountCard({
+      const { container } = mountCard({
         missingModelGroups: [makeGroup({ isAssetSupported: false })]
       })
-      expect(wrapper.text()).toContain('Import Not Supported')
+      expect(container.textContent).toContain('Import Not Supported')
     })
 
     it('shows info notice for unsupported groups', () => {
-      const wrapper = mountCard({
+      const { container } = mountCard({
         missingModelGroups: [makeGroup({ isAssetSupported: false })]
       })
-      expect(wrapper.text()).toContain(
+      expect(container.textContent).toContain(
         'Cloud environment does not support model imports'
       )
     })
 
     it('hides info notice for supported groups', () => {
-      const wrapper = mountCard({
+      const { container } = mountCard({
         missingModelGroups: [makeGroup({ isAssetSupported: true })]
       })
-      expect(wrapper.text()).not.toContain(
+      expect(container.textContent).not.toContain(
         'Cloud environment does not support model imports'
       )
     })
@@ -195,11 +232,11 @@ describe('MissingModelCard', () => {
 
   describe('Event Handling', () => {
     it('emits locateModel when child emits locate-model', async () => {
-      const wrapper = mountCard()
-      const row = wrapper.findComponent({ name: 'MissingModelRow' })
-      await row.vm.$emit('locate-model', '42')
-      expect(wrapper.emitted('locateModel')).toBeTruthy()
-      expect(wrapper.emitted('locateModel')?.[0]).toEqual(['42'])
+      const onLocateModel = vi.fn()
+      mountCard({}, onLocateModel)
+      const locateButton = screen.getByRole('button', { name: 'Locate' })
+      await userEvent.click(locateButton)
+      expect(onLocateModel).toHaveBeenCalledWith('1')
     })
   })
 })
@@ -214,31 +251,79 @@ describe('MissingModelCard (OSS)', () => {
   })
 
   it('shows directory name instead of "Import Not Supported" for unsupported groups', () => {
-    const wrapper = mountCard({
+    const { container } = mountCard({
       missingModelGroups: [
         makeGroup({ directory: 'checkpoints', isAssetSupported: false })
       ]
     })
-    expect(wrapper.text()).toContain('checkpoints')
-    expect(wrapper.text()).not.toContain('Import Not Supported')
+    expect(container.textContent).toContain('checkpoints')
+    expect(container.textContent).not.toContain('Import Not Supported')
   })
 
   it('hides info notice for unsupported groups', () => {
-    const wrapper = mountCard({
+    const { container } = mountCard({
       missingModelGroups: [makeGroup({ isAssetSupported: false })]
     })
-    expect(wrapper.text()).not.toContain(
+    expect(container.textContent).not.toContain(
       'Cloud environment does not support model imports'
     )
   })
 
   it('renders unknown category for null directory in OSS', () => {
-    const wrapper = mountCard({
+    const { container } = mountCard({
       missingModelGroups: [
         makeGroup({ directory: null, isAssetSupported: false })
       ]
     })
-    expect(wrapper.text()).toContain('Unknown Category')
-    expect(wrapper.text()).not.toContain('Import Not Supported')
+    expect(container.textContent).toContain('Unknown Category')
+    expect(container.textContent).not.toContain('Import Not Supported')
+  })
+
+  it('shows bulk actions when one model is downloadable', () => {
+    mountCard({
+      missingModelGroups: [makeGroup({ withDownloadUrls: true })]
+    })
+
+    expect(screen.getByRole('button', { name: /Download all/ })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeVisible()
+  })
+
+  it('hides bulk actions when no model is downloadable', () => {
+    mountCard()
+
+    expect(
+      screen.queryByRole('button', { name: /Download all/ })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Refresh' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('refreshes missing models from the action bar', async () => {
+    mountCard({
+      missingModelGroups: [makeGroup({ withDownloadUrls: true })]
+    })
+    const store = useMissingModelStore()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh' }))
+
+    expect(store.refreshMissingModels).toHaveBeenCalled()
+  })
+
+  it('keeps the Refresh button focusable and announces refresh progress', async () => {
+    mountCard({
+      missingModelGroups: [makeGroup({ withDownloadUrls: true })]
+    })
+    const store = useMissingModelStore()
+
+    store.isRefreshingMissingModels = true
+    await nextTick()
+
+    const refreshButton = screen.getByRole('button', { name: 'Refresh' })
+    expect(refreshButton).toHaveAttribute('aria-disabled', 'true')
+    expect(refreshButton).toHaveAttribute('aria-busy', 'true')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Refreshing missing models.'
+    )
   })
 })

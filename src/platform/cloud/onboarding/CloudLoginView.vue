@@ -11,7 +11,7 @@
           {{ t('auth.login.title') }}
         </h1>
         <i18n-t
-          v-if="isFreeTierEnabled"
+          v-if="isFreeTierEnabled && !googleSsoBlockedReason"
           keypath="auth.login.signUpFreeTierPromo"
           tag="p"
           class="my-0 text-sm/6 tracking-[-0.02em] text-sand-500 sm:text-base/6"
@@ -40,10 +40,10 @@
         {{ t('auth.login.insecureContextWarning') }}
       </Message>
 
-      <!-- Buttons section: py-2, gap-4 between buttons -->
       <div class="flex w-full flex-col gap-4 pt-5 pb-2">
         <template v-if="!showEmailForm">
           <Button
+            v-if="!googleSsoBlockedReason"
             type="button"
             variant="secondary"
             class="relative h-10 w-full gap-4 rounded-md border border-solid border-smoke-800/9 bg-smoke-800/10 text-sm/4 font-medium text-sand-500 shadow-inset-highlight hover:bg-sand-300/20"
@@ -120,9 +120,9 @@ import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
 import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
-import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
 import type { SignInData } from '@/schemas/signInSchema'
+import { getGoogleSsoBlockedReason } from '@/base/webviewDetection'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -130,9 +130,14 @@ const route = useRoute()
 const authActions = useAuthActions()
 const isSecureContext = globalThis.isSecureContext
 const authError = ref('')
-const toastStore = useToastStore()
 const showEmailForm = ref(false)
 const { isFreeTierEnabled, freeTierCredits } = useFreeTierOnboarding()
+const googleSsoBlockedReason = getGoogleSsoBlockedReason()
+const { onAuthSuccess } = usePostAuthRedirect({
+  authError,
+  successSummary: 'Login Completed',
+  defaultRedirect: () => ({ name: 'cloud-user-check' })
+})
 
 function switchToEmailForm() {
   showEmailForm.value = true
@@ -146,40 +151,24 @@ const navigateToSignup = async () => {
   await router.push({ name: 'cloud-signup', query: route.query })
 }
 
-const onSuccess = async () => {
-  toastStore.add({
-    severity: 'success',
-    summary: 'Login Completed',
-    life: 2000
-  })
-
-  const previousFullPath = getSafePreviousFullPath(route.query)
-  if (previousFullPath) {
-    await router.replace(previousFullPath)
-    return
-  }
-
-  await router.push({ name: 'cloud-user-check' })
-}
-
 const signInWithGoogle = async () => {
   authError.value = ''
   if (await authActions.signInWithGoogle()) {
-    await onSuccess()
+    await onAuthSuccess()
   }
 }
 
 const signInWithGithub = async () => {
   authError.value = ''
   if (await authActions.signInWithGithub()) {
-    await onSuccess()
+    await onAuthSuccess()
   }
 }
 
 const signInWithEmail = async (values: SignInData) => {
   authError.value = ''
   if (await authActions.signInWithEmail(values.email, values.password)) {
-    await onSuccess()
+    await onAuthSuccess()
   }
 }
 </script>

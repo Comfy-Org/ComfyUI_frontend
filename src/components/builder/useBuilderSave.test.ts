@@ -6,6 +6,7 @@ import { useBuilderSave } from './useBuilderSave'
 const mockSetMode = vi.hoisted(() => vi.fn())
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 const mockTrackEnterLinear = vi.hoisted(() => vi.fn())
+const mockTrackDefaultViewSet = vi.hoisted(() => vi.fn())
 const mockSaveWorkflow = vi.hoisted(() => vi.fn<() => Promise<void>>())
 const mockSaveWorkflowAs = vi.hoisted(() =>
   vi.fn<() => Promise<boolean | null>>()
@@ -13,7 +14,6 @@ const mockSaveWorkflowAs = vi.hoisted(() =>
 const mockShowLayoutDialog = vi.hoisted(() => vi.fn())
 const mockShowConfirmDialog = vi.hoisted(() => vi.fn())
 const mockCloseDialog = vi.hoisted(() => vi.fn())
-const mockSetWorkflowDefaultView = vi.hoisted(() => vi.fn())
 const mockExitBuilder = vi.hoisted(() => vi.fn())
 
 const mockActiveWorkflow = ref<{
@@ -30,7 +30,10 @@ vi.mock('@/composables/useErrorHandling', () => ({
 }))
 
 vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({ trackEnterLinear: mockTrackEnterLinear })
+  useTelemetry: () => ({
+    trackEnterLinear: mockTrackEnterLinear,
+    trackDefaultViewSet: mockTrackDefaultViewSet
+  })
 }))
 
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({
@@ -58,10 +61,6 @@ vi.mock('@/stores/appModeStore', () => ({
 
 vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({ closeDialog: mockCloseDialog })
-}))
-
-vi.mock('./builderViewOptions', () => ({
-  setWorkflowDefaultView: mockSetWorkflowDefaultView
 }))
 
 vi.mock('@/components/dialog/confirm/confirmDialog', () => ({
@@ -190,7 +189,7 @@ describe('useBuilderSave', () => {
       }
     }
 
-    it('onSave calls saveWorkflowAs then setWorkflowDefaultView on success', async () => {
+    it('onSave calls saveWorkflowAs with isApp and tracks telemetry', async () => {
       mockSaveWorkflowAs.mockResolvedValueOnce(true)
       const { onSave } = getSaveDialogProps()
 
@@ -199,35 +198,40 @@ describe('useBuilderSave', () => {
       expect(mockSaveWorkflowAs).toHaveBeenCalledWith(
         mockActiveWorkflow.value,
         {
-          filename: 'new-name'
+          filename: 'new-name',
+          isApp: true
         }
       )
-      expect(mockSetWorkflowDefaultView).toHaveBeenCalledWith(
-        mockActiveWorkflow.value,
-        true
-      )
+      expect(mockTrackDefaultViewSet).toHaveBeenCalledWith({
+        default_view: 'app'
+      })
     })
 
-    it('onSave uses fresh activeWorkflow reference for setWorkflowDefaultView', async () => {
-      const newWorkflow = { filename: 'new-name', initialMode: 'app' }
-      mockSaveWorkflowAs.mockImplementationOnce(async () => {
-        mockActiveWorkflow.value = newWorkflow
-        return true
-      })
+    it('onSave passes isApp: false when saving as graph', async () => {
+      mockSaveWorkflowAs.mockResolvedValueOnce(true)
       const { onSave } = getSaveDialogProps()
 
-      await onSave('new-name', true)
+      await onSave('new-name', false)
 
-      expect(mockSetWorkflowDefaultView).toHaveBeenCalledWith(newWorkflow, true)
+      expect(mockSaveWorkflowAs).toHaveBeenCalledWith(
+        mockActiveWorkflow.value,
+        {
+          filename: 'new-name',
+          isApp: false
+        }
+      )
+      expect(mockTrackDefaultViewSet).toHaveBeenCalledWith({
+        default_view: 'graph'
+      })
     })
 
-    it('onSave does not mutate or close when saveWorkflowAs returns falsy', async () => {
+    it('onSave does not track or close when saveWorkflowAs returns falsy', async () => {
       mockSaveWorkflowAs.mockResolvedValueOnce(null)
       const { onSave } = getSaveDialogProps()
 
       await onSave('new-name', false)
 
-      expect(mockSetWorkflowDefaultView).not.toHaveBeenCalled()
+      expect(mockTrackDefaultViewSet).not.toHaveBeenCalled()
       expect(mockCloseDialog).not.toHaveBeenCalled()
     })
 

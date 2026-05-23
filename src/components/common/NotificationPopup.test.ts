@@ -1,6 +1,6 @@
-import { mount } from '@vue/test-utils'
-import type { ComponentProps } from 'vue-component-type-helpers'
-import { describe, expect, it } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import NotificationPopup from './NotificationPopup.vue'
@@ -13,13 +13,11 @@ const i18n = createI18n({
   }
 })
 
-function mountPopup(
-  props: ComponentProps<typeof NotificationPopup> = {
-    title: 'Test'
-  },
+function renderPopup(
+  props: { title: string; [key: string]: unknown } = { title: 'Test' },
   slots: Record<string, string> = {}
 ) {
-  return mount(NotificationPopup, {
+  return render(NotificationPopup, {
     global: { plugins: [i18n] },
     props,
     slots
@@ -28,51 +26,58 @@ function mountPopup(
 
 describe('NotificationPopup', () => {
   it('renders title', () => {
-    const wrapper = mountPopup({ title: 'Hello World' })
-    expect(wrapper.text()).toContain('Hello World')
+    renderPopup({ title: 'Hello World' })
+    expect(screen.getByRole('status')).toHaveTextContent('Hello World')
   })
 
   it('has role="status" for accessibility', () => {
-    const wrapper = mountPopup()
-    expect(wrapper.find('[role="status"]').exists()).toBe(true)
+    renderPopup()
+    expect(screen.getByRole('status')).toBeInTheDocument()
   })
 
   it('renders subtitle when provided', () => {
-    const wrapper = mountPopup({ title: 'T', subtitle: 'v1.2.3' })
-    expect(wrapper.text()).toContain('v1.2.3')
+    renderPopup({ title: 'T', subtitle: 'v1.2.3' })
+    expect(screen.getByRole('status')).toHaveTextContent('v1.2.3')
   })
 
   it('renders icon when provided', () => {
-    const wrapper = mountPopup({
+    const { container } = renderPopup({
       title: 'T',
       icon: 'icon-[lucide--rocket]'
     })
-    expect(wrapper.find('i.icon-\\[lucide--rocket\\]').exists()).toBe(true)
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const icon = container.querySelector('i.icon-\\[lucide--rocket\\]')
+    expect(icon).toBeInTheDocument()
   })
 
   it('emits close when close button clicked', async () => {
-    const wrapper = mountPopup({ title: 'T', showClose: true })
-    await wrapper.find('[aria-label="Close"]').trigger('click')
-    expect(wrapper.emitted('close')).toHaveLength(1)
+    const user = userEvent.setup()
+    const closeSpy = vi.fn()
+    renderPopup({ title: 'T', showClose: true, onClose: closeSpy })
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+    expect(closeSpy).toHaveBeenCalledOnce()
   })
 
   it('renders default slot content', () => {
-    const wrapper = mountPopup({ title: 'T' }, { default: 'Body text here' })
-    expect(wrapper.text()).toContain('Body text here')
+    renderPopup({ title: 'T' }, { default: 'Body text here' })
+    expect(screen.getByRole('status')).toHaveTextContent('Body text here')
   })
 
   it('renders footer slots', () => {
-    const wrapper = mountPopup(
+    renderPopup(
       { title: 'T' },
       { 'footer-start': 'Left side', 'footer-end': 'Right side' }
     )
-    expect(wrapper.text()).toContain('Left side')
-    expect(wrapper.text()).toContain('Right side')
+    const status = screen.getByRole('status')
+    expect(status).toHaveTextContent('Left side')
+    expect(status).toHaveTextContent('Right side')
   })
 
   it('positions bottom-right when specified', () => {
-    const wrapper = mountPopup({ title: 'T', position: 'bottom-right' })
-    const root = wrapper.find('[role="status"]')
-    expect(root.attributes('data-position')).toBe('bottom-right')
+    renderPopup({ title: 'T', position: 'bottom-right' })
+    expect(screen.getByRole('status')).toHaveAttribute(
+      'data-position',
+      'bottom-right'
+    )
   })
 })

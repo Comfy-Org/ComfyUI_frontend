@@ -1,0 +1,88 @@
+{
+  "last_node_id": 2,
+  "last_link_id": 1,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "Load3D",
+      "pos": [50, 50],
+      "size": [400, 650],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        },
+        {
+          "name": "mesh_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "normal",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "camera_info",
+          "type": "LOAD3D_CAMERA",
+          "links": null
+        },
+        {
+          "name": "recording_video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "model_3d",
+          "type": "FILE_3D",
+          "links": [1]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Load3D"
+      },
+      "widgets_values": ["", 1024, 1024, "#000000"]
+    },
+    {
+      "id": 2,
+      "type": "Preview3D",
+      "pos": [520, 50],
+      "size": [450, 600],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model_file",
+          "type": "FILE_3D",
+          "link": 1
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "Preview3D"
+      },
+      "widgets_values": []
+    }
+  ],
+  "links": [[1, 1, 6, 2, 0, "*"]],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "offset": [0, 0],
+      "scale": 1
+    }
+  },
+  "version": 0.4
+}

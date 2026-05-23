@@ -1,9 +1,12 @@
+import type { ImportPublishedAssetsRequest } from '@comfyorg/ingest-types'
+
 import type {
   PublishPrefill,
   SharedWorkflowPayload,
   WorkflowPublishResult,
   WorkflowPublishStatus
 } from '@/platform/workflow/sharing/types/shareTypes'
+import { assetService } from '@/platform/assets/services/assetService'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -255,16 +258,26 @@ export function useWorkflowShareService() {
     return workflow
   }
 
-  async function importPublishedAssets(assetIds: string[]): Promise<void> {
+  async function importPublishedAssets(
+    assetIds: string[],
+    shareId?: string
+  ): Promise<void> {
+    const body: ImportPublishedAssetsRequest = {
+      published_asset_ids: assetIds,
+      ...(shareId ? { share_id: shareId } : {})
+    }
+
     const response = await api.fetchApi('/assets/import', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ published_asset_ids: assetIds })
+      body: JSON.stringify(body)
     })
 
     if (!response.ok) {
       throw new Error(`Failed to import assets: ${response.status}`)
     }
+
+    assetService.invalidateInputAssetsIncludingPublic()
   }
 
   return {

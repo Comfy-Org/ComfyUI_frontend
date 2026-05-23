@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -26,6 +27,8 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 vi.mock('@/i18n', () => ({
+  te: vi.fn(() => false),
+  t: vi.fn((key: string) => key),
   st: vi.fn((_key: string, fallback: string) => fallback)
 }))
 
@@ -83,8 +86,7 @@ describe('swapNodeGroups computed', () => {
     useMissingNodesErrorStore().surfaceMissingNodes(nodeTypes)
 
     const searchQuery = ref('')
-    const t = (key: string) => key
-    const { swapNodeGroups } = useErrorGroups(searchQuery, t)
+    const { swapNodeGroups } = useErrorGroups(searchQuery)
     return swapNodeGroups
   }
 
@@ -159,7 +161,7 @@ describe('swapNodeGroups computed', () => {
 
   it('excludes string nodeType entries', async () => {
     const swap = getSwapNodeGroups([
-      'StringGroupNode' as unknown as MissingNodeType,
+      fromAny<MissingNodeType, unknown>('StringGroupNode'),
       makeMissingNodeType('OldNode', {
         nodeId: '1',
         isReplaceable: true,

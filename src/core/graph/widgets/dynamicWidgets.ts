@@ -321,6 +321,7 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
       if (!outputType) throw new Error('invalid connection')
       this.outputs.forEach((output, idx) => {
         if (!(outputGroups?.[idx] == matchKey)) return
+        this.outputs[idx] = shallowReactive(this.outputs[idx])
         changeOutputType(this, output, outputType)
       })
       app.canvas?.setDirty(true, true)
@@ -460,7 +461,10 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   const input = node.inputs[index]
   if (!input) return
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
-  const { min = 1, inputSpecs } = node.comfyDynamic.autogrow[groupName]
+  const autogrowGroup = node.comfyDynamic.autogrow[groupName]
+  if (!autogrowGroup) return
+
+  const { min = 1, inputSpecs } = autogrowGroup
   const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
   if (ordinal == undefined || ordinal + 1 < min) return
 
@@ -511,7 +515,7 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
       lastInput
     )
   }
-  const removalChecks = groupInputs.slice((min - 1) * stride)
+  const removalChecks = groupInputs.slice(min * stride)
   let i
   for (i = removalChecks.length - stride; i >= 0; i -= stride) {
     if (removalChecks.slice(i, i + stride).some((inp) => inp.link)) break
@@ -597,6 +601,6 @@ function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
     prefix,
     inputSpecs: inputsV2
   }
-  for (let i = 0; i === 0 || i < min; i++)
+  for (let i = 0; i === 0 || i < min + 1; i++)
     addAutogrowGroup(i, inputSpecV2.name, node)
 }

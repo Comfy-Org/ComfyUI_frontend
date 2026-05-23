@@ -289,7 +289,9 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     )
     const workflowExtra = workflow.initialState.extra
     const description =
-      workflowExtra?.BlueprintDescription ?? 'User generated subgraph blueprint'
+      workflowExtra?.BlueprintDescription ??
+      workflow.initialState?.definitions?.subgraphs[0].description ??
+      'User generated subgraph blueprint'
     const search_aliases = workflowExtra?.BlueprintSearchAliases
     const subgraphDefCategory =
       workflow.initialState.definitions?.subgraphs?.[0]?.category
@@ -432,6 +434,12 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     return nodeDef !== undefined && nodeDef.isGlobal === true
   }
 
+  function isUserBlueprint(nodeType?: string): boolean {
+    if (!nodeType?.startsWith(typePrefix)) return false
+    const name = nodeType.slice(typePrefix.length)
+    return name in subgraphCache && !isGlobalBlueprint(name)
+  }
+
   return {
     deleteBlueprint,
     editBlueprint,
@@ -439,6 +447,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     getBlueprint,
     isGlobalBlueprint,
     isSubgraphBlueprint,
+    isUserBlueprint,
     publishSubgraph,
     subgraphBlueprints,
     typePrefix

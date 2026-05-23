@@ -27,6 +27,27 @@ export function getWidgetName(w: IBaseWidget): string {
   return isPromotedWidgetView(w) ? w.sourceWidgetName : w.name
 }
 
+/**
+ * Returns true if the given promotion entry corresponds to a linked promotion
+ * on the subgraph node. Linked promotions are driven by subgraph input
+ * connections and cannot be independently hidden or shown.
+ */
+export function isLinkedPromotion(
+  subgraphNode: SubgraphNode,
+  sourceNodeId: string,
+  sourceWidgetName: string
+): boolean {
+  return subgraphNode.inputs.some((input) => {
+    const w = input._widget
+    return (
+      w &&
+      isPromotedWidgetView(w) &&
+      w.sourceNodeId === sourceNodeId &&
+      w.sourceWidgetName === sourceWidgetName
+    )
+  })
+}
+
 export function getSourceNodeId(w: IBaseWidget): string | undefined {
   if (!isPromotedWidgetView(w)) return undefined
   return w.disambiguatingSourceNodeId ?? w.sourceNodeId
@@ -39,7 +60,9 @@ function toPromotionSource(
   return {
     sourceNodeId: String(node.id),
     sourceWidgetName: getWidgetName(widget),
-    disambiguatingSourceNodeId: getSourceNodeId(widget)
+    disambiguatingSourceNodeId: isPromotedWidgetView(widget)
+      ? widget.disambiguatingSourceNodeId
+      : undefined
   }
 }
 

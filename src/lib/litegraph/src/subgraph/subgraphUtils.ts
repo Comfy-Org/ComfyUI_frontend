@@ -1,4 +1,4 @@
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraph, SubgraphId } from '@/lib/litegraph/src/LGraph'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
@@ -21,7 +21,6 @@ import type {
   SerialisableLLink,
   SubgraphIO
 } from '@/lib/litegraph/src/types/serialisation'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 
 import type { GraphOrSubgraph } from './Subgraph'
 import type { SubgraphInput } from './SubgraphInput'
@@ -438,8 +437,8 @@ export function mapSubgraphOutputsAndLinks(
  * @param graph The graph to check for subgraph nodes
  * @returns Set of subgraph IDs used in this graph
  */
-export function getDirectSubgraphIds(graph: GraphOrSubgraph): Set<UUID> {
-  const subgraphIds = new Set<UUID>()
+export function getDirectSubgraphIds(graph: GraphOrSubgraph): Set<SubgraphId> {
+  const subgraphIds = new Set<SubgraphId>()
 
   for (const node of graph._nodes) {
     if (node.isSubgraphNode()) {
@@ -458,9 +457,9 @@ export function getDirectSubgraphIds(graph: GraphOrSubgraph): Set<UUID> {
  */
 export function findUsedSubgraphIds(
   rootGraph: GraphOrSubgraph,
-  subgraphRegistry: Map<UUID, GraphOrSubgraph>
-): Set<UUID> {
-  const usedSubgraphIds = new Set<UUID>()
+  subgraphRegistry: Map<SubgraphId, GraphOrSubgraph>
+): Set<SubgraphId> {
+  const usedSubgraphIds = new Set<SubgraphId>()
   const toVisit: GraphOrSubgraph[] = [rootGraph]
 
   while (toVisit.length > 0) {

@@ -6,6 +6,7 @@ import type { Raw } from 'vue'
 import { useAppMode } from '@/composables/useAppMode'
 
 import type { Point, Positionable } from '@/lib/litegraph/src/interfaces'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type {
   LGraph,
   LGraphCanvas,
@@ -14,6 +15,7 @@ import type {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { app } from '@/scripts/app'
 import { isLGraphGroup, isLGraphNode, isReroute } from '@/utils/litegraphUtil'
 
@@ -114,13 +116,14 @@ export const useCanvasStore = defineStore('canvas', () => {
 
   const currentGraph = shallowRef<LGraph | null>(null)
   const isInSubgraph = ref(false)
+  const isGhostPlacing = ref(false)
 
   // Provide selection state to all Vue nodes
   const selectedNodeIds = computed(
     () =>
       new Set(
         selectedItems.value
-          .filter((item) => item.id !== undefined)
+          .filter((item) => item.id !== undefined && isLGraphNode(item))
           .map((item) => String(item.id))
       )
   )
@@ -148,6 +151,18 @@ export const useCanvasStore = defineStore('canvas', () => {
         (e: CustomEvent<{ subgraphNode: SubgraphNode }>) =>
           promoteRecommendedWidgets(e.detail.subgraphNode)
       )
+
+      useEventListener(
+        newCanvas.canvas,
+        'litegraph:ghost-placement',
+        (e: CustomEvent<{ active: boolean; nodeId: NodeId }>) => {
+          isGhostPlacing.value = e.detail.active
+          if (e.detail.active) {
+            const mutations = useLayoutMutations()
+            mutations.bringNodeToFront(String(e.detail.nodeId))
+          }
+        }
+      )
     },
     { immediate: true }
   )
@@ -167,6 +182,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     initScaleSync,
     cleanupScaleSync,
     currentGraph,
-    isInSubgraph
+    isInSubgraph,
+    isGhostPlacing
   }
 })

@@ -10,7 +10,6 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { ref } from 'vue'
 
-import { setWorkflowDefaultView } from './builderViewOptions'
 import BuilderSaveDialogContent from './BuilderSaveDialogContent.vue'
 
 const SAVE_DIALOG_KEY = 'builder-save'
@@ -71,13 +70,14 @@ export function useBuilderSave() {
       if (!workflow) return
 
       const saved = await workflowService.saveWorkflowAs(workflow, {
-        filename
+        filename,
+        isApp: openAsApp
       })
 
       if (!saved) return
-      const activeWorkflow = workflowStore.activeWorkflow
-      if (!activeWorkflow) return
-      setWorkflowDefaultView(activeWorkflow, openAsApp)
+      useTelemetry()?.trackDefaultViewSet({
+        default_view: openAsApp ? 'app' : 'graph'
+      })
       closeDialog(SAVE_DIALOG_KEY)
       showSuccessDialog(openAsApp ? 'app' : 'graph')
     } catch (e) {

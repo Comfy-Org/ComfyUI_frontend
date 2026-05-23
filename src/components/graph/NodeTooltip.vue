@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="tooltipText"
+    v-show="tooltipText"
     ref="tooltipRef"
     class="node-tooltip"
     :style="{ left, top }"
@@ -34,7 +34,8 @@ const left = ref<string>()
 const top = ref<string>()
 
 function hideTooltip() {
-  return (tooltipText.value = '')
+  if (!tooltipText.value) return
+  tooltipText.value = ''
 }
 
 async function showTooltip(tooltip: string | null | undefined) {

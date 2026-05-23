@@ -99,6 +99,7 @@
     "findInLibrary": "Bunu modeller kütüphanesinin {type} bölümünde bulabilirsiniz.",
     "finish": "Bitir",
     "genericLinkPlaceholder": "Bağlantıyı buraya yapıştırın",
+    "gridView": "Izgara görünümü",
     "importAnother": "Başka Birini İçe Aktar",
     "imported": "İçe aktarıldı",
     "invalidAsset": "Geçersiz Varlık",
@@ -106,6 +107,7 @@
     "invalidFilename": "Geçersiz Dosya Adı",
     "invalidFilenameDetail": "Varlık dosya adı belirlenemedi. Lütfen tekrar deneyin.",
     "jobId": "İş ID",
+    "listView": "Liste görünümü",
     "loadingModels": "{type} yükleniyor...",
     "maxFileSize": "Maksimum dosya boyutu: {size}",
     "maxFileSizeValue": "1 GB",
@@ -168,6 +170,7 @@
     "sortDefault": "Varsayılan",
     "sortPopular": "Popüler",
     "sortRecent": "En yeni",
+    "sortUnsorted": "Sıralanmamış",
     "sortZA": "Z-A",
     "sortingType": "Sıralama Türü",
     "tags": "Etiketler",
@@ -234,6 +237,7 @@
     },
     "login": {
       "andText": "ve",
+      "backToGithubLogin": "Bunun yerine Github ile kaydol",
       "backToLogin": "Girişe dön",
       "backToSocialLogin": "Bunun yerine Google veya Github ile kaydolun",
       "confirmPasswordLabel": "Şifreyi Onayla",
@@ -289,7 +293,9 @@
       "title": "Yeniden Kimlik Doğrulama Gerekli"
     },
     "signOut": {
+      "saveFailed": "\"{workflow}\" kaydedilemediği için çıkış iptal edildi.",
       "signOut": "Çıkış Yap",
+      "signOutAnyway": "Yine de çıkış yap",
       "success": "Başarıyla çıkış yapıldı",
       "successDetail": "Hesabınızdan başarıyla çıkış yaptınız.",
       "unsavedChangesMessage": "Oturumu kapattığınızda kaydedilmemiş değişiklikleriniz kaybolacak. Devam etmek istiyor musunuz?",
@@ -332,6 +338,7 @@
   },
   "breadcrumbsMenu": {
     "app": "Uygulama",
+    "blueprint": "Plan",
     "clearWorkflow": "İş Akışını Temizle",
     "deleteBlueprint": "Taslağı Sil",
     "deleteWorkflow": "İş Akışını Sil",
@@ -403,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "Yerelde Devam Et",
     "exploreCloud": "Bulutu Ücretsiz Dene",
-    "feature1Title": "Aylık 400 Ücretsiz Kredi",
     "feature2Title": "Her Yerde, Anında Çalışır",
     "feature3Title": "Kullanıma Hazır Modeller",
     "feature4Title": "En İyi Özel Node Paketleri Önceden Yüklü",
@@ -457,6 +463,12 @@
       "wantToRun": "ComfyUI'ı yerel olarak çalıştırmak mı istiyorsunuz?"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "Lütfen bir seçenek seçin.",
+        "describeAnswer": "Lütfen cevabınızı açıklayın.",
+        "selectAtLeastOne": "Lütfen en az bir seçenek seçin."
+      },
+      "intro": "ComfyUI deneyiminizi size özel hale getirmemize yardımcı olun.",
       "options": {
         "familiarity": {
           "advanced": "İleri seviye kullanıcı (özel iş akışları)",
@@ -465,45 +477,43 @@
           "new": "ComfyUI'a yeni (daha önce hiç kullanmadım)",
           "starting": "Yeni başlıyorum (eğitimleri takip ediyorum)"
         },
-        "industry": {
-          "architecture": "Mimarlık",
-          "education": "Eğitim",
-          "film_tv_animation": "Film, TV ve animasyon",
-          "fine_art": "Güzel sanatlar ve illüstrasyon",
-          "gaming": "Oyun",
-          "marketing": "Pazarlama ve reklamcılık",
-          "other": "Diğer",
-          "otherPlaceholder": "Lütfen belirtin",
-          "product_design": "Ürün ve grafik tasarımı",
-          "software": "Yazılım ve teknoloji"
-        },
-        "making": {
-          "3d": "3D varlıklar",
+        "intent": {
+          "3d_game": "3D varlıklar / oyun varlıkları",
+          "api": "İş akışlarını çalıştırmak için API uç noktaları",
+          "apps": "İş akışlarından basitleştirilmiş uygulamalar",
           "audio": "Ses / müzik",
-          "custom_nodes": "Özel düğümler ve iş akışları",
+          "custom_nodes": "Özel node'lar",
           "images": "Görseller",
-          "video": "Video ve animasyon"
+          "not_sure": "Emin değilim",
+          "videos": "Videolar",
+          "workflows": "Özel iş akışları veya boru hatları"
         },
-        "purpose": {
-          "client": "Müşteri işleri (serbest çalışma)",
-          "community": "Topluluk katkıları (düğümler, iş akışları vb.)",
-          "inhouse": "Kendi işyerim (şirket içi)",
-          "personal": "Kişisel projeler / hobi",
-          "research": "Akademik araştırma"
+        "source": {
+          "conference": "Konferans veya etkinlik",
+          "discord": "Discord / topluluk",
+          "friend": "Arkadaş veya iş arkadaşı",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "Bülten veya blog",
+          "other": "Diğer",
+          "reddit": "Reddit",
+          "search": "Google / arama",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
+        },
+        "usage": {
+          "education": "Eğitim (öğrenci veya eğitmen)",
+          "personal": "Kişisel kullanım",
+          "work": "İş"
         }
       },
       "placeholder": "Anket soruları yer tutucusu",
-      "questions": {
-        "familiarity": "ComfyUI'a ne kadar aşinasınız?",
-        "industry": "Birincil sektörünüz nedir?",
-        "making": "Ne yapmayı planlıyorsunuz?",
-        "purpose": "ComfyUI'ı öncelikle ne için kullanacaksınız?"
-      },
       "steps": {
         "familiarity": "ComfyUI'a ne kadar aşinasınız?",
-        "industry": "Birincil sektörünüz nedir?",
-        "making": "Ne yapmayı planlıyorsunuz?",
-        "purpose": "ComfyUI'ı öncelikle ne için kullanacaksınız?"
+        "intent": "ComfyUI ile ne oluşturmak istiyorsunuz?",
+        "source": "ComfyUI'yi nereden duydunuz?",
+        "usage": "ComfyUI'yi nasıl kullanmayı planlıyorsunuz?"
       },
       "title": "Bulut Anketi"
     }
@@ -518,9 +528,9 @@
   "cloudStart_title": "saniyeler içinde oluşturmaya başlayın",
   "cloudStart_wantToRun": "ComfyUI'ı yerel olarak çalıştırmak mı istiyorsunuz?",
   "cloudSurvey_steps_familiarity": "ComfyUI'ya ne kadar aşinasınız?",
-  "cloudSurvey_steps_industry": "Birincil sektörünüz nedir?",
-  "cloudSurvey_steps_making": "Ne yapmayı planlıyorsunuz?",
-  "cloudSurvey_steps_purpose": "ComfyUI'yı öncelikle ne için kullanacaksınız?",
+  "cloudSurvey_steps_intent": "ComfyUI ile ne oluşturmak istiyorsunuz?",
+  "cloudSurvey_steps_source": "ComfyUI'yi nereden duydunuz?",
+  "cloudSurvey_steps_usage": "ComfyUI'yi nasıl kullanmayı planlıyorsunuz?",
   "cloudWaitlist_contactLink": "burada",
   "cloudWaitlist_questionsText": "Sorularınız mı var? Bize ulaşın",
   "color": {
@@ -584,6 +594,8 @@
     "publishButton": "ComfyHub'da Yayınla",
     "publishFailedDescription": "Çalışma akışınızı yayınlarken bir hata oluştu. Lütfen tekrar deneyin.",
     "publishFailedTitle": "Yayınlama başarısız",
+    "publishSuccessDescription": "Çalışma akışınız artık ComfyHub'da yayında.",
+    "publishSuccessTitle": "Başarıyla yayınlandı",
     "removeExampleImage": "Örnek görseli kaldır",
     "selectAThumbnail": "Bir küçük resim seçin",
     "shareAs": "Olarak paylaş",
@@ -772,6 +784,7 @@
     "AUDIO_ENCODER": "SES_KODLAYICI",
     "AUDIO_ENCODER_OUTPUT": "SES_KODLAYICI_ÇIKIŞI",
     "AUDIO_RECORD": "SES_KAYDI",
+    "BACKGROUND_REMOVAL": "ARKA_PLAN_KALDIRMA",
     "BOOLEAN": "BOOLEAN",
     "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "KAMERA_KONTROL",
@@ -787,6 +800,8 @@
     "CONTROL_NET": "KONTROL_AĞI",
     "CURVE": "EĞRİ",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "YÜZ_TESPİT_MODELİ",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -802,9 +817,11 @@
     "HISTOGRAM": "HİSTOGRAM",
     "HOOKS": "Kancalar",
     "HOOK_KEYFRAMES": "Kanca_anahtar_kareleri",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "GÖRÜNTÜ",
     "IMAGECOMPARE": "GÖRSELKARŞILAŞTIR",
     "INT": "TAMSAYI",
+    "INTERP_MODEL": "YORUMLAMA_MODELİ",
     "LATENT": "GİZLİ",
     "LATENT_OPERATION": "GİZLİ_İŞLEM",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
@@ -821,9 +838,12 @@
     "MODEL": "MODEL",
     "MODEL_PATCH": "MODEL_YAMASI",
     "MODEL_TASK_ID": "MODEL_GÖREV_ID",
+    "MOGE_GEOMETRY": "MOGE_GEOMETRY",
+    "MOGE_MODEL": "MOGE_MODEL",
     "NOISE": "GÜRÜLTÜ",
     "OPENAI_CHAT_CONFIG": "OPENAI_SOHBET_YAPILANDIRMASI",
     "OPENAI_INPUT_FILES": "OPENAI_GİRİŞ_DOSYALARI",
+    "OPTICAL_FLOW": "OPTICAL_FLOW",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "PIXVERSE_ŞABLONU",
     "POSE_KEYPOINT": "POZ ANAHTAR NOKTASI",
@@ -832,6 +852,7 @@
     "RECRAFT_V3_STYLE": "RECRAFT_V3_STİLİ",
     "RETARGET_TASK_ID": "YENİ_HEDEF_GÖREV_ID",
     "RIG_TASK_ID": "RİG_GÖREV_ID",
+    "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "ÖRNEKLEYİCİ",
     "SIGMAS": "SİGMALAR",
     "STRING": "METİN",
@@ -890,6 +911,44 @@
     "paused": "Duraklatıldı",
     "resume": "İndirmeye Devam Et"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "bilinmeyen giriş",
+      "nodeName": "Bu düğüm"
+    },
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "Sunucuya gönderilen çalışma akışı verisi boş. Bu beklenmeyen bir sistem hatası olabilir."
+      },
+      "prompt_no_outputs": {
+        "desc": "Çalışma akışında sonuç üretecek herhangi bir çıktı düğümü (örn. Görseli Kaydet, Görseli Önizle) bulunmuyor."
+      },
+      "server_error_cloud": {
+        "desc": "Sunucuda beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin."
+      },
+      "server_error_local": {
+        "desc": "Sunucuda beklenmeyen bir hata oluştu. Lütfen sunucu günlüklerini kontrol edin."
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastMessageCloud": "Bu düğüm çalıştırılırken bir hata oluştu. Girişlerini kontrol edin veya farklı bir yapılandırmayı deneyin. Kredi harcanmadı.",
+        "toastMessageLocal": "Bu düğüm çalıştırılırken bir hata oluştu. Girişlerini kontrol edin veya farklı bir yapılandırmayı deneyin.",
+        "toastTitle": "{nodeName} başarısız oldu"
+      }
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "details": "{nodeName} için gerekli bir giriş eksik: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Gerekli giriş yuvalarına bağlantı yapılmamış.",
+        "title": "Eksik bağlantı",
+        "toastMessage": "{nodeName} için gerekli bir giriş eksik: {inputName}",
+        "toastTitle": "Gerekli giriş eksik"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "accessRestrictedTitle": "Access Restricted",
@@ -897,7 +956,8 @@
     "extensionFileHint": "Bu, aşağıdaki komut dosyasından kaynaklanıyor olabilir",
     "loadWorkflowTitle": "İş akışı verileri yeniden yüklenirken hata nedeniyle yükleme iptal edildi",
     "noStackTrace": "Yığın izi mevcut değil",
-    "promptExecutionError": "İstem yürütmesi başarısız oldu"
+    "promptExecutionError": "İstem yürütmesi başarısız oldu",
+    "queueOpenWorkflowFailedTitle": "İş Akışı Açılamadı"
   },
   "errorOverlay": {
     "errorCount": "{count} HATA | {count} HATA",
@@ -910,6 +970,10 @@
     "showMissingNodes": "Eksik düğümleri göster",
     "showSwapNodes": "Değiştirilebilir düğümleri göster",
     "swapNodes": "Bazı düğümler alternatiflerle değiştirilebilir"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "Geri bildirim ver",
+    "ctaText": "Yeni hata paneli nasıl?"
   },
   "essentials": {
     "batchImage": "Toplu Görüntü",
@@ -996,13 +1060,16 @@
     "back": "Geri",
     "batchRename": "Toplu Yeniden Adlandır",
     "beta": "BETA",
+    "blueprints": "Planlar",
     "bookmark": "Kütüphaneye Kaydet",
+    "bookmarked": "Yer İmleri",
     "browserReservedKeybinding": "Bu kısayol bazı tarayıcılar tarafından ayrılmıştır ve beklenmeyen sonuçlara yol açabilir.",
     "browserReservedKeybindingTooltip": "Bu kısayol, tarayıcıya ayrılmış kısayollarla çakışıyor",
     "calculatingDimensions": "Boyutlar hesaplanıyor",
     "cancel": "İptal",
     "cancelled": "İptal Edildi",
     "capture": "yakala",
+    "categories": "Kategoriler",
     "category": "Kategori",
     "changeKeybinding": "Kısayol tuşunu değiştir",
     "chart": "Grafik",
@@ -1018,6 +1085,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrg Logosu",
+    "comfyPackageOutdated": "Yüklü {name} sürümü ({installedVersion}), gerekli sürümden ({requiredVersion}) daha eski.",
     "comingSoon": "Çok Yakında",
     "command": "Komut",
     "commandProhibited": "{command} komutu yasak. Daha fazla bilgi için bir yöneticiyle iletişime geçin.",
@@ -1214,13 +1282,16 @@
     "nothingToDelete": "Silinecek bir şey yok",
     "nothingToDuplicate": "Çoğaltılacak bir şey yok",
     "nothingToRename": "Yeniden adlandırılacak bir şey yok",
+    "off": "Kapalı",
     "ok": "Tamam",
+    "on": "Açık",
     "openManager": "Yöneticiyi Aç",
     "openNewIssue": "Yeni Sorun Aç",
     "or": "veya",
     "output": "Çıktı",
     "overwrite": "Üzerine Yaz",
     "partner": "Partner",
+    "partnerNodes": "Ortak Düğümler",
     "pause": "Duraklat",
     "play": "Oynat",
     "playPause": "Oynat/Duraklat",
@@ -1331,6 +1402,7 @@
     "updating": "{id} güncelleniyor",
     "upload": "Yükle",
     "uploadAlreadyInProgress": "Yükleme zaten devam ediyor",
+    "uploadTimedOut": "Yükleme zaman aşımına uğradı. Lütfen tekrar deneyin.",
     "usageHint": "Kullanım ipucu",
     "use": "Kullan",
     "user": "Kullanıcı",
@@ -1640,10 +1712,28 @@
     "exportModel": "Modeli Dışa Aktar",
     "exportRecording": "Kaydı Dışa Aktar",
     "exportingModel": "Model dışa aktarılıyor...",
+    "fitToViewer": "Görüntüleyiciye Sığdır",
     "fov": "FOV",
+    "gizmo": {
+      "label": "Gizmo",
+      "reset": "Dönüşümü Sıfırla",
+      "rotate": "Döndür",
+      "scale": "Ölçekle",
+      "toggle": "Gizmo",
+      "translate": "Taşı"
+    },
+    "hdri": {
+      "changeFile": "HDRI Değiştir",
+      "intensity": "Yoğunluk",
+      "label": "HDRI Ortamı",
+      "removeFile": "HDRI Kaldır",
+      "showAsBackground": "Arka Plan Olarak Göster",
+      "uploadFile": "HDRI Yükle (.hdr, .exr)"
+    },
     "light": "Işık",
     "lightIntensity": "Işık Yoğunluğu",
     "loadingBackgroundImage": "Arka Plan Resmi Yükleniyor",
+    "loadingHDRI": "HDRI Yükleniyor...",
     "loadingModel": "3D Model Yükleniyor...",
     "materialMode": "Malzeme Modu",
     "materialModes": {
@@ -1694,6 +1784,10 @@
     "outdatedVersion": "Bu iş akışı ComfyUI'nin daha yeni bir sürümüyle oluşturulmuş ({version}). Bazı düğümler düzgün çalışmayabilir.",
     "outdatedVersionGeneric": "Bu iş akışı ComfyUI'nin daha yeni bir sürümüyle oluşturulmuş. Bazı düğümler düzgün çalışmayabilir.",
     "unknownVersion": "bilinmeyen"
+  },
+  "logsTerminal": {
+    "loadError": "Kayıtlar yüklenemiyor, lütfen ComfyUI arka ucunuzu güncellediğinizden emin olun.",
+    "resyncError": "Arka uç yeniden bağlandıktan sonra kayıtlar yeniden eşitlenemedi. Tekrar denemek için konsolu yeniden açın."
   },
   "maintenance": {
     "None": "Yok",
@@ -1798,6 +1892,10 @@
     "gettingInfo": "Bilgi alınıyor...",
     "importFailedGenericError": "Paket içe aktarılamadı. Daha fazla ayrıntı için konsolu kontrol edin.",
     "inWorkflow": "İş Akışında",
+    "incompatibleVersion": {
+      "message": "Lütfen ComfyUI-Manager'ı 4.2.1 veya daha yüksek bir sürüme yükseltin.\n• Masaüstü: ComfyUI Masaüstü uygulamasını güncelleyin\n• Bağımsız: pip install -U comfyui-manager komutunu çalıştırın ve yeniden başlatın\nDaha fazla bilgi: https://github.com/Comfy-Org/ComfyUI-Manager",
+      "title": "ComfyUI-Manager yükseltmesi gerekli"
+    },
     "infoPanelEmpty": "Bilgileri görmek için bir öğeye tıklayın",
     "installAllMissingNodes": "Tüm Eksik Düğümleri Yükle",
     "installError": "Yükleme Hatası",
@@ -2204,6 +2302,7 @@
     "": "",
     "3d": "3d",
     "3d_models": "3d_modeller",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
@@ -2218,14 +2317,15 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
     "Reve": "Reve",
     "Rodin": "Rodin",
     "Runway": "Runway",
+    "Sonilo": "Sonilo",
     "Sora": "Sora",
     "Stability AI": "Stability AI",
     "Tencent": "Tencent",
@@ -2235,31 +2335,33 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
-    "_for_testing": "_test_için",
+    "adjustments": "ayarlar",
     "advanced": "gelişmiş",
-    "animation": "animasyon",
-    "api": "api",
     "api node": "api düğümü",
     "attention_experiments": "dikkat_deneyleri",
     "audio": "ses",
+    "background removal": "arka plan kaldırma",
     "batch": "toplu",
-    "camera": "kamera",
     "chroma_radiance": "chroma_radiance",
     "clip": "klip",
+    "color": "renk",
     "combine": "birleştir",
     "compositing": "birleştirme",
     "cond pair": "çift koşul",
     "cond single": "tek koşul",
     "conditioning": "koşullandırma",
-    "context": "bağlam",
     "controlnet": "controlnet",
     "create": "oluştur",
     "custom_sampling": "özel_örnekleme",
     "dataset": "veri seti",
     "debug": "hata ayıklama",
     "deprecated": "kullanımdan kaldırılmış",
+    "detection": "tespit",
     "edit_models": "modelleri_düzenle",
+    "experimental": "deneysel",
+    "filters": "filtreler",
     "flux": "flux",
+    "geometry_estimation": "geometri_tahmini",
     "gligen": "gligen",
     "guidance": "rehberlik",
     "guiders": "rehberler",
@@ -2274,7 +2376,6 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "mask": "maske",
-    "math": "matematik",
     "model": "model",
     "model_merging": "model_birleştirme",
     "model_patches": "model_yamaları",
@@ -2282,24 +2383,20 @@
     "noise": "gürültü",
     "operations": "işlemler",
     "photomaker": "photomaker",
-    "postprocessing": "son işleme",
     "preprocessors": "ön işlemciler",
     "primitive": "ilkel",
     "qwen": "qwen",
     "samplers": "örnekleyiciler",
     "sampling": "örnekleme",
-    "save": "kaydet",
     "schedulers": "zamanlayıcılar",
     "scheduling": "zamanlama",
-    "sd": "sd",
     "sd3": "sd3",
     "shader": "shader",
     "sigmas": "sigmalar",
     "stable_cascade": "stabil_çağlayan",
-    "string": "dize",
     "style_model": "stil_modeli",
+    "supir": "supir",
     "text": "metin",
-    "textgen": "textgen",
     "training": "eğitim",
     "transform": "dönüştür",
     "unet": "unet",
@@ -2378,6 +2475,43 @@
     },
     "title": "Cihazınız desteklenmiyor"
   },
+  "oauth": {
+    "consent": {
+      "allow": "Devam Et",
+      "appTypeNative": "Yerel uygulama",
+      "appTypeWeb": "Web uygulaması",
+      "deny": "İptal",
+      "errorExpired": "Bu onay isteğinin süresi doldu veya zaten kullanıldı. Lütfen istemci uygulamasından tekrar başlatın.",
+      "errorScopeBroadening": "Önceden onaylanan izinler bu isteği kapsamıyor. Yeni izinlerle tekrar yetkilendirmeniz gerekiyor.",
+      "errorUnavailable": "Bu özellik şu anda kullanılamıyor. Sorun devam ederse lütfen destek ile iletişime geçin.",
+      "genericError": "OAuth isteği başarısız oldu. Lütfen istemci uygulamasından tekrar başlatın.",
+      "loading": "Yetkilendirme isteği yükleniyor…",
+      "missingRequest": "Bu yetkilendirme isteği eksik. Lütfen istemci uygulamasından tekrar başlatın.",
+      "noWorkspaces": "Bu istek için uygun çalışma alanı yok.",
+      "permissionsHeader": "İzinler",
+      "redirectNotice": "Yönlendirileceksiniz:",
+      "resourceFallback": "bu uygulama",
+      "sessionError": "Oturum başlatılamadı. Lütfen tekrar deneyin.",
+      "sessionErrorToastSummary": "OAuth oturum açma devam ettirilemedi",
+      "subtitle": "Devam etmek için {resource} hesabınızla oturum açın",
+      "title": "{client} erişim istiyor",
+      "workspaceHelp": "İzinler yalnızca bu çalışma alanı için geçerlidir.",
+      "workspaceLabel": "Çalışma Alanı"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "Sizin adınıza iş akışlarını çalıştır"
+      },
+      "mcp:tools:read": {
+        "label": "Mevcut iş akışı araçlarını görüntüle"
+      }
+    },
+    "workspace": {
+      "member": "Üye",
+      "owner": "Sahip",
+      "personal": "Kişisel"
+    }
+  },
   "openSharedWorkflow": {
     "author": "Yazar:",
     "copyAssetsAndOpen": "Varlıkları içe aktar ve iş akışını aç",
@@ -2388,7 +2522,8 @@
     "nonPublicAssetsWarningLine1": "Bu iş akışı herkese açık olmayan varlıklar içeriyor.",
     "nonPublicAssetsWarningLine2": "İş akışını açtığınızda bunlar kütüphanenize aktarılacak",
     "openWithoutImporting": "İçe aktarmadan aç",
-    "openWorkflow": "İş akışını aç"
+    "openWorkflow": "İş akışını aç",
+    "opening": "Paylaşılan iş akışı açılıyor..."
   },
   "painter": {
     "background": "Arka Plan",
@@ -2484,6 +2619,8 @@
     "advancedInputs": "GELİŞMİŞ GİRDİLER",
     "bypass": "Atla",
     "color": "Düğüm rengi",
+    "editSubgraph": "Alt grafiği düzenle",
+    "editTitle": "Başlığı düzenle",
     "enterSubgraph": "Alt grafiğe gir",
     "errorHelp": "Daha fazla yardım için {github} veya {support}",
     "errorHelpGithub": "bir GitHub sorunu gönderin",
@@ -2526,6 +2663,23 @@
     "inputsNone": "GİRİŞ YOK",
     "inputsNoneTooltip": "Düğümün girişi yok",
     "locateNode": "Düğümü tuvalde bul",
+    "missingMedia": {
+      "audio": "Ses",
+      "cancelSelection": "Seçimi iptal et",
+      "collapseNodes": "Referans veren düğümleri gizle",
+      "confirmSelection": "Seçimi onayla",
+      "expandNodes": "Referans veren düğümleri göster",
+      "image": "Görseller",
+      "locateNode": "Düğümü bul",
+      "missingMediaTitle": "Eksik Girdiler",
+      "or": "VEYA",
+      "selectedFromLibrary": "Kütüphaneden seçildi",
+      "uploadFile": "{type} Yükle",
+      "uploaded": "Yüklendi",
+      "uploading": "Yükleniyor...",
+      "useFromLibrary": "Kütüphaneden Kullan",
+      "video": "Videolar"
+    },
     "missingModels": {
       "alreadyExistsInCategory": "Bu model zaten \"{category}\" içinde mevcut",
       "assetLoadTimeout": "Model algılama zaman aşımına uğradı. Lütfen iş akışını yeniden yüklemeyi deneyin.",
@@ -2548,6 +2702,9 @@
       "metadataFetchFailed": "Meta veriler alınamadı. Lütfen bağlantıyı kontrol edip tekrar deneyin.",
       "missingModelsTitle": "Eksik Modeller",
       "or": "VEYA",
+      "refresh": "Yenile",
+      "refreshFailed": "Eksik modeller yenilenemedi. Lütfen tekrar deneyin.",
+      "refreshing": "Eksik modeller yenileniyor.",
       "typeMismatch": "Bu model \"{detectedType}\" gibi görünüyor. Emin misiniz?",
       "unknownCategory": "Bilinmeyen",
       "unsupportedUrl": "Sadece Civitai ve Hugging Face URL'leri desteklenmektedir.",
@@ -2582,20 +2739,6 @@
     "normal": "Normal",
     "parameters": "Parametreler",
     "pinned": "Sabitlendi",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "Sunucuya gönderilen çalışma akışı verisi boş. Bu beklenmeyen bir sistem hatası olabilir."
-      },
-      "prompt_no_outputs": {
-        "desc": "Çalışma akışında sonuç üretecek herhangi bir çıktı düğümü (ör. Görüntüyü Kaydet, Görüntüyü Önizle) bulunmuyor."
-      },
-      "server_error_cloud": {
-        "desc": "Sunucu beklenmeyen bir hata ile karşılaştı. Lütfen daha sonra tekrar deneyin."
-      },
-      "server_error_local": {
-        "desc": "Sunucu beklenmeyen bir hata ile karşılaştı. Lütfen sunucu günlüklerini kontrol edin."
-      }
-    },
     "properties": "Özellikler",
     "removeFavorite": "Favorilerden Kaldır",
     "resetAllParameters": "Tüm parametreleri sıfırla",
@@ -2993,6 +3136,7 @@
         "sourceDesc": "Kaynak türüne göre gruplandır (Çekirdek, Özel, API)"
       },
       "noBookmarkedNodes": "Henüz favori yok",
+      "noMatchingNodes": "\"{query}\" ile eşleşen düğüm yok",
       "resetView": "Görünümü Varsayılana Sıfırla",
       "sections": {
         "bookmarked": "Favoriler",
@@ -3081,6 +3225,7 @@
       "deleteFailedTitle": "Silme başarısız oldu",
       "deleted": "İş akışı silindi",
       "dirtyClose": "Aşağıdaki dosyalar değiştirildi. Kapatmadan önce bunları kaydetmek ister misiniz?",
+      "dirtyCloseAnyway": "Yine de kapat",
       "dirtyCloseHint": "Sormadan kapatmak için Shift tuşunu basılı tutun",
       "dirtyCloseTitle": "Değişiklikler Kaydedilsin mi?",
       "workflowTreeType": {
@@ -3239,6 +3384,7 @@
       "termsAgreement": "Devam ederek Comfy Org'un {terms} ve {privacy} politikasını kabul etmiş olursunuz.",
       "totalDueToday": "Bugün ödenecek toplam tutar"
     },
+    "refreshCredits": "Kredileri yenile",
     "renewsDate": "{date} tarihinde yenilenir",
     "required": {
       "pollingFailed": "Abonelik etkinleştirme başarısız oldu",
@@ -3376,8 +3522,7 @@
       "newest": "En Yeni",
       "popular": "Popüler",
       "recommended": "Önerilen",
-      "searchPlaceholder": "Ara...",
-      "vramLowToHigh": "VRAM Kullanımı (Düşükten Yükseğe)"
+      "searchPlaceholder": "Ara..."
     },
     "sorting": "Sıralama ölçütü",
     "title": "Bir Şablonla Başlayın",
@@ -3411,11 +3556,14 @@
     "failedToInitiateCreditPurchase": "Kredi satın alma başlatılamadı: {error}",
     "failedToInitiateSubscription": "Abonelik başlatılamadı: {error}",
     "failedToLoadBackgroundImage": "Arka plan görseli yüklenemedi",
+    "failedToLoadHDRI": "HDRI dosyası yüklenemedi",
     "failedToLoadModel": "3B model yüklenemedi",
     "failedToPurchaseCredits": "Kredi satın alınamadı: {error}",
     "failedToQueue": "Kuyruğa alınamadı",
     "failedToSaveDraft": "Çalışma taslağı kaydedilemedi",
+    "failedToSetGizmoMode": "Gizmo modu ayarlanamadı",
     "failedToToggleCamera": "Kamera açılıp kapatılamadı",
+    "failedToToggleGizmo": "Gizmo geçişi başarısız oldu",
     "failedToToggleGrid": "Izgara açılıp kapatılamadı",
     "failedToUpdateBackgroundColor": "Arka plan rengi güncellenemedi",
     "failedToUpdateBackgroundImage": "Arka plan görseli güncellenemedi",
@@ -3437,6 +3585,7 @@
     "no3dScene": "Doku uygulanacak 3D sahne yok",
     "no3dSceneToExport": "Dışa aktarılacak 3D sahne yok",
     "noTemplatesToExport": "Dışa aktarılacak şablon yok",
+    "nodeDefinitionsUpdateFailed": "Düğüm tanımları güncellenemedi",
     "nodeDefinitionsUpdated": "Düğüm tanımları güncellendi",
     "nothingSelected": "Hiçbir şey seçilmedi",
     "nothingToGroup": "Gruplandırılacak bir şey yok",
@@ -3446,6 +3595,7 @@
     "pleaseSelectOutputNodes": "Lütfen çıktı düğümlerini seçin",
     "unableToGetModelFilePath": "Model dosyası yolu alınamıyor",
     "unauthorizedDomain": "{domain} alan adınız bu hizmeti kullanma yetkisine sahip değil. Alan adınızı beyaz listeye eklemek için lütfen {email} ile iletişime geçin.",
+    "unsupportedHDRIFormat": "Desteklenmeyen dosya formatı. Lütfen .hdr veya .exr dosyası yükleyin.",
     "updateRequested": "Güncelleme istendi",
     "useApiKeyTip": "İpucu: Normal girişe erişemiyor musunuz? Comfy API Anahtarı seçeneğini kullanın.",
     "userNotAuthenticated": "Kullanıcı doğrulanmadı"
@@ -3536,7 +3686,8 @@
       "placeholderMesh": "Ağ seç...",
       "placeholderModel": "Model seç...",
       "placeholderUnknown": "Medya seç...",
-      "placeholderVideo": "Video seç..."
+      "placeholderVideo": "Video seç...",
+      "topResult": "En iyi sonuç: {result}"
     },
     "valueControl": {
       "decrement": "Değeri Azalt",

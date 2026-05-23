@@ -14,12 +14,16 @@ export default {
   './**/*.{ts,tsx,vue,mts,json,yaml,md}': (stagedFiles: string[]) => {
     const commands = [...formatAndEslint(stagedFiles), 'pnpm typecheck']
 
-    const hasBrowserTestsChanges = stagedFiles
-      .map((f) => path.relative(process.cwd(), f).replace(/\\/g, '/'))
-      .some((f) => f.startsWith('browser_tests/'))
+    const relativePaths = stagedFiles.map((f) =>
+      path.relative(process.cwd(), f).replace(/\\/g, '/')
+    )
 
-    if (hasBrowserTestsChanges) {
+    if (relativePaths.some((f) => f.startsWith('browser_tests/'))) {
       commands.push('pnpm typecheck:browser')
+    }
+
+    if (relativePaths.some((f) => f.startsWith('apps/website/'))) {
+      commands.push('pnpm typecheck:website')
     }
 
     return commands
@@ -30,7 +34,7 @@ function formatAndEslint(fileNames: string[]) {
   const joinedPaths = toJoinedRelativePaths(fileNames)
   return [
     `pnpm exec oxfmt --write ${joinedPaths}`,
-    `pnpm exec oxlint --fix ${joinedPaths}`,
+    `pnpm exec oxlint --type-aware --fix ${joinedPaths}`,
     `pnpm exec eslint --cache --fix --no-warn-ignored ${joinedPaths}`
   ]
 }

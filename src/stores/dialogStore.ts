@@ -4,9 +4,10 @@ import { merge } from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import type { DialogPassThroughOptions } from 'primevue/dialog'
 import { markRaw, ref } from 'vue'
-import type { Component } from 'vue'
+import type { Component, HTMLAttributes } from 'vue'
 
 import type GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+import type { DialogContentSize } from '@/components/ui/dialog/dialog.variants'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
 type DialogPosition =
@@ -20,6 +21,14 @@ type DialogPosition =
   | 'bottomleft'
   | 'bottomright'
 
+/**
+ * Selects the dialog renderer used by `GlobalDialog`. `'primevue'` is the
+ * current default and runs the legacy PrimeVue `Dialog` path. `'reka'` opts
+ * into the Reka-UI primitive set under `src/components/ui/dialog/`. Migration
+ * tracked in `temp/plans/adr-0009-dialog-reka-migration-DRAFT.md`.
+ */
+type DialogRenderer = 'primevue' | 'reka'
+
 interface CustomDialogComponentProps {
   maximizable?: boolean
   maximized?: boolean
@@ -32,6 +41,13 @@ interface CustomDialogComponentProps {
   dismissableMask?: boolean
   unstyled?: boolean
   headless?: boolean
+  renderer?: DialogRenderer
+  size?: DialogContentSize
+  /**
+   * Class applied to the Reka-UI `DialogContent` element. Ignored on the
+   * PrimeVue path — use `pt` for that renderer.
+   */
+  contentClass?: HTMLAttributes['class']
 }
 
 export type DialogComponentProps = ComponentAttrs<typeof GlobalDialog> &
@@ -75,6 +91,12 @@ export interface ShowDialogOptions<
    * @default 1
    */
   priority?: number
+}
+
+interface UpdateDialogOptions {
+  key: string
+  contentProps?: Partial<DialogInstance['contentProps']>
+  dialogComponentProps?: Partial<DialogComponentProps>
 }
 
 export const useDialogStore = defineStore('dialog', () => {
@@ -253,6 +275,28 @@ export const useDialogStore = defineStore('dialog', () => {
     return dialogStack.value.some((d) => d.key === key)
   }
 
+  function updateDialog(options: UpdateDialogOptions): boolean {
+    const dialog = dialogStack.value.find((d) => d.key === options.key)
+    if (!dialog) return false
+
+    if (options.contentProps) {
+      dialog.contentProps = {
+        ...dialog.contentProps,
+        ...options.contentProps
+      }
+    }
+
+    if (options.dialogComponentProps) {
+      dialog.dialogComponentProps = {
+        ...dialog.dialogComponentProps,
+        ...options.dialogComponentProps
+      }
+      updateCloseOnEscapeStates()
+    }
+
+    return true
+  }
+
   return {
     dialogStack,
     riseDialog,
@@ -260,6 +304,7 @@ export const useDialogStore = defineStore('dialog', () => {
     closeDialog,
     showExtensionDialog,
     isDialogOpen,
+    updateDialog,
     activeKey
   }
 })

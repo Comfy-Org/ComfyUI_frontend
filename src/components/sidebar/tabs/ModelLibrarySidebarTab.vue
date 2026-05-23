@@ -6,7 +6,7 @@
         variant="muted-textonly"
         size="icon"
         :aria-label="$t('g.refresh')"
-        @click="modelStore.loadModelFolders"
+        @click="modelStore.refresh"
       >
         <i class="icon-[lucide--refresh-cw] size-4" />
       </Button>
@@ -66,6 +66,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { ComfyModelDef, ModelFolder } from '@/stores/modelStore'
 import { ResourceState, useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
@@ -76,6 +77,7 @@ import { buildTree } from '@/utils/treeUtil'
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
 const settingStore = useSettingStore()
+const assetDownloadStore = useAssetDownloadStore()
 const searchBoxRef = ref()
 const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
@@ -150,17 +152,16 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
       children,
       draggable: node.leaf,
       handleClick(e: MouseEvent) {
-        if (this.leaf) {
-          // @ts-expect-error fixme ts strict error
+        if (this.leaf && model) {
           const provider = modelToNodeStore.getNodeProvider(model.directory)
           if (provider) {
-            const node = useLitegraphService().addNodeOnGraph(provider.nodeDef)
-            // @ts-expect-error fixme ts strict error
-            const widget = node.widgets.find(
+            const graphNode = useLitegraphService().addNodeOnGraph(
+              provider.nodeDef
+            )
+            const widget = graphNode?.widgets?.find(
               (widget) => widget.name === provider.key
             )
             if (widget) {
-              // @ts-expect-error fixme ts strict error
               widget.value = model.file_name
             }
           }
@@ -188,6 +189,14 @@ watch(
     })
   },
   { deep: true }
+)
+
+watch(
+  () => assetDownloadStore.lastCompletedDownload,
+  (completed) => {
+    if (!completed) return
+    void modelStore.refreshModelFolder(completed.modelType)
+  }
 )
 
 onMounted(async () => {
