@@ -1,0 +1,112 @@
+# Description: Run Playwright Chromium browser tests on a Windows runner
+# to catch platform-specific regressions that Linux CI cannot detect.
+name: 'CI: Tests E2E Windows'
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+  merge_group:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      should-run: ${{ steps.changes.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
+  setup:
+    needs: changes
+    if: ${{ needs.changes.outputs.should-run == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: true
+
+      - name: Upload built frontend
+        uses: actions/upload-artifact@v6
+        with:
+          name: frontend-dist-windows-e2e
+          path: dist/
+          retention-days: 1
+
+  playwright-tests-windows:
+    needs: setup
+    runs-on: windows-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Download built frontend
+        uses: actions/download-artifact@v7
+        with:
+          name: frontend-dist-windows-e2e
+          path: dist/
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
+      - name: Setup and start ComfyUI server
+        uses: ./.github/actions/setup-comfyui-server-windows
+        with:
+          launch_server: 'true'
+
+      - name: Run Playwright tests (Windows Chromium)
+        id: playwright
+        shell: bash
+        run: pnpm exec playwright test --project=chromium --reporter=blob
+        env:
+          PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+
+      - name: Generate HTML and JSON reports
+        if: always()
+        shell: bash
+        run: |
+          pnpm exec playwright merge-reports --reporter=html ./blob-report
+          PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
+          pnpm exec playwright merge-reports --reporter=json ./blob-report
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: playwright-report-windows-chromium
+          path: ./playwright-report/
+          retention-days: 30
+
+  # Gate job — required check that passes whether tests ran or were skipped.
+  windows-e2e-status:
+    if: ${{ always() }}
+    needs: [changes, playwright-tests-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Windows E2E results
+        env:
+          SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
+          WINDOWS: ${{ needs.playwright-tests-windows.result }}
+        run: |
+          [[ "$SHOULD_RUN" != "true" ]] && echo "Windows E2E skipped" && exit 0
+          [[ "$WINDOWS" != "success" ]] && echo "Windows E2E failed" && exit 1
+          echo "Windows E2E passed"

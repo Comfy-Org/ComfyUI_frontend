@@ -1,0 +1,90 @@
+name: Setup ComfyUI Server (Windows)
+description: >-
+  Checkout ComfyUI, install Python dependencies, and optionally start the
+  server on a Windows runner. Uses PowerShell polling instead of wait-for-it
+  (which is Linux-only).
+
+inputs:
+  front_end_root:
+    description: 'Path to frontend dist directory'
+    required: false
+    default: '../dist'
+  extra_server_params:
+    description: 'Additional parameters to pass to ComfyUI server'
+    required: false
+    default: ''
+  launch_server:
+    description: 'Whether to launch the server after setup'
+    required: false
+    default: 'true'
+  timeout:
+    description: 'Timeout in seconds for server startup'
+    required: false
+    default: '600'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout ComfyUI
+      uses: actions/checkout@v6
+      with:
+        repository: 'comfyanonymous/ComfyUI'
+        path: 'ComfyUI'
+
+    - name: Install ComfyUI_devtools from frontend repo
+      shell: bash
+      run: |
+        mkdir -p ComfyUI/custom_nodes/ComfyUI_devtools
+        if ! cp -r ./tools/devtools/* ComfyUI/custom_nodes/ComfyUI_devtools/; then
+          echo "::error::Failed to copy ComfyUI_devtools from ./tools/devtools/"
+          exit 1
+        fi
+
+    - name: Setup Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+
+    - name: Install Python requirements
+      shell: bash
+      working-directory: ComfyUI
+      run: |
+        python -m pip install --upgrade pip
+        pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+        pip install -r requirements.txt
+
+    - name: Start ComfyUI server
+      if: ${{ inputs.launch_server == 'true' }}
+      shell: pwsh
+      working-directory: ComfyUI
+      run: |
+        $env:PYTHONUNBUFFERED = "1"
+
+        Start-Process -FilePath "python" `
+          -ArgumentList "main.py --cpu --multi-user --front-end-root `"${{ inputs.front_end_root }}`" ${{ inputs.extra_server_params }}" `
+          -NoNewWindow -PassThru -RedirectStandardOutput "../server_stdout.log" -RedirectStandardError "../server_stderr.log"
+
+        $timeout = ${{ inputs.timeout }}
+        $elapsed = 0
+        $interval = 5
+
+        while ($elapsed -lt $timeout) {
+          try {
+            $response = Invoke-WebRequest -Uri "http://127.0.0.1:8188/" -UseBasicParsing -TimeoutSec 5 -ErrorAction SilentlyContinue
+            if ($response.StatusCode -eq 200) {
+              Write-Host "ComfyUI server is ready after ${elapsed} seconds"
+              exit 0
+            }
+          } catch {}
+
+          Start-Sleep -Seconds $interval
+          $elapsed += $interval
+          Write-Host "Waiting for ComfyUI server... (${elapsed}s / ${timeout}s)"
+        }
+
+        Write-Host "::error::ComfyUI server failed to start within ${timeout} seconds"
+        if (Test-Path "../server_stderr.log") {
+          Write-Host "Server stderr:"
+          Get-Content "../server_stderr.log" -Tail 50
+        }
+        exit 1
