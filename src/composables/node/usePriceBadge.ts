@@ -1,6 +1,8 @@
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphBadge } from '@/lib/litegraph/src/litegraph'
 
+import { useNodePricing } from '@/composables/node/useNodePricing'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
 
@@ -9,14 +11,25 @@ componentIconSvg.src =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='oklch(83.01%25 0.163 83.16)' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M15.536 11.293a1 1 0 0 0 0 1.414l2.376 2.377a1 1 0 0 0 1.414 0l2.377-2.377a1 1 0 0 0 0-1.414l-2.377-2.377a1 1 0 0 0-1.414 0zm-13.239 0a1 1 0 0 0 0 1.414l2.377 2.377a1 1 0 0 0 1.414 0l2.377-2.377a1 1 0 0 0 0-1.414L6.088 8.916a1 1 0 0 0-1.414 0zm6.619 6.619a1 1 0 0 0 0 1.415l2.377 2.376a1 1 0 0 0 1.414 0l2.377-2.376a1 1 0 0 0 0-1.415l-2.377-2.376a1 1 0 0 0-1.414 0zm0-13.238a1 1 0 0 0 0 1.414l2.377 2.376a1 1 0 0 0 1.414 0l2.377-2.376a1 1 0 0 0 0-1.414l-2.377-2.377a1 1 0 0 0-1.414 0z'/%3E%3C/svg%3E"
 
 export const usePriceBadge = () => {
+  const nodePricing = useNodePricing()
+
   function updateSubgraphCredits(node: LGraphNode) {
     if (!node.isSubgraphNode()) return
     node.badges = node.badges.filter((b) => !isCreditsBadge(b))
-    const newBadges = collectCreditsBadges(node.subgraph)
-    if (newBadges.length > 1) {
-      node.badges.push(getCreditsBadge('Partner Nodes x ' + newBadges.length))
-    } else {
-      node.badges.push(...newBadges)
+    const innerCreditsBadges = collectCreditsBadges(node.subgraph)
+    if (innerCreditsBadges.length > 1) {
+      node.badges.push(
+        getCreditsBadge('Partner Nodes x ' + innerCreditsBadges.length)
+      )
+    } else if (innerCreditsBadges.length === 1) {
+      const innerApiNodes = collectInnerApiNodes(node.subgraph)
+      // When a single inner api node is the price source, swap its static
+      // getter for a wrapper-aware one that resolves promoted widget values.
+      if (innerApiNodes.length === 1) {
+        node.badges.push(buildWrapperAwarePriceBadge(node, innerApiNodes[0]))
+      } else {
+        node.badges.push(...innerCreditsBadges)
+      }
     }
     const graph = node.graph
     if (!graph) return
@@ -28,13 +41,14 @@ export const usePriceBadge = () => {
       newValue: node.badges
     })
   }
+
   function collectCreditsBadges(
     graph: LGraph,
     visited: Set<string> = new Set()
   ): (LGraphBadge | (() => LGraphBadge))[] {
     if (visited.has(graph.id)) return []
     visited.add(graph.id)
-    const badges = []
+    const badges: (LGraphBadge | (() => LGraphBadge))[] = []
     for (const node of graph.nodes) {
       badges.push(
         ...(node.isSubgraphNode()
@@ -43,6 +57,57 @@ export const usePriceBadge = () => {
       )
     }
     return badges
+  }
+
+  function collectInnerApiNodes(
+    graph: LGraph,
+    visited: Set<string> = new Set()
+  ): LGraphNode[] {
+    if (visited.has(graph.id)) return []
+    visited.add(graph.id)
+    const apiNodes: LGraphNode[] = []
+    for (const node of graph.nodes) {
+      if (node.isSubgraphNode()) {
+        apiNodes.push(...collectInnerApiNodes(node.subgraph, visited))
+      } else if (node.constructor?.nodeData?.api_node) {
+        apiNodes.push(node)
+      }
+    }
+    return apiNodes
+  }
+
+  /**
+   * Wrapper-aware price badge getter: resolves the inner node's price using
+   * the host-effective values of any promoted widgets on the wrapper, so the
+   * badge updates when a user edits the promoted control without leaking
+   * into the interior widget state (ADR 0009 host-wins).
+   */
+  function buildWrapperAwarePriceBadge(
+    wrapper: LGraphNode,
+    innerNode: LGraphNode
+  ): () => LGraphBadge {
+    return () =>
+      getCreditsBadge(
+        nodePricing.getNodeDisplayPrice(
+          innerNode,
+          collectPromotedOverrides(wrapper, innerNode)
+        )
+      )
+  }
+
+  function collectPromotedOverrides(
+    wrapper: LGraphNode,
+    innerNode: LGraphNode
+  ): ReadonlyMap<string, unknown> {
+    const overrides = new Map<string, unknown>()
+    if (!wrapper.isSubgraphNode()) return overrides
+    const innerId = String(innerNode.id)
+    for (const w of wrapper.widgets ?? []) {
+      if (!isPromotedWidgetView(w)) continue
+      if (w.sourceNodeId !== innerId) continue
+      overrides.set(w.sourceWidgetName, w.value)
+    }
+    return overrides
   }
 
   function isCreditsBadge(

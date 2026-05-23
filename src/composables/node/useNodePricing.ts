@@ -237,12 +237,15 @@ const normalizeWidgetValue = (
 
 const buildJsonataContext = (
   node: LGraphNode,
-  rule: JsonataPricingRule
+  rule: JsonataPricingRule,
+  widgetOverrides?: ReadonlyMap<string, unknown>
 ): JsonataEvalContext => {
   const widgets: Record<string, NormalizedWidgetValue> = {}
   for (const dep of rule.depends_on.widgets) {
-    const widget = node.widgets?.find((x: IBaseWidget) => x.name === dep.name)
-    widgets[dep.name] = normalizeWidgetValue(widget?.value, dep.type)
+    const raw = widgetOverrides?.has(dep.name)
+      ? widgetOverrides.get(dep.name)
+      : node.widgets?.find((x: IBaseWidget) => x.name === dep.name)?.value
+    widgets[dep.name] = normalizeWidgetValue(raw, dep.type)
   }
 
   const inputs: Record<string, { connected: boolean }> = {}
@@ -552,7 +555,10 @@ export const useNodePricing = () => {
    * - schedules async evaluation when needed
    * - remains non-fatal on errors (returns safe fallback '')
    */
-  const getNodeDisplayPrice = (node: LGraphNode): string => {
+  const getNodeDisplayPrice = (
+    node: LGraphNode,
+    widgetOverrides?: ReadonlyMap<string, unknown>
+  ): string => {
     // Make this function reactive: when async evaluation completes, we bump pricingTick,
     // which causes this getter to recompute in Vue render/computed contexts.
     void pricingTick.value
@@ -565,7 +571,7 @@ export const useNodePricing = () => {
     if (rule.engine !== 'jsonata') return ''
     if (!rule._compiled) return ''
 
-    const ctx = buildJsonataContext(node, rule)
+    const ctx = buildJsonataContext(node, rule, widgetOverrides)
     const sig = buildSignature(ctx, rule)
 
     const cached = cache.get(node)
