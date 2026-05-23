@@ -11,17 +11,39 @@
       :aria-label="$t('load3d.switchCamera')"
       @click="switchCamera"
     >
-      <i :class="['pi', 'pi-camera', 'text-lg text-base-foreground']" />
+      <i :class="cn('pi pi-camera text-lg text-base-foreground')" />
     </Button>
     <PopupSlider
       v-if="showFOVButton"
       v-model="fov"
       :tooltip-text="$t('load3d.fov')"
     />
+    <Button
+      v-tooltip.right="{
+        value: $t('load3d.retainViewOnReload'),
+        showDelay: 300
+      }"
+      size="icon"
+      variant="textonly"
+      class="rounded-full"
+      :aria-label="$t('load3d.retainViewOnReload')"
+      :aria-pressed="retainViewOnReload"
+      @click="retainViewOnReload = !retainViewOnReload"
+    >
+      <i
+        :class="
+          cn(
+            'pi text-lg text-base-foreground',
+            retainViewOnReload ? 'pi-lock' : 'pi-lock-open'
+          )
+        "
+      />
+    </Button>
   </div>
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
 import PopupSlider from '@/components/load3d/controls/PopupSlider.vue'
@@ -30,6 +52,9 @@ import type { CameraType } from '@/extensions/core/load3d/interfaces'
 
 const cameraType = defineModel<CameraType>('cameraType')
 const fov = defineModel<number>('fov')
+const retainViewOnReload = defineModel<boolean>('retainViewOnReload', {
+  default: false
+})
 const showFOVButton = computed(() => cameraType.value === 'perspective')
 
 const switchCamera = () => {
