@@ -911,6 +911,44 @@
     "paused": "Pausado",
     "resume": "Retomar download"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "entrada desconhecida",
+      "nodeName": "Este nó"
+    },
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "Os dados do fluxo de trabalho enviados ao servidor estão vazios. Isso pode ser um erro inesperado do sistema."
+      },
+      "prompt_no_outputs": {
+        "desc": "O fluxo de trabalho não contém nenhum nó de saída (ex: Salvar Imagem, Visualizar Imagem) para produzir um resultado."
+      },
+      "server_error_cloud": {
+        "desc": "O servidor encontrou um erro inesperado. Por favor, tente novamente mais tarde."
+      },
+      "server_error_local": {
+        "desc": "O servidor encontrou um erro inesperado. Por favor, verifique os logs do servidor."
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastMessageCloud": "Este nó gerou um erro durante a execução. Verifique suas entradas ou tente uma configuração diferente. Nenhum crédito foi cobrado.",
+        "toastMessageLocal": "Este nó gerou um erro durante a execução. Verifique suas entradas ou tente uma configuração diferente.",
+        "toastTitle": "{nodeName} falhou"
+      }
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "details": "{nodeName} está sem uma entrada obrigatória: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Entradas obrigatórias não possuem conexão.",
+        "title": "Conexão ausente",
+        "toastMessage": "{nodeName} está sem uma entrada obrigatória: {inputName}",
+        "toastTitle": "Entrada obrigatória ausente"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "accessRestrictedTitle": "Access Restricted",
@@ -2701,20 +2739,6 @@
     "normal": "Normal",
     "parameters": "Parâmetros",
     "pinned": "Fixado",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "Os dados do fluxo de trabalho enviados ao servidor estão vazios. Isso pode ser um erro de sistema inesperado."
-      },
-      "prompt_no_outputs": {
-        "desc": "O fluxo de trabalho não contém nenhum nó de saída (por exemplo, Salvar Imagem, Visualizar Imagem) para produzir um resultado."
-      },
-      "server_error_cloud": {
-        "desc": "O servidor encontrou um erro inesperado. Por favor, tente novamente mais tarde."
-      },
-      "server_error_local": {
-        "desc": "O servidor encontrou um erro inesperado. Por favor, verifique os logs do servidor."
-      }
-    },
     "properties": "Propriedades",
     "removeFavorite": "Desfavoritar",
     "resetAllParameters": "Redefinir todos os parâmetros",

@@ -911,6 +911,44 @@
     "paused": "تم الإيقاف مؤقتًا",
     "resume": "استئناف التنزيل"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "مدخل غير معروف",
+      "nodeName": "هذه العقدة"
+    },
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "بيانات سير العمل المرسلة إلى الخادم فارغة. قد يكون هذا خطأ غير متوقع في النظام."
+      },
+      "prompt_no_outputs": {
+        "desc": "سير العمل لا يحتوي على أي عقدة إخراج (مثل حفظ الصورة أو معاينة الصورة) لإنتاج نتيجة."
+      },
+      "server_error_cloud": {
+        "desc": "واجه الخادم خطأ غير متوقع. يرجى المحاولة لاحقاً."
+      },
+      "server_error_local": {
+        "desc": "واجه الخادم خطأ غير متوقع. يرجى مراجعة سجلات الخادم."
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastMessageCloud": "حدث خطأ أثناء تنفيذ هذه العقدة. تحقق من المدخلات أو جرّب إعداداً مختلفاً. لم يتم خصم أي رصيد.",
+        "toastMessageLocal": "حدث خطأ أثناء تنفيذ هذه العقدة. تحقق من المدخلات أو جرّب إعداداً مختلفاً.",
+        "toastTitle": "فشل {nodeName}"
+      }
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "details": "{nodeName} تفتقد إلى مدخل مطلوب: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "بعض منافذ الإدخال المطلوبة غير متصلة.",
+        "title": "الاتصال مفقود",
+        "toastMessage": "{nodeName} تفتقد إلى مدخل مطلوب: {inputName}",
+        "toastTitle": "مدخل مطلوب مفقود"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "accessRestrictedTitle": "Access Restricted",
@@ -2701,20 +2739,6 @@
     "normal": "عادي",
     "parameters": "المعلمات",
     "pinned": "مثبت",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "بيانات سير العمل المرسلة إلى الخادم فارغة. قد يكون هذا خطأ غير متوقع في النظام."
-      },
-      "prompt_no_outputs": {
-        "desc": "سير العمل لا يحتوي على أي عقدة إخراج (مثل حفظ الصورة، معاينة الصورة) لإنتاج نتيجة."
-      },
-      "server_error_cloud": {
-        "desc": "واجه الخادم خطأ غير متوقع. يرجى المحاولة لاحقاً."
-      },
-      "server_error_local": {
-        "desc": "واجه الخادم خطأ غير متوقع. يرجى مراجعة سجلات الخادم."
-      }
-    },
     "properties": "الخصائص",
     "removeFavorite": "إزالة من المفضلة",
     "resetAllParameters": "إعادة تعيين جميع المعلمات",

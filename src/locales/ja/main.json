@@ -911,6 +911,44 @@
     "paused": "一時停止",
     "resume": "ダウンロードを再開"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "不明な入力",
+      "nodeName": "このノード"
+    },
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "サーバーに送信されたワークフローデータが空です。これは予期しないシステムエラーの可能性があります。"
+      },
+      "prompt_no_outputs": {
+        "desc": "ワークフローに出力ノード（例：画像を保存、画像をプレビュー）が含まれていないため、結果を生成できません。"
+      },
+      "server_error_cloud": {
+        "desc": "サーバーで予期しないエラーが発生しました。しばらくしてから再度お試しください。"
+      },
+      "server_error_local": {
+        "desc": "サーバーで予期しないエラーが発生しました。サーバーログを確認してください。"
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastMessageCloud": "このノードの実行中にエラーが発生しました。入力内容を確認するか、別の設定をお試しください。クレジットは消費されていません。",
+        "toastMessageLocal": "このノードの実行中にエラーが発生しました。入力内容を確認するか、別の設定をお試しください。",
+        "toastTitle": "{nodeName} の実行に失敗しました"
+      }
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "details": "{nodeName} に必須入力 {inputName} がありません。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "必須入力スロットに接続がありません。",
+        "title": "接続がありません",
+        "toastMessage": "{nodeName} に必須入力 {inputName} がありません。",
+        "toastTitle": "必須入力がありません"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "accessRestrictedTitle": "Access Restricted",
@@ -2701,20 +2739,6 @@
     "normal": "ノーマル",
     "parameters": "パラメータ",
     "pinned": "ピン留め",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "サーバーに送信されたワークフローデータが空です。これは予期しないシステムエラーの可能性があります。"
-      },
-      "prompt_no_outputs": {
-        "desc": "ワークフローに結果を生成する出力ノード（例：画像を保存、画像をプレビュー）が含まれていません。"
-      },
-      "server_error_cloud": {
-        "desc": "サーバーで予期しないエラーが発生しました。しばらくしてから再度お試しください。"
-      },
-      "server_error_local": {
-        "desc": "サーバーで予期しないエラーが発生しました。サーバーログをご確認ください。"
-      }
-    },
     "properties": "プロパティ",
     "removeFavorite": "お気に入りを解除",
     "resetAllParameters": "すべてのパラメータをリセット",
