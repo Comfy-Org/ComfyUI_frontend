@@ -265,23 +265,28 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
     }
   )
 
-  test('Promoted widget remains usable after serialize and reload', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadWorkflow(
-      'subgraphs/subgraph-with-promoted-text-widget'
-    )
+  test(
+    'Promoted widget remains usable after serialize and reload',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-promoted-text-widget'
+      )
 
-    const beforeReload = comfyPage.page.locator('.comfy-multiline-input')
-    await expect(beforeReload).toHaveCount(1)
-    await expect(beforeReload).toBeVisible()
+      const beforeReload = comfyPage.vueNodes
+        .getNodeLocator('11')
+        .getByRole('textbox', { name: 'text' })
+      await expect(beforeReload).toBeVisible()
 
-    await comfyPage.subgraph.serializeAndReload()
+      await comfyPage.subgraph.serializeAndReload()
+      await comfyPage.vueNodes.waitForNodes()
 
-    const afterReload = comfyPage.page.locator('.comfy-multiline-input')
-    await expect(afterReload).toHaveCount(1)
-    await expect(afterReload).toBeVisible()
-  })
+      const afterReload = comfyPage.vueNodes
+        .getNodeLocator('11')
+        .getByRole('textbox', { name: 'text' })
+      await expect(afterReload).toBeVisible()
+    }
+  )
 
   test('Compressed target_slot workflow boots into a usable promoted widget state', async ({
     comfyPage

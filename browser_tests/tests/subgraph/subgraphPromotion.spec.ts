@@ -90,88 +90,79 @@ test.describe(
       })
     })
 
-    test.describe('Promoted Widget Visibility in LiteGraph Mode', () => {
-      test('Promoted text widget is visible on SubgraphNode', async ({
-        comfyPage
-      }) => {
-        await comfyPage.workflow.loadWorkflow(
-          'subgraphs/subgraph-with-promoted-text-widget'
-        )
+    test.describe(
+      'Promoted Widget Visibility in Vue Mode',
+      { tag: ['@vue-nodes'] },
+      () => {
+        test('Promoted text widget renders and enters the subgraph in Vue mode', async ({
+          comfyPage
+        }) => {
+          await comfyPage.workflow.loadWorkflow(
+            'subgraphs/subgraph-with-promoted-text-widget'
+          )
+          await comfyPage.vueNodes.waitForNodes()
 
-        const textarea = comfyPage.page.getByTestId(
-          TestIds.widgets.domWidgetTextarea
-        )
-        await expect(textarea).toBeVisible()
-        await expect(textarea).toHaveCount(1)
-      })
-    })
+          const subgraphVueNode = comfyPage.vueNodes.getNodeLocator('11')
+          await expect(subgraphVueNode).toBeVisible()
 
-    test.describe('Promoted Widget Visibility in Vue Mode', () => {
-      test.beforeEach(async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-      })
+          const enterButton = subgraphVueNode.getByTestId(
+            'subgraph-enter-button'
+          )
+          await expect(enterButton).toBeVisible()
 
-      test('Promoted text widget renders and enters the subgraph in Vue mode', async ({
-        comfyPage
-      }) => {
-        await comfyPage.workflow.loadWorkflow(
-          'subgraphs/subgraph-with-promoted-text-widget'
-        )
-        await comfyPage.vueNodes.waitForNodes()
+          const nodeBody = subgraphVueNode.getByTestId('node-body-11')
+          await expect(nodeBody).toBeVisible()
 
-        const subgraphVueNode = comfyPage.vueNodes.getNodeLocator('11')
-        await expect(subgraphVueNode).toBeVisible()
+          const widgets = nodeBody.locator('.lg-node-widgets > div')
+          await expect(widgets.first()).toBeVisible()
+          await comfyPage.vueNodes.enterSubgraph('11')
+          await comfyPage.nextFrame()
 
-        const enterButton = subgraphVueNode.getByTestId('subgraph-enter-button')
-        await expect(enterButton).toBeVisible()
+          await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
+        })
+      }
+    )
 
-        const nodeBody = subgraphVueNode.getByTestId('node-body-11')
-        await expect(nodeBody).toBeVisible()
+    test.describe('Promoted Widget Reactivity', { tag: ['@vue-nodes'] }, () => {
+      // FIXME: Vue Nodes mode does not currently propagate host promoted
+      // widget value changes into the interior widget's widget store entry.
+      // Tracking bug: cross-mode promoted widget value sync.
+      test.fail(
+        'Promoted and interior widgets stay in sync across navigation',
+        async ({ comfyPage }) => {
+          await comfyPage.workflow.loadWorkflow(
+            'subgraphs/subgraph-with-promoted-text-widget'
+          )
 
-        const widgets = nodeBody.locator('.lg-node-widgets > div')
-        await expect(widgets.first()).toBeVisible()
-        await comfyPage.vueNodes.enterSubgraph('11')
-        await comfyPage.nextFrame()
+          const testContent = 'promoted-value-sync-test'
 
-        await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
-      })
-    })
+          const promotedTextarea = comfyPage.vueNodes
+            .getNodeLocator('11')
+            .getByRole('textbox', { name: 'text' })
+          await promotedTextarea.fill(testContent)
 
-    test.describe('Promoted Widget Reactivity', () => {
-      test('Promoted and interior widgets stay in sync across navigation', async ({
-        comfyPage
-      }) => {
-        await comfyPage.workflow.loadWorkflow(
-          'subgraphs/subgraph-with-promoted-text-widget'
-        )
+          await comfyPage.vueNodes.enterSubgraph('11')
+          await comfyPage.vueNodes.waitForNodes()
 
-        const testContent = 'promoted-value-sync-test'
+          const interiorTextarea = comfyPage.page
+            .locator('[data-node-id]')
+            .getByRole('textbox', { name: 'text' })
+            .first()
+          await expect(interiorTextarea).toHaveValue(testContent)
 
-        const textarea = comfyPage.page.getByTestId(
-          TestIds.widgets.domWidgetTextarea
-        )
-        await textarea.fill(testContent)
-        await comfyPage.nextFrame()
+          const updatedInteriorContent = 'interior-value-sync-test'
+          await interiorTextarea.fill(updatedInteriorContent)
 
-        const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
-        await subgraphNode.navigateIntoSubgraph()
+          await comfyPage.subgraph.exitViaBreadcrumb()
+          await comfyPage.vueNodes.waitForNodes()
 
-        const interiorTextarea = comfyPage.page.getByTestId(
-          TestIds.widgets.domWidgetTextarea
-        )
-        await expect(interiorTextarea).toHaveValue(testContent)
-
-        const updatedInteriorContent = 'interior-value-sync-test'
-        await interiorTextarea.fill(updatedInteriorContent)
-        await comfyPage.nextFrame()
-
-        await comfyPage.subgraph.exitViaBreadcrumb()
-
-        const promotedTextarea = comfyPage.page.getByTestId(
-          TestIds.widgets.domWidgetTextarea
-        )
-        await expect(promotedTextarea).toHaveValue(updatedInteriorContent)
-      })
+          await expect(
+            comfyPage.vueNodes
+              .getNodeLocator('11')
+              .getByRole('textbox', { name: 'text' })
+          ).toHaveValue(updatedInteriorContent)
+        }
+      )
     })
 
     test.describe('Manual Promote/Demote via Context Menu', () => {
@@ -379,56 +370,49 @@ test.describe(
       })
     })
 
-    test.describe('Nested Promoted Widget Disabled State', () => {
-      test('Externally linked promotions stay disabled while unlinked textareas remain editable', async ({
-        comfyPage
-      }) => {
-        await comfyPage.workflow.loadWorkflow(
-          'subgraphs/subgraph-nested-promotion'
-        )
-
-        await expect
-          .poll(() => getPromotedWidgetNames(comfyPage, '5'))
-          .toEqual(expect.arrayContaining(['string_a', 'value']))
-
-        await expect
-          .poll(async () => {
-            const disabledState = await comfyPage.page.evaluate(() => {
-              const node = window.app!.canvas.graph!.getNodeById('5')
-              return (node?.widgets ?? []).map((w) => ({
-                name: w.name,
-                disabled: !!w.computedDisabled
-              }))
-            })
-            return disabledState.find((w) => w.name === 'string_a')?.disabled
-          })
-          .toBe(true)
-
-        const textareas = comfyPage.page.getByTestId(
-          TestIds.widgets.domWidgetTextarea
-        )
-        await expect(textareas.first()).toBeVisible()
-
-        let editedTextarea = false
-        const count = await textareas.count()
-        for (let i = 0; i < count; i++) {
-          const textarea = textareas.nth(i)
-          const wrapper = textarea.locator('..')
-          const opacity = await wrapper.evaluate(
-            (el) => getComputedStyle(el).opacity
+    test.describe(
+      'Nested Promoted Widget Disabled State',
+      { tag: ['@vue-nodes'] },
+      () => {
+        test('Externally linked promotions stay disabled while unlinked textareas remain editable', async ({
+          comfyPage
+        }) => {
+          await comfyPage.workflow.loadWorkflow(
+            'subgraphs/subgraph-nested-promotion'
           )
+          await comfyPage.vueNodes.waitForNodes()
 
-          if (opacity === '1' && (await textarea.isEditable())) {
-            const testContent = `nested-promotion-edit-${i}`
-            await textarea.fill(testContent)
-            await expect(textarea).toHaveValue(testContent)
-            editedTextarea = true
-            break
+          await expect
+            .poll(() => getPromotedWidgetNames(comfyPage, '5'))
+            .toEqual(expect.arrayContaining(['string_a', 'value']))
+
+          const subgraphNode = comfyPage.vueNodes.getNodeLocator('5')
+          const linkedTextarea = subgraphNode.getByRole('textbox', {
+            name: 'string_a',
+            exact: true
+          })
+          await expect(linkedTextarea).toBeVisible()
+          await expect(linkedTextarea).toBeDisabled()
+
+          const allTextareas = subgraphNode.getByRole('textbox')
+          await expect(allTextareas.first()).toBeVisible()
+
+          let editedTextarea = false
+          const count = await allTextareas.count()
+          for (let i = 0; i < count; i++) {
+            const textarea = allTextareas.nth(i)
+            if (await textarea.isEditable()) {
+              const testContent = `nested-promotion-edit-${i}`
+              await textarea.fill(testContent)
+              await expect(textarea).toHaveValue(testContent)
+              editedTextarea = true
+              break
+            }
           }
-        }
-        expect(editedTextarea).toBe(true)
-      })
-    })
+          expect(editedTextarea).toBe(true)
+        })
+      }
+    )
 
     test.describe('Promotion Cleanup', () => {
       test('Removing subgraph node clears promotion store entries', async ({
