@@ -5,7 +5,6 @@ import {
   resolveRunErrorMessage
 } from './errorMessageResolver'
 import type { NodeValidationError } from './types'
-import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import { i18n } from '@/i18n'
 
 function nodeValidationError(
@@ -34,24 +33,6 @@ function requiredInputMissing(inputName?: string): NodeValidationError {
   return {
     ...nodeValidationError('required_input_missing', inputName),
     message: 'Required input is missing'
-  }
-}
-
-function runtimeError(
-  overrides: Partial<ExecutionErrorWsMessage> = {}
-): ExecutionErrorWsMessage {
-  return {
-    prompt_id: 'test',
-    timestamp: Date.now(),
-    node_id: 1,
-    node_type: 'KSampler',
-    executed: [],
-    exception_type: 'RuntimeError',
-    exception_message: 'CUDA out of memory',
-    traceback: [],
-    current_inputs: {},
-    current_outputs: {},
-    ...overrides
   }
 }
 
@@ -103,11 +84,11 @@ describe('errorMessageResolver', () => {
           nodeDisplayName: '0'
         })
       ).toMatchObject({
-        displayTitle: 'required_input_missing',
+        displayTitle: 'Required input is missing',
         displayMessage: 'Required input is missing',
         displayDetails: 'seed',
         displayItemLabel: '0 - seed',
-        toastTitle: 'required_input_missing',
+        toastTitle: 'Required input is missing',
         toastMessage: 'Required input is missing'
       })
     } finally {
@@ -116,20 +97,20 @@ describe('errorMessageResolver', () => {
     }
   })
 
-  it('leaves execution errors unresolved so raw runtime copy is preserved', () => {
-    expect(
-      resolveRunErrorMessage({
-        kind: 'execution',
-        isCloud: true,
-        nodeDisplayName: 'KSampler',
-        error: runtimeError({
-          exception_message: 'mat1 and mat2 shapes cannot be multiplied'
-        })
-      })
-    ).toEqual({})
-  })
-
   it.for([
+    {
+      type: 'bad_linked_input',
+      inputName: 'model',
+      expected: {
+        catalogId: 'bad_linked_input',
+        displayTitle: 'Invalid connection',
+        displayMessage: 'A node connection could not be read correctly.',
+        displayDetails: 'KSampler has an invalid connection for model.',
+        displayItemLabel: 'KSampler - model',
+        toastTitle: 'Invalid connection',
+        toastMessage: 'KSampler has an invalid connection for model.'
+      }
+    },
     {
       type: 'value_not_in_list',
       inputName: 'scheduler',
@@ -274,6 +255,30 @@ describe('errorMessageResolver', () => {
     })
   })
 
+  it('falls back to generic copy when structured values cannot be formatted', () => {
+    const circularValue: Record<string, unknown> = {}
+    circularValue.self = circularValue
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'invalid_input_type',
+          'steps',
+          "steps, [object Object], invalid literal for int() with base 10: 'abc'",
+          {
+            input_config: ['INT', {}],
+            received_value: circularValue
+          }
+        ),
+        nodeDisplayName: 'KSampler'
+      })
+    ).toMatchObject({
+      displayDetails: "KSampler couldn't convert steps to the expected type.",
+      toastMessage: "KSampler couldn't convert steps to the expected type."
+    })
+  })
+
   it('includes raw details when validation itself fails unexpectedly', () => {
     expect(
       resolveRunErrorMessage({
@@ -354,6 +359,23 @@ describe('errorMessageResolver', () => {
       displayItemLabel: 'Load Image',
       toastTitle: "Input image couldn't be loaded"
     })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'custom_validation_failed',
+          'image',
+          "[Errno 21] Is a directory: '/app/comfyui/input'"
+        ),
+        nodeDisplayName: 'Load Image'
+      })
+    ).toMatchObject({
+      catalogId: 'image_not_loaded',
+      displayTitle: 'Image not loaded',
+      displayMessage: "The system couldn't load this image.",
+      displayItemLabel: 'Load Image'
+    })
   })
 
   it('includes raw details for generic custom validation failures', () => {
@@ -376,6 +398,24 @@ describe('errorMessageResolver', () => {
       displayItemLabel: 'Custom Validation Error - setting',
       toastTitle: 'Invalid input',
       toastMessage: 'Custom Validation Error rejected the value for setting.'
+    })
+  })
+
+  it('does not treat raw details as the input name when input metadata is missing', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'custom_validation_failed',
+          undefined,
+          'Traceback line 1\nTraceback line 2'
+        ),
+        nodeDisplayName: 'Custom Validation Error'
+      })
+    ).toMatchObject({
+      displayItemLabel: 'Custom Validation Error - unknown input',
+      toastMessage:
+        'Custom Validation Error rejected the value for unknown input.'
     })
   })
 
@@ -510,6 +550,22 @@ describe('errorMessageResolver', () => {
       catalogId: 'image_not_loaded',
       displayTitle: 'Image not loaded',
       displayMessage: "The system couldn't load this image."
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'prompt_outputs_failed_validation',
+          message: 'Prompt outputs failed validation',
+          details: ''
+        }
+      })
+    ).toEqual({
+      displayTitle: 'Prompt validation failed',
+      displayMessage:
+        'The workflow has invalid node inputs. Fix the highlighted nodes before running it again.'
     })
   })
 
