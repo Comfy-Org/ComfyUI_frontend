@@ -3758,33 +3758,6 @@
         "toastMessage": "The image for {nodeName} couldn't be loaded. Try adding it again."
       }
     },
-    "runtimeErrors": {
-      "execution_failed": {
-        "title": "Execution failed",
-        "messageLocal": "Node threw an error during execution.",
-        "messageCloud": "Node threw an error during execution. No credits charged.",
-        "itemLabel": "{nodeName}",
-        "toastTitle": "{nodeName} failed",
-        "toastMessageLocal": "This node threw an error during execution. Check its inputs or try a different configuration.",
-        "toastMessageCloud": "This node threw an error during execution. Check its inputs or try a different configuration. No credits charged."
-      },
-      "image_not_loaded": {
-        "title": "Image not loaded",
-        "message": "The system couldn't load this image.",
-        "itemLabel": "{nodeName}",
-        "toastTitle": "Input image couldn't be loaded",
-        "toastMessage": "The image for {nodeName} couldn't be loaded. Try adding it again."
-      },
-      "out_of_memory": {
-        "title": "Generation failed",
-        "messageLocal": "Not enough GPU memory. Try reducing complexity and run again.",
-        "messageCloud": "Not enough GPU memory. Try reducing complexity and run again. No credits charged.",
-        "itemLabel": "{nodeName}",
-        "toastTitle": "Generation failed",
-        "toastMessageLocal": "Not enough GPU memory. Try reducing complexity and run again.",
-        "toastMessageCloud": "Not enough GPU memory. Try reducing complexity and run again. No credits charged."
-      }
-    },
     "promptErrors": {
       "prompt_no_outputs": {
         "title": "Prompt has no outputs",

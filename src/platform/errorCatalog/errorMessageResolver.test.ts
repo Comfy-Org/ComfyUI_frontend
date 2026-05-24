@@ -111,7 +111,7 @@ describe('errorMessageResolver', () => {
     }
   })
 
-  it('resolves runtime errors with item labels and toast copy', () => {
+  it('leaves execution errors unresolved so raw runtime copy is preserved', () => {
     expect(
       resolveRunErrorMessage({
         kind: 'execution',
@@ -121,31 +121,7 @@ describe('errorMessageResolver', () => {
           exception_message: 'mat1 and mat2 shapes cannot be multiplied'
         })
       })
-    ).toEqual({
-      catalogId: 'execution_failed',
-      displayTitle: 'Execution failed',
-      displayMessage:
-        'Node threw an error during execution. No credits charged.',
-      displayItemLabel: 'KSampler',
-      toastTitle: 'KSampler failed',
-      toastMessage:
-        'This node threw an error during execution. Check its inputs or try a different configuration. No credits charged.'
-    })
-  })
-
-  it('resolves local runtime errors without cloud credit copy', () => {
-    expect(
-      resolveRunErrorMessage({
-        kind: 'execution',
-        isCloud: false,
-        nodeDisplayName: 'KSampler',
-        error: runtimeError({
-          exception_message: 'mat1 and mat2 shapes cannot be multiplied'
-        })
-      }).toastMessage
-    ).toBe(
-      'This node threw an error during execution. Check its inputs or try a different configuration.'
-    )
+    ).toEqual({})
   })
 
   it.for([
@@ -219,71 +195,6 @@ describe('errorMessageResolver', () => {
       displayItemLabel: 'Load Image',
       toastTitle: "Input image couldn't be loaded"
     })
-  })
-
-  it('resolves runtime image load failures by exception type or high-confidence message', () => {
-    expect(
-      resolveRunErrorMessage({
-        kind: 'execution',
-        isCloud: true,
-        nodeDisplayName: 'Load Image',
-        error: runtimeError({
-          exception_type: 'ImageDownloadError',
-          exception_message: 'Failed to validate images'
-        })
-      })
-    ).toMatchObject({
-      catalogId: 'image_not_loaded',
-      displayTitle: 'Image not loaded',
-      displayMessage: "The system couldn't load this image.",
-      displayItemLabel: 'Load Image',
-      toastMessage:
-        "The image for Load Image couldn't be loaded. Try adding it again."
-    })
-
-    expect(
-      resolveRunErrorMessage({
-        kind: 'execution',
-        isCloud: true,
-        nodeDisplayName: 'Load Image',
-        error: runtimeError({
-          exception_message: "[Errno 21] Is a directory: '/app/comfyui/input'"
-        })
-      }).catalogId
-    ).toBe('image_not_loaded')
-  })
-
-  it('resolves runtime OOM failures from cloud type and local message patterns', () => {
-    expect(
-      resolveRunErrorMessage({
-        kind: 'execution',
-        isCloud: true,
-        nodeDisplayName: 'KSampler',
-        error: runtimeError({
-          exception_type: 'OOMError',
-          exception_message:
-            'Workflow execution failed due to insufficient memory (OOM).'
-        })
-      })
-    ).toMatchObject({
-      catalogId: 'out_of_memory',
-      displayTitle: 'Generation failed',
-      displayMessage:
-        'Not enough GPU memory. Try reducing complexity and run again. No credits charged.',
-      displayItemLabel: 'KSampler',
-      toastTitle: 'Generation failed'
-    })
-
-    expect(
-      resolveRunErrorMessage({
-        kind: 'execution',
-        isCloud: false,
-        nodeDisplayName: 'KSampler',
-        error: runtimeError({
-          exception_message: 'torch.cuda.OutOfMemoryError: CUDA out of memory'
-        })
-      }).displayMessage
-    ).toBe('Not enough GPU memory. Try reducing complexity and run again.')
   })
 
   it('resolves known prompt errors with run error rules', () => {

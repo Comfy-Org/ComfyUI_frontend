@@ -9,7 +9,6 @@ import { st, t, te } from '@/i18n'
 
 const REQUIRED_INPUT_MISSING_TYPE = 'required_input_missing'
 const REQUIRED_INPUT_MISSING_CATALOG_ID = 'missing_connection'
-const EXECUTION_FAILED_CATALOG_ID = 'execution_failed'
 const IMAGE_NOT_LOADED_CATALOG_ID = 'image_not_loaded'
 const OUT_OF_MEMORY_CATALOG_ID = 'out_of_memory'
 const KNOWN_PROMPT_ERROR_TYPES = new Set([
@@ -24,13 +23,6 @@ interface ValidationCatalogRule {
   catalogId: string
   key: string
   itemLabel: 'node' | 'nodeInput'
-}
-
-interface RuntimeCatalogRule {
-  catalogId: string
-  key: string
-  messageKey: 'message' | 'messageByEnvironment'
-  toastMessageKey: 'toastMessage' | 'toastMessageByEnvironment'
 }
 
 interface ErrorResolveContext {
@@ -75,14 +67,10 @@ function getInputName(error: NodeValidationError): string {
   )
 }
 
-function getErrorText(
-  error: NodeValidationError | RunErrorMessageSource['error']
-) {
+function getErrorText(error: NodeValidationError) {
   return [
     'message' in error ? error.message : undefined,
-    'details' in error ? error.details : undefined,
-    'exception_message' in error ? error.exception_message : undefined,
-    'exception_type' in error ? error.exception_type : undefined
+    'details' in error ? error.details : undefined
   ]
     .filter(Boolean)
     .join('\n')
@@ -90,12 +78,6 @@ function getErrorText(
 
 function isImageNotLoadedText(text: string): boolean {
   return /invalid image file|\[errno 21\].*is a directory/i.test(text)
-}
-
-function isOutOfMemoryText(text: string): boolean {
-  return /outofmemoryerror|out of memory|allocation on device|insufficient memory \(oom\)/i.test(
-    text
-  )
 }
 
 function isImageNotLoadedValidationError(error: NodeValidationError): boolean {
@@ -107,14 +89,6 @@ function isImageNotLoadedValidationError(error: NodeValidationError): boolean {
 
 function nodeInputItemLabel(nodeName: string, inputName: string): string {
   return `${nodeName} - ${inputName}`
-}
-
-function rawExecutionMessage(
-  error: Extract<RunErrorMessageSource, { kind: 'execution' }>['error']
-): string {
-  return error.exception_type
-    ? `${error.exception_type}: ${error.exception_message}`
-    : error.exception_message
 }
 
 const VALIDATION_ERROR_RULES: Record<string, ValidationCatalogRule> = {
@@ -180,27 +154,6 @@ const IMAGE_NOT_LOADED_VALIDATION_RULE = {
   key: 'image_not_loaded',
   itemLabel: 'node'
 } satisfies ValidationCatalogRule
-
-const RUNTIME_ERROR_RULES = {
-  execution_failed: {
-    catalogId: EXECUTION_FAILED_CATALOG_ID,
-    key: 'execution_failed',
-    messageKey: 'messageByEnvironment',
-    toastMessageKey: 'toastMessageByEnvironment'
-  },
-  image_not_loaded: {
-    catalogId: IMAGE_NOT_LOADED_CATALOG_ID,
-    key: 'image_not_loaded',
-    messageKey: 'message',
-    toastMessageKey: 'toastMessage'
-  },
-  out_of_memory: {
-    catalogId: OUT_OF_MEMORY_CATALOG_ID,
-    key: 'out_of_memory',
-    messageKey: 'messageByEnvironment',
-    toastMessageKey: 'toastMessageByEnvironment'
-  }
-} satisfies Record<string, RuntimeCatalogRule>
 
 function resolveValidationCatalogCopy(
   error: NodeValidationError,
@@ -270,88 +223,9 @@ function resolveNodeValidationErrorMessage(
   return resolveValidationCatalogCopy(error, context, rule)
 }
 
-function resolveRuntimeCatalogCopy(
-  error: Extract<RunErrorMessageSource, { kind: 'execution' }>['error'],
-  rule: RuntimeCatalogRule,
-  context: ErrorResolveContext
-): ResolvedErrorMessage {
-  const nodeName = normalizeNodeName(context.nodeDisplayName)
-  const params = { nodeName }
-  const keyPrefix = `errorCatalog.runtimeErrors.${rule.key}`
-  const messageKey =
-    rule.messageKey === 'message'
-      ? 'message'
-      : context.isCloud
-        ? 'messageCloud'
-        : 'messageLocal'
-  const toastMessageKey =
-    rule.toastMessageKey === 'toastMessage'
-      ? 'toastMessage'
-      : context.isCloud
-        ? 'toastMessageCloud'
-        : 'toastMessageLocal'
-  const titleFallback = error.exception_type || error.exception_message
-  const messageFallback = rawExecutionMessage(error)
-
-  return {
-    catalogId: rule.catalogId,
-    displayTitle: translateCatalogMessage(
-      `${keyPrefix}.title`,
-      titleFallback,
-      params
-    ),
-    displayMessage: translateCatalogMessage(
-      `${keyPrefix}.${messageKey}`,
-      messageFallback,
-      params
-    ),
-    displayItemLabel: translateCatalogMessage(
-      `${keyPrefix}.itemLabel`,
-      nodeName,
-      params
-    ),
-    toastTitle: translateCatalogMessage(
-      `${keyPrefix}.toastTitle`,
-      titleFallback,
-      params
-    ),
-    toastMessage: translateCatalogMessage(
-      `${keyPrefix}.${toastMessageKey}`,
-      messageFallback,
-      params
-    )
-  }
-}
-
-function resolveExecutionErrorMessage(
-  error: Extract<RunErrorMessageSource, { kind: 'execution' }>['error'],
-  context: ErrorResolveContext
-): ResolvedErrorMessage {
-  const errorText = getErrorText(error)
-  if (
-    error.exception_type === 'ImageDownloadError' ||
-    isImageNotLoadedText(errorText)
-  ) {
-    return resolveRuntimeCatalogCopy(
-      error,
-      RUNTIME_ERROR_RULES.image_not_loaded,
-      context
-    )
-  }
-
-  if (error.exception_type === 'OOMError' || isOutOfMemoryText(errorText)) {
-    return resolveRuntimeCatalogCopy(
-      error,
-      RUNTIME_ERROR_RULES.out_of_memory,
-      context
-    )
-  }
-
-  return resolveRuntimeCatalogCopy(
-    error,
-    RUNTIME_ERROR_RULES.execution_failed,
-    context
-  )
+function resolveExecutionErrorMessage(): ResolvedErrorMessage {
+  // Runtime catalog copy is deferred so actionable service errors stay raw.
+  return {}
 }
 
 function resolvePromptErrorMessage(
@@ -488,10 +362,7 @@ export function resolveRunErrorMessage(
         nodeDisplayName: source.nodeDisplayName
       })
     case 'execution':
-      return resolveExecutionErrorMessage(source.error, {
-        isCloud: source.isCloud,
-        nodeDisplayName: source.nodeDisplayName
-      })
+      return resolveExecutionErrorMessage()
     case 'prompt':
       return resolvePromptErrorMessage(source.error, {
         isCloud: source.isCloud
