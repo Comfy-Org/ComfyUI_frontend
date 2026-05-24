@@ -30,10 +30,12 @@ interface ErrorResolveContext {
   nodeDisplayName?: string
 }
 
+type CatalogParams = Record<string, string | number>
+
 function translateCatalogMessage(
   key: string,
   fallback: string,
-  params?: Record<string, string | number>
+  params?: CatalogParams
 ): string {
   if (te(key)) return params ? t(key, params) : t(key)
   if (!params) return fallback
@@ -46,7 +48,7 @@ function translateCatalogMessage(
 function translateOptionalCatalogMessage(
   key: string,
   fallback?: string,
-  params?: Record<string, string | number>
+  params?: CatalogParams
 ): string | undefined {
   if (te(key)) return params ? t(key, params) : t(key)
   return fallback?.trim() ? fallback : undefined
@@ -89,6 +91,190 @@ function isImageNotLoadedValidationError(error: NodeValidationError): boolean {
 
 function nodeInputItemLabel(nodeName: string, inputName: string): string {
   return `${nodeName} - ${inputName}`
+}
+
+function formatRawDetailsForCatalog(details: string): string {
+  return details.replace(/\s*->\s*/g, ' to ')
+}
+
+function formatCatalogValue(value: unknown): string | undefined {
+  if (value === undefined || value === null) return undefined
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return String(value)
+  }
+}
+
+function getInputConfigValue(
+  error: NodeValidationError,
+  key: 'min' | 'max'
+): string | undefined {
+  const inputConfig = error.extra_info?.input_config
+  if (!Array.isArray(inputConfig)) return undefined
+
+  const config = inputConfig[1]
+  if (!config || typeof config !== 'object') return undefined
+
+  return formatCatalogValue((config as Record<string, unknown>)[key])
+}
+
+function getInputConfigType(error: NodeValidationError): string | undefined {
+  const inputConfig = error.extra_info?.input_config
+  if (!Array.isArray(inputConfig)) return undefined
+
+  return formatCatalogValue(inputConfig[0])
+}
+
+function getValidationParams(
+  error: NodeValidationError,
+  nodeName: string,
+  inputName: string
+): CatalogParams {
+  const params: CatalogParams = { nodeName, inputName }
+  const receivedValue = formatCatalogValue(error.extra_info?.received_value)
+  const receivedType = formatCatalogValue(error.extra_info?.received_type)
+  const expectedType = getInputConfigType(error)
+  const minValue = getInputConfigValue(error, 'min')
+  const maxValue = getInputConfigValue(error, 'max')
+
+  if (receivedValue !== undefined) params.receivedValue = receivedValue
+  if (receivedType !== undefined) params.receivedType = receivedType
+  if (expectedType !== undefined) params.expectedType = expectedType
+  if (minValue !== undefined) params.minValue = minValue
+  if (maxValue !== undefined) params.maxValue = maxValue
+
+  return params
+}
+
+function hasParams(params: CatalogParams, keys: string[]): boolean {
+  return keys.every((key) => params[key] !== undefined)
+}
+
+function getValueSpecificCopyKeys(
+  errorType: string,
+  params: CatalogParams
+): {
+  detailsKey: string
+  toastMessageKey: string
+} {
+  switch (errorType) {
+    case 'return_type_mismatch':
+      if (hasParams(params, ['expectedType', 'receivedType'])) {
+        return {
+          detailsKey: 'detailsWithTypes',
+          toastMessageKey: 'toastMessageWithTypes'
+        }
+      }
+      break
+    case 'invalid_input_type':
+      if (hasParams(params, ['receivedValue', 'expectedType'])) {
+        return {
+          detailsKey: 'detailsWithValue',
+          toastMessageKey: 'toastMessageWithValue'
+        }
+      }
+      break
+    case 'value_smaller_than_min':
+      if (hasParams(params, ['receivedValue', 'minValue'])) {
+        return {
+          detailsKey: 'detailsWithValue',
+          toastMessageKey: 'toastMessageWithValue'
+        }
+      }
+      break
+    case 'value_bigger_than_max':
+      if (hasParams(params, ['receivedValue', 'maxValue'])) {
+        return {
+          detailsKey: 'detailsWithValue',
+          toastMessageKey: 'toastMessageWithValue'
+        }
+      }
+      break
+    case 'value_not_in_list':
+      if (hasParams(params, ['receivedValue'])) {
+        return {
+          detailsKey: 'detailsWithValue',
+          toastMessageKey: 'toastMessageWithValue'
+        }
+      }
+      break
+  }
+
+  return {
+    detailsKey: 'details',
+    toastMessageKey: 'toastMessage'
+  }
+}
+
+function getRawDetailsCopyKeys(error: NodeValidationError): {
+  detailsKey: string
+  toastMessageKey: string
+} {
+  return error.details.trim()
+    ? {
+        detailsKey: 'detailsWithRawDetails',
+        toastMessageKey: 'toastMessageWithRawDetails'
+      }
+    : {
+        detailsKey: 'details',
+        toastMessageKey: 'toastMessage'
+      }
+}
+
+function getExceptionDuringValidationCopyKeys(error: NodeValidationError): {
+  detailsKey: string
+  toastMessageKey: string
+} {
+  return getRawDetailsCopyKeys(error)
+}
+
+function getRawDetailsOnlyCopyKeys(error: NodeValidationError): {
+  detailsKey: string
+  toastMessageKey: string
+} {
+  if (!error.details.trim()) {
+    return {
+      detailsKey: 'details',
+      toastMessageKey: 'toastMessage'
+    }
+  }
+
+  return {
+    detailsKey: 'detailsWithRawDetails',
+    toastMessageKey: 'toastMessage'
+  }
+}
+
+function getValidationCopyKeys(
+  error: NodeValidationError,
+  params: CatalogParams
+): {
+  detailsKey: string
+  toastMessageKey: string
+} {
+  if (error.type === 'exception_during_validation') {
+    return getExceptionDuringValidationCopyKeys(error)
+  }
+
+  if (error.type === 'exception_during_inner_validation') {
+    return getRawDetailsCopyKeys(error)
+  }
+
+  if (error.type === 'custom_validation_failed') {
+    return getRawDetailsOnlyCopyKeys(error)
+  }
+
+  if (error.type === 'dependency_cycle') {
+    return getRawDetailsOnlyCopyKeys(error)
+  }
+
+  return getValueSpecificCopyKeys(error.type, params)
 }
 
 const VALIDATION_ERROR_RULES: Record<string, ValidationCatalogRule> = {
@@ -162,13 +348,24 @@ function resolveValidationCatalogCopy(
 ): ResolvedErrorMessage {
   const nodeName = normalizeNodeName(context.nodeDisplayName)
   const inputName = getInputName(error)
-  const params = { nodeName, inputName }
+  const rawDetails = formatRawDetailsForCatalog(error.details.trim())
+  const params = {
+    ...getValidationParams(error, nodeName, inputName),
+    rawDetails
+  }
   const keyPrefix = `errorCatalog.validationErrors.${rule.key}`
   const titleFallback = error.type || error.message
   const itemLabelFallback =
     rule.itemLabel === 'node'
       ? nodeName
       : nodeInputItemLabel(nodeName, inputName)
+  const copyKeys =
+    rule.key === 'image_not_loaded'
+      ? {
+          detailsKey: 'details',
+          toastMessageKey: 'toastMessage'
+        }
+      : getValidationCopyKeys(error, params)
 
   return {
     catalogId: rule.catalogId,
@@ -183,7 +380,7 @@ function resolveValidationCatalogCopy(
       params
     ),
     displayDetails: translateOptionalCatalogMessage(
-      `${keyPrefix}.details`,
+      `${keyPrefix}.${copyKeys.detailsKey}`,
       error.details,
       params
     ),
@@ -198,7 +395,7 @@ function resolveValidationCatalogCopy(
       params
     ),
     toastMessage: translateCatalogMessage(
-      `${keyPrefix}.toastMessage`,
+      `${keyPrefix}.${copyKeys.toastMessageKey}`,
       error.message,
       params
     )

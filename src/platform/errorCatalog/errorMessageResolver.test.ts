@@ -11,17 +11,22 @@ import { i18n } from '@/i18n'
 function nodeValidationError(
   type: string,
   inputName?: string,
-  details = inputName ?? ''
+  details = inputName ?? '',
+  extraInfo: Record<string, unknown> = {}
 ): NodeValidationError {
+  const extra_info =
+    inputName || Object.keys(extraInfo).length > 0
+      ? {
+          ...(inputName ? { input_name: inputName } : {}),
+          ...extraInfo
+        }
+      : undefined
+
   return {
     type,
     message: 'Validation failed',
     details,
-    extra_info: inputName
-      ? {
-          input_name: inputName
-        }
-      : undefined
+    extra_info
   }
 }
 
@@ -175,6 +180,160 @@ describe('errorMessageResolver', () => {
     ).toEqual(expected)
   })
 
+  it('includes received values in validation range and option details', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'return_type_mismatch',
+          'images',
+          'images, received_type(LATENT) mismatch input_type(IMAGE)',
+          {
+            input_config: ['IMAGE', {}],
+            received_type: 'LATENT'
+          }
+        ),
+        nodeDisplayName: 'Preview Image'
+      })
+    ).toMatchObject({
+      displayDetails:
+        "Preview Image's images input expects IMAGE, but the connected output is LATENT.",
+      toastMessage:
+        "Preview Image's images input expects IMAGE, but the connected output is LATENT."
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'invalid_input_type',
+          'steps',
+          "steps, abc, invalid literal for int() with base 10: 'abc'",
+          {
+            input_config: ['INT', {}],
+            received_value: 'abc'
+          }
+        ),
+        nodeDisplayName: 'KSampler'
+      })
+    ).toMatchObject({
+      displayDetails:
+        "The value abc for KSampler's steps couldn't be converted to INT.",
+      toastMessage:
+        "The value abc for KSampler's steps couldn't be converted to INT."
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError('value_smaller_than_min', 'steps', 'steps', {
+          input_config: ['INT', { min: 1 }],
+          received_value: 0
+        }),
+        nodeDisplayName: 'KSampler'
+      })
+    ).toMatchObject({
+      displayDetails:
+        "The value 0 for KSampler's steps is below the minimum 1.",
+      toastMessage: "The value 0 for KSampler's steps is below the minimum 1."
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError('value_bigger_than_max', 'cfg', 'cfg', {
+          input_config: ['FLOAT', { max: 30 }],
+          received_value: 40
+        }),
+        nodeDisplayName: 'KSampler'
+      })
+    ).toMatchObject({
+      displayDetails:
+        "The value 40 for KSampler's cfg is above the maximum 30.",
+      toastMessage: "The value 40 for KSampler's cfg is above the maximum 30."
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'value_not_in_list',
+          'scheduler',
+          'scheduler',
+          {
+            received_value: 'not-a-scheduler'
+          }
+        ),
+        nodeDisplayName: 'KSampler'
+      })
+    ).toMatchObject({
+      displayDetails:
+        "The value not-a-scheduler for KSampler's scheduler is not available.",
+      toastMessage:
+        "The value not-a-scheduler for KSampler's scheduler is not available."
+    })
+  })
+
+  it('includes raw details when validation itself fails unexpectedly', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'exception_during_inner_validation',
+          'images',
+          'list index out of range'
+        ),
+        nodeDisplayName: 'Image Scale'
+      })
+    ).toMatchObject({
+      displayTitle: 'Validation failed',
+      displayMessage: "The workflow couldn't validate a connected node.",
+      displayDetails:
+        "Image Scale couldn't validate images: list index out of range",
+      displayItemLabel: 'Image Scale - images',
+      toastTitle: 'Validation failed',
+      toastMessage:
+        "Image Scale couldn't validate images: list index out of range"
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'exception_during_validation',
+          undefined,
+          'tuple index out of range'
+        ),
+        nodeDisplayName: 'Preview Image'
+      })
+    ).toMatchObject({
+      displayTitle: 'Validation failed',
+      displayMessage:
+        'The workflow could not be validated because a node validation check failed unexpectedly.',
+      displayDetails:
+        'Preview Image failed during validation: tuple index out of range',
+      displayItemLabel: 'Preview Image',
+      toastTitle: 'Validation failed',
+      toastMessage:
+        'Preview Image failed during validation: tuple index out of range'
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'exception_during_validation',
+          undefined,
+          ''
+        ),
+        nodeDisplayName: 'Preview Image'
+      })
+    ).toMatchObject({
+      displayDetails: 'Preview Image failed during validation.',
+      toastMessage: 'Preview Image failed during validation.'
+    })
+  })
+
   it('resolves custom validation image failures as image-not-loaded copy', () => {
     expect(
       resolveRunErrorMessage({
@@ -194,6 +353,51 @@ describe('errorMessageResolver', () => {
         "The image for Load Image couldn't be loaded. Try adding it again.",
       displayItemLabel: 'Load Image',
       toastTitle: "Input image couldn't be loaded"
+    })
+  })
+
+  it('includes raw details for generic custom validation failures', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'custom_validation_failed',
+          'setting',
+          'setting - Unsupported lab value: bad-value'
+        ),
+        nodeDisplayName: 'Custom Validation Error'
+      })
+    ).toMatchObject({
+      catalogId: 'custom_validation_failed',
+      displayTitle: 'Invalid input',
+      displayMessage: 'A node rejected one or more input values.',
+      displayDetails:
+        'Custom Validation Error failed custom validation: setting - Unsupported lab value: bad-value',
+      displayItemLabel: 'Custom Validation Error - setting',
+      toastTitle: 'Invalid input',
+      toastMessage: 'Custom Validation Error rejected the value for setting.'
+    })
+  })
+
+  it('includes raw cycle paths for dependency cycle details', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'dependency_cycle',
+          undefined,
+          '7 (ImageScale) -> 7 (ImageScale)'
+        ),
+        nodeDisplayName: 'Image Scale'
+      })
+    ).toMatchObject({
+      displayTitle: 'Invalid workflow',
+      displayMessage: 'The workflow has a circular node connection.',
+      displayDetails:
+        'Image Scale is part of a circular connection: 7 (ImageScale) to 7 (ImageScale)',
+      displayItemLabel: 'Image Scale',
+      toastTitle: 'Invalid workflow',
+      toastMessage: 'Image Scale is part of a circular connection.'
     })
   })
 

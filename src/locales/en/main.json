@@ -3671,7 +3671,7 @@
       },
       "bad_linked_input": {
         "title": "Invalid connection",
-        "message": "A linked input connection is malformed.",
+        "message": "A node connection could not be read correctly.",
         "details": "{nodeName} has an invalid connection for {inputName}.",
         "itemLabel": "{nodeName} - {inputName}",
         "toastTitle": "Invalid connection",
@@ -3681,46 +3681,57 @@
         "title": "Invalid connection",
         "message": "Connected nodes are using incompatible input and output types.",
         "details": "{nodeName} has an incompatible connection for {inputName}.",
+        "detailsWithTypes": "{nodeName}'s {inputName} input expects {expectedType}, but the connected output is {receivedType}.",
         "itemLabel": "{nodeName} - {inputName}",
         "toastTitle": "Invalid connection",
-        "toastMessage": "{nodeName} has an incompatible connection for {inputName}."
+        "toastMessage": "{nodeName} has an incompatible connection for {inputName}.",
+        "toastMessageWithTypes": "{nodeName}'s {inputName} input expects {expectedType}, but the connected output is {receivedType}."
       },
       "invalid_input_type": {
         "title": "Invalid input",
         "message": "An input value has the wrong type.",
         "details": "{nodeName} couldn't convert {inputName} to the expected type.",
+        "detailsWithValue": "The value {receivedValue} for {nodeName}'s {inputName} couldn't be converted to {expectedType}.",
         "itemLabel": "{nodeName} - {inputName}",
         "toastTitle": "Invalid input",
-        "toastMessage": "{nodeName} couldn't convert {inputName} to the expected type."
+        "toastMessage": "{nodeName} couldn't convert {inputName} to the expected type.",
+        "toastMessageWithValue": "The value {receivedValue} for {nodeName}'s {inputName} couldn't be converted to {expectedType}."
       },
       "value_smaller_than_min": {
         "title": "Input out of range",
         "message": "Some input values are outside the allowed range.",
         "details": "{nodeName} has a value below the minimum for {inputName}.",
+        "detailsWithValue": "The value {receivedValue} for {nodeName}'s {inputName} is below the minimum {minValue}.",
         "itemLabel": "{nodeName} - {inputName}",
         "toastTitle": "Input out of range",
-        "toastMessage": "{nodeName} has a value below the minimum for {inputName}."
+        "toastMessage": "{nodeName} has a value below the minimum for {inputName}.",
+        "toastMessageWithValue": "The value {receivedValue} for {nodeName}'s {inputName} is below the minimum {minValue}."
       },
       "value_bigger_than_max": {
         "title": "Input out of range",
         "message": "Some input values are outside the allowed range.",
         "details": "{nodeName} has a value above the maximum for {inputName}.",
+        "detailsWithValue": "The value {receivedValue} for {nodeName}'s {inputName} is above the maximum {maxValue}.",
         "itemLabel": "{nodeName} - {inputName}",
         "toastTitle": "Input out of range",
-        "toastMessage": "{nodeName} has a value above the maximum for {inputName}."
+        "toastMessage": "{nodeName} has a value above the maximum for {inputName}.",
+        "toastMessageWithValue": "The value {receivedValue} for {nodeName}'s {inputName} is above the maximum {maxValue}."
       },
       "value_not_in_list": {
         "title": "Invalid input",
         "message": "Some input values are not available for this node.",
         "details": "{nodeName} has an unsupported value for {inputName}.",
+        "detailsWithValue": "The value {receivedValue} for {nodeName}'s {inputName} is not available.",
         "itemLabel": "{nodeName} - {inputName}",
         "toastTitle": "Invalid input",
-        "toastMessage": "{nodeName} has an unsupported value for {inputName}."
+        "toastMessage": "{nodeName} has an unsupported value for {inputName}.",
+        "toastMessageWithValue": "The value {receivedValue} for {nodeName}'s {inputName} is not available."
       },
       "custom_validation_failed": {
         "title": "Invalid input",
         "message": "A node rejected one or more input values.",
         "details": "{nodeName} rejected the value for {inputName}.",
+        "detailsWithRawDetails": "{nodeName} failed custom validation: {rawDetails}",
         "itemLabel": "{nodeName} - {inputName}",
         "toastTitle": "Invalid input",
         "toastMessage": "{nodeName} rejected the value for {inputName}."
@@ -3729,22 +3740,27 @@
         "title": "Validation failed",
         "message": "The workflow couldn't validate a connected node.",
         "details": "{nodeName} couldn't validate {inputName}.",
+        "detailsWithRawDetails": "{nodeName} couldn't validate {inputName}: {rawDetails}",
         "itemLabel": "{nodeName} - {inputName}",
         "toastTitle": "Validation failed",
-        "toastMessage": "{nodeName} couldn't validate {inputName}."
+        "toastMessage": "{nodeName} couldn't validate {inputName}.",
+        "toastMessageWithRawDetails": "{nodeName} couldn't validate {inputName}: {rawDetails}"
       },
       "exception_during_validation": {
         "title": "Validation failed",
-        "message": "The node could not be validated.",
-        "details": "{nodeName} could not be validated.",
+        "message": "The workflow could not be validated because a node validation check failed unexpectedly.",
+        "details": "{nodeName} failed during validation.",
+        "detailsWithRawDetails": "{nodeName} failed during validation: {rawDetails}",
         "itemLabel": "{nodeName}",
         "toastTitle": "Validation failed",
-        "toastMessage": "{nodeName} could not be validated."
+        "toastMessage": "{nodeName} failed during validation.",
+        "toastMessageWithRawDetails": "{nodeName} failed during validation: {rawDetails}"
       },
       "dependency_cycle": {
         "title": "Invalid workflow",
         "message": "The workflow has a circular node connection.",
         "details": "{nodeName} is part of a circular connection.",
+        "detailsWithRawDetails": "{nodeName} is part of a circular connection: {rawDetails}",
         "itemLabel": "{nodeName}",
         "toastTitle": "Invalid workflow",
         "toastMessage": "{nodeName} is part of a circular connection."
