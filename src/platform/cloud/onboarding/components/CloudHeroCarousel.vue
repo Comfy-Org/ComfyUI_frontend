@@ -129,8 +129,11 @@
       </div>
     </div>
 
-    <!-- Download CTA -->
-    <div class="flex w-full items-center justify-center gap-3 pt-6">
+    <!-- Download CTA (cloud build only) -->
+    <div
+      v-if="isCloud"
+      class="flex w-full items-center justify-center gap-3 pt-6"
+    >
       <p class="m-0 hidden text-sm text-sand-500/90 md:block">
         {{ t('cloudStart_wantToRun') }}
       </p>
@@ -157,6 +160,7 @@ import bottomLeft from '@/platform/cloud/onboarding/assets/hero/bottom-left.jpg'
 import bottomRight from '@/platform/cloud/onboarding/assets/hero/bottom-right.jpg'
 import centerImage from '@/platform/cloud/onboarding/assets/hero/center-image.jpg'
 import topLeft from '@/platform/cloud/onboarding/assets/hero/top-left.jpg'
+import { isCloud } from '@/platform/distribution/types'
 import GeminiLogo from '@/platform/cloud/onboarding/components/logos/GeminiLogo.vue'
 import GrokLogo from '@/platform/cloud/onboarding/components/logos/GrokLogo.vue'
 import SeedanceLogo from '@/platform/cloud/onboarding/components/logos/SeedanceLogo.vue'
