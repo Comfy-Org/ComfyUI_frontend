@@ -22,6 +22,7 @@ const KNOWN_PROMPT_ERROR_TYPES = new Set([
 interface ValidationCatalogRule {
   catalogId: string
   itemLabel: 'node' | 'nodeInput'
+  copyKeys?: CopyKeys
 }
 
 interface ErrorResolveContext {
@@ -215,19 +216,11 @@ function getRawDetailsCopyKeys(error: NodeValidationError): CopyKeys {
         detailsKey: 'detailsWithRawDetails',
         toastMessageKey: 'toastMessageWithRawDetails'
       }
-    : {
-        detailsKey: 'details',
-        toastMessageKey: 'toastMessage'
-      }
+    : DEFAULT_COPY_KEYS
 }
 
 function getRawDetailsOnlyCopyKeys(error: NodeValidationError): CopyKeys {
-  if (!error.details.trim()) {
-    return {
-      detailsKey: 'details',
-      toastMessageKey: 'toastMessage'
-    }
-  }
+  if (!error.details.trim()) return DEFAULT_COPY_KEYS
 
   return {
     detailsKey: 'detailsWithRawDetails',
@@ -305,15 +298,18 @@ const VALIDATION_ERROR_RULES: Record<string, ValidationCatalogRule> = {
   }
 }
 
+// Image-not-loaded shares the custom_validation_failed type, so it needs a
+// predicate override to use image_not_loaded locale copy and default copy keys.
 const IMAGE_NOT_LOADED_VALIDATION_RULE = {
   catalogId: IMAGE_NOT_LOADED_CATALOG_ID,
-  itemLabel: 'node'
+  itemLabel: 'node',
+  copyKeys: DEFAULT_COPY_KEYS
 } satisfies ValidationCatalogRule
 
 function resolveValidationCatalogCopy(
   error: NodeValidationError,
   context: ErrorResolveContext,
-  errorKey: string,
+  localeKey: string,
   rule: ValidationCatalogRule
 ): ResolvedErrorMessage {
   const nodeName = normalizeNodeName(context.nodeDisplayName)
@@ -323,19 +319,13 @@ function resolveValidationCatalogCopy(
     ...getValidationParams(error, nodeName, inputName),
     rawDetails
   }
-  const keyPrefix = `errorCatalog.validationErrors.${errorKey}`
-  const titleFallback = error.message
+  const keyPrefix = `errorCatalog.validationErrors.${localeKey}`
+  const titleFallback = error.message || error.type
   const itemLabelFallback =
     rule.itemLabel === 'node'
       ? nodeName
       : nodeInputItemLabel(nodeName, inputName)
-  const copyKeys =
-    errorKey === 'image_not_loaded'
-      ? {
-          detailsKey: 'details',
-          toastMessageKey: 'toastMessage'
-        }
-      : getValidationCopyKeys(error, params)
+  const copyKeys = rule.copyKeys ?? getValidationCopyKeys(error, params)
 
   return {
     catalogId: rule.catalogId,

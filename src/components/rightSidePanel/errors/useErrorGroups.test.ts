@@ -448,6 +448,8 @@ describe('useErrorGroups', () => {
         isRuntimeError: true,
         exceptionType: 'RuntimeError'
       })
+      // TODO(FE-816 overlay-redesign): Runtime execution errors intentionally
+      // bypass catalog display fields until targeted runtime handling lands.
       expect(execGroups[0].cards[0].errors[0].displayItemLabel).toBeUndefined()
       expect(execGroups[0].cards[0].errors[0].toastTitle).toBeUndefined()
     })
