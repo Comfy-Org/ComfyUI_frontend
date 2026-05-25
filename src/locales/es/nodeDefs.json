@@ -119,6 +119,7 @@
     }
   },
   "AdjustBrightness": {
+    "description": "Ajusta el brillo de una imagen.",
     "display_name": "Ajustar brillo",
     "inputs": {
       "factor": {
@@ -138,6 +139,7 @@
     }
   },
   "AdjustContrast": {
+    "description": "Ajusta el contraste de una imagen.",
     "display_name": "Ajustar contraste",
     "inputs": {
       "factor": {
@@ -176,6 +178,7 @@
     }
   },
   "AudioAdjustVolume": {
+    "description": "Ajusta el volumen del audio en una cantidad especificada en decibelios (dB).",
     "display_name": "Ajustar Volumen de Audio",
     "inputs": {
       "audio": {
@@ -576,6 +579,9 @@
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
+      },
+      "model_auto_upscale": {
+        "name": "auto_upscale"
       },
       "model_duration": {
         "name": "duración"
@@ -1547,6 +1553,7 @@
     }
   },
   "CenterCropImages": {
+    "description": "Recorta una imagen al centro con las dimensiones especificadas.",
     "display_name": "Recorte central de imágenes",
     "inputs": {
       "height": {
@@ -1665,6 +1672,9 @@
       },
       "model_max_tokens": {
         "name": "max_tokens"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
       },
       "model_temperature": {
         "name": "temperature"
@@ -1790,6 +1800,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "description": "Operación lógica AND. Devuelve verdadero si todos los valores son verdaderos. Usa las reglas de verdad de Python.",
+    "display_name": "Y",
+    "inputs": {
+      "values": {
+        "name": "valores"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "Expresión matemática",
     "inputs": {
@@ -1813,6 +1837,20 @@
       }
     }
   },
+  "ComfyNotNode": {
+    "description": "Operación lógica NOT. Devuelve verdadero si el valor es falso. Usa las reglas de verdad de Python.",
+    "display_name": "No",
+    "inputs": {
+      "value": {
+        "name": "valor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyNumberConvert": {
     "display_name": "Conversión de número",
     "inputs": {
@@ -1825,6 +1863,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "description": "Operación lógica OR. Devuelve verdadero si alguno de los valores es verdadero. Usa las reglas de verdad de Python.",
+    "display_name": "O",
+    "inputs": {
+      "values": {
+        "name": "valores"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -5699,6 +5751,7 @@
     }
   },
   "ImageCropV2": {
+    "description": "Recorta una imagen a las dimensiones especificadas.",
     "display_name": "Recorte de Imagen",
     "inputs": {
       "crop_region": {
@@ -5719,6 +5772,7 @@
     }
   },
   "ImageDeduplication": {
+    "description": "Elimina imágenes duplicadas o muy similares de una lista.",
     "display_name": "Eliminación de Imágenes Duplicadas",
     "inputs": {
       "images": {
@@ -5773,6 +5827,7 @@
     }
   },
   "ImageGrid": {
+    "description": "Organiza varias imágenes en una cuadrícula.",
     "display_name": "Cuadrícula de Imágenes",
     "inputs": {
       "cell_height": {
@@ -8366,6 +8421,7 @@
     }
   },
   "LoadImageDataSetFromFolder": {
+    "description": "Carga un conjunto de datos de imágenes desde una carpeta especificada y devuelve una lista de imágenes. Formatos soportados: PNG, JPG, JPEG, WEBP.",
     "display_name": "Cargar conjunto de imágenes desde carpeta",
     "inputs": {
       "folder": {
@@ -8409,6 +8465,7 @@
     }
   },
   "LoadImageTextDataSetFromFolder": {
+    "description": "Carga un conjunto de datos de pares de imágenes y textos desde una carpeta especificada y los devuelve como una lista. Formatos soportados: PNG, JPG, JPEG, WEBP.",
     "display_name": "Cargar conjunto de imágenes y texto desde carpeta",
     "inputs": {
       "folder": {
@@ -8463,6 +8520,7 @@
     }
   },
   "LoadTrainingDataset": {
+    "description": "Carga un conjunto de datos de entrenamiento codificado (latentes + condicionamiento) desde el disco para su uso en entrenamiento.",
     "display_name": "Cargar conjunto de datos de entrenamiento",
     "inputs": {
       "folder_name": {
@@ -9246,6 +9304,7 @@
     }
   },
   "MakeTrainingDataset": {
+    "description": "Codifica imágenes con VAE y textos con CLIP para crear un conjunto de datos de latentes y condicionamientos para entrenamiento.",
     "display_name": "Crear Conjunto de Datos de Entrenamiento",
     "inputs": {
       "clip": {
@@ -9337,14 +9396,15 @@
     }
   },
   "MediaPipeFaceLandmarker": {
+    "description": "Detecta puntos de referencia faciales usando el modelo MediaPipe.",
     "display_name": "MediaPipe Face Landmarker",
     "inputs": {
       "detector_variant": {
         "name": "detector_variant",
         "tooltip": "Rango del detector facial. 'short' está ajustado para rostros cercanos (a menos de ~2 m de la cámara); 'full' cubre rostros más lejanos/pequeños (hasta ~5 m) pero es más lento. 'both' ejecuta ambos detectores y mantiene el que encontró más rostros por fotograma (costo de detección ~2×)."
       },
-      "face_landmarker": {
-        "name": "face_landmarker"
+      "face_detection_model": {
+        "name": "face_detection_model"
       },
       "image": {
         "name": "image"
@@ -9374,6 +9434,7 @@
     }
   },
   "MediaPipeFaceMask": {
+    "description": "Dibuja una máscara a partir de los puntos de referencia faciales.",
     "display_name": "MediaPipe Face Mask",
     "inputs": {
       "face_landmarks": {
@@ -9391,6 +9452,7 @@
     }
   },
   "MediaPipeFaceMeshVisualize": {
+    "description": "Dibuja la malla de puntos de referencia faciales sobre la imagen de entrada.",
     "display_name": "Visualizar Malla Facial de MediaPipe",
     "inputs": {
       "color": {
@@ -9423,6 +9485,7 @@
     }
   },
   "MergeImageLists": {
+    "description": "Concatena varias listas de imágenes en una sola.",
     "display_name": "Unir Listas de Imágenes",
     "inputs": {
       "images": {
@@ -9877,6 +9940,7 @@
     }
   },
   "MoGeInference": {
+    "description": "Ejecuta MoGe en una sola imagen para estimar profundidad y geometría.",
     "display_name": "Inferencia MoGe",
     "inputs": {
       "apply_mask": {
@@ -9913,6 +9977,7 @@
     }
   },
   "MoGePanoramaInference": {
+    "description": "Ejecuta MoGe en una panorámica equirectangular dividiéndola en 12 vistas en perspectiva, ejecutando inferencia en cada una y fusionando los resultados en un solo mapa de profundidad.",
     "display_name": "Inferencia panorámica MoGe",
     "inputs": {
       "batch_size": {
@@ -9947,6 +10012,7 @@
     }
   },
   "MoGePointMapToMesh": {
+    "description": "Convierte un mapa de puntos MoGe en una malla 3D.",
     "display_name": "MoGe Point Map a Malla",
     "inputs": {
       "batch_index": {
@@ -9976,6 +10042,7 @@
     }
   },
   "MoGeRender": {
+    "description": "Renderiza un mapa de profundidad o un mapa normal a partir de datos de geometría",
     "display_name": "MoGe Renderizado",
     "inputs": {
       "moge_geometry": {
@@ -12264,6 +12331,7 @@
     }
   },
   "NormalizeImages": {
+    "description": "Normaliza imágenes usando la media y la desviación estándar.",
     "display_name": "Normalizar Imágenes",
     "inputs": {
       "images": {
@@ -12585,6 +12653,39 @@
       },
       "size": {
         "name": "tamaño"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterLLMNode": {
+    "description": "Genera respuestas de texto a través de OpenRouter. Redirige a un conjunto seleccionado de modelos populares de xAI, DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi) y Perplexity Sonar.",
+    "display_name": "OpenRouter LLM",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "El modelo de OpenRouter utilizado para generar la respuesta."
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Entrada de texto para el modelo."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Semilla para muestreo. Establecer en 0 para omitir. La mayoría de los modelos lo toman solo como sugerencia."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Instrucciones fundamentales que dictan el comportamiento del modelo."
       }
     },
     "outputs": {
@@ -13406,6 +13507,7 @@
     }
   },
   "RandomCropImages": {
+    "description": "Recorta aleatoriamente una imagen a las dimensiones especificadas.",
     "display_name": "Recorte Aleatorio de Imágenes",
     "inputs": {
       "control_after_generate": {
@@ -14268,6 +14370,7 @@
     }
   },
   "ResizeImagesByLongerEdge": {
+    "description": "Redimensiona imágenes para que el borde más largo coincida con la dimensión especificada, manteniendo la relación de aspecto.",
     "display_name": "Redimensionar imágenes por el borde más largo",
     "inputs": {
       "images": {
@@ -14287,6 +14390,7 @@
     }
   },
   "ResizeImagesByShorterEdge": {
+    "description": "Redimensiona las imágenes para que el borde más corto coincida con la dimensión especificada, manteniendo la proporción de aspecto.",
     "display_name": "Redimensionar imágenes por el borde más corto",
     "inputs": {
       "images": {
@@ -14306,6 +14410,7 @@
     }
   },
   "ResolutionBucket": {
+    "description": "Agrupa latents y condicionamientos en buckets",
     "display_name": "Agrupación por resolución",
     "inputs": {
       "conditioning": {
@@ -14534,6 +14639,164 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Image": {
+    "description": "Genera un modelo 3D a partir de 1 a 5 imágenes de referencia usando Rodin Gen-2.5. Elige un modo (Rápido / Regular / Extremo-Alto) para ajustar calidad y costo.",
+    "display_name": "Rodin 3D Gen-2.5 - Imagen a 3D",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "Pose T/A para modelos humanoides."
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "Addon HighPack: texturas 4K y ~16x caras en modo Quad."
+      },
+      "bbox_height": {
+        "name": "alto_caja",
+        "tooltip": "Alto de la caja delimitadora (eje Z)."
+      },
+      "bbox_length": {
+        "name": "largo_caja",
+        "tooltip": "Largo de la caja delimitadora (eje X)."
+      },
+      "bbox_width": {
+        "name": "ancho_caja",
+        "tooltip": "Ancho de la caja delimitadora (eje Y). Pon 0 junto con los otros para omitir la caja."
+      },
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "geometry_file_format": {
+        "name": "formato_archivo_geometría"
+      },
+      "hd_texture": {
+        "name": "textura_hd",
+        "tooltip": "Mejora de textura de alta calidad."
+      },
+      "height_cm": {
+        "name": "altura_cm",
+        "tooltip": "Altura aproximada del modelo en centímetros (0 para omitir)."
+      },
+      "images": {
+        "name": "imágenes",
+        "tooltip": "1-5 imágenes. La primera imagen se usa para materiales en vista múltiple."
+      },
+      "material": {
+        "name": "material"
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Modo de generación. Regular = equilibrado. Rápido = 1K-20K caras para prototipado rápido. Extremo-Alto = 20K-2M caras con detalles micro opcionales."
+      },
+      "mode_creative": {
+        "name": "creativo"
+      },
+      "mode_polygon_count": {
+        "name": "conteo_polígonos"
+      },
+      "mode_tier": {
+        "name": "nivel"
+      },
+      "seed": {
+        "name": "semilla"
+      },
+      "texture_delight": {
+        "name": "eliminar_iluminación_textura",
+        "tooltip": "Eliminar iluminación horneada de las texturas."
+      },
+      "texture_mode": {
+        "name": "modo_textura",
+        "tooltip": "Preajuste de calidad de textura. 'Predeterminado' usa el valor por defecto del servidor para el nivel seleccionado."
+      },
+      "use_original_alpha": {
+        "name": "usar_alpha_original",
+        "tooltip": "Conservar la transparencia de la imagen."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "archivo_modelo",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "description": "Genera un modelo 3D a partir de un prompt de texto usando Rodin Gen-2.5. Elige un modo (Rápido / Regular / Extremo-Alto) para ajustar calidad frente a coste.",
+    "display_name": "Rodin 3D Gen-2.5 - Texto a 3D",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "Pose T/A para modelos humanoides."
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "Addon HighPack: texturas 4K y ~16x caras en modo Quad."
+      },
+      "bbox_height": {
+        "name": "alto_bbox",
+        "tooltip": "Alto de la caja delimitadora (eje Z)."
+      },
+      "bbox_length": {
+        "name": "largo_bbox",
+        "tooltip": "Largo de la caja delimitadora (eje X)."
+      },
+      "bbox_width": {
+        "name": "ancho_bbox",
+        "tooltip": "Ancho de la caja delimitadora (eje Y). Pon 0 junto con los otros para omitir la caja."
+      },
+      "control_after_generate": {
+        "name": "controlar tras generar"
+      },
+      "geometry_file_format": {
+        "name": "formato_archivo_geometría"
+      },
+      "hd_texture": {
+        "name": "textura_hd",
+        "tooltip": "Mejora de textura de alta calidad."
+      },
+      "height_cm": {
+        "name": "altura_cm",
+        "tooltip": "Altura aproximada del modelo en centímetros (0 para omitir)."
+      },
+      "material": {
+        "name": "material"
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Modo de generación. Regular = equilibrado. Rápido = 1K-20K caras para prototipado rápido. Extremo-Alto = 20K-2M caras con microdetalles opcionales."
+      },
+      "mode_creative": {
+        "name": "creativo"
+      },
+      "mode_polygon_count": {
+        "name": "conteo_polígonos"
+      },
+      "mode_tier": {
+        "name": "nivel"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto para el modelo 3D."
+      },
+      "seed": {
+        "name": "semilla"
+      },
+      "texture_delight": {
+        "name": "eliminar_iluminación_textura",
+        "tooltip": "Eliminar iluminación horneada de las texturas."
+      },
+      "texture_mode": {
+        "name": "modo_textura",
+        "tooltip": "Preajuste de calidad de textura. 'Predeterminado' usa el valor por defecto del servidor para el nivel seleccionado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "archivo_modelo",
         "tooltip": null
       }
     }
@@ -15650,6 +15913,7 @@
     }
   },
   "SaveImageDataSetToFolder": {
+    "description": "Guarda un conjunto de imágenes en una carpeta especificada. Formatos soportados: PNG.",
     "display_name": "Guardar conjunto de imágenes en carpeta",
     "inputs": {
       "filename_prefix": {
@@ -15667,6 +15931,7 @@
     }
   },
   "SaveImageTextDataSetToFolder": {
+    "description": "Guarda un conjunto de pares de imágenes y subtítulos de texto en una carpeta especificada. Las imágenes se guardan como archivos PNG y los subtítulos como archivos TXT con el mismo prefijo de nombre de archivo.",
     "display_name": "Guardar conjunto de imágenes y textos en carpeta",
     "inputs": {
       "filename_prefix": {
@@ -15737,6 +16002,7 @@
     }
   },
   "SaveTrainingDataset": {
+    "description": "Guarda el conjunto de datos de entrenamiento codificado (latents + conditioning) en disco para una carga eficiente durante el entrenamiento.",
     "display_name": "Guardar conjunto de datos de entrenamiento",
     "inputs": {
       "conditioning": {
@@ -15923,6 +16189,7 @@
     }
   },
   "ShuffleDataset": {
+    "description": "Mezcla aleatoriamente el orden de las imágenes en una lista.",
     "display_name": "Barajar conjunto de imágenes",
     "inputs": {
       "control_after_generate": {
@@ -15945,6 +16212,7 @@
     }
   },
   "ShuffleImageTextDataset": {
+    "description": "Mezcla aleatoriamente el orden de los pares imagen-texto en una lista.",
     "display_name": "Barajar conjunto de imágenes y textos",
     "inputs": {
       "control_after_generate": {
@@ -19445,6 +19713,7 @@
     }
   },
   "VoxelToMesh": {
+    "description": "Convierte una cuadrícula de vóxeles en una malla.",
     "display_name": "VoxelToMesh",
     "inputs": {
       "algorithm": {
@@ -19464,6 +19733,7 @@
     }
   },
   "VoxelToMeshBasic": {
+    "description": "Convierte una cuadrícula de vóxeles en una malla.",
     "display_name": "VoxelAMallaBásico",
     "inputs": {
       "threshold": {

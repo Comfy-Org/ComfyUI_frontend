@@ -14,14 +14,18 @@ function createMockNode(): {
 } {
   const node = new LGraphNode('TestColorNode')
   const addWidget = vi.spyOn(node, 'addWidget').mockImplementation(
-    (type, name, value, _callback, options) =>
-      ({
+    (type, name, value, _callback, options) => {
+      const widget = {
         type,
         name,
         value,
         options: typeof options === 'string' ? { property: options } : options,
         y: 0
-      }) as IBaseWidget
+      } as IBaseWidget
+      node.widgets ??= []
+      node.widgets.push(widget)
+      return widget
+    }
   )
   return { node, addWidget }
 }
@@ -77,5 +81,17 @@ describe('useColorWidget', () => {
     )
 
     expect(addWidget.mock.calls[0]![1]).toBe('bg_color')
+  })
+
+  it('returns the existing widget instead of creating a duplicate', () => {
+    const { node, addWidget } = createMockNode()
+    const inputSpec = createColorSpec({ default: DECLARED_DEFAULT })
+
+    const first = useColorWidget()(node, inputSpec)
+    const second = useColorWidget()(node, inputSpec)
+
+    expect(second).toBe(first)
+    expect(addWidget).toHaveBeenCalledOnce()
+    expect(node.widgets).toHaveLength(1)
   })
 })

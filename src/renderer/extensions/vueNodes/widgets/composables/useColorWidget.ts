@@ -12,6 +12,11 @@ export const useColorWidget = (): ComfyWidgetConstructorV2 => {
 
     const { name, default: defaultValue = '#000000' } = inputSpec
 
+    const existing = node.widgets?.find(
+      (w): w is IColorWidget => w.name === name && w.type === 'color'
+    )
+    if (existing) return existing
+
     const widget = node.addWidget('color', name, defaultValue, () => {}, {
       serialize: true
     }) as IColorWidget

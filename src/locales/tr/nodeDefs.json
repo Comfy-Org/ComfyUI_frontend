@@ -119,6 +119,7 @@
     }
   },
   "AdjustBrightness": {
+    "description": "Bir görüntünün parlaklığını ayarla.",
     "display_name": "Parlaklığı Ayarla",
     "inputs": {
       "factor": {
@@ -138,6 +139,7 @@
     }
   },
   "AdjustContrast": {
+    "description": "Bir görüntünün kontrastını ayarla.",
     "display_name": "Kontrastı Ayarla",
     "inputs": {
       "factor": {
@@ -176,6 +178,7 @@
     }
   },
   "AudioAdjustVolume": {
+    "description": "Sesin seviyesini belirtilen desibel (dB) miktarında ayarla.",
     "display_name": "Ses Ses Seviyesi Ayarla",
     "inputs": {
       "audio": {
@@ -576,6 +579,9 @@
       },
       "model_auto_downscale": {
         "name": "otomatik_küçültme"
+      },
+      "model_auto_upscale": {
+        "name": "auto_upscale"
       },
       "model_duration": {
         "name": "süre"
@@ -1547,6 +1553,7 @@
     }
   },
   "CenterCropImages": {
+    "description": "Bir görüntüyü belirtilen boyutlara merkezden kırp.",
     "display_name": "Ortadan Kırp Görseller",
     "inputs": {
       "height": {
@@ -1665,6 +1672,9 @@
       },
       "model_max_tokens": {
         "name": "maksimum_token"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
       },
       "model_temperature": {
         "name": "sıcaklık"
@@ -1790,6 +1800,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "description": "Mantıksal VE işlemi. Tüm değerler doğruysa true döner. Python'un doğruluk kurallarını kullanır.",
+    "display_name": "Ve",
+    "inputs": {
+      "values": {
+        "name": "değerler"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "Matematiksel İfade",
     "inputs": {
@@ -1813,6 +1837,20 @@
       }
     }
   },
+  "ComfyNotNode": {
+    "description": "Mantıksal DEĞİL işlemi. Değer yanlışsa true döner. Python'un doğruluk kurallarını kullanır.",
+    "display_name": "Değil",
+    "inputs": {
+      "value": {
+        "name": "değer"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyNumberConvert": {
     "display_name": "Sayı Dönüştürme",
     "inputs": {
@@ -1825,6 +1863,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "description": "Mantıksal VEYA işlemi. Herhangi bir değer doğruysa true döner. Python'un doğruluk kurallarını kullanır.",
+    "display_name": "Veya",
+    "inputs": {
+      "values": {
+        "name": "değerler"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -5699,6 +5751,7 @@
     }
   },
   "ImageCropV2": {
+    "description": "Bir görüntüyü belirtilen boyutlara kırp.",
     "display_name": "Görüntü Kırpma",
     "inputs": {
       "crop_region": {
@@ -5719,6 +5772,7 @@
     }
   },
   "ImageDeduplication": {
+    "description": "Bir listedeki yinelenen veya çok benzer görüntüleri kaldır.",
     "display_name": "Görsel Çoğaltma Kaldırma",
     "inputs": {
       "images": {
@@ -5773,6 +5827,7 @@
     }
   },
   "ImageGrid": {
+    "description": "Birden fazla görüntüyü bir ızgara düzeninde yerleştir.",
     "display_name": "Görsel Izgarası",
     "inputs": {
       "cell_height": {
@@ -8366,6 +8421,7 @@
     }
   },
   "LoadImageDataSetFromFolder": {
+    "description": "Belirtilen bir klasörden bir görüntü veri seti yükle ve bir görüntü listesi olarak döndür. Desteklenen formatlar: PNG, JPG, JPEG, WEBP.",
     "display_name": "Klasörden Görsel Veri Kümesi Yükle",
     "inputs": {
       "folder": {
@@ -8409,6 +8465,7 @@
     }
   },
   "LoadImageTextDataSetFromFolder": {
+    "description": "Belirtilen bir klasörden görüntü ve metin başlığı çiftlerinden oluşan bir veri seti yükle ve bunları bir liste olarak döndür. Desteklenen formatlar: PNG, JPG, JPEG, WEBP.",
     "display_name": "Klasörden Görsel ve Metin Veri Kümesi Yükle",
     "inputs": {
       "folder": {
@@ -8463,6 +8520,7 @@
     }
   },
   "LoadTrainingDataset": {
+    "description": "Eğitimde kullanılmak üzere diskten kodlanmış eğitim veri setini (latentler + koşullandırma) yükle.",
     "display_name": "Eğitim Verisetini Yükle",
     "inputs": {
       "folder_name": {
@@ -9246,6 +9304,7 @@
     }
   },
   "MakeTrainingDataset": {
+    "description": "Görüntüleri VAE ile ve metinleri CLIP ile kodlayarak latentler ve koşullandırmalardan oluşan bir eğitim veri seti oluştur.",
     "display_name": "Eğitim Veriseti Oluştur",
     "inputs": {
       "clip": {
@@ -9337,14 +9396,15 @@
     }
   },
   "MediaPipeFaceLandmarker": {
+    "description": "MediaPipe modeli kullanarak yüz işaret noktalarını tespit eder.",
     "display_name": "MediaPipe Yüz İşaretleyici",
     "inputs": {
       "detector_variant": {
         "name": "detector_variant",
         "tooltip": "Yüz algılayıcı aralığı. 'short' yakın yüzler için ayarlanmıştır (kamera ~2 m içinde); 'full' daha uzak/küçük yüzleri kapsar (en fazla ~5 m) fakat daha yavaştır. 'both' her iki algılayıcıyı da çalıştırır ve kare başına daha fazla yüz bulanı seçer (~2× algılama maliyeti)."
       },
-      "face_landmarker": {
-        "name": "face_landmarker"
+      "face_detection_model": {
+        "name": "face_detection_model"
       },
       "image": {
         "name": "image"
@@ -9374,6 +9434,7 @@
     }
   },
   "MediaPipeFaceMask": {
+    "description": "Yüz işaret noktalarından bir maske çizer.",
     "display_name": "MediaPipe Yüz Maskesi",
     "inputs": {
       "face_landmarks": {
@@ -9391,6 +9452,7 @@
     }
   },
   "MediaPipeFaceMeshVisualize": {
+    "description": "Girdi görüntüsü üzerinde yüz işaret noktaları ağını çizer.",
     "display_name": "MediaPipe Yüz Ağı Görselleştir",
     "inputs": {
       "color": {
@@ -9423,6 +9485,7 @@
     }
   },
   "MergeImageLists": {
+    "description": "Birden fazla görüntü listesini birleştir.",
     "display_name": "Görüntü Listelerini Birleştir",
     "inputs": {
       "images": {
@@ -9877,6 +9940,7 @@
     }
   },
   "MoGeInference": {
+    "description": "Tek bir görüntü üzerinde MoGe çalıştırarak derinlik ve geometrisini tahmin et.",
     "display_name": "MoGe Çıkarımı",
     "inputs": {
       "apply_mask": {
@@ -9913,6 +9977,7 @@
     }
   },
   "MoGePanoramaInference": {
+    "description": "MoGe'yi equirectangular bir panoramada çalıştırmak için görüntüyü 12 perspektif görünüme böl, her birinde çıkarım yap ve sonuçları tek bir derinlik haritasında birleştir.",
     "display_name": "MoGe Panorama Çıkarımı",
     "inputs": {
       "batch_size": {
@@ -9947,6 +10012,7 @@
     }
   },
   "MoGePointMapToMesh": {
+    "description": "Bir MoGe nokta haritasını 3B mesh'e dönüştür.",
     "display_name": "MoGe Nokta Haritasından Mesh'e",
     "inputs": {
       "batch_index": {
@@ -9976,6 +10042,7 @@
     }
   },
   "MoGeRender": {
+    "description": "Geometri verisinden bir derinlik haritası veya normal haritası oluştur.",
     "display_name": "MoGe Render",
     "inputs": {
       "moge_geometry": {
@@ -12264,6 +12331,7 @@
     }
   },
   "NormalizeImages": {
+    "description": "Görüntüleri ortalama ve standart sapma ile normalize et.",
     "display_name": "Görüntüleri Normalleştir",
     "inputs": {
       "images": {
@@ -12585,6 +12653,39 @@
       },
       "size": {
         "name": "boyut"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterLLMNode": {
+    "description": "OpenRouter üzerinden metin yanıtları üret. xAI, DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi) ve Perplexity Sonar gibi popüler modellerden seçilmiş bir gruba yönlendirir.",
+    "display_name": "OpenRouter LLM",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Yanıtı üretmek için kullanılan OpenRouter modeli."
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Model için metin girişi."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Örnekleme için tohum. 0 olarak ayarlanırsa atlanır. Çoğu model bunu yalnızca bir ipucu olarak kullanır."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Modelin davranışını belirleyen temel talimatlar."
       }
     },
     "outputs": {
@@ -13406,6 +13507,7 @@
     }
   },
   "RandomCropImages": {
+    "description": "Bir görüntüyü rastgele belirtilen boyutlara kırp.",
     "display_name": "Rastgele Kırpılmış Görseller",
     "inputs": {
       "control_after_generate": {
@@ -14268,6 +14370,7 @@
     }
   },
   "ResizeImagesByLongerEdge": {
+    "description": "Görüntüleri, uzun kenarı belirtilen boyuta gelecek şekilde oranı koruyarak yeniden boyutlandır.",
     "display_name": "Görüntüleri Uzun Kenara Göre Yeniden Boyutlandır",
     "inputs": {
       "images": {
@@ -14287,6 +14390,7 @@
     }
   },
   "ResizeImagesByShorterEdge": {
+    "description": "Görüntüleri, kısa kenarı belirtilen boyuta uyacak şekilde oranı koruyarak yeniden boyutlandır.",
     "display_name": "Görüntüleri Kısa Kenara Göre Yeniden Boyutlandır",
     "inputs": {
       "images": {
@@ -14306,6 +14410,7 @@
     }
   },
   "ResolutionBucket": {
+    "description": "Latentleri ve koşullandırmaları gruplara ayır",
     "display_name": "Çözünürlük Kovası",
     "inputs": {
       "conditioning": {
@@ -14534,6 +14639,164 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Image": {
+    "description": "Rodin Gen-2.5 ile 1-5 referans görüntüsünden 3D model oluşturun. Kalite ve maliyet dengesini ayarlamak için bir mod seçin (Hızlı / Normal / Aşırı-Yüksek).",
+    "display_name": "Rodin 3D Gen-2.5 - Görüntüden 3D'ye",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "İnsan benzeri modeller için T/A pozu."
+      },
+      "addon_highpack": {
+        "name": "ek_highpack",
+        "tooltip": "HighPack eklentisi: 4K dokular ve Quad modunda ~16x yüz."
+      },
+      "bbox_height": {
+        "name": "bbox_yüksekliği",
+        "tooltip": "Sınır kutusu yüksekliği (Z ekseni)."
+      },
+      "bbox_length": {
+        "name": "bbox_uzunluğu",
+        "tooltip": "Sınır kutusu uzunluğu (X ekseni)."
+      },
+      "bbox_width": {
+        "name": "bbox_genişliği",
+        "tooltip": "Sınır kutusu genişliği (Y ekseni). Diğerleriyle birlikte 0 ayarlanırsa bbox atlanır."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "geometry_file_format": {
+        "name": "geometri_dosya_formatı"
+      },
+      "hd_texture": {
+        "name": "hd_doku",
+        "tooltip": "Yüksek kaliteli doku iyileştirmesi."
+      },
+      "height_cm": {
+        "name": "yükseklik_cm",
+        "tooltip": "Yaklaşık model yüksekliği santimetre cinsinden (0 ise atlanır)."
+      },
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "1-5 görüntü. Çoklu bakışta ilk görüntü materyaller için kullanılır."
+      },
+      "material": {
+        "name": "materyal"
+      },
+      "mode": {
+        "name": "mod",
+        "tooltip": "Oluşturma modu. Normal = dengeli. Hızlı = hızlı prototipleme için 1K-20K yüz. Aşırı-Yüksek = isteğe bağlı mikro detaylarla 20K-2M yüz."
+      },
+      "mode_creative": {
+        "name": "yaratıcı"
+      },
+      "mode_polygon_count": {
+        "name": "poligon_sayısı"
+      },
+      "mode_tier": {
+        "name": "katman"
+      },
+      "seed": {
+        "name": "tohum"
+      },
+      "texture_delight": {
+        "name": "doku_aydınlatma",
+        "tooltip": "Dokulardan pişmiş ışıklandırmayı kaldır."
+      },
+      "texture_mode": {
+        "name": "doku_modu",
+        "tooltip": "Doku kalitesi ön ayarı. 'Varsayılan', seçilen katman için sunucunun varsayılanını kullanır."
+      },
+      "use_original_alpha": {
+        "name": "orijinal_alfa_kullan",
+        "tooltip": "Görüntü şeffaflığını koru."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "description": "Rodin Gen-2.5 ile bir metin isteminden 3D model oluşturun. Kalite ve maliyet dengesini ayarlamak için bir mod seçin (Hızlı / Normal / Aşırı-Yüksek).",
+    "display_name": "Rodin 3D Gen-2.5 - Metinden 3D'ye",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "İnsan benzeri modeller için T/A pozu."
+      },
+      "addon_highpack": {
+        "name": "eklenti_highpack",
+        "tooltip": "HighPack eklentisi: 4K dokular ve Quad modunda ~16x yüzey."
+      },
+      "bbox_height": {
+        "name": "bbox_yükseklik",
+        "tooltip": "Sınır kutusu yüksekliği (Z ekseni)."
+      },
+      "bbox_length": {
+        "name": "bbox_uzunluk",
+        "tooltip": "Sınır kutusu uzunluğu (X ekseni)."
+      },
+      "bbox_width": {
+        "name": "bbox_genişlik",
+        "tooltip": "Sınır kutusu genişliği (Y ekseni). Diğerleriyle birlikte 0 ayarlanırsa bbox atlanır."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "geometry_file_format": {
+        "name": "geometri_dosya_formatı"
+      },
+      "hd_texture": {
+        "name": "hd_doku",
+        "tooltip": "Yüksek kaliteli doku iyileştirmesi."
+      },
+      "height_cm": {
+        "name": "yükseklik_cm",
+        "tooltip": "Yaklaşık model yüksekliği (santimetre cinsinden, atlamak için 0 girin)."
+      },
+      "material": {
+        "name": "malzeme"
+      },
+      "mode": {
+        "name": "mod",
+        "tooltip": "Oluşturma modu. Normal = dengeli. Hızlı = hızlı prototipleme için 1K-20K yüzey. Aşırı-Yüksek = isteğe bağlı mikro detaylarla 20K-2M yüzey."
+      },
+      "mode_creative": {
+        "name": "yaratıcı"
+      },
+      "mode_polygon_count": {
+        "name": "poligon_sayısı"
+      },
+      "mode_tier": {
+        "name": "katman"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "3D model için metin istemi."
+      },
+      "seed": {
+        "name": "tohum"
+      },
+      "texture_delight": {
+        "name": "doku_aydınlatma_kaldır",
+        "tooltip": "Dokulardan pişmiş aydınlatmayı kaldır."
+      },
+      "texture_mode": {
+        "name": "doku_modu",
+        "tooltip": "Doku kalitesi ön ayarı. 'Varsayılan', seçilen katman için sunucunun varsayılanını kullanır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
         "tooltip": null
       }
     }
@@ -15650,6 +15913,7 @@
     }
   },
   "SaveImageDataSetToFolder": {
+    "description": "Bir görüntü veri setini belirtilen klasöre kaydet. Desteklenen formatlar: PNG.",
     "display_name": "Görüntü Veri Setini Klasöre Kaydet",
     "inputs": {
       "filename_prefix": {
@@ -15667,6 +15931,7 @@
     }
   },
   "SaveImageTextDataSetToFolder": {
+    "description": "Görüntü ve metin başlıklarından oluşan çiftleri belirtilen klasöre kaydet. Görüntüler PNG dosyası olarak, başlıklar ise aynı dosya adı ön ekiyle TXT dosyası olarak kaydedilir.",
     "display_name": "Görüntü ve Metin Veri Setini Klasöre Kaydet",
     "inputs": {
       "filename_prefix": {
@@ -15737,6 +16002,7 @@
     }
   },
   "SaveTrainingDataset": {
+    "description": "Kodlanmış eğitim veri setini (latentler + koşullandırma) eğitim sırasında verimli yükleme için diske kaydet.",
     "display_name": "Eğitim Veri Setini Kaydet",
     "inputs": {
       "conditioning": {
@@ -15923,6 +16189,7 @@
     }
   },
   "ShuffleDataset": {
+    "description": "Bir listedeki görüntülerin sırasını rastgele karıştır.",
     "display_name": "Görüntü Veri Setini Karıştır",
     "inputs": {
       "control_after_generate": {
@@ -15945,6 +16212,7 @@
     }
   },
   "ShuffleImageTextDataset": {
+    "description": "Bir listedeki görüntü-metin çiftlerinin sırasını rastgele karıştır.",
     "display_name": "Görüntü-Metin Veri Setini Karıştır",
     "inputs": {
       "control_after_generate": {
@@ -19445,6 +19713,7 @@
     }
   },
   "VoxelToMesh": {
+    "description": "Bir voxel ızgarasını mesh'e dönüştürür.",
     "display_name": "VokseldenAğa",
     "inputs": {
       "algorithm": {
@@ -19464,6 +19733,7 @@
     }
   },
   "VoxelToMeshBasic": {
+    "description": "Bir voxel ızgarasını mesh'e dönüştürür.",
     "display_name": "TemelVokseldenAğa",
     "inputs": {
       "threshold": {
