@@ -20,7 +20,7 @@ const {
 </script>
 
 <template>
-  <section class="flex flex-col items-center px-6 pt-36 pb-16 text-center">
+  <section class="flex flex-col items-center px-6 pt-16 text-center lg:pt-36">
     <h1
       class="text-primary-comfy-canvas max-w-4xl text-4xl font-light tracking-tight lg:text-6xl"
     >

@@ -75,7 +75,7 @@ const ctaLabel = t('models.list.creations.cta', locale)
 <template>
   <section
     data-testid="model-creations"
-    class="flex flex-col items-center px-4 pt-12 pb-20 lg:px-20"
+    class="flex flex-col items-center px-4 pt-16 pb-20 lg:px-20 lg:pt-36"
   >
     <h2
       class="text-primary-comfy-canvas max-w-4xl text-center text-3xl font-light tracking-tight lg:text-5xl"
@@ -113,7 +113,7 @@ const ctaLabel = t('models.list.creations.cta', locale)
     </div>
 
     <div
-      class="rounded-5xl bg-transparency-white-t4 mt-12 flex w-full flex-col gap-6 p-2 lg:hidden"
+      class="rounded-5xl bg-transparency-white-t4 mt-12 flex w-full flex-col gap-6 p-2 max-lg:pb-6 lg:hidden"
     >
       <GalleryCard
         v-for="(item, i) in items"

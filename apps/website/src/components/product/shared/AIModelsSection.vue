@@ -182,12 +182,12 @@ function getCardClass(layoutClass: string): string {
         variant="outline"
         class="mt-4 w-full max-w-md text-center lg:mt-8 lg:w-auto"
       >
-        <span class="lg:hidden">{{
-          t('cloud.aiModels.ctaMobile', locale)
-        }}</span>
-        <span class="hidden lg:inline">{{
+        <!-- <span class="lg:hidden"> -->
+        {{ t('cloud.aiModels.ctaMobile', locale) }}
+        <!-- </span> -->
+        <!-- <span class="hidden lg:inline">{{
           t('cloud.aiModels.ctaDesktop', locale)
-        }}</span>
+        }}</span> -->
       </BrandButton>
     </div>
   </section>
