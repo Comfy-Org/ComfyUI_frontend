@@ -224,13 +224,13 @@ describe('resolveOutputAssetItems', () => {
   })
 
   /**
-   * Regression for FE-297. When two output records share the composite
-   * `<nodeId>-<subfolder>-<filename>` key, the synthetic AssetItem ids
-   * collide, the keyed v-for in VirtualGrid reuses one DOM node for the
-   * colliding rows, and the asset visibly duplicates while scrolling. A
-   * resolved job's asset list must contain each composite key at most once.
+   * Two output records that share the composite
+   * `<nodeId>-<subfolder>-<filename>` key produce colliding AssetItem ids,
+   * which makes Vue's keyed v-for in VirtualGrid reuse one DOM node and
+   * visibly duplicate the asset on scroll. A resolved job's asset list
+   * must contain each composite key at most once.
    */
-  it('FE-297: deduplicates outputs that share the same composite output key', async () => {
+  it('deduplicates outputs that share the same composite output key', async () => {
     const first = createOutput({
       filename: 'ComfyUI_00001_.png',
       nodeId: '9',
@@ -250,7 +250,7 @@ describe('resolveOutputAssetItems', () => {
       url: 'https://example.com/distinct.png'
     })
     const metadata: OutputAssetMetadata = {
-      jobId: 'job-fe-297',
+      jobId: 'job-dedupe',
       nodeId: '9',
       subfolder: '',
       outputCount: 3,
@@ -264,14 +264,14 @@ describe('resolveOutputAssetItems', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
-  it('FE-297: collapses to a single asset when every output shares the same composite key', async () => {
+  it('collapses to a single asset when every output shares the same composite key', async () => {
     const shared = {
       filename: 'ComfyUI_00001_.png',
       nodeId: '9',
       subfolder: ''
     }
     const metadata: OutputAssetMetadata = {
-      jobId: 'job-fe-297-all-dup',
+      jobId: 'job-all-dup',
       nodeId: shared.nodeId,
       subfolder: shared.subfolder,
       outputCount: 3,

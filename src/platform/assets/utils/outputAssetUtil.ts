@@ -64,22 +64,17 @@ export function getOutputKey({
 }
 
 /**
- * Maps a job's outputs to AssetItems with synthetic ids derived from the
- * composite `<nodeId>-<subfolder>-<filename>` key. Records that share a
- * composite key are dropped after the first one so each rendered row keeps
- * a unique `:key` in VirtualGrid; without this, colliding ids cause Vue to
- * reuse one DOM node for many rows and visibly duplicate one asset on
- * scroll (FE-297).
+ * Maps a job's outputs to AssetItems with ids derived from the composite
+ * `<nodeId>-<subfolder>-<filename>` key. Records sharing a composite key are
+ * dropped after the first to keep `:key` unique in VirtualGrid — colliding
+ * ids cause Vue to reuse one DOM node and visibly duplicate the asset on
+ * scroll.
  *
- * The composite key intentionally ignores fields outside the rendered id
- * (`type`, `mediaType`, `format`, `frame_rate`). Two records that differ
- * only on those fields are treated as the same identity here because the
- * downstream `AssetItem.id` would collide regardless — a wider dedupe key
- * would let the collision propagate to VirtualGrid.
- *
- * The kept copy is the first one seen by this function. Callers that reverse
- * the input array (e.g. `resolveOutputAssetItems`) therefore retain the
- * last record in the API's original order.
+ * The dedupe key ignores `type`/`mediaType`/`format`/`frame_rate` because
+ * those fields don't appear in `AssetItem.id`, so widening the key would
+ * just let the collision propagate. The kept copy is the first one seen;
+ * callers that reverse the input (e.g. `resolveOutputAssetItems`) retain
+ * the last record in the API's original order.
  */
 function mapOutputsToAssetItems({
   jobId,
