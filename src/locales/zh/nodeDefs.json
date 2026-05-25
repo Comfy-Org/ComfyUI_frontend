@@ -24,6 +24,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "start_image": {
+        "name": "起始图像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "添加噪波",
     "inputs": {
@@ -85,6 +119,7 @@
     }
   },
   "AdjustBrightness": {
+    "description": "调整图像的亮度。",
     "display_name": "调整亮度",
     "inputs": {
       "factor": {
@@ -104,6 +139,7 @@
     }
   },
   "AdjustContrast": {
+    "description": "调整图像的对比度。",
     "display_name": "调整对比度",
     "inputs": {
       "factor": {
@@ -142,6 +178,7 @@
     }
   },
   "AudioAdjustVolume": {
+    "description": "按指定的分贝（dB）调整音频音量。",
     "display_name": "音频调整音量",
     "inputs": {
       "audio": {
@@ -543,6 +580,9 @@
       "model_auto_downscale": {
         "name": "自动降采样"
       },
+      "model_auto_upscale": {
+        "name": "auto_upscale"
+      },
       "model_duration": {
         "name": "时长"
       },
@@ -862,6 +902,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "description": "使用字节跳动的 Seed 2.0 模型生成文本回复。请提供文本提示，并可选地添加一张或多张图像或视频以实现多模态上下文。",
+    "display_name": "字节跳动 Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于生成回复的 Seed 模型。"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "模型的文本输入。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制节点是否重新运行；无论 seed 如何，结果都是非确定性的。"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "决定模型行为的基础指令。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "description": "统一文本到图像生成，支持高达4K分辨率的精确单句编辑。",
     "display_name": "ByteDance Seedream 4.5 & 5.0",
@@ -911,6 +984,50 @@
       "width": {
         "name": "宽度",
         "tooltip": "图像的自定义宽度。仅当 `size_preset` 设置为 `Custom` 时该值生效"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamNodeV2": {
+    "description": "统一的文本生成图像与精确的单句编辑，最高支持4K分辨率。",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_fail_on_partial": {
+        "name": "部分失败时终止"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_max_images": {
+        "name": "最大图像数"
+      },
+      "model_size_preset": {
+        "name": "尺寸预设"
+      },
+      "model_width": {
+        "name": "宽度"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于创建或编辑图像的文本提示。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于生成的种子。"
+      },
+      "watermark": {
+        "name": "水印",
+        "tooltip": "是否在图像上添加“AI生成”水印。"
       }
     },
     "outputs": {
@@ -1436,6 +1553,7 @@
     }
   },
   "CenterCropImages": {
+    "description": "将图像居中裁剪为指定尺寸。",
     "display_name": "裁剪图像（中心）",
     "inputs": {
       "height": {
@@ -1529,6 +1647,49 @@
       "start_sigma": {
         "name": "起始sigma",
         "tooltip": "这些选项生效的第一个sigma值。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClaudeNode": {
+    "description": "使用Anthropic的Claude模型生成文本回复。提供文本提示，并可选提供一张或多张图像用于多模态上下文。",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "可选图像，作为模型的上下文使用。最多支持20张图像。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于生成回复的Claude模型。"
+      },
+      "model_max_tokens": {
+        "name": "最大tokens数"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "输入到模型的文本。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed用于控制节点是否重新运行；无论seed如何，结果都是非确定性的。"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "决定模型行为的基础指令。"
       }
     },
     "outputs": {
@@ -1639,6 +1800,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "description": "逻辑与操作。如果所有值都为真，则返回 true。使用 Python 的真值规则。",
+    "display_name": "与",
+    "inputs": {
+      "values": {
+        "name": "值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "数学表达式",
     "inputs": {
@@ -1655,6 +1830,24 @@
       },
       "1": {
         "tooltip": null
+      },
+      "2": {
+        "name": "布尔值",
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyNotNode": {
+    "description": "逻辑非操作。如果值为假，则返回 true。使用 Python 的真值规则。",
+    "display_name": "非",
+    "inputs": {
+      "value": {
+        "name": "值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -1670,6 +1863,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "description": "逻辑或操作。如果任意值为真，则返回 true。使用 Python 的真值规则。",
+    "display_name": "或",
+    "inputs": {
+      "values": {
+        "name": "值"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -3074,6 +3281,26 @@
       }
     }
   },
+  "EmptyHiDreamO1LatentImage": {
+    "description": "HiDream-O1-Image 的空像素空间潜空间。该模型在约 400 万像素下训练；分辨率过低会导致分布偏移，质量明显下降。训练分辨率：2048x2048、2304x1728、1728x2304、2560x1440、1440x2560、2496x1664、1664x2496、3104x1312、1312x3104、2304x1792、1792x2304。",
+    "display_name": "空 HiDream-O1 潜空间图像",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyHunyuanImageLatent": {
     "display_name": "空Latent图像（Hunyuan）",
     "inputs": {
@@ -3386,6 +3613,37 @@
     "inputs": {
       "sigmas": {
         "name": "sigmas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux2ImageNode": {
+    "description": "通过Flux.2 [pro]或Flux.2 [max]，根据提示词和可选参考图像生成图像。",
+    "display_name": "Flux.2 图像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_height": {
+        "name": "高度"
+      },
+      "model_width": {
+        "name": "宽度"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于图像生成或编辑的提示词"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于生成噪声的随机种子。"
       }
     },
     "outputs": {
@@ -4331,6 +4589,22 @@
       }
     }
   },
+  "GetICLoRAParameters": {
+    "description": "从已加载 LoRA 模型的 safetensors 元数据中提取 IC-LoRA 参数，并将其输出用于 LTXVAddGuide（例如 reference_downscale_factor）。",
+    "display_name": "获取 IC-LoRA 参数",
+    "inputs": {
+      "iclora_model": {
+        "name": "iclora_model",
+        "tooltip": "来自 LoRA 加载器的直接输出，用于提取特定 IC-LoRA 的元数据。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iclora_parameters",
+        "tooltip": "从 LoRA 元数据中提取的 IC-LoRA 参数（例如 reference_downscale_factor）。如果 LoRA 需要特殊的引导处理，请连接到 LTXVAddGuide。"
+      }
+    }
+  },
   "GetImageSize": {
     "description": "返回图像的宽度和高度，并原样传递图像。",
     "display_name": "获取图像尺寸",
@@ -4409,6 +4683,40 @@
       "seed": {
         "name": "seed",
         "tooltip": "用于确定节点是否应重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNodeV2": {
+    "description": "根据文本提示修改已有图像",
+    "display_name": "Grok 图像编辑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_number_of_images": {
+        "name": "图像数量"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于生成图像的文本提示"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
       }
     },
     "outputs": {
@@ -4754,6 +5062,70 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1PatchSeamSmoothing": {
+    "description": "在采样后期，将模型输出在多个偏移补丁网格位置上取平均。消除缝隙。",
+    "display_name": "HiDream-O1 补丁缝隙平滑",
+    "inputs": {
+      "blend": {
+        "name": "混合方式",
+        "tooltip": "average：等权重平均。window：Hann 窗加权，远离补丁边界权重更高。median：逐像素中值，剔除环绕异常遍数。"
+      },
+      "end_percent": {
+        "name": "结束百分比",
+        "tooltip": "混合关闭时的采样进度。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "passes": {
+        "name": "遍数",
+        "tooltip": "每步的遍数。2/4 = 固定。ramp_*：采样接近结束时遍数增加（缝隙最明显处更多平滑）。"
+      },
+      "pattern": {
+        "name": "模式",
+        "tooltip": "偏移布局。single_shift：一次自然补丁网格+其他偏移。symmetric：全部偏移，偏移围绕原点对称分布。"
+      },
+      "start_percent": {
+        "name": "起始百分比",
+        "tooltip": "混合开启时的采样进度（0=开始，1=结束）。"
+      },
+      "strength": {
+        "name": "强度",
+        "tooltip": "在自然网格预测（0）与平均结果（1）之间插值。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1ReferenceImages": {
+    "description": "为条件添加 1-10 张参考图像，一张用于编辑指令，多张用于主体个性化。",
+    "display_name": "HiDream-O1 参考图像",
+    "inputs": {
+      "images": {
+        "name": "参考图像",
+        "tooltip": "参考图像。1 张 = 指令编辑；2-10 张 = 多参考。"
+      },
+      "negative": {
+        "name": "负向"
+      },
+      "positive": {
+        "name": "正向"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "name": "负向",
         "tooltip": null
       }
     }
@@ -5379,6 +5751,7 @@
     }
   },
   "ImageCropV2": {
+    "description": "将图像裁剪为指定尺寸。",
     "display_name": "图像裁剪",
     "inputs": {
       "crop_region": {
@@ -5399,6 +5772,7 @@
     }
   },
   "ImageDeduplication": {
+    "description": "从列表中移除重复或非常相似的图像。",
     "display_name": "图像去重",
     "inputs": {
       "images": {
@@ -5453,6 +5827,7 @@
     }
   },
   "ImageGrid": {
+    "description": "将多张图像排列为网格布局。",
     "display_name": "图像表格",
     "inputs": {
       "cell_height": {
@@ -7108,9 +7483,17 @@
   "LTXVAddGuide": {
     "display_name": "LTXV添加指导",
     "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "可选的像素空间区域 mask。通过自注意力机制并乘以强度，控制每个区域的条件影响。"
+      },
       "frame_idx": {
         "name": "帧索引",
         "tooltip": "开始调节的帧索引。对于单帧图像或1-8帧的视频，任何帧索引值都可以接受。对于9+帧的视频，帧索引必须能被8整除，否则它将被向下取整到最接近的8的倍数。负值从视频的末尾开始计算。"
+      },
+      "iclora_parameters": {
+        "name": "iclora_parameters",
+        "tooltip": "来自 Get IC-LoRA Parameters 节点的可选 IC-LoRA 参数。用于根据某些 IC-LoRA（如 reference_downscale_factor > 1）需求调整引导处理。链式连接时，每个 LTXVAddGuide 仅使用连接到它的参数。"
       },
       "image": {
         "name": "图像",
@@ -8011,6 +8394,21 @@
       }
     }
   },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "加载背景移除模型",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "背景移除模型名称",
+        "tooltip": "用于从图像中移除背景的模型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "bg_model",
+        "tooltip": null
+      }
+    }
+  },
   "LoadImage": {
     "display_name": "加载图像",
     "inputs": {
@@ -8023,6 +8421,7 @@
     }
   },
   "LoadImageDataSetFromFolder": {
+    "description": "从指定文件夹加载图像数据集并返回图像列表。支持格式：PNG、JPG、JPEG、WEBP。",
     "display_name": "加载图像数据集",
     "inputs": {
       "folder": {
@@ -8066,6 +8465,7 @@
     }
   },
   "LoadImageTextDataSetFromFolder": {
+    "description": "从指定文件夹加载图像与文本描述对的数据集，并以列表形式返回。支持格式：PNG、JPG、JPEG、WEBP。",
     "display_name": "加载图像和文本数据集",
     "inputs": {
       "folder": {
@@ -8092,7 +8492,35 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "加载 MediaPipe 人脸标记器",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "来自 models/mediapipe/ 的 Face Landmarker safetensors。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoadMoGeModel": {
+    "display_name": "加载 MoGe 模型",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadTrainingDataset": {
+    "description": "从磁盘加载已编码的训练数据集（latent + 条件信息），用于训练。",
     "display_name": "加载训练数据集",
     "inputs": {
       "folder_name": {
@@ -8876,6 +9304,7 @@
     }
   },
   "MakeTrainingDataset": {
+    "description": "使用VAE对图像编码，使用CLIP对文本编码，生成包含latent和条件信息的训练数据集。",
     "display_name": "制作训练数据集",
     "inputs": {
       "clip": {
@@ -8966,7 +9395,97 @@
       }
     }
   },
+  "MediaPipeFaceLandmarker": {
+    "description": "使用MediaPipe模型检测人脸关键点。",
+    "display_name": "MediaPipe 人脸标记器",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "人脸检测器范围。'short' 适用于近距离人脸（距离相机约 2 米内）；'full' 适用于更远/更小的人脸（最多约 5 米），但速度较慢。'both' 同时运行两个检测器，并保留每帧检测到更多人脸的结果（检测成本约为 2 倍）。"
+      },
+      "face_detection_model": {
+        "name": "face_detection_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "BlazeFace 分数阈值。降低以捕捉较小/被遮挡的人脸。"
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "批量检测失败时每帧的处理方式。'empty' 表示该帧无人脸。'previous' 复制最近一次成功检测的结果。'interpolate' 在包围的成功帧之间插值地标/边框/混合形状。多脸：通过贪婪边框中心最近邻配对跨帧人脸。"
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "每帧返回的最大人脸数。0 = 不限制（返回所有检测到的人脸）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "description": "根据人脸关键点绘制mask。",
+    "display_name": "MediaPipe 人脸蒙版",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = face_oval+lips+eyes+irises 的并集（由于 face_oval 包含其他区域，最终为 face_oval）。'custom' = 可单独切换每个区域，组合如 lips+eyes。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "description": "在输入图像上绘制人脸关键点网格。",
+    "display_name": "MediaPipe 人脸网格可视化",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = oval+eyes+brows+lips+irises+nose。'fill' = 实心 face_oval 多边形（轮廓蒙版）。'custom' = 可单独切换每个特征（包括 'tesselation'，即完整的 2547 边线框）。"
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "如果未连接，将使用黑色画布。"
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "地标点像素半径。0 表示不绘制点。"
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "边线像素粗细。0 表示不绘制边线。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MergeImageLists": {
+    "description": "将多个图像列表合并为一个。",
     "display_name": "融合图像序列",
     "inputs": {
       "images": {
@@ -9412,6 +9931,126 @@
       "seed": {
         "name": "随机种",
         "tooltip": "用于生成噪声的随机种子。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeInference": {
+    "description": "在单张图像上运行MoGe以估算深度和几何信息。",
+    "display_name": "MoGe 推理",
+    "inputs": {
+      "apply_mask": {
+        "name": "apply_mask",
+        "tooltip": "将被遮罩（天空/无效）像素在点云和深度中设为 inf，以便网格化时剔除。禁用后将保留所有原始预测几何信息；遮罩仍会单独返回。"
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "每次推理的图像数量。如果处理长视频或大批量图像时显存不足，请降低此值。"
+      },
+      "force_projection": {
+        "name": "force_projection"
+      },
+      "fov_x_degrees": {
+        "name": "fov_x_degrees",
+        "tooltip": "源相机的水平视场角。设置用于将深度图反投影到 3D 的焦距。0 = 自动从预测点恢复。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "0 = 速度最快，9 = 细节最多。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePanoramaInference": {
+    "description": "将全景图像分割为12个透视视图，分别运行MoGe推理，并将结果合并为单一深度图。",
+    "display_name": "MoGe 全景推理",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "每批推理的视角数量（共 12 个分割）。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "等距柱状全景图（任意宽高比）。"
+      },
+      "merge_resolution": {
+        "name": "merge_resolution",
+        "tooltip": "合并后距离图的长边分辨率。"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "每视角细节（0 = 速度最快，9 = 细节最多）。"
+      },
+      "split_resolution": {
+        "name": "split_resolution",
+        "tooltip": "每个透视分割的分辨率。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePointMapToMesh": {
+    "description": "将MoGe点图转换为3D网格。",
+    "display_name": "MoGe 点云映射到网格",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "选择批量 MoGe 几何体中的哪一张图像进行网格化。每张图像的顶点数量不同，因此批量无法合并为单一网格。"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "顶点步长；1 = 全分辨率。"
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "丢弃 3x3 深度跨度超过该阈值的像素。0 = 关闭。"
+      },
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "将源图像作为 baseColor 纹理传递。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeRender": {
+    "description": "根据几何数据渲染深度图或法线图。",
+    "display_name": "MoGe 渲染",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "DirectX 与 OpenGL 控制法线贴图绿色通道的约定。DirectX：绿色 = -Y 向下（Unreal）。OpenGL：绿色 = +Y 向上（Blender、Substance、Unity、glTF）。"
       }
     },
     "outputs": {
@@ -11492,6 +12131,18 @@
       }
     }
   },
+  "ModelNoiseScale": {
+    "display_name": "模型噪声尺度",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "noise_scale": {
+        "name": "噪声尺度",
+        "tooltip": "绝对训练噪声尺度。例如 HiDream-O1 base: 8.0，dev: 7.5。"
+      }
+    }
+  },
   "ModelPatchLoader": {
     "display_name": "加载模型补丁",
     "inputs": {
@@ -11680,6 +12331,7 @@
     }
   },
   "NormalizeImages": {
+    "description": "使用均值和标准差对图像进行归一化处理。",
     "display_name": "规格化图像",
     "inputs": {
       "images": {
@@ -11912,6 +12564,50 @@
       }
     }
   },
+  "OpenAIGPTImageNodeV2": {
+    "description": "通过OpenAI的GPT Image端点生成图像。",
+    "display_name": "OpenAI GPT 图像 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_background": {
+        "name": "背景"
+      },
+      "model_custom_height": {
+        "name": "自定义高度"
+      },
+      "model_custom_width": {
+        "name": "自定义宽度"
+      },
+      "model_quality": {
+        "name": "质量"
+      },
+      "model_size": {
+        "name": "尺寸"
+      },
+      "n": {
+        "name": "数量",
+        "tooltip": "要生成的图像数量"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于GPT Image的文本提示"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "后端尚未实现"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIInputFiles": {
     "description": "加载并准备输入文件（文本、PDF等）作为OpenAI聊天节点的输入。生成响应时，OpenAI模型将读取这些文件。🛈 提示：可与其他OpenAI输入文件节点链式连接。",
     "display_name": "OpenAI ChatGPT Input Files",
@@ -11957,6 +12653,39 @@
       },
       "size": {
         "name": "尺寸"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterLLMNode": {
+    "description": "通过OpenRouter生成文本回复。路由到xAI、DeepSeek、Qwen、Mistral、Z.AI（GLM）、Moonshot（Kimi）、Perplexity Sonar等精选热门模型。",
+    "display_name": "OpenRouter LLM",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于生成回复的OpenRouter模型。"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "模型的文本输入。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "采样种子。设为0表示不使用。大多数模型仅将其作为参考。"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "决定模型行为的基础指令。"
       }
     },
     "outputs": {
@@ -12778,6 +13507,7 @@
     }
   },
   "RandomCropImages": {
+    "description": "随机裁剪图像为指定尺寸。",
     "display_name": "裁剪图像（随机）",
     "inputs": {
       "control_after_generate": {
@@ -13460,6 +14190,26 @@
       }
     }
   },
+  "RemoveBackground": {
+    "description": "使用背景移除模型生成前景mask，从图像中移除背景。",
+    "display_name": "移除背景",
+    "inputs": {
+      "bg_removal_model": {
+        "name": "背景移除模型",
+        "tooltip": "用于生成 mask 的背景移除模型"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "要移除背景的输入图像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mask",
+        "tooltip": "生成的前景 mask"
+      }
+    }
+  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -13620,6 +14370,7 @@
     }
   },
   "ResizeImagesByLongerEdge": {
+    "description": "调整图像尺寸，使较长边匹配指定长度，同时保持宽高比。",
     "display_name": "缩放图像（长边）",
     "inputs": {
       "images": {
@@ -13639,6 +14390,7 @@
     }
   },
   "ResizeImagesByShorterEdge": {
+    "description": "调整图像尺寸，使较短边与指定尺寸相同，同时保持宽高比。",
     "display_name": "Resize Images by Shorter Edge",
     "inputs": {
       "images": {
@@ -13658,6 +14410,7 @@
     }
   },
   "ResolutionBucket": {
+    "description": "将latent和conditioning分组到不同的桶中",
     "display_name": "分辨率 Bucket",
     "inputs": {
       "conditioning": {
@@ -13886,6 +14639,164 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Image": {
+    "description": "通过 Rodin Gen-2.5 从 1-5 张参考图像生成 3D 模型。选择模式（快速 / 常规 / 极高）以平衡质量与成本。",
+    "display_name": "Rodin 3D Gen-2.5 - 图像转3D",
+    "inputs": {
+      "TAPose": {
+        "name": "T/A 姿势",
+        "tooltip": "用于类人模型的 T/A 姿势。"
+      },
+      "addon_highpack": {
+        "name": "HighPack 插件",
+        "tooltip": "HighPack 插件：4K 贴图和 Quad 模式下约 16 倍面数。"
+      },
+      "bbox_height": {
+        "name": "包围盒高度",
+        "tooltip": "包围盒高度（Z 轴）。"
+      },
+      "bbox_length": {
+        "name": "包围盒长度",
+        "tooltip": "包围盒长度（X 轴）。"
+      },
+      "bbox_width": {
+        "name": "包围盒宽度",
+        "tooltip": "包围盒宽度（Y 轴）。与其他设置为 0 可跳过包围盒。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "geometry_file_format": {
+        "name": "几何文件格式"
+      },
+      "hd_texture": {
+        "name": "高清贴图",
+        "tooltip": "高质量贴图增强。"
+      },
+      "height_cm": {
+        "name": "模型高度（厘米）",
+        "tooltip": "模型大致高度（厘米，0 表示跳过）。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "1-5 张图像。多视角时第一张图像用于材质。"
+      },
+      "material": {
+        "name": "材质"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "生成模式。常规 = 平衡。快速 = 1K-20K 面，适合快速原型。极高 = 20K-200 万面，可选微细节。"
+      },
+      "mode_creative": {
+        "name": "创意"
+      },
+      "mode_polygon_count": {
+        "name": "面数"
+      },
+      "mode_tier": {
+        "name": "档位"
+      },
+      "seed": {
+        "name": "种子"
+      },
+      "texture_delight": {
+        "name": "贴图去光照",
+        "tooltip": "去除贴图中的烘焙光照。"
+      },
+      "texture_mode": {
+        "name": "贴图模式",
+        "tooltip": "贴图质量预设。'默认'使用服务器为所选档位设置的默认值。"
+      },
+      "use_original_alpha": {
+        "name": "保留原始透明度",
+        "tooltip": "保留图像透明通道。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "description": "通过 Rodin Gen-2.5 根据文本提示生成3D模型。选择模式（快速 / 常规 / 极高）以平衡质量与成本。",
+    "display_name": "Rodin 3D Gen-2.5 - 文本转3D",
+    "inputs": {
+      "TAPose": {
+        "name": "T/A 姿势",
+        "tooltip": "用于类人模型的T/A姿势。"
+      },
+      "addon_highpack": {
+        "name": "HighPack 插件",
+        "tooltip": "HighPack 插件：4K贴图和Quad模式下约16倍面数。"
+      },
+      "bbox_height": {
+        "name": "包围盒高度",
+        "tooltip": "包围盒高度（Z轴）。"
+      },
+      "bbox_length": {
+        "name": "包围盒长度",
+        "tooltip": "包围盒长度（X轴）。"
+      },
+      "bbox_width": {
+        "name": "包围盒宽度",
+        "tooltip": "包围盒宽度（Y轴）。与其他设置为0可跳过包围盒。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "geometry_file_format": {
+        "name": "几何文件格式"
+      },
+      "hd_texture": {
+        "name": "高清贴图",
+        "tooltip": "高质量贴图增强。"
+      },
+      "height_cm": {
+        "name": "模型高度（厘米）",
+        "tooltip": "模型近似高度（厘米，0为跳过）。"
+      },
+      "material": {
+        "name": "材质"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "生成模式。常规 = 平衡。快速 = 1K-20K面数，适合快速原型。极高 = 20K-200万面数，可选微细节。"
+      },
+      "mode_creative": {
+        "name": "创意"
+      },
+      "mode_polygon_count": {
+        "name": "面数"
+      },
+      "mode_tier": {
+        "name": "档位"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于生成3D模型的文本提示。"
+      },
+      "seed": {
+        "name": "随机种子"
+      },
+      "texture_delight": {
+        "name": "贴图去光照",
+        "tooltip": "移除贴图中的烘焙光照。"
+      },
+      "texture_mode": {
+        "name": "贴图模式",
+        "tooltip": "贴图质量预设。“默认”将使用所选档位的服务器默认值。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型文件",
         "tooltip": null
       }
     }
@@ -14745,6 +15656,29 @@
       }
     }
   },
+  "SamplerLCM": {
+    "description": "具有可调每步噪声的LCM采样器。s_noise是模型训练噪声尺度的倍数",
+    "display_name": "SamplerLCM",
+    "inputs": {
+      "noise_clip_std": {
+        "name": "noise_clip_std",
+        "tooltip": "将每步噪声限制在±N*标准差。0为禁用。"
+      },
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "第一步的每步噪声倍数（1.0 = 匹配训练）。"
+      },
+      "s_noise_end": {
+        "name": "s_noise_end",
+        "tooltip": "最后一步的每步噪声倍数。与s_noise相同则为恒定调度。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SamplerLCMUpscale": {
     "display_name": "LCM缩放采样器",
     "inputs": {
@@ -14979,6 +15913,7 @@
     }
   },
   "SaveImageDataSetToFolder": {
+    "description": "将图像数据集保存到指定文件夹。支持的格式：PNG。",
     "display_name": "保存图像数据集",
     "inputs": {
       "filename_prefix": {
@@ -14996,6 +15931,7 @@
     }
   },
   "SaveImageTextDataSetToFolder": {
+    "description": "将图像和文本描述对的数据集保存到指定文件夹。图像以PNG格式保存，描述以与文件名前缀相同的TXT文件保存。",
     "display_name": "保存图像文本数据集",
     "inputs": {
       "filename_prefix": {
@@ -15066,6 +16002,7 @@
     }
   },
   "SaveTrainingDataset": {
+    "description": "将编码后的训练数据集（latent + conditioning）保存到磁盘，以便训练时高效加载。",
     "display_name": "保存训练数据集",
     "inputs": {
       "conditioning": {
@@ -15252,6 +16189,7 @@
     }
   },
   "ShuffleDataset": {
+    "description": "随机打乱列表中图像的顺序。",
     "display_name": "打乱图像数据集",
     "inputs": {
       "control_after_generate": {
@@ -15274,6 +16212,7 @@
     }
   },
   "ShuffleImageTextDataset": {
+    "description": "随机打乱列表中图像-文本对的顺序。",
     "display_name": "打乱图像文本数据集",
     "inputs": {
       "control_after_generate": {
@@ -16086,6 +17025,23 @@
     "outputs": {
       "0": {
         "name": "包含",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "与 Python 的字符串格式化方法相同。支持所有 Python 的格式化选项和功能。",
+    "display_name": "格式化文本",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -17353,7 +18309,8 @@
         "name": "PBR"
       },
       "quad": {
-        "name": "四边形"
+        "name": "四边形",
+        "tooltip": "此参数已弃用，无任何作用。"
       },
       "texture": {
         "name": "纹理"
@@ -18756,6 +19713,7 @@
     }
   },
   "VoxelToMesh": {
+    "description": "将体素网格转换为网格模型。",
     "display_name": "体素到网格",
     "inputs": {
       "algorithm": {
@@ -18775,6 +19733,7 @@
     }
   },
   "VoxelToMeshBasic": {
+    "description": "将体素网格转换为网格模型。",
     "display_name": "体素到网格（基础）",
     "inputs": {
       "threshold": {
@@ -19318,6 +20277,156 @@
     "outputs": {
       "0": {
         "tooltip": "在采样过程中应用了上下文窗口的模型。"
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "音频"
+      },
+      "audio_inject_scale": {
+        "name": "音频注入比例",
+        "tooltip": "将音频特征注入到视频模型时的比例。"
+      },
+      "video_frames": {
+        "name": "视频帧"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "音频编码器输出",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps字符串",
+        "tooltip": "根据音频长度和视频帧数计算得到的fps。用于提示词中。"
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "audio": {
+        "name": "音频",
+        "tooltip": "用于计算总输出帧数并提取片段音频。"
+      },
+      "images": {
+        "name": "图像"
+      },
+      "segment_index": {
+        "name": "片段索引",
+        "tooltip": "这是第几个片段（第一个为0，第二个为1，以此类推）"
+      },
+      "segment_length": {
+        "name": "片段长度",
+        "tooltip": "该片段的长度（通常为149帧）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "关键帧序列",
+        "tooltip": "填充后的关键帧序列"
+      },
+      "1": {
+        "name": "关键帧掩码",
+        "tooltip": "指示有效帧的掩码"
+      },
+      "2": {
+        "name": "音频片段",
+        "tooltip": "该视频片段对应的音频片段"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "audio": {
+        "name": "音频",
+        "tooltip": "为每个输出片段切分音频。"
+      },
+      "images": {
+        "name": "图像"
+      },
+      "num_segments": {
+        "name": "片段数量",
+        "tooltip": "要以列表形式输出多少个填充片段。"
+      },
+      "segment_length": {
+        "name": "片段长度",
+        "tooltip": "每个片段的长度（通常为149帧）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "关键帧序列",
+        "tooltip": "填充后的关键帧序列"
+      },
+      "1": {
+        "name": "关键帧掩码",
+        "tooltip": "指示有效帧的掩码"
+      },
+      "2": {
+        "name": "音频片段",
+        "tooltip": "每个视频片段对应的音频片段"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "audio_encoder_output": {
+        "name": "音频编码器输出"
+      },
+      "clip_vision_output": {
+        "name": "clip视觉输出",
+        "tooltip": "第一帧的CLIP视觉嵌入。"
+      },
+      "clip_vision_output_ref": {
+        "name": "clip视觉参考输出",
+        "tooltip": "参考图像的CLIP视觉嵌入。"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度",
+        "tooltip": "生成视频的帧数。对于WanDancer应保持为149。"
+      },
+      "mask": {
+        "name": "掩码",
+        "tooltip": "用于起始图像的图像条件掩码。白色保留，黑色生成。用于局部生成。"
+      },
+      "negative": {
+        "name": "负向"
+      },
+      "positive": {
+        "name": "正向"
+      },
+      "start_image": {
+        "name": "起始图像",
+        "tooltip": "要编码的初始图像，可以为任意帧数。"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "name": "负向",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "空的latent。"
       }
     }
   },

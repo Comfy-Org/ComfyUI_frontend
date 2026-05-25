@@ -22,7 +22,7 @@ defineProps<{
 </script>
 
 <template>
-  <section class="px-4 py-24 lg:px-20">
+  <section class="max-w-9xl mx-auto px-4 py-24 lg:px-20">
     <SectionHeader>
       {{ heading }}
       <template #subtitle>

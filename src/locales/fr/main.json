@@ -410,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "Continuer localement",
     "exploreCloud": "Essayer le cloud gratuitement",
-    "feature1Title": "400 crédits gratuits par mois",
     "feature2Title": "Fonctionne partout, instantanément",
     "feature3Title": "Modèles prêts à l’emploi",
     "feature4Title": "Packs de nœuds personnalisés préinstallés",
@@ -785,6 +784,7 @@
     "AUDIO_ENCODER": "ENCODEUR_AUDIO",
     "AUDIO_ENCODER_OUTPUT": "SORTIE_ENCODEUR_AUDIO",
     "AUDIO_RECORD": "ENREGISTREMENT_AUDIO",
+    "BACKGROUND_REMOVAL": "SUPPRESSION_ARRIÈRE-PLAN",
     "BOOLEAN": "BOOLEAN",
     "BOUNDING_BOX": "BOÎTE ENGLOBANTE",
     "CAMERA_CONTROL": "Contrôle de la caméra",
@@ -800,6 +800,8 @@
     "CONTROL_NET": "RESEAU_DE_CONTROLE",
     "CURVE": "COURBE",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "MODÈLE_DE_DÉTECTION_DE_VISAGE",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FICHIER_3D",
     "FILE_3D_FBX": "FICHIER_3D_FBX",
     "FILE_3D_GLB": "FICHIER_3D_GLB",
@@ -815,6 +817,7 @@
     "HISTOGRAM": "HISTOGRAMME",
     "HOOKS": "CROCHETS",
     "HOOK_KEYFRAMES": "CLEFS_DE_CROCHET",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "IMAGE",
     "IMAGECOMPARE": "COMPARAISON_IMAGE",
     "INT": "ENTIER",
@@ -835,6 +838,8 @@
     "MODEL": "MODÈLE",
     "MODEL_PATCH": "PATCH_MODÈLE",
     "MODEL_TASK_ID": "ID_TÂCHE_MODÈLE",
+    "MOGE_GEOMETRY": "MOGE_GÉOMÉTRIE",
+    "MOGE_MODEL": "MOGE_MODÈLE",
     "NOISE": "BRUIT",
     "OPENAI_CHAT_CONFIG": "CONFIG_CHAT_OPENAI",
     "OPENAI_INPUT_FILES": "FICHIERS_ENTRÉE_OPENAI",
@@ -906,6 +911,44 @@
     "paused": "En pause",
     "resume": "Reprendre le téléchargement"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "entrée inconnue",
+      "nodeName": "Ce nœud"
+    },
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "Les données du workflow envoyées au serveur sont vides. Il peut s’agir d’une erreur système inattendue."
+      },
+      "prompt_no_outputs": {
+        "desc": "Le workflow ne contient aucun nœud de sortie (par exemple, Enregistrer l’image, Prévisualiser l’image) pour produire un résultat."
+      },
+      "server_error_cloud": {
+        "desc": "Le serveur a rencontré une erreur inattendue. Veuillez réessayer plus tard."
+      },
+      "server_error_local": {
+        "desc": "Le serveur a rencontré une erreur inattendue. Veuillez consulter les journaux du serveur."
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastMessageCloud": "Ce nœud a généré une erreur lors de l’exécution. Vérifiez ses entrées ou essayez une autre configuration. Aucun crédit n’a été déduit.",
+        "toastMessageLocal": "Ce nœud a généré une erreur lors de l’exécution. Vérifiez ses entrées ou essayez une autre configuration.",
+        "toastTitle": "Échec de {nodeName}"
+      }
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "details": "{nodeName} nécessite une entrée obligatoire : {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Des entrées requises ne sont pas connectées.",
+        "title": "Connexion manquante",
+        "toastMessage": "{nodeName} nécessite une entrée obligatoire : {inputName}",
+        "toastTitle": "Entrée requise manquante"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "accessRestrictedTitle": "Access Restricted",
@@ -913,7 +956,8 @@
     "extensionFileHint": "Cela peut être dû au script suivant",
     "loadWorkflowTitle": "Chargement interrompu en raison d'une erreur de rechargement des données de workflow",
     "noStackTrace": "Aucune trace de pile disponible",
-    "promptExecutionError": "L'exécution de l'invite a échoué"
+    "promptExecutionError": "L'exécution de l'invite a échoué",
+    "queueOpenWorkflowFailedTitle": "Échec de l'ouverture du workflow"
   },
   "errorOverlay": {
     "errorCount": "{count} ERREUR | {count} ERREURS",
@@ -1041,6 +1085,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "Logo ComfyOrg",
+    "comfyPackageOutdated": "La version installée de {name} ({installedVersion}) est inférieure à la version requise ({requiredVersion}).",
     "comingSoon": "Bientôt disponible",
     "command": "Commande",
     "commandProhibited": "La commande {command} est interdite. Contactez un administrateur pour plus d'informations.",
@@ -1706,6 +1751,7 @@
     "reloadingModel": "Rechargement du modèle...",
     "removeBackgroundImage": "Supprimer l'image de fond",
     "resizeNodeMatchOutput": "Redimensionner le nœud pour correspondre à la sortie",
+    "retainViewOnReload": "Verrouiller la vue de la caméra lors du rechargement du modèle",
     "scene": "Scène",
     "showGrid": "Afficher la grille",
     "showSkeleton": "Afficher le squelette",
@@ -1739,6 +1785,10 @@
     "outdatedVersion": "Ce workflow a été créé avec une version plus récente de ComfyUI ({version}). Certains nœuds peuvent ne pas fonctionner correctement.",
     "outdatedVersionGeneric": "Ce workflow a été créé avec une version plus récente de ComfyUI. Certains nœuds peuvent ne pas fonctionner correctement.",
     "unknownVersion": "inconnue"
+  },
+  "logsTerminal": {
+    "loadError": "Impossible de charger les journaux, veuillez vous assurer que votre backend ComfyUI est à jour.",
+    "resyncError": "Impossible de resynchroniser les journaux après la reconnexion du backend. Rouvrez la console pour réessayer."
   },
   "maintenance": {
     "None": "Aucun",
@@ -2253,6 +2303,7 @@
     "": "",
     "3d": "3d",
     "3d_models": "modèles_3d",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
@@ -2268,6 +2319,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2284,15 +2336,13 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
-    "_for_testing": "_pour_test",
+    "adjustments": "ajustements",
     "advanced": "avancé",
-    "animation": "animation",
-    "api": "api",
     "api node": "nœud api",
     "attention_experiments": "expériences_d'attention",
     "audio": "audio",
+    "background removal": "suppression de l’arrière-plan",
     "batch": "lot",
-    "camera": "caméra",
     "chroma_radiance": "chroma_radiance",
     "clip": "clip",
     "color": "couleur",
@@ -2301,7 +2351,6 @@
     "cond pair": "cond pair",
     "cond single": "cond unique",
     "conditioning": "conditionnement",
-    "context": "contexte",
     "controlnet": "controlnet",
     "create": "créer",
     "custom_sampling": "échantillonnage_personnalisé",
@@ -2310,7 +2359,10 @@
     "deprecated": "déprécié",
     "detection": "détection",
     "edit_models": "edit_models",
+    "experimental": "expérimental",
+    "filters": "filtres",
     "flux": "flux",
+    "geometry_estimation": "estimation_de_géométrie",
     "gligen": "gligen",
     "guidance": "guidance",
     "guiders": "guides",
@@ -2325,7 +2377,6 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "mask": "masque",
-    "math": "math",
     "model": "modèle",
     "model_merging": "fusion_de_modèles",
     "model_patches": "patches_de_modèle",
@@ -2333,16 +2384,13 @@
     "noise": "bruit",
     "operations": "opérations",
     "photomaker": "photomaker",
-    "postprocessing": "post-traitement",
     "preprocessors": "préprocesseurs",
     "primitive": "primitif",
     "qwen": "qwen",
     "samplers": "échantillonneurs",
     "sampling": "échantillonnage",
-    "save": "enregistrer",
     "schedulers": "planificateurs",
     "scheduling": "planification",
-    "sd": "sd",
     "sd3": "sd3",
     "shader": "shader",
     "sigmas": "sigmas",
@@ -2350,7 +2398,6 @@
     "style_model": "modèle_de_style",
     "supir": "supir",
     "text": "texte",
-    "textgen": "textgen",
     "training": "entraînement",
     "transform": "transformer",
     "unet": "unet",
@@ -2429,6 +2476,43 @@
     },
     "title": "Votre appareil n'est pas pris en charge"
   },
+  "oauth": {
+    "consent": {
+      "allow": "Continuer",
+      "appTypeNative": "Application native",
+      "appTypeWeb": "Application web",
+      "deny": "Annuler",
+      "errorExpired": "Cette demande de consentement a expiré ou a déjà été utilisée. Veuillez redémarrer depuis l’application cliente.",
+      "errorScopeBroadening": "Les autorisations précédemment approuvées ne couvrent pas cette demande. Vous devrez réautoriser avec les nouvelles autorisations.",
+      "errorUnavailable": "Cette fonctionnalité n’est pas disponible pour le moment. Veuillez contacter le support si le problème persiste.",
+      "genericError": "La demande OAuth a échoué. Veuillez redémarrer depuis l’application cliente.",
+      "loading": "Chargement de la demande d’autorisation…",
+      "missingRequest": "Cette demande d’autorisation est manquante. Veuillez redémarrer depuis l’application cliente.",
+      "noWorkspaces": "Aucun espace de travail éligible n’est disponible pour cette demande.",
+      "permissionsHeader": "Autorisations",
+      "redirectNotice": "Vous allez être redirigé vers",
+      "resourceFallback": "cette application",
+      "sessionError": "Échec de l’établissement de la session. Veuillez réessayer.",
+      "sessionErrorToastSummary": "Impossible de poursuivre la connexion OAuth",
+      "subtitle": "Connectez-vous à {resource} pour continuer",
+      "title": "{client} souhaite accéder",
+      "workspaceHelp": "Les autorisations s’appliquent uniquement à cet espace de travail.",
+      "workspaceLabel": "Espace de travail"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "Exécuter des workflows en votre nom"
+      },
+      "mcp:tools:read": {
+        "label": "Voir les outils de workflow disponibles"
+      }
+    },
+    "workspace": {
+      "member": "Membre",
+      "owner": "Propriétaire",
+      "personal": "Personnel"
+    }
+  },
   "openSharedWorkflow": {
     "author": "Auteur :",
     "copyAssetsAndOpen": "Importer les ressources et ouvrir le workflow",
@@ -2439,7 +2523,8 @@
     "nonPublicAssetsWarningLine1": "Ce workflow contient des ressources non publiques.",
     "nonPublicAssetsWarningLine2": "Celles-ci seront importées dans votre bibliothèque lors de l'ouverture du workflow",
     "openWithoutImporting": "Ouvrir sans importer",
-    "openWorkflow": "Ouvrir le workflow"
+    "openWorkflow": "Ouvrir le workflow",
+    "opening": "Ouverture du workflow partagé..."
   },
   "painter": {
     "background": "Arrière-plan",
@@ -2655,20 +2740,6 @@
     "normal": "Normal",
     "parameters": "Paramètres",
     "pinned": "Épinglé",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "Les données du flux de travail envoyées au serveur sont vides. Il peut s'agir d'une erreur système inattendue."
-      },
-      "prompt_no_outputs": {
-        "desc": "Le flux de travail ne contient aucun nœud de sortie (par exemple, Enregistrer l'image, Prévisualiser l'image) pour produire un résultat."
-      },
-      "server_error_cloud": {
-        "desc": "Le serveur a rencontré une erreur inattendue. Veuillez réessayer plus tard."
-      },
-      "server_error_local": {
-        "desc": "Le serveur a rencontré une erreur inattendue. Veuillez consulter les journaux du serveur."
-      }
-    },
     "properties": "Propriétés",
     "removeFavorite": "Retirer des favoris",
     "resetAllParameters": "Réinitialiser tous les paramètres",
@@ -3066,6 +3137,7 @@
         "sourceDesc": "Grouper par type de source (Core, Custom, API)"
       },
       "noBookmarkedNodes": "Aucun favori pour le moment",
+      "noMatchingNodes": "Aucun nœud ne correspond à « {query} »",
       "resetView": "Réinitialiser la vue par défaut",
       "sections": {
         "bookmarked": "Favoris",
@@ -3451,8 +3523,7 @@
       "newest": "Plus récent",
       "popular": "Populaire",
       "recommended": "Recommandé",
-      "searchPlaceholder": "Rechercher...",
-      "vramLowToHigh": "Utilisation VRAM (faible à élevée)"
+      "searchPlaceholder": "Rechercher..."
     },
     "sorting": "Trier par",
     "title": "Commencez avec un modèle",
@@ -3616,7 +3687,8 @@
       "placeholderMesh": "Sélectionner un mesh...",
       "placeholderModel": "Sélectionner un modèle...",
       "placeholderUnknown": "Sélectionner un média...",
-      "placeholderVideo": "Sélectionner une vidéo..."
+      "placeholderVideo": "Sélectionner une vidéo...",
+      "topResult": "Meilleur résultat : {result}"
     },
     "valueControl": {
       "decrement": "Décrémenter la valeur",

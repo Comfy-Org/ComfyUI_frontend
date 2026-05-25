@@ -99,6 +99,8 @@ export const useDialogService = () => {
       component: ErrorDialogContent,
       props,
       dialogComponentProps: {
+        renderer: 'reka',
+        size: 'lg',
         onClose: () => {
           useTelemetry()?.trackUiButtonClicked({
             button_id: 'error_dialog_closed'
@@ -163,6 +165,8 @@ export const useDialogService = () => {
       component: ErrorDialogContent,
       props,
       dialogComponentProps: {
+        renderer: 'reka',
+        size: 'lg',
         onClose: () => {
           useTelemetry()?.trackUiButtonClicked({
             button_id: 'error_dialog_closed'
@@ -251,6 +255,8 @@ export const useDialogService = () => {
           placeholder
         },
         dialogComponentProps: {
+          renderer: 'reka',
+          size: 'md',
           onClose: () => {
             resolve(null)
           }
@@ -286,6 +292,8 @@ export const useDialogService = () => {
           denyLabel
         },
         dialogComponentProps: {
+          renderer: 'reka',
+          size: 'md',
           onClose: () => resolve(null)
         }
       }
@@ -572,9 +580,9 @@ export const useDialogService = () => {
         onConfirm: () => {}
       },
       dialogComponentProps: {
-        pt: {
-          root: { class: 'max-w-[360px]' }
-        }
+        renderer: 'reka',
+        size: 'sm',
+        contentClass: 'max-w-[360px]'
       }
     })
   }

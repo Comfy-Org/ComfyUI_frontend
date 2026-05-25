@@ -180,6 +180,8 @@ const DEFAULT_LIMIT = 500
 const INPUT_ASSETS_WITH_PUBLIC_LIMIT = 500
 
 export const MODELS_TAG = 'models'
+export const INPUT_TAG = 'input'
+export const OUTPUT_TAG = 'output'
 /** Asset tag used by the backend for placeholder records that are not installed. */
 export const MISSING_TAG = 'missing'
 const DEFAULT_EXCLUDED_ASSET_TAGS = [MISSING_TAG]
@@ -480,12 +482,27 @@ function createAssetService() {
     includePublic: boolean = true,
     { limit = DEFAULT_LIMIT, offset = 0, signal }: AssetPaginationOptions = {}
   ): Promise<AssetItem[]> {
-    const data = await handleAssetRequest(
+    const data = await getAssetsPageByTag(tag, includePublic, {
+      limit,
+      offset,
+      signal
+    })
+
+    return data.assets
+  }
+
+  /**
+   * Gets one paginated asset response filtered by a specific tag.
+   */
+  async function getAssetsPageByTag(
+    tag: string,
+    includePublic: boolean = true,
+    { limit = DEFAULT_LIMIT, offset = 0, signal }: AssetPaginationOptions = {}
+  ): Promise<AssetResponse> {
+    return await handleAssetRequest(
       { includeTags: [tag], limit, offset, includePublic, signal },
       `assets for tag ${tag}`
     )
-
-    return data.assets
   }
 
   /**
@@ -511,16 +528,11 @@ function createAssetService() {
     while (true) {
       if (signal?.aborted) throw createAbortError()
 
-      const data = await handleAssetRequest(
-        {
-          includeTags: [tag],
-          limit: pageSize,
-          offset,
-          includePublic,
-          signal
-        },
-        `assets for tag ${tag}`
-      )
+      const data = await getAssetsPageByTag(tag, includePublic, {
+        limit: pageSize,
+        offset,
+        signal
+      })
       const batch = data.assets
       if (batch.length === 0) {
         return assets
@@ -935,6 +947,7 @@ function createAssetService() {
     getAssetsForNodeType,
     getAssetDetails,
     getAssetsByTag,
+    getAssetsPageByTag,
     getAllAssetsByTag,
     getInputAssetsIncludingPublic,
     invalidateInputAssetsIncludingPublic,

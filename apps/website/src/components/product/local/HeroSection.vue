@@ -276,29 +276,6 @@ onUnmounted(() => {
             fill="#211927"
           />
         </g>
-
-        <!-- Left-edge fade -->
-        <rect
-          x="300"
-          y="150"
-          width="250"
-          height="900"
-          fill="url(#localHeroFadeLeft)"
-        />
-
-        <defs>
-          <linearGradient
-            id="localHeroFadeLeft"
-            x1="550"
-            y1="600"
-            x2="300"
-            y2="600"
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop stop-color="#211927" stop-opacity="0" />
-            <stop offset="1" stop-color="#211927" />
-          </linearGradient>
-        </defs>
       </svg>
     </div>
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -40,6 +40,14 @@ const theButtonStyle = computed(() =>
     selectedItems.value.length > 0 && 'text-text-primary'
   )
 )
+
+const buttonRef = ref<HTMLButtonElement>()
+
+function focus() {
+  buttonRef.value?.focus()
+}
+
+defineExpose({ focus })
 </script>
 
 <template>
@@ -51,6 +59,7 @@ const theButtonStyle = computed(() =>
     "
   >
     <button
+      ref="buttonRef"
       :class="
         cn(
           theButtonStyle,

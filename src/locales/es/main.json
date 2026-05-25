@@ -410,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "Continuar Localmente",
     "exploreCloud": "Probar la Nube Gratis",
-    "feature1Title": "400 Créditos Gratis al Mes",
     "feature2Title": "Funciona en Cualquier Lugar, al Instante",
     "feature3Title": "Modelos Listos para Usar",
     "feature4Title": "Paquetes de Nodos Personalizados Preinstalados",
@@ -785,6 +784,7 @@
     "AUDIO_ENCODER": "CODIFICADOR_AUDIO",
     "AUDIO_ENCODER_OUTPUT": "SALIDA_CODIFICADOR_AUDIO",
     "AUDIO_RECORD": "GRABACIÓN_AUDIO",
+    "BACKGROUND_REMOVAL": "ELIMINACIÓN_DE_FONDO",
     "BOOLEAN": "BOOLEANO",
     "BOUNDING_BOX": "CUADRO DELIMITADOR",
     "CAMERA_CONTROL": "CONTROL DE CÁMARA",
@@ -800,6 +800,8 @@
     "CONTROL_NET": "RED_DE_CONTROL",
     "CURVE": "CURVA",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "MODELO_DE_DETECCIÓN_DE_CARAS",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "ARCHIVO_3D",
     "FILE_3D_FBX": "ARCHIVO_3D_FBX",
     "FILE_3D_GLB": "ARCHIVO_3D_GLB",
@@ -815,6 +817,7 @@
     "HISTOGRAM": "HISTOGRAMA",
     "HOOKS": "GANCHOS",
     "HOOK_KEYFRAMES": "GANCHO_FOTOGRAMAS_CLAVE",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "IMAGEN",
     "IMAGECOMPARE": "COMPARARIMÁGENES",
     "INT": "ENTERO",
@@ -835,6 +838,8 @@
     "MODEL": "MODELO",
     "MODEL_PATCH": "PARCHE_MODELO",
     "MODEL_TASK_ID": "ID_TAREA_MODELO",
+    "MOGE_GEOMETRY": "MOGE_GEOMETRY",
+    "MOGE_MODEL": "MOGE_MODEL",
     "NOISE": "RUIDO",
     "OPENAI_CHAT_CONFIG": "CONFIGURACIÓN_CHAT_OPENAI",
     "OPENAI_INPUT_FILES": "ARCHIVOS_ENTRADA_OPENAI",
@@ -906,6 +911,44 @@
     "paused": "Pausado",
     "resume": "Reanudar descarga"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "entrada desconocida",
+      "nodeName": "Este nodo"
+    },
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "Los datos del flujo de trabajo enviados al servidor están vacíos. Esto puede ser un error inesperado del sistema."
+      },
+      "prompt_no_outputs": {
+        "desc": "El flujo de trabajo no contiene ningún nodo de salida (por ejemplo, Guardar imagen, Vista previa de imagen) para producir un resultado."
+      },
+      "server_error_cloud": {
+        "desc": "El servidor encontró un error inesperado. Por favor, inténtalo de nuevo más tarde."
+      },
+      "server_error_local": {
+        "desc": "El servidor encontró un error inesperado. Por favor, revisa los registros del servidor."
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastMessageCloud": "Este nodo generó un error durante la ejecución. Revisa sus entradas o prueba una configuración diferente. No se cobraron créditos.",
+        "toastMessageLocal": "Este nodo generó un error durante la ejecución. Revisa sus entradas o prueba una configuración diferente.",
+        "toastTitle": "{nodeName} falló"
+      }
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "details": "{nodeName} carece de una entrada requerida: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Las ranuras de entrada requeridas no tienen ninguna conexión.",
+        "title": "Conexión faltante",
+        "toastMessage": "{nodeName} carece de una entrada requerida: {inputName}",
+        "toastTitle": "Falta entrada requerida"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "accessRestrictedTitle": "Access Restricted",
@@ -913,7 +956,8 @@
     "extensionFileHint": "Esto puede deberse al siguiente script",
     "loadWorkflowTitle": "La carga se interrumpió debido a un error al recargar los datos del flujo de trabajo",
     "noStackTrace": "No hay seguimiento de pila disponible",
-    "promptExecutionError": "La ejecución del prompt falló"
+    "promptExecutionError": "La ejecución del prompt falló",
+    "queueOpenWorkflowFailedTitle": "No se pudo abrir el flujo de trabajo"
   },
   "errorOverlay": {
     "errorCount": "{count} ERROR | {count} ERRORES",
@@ -1041,6 +1085,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "Logo de ComfyOrg",
+    "comfyPackageOutdated": "La versión instalada de {name} ({installedVersion}) es inferior a la versión requerida ({requiredVersion}).",
     "comingSoon": "Próximamente",
     "command": "Comando",
     "commandProhibited": "El comando {command} está prohibido. Contacta a un administrador para más información.",
@@ -1706,6 +1751,7 @@
     "reloadingModel": "Recargando modelo...",
     "removeBackgroundImage": "Eliminar imagen de fondo",
     "resizeNodeMatchOutput": "Redimensionar nodo para coincidir con la salida",
+    "retainViewOnReload": "Bloquear la vista de la cámara al recargar el modelo",
     "scene": "Escena",
     "showGrid": "Mostrar cuadrícula",
     "showSkeleton": "Mostrar esqueleto",
@@ -1739,6 +1785,10 @@
     "outdatedVersion": "Este flujo de trabajo fue creado con una versión más reciente de ComfyUI ({version}). Es posible que algunos nodos no funcionen correctamente.",
     "outdatedVersionGeneric": "Este flujo de trabajo fue creado con una versión más reciente de ComfyUI. Es posible que algunos nodos no funcionen correctamente.",
     "unknownVersion": "desconocido"
+  },
+  "logsTerminal": {
+    "loadError": "No se pueden cargar los registros, por favor asegúrate de haber actualizado tu backend de ComfyUI.",
+    "resyncError": "No se pueden resincronizar los registros después de que el backend se reconectó. Vuelve a abrir la consola para intentarlo de nuevo."
   },
   "maintenance": {
     "None": "Ninguno",
@@ -2253,6 +2303,7 @@
     "": "",
     "3d": "3d",
     "3d_models": "modelos_3d",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
@@ -2268,6 +2319,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2284,15 +2336,13 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
-    "_for_testing": "_para_pruebas",
+    "adjustments": "ajustes",
     "advanced": "avanzado",
-    "animation": "animación",
-    "api": "api",
     "api node": "nodo api",
     "attention_experiments": "experimentos_de_atención",
     "audio": "audio",
+    "background removal": "eliminación de fondo",
     "batch": "lote",
-    "camera": "cámara",
     "chroma_radiance": "chroma_radiance",
     "clip": "clip",
     "color": "color",
@@ -2301,7 +2351,6 @@
     "cond pair": "par_cond",
     "cond single": "cond único",
     "conditioning": "acondicionamiento",
-    "context": "contexto",
     "controlnet": "controlnet",
     "create": "crear",
     "custom_sampling": "muestreo_personalizado",
@@ -2310,7 +2359,10 @@
     "deprecated": "obsoleto",
     "detection": "detección",
     "edit_models": "editar_modelos",
+    "experimental": "experimental",
+    "filters": "filtros",
     "flux": "flux",
+    "geometry_estimation": "estimación de geometría",
     "gligen": "gligen",
     "guidance": "orientación",
     "guiders": "guías",
@@ -2325,7 +2377,6 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "mask": "mask",
-    "math": "matemáticas",
     "model": "modelo",
     "model_merging": "fusión_de_modelos",
     "model_patches": "parches_de_modelo",
@@ -2333,16 +2384,13 @@
     "noise": "ruido",
     "operations": "operaciones",
     "photomaker": "photomaker",
-    "postprocessing": "postprocesamiento",
     "preprocessors": "preprocesadores",
     "primitive": "primitivo",
     "qwen": "qwen",
     "samplers": "muestreadores",
     "sampling": "muestreo",
-    "save": "guardar",
     "schedulers": "programadores",
     "scheduling": "programación",
-    "sd": "sd",
     "sd3": "sd3",
     "shader": "shader",
     "sigmas": "sigmas",
@@ -2350,7 +2398,6 @@
     "style_model": "modelo_de_estilo",
     "supir": "supir",
     "text": "texto",
-    "textgen": "textgen",
     "training": "entrenamiento",
     "transform": "transformar",
     "unet": "unet",
@@ -2429,6 +2476,43 @@
     },
     "title": "Tu dispositivo no es compatible"
   },
+  "oauth": {
+    "consent": {
+      "allow": "Continuar",
+      "appTypeNative": "Aplicación nativa",
+      "appTypeWeb": "Aplicación web",
+      "deny": "Cancelar",
+      "errorExpired": "Esta solicitud de consentimiento ha expirado o ya ha sido utilizada. Por favor, reinicia desde la aplicación cliente.",
+      "errorScopeBroadening": "Los permisos aprobados previamente no cubren esta solicitud. Necesitas volver a autorizar con los nuevos permisos.",
+      "errorUnavailable": "Esta función no está disponible en este momento. Por favor, contacta con soporte si el problema persiste.",
+      "genericError": "La solicitud OAuth ha fallado. Por favor, reinicia desde la aplicación cliente.",
+      "loading": "Cargando solicitud de autorización…",
+      "missingRequest": "Falta esta solicitud de autorización. Por favor, reinicia desde la aplicación cliente.",
+      "noWorkspaces": "No hay espacios de trabajo elegibles disponibles para esta solicitud.",
+      "permissionsHeader": "Permisos",
+      "redirectNotice": "Serás redirigido a",
+      "resourceFallback": "esta aplicación",
+      "sessionError": "No se pudo establecer la sesión. Por favor, inténtalo de nuevo.",
+      "sessionErrorToastSummary": "No se pudo continuar con el inicio de sesión OAuth",
+      "subtitle": "Inicia sesión en {resource} para continuar",
+      "title": "{client} quiere acceder",
+      "workspaceHelp": "Los permisos se aplican solo a este espacio de trabajo.",
+      "workspaceLabel": "Espacio de trabajo"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "Ejecutar flujos de trabajo en tu nombre"
+      },
+      "mcp:tools:read": {
+        "label": "Ver herramientas de flujo de trabajo disponibles"
+      }
+    },
+    "workspace": {
+      "member": "Miembro",
+      "owner": "Propietario",
+      "personal": "Personal"
+    }
+  },
   "openSharedWorkflow": {
     "author": "Autor:",
     "copyAssetsAndOpen": "Importar recursos y abrir flujo de trabajo",
@@ -2439,7 +2523,8 @@
     "nonPublicAssetsWarningLine1": "Este flujo de trabajo incluye recursos no públicos.",
     "nonPublicAssetsWarningLine2": "Estos se importarán a tu biblioteca al abrir el flujo de trabajo",
     "openWithoutImporting": "Abrir sin importar",
-    "openWorkflow": "Abrir flujo de trabajo"
+    "openWorkflow": "Abrir flujo de trabajo",
+    "opening": "Abriendo flujo de trabajo compartido..."
   },
   "painter": {
     "background": "Fondo",
@@ -2655,20 +2740,6 @@
     "normal": "Normal",
     "parameters": "Parámetros",
     "pinned": "Fijado",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "Los datos del flujo de trabajo enviados al servidor están vacíos. Esto puede ser un error inesperado del sistema."
-      },
-      "prompt_no_outputs": {
-        "desc": "El flujo de trabajo no contiene ningún nodo de salida (por ejemplo, Guardar imagen, Vista previa de imagen) para producir un resultado."
-      },
-      "server_error_cloud": {
-        "desc": "El servidor encontró un error inesperado. Por favor, inténtalo de nuevo más tarde."
-      },
-      "server_error_local": {
-        "desc": "El servidor encontró un error inesperado. Por favor, revisa los registros del servidor."
-      }
-    },
     "properties": "Propiedades",
     "removeFavorite": "Quitar de favoritos",
     "resetAllParameters": "Restablecer todos los parámetros",
@@ -3066,6 +3137,7 @@
         "sourceDesc": "Agrupar por tipo de fuente (Core, Custom, API)"
       },
       "noBookmarkedNodes": "Aún no hay favoritos",
+      "noMatchingNodes": "No hay nodos que coincidan con \"{query}\"",
       "resetView": "Restablecer vista a la predeterminada",
       "sections": {
         "bookmarked": "Favoritos",
@@ -3451,8 +3523,7 @@
       "newest": "Más reciente",
       "popular": "Popular",
       "recommended": "Recomendado",
-      "searchPlaceholder": "Buscar...",
-      "vramLowToHigh": "Uso de VRAM (de bajo a alto)"
+      "searchPlaceholder": "Buscar..."
     },
     "sorting": "Ordenar por",
     "title": "Comienza con una Plantilla",
@@ -3616,7 +3687,8 @@
       "placeholderMesh": "Seleccionar malla...",
       "placeholderModel": "Seleccionar modelo...",
       "placeholderUnknown": "Seleccionar medio...",
-      "placeholderVideo": "Seleccionar video..."
+      "placeholderVideo": "Seleccionar video...",
+      "topResult": "Mejor resultado: {result}"
     },
     "valueControl": {
       "decrement": "Disminuir valor",

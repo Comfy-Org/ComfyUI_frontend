@@ -52,9 +52,6 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   // ---- SAM3 3D segmentation (comfyui-sam3) ----
   ['sam3', 'LoadSAM3Model', 'model_path'],
 
-  // ---- Ultralytics detection (comfyui-impact-subpack) ----
-  ['ultralytics', 'UltralyticsDetectorProvider', 'model_name'],
-
   // ---- DepthAnything (comfyui-depthanythingv2, comfyui-depthanythingv3) ----
   ['depthanything', 'DownloadAndLoadDepthAnythingV2Model', 'model'],
   ['depthanything3', 'DownloadAndLoadDepthAnythingV3Model', 'model'],
@@ -200,5 +197,24 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   ['mediapipe', 'LivePortraitLoadMediaPipeCropper', ''],
 
   // ---- Superprompt text enhancement ----
-  ['superprompt-v1', 'Superprompt', '']
+  ['superprompt-v1', 'Superprompt', ''],
+
+  // ---- ComfyUI core background removal (v0.21+) ----
+  ['background_removal', 'LoadBackgroundRemovalModel', 'bg_removal_name'],
+
+  // ---- ComfyUI core frame interpolation (v0.21+) ----
+  ['frame_interpolation', 'FrameInterpolationModelLoader', 'model_name'],
+
+  // ---- FILM frame interpolation (ComfyUI-Frame-Interpolation) ----
+  ['film', 'FILM VFI', 'ckpt_name'],
+
+  // ---- Ultralytics YOLO detectors (ComfyUI-Impact-Pack) ----
+  ['ultralytics/bbox', 'UltralyticsDetectorProvider', 'model_name'],
+  ['ultralytics/segm', 'UltralyticsDetectorProvider', 'model_name'],
+
+  // ---- ComfyUI core geometry estimation (MoGe) ----
+  ['geometry_estimation', 'LoadMoGeModel', 'model_name'],
+
+  // ---- ComfyUI core optical flow (RAFT) ----
+  ['optical_flow', 'OpticalFlowLoader', 'model_name']
 ] as const satisfies ReadonlyArray<readonly [string, string, string]>

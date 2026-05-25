@@ -39,4 +39,18 @@ describe('getSvgMetadata', () => {
 
     expect(result).toEqual({})
   })
+
+  it('coerces bare NaN/Infinity tokens to null (Python json.dumps output)', async () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg">
+      <metadata><![CDATA[{"prompt": {"1": {"class_type": "KSampler", "inputs": {"cfg": NaN, "denoise": Infinity}}}}]]></metadata>
+    </svg>`
+
+    const result = await getSvgMetadata(svgFile(svg))
+
+    expect(result).toEqual({
+      prompt: {
+        '1': { class_type: 'KSampler', inputs: { cfg: null, denoise: null } }
+      }
+    })
+  })
 })

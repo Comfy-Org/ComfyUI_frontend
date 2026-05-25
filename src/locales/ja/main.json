@@ -410,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "ローカルで続行",
     "exploreCloud": "クラウドを無料で試す",
-    "feature1Title": "毎月400クレジット無料",
     "feature2Title": "どこでも即時利用可能",
     "feature3Title": "すぐに使えるモデル",
     "feature4Title": "人気カスタムノードパックをプリインストール",
@@ -785,6 +784,7 @@
     "AUDIO_ENCODER": "オーディオエンコーダ",
     "AUDIO_ENCODER_OUTPUT": "オーディオエンコーダ出力",
     "AUDIO_RECORD": "オーディオ録音",
+    "BACKGROUND_REMOVAL": "背景除去",
     "BOOLEAN": "ブール",
     "BOUNDING_BOX": "バウンディングボックス",
     "CAMERA_CONTROL": "カメラコントロール",
@@ -800,6 +800,8 @@
     "CONTROL_NET": "コントロールネット",
     "CURVE": "カーブ",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "顔検出モデル",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -815,6 +817,7 @@
     "HISTOGRAM": "ヒストグラム",
     "HOOKS": "フック",
     "HOOK_KEYFRAMES": "フックキーフレーム",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "画像",
     "IMAGECOMPARE": "画像比較",
     "INT": "整数",
@@ -835,6 +838,8 @@
     "MODEL": "モデル",
     "MODEL_PATCH": "モデルパッチ",
     "MODEL_TASK_ID": "モデルタスクID",
+    "MOGE_GEOMETRY": "MOGE_GEOMETRY",
+    "MOGE_MODEL": "MOGE_MODEL",
     "NOISE": "ノイズ",
     "OPENAI_CHAT_CONFIG": "OpenAIチャット設定",
     "OPENAI_INPUT_FILES": "OpenAI入力ファイル",
@@ -906,6 +911,44 @@
     "paused": "一時停止",
     "resume": "ダウンロードを再開"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "不明な入力",
+      "nodeName": "このノード"
+    },
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "サーバーに送信されたワークフローデータが空です。これは予期しないシステムエラーの可能性があります。"
+      },
+      "prompt_no_outputs": {
+        "desc": "ワークフローに出力ノード（例：画像を保存、画像をプレビュー）が含まれていないため、結果を生成できません。"
+      },
+      "server_error_cloud": {
+        "desc": "サーバーで予期しないエラーが発生しました。しばらくしてから再度お試しください。"
+      },
+      "server_error_local": {
+        "desc": "サーバーで予期しないエラーが発生しました。サーバーログを確認してください。"
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastMessageCloud": "このノードの実行中にエラーが発生しました。入力内容を確認するか、別の設定をお試しください。クレジットは消費されていません。",
+        "toastMessageLocal": "このノードの実行中にエラーが発生しました。入力内容を確認するか、別の設定をお試しください。",
+        "toastTitle": "{nodeName} の実行に失敗しました"
+      }
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "details": "{nodeName} に必須入力 {inputName} がありません。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "必須入力スロットに接続がありません。",
+        "title": "接続がありません",
+        "toastMessage": "{nodeName} に必須入力 {inputName} がありません。",
+        "toastTitle": "必須入力がありません"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "accessRestrictedTitle": "Access Restricted",
@@ -913,7 +956,8 @@
     "extensionFileHint": "これは次のスクリプトが原因かもしれません",
     "loadWorkflowTitle": "ワークフローデータの再読み込みエラーにより、読み込みが中止されました",
     "noStackTrace": "スタックトレースは利用できません",
-    "promptExecutionError": "プロンプトの実行に失敗しました"
+    "promptExecutionError": "プロンプトの実行に失敗しました",
+    "queueOpenWorkflowFailedTitle": "ワークフローのオープンに失敗しました"
   },
   "errorOverlay": {
     "errorCount": "{count} 件のエラー",
@@ -1041,6 +1085,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrgロゴ",
+    "comfyPackageOutdated": "インストールされている{name}のバージョン{installedVersion}は、必要なバージョン{requiredVersion}よりも低いです。",
     "comingSoon": "近日公開",
     "command": "コマンド",
     "commandProhibited": "コマンド {command} は禁止されています。詳細は管理者にお問い合わせください。",
@@ -1706,6 +1751,7 @@
     "reloadingModel": "モデルを再読み込み中...",
     "removeBackgroundImage": "背景画像を削除",
     "resizeNodeMatchOutput": "ノードを出力に合わせてリサイズ",
+    "retainViewOnReload": "モデルの再読み込み時にカメラビューを固定する",
     "scene": "シーン",
     "showGrid": "グリッドを表示",
     "showSkeleton": "スケルトンを表示",
@@ -1739,6 +1785,10 @@
     "outdatedVersion": "このワークフローは新しいバージョンのComfyUI（{version}）で作成されました。一部のノードが正しく動作しない場合があります。",
     "outdatedVersionGeneric": "このワークフローは新しいバージョンのComfyUIで作成されました。一部のノードが正しく動作しない場合があります。",
     "unknownVersion": "不明"
+  },
+  "logsTerminal": {
+    "loadError": "ログを読み込めません。ComfyUI バックエンドが最新であることを確認してください。",
+    "resyncError": "バックエンド再接続後にログを再同期できませんでした。再度コンソールを開いて再試行してください。"
   },
   "maintenance": {
     "None": "なし",
@@ -2253,6 +2303,7 @@
     "": "",
     "3d": "3d",
     "3d_models": "3Dモデル",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
@@ -2268,6 +2319,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2284,15 +2336,13 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
-    "_for_testing": "_テスト用",
+    "adjustments": "調整",
     "advanced": "高度な機能",
-    "animation": "アニメーション",
-    "api": "API",
     "api node": "apiノード",
     "attention_experiments": "アテンション実験",
     "audio": "オーディオ",
+    "background removal": "背景除去",
     "batch": "バッチ",
-    "camera": "カメラ",
     "chroma_radiance": "chroma_radiance",
     "clip": "クリップ",
     "color": "カラー",
@@ -2301,7 +2351,6 @@
     "cond pair": "条件ペア",
     "cond single": "条件単体",
     "conditioning": "条件付け",
-    "context": "コンテキスト",
     "controlnet": "コントロールネット",
     "create": "作成",
     "custom_sampling": "カスタムサンプリング",
@@ -2310,7 +2359,10 @@
     "deprecated": "非推奨",
     "detection": "検出",
     "edit_models": "モデル編集",
+    "experimental": "実験的",
+    "filters": "フィルター",
     "flux": "flux",
+    "geometry_estimation": "geometry_estimation",
     "gligen": "グライジェン",
     "guidance": "ガイダンス",
     "guiders": "ガイダー",
@@ -2325,7 +2377,6 @@
     "lotus": "lotus",
     "ltxv": "LTXV",
     "mask": "マスク",
-    "math": "数学",
     "model": "モデル",
     "model_merging": "モデルマージ",
     "model_patches": "モデルパッチ",
@@ -2333,16 +2384,13 @@
     "noise": "ノイズ",
     "operations": "操作",
     "photomaker": "photomaker",
-    "postprocessing": "ポストプロセッシング",
     "preprocessors": "前処理",
     "primitive": "プリミティブ",
     "qwen": "qwen",
     "samplers": "サンプラー",
     "sampling": "サンプリング",
-    "save": "保存",
     "schedulers": "スケジューラー",
     "scheduling": "スケジューリング",
-    "sd": "sd",
     "sd3": "SD3",
     "shader": "shader",
     "sigmas": "シグマ",
@@ -2350,7 +2398,6 @@
     "style_model": "スタイルモデル",
     "supir": "supir",
     "text": "テキスト",
-    "textgen": "textgen",
     "training": "トレーニング",
     "transform": "変換",
     "unet": "U-Net",
@@ -2429,6 +2476,43 @@
     },
     "title": "お使いのデバイスはサポートされていません"
   },
+  "oauth": {
+    "consent": {
+      "allow": "続行",
+      "appTypeNative": "ネイティブアプリ",
+      "appTypeWeb": "ウェブアプリ",
+      "deny": "キャンセル",
+      "errorExpired": "この同意リクエストは期限切れ、またはすでに使用されています。クライアントアプリから再起動してください。",
+      "errorScopeBroadening": "以前に承認された権限ではこのリクエストをカバーできません。新しい権限で再認可が必要です。",
+      "errorUnavailable": "現在この機能は利用できません。問題が続く場合はサポートにお問い合わせください。",
+      "genericError": "OAuthリクエストに失敗しました。クライアントアプリから再起動してください。",
+      "loading": "認可リクエストを読み込み中…",
+      "missingRequest": "この認可リクエストが見つかりません。クライアントアプリから再起動してください。",
+      "noWorkspaces": "このリクエストに利用可能なワークスペースがありません。",
+      "permissionsHeader": "権限",
+      "redirectNotice": "リダイレクト先：",
+      "resourceFallback": "このアプリ",
+      "sessionError": "セッションの確立に失敗しました。もう一度お試しください。",
+      "sessionErrorToastSummary": "OAuthサインインを続行できませんでした",
+      "subtitle": "続行するには{resource}にサインインしてください",
+      "title": "{client} がアクセスを要求しています",
+      "workspaceHelp": "権限はこのワークスペースのみに適用されます。",
+      "workspaceLabel": "ワークスペース"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "あなたに代わってワークフローを実行"
+      },
+      "mcp:tools:read": {
+        "label": "利用可能なワークフローツールの表示"
+      }
+    },
+    "workspace": {
+      "member": "メンバー",
+      "owner": "オーナー",
+      "personal": "個人"
+    }
+  },
   "openSharedWorkflow": {
     "author": "作成者：",
     "copyAssetsAndOpen": "アセットをインポートしてワークフローを開く",
@@ -2439,7 +2523,8 @@
     "nonPublicAssetsWarningLine1": "このワークフローには非公開のアセットが含まれています。",
     "nonPublicAssetsWarningLine2": "ワークフローを開くと、これらがライブラリにインポートされます",
     "openWithoutImporting": "インポートせずに開く",
-    "openWorkflow": "ワークフローを開く"
+    "openWorkflow": "ワークフローを開く",
+    "opening": "共有ワークフローを開いています..."
   },
   "painter": {
     "background": "背景",
@@ -2655,20 +2740,6 @@
     "normal": "ノーマル",
     "parameters": "パラメータ",
     "pinned": "ピン留め",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "サーバーに送信されたワークフローデータが空です。これは予期しないシステムエラーの可能性があります。"
-      },
-      "prompt_no_outputs": {
-        "desc": "ワークフローに結果を生成する出力ノード（例：画像を保存、画像をプレビュー）が含まれていません。"
-      },
-      "server_error_cloud": {
-        "desc": "サーバーで予期しないエラーが発生しました。しばらくしてから再度お試しください。"
-      },
-      "server_error_local": {
-        "desc": "サーバーで予期しないエラーが発生しました。サーバーログをご確認ください。"
-      }
-    },
     "properties": "プロパティ",
     "removeFavorite": "お気に入りを解除",
     "resetAllParameters": "すべてのパラメータをリセット",
@@ -3066,6 +3137,7 @@
         "sourceDesc": "ソースタイプ（Core、Custom、API）でグループ化"
       },
       "noBookmarkedNodes": "お気に入りはまだありません",
+      "noMatchingNodes": "「{query}」に一致するノードはありません",
       "resetView": "ビューをデフォルトにリセット",
       "sections": {
         "bookmarked": "ブックマーク済み",
@@ -3451,8 +3523,7 @@
       "newest": "新着順",
       "popular": "人気",
       "recommended": "おすすめ",
-      "searchPlaceholder": "検索...",
-      "vramLowToHigh": "VRAM使用量（少ない順）"
+      "searchPlaceholder": "検索..."
     },
     "sorting": "並び替え",
     "title": "テンプレートを利用して開始",
@@ -3616,7 +3687,8 @@
       "placeholderMesh": "メッシュを選択...",
       "placeholderModel": "モデルを選択...",
       "placeholderUnknown": "メディアを選択...",
-      "placeholderVideo": "動画を選択..."
+      "placeholderVideo": "動画を選択...",
+      "topResult": "最上位の結果: {result}"
     },
     "valueControl": {
       "decrement": "値を減少",

@@ -46,10 +46,17 @@ function createMockPointerEvent(
   return mockEvent as PointerEvent
 }
 
-function createMockWheelEvent(ctrlKey = false, metaKey = false): WheelEvent {
+function createMockWheelEvent(
+  ctrlKey = false,
+  metaKey = false,
+  deltaX = 0,
+  deltaY = 0
+): WheelEvent {
   const mockEvent: Partial<WheelEvent> = {
     ctrlKey,
     metaKey,
+    deltaX,
+    deltaY,
     preventDefault: vi.fn(),
     stopPropagation: vi.fn()
   }
@@ -219,6 +226,108 @@ describe('useCanvasInteractions', () => {
 
       expect(mockEvent.preventDefault).toHaveBeenCalled()
       expect(mockEvent.stopPropagation).toHaveBeenCalled()
+
+      document.body.removeChild(captureElement)
+    })
+
+    /** Regression: trackpad pinch-zoom inside a focused textarea must not
+     *  fall through to browser page zoom in non-standard navigation modes. */
+    it.for(['legacy', 'custom'])(
+      'should forward ctrl+wheel to canvas when capture element IS focused in %s mode',
+      (mode) => {
+        const { get } = useSettingStore()
+        vi.mocked(get).mockReturnValue(mode)
+
+        const captureElement = document.createElement('div')
+        captureElement.setAttribute('data-capture-wheel', 'true')
+        const textarea = document.createElement('textarea')
+        captureElement.appendChild(textarea)
+        document.body.appendChild(captureElement)
+        textarea.focus()
+
+        const { handleWheel } = useCanvasInteractions()
+        const mockEvent = createMockWheelEvent(true)
+        Object.defineProperty(mockEvent, 'target', { value: textarea })
+
+        handleWheel(mockEvent)
+
+        expect(mockEvent.preventDefault).toHaveBeenCalled()
+        expect(mockEvent.stopPropagation).toHaveBeenCalled()
+
+        document.body.removeChild(captureElement)
+      }
+    )
+
+    it('should forward meta+wheel to canvas when capture element IS focused', () => {
+      const { get } = useSettingStore()
+      vi.mocked(get).mockReturnValue('standard')
+
+      const captureElement = document.createElement('div')
+      captureElement.setAttribute('data-capture-wheel', 'true')
+      const textarea = document.createElement('textarea')
+      captureElement.appendChild(textarea)
+      document.body.appendChild(captureElement)
+      textarea.focus()
+
+      const { handleWheel } = useCanvasInteractions()
+      const mockEvent = createMockWheelEvent(false, true)
+      Object.defineProperty(mockEvent, 'target', { value: textarea })
+
+      handleWheel(mockEvent)
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled()
+      expect(mockEvent.stopPropagation).toHaveBeenCalled()
+
+      document.body.removeChild(captureElement)
+    })
+
+    /** Regression: trackpad two-finger horizontal swipes inside a focused
+     *  textarea must not fall through to browser back/forward navigation. */
+    it.for(['standard', 'legacy', 'custom'])(
+      'should forward horizontal-dominant wheel to canvas when capture element IS focused in %s mode',
+      (mode) => {
+        const { get } = useSettingStore()
+        vi.mocked(get).mockReturnValue(mode)
+
+        const captureElement = document.createElement('div')
+        captureElement.setAttribute('data-capture-wheel', 'true')
+        const textarea = document.createElement('textarea')
+        captureElement.appendChild(textarea)
+        document.body.appendChild(captureElement)
+        textarea.focus()
+
+        const { handleWheel } = useCanvasInteractions()
+        const mockEvent = createMockWheelEvent(false, false, 30, 5)
+        Object.defineProperty(mockEvent, 'target', { value: textarea })
+
+        handleWheel(mockEvent)
+
+        expect(mockEvent.preventDefault).toHaveBeenCalled()
+        expect(mockEvent.stopPropagation).toHaveBeenCalled()
+
+        document.body.removeChild(captureElement)
+      }
+    )
+
+    it('should NOT forward vertical-dominant wheel when capture element IS focused', () => {
+      const { get } = useSettingStore()
+      vi.mocked(get).mockReturnValue('standard')
+
+      const captureElement = document.createElement('div')
+      captureElement.setAttribute('data-capture-wheel', 'true')
+      const textarea = document.createElement('textarea')
+      captureElement.appendChild(textarea)
+      document.body.appendChild(captureElement)
+      textarea.focus()
+
+      const { handleWheel } = useCanvasInteractions()
+      const mockEvent = createMockWheelEvent(false, false, 0, 30)
+      Object.defineProperty(mockEvent, 'target', { value: textarea })
+
+      handleWheel(mockEvent)
+
+      expect(mockEvent.preventDefault).not.toHaveBeenCalled()
+      expect(mockEvent.stopPropagation).not.toHaveBeenCalled()
 
       document.body.removeChild(captureElement)
     })
