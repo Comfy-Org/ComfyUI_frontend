@@ -104,6 +104,8 @@ class Load3d {
   private disposeContextMenuGuard: (() => void) | null = null
   private resizeObserver: ResizeObserver | null = null
   private getZoomScaleCallback: (() => number) | undefined
+  private retainViewOnReload: boolean = false
+  private hasLoadedModel: boolean = false
 
   constructor(
     container: Element | HTMLElement,
@@ -564,13 +566,25 @@ class Load3d {
     }
   }
 
+  public setRetainViewOnReload(value: boolean): void {
+    this.retainViewOnReload = value
+  }
+
   private async _loadModelInternal(
     url: string,
     originalFileName?: string,
     options?: LoadModelOptions
   ): Promise<void> {
-    this.cameraManager.reset()
-    this.controlsManager.reset()
+    // First load always uses default framing; retain only applies on reload.
+    const shouldRetainView = this.retainViewOnReload && this.hasLoadedModel
+    const savedCameraState = shouldRetainView
+      ? this.cameraManager.getCameraState()
+      : null
+
+    if (!shouldRetainView) {
+      this.cameraManager.reset()
+      this.controlsManager.reset()
+    }
     this.gizmoManager.detach()
     this.modelManager.clearModel()
     this.animationManager.dispose()
@@ -583,6 +597,18 @@ class Load3d {
         this.modelManager.currentModel,
         this.modelManager.originalModel
       )
+      this.hasLoadedModel = true
+    }
+
+    if (savedCameraState) {
+      // setupForModel runs during loadModel and clobbers the camera; restore on top.
+      if (
+        savedCameraState.cameraType !==
+        this.cameraManager.getCurrentCameraType()
+      ) {
+        this.toggleCamera(savedCameraState.cameraType)
+      }
+      this.cameraManager.setCameraState(savedCameraState)
     }
 
     this.handleResize()
@@ -607,6 +633,7 @@ class Load3d {
     this.gizmoManager.detach()
     this.modelManager.clearModel()
     this.adapterRef.current = null
+    this.hasLoadedModel = false
     this.forceRender()
   }
 

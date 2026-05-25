@@ -15,7 +15,7 @@ const row2 = [
 
 <template>
   <section
-    class="bg-primary-comfy-ink flex flex-col items-center px-4 py-24 lg:px-6 lg:py-32"
+    class="bg-primary-comfy-ink max-w-9xl mx-auto flex flex-col items-center px-4 py-24 lg:px-6 lg:py-32"
   >
     <!-- Node rows -->
     <div

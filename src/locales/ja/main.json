@@ -800,7 +800,7 @@
     "CONTROL_NET": "コントロールネット",
     "CURVE": "カーブ",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
-    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_DETECTION_MODEL": "顔検出モデル",
     "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
@@ -910,6 +910,44 @@
     "pause": "ダウンロードを一時停止",
     "paused": "一時停止",
     "resume": "ダウンロードを再開"
+  },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "不明な入力",
+      "nodeName": "このノード"
+    },
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "サーバーに送信されたワークフローデータが空です。これは予期しないシステムエラーの可能性があります。"
+      },
+      "prompt_no_outputs": {
+        "desc": "ワークフローに出力ノード（例：画像を保存、画像をプレビュー）が含まれていないため、結果を生成できません。"
+      },
+      "server_error_cloud": {
+        "desc": "サーバーで予期しないエラーが発生しました。しばらくしてから再度お試しください。"
+      },
+      "server_error_local": {
+        "desc": "サーバーで予期しないエラーが発生しました。サーバーログを確認してください。"
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastMessageCloud": "このノードの実行中にエラーが発生しました。入力内容を確認するか、別の設定をお試しください。クレジットは消費されていません。",
+        "toastMessageLocal": "このノードの実行中にエラーが発生しました。入力内容を確認するか、別の設定をお試しください。",
+        "toastTitle": "{nodeName} の実行に失敗しました"
+      }
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "details": "{nodeName} に必須入力 {inputName} がありません。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "必須入力スロットに接続がありません。",
+        "title": "接続がありません",
+        "toastMessage": "{nodeName} に必須入力 {inputName} がありません。",
+        "toastTitle": "必須入力がありません"
+      }
+    }
   },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
@@ -1713,6 +1751,7 @@
     "reloadingModel": "モデルを再読み込み中...",
     "removeBackgroundImage": "背景画像を削除",
     "resizeNodeMatchOutput": "ノードを出力に合わせてリサイズ",
+    "retainViewOnReload": "モデルの再読み込み時にカメラビューを固定する",
     "scene": "シーン",
     "showGrid": "グリッドを表示",
     "showSkeleton": "スケルトンを表示",
@@ -2280,6 +2319,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2296,6 +2336,7 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "調整",
     "advanced": "高度な機能",
     "api node": "apiノード",
     "attention_experiments": "アテンション実験",
@@ -2434,6 +2475,43 @@
       "windows": "Windows (CUDA対応のNvidia GPU)"
     },
     "title": "お使いのデバイスはサポートされていません"
+  },
+  "oauth": {
+    "consent": {
+      "allow": "続行",
+      "appTypeNative": "ネイティブアプリ",
+      "appTypeWeb": "ウェブアプリ",
+      "deny": "キャンセル",
+      "errorExpired": "この同意リクエストは期限切れ、またはすでに使用されています。クライアントアプリから再起動してください。",
+      "errorScopeBroadening": "以前に承認された権限ではこのリクエストをカバーできません。新しい権限で再認可が必要です。",
+      "errorUnavailable": "現在この機能は利用できません。問題が続く場合はサポートにお問い合わせください。",
+      "genericError": "OAuthリクエストに失敗しました。クライアントアプリから再起動してください。",
+      "loading": "認可リクエストを読み込み中…",
+      "missingRequest": "この認可リクエストが見つかりません。クライアントアプリから再起動してください。",
+      "noWorkspaces": "このリクエストに利用可能なワークスペースがありません。",
+      "permissionsHeader": "権限",
+      "redirectNotice": "リダイレクト先：",
+      "resourceFallback": "このアプリ",
+      "sessionError": "セッションの確立に失敗しました。もう一度お試しください。",
+      "sessionErrorToastSummary": "OAuthサインインを続行できませんでした",
+      "subtitle": "続行するには{resource}にサインインしてください",
+      "title": "{client} がアクセスを要求しています",
+      "workspaceHelp": "権限はこのワークスペースのみに適用されます。",
+      "workspaceLabel": "ワークスペース"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "あなたに代わってワークフローを実行"
+      },
+      "mcp:tools:read": {
+        "label": "利用可能なワークフローツールの表示"
+      }
+    },
+    "workspace": {
+      "member": "メンバー",
+      "owner": "オーナー",
+      "personal": "個人"
+    }
   },
   "openSharedWorkflow": {
     "author": "作成者：",
@@ -2662,20 +2740,6 @@
     "normal": "ノーマル",
     "parameters": "パラメータ",
     "pinned": "ピン留め",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "サーバーに送信されたワークフローデータが空です。これは予期しないシステムエラーの可能性があります。"
-      },
-      "prompt_no_outputs": {
-        "desc": "ワークフローに結果を生成する出力ノード（例：画像を保存、画像をプレビュー）が含まれていません。"
-      },
-      "server_error_cloud": {
-        "desc": "サーバーで予期しないエラーが発生しました。しばらくしてから再度お試しください。"
-      },
-      "server_error_local": {
-        "desc": "サーバーで予期しないエラーが発生しました。サーバーログをご確認ください。"
-      }
-    },
     "properties": "プロパティ",
     "removeFavorite": "お気に入りを解除",
     "resetAllParameters": "すべてのパラメータをリセット",
@@ -3073,6 +3137,7 @@
         "sourceDesc": "ソースタイプ（Core、Custom、API）でグループ化"
       },
       "noBookmarkedNodes": "お気に入りはまだありません",
+      "noMatchingNodes": "「{query}」に一致するノードはありません",
       "resetView": "ビューをデフォルトにリセット",
       "sections": {
         "bookmarked": "ブックマーク済み",
@@ -3458,8 +3523,7 @@
       "newest": "新着順",
       "popular": "人気",
       "recommended": "おすすめ",
-      "searchPlaceholder": "検索...",
-      "vramLowToHigh": "VRAM使用量（少ない順）"
+      "searchPlaceholder": "検索..."
     },
     "sorting": "並び替え",
     "title": "テンプレートを利用して開始",
@@ -3623,7 +3687,8 @@
       "placeholderMesh": "メッシュを選択...",
       "placeholderModel": "モデルを選択...",
       "placeholderUnknown": "メディアを選択...",
-      "placeholderVideo": "動画を選択..."
+      "placeholderVideo": "動画を選択...",
+      "topResult": "最上位の結果: {result}"
     },
     "valueControl": {
       "decrement": "値を減少",
