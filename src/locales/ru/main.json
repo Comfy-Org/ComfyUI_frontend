@@ -237,6 +237,7 @@
     },
     "login": {
       "andText": "и",
+      "backToGithubLogin": "Зарегистрироваться через Github",
       "backToLogin": "Вернуться к входу",
       "backToSocialLogin": "Зарегистрируйтесь через Google или Github",
       "confirmPasswordLabel": "Подтвердите пароль",
@@ -292,7 +293,9 @@
       "title": "Требуется повторная аутентификация"
     },
     "signOut": {
+      "saveFailed": "Выход отменён, так как не удалось сохранить «{workflow}».",
       "signOut": "Выйти",
+      "signOutAnyway": "Выйти всё равно",
       "success": "Вы успешно вышли из системы",
       "successDetail": "Вы вышли из своей учетной записи.",
       "unsavedChangesMessage": "У вас есть несохранённые изменения, которые будут потеряны при выходе из системы. Вы хотите продолжить?",
@@ -407,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "Продолжить локально",
     "exploreCloud": "Попробовать облако бесплатно",
-    "feature1Title": "400 бесплатных кредитов в месяц",
     "feature2Title": "Работает везде и мгновенно",
     "feature3Title": "Модели готовы к использованию",
     "feature4Title": "Лучшие пользовательские пакеты узлов предустановлены",
@@ -461,6 +463,12 @@
       "wantToRun": "Хотите запустить ComfyUI локально?"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "Пожалуйста, выберите вариант.",
+        "describeAnswer": "Пожалуйста, опишите ваш ответ.",
+        "selectAtLeastOne": "Пожалуйста, выберите хотя бы один вариант."
+      },
+      "intro": "Помогите нам адаптировать ваш опыт работы с ComfyUI.",
       "options": {
         "familiarity": {
           "advanced": "Продвинутый пользователь (пользовательские рабочие процессы)",
@@ -469,45 +477,43 @@
           "new": "Новичок в ComfyUI (никогда не использовал)",
           "starting": "Только начинаю (следую руководствам)"
         },
-        "industry": {
-          "architecture": "Архитектура",
-          "education": "Образование",
-          "film_tv_animation": "Кино, ТВ и анимация",
-          "fine_art": "Изобразительное искусство и иллюстрация",
-          "gaming": "Игровая индустрия",
-          "marketing": "Маркетинг и реклама",
-          "other": "Другое",
-          "otherPlaceholder": "Пожалуйста, уточните",
-          "product_design": "Продуктовый и графический дизайн",
-          "software": "Программное обеспечение и технологии"
-        },
-        "making": {
-          "3d": "3D-ресурсы",
+        "intent": {
+          "3d_game": "3D-ассеты / игровые ассеты",
+          "api": "API endpoints для запуска workflow",
+          "apps": "Упрощённые приложения из workflow",
           "audio": "Аудио / музыка",
-          "custom_nodes": "Пользовательские узлы и рабочие процессы",
+          "custom_nodes": "Пользовательские node",
           "images": "Изображения",
-          "video": "Видео и анимация"
+          "not_sure": "Не уверен",
+          "videos": "Видео",
+          "workflows": "Пользовательские workflow или pipeline"
         },
-        "purpose": {
-          "client": "Работа с клиентами (фриланс)",
-          "community": "Вклад в сообщество (узлы, рабочие процессы и т.д.)",
-          "inhouse": "Моё рабочее место (внутреннее использование)",
-          "personal": "Личные проекты / хобби",
-          "research": "Академические исследования"
+        "source": {
+          "conference": "Конференция или мероприятие",
+          "discord": "Discord / сообщество",
+          "friend": "Друг или коллега",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "Новостная рассылка или блог",
+          "other": "Другое",
+          "reddit": "Reddit",
+          "search": "Google / поиск",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
+        },
+        "usage": {
+          "education": "Образование (студент или преподаватель)",
+          "personal": "Личное использование",
+          "work": "Работа"
         }
       },
       "placeholder": "Вопросы для опроса",
-      "questions": {
-        "familiarity": "Насколько вы знакомы с ComfyUI?",
-        "industry": "В какой отрасли вы работаете?",
-        "making": "Что вы планируете создавать?",
-        "purpose": "Для чего вы в основном будетете использовать ComfyUI?"
-      },
       "steps": {
         "familiarity": "Насколько вы знакомы с ComfyUI?",
-        "industry": "В какой отрасли вы работаете?",
-        "making": "Что вы планируете создавать?",
-        "purpose": "Для чего вы в основном будете использовать ComfyUI?"
+        "intent": "Что вы хотите создавать с помощью ComfyUI?",
+        "source": "Где вы узнали о ComfyUI?",
+        "usage": "Как вы планируете использовать ComfyUI?"
       },
       "title": "Облачный опрос"
     }
@@ -522,9 +528,9 @@
   "cloudStart_title": "начать создавать за секунды",
   "cloudStart_wantToRun": "Хотите запустить ComfyUI локально?",
   "cloudSurvey_steps_familiarity": "Насколько вы знакомы с ComfyUI?",
-  "cloudSurvey_steps_industry": "В какой отрасли вы работаете?",
-  "cloudSurvey_steps_making": "Что вы планируете создавать?",
-  "cloudSurvey_steps_purpose": "Для чего вы в основном будете использовать ComfyUI?",
+  "cloudSurvey_steps_intent": "Что вы хотите создавать с помощью ComfyUI?",
+  "cloudSurvey_steps_source": "Где вы узнали о ComfyUI?",
+  "cloudSurvey_steps_usage": "Как вы планируете использовать ComfyUI?",
   "cloudWaitlist_contactLink": "здесь",
   "cloudWaitlist_questionsText": "Есть вопросы? Свяжитесь с нами",
   "color": {
@@ -778,6 +784,7 @@
     "AUDIO_ENCODER": "АУДИО_КОДЕР",
     "AUDIO_ENCODER_OUTPUT": "ВЫХОД_АУДИО_КОДЕРА",
     "AUDIO_RECORD": "АУДИО_ЗАПИСЬ",
+    "BACKGROUND_REMOVAL": "УДАЛЕНИЕ_ФОНА",
     "BOOLEAN": "БУЛЕВО",
     "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "УПРАВЛЕНИЕ_КАМЕРОЙ",
@@ -793,6 +800,8 @@
     "CONTROL_NET": "CONTROL_NET",
     "CURVE": "КРИВАЯ",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "МОДЕЛЬ_ОПРЕДЕЛЕНИЯ_ЛИЦА",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -808,6 +817,7 @@
     "HISTOGRAM": "ГИСТОГРАММА",
     "HOOKS": "ХУКИ",
     "HOOK_KEYFRAMES": "КЛЮЧЕВЫЕ_КАДРЫ_ХУКА",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "ИЗОБРАЖЕНИЕ",
     "IMAGECOMPARE": "СРАВНЕНИЕ_ИЗОБРАЖЕНИЙ",
     "INT": "ЦЕЛОЕ",
@@ -828,9 +838,12 @@
     "MODEL": "МОДЕЛЬ",
     "MODEL_PATCH": "ПАТЧ_МОДЕЛИ",
     "MODEL_TASK_ID": "ID_ЗАДАЧИ_МОДЕЛИ",
+    "MOGE_GEOMETRY": "MOGE_ГЕОМЕТРИЯ",
+    "MOGE_MODEL": "MOGE_МОДЕЛЬ",
     "NOISE": "ШУМ",
     "OPENAI_CHAT_CONFIG": "КОНФИГУРАЦИЯ_ЧАТА_OPENAI",
     "OPENAI_INPUT_FILES": "ВХОДНЫЕ_ФАЙЛЫ_OPENAI",
+    "OPTICAL_FLOW": "OPTICAL_FLOW",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "ШАБЛОН_PIXVERSE",
     "POSE_KEYPOINT": "POSE_KEYPOINT",
@@ -898,6 +911,44 @@
     "paused": "Приостановлено",
     "resume": "Возобновить загрузку"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "неизвестный вход",
+      "nodeName": "Этот узел"
+    },
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "Данные рабочего процесса, отправленные на сервер, пусты. Это может быть неожиданной системной ошибкой."
+      },
+      "prompt_no_outputs": {
+        "desc": "В рабочем процессе отсутствуют выходные узлы (например, Сохранить изображение, Просмотр изображения) для получения результата."
+      },
+      "server_error_cloud": {
+        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, попробуйте позже."
+      },
+      "server_error_local": {
+        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, проверьте журналы сервера."
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastMessageCloud": "Этот узел вызвал ошибку во время выполнения. Проверьте его входные данные или попробуйте другую конфигурацию. Кредиты не списаны.",
+        "toastMessageLocal": "Этот узел вызвал ошибку во время выполнения. Проверьте его входные данные или попробуйте другую конфигурацию.",
+        "toastTitle": "{nodeName} завершился с ошибкой"
+      }
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "details": "{nodeName} отсутствует обязательный вход: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Требуемые входные слоты не имеют подключений.",
+        "title": "Отсутствует соединение",
+        "toastMessage": "{nodeName} отсутствует обязательный вход: {inputName}",
+        "toastTitle": "Отсутствует обязательный вход"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "accessRestrictedTitle": "Access Restricted",
@@ -905,7 +956,8 @@
     "extensionFileHint": "Это может быть связано со следующим скриптом",
     "loadWorkflowTitle": "Загрузка прервана из-за ошибки при перезагрузке данных рабочего процесса",
     "noStackTrace": "Стек вызовов недоступен",
-    "promptExecutionError": "Ошибка выполнения запроса"
+    "promptExecutionError": "Ошибка выполнения запроса",
+    "queueOpenWorkflowFailedTitle": "Не удалось открыть рабочий процесс"
   },
   "errorOverlay": {
     "errorCount": "{count} ОШИБОК | {count} ОШИБКА | {count} ОШИБКИ",
@@ -1017,6 +1069,7 @@
     "cancel": "Отмена",
     "cancelled": "Отменено",
     "capture": "захват",
+    "categories": "Категории",
     "category": "Категория",
     "changeKeybinding": "Изменить сочетание клавиш",
     "chart": "Диаграмма",
@@ -1032,6 +1085,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "Логотип ComfyOrg",
+    "comfyPackageOutdated": "Установленная версия {name} ({installedVersion}) ниже требуемой версии ({requiredVersion}).",
     "comingSoon": "Скоро будет",
     "command": "Команда",
     "commandProhibited": "Команда {command} запрещена. Свяжитесь с администратором для получения дополнительной информации.",
@@ -1731,6 +1785,10 @@
     "outdatedVersionGeneric": "Этот рабочий процесс был создан в более новой версии ComfyUI. Некоторые узлы могут работать некорректно.",
     "unknownVersion": "неизвестно"
   },
+  "logsTerminal": {
+    "loadError": "Не удалось загрузить логи, пожалуйста, убедитесь, что вы обновили ваш ComfyUI backend.",
+    "resyncError": "Не удалось повторно синхронизировать логи после переподключения backend. Откройте консоль заново, чтобы повторить попытку."
+  },
   "maintenance": {
     "None": "Нет",
     "OK": "OK",
@@ -2244,6 +2302,7 @@
     "": "",
     "3d": "3d",
     "3d_models": "3d_модели",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
@@ -2258,8 +2317,8 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2276,23 +2335,21 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
-    "_for_testing": "_для_тестирования",
+    "adjustments": "корректировки",
     "advanced": "расширенный",
-    "animation": "анимация",
-    "api": "api",
     "api node": "api-узел",
     "attention_experiments": "эксперименты_внимания",
     "audio": "аудио",
+    "background removal": "удаление фона",
     "batch": "пакет",
-    "camera": "камера",
     "chroma_radiance": "chroma_radiance",
     "clip": "clip",
+    "color": "цвет",
     "combine": "объединить",
     "compositing": "композиционирование",
     "cond pair": "условие_пара",
     "cond single": "условие_одиночное",
     "conditioning": "условие",
-    "context": "контекст",
     "controlnet": "controlnet",
     "create": "создать",
     "custom_sampling": "пользовательский_семплинг",
@@ -2301,7 +2358,10 @@
     "deprecated": "устаревший",
     "detection": "детекция",
     "edit_models": "редактировать_модели",
+    "experimental": "экспериментальное",
+    "filters": "фильтры",
     "flux": "flux",
+    "geometry_estimation": "оценка_геометрии",
     "gligen": "gligen",
     "guidance": "направление",
     "guiders": "направляющие",
@@ -2316,7 +2376,6 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "mask": "маска",
-    "math": "математика",
     "model": "модель",
     "model_merging": "слияние_моделей",
     "model_patches": "патчи_моделей",
@@ -2324,25 +2383,20 @@
     "noise": "шум",
     "operations": "операции",
     "photomaker": "photomaker",
-    "postprocessing": "постобработка",
     "preprocessors": "предобработчики",
     "primitive": "примитив",
     "qwen": "qwen",
     "samplers": "семплеры",
     "sampling": "выборка",
-    "save": "сохранить",
     "schedulers": "schedulers",
     "scheduling": "scheduling",
-    "sd": "sd",
     "sd3": "sd3",
     "shader": "шейдер",
     "sigmas": "сигмы",
     "stable_cascade": "стабильная_каскадная",
-    "string": "строка",
     "style_model": "модель_стиля",
     "supir": "supir",
     "text": "текст",
-    "textgen": "textgen",
     "training": "обучение",
     "transform": "преобразование",
     "unet": "unet",
@@ -2421,6 +2475,43 @@
     },
     "title": "Ваше устройство не поддерживается"
   },
+  "oauth": {
+    "consent": {
+      "allow": "Продолжить",
+      "appTypeNative": "Нативное приложение",
+      "appTypeWeb": "Веб-приложение",
+      "deny": "Отмена",
+      "errorExpired": "Этот запрос на согласие истёк или уже был использован. Пожалуйста, перезапустите из клиентского приложения.",
+      "errorScopeBroadening": "Ранее одобренные разрешения не покрывают этот запрос. Необходимо повторно авторизоваться с новыми разрешениями.",
+      "errorUnavailable": "Эта функция сейчас недоступна. Если проблема сохраняется, обратитесь в поддержку.",
+      "genericError": "Ошибка OAuth-запроса. Пожалуйста, перезапустите из клиентского приложения.",
+      "loading": "Загрузка запроса авторизации…",
+      "missingRequest": "Этот запрос авторизации отсутствует. Пожалуйста, перезапустите из клиентского приложения.",
+      "noWorkspaces": "Нет доступных рабочих пространств для этого запроса.",
+      "permissionsHeader": "Разрешения",
+      "redirectNotice": "Вы будете перенаправлены на",
+      "resourceFallback": "это приложение",
+      "sessionError": "Не удалось установить сессию. Пожалуйста, попробуйте ещё раз.",
+      "sessionErrorToastSummary": "Не удалось продолжить вход через OAuth",
+      "subtitle": "Войдите в {resource}, чтобы продолжить",
+      "title": "{client} запрашивает доступ",
+      "workspaceHelp": "Разрешения применяются только к этому рабочему пространству.",
+      "workspaceLabel": "Рабочее пространство"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "Запуск workflow от вашего имени"
+      },
+      "mcp:tools:read": {
+        "label": "Просмотр доступных инструментов workflow"
+      }
+    },
+    "workspace": {
+      "member": "Участник",
+      "owner": "Владелец",
+      "personal": "Личное"
+    }
+  },
   "openSharedWorkflow": {
     "author": "Автор:",
     "copyAssetsAndOpen": "Импортировать ресурсы и открыть рабочий процесс",
@@ -2431,7 +2522,8 @@
     "nonPublicAssetsWarningLine1": "Этот рабочий процесс содержит непубличные ресурсы.",
     "nonPublicAssetsWarningLine2": "Они будут импортированы в вашу библиотеку при открытии рабочего процесса",
     "openWithoutImporting": "Открыть без импорта",
-    "openWorkflow": "Открыть рабочий процесс"
+    "openWorkflow": "Открыть рабочий процесс",
+    "opening": "Открытие общего рабочего процесса..."
   },
   "painter": {
     "background": "Фон",
@@ -2647,20 +2739,6 @@
     "normal": "Обычный",
     "parameters": "Параметры",
     "pinned": "Закреплено",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "Данные рабочего процесса, отправленные на сервер, пусты. Это может быть неожиданной системной ошибкой."
-      },
-      "prompt_no_outputs": {
-        "desc": "В рабочем процессе отсутствуют выходные узлы (например, Сохранить изображение, Предпросмотр изображения) для получения результата."
-      },
-      "server_error_cloud": {
-        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, попробуйте позже."
-      },
-      "server_error_local": {
-        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, проверьте логи сервера."
-      }
-    },
     "properties": "Свойства",
     "removeFavorite": "Убрать из избранного",
     "resetAllParameters": "Сбросить все параметры",
@@ -3058,6 +3136,7 @@
         "sourceDesc": "Группировать по типу источника (Core, Custom, API)"
       },
       "noBookmarkedNodes": "Избранных пока нет",
+      "noMatchingNodes": "Нет узлов, соответствующих «{query}»",
       "resetView": "Сбросить вид по умолчанию",
       "sections": {
         "bookmarked": "Избранное",
@@ -3146,6 +3225,7 @@
       "deleteFailedTitle": "Не удалось удалить",
       "deleted": "Рабочий процесс удалён",
       "dirtyClose": "Файлы ниже были изменены. Вы хотите сохранить их перед закрытием?",
+      "dirtyCloseAnyway": "Закрыть всё равно",
       "dirtyCloseHint": "Удерживайте Shift, чтобы закрыть без подсказки",
       "dirtyCloseTitle": "Сохранить изменения?",
       "workflowTreeType": {
@@ -3442,8 +3522,7 @@
       "newest": "Новейшие",
       "popular": "Популярные",
       "recommended": "Рекомендуемые",
-      "searchPlaceholder": "Поиск...",
-      "vramLowToHigh": "Использование VRAM (от низкого к высокому)"
+      "searchPlaceholder": "Поиск..."
     },
     "sorting": "Сортировать по",
     "title": "Начните с шаблона",
@@ -3607,7 +3686,8 @@
       "placeholderMesh": "Выберите mesh...",
       "placeholderModel": "Выбрать модель...",
       "placeholderUnknown": "Выбрать медиа...",
-      "placeholderVideo": "Выбрать видео..."
+      "placeholderVideo": "Выбрать видео...",
+      "topResult": "Лучший результат: {result}"
     },
     "valueControl": {
       "decrement": "Уменьшить значение",

@@ -243,13 +243,13 @@ function groupByDepartment(jobs: readonly AshbyJobPosting[]): Department[] {
 }
 
 function toDomainRole(job: AshbyJobPosting, department: string): Role {
-  const applyUrl = job.applyUrl ?? job.jobUrl
+  const jobUrl = job.jobUrl
   return {
-    id: createHash('sha1').update(applyUrl).digest('hex').slice(0, 16),
+    id: createHash('sha1').update(jobUrl).digest('hex').slice(0, 16),
     title: job.title,
     department: capitalize(department),
     location: (job.location ?? '').trim() || DEFAULT_LOCATION,
-    applyUrl
+    jobUrl
   }
 }
 

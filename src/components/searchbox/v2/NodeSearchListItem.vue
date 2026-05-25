@@ -18,6 +18,7 @@
         />
         <span
           v-if="showIdName"
+          data-testid="node-id-badge"
           class="shrink-0 rounded-sm bg-secondary-background px-1.5 py-0.5 text-xs text-muted-foreground"
           v-html="highlightQuery(nodeDef.name, currentQuery)"
         />
@@ -154,8 +155,10 @@ const settingStore = useSettingStore()
 const showCategory = computed(() =>
   settingStore.get('Comfy.NodeSearchBoxImpl.ShowCategory')
 )
-const showIdName = computed(() =>
-  settingStore.get('Comfy.NodeSearchBoxImpl.ShowIdName')
+const showIdName = computed(
+  () =>
+    settingStore.get('Comfy.NodeSearchBoxImpl.ShowIdName') &&
+    nodeDef.nodeSource.type !== NodeSourceType.Blueprint
 )
 const showNodeFrequency = computed(() =>
   settingStore.get('Comfy.NodeSearchBoxImpl.ShowNodeFrequency')

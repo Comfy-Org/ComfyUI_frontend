@@ -237,6 +237,7 @@
     },
     "login": {
       "andText": "및",
+      "backToGithubLogin": "대신 Github로 가입하기",
       "backToLogin": "로그인으로 돌아가기",
       "backToSocialLogin": "Google 또는 Github로 가입하기",
       "confirmPasswordLabel": "비밀번호 확인",
@@ -292,7 +293,9 @@
       "title": "재인증 필요"
     },
     "signOut": {
+      "saveFailed": "\"{workflow}\" 저장에 실패하여 로그아웃이 취소되었습니다.",
       "signOut": "로그아웃",
+      "signOutAnyway": "그래도 로그아웃하기",
       "success": "성공적으로 로그아웃되었습니다",
       "successDetail": "계정에서 로그아웃되었습니다.",
       "unsavedChangesMessage": "저장되지 않은 변경 사항이 있습니다. 로그아웃하면 변경 사항이 사라집니다. 계속하시겠습니까?",
@@ -407,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "로컬에서 계속하기",
     "exploreCloud": "클라우드 무료 체험",
-    "feature1Title": "매월 400 크레딧 무료 제공",
     "feature2Title": "어디서나 즉시 사용 가능",
     "feature3Title": "즉시 사용 가능한 모델",
     "feature4Title": "최고의 커스텀 노드 팩 사전 설치",
@@ -461,6 +463,12 @@
       "wantToRun": "로컬에서 ComfyUI를 실행하고 싶으신가요?"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "옵션을 선택해 주세요.",
+        "describeAnswer": "답변을 설명해 주세요.",
+        "selectAtLeastOne": "최소 한 가지 옵션을 선택해 주세요."
+      },
+      "intro": "ComfyUI 경험을 맞춤화할 수 있도록 도와주세요.",
       "options": {
         "familiarity": {
           "advanced": "고급 사용자 (커스텀 워크플로우 사용)",
@@ -469,45 +477,43 @@
           "new": "ComfyUI 처음 사용 (이전에 사용한 적 없음)",
           "starting": "막 시작한 단계 (튜토리얼 따라하는 중)"
         },
-        "industry": {
-          "architecture": "건축",
-          "education": "교육",
-          "film_tv_animation": "영화, TV 및 애니메이션",
-          "fine_art": "순수 미술 및 일러스트레이션",
-          "gaming": "게임",
-          "marketing": "마케팅 및 광고",
-          "other": "기타",
-          "otherPlaceholder": "구체적으로 입력",
-          "product_design": "제품 및 그래픽 디자인",
-          "software": "소프트웨어 및 기술"
-        },
-        "making": {
-          "3d": "3D 에셋",
+        "intent": {
+          "3d_game": "3D 에셋 / 게임 에셋",
+          "api": "워크플로우 실행용 API 엔드포인트",
+          "apps": "워크플로우 기반 간소화 앱",
           "audio": "오디오 / 음악",
-          "custom_nodes": "사용자 정의 노드 및 워크플로우",
+          "custom_nodes": "커스텀 노드",
           "images": "이미지",
-          "video": "비디오 및 애니메이션"
+          "not_sure": "잘 모르겠음",
+          "videos": "비디오",
+          "workflows": "맞춤형 워크플로우 또는 파이프라인"
         },
-        "purpose": {
-          "client": "클라이언트 작업 (프리랜서)",
-          "community": "커뮤니티 기여 (노드, 워크플로우 등)",
-          "inhouse": "자사 업무 (내부 사용)",
-          "personal": "개인 프로젝트 / 취미",
-          "research": "학술 연구"
+        "source": {
+          "conference": "컨퍼런스 또는 이벤트",
+          "discord": "Discord / 커뮤니티",
+          "friend": "친구 또는 동료",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "뉴스레터 또는 블로그",
+          "other": "기타",
+          "reddit": "Reddit",
+          "search": "Google / 검색",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
+        },
+        "usage": {
+          "education": "교육용(학생 또는 교육자)",
+          "personal": "개인용",
+          "work": "업무용"
         }
       },
       "placeholder": "설문 질문 자리표시자",
-      "questions": {
-        "familiarity": "ComfyUI에 얼마나 익숙하신가요?",
-        "industry": "주로 어떤 업계에서 일하시나요?",
-        "making": "무엇을 만들 계획이신가요?",
-        "purpose": "주로 ComfyUI를 어떤 용도로 사용하실 계획이신가요?"
-      },
       "steps": {
         "familiarity": "ComfyUI에 얼마나 익숙하신가요?",
-        "industry": "주로 어떤 업계에서 일하시나요?",
-        "making": "무엇을 만들 계획이신가요?",
-        "purpose": "주로 ComfyUI를 어떤 용도로 사용하실 계획이신가요?"
+        "intent": "ComfyUI로 무엇을 만들고 싶으신가요?",
+        "source": "ComfyUI를 어디에서 알게 되셨나요?",
+        "usage": "ComfyUI를 어떻게 사용하실 계획인가요?"
       },
       "title": "클라우드 설문"
     }
@@ -522,9 +528,9 @@
   "cloudStart_title": "몇 초 만에 제작 시작",
   "cloudStart_wantToRun": "로컬에서 ComfyUI를 실행하고 싶으신가요?",
   "cloudSurvey_steps_familiarity": "ComfyUI에 얼마나 익숙하신가요?",
-  "cloudSurvey_steps_industry": "주요 업계는 무엇인가요?",
-  "cloudSurvey_steps_making": "무엇을 만들 계획인가요?",
-  "cloudSurvey_steps_purpose": "주로 ComfyUI를 어떤 용도로 사용하실 계획인가요?",
+  "cloudSurvey_steps_intent": "ComfyUI로 무엇을 만들고 싶으신가요?",
+  "cloudSurvey_steps_source": "ComfyUI를 어디에서 알게 되셨나요?",
+  "cloudSurvey_steps_usage": "ComfyUI를 어떻게 사용하실 계획인가요?",
   "cloudWaitlist_contactLink": "여기",
   "cloudWaitlist_questionsText": "질문이 있으신가요? 문의하기",
   "color": {
@@ -778,6 +784,7 @@
     "AUDIO_ENCODER": "AUDIO_ENCODER",
     "AUDIO_ENCODER_OUTPUT": "AUDIO_ENCODER_OUTPUT",
     "AUDIO_RECORD": "AUDIO_RECORD",
+    "BACKGROUND_REMOVAL": "배경 제거",
     "BOOLEAN": "논리값",
     "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "카메라 제어",
@@ -793,6 +800,8 @@
     "CONTROL_NET": "컨트롤넷",
     "CURVE": "곡선",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "얼굴 감지 모델",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -808,6 +817,7 @@
     "HISTOGRAM": "히스토그램",
     "HOOKS": "후크",
     "HOOK_KEYFRAMES": "후크 키프레임",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "이미지",
     "IMAGECOMPARE": "이미지 비교",
     "INT": "정수",
@@ -828,9 +838,12 @@
     "MODEL": "모델",
     "MODEL_PATCH": "모델 패치",
     "MODEL_TASK_ID": "모델 작업 ID",
+    "MOGE_GEOMETRY": "MOGE_GEOMETRY",
+    "MOGE_MODEL": "MOGE_MODEL",
     "NOISE": "노이즈",
     "OPENAI_CHAT_CONFIG": "OpenAI 채팅 설정",
     "OPENAI_INPUT_FILES": "OpenAI 입력 파일",
+    "OPTICAL_FLOW": "OPTICAL_FLOW",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "Pixverse 템플릿",
     "POSE_KEYPOINT": "POSE_KEYPOINT",
@@ -898,6 +911,44 @@
     "paused": "일시 중지됨",
     "resume": "다운로드 재개"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "알 수 없는 입력",
+      "nodeName": "이 노드"
+    },
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "서버로 전송된 워크플로우 데이터가 비어 있습니다. 시스템 오류일 수 있습니다."
+      },
+      "prompt_no_outputs": {
+        "desc": "워크플로우에 결과를 생성할 출력 노드(예: 이미지 저장, 이미지 미리보기)가 없습니다."
+      },
+      "server_error_cloud": {
+        "desc": "서버에서 예기치 않은 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."
+      },
+      "server_error_local": {
+        "desc": "서버에서 예기치 않은 오류가 발생했습니다. 서버 로그를 확인해 주세요."
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastMessageCloud": "이 노드는 실행 중 오류가 발생했습니다. 입력값을 확인하거나 다른 설정을 시도해 보세요. 크레딧은 차감되지 않았습니다.",
+        "toastMessageLocal": "이 노드는 실행 중 오류가 발생했습니다. 입력값을 확인하거나 다른 설정을 시도해 보세요.",
+        "toastTitle": "{nodeName} 실패"
+      }
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "details": "{nodeName}에 필수 입력이 누락되었습니다: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "필수 입력 슬롯에 연결이 없습니다.",
+        "title": "연결 누락",
+        "toastMessage": "{nodeName}에 필수 입력이 누락되었습니다: {inputName}",
+        "toastTitle": "필수 입력 누락"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "accessRestrictedTitle": "Access Restricted",
@@ -905,7 +956,8 @@
     "extensionFileHint": "다음 스크립트 때문일 수 있습니다",
     "loadWorkflowTitle": "워크플로 데이터를 다시 로드하는 중 오류로 인해 로드가 중단되었습니다",
     "noStackTrace": "스택 추적을 사용할 수 없습니다",
-    "promptExecutionError": "프롬프트 실행 실패"
+    "promptExecutionError": "프롬프트 실행 실패",
+    "queueOpenWorkflowFailedTitle": "워크플로우 열기에 실패했습니다"
   },
   "errorOverlay": {
     "errorCount": "{count}개 오류",
@@ -1017,6 +1069,7 @@
     "cancel": "취소",
     "cancelled": "취소됨",
     "capture": "캡처",
+    "categories": "카테고리",
     "category": "카테고리",
     "changeKeybinding": "키 바인딩 변경",
     "chart": "차트",
@@ -1032,6 +1085,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrg 로고",
+    "comfyPackageOutdated": "설치된 {name} 버전 {installedVersion}이(가) 필요한 버전 {requiredVersion}보다 낮습니다.",
     "comingSoon": "곧 출시 예정",
     "command": "명령",
     "commandProhibited": "{command}는 금지된 명령입니다. 자세한 정보는 관리자에게 문의하십시오.",
@@ -1731,6 +1785,10 @@
     "outdatedVersionGeneric": "이 워크플로우는 더 최신 버전의 ComfyUI에서 생성되었습니다. 일부 노드는 제대로 작동하지 않을 수 있습니다.",
     "unknownVersion": "알 수 없음"
   },
+  "logsTerminal": {
+    "loadError": "로그를 불러올 수 없습니다. ComfyUI 백엔드가 최신인지 확인해 주세요.",
+    "resyncError": "백엔드 재연결 후 로그를 다시 동기화할 수 없습니다. 다시 시도하려면 콘솔을 다시 여세요."
+  },
   "maintenance": {
     "None": "없음",
     "OK": "확인",
@@ -2244,6 +2302,7 @@
     "": "",
     "3d": "3d",
     "3d_models": "3D 모델",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
@@ -2258,8 +2317,8 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2276,23 +2335,21 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
-    "_for_testing": "_테스트용",
+    "adjustments": "조정",
     "advanced": "고급",
-    "animation": "애니메이션",
-    "api": "API",
     "api node": "api 노드",
     "attention_experiments": "어텐션 실험",
     "audio": "오디오",
+    "background removal": "배경 제거",
     "batch": "배치",
-    "camera": "카메라",
     "chroma_radiance": "chroma_radiance",
     "clip": "클립",
+    "color": "색상",
     "combine": "결합",
     "compositing": "합성",
     "cond pair": "조건 쌍",
     "cond single": "단일 조건",
     "conditioning": "조건화",
-    "context": "컨텍스트",
     "controlnet": "컨트롤넷",
     "create": "생성",
     "custom_sampling": "사용자 정의 샘플링",
@@ -2301,7 +2358,10 @@
     "deprecated": "지원 중단",
     "detection": "감지",
     "edit_models": "edit_models",
+    "experimental": "실험적",
+    "filters": "필터",
     "flux": "flux",
+    "geometry_estimation": "geometry_estimation",
     "gligen": "글리젠",
     "guidance": "가이드",
     "guiders": "가이드",
@@ -2316,7 +2376,6 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "mask": "마스크",
-    "math": "수학",
     "model": "모델",
     "model_merging": "모델 병합",
     "model_patches": "모델 패치",
@@ -2324,25 +2383,20 @@
     "noise": "노이즈",
     "operations": "연산",
     "photomaker": "포토메이커",
-    "postprocessing": "후처리",
     "preprocessors": "전처리기",
     "primitive": "기본 입력",
     "qwen": "qwen",
     "samplers": "샘플러",
     "sampling": "샘플링",
-    "save": "저장",
     "schedulers": "스케줄러",
     "scheduling": "스케줄링",
-    "sd": "sd",
     "sd3": "sd3",
     "shader": "shader",
     "sigmas": "시그마",
     "stable_cascade": "Stable Cascade",
-    "string": "문자열",
     "style_model": "스타일 모델",
     "supir": "supir",
     "text": "텍스트",
-    "textgen": "textgen",
     "training": "학습",
     "transform": "변환",
     "unet": "UNet",
@@ -2421,6 +2475,43 @@
     },
     "title": "이 장치는 지원되지 않습니다."
   },
+  "oauth": {
+    "consent": {
+      "allow": "계속",
+      "appTypeNative": "네이티브 앱",
+      "appTypeWeb": "웹 앱",
+      "deny": "취소",
+      "errorExpired": "이 동의 요청이 만료되었거나 이미 사용되었습니다. 클라이언트 앱에서 다시 시작해 주세요.",
+      "errorScopeBroadening": "이전에 승인된 권한이 이 요청을 포함하지 않습니다. 새로운 권한으로 다시 인증해야 합니다.",
+      "errorUnavailable": "이 기능은 현재 사용할 수 없습니다. 문제가 계속되면 지원팀에 문의해 주세요.",
+      "genericError": "OAuth 요청에 실패했습니다. 클라이언트 앱에서 다시 시작해 주세요.",
+      "loading": "인증 요청을 불러오는 중…",
+      "missingRequest": "이 인증 요청이 누락되었습니다. 클라이언트 앱에서 다시 시작해 주세요.",
+      "noWorkspaces": "이 요청에 사용할 수 있는 워크스페이스가 없습니다.",
+      "permissionsHeader": "권한",
+      "redirectNotice": "다음으로 리디렉션됩니다",
+      "resourceFallback": "이 앱",
+      "sessionError": "세션을 설정하지 못했습니다. 다시 시도해 주세요.",
+      "sessionErrorToastSummary": "OAuth 로그인 진행을 계속할 수 없습니다",
+      "subtitle": "계속하려면 {resource}에 로그인하세요",
+      "title": "{client}에서 접근을 요청합니다",
+      "workspaceHelp": "권한은 이 워크스페이스에만 적용됩니다.",
+      "workspaceLabel": "워크스페이스"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "워크플로를 대신 실행"
+      },
+      "mcp:tools:read": {
+        "label": "사용 가능한 워크플로 도구 보기"
+      }
+    },
+    "workspace": {
+      "member": "멤버",
+      "owner": "소유자",
+      "personal": "개인"
+    }
+  },
   "openSharedWorkflow": {
     "author": "작성자:",
     "copyAssetsAndOpen": "에셋 가져오기 및 워크플로우 열기",
@@ -2431,7 +2522,8 @@
     "nonPublicAssetsWarningLine1": "이 워크플로우에는 비공개 에셋이 포함되어 있습니다.",
     "nonPublicAssetsWarningLine2": "워크플로우를 열면 이 에셋들이 라이브러리에 가져와집니다",
     "openWithoutImporting": "가져오지 않고 열기",
-    "openWorkflow": "워크플로우 열기"
+    "openWorkflow": "워크플로우 열기",
+    "opening": "공유 워크플로우 열기 중..."
   },
   "painter": {
     "background": "배경",
@@ -2647,20 +2739,6 @@
     "normal": "일반",
     "parameters": "파라미터",
     "pinned": "고정됨",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "서버로 전송된 워크플로우 데이터가 비어 있습니다. 이는 예기치 않은 시스템 오류일 수 있습니다."
-      },
-      "prompt_no_outputs": {
-        "desc": "워크플로우에 결과를 생성할 출력 노드(예: 이미지 저장, 이미지 미리보기)가 포함되어 있지 않습니다."
-      },
-      "server_error_cloud": {
-        "desc": "서버에서 예기치 않은 오류가 발생했습니다. 나중에 다시 시도해 주세요."
-      },
-      "server_error_local": {
-        "desc": "서버에서 예기치 않은 오류가 발생했습니다. 서버 로그를 확인해 주세요."
-      }
-    },
     "properties": "속성",
     "removeFavorite": "즐겨찾기 해제",
     "resetAllParameters": "모든 매개변수 재설정",
@@ -3058,6 +3136,7 @@
         "sourceDesc": "소스 유형(Core, Custom, API)별로 그룹화"
       },
       "noBookmarkedNodes": "아직 즐겨찾기가 없습니다",
+      "noMatchingNodes": "\"{query}\"에 일치하는 노드가 없습니다",
       "resetView": "기본 보기로 재설정",
       "sections": {
         "bookmarked": "즐겨찾기",
@@ -3146,6 +3225,7 @@
       "deleteFailedTitle": "삭제 실패",
       "deleted": "워크플로가 삭제되었습니다.",
       "dirtyClose": "아래 파일들이 변경되었습니다. 닫기 전에 저장하시겠습니까?",
+      "dirtyCloseAnyway": "그래도 닫기",
       "dirtyCloseHint": "프롬프트 없이 닫으려면 Shift를 누르세요",
       "dirtyCloseTitle": "변경 사항 저장",
       "workflowTreeType": {
@@ -3442,8 +3522,7 @@
       "newest": "최신순",
       "popular": "인기",
       "recommended": "권장",
-      "searchPlaceholder": "검색...",
-      "vramLowToHigh": "VRAM 사용량 (낮음에서 높음 순)"
+      "searchPlaceholder": "검색..."
     },
     "sorting": "정렬 기준",
     "title": "템플릿으로 시작하기",
@@ -3607,7 +3686,8 @@
       "placeholderMesh": "메시 선택...",
       "placeholderModel": "모델 선택...",
       "placeholderUnknown": "미디어 선택...",
-      "placeholderVideo": "비디오 선택..."
+      "placeholderVideo": "비디오 선택...",
+      "topResult": "최상위 결과: {result}"
     },
     "valueControl": {
       "decrement": "값 감소",

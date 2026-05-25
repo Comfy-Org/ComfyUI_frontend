@@ -80,7 +80,7 @@
       >
         <!-- Mask/Edit Button -->
         <button
-          v-if="!hasMultipleImages"
+          v-if="!hasMultipleImages && !imageError"
           :class="actionButtonClass"
           :title="$t('g.editOrMaskImage')"
           :aria-label="$t('g.editOrMaskImage')"
@@ -91,6 +91,7 @@
 
         <!-- Download Button -->
         <button
+          v-if="!imageError"
           :class="actionButtonClass"
           :title="$t('g.downloadImage')"
           :aria-label="$t('g.downloadImage')"

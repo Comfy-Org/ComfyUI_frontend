@@ -94,9 +94,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
 
 function dragDrop(e: DragEvent) {
   const { dataTransfer } = e
-  if (!dataTransfer) return
-
-  linearWorkflowRef.value?.handleDragDrop(e)
+  if (dataTransfer) linearWorkflowRef.value?.handleDragDrop()
 }
 </script>
 <template>
@@ -149,6 +147,7 @@ function dragDrop(e: DragEvent) {
       </SplitterPanel>
       <SplitterPanel
         id="linearCenterPanel"
+        data-testid="linear-center-panel"
         :size="CENTER_PANEL_SIZE"
         class="relative flex min-w-[20vw] flex-col gap-4 text-muted-foreground outline-none"
         @drop="dragDrop"

@@ -237,6 +237,7 @@
     },
     "login": {
       "andText": "和",
+      "backToGithubLogin": "改用 Github 注册",
       "backToLogin": "返回登录",
       "backToSocialLogin": "改用 Google 或 Github 注册",
       "confirmPasswordLabel": "确认密码",
@@ -292,7 +293,9 @@
       "title": "需要重新认证"
     },
     "signOut": {
+      "saveFailed": "由于保存“{workflow}”失败，已取消退出登录。",
       "signOut": "退出登录",
+      "signOutAnyway": "仍然退出登录",
       "success": "成功退出登录",
       "successDetail": "您已成功退出账户。",
       "unsavedChangesMessage": "您有未保存的更改，注销后这些更改将会丢失。是否继续？",
@@ -407,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "本地继续",
     "exploreCloud": "免费试用云端",
-    "feature1Title": "每月 400 免费积分",
     "feature2Title": "随时随地，立即可用",
     "feature3Title": "模型即刻可用",
     "feature4Title": "顶级自定义节点包预装",
@@ -461,6 +463,12 @@
       "wantToRun": "想在本机运行 ComfyUI 吗？"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "请选择一个选项。",
+        "describeAnswer": "请描述您的答案。",
+        "selectAtLeastOne": "请至少选择一个选项。"
+      },
+      "intro": "帮助我们为您定制 ComfyUI 体验。",
       "options": {
         "familiarity": {
           "advanced": "高级用户（自定义工作流）",
@@ -469,45 +477,43 @@
           "new": "ComfyUI 新手（从未使用过）",
           "starting": "刚刚开始（正在学习教程）"
         },
-        "industry": {
-          "architecture": "架构",
-          "education": "教育",
-          "film_tv_animation": "电影、电视与动画",
-          "fine_art": "美术与插画",
-          "gaming": "游戏",
-          "marketing": "营销与广告",
-          "other": "其他",
-          "otherPlaceholder": "请指定",
-          "product_design": "产品与平面设计",
-          "software": "软件与技术"
-        },
-        "making": {
-          "3d": "3D 资产",
+        "intent": {
+          "3d_game": "3D 资产 / 游戏资产",
+          "api": "运行工作流的 API 端点",
+          "apps": "基于工作流的简化应用",
           "audio": "音频 / 音乐",
-          "custom_nodes": "自定义节点和工作流",
-          "images": "图片",
-          "video": "视频与动画"
+          "custom_nodes": "自定义节点",
+          "images": "图像",
+          "not_sure": "不确定",
+          "videos": "视频",
+          "workflows": "自定义工作流或流程"
         },
-        "purpose": {
-          "client": "客户工作（自由职业）",
-          "community": "社区贡献（节点、工作流等）",
-          "inhouse": "我自己的工作场所（内部）",
-          "personal": "个人项目 / 爱好",
-          "research": "学术研究"
+        "source": {
+          "conference": "会议或活动",
+          "discord": "Discord / 社区",
+          "friend": "朋友或同事",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "新闻通讯或博客",
+          "other": "其他",
+          "reddit": "Reddit",
+          "search": "Google / 搜索",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
+        },
+        "usage": {
+          "education": "教育（学生或教师）",
+          "personal": "个人使用",
+          "work": "工作"
         }
       },
       "placeholder": "调查问题占位符",
-      "questions": {
-        "familiarity": "你对 ComfyUI 有多熟悉？",
-        "industry": "您的主要行业是什么？",
-        "making": "你打算做什么？",
-        "purpose": "您主要将使用 ComfyUI 做什么？"
-      },
       "steps": {
         "familiarity": "你对 ComfyUI 有多熟悉？",
-        "industry": "您的主要行业是什么？",
-        "making": "你打算做什么？",
-        "purpose": "您将主要使用 ComfyUI 做什么？"
+        "intent": "您希望用 ComfyUI 创作什么？",
+        "source": "您是从哪里了解到 ComfyUI 的？",
+        "usage": "您打算如何使用 ComfyUI？"
       },
       "title": "云调研"
     }
@@ -522,9 +528,9 @@
   "cloudStart_title": "几秒钟内开始创作",
   "cloudStart_wantToRun": "想在本地运行 ComfyUI 吗？",
   "cloudSurvey_steps_familiarity": "你对 ComfyUI 有多熟悉？",
-  "cloudSurvey_steps_industry": "您的主要行业是什么？",
-  "cloudSurvey_steps_making": "你打算做什么？",
-  "cloudSurvey_steps_purpose": "您将主要使用 ComfyUI 做什么？",
+  "cloudSurvey_steps_intent": "您希望用 ComfyUI 创作什么？",
+  "cloudSurvey_steps_source": "您是从哪里了解到 ComfyUI 的？",
+  "cloudSurvey_steps_usage": "您打算如何使用 ComfyUI？",
   "cloudWaitlist_contactLink": "这里",
   "cloudWaitlist_questionsText": "有问题？联系我们",
   "color": {
@@ -778,6 +784,7 @@
     "AUDIO_ENCODER": "音频编码器",
     "AUDIO_ENCODER_OUTPUT": "音频编码器输出",
     "AUDIO_RECORD": "音频录制",
+    "BACKGROUND_REMOVAL": "背景移除",
     "BOOLEAN": "布尔",
     "BOUNDING_BOX": "边界框",
     "CAMERA_CONTROL": "相机控制",
@@ -793,6 +800,8 @@
     "CONTROL_NET": "ControlNet",
     "CURVE": "曲线",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "人脸检测模型",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -808,6 +817,7 @@
     "HISTOGRAM": "直方图",
     "HOOKS": "约束",
     "HOOK_KEYFRAMES": "约束关键帧",
+    "IC_LORA_PARAMETERS": "IC_LORA参数",
     "IMAGE": "图像",
     "IMAGECOMPARE": "图像对比",
     "INT": "整数",
@@ -828,9 +838,12 @@
     "MODEL": "模型",
     "MODEL_PATCH": "模型补丁",
     "MODEL_TASK_ID": "模型任务ID",
+    "MOGE_GEOMETRY": "MOGE几何",
+    "MOGE_MODEL": "MOGE模型",
     "NOISE": "噪波",
     "OPENAI_CHAT_CONFIG": "OpenAI对话文件",
     "OPENAI_INPUT_FILES": "OpenAI输入文件",
+    "OPTICAL_FLOW": "光流",
     "PHOTOMAKER": "PhotoMaker",
     "PIXVERSE_TEMPLATE": "Pixverse 模板",
     "POSE_KEYPOINT": "POSE_KEYPOINT",
@@ -898,14 +911,53 @@
     "paused": "已暂停",
     "resume": "恢复下载"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "未知输入",
+      "nodeName": "此节点"
+    },
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "发送到服务器的工作流数据为空。这可能是系统的意外错误。"
+      },
+      "prompt_no_outputs": {
+        "desc": "工作流未包含任何输出节点（如保存图像、预览图像），无法生成结果。"
+      },
+      "server_error_cloud": {
+        "desc": "服务器遇到意外错误。请稍后再试。"
+      },
+      "server_error_local": {
+        "desc": "服务器遇到意外错误。请检查服务器日志。"
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastMessageCloud": "此节点在执行过程中发生错误。请检查其输入或尝试其他配置。未扣除积分。",
+        "toastMessageLocal": "此节点在执行过程中发生错误。请检查其输入或尝试其他配置。",
+        "toastTitle": "{nodeName} 执行失败"
+      }
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "details": "{nodeName} 缺少必需的输入：{inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "必需的输入插槽没有连接。",
+        "title": "缺少连接",
+        "toastMessage": "{nodeName} 缺少必需的输入：{inputName}",
+        "toastTitle": "缺少必需输入"
+      }
+    }
+  },
   "errorDialog": {
-    "accessRestrictedMessage": "Your account is not authorized for this feature.",
-    "accessRestrictedTitle": "Access Restricted",
+    "accessRestrictedMessage": "您的账户无权使用此功能。",
+    "accessRestrictedTitle": "访问受限",
     "defaultTitle": "发生错误",
     "extensionFileHint": "这可能是由于以下脚本",
     "loadWorkflowTitle": "由于重新加载工作流数据出错，加载被中止",
     "noStackTrace": "无可用堆栈跟踪",
-    "promptExecutionError": "提示执行失败"
+    "promptExecutionError": "提示执行失败",
+    "queueOpenWorkflowFailedTitle": "打开工作流失败"
   },
   "errorOverlay": {
     "errorCount": "{count}个错误",
@@ -1017,6 +1069,7 @@
     "cancel": "取消",
     "cancelled": "已取消",
     "capture": "捕获",
+    "categories": "分类",
     "category": "类别",
     "changeKeybinding": "更改快捷键",
     "chart": "图表",
@@ -1032,6 +1085,7 @@
     "comfy": "舒适",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrg 徽标",
+    "comfyPackageOutdated": "已安装的 {name} 版本 {installedVersion} 低于所需版本 {requiredVersion}。",
     "comingSoon": "即将推出",
     "command": "指令",
     "commandProhibited": "命令 {command} 被禁止。请联系管理员了解更多信息。",
@@ -1731,6 +1785,10 @@
     "outdatedVersionGeneric": "这个工作流由新版 ComfyUI 创建，部分节点可能无法正常运行。",
     "unknownVersion": "未知"
   },
+  "logsTerminal": {
+    "loadError": "无法加载日志，请确保已更新您的ComfyUI后端。",
+    "resyncError": "后端重新连接后无法重新同步日志。请重新打开控制台以重试。"
+  },
   "maintenance": {
     "None": "无",
     "OK": "确定",
@@ -2244,6 +2302,7 @@
     "": "",
     "3d": "3d",
     "3d_models": "3D模型",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "字节跳动",
@@ -2258,8 +2317,8 @@
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2276,23 +2335,21 @@
     "Vidu": "Vidu",
     "Wan": "Wan万相",
     "WaveSpeed": "WaveSpeed",
-    "_for_testing": "_用于测试",
+    "adjustments": "调整",
     "advanced": "高级",
-    "animation": "动画",
-    "api": "API",
     "api node": "api 节点",
     "attention_experiments": "注意力实验",
     "audio": "音频",
+    "background removal": "背景移除",
     "batch": "批处理",
-    "camera": "相机",
     "chroma_radiance": "chroma_radiance",
     "clip": "CLIP",
+    "color": "颜色",
     "combine": "组合",
     "compositing": "合成",
     "cond pair": "条件对",
     "cond single": "条件单",
     "conditioning": "条件",
-    "context": "上下文",
     "controlnet": "ControlNet",
     "create": "创建",
     "custom_sampling": "自定义采样",
@@ -2301,7 +2358,10 @@
     "deprecated": "已弃用",
     "detection": "检测",
     "edit_models": "编辑模型",
+    "experimental": "实验性",
+    "filters": "滤镜",
     "flux": "Flux",
+    "geometry_estimation": "几何估计",
     "gligen": "GLIGEN",
     "guidance": "引导",
     "guiders": "引导器",
@@ -2316,7 +2376,6 @@
     "lotus": "lotus",
     "ltxv": "LTXV",
     "mask": "遮罩",
-    "math": "数学",
     "model": "模型",
     "model_merging": "模型合并",
     "model_patches": "模型微调",
@@ -2324,25 +2383,20 @@
     "noise": "噪波",
     "operations": "操作",
     "photomaker": "PhotoMaker",
-    "postprocessing": "后处理",
     "preprocessors": "预处理器",
     "primitive": "基础",
     "qwen": "Qwen千问",
     "samplers": "采样器",
     "sampling": "采样",
-    "save": "保存",
     "schedulers": "调度器",
     "scheduling": "调度",
-    "sd": "sd",
     "sd3": "SD3",
     "shader": "shader",
     "sigmas": "Sigmas",
     "stable_cascade": "StableCascade",
-    "string": "字符串",
     "style_model": "风格模型",
     "supir": "supir",
     "text": "文本",
-    "textgen": "textgen",
     "training": "训练",
     "transform": "变换",
     "unet": "U-Net",
@@ -2421,6 +2475,43 @@
     },
     "title": "您的设备不受支持"
   },
+  "oauth": {
+    "consent": {
+      "allow": "继续",
+      "appTypeNative": "本地应用",
+      "appTypeWeb": "网页应用",
+      "deny": "取消",
+      "errorExpired": "此授权请求已过期或已被使用。请从客户端应用重新开始。",
+      "errorScopeBroadening": "之前批准的权限不包含此次请求。您需要使用新权限重新授权。",
+      "errorUnavailable": "此功能当前不可用。如问题持续，请联系支持。",
+      "genericError": "OAuth 请求失败。请从客户端应用重新开始。",
+      "loading": "正在加载授权请求…",
+      "missingRequest": "缺少此授权请求。请从客户端应用重新开始。",
+      "noWorkspaces": "此请求没有可用的工作区。",
+      "permissionsHeader": "权限",
+      "redirectNotice": "您将被重定向到",
+      "resourceFallback": "此应用",
+      "sessionError": "建立会话失败。请重试。",
+      "sessionErrorToastSummary": "无法继续 OAuth 登录",
+      "subtitle": "登录 {resource} 以继续",
+      "title": "{client} 请求访问权限",
+      "workspaceHelp": "权限仅适用于此工作区。",
+      "workspaceLabel": "工作区"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "代表您运行工作流"
+      },
+      "mcp:tools:read": {
+        "label": "查看可用的工作流工具"
+      }
+    },
+    "workspace": {
+      "member": "成员",
+      "owner": "所有者",
+      "personal": "个人"
+    }
+  },
   "openSharedWorkflow": {
     "author": "作者：",
     "copyAssetsAndOpen": "导入资源并打开工作流",
@@ -2431,7 +2522,8 @@
     "nonPublicAssetsWarningLine1": "此工作流包含非公开资源。",
     "nonPublicAssetsWarningLine2": "打开工作流时，这些资源将被导入到你的库中",
     "openWithoutImporting": "不导入直接打开",
-    "openWorkflow": "打开工作流"
+    "openWorkflow": "打开工作流",
+    "opening": "正在打开共享工作流..."
   },
   "painter": {
     "background": "背景",
@@ -2647,20 +2739,6 @@
     "normal": "正常",
     "parameters": "参数",
     "pinned": "顶固",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "发送到服务器的工作流数据为空。这可能是一个意外的系统错误。"
-      },
-      "prompt_no_outputs": {
-        "desc": "工作流中没有包含任何输出节点（例如：保存图像、预览图像），无法生成结果。"
-      },
-      "server_error_cloud": {
-        "desc": "服务器遇到意外错误。请稍后再试。"
-      },
-      "server_error_local": {
-        "desc": "服务器遇到意外错误。请检查服务器日志。"
-      }
-    },
     "properties": "属性",
     "removeFavorite": "取消收藏",
     "resetAllParameters": "重置所有参数",
@@ -3070,6 +3148,7 @@
         "sourceDesc": "按来源类型分组（核心，自定义，API）"
       },
       "noBookmarkedNodes": "暂无收藏",
+      "noMatchingNodes": "没有与“{query}”匹配的节点",
       "resetView": "重置视图为默认",
       "sections": {
         "bookmarked": "已收藏",
@@ -3158,6 +3237,7 @@
       "deleteFailedTitle": "删除失败",
       "deleted": "工作流已删除",
       "dirtyClose": "以下文件已被更改。您想在关闭之前保存它们吗？",
+      "dirtyCloseAnyway": "仍然关闭",
       "dirtyCloseHint": "按住 Shift 关闭而不提示",
       "dirtyCloseTitle": "保存更改？",
       "workflowTreeType": {
@@ -3454,8 +3534,7 @@
       "newest": "最新",
       "popular": "热门",
       "recommended": "推荐",
-      "searchPlaceholder": "搜索...",
-      "vramLowToHigh": "VRAM 使用量（从低到高）"
+      "searchPlaceholder": "搜索..."
     },
     "sorting": "排序方式",
     "title": "从模板开始",
@@ -3619,7 +3698,8 @@
       "placeholderMesh": "选择网格...",
       "placeholderModel": "请选择模型...",
       "placeholderUnknown": "请选择媒体...",
-      "placeholderVideo": "请选择视频..."
+      "placeholderVideo": "请选择视频...",
+      "topResult": "最佳结果：{result}"
     },
     "valueControl": {
       "decrement": "递减值",

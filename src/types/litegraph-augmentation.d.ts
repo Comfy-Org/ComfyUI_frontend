@@ -144,13 +144,9 @@ declare module '@/lib/litegraph/src/litegraph' {
      * Callback invoked when the node is dropped from an external source, i.e.
      * a file or another HTML element.
      * @param e The drag event
-     * @param claimEvent If true, the handler should call preventDefault and
-     *   stopPropagation synchronously before any await once it has decided to
-     *   accept the drop, so bubbling fallback handlers know not to also process
-     *   the event.
      * @returns {boolean} True if the drag event should be handled by this node, false otherwise
      */
-    onDragDrop?(e: DragEvent, claimEvent?: boolean): Promise<boolean> | boolean
+    onDragDrop?(e: DragEvent): Promise<boolean> | boolean
 
     index?: number
     runningInternalNodeId?: NodeId

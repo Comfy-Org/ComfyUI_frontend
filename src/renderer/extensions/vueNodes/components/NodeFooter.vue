@@ -13,7 +13,8 @@
           errorRadiusClass
         )
       "
-      @click.stop="$emit('openErrors')"
+      @pointerup="snapshotDragOnPointerUp"
+      @click.stop="emitIfNotDragged('openErrors')"
     >
       <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{ t('g.error') }}</span>
@@ -32,7 +33,8 @@
         )
       "
       :style="headerColorStyle"
-      @click.stop="$emit('enterSubgraph')"
+      @pointerup="snapshotDragOnPointerUp"
+      @click.stop="emitIfNotDragged('enterSubgraph')"
     >
       <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{ t('g.enter') }}</span>
@@ -60,7 +62,8 @@
           errorRadiusClass
         )
       "
-      @click.stop="$emit('openErrors')"
+      @pointerup="snapshotDragOnPointerUp"
+      @click.stop="emitIfNotDragged('openErrors')"
     >
       <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{ t('g.error') }}</span>
@@ -78,7 +81,8 @@
         )
       "
       :style="headerColorStyle"
-      @click.stop="$emit('toggleAdvanced')"
+      @pointerup="snapshotDragOnPointerUp"
+      @click.stop="emitIfNotDragged('toggleAdvanced')"
     >
       <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{
@@ -111,7 +115,8 @@
           footerRadiusClass
         )
       "
-      @click.stop="$emit('openErrors')"
+      @pointerup="snapshotDragOnPointerUp"
+      @click.stop="emitIfNotDragged('openErrors')"
     >
       <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{ t('g.error') }}</span>
@@ -142,7 +147,8 @@
         )
       "
       :style="headerColorStyle"
-      @click.stop="$emit('enterSubgraph')"
+      @pointerup="snapshotDragOnPointerUp"
+      @click.stop="emitIfNotDragged('enterSubgraph')"
     >
       <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{ t('g.enterSubgraph') }}</span>
@@ -172,7 +178,8 @@
         )
       "
       :style="headerColorStyle"
-      @click.stop="$emit('toggleAdvanced')"
+      @pointerup="snapshotDragOnPointerUp"
+      @click.stop="emitIfNotDragged('toggleAdvanced')"
     >
       <div class="flex size-full items-center justify-center gap-2">
         <template v-if="showAdvancedState">
@@ -197,6 +204,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { RenderShape } from '@/lib/litegraph/src/litegraph'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
@@ -221,11 +229,28 @@ const {
   shape
 } = defineProps<Props>()
 
-defineEmits<{
+const emit = defineEmits<{
   enterSubgraph: []
   openErrors: []
   toggleAdvanced: []
 }>()
+
+let suppressNextClick = false
+
+function snapshotDragOnPointerUp() {
+  suppressNextClick = layoutStore.isDraggingVueNodes.value
+}
+
+function emitIfNotDragged(
+  name: 'enterSubgraph' | 'openErrors' | 'toggleAdvanced'
+) {
+  const wasDrag = suppressNextClick
+  suppressNextClick = false
+  if (wasDrag) return
+  if (name === 'enterSubgraph') emit('enterSubgraph')
+  else if (name === 'openErrors') emit('openErrors')
+  else emit('toggleAdvanced')
+}
 
 const RADIUS_CLASS = {
   'rounded-b-17': 'rounded-b-[17px]',

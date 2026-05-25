@@ -85,7 +85,7 @@ describe('ToolPanel', () => {
   })
 
   describe('current tool highlight', () => {
-    it.each([Tools.MaskPen, Tools.Eraser, Tools.PaintPen] as const)(
+    it.for([Tools.MaskPen, Tools.Eraser, Tools.PaintPen] as const)(
       'should mark the %s button as selected when it is the current tool',
       (tool) => {
         mockStore.currentTool = tool

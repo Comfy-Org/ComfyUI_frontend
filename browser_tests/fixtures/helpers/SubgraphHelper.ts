@@ -9,12 +9,18 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { SubgraphEditor } from '@e2e/fixtures/components/SubgraphEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { Position, Size } from '@e2e/fixtures/types'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 import { SubgraphSlotReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 export class SubgraphHelper {
-  constructor(private readonly comfyPage: ComfyPage) {}
+  public readonly editor: SubgraphEditor
+
+  constructor(private readonly comfyPage: ComfyPage) {
+    this.editor = new SubgraphEditor(comfyPage)
+  }
 
   private get page(): Page {
     return this.comfyPage.page
@@ -236,6 +242,17 @@ export class SubgraphHelper {
     return new SubgraphSlotReference('output', slotName || '', this.comfyPage)
   }
 
+  async getInputBounds(): Promise<Position & Size> {
+    return await this.comfyPage.page.evaluate(() => {
+      const graph = app!.canvas.graph as Subgraph
+      const inputNode = graph.inputNode
+      const [x, y] = app!.canvas.ds.convertOffsetToCanvas(inputNode.pos)
+      const width = inputNode.size[0] * app!.canvas.ds.scale
+      const height = inputNode.size[1] * app!.canvas.ds.scale
+      return { x, y, width, height }
+    })
+  }
+
   /**
    * Connect a regular node output to a subgraph input.
    * This creates a new input slot on the subgraph if targetInputName is not provided.
@@ -327,6 +344,23 @@ export class SubgraphHelper {
     await this.comfyPage.nextFrame()
   }
 
+  async promoteWidget(nodeLocator: Locator, widgetName: string): Promise<void> {
+    const widget = nodeLocator.getByLabel(widgetName, { exact: true })
+    await this.comfyPage.contextMenu
+      .openFor(widget)
+      .then((m) => m.clickMenuItemExact(`Promote Widget: ${widgetName}`))
+  }
+
+  async unpromoteWidget(
+    nodeLocator: Locator,
+    widgetName: string
+  ): Promise<void> {
+    const widget = nodeLocator.getByLabel(widgetName, { exact: true })
+    await this.comfyPage.contextMenu
+      .openFor(widget)
+      .then((m) => m.clickMenuItemExact(`Un-Promote Widget: ${widgetName}`))
+  }
+
   async isInSubgraph(): Promise<boolean> {
     return this.page.evaluate(() => {
       const graph = window.app!.canvas.graph
@@ -362,6 +396,9 @@ export class SubgraphHelper {
 
     await this.comfyPage.nextFrame()
     await expect.poll(async () => this.isInSubgraph()).toBe(false)
+    if (this.comfyPage.isVueNodes) {
+      await this.comfyPage.vueNodes.waitForNodes()
+    }
   }
 
   async countGraphPseudoPreviewEntries(): Promise<number> {

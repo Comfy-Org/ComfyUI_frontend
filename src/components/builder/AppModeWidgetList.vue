@@ -153,17 +153,15 @@ function nodeToNodeData(node: LGraphNode) {
   }
 }
 
-async function handleDragDrop(e: DragEvent) {
-  for (const { nodeData } of mappedSelections.value) {
-    if (!nodeData?.onDragOver?.(e)) continue
-
-    const rawResult = nodeData?.onDragDrop?.(e)
-    if (rawResult === false) continue
-
-    e.stopPropagation()
-    e.preventDefault()
-    if ((await rawResult) === true) return
+async function handleDragDrop() {
+  const onDragDrop = async (e: DragEvent) => {
+    for (const { nodeData } of mappedSelections.value)
+      if (nodeData?.onDragOver?.(e) && (await nodeData.onDragDrop?.(e)))
+        return true
+    return false
   }
+
+  app.dragOverNode = { id: -1, onDragDrop }
 }
 
 defineExpose({ handleDragDrop })
