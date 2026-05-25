@@ -417,12 +417,6 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     if (!executionErrorStore.lastExecutionError) return
 
     const e = executionErrorStore.lastExecutionError
-    const resolvedDisplay = resolveRunErrorMessage({
-      kind: 'execution',
-      error: e,
-      nodeDisplayName: e.node_type,
-      isCloud
-    })
     addNodeErrorToGroup(
       groupsMap,
       String(e.node_id),
@@ -433,8 +427,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
           message: `${e.exception_type}: ${e.exception_message}`,
           details: e.traceback.join('\n'),
           isRuntimeError: true,
-          exceptionType: e.exception_type,
-          ...resolvedDisplay
+          exceptionType: e.exception_type
         }
       ],
       filterBySelection
