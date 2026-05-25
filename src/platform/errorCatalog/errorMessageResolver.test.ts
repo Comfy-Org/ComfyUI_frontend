@@ -539,6 +539,23 @@ describe('errorMessageResolver', () => {
     expect(
       resolveRunErrorMessage({
         kind: 'prompt',
+        isCloud: false,
+        error: {
+          type: 'OOMError',
+          message: 'OOMError: Workflow execution failed',
+          details: ''
+        }
+      })
+    ).toEqual({
+      catalogId: 'out_of_memory',
+      displayTitle: 'Generation failed',
+      displayMessage:
+        'Not enough GPU memory. Try reducing complexity and run again.'
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
         isCloud: true,
         error: {
           type: 'ImageDownloadError',

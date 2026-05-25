@@ -93,7 +93,7 @@ function nodeInputItemLabel(nodeName: string, inputName: string): string {
   return `${nodeName} - ${inputName}`
 }
 
-function formatRawDetailsForCatalog(details: string): string {
+function formatDependencyCycleDetails(details: string): string {
   // Core reports dependency cycle paths as "node -> node"; catalog copy embeds
   // those paths in prose, where "to" reads more naturally.
   return details.replace(/\s*->\s*/g, ' to ')
@@ -314,7 +314,11 @@ function resolveValidationCatalogCopy(
 ): ResolvedErrorMessage {
   const nodeName = normalizeNodeName(context.nodeDisplayName)
   const inputName = getInputName(error)
-  const rawDetails = formatRawDetailsForCatalog(error.details.trim())
+  const trimmedDetails = error.details.trim()
+  const rawDetails =
+    error.type === 'dependency_cycle'
+      ? formatDependencyCycleDetails(trimmedDetails)
+      : trimmedDetails
   const params = {
     ...getValidationParams(error, nodeName, inputName),
     rawDetails
