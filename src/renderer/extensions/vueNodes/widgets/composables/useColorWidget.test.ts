@@ -13,8 +13,9 @@ function createMockNode(): {
   addWidget: ReturnType<typeof vi.spyOn>
 } {
   const node = new LGraphNode('TestColorNode')
-  const addWidget = vi.spyOn(node, 'addWidget').mockImplementation(
-    (type, name, value, _callback, options) => {
+  const addWidget = vi
+    .spyOn(node, 'addWidget')
+    .mockImplementation((type, name, value, _callback, options) => {
       const widget = {
         type,
         name,
@@ -25,8 +26,7 @@ function createMockNode(): {
       node.widgets ??= []
       node.widgets.push(widget)
       return widget
-    }
-  )
+    })
   return { node, addWidget }
 }
 
