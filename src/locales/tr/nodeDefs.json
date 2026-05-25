@@ -1800,6 +1800,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "description": "Mantıksal VE işlemi. Tüm değerler doğruysa true döner. Python'un doğruluk kurallarını kullanır.",
+    "display_name": "Ve",
+    "inputs": {
+      "values": {
+        "name": "değerler"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "Matematiksel İfade",
     "inputs": {
@@ -1823,6 +1837,20 @@
       }
     }
   },
+  "ComfyNotNode": {
+    "description": "Mantıksal DEĞİL işlemi. Değer yanlışsa true döner. Python'un doğruluk kurallarını kullanır.",
+    "display_name": "Değil",
+    "inputs": {
+      "value": {
+        "name": "değer"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyNumberConvert": {
     "display_name": "Sayı Dönüştürme",
     "inputs": {
@@ -1835,6 +1863,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "description": "Mantıksal VEYA işlemi. Herhangi bir değer doğruysa true döner. Python'un doğruluk kurallarını kullanır.",
+    "display_name": "Veya",
+    "inputs": {
+      "values": {
+        "name": "değerler"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -14597,6 +14639,164 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Image": {
+    "description": "Rodin Gen-2.5 ile 1-5 referans görüntüsünden 3D model oluşturun. Kalite ve maliyet dengesini ayarlamak için bir mod seçin (Hızlı / Normal / Aşırı-Yüksek).",
+    "display_name": "Rodin 3D Gen-2.5 - Görüntüden 3D'ye",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "İnsan benzeri modeller için T/A pozu."
+      },
+      "addon_highpack": {
+        "name": "ek_highpack",
+        "tooltip": "HighPack eklentisi: 4K dokular ve Quad modunda ~16x yüz."
+      },
+      "bbox_height": {
+        "name": "bbox_yüksekliği",
+        "tooltip": "Sınır kutusu yüksekliği (Z ekseni)."
+      },
+      "bbox_length": {
+        "name": "bbox_uzunluğu",
+        "tooltip": "Sınır kutusu uzunluğu (X ekseni)."
+      },
+      "bbox_width": {
+        "name": "bbox_genişliği",
+        "tooltip": "Sınır kutusu genişliği (Y ekseni). Diğerleriyle birlikte 0 ayarlanırsa bbox atlanır."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "geometry_file_format": {
+        "name": "geometri_dosya_formatı"
+      },
+      "hd_texture": {
+        "name": "hd_doku",
+        "tooltip": "Yüksek kaliteli doku iyileştirmesi."
+      },
+      "height_cm": {
+        "name": "yükseklik_cm",
+        "tooltip": "Yaklaşık model yüksekliği santimetre cinsinden (0 ise atlanır)."
+      },
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "1-5 görüntü. Çoklu bakışta ilk görüntü materyaller için kullanılır."
+      },
+      "material": {
+        "name": "materyal"
+      },
+      "mode": {
+        "name": "mod",
+        "tooltip": "Oluşturma modu. Normal = dengeli. Hızlı = hızlı prototipleme için 1K-20K yüz. Aşırı-Yüksek = isteğe bağlı mikro detaylarla 20K-2M yüz."
+      },
+      "mode_creative": {
+        "name": "yaratıcı"
+      },
+      "mode_polygon_count": {
+        "name": "poligon_sayısı"
+      },
+      "mode_tier": {
+        "name": "katman"
+      },
+      "seed": {
+        "name": "tohum"
+      },
+      "texture_delight": {
+        "name": "doku_aydınlatma",
+        "tooltip": "Dokulardan pişmiş ışıklandırmayı kaldır."
+      },
+      "texture_mode": {
+        "name": "doku_modu",
+        "tooltip": "Doku kalitesi ön ayarı. 'Varsayılan', seçilen katman için sunucunun varsayılanını kullanır."
+      },
+      "use_original_alpha": {
+        "name": "orijinal_alfa_kullan",
+        "tooltip": "Görüntü şeffaflığını koru."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "description": "Rodin Gen-2.5 ile bir metin isteminden 3D model oluşturun. Kalite ve maliyet dengesini ayarlamak için bir mod seçin (Hızlı / Normal / Aşırı-Yüksek).",
+    "display_name": "Rodin 3D Gen-2.5 - Metinden 3D'ye",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "İnsan benzeri modeller için T/A pozu."
+      },
+      "addon_highpack": {
+        "name": "eklenti_highpack",
+        "tooltip": "HighPack eklentisi: 4K dokular ve Quad modunda ~16x yüzey."
+      },
+      "bbox_height": {
+        "name": "bbox_yükseklik",
+        "tooltip": "Sınır kutusu yüksekliği (Z ekseni)."
+      },
+      "bbox_length": {
+        "name": "bbox_uzunluk",
+        "tooltip": "Sınır kutusu uzunluğu (X ekseni)."
+      },
+      "bbox_width": {
+        "name": "bbox_genişlik",
+        "tooltip": "Sınır kutusu genişliği (Y ekseni). Diğerleriyle birlikte 0 ayarlanırsa bbox atlanır."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "geometry_file_format": {
+        "name": "geometri_dosya_formatı"
+      },
+      "hd_texture": {
+        "name": "hd_doku",
+        "tooltip": "Yüksek kaliteli doku iyileştirmesi."
+      },
+      "height_cm": {
+        "name": "yükseklik_cm",
+        "tooltip": "Yaklaşık model yüksekliği (santimetre cinsinden, atlamak için 0 girin)."
+      },
+      "material": {
+        "name": "malzeme"
+      },
+      "mode": {
+        "name": "mod",
+        "tooltip": "Oluşturma modu. Normal = dengeli. Hızlı = hızlı prototipleme için 1K-20K yüzey. Aşırı-Yüksek = isteğe bağlı mikro detaylarla 20K-2M yüzey."
+      },
+      "mode_creative": {
+        "name": "yaratıcı"
+      },
+      "mode_polygon_count": {
+        "name": "poligon_sayısı"
+      },
+      "mode_tier": {
+        "name": "katman"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "3D model için metin istemi."
+      },
+      "seed": {
+        "name": "tohum"
+      },
+      "texture_delight": {
+        "name": "doku_aydınlatma_kaldır",
+        "tooltip": "Dokulardan pişmiş aydınlatmayı kaldır."
+      },
+      "texture_mode": {
+        "name": "doku_modu",
+        "tooltip": "Doku kalitesi ön ayarı. 'Varsayılan', seçilen katman için sunucunun varsayılanını kullanır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
         "tooltip": null
       }
     }

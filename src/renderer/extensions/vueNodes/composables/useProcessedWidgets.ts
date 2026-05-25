@@ -128,12 +128,27 @@ export function getWidgetIdentity(
   dedupeIdentity?: string
   renderKey: string
 } {
-  const dedupeIdentity = widget.entityId
-    ? `${widget.entityId}:${widget.type}`
+  if (widget.entityId) {
+    const dedupeIdentity = `${widget.entityId}:${widget.type}`
+    return { dedupeIdentity, renderKey: dedupeIdentity }
+  }
+  const slotNameForIdentity = widget.slotName ?? widget.name
+  const hostNodeIdRoot =
+    nodeId !== undefined && nodeId !== ''
+      ? `node:${String(stripGraphPrefix(nodeId))}`
+      : undefined
+  const stableIdentityRoot = widget.nodeId
+    ? `node:${String(stripGraphPrefix(widget.nodeId))}`
+    : widget.sourceExecutionId
+      ? `exec:${widget.sourceExecutionId}`
+      : hostNodeIdRoot
+
+  const dedupeIdentity = stableIdentityRoot
+    ? `${stableIdentityRoot}:${widget.name}:${slotNameForIdentity}:${widget.type}`
     : undefined
   const renderKey =
     dedupeIdentity ??
-    `transient:${String(nodeId ?? '')}:${widget.name}:${widget.type}:${index}`
+    `transient:${String(nodeId ?? '')}:${widget.name}:${slotNameForIdentity}:${widget.type}:${index}`
   return { dedupeIdentity, renderKey }
 }
 

@@ -52,11 +52,37 @@ describe('getWidgetIdentity', () => {
     expect(renderKey).toBe(dedupeIdentity)
   })
 
-  it('falls back to a transient renderKey when no entityId is set', () => {
-    const widget = createMockWidget({ entityId: undefined })
+  it('falls back to host nodeId so duplicate normal widgets dedupe', () => {
+    const widget = createMockWidget({
+      nodeId: undefined,
+      sourceExecutionId: undefined
+    })
     const { dedupeIdentity, renderKey } = getWidgetIdentity(widget, '5', 3)
+    expect(dedupeIdentity).toBe('node:5:test_widget:test_widget:combo')
+    expect(renderKey).toBe(dedupeIdentity)
+  })
+
+  it('returns transient renderKey when no nodeId is available at all', () => {
+    const widget = createMockWidget({
+      nodeId: undefined,
+      sourceExecutionId: undefined
+    })
+    const { dedupeIdentity, renderKey } = getWidgetIdentity(
+      widget,
+      undefined,
+      3
+    )
     expect(dedupeIdentity).toBeUndefined()
-    expect(renderKey).toBe('transient:5:test_widget:combo:3')
+    expect(renderKey).toBe('transient::test_widget:test_widget:combo:3')
+  })
+
+  it('uses sourceExecutionId for identity when no nodeId', () => {
+    const widget = createMockWidget({
+      nodeId: undefined,
+      sourceExecutionId: '65:18'
+    })
+    const { dedupeIdentity } = getWidgetIdentity(widget, '1', 0)
+    expect(dedupeIdentity).toBe('exec:65:18:test_widget:test_widget:combo')
   })
 })
 
@@ -328,6 +354,44 @@ describe('computeProcessedWidgets borderStyle', () => {
 
     expect(result).toHaveLength(1)
     expect(result[0].hidden).toBe(false)
+  })
+
+  it('collapses duplicate normal widgets on the same node to one render', () => {
+    const colorA = createMockWidget({
+      name: 'color',
+      type: 'color',
+      nodeId: undefined,
+      sourceExecutionId: undefined
+    })
+    const colorB = createMockWidget({
+      name: 'color',
+      type: 'color',
+      nodeId: undefined,
+      sourceExecutionId: undefined
+    })
+
+    const result = computeProcessedWidgets({
+      nodeData: {
+        id: '1',
+        type: 'ColorToRGBInt',
+        widgets: [colorA, colorB],
+        title: 'Color to RGB Int',
+        mode: 0,
+        selected: false,
+        executing: false,
+        inputs: [],
+        outputs: []
+      },
+      graphId: 'graph-test',
+      showAdvanced: false,
+      isGraphReady: false,
+      rootGraph: null,
+      ui: noopUi
+    })
+
+    expect(result).toHaveLength(1)
+    expect(result[0].name).toBe('color')
+    expect(result[0].renderKey).toBe('node:1:color:color:color')
   })
 })
 

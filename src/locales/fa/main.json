@@ -911,6 +911,44 @@
     "paused": "متوقف شده",
     "resume": "ادامه دانلود"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "ورودی نامشخص",
+      "nodeName": "این نود"
+    },
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "داده‌های ورک‌فلو ارسال‌شده به سرور خالی است. این ممکن است یک خطای غیرمنتظره سیستمی باشد."
+      },
+      "prompt_no_outputs": {
+        "desc": "در این ورک‌فلو هیچ نود خروجی (مانند Save Image یا Preview Image) برای تولید نتیجه وجود ندارد."
+      },
+      "server_error_cloud": {
+        "desc": "سرور با یک خطای غیرمنتظره مواجه شد. لطفاً بعداً دوباره تلاش کنید."
+      },
+      "server_error_local": {
+        "desc": "سرور با یک خطای غیرمنتظره مواجه شد. لطفاً لاگ‌های سرور را بررسی کنید."
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastMessageCloud": "این نود هنگام اجرا با خطا مواجه شد. ورودی‌ها را بررسی کنید یا پیکربندی دیگری را امتحان نمایید. هیچ اعتباری کسر نشد.",
+        "toastMessageLocal": "این نود هنگام اجرا با خطا مواجه شد. ورودی‌ها را بررسی کنید یا پیکربندی دیگری را امتحان نمایید.",
+        "toastTitle": "{nodeName} با خطا مواجه شد"
+      }
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "details": "{nodeName} یک ورودی ضروری را ندارد: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "ورودی‌های ضروری بدون اتصال هستند.",
+        "title": "اتصال وجود ندارد",
+        "toastMessage": "{nodeName} یک ورودی ضروری را ندارد: {inputName}",
+        "toastTitle": "ورودی ضروری وجود ندارد"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "accessRestrictedTitle": "Access Restricted",
@@ -1713,6 +1751,7 @@
     "reloadingModel": "در حال بارگذاری مجدد مدل...",
     "removeBackgroundImage": "حذف تصویر پس‌زمینه",
     "resizeNodeMatchOutput": "تغییر اندازه node مطابق خروجی",
+    "retainViewOnReload": "قفل کردن نمای دوربین هنگام بارگذاری مجدد مدل",
     "scene": "صحنه",
     "showGrid": "نمایش شبکه",
     "showSkeleton": "نمایش اسکلت",
@@ -2437,6 +2476,43 @@
     },
     "title": "دستگاه شما پشتیبانی نمی‌شود"
   },
+  "oauth": {
+    "consent": {
+      "allow": "ادامه",
+      "appTypeNative": "برنامه بومی",
+      "appTypeWeb": "برنامه وب",
+      "deny": "لغو",
+      "errorExpired": "این درخواست تأیید منقضی شده یا قبلاً استفاده شده است. لطفاً از برنامه کلاینت مجدداً اقدام کنید.",
+      "errorScopeBroadening": "دسترسی‌های قبلاً تأییدشده این درخواست را پوشش نمی‌دهند. لازم است با دسترسی‌های جدید مجدداً تأیید کنید.",
+      "errorUnavailable": "این قابلیت در حال حاضر در دسترس نیست. در صورت تداوم مشکل با پشتیبانی تماس بگیرید.",
+      "genericError": "درخواست OAuth با خطا مواجه شد. لطفاً از برنامه کلاینت مجدداً اقدام کنید.",
+      "loading": "در حال بارگذاری درخواست احراز هویت…",
+      "missingRequest": "این درخواست احراز هویت وجود ندارد. لطفاً از برنامه کلاینت مجدداً اقدام کنید.",
+      "noWorkspaces": "هیچ ورک‌اسپیس واجدی برای این درخواست موجود نیست.",
+      "permissionsHeader": "دسترسی‌ها",
+      "redirectNotice": "شما به این آدرس هدایت خواهید شد",
+      "resourceFallback": "این برنامه",
+      "sessionError": "برقراری نشست با خطا مواجه شد. لطفاً دوباره تلاش کنید.",
+      "sessionErrorToastSummary": "ورود با OAuth ادامه نیافت",
+      "subtitle": "برای ادامه وارد {resource} شوید",
+      "title": "{client} درخواست دسترسی دارد",
+      "workspaceHelp": "دسترسی‌ها فقط برای این ورک‌اسپیس اعمال می‌شوند.",
+      "workspaceLabel": "ورک‌اسپیس"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "اجرای workflowها به نمایندگی از شما"
+      },
+      "mcp:tools:read": {
+        "label": "مشاهده ابزارهای workflow موجود"
+      }
+    },
+    "workspace": {
+      "member": "عضو",
+      "owner": "مالک",
+      "personal": "شخصی"
+    }
+  },
   "openSharedWorkflow": {
     "author": "نویسنده:",
     "copyAssetsAndOpen": "وارد کردن دارایی‌ها و باز کردن گردش‌کار",
@@ -2664,20 +2740,6 @@
     "normal": "عادی",
     "parameters": "پارامترها",
     "pinned": "سنجاق شده",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "داده‌های گردش‌کار ارسال‌شده به سرور خالی است. این ممکن است یک خطای غیرمنتظره سیستمی باشد."
-      },
-      "prompt_no_outputs": {
-        "desc": "گردش‌کار هیچ نود خروجی (مانند Save Image یا Preview Image) برای تولید نتیجه ندارد."
-      },
-      "server_error_cloud": {
-        "desc": "سرور با خطای غیرمنتظره‌ای مواجه شد. لطفاً بعداً دوباره تلاش کنید."
-      },
-      "server_error_local": {
-        "desc": "سرور با خطای غیرمنتظره‌ای مواجه شد. لطفاً لاگ‌های سرور را بررسی کنید."
-      }
-    },
     "properties": "ویژگی‌ها",
     "removeFavorite": "حذف از علاقه‌مندی‌ها",
     "resetAllParameters": "بازنشانی همه پارامترها",
@@ -3087,6 +3149,7 @@
         "sourceDesc": "گروه‌بندی بر اساس نوع منبع (Core، Custom، API)"
       },
       "noBookmarkedNodes": "هنوز مورد علاقه‌ای وجود ندارد",
+      "noMatchingNodes": "هیچ نودی با «{query}» مطابقت ندارد",
       "resetView": "بازنشانی نمای پیش‌فرض",
       "sections": {
         "bookmarked": "نشان‌شده‌ها",
@@ -3472,8 +3535,7 @@
       "newest": "جدیدترین",
       "popular": "محبوب",
       "recommended": "پیشنهادی",
-      "searchPlaceholder": "جستجو...",
-      "vramLowToHigh": "مصرف VRAM (کم به زیاد)"
+      "searchPlaceholder": "جستجو..."
     },
     "sorting": "مرتب‌سازی بر اساس",
     "title": "شروع با یک قالب",
