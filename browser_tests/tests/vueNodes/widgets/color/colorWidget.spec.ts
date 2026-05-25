@@ -11,8 +11,7 @@ test.describe('Vue Color Widget defaults', { tag: '@vue-nodes' }, () => {
   test('respects the declared default value in the input spec', async ({
     comfyPage
   }) => {
-    await comfyPage.page.mouse.dblclick(200, 200, { delay: 5 })
-    await comfyPage.searchBox.fillAndSelectFirstNode(COLOR_NODE_DISPLAY_NAME)
+    await comfyPage.searchBoxV2.addNode(COLOR_NODE_DISPLAY_NAME)
 
     const node = comfyPage.vueNodes.getNodeByTitle(COLOR_NODE_DISPLAY_NAME)
     const colorTrigger = node.getByRole('button', {
