@@ -129,11 +129,15 @@ export function getWidgetIdentity(
   const rawWidgetId = widget.storeNodeId ?? widget.nodeId
   const storeWidgetName = widget.storeName ?? widget.name
   const slotNameForIdentity = widget.slotName ?? widget.name
+  const hostNodeIdRoot =
+    nodeId !== undefined && nodeId !== ''
+      ? `node:${String(stripGraphPrefix(nodeId))}`
+      : undefined
   const stableIdentityRoot = rawWidgetId
     ? `node:${String(stripGraphPrefix(rawWidgetId))}`
     : widget.sourceExecutionId
       ? `exec:${widget.sourceExecutionId}`
-      : undefined
+      : hostNodeIdRoot
 
   const dedupeIdentity = stableIdentityRoot
     ? `${stableIdentityRoot}:${storeWidgetName}:${slotNameForIdentity}:${widget.type}`
