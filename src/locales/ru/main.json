@@ -410,7 +410,6 @@
   "cloudNotification": {
     "continueLocally": "Продолжить локально",
     "exploreCloud": "Попробовать облако бесплатно",
-    "feature1Title": "400 бесплатных кредитов в месяц",
     "feature2Title": "Работает везде и мгновенно",
     "feature3Title": "Модели готовы к использованию",
     "feature4Title": "Лучшие пользовательские пакеты узлов предустановлены",
@@ -801,6 +800,8 @@
     "CONTROL_NET": "CONTROL_NET",
     "CURVE": "КРИВАЯ",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "МОДЕЛЬ_ОПРЕДЕЛЕНИЯ_ЛИЦА",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -816,6 +817,7 @@
     "HISTOGRAM": "ГИСТОГРАММА",
     "HOOKS": "ХУКИ",
     "HOOK_KEYFRAMES": "КЛЮЧЕВЫЕ_КАДРЫ_ХУКА",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "ИЗОБРАЖЕНИЕ",
     "IMAGECOMPARE": "СРАВНЕНИЕ_ИЗОБРАЖЕНИЙ",
     "INT": "ЦЕЛОЕ",
@@ -836,6 +838,8 @@
     "MODEL": "МОДЕЛЬ",
     "MODEL_PATCH": "ПАТЧ_МОДЕЛИ",
     "MODEL_TASK_ID": "ID_ЗАДАЧИ_МОДЕЛИ",
+    "MOGE_GEOMETRY": "MOGE_ГЕОМЕТРИЯ",
+    "MOGE_MODEL": "MOGE_МОДЕЛЬ",
     "NOISE": "ШУМ",
     "OPENAI_CHAT_CONFIG": "КОНФИГУРАЦИЯ_ЧАТА_OPENAI",
     "OPENAI_INPUT_FILES": "ВХОДНЫЕ_ФАЙЛЫ_OPENAI",
@@ -907,6 +911,44 @@
     "paused": "Приостановлено",
     "resume": "Возобновить загрузку"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "неизвестный вход",
+      "nodeName": "Этот узел"
+    },
+    "promptErrors": {
+      "no_prompt": {
+        "desc": "Данные рабочего процесса, отправленные на сервер, пусты. Это может быть неожиданной системной ошибкой."
+      },
+      "prompt_no_outputs": {
+        "desc": "В рабочем процессе отсутствуют выходные узлы (например, Сохранить изображение, Просмотр изображения) для получения результата."
+      },
+      "server_error_cloud": {
+        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, попробуйте позже."
+      },
+      "server_error_local": {
+        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, проверьте журналы сервера."
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastMessageCloud": "Этот узел вызвал ошибку во время выполнения. Проверьте его входные данные или попробуйте другую конфигурацию. Кредиты не списаны.",
+        "toastMessageLocal": "Этот узел вызвал ошибку во время выполнения. Проверьте его входные данные или попробуйте другую конфигурацию.",
+        "toastTitle": "{nodeName} завершился с ошибкой"
+      }
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "details": "{nodeName} отсутствует обязательный вход: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Требуемые входные слоты не имеют подключений.",
+        "title": "Отсутствует соединение",
+        "toastMessage": "{nodeName} отсутствует обязательный вход: {inputName}",
+        "toastTitle": "Отсутствует обязательный вход"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "accessRestrictedTitle": "Access Restricted",
@@ -914,7 +956,8 @@
     "extensionFileHint": "Это может быть связано со следующим скриптом",
     "loadWorkflowTitle": "Загрузка прервана из-за ошибки при перезагрузке данных рабочего процесса",
     "noStackTrace": "Стек вызовов недоступен",
-    "promptExecutionError": "Ошибка выполнения запроса"
+    "promptExecutionError": "Ошибка выполнения запроса",
+    "queueOpenWorkflowFailedTitle": "Не удалось открыть рабочий процесс"
   },
   "errorOverlay": {
     "errorCount": "{count} ОШИБОК | {count} ОШИБКА | {count} ОШИБКИ",
@@ -1042,6 +1085,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "Логотип ComfyOrg",
+    "comfyPackageOutdated": "Установленная версия {name} ({installedVersion}) ниже требуемой версии ({requiredVersion}).",
     "comingSoon": "Скоро будет",
     "command": "Команда",
     "commandProhibited": "Команда {command} запрещена. Свяжитесь с администратором для получения дополнительной информации.",
@@ -1707,6 +1751,7 @@
     "reloadingModel": "Перезагрузка модели...",
     "removeBackgroundImage": "Удалить фоновое изображение",
     "resizeNodeMatchOutput": "Изменить размер узла под вывод",
+    "retainViewOnReload": "Зафиксировать вид камеры при перезагрузке модели",
     "scene": "Сцена",
     "showGrid": "Показать сетку",
     "showSkeleton": "Показать скелет",
@@ -1740,6 +1785,10 @@
     "outdatedVersion": "Этот рабочий процесс был создан в более новой версии ComfyUI ({version}). Некоторые узлы могут работать некорректно.",
     "outdatedVersionGeneric": "Этот рабочий процесс был создан в более новой версии ComfyUI. Некоторые узлы могут работать некорректно.",
     "unknownVersion": "неизвестно"
+  },
+  "logsTerminal": {
+    "loadError": "Не удалось загрузить логи, пожалуйста, убедитесь, что вы обновили ваш ComfyUI backend.",
+    "resyncError": "Не удалось повторно синхронизировать логи после переподключения backend. Откройте консоль заново, чтобы повторить попытку."
   },
   "maintenance": {
     "None": "Нет",
@@ -2254,6 +2303,7 @@
     "": "",
     "3d": "3d",
     "3d_models": "3d_модели",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
@@ -2269,6 +2319,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2285,8 +2336,8 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "корректировки",
     "advanced": "расширенный",
-    "animation": "анимация",
     "api node": "api-узел",
     "attention_experiments": "эксперименты_внимания",
     "audio": "аудио",
@@ -2309,7 +2360,9 @@
     "detection": "детекция",
     "edit_models": "редактировать_модели",
     "experimental": "экспериментальное",
+    "filters": "фильтры",
     "flux": "flux",
+    "geometry_estimation": "оценка_геометрии",
     "gligen": "gligen",
     "guidance": "направление",
     "guiders": "направляющие",
@@ -2331,13 +2384,11 @@
     "noise": "шум",
     "operations": "операции",
     "photomaker": "photomaker",
-    "postprocessing": "постобработка",
     "preprocessors": "предобработчики",
     "primitive": "примитив",
     "qwen": "qwen",
     "samplers": "семплеры",
     "sampling": "выборка",
-    "save": "сохранить",
     "schedulers": "schedulers",
     "scheduling": "scheduling",
     "sd3": "sd3",
@@ -2425,6 +2476,43 @@
     },
     "title": "Ваше устройство не поддерживается"
   },
+  "oauth": {
+    "consent": {
+      "allow": "Продолжить",
+      "appTypeNative": "Нативное приложение",
+      "appTypeWeb": "Веб-приложение",
+      "deny": "Отмена",
+      "errorExpired": "Этот запрос на согласие истёк или уже был использован. Пожалуйста, перезапустите из клиентского приложения.",
+      "errorScopeBroadening": "Ранее одобренные разрешения не покрывают этот запрос. Необходимо повторно авторизоваться с новыми разрешениями.",
+      "errorUnavailable": "Эта функция сейчас недоступна. Если проблема сохраняется, обратитесь в поддержку.",
+      "genericError": "Ошибка OAuth-запроса. Пожалуйста, перезапустите из клиентского приложения.",
+      "loading": "Загрузка запроса авторизации…",
+      "missingRequest": "Этот запрос авторизации отсутствует. Пожалуйста, перезапустите из клиентского приложения.",
+      "noWorkspaces": "Нет доступных рабочих пространств для этого запроса.",
+      "permissionsHeader": "Разрешения",
+      "redirectNotice": "Вы будете перенаправлены на",
+      "resourceFallback": "это приложение",
+      "sessionError": "Не удалось установить сессию. Пожалуйста, попробуйте ещё раз.",
+      "sessionErrorToastSummary": "Не удалось продолжить вход через OAuth",
+      "subtitle": "Войдите в {resource}, чтобы продолжить",
+      "title": "{client} запрашивает доступ",
+      "workspaceHelp": "Разрешения применяются только к этому рабочему пространству.",
+      "workspaceLabel": "Рабочее пространство"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "Запуск workflow от вашего имени"
+      },
+      "mcp:tools:read": {
+        "label": "Просмотр доступных инструментов workflow"
+      }
+    },
+    "workspace": {
+      "member": "Участник",
+      "owner": "Владелец",
+      "personal": "Личное"
+    }
+  },
   "openSharedWorkflow": {
     "author": "Автор:",
     "copyAssetsAndOpen": "Импортировать ресурсы и открыть рабочий процесс",
@@ -2435,7 +2523,8 @@
     "nonPublicAssetsWarningLine1": "Этот рабочий процесс содержит непубличные ресурсы.",
     "nonPublicAssetsWarningLine2": "Они будут импортированы в вашу библиотеку при открытии рабочего процесса",
     "openWithoutImporting": "Открыть без импорта",
-    "openWorkflow": "Открыть рабочий процесс"
+    "openWorkflow": "Открыть рабочий процесс",
+    "opening": "Открытие общего рабочего процесса..."
   },
   "painter": {
     "background": "Фон",
@@ -2651,20 +2740,6 @@
     "normal": "Обычный",
     "parameters": "Параметры",
     "pinned": "Закреплено",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "Данные рабочего процесса, отправленные на сервер, пусты. Это может быть неожиданной системной ошибкой."
-      },
-      "prompt_no_outputs": {
-        "desc": "В рабочем процессе отсутствуют выходные узлы (например, Сохранить изображение, Предпросмотр изображения) для получения результата."
-      },
-      "server_error_cloud": {
-        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, попробуйте позже."
-      },
-      "server_error_local": {
-        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, проверьте логи сервера."
-      }
-    },
     "properties": "Свойства",
     "removeFavorite": "Убрать из избранного",
     "resetAllParameters": "Сбросить все параметры",
@@ -3062,6 +3137,7 @@
         "sourceDesc": "Группировать по типу источника (Core, Custom, API)"
       },
       "noBookmarkedNodes": "Избранных пока нет",
+      "noMatchingNodes": "Нет узлов, соответствующих «{query}»",
       "resetView": "Сбросить вид по умолчанию",
       "sections": {
         "bookmarked": "Избранное",
@@ -3447,8 +3523,7 @@
       "newest": "Новейшие",
       "popular": "Популярные",
       "recommended": "Рекомендуемые",
-      "searchPlaceholder": "Поиск...",
-      "vramLowToHigh": "Использование VRAM (от низкого к высокому)"
+      "searchPlaceholder": "Поиск..."
     },
     "sorting": "Сортировать по",
     "title": "Начните с шаблона",
@@ -3612,7 +3687,8 @@
       "placeholderMesh": "Выберите mesh...",
       "placeholderModel": "Выбрать модель...",
       "placeholderUnknown": "Выбрать медиа...",
-      "placeholderVideo": "Выбрать видео..."
+      "placeholderVideo": "Выбрать видео...",
+      "topResult": "Лучший результат: {result}"
     },
     "valueControl": {
       "decrement": "Уменьшить значение",

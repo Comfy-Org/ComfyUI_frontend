@@ -39,6 +39,30 @@ import { useLoad3dService } from '@/services/load3dService'
 type Load3dReadyCallback = (load3d: Load3d) => void
 export const nodeToLoad3dMap = new Map<LGraphNode, Load3d>()
 const pendingCallbacks = new Map<LGraphNode, Load3dReadyCallback[]>()
+const persistentReadyCallbacks = new Map<LGraphNode, Load3dReadyCallback[]>()
+
+const nodesWithCleanup = new WeakSet<LGraphNode>()
+
+const ensureNodeCleanupChained = (node: LGraphNode): void => {
+  if (nodesWithCleanup.has(node)) return
+  nodesWithCleanup.add(node)
+  node.onRemoved = useChainCallback(node.onRemoved, () => {
+    useLoad3dService().removeLoad3d(node)
+    pendingCallbacks.delete(node)
+    persistentReadyCallbacks.delete(node)
+  })
+}
+
+const invokeReadyCallback = (
+  callback: Load3dReadyCallback,
+  instance: Load3d
+): void => {
+  try {
+    callback(instance)
+  } catch (error) {
+    console.error('Load3d ready callback failed:', error)
+  }
+}
 
 export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const nodeRef = toRef(nodeOrRef)
@@ -177,10 +201,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         }
       )
 
-      node.onRemoved = useChainCallback(node.onRemoved, () => {
-        useLoad3dService().removeLoad3d(node)
-        pendingCallbacks.delete(node)
-      })
+      ensureNodeCleanupChained(node)
 
       nodeToLoad3dMap.set(node, load3d)
 
@@ -188,11 +209,16 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
       if (callbacks && load3d) {
         callbacks.forEach((callback) => {
-          if (load3d) {
-            callback(load3d)
-          }
+          if (load3d) invokeReadyCallback(callback, load3d)
         })
         pendingCallbacks.delete(node)
+      }
+
+      const persistent = persistentReadyCallbacks.get(node)
+      if (persistent && load3d) {
+        persistent.forEach((callback) => {
+          if (load3d) invokeReadyCallback(callback, load3d)
+        })
       }
 
       handleEvents('add')
@@ -351,8 +377,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     const existingInstance = nodeToLoad3dMap.get(node)
 
     if (existingInstance) {
-      callback(existingInstance)
-
+      invokeReadyCallback(callback, existingInstance)
       return
     }
 
@@ -361,6 +386,23 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
 
     pendingCallbacks.get(node)!.push(callback)
+    ensureNodeCleanupChained(node)
+  }
+
+  const onLoad3dReady = (callback: Load3dReadyCallback) => {
+    const rawNode = toRaw(nodeRef.value)
+    if (!rawNode) return
+
+    const node = rawNode as LGraphNode
+
+    if (!persistentReadyCallbacks.has(node)) {
+      persistentReadyCallbacks.set(node, [])
+    }
+    persistentReadyCallbacks.get(node)!.push(callback)
+    ensureNodeCleanupChained(node)
+
+    const existingInstance = nodeToLoad3dMap.get(node)
+    if (existingInstance) invokeReadyCallback(callback, existingInstance)
   }
 
   watch(
@@ -441,6 +483,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         nodeRef.value.properties['Camera Config'] = newValue
         load3d.toggleCamera(newValue.cameraType)
         load3d.setFOV(newValue.fov)
+        load3d.setRetainViewOnReload(newValue.retainViewOnReload ?? false)
       }
     },
     { deep: true }
@@ -979,6 +1022,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     // Methods
     initializeLoad3d,
     waitForLoad3d,
+    onLoad3dReady,
     handleMouseEnter,
     handleMouseLeave,
     handleStartRecording,

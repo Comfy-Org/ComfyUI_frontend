@@ -20,11 +20,16 @@ const baseRoutes = {
 
 type Routes = typeof baseRoutes
 
+const localeInvariantRouteKeys = new Set<keyof Routes>(['termsOfService'])
+
 export function getRoutes(locale: Locale = 'en'): Routes {
   if (locale === 'en') return baseRoutes
   const prefix = `/${locale}`
   return Object.fromEntries(
-    Object.entries(baseRoutes).map(([k, v]) => [k, `${prefix}${v}`])
+    Object.entries(baseRoutes).map(([k, v]) => [
+      k,
+      localeInvariantRouteKeys.has(k as keyof Routes) ? v : `${prefix}${v}`
+    ])
   ) as unknown as Routes
 }
 
@@ -32,6 +37,7 @@ export const externalLinks = {
   apiKeys: 'https://platform.comfy.org/profile/api-keys',
   blog: 'https://blog.comfy.org/',
   cloud: 'https://cloud.comfy.org',
+  cloudStatus: 'https://status.comfy.org',
   discord: 'https://discord.com/invite/comfyorg',
   docs: 'https://docs.comfy.org/',
   docsApi: 'https://docs.comfy.org/api-reference/cloud',

@@ -220,6 +220,7 @@
     "versionMismatchWarningMessage": "{warning}: {detail} Visit https://docs.comfy.org/installation/update_comfyui#common-update-issues for update instructions.",
     "frontendOutdated": "Frontend version {frontendVersion} is outdated. Backend requires {requiredVersion} or higher.",
     "frontendNewer": "Frontend version {frontendVersion} may not be compatible with backend version {backendVersion}.",
+    "comfyPackageOutdated": "Installed {name} version {installedVersion} is lower than the required version {requiredVersion}.",
     "updateFrontend": "Update Frontend",
     "dismiss": "Dismiss",
     "update": "Update",
@@ -903,6 +904,7 @@
         "alphabetical": "A-Z",
         "alphabeticalDesc": "Sort alphabetically within groups"
       },
+      "noMatchingNodes": "No nodes match \"{query}\"",
       "sections": {
         "favorites": "Bookmarks",
         "favoriteNode": "Bookmark Node",
@@ -1111,7 +1113,6 @@
       "alphabetical": "A → Z",
       "newest": "Newest",
       "searchPlaceholder": "Search...",
-      "vramLowToHigh": "VRAM Usage (Low to High)",
       "modelSizeLowToHigh": "Model Size (Low to High)",
       "default": "Default"
     },
@@ -1158,6 +1159,10 @@
   "nodeTemplates": {
     "saveAsTemplate": "Save as template",
     "enterName": "Enter name"
+  },
+  "logsTerminal": {
+    "loadError": "Unable to load logs, please ensure you have updated your ComfyUI backend.",
+    "resyncError": "Unable to resync logs after the backend reconnected. Reopen the console to retry."
   },
   "workflowService": {
     "exportWorkflow": "Export Workflow",
@@ -1656,6 +1661,7 @@
     "dataset": "dataset",
     "text": "text",
     "image": "image",
+    "adjustments": "adjustments",
     "sampling": "sampling",
     "schedulers": "schedulers",
     "conditioning": "conditioning",
@@ -1670,17 +1676,18 @@
     "Bria": "Bria",
     "video": "video",
     "ByteDance": "ByteDance",
-    "preprocessors": "preprocessors",
+    "filters": "filters",
+    "transform": "transform",
     "advanced": "advanced",
     "guidance": "guidance",
     "model_merging": "model_merging",
     "model_patches": "model_patches",
     "chroma_radiance": "chroma_radiance",
+    "Anthropic": "Anthropic",
     "attention_experiments": "attention_experiments",
     "flux": "flux",
     "kandinsky5": "kandinsky5",
     "utils": "utils",
-    "postprocessing": "postprocessing",
     "hooks": "hooks",
     "combine": "combine",
     "logic": "logic",
@@ -1701,7 +1708,6 @@
     "unet": "unet",
     "sigmas": "sigmas",
     "BFL": "BFL",
-    "": "",
     "Gemini": "Gemini",
     "gligen": "gligen",
     "shader": "shader",
@@ -1710,24 +1716,26 @@
     "HitPaw": "HitPaw",
     "3d_models": "3d_models",
     "Ideogram": "Ideogram",
-    "transform": "transform",
+    "compositing": "compositing",
     "color": "color",
     "upscaling": "upscaling",
     "instructpix2pix": "instructpix2pix",
-    "compositing": "compositing",
     "Kling": "Kling",
     "samplers": "samplers",
     "operations": "operations",
     "training": "training",
     "lotus": "lotus",
     "LTXV": "LTXV",
+    "preprocessors": "preprocessors",
     "Luma": "Luma",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "model_specific": "model_specific",
+    "geometry_estimation": "geometry_estimation",
     "OpenAI": "OpenAI",
     "Sora": "Sora",
+    "OpenRouter": "OpenRouter",
     "cond pair": "cond pair",
     "photomaker": "photomaker",
     "PixVerse": "PixVerse",
@@ -1739,8 +1747,6 @@
     "Reve": "Reve",
     "Rodin": "Rodin",
     "Runway": "Runway",
-    "animation": "animation",
-    "save": "save",
     "upscale_diffusion": "upscale_diffusion",
     "clip": "clip",
     "Sonilo": "Sonilo",
@@ -1753,6 +1759,7 @@
     "Tripo": "Tripo",
     "Veo": "Veo",
     "Vidu": "Vidu",
+    "": "",
     "WaveSpeed": "WaveSpeed",
     "zimage": "zimage"
   },
@@ -1778,6 +1785,8 @@
     "CONTROL_NET": "CONTROL_NET",
     "CURVE": "CURVE",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "FACE_DETECTION_MODEL",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -1793,6 +1802,7 @@
     "HISTOGRAM": "HISTOGRAM",
     "HOOK_KEYFRAMES": "HOOK_KEYFRAMES",
     "HOOKS": "HOOKS",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "IMAGE",
     "IMAGECOMPARE": "IMAGECOMPARE",
     "INT": "INT",
@@ -1813,6 +1823,8 @@
     "MODEL": "MODEL",
     "MODEL_PATCH": "MODEL_PATCH",
     "MODEL_TASK_ID": "MODEL_TASK_ID",
+    "MOGE_GEOMETRY": "MOGE_GEOMETRY",
+    "MOGE_MODEL": "MOGE_MODEL",
     "NOISE": "NOISE",
     "OPENAI_CHAT_CONFIG": "OPENAI_CHAT_CONFIG",
     "OPENAI_INPUT_FILES": "OPENAI_INPUT_FILES",
@@ -1899,6 +1911,7 @@
   "errorDialog": {
     "defaultTitle": "An error occurred",
     "loadWorkflowTitle": "Loading aborted due to error reloading workflow data",
+    "queueOpenWorkflowFailedTitle": "Failed to Open Workflow",
     "noStackTrace": "No stacktrace available",
     "extensionFileHint": "This may be due to the following script",
     "promptExecutionError": "Prompt execution failed",
@@ -1939,6 +1952,7 @@
   },
   "load3d": {
     "switchCamera": "Switch Camera",
+    "retainViewOnReload": "Lock camera view across model reloads",
     "showGrid": "Show Grid",
     "backgroundColor": "Background Color",
     "lightIntensity": "Light Intensity",
@@ -2125,6 +2139,43 @@
     "header": "Node Header Error",
     "slots": "Node Slots Error",
     "widgets": "Node Widgets Error"
+  },
+  "oauth": {
+    "consent": {
+      "allow": "Continue",
+      "deny": "Cancel",
+      "genericError": "OAuth request failed. Please restart from the client app.",
+      "loading": "Loading authorization request…",
+      "missingRequest": "This authorization request is missing. Please restart from the client app.",
+      "noWorkspaces": "No eligible workspaces are available for this request.",
+      "title": "{client} wants access",
+      "subtitle": "Sign in to {resource} to continue",
+      "resourceFallback": "this app",
+      "workspaceLabel": "Workspace",
+      "permissionsHeader": "Permissions",
+      "workspaceHelp": "Permissions apply to this workspace only.",
+      "redirectNotice": "You'll be redirected to",
+      "appTypeNative": "Native app",
+      "appTypeWeb": "Web app",
+      "errorExpired": "This consent request has expired or has already been used. Please restart from the client app.",
+      "errorScopeBroadening": "The previously approved permissions don't cover this request. You'll need to re-authorize with the new permissions.",
+      "errorUnavailable": "This feature isn't available right now. Please contact support if the problem persists.",
+      "sessionError": "Failed to establish session. Please try again.",
+      "sessionErrorToastSummary": "Couldn't continue OAuth sign-in"
+    },
+    "scopes": {
+      "mcp:tools:read": {
+        "label": "View available workflow tools"
+      },
+      "mcp:tools:call": {
+        "label": "Run workflows on your behalf"
+      }
+    },
+    "workspace": {
+      "personal": "Personal",
+      "owner": "Owner",
+      "member": "Member"
+    }
   },
   "auth": {
     "apiKey": {
@@ -2698,7 +2749,8 @@
       "placeholderMesh": "Select mesh...",
       "placeholderModel": "Select model...",
       "placeholderUnknown": "Select media...",
-      "maxSelectionReached": "Maximum selection limit reached"
+      "maxSelectionReached": "Maximum selection limit reached",
+      "topResult": "Top result: {result}"
     },
     "valueControl": {
       "header": {
@@ -3214,6 +3266,7 @@
     "copyAssetsAndOpen": "Import assets & open workflow",
     "openWorkflow": "Open workflow",
     "openWithoutImporting": "Open without importing",
+    "opening": "Opening shared workflow...",
     "importFailed": "Failed to import workflow assets",
     "loadError": "Could not load this shared workflow. Please try again later."
   },
@@ -3518,20 +3571,6 @@
     "getHelpTooltip": "Report this error and we'll help you resolve it",
     "enterSubgraph": "Enter subgraph",
     "seeError": "See Error",
-    "promptErrors": {
-      "prompt_no_outputs": {
-        "desc": "The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result."
-      },
-      "no_prompt": {
-        "desc": "The workflow data sent to the server is empty. This may be an unexpected system error."
-      },
-      "server_error_local": {
-        "desc": "The server encountered an unexpected error. Please check the server logs."
-      },
-      "server_error_cloud": {
-        "desc": "The server encountered an unexpected error. Please try again later."
-      }
-    },
     "errorHelp": "For more help, {github} or {support}",
     "errorHelpGithub": "submit a GitHub issue",
     "errorHelpSupport": "contact our support",
@@ -3615,6 +3654,44 @@
     "missingModels": "{count} required model is missing | {count} required models are missing",
     "swapNodes": "Some nodes can be replaced with alternatives",
     "missingMedia": "Some nodes are missing required inputs"
+  },
+  "errorCatalog": {
+    "fallbacks": {
+      "nodeName": "This node",
+      "inputName": "unknown input"
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "title": "Missing connection",
+        "message": "Required input slots have no connection feeding them.",
+        "details": "{nodeName} is missing a required input: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastTitle": "Required input missing",
+        "toastMessage": "{nodeName} is missing a required input: {inputName}"
+      }
+    },
+    "runtimeErrors": {
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "toastTitle": "{nodeName} failed",
+        "toastMessageLocal": "This node threw an error during execution. Check its inputs or try a different configuration.",
+        "toastMessageCloud": "This node threw an error during execution. Check its inputs or try a different configuration. No credits charged."
+      }
+    },
+    "promptErrors": {
+      "prompt_no_outputs": {
+        "desc": "The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result."
+      },
+      "no_prompt": {
+        "desc": "The workflow data sent to the server is empty. This may be an unexpected system error."
+      },
+      "server_error_local": {
+        "desc": "The server encountered an unexpected error. Please check the server logs."
+      },
+      "server_error_cloud": {
+        "desc": "The server encountered an unexpected error. Please try again later."
+      }
+    }
   },
   "help": {
     "recentReleases": "Recent releases",
@@ -3790,7 +3867,6 @@
   "cloudNotification": {
     "title": "Run ComfyUI in the Cloud",
     "message": "From setup to creation in seconds. Popular models, extensions, and powerful GPUs — ready when you are.",
-    "feature1Title": "400 Free Credits Monthly",
     "feature2Title": "Works Anywhere, Instantly",
     "feature3Title": "Models Ready to Use",
     "feature4Title": "Top Custom Node Packs Pre-installed",

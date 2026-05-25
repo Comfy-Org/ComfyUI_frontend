@@ -22,7 +22,7 @@
     }
   },
   "AddTextPrefix": {
-    "display_name": "Add Text Prefix",
+    "display_name": "Add Text Prefix (DEPRECATED)",
     "inputs": {
       "texts": {
         "name": "texts",
@@ -41,7 +41,7 @@
     }
   },
   "AddTextSuffix": {
-    "display_name": "Add Text Suffix",
+    "display_name": "Add Text Suffix (DEPRECATED)",
     "inputs": {
       "texts": {
         "name": "texts",
@@ -61,6 +61,7 @@
   },
   "AdjustBrightness": {
     "display_name": "Adjust Brightness",
+    "description": "Adjust the brightness of an image.",
     "inputs": {
       "images": {
         "name": "images",
@@ -80,6 +81,7 @@
   },
   "AdjustContrast": {
     "display_name": "Adjust Contrast",
+    "description": "Adjust the contrast of an image.",
     "inputs": {
       "images": {
         "name": "images",
@@ -176,7 +178,8 @@
     }
   },
   "AudioAdjustVolume": {
-    "display_name": "Audio Adjust Volume",
+    "display_name": "Adjust Audio Volume",
+    "description": "Adjust the volume of the audio by a specified amount in decibels (dB).",
     "inputs": {
       "audio": {
         "name": "audio"
@@ -193,7 +196,7 @@
     }
   },
   "AudioConcat": {
-    "display_name": "Audio Concat",
+    "display_name": "Concatenate Audio",
     "description": "Concatenates the audio1 to audio2 in the specified direction.",
     "inputs": {
       "audio1": {
@@ -284,7 +287,7 @@
     }
   },
   "AudioMerge": {
-    "display_name": "Audio Merge",
+    "display_name": "Merge Audio",
     "description": "Combine two audio tracks by overlaying their waveforms.",
     "inputs": {
       "audio1": {
@@ -305,7 +308,7 @@
     }
   },
   "BasicGuider": {
-    "display_name": "BasicGuider",
+    "display_name": "Basic Guider",
     "inputs": {
       "model": {
         "name": "model"
@@ -584,6 +587,9 @@
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
+      },
+      "model_auto_upscale": {
+        "name": "auto_upscale"
       },
       "model_duration": {
         "name": "duration"
@@ -896,6 +902,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "display_name": "ByteDance Seed",
+    "description": "Generate text responses with ByteDance's Seed 2.0 models. Provide a text prompt and optionally one or more images or videos for multimodal context.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text input to the model."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The Seed model used to generate the response."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Foundational instructions that dictate the model's behavior."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "display_name": "ByteDance Seedream 4.5 & 5.0",
     "description": "Unified text-to-image generation and precise single-sentence editing at up to 4K resolution.",
@@ -1047,7 +1086,7 @@
     }
   },
   "Canny": {
-    "display_name": "Canny",
+    "display_name": "Detect Edges (Canny)",
     "inputs": {
       "image": {
         "name": "image"
@@ -1082,7 +1121,8 @@
     }
   },
   "CenterCropImages": {
-    "display_name": "Center Crop Images",
+    "display_name": "Crop Image (Center)",
+    "description": "Center crop an image to the specified dimensions.",
     "inputs": {
       "images": {
         "name": "images",
@@ -1105,7 +1145,7 @@
     }
   },
   "CFGGuider": {
-    "display_name": "CFGGuider",
+    "display_name": "CFG Guider",
     "inputs": {
       "model": {
         "name": "model"
@@ -1228,6 +1268,49 @@
       "nerf_tile_size": {
         "name": "nerf_tile_size",
         "tooltip": "Allows overriding the default NeRF tile size. -1 means use the default (32). 0 means use non-tiling mode (may require a lot of VRAM)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClaudeNode": {
+    "display_name": "Anthropic Claude",
+    "description": "Generate text responses with Anthropic's Claude models. Provide a text prompt and optionally one or more images for multimodal context.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text input to the model."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The Claude model used to generate the response."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Optional image(s) to use as context for the model. Up to 20 images."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Foundational instructions that dictate the model's behavior."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_temperature": {
+        "name": "temperature"
       }
     },
     "outputs": {
@@ -1631,7 +1714,7 @@
     }
   },
   "ColorTransfer": {
-    "display_name": "Color Transfer",
+    "display_name": "Transfer Color",
     "description": "Match the colors of one image to another using various algorithms.",
     "inputs": {
       "image_target": {
@@ -1717,6 +1800,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "display_name": "And",
+    "description": "Logical AND operation. Returns true if all of the values are truthy. Uses Python's rules for truthiness.",
+    "inputs": {
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "Math Expression",
     "inputs": {
@@ -1740,8 +1837,22 @@
       }
     }
   },
+  "ComfyNotNode": {
+    "display_name": "Not",
+    "description": "Logical NOT operation. Returns true if the value is falsy. Uses Python's rules for truthiness.",
+    "inputs": {
+      "value": {
+        "name": "value"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyNumberConvert": {
-    "display_name": "Number Convert",
+    "display_name": "Convert Number",
     "inputs": {
       "value": {
         "name": "value"
@@ -1752,6 +1863,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "display_name": "Or",
+    "description": "Logical OR operation. Returns true if any of the values are truthy. Uses Python's rules for truthiness.",
+    "inputs": {
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -2487,7 +2612,7 @@
     }
   },
   "CropByBBoxes": {
-    "display_name": "CropByBBoxes",
+    "display_name": "Crop By Bounding Boxes",
     "description": "Crop and resize regions from the input image batch based on provided bounding boxes.",
     "inputs": {
       "image": {
@@ -2641,7 +2766,7 @@
     }
   },
   "DualCFGGuider": {
-    "display_name": "DualCFGGuider",
+    "display_name": "Dual CFG Guider",
     "inputs": {
       "model": {
         "name": "model"
@@ -4356,6 +4481,22 @@
       }
     }
   },
+  "GetICLoRAParameters": {
+    "display_name": "Get IC-LoRA Parameters",
+    "description": "Extracts IC-LoRA parameters from the safetensors metadata of a LoRA-loaded model and outputs them for LTXVAddGuide (eg. reference_downscale_factor).",
+    "inputs": {
+      "iclora_model": {
+        "name": "iclora_model",
+        "tooltip": "Direct output from a LoRA Loader for the specific IC-LoRA from which to extract the metadata."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iclora_parameters",
+        "tooltip": "IC-LoRA parameters extracted from the LoRA metadata (eg. reference_downscale_factor). Connect to LTXVAddGuide if the LoRA requires special handling of the guides."
+      }
+    }
+  },
   "GetImageSize": {
     "display_name": "Get Image Size",
     "description": "Returns width and height of the image, and passes it through unchanged.",
@@ -5507,7 +5648,7 @@
     }
   },
   "ImageBlur": {
-    "display_name": "Image Blur",
+    "display_name": "Blur Image",
     "inputs": {
       "image": {
         "name": "image"
@@ -5526,7 +5667,7 @@
     }
   },
   "ImageColorToMask": {
-    "display_name": "ImageColorToMask",
+    "display_name": "Convert Image Color to Mask",
     "inputs": {
       "image": {
         "name": "image"
@@ -5611,6 +5752,7 @@
   },
   "ImageCropV2": {
     "display_name": "Crop Image",
+    "description": "Crop an image to the specified dimensions.",
     "inputs": {
       "image": {
         "name": "image"
@@ -5630,7 +5772,8 @@
     }
   },
   "ImageDeduplication": {
-    "display_name": "Image Deduplication",
+    "display_name": "Deduplicate Images",
+    "description": "Remove duplicate or very similar images from a list.",
     "inputs": {
       "images": {
         "name": "images",
@@ -5684,7 +5827,8 @@
     }
   },
   "ImageGrid": {
-    "display_name": "Image Grid",
+    "display_name": "Make Image Grid",
+    "description": "Arrange multiple images into a grid layout.",
     "inputs": {
       "images": {
         "name": "images",
@@ -5775,7 +5919,7 @@
     }
   },
   "ImageOnlyCheckpointLoader": {
-    "display_name": "Image Only Checkpoint Loader (img2vid model)",
+    "display_name": "Load Checkpoint Image Only (img2vid model)",
     "inputs": {
       "ckpt_name": {
         "name": "ckpt_name"
@@ -7856,7 +8000,8 @@
     }
   },
   "LoadImageDataSetFromFolder": {
-    "display_name": "Load Image Dataset from Folder",
+    "display_name": "Load Image (from Folder)",
+    "description": "Load a dataset of images from a specified folder and return a list of images. Supported formats: PNG, JPG, JPEG, WEBP.",
     "inputs": {
       "folder": {
         "name": "folder",
@@ -7899,11 +8044,12 @@
     }
   },
   "LoadImageTextDataSetFromFolder": {
-    "display_name": "Load Image and Text Dataset from Folder",
+    "display_name": "Load Image-Text (from Folder)",
+    "description": "Load a dataset of pairs of images and text captions from a specified folder and return them as a list. Supported formats: PNG, JPG, JPEG, WEBP.",
     "inputs": {
       "folder": {
         "name": "folder",
-        "tooltip": "The folder to load images from."
+        "tooltip": "The folder to load images and text captions from."
       }
     },
     "outputs": {
@@ -7925,8 +8071,36 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "Load Face Detection Model (MediaPipe)",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "Face detection model from models/detection/."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoadMoGeModel": {
+    "display_name": "Load MoGe Model",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadTrainingDataset": {
     "display_name": "Load Training Dataset",
+    "description": "Load encoded training dataset (latents + conditioning) from disk for use in training.",
     "inputs": {
       "folder_name": {
         "name": "folder_name",
@@ -7962,7 +8136,7 @@
   },
   "LoraLoader": {
     "display_name": "Load LoRA (Model and CLIP)",
-    "description": "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
+    "description": "This LoRA loader is used to modify both diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
     "inputs": {
       "model": {
         "name": "model",
@@ -8050,7 +8224,7 @@
   },
   "LoraLoaderModelOnly": {
     "display_name": "Load LoRA",
-    "description": "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
+    "description": "This LoRAs loader is used to modify the diffusion model, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
     "inputs": {
       "model": {
         "name": "model"
@@ -8187,6 +8361,14 @@
       },
       "strength": {
         "name": "strength"
+      },
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "Optional pixel-space spatial mask. Controls per-region conditioning influence via self-attention, multiplied by strength."
+      },
+      "iclora_parameters": {
+        "name": "iclora_parameters",
+        "tooltip": "Optional IC-LoRA parameters from a Get IC-LoRA Parameters node. Used for adjusting guide processing as required by certain IC-LoRAs (eg. those with a reference_downscale_factor > 1). When chained, each LTXVAddGuide uses only the parameters connected to it."
       }
     },
     "outputs": {
@@ -8307,7 +8489,7 @@
     }
   },
   "LTXVAudioVAELoader": {
-    "display_name": "LTXV Audio VAE Loader",
+    "display_name": "Load LTXV Audio VAE",
     "inputs": {
       "ckpt_name": {
         "name": "ckpt_name",
@@ -9123,6 +9305,7 @@
   },
   "MakeTrainingDataset": {
     "display_name": "Make Training Dataset",
+    "description": "Encode images with VAE and texts with CLIP to create a training dataset of latents and conditionings.",
     "inputs": {
       "images": {
         "name": "images",
@@ -9212,8 +9395,98 @@
       }
     }
   },
+  "MediaPipeFaceLandmarker": {
+    "display_name": "Detect Face Landmarks (MediaPipe)",
+    "description": "Detects facial landmarks using MediaPipe model.",
+    "inputs": {
+      "face_detection_model": {
+        "name": "face_detection_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "Face detector range. 'short' is tuned for close-up faces (within ~2 m of the camera); 'full' covers farther / smaller faces (up to ~5 m) but is slower. 'both' runs both detectors and keeps whichever found more faces per frame (~2× detection cost)."
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "Maximum faces to return per frame. 0 = no cap (return all detected)."
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "BlazeFace score threshold. Lower to catch small/occluded faces."
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "Per-frame behaviour when detection fails in a batch. 'empty' leaves the frame faceless. 'previous' copies the most recent successful detection. 'interpolate' lerps landmarks/bbox/blendshapes between bracketing successful frames. Multi-face: pairs faces across frames by greedy bbox-centre NN."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "display_name": "Draw Face Mask (MediaPipe)",
+    "description": "Draws a mask from face landmarks.",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = union of face_oval+lips+eyes+irises (which collapses to face_oval since it encloses the rest). 'custom' = toggle each region individually for combos like lips+eyes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "display_name": "Visualize Face Landmarks (MediaPipe)",
+    "description": "Draws face landmarks mesh on the input image.",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = oval+eyes+brows+lips+irises+nose. 'fill' = solid face_oval polygon (silhouette mask). 'custom' = toggle each feature individually (including 'tesselation', the full 2547-edge wireframe)."
+      },
+      "color": {
+        "name": "color"
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "Edge line thickness in pixels. 0 disables edge drawing."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "Landmark dot radius in pixels. 0 disables point drawing."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "If not connected, a black canvas will be used."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MergeImageLists": {
-    "display_name": "Merge Image Lists",
+    "display_name": "Merge Image Lists (DEPRECATED)",
+    "description": "Concatenate multiple image lists into one.",
     "inputs": {
       "images": {
         "name": "images",
@@ -9228,7 +9501,7 @@
     }
   },
   "MergeTextLists": {
-    "display_name": "Merge Text Lists",
+    "display_name": "Merge Text Lists (DEPRECATED)",
     "inputs": {
       "texts": {
         "name": "texts",
@@ -11892,8 +12165,128 @@
       }
     }
   },
+  "MoGeInference": {
+    "display_name": "Run MoGe Inference",
+    "description": "Run MoGe on a single image to estimate depth and geometry.",
+    "inputs": {
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "0 = fastest, 9 = most detail."
+      },
+      "fov_x_degrees": {
+        "name": "fov_x_degrees",
+        "tooltip": "Horizontal field of view of the source camera. Sets the focal length used to unproject the depth map into 3D. 0 = auto-recover from the predicted points."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Images per inference call. Lower if you OOM on a long video / image set."
+      },
+      "force_projection": {
+        "name": "force_projection"
+      },
+      "apply_mask": {
+        "name": "apply_mask",
+        "tooltip": "Set masked-out (sky / invalid) pixels to inf in points and depth so meshing culls them. Disable to keep the raw predicted geometry everywhere; the mask is still returned separately."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePanoramaInference": {
+    "display_name": "Run MoGe Panorama Inference",
+    "description": "Run MoGe on an equirectangular panorama by splitting it into 12 perspective views, running inference on each, and merging the results into a single depth map.",
+    "inputs": {
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Equirectangular panorama (any aspect)."
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "Per-view detail (0 = fastest, 9 = most detailed)."
+      },
+      "split_resolution": {
+        "name": "split_resolution",
+        "tooltip": "Resolution of each perspective split."
+      },
+      "merge_resolution": {
+        "name": "merge_resolution",
+        "tooltip": "Long-side resolution of the merged equirect distance map."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Views per inference batch (12 splits total)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePointMapToMesh": {
+    "display_name": "Convert MoGe Point Map to Mesh",
+    "description": "Convert a MoGe point map into a 3D mesh.",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "Which image of a batched MoGe geometry to mesh. Per-image vertex counts differ, so batches can't be stacked into a single MESH."
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "Vertex stride; 1 = full resolution."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "Drop pixels whose 3x3 depth span exceeds this fraction. 0 = off."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Carry the source image through as the baseColor texture."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeRender": {
+    "display_name": "Render MoGe Geometry",
+    "description": "Render a depth map or normal map from geometry data",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "DirectX vs OpenGL controls the normal-map green-channel convention. DirectX: green = -Y down (Unreal). OpenGL: green = +Y up (Blender, Substance, Unity, glTF)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Morphology": {
-    "display_name": "ImageMorphology",
+    "display_name": "Apply Morphology",
     "inputs": {
       "image": {
         "name": "image"
@@ -11938,7 +12331,8 @@
     }
   },
   "NormalizeImages": {
-    "display_name": "Normalize Images",
+    "display_name": "Normalize Image Colors",
+    "description": "Normalize images using mean and standard deviation.",
     "inputs": {
       "images": {
         "name": "images",
@@ -12259,6 +12653,39 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterLLMNode": {
+    "display_name": "OpenRouter LLM",
+    "description": "Generate text responses through OpenRouter. Routes to a curated set of popular models from xAI, DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi), and Perplexity Sonar.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text input to the model."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The OpenRouter model used to generate the response."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for sampling. Set to 0 to omit. Most models treat this as a hint only."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Foundational instructions that dictate the model's behavior."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
       }
     },
     "outputs": {
@@ -13052,7 +13479,8 @@
     }
   },
   "RandomCropImages": {
-    "display_name": "Random Crop Images",
+    "display_name": "Crop Image (Random)",
+    "description": "Randomly crop an image to the specified dimensions.",
     "inputs": {
       "images": {
         "name": "images",
@@ -13736,6 +14164,7 @@
   },
   "RemoveBackground": {
     "display_name": "Remove Background",
+    "description": "Generates a foreground mask to remove the background from an image using a background removal model.",
     "inputs": {
       "image": {
         "name": "image",
@@ -13800,7 +14229,7 @@
     }
   },
   "ReplaceText": {
-    "display_name": "Replace Text",
+    "display_name": "Replace Text (DEPRECATED)",
     "inputs": {
       "texts": {
         "name": "texts",
@@ -13913,7 +14342,8 @@
     }
   },
   "ResizeImagesByLongerEdge": {
-    "display_name": "Resize Images by Longer Edge",
+    "display_name": "Resize Images by Longer Edge (DEPRECATED)",
+    "description": "Resize images so that the longer edge matches the specified dimension while preserving aspect ratio.",
     "inputs": {
       "images": {
         "name": "images",
@@ -13921,7 +14351,7 @@
       },
       "longer_edge": {
         "name": "longer_edge",
-        "tooltip": "Target length for the longer edge."
+        "tooltip": "Target dimension for the longer edge."
       }
     },
     "outputs": {
@@ -13932,7 +14362,8 @@
     }
   },
   "ResizeImagesByShorterEdge": {
-    "display_name": "Resize Images by Shorter Edge",
+    "display_name": "Resize Images by Shorter Edge (DEPRECATED)",
+    "description": "Resize images so that the shorter edge matches the specified dimension while preserving aspect ratio.",
     "inputs": {
       "images": {
         "name": "images",
@@ -13940,7 +14371,7 @@
       },
       "shorter_edge": {
         "name": "shorter_edge",
-        "tooltip": "Target length for the shorter edge."
+        "tooltip": "Target dimension for the shorter edge."
       }
     },
     "outputs": {
@@ -13952,6 +14383,7 @@
   },
   "ResolutionBucket": {
     "display_name": "Resolution Bucket",
+    "description": "Group latents and conditionings into buckets",
     "inputs": {
       "latents": {
         "name": "latents",
@@ -14179,6 +14611,164 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Image": {
+    "display_name": "Rodin 3D Gen-2.5 - Image to 3D",
+    "description": "Generate a 3D model from 1-5 reference images via Rodin Gen-2.5. Pick a mode (Fast / Regular / Extreme-High) to tune quality vs. cost.",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "1-5 images. The first image is used for materials when multi-view."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Generation mode. Regular = balanced. Fast = 1K-20K faces for rapid prototyping. Extreme-High = 20K-2M faces with optional micro details."
+      },
+      "material": {
+        "name": "material"
+      },
+      "geometry_file_format": {
+        "name": "geometry_file_format"
+      },
+      "texture_mode": {
+        "name": "texture_mode",
+        "tooltip": "Texture quality preset. 'Default' uses the server's default for the selected tier."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "T/A pose for human-like models."
+      },
+      "hd_texture": {
+        "name": "hd_texture",
+        "tooltip": "High-quality texture enhancement."
+      },
+      "texture_delight": {
+        "name": "texture_delight",
+        "tooltip": "Remove baked lighting from textures."
+      },
+      "use_original_alpha": {
+        "name": "use_original_alpha",
+        "tooltip": "Preserve image transparency."
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "HighPack addon: 4K textures and ~16x faces in Quad mode."
+      },
+      "bbox_width": {
+        "name": "bbox_width",
+        "tooltip": "Bounding-box width (Y axis). Set to 0 with the others to skip bbox."
+      },
+      "bbox_height": {
+        "name": "bbox_height",
+        "tooltip": "Bounding-box height (Z axis)."
+      },
+      "bbox_length": {
+        "name": "bbox_length",
+        "tooltip": "Bounding-box length (X axis)."
+      },
+      "height_cm": {
+        "name": "height_cm",
+        "tooltip": "Approximate model height in centimeters (0 to skip)."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "mode_creative": {
+        "name": "creative"
+      },
+      "mode_polygon_count": {
+        "name": "polygon_count"
+      },
+      "mode_tier": {
+        "name": "tier"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "display_name": "Rodin 3D Gen-2.5 - Text to 3D",
+    "description": "Generate a 3D model from a text prompt via Rodin Gen-2.5. Pick a mode (Fast / Regular / Extreme-High) to tune quality vs. cost.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for the 3D model."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Generation mode. Regular = balanced. Fast = 1K-20K faces for rapid prototyping. Extreme-High = 20K-2M faces with optional micro details."
+      },
+      "material": {
+        "name": "material"
+      },
+      "geometry_file_format": {
+        "name": "geometry_file_format"
+      },
+      "texture_mode": {
+        "name": "texture_mode",
+        "tooltip": "Texture quality preset. 'Default' uses the server's default for the selected tier."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "T/A pose for human-like models."
+      },
+      "hd_texture": {
+        "name": "hd_texture",
+        "tooltip": "High-quality texture enhancement."
+      },
+      "texture_delight": {
+        "name": "texture_delight",
+        "tooltip": "Remove baked lighting from textures."
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "HighPack addon: 4K textures and ~16x faces in Quad mode."
+      },
+      "bbox_width": {
+        "name": "bbox_width",
+        "tooltip": "Bounding-box width (Y axis). Set to 0 with the others to skip bbox."
+      },
+      "bbox_height": {
+        "name": "bbox_height",
+        "tooltip": "Bounding-box height (Z axis)."
+      },
+      "bbox_length": {
+        "name": "bbox_length",
+        "tooltip": "Bounding-box length (X axis)."
+      },
+      "height_cm": {
+        "name": "height_cm",
+        "tooltip": "Approximate model height in centimeters (0 to skip)."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "mode_creative": {
+        "name": "creative"
+      },
+      "mode_polygon_count": {
+        "name": "polygon_count"
+      },
+      "mode_tier": {
+        "name": "tier"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
       }
     }
@@ -14948,7 +15538,7 @@
     }
   },
   "SaveAnimatedPNG": {
-    "display_name": "SaveAnimatedPNG",
+    "display_name": "Save Animated PNG",
     "inputs": {
       "images": {
         "name": "images"
@@ -14965,7 +15555,7 @@
     }
   },
   "SaveAnimatedWEBP": {
-    "display_name": "SaveAnimatedWEBP",
+    "display_name": "Save Animated WEBP",
     "inputs": {
       "images": {
         "name": "images"
@@ -15065,7 +15655,8 @@
     }
   },
   "SaveImageDataSetToFolder": {
-    "display_name": "Save Image Dataset to Folder",
+    "display_name": "Save Image (to Folder) (DEPRECATED)",
+    "description": "Save a dataset of images to a specified folder. Supported formats: PNG.",
     "inputs": {
       "images": {
         "name": "images",
@@ -15082,15 +15673,12 @@
     }
   },
   "SaveImageTextDataSetToFolder": {
-    "display_name": "Save Image and Text Dataset to Folder",
+    "display_name": "Save Image-Text (to Folder)",
+    "description": "Save a dataset of pairs of images and text captions to a specified folder. Images are saved as PNG files and captions are saved as TXT files with the same filename_prefix.",
     "inputs": {
       "images": {
         "name": "images",
         "tooltip": "List of images to save."
-      },
-      "texts": {
-        "name": "texts",
-        "tooltip": "List of text captions to save."
       },
       "folder_name": {
         "name": "folder_name",
@@ -15099,6 +15687,10 @@
       "filename_prefix": {
         "name": "filename_prefix",
         "tooltip": "Prefix for saved image filenames."
+      },
+      "texts": {
+        "name": "texts",
+        "tooltip": "List of text captions to save."
       }
     }
   },
@@ -15153,6 +15745,7 @@
   },
   "SaveTrainingDataset": {
     "display_name": "Save Training Dataset",
+    "description": "Save encoded training dataset (latents + conditioning) to disk for efficient loading during training.",
     "inputs": {
       "latents": {
         "name": "latents",
@@ -15282,7 +15875,7 @@
     }
   },
   "SDPoseDrawKeypoints": {
-    "display_name": "SDPoseDrawKeypoints",
+    "display_name": "SDPose Draw Keypoints",
     "inputs": {
       "keypoints": {
         "name": "keypoints"
@@ -15316,7 +15909,7 @@
     }
   },
   "SDPoseFaceBBoxes": {
-    "display_name": "SDPoseFaceBBoxes",
+    "display_name": "SDPose Face Bounding Boxes",
     "inputs": {
       "keypoints": {
         "name": "keypoints"
@@ -15338,7 +15931,7 @@
     }
   },
   "SDPoseKeypointExtractor": {
-    "display_name": "SDPoseKeypointExtractor",
+    "display_name": "SDPose Keypoint Extractor",
     "description": "Extract pose keypoints from images using the SDPose model: https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
     "inputs": {
       "model": {
@@ -15475,7 +16068,8 @@
     }
   },
   "ShuffleDataset": {
-    "display_name": "Shuffle Image Dataset",
+    "display_name": "Shuffle Images List",
+    "description": "Randomly shuffle the order of images in a list.",
     "inputs": {
       "images": {
         "name": "images",
@@ -15497,7 +16091,8 @@
     }
   },
   "ShuffleImageTextDataset": {
-    "display_name": "Shuffle Image-Text Dataset",
+    "display_name": "Shuffle Pairs of Image-Text",
+    "description": "Randomly shuffle the order of pairs of image-text in a list.",
     "inputs": {
       "images": {
         "name": "images",
@@ -15611,7 +16206,7 @@
     }
   },
   "SolidMask": {
-    "display_name": "SolidMask",
+    "display_name": "Create Solid Mask",
     "inputs": {
       "value": {
         "name": "value"
@@ -16313,6 +16908,23 @@
       }
     }
   },
+  "StringFormat": {
+    "display_name": "Format Text",
+    "description": "Same as Python's string format method. Supports all of Python's format options and features.",
+    "inputs": {
+      "values": {
+        "name": "values"
+      },
+      "f_string": {
+        "name": "f_string"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "StringLength": {
     "display_name": "Text Length",
     "inputs": {
@@ -16382,7 +16994,7 @@
     }
   },
   "StripWhitespace": {
-    "display_name": "Strip Whitespace",
+    "display_name": "Strip Whitespace (DEPRECATED)",
     "inputs": {
       "texts": {
         "name": "texts",
@@ -17149,7 +17761,7 @@
     }
   },
   "TextToLowercase": {
-    "display_name": "Text to Lowercase",
+    "display_name": "Convert Text to Lowercase (DEPRECATED)",
     "inputs": {
       "texts": {
         "name": "texts",
@@ -17164,7 +17776,7 @@
     }
   },
   "TextToUppercase": {
-    "display_name": "Text to Uppercase",
+    "display_name": "Convert Text to Uppercase (DEPRECATED)",
     "inputs": {
       "texts": {
         "name": "texts",
@@ -17179,7 +17791,7 @@
     }
   },
   "ThresholdMask": {
-    "display_name": "ThresholdMask",
+    "display_name": "Threshold Mask",
     "inputs": {
       "mask": {
         "name": "mask"
@@ -18429,7 +19041,7 @@
     }
   },
   "VideoLinearCFGGuidance": {
-    "display_name": "VideoLinearCFGGuidance",
+    "display_name": "Video Linear CFG Guidance",
     "inputs": {
       "model": {
         "name": "model"
@@ -18440,7 +19052,7 @@
     }
   },
   "VideoTriangleCFGGuidance": {
-    "display_name": "VideoTriangleCFGGuidance",
+    "display_name": "Video Triangle CFG Guidance",
     "inputs": {
       "model": {
         "name": "model"
@@ -19032,7 +19644,7 @@
     }
   },
   "VOIDQuadmaskPreprocess": {
-    "display_name": "VOIDQuadmaskPreprocess",
+    "display_name": "VOID Quadmask Preprocessor",
     "inputs": {
       "mask": {
         "name": "mask"
@@ -19105,6 +19717,7 @@
   },
   "VoxelToMesh": {
     "display_name": "Voxel to Mesh",
+    "description": "Converts a voxel grid to a mesh.",
     "inputs": {
       "voxel": {
         "name": "voxel"
@@ -19123,7 +19736,8 @@
     }
   },
   "VoxelToMeshBasic": {
-    "display_name": "Voxel to Mesh (Basic)",
+    "display_name": "Voxel to Mesh (Basic) (DEPRECATED)",
+    "description": "Converts a voxel grid to a mesh.",
     "inputs": {
       "voxel": {
         "name": "voxel"
@@ -19551,7 +20165,7 @@
   },
   "wanBlockSwap": {
     "display_name": "wanBlockSwap",
-    "description": "NOP",
+    "description": "Intercept wanBlockSwap custom node that causes major instability and make it no-op.",
     "inputs": {
       "model": {
         "name": "model"

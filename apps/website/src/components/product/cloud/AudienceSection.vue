@@ -25,7 +25,7 @@ const cards = [
 </script>
 
 <template>
-  <section class="px-4 pt-24 lg:px-20 lg:pt-40">
+  <section class="max-w-9xl mx-auto px-4 pt-24 lg:px-20 lg:pt-40">
     <h2
       class="text-primary-comfy-canvas text-3.5xl/tight mx-auto max-w-3xl text-center font-light lg:text-5xl/tight"
     >

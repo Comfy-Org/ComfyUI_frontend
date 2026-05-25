@@ -607,3 +607,217 @@ test.describe(
     )
   }
 )
+
+test('Promote/Demote by Context Menu @vue-nodes', async ({ comfyPage }) => {
+  await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+  const ksampler = comfyPage.vueNodes.getNodeLocator('1')
+  const steps = comfyPage.vueNodes.getWidgetByName('New Subgraph', 'steps')
+  const subgraphNode = comfyPage.vueNodes.getNodeLocator('2')
+
+  await test.step('Promote widget', async () => {
+    await comfyPage.vueNodes.enterSubgraph('2')
+    await comfyPage.subgraph.promoteWidget(ksampler, 'steps')
+    await comfyPage.subgraph.exitViaBreadcrumb()
+
+    await expect(steps).toBeVisible()
+  })
+
+  await test.step('Un-promote widget', async () => {
+    await comfyPage.vueNodes.enterSubgraph('2')
+    await comfyPage.subgraph.unpromoteWidget(ksampler, 'steps')
+    await comfyPage.subgraph.exitViaBreadcrumb()
+
+    await expect(subgraphNode).toBeVisible()
+    await expect(steps).toBeHidden()
+  })
+})
+
+test('Properties panel operations @vue-nodes', async ({ comfyPage }) => {
+  await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+  const { editor } = comfyPage.subgraph
+  const subgraphNode = comfyPage.vueNodes.getNodeLocator('2')
+  const steps = comfyPage.vueNodes.getWidgetByName('New Subgraph', 'steps')
+  const cfg = comfyPage.vueNodes.getWidgetByName('New Subgraph', 'cfg')
+
+  await editor.togglePromotion(subgraphNode, {
+    nodeName: 'KSampler',
+    widgetName: 'steps',
+    toState: true
+  })
+  await expect(steps, 'Promote widget').toBeVisible()
+  await editor.togglePromotion(subgraphNode, {
+    nodeName: 'KSampler',
+    widgetName: 'cfg',
+    toState: true
+  })
+  await expect(cfg, 'Promote widget').toBeVisible()
+
+  await test.step('widgets display in order promoted', async () => {
+    await expect(editor.promotionItems.first()).toContainText('steps')
+    await expect(subgraphNode.locator('.lg-node-widget').first()).toHaveText(
+      'steps'
+    )
+  })
+
+  await test.step('Reorder widgets', async () => {
+    await editor.dragItem(0, 1)
+    await expect(editor.promotionItems.first()).toContainText('cfg')
+    await expect(subgraphNode.locator('.lg-node-widget').first()).toHaveText(
+      'cfg'
+    )
+  })
+
+  await editor.togglePromotion(subgraphNode, {
+    nodeName: 'KSampler',
+    widgetName: 'steps',
+    toState: false
+  })
+  await expect(steps, 'Un-promote widget').toBeHidden()
+})
+
+test('Can intermix linked and proxy @vue-nodes', async ({ comfyPage }) => {
+  await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+  const { editor } = comfyPage.subgraph
+  const subgraphNode = comfyPage.vueNodes.getNodeLocator('2')
+
+  await test.step('Enter subgraph and link widget to input', async () => {
+    await comfyPage.vueNodes.enterSubgraph('2')
+
+    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await comfyPage.subgraph.promoteWidget(ksampler.root, 'cfg')
+
+    const fromSlot = ksampler.getSlot('steps')
+    const toPos = await comfyPage.subgraph.getInputSlot().getOpenSlotPosition()
+    await fromSlot.dragTo(comfyPage.canvas, { targetPosition: toPos })
+    const isConnected = () => comfyPage.vueNodes.isSlotConnected(fromSlot)
+    await expect.poll(isConnected).toBe(true)
+
+    await comfyPage.subgraph.exitViaBreadcrumb()
+  })
+
+  await expect(
+    subgraphNode.locator('.lg-node-widget').first(),
+    'linked widgets are first by default'
+  ).toHaveText('steps')
+
+  await editor.open(subgraphNode)
+
+  await editor.dragItem(0, 1)
+  await expect(
+    editor.promotionItems.first(),
+    'Swap widget order'
+  ).toContainText('cfg')
+
+  // FIXME: solve actual bug and remove the not
+  await expect(
+    subgraphNode.locator('.lg-node-widget').first(),
+    'Linked widget is first on node'
+  ).not.toHaveText('cfg')
+})
+
+test('Link already promoted widget @vue-nodes', async ({ comfyPage }) => {
+  await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+  const { editor } = comfyPage.subgraph
+  const subgraphNode = comfyPage.vueNodes.getNodeLocator('2')
+  const steps = comfyPage.vueNodes.getWidgetByName('New Subgraph', 'steps')
+
+  await editor.togglePromotion(subgraphNode, {
+    nodeName: 'KSampler',
+    widgetName: 'steps',
+    toState: true
+  })
+  await expect(steps, 'Promote widget').toBeVisible()
+
+  await test.step('Enter subgraph and link widget to input', async () => {
+    await comfyPage.vueNodes.enterSubgraph('2')
+    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+
+    const fromSlot = ksampler.getSlot('steps')
+    const toPos = await comfyPage.subgraph.getInputSlot().getOpenSlotPosition()
+    await fromSlot.dragTo(comfyPage.canvas, { targetPosition: toPos })
+    const isConnected = () => comfyPage.vueNodes.isSlotConnected(fromSlot)
+    await expect.poll(isConnected).toBe(true)
+
+    await comfyPage.subgraph.exitViaBreadcrumb()
+  })
+
+  await expect(steps).toHaveCount(1)
+})
+
+test('Can promote multiple previews @vue-nodes', async ({ comfyPage }) => {
+  await comfyPage.menu.topbar.newWorkflowButton.click()
+  await comfyPage.nextFrame()
+
+  await test.step('Add and rename a Load Image node', async () => {
+    const position = { x: 300, y: 300 }
+    await comfyPage.searchBoxV2.addNode('Load Image', { position })
+    const loadImage = await comfyPage.vueNodes.getFixtureByTitle('Load Image')
+    await loadImage.setTitle('Character Reference')
+  })
+
+  await test.step('Add a second Load Image node', async () => {
+    const position = { x: 600, y: 300 }
+    await comfyPage.searchBoxV2.addNode('Load Image', { position })
+  })
+
+  await test.step('Convert both nodes to subgraph', async () => {
+    await comfyPage.canvas.focus()
+    await comfyPage.page.keyboard.press('Control+a')
+    await comfyPage.contextMenu
+      .openFor(comfyPage.vueNodes.getNodeLocator('1'))
+      .then((m) => m.clickMenuItemExact('Convert to Subgraph'))
+  })
+
+  const { editor } = comfyPage.subgraph
+  const subgraph = await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
+
+  await test.step('Promote both image previews', async () => {
+    await editor.togglePromotion(subgraph.root, {
+      nodeId: '1',
+      widgetName: '$$canvas-image-preview',
+      toState: true
+    })
+    await expect(subgraph.content).toHaveCount(1)
+
+    await editor.togglePromotion(subgraph.root, {
+      nodeId: '2',
+      widgetName: '$$canvas-image-preview',
+      toState: true
+    })
+
+    await expect(subgraph.content).toHaveCount(2)
+  })
+  // FUTURE: Add test for re-ordering previews?
+
+  await test.step('Demote image', async () => {
+    await editor.togglePromotion(subgraph.root, {
+      nodeId: '1',
+      widgetName: '$$canvas-image-preview',
+      toState: false
+    })
+    await expect(subgraph.content).toHaveCount(1)
+  })
+})
+
+test('Linked widgets can not be demoted @vue-nodes', async ({ comfyPage }) => {
+  await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+  const { editor } = comfyPage.subgraph
+  const subgraphNode = comfyPage.vueNodes.getNodeLocator('2')
+
+  await test.step('Enter subgraph and link widget to input', async () => {
+    await comfyPage.vueNodes.enterSubgraph('2')
+    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+
+    const fromSlot = ksampler.getSlot('steps')
+    const toPos = await comfyPage.subgraph.getInputSlot().getOpenSlotPosition()
+    await fromSlot.dragTo(comfyPage.canvas, { targetPosition: toPos })
+    const isConnected = () => comfyPage.vueNodes.isSlotConnected(fromSlot)
+    await expect.poll(isConnected).toBe(true)
+
+    await comfyPage.subgraph.exitViaBreadcrumb()
+  })
+
+  await editor.open(subgraphNode)
+  const stepsItem = await editor.resolveItem({ widgetName: 'steps' })
+  await expect(editor.getToggleButton(stepsItem)).toBeDisabled()
+})

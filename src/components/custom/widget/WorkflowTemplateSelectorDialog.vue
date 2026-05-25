@@ -14,7 +14,7 @@
     </template>
 
     <template #header>
-      <FormSearchInput
+      <AsyncSearchInput
         v-model="searchInput"
         :searcher="applySearchQuery"
         :debounce-ms="400"
@@ -412,7 +412,7 @@ import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import Tag from '@/components/chip/Tag.vue'
-import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
+import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
@@ -744,10 +744,6 @@ const sortOptions = computed(() => [
     value: 'popular'
   },
   { name: t('templateWorkflows.sort.newest', 'Newest'), value: 'newest' },
-  {
-    name: t('templateWorkflows.sort.vramLowToHigh', 'VRAM Usage (Low to High)'),
-    value: 'vram-low-to-high'
-  },
   {
     name: t(
       'templateWorkflows.sort.modelSizeLowToHigh',

@@ -4,7 +4,7 @@
     <div
       class="flex min-w-0 shrink-0 items-center border-b border-interface-stroke px-4 pt-1 pb-4"
     >
-      <FormSearchInput v-model="searchQuery" class="flex-1" />
+      <AsyncSearchInput v-model="searchQuery" class="flex-1" />
       <CollapseToggleButton
         v-model="isAllCollapsed"
         :show="!isSearching && tabErrorGroups.length > 1"
@@ -21,7 +21,7 @@
       <div
         class="shrink-0 pb-2 text-sm font-semibold text-destructive-background-hover"
       >
-        {{ singleRuntimeErrorGroup?.title }}
+        {{ singleRuntimeErrorGroup?.displayTitle }}
       </div>
       <ErrorNodeCard
         :key="singleRuntimeErrorCard.id"
@@ -53,12 +53,12 @@
         <!-- Group by Class Type -->
         <PropertiesAccordionItem
           v-for="group in filteredGroups"
-          :key="group.title"
+          :key="group.groupKey"
           :data-testid="'error-group-' + group.type.replaceAll('_', '-')"
-          :collapse="isSectionCollapsed(group.title) && !isSearching"
+          :collapse="isSectionCollapsed(group.groupKey) && !isSearching"
           class="border-b border-interface-stroke"
           :size="getGroupSize(group)"
-          @update:collapse="setSectionCollapsed(group.title, $event)"
+          @update:collapse="setSectionCollapsed(group.groupKey, $event)"
         >
           <template #label>
             <div class="flex min-w-0 flex-1 items-center gap-2">
@@ -67,13 +67,7 @@
                   class="icon-[lucide--octagon-alert] size-4 shrink-0 text-destructive-background-hover"
                 />
                 <span class="truncate text-destructive-background-hover">
-                  {{
-                    group.type === 'missing_node'
-                      ? `${group.title} (${missingPackGroups.length})`
-                      : group.type === 'swap_nodes'
-                        ? `${group.title} (${swapNodeGroups.length})`
-                        : group.title
-                  }}
+                  {{ group.displayTitle }}
                 </span>
                 <span
                   v-if="group.type === 'execution' && group.cards.length > 1"
@@ -260,7 +254,7 @@ import { NodeBadgeMode } from '@/types/nodeSource'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 import CollapseToggleButton from '../layout/CollapseToggleButton.vue'
-import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
+import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
 import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.vue'
@@ -331,7 +325,7 @@ const {
   filteredMissingModelGroups: missingModelGroups,
   filteredMissingMediaGroups: missingMediaGroups,
   swapNodeGroups
-} = useErrorGroups(searchQuery, t)
+} = useErrorGroups(searchQuery)
 
 const missingModelDownloadableModels = computed(() => {
   if (isCloud) return []
@@ -366,22 +360,22 @@ const singleRuntimeErrorCard = computed(
 
 const isAllCollapsed = computed({
   get() {
-    return filteredGroups.value.every((g) => isSectionCollapsed(g.title))
+    return filteredGroups.value.every((g) => isSectionCollapsed(g.groupKey))
   },
   set(collapse: boolean) {
     for (const group of tabErrorGroups.value) {
-      setSectionCollapsed(group.title, collapse)
+      setSectionCollapsed(group.groupKey, collapse)
     }
   }
 })
 
-function isSectionCollapsed(title: string): boolean {
+function isSectionCollapsed(groupKey: string): boolean {
   // Defaults to expanded when not explicitly set by the user
-  return collapseState[title] ?? false
+  return collapseState[groupKey] ?? false
 }
 
-function setSectionCollapsed(title: string, collapsed: boolean) {
-  collapseState[title] = collapsed
+function setSectionCollapsed(groupKey: string, collapsed: boolean) {
+  collapseState[groupKey] = collapsed
 }
 
 /**
@@ -403,7 +397,7 @@ watch(
           card.graphNodeId === graphNodeId ||
           (card.nodeId?.startsWith(prefix) ?? false)
       )
-      setSectionCollapsed(group.title, !hasMatch)
+      setSectionCollapsed(group.groupKey, !hasMatch)
     }
     rightSidePanelStore.focusedErrorNodeId = null
   },

@@ -30,7 +30,15 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 vi.mock('@/i18n', () => ({
-  st: vi.fn((_key: string, fallback: string) => fallback)
+  te: vi.fn(() => false),
+  st: vi.fn((_key: string, fallback: string) => fallback),
+  t: vi.fn((key: string, params?: { count?: number }) => {
+    if (key === 'errorOverlay.missingModels') {
+      const count = params?.count ?? 0
+      return `${count} required ${count === 1 ? 'model is' : 'models are'} missing`
+    }
+    return key
+  })
 }))
 
 vi.mock('@/stores/comfyRegistryStore', () => ({
@@ -113,8 +121,7 @@ function makeModel(
 function createErrorGroups() {
   const store = useExecutionErrorStore()
   const searchQuery = ref('')
-  const t = (key: string) => key
-  const groups = useErrorGroups(searchQuery, t)
+  const groups = useErrorGroups(searchQuery)
   return { store, searchQuery, groups }
 }
 
@@ -245,6 +252,11 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'missing_node'
       )
       expect(missingGroup).toBeDefined()
+      expect(missingGroup?.groupKey).toBe('missing_node')
+      expect(missingGroup?.displayTitle).toBe('Missing Node Packs (1)')
+      expect(missingGroup?.displayMessage).toBe(
+        'Some nodes are missing and need to be installed'
+      )
     })
 
     it('includes swap_nodes group when replaceable nodes exist', async () => {
@@ -329,6 +341,54 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'execution'
       )
       expect(execGroups.length).toBeGreaterThan(0)
+      expect(execGroups[0].groupKey).toBe('execution:KSampler')
+      expect(execGroups[0].displayTitle).toBe('KSampler')
+    })
+
+    it('resolves required_input_missing item display copy', async () => {
+      const { store, groups } = createErrorGroups()
+      store.lastNodeErrors = {
+        '1': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [
+            {
+              type: 'required_input_missing',
+              message: 'Required input is missing',
+              details: 'model',
+              extra_info: {
+                input_name: 'model'
+              }
+            }
+          ]
+        }
+      }
+      await nextTick()
+
+      const execGroup = groups.allErrorGroups.value.find(
+        (g) => g.type === 'execution'
+      )
+      expect(execGroup?.type).toBe('execution')
+      if (execGroup?.type !== 'execution') return
+
+      const card = execGroup.cards[0]
+      const error = card.errors[0]
+
+      expect(error.message).toBe('Required input is missing')
+      expect(error.details).toBe('model')
+      expect(error.catalogId).toBe('missing_connection')
+      expect(error.displayTitle).toBe('Missing connection')
+      expect(error.displayMessage).toBe(
+        'Required input slots have no connection feeding them.'
+      )
+      expect(error.displayDetails).toBe(
+        'KSampler is missing a required input: model'
+      )
+      expect(error.displayItemLabel).toBe('KSampler - model')
+      expect(error.toastTitle).toBe('Required input missing')
+      expect(error.toastMessage).toBe(
+        'KSampler is missing a required input: model'
+      )
     })
 
     it('includes execution error from runtime errors', async () => {
@@ -351,6 +411,11 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'execution'
       )
       expect(execGroups.length).toBeGreaterThan(0)
+      if (execGroups[0].type !== 'execution') return
+      expect(execGroups[0].cards[0].errors[0].displayItemLabel).toBe('KSampler')
+      expect(execGroups[0].cards[0].errors[0].toastTitle).toBe(
+        'KSampler failed'
+      )
     })
 
     it('includes prompt error when present', async () => {
@@ -363,7 +428,7 @@ describe('useErrorGroups', () => {
       await nextTick()
 
       const promptGroup = groups.allErrorGroups.value.find(
-        (g) => g.type === 'execution' && g.title === 'No outputs'
+        (g) => g.type === 'execution' && g.displayTitle === 'No outputs'
       )
       expect(promptGroup).toBeDefined()
     })
@@ -546,7 +611,7 @@ describe('useErrorGroups', () => {
       expect(messages.filter((m) => m === 'Error A')).toHaveLength(1)
     })
 
-    it('includes missing node group title as message', async () => {
+    it('includes missing node group display message', async () => {
       const { groups } = createErrorGroups()
       const missingNodesStore = useMissingNodesErrorStore()
       missingNodesStore.setMissingNodeTypes([
@@ -558,7 +623,9 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'missing_node'
       )
       expect(missingGroup).toBeDefined()
-      expect(groups.groupedErrorMessages.value).toContain(missingGroup!.title)
+      expect(groups.groupedErrorMessages.value).toContain(
+        missingGroup!.displayMessage
+      )
     })
   })
 
@@ -703,6 +770,8 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'missing_model'
       )
       expect(modelGroup).toBeDefined()
+      expect(modelGroup?.groupKey).toBe('missing_model')
+      expect(modelGroup?.displayTitle).toBe('Missing Models (1)')
     })
   })
 

@@ -223,7 +223,10 @@ while (idx < items.length) {
 </script>
 
 <template>
-  <section data-testid="gallery-grid" class="px-4 pb-20 lg:px-20">
+  <section
+    data-testid="gallery-grid"
+    class="max-w-9xl mx-auto px-4 pb-20 lg:px-20"
+  >
     <!-- Desktop grid -->
     <div
       class="rounded-5xl bg-transparency-white-t4 hidden flex-col gap-2 p-2 lg:flex"

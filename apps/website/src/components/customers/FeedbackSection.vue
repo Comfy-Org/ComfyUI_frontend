@@ -45,11 +45,11 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
 </script>
 
 <template>
-  <section class="px-6 py-16 lg:px-16 lg:py-24">
+  <section class="max-w-9xl mx-auto px-6 py-16 lg:px-16 lg:py-24">
     <!-- Scrollable track -->
     <div
       ref="trackRef"
-      class="scrollbar-none flex snap-x snap-mandatory gap-12 overflow-x-auto lg:gap-20"
+      class="flex snap-x snap-mandatory scrollbar-none gap-12 overflow-x-auto lg:gap-20"
     >
       <div
         v-for="(fb, i) in feedbacks"

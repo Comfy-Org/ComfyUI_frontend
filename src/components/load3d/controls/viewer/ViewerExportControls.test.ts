@@ -81,12 +81,12 @@ function renderComponent(onExportModel?: (format: string) => void) {
 }
 
 describe('ViewerExportControls', () => {
-  it('renders all three export format options', () => {
+  it('renders all four export format options', () => {
     renderComponent()
     const select = screen.getByRole('combobox') as HTMLSelectElement
     const optionValues = Array.from(select.options).map((o) => o.value)
 
-    expect(optionValues).toEqual(['glb', 'obj', 'stl'])
+    expect(optionValues).toEqual(['glb', 'obj', 'stl', 'fbx'])
   })
 
   it('defaults the export format to obj', () => {
