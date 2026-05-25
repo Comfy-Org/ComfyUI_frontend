@@ -25,17 +25,26 @@ export const zResultItem = z.object({
 export type ResultItem = z.infer<typeof zResultItem>
 // Uses .passthrough() because custom nodes can output arbitrary keys.
 // See docs/adr/0007-node-execution-output-passthrough-schema.md
+//
+// `text` is intentionally not declared in the runtime schema. Cloud
+// `/api/jobs/{id}` serializes empty subgraph text outputs as `[null]`,
+// which a strict `string | string[]` union rejects — collapsing the whole
+// job-detail response (FE-844). Downstream parseTaskOutput already filters
+// `text` via METADATA_KEYS, so the field has no runtime consumer in the
+// asset-resolution path. We retain the static typing for custom node
+// `onExecuted` ergonomics via the intersection on NodeExecutionOutput.
 const zOutputs = z
   .object({
     audio: z.array(zResultItem).optional(),
     images: z.array(zResultItem).optional(),
     video: z.array(zResultItem).optional(),
-    animated: z.array(z.boolean()).optional(),
-    text: z.union([z.string(), z.array(z.string())]).optional()
+    animated: z.array(z.boolean()).optional()
   })
   .passthrough()
 
-export type NodeExecutionOutput = z.infer<typeof zOutputs>
+export type NodeExecutionOutput = z.infer<typeof zOutputs> & {
+  text?: string | string[]
+}
 
 export type NodeOutputWith<T extends Record<string, unknown>> =
   NodeExecutionOutput & T
