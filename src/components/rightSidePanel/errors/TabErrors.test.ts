@@ -109,7 +109,9 @@ describe('TabErrors.vue', () => {
       }
     })
 
-    expect(screen.getByText('Server Error: No outputs')).toBeInTheDocument()
+    expect(screen.getAllByText('Prompt has no outputs').length).toBeGreaterThan(
+      0
+    )
     expect(
       screen.getByText(
         'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.'
