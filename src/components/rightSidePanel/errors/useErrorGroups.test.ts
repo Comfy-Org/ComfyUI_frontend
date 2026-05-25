@@ -29,17 +29,47 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('@/i18n', () => ({
-  te: vi.fn(() => false),
-  st: vi.fn((_key: string, fallback: string) => fallback),
-  t: vi.fn((key: string, params?: { count?: number }) => {
-    if (key === 'errorOverlay.missingModels') {
-      const count = params?.count ?? 0
-      return `${count} required ${count === 1 ? 'model is' : 'models are'} missing`
-    }
-    return key
-  })
-}))
+vi.mock('@/i18n', () => {
+  const messages: Record<string, string> = {
+    'errorCatalog.validationErrors.required_input_missing.title':
+      'Missing connection',
+    'errorCatalog.validationErrors.required_input_missing.message':
+      'Required input slots have no connection feeding them.',
+    'errorCatalog.validationErrors.required_input_missing.details':
+      '{nodeName} is missing a required input: {inputName}',
+    'errorCatalog.validationErrors.required_input_missing.itemLabel':
+      '{nodeName} - {inputName}',
+    'errorCatalog.validationErrors.required_input_missing.toastTitle':
+      'Required input missing',
+    'errorCatalog.validationErrors.required_input_missing.toastMessage':
+      '{nodeName} is missing a required input: {inputName}',
+    'errorCatalog.promptErrors.prompt_no_outputs.title':
+      'Prompt has no outputs',
+    'errorCatalog.promptErrors.prompt_no_outputs.desc':
+      'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.'
+  }
+
+  const interpolate = (
+    message: string,
+    params?: Record<string, string | number>
+  ) =>
+    message.replace(/\{(\w+)\}/g, (match, paramName) =>
+      params?.[paramName] === undefined ? match : String(params[paramName])
+    )
+
+  return {
+    te: vi.fn((key: string) => key in messages),
+    st: vi.fn((key: string, fallback: string) => messages[key] ?? fallback),
+    t: vi.fn((key: string, params?: Record<string, string | number>) => {
+      if (key === 'errorOverlay.missingModels') {
+        const count = Number(params?.count ?? 0)
+        return `${count} required ${count === 1 ? 'model is' : 'models are'} missing`
+      }
+
+      return interpolate(messages[key] ?? key, params)
+    })
+  }
+})
 
 vi.mock('@/stores/comfyRegistryStore', () => ({
   useComfyRegistryStore: () => ({
@@ -412,10 +442,16 @@ describe('useErrorGroups', () => {
       )
       expect(execGroups.length).toBeGreaterThan(0)
       if (execGroups[0].type !== 'execution') return
-      expect(execGroups[0].cards[0].errors[0].displayItemLabel).toBe('KSampler')
-      expect(execGroups[0].cards[0].errors[0].toastTitle).toBe(
-        'KSampler failed'
-      )
+      expect(execGroups[0].cards[0].errors[0]).toMatchObject({
+        message: 'RuntimeError: CUDA out of memory',
+        details: 'line 1\nline 2',
+        isRuntimeError: true,
+        exceptionType: 'RuntimeError'
+      })
+      // TODO(FE-816 overlay-redesign): Runtime execution errors intentionally
+      // bypass catalog display fields until targeted runtime handling lands.
+      expect(execGroups[0].cards[0].errors[0].displayItemLabel).toBeUndefined()
+      expect(execGroups[0].cards[0].errors[0].toastTitle).toBeUndefined()
     })
 
     it('includes prompt error when present', async () => {
@@ -428,7 +464,8 @@ describe('useErrorGroups', () => {
       await nextTick()
 
       const promptGroup = groups.allErrorGroups.value.find(
-        (g) => g.type === 'execution' && g.displayTitle === 'No outputs'
+        (g) =>
+          g.type === 'execution' && g.displayTitle === 'Prompt has no outputs'
       )
       expect(promptGroup).toBeDefined()
     })
