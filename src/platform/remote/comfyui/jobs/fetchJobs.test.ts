@@ -318,6 +318,38 @@ describe('fetchJobs', () => {
 
       expect(result).toBeUndefined()
     })
+
+    it('FE-844: tolerates text:[null] from subgraph empty text outputs', async () => {
+      // Cloud serializes empty text outputs of subgraph promoted nodes as
+      // `text: [null]` (node IDs use `parent:child` form). The previous
+      // schema declared `text` as `string | string[]`, so the union failed
+      // on the null element and the entire job-detail response was dropped,
+      // collapsing expanded folder view to the cover preview only.
+      // parseTaskOutput already filters `text` via METADATA_KEYS, so the
+      // runtime never needed this field in zOutputs.
+      const jobDetail = {
+        ...createMockJob('job1', 'completed'),
+        workflow: { extra_data: { extra_pnginfo: { workflow: {} } } },
+        outputs: {
+          '1': {
+            images: [{ filename: 'cover.png', subfolder: '', type: 'output' }]
+          },
+          '165:160': { text: [null] },
+          '166:161': { text: [null] }
+        }
+      }
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(jobDetail)
+      })
+
+      const result = await fetchJobDetail(mockFetch, 'job1')
+
+      expect(result).toBeDefined()
+      expect(result?.outputs).toBeDefined()
+      expect(result?.outputs?.['1']).toBeDefined()
+      expect(result?.outputs?.['165:160']).toBeDefined()
+    })
   })
 
   describe('extractWorkflow', () => {
