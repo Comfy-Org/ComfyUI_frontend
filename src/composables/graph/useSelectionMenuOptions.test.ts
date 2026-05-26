@@ -72,14 +72,14 @@ describe('useSelectionMenuOptions - multiple nodes options', () => {
     expect(mocks.frameNodes).toHaveBeenCalledOnce()
   })
 
-  it('returns Convert to Group Node option from getMultipleNodesOptions', () => {
+  it('does not include a Convert to Group Node option', () => {
     const { getMultipleNodesOptions } = useSelectionMenuOptions()
     const options = getMultipleNodesOptions()
 
     const groupNodeOption = options.find(
       (opt) => opt.label === 'contextMenu.Convert to Group Node'
     )
-    expect(groupNodeOption).toBeDefined()
+    expect(groupNodeOption).toBeUndefined()
   })
 })
 
