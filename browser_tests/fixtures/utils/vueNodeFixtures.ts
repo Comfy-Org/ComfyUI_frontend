@@ -15,7 +15,9 @@ export class VueNodeFixture {
   public readonly root: Locator
   public readonly widgets: Locator
   public readonly imagePreview: Locator
+  public readonly imageGrid: Locator
   public readonly content: Locator
+  public readonly resize: { br: Locator }
 
   constructor(private readonly locator: Locator) {
     this.header = locator.locator('[data-testid^="node-header-"]')
@@ -28,7 +30,9 @@ export class VueNodeFixture {
     this.root = locator
     this.widgets = this.locator.locator('.lg-node-widget')
     this.imagePreview = locator.locator('.image-preview')
+    this.imageGrid = locator.getByTestId(TestIds.node.imageGrid)
     this.content = locator.locator('.lg-node-content')
+    this.resize = { br: locator.getByRole('button', { name: 'bottom-right' }) }
   }
 
   async getTitle(): Promise<string> {

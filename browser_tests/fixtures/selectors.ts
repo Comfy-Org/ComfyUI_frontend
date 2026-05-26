@@ -128,7 +128,8 @@ export const TestIds = {
     pinIndicator: 'node-pin-indicator',
     innerWrapper: 'node-inner-wrapper',
     mainImage: 'main-image',
-    slotConnectionDot: 'slot-connection-dot'
+    slotConnectionDot: 'slot-connection-dot',
+    imageGrid: 'image-grid'
   },
   selectionToolbox: {
     root: 'selection-toolbox',

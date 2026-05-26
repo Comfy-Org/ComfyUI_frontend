@@ -16,7 +16,7 @@
         v-for="(url, index) in imageUrls"
         :key="index"
         size="unset"
-        class="ring-ring overflow-hidden p-0 hover:ring-1 focus-visible:ring-2"
+        class="ring-ring overflow-hidden rounded-none p-0 hover:ring-1 focus-visible:ring-2"
         :aria-label="
           $t('g.viewImageOfTotal', {
             index: index + 1,
