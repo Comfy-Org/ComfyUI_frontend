@@ -15912,6 +15912,30 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "description": "入力画像をComfyUIの出力ディレクトリに保存します。",
+    "display_name": "画像を保存（詳細）",
+    "inputs": {
+      "filename_prefix": {
+        "name": "ファイル名プレフィックス",
+        "tooltip": "保存するファイルのプレフィックス。%date:yyyy-MM-dd% や %Empty Latent Image.width% などの書式トークンを含めることができます。"
+      },
+      "format": {
+        "name": "フォーマット",
+        "tooltip": "画像を保存するファイル形式。"
+      },
+      "format_bit_depth": {
+        "name": "ビット深度"
+      },
+      "format_input_color_space": {
+        "name": "入力カラースペース"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "保存する画像。"
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
     "description": "画像データセットを指定したフォルダーに保存します。対応フォーマット：PNG。",
     "display_name": "画像データセットをフォルダに保存",

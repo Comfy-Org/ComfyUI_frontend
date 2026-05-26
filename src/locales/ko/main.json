@@ -917,28 +917,105 @@
       "nodeName": "이 노드"
     },
     "promptErrors": {
+      "image_not_loaded": {
+        "desc": "시스템에서 이 이미지를 불러올 수 없습니다.",
+        "title": "이미지 불러오기 실패"
+      },
+      "missing_node_type": {
+        "desc": "노드 타입이 없거나 사용할 수 없습니다. 워크플로우가 손상되었거나 사용자 지정 노드가 필요할 수 있습니다.",
+        "title": "노드 타입 없음"
+      },
       "no_prompt": {
-        "desc": "서버로 전송된 워크플로우 데이터가 비어 있습니다. 시스템 오류일 수 있습니다."
+        "desc": "서버로 전송된 워크플로우 데이터가 비어 있습니다. 시스템 오류일 수 있습니다.",
+        "title": "워크플로우 데이터가 비어 있습니다"
+      },
+      "out_of_memory": {
+        "descCloud": "GPU 메모리가 부족합니다. 복잡도를 줄이고 다시 시도하세요. 크레딧은 차감되지 않습니다.",
+        "descLocal": "GPU 메모리가 부족합니다. 복잡도를 줄이고 다시 시도하세요.",
+        "title": "생성 실패"
       },
       "prompt_no_outputs": {
-        "desc": "워크플로우에 결과를 생성할 출력 노드(예: 이미지 저장, 이미지 미리보기)가 없습니다."
+        "desc": "워크플로우에 결과를 생성할 출력 노드(예: 이미지 저장, 이미지 미리보기)가 없습니다.",
+        "title": "프롬프트에 출력이 없습니다"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "워크플로우에 잘못된 노드 입력이 있습니다. 다시 실행하기 전에 강조된 노드를 수정하세요.",
+        "title": "프롬프트 검증 실패"
       },
       "server_error_cloud": {
-        "desc": "서버에서 예기치 않은 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."
+        "desc": "서버에서 예기치 않은 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+        "title": "서버 오류"
       },
       "server_error_local": {
-        "desc": "서버에서 예기치 않은 오류가 발생했습니다. 서버 로그를 확인해 주세요."
-      }
-    },
-    "runtimeErrors": {
-      "execution_failed": {
-        "itemLabel": "{nodeName}",
-        "toastMessageCloud": "이 노드는 실행 중 오류가 발생했습니다. 입력값을 확인하거나 다른 설정을 시도해 보세요. 크레딧은 차감되지 않았습니다.",
-        "toastMessageLocal": "이 노드는 실행 중 오류가 발생했습니다. 입력값을 확인하거나 다른 설정을 시도해 보세요.",
-        "toastTitle": "{nodeName} 실패"
+        "desc": "서버에서 예기치 않은 오류가 발생했습니다. 서버 로그를 확인해 주세요.",
+        "title": "서버 오류"
       }
     },
     "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName}의 {inputName} 연결이 잘못되었습니다.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "노드 연결을 올바르게 읽을 수 없습니다.",
+        "title": "잘못된 연결",
+        "toastMessage": "{nodeName}의 {inputName} 연결이 잘못되었습니다.",
+        "toastTitle": "잘못된 연결"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName}이(가) {inputName}의 값을 거부했습니다.",
+        "detailsWithRawDetails": "{nodeName}에서 사용자 지정 검증 실패: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "노드가 하나 이상의 입력 값을 거부했습니다.",
+        "title": "잘못된 입력",
+        "toastMessage": "{nodeName}이(가) {inputName}의 값을 거부했습니다.",
+        "toastTitle": "잘못된 입력"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName}이(가) 순환 연결의 일부입니다.",
+        "detailsWithRawDetails": "{nodeName}이(가) 순환 연결의 일부입니다: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "워크플로우에 순환 노드 연결이 있습니다.",
+        "title": "잘못된 워크플로우",
+        "toastMessage": "{nodeName}이(가) 순환 연결의 일부입니다.",
+        "toastTitle": "잘못된 워크플로우"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName}에서 {inputName}을(를) 검증할 수 없습니다.",
+        "detailsWithRawDetails": "{nodeName}에서 {inputName}을(를) 검증할 수 없습니다: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "워크플로우가 연결된 노드를 검증할 수 없습니다.",
+        "title": "검증 실패",
+        "toastMessage": "{nodeName}에서 {inputName}을(를) 검증할 수 없습니다.",
+        "toastMessageWithRawDetails": "{nodeName}에서 {inputName}을(를) 검증할 수 없습니다: {rawDetails}",
+        "toastTitle": "검증 실패"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName}이(가) 검증 중에 실패했습니다.",
+        "detailsWithRawDetails": "{nodeName}이(가) 검증 중에 실패했습니다: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "노드 검증 체크가 예기치 않게 실패하여 워크플로우를 검증할 수 없습니다.",
+        "title": "검증 실패",
+        "toastMessage": "{nodeName}이(가) 검증 중에 실패했습니다.",
+        "toastMessageWithRawDetails": "{nodeName}이(가) 검증 중에 실패했습니다: {rawDetails}",
+        "toastTitle": "검증 실패"
+      },
+      "image_not_loaded": {
+        "details": "{nodeName}의 이미지를 불러올 수 없습니다. 다시 추가해 보세요.",
+        "itemLabel": "{nodeName}",
+        "message": "시스템에서 이 이미지를 불러올 수 없습니다.",
+        "title": "이미지 불러오기 실패",
+        "toastMessage": "{nodeName}의 이미지를 불러올 수 없습니다. 다시 추가해 보세요.",
+        "toastTitle": "입력 이미지 불러오기 실패"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName}에서 {inputName}을(를) 기대한 타입으로 변환할 수 없습니다.",
+        "detailsWithValue": "{nodeName}의 {inputName}에 대한 값 {receivedValue}을(를) {expectedType}으로 변환할 수 없습니다.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "입력 값의 타입이 올바르지 않습니다.",
+        "title": "잘못된 입력",
+        "toastMessage": "{nodeName}에서 {inputName}을(를) 기대한 타입으로 변환할 수 없습니다.",
+        "toastMessageWithValue": "{nodeName}의 {inputName}에 대한 값 {receivedValue}을(를) {expectedType}으로 변환할 수 없습니다.",
+        "toastTitle": "잘못된 입력"
+      },
       "required_input_missing": {
         "details": "{nodeName}에 필수 입력이 누락되었습니다: {inputName}",
         "itemLabel": "{nodeName} - {inputName}",
@@ -946,6 +1023,46 @@
         "title": "연결 누락",
         "toastMessage": "{nodeName}에 필수 입력이 누락되었습니다: {inputName}",
         "toastTitle": "필수 입력 누락"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName}의 {inputName} 연결이 호환되지 않습니다.",
+        "detailsWithTypes": "{nodeName}의 {inputName} 입력은 {expectedType}을(를) 기대하지만, 연결된 출력은 {receivedType}입니다.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "연결된 노드의 입력 및 출력 타입이 호환되지 않습니다.",
+        "title": "잘못된 연결",
+        "toastMessage": "{nodeName}의 {inputName} 연결이 호환되지 않습니다.",
+        "toastMessageWithTypes": "{nodeName}의 {inputName} 입력은 {expectedType}을(를) 기대하지만, 연결된 출력은 {receivedType}입니다.",
+        "toastTitle": "잘못된 연결"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName}의 {inputName} 값이 최대값을 초과합니다.",
+        "detailsWithValue": "{nodeName}의 {inputName}에 대한 값 {receivedValue}이(가) 최대값 {maxValue}를 초과합니다.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "일부 입력 값이 허용된 범위를 벗어났습니다.",
+        "title": "입력값 범위 초과",
+        "toastMessage": "{nodeName}의 {inputName} 값이 최대값을 초과합니다.",
+        "toastMessageWithValue": "{nodeName}의 {inputName}에 대한 값 {receivedValue}이(가) 최대값 {maxValue}를 초과합니다.",
+        "toastTitle": "입력값 범위 초과"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName}의 {inputName}에 지원되지 않는 값이 있습니다.",
+        "detailsWithValue": "{nodeName}의 {inputName}에 대한 값 {receivedValue}은(는) 사용할 수 없습니다.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "일부 입력 값이 이 노드에서 사용할 수 없습니다.",
+        "title": "잘못된 입력",
+        "toastMessage": "{nodeName}의 {inputName}에 지원되지 않는 값이 있습니다.",
+        "toastMessageWithValue": "{nodeName}의 {inputName}에 대한 값 {receivedValue}은(는) 사용할 수 없습니다.",
+        "toastTitle": "잘못된 입력"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName}의 {inputName} 값이 최소값보다 작습니다.",
+        "detailsWithValue": "{nodeName}의 {inputName}에 대한 값 {receivedValue}이(가) 최소값 {minValue}보다 작습니다.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "일부 입력 값이 허용된 범위를 벗어났습니다.",
+        "title": "입력값 범위 초과",
+        "toastMessage": "{nodeName}의 {inputName} 값이 최소값보다 작습니다.",
+        "toastMessageWithValue": "{nodeName}의 {inputName}에 대한 값 {receivedValue}이(가) 최소값 {minValue}보다 작습니다.",
+        "toastTitle": "입력값 범위 초과"
       }
     }
   },

@@ -15912,6 +15912,30 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "description": "Guarda las imágenes de entrada en tu directorio de salida de ComfyUI.",
+    "display_name": "Guardar imagen (avanzado)",
+    "inputs": {
+      "filename_prefix": {
+        "name": "prefijo_nombre_archivo",
+        "tooltip": "El prefijo para el archivo a guardar. Puede incluir tokens de formato como %date:yyyy-MM-dd% o %Empty Latent Image.width%."
+      },
+      "format": {
+        "name": "formato",
+        "tooltip": "El formato de archivo en el que se guardará la imagen."
+      },
+      "format_bit_depth": {
+        "name": "profundidad_de_bits"
+      },
+      "format_input_color_space": {
+        "name": "espacio_de_color_entrada"
+      },
+      "images": {
+        "name": "imágenes",
+        "tooltip": "Las imágenes que se van a guardar."
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
     "description": "Guarda un conjunto de imágenes en una carpeta especificada. Formatos soportados: PNG.",
     "display_name": "Guardar conjunto de imágenes en carpeta",
