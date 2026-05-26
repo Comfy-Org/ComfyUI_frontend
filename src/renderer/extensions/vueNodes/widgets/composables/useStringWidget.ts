@@ -1,6 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
-import { defineDeprecatedProperty } from '@/lib/litegraph/src/utils/feedback'
+import { defineDeprecatedProperty } from '@/platform/dev/warnDeprecated'
 import {
   bindMultilineTextareaWidget,
   createMultilineInputElement

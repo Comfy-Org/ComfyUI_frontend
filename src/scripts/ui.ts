@@ -1,4 +1,5 @@
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
+import { warnDeprecated } from '@/platform/dev/warnDeprecated'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -246,11 +247,13 @@ class ComfyList {
     this.element = $el('div.comfy-list') as HTMLDivElement
     this.element.style.display = 'none'
 
-    console.warn(
-      '[ComfyUI] The legacy queue/history menu is deprecated. ' +
-        'Core functionality in this menu may break at any time. ' +
-        'Issues and feature requests related to the legacy menu will not be addressed. ' +
-        'To switch to the new menu: Settings → search "Use new menu" → change from "Disabled" to "Top".'
+    warnDeprecated(
+      'The legacy queue/history menu is deprecated and unsupported.',
+      {
+        suggestion:
+          'Switch to the new menu: Settings → search "Use new menu" → change from "Disabled" to "Top".',
+        source: 'ComfyUI'
+      }
     )
   }
 

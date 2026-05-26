@@ -1,11 +1,12 @@
 import _ from 'es-toolkit/compat'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-import { app, ComfyApp } from '@/scripts/app'
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
-import { useDialogStore } from '@/stores/dialogStore'
-import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useCanvasTransform } from '@/composables/maskeditor/useCanvasTransform'
+import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { warnDeprecated } from '@/platform/dev/warnDeprecated'
+import { app, ComfyApp } from '@/scripts/app'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 function openMaskEditor(node: LGraphNode): void {
   if (!node) {
@@ -150,11 +151,13 @@ app.registerExtension({
   ],
   init() {
     // Set up ComfyApp static methods for plugin compatibility (deprecated)
-    ComfyApp.open_maskeditor = openMaskEditorFromClipspace
-
-    console.warn(
-      '[MaskEditor] ComfyApp.open_maskeditor is deprecated. ' +
-        'Plugins should migrate to using the command system or direct node context menu integration.'
-    )
+    ComfyApp.open_maskeditor = function open_maskeditor() {
+      warnDeprecated('ComfyApp.open_maskeditor is deprecated.', {
+        suggestion:
+          'Migrate to the command system or direct node context menu integration.',
+        source: 'MaskEditor'
+      })
+      openMaskEditorFromClipspace()
+    }
   }
 })
