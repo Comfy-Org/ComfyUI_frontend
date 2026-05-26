@@ -46,10 +46,13 @@ async function getPrimitiveFanoutSnapshot(
       throw new Error(`Host node ${id} is not a SubgraphNode`)
     }
 
-    const primitiveNode = hostNode.subgraph.getNodeById(4)
+    const [primitiveNode] = hostNode.subgraph.findNodesByType(
+      'PrimitiveNode',
+      []
+    )
     const primitiveOriginLinkCount = [
       ...hostNode.subgraph._links.values()
-    ].filter((link) => link.origin_id === 4).length
+    ].filter((link) => link.origin_id === primitiveNode?.id).length
     const serialized = window.app!.graph!.serialize()
     const serializedNode = serialized.nodes.find(
       (candidate) => String(candidate.id) === String(id)
