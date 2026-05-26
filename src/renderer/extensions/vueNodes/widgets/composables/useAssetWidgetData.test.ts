@@ -242,4 +242,55 @@ describe('useAssetWidgetData', () => {
       expect(error.value).toBeNull()
     })
   })
+
+  describe('refresh()', () => {
+    it('refetches assets for the current node type, bypassing the initial-load cache guard', async () => {
+      mockGetCategoryForNodeType.mockReturnValue('checkpoints')
+      mockUpdateModelsForNodeType.mockImplementation(
+        async (_nodeType: string): Promise<AssetItem[]> => {
+          mockInitializedKeys.add(_nodeType)
+          mockLoadingByKey.set(_nodeType, false)
+          return []
+        }
+      )
+
+      const { refresh, isLoading } = useAssetWidgetData(
+        'CheckpointLoaderSimple'
+      )
+
+      await nextTick()
+      await vi.waitFor(() => !isLoading.value)
+      expect(mockUpdateModelsForNodeType).toHaveBeenCalledTimes(1)
+
+      await refresh()
+      expect(mockUpdateModelsForNodeType).toHaveBeenCalledTimes(2)
+      expect(mockUpdateModelsForNodeType).toHaveBeenLastCalledWith(
+        'CheckpointLoaderSimple'
+      )
+    })
+
+    it('skips refresh when a fetch is already in flight', async () => {
+      mockGetCategoryForNodeType.mockReturnValue('checkpoints')
+      mockUpdateModelsForNodeType.mockImplementation(
+        async (_nodeType: string): Promise<AssetItem[]> => {
+          mockInitializedKeys.add(_nodeType)
+          return []
+        }
+      )
+
+      const { refresh } = useAssetWidgetData('CheckpointLoaderSimple')
+      await nextTick()
+
+      mockLoadingByKey.set('CheckpointLoaderSimple', true)
+      mockUpdateModelsForNodeType.mockClear()
+      await refresh()
+      expect(mockUpdateModelsForNodeType).not.toHaveBeenCalled()
+    })
+
+    it('no-ops when node type is undefined', async () => {
+      const { refresh } = useAssetWidgetData(undefined)
+      await refresh()
+      expect(mockUpdateModelsForNodeType).not.toHaveBeenCalled()
+    })
+  })
 })

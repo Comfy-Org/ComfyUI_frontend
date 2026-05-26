@@ -146,7 +146,12 @@ const acceptTypes = computed(() => {
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
 function handleIsOpenUpdate(isOpen: boolean) {
-  if (isOpen && !outputMediaAssets.loading.value) {
+  if (!isOpen) return
+  if (props.isAssetMode) {
+    void assetData?.refresh()
+    return
+  }
+  if (!outputMediaAssets.loading.value) {
     void outputMediaAssets.refresh()
   }
 }
