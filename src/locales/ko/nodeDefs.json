@@ -15912,6 +15912,30 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "description": "입력된 이미지를 ComfyUI 출력 디렉터리에 저장합니다.",
+    "display_name": "이미지 저장 (고급)",
+    "inputs": {
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "저장할 파일의 접두사입니다. %date:yyyy-MM-dd% 또는 %Empty Latent Image.width%와 같은 포맷 토큰을 포함할 수 있습니다."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "이미지를 저장할 파일 형식입니다."
+      },
+      "format_bit_depth": {
+        "name": "bit_depth"
+      },
+      "format_input_color_space": {
+        "name": "input_color_space"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "저장할 이미지입니다."
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
     "description": "이미지 데이터셋을 지정한 폴더에 저장합니다. 지원 포맷: PNG.",
     "display_name": "이미지 데이터셋을 폴더에 저장",

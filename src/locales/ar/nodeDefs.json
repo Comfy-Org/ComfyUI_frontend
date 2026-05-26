@@ -15912,6 +15912,30 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "description": "يحفظ الصور المُدخلة في دليل الإخراج الخاص بـ ComfyUI.",
+    "display_name": "حفظ الصورة (متقدم)",
+    "inputs": {
+      "filename_prefix": {
+        "name": "بادئة اسم الملف",
+        "tooltip": "البادئة لاسم الملف الذي سيتم حفظه. يمكن أن تتضمن رموز تنسيق مثل ‎%date:yyyy-MM-dd%‎ أو ‎%Empty Latent Image.width%‎."
+      },
+      "format": {
+        "name": "الصيغة",
+        "tooltip": "صيغة الملف التي سيتم حفظ الصورة بها."
+      },
+      "format_bit_depth": {
+        "name": "عمق البت"
+      },
+      "format_input_color_space": {
+        "name": "حيز ألوان الإدخال"
+      },
+      "images": {
+        "name": "الصور",
+        "tooltip": "الصور المراد حفظها."
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
     "description": "حفظ مجموعة بيانات من الصور في مجلد محدد. الصيغ المدعومة: PNG.",
     "display_name": "حفظ مجموعة بيانات الصور في مجلد",

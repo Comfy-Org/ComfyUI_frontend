@@ -15654,6 +15654,30 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "display_name": "Save Image (Advanced)",
+    "description": "Saves the input images to your ComfyUI output directory.",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "The images to save."
+      },
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "The prefix for the file to save. May include formatting tokens such as %date:yyyy-MM-dd% or %Empty Latent Image.width%."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "The file format in which to save the image."
+      },
+      "format_bit_depth": {
+        "name": "bit_depth"
+      },
+      "format_input_color_space": {
+        "name": "input_color_space"
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
     "display_name": "Save Image (to Folder) (DEPRECATED)",
     "description": "Save a dataset of images to a specified folder. Supported formats: PNG.",
