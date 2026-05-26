@@ -3,7 +3,7 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
-import { te } from '@/i18n'
+import { i18n, te } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -17,9 +17,25 @@ const jsonTooltip =
 const positiveCoordsTooltipKey =
   'nodeDefs.SAM3_Detect.inputs.positive_coords.tooltip'
 
+const outputTooltipKey = 'nodeDefs.SAM3_Detect.outputs.0.tooltip'
+
 const positiveCoordsWidget: SafeWidgetData = {
   name: 'positive_coords',
   type: 'STRING'
+}
+
+function mergeOutputTooltipMessage(tooltip: string | null) {
+  i18n.global.mergeLocaleMessage('en', {
+    nodeDefs: {
+      SAM3_Detect: {
+        outputs: {
+          0: {
+            tooltip
+          }
+        }
+      }
+    }
+  })
 }
 
 const sam3DetectNodeDef: ComfyNodeDef = {
@@ -40,7 +56,9 @@ const sam3DetectNodeDef: ComfyNodeDef = {
       ]
     }
   },
-  output: [],
+  output: ['MASK'],
+  output_name: ['masks'],
+  output_tooltips: [jsonTooltip],
   output_node: false,
   deprecated: false,
   experimental: false
@@ -64,9 +82,11 @@ describe('useNodeTooltips', () => {
     )
 
     useNodeDefStore().addNodeDef(sam3DetectNodeDef)
+    mergeOutputTooltipMessage(jsonTooltip)
   })
 
   afterEach(() => {
+    mergeOutputTooltipMessage(null)
     vi.restoreAllMocks()
   })
 
@@ -86,6 +106,15 @@ describe('useNodeTooltips', () => {
 
     expect(te(positiveCoordsTooltipKey)).toBe(true)
     expect(getWidgetTooltip(positiveCoordsWidget)).toBe(jsonTooltip)
+    expect(consoleError).not.toHaveBeenCalled()
+  })
+
+  it('reads output slot tooltips without i18n placeholder errors', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { getOutputSlotTooltip } = useNodeTooltips('SAM3_Detect')
+
+    expect(te(outputTooltipKey)).toBe(true)
+    expect(getOutputSlotTooltip(0)).toBe(jsonTooltip)
     expect(consoleError).not.toHaveBeenCalled()
   })
 })
