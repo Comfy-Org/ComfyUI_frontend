@@ -745,10 +745,6 @@ const sortOptions = computed(() => [
   },
   { name: t('templateWorkflows.sort.newest', 'Newest'), value: 'newest' },
   {
-    name: t('templateWorkflows.sort.vramLowToHigh', 'VRAM Usage (Low to High)'),
-    value: 'vram-low-to-high'
-  },
-  {
     name: t(
       'templateWorkflows.sort.modelSizeLowToHigh',
       'Model Size (Low to High)'

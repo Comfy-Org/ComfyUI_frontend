@@ -800,7 +800,7 @@
     "CONTROL_NET": "ControlNet",
     "CURVE": "曲線",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
-    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_DETECTION_MODEL": "人臉偵測模型",
     "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
@@ -910,6 +910,161 @@
     "pause": "暫停下載",
     "paused": "已暫停",
     "resume": "繼續下載"
+  },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "未知輸入",
+      "nodeName": "此節點"
+    },
+    "promptErrors": {
+      "image_not_loaded": {
+        "desc": "系統無法載入此圖片。",
+        "title": "圖片未載入"
+      },
+      "missing_node_type": {
+        "desc": "缺少或無法取得某個節點類型。工作流程可能已損壞或需要自訂節點。",
+        "title": "缺少節點類型"
+      },
+      "no_prompt": {
+        "desc": "傳送到伺服器的工作流程資料為空。這可能是系統的非預期錯誤。",
+        "title": "工作流程資料為空"
+      },
+      "out_of_memory": {
+        "descCloud": "GPU 記憶體不足。請嘗試降低複雜度後再執行。不會扣除點數。",
+        "descLocal": "GPU 記憶體不足。請嘗試降低複雜度後再執行。",
+        "title": "生成失敗"
+      },
+      "prompt_no_outputs": {
+        "desc": "工作流程中沒有包含任何輸出節點（例如：儲存圖像、預覽圖像），無法產生結果。",
+        "title": "提示沒有輸出"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "工作流程有無效的節點輸入。請修正標示的節點後再執行。",
+        "title": "提示驗證失敗"
+      },
+      "server_error_cloud": {
+        "desc": "伺服器發生非預期錯誤。請稍後再試。",
+        "title": "伺服器錯誤"
+      },
+      "server_error_local": {
+        "desc": "伺服器發生非預期錯誤。請檢查伺服器日誌。",
+        "title": "伺服器錯誤"
+      }
+    },
+    "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName} 的 {inputName} 連接無效。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "節點連接無法正確讀取。",
+        "title": "無效的連接",
+        "toastMessage": "{nodeName} 的 {inputName} 連接無效。",
+        "toastTitle": "無效的連接"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName} 拒絕了 {inputName} 的值。",
+        "detailsWithRawDetails": "{nodeName} 自訂驗證失敗：{rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "節點拒絕了一個或多個輸入值。",
+        "title": "無效的輸入",
+        "toastMessage": "{nodeName} 拒絕了 {inputName} 的值。",
+        "toastTitle": "無效的輸入"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName} 是循環連接的一部分。",
+        "detailsWithRawDetails": "{nodeName} 是循環連接的一部分：{rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "工作流程存在循環節點連接。",
+        "title": "無效的工作流程",
+        "toastMessage": "{nodeName} 是循環連接的一部分。",
+        "toastTitle": "無效的工作流程"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName} 無法驗證 {inputName}。",
+        "detailsWithRawDetails": "{nodeName} 無法驗證 {inputName}：{rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "工作流程無法驗證已連接的節點。",
+        "title": "驗證失敗",
+        "toastMessage": "{nodeName} 無法驗證 {inputName}。",
+        "toastMessageWithRawDetails": "{nodeName} 無法驗證 {inputName}：{rawDetails}",
+        "toastTitle": "驗證失敗"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName} 驗證時失敗。",
+        "detailsWithRawDetails": "{nodeName} 驗證時失敗：{rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "由於節點驗證檢查意外失敗，工作流程無法驗證。",
+        "title": "驗證失敗",
+        "toastMessage": "{nodeName} 驗證時失敗。",
+        "toastMessageWithRawDetails": "{nodeName} 驗證時失敗：{rawDetails}",
+        "toastTitle": "驗證失敗"
+      },
+      "image_not_loaded": {
+        "details": "{nodeName} 的圖片無法載入。請重新加入。",
+        "itemLabel": "{nodeName}",
+        "message": "系統無法載入此圖片。",
+        "title": "圖片未載入",
+        "toastMessage": "{nodeName} 的圖片無法載入。請重新加入。",
+        "toastTitle": "輸入圖片無法載入"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName} 無法將 {inputName} 轉換為預期的類型。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 無法轉換為 {expectedType}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "輸入值的類型錯誤。",
+        "title": "無效的輸入",
+        "toastMessage": "{nodeName} 無法將 {inputName} 轉換為預期的類型。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 無法轉換為 {expectedType}。",
+        "toastTitle": "無效的輸入"
+      },
+      "required_input_missing": {
+        "details": "{nodeName} 缺少必要的輸入：{inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "必要的輸入插槽沒有連接來源。",
+        "title": "缺少連接",
+        "toastMessage": "{nodeName} 缺少必要的輸入：{inputName}",
+        "toastTitle": "缺少必要輸入"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName} 的 {inputName} 連接類型不相容。",
+        "detailsWithTypes": "{nodeName} 的 {inputName} 輸入預期為 {expectedType}，但連接的輸出為 {receivedType}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "已連接的節點使用了不相容的輸入與輸出類型。",
+        "title": "無效的連接",
+        "toastMessage": "{nodeName} 的 {inputName} 連接類型不相容。",
+        "toastMessageWithTypes": "{nodeName} 的 {inputName} 輸入預期為 {expectedType}，但連接的輸出為 {receivedType}。",
+        "toastTitle": "無效的連接"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName} 的 {inputName} 值高於最大值。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 高於最大值 {maxValue}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "部分輸入值超出允許範圍。",
+        "title": "輸入超出範圍",
+        "toastMessage": "{nodeName} 的 {inputName} 值高於最大值。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 高於最大值 {maxValue}。",
+        "toastTitle": "輸入超出範圍"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName} 的 {inputName} 值不支援。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 不可用。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "部分輸入值不適用於此節點。",
+        "title": "無效的輸入",
+        "toastMessage": "{nodeName} 的 {inputName} 值不支援。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 不可用。",
+        "toastTitle": "無效的輸入"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName} 的 {inputName} 值低於最小值。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 低於最小值 {minValue}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "部分輸入值超出允許範圍。",
+        "title": "輸入超出範圍",
+        "toastMessage": "{nodeName} 的 {inputName} 值低於最小值。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 低於最小值 {minValue}。",
+        "toastTitle": "輸入超出範圍"
+      }
+    }
   },
   "errorDialog": {
     "accessRestrictedMessage": "您的帳戶無權使用此功能。",
@@ -1713,6 +1868,7 @@
     "reloadingModel": "重新載入模型中...",
     "removeBackgroundImage": "移除背景圖片",
     "resizeNodeMatchOutput": "調整節點以符合輸出",
+    "retainViewOnReload": "鎖定相機視角於模型重新載入時保持不變",
     "scene": "場景",
     "showGrid": "顯示格線",
     "showSkeleton": "顯示骨架",
@@ -2280,6 +2436,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2296,6 +2453,7 @@
     "Vidu": "維度",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "調整",
     "advanced": "進階",
     "api node": "API 節點",
     "attention_experiments": "注意力實驗",
@@ -2434,6 +2592,43 @@
       "windows": "Windows（支援 CUDA 的 NVIDIA 顯示卡）"
     },
     "title": "您的裝置不受支援"
+  },
+  "oauth": {
+    "consent": {
+      "allow": "繼續",
+      "appTypeNative": "原生應用程式",
+      "appTypeWeb": "網頁應用程式",
+      "deny": "取消",
+      "errorExpired": "此授權請求已過期或已被使用。請從用戶端應用程式重新啟動。",
+      "errorScopeBroadening": "先前核准的權限不涵蓋此請求。您需要以新權限重新授權。",
+      "errorUnavailable": "此功能目前無法使用。如問題持續，請聯絡客服。",
+      "genericError": "OAuth 請求失敗。請從用戶端應用程式重新啟動。",
+      "loading": "正在載入授權請求…",
+      "missingRequest": "找不到此授權請求。請從用戶端應用程式重新啟動。",
+      "noWorkspaces": "此請求沒有可用的合格工作區。",
+      "permissionsHeader": "權限",
+      "redirectNotice": "您將被重新導向至",
+      "resourceFallback": "此應用程式",
+      "sessionError": "建立工作階段失敗。請再試一次。",
+      "sessionErrorToastSummary": "無法繼續 OAuth 登入",
+      "subtitle": "登入 {resource} 以繼續",
+      "title": "{client} 想要存取",
+      "workspaceHelp": "權限僅適用於此工作區。",
+      "workspaceLabel": "工作區"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "代表您執行工作流程"
+      },
+      "mcp:tools:read": {
+        "label": "檢視可用的工作流程工具"
+      }
+    },
+    "workspace": {
+      "member": "成員",
+      "owner": "擁有者",
+      "personal": "個人"
+    }
   },
   "openSharedWorkflow": {
     "author": "作者：",
@@ -2662,20 +2857,6 @@
     "normal": "一般",
     "parameters": "參數",
     "pinned": "已釘選",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "傳送到伺服器的工作流程資料為空。這可能是系統發生了非預期的錯誤。"
-      },
-      "prompt_no_outputs": {
-        "desc": "工作流程中沒有任何輸出節點（例如：儲存圖像、預覽圖像），無法產生結果。"
-      },
-      "server_error_cloud": {
-        "desc": "伺服器發生非預期錯誤。請稍後再試。"
-      },
-      "server_error_local": {
-        "desc": "伺服器發生非預期錯誤。請檢查伺服器日誌。"
-      }
-    },
     "properties": "屬性",
     "removeFavorite": "取消收藏",
     "resetAllParameters": "重設所有參數",
@@ -3073,6 +3254,7 @@
         "sourceDesc": "依來源類型分組（核心、自訂、API）"
       },
       "noBookmarkedNodes": "尚未有收藏",
+      "noMatchingNodes": "沒有符合「{query}」的節點",
       "resetView": "重設檢視為預設值",
       "sections": {
         "bookmarked": "已收藏",
@@ -3458,8 +3640,7 @@
       "newest": "最新",
       "popular": "熱門",
       "recommended": "推薦",
-      "searchPlaceholder": "搜尋...",
-      "vramLowToHigh": "VRAM 使用量 (低到高)"
+      "searchPlaceholder": "搜尋..."
     },
     "sorting": "排序依據",
     "title": "從範本開始",
@@ -3623,7 +3804,8 @@
       "placeholderMesh": "選擇網格...",
       "placeholderModel": "選擇模型...",
       "placeholderUnknown": "選擇媒體...",
-      "placeholderVideo": "選擇影片..."
+      "placeholderVideo": "選擇影片...",
+      "topResult": "最佳結果：{result}"
     },
     "valueControl": {
       "decrement": "減少數值",

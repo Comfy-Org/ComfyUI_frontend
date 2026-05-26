@@ -169,7 +169,7 @@ expect(result).toBeDefined() // This proves nothing
 
 ```bash
 # Instead of fixing the code, just updating the snapshot to match buggy output
-pnpm test:unit -- --update
+pnpm test:unit --update
 ```
 
 If a snapshot needs updating, the fix should change the code behavior, not the expected output.

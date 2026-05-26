@@ -800,7 +800,7 @@
     "CONTROL_NET": "ControlNet",
     "CURVE": "منحنى",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
-    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_DETECTION_MODEL": "نموذج كشف الوجه",
     "FACE_LANDMARKS": "معالم الوجه",
     "FILE_3D": "ملف ثلاثي الأبعاد",
     "FILE_3D_FBX": "ملف FBX ثلاثي الأبعاد",
@@ -910,6 +910,161 @@
     "pause": "إيقاف التنزيل مؤقتًا",
     "paused": "تم الإيقاف مؤقتًا",
     "resume": "استئناف التنزيل"
+  },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "مدخل غير معروف",
+      "nodeName": "هذه العقدة"
+    },
+    "promptErrors": {
+      "image_not_loaded": {
+        "desc": "تعذر على النظام تحميل هذه الصورة.",
+        "title": "لم يتم تحميل الصورة"
+      },
+      "missing_node_type": {
+        "desc": "نوع عقدة مفقود أو غير متوفر. قد يكون سير العمل تالفًا أو يحتاج إلى عقدة مخصصة.",
+        "title": "نوع العقدة مفقود"
+      },
+      "no_prompt": {
+        "desc": "بيانات سير العمل المرسلة إلى الخادم فارغة. قد يكون هذا خطأ غير متوقع في النظام.",
+        "title": "بيانات سير العمل فارغة"
+      },
+      "out_of_memory": {
+        "descCloud": "لا توجد ذاكرة GPU كافية. حاول تقليل التعقيد وأعد المحاولة. لم يتم خصم أي رصيد.",
+        "descLocal": "لا توجد ذاكرة GPU كافية. حاول تقليل التعقيد وأعد المحاولة.",
+        "title": "فشل التوليد"
+      },
+      "prompt_no_outputs": {
+        "desc": "سير العمل لا يحتوي على أي عقدة إخراج (مثل حفظ الصورة أو معاينة الصورة) لإنتاج نتيجة.",
+        "title": "المطالبة لا تحتوي على مخرجات"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "سير العمل يحتوي على مدخلات عقدة غير صالحة. يرجى تصحيح العقد المميزة قبل إعادة التشغيل.",
+        "title": "فشل التحقق من صحة المطالبة"
+      },
+      "server_error_cloud": {
+        "desc": "واجه الخادم خطأ غير متوقع. يرجى المحاولة لاحقاً.",
+        "title": "خطأ في الخادم"
+      },
+      "server_error_local": {
+        "desc": "واجه الخادم خطأ غير متوقع. يرجى مراجعة سجلات الخادم.",
+        "title": "خطأ في الخادم"
+      }
+    },
+    "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName} لديه اتصال غير صالح لـ {inputName}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "تعذر قراءة اتصال العقدة بشكل صحيح.",
+        "title": "اتصال غير صالح",
+        "toastMessage": "{nodeName} لديه اتصال غير صالح لـ {inputName}.",
+        "toastTitle": "اتصال غير صالح"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName} رفض القيمة لـ {inputName}.",
+        "detailsWithRawDetails": "{nodeName} فشل في التحقق المخصص: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "رفضت العقدة قيمة أو أكثر من قيم الإدخال.",
+        "title": "إدخال غير صالح",
+        "toastMessage": "{nodeName} رفض القيمة لـ {inputName}.",
+        "toastTitle": "إدخال غير صالح"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName} جزء من اتصال دائري.",
+        "detailsWithRawDetails": "{nodeName} جزء من اتصال دائري: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "سير العمل يحتوي على اتصال دائري بين العقد.",
+        "title": "سير عمل غير صالح",
+        "toastMessage": "{nodeName} جزء من اتصال دائري.",
+        "toastTitle": "سير عمل غير صالح"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName} لم يتمكن من التحقق من {inputName}.",
+        "detailsWithRawDetails": "{nodeName} لم يتمكن من التحقق من {inputName}: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "تعذر على سير العمل التحقق من عقدة متصلة.",
+        "title": "فشل التحقق",
+        "toastMessage": "{nodeName} لم يتمكن من التحقق من {inputName}.",
+        "toastMessageWithRawDetails": "{nodeName} لم يتمكن من التحقق من {inputName}: {rawDetails}",
+        "toastTitle": "فشل التحقق"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName} فشل أثناء التحقق.",
+        "detailsWithRawDetails": "{nodeName} فشل أثناء التحقق: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "تعذر التحقق من سير العمل لأن فحص تحقق العقدة فشل بشكل غير متوقع.",
+        "title": "فشل التحقق",
+        "toastMessage": "{nodeName} فشل أثناء التحقق.",
+        "toastMessageWithRawDetails": "{nodeName} فشل أثناء التحقق: {rawDetails}",
+        "toastTitle": "فشل التحقق"
+      },
+      "image_not_loaded": {
+        "details": "تعذر تحميل الصورة لـ {nodeName}. حاول إضافتها مرة أخرى.",
+        "itemLabel": "{nodeName}",
+        "message": "تعذر على النظام تحميل هذه الصورة.",
+        "title": "لم يتم تحميل الصورة",
+        "toastMessage": "تعذر تحميل الصورة لـ {nodeName}. حاول إضافتها مرة أخرى.",
+        "toastTitle": "تعذر تحميل صورة الإدخال"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName} لم يتمكن من تحويل {inputName} إلى النوع المتوقع.",
+        "detailsWithValue": "القيمة {receivedValue} لـ {inputName} في {nodeName} لم يتم تحويلها إلى {expectedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "قيمة الإدخال من نوع غير صحيح.",
+        "title": "إدخال غير صالح",
+        "toastMessage": "{nodeName} لم يتمكن من تحويل {inputName} إلى النوع المتوقع.",
+        "toastMessageWithValue": "القيمة {receivedValue} لـ {inputName} في {nodeName} لم يتم تحويلها إلى {expectedType}.",
+        "toastTitle": "إدخال غير صالح"
+      },
+      "required_input_missing": {
+        "details": "{nodeName} تفتقد إلى مدخل مطلوب: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "بعض منافذ الإدخال المطلوبة غير متصلة.",
+        "title": "الاتصال مفقود",
+        "toastMessage": "{nodeName} تفتقد إلى مدخل مطلوب: {inputName}",
+        "toastTitle": "مدخل مطلوب مفقود"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName} لديه اتصال غير متوافق لـ {inputName}.",
+        "detailsWithTypes": "مدخل {inputName} في {nodeName} يتطلب {expectedType}، لكن الإخراج المتصل هو {receivedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "العقد المتصلة تستخدم أنواع إدخال وإخراج غير متوافقة.",
+        "title": "اتصال غير صالح",
+        "toastMessage": "{nodeName} لديه اتصال غير متوافق لـ {inputName}.",
+        "toastMessageWithTypes": "مدخل {inputName} في {nodeName} يتطلب {expectedType}، لكن الإخراج المتصل هو {receivedType}.",
+        "toastTitle": "اتصال غير صالح"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName} لديه قيمة أعلى من الحد الأقصى لـ {inputName}.",
+        "detailsWithValue": "القيمة {receivedValue} لـ {inputName} في {nodeName} أعلى من الحد الأقصى {maxValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "بعض قيم الإدخال خارج النطاق المسموح.",
+        "title": "إدخال خارج النطاق",
+        "toastMessage": "{nodeName} لديه قيمة أعلى من الحد الأقصى لـ {inputName}.",
+        "toastMessageWithValue": "القيمة {receivedValue} لـ {inputName} في {nodeName} أعلى من الحد الأقصى {maxValue}.",
+        "toastTitle": "إدخال خارج النطاق"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName} لديه قيمة غير مدعومة لـ {inputName}.",
+        "detailsWithValue": "القيمة {receivedValue} لـ {inputName} في {nodeName} غير متوفرة.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "بعض قيم الإدخال غير متوفرة لهذه العقدة.",
+        "title": "إدخال غير صالح",
+        "toastMessage": "{nodeName} لديه قيمة غير مدعومة لـ {inputName}.",
+        "toastMessageWithValue": "القيمة {receivedValue} لـ {inputName} في {nodeName} غير متوفرة.",
+        "toastTitle": "إدخال غير صالح"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName} لديه قيمة أقل من الحد الأدنى لـ {inputName}.",
+        "detailsWithValue": "القيمة {receivedValue} لـ {inputName} في {nodeName} أقل من الحد الأدنى {minValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "بعض قيم الإدخال خارج النطاق المسموح.",
+        "title": "إدخال خارج النطاق",
+        "toastMessage": "{nodeName} لديه قيمة أقل من الحد الأدنى لـ {inputName}.",
+        "toastMessageWithValue": "القيمة {receivedValue} لـ {inputName} في {nodeName} أقل من الحد الأدنى {minValue}.",
+        "toastTitle": "إدخال خارج النطاق"
+      }
+    }
   },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
@@ -1713,6 +1868,7 @@
     "reloadingModel": "جاري إعادة تحميل النموذج...",
     "removeBackgroundImage": "إزالة صورة الخلفية",
     "resizeNodeMatchOutput": "تغيير حجم العقدة لتتناسب مع المخرج",
+    "retainViewOnReload": "تثبيت عرض الكاميرا عند إعادة تحميل النموذج",
     "scene": "المشهد",
     "showGrid": "عرض الشبكة",
     "showSkeleton": "إظهار الهيكل العظمي",
@@ -2280,6 +2436,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2296,6 +2453,7 @@
     "Vidu": "فيدو",
     "Wan": "وان",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "تعديلات",
     "advanced": "متقدم",
     "api node": "عقدة API",
     "attention_experiments": "تجارب الانتباه",
@@ -2434,6 +2592,43 @@
       "windows": "Windows (بطاقة Nvidia تدعم CUDA)"
     },
     "title": "جهازك غير مدعوم"
+  },
+  "oauth": {
+    "consent": {
+      "allow": "متابعة",
+      "appTypeNative": "تطبيق أصلي",
+      "appTypeWeb": "تطبيق ويب",
+      "deny": "إلغاء",
+      "errorExpired": "انتهت صلاحية طلب الموافقة هذا أو تم استخدامه بالفعل. يرجى إعادة البدء من تطبيق العميل.",
+      "errorScopeBroadening": "الأذونات التي تمت الموافقة عليها سابقًا لا تغطي هذا الطلب. ستحتاج إلى إعادة التفويض بالأذونات الجديدة.",
+      "errorUnavailable": "هذه الميزة غير متوفرة حاليًا. يرجى التواصل مع الدعم إذا استمرت المشكلة.",
+      "genericError": "فشل طلب OAuth. يرجى إعادة البدء من تطبيق العميل.",
+      "loading": "جارٍ تحميل طلب التفويض…",
+      "missingRequest": "هذا الطلب التفويضي غير موجود. يرجى إعادة البدء من تطبيق العميل.",
+      "noWorkspaces": "لا توجد مساحات عمل مؤهلة لهذا الطلب.",
+      "permissionsHeader": "الأذونات",
+      "redirectNotice": "سيتم إعادة توجيهك إلى",
+      "resourceFallback": "هذا التطبيق",
+      "sessionError": "فشل في إنشاء الجلسة. يرجى المحاولة مرة أخرى.",
+      "sessionErrorToastSummary": "تعذر متابعة تسجيل الدخول عبر OAuth",
+      "subtitle": "سجّل الدخول إلى {resource} للمتابعة",
+      "title": "{client} يطلب الوصول",
+      "workspaceHelp": "تنطبق الأذونات على مساحة العمل هذه فقط.",
+      "workspaceLabel": "مساحة العمل"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "تشغيل سير العمل نيابةً عنك"
+      },
+      "mcp:tools:read": {
+        "label": "عرض أدوات سير العمل المتاحة"
+      }
+    },
+    "workspace": {
+      "member": "عضو",
+      "owner": "المالك",
+      "personal": "شخصي"
+    }
   },
   "openSharedWorkflow": {
     "author": "المؤلف:",
@@ -2662,20 +2857,6 @@
     "normal": "عادي",
     "parameters": "المعلمات",
     "pinned": "مثبت",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "بيانات سير العمل المرسلة إلى الخادم فارغة. قد يكون هذا خطأ غير متوقع في النظام."
-      },
-      "prompt_no_outputs": {
-        "desc": "سير العمل لا يحتوي على أي عقدة إخراج (مثل حفظ الصورة، معاينة الصورة) لإنتاج نتيجة."
-      },
-      "server_error_cloud": {
-        "desc": "واجه الخادم خطأ غير متوقع. يرجى المحاولة لاحقاً."
-      },
-      "server_error_local": {
-        "desc": "واجه الخادم خطأ غير متوقع. يرجى مراجعة سجلات الخادم."
-      }
-    },
     "properties": "الخصائص",
     "removeFavorite": "إزالة من المفضلة",
     "resetAllParameters": "إعادة تعيين جميع المعلمات",
@@ -3073,6 +3254,7 @@
         "sourceDesc": "التجميع حسب نوع المصدر (أساسي، مخصص، API)"
       },
       "noBookmarkedNodes": "لا توجد مفضلات بعد",
+      "noMatchingNodes": "لا توجد عقد تطابق \"{query}\"",
       "resetView": "إعادة تعيين العرض إلى الافتراضي",
       "sections": {
         "bookmarked": "المفضلة",
@@ -3458,8 +3640,7 @@
       "newest": "الأحدث",
       "popular": "الأكثر شيوعًا",
       "recommended": "موصى به",
-      "searchPlaceholder": "بحث...",
-      "vramLowToHigh": "استخدام VRAM (من الأقل إلى الأعلى)"
+      "searchPlaceholder": "بحث..."
     },
     "sorting": "ترتيب حسب",
     "title": "ابدأ باستخدام قالب",
@@ -3623,7 +3804,8 @@
       "placeholderMesh": "اختر شبكة...",
       "placeholderModel": "اختر نموذج...",
       "placeholderUnknown": "اختر وسائط...",
-      "placeholderVideo": "اختر فيديو..."
+      "placeholderVideo": "اختر فيديو...",
+      "topResult": "أفضل نتيجة: {result}"
     },
     "valueControl": {
       "decrement": "إنقاص القيمة",

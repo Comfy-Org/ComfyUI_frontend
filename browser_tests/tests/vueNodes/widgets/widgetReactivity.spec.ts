@@ -12,19 +12,22 @@ test.describe('Vue Widget Reactivity', { tag: '@vue-nodes' }, () => {
     await comfyPage.page.evaluate(() => {
       const graph = window.graph as TestGraphAccess
       const node = graph._nodes_by_id['4']
-      node.widgets!.push(node.widgets![0])
+      node.widgets!.push({ ...node.widgets![0], name: 'added_widget_1' })
     })
     await expect(loadCheckpointNode).toHaveCount(2)
     await comfyPage.page.evaluate(() => {
       const graph = window.graph as TestGraphAccess
       const node = graph._nodes_by_id['4']
-      node.widgets![2] = node.widgets![0]
+      node.widgets![2] = { ...node.widgets![0], name: 'added_widget_2' }
     })
     await expect(loadCheckpointNode).toHaveCount(3)
     await comfyPage.page.evaluate(() => {
       const graph = window.graph as TestGraphAccess
       const node = graph._nodes_by_id['4']
-      node.widgets!.splice(0, 0, node.widgets![0])
+      node.widgets!.splice(0, 0, {
+        ...node.widgets![0],
+        name: 'added_widget_3'
+      })
     })
     await expect(loadCheckpointNode).toHaveCount(4)
   })

@@ -800,7 +800,7 @@
     "CONTROL_NET": "CONTROL_NET",
     "CURVE": "КРИВАЯ",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
-    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_DETECTION_MODEL": "МОДЕЛЬ_ОПРЕДЕЛЕНИЯ_ЛИЦА",
     "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
@@ -910,6 +910,161 @@
     "pause": "Приостановить загрузку",
     "paused": "Приостановлено",
     "resume": "Возобновить загрузку"
+  },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "неизвестный вход",
+      "nodeName": "Этот узел"
+    },
+    "promptErrors": {
+      "image_not_loaded": {
+        "desc": "Системе не удалось загрузить это изображение.",
+        "title": "Изображение не загружено"
+      },
+      "missing_node_type": {
+        "desc": "Тип узла отсутствует или недоступен. Рабочий процесс может быть повреждён или требует пользовательский узел.",
+        "title": "Отсутствует тип узла"
+      },
+      "no_prompt": {
+        "desc": "Данные рабочего процесса, отправленные на сервер, пусты. Это может быть неожиданной системной ошибкой.",
+        "title": "Данные рабочего процесса отсутствуют"
+      },
+      "out_of_memory": {
+        "descCloud": "Недостаточно памяти GPU. Попробуйте уменьшить сложность и запустить снова. Кредиты не списаны.",
+        "descLocal": "Недостаточно памяти GPU. Попробуйте уменьшить сложность и запустить снова.",
+        "title": "Не удалось сгенерировать"
+      },
+      "prompt_no_outputs": {
+        "desc": "В рабочем процессе отсутствуют выходные узлы (например, Сохранить изображение, Просмотр изображения) для получения результата.",
+        "title": "В запросе нет выходных данных"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "В рабочем процессе недопустимые входные данные узлов. Исправьте выделенные узлы перед повторным запуском.",
+        "title": "Ошибка проверки запроса"
+      },
+      "server_error_cloud": {
+        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, попробуйте позже.",
+        "title": "Ошибка сервера"
+      },
+      "server_error_local": {
+        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, проверьте журналы сервера.",
+        "title": "Ошибка сервера"
+      }
+    },
+    "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName} имеет недопустимое соединение для {inputName}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Соединение между узлами не удалось корректно прочитать.",
+        "title": "Недопустимое соединение",
+        "toastMessage": "{nodeName} имеет недопустимое соединение для {inputName}.",
+        "toastTitle": "Недопустимое соединение"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName} отклонил значение для {inputName}.",
+        "detailsWithRawDetails": "{nodeName} не прошёл пользовательскую проверку: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Узел отклонил одно или несколько входных значений.",
+        "title": "Недопустимый ввод",
+        "toastMessage": "{nodeName} отклонил значение для {inputName}.",
+        "toastTitle": "Недопустимый ввод"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName} является частью циклического соединения.",
+        "detailsWithRawDetails": "{nodeName} является частью циклического соединения: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "В рабочем процессе обнаружено циклическое соединение узлов.",
+        "title": "Недопустимый рабочий процесс",
+        "toastMessage": "{nodeName} является частью циклического соединения.",
+        "toastTitle": "Недопустимый рабочий процесс"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName} не удалось проверить {inputName}.",
+        "detailsWithRawDetails": "{nodeName} не удалось проверить {inputName}: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Не удалось проверить подключённый узел в рабочем процессе.",
+        "title": "Ошибка проверки",
+        "toastMessage": "{nodeName} не удалось проверить {inputName}.",
+        "toastMessageWithRawDetails": "{nodeName} не удалось проверить {inputName}: {rawDetails}",
+        "toastTitle": "Ошибка проверки"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName} завершился с ошибкой во время проверки.",
+        "detailsWithRawDetails": "{nodeName} завершился с ошибкой во время проверки: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "Не удалось проверить рабочий процесс, так как проверка узла завершилась с ошибкой.",
+        "title": "Ошибка проверки",
+        "toastMessage": "{nodeName} завершился с ошибкой во время проверки.",
+        "toastMessageWithRawDetails": "{nodeName} завершился с ошибкой во время проверки: {rawDetails}",
+        "toastTitle": "Ошибка проверки"
+      },
+      "image_not_loaded": {
+        "details": "Изображение для {nodeName} не удалось загрузить. Попробуйте добавить его снова.",
+        "itemLabel": "{nodeName}",
+        "message": "Системе не удалось загрузить это изображение.",
+        "title": "Изображение не загружено",
+        "toastMessage": "Изображение для {nodeName} не удалось загрузить. Попробуйте добавить его снова.",
+        "toastTitle": "Не удалось загрузить входное изображение"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName} не удалось преобразовать {inputName} к ожидаемому типу.",
+        "detailsWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} не удалось преобразовать в {expectedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Введено значение неверного типа.",
+        "title": "Недопустимый ввод",
+        "toastMessage": "{nodeName} не удалось преобразовать {inputName} к ожидаемому типу.",
+        "toastMessageWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} не удалось преобразовать в {expectedType}.",
+        "toastTitle": "Недопустимый ввод"
+      },
+      "required_input_missing": {
+        "details": "{nodeName} отсутствует обязательный вход: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Требуемые входные слоты не имеют подключений.",
+        "title": "Отсутствует соединение",
+        "toastMessage": "{nodeName} отсутствует обязательный вход: {inputName}",
+        "toastTitle": "Отсутствует обязательный вход"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName} имеет несовместимое соединение для {inputName}.",
+        "detailsWithTypes": "Вход {inputName} узла {nodeName} ожидает {expectedType}, но подключённый выход — {receivedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Подключённые узлы используют несовместимые типы входа и выхода.",
+        "title": "Недопустимое соединение",
+        "toastMessage": "{nodeName} имеет несовместимое соединение для {inputName}.",
+        "toastMessageWithTypes": "Вход {inputName} узла {nodeName} ожидает {expectedType}, но подключённый выход — {receivedType}.",
+        "toastTitle": "Недопустимое соединение"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName} имеет значение выше максимального для {inputName}.",
+        "detailsWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} выше максимального {maxValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Некоторые значения вне допустимого диапазона.",
+        "title": "Ввод вне диапазона",
+        "toastMessage": "{nodeName} имеет значение выше максимального для {inputName}.",
+        "toastMessageWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} выше максимального {maxValue}.",
+        "toastTitle": "Ввод вне диапазона"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName} имеет неподдерживаемое значение для {inputName}.",
+        "detailsWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} недоступно.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Некоторые значения недоступны для этого узла.",
+        "title": "Недопустимый ввод",
+        "toastMessage": "{nodeName} имеет неподдерживаемое значение для {inputName}.",
+        "toastMessageWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} недоступно.",
+        "toastTitle": "Недопустимый ввод"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName} имеет значение ниже минимального для {inputName}.",
+        "detailsWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} ниже минимального {minValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Некоторые значения вне допустимого диапазона.",
+        "title": "Ввод вне диапазона",
+        "toastMessage": "{nodeName} имеет значение ниже минимального для {inputName}.",
+        "toastMessageWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} ниже минимального {minValue}.",
+        "toastTitle": "Ввод вне диапазона"
+      }
+    }
   },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
@@ -1713,6 +1868,7 @@
     "reloadingModel": "Перезагрузка модели...",
     "removeBackgroundImage": "Удалить фоновое изображение",
     "resizeNodeMatchOutput": "Изменить размер узла под вывод",
+    "retainViewOnReload": "Зафиксировать вид камеры при перезагрузке модели",
     "scene": "Сцена",
     "showGrid": "Показать сетку",
     "showSkeleton": "Показать скелет",
@@ -2280,6 +2436,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2296,6 +2453,7 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "корректировки",
     "advanced": "расширенный",
     "api node": "api-узел",
     "attention_experiments": "эксперименты_внимания",
@@ -2434,6 +2592,43 @@
       "windows": "Windows (Nvidia GPU с поддержкой CUDA)"
     },
     "title": "Ваше устройство не поддерживается"
+  },
+  "oauth": {
+    "consent": {
+      "allow": "Продолжить",
+      "appTypeNative": "Нативное приложение",
+      "appTypeWeb": "Веб-приложение",
+      "deny": "Отмена",
+      "errorExpired": "Этот запрос на согласие истёк или уже был использован. Пожалуйста, перезапустите из клиентского приложения.",
+      "errorScopeBroadening": "Ранее одобренные разрешения не покрывают этот запрос. Необходимо повторно авторизоваться с новыми разрешениями.",
+      "errorUnavailable": "Эта функция сейчас недоступна. Если проблема сохраняется, обратитесь в поддержку.",
+      "genericError": "Ошибка OAuth-запроса. Пожалуйста, перезапустите из клиентского приложения.",
+      "loading": "Загрузка запроса авторизации…",
+      "missingRequest": "Этот запрос авторизации отсутствует. Пожалуйста, перезапустите из клиентского приложения.",
+      "noWorkspaces": "Нет доступных рабочих пространств для этого запроса.",
+      "permissionsHeader": "Разрешения",
+      "redirectNotice": "Вы будете перенаправлены на",
+      "resourceFallback": "это приложение",
+      "sessionError": "Не удалось установить сессию. Пожалуйста, попробуйте ещё раз.",
+      "sessionErrorToastSummary": "Не удалось продолжить вход через OAuth",
+      "subtitle": "Войдите в {resource}, чтобы продолжить",
+      "title": "{client} запрашивает доступ",
+      "workspaceHelp": "Разрешения применяются только к этому рабочему пространству.",
+      "workspaceLabel": "Рабочее пространство"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "Запуск workflow от вашего имени"
+      },
+      "mcp:tools:read": {
+        "label": "Просмотр доступных инструментов workflow"
+      }
+    },
+    "workspace": {
+      "member": "Участник",
+      "owner": "Владелец",
+      "personal": "Личное"
+    }
   },
   "openSharedWorkflow": {
     "author": "Автор:",
@@ -2662,20 +2857,6 @@
     "normal": "Обычный",
     "parameters": "Параметры",
     "pinned": "Закреплено",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "Данные рабочего процесса, отправленные на сервер, пусты. Это может быть неожиданной системной ошибкой."
-      },
-      "prompt_no_outputs": {
-        "desc": "В рабочем процессе отсутствуют выходные узлы (например, Сохранить изображение, Предпросмотр изображения) для получения результата."
-      },
-      "server_error_cloud": {
-        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, попробуйте позже."
-      },
-      "server_error_local": {
-        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, проверьте логи сервера."
-      }
-    },
     "properties": "Свойства",
     "removeFavorite": "Убрать из избранного",
     "resetAllParameters": "Сбросить все параметры",
@@ -3073,6 +3254,7 @@
         "sourceDesc": "Группировать по типу источника (Core, Custom, API)"
       },
       "noBookmarkedNodes": "Избранных пока нет",
+      "noMatchingNodes": "Нет узлов, соответствующих «{query}»",
       "resetView": "Сбросить вид по умолчанию",
       "sections": {
         "bookmarked": "Избранное",
@@ -3458,8 +3640,7 @@
       "newest": "Новейшие",
       "popular": "Популярные",
       "recommended": "Рекомендуемые",
-      "searchPlaceholder": "Поиск...",
-      "vramLowToHigh": "Использование VRAM (от низкого к высокому)"
+      "searchPlaceholder": "Поиск..."
     },
     "sorting": "Сортировать по",
     "title": "Начните с шаблона",
@@ -3623,7 +3804,8 @@
       "placeholderMesh": "Выберите mesh...",
       "placeholderModel": "Выбрать модель...",
       "placeholderUnknown": "Выбрать медиа...",
-      "placeholderVideo": "Выбрать видео..."
+      "placeholderVideo": "Выбрать видео...",
+      "topResult": "Лучший результат: {result}"
     },
     "valueControl": {
       "decrement": "Уменьшить значение",
