@@ -56,7 +56,7 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
 
   function getStackJobId(asset: AssetItem): string | null {
     const metadata = getOutputAssetMetadata(asset.user_metadata)
-    return metadata?.jobId ?? null
+    return metadata?.jobId ?? asset.job_id ?? null
   }
 
   function isStackExpanded(asset: AssetItem): boolean {

@@ -18,7 +18,10 @@ const zAsset = z.object({
   is_immutable: z.boolean().optional(),
   last_access_time: z.string().optional(),
   metadata: z.record(z.unknown()).optional(), // API allows arbitrary key-value pairs
-  user_metadata: z.record(z.unknown()).optional() // API allows arbitrary key-value pairs
+  user_metadata: z.record(z.unknown()).optional(), // API allows arbitrary key-value pairs
+  job_id: z.string().nullish(),
+  // Deprecated alias of job_id. See ingest-types Asset schema; both backends emit this during the L6 transition.
+  prompt_id: z.string().nullish()
 })
 
 const zAssetResponse = zListAssetsResponse

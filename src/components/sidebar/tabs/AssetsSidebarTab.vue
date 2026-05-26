@@ -238,6 +238,7 @@ import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContex
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
+import { useFlatOutputAssetsGrouped } from '@/platform/assets/composables/media/useFlatOutputAssetsGrouped'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
@@ -311,7 +312,12 @@ const formattedExecutionTime = computed(() => {
 const toast = useToast()
 
 const inputAssets = useAssetsApi('input')
-const outputAssets = useAssetsApi('output')
+// Cloud: source the Generated tab from `/api/assets?include_tags=output` so
+// deleted assets actually disappear (history-soft-delete keeps stale entries
+// in `/api/jobs`). FE-740.
+const outputAssets = isCloud
+  ? useFlatOutputAssetsGrouped()
+  : useAssetsApi('output')
 
 // Asset selection
 const {

@@ -2,13 +2,14 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 /**
- * Metadata for output assets from queue store
- * Extends Record<string, unknown> for compatibility with AssetItem schema
+ * Metadata for output assets. Originates from the queue/history mapping but
+ * also surfaces on assets sourced directly from `/api/assets?include_tags=output`,
+ * which carry `jobId` only (no per-output `nodeId` / `subfolder`).
  */
 export interface OutputAssetMetadata extends Record<string, unknown> {
   jobId: string
-  nodeId: string | number
-  subfolder: string
+  nodeId?: string | number
+  subfolder?: string
   executionTimeInSeconds?: number
   format?: string
   workflow?: ComfyWorkflowJSON
@@ -16,17 +17,11 @@ export interface OutputAssetMetadata extends Record<string, unknown> {
   allOutputs?: ResultItemImpl[]
 }
 
-/**
- * Type guard to check if metadata is OutputAssetMetadata
- */
 function isOutputAssetMetadata(
   metadata: Record<string, unknown> | undefined
 ): metadata is OutputAssetMetadata {
   if (!metadata) return false
-  return (
-    typeof metadata.jobId === 'string' &&
-    (typeof metadata.nodeId === 'string' || typeof metadata.nodeId === 'number')
-  )
+  return typeof metadata.jobId === 'string'
 }
 
 /**
