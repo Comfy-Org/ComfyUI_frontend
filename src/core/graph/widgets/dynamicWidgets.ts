@@ -187,11 +187,11 @@ function dynamicComboWidget(
   //A little hacky, but onConfigure won't work.
   //It fires too late and is overly disruptive
   let widgetValue = widget.value
-  const graphId = resolveNodeRootGraphId(node)
-  const getState = () =>
-    graphId
-      ? useWidgetValueStore().getWidget(graphId, node.id, widget.name)
-      : undefined
+  const getState = () => {
+    const graphId = resolveNodeRootGraphId(node)
+    if (!graphId) return undefined
+    return useWidgetValueStore().getWidget(graphId, node.id, widget.name)
+  }
   Object.defineProperty(widget, 'value', {
     get() {
       return getState()?.value ?? widgetValue
