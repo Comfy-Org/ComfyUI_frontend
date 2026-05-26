@@ -5,6 +5,7 @@ import {
   isAuthenticatedConfigLoaded,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
+import { cachedTeamWorkspacesEnabled } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { api } from '@/scripts/api'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
@@ -107,7 +108,8 @@ export function useFeatureFlags() {
       if (override !== undefined) return override
 
       if (!isCloud) return false
-      if (!isAuthenticatedConfigLoaded.value) return false
+      if (!isAuthenticatedConfigLoaded.value)
+        return cachedTeamWorkspacesEnabled.value ?? false
 
       return (
         remoteConfig.value.team_workspaces_enabled ??

@@ -1,6 +1,14 @@
+import { useStorage } from '@vueuse/core'
+
+import type { ServerFeatureFlag } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
 
 import { remoteConfig, remoteConfigState } from './remoteConfig'
+
+export const cachedTeamWorkspacesEnabled = useStorage<boolean | undefined>(
+  'team_workspaces_enabled' satisfies `${ServerFeatureFlag.TEAM_WORKSPACES_ENABLED}`,
+  undefined
+)
 
 interface RefreshRemoteConfigOptions {
   /**
@@ -34,6 +42,10 @@ export async function refreshRemoteConfig(
       window.__CONFIG__ = config
       remoteConfig.value = config
       remoteConfigState.value = useAuth ? 'authenticated' : 'anonymous'
+      if (useAuth)
+        cachedTeamWorkspacesEnabled.value = Boolean(
+          config.team_workspaces_enabled
+        )
       return
     }
 
