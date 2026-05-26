@@ -1,6 +1,6 @@
 import type { LocalizedText, TranslationKey } from '../i18n/translations'
 
-export interface LearningTutorial {
+interface LearningTutorial {
   id: string
   title: LocalizedText
   videoSrc: string
