@@ -661,6 +661,121 @@ describe(usePromotionStore, () => {
     })
   })
 
+  describe('ordering preservation through visibility toggle', () => {
+    const seed = { sourceNodeId: '10', sourceWidgetName: 'seed' }
+    const steps = { sourceNodeId: '11', sourceWidgetName: 'steps' }
+    const cfg = { sourceNodeId: '12', sourceWidgetName: 'cfg' }
+    const denoise = { sourceNodeId: '13', sourceWidgetName: 'denoise' }
+    const model = { sourceNodeId: '20', sourceWidgetName: 'model' }
+
+    it('preserves position when demoting then re-promoting', () => {
+      store.promote(graphA, nodeId, seed)
+      store.promote(graphA, nodeId, steps)
+      store.promote(graphA, nodeId, cfg)
+
+      store.demote(graphA, nodeId, steps)
+      expect(store.getPromotions(graphA, nodeId)).toEqual([seed, cfg])
+
+      store.promote(graphA, nodeId, steps)
+      expect(store.getPromotions(graphA, nodeId)).toEqual([seed, steps, cfg])
+    })
+
+    it('preserves position through multiple toggle cycles', () => {
+      store.promote(graphA, nodeId, seed)
+      store.promote(graphA, nodeId, steps)
+      store.promote(graphA, nodeId, cfg)
+
+      store.demote(graphA, nodeId, steps)
+      store.promote(graphA, nodeId, steps)
+      store.demote(graphA, nodeId, steps)
+      store.promote(graphA, nodeId, steps)
+
+      expect(store.getPromotions(graphA, nodeId)).toEqual([seed, steps, cfg])
+    })
+
+    it('preserves position when demoting first entry', () => {
+      store.promote(graphA, nodeId, seed)
+      store.promote(graphA, nodeId, steps)
+      store.promote(graphA, nodeId, cfg)
+
+      store.demote(graphA, nodeId, seed)
+      store.promote(graphA, nodeId, seed)
+
+      expect(store.getPromotions(graphA, nodeId)).toEqual([seed, steps, cfg])
+    })
+
+    it('preserves position when demoting last entry', () => {
+      store.promote(graphA, nodeId, seed)
+      store.promote(graphA, nodeId, steps)
+      store.promote(graphA, nodeId, cfg)
+
+      store.demote(graphA, nodeId, cfg)
+      store.promote(graphA, nodeId, cfg)
+
+      expect(store.getPromotions(graphA, nodeId)).toEqual([seed, steps, cfg])
+    })
+
+    it('appends truly new entries after all manifest entries', () => {
+      store.promote(graphA, nodeId, seed)
+      store.promote(graphA, nodeId, steps)
+      store.demote(graphA, nodeId, steps)
+
+      store.promote(graphA, nodeId, denoise)
+
+      expect(store.getPromotions(graphA, nodeId)).toEqual([seed, denoise])
+
+      store.promote(graphA, nodeId, steps)
+      expect(store.getPromotions(graphA, nodeId)).toEqual([
+        seed,
+        steps,
+        denoise
+      ])
+    })
+
+    it('movePromotion operates on visible entries only', () => {
+      store.promote(graphA, nodeId, seed)
+      store.promote(graphA, nodeId, steps)
+      store.promote(graphA, nodeId, cfg)
+
+      store.demote(graphA, nodeId, steps)
+
+      store.movePromotion(graphA, nodeId, 0, 1)
+
+      expect(store.getPromotions(graphA, nodeId)).toEqual([cfg, seed])
+    })
+
+    it('setPromotions replaces the entire manifest including hidden entries', () => {
+      store.promote(graphA, nodeId, seed)
+      store.promote(graphA, nodeId, steps)
+      store.demote(graphA, nodeId, steps)
+
+      store.setPromotions(graphA, nodeId, [model])
+
+      expect(store.getPromotions(graphA, nodeId)).toEqual([model])
+
+      store.promote(graphA, nodeId, steps)
+      expect(store.getPromotions(graphA, nodeId)).toEqual([model, steps])
+    })
+
+    it('ref-counts stay correct through demote-promote cycles', () => {
+      const nodeA = 1 as NodeId
+      const nodeB = 2 as NodeId
+
+      store.promote(graphA, nodeA, seed)
+      store.promote(graphA, nodeB, seed)
+
+      store.demote(graphA, nodeA, seed)
+      expect(store.isPromotedByAny(graphA, seed)).toBe(true)
+
+      store.promote(graphA, nodeA, seed)
+      expect(store.isPromotedByAny(graphA, seed)).toBe(true)
+
+      store.demote(graphA, nodeA, seed)
+      store.demote(graphA, nodeB, seed)
+      expect(store.isPromotedByAny(graphA, seed)).toBe(false)
+    })
+  })
+
   describe('graph isolation', () => {
     it('isolates promotions by graph id', () => {
       store.promote(graphA, nodeId, {
