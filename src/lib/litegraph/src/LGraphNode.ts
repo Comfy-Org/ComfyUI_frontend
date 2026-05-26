@@ -89,7 +89,7 @@ import type {
   TWidgetValue
 } from './types/widgets'
 import { findFreeSlotOfType } from './utils/collections'
-import { warnDeprecated } from './utils/feedback'
+import { dispatchLitegraphDeprecation } from './utils/feedback'
 import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
 import { BaseWidget } from './widgets/BaseWidget'
@@ -3511,7 +3511,7 @@ export class LGraphNode
    * @deprecated Use {@link LGraphCanvas.pointer} instead.
    */
   captureInput(v: boolean): void {
-    warnDeprecated(
+    dispatchLitegraphDeprecation(
       '[DEPRECATED] captureInput will be removed in a future version. Please use LGraphCanvas.pointer (CanvasPointer) instead.'
     )
     if (!this.graph || !this.graph.list_of_graphcanvas) return

@@ -25,3 +25,7 @@ export const formatPercent0 = (locale: string, value0to100: number): string => {
     maximumFractionDigits: 0
   }).format((v || 0) / 100)
 }
+
+export function formatBadgeCount(count: number, max = 99): string {
+  return count > max ? `${max}+` : count.toString()
+}

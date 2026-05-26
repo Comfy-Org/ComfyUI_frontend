@@ -7,6 +7,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 class SidebarTab {
   public readonly tabButton: Locator
   public readonly selectedTabButton: Locator
+  public readonly badge: Locator
 
   constructor(
     public readonly page: Page,
@@ -16,6 +17,7 @@ class SidebarTab {
     this.selectedTabButton = page.locator(
       `.${tabId}-tab-button.side-bar-button-selected`
     )
+    this.badge = this.tabButton.locator('.sidebar-icon-badge')
   }
 
   async open() {
@@ -25,7 +27,7 @@ class SidebarTab {
     await this.tabButton.click()
   }
   async close() {
-    if (!this.tabButton.isVisible()) {
+    if (!(await this.tabButton.isVisible())) {
       return
     }
     await this.tabButton.click()
@@ -54,7 +56,7 @@ export class NodeLibrarySidebarTab extends SidebarTab {
   }
 
   override async close() {
-    if (!this.tabButton.isVisible()) {
+    if (!(await this.tabButton.isVisible())) {
       return
     }
 
@@ -471,5 +473,32 @@ export class AssetsSidebarTab extends SidebarTab {
     } else {
       await this.assetCards.first().waitFor({ state: 'visible', timeout: 5000 })
     }
+  }
+}
+
+export class DeprecationWarningsSidebarTab extends SidebarTab {
+  public readonly panel: Locator
+  public readonly list: Locator
+  public readonly clearAllButton: Locator
+  public readonly emptyState: Locator
+
+  constructor(public override readonly page: Page) {
+    super(page, 'deprecation-warnings')
+    this.panel = page.getByTestId('deprecation-warnings-sidebar')
+    this.list = page.getByTestId('deprecation-warnings-list')
+    this.clearAllButton = this.panel.getByRole('button', { name: 'Clear all' })
+    this.emptyState = this.panel.getByText(
+      'No deprecation warnings reported in this session.'
+    )
+  }
+
+  rowFor(message: string): Locator {
+    return this.list.locator('li').filter({ hasText: message })
+  }
+
+  async emitDeprecation(message: string): Promise<void> {
+    await this.page.evaluate((m: string) => {
+      window.LiteGraph!.onDeprecationWarning.forEach((cb) => cb(m))
+    }, message)
   }
 }

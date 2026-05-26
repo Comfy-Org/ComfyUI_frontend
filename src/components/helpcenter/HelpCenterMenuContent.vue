@@ -170,6 +170,7 @@ import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { electronAPI } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
+import { formatRelativeTime } from '@/utils/relativeTime'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
@@ -187,16 +188,6 @@ interface MenuItem {
   showRedDot?: boolean
   showExternalIcon?: boolean
 }
-
-// Constants
-const TIME_UNITS = {
-  MINUTE: 60 * 1000,
-  HOUR: 60 * 60 * 1000,
-  DAY: 24 * 60 * 60 * 1000,
-  WEEK: 7 * 24 * 60 * 60 * 1000,
-  MONTH: 30 * 24 * 60 * 60 * 1000,
-  YEAR: 365 * 24 * 60 * 60 * 1000
-} as const
 
 const SUBMENU_CONFIG = {
   DELAY_MS: 100,
@@ -492,28 +483,8 @@ const calculateSubmenuPosition = (button: HTMLElement): CSSProperties => {
 
 const formatReleaseDate = (dateString?: string): string => {
   if (!dateString) return 'date'
-
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffTime = Math.abs(now.getTime() - date.getTime())
-
-  const timeUnits = [
-    { unit: TIME_UNITS.YEAR, key: 'yearsAgo' },
-    { unit: TIME_UNITS.MONTH, key: 'monthsAgo' },
-    { unit: TIME_UNITS.WEEK, key: 'weeksAgo' },
-    { unit: TIME_UNITS.DAY, key: 'daysAgo' },
-    { unit: TIME_UNITS.HOUR, key: 'hoursAgo' },
-    { unit: TIME_UNITS.MINUTE, key: 'minutesAgo' }
-  ]
-
-  for (const { unit, key } of timeUnits) {
-    const value = Math.floor(diffTime / unit)
-    if (value > 0) {
-      return t(`g.relativeTime.${key}`, { count: value })
-    }
-  }
-
-  return t('g.relativeTime.now')
+  const diffMs = Math.abs(Date.now() - new Date(dateString).getTime())
+  return formatRelativeTime(t, diffMs)
 }
 
 // Event Handlers

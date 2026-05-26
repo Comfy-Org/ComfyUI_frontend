@@ -1,8 +1,9 @@
+import { warnDeprecated } from '@/platform/dev/warnDeprecated'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
 import { type StatusWsMessageStatus } from '@/schemas/apiSchema'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { isCloud } from '@/platform/distribution/types'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useTelemetry } from '@/platform/telemetry'
@@ -246,11 +247,13 @@ class ComfyList {
     this.element = $el('div.comfy-list') as HTMLDivElement
     this.element.style.display = 'none'
 
-    console.warn(
-      '[ComfyUI] The legacy queue/history menu is deprecated. ' +
-        'Core functionality in this menu may break at any time. ' +
-        'Issues and feature requests related to the legacy menu will not be addressed. ' +
-        'To switch to the new menu: Settings → search "Use new menu" → change from "Disabled" to "Top".'
+    warnDeprecated(
+      'The legacy queue/history menu is deprecated and unsupported.',
+      {
+        suggestion:
+          'Switch to the new menu: Settings → search "Use new menu" → change from "Disabled" to "Top".',
+        source: 'ComfyUI'
+      }
     )
   }
 

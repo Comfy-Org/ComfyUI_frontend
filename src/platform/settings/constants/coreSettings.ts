@@ -571,6 +571,8 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.DevMode',
     name: 'Enable dev mode options (API save, etc.)',
+    tooltip:
+      'Enables the legacy "Save (API Format)" button, dev-only nodes in the node library, and a "Deprecation Warnings" sidebar tab that surfaces uses of removed/renamed APIs by custom nodes.',
     type: 'boolean',
     defaultValue: false,
     onChange: (value) => {

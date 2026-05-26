@@ -1,7 +1,7 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
-import { defineDeprecatedProperty } from '@/lib/litegraph/src/utils/feedback'
+import { defineDeprecatedProperty } from '@/platform/dev/warnDeprecated'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
 import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'

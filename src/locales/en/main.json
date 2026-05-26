@@ -992,6 +992,15 @@
       }
     }
   },
+  "deprecationWarnings": {
+    "title": "Deprecation Warnings",
+    "label": "Warnings",
+    "emptyTitle": "All clear",
+    "empty": "No deprecation warnings reported in this session.",
+    "clearAll": "Clear all",
+    "suggestionLabel": "Fix:",
+    "occurrenceCount": "Reported {count} time | Reported {count} times"
+  },
   "helpCenter": {
     "feedback": "Give Feedback",
     "docs": "Docs",

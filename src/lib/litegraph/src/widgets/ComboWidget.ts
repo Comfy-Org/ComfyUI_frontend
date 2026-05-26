@@ -6,7 +6,7 @@ import type {
   IComboWidget,
   IStringComboWidget
 } from '@/lib/litegraph/src/types/widgets'
-import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
+import { dispatchLitegraphDeprecation } from '@/lib/litegraph/src/utils/feedback'
 
 import { BaseSteppedWidget } from './BaseSteppedWidget'
 import type { WidgetEventOptions } from './BaseWidget'
@@ -129,7 +129,7 @@ export class ComboWidget
 
     // Deprecated functionality (warning as of v0.14.5)
     if (typeof this.options.values === 'function') {
-      warnDeprecated(
+      dispatchLitegraphDeprecation(
         'Using a function for values is deprecated. Use an array of unique values instead.'
       )
     }

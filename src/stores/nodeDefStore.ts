@@ -9,6 +9,7 @@ import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolveConcre
 import { resolveInputType } from '@/core/graph/widgets/dynamicTypes'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { warnDeprecated } from '@/platform/dev/warnDeprecated'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
@@ -113,8 +114,13 @@ export class ComfyNodeDefImpl
     for (const [name, spec] of Object.entries(def.input.required ?? {})) {
       const inputOptions = spec[1]
       if (inputOptions && inputOptions.defaultInput) {
-        console.warn(
-          `Use of defaultInput on required input ${nodeDef.python_module}:${nodeDef.name}:${name} is deprecated. Please drop the defaultInput option.`
+        warnDeprecated(
+          `Use of defaultInput on required input ${nodeDef.python_module}:${nodeDef.name}:${name}.`,
+          {
+            suggestion:
+              'Drop the defaultInput option — required sockets are always present.',
+            source: 'nodeDef'
+          }
         )
       }
     }
@@ -124,8 +130,12 @@ export class ComfyNodeDefImpl
     for (const [name, spec] of Object.entries(def.input.optional ?? {})) {
       const inputOptions = spec[1]
       if (inputOptions && inputOptions.defaultInput) {
-        console.warn(
-          `Use of defaultInput on optional input ${nodeDef.python_module}:${nodeDef.name}:${name} is deprecated. Please use forceInput instead.`
+        warnDeprecated(
+          `Use of defaultInput on optional input ${nodeDef.python_module}:${nodeDef.name}:${name}.`,
+          {
+            suggestion: 'Replace with forceInput.',
+            source: 'nodeDef'
+          }
         )
         inputOptions.forceInput = true
       }

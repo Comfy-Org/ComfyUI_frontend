@@ -21,7 +21,7 @@
       <div ref="topToolbarRef" :class="groupClasses">
         <ComfyMenuButton />
         <SidebarIcon
-          v-for="tab in tabs"
+          v-for="tab in topTabs"
           :key="tab.id"
           :icon="tab.icon"
           :icon-badge="tab.iconBadge"
@@ -37,6 +37,19 @@
       </div>
 
       <div ref="bottomToolbarRef" class="mt-auto" :class="groupClasses">
+        <SidebarIcon
+          v-for="tab in bottomTabs"
+          :key="tab.id"
+          :icon="tab.icon"
+          :icon-badge="tab.iconBadge"
+          :tooltip="tab.tooltip"
+          :tooltip-suffix="getTabTooltipSuffix(tab)"
+          :label="tab.label || tab.title"
+          :is-small="isSmall"
+          :selected="tab.id === selectedTab?.id"
+          :class="tab.id + '-tab-button'"
+          @click="onTabClick(tab)"
+        />
         <SidebarLogoutIcon
           v-if="userStore.isMultiUserServer"
           :is-small="isSmall"
@@ -121,6 +134,12 @@ const isConnected = computed(
 )
 
 const tabs = computed(() => workspaceStore.getSidebarTabs())
+const topTabs = computed(() =>
+  tabs.value.filter((tab) => tab.placement !== 'bottom')
+)
+const bottomTabs = computed(() =>
+  tabs.value.filter((tab) => tab.placement === 'bottom')
+)
 const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
 
 /**

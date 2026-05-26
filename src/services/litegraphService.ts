@@ -35,6 +35,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { warnDeprecated } from '@/platform/dev/warnDeprecated'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -835,9 +836,10 @@ export const useLitegraphService = () => {
      * @deprecated No longer needed as we use {@link useImagePreviewWidget}
      */
     node.prototype.setSizeForImage = function (this: LGraphNode) {
-      console.warn(
-        'node.setSizeForImage is deprecated. Now it has no effect. Please remove the call to it.'
-      )
+      warnDeprecated('node.setSizeForImage is deprecated and has no effect.', {
+        suggestion: 'Remove the call.',
+        source: 'litegraphService'
+      })
     }
     node.prototype.onDrawBackground = function () {
       updatePreviews(this)

@@ -3,6 +3,7 @@ import _ from 'es-toolkit/compat'
 import { assert } from '@/base/assert'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { warnDeprecated } from '@/platform/dev/warnDeprecated'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -215,16 +216,12 @@ export class ChangeTracker {
 
   /** @deprecated Use {@link captureCanvasState} instead. */
   checkState() {
-    if (!ChangeTracker._checkStateWarned) {
-      ChangeTracker._checkStateWarned = true
-      console.warn(
-        'checkState() is deprecated — use captureCanvasState() instead.'
-      )
-    }
+    warnDeprecated('ChangeTracker.checkState() is deprecated.', {
+      suggestion: 'Call captureCanvasState() instead.',
+      source: 'ChangeTracker'
+    })
     this.captureCanvasState()
   }
-
-  private static _checkStateWarned = false
 
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
     const prevState = source.pop()

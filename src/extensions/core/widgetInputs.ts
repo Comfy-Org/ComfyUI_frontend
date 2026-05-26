@@ -14,6 +14,7 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
+import { warnDeprecated } from '@/platform/dev/warnDeprecated'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import {
@@ -438,15 +439,16 @@ function getConfig(this: LGraphNode, widgetName: string) {
  * @param node The node to convert the widget to an input slot for.
  * @param widget The widget to convert to an input slot.
  * @returns The input slot that was converted from the widget or undefined if the widget is not found.
- * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export function convertToInput(
   node: LGraphNode,
   widget: IBaseWidget
 ): INodeInputSlot | undefined {
-  console.warn(
-    'Please remove call to convertToInput. Widget to socket conversion is no longer necessary, as they co-exist now.'
-  )
+  warnDeprecated('convertToInput is no longer necessary.', {
+    suggestion:
+      'Remove the call — widgets and sockets now co-exist on each input.',
+    source: 'widgetInputs'
+  })
   return node.inputs.find((slot) => slot.widget?.name === widget.name)
 }
 
@@ -529,9 +531,11 @@ app.registerExtension({
   ) {
     // @ts-expect-error adding extra property
     nodeType.prototype.convertWidgetToInput = function (this: LGraphNode) {
-      console.warn(
-        'Please remove call to convertWidgetToInput. Widget to socket conversion is no longer necessary, as they co-exist now.'
-      )
+      warnDeprecated('convertWidgetToInput is no longer necessary.', {
+        suggestion:
+          'Remove the call — widgets and sockets now co-exist on each input.',
+        source: 'widgetInputs'
+      })
       return false
     }
 
