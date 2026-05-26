@@ -1435,6 +1435,81 @@ const translations = {
   'player.subtitlesOn': { en: 'Subtitles on', 'zh-CN': '开启字幕' },
   'player.subtitlesOff': { en: 'Subtitles off', 'zh-CN': '关闭字幕' },
 
+  // LearningHeroSection
+  'learning.heroTitle.before': { en: 'Learn', 'zh-CN': '学习' },
+  'learning.heroTitle.after': { en: '.', 'zh-CN': '。' },
+  'learning.heroTitle.line2': {
+    en: 'Build what doesn’t exist yet.',
+    'zh-CN': '构建尚未存在之物。'
+  },
+
+  // LearningFeaturedWorkflowSection
+  'learning.featured.title': {
+    en: 'Sky Replacement',
+    'zh-CN': '天空替换'
+  },
+  'learning.featured.author': {
+    en: 'by Doug Hogan',
+    'zh-CN': '作者：Doug Hogan'
+  },
+  'learning.featured.description': {
+    en: 'Detailed explanation here fpo lorem ipsum Detailed explanation here fpo lorem ipsum Detailed explem ipsum Detailed explanation here fpo lorem ipsum',
+    'zh-CN':
+      '此处为详细说明的占位文本，待补充实际内容。此处为详细说明的占位文本，待补充实际内容。'
+  },
+  'learning.featured.watchDemo': {
+    en: 'Watch Demo',
+    'zh-CN': '观看演示'
+  },
+  'learning.featured.tryWorkflow': {
+    en: 'Try Workflow',
+    'zh-CN': '试用工作流'
+  },
+
+  // LearningCallToActionSection
+  'learning.cta.heading': {
+    en: 'Schedule a demo and see how ComfyUI fits your team’s creative needs.',
+    'zh-CN': '预约演示，了解 ComfyUI 如何契合你的团队创作需求。'
+  },
+  'learning.cta.contactSales': {
+    en: 'Contact Sales',
+    'zh-CN': '联系销售'
+  },
+  'learning.cta.tryWorkflow': {
+    en: 'Try Workflow',
+    'zh-CN': '试用工作流'
+  },
+
+  // LearningEventsSection
+  'learning.events.heading': { en: 'Events', 'zh-CN': '活动' },
+  'learning.events.description': {
+    en: 'Check out our upcoming live streams and community meetings. We’re always open to your questions, ideas, and conversations.',
+    'zh-CN':
+      '查看我们即将举办的直播和社区聚会。我们随时欢迎你的提问、想法和交流。'
+  },
+  'learning.events.getNotified': { en: 'Get Notified', 'zh-CN': '获取通知' },
+  'learning.events.liveStream.label': {
+    en: 'Live Stream:',
+    'zh-CN': '直播：'
+  },
+  'learning.events.liveStream.title': {
+    en: 'Zero to Node: Building Your First Workflow',
+    'zh-CN': '从零到节点：构建你的第一个工作流'
+  },
+  'learning.events.liveStream.cta': { en: 'Link', 'zh-CN': '链接' },
+  'learning.events.event1.label': { en: 'Event 1', 'zh-CN': '活动 1' },
+  'learning.events.event1.title': {
+    en: 'Lorem ipsum dollar sita met',
+    'zh-CN': '此处为活动描述的占位文本'
+  },
+  'learning.events.event1.cta': { en: 'London, UK', 'zh-CN': '英国伦敦' },
+  'learning.events.event2.label': { en: 'Event 2', 'zh-CN': '活动 2' },
+  'learning.events.event2.title': {
+    en: 'Lorem ipsum dollar sita met',
+    'zh-CN': '此处为活动描述的占位文本'
+  },
+  'learning.events.event2.cta': { en: 'San Francisco', 'zh-CN': '旧金山' },
+
   // GalleryHeroSection
   'gallery.label': { en: 'GALLERY', 'zh-CN': '画廊' },
   'gallery.heroTitle.before': {
