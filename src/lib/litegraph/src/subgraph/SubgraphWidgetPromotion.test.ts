@@ -1290,6 +1290,89 @@ describe('SubgraphWidgetPromotion', () => {
         ).toBeUndefined()
         expect(hostNode.properties.proxyWidgetErrorQuarantine).toEqual([])
       })
+
+      it('restores host values by input name when widgets_values is out of order', () => {
+        const subgraph = createTestSubgraph({
+          inputs: [
+            { name: 'unet_name', type: 'COMBO' },
+            { name: 'clip_name', type: 'COMBO' },
+            { name: 'steps', type: 'INT' }
+          ]
+        })
+
+        const unetNode = new LGraphNode('UNETLoader')
+        const unetInput = unetNode.addInput('unet_name', 'COMBO')
+        unetNode.addWidget(
+          'combo',
+          'unet_name',
+          'z_image_turbo_bf16.safetensors',
+          () => {}
+        )
+        unetInput.widget = { name: 'unet_name' }
+        subgraph.add(unetNode)
+        subgraph.inputNode.slots[0].connect(unetNode.inputs[0], unetNode)
+
+        const clipNode = new LGraphNode('CLIPLoader')
+        const clipInput = clipNode.addInput('clip_name', 'COMBO')
+        clipNode.addWidget(
+          'combo',
+          'clip_name',
+          'qwen_3_4b.safetensors',
+          () => {}
+        )
+        clipInput.widget = { name: 'clip_name' }
+        subgraph.add(clipNode)
+        subgraph.inputNode.slots[1].connect(clipNode.inputs[0], clipNode)
+
+        const samplerNode = new LGraphNode('KSampler')
+        const stepsInput = samplerNode.addInput('steps', 'INT')
+        samplerNode.addWidget('number', 'steps', 8, () => {})
+        stepsInput.widget = { name: 'steps' }
+        subgraph.add(samplerNode)
+        subgraph.inputNode.slots[2].connect(samplerNode.inputs[0], samplerNode)
+
+        const hostNode = createTestSubgraphNode(subgraph)
+        const serialized = hostNode.serialize()
+
+        serialized.widgets_values = [
+          8,
+          'qwen_3_4b.safetensors',
+          'z_image_turbo_bf16.safetensors'
+        ]
+        serialized.properties = {
+          ...serialized.properties,
+          proxyWidgetErrorQuarantine: [
+            {
+              originalEntry: ['-1', 'steps'] as SerializedProxyWidgetTuple,
+              reason: 'missingSourceNode',
+              hostValue: 8,
+              attemptedAtVersion: 1
+            },
+            {
+              originalEntry: ['-1', 'clip_name'] as SerializedProxyWidgetTuple,
+              reason: 'missingSourceNode',
+              hostValue: 'qwen_3_4b.safetensors',
+              attemptedAtVersion: 1
+            },
+            {
+              originalEntry: ['-1', 'unet_name'] as SerializedProxyWidgetTuple,
+              reason: 'missingSourceNode',
+              hostValue: 'z_image_turbo_bf16.safetensors',
+              attemptedAtVersion: 1
+            }
+          ]
+        }
+
+        const reloaded = createTestSubgraphNode(subgraph)
+        reloaded.configure(serialized)
+
+        const byName = new Map(
+          reloaded.inputs.map((input) => [input.name, input._widget?.value])
+        )
+        expect(byName.get('unet_name')).toBe('z_image_turbo_bf16.safetensors')
+        expect(byName.get('clip_name')).toBe('qwen_3_4b.safetensors')
+        expect(byName.get('steps')).toBe(8)
+      })
     })
   })
 })

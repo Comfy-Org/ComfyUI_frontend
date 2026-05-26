@@ -28,7 +28,10 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  TWidgetValue
+} from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import {
   createPromotedWidgetView,
@@ -602,17 +605,34 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   private _applyPromotedWidgetValues(
     widgetValues: ExportedSubgraphInstance['widgets_values']
   ): void {
-    if (!widgetValues) return
+    const quarantineValuesByInputName = this._readQuarantineHostValuesByName()
 
     let valueIndex = 0
     for (const input of this.inputs) {
       const view = input._widget
       if (!view || !isPromotedWidgetView(view)) continue
-      if (valueIndex >= widgetValues.length) return
-      const value = widgetValues[valueIndex]
+      const value =
+        quarantineValuesByInputName.get(input.name) ??
+        widgetValues?.[valueIndex]
       if (value !== undefined) view.hydrateHostValue(value)
       valueIndex += 1
     }
+  }
+
+  private _readQuarantineHostValuesByName(): Map<string, TWidgetValue> {
+    return new Map(
+      parseProxyWidgetErrorQuarantine(
+        this.properties.proxyWidgetErrorQuarantine
+      )
+        .toReversed()
+        .flatMap(({ originalEntry: [sourceNodeId, name], hostValue }) =>
+          sourceNodeId === '-1' &&
+          hostValue !== undefined &&
+          isWidgetValue(hostValue)
+            ? [[name, hostValue] as const]
+            : []
+        )
+    )
   }
 
   override _internalConfigureAfterSlots() {
