@@ -482,7 +482,7 @@ const calculateSubmenuPosition = (button: HTMLElement): CSSProperties => {
 }
 
 const formatReleaseDate = (dateString?: string): string => {
-  if (!dateString) return 'date'
+  if (!dateString) return t('helpCenter.missingDate')
   const diffMs = Math.abs(Date.now() - new Date(dateString).getTime())
   return formatRelativeTime(t, diffMs)
 }

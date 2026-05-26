@@ -136,6 +136,22 @@ describe('backfillServerDeprecations', () => {
     expect(api.getRawLogs).toHaveBeenCalledTimes(1)
   })
 
+  it('dedupes concurrent callers to a single fetch', async () => {
+    const api = mockState.api
+    api.getRawLogs.mockResolvedValue({ entries: [] })
+
+    const { backfillServerDeprecations } =
+      await import('@/platform/dev/backfillServerDeprecations')
+
+    await Promise.all([
+      backfillServerDeprecations(),
+      backfillServerDeprecations(),
+      backfillServerDeprecations()
+    ])
+
+    expect(api.getRawLogs).toHaveBeenCalledTimes(1)
+  })
+
   it('retries on a subsequent call after a failure', async () => {
     const api = mockState.api
     api.getRawLogs
