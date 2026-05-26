@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, reactive } from 'vue'
 
-export interface DeprecationWarning {
+interface DeprecationWarning {
   key: string
   message: string
   suggestion?: string
@@ -16,7 +16,7 @@ export interface ReportDeprecationInput {
   source?: string
 }
 
-export function deprecationKey(input: ReportDeprecationInput): string {
+function deprecationKey(input: ReportDeprecationInput): string {
   return `${input.source ?? ''}::${input.message}`
 }
 

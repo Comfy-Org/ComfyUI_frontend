@@ -6,7 +6,7 @@ import {
   useDeprecationWarningsStore
 } from '@/platform/dev/deprecationWarningsStore'
 
-export type WarnDeprecatedOptions = Omit<ReportDeprecationInput, 'message'>
+type WarnDeprecatedOptions = Omit<ReportDeprecationInput, 'message'>
 
 function formatConsoleMessage(input: ReportDeprecationInput): string {
   const tag = input.source ? `[DEPRECATED:${input.source}]` : '[DEPRECATED]'
