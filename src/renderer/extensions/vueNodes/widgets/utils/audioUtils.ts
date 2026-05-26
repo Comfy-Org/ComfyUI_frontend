@@ -1,5 +1,4 @@
 import type { ResultItemType } from '@/schemas/apiSchema'
-import { app } from '@/scripts/app'
 
 export function getResourceURL(
   subfolder: string,
@@ -9,8 +8,7 @@ export function getResourceURL(
   const params = [
     'filename=' + encodeURIComponent(filename),
     'type=' + type,
-    'subfolder=' + subfolder,
-    app.getRandParam().substring(1)
+    'subfolder=' + subfolder
   ].join('&')
 
   return `/view?${params}`
