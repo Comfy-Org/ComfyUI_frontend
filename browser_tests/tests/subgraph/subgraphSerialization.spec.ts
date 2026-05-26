@@ -279,7 +279,6 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       await expect(beforeReload).toBeVisible()
 
       await comfyPage.subgraph.serializeAndReload()
-      await comfyPage.vueNodes.waitForNodes()
 
       const afterReload = comfyPage.vueNodes
         .getNodeLocator('11')

@@ -100,7 +100,6 @@ test.describe(
           await comfyPage.workflow.loadWorkflow(
             'subgraphs/subgraph-with-promoted-text-widget'
           )
-          await comfyPage.vueNodes.waitForNodes()
 
           const subgraphVueNode = comfyPage.vueNodes.getNodeLocator('11')
           await expect(subgraphVueNode).toBeVisible()
@@ -142,7 +141,6 @@ test.describe(
           await promotedTextarea.fill(testContent)
 
           await comfyPage.vueNodes.enterSubgraph('11')
-          await comfyPage.vueNodes.waitForNodes()
 
           const interiorTextarea = comfyPage.page
             .locator('[data-node-id]')
@@ -154,7 +152,6 @@ test.describe(
           await interiorTextarea.fill(updatedInteriorContent)
 
           await comfyPage.subgraph.exitViaBreadcrumb()
-          await comfyPage.vueNodes.waitForNodes()
 
           await expect(
             comfyPage.vueNodes
@@ -261,11 +258,9 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-with-text-widget'
         )
-        await comfyPage.vueNodes.waitForNodes()
 
         await comfyPage.vueNodes.enterSubgraph('11')
         await comfyPage.nextFrame()
-        await comfyPage.vueNodes.waitForNodes()
 
         const clipNode = comfyPage.vueNodes.getNodeLocator('10')
         await expect(clipNode).toBeVisible()
@@ -333,7 +328,6 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-with-preview-node'
         )
-        await comfyPage.vueNodes.waitForNodes()
 
         const subgraphVueNode = comfyPage.vueNodes.getNodeLocator('5')
         await expect(subgraphVueNode).toBeVisible()
@@ -380,7 +374,6 @@ test.describe(
           await comfyPage.workflow.loadWorkflow(
             'subgraphs/subgraph-nested-promotion'
           )
-          await comfyPage.vueNodes.waitForNodes()
 
           await expect
             .poll(() => getPromotedWidgetNames(comfyPage, '5'))
@@ -551,7 +544,6 @@ test.describe(
 
         await comfyPage.vueNodes.enterSubgraph(subgraphNodeId)
         await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
-        await comfyPage.vueNodes.waitForNodes()
 
         const interiorClip = await comfyPage.vueNodes.getFixtureByTitle(
           'CLIP Text Encode (Prompt)'

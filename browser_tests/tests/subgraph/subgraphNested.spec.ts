@@ -90,7 +90,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow(WORKFLOW)
-        await comfyPage.vueNodes.waitForNodes()
 
         const nodeLocator = comfyPage.vueNodes.getNodeLocator(HOST_NODE_ID)
         await comfyExpect(nodeLocator).toBeVisible()
@@ -123,7 +122,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         await comfyPage.subgraph.packAllInteriorNodes(HOST_NODE_ID)
 
         await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-        await comfyPage.vueNodes.waitForNodes()
 
         const nodeAfter = comfyPage.vueNodes.getNodeLocator(HOST_NODE_ID)
         await comfyExpect(nodeAfter).toBeVisible()
@@ -170,7 +168,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow(WORKFLOW)
-        await comfyPage.vueNodes.waitForNodes()
 
         const outerNode = comfyPage.vueNodes.getNodeLocator('10')
         await comfyExpect(outerNode).toBeVisible()
@@ -204,7 +201,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
 
         try {
           await comfyPage.workflow.loadWorkflow(WORKFLOW)
-          await comfyPage.vueNodes.waitForNodes()
 
           const outerNode = comfyPage.vueNodes.getNodeLocator(OUTER_NODE_ID)
           await comfyExpect(outerNode).toBeVisible()
@@ -225,7 +221,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow(WORKFLOW)
-        await comfyPage.vueNodes.waitForNodes()
 
         const outerNode = comfyPage.vueNodes.getNodeLocator(OUTER_NODE_ID)
         await comfyExpect(outerNode).toBeVisible()
@@ -244,7 +239,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow(WORKFLOW)
-        await comfyPage.vueNodes.waitForNodes()
 
         await expect
           .poll(async () => {
@@ -262,7 +256,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow(WORKFLOW)
-        await comfyPage.vueNodes.waitForNodes()
 
         const outerNode = comfyPage.vueNodes.getNodeLocator(OUTER_NODE_ID)
         const widgets = outerNode.getByTestId(TestIds.widgets.widget)
@@ -273,7 +266,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         const initialCount = await widgets.count()
 
         await comfyPage.subgraph.serializeAndReload()
-        await comfyPage.vueNodes.waitForNodes()
 
         const outerNodeAfter = comfyPage.vueNodes.getNodeLocator(OUTER_NODE_ID)
         const widgetsAfter = outerNodeAfter.getByTestId(TestIds.widgets.widget)

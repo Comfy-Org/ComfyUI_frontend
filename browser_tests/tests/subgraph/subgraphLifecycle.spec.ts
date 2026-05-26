@@ -16,7 +16,6 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-with-promoted-text-widget'
         )
-        await comfyPage.vueNodes.waitForNodes()
 
         const subgraphNode = comfyPage.vueNodes.getNodeLocator('11')
         const promotedTextarea = subgraphNode.getByRole('textbox', {
@@ -25,13 +24,11 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
         await expect(promotedTextarea).toBeVisible()
 
         await comfyPage.vueNodes.enterSubgraph('11')
-        await comfyPage.vueNodes.waitForNodes()
 
         const clipNode = await comfyPage.nodeOps.getNodeRefById('10')
         await clipNode.delete()
 
         await comfyPage.subgraph.exitViaBreadcrumb()
-        await comfyPage.vueNodes.waitForNodes()
 
         await expect(
           comfyPage.vueNodes

@@ -44,8 +44,6 @@ test.describe(
         .poll(() => getPromotedWidgetNames(comfyPage, subgraphNodeId))
         .toContain('seed')
 
-      await comfyPage.vueNodes.waitForNodes()
-
       const nodeLocator = comfyPage.vueNodes.getNodeLocator(subgraphNodeId)
       await expect(nodeLocator).toBeVisible()
 
@@ -74,10 +72,8 @@ test.describe(
           await promotedTextarea.fill(TEST_WIDGET_CONTENT)
 
           await openSubgraphById(comfyPage, '11')
-          await comfyPage.vueNodes.waitForNodes()
 
           await comfyPage.keyboard.press('Escape')
-          await comfyPage.vueNodes.waitForNodes()
 
           const backToPromoted = comfyPage.vueNodes
             .getNodeLocator('11')
@@ -110,7 +106,6 @@ test.describe(
           await comfyPage.workflow.loadWorkflow(
             'subgraphs/subgraph-with-promoted-text-widget'
           )
-          await comfyPage.vueNodes.waitForNodes()
 
           const subgraphNode = comfyPage.vueNodes.getNodeLocator('11')
           await expect(
@@ -120,7 +115,6 @@ test.describe(
           await openSubgraphById(comfyPage, '11')
           await comfyPage.subgraph.removeSlot('input', 'text')
           await comfyPage.subgraph.exitViaBreadcrumb()
-          await comfyPage.vueNodes.waitForNodes()
 
           await expect(
             comfyPage.vueNodes
@@ -141,7 +135,6 @@ test.describe(
           await expect(promotedTextareas).toHaveCount(2)
 
           await openSubgraphById(comfyPage, '11')
-          await comfyPage.vueNodes.waitForNodes()
 
           const interiorTextareas = comfyPage.page
             .locator('[data-node-id]')
@@ -149,7 +142,6 @@ test.describe(
           await expect(interiorTextareas).toHaveCount(2)
 
           await comfyPage.subgraph.exitViaBreadcrumb()
-          await comfyPage.vueNodes.waitForNodes()
 
           await expect(
             comfyPage.vueNodes.getNodeLocator('11').getByRole('textbox')
