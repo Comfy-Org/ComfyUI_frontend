@@ -216,16 +216,6 @@ export class NodeOperationsHelper {
     }
   }
 
-  async convertAllNodesToGroupNode(groupNodeName: string): Promise<void> {
-    await this.comfyPage.canvas.press('Control+a')
-    const node = await this.getFirstNodeRef()
-    if (!node) {
-      throw new Error('No nodes found to convert')
-    }
-    await node.clickContextMenuOption('Convert to Group Node')
-    await this.fillPromptDialog(groupNodeName)
-  }
-
   async fillPromptDialog(value: string): Promise<void> {
     await this.promptDialogInput.fill(value)
     await this.page.keyboard.press('Enter')
