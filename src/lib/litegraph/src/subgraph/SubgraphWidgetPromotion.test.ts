@@ -10,7 +10,7 @@ import type {
 import { BaseWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
 import {
-  appendHostQuarantine,
+  appendQuarantine,
   flushProxyWidgetMigration,
   makeQuarantineEntry
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
@@ -1258,7 +1258,7 @@ describe('SubgraphWidgetPromotion', () => {
         const subgraph = createTestSubgraph()
         const hostNode = createTestSubgraphNode(subgraph)
 
-        appendHostQuarantine(hostNode, [
+        appendQuarantine(hostNode, [
           makeQuarantineEntry({
             originalEntry: ['7', 'seed'],
             reason: 'missingSourceNode',

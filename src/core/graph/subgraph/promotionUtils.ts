@@ -168,9 +168,13 @@ function toPromotionSource(
   node: PartialNode,
   widget: IBaseWidget
 ): PromotedWidgetSource {
+  const widgetIsParentLevelView =
+    isPromotedWidgetView(widget) && widget.sourceNodeId === String(node.id)
   return {
     sourceNodeId: String(node.id),
-    sourceWidgetName: getWidgetName(widget)
+    sourceWidgetName: widgetIsParentLevelView
+      ? widget.sourceWidgetName
+      : getWidgetName(widget)
   }
 }
 

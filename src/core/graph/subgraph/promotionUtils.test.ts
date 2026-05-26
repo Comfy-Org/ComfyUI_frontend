@@ -51,6 +51,34 @@ function widget(
   return fromPartial<IBaseWidget>({ name: 'widget', ...overrides })
 }
 
+/**
+ * Builds a host SubgraphNode whose subgraph contains two source nodes that
+ * share a widget name (`text`), then promotes both — forcing the second
+ * promotion to be disambiguated to `text_1`.
+ */
+function buildDuplicateNamePromotion() {
+  const subgraph = createTestSubgraph()
+  const host = createTestSubgraphNode(subgraph)
+
+  const nodeA = new LGraphNode('SourceA')
+  subgraph.add(nodeA)
+  const inputA = nodeA.addInput('text', 'STRING')
+  const widgetA = nodeA.addWidget('text', 'text', 'a', () => {})
+  inputA.widget = { name: widgetA.name }
+
+  const nodeB = new LGraphNode('SourceB')
+  subgraph.add(nodeB)
+  const inputB = nodeB.addInput('text', 'STRING')
+  const widgetB = nodeB.addWidget('text', 'text', 'b', () => {})
+  inputB.widget = { name: widgetB.name }
+
+  expect(promoteValueWidgetViaSubgraphInput(host, nodeA, widgetA).ok).toBe(true)
+  expect(promoteValueWidgetViaSubgraphInput(host, nodeB, widgetB).ok).toBe(true)
+  expect(host.subgraph.inputs.map((i) => i.name)).toEqual(['text', 'text_1'])
+
+  return { subgraph, host, nodeA, widgetA, nodeB, widgetB }
+}
+
 describe('isPreviewPseudoWidget', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -779,6 +807,55 @@ describe('demoteWidget — axiomatic projection retraction', () => {
     expect(host.subgraph.inputs).toHaveLength(0)
     expect(host.inputs).toHaveLength(0)
   })
+
+  it('demotes the second of two promoted widgets sharing a source widget name', () => {
+    const { host, nodeA, widgetA, nodeB, widgetB } =
+      buildDuplicateNamePromotion()
+
+    const promotedViewForB = host.widgets.find(
+      (w) => isPromotedWidgetView(w) && w.sourceNodeId === String(nodeB.id)
+    )
+    expect(promotedViewForB!.name).toBe('text_1')
+
+    demoteWidget(nodeB, promotedViewForB!, [host])
+
+    expect(host.subgraph.inputs.map((i) => i.name)).toEqual(['text'])
+    expect(isLinkedPromotion(host, String(nodeB.id), widgetB.name)).toBe(false)
+    expect(isLinkedPromotion(host, String(nodeA.id), widgetA.name)).toBe(true)
+  })
+
+  it('demotes the correct slot when widget lives on a nested SubgraphNode with same-named deep sources', () => {
+    const { host: innerHost, nodeB } = buildDuplicateNamePromotion()
+
+    const outerSubgraph = createTestSubgraph()
+    const outerHost = createTestSubgraphNode(outerSubgraph)
+    outerSubgraph.add(innerHost)
+
+    for (const w of [...innerHost.widgets]) {
+      expect(
+        promoteValueWidgetViaSubgraphInput(outerHost, innerHost, w).ok
+      ).toBe(true)
+    }
+    expect(outerHost.subgraph.inputs.map((i) => i.name)).toEqual([
+      'text',
+      'text_1'
+    ])
+
+    const innerViewForB = innerHost.widgets.find(
+      (w) => isPromotedWidgetView(w) && w.sourceNodeId === String(nodeB.id)
+    )
+    expect(innerViewForB!.name).toBe('text_1')
+
+    demoteWidget(innerHost, innerViewForB!, [outerHost])
+
+    expect(outerHost.subgraph.inputs.map((i) => i.name)).toEqual(['text'])
+    expect(isLinkedPromotion(outerHost, String(innerHost.id), 'text_1')).toBe(
+      false
+    )
+    expect(isLinkedPromotion(outerHost, String(innerHost.id), 'text')).toBe(
+      true
+    )
+  })
 })
 
 describe('disambiguated nested promotion identity', () => {
@@ -881,36 +958,8 @@ describe('disambiguated nested promotion identity', () => {
   })
 
   it('preserves a real two-level promotion through the SubgraphEditor mount-time prune', () => {
-    // Inner subgraph: two interior nodes that both have a `text` widget.
-    // Promoting both to the inner boundary forces a `text` / `text_1` collision.
-    const innerSubgraph = createTestSubgraph()
-    const innerHost = createTestSubgraphNode(innerSubgraph)
+    const { host: innerHost } = buildDuplicateNamePromotion()
 
-    const nodeA = new LGraphNode('SourceA')
-    innerSubgraph.add(nodeA)
-    const inputA = nodeA.addInput('text', 'STRING')
-    const widgetA = nodeA.addWidget('text', 'text', 'a', () => {})
-    inputA.widget = { name: widgetA.name }
-
-    const nodeB = new LGraphNode('SourceB')
-    innerSubgraph.add(nodeB)
-    const inputB = nodeB.addInput('text', 'STRING')
-    const widgetB = nodeB.addWidget('text', 'text', 'b', () => {})
-    inputB.widget = { name: widgetB.name }
-
-    expect(
-      promoteValueWidgetViaSubgraphInput(innerHost, nodeA, widgetA).ok
-    ).toBe(true)
-    expect(
-      promoteValueWidgetViaSubgraphInput(innerHost, nodeB, widgetB).ok
-    ).toBe(true)
-
-    // innerHost now exposes `text` and `text_1` boundary widgets.
-    const nestedNames = innerHost.widgets.map((w) => w.name).sort()
-    expect(nestedNames).toEqual(['text', 'text_1'])
-
-    // Outer subgraph hosts the inner SubgraphNode and tries to promote both
-    // boundary widgets again.
     const outerSubgraph = createTestSubgraph()
     const outerHost = createTestSubgraphNode(outerSubgraph)
     outerSubgraph.add(innerHost)

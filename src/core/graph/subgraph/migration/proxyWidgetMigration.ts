@@ -188,14 +188,26 @@ export function flushProxyWidgetMigration(args: FlushArgs): void {
         primitiveCohorts.set(entry.plan.primitiveNodeId, c)
         break
       }
-      case 'alreadyLinked':
+      case 'alreadyLinked': {
+        const r = repairAlreadyLinked(
+          hostNode,
+          entry,
+          entry.plan.subgraphInputName
+        )
+        if (!r.ok) quarantineToAppend.push(quarantineFor(entry, r.reason))
+        break
+      }
       case 'createSubgraphInput': {
-        const r = repairValue(hostNode, entry)
+        const r = repairCreateSubgraphInput(
+          hostNode,
+          entry,
+          entry.plan.sourceWidgetName
+        )
         if (!r.ok) quarantineToAppend.push(quarantineFor(entry, r.reason))
         break
       }
       case 'previewExposure': {
-        const r = migratePreview(hostNode, entry, previewStore)
+        const r = migratePreview(hostNode, entry, previewStore, entry.plan)
         if (!r.ok) quarantineToAppend.push(quarantineFor(entry, r.reason))
         break
       }
@@ -391,31 +403,6 @@ type Outcome<TOk, TReason = ProxyWidgetQuarantineReason> =
   | { ok: false; reason: TReason }
 
 type RepairValueResult = Outcome<{ subgraphInputName: string }>
-
-function repairValue(
-  hostNode: SubgraphNode,
-  entry: PendingEntry
-): RepairValueResult {
-  const { plan } = entry
-  switch (plan.kind) {
-    case 'alreadyLinked':
-      return repairAlreadyLinked(hostNode, entry, plan.subgraphInputName)
-    case 'createSubgraphInput':
-      return repairCreateSubgraphInput(hostNode, entry, plan.sourceWidgetName)
-    case 'primitiveBypass':
-    case 'previewExposure':
-    case 'quarantine':
-      throw new Error(`repairValue: unexpected plan kind ${plan.kind}`)
-    default:
-      return assertUnreachablePlan(plan)
-  }
-}
-
-function assertUnreachablePlan(plan: never): never {
-  throw new Error(
-    `Unexpected plan kind: ${(plan as { kind: string } | undefined)?.kind}`
-  )
-}
 
 function repairAlreadyLinked(
   hostNode: SubgraphNode,
@@ -705,21 +692,9 @@ type MigratePreviewResult = Outcome<
 function migratePreview(
   hostNode: SubgraphNode,
   entry: PendingEntry,
-  store: ReturnType<typeof usePreviewExposureStore>
+  store: ReturnType<typeof usePreviewExposureStore>,
+  plan: { kind: 'previewExposure'; sourcePreviewName: string }
 ): MigratePreviewResult {
-  const { plan } = entry
-  switch (plan.kind) {
-    case 'previewExposure':
-      break
-    case 'alreadyLinked':
-    case 'createSubgraphInput':
-    case 'primitiveBypass':
-    case 'quarantine':
-      throw new Error(`migratePreview: unexpected plan kind ${plan.kind}`)
-    default:
-      assertUnreachablePlan(plan)
-  }
-
   const sourceNode = hostNode.subgraph.getNodeById(
     entry.normalized.sourceNodeId
   )
@@ -771,7 +746,7 @@ function quarantineFor(
   })
 }
 
-function appendQuarantine(
+export function appendQuarantine(
   hostNode: SubgraphNode,
   entries: readonly ProxyWidgetErrorQuarantineEntry[]
 ): void {
@@ -813,11 +788,4 @@ export function makeQuarantineEntry(args: {
     entry.hostValue = args.hostValue
   }
   return entry
-}
-
-export function appendHostQuarantine(
-  hostNode: SubgraphNode,
-  entries: readonly ProxyWidgetErrorQuarantineEntry[]
-): void {
-  appendQuarantine(hostNode, entries)
 }
