@@ -59,9 +59,10 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
         await test.step('Capture HUD region with setting on', async () => {
           await comfyPage.settings.setSetting('Comfy.Graph.CanvasInfo', true)
           await comfyPage.canvasOps.moveMouseToEmptyArea()
+          // FPS value varies per run; allow ~1% pixel variance in the 180×160 clip
           await expect(comfyPage.page).toHaveScreenshot(
             'canvas-info-hud-on.png',
-            { clip: hudClip, maxDiffPixels: 50 }
+            { clip: hudClip, maxDiffPixels: 350 }
           )
         })
       }
