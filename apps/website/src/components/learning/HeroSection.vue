@@ -8,10 +8,10 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 <template>
   <section
-    class="max-w-9xl mx-auto flex flex-col items-center px-6 pt-36 pb-16 text-center"
+    class="max-w-9xl mx-auto flex flex-col items-center px-6 pt-24 pb-12 text-center"
   >
     <h1
-      class="text-primary-comfy-canvas max-w-4xl text-3xl font-light tracking-tight lg:text-5xl"
+      class="text-primary-comfy-canvas max-w-4xl text-3xl leading-[110%] font-light tracking-tight lg:text-5xl"
     >
       {{ t('learning.heroTitle.before', locale) }}
       <span class="text-primary-comfy-yellow">ComfyUI</span

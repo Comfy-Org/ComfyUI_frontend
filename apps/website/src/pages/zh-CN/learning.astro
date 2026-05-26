@@ -2,43 +2,25 @@
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import HeroSection from '../../components/learning/HeroSection.vue'
 import FeaturedWorkflowSection from '../../components/learning/FeaturedWorkflowSection.vue'
+import TutorialsSection from '../../components/learning/TutorialsSection.vue'
 import CallToActionSection from '../../components/common/CallToActionSection.vue'
 import EventsSection from '../../components/common/EventsSection.vue'
 import { getRoutes } from '../../config/routes'
+import { learningEvents } from '../../data/events'
 
 const routes = getRoutes('zh-CN')
-
-const events = [
-  {
-    labelKey: 'learning.events.liveStream.label',
-    titleKey: 'learning.events.liveStream.title',
-    ctaKey: 'learning.events.liveStream.cta',
-    href: '#'
-  },
-  {
-    labelKey: 'learning.events.event1.label',
-    titleKey: 'learning.events.event1.title',
-    ctaKey: 'learning.events.event1.cta',
-    href: '#'
-  },
-  {
-    labelKey: 'learning.events.event2.label',
-    titleKey: 'learning.events.event2.title',
-    ctaKey: 'learning.events.event2.cta',
-    href: '#'
-  }
-] as const
 ---
 
 <BaseLayout title="学习 — Comfy">
   <HeroSection locale="zh-CN" client:load />
   <FeaturedWorkflowSection locale="zh-CN" client:visible />
+  <TutorialsSection locale="zh-CN" client:visible />
   <CallToActionSection
     locale="zh-CN"
     headingKey="learning.cta.heading"
     primaryLabelKey="learning.cta.contactSales"
     primaryHref={routes.contact}
-    secondaryLabelKey="learning.cta.tryWorkflow"
+    secondaryLabelKey="cta.tryWorkflow"
     secondaryHref={routes.demos}
     client:visible
   />
@@ -48,7 +30,7 @@ const events = [
     descriptionKey="learning.events.description"
     notifyLabelKey="learning.events.getNotified"
     notifyHref={routes.contact}
-    events={events}
+    events={learningEvents}
     client:visible
   />
 </BaseLayout>

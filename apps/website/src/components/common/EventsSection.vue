@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type {
+  Locale,
+  LocalizedText,
+  TranslationKey
+} from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
 import BrandButton from './BrandButton.vue'
 
 export type EventItem = {
-  labelKey: TranslationKey
-  titleKey: TranslationKey
-  ctaKey: TranslationKey
+  label: LocalizedText
+  title: LocalizedText
+  cta: LocalizedText
   href: string
 }
 
@@ -67,15 +71,15 @@ const {
             <span
               class="text-primary-comfy-canvas shrink-0 text-sm font-medium"
             >
-              {{ t(event.labelKey, locale) }}
+              {{ event.label[locale] }}
             </span>
             <span class="text-primary-warm-gray flex-1 text-sm">
-              {{ t(event.titleKey, locale) }}
+              {{ event.title[locale] }}
             </span>
             <span
               class="text-primary-comfy-yellow flex shrink-0 items-center gap-2 text-sm"
             >
-              {{ t(event.ctaKey, locale) }}
+              {{ event.cta[locale] }}
               <svg
                 class="size-4 transition-transform group-hover:translate-x-0.5"
                 viewBox="0 0 24 24"

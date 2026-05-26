@@ -1,6 +1,22 @@
 type Locale = 'en' | 'zh-CN'
 
 const translations = {
+  // Tags (global, reusable across sections)
+  'tags.partnerNodes': {
+    en: 'Partner Nodes',
+    'zh-CN': '合作伙伴节点'
+  },
+  'tags.imageToVideo': {
+    en: 'Image To Video',
+    'zh-CN': '图像生成视频'
+  },
+
+  // CTAs (global, reusable across sections)
+  'cta.tryWorkflow': {
+    en: 'Try Workflow',
+    'zh-CN': '试用工作流'
+  },
+
   // HeroSection
   'hero.title': {
     en: 'Professional Control\nof Visual AI',
@@ -1461,9 +1477,11 @@ const translations = {
     en: 'Watch Demo',
     'zh-CN': '观看演示'
   },
-  'learning.featured.tryWorkflow': {
-    en: 'Try Workflow',
-    'zh-CN': '试用工作流'
+
+  // LearningTutorialsSection
+  'learning.tutorials.titlePrefix': {
+    en: 'Learn how to:',
+    'zh-CN': '学习如何：'
   },
 
   // LearningCallToActionSection
@@ -1475,10 +1493,6 @@ const translations = {
     en: 'Contact Sales',
     'zh-CN': '联系销售'
   },
-  'learning.cta.tryWorkflow': {
-    en: 'Try Workflow',
-    'zh-CN': '试用工作流'
-  },
 
   // LearningEventsSection
   'learning.events.heading': { en: 'Events', 'zh-CN': '活动' },
@@ -1488,27 +1502,6 @@ const translations = {
       '查看我们即将举办的直播和社区聚会。我们随时欢迎你的提问、想法和交流。'
   },
   'learning.events.getNotified': { en: 'Get Notified', 'zh-CN': '获取通知' },
-  'learning.events.liveStream.label': {
-    en: 'Live Stream:',
-    'zh-CN': '直播：'
-  },
-  'learning.events.liveStream.title': {
-    en: 'Zero to Node: Building Your First Workflow',
-    'zh-CN': '从零到节点：构建你的第一个工作流'
-  },
-  'learning.events.liveStream.cta': { en: 'Link', 'zh-CN': '链接' },
-  'learning.events.event1.label': { en: 'Event 1', 'zh-CN': '活动 1' },
-  'learning.events.event1.title': {
-    en: 'Lorem ipsum dollar sita met',
-    'zh-CN': '此处为活动描述的占位文本'
-  },
-  'learning.events.event1.cta': { en: 'London, UK', 'zh-CN': '英国伦敦' },
-  'learning.events.event2.label': { en: 'Event 2', 'zh-CN': '活动 2' },
-  'learning.events.event2.title': {
-    en: 'Lorem ipsum dollar sita met',
-    'zh-CN': '此处为活动描述的占位文本'
-  },
-  'learning.events.event2.cta': { en: 'San Francisco', 'zh-CN': '旧金山' },
 
   // GalleryHeroSection
   'gallery.label': { en: 'GALLERY', 'zh-CN': '画廊' },
@@ -1546,9 +1539,13 @@ const translations = {
   },
   'about.hero.body': {
     en: 'The team behind Comfy is small, intense, and building what we intend to be our life\u2019s work.',
-    'zh-CN': 'Comfy 背后的团队规模虽小，但充满热情，致力于打造我们毕生的事业。'
+    'zh-CN':
+      'Comfy \u80cc\u540e\u7684\u56e2\u961f\u89c4\u6a21\u867d\u5c0f\uff0c\u4f46\u5145\u6ee1\u70ed\u60c5\uff0c\u81f4\u529b\u4e8e\u6253\u9020\u6211\u4eec\u6bd5\u751f\u7684\u4e8b\u4e1a\u3002'
   },
-  'about.hero.cta': { en: 'SEE OPEN ROLES', 'zh-CN': '查看开放职位' },
+  'about.hero.cta': {
+    en: 'SEE OPEN ROLES',
+    'zh-CN': '\u67e5\u770b\u5f00\u653e\u804c\u4f4d'
+  },
 
   // AboutStorySection
   'about.story.label': { en: 'OUR STORY', 'zh-CN': '我们的故事' },
@@ -4315,6 +4312,8 @@ const translations = {
 
 type TranslationKey = keyof typeof translations
 
+type LocalizedText = Record<Locale, string>
+
 export function t(key: TranslationKey, locale: Locale = 'en'): string {
   return translations[key][locale] ?? translations[key].en
 }
@@ -4325,4 +4324,4 @@ export function hasKey(key: string): boolean {
   return key in translations
 }
 
-export type { Locale, TranslationKey }
+export type { Locale, LocalizedText, TranslationKey }

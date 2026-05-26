@@ -13,7 +13,7 @@ const demoVideoSrc = 'https://media.comfy.org/videos/compressed_512/swings.webm'
 
 <template>
   <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
-    <div class="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-20">
+    <div class="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
       <div class="flex flex-col gap-8">
         <div>
           <h2
@@ -37,7 +37,7 @@ const demoVideoSrc = 'https://media.comfy.org/videos/compressed_512/swings.webm'
             {{ t('learning.featured.watchDemo', locale) }}
           </BrandButton>
           <BrandButton variant="outline" size="xs" class="uppercase">
-            {{ t('learning.featured.tryWorkflow', locale) }}
+            {{ t('cta.tryWorkflow', locale) }}
           </BrandButton>
         </div>
 
@@ -52,7 +52,9 @@ const demoVideoSrc = 'https://media.comfy.org/videos/compressed_512/swings.webm'
         </div>
       </div>
 
-      <VideoPlayer :locale :src="demoVideoSrc" minimal />
+      <div class="border-primary-warm-gray rounded-4.5xl border p-4">
+        <VideoPlayer :locale :src="demoVideoSrc" minimal />
+      </div>
     </div>
   </section>
 </template>
