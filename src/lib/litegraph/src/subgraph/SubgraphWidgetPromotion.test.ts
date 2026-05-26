@@ -1306,7 +1306,8 @@ describe('SubgraphWidgetPromotion', () => {
           'combo',
           'unet_name',
           'z_image_turbo_bf16.safetensors',
-          () => {}
+          () => {},
+          { values: ['z_image_turbo_bf16.safetensors'] }
         )
         unetInput.widget = { name: 'unet_name' }
         subgraph.add(unetNode)
@@ -1318,7 +1319,8 @@ describe('SubgraphWidgetPromotion', () => {
           'combo',
           'clip_name',
           'qwen_3_4b.safetensors',
-          () => {}
+          () => {},
+          { values: ['qwen_3_4b.safetensors'] }
         )
         clipInput.widget = { name: 'clip_name' }
         subgraph.add(clipNode)
