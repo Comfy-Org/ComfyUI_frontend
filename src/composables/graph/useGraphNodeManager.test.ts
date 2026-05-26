@@ -191,8 +191,6 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
   })
 
   it('marks a widget input slot as linked when connected to a SubgraphInput', () => {
-    // Per ADR_0009, linking to a SubgraphInput should be indistinguishable
-    // from a regular link: the widget must be disabled and the slot dot shown.
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'prompt', type: 'STRING' }]
     })

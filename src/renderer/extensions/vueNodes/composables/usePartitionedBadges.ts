@@ -73,8 +73,7 @@ export function trackNodePrice(node: TrackableNode) {
  * Register reactive deps on every contained api node's pricing inputs so the
  * SubgraphNode wrapper's badge computed re-runs when an inner (e.g. promoted)
  * widget value changes. Also tracks the wrapper's own promoted widget host
- * values so user edits on the wrapper trigger re-evaluation (ADR 0009
- * host-wins: promoted writes stay on the host and never leak interior).
+ * values so user edits on the wrapper trigger re-evaluation.
  */
 function trackSubgraphInnerNodePrices(wrapper: LGraphNode) {
   if (!wrapper.isSubgraphNode()) return
