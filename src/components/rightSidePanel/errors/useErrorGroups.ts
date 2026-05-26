@@ -427,7 +427,14 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
           message: `${e.exception_type}: ${e.exception_message}`,
           details: e.traceback.join('\n'),
           isRuntimeError: true,
-          exceptionType: e.exception_type
+          exceptionType: e.exception_type,
+          ...resolveRunErrorMessage({
+            kind: 'execution',
+            error: e,
+            nodeDisplayName:
+              resolveNodeInfo(String(e.node_id)).title || e.node_type,
+            isCloud
+          })
         }
       ],
       filterBySelection

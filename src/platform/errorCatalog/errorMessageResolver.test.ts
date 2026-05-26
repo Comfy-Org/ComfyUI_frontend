@@ -5,6 +5,7 @@ import {
   resolveRunErrorMessage
 } from './errorMessageResolver'
 import type { NodeValidationError } from './types'
+import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import { i18n } from '@/i18n'
 
 function nodeValidationError(
@@ -33,6 +34,24 @@ function requiredInputMissing(inputName?: string): NodeValidationError {
   return {
     ...nodeValidationError('required_input_missing', inputName),
     message: 'Required input is missing'
+  }
+}
+
+function executionError(
+  exceptionType: string,
+  exceptionMessage: string
+): ExecutionErrorWsMessage {
+  return {
+    prompt_id: 'prompt-1',
+    timestamp: Date.now(),
+    node_id: '1',
+    node_type: 'KSampler',
+    executed: [],
+    exception_type: exceptionType,
+    exception_message: exceptionMessage,
+    traceback: [],
+    current_inputs: {},
+    current_outputs: {}
   }
 }
 
@@ -533,7 +552,8 @@ describe('errorMessageResolver', () => {
       catalogId: 'out_of_memory',
       displayTitle: 'Generation failed',
       displayMessage:
-        'Not enough GPU memory. Try reducing complexity and run again. No credits charged.'
+        'Not enough GPU memory. Try reducing image resolution or batch size and run again. No credits charged.',
+      displayDetails: 'Workflow execution failed'
     })
 
     expect(
@@ -550,7 +570,8 @@ describe('errorMessageResolver', () => {
       catalogId: 'out_of_memory',
       displayTitle: 'Generation failed',
       displayMessage:
-        'Not enough GPU memory. Try reducing complexity and run again.'
+        'Not enough GPU memory. Try reducing image resolution or batch size and run again.',
+      displayDetails: 'Workflow execution failed'
     })
 
     expect(
@@ -566,7 +587,9 @@ describe('errorMessageResolver', () => {
     ).toEqual({
       catalogId: 'image_not_loaded',
       displayTitle: 'Image not loaded',
-      displayMessage: "The system couldn't load this image."
+      displayMessage:
+        "The system couldn't load this image. No credits charged.",
+      displayDetails: 'Failed to validate images'
     })
 
     expect(
@@ -583,6 +606,733 @@ describe('errorMessageResolver', () => {
       displayTitle: 'Prompt validation failed',
       displayMessage:
         'The workflow has invalid node inputs. Fix the highlighted nodes before running it again.'
+    })
+  })
+
+  it('resolves targeted runtime execution errors', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'execution',
+        isCloud: true,
+        nodeDisplayName: 'KSampler',
+        error: executionError(
+          'torch.OutOfMemoryError',
+          'Allocation on device 0 failed.\nThis error means you ran out of memory on your GPU.'
+        )
+      })
+    ).toEqual({
+      catalogId: 'out_of_memory',
+      displayTitle: 'Generation failed',
+      displayMessage:
+        'Not enough GPU memory. Try reducing image resolution or batch size and run again. No credits charged.',
+      displayDetails:
+        'Allocation on device 0 failed.\nThis error means you ran out of memory on your GPU.',
+      displayItemLabel: 'KSampler',
+      toastTitle: 'Generation failed',
+      toastMessage:
+        'Not enough GPU memory. Try reducing image resolution or batch size and run again. No credits charged.'
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'execution',
+        isCloud: true,
+        nodeDisplayName: 'Load Image',
+        error: executionError('ImageDownloadError', 'Failed to validate images')
+      })
+    ).toMatchObject({
+      catalogId: 'image_not_loaded',
+      displayTitle: 'Image not loaded',
+      displayMessage:
+        "The system couldn't load this image. No credits charged.",
+      displayItemLabel: 'Load Image',
+      toastTitle: "Input image couldn't be loaded",
+      toastMessage:
+        "The image for Load Image couldn't be loaded. Try adding it again. No credits charged."
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'execution',
+        isCloud: true,
+        nodeDisplayName: 'Load Image',
+        error: executionError(
+          'IsADirectoryError',
+          "[Errno 21] Is a directory: '/app/comfyui/input'"
+        )
+      })
+    ).toMatchObject({
+      catalogId: 'image_not_loaded',
+      displayTitle: 'Image not loaded',
+      displayMessage:
+        "The system couldn't load this image. No credits charged.",
+      displayItemLabel: 'Load Image'
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'execution',
+        isCloud: true,
+        nodeDisplayName: 'File Reader',
+        error: executionError(
+          'RuntimeError',
+          "[Errno 21] Is a directory: '/tmp/not-an-input-image'"
+        )
+      })
+    ).toMatchObject({
+      catalogId: 'execution_failed',
+      displayTitle: 'Execution failed'
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'execution',
+        isCloud: false,
+        nodeDisplayName: 'CLIP Text Encode',
+        error: executionError(
+          'RuntimeError',
+          'ERROR: clip input is invalid: None\n\nIf the clip is from a checkpoint loader node your checkpoint does not contain a valid clip or text encoder model.'
+        )
+      })
+    ).toMatchObject({
+      catalogId: 'invalid_clip_input',
+      displayTitle: 'Invalid CLIP input',
+      displayMessage:
+        'The CLIP input is missing or invalid. Check the connected checkpoint or CLIP loader.',
+      displayItemLabel: 'CLIP Text Encode',
+      toastMessage: 'CLIP Text Encode has a missing or invalid CLIP input.'
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'execution',
+        isCloud: true,
+        nodeDisplayName: 'KSampler',
+        error: executionError(
+          'OOMError',
+          'Workflow execution failed due to insufficient memory (OOM). Try reducing image resolution or batch size.'
+        )
+      })
+    ).toMatchObject({
+      catalogId: 'out_of_memory',
+      displayTitle: 'Generation failed',
+      displayMessage:
+        'Not enough GPU memory. Try reducing image resolution or batch size and run again. No credits charged.',
+      displayItemLabel: 'KSampler'
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'execution',
+        isCloud: true,
+        nodeDisplayName: 'KSampler',
+        error: executionError(
+          'RuntimeError',
+          'CUDA out of memory. Tried to allocate 6.00 GiB. GPU 0 has 2.00 GiB free.'
+        )
+      })
+    ).toMatchObject({
+      catalogId: 'out_of_memory',
+      displayTitle: 'Generation failed',
+      displayDetails:
+        'CUDA out of memory. Tried to allocate 6.00 GiB. GPU 0 has 2.00 GiB free.'
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'execution',
+        isCloud: false,
+        nodeDisplayName: 'KSampler',
+        error: executionError('RuntimeError', 'GPU out of memory')
+      })
+    ).toMatchObject({
+      catalogId: 'out_of_memory',
+      displayMessage:
+        'Not enough GPU memory. Try reducing image resolution or batch size and run again.',
+      displayDetails: 'GPU out of memory'
+    })
+  })
+
+  it.for([
+    {
+      type: 'InsufficientFundsError',
+      message:
+        'Payment Required: Please add credits to your account to use this node.',
+      expected: {
+        catalogId: 'insufficient_credits',
+        displayTitle: 'Insufficient credits',
+        displayMessage:
+          'Add credits to your account to use this node. No credits charged.'
+      }
+    },
+    {
+      type: 'InsufficientFundsError',
+      message:
+        'Payment Required: Please add credits to your workspace to continue.',
+      expected: {
+        catalogId: 'workspace_insufficient_credits',
+        displayTitle: 'Insufficient credits',
+        displayMessage:
+          'Add credits to your workspace to continue. No credits charged.'
+      }
+    },
+    {
+      type: 'InactiveSubscriptionError',
+      message:
+        'User has no active subscription. Please subscribe to a plan to continue.',
+      expected: {
+        catalogId: 'subscription_required',
+        displayTitle: 'Subscription required',
+        displayMessage:
+          'Subscribe to a plan to continue running this workflow. No credits charged.'
+      }
+    },
+    {
+      type: 'RuntimeError',
+      message:
+        'the following private models require a subscription upgrade: Skullgirls_Cerebella.safetensors',
+      expected: {
+        catalogId: 'subscription_upgrade_required',
+        displayTitle: 'Subscription upgrade required',
+        displayMessage:
+          'Upgrade your subscription to use the private models in this workflow. No credits charged.',
+        displayDetails:
+          'Private models require a subscription upgrade: Skullgirls_Cerebella.safetensors',
+        toastMessage:
+          'Upgrade your subscription to use these private models: Skullgirls_Cerebella.safetensors. No credits charged.'
+      }
+    },
+    {
+      type: 'RuntimeError',
+      message: 'Unauthorized: Please login first to use this node.',
+      expected: {
+        catalogId: 'sign_in_required',
+        displayTitle: 'Sign in required',
+        displayMessage:
+          'Partner nodes require a Comfy account. Sign in to continue. No credits charged.'
+      }
+    },
+    {
+      type: 'RuntimeError',
+      message:
+        'Rate Limit Exceeded: The server returned 429 after all retry attempts. Please wait and try again.',
+      expected: {
+        catalogId: 'rate_limited',
+        displayTitle: 'Servers are busy',
+        displayMessage:
+          'High demand right now. Try again in a moment. No credits charged.'
+      }
+    }
+  ])(
+    'resolves $type runtime execution errors by stable copy',
+    ({ type, message, expected }) => {
+      expect(
+        resolveRunErrorMessage({
+          kind: 'execution',
+          isCloud: true,
+          nodeDisplayName: 'API Node',
+          error: executionError(type, message)
+        })
+      ).toMatchObject({
+        ...expected,
+        displayItemLabel: 'API Node'
+      })
+    }
+  )
+
+  it.for([
+    {
+      type: 'ServiceError',
+      message: 'ServiceError: Job execution time exceeded maximum limit',
+      expected: {
+        catalogId: 'timeout',
+        displayTitle: 'Generation timed out',
+        displayMessage:
+          'This workflow reached the maximum run time. Try reducing image resolution, batch size, or workflow length and run again. No credits charged.'
+      }
+    },
+    {
+      type: 'ServiceError',
+      message: 'ServiceError: Job went too long without making any progress',
+      expected: {
+        catalogId: 'generation_stalled',
+        displayTitle: 'Generation stalled',
+        displayMessage:
+          'This workflow stopped making progress. Try running it again. No credits charged.'
+      }
+    },
+    {
+      type: 'ServiceError',
+      message: 'ServiceError: Job has stagnated',
+      expected: {
+        catalogId: 'generation_stalled',
+        displayTitle: 'Generation stalled',
+        displayMessage:
+          'This workflow stopped making progress. Try running it again. No credits charged.'
+      }
+    },
+    {
+      type: 'ServiceError',
+      message: 'ServiceError: RIP to the server your workflow was running on.',
+      expected: {
+        catalogId: 'server_crashed',
+        displayTitle: 'Server crashed',
+        displayMessage:
+          'The server stopped while running this workflow. Try again. No credits charged.'
+      }
+    },
+    {
+      type: 'ServiceError',
+      message: 'ServiceError: Executor is busy with another job',
+      expected: {
+        catalogId: 'server_busy',
+        displayTitle: 'Servers are busy',
+        displayMessage:
+          'The servers are busy right now. Try again in a moment. No credits charged.'
+      }
+    },
+    {
+      type: 'DispatcherError',
+      message: 'DispatcherError: Preprocessing timed out',
+      expected: {
+        catalogId: 'preprocessing_timeout',
+        displayTitle: 'Preparation timed out',
+        displayMessage:
+          'The workflow took too long to prepare. Try running it again. No credits charged.'
+      }
+    },
+    {
+      type: 'DispatcherError',
+      message: 'DispatcherError: Preprocessing failed',
+      expected: {
+        catalogId: 'preprocessing_failed',
+        displayTitle: 'Preparation failed',
+        displayMessage:
+          'The workflow could not be prepared. Try running it again. No credits charged.'
+      }
+    },
+    {
+      type: 'DispatcherError',
+      message: 'DispatcherError: Preprocessing failed: input archive missing',
+      expected: {
+        catalogId: 'preprocessing_failed',
+        displayTitle: 'Preparation failed',
+        displayMessage:
+          'The workflow could not be prepared. Try running it again. No credits charged.',
+        displayDetails: 'Preprocessing failed: input archive missing'
+      }
+    },
+    {
+      type: 'AccessRequired',
+      message:
+        'AccessRequired: This run requires access that is not available for the current account.',
+      expected: {
+        catalogId: 'access_required',
+        displayTitle: 'Access required',
+        displayMessage:
+          'This run requires access that is not available for the current account. No credits charged.'
+      }
+    },
+    {
+      type: 'ModelAccessError',
+      message:
+        'ModelAccessError: One or more required models could not be accessed.',
+      expected: {
+        catalogId: 'model_access_error',
+        displayTitle: 'Model access required',
+        displayMessage:
+          'One or more required models could not be accessed. No credits charged.'
+      }
+    },
+    {
+      type: 'ValidationError',
+      message:
+        "ValidationError: Field 'prompt' cannot be shorter than 1 characters; was 0 characters long.",
+      expected: {
+        catalogId: 'invalid_prompt',
+        displayTitle: 'Prompt is empty',
+        displayMessage:
+          'Enter a prompt before running this workflow. No credits charged.'
+      }
+    },
+    {
+      type: 'ValidationError',
+      message: "ValidationError: Field 'prompt' cannot be empty.",
+      expected: {
+        catalogId: 'invalid_prompt',
+        displayTitle: 'Prompt is empty',
+        displayMessage:
+          'Enter a prompt before running this workflow. No credits charged.'
+      }
+    },
+    {
+      type: 'ValidationError',
+      message: 'ValidationError: The workflow request is invalid.',
+      expected: {
+        catalogId: 'invalid_workflow_request',
+        displayTitle: 'Invalid workflow request',
+        displayMessage:
+          'The workflow request is invalid. Check the workflow and try again. No credits charged.'
+      }
+    },
+    {
+      type: 'ValidationError',
+      message: 'ValidationError: Invalid job: missing workflow',
+      expected: {
+        catalogId: 'invalid_workflow_request',
+        displayTitle: 'Invalid workflow request',
+        displayMessage:
+          'The workflow request is invalid. Check the workflow and try again. No credits charged.'
+      }
+    },
+    {
+      type: 'ValidationError',
+      message: "ValidationError: Invalid workflow: missing 'prompt' field",
+      expected: {
+        catalogId: 'invalid_workflow_request',
+        displayTitle: 'Invalid workflow request',
+        displayMessage:
+          'The workflow request is invalid. Check the workflow and try again. No credits charged.'
+      }
+    },
+    {
+      type: 'ValidationError',
+      message:
+        "ValidationError: Invalid workflow: 'prompt' field must be an object",
+      expected: {
+        catalogId: 'invalid_workflow_request',
+        displayTitle: 'Invalid workflow request',
+        displayMessage:
+          'The workflow request is invalid. Check the workflow and try again. No credits charged.'
+      }
+    },
+    {
+      type: 'ModelDownloadError',
+      message:
+        'ModelDownloadError: the following private models require a subscription upgrade: Skullgirls_Cerebella.safetensors, alex_ahad_style_ponyxl.safetensors',
+      expected: {
+        catalogId: 'subscription_upgrade_required',
+        displayTitle: 'Subscription upgrade required',
+        displayDetails:
+          'Private models require a subscription upgrade: Skullgirls_Cerebella.safetensors, alex_ahad_style_ponyxl.safetensors'
+      }
+    },
+    {
+      type: 'PanicError',
+      message:
+        'PanicError: internal error during model download: runtime error: invalid memory address',
+      expected: {
+        catalogId: 'model_download_failed',
+        displayTitle: 'Model download failed',
+        displayMessage:
+          'A model could not be downloaded. Try again. No credits charged.'
+      }
+    },
+    {
+      type: 'PanicError',
+      message: 'PanicError: internal error during model download: boom',
+      expected: {
+        catalogId: 'model_download_failed',
+        displayTitle: 'Model download failed',
+        displayMessage:
+          'A model could not be downloaded. Try again. No credits charged.'
+      }
+    },
+    {
+      type: 'PanicError',
+      message: 'PanicError: panic during job execution: boom',
+      expected: {
+        catalogId: 'run_ended_unexpectedly',
+        displayTitle: 'Run ended unexpectedly',
+        displayMessage:
+          'The run ended unexpectedly. Try again. No credits charged.'
+      }
+    },
+    {
+      type: 'UnexpectedServiceError',
+      message: 'UnexpectedServiceError: Unexpected service error.',
+      expected: {
+        catalogId: 'unexpected_service_error',
+        displayTitle: 'Service error',
+        displayMessage:
+          'The service encountered an unexpected error. Try again. No credits charged.'
+      }
+    },
+    {
+      type: 'RequestError',
+      message:
+        'RequestError: The request failed before the run could complete.',
+      expected: {
+        catalogId: 'request_failed',
+        displayTitle: 'Request failed',
+        displayMessage:
+          'The request failed before the run could complete. Try again. No credits charged.'
+      }
+    },
+    {
+      type: 'PreprocessingTimeout',
+      message: 'PreprocessingTimeout: Preprocessing timed out.',
+      expected: {
+        catalogId: 'preprocessing_timeout',
+        displayTitle: 'Preparation timed out',
+        displayMessage:
+          'The workflow took too long to prepare. Try running it again. No credits charged.'
+      }
+    },
+    {
+      type: 'ServiceError',
+      message: 'ServiceError: The run could not be started.',
+      expected: {
+        catalogId: 'run_start_failed',
+        displayTitle: 'Run could not start',
+        displayMessage:
+          'The run could not be started. Try again. No credits charged.'
+      }
+    },
+    {
+      type: 'WebSocketError',
+      message: 'WebSocketError: Failed to start WebSocket client: EOF',
+      expected: {
+        catalogId: 'run_start_failed',
+        displayTitle: 'Run could not start',
+        displayMessage:
+          'The run could not be started. Try again. No credits charged.',
+        displayDetails: 'Failed to start WebSocket client: EOF'
+      }
+    },
+    {
+      type: 'ServiceError',
+      message:
+        'ServiceError: Failed to send prompt request: connection refused',
+      expected: {
+        catalogId: 'request_failed',
+        displayTitle: 'Request failed',
+        displayMessage:
+          'The request failed before the run could complete. Try again. No credits charged.',
+        displayDetails: 'Failed to send prompt request: connection refused'
+      }
+    },
+    {
+      type: 'ServiceError',
+      message:
+        'ServiceError: Failed to complete preparation: transition failed',
+      expected: {
+        catalogId: 'preprocessing_failed',
+        displayTitle: 'Preparation failed',
+        displayMessage:
+          'The workflow could not be prepared. Try running it again. No credits charged.',
+        displayDetails: 'Failed to complete preparation: transition failed'
+      }
+    },
+    {
+      type: 'ServiceError',
+      message: 'ServiceError: The run ended unexpectedly.',
+      expected: {
+        catalogId: 'run_ended_unexpectedly',
+        displayTitle: 'Run ended unexpectedly',
+        displayMessage:
+          'The run ended unexpectedly. Try again. No credits charged.'
+      }
+    },
+    {
+      type: 'Exception',
+      message: 'Exception: Servers are busy. Please try again later.',
+      expected: {
+        catalogId: 'server_busy',
+        displayTitle: 'Servers are busy',
+        displayMessage:
+          'The servers are busy right now. Try again in a moment. No credits charged.'
+      }
+    },
+    {
+      type: 'WebSocketError',
+      message:
+        'WebSocketError: Polling aborted due to error: API Error: {"code":"Client specified an invalid argument","error":"Generated video rejected by content moderation."}',
+      expected: {
+        catalogId: 'content_blocked',
+        displayTitle: 'Content blocked',
+        displayMessage:
+          'This request was blocked by the content moderation system. Try changing the prompt or inputs. No credits charged.'
+      }
+    },
+    {
+      type: 'Exception',
+      message: 'Exception: Generated video rejected by content moderation.',
+      expected: {
+        catalogId: 'content_blocked',
+        displayTitle: 'Content blocked',
+        displayMessage:
+          'This request was blocked by the content moderation system. Try changing the prompt or inputs. No credits charged.'
+      }
+    },
+    {
+      type: 'Exception',
+      message: 'Exception: Prompt or Initial Image failed the safety checks.',
+      expected: {
+        catalogId: 'content_blocked',
+        displayTitle: 'Content blocked',
+        displayMessage:
+          'This request was blocked by the content moderation system. Try changing the prompt or inputs. No credits charged.'
+      }
+    },
+    {
+      type: 'ValueError',
+      message:
+        'ValueError: The generated image was flagged for content policy violation.',
+      expected: {
+        catalogId: 'content_blocked',
+        displayTitle: 'Content blocked',
+        displayMessage:
+          'This request was blocked by the content moderation system. Try changing the prompt or inputs. No credits charged.'
+      }
+    },
+    {
+      type: 'Exception',
+      message:
+        "Exception: Content filtered by Google's Responsible AI practices: safety (1 video filtered.)",
+      expected: {
+        catalogId: 'content_blocked',
+        displayTitle: 'Content blocked',
+        displayMessage:
+          'This request was blocked by the content moderation system. Try changing the prompt or inputs. No credits charged.'
+      }
+    },
+    {
+      type: 'Exception',
+      message:
+        "Exception: Content blocked by Google's Responsible AI filters (1 video filtered).",
+      expected: {
+        catalogId: 'content_blocked',
+        displayTitle: 'Content blocked',
+        displayMessage:
+          'This request was blocked by the content moderation system. Try changing the prompt or inputs. No credits charged.'
+      }
+    },
+    {
+      type: 'Exception',
+      message: 'Exception: Generated content was rejected by a safety check.',
+      expected: {
+        catalogId: 'content_blocked',
+        displayTitle: 'Content blocked',
+        displayMessage:
+          'This request was blocked by the content moderation system. Try changing the prompt or inputs. No credits charged.'
+      }
+    }
+  ])(
+    'resolves non-node-scoped runtime failures',
+    ({ type, message, expected }) => {
+      expect(
+        resolveRunErrorMessage({
+          kind: 'prompt',
+          isCloud: true,
+          error: {
+            type,
+            message,
+            details: ''
+          }
+        })
+      ).toMatchObject(expected)
+    }
+  )
+
+  it('does not append credit copy outside cloud mode', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'execution',
+        isCloud: false,
+        nodeDisplayName: 'KSampler',
+        error: executionError(
+          'ServiceError',
+          'Job execution time exceeded maximum limit'
+        )
+      })
+    ).toMatchObject({
+      catalogId: 'timeout',
+      displayMessage:
+        'This workflow reached the maximum run time. Try reducing image resolution, batch size, or workflow length and run again.',
+      toastMessage:
+        'This workflow reached the maximum run time. Try reducing image resolution, batch size, or workflow length and run again.'
+    })
+  })
+
+  it('does not over-match runtime error lookalikes', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'RequestError',
+          message:
+            'RequestError: Failed to send prompt request: request returned error status 400: {"error":{"type":"prompt_outputs_failed_validation"}}',
+          details: ''
+        }
+      })
+    ).toEqual({})
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'RequestError',
+          message:
+            'RequestError: Failed to send prompt request: renderer template {node}',
+          details: ''
+        }
+      })
+    ).toMatchObject({
+      catalogId: 'request_failed',
+      displayTitle: 'Request failed',
+      displayDetails: 'Failed to send prompt request: renderer template {node}'
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'Exception',
+          message:
+            'Exception: Debug output mentioned the content moderation system, but no content was blocked.',
+          details: ''
+        }
+      })
+    ).toEqual({})
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'ModelDownloadError',
+          message:
+            'ModelDownloadError: the following private models require a subscription upgrade:',
+          details: ''
+        }
+      })
+    ).toEqual({})
+  })
+
+  it('resolves unknown node execution errors to the general runtime fallback', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'execution',
+        isCloud: true,
+        nodeDisplayName: 'KSampler',
+        error: executionError(
+          'RuntimeError',
+          'mat1 and mat2 shapes cannot be multiplied'
+        )
+      })
+    ).toEqual({
+      catalogId: 'execution_failed',
+      displayTitle: 'Execution failed',
+      displayMessage:
+        'Node threw an error during execution. No credits charged.',
+      displayItemLabel: 'KSampler',
+      toastTitle: 'KSampler failed',
+      toastMessage:
+        'This node threw an error during execution. Check its inputs or try a different configuration. No credits charged.'
     })
   })
 
