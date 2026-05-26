@@ -45,8 +45,7 @@ export interface SubMenuOption {
 }
 
 export enum BadgeVariant {
-  NEW = 'new',
-  DEPRECATED = 'deprecated'
+  NEW = 'new'
 }
 
 // Global singleton for NodeOptions component reference
