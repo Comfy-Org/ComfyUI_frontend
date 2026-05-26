@@ -59,10 +59,18 @@ export function useAssetWidgetData(
     { immediate: true }
   )
 
+  async function refresh(): Promise<void> {
+    const currentNodeType = toValue(nodeType)
+    if (!currentNodeType) return
+    if (assetsStore.isModelLoading(currentNodeType)) return
+    await assetsStore.updateModelsForNodeType(currentNodeType)
+  }
+
   return {
     category,
     assets,
     isLoading,
-    error
+    error,
+    refresh
   }
 }
