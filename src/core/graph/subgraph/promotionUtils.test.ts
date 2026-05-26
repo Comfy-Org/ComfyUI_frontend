@@ -889,13 +889,8 @@ describe('disambiguated nested promotion identity', () => {
 
   it('identifies a promoted nested view by its immediate slot name, not its deep source widget name', () => {
     const host = createSubgraphHost()
-    // The host's _widget records the IMMEDIATE input name on the nested SubgraphNode
-    // (set by SubgraphNode._setWidget = interiorWidget.name).
     host.inputs[0]._widget = linkedView('inner', 'text_1')
 
-    // The nested SubgraphNode's widget is itself a PromotedWidgetView: its
-    // exposed name is the disambiguated input slot name ('text_1'), while its
-    // sourceWidgetName peels back to the deep original ('text').
     const interiorWidget = linkedView('inner', 'text', { name: 'text_1' })
     const interiorNode = {
       id: 'inner',
@@ -919,9 +914,6 @@ describe('disambiguated nested promotion identity', () => {
     })
     const host = createTestSubgraphNode(subgraph)
 
-    // Simulate a nested SubgraphNode as the interior node. Its widget is a
-    // PromotedWidgetView whose `.name` is the immediate slot name ('text_1'),
-    // with sourceWidgetName peeling back to the deep original ('text').
     const nestedSubgraphNode = {
       id: 'inner',
       title: 'inner',

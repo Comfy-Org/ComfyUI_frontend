@@ -454,7 +454,6 @@ function repairCreateSubgraphInput(
   const slot: INodeInputSlot | undefined =
     sourceNode.getSlotFromWidget(sourceWidget)
   if (!slot) {
-    // TODO: synthesize a backing input slot during the wiring slice.
     console.warn(
       '[proxyWidgetMigration] source widget has no backing input slot; quarantining',
       {

@@ -123,9 +123,6 @@ test.describe(
     )
 
     test.describe('Promoted Widget Reactivity', { tag: ['@vue-nodes'] }, () => {
-      // FIXME: Vue Nodes mode does not currently propagate host promoted
-      // widget value changes into the interior widget's widget store entry.
-      // Tracking bug: cross-mode promoted widget value sync.
       test.fail(
         'Promoted and interior widgets stay in sync across navigation',
         async ({ comfyPage }) => {

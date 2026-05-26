@@ -1084,7 +1084,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
             .filter((w) => !isPromotedWidgetView(w))
             .map((w) => w.name)
             .join(', ')}); ` +
-          'expected only PromotedWidgetView instances per ADR 0009.'
+          'expected only PromotedWidgetView instances.'
       )
     }
 

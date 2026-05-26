@@ -800,7 +800,7 @@ describe('appModeStore', () => {
     })
   })
 
-  describe('legacy selectedInput tuple migration (ADR 0009)', () => {
+  describe('legacy selectedInput tuple migration', () => {
     const rootGraphId = '11111111-1111-4111-8111-111111111111'
 
     it('migrates legacy `(sourceNodeId, sourceWidgetName)` to the host promoted widget entity id', () => {

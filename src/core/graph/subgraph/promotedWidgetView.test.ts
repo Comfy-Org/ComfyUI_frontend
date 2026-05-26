@@ -39,7 +39,7 @@ function createNumericInteriorNode(initialValue: number) {
   return { node, widget }
 }
 
-describe('PromotedWidgetView — ADR 0009 host-wins semantics', () => {
+describe('PromotedWidgetView — host-wins semantics', () => {
   it('does not leak host-side writes into the interior widget or into a sibling host', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'value', type: 'number' }]

@@ -575,7 +575,7 @@ describe('SubgraphWidgetPromotion', () => {
     })
   })
 
-  describe('SubgraphNode.serialize (ADR 0009)', () => {
+  describe('SubgraphNode.serialize', () => {
     it('does not mutate interior widget values when serializing the host', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'value', type: 'number' }]
@@ -854,7 +854,7 @@ describe('SubgraphWidgetPromotion', () => {
           expect: { promptSeed: 123456 }
         },
         {
-          name: 'Vue + fixed: host-wins — does not push Vue value into source seed (ADR 0009)',
+          name: 'Vue + fixed: host-wins — does not push Vue value into source seed',
           editVia: 'vue',
           controlMode: 'fixed',
           controlMarker: false,

@@ -76,12 +76,6 @@ export const usePriceBadge = () => {
     return apiNodes
   }
 
-  /**
-   * Wrapper-aware price badge getter: resolves the inner node's price using
-   * the host-effective values of any promoted widgets on the wrapper, so the
-   * badge updates when a user edits the promoted control without leaking
-   * into the interior widget state (ADR 0009 host-wins).
-   */
   function buildWrapperAwarePriceBadge(
     wrapper: LGraphNode,
     innerNode: LGraphNode
