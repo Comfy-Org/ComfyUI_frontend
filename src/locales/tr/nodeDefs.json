@@ -15912,6 +15912,30 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "description": "Girdi görüntülerini ComfyUI çıktı dizinine kaydeder.",
+    "display_name": "Görüntüyü Kaydet (Gelişmiş)",
+    "inputs": {
+      "filename_prefix": {
+        "name": "dosya_adı_ön_eki",
+        "tooltip": "Kaydedilecek dosya için ön ek. %date:yyyy-MM-dd% veya %Empty Latent Image.width% gibi biçimlendirme belirteçleri içerebilir."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "Görüntünün kaydedileceği dosya formatı."
+      },
+      "format_bit_depth": {
+        "name": "bit_derinliği"
+      },
+      "format_input_color_space": {
+        "name": "giriş_renk_uzayı"
+      },
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "Kaydedilecek görüntüler."
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
     "description": "Bir görüntü veri setini belirtilen klasöre kaydet. Desteklenen formatlar: PNG.",
     "display_name": "Görüntü Veri Setini Klasöre Kaydet",

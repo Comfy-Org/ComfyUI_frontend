@@ -917,28 +917,105 @@
       "nodeName": "Этот узел"
     },
     "promptErrors": {
+      "image_not_loaded": {
+        "desc": "Системе не удалось загрузить это изображение.",
+        "title": "Изображение не загружено"
+      },
+      "missing_node_type": {
+        "desc": "Тип узла отсутствует или недоступен. Рабочий процесс может быть повреждён или требует пользовательский узел.",
+        "title": "Отсутствует тип узла"
+      },
       "no_prompt": {
-        "desc": "Данные рабочего процесса, отправленные на сервер, пусты. Это может быть неожиданной системной ошибкой."
+        "desc": "Данные рабочего процесса, отправленные на сервер, пусты. Это может быть неожиданной системной ошибкой.",
+        "title": "Данные рабочего процесса отсутствуют"
+      },
+      "out_of_memory": {
+        "descCloud": "Недостаточно памяти GPU. Попробуйте уменьшить сложность и запустить снова. Кредиты не списаны.",
+        "descLocal": "Недостаточно памяти GPU. Попробуйте уменьшить сложность и запустить снова.",
+        "title": "Не удалось сгенерировать"
       },
       "prompt_no_outputs": {
-        "desc": "В рабочем процессе отсутствуют выходные узлы (например, Сохранить изображение, Просмотр изображения) для получения результата."
+        "desc": "В рабочем процессе отсутствуют выходные узлы (например, Сохранить изображение, Просмотр изображения) для получения результата.",
+        "title": "В запросе нет выходных данных"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "В рабочем процессе недопустимые входные данные узлов. Исправьте выделенные узлы перед повторным запуском.",
+        "title": "Ошибка проверки запроса"
       },
       "server_error_cloud": {
-        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, попробуйте позже."
+        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, попробуйте позже.",
+        "title": "Ошибка сервера"
       },
       "server_error_local": {
-        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, проверьте журналы сервера."
-      }
-    },
-    "runtimeErrors": {
-      "execution_failed": {
-        "itemLabel": "{nodeName}",
-        "toastMessageCloud": "Этот узел вызвал ошибку во время выполнения. Проверьте его входные данные или попробуйте другую конфигурацию. Кредиты не списаны.",
-        "toastMessageLocal": "Этот узел вызвал ошибку во время выполнения. Проверьте его входные данные или попробуйте другую конфигурацию.",
-        "toastTitle": "{nodeName} завершился с ошибкой"
+        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, проверьте журналы сервера.",
+        "title": "Ошибка сервера"
       }
     },
     "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName} имеет недопустимое соединение для {inputName}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Соединение между узлами не удалось корректно прочитать.",
+        "title": "Недопустимое соединение",
+        "toastMessage": "{nodeName} имеет недопустимое соединение для {inputName}.",
+        "toastTitle": "Недопустимое соединение"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName} отклонил значение для {inputName}.",
+        "detailsWithRawDetails": "{nodeName} не прошёл пользовательскую проверку: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Узел отклонил одно или несколько входных значений.",
+        "title": "Недопустимый ввод",
+        "toastMessage": "{nodeName} отклонил значение для {inputName}.",
+        "toastTitle": "Недопустимый ввод"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName} является частью циклического соединения.",
+        "detailsWithRawDetails": "{nodeName} является частью циклического соединения: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "В рабочем процессе обнаружено циклическое соединение узлов.",
+        "title": "Недопустимый рабочий процесс",
+        "toastMessage": "{nodeName} является частью циклического соединения.",
+        "toastTitle": "Недопустимый рабочий процесс"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName} не удалось проверить {inputName}.",
+        "detailsWithRawDetails": "{nodeName} не удалось проверить {inputName}: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Не удалось проверить подключённый узел в рабочем процессе.",
+        "title": "Ошибка проверки",
+        "toastMessage": "{nodeName} не удалось проверить {inputName}.",
+        "toastMessageWithRawDetails": "{nodeName} не удалось проверить {inputName}: {rawDetails}",
+        "toastTitle": "Ошибка проверки"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName} завершился с ошибкой во время проверки.",
+        "detailsWithRawDetails": "{nodeName} завершился с ошибкой во время проверки: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "Не удалось проверить рабочий процесс, так как проверка узла завершилась с ошибкой.",
+        "title": "Ошибка проверки",
+        "toastMessage": "{nodeName} завершился с ошибкой во время проверки.",
+        "toastMessageWithRawDetails": "{nodeName} завершился с ошибкой во время проверки: {rawDetails}",
+        "toastTitle": "Ошибка проверки"
+      },
+      "image_not_loaded": {
+        "details": "Изображение для {nodeName} не удалось загрузить. Попробуйте добавить его снова.",
+        "itemLabel": "{nodeName}",
+        "message": "Системе не удалось загрузить это изображение.",
+        "title": "Изображение не загружено",
+        "toastMessage": "Изображение для {nodeName} не удалось загрузить. Попробуйте добавить его снова.",
+        "toastTitle": "Не удалось загрузить входное изображение"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName} не удалось преобразовать {inputName} к ожидаемому типу.",
+        "detailsWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} не удалось преобразовать в {expectedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Введено значение неверного типа.",
+        "title": "Недопустимый ввод",
+        "toastMessage": "{nodeName} не удалось преобразовать {inputName} к ожидаемому типу.",
+        "toastMessageWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} не удалось преобразовать в {expectedType}.",
+        "toastTitle": "Недопустимый ввод"
+      },
       "required_input_missing": {
         "details": "{nodeName} отсутствует обязательный вход: {inputName}",
         "itemLabel": "{nodeName} - {inputName}",
@@ -946,6 +1023,46 @@
         "title": "Отсутствует соединение",
         "toastMessage": "{nodeName} отсутствует обязательный вход: {inputName}",
         "toastTitle": "Отсутствует обязательный вход"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName} имеет несовместимое соединение для {inputName}.",
+        "detailsWithTypes": "Вход {inputName} узла {nodeName} ожидает {expectedType}, но подключённый выход — {receivedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Подключённые узлы используют несовместимые типы входа и выхода.",
+        "title": "Недопустимое соединение",
+        "toastMessage": "{nodeName} имеет несовместимое соединение для {inputName}.",
+        "toastMessageWithTypes": "Вход {inputName} узла {nodeName} ожидает {expectedType}, но подключённый выход — {receivedType}.",
+        "toastTitle": "Недопустимое соединение"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName} имеет значение выше максимального для {inputName}.",
+        "detailsWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} выше максимального {maxValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Некоторые значения вне допустимого диапазона.",
+        "title": "Ввод вне диапазона",
+        "toastMessage": "{nodeName} имеет значение выше максимального для {inputName}.",
+        "toastMessageWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} выше максимального {maxValue}.",
+        "toastTitle": "Ввод вне диапазона"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName} имеет неподдерживаемое значение для {inputName}.",
+        "detailsWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} недоступно.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Некоторые значения недоступны для этого узла.",
+        "title": "Недопустимый ввод",
+        "toastMessage": "{nodeName} имеет неподдерживаемое значение для {inputName}.",
+        "toastMessageWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} недоступно.",
+        "toastTitle": "Недопустимый ввод"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName} имеет значение ниже минимального для {inputName}.",
+        "detailsWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} ниже минимального {minValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Некоторые значения вне допустимого диапазона.",
+        "title": "Ввод вне диапазона",
+        "toastMessage": "{nodeName} имеет значение ниже минимального для {inputName}.",
+        "toastMessageWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} ниже минимального {minValue}.",
+        "toastTitle": "Ввод вне диапазона"
       }
     }
   },

@@ -917,28 +917,105 @@
       "nodeName": "此節點"
     },
     "promptErrors": {
+      "image_not_loaded": {
+        "desc": "系統無法載入此圖片。",
+        "title": "圖片未載入"
+      },
+      "missing_node_type": {
+        "desc": "缺少或無法取得某個節點類型。工作流程可能已損壞或需要自訂節點。",
+        "title": "缺少節點類型"
+      },
       "no_prompt": {
-        "desc": "傳送到伺服器的工作流程資料為空。這可能是系統的非預期錯誤。"
+        "desc": "傳送到伺服器的工作流程資料為空。這可能是系統的非預期錯誤。",
+        "title": "工作流程資料為空"
+      },
+      "out_of_memory": {
+        "descCloud": "GPU 記憶體不足。請嘗試降低複雜度後再執行。不會扣除點數。",
+        "descLocal": "GPU 記憶體不足。請嘗試降低複雜度後再執行。",
+        "title": "生成失敗"
       },
       "prompt_no_outputs": {
-        "desc": "工作流程中沒有包含任何輸出節點（例如：儲存圖像、預覽圖像），無法產生結果。"
+        "desc": "工作流程中沒有包含任何輸出節點（例如：儲存圖像、預覽圖像），無法產生結果。",
+        "title": "提示沒有輸出"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "工作流程有無效的節點輸入。請修正標示的節點後再執行。",
+        "title": "提示驗證失敗"
       },
       "server_error_cloud": {
-        "desc": "伺服器發生非預期錯誤。請稍後再試。"
+        "desc": "伺服器發生非預期錯誤。請稍後再試。",
+        "title": "伺服器錯誤"
       },
       "server_error_local": {
-        "desc": "伺服器發生非預期錯誤。請檢查伺服器日誌。"
-      }
-    },
-    "runtimeErrors": {
-      "execution_failed": {
-        "itemLabel": "{nodeName}",
-        "toastMessageCloud": "此節點在執行時發生錯誤。請檢查其輸入或嘗試其他設定。未扣除點數。",
-        "toastMessageLocal": "此節點在執行時發生錯誤。請檢查其輸入或嘗試其他設定。",
-        "toastTitle": "{nodeName} 執行失敗"
+        "desc": "伺服器發生非預期錯誤。請檢查伺服器日誌。",
+        "title": "伺服器錯誤"
       }
     },
     "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName} 的 {inputName} 連接無效。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "節點連接無法正確讀取。",
+        "title": "無效的連接",
+        "toastMessage": "{nodeName} 的 {inputName} 連接無效。",
+        "toastTitle": "無效的連接"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName} 拒絕了 {inputName} 的值。",
+        "detailsWithRawDetails": "{nodeName} 自訂驗證失敗：{rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "節點拒絕了一個或多個輸入值。",
+        "title": "無效的輸入",
+        "toastMessage": "{nodeName} 拒絕了 {inputName} 的值。",
+        "toastTitle": "無效的輸入"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName} 是循環連接的一部分。",
+        "detailsWithRawDetails": "{nodeName} 是循環連接的一部分：{rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "工作流程存在循環節點連接。",
+        "title": "無效的工作流程",
+        "toastMessage": "{nodeName} 是循環連接的一部分。",
+        "toastTitle": "無效的工作流程"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName} 無法驗證 {inputName}。",
+        "detailsWithRawDetails": "{nodeName} 無法驗證 {inputName}：{rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "工作流程無法驗證已連接的節點。",
+        "title": "驗證失敗",
+        "toastMessage": "{nodeName} 無法驗證 {inputName}。",
+        "toastMessageWithRawDetails": "{nodeName} 無法驗證 {inputName}：{rawDetails}",
+        "toastTitle": "驗證失敗"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName} 驗證時失敗。",
+        "detailsWithRawDetails": "{nodeName} 驗證時失敗：{rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "由於節點驗證檢查意外失敗，工作流程無法驗證。",
+        "title": "驗證失敗",
+        "toastMessage": "{nodeName} 驗證時失敗。",
+        "toastMessageWithRawDetails": "{nodeName} 驗證時失敗：{rawDetails}",
+        "toastTitle": "驗證失敗"
+      },
+      "image_not_loaded": {
+        "details": "{nodeName} 的圖片無法載入。請重新加入。",
+        "itemLabel": "{nodeName}",
+        "message": "系統無法載入此圖片。",
+        "title": "圖片未載入",
+        "toastMessage": "{nodeName} 的圖片無法載入。請重新加入。",
+        "toastTitle": "輸入圖片無法載入"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName} 無法將 {inputName} 轉換為預期的類型。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 無法轉換為 {expectedType}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "輸入值的類型錯誤。",
+        "title": "無效的輸入",
+        "toastMessage": "{nodeName} 無法將 {inputName} 轉換為預期的類型。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 無法轉換為 {expectedType}。",
+        "toastTitle": "無效的輸入"
+      },
       "required_input_missing": {
         "details": "{nodeName} 缺少必要的輸入：{inputName}",
         "itemLabel": "{nodeName} - {inputName}",
@@ -946,6 +1023,46 @@
         "title": "缺少連接",
         "toastMessage": "{nodeName} 缺少必要的輸入：{inputName}",
         "toastTitle": "缺少必要輸入"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName} 的 {inputName} 連接類型不相容。",
+        "detailsWithTypes": "{nodeName} 的 {inputName} 輸入預期為 {expectedType}，但連接的輸出為 {receivedType}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "已連接的節點使用了不相容的輸入與輸出類型。",
+        "title": "無效的連接",
+        "toastMessage": "{nodeName} 的 {inputName} 連接類型不相容。",
+        "toastMessageWithTypes": "{nodeName} 的 {inputName} 輸入預期為 {expectedType}，但連接的輸出為 {receivedType}。",
+        "toastTitle": "無效的連接"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName} 的 {inputName} 值高於最大值。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 高於最大值 {maxValue}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "部分輸入值超出允許範圍。",
+        "title": "輸入超出範圍",
+        "toastMessage": "{nodeName} 的 {inputName} 值高於最大值。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 高於最大值 {maxValue}。",
+        "toastTitle": "輸入超出範圍"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName} 的 {inputName} 值不支援。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 不可用。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "部分輸入值不適用於此節點。",
+        "title": "無效的輸入",
+        "toastMessage": "{nodeName} 的 {inputName} 值不支援。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 不可用。",
+        "toastTitle": "無效的輸入"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName} 的 {inputName} 值低於最小值。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 低於最小值 {minValue}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "部分輸入值超出允許範圍。",
+        "title": "輸入超出範圍",
+        "toastMessage": "{nodeName} 的 {inputName} 值低於最小值。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 低於最小值 {minValue}。",
+        "toastTitle": "輸入超出範圍"
       }
     }
   },
