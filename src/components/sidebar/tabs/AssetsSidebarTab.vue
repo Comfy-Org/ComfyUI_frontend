@@ -312,12 +312,7 @@ const formattedExecutionTime = computed(() => {
 const toast = useToast()
 
 const inputAssets = useAssetsApi('input')
-// Cloud: source the Generated tab from `/api/assets?include_tags=output` so
-// deleted assets actually disappear (history-soft-delete keeps stale entries
-// in `/api/jobs`). FE-740.
-const outputAssets = isCloud
-  ? useFlatOutputAssetsGrouped()
-  : useAssetsApi('output')
+const outputAssets = useFlatOutputAssetsGrouped()
 
 // Asset selection
 const {
