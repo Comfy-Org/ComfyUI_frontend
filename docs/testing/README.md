@@ -43,10 +43,10 @@ To run the tests locally:
 pnpm test:unit
 
 # Run a specific test file
-pnpm test:unit -- src/path/to/file.test.ts
+pnpm test:unit src/path/to/file.test.ts
 
 # Run unit tests in watch mode
-pnpm test:unit -- --watch
+pnpm test:unit --watch
 ```
 
 Refer to the specific guides for more detailed information on each testing type.

@@ -513,17 +513,6 @@ export class NodeReference {
     await this.click('title', { button: 'right' })
     await this.comfyPage.contextMenu.clickMenuItem(optionText)
   }
-  async convertToGroupNode(groupNodeName: string = 'GroupNode') {
-    await this.clickContextMenuOption('Convert to Group Node')
-    await this.comfyPage.nodeOps.fillPromptDialog(groupNodeName)
-    const nodes = await this.comfyPage.nodeOps.getNodeRefsByType(
-      `workflow>${groupNodeName}`
-    )
-    if (nodes.length !== 1) {
-      throw new Error(`Did not find single group node (found=${nodes.length})`)
-    }
-    return nodes[0]
-  }
   async convertToSubgraph() {
     await this.clickContextMenuOption('Convert to Subgraph')
     await this.comfyPage.nextFrame()
