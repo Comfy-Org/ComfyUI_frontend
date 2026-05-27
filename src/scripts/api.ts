@@ -812,8 +812,8 @@ export class ComfyApi extends EventTarget {
       locale && locale !== 'en' ? `index.${locale}.json` : 'index.json'
     try {
       const res = await axios.get(this.fileURL(`/templates/${fileName}`))
-      const contentType = res.headers['content-type']
-      return contentType?.includes('application/json') ? res.data : []
+      const contentType = String(res.headers['content-type'] ?? '')
+      return contentType.includes('application/json') ? res.data : []
     } catch (error) {
       // Fallback to default English version if localized version doesn't exist
       if (locale && locale !== 'en') {
@@ -1411,8 +1411,8 @@ export class ComfyApi extends EventTarget {
           }
         }
       )
-      const contentType = res.headers['content-type']
-      return contentType?.includes('application/json') ? res.data : null
+      const contentType = String(res.headers['content-type'] ?? '')
+      return contentType.includes('application/json') ? res.data : null
     } catch (error) {
       console.error('Error loading fuse options:', error)
       return null

@@ -17,7 +17,7 @@ catalog:
   '@formkit/auto-animate': ^0.9.0
   '@iconify-json/lucide': ^1.1.178
   '@iconify/json': ^2.2.380
-  '@iconify/tailwind4': ^1.2.0
+  '@iconify/tailwind4': ^1.2.3
   '@iconify/utils': ^3.1.0
   '@intlify/eslint-plugin-vue-i18n': ^4.1.1
   '@lobehub/i18n-cli': ^1.26.1
@@ -66,10 +66,10 @@ catalog:
   '@webgpu/types': ^0.1.66
   algoliasearch: ^5.21.0
   astro: ^5.10.0
-  axios: ^1.13.5
+  axios: ^1.15.2
   cross-env: ^10.1.0
   cva: 1.0.0-beta.4
-  dompurify: ^3.3.1
+  dompurify: ^3.4.5
   dotenv: ^16.4.5
   eslint: ^9.39.1
   eslint-config-prettier: ^10.1.8
@@ -87,12 +87,12 @@ catalog:
   glob: ^13.0.6
   globals: ^16.5.0
   gsap: ^3.14.2
-  happy-dom: ^20.0.11
+  happy-dom: ^20.8.9
   husky: ^9.1.7
   jiti: 2.6.1
   jsdom: ^27.4.0
   jsonata: ^2.1.0
-  knip: ^6.3.1
+  knip: ^6.14.1
   lenis: ^1.3.21
   lint-staged: ^16.2.7
   markdown-table: ^3.0.4
@@ -108,13 +108,13 @@ catalog:
   pretty-bytes: ^7.1.0
   primeicons: ^7.0.0
   primevue: ^4.2.5
-  reka-ui: ^2.5.0
+  reka-ui: 2.5.0
   rollup-plugin-visualizer: ^6.0.4
   storybook: ^10.2.10
   stylelint: ^16.26.1
   tailwindcss: ^4.3.0
-  three: ^0.184.0
   tailwindcss-primeui: ^0.6.1
+  three: ^0.184.0
   tsx: ^4.15.6
   tw-animate-css: ^1.3.8
   typegpu: ^0.8.2
@@ -123,13 +123,14 @@ catalog:
   unplugin-icons: ^22.5.0
   unplugin-typegpu: 0.8.0
   unplugin-vue-components: ^30.0.0
+  uuid: ^11.1.1
   vee-validate: ^4.15.1
-  vite: ^8.0.0
+  vite: ^8.0.13
   vite-plugin-dts: ^4.5.4
   vite-plugin-html: ^3.2.2
   vite-plugin-vue-devtools: ^8.0.0
   vitest: ^4.0.16
-  vue: ^3.5.13
+  vue: ^3.5.34
   vue-component-type-helpers: ^3.2.1
   vue-eslint-parser: ^10.4.0
   vue-i18n: ^9.14.5
@@ -160,3 +161,13 @@ overrides:
   vite: 'catalog:'
   '@tiptap/pm': 2.27.2
   '@types/eslint': '-'
+  protobufjs: ~7.6.0
+  flatted: ~3.4.2
+  defu: ~6.1.7
+  # Security overrides (see pnpm.overrides in package.json for the actual pins):
+  # protobufjs ~7.6.0 — CVE-2026-41242 (CVSS 9.8): arbitrary code execution.
+  #   Transitive via firebase, posthog-js. Remove after firebase upgrades protobufjs.
+  # flatted ~3.4.2 — GHSA-x7hr-w5r2-h6qg: prototype pollution.
+  #   Transitive via eslint flat-cache@4.0.1. Dev-only. Remove after eslint upgrades flat-cache.
+  # defu ~6.1.7 — GHSA-47f6-5gq3-vx9c: prototype pollution.
+  #   Transitive via reka-ui, c12, unplugin-typegpu. Remove after reka-ui upgrades defu.
