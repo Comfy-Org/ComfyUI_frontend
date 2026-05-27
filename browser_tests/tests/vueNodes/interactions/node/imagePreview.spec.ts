@@ -143,10 +143,10 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
   )
 })
 
-async function getColumns(locator: Locator) {
+async function countColumns(locator: Locator) {
   return await locator.locator('img').evaluateAll((images) => {
-    const ys = images.map((image) => image.getBoundingClientRect().y)
-    return ys.filter((y) => y === ys[0]).length
+    const yOffsets = images.map((image) => image.getBoundingClientRect().y)
+    return yOffsets.filter((yOffset) => yOffset === yOffsets[0]).length
   })
 }
 
@@ -174,11 +174,12 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
         await expect(node.imageGrid.locator('img')).toHaveCount(100)
       })
 
-      await expect.poll(() => getColumns(node.imageGrid)).toBe(10)
-      await comfyMouse.resizeByDragging(node.resize.br, { x: 200 })
-      await expect.poll(() => getColumns(node.imageGrid)).toBeGreaterThan(10)
-      await comfyMouse.resizeByDragging(node.resize.br, { x: -200, y: 200 })
-      await expect.poll(() => getColumns(node.imageGrid)).toBeLessThan(10)
+      const { bottomRight } = node.resize
+      await expect.poll(() => countColumns(node.imageGrid)).toBe(10)
+      await comfyMouse.resizeByDragging(bottomRight, { x: 200 })
+      await expect.poll(() => countColumns(node.imageGrid)).toBeGreaterThan(10)
+      await comfyMouse.resizeByDragging(bottomRight, { x: -200, y: 200 })
+      await expect.poll(() => countColumns(node.imageGrid)).toBeLessThan(10)
     }
   )
 })
