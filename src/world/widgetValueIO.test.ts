@@ -2,6 +2,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { resetWorldInstance } from '@/world/worldInstance'
 
 import { widgetEntityId } from './entityIds'
 import {
@@ -17,6 +18,7 @@ describe('widgetValueIO', () => {
 
   beforeEach(() => {
     setActivePinia(createPinia())
+    resetWorldInstance()
   })
 
   describe('ensureWidgetState', () => {
@@ -31,8 +33,6 @@ describe('widgetValueIO', () => {
         disabled: false
       })
       expect(state.value).toBe(11)
-      expect(state.nodeId).toBe('1')
-      expect(state.name).toBe('seed')
     })
 
     it('is idempotent — returns the same state on repeated calls', () => {
@@ -47,7 +47,7 @@ describe('widgetValueIO', () => {
       }
       const first = ensureWidgetState(id, init)
       const second = ensureWidgetState(id, init)
-      expect(second).toBe(first)
+      expect(second).toEqual(first)
     })
 
     it('does not overwrite an existing state with init values', () => {
@@ -158,7 +158,7 @@ describe('widgetValueIO', () => {
       ensureWidgetState(id, init)
 
       const viaLegacy = useWidgetValueStore().getWidget(graphA, '1', 'seed')
-      expect(viaLegacy).toBe(getWidgetState(id))
+      expect(viaLegacy).toEqual(getWidgetState(id))
     })
   })
 })

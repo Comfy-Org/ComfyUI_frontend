@@ -24,6 +24,7 @@ import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
+import { resetWorldInstance } from '@/world/worldInstance'
 
 import {
   createEventCapture,
@@ -88,6 +89,7 @@ function expectPromotedWidgetView(
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
+  resetWorldInstance()
   resetSubgraphFixtureState()
 })
 
@@ -944,8 +946,8 @@ describe('SubgraphWidgetPromotion', () => {
         if (c.expect.storeSeedValue !== undefined) {
           expect(
             useWidgetValueStore()
-              .getNodeWidgets(host.rootGraph.id, host.id)
-              .find((entry) => entry.name === 'seed')?.value
+              .getNodeWidgetsByName(host.rootGraph.id, host.id)
+              .get('seed')?.value
           ).toBe(c.expect.storeSeedValue)
         }
       })
