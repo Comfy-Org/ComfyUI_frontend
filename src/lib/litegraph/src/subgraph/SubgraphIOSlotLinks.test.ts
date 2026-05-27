@@ -98,3 +98,39 @@ describe('SubgraphInputNode._disconnectNodeInput triggers node:slot-links:change
     }
   )
 })
+
+describe('LGraphNode.disconnectInput emits node:slot-links:changed once for subgraph-backed widget input', () => {
+  subgraphTest(
+    'fires one disconnected event with the original non-null linkId',
+    ({ simpleSubgraph }) => {
+      const subgraph = simpleSubgraph
+
+      const node = new LGraphNode('Target')
+      node.addInput('prompt', 'STRING')
+      node.inputs[0].widget = { name: 'prompt' }
+      subgraph.add(node)
+
+      const link = subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+      expect(link).toBeDefined()
+
+      const triggerSpy = vi.spyOn(subgraph, 'trigger')
+
+      node.disconnectInput(0)
+
+      const slotLinksChangedCalls = triggerSpy.mock.calls.filter(
+        (call) => call[0] === 'node:slot-links:changed'
+      )
+      expect(slotLinksChangedCalls).toHaveLength(1)
+      expect(slotLinksChangedCalls[0][1]).toMatchObject({
+        nodeId: node.id,
+        slotType: NodeSlotType.INPUT,
+        slotIndex: 0,
+        connected: false,
+        linkId: link!.id
+      })
+      expect(slotLinksChangedCalls[0][1]).not.toMatchObject({
+        linkId: null
+      })
+    }
+  )
+})
