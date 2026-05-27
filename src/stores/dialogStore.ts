@@ -4,7 +4,7 @@ import { merge } from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import type { DialogPassThroughOptions } from 'primevue/dialog'
 import { markRaw, ref } from 'vue'
-import type { Component, HTMLAttributes } from 'vue'
+import type { Component, HTMLAttributes, Ref } from 'vue'
 
 import type { DialogContentSize } from '@/components/ui/dialog/dialog.variants'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
@@ -95,7 +95,7 @@ interface UpdateDialogOptions {
 }
 
 export const useDialogStore = defineStore('dialog', () => {
-  const dialogStack = ref<DialogInstance[]>([])
+  const dialogStack: Ref<DialogInstance[]> = ref([])
 
   /**
    * The key of the currently active (top-most) dialog.
