@@ -240,6 +240,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.USER_LOGGED_IN)
   }
 
+  trackLogout(): void {
+    this.posthog?.reset(true)
+  }
+
   trackSubscription(
     event: 'modal_opened' | 'subscribe_clicked',
     metadata?: SubscriptionMetadata

@@ -81,6 +81,7 @@ export const useAuthActions = () => {
     }
 
     await authStore.logout()
+    useTelemetry()?.trackLogout()
     toastStore.add({
       severity: 'success',
       summary: t('auth.signOut.success'),
