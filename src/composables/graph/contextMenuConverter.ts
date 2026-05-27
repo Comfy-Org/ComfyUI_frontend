@@ -245,9 +245,7 @@ const MENU_ORDER: string[] = [
   'Paste Image',
   'Save Image',
   'Copy (Clipspace)',
-  'Paste (Clipspace)',
-  // Fallback for other core items
-  'Convert to Group Node (Deprecated)'
+  'Paste (Clipspace)'
 ]
 
 /**

@@ -136,6 +136,13 @@ export class SubgraphInput extends SubgraphSlot {
     }
     subgraph.incrementVersion()
 
+    subgraph.trigger('node:slot-links:changed', {
+      nodeId: node.id,
+      slotType: NodeSlotType.INPUT,
+      slotIndex: inputIndex,
+      connected: true,
+      linkId: link.id
+    })
     node.onConnectionsChange?.(NodeSlotType.INPUT, inputIndex, true, link, slot)
 
     subgraph.afterChange()
@@ -239,11 +246,8 @@ export class SubgraphInput extends SubgraphSlot {
   override isValidTarget(
     fromSlot: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput
   ): boolean {
-    if (isNodeSlot(fromSlot)) {
-      return (
-        'link' in fromSlot &&
-        LiteGraph.isValidConnection(this.type, fromSlot.type)
-      )
+    if (isNodeSlot(fromSlot) && 'link' in fromSlot) {
+      return LiteGraph.isValidConnection(this.type, fromSlot.type)
     }
 
     if (isSubgraphOutput(fromSlot)) {

@@ -169,7 +169,6 @@ export default defineConfig({
         '*.config.{ts,mts}',
         '**/.git/**',
         '**/.github/**',
-        '**/.nx/**',
         '**/*.{test,spec,stories}.ts',
         '**/coverage/**',
         '**/dist/**',
@@ -212,6 +211,11 @@ export default defineConfig({
 
           return null
         }
+      },
+
+      '/oauth': {
+        target: DEV_SERVER_COMFYUI_URL,
+        ...cloudProxyConfig
       },
 
       '/ws': {
@@ -647,6 +651,13 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'happy-dom',
+    // Node 25+ enables the Web Storage API by default, which shadows
+    // happy-dom's localStorage/sessionStorage with a non-functional Proxy.
+    // See https://github.com/capricorn86/happy-dom/issues/1950
+    execArgv:
+      Number(process.versions.node.split('.')[0]) >= 25
+        ? ['--no-experimental-webstorage']
+        : [],
     setupFiles: ['./vitest.setup.ts'],
     retry: process.env.CI ? 2 : 0,
     include: [

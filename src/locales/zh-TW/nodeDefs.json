@@ -119,6 +119,7 @@
     }
   },
   "AdjustBrightness": {
+    "description": "調整圖像的亮度。",
     "display_name": "調整亮度",
     "inputs": {
       "factor": {
@@ -138,6 +139,7 @@
     }
   },
   "AdjustContrast": {
+    "description": "調整圖像的對比度。",
     "display_name": "調整對比度",
     "inputs": {
       "factor": {
@@ -176,6 +178,7 @@
     }
   },
   "AudioAdjustVolume": {
+    "description": "將音訊音量調整指定的分貝（dB）數值。",
     "display_name": "音訊調整音量",
     "inputs": {
       "audio": {
@@ -576,6 +579,9 @@
       },
       "model_auto_downscale": {
         "name": "自動縮小"
+      },
+      "model_auto_upscale": {
+        "name": "auto_upscale"
       },
       "model_duration": {
         "name": "時長"
@@ -1107,6 +1113,10 @@
       "model": {
         "name": "模型"
       },
+      "pre_cfg": {
+        "name": "pre_cfg",
+        "tooltip": "若為 true，則在取樣器的 CFG 組合之前對合併後的雜訊進行重新縮放，且不進行夾制（可能會放大）。這與像 Lens 這類模型所使用的 norm-scaled CFG 相符。預設為 false，則保持原本在 CFG 後僅於 x0 空間進行衰減的行為。"
+      },
       "strength": {
         "name": "強度"
       }
@@ -1547,6 +1557,7 @@
     }
   },
   "CenterCropImages": {
+    "description": "將圖像以中心裁切至指定尺寸。",
     "display_name": "中心裁切影像",
     "inputs": {
       "height": {
@@ -1665,6 +1676,9 @@
       },
       "model_max_tokens": {
         "name": "max_tokens"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
       },
       "model_temperature": {
         "name": "temperature"
@@ -1790,6 +1804,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "description": "邏輯 AND 運算。若所有值皆為真則回傳 true。依據 Python 的真值規則判斷。",
+    "display_name": "And",
+    "inputs": {
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "數學運算式",
     "inputs": {
@@ -1813,6 +1841,20 @@
       }
     }
   },
+  "ComfyNotNode": {
+    "description": "邏輯 NOT 運算。若值為假則回傳 true。依據 Python 的真值規則判斷。",
+    "display_name": "Not",
+    "inputs": {
+      "value": {
+        "name": "value"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyNumberConvert": {
     "display_name": "數值轉換",
     "inputs": {
@@ -1825,6 +1867,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "description": "邏輯 OR 運算。若任一值為真則回傳 true。依據 Python 的真值規則判斷。",
+    "display_name": "Or",
+    "inputs": {
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -5699,6 +5755,7 @@
     }
   },
   "ImageCropV2": {
+    "description": "將圖像裁切至指定尺寸。",
     "display_name": "圖像裁切",
     "inputs": {
       "crop_region": {
@@ -5719,6 +5776,7 @@
     }
   },
   "ImageDeduplication": {
+    "description": "從清單中移除重複或極為相似的圖像。",
     "display_name": "影像去重",
     "inputs": {
       "images": {
@@ -5773,6 +5831,7 @@
     }
   },
   "ImageGrid": {
+    "description": "將多張圖像排列成網格佈局。",
     "display_name": "影像網格",
     "inputs": {
       "cell_height": {
@@ -8366,6 +8425,7 @@
     }
   },
   "LoadImageDataSetFromFolder": {
+    "description": "從指定資料夾載入圖像資料集並返回圖像清單。支援格式：PNG、JPG、JPEG、WEBP。",
     "display_name": "從資料夾載入圖片資料集",
     "inputs": {
       "folder": {
@@ -8409,6 +8469,7 @@
     }
   },
   "LoadImageTextDataSetFromFolder": {
+    "description": "從指定資料夾載入圖像與文字標註配對的資料集並返回清單。支援格式：PNG、JPG、JPEG、WEBP。",
     "display_name": "從資料夾載入圖片與文字資料集",
     "inputs": {
       "folder": {
@@ -8435,6 +8496,20 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "載入 MediaPipe Face Landmarker",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "來自 models/mediapipe/ 的 Face Landmarker safetensors。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadMoGeModel": {
     "display_name": "載入 MoGe 模型",
     "inputs": {
@@ -8449,6 +8524,7 @@
     }
   },
   "LoadTrainingDataset": {
+    "description": "從磁碟載入已編碼的訓練資料集（latent + conditioning），用於訓練。",
     "display_name": "載入訓練資料集",
     "inputs": {
       "folder_name": {
@@ -9232,6 +9308,7 @@
     }
   },
   "MakeTrainingDataset": {
+    "description": "使用VAE對圖像編碼、CLIP對文字編碼，建立包含latent與conditioning的訓練資料集。",
     "display_name": "建立訓練資料集",
     "inputs": {
       "clip": {
@@ -9322,7 +9399,97 @@
       }
     }
   },
+  "MediaPipeFaceLandmarker": {
+    "description": "使用MediaPipe模型偵測臉部關鍵點。",
+    "display_name": "MediaPipe Face Landmarker",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "人臉偵測器範圍。「short」適用於近距離人臉（約 2 公尺內）；「full」可偵測較遠／較小的人臉（最遠約 5 公尺），但速度較慢。「both」會同時執行兩種偵測器，並保留每幀找到最多人臉的結果（約 2 倍偵測成本）。"
+      },
+      "face_detection_model": {
+        "name": "face_detection_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "BlazeFace 分數門檻。降低可捕捉較小／被遮擋的人臉。"
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "批次處理時偵測失敗的每幀行為。「empty」讓該幀無人臉。「previous」複製最近一次成功偵測的結果。「interpolate」在包圍成功幀之間插值地標／邊界框／blendshapes。多臉：跨幀以貪婪邊界框中心最近鄰配對人臉。"
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "每幀最多回傳的人臉數量。0 = 不限制（回傳所有偵測到的人臉）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "description": "根據臉部關鍵點繪製mask。",
+    "display_name": "MediaPipe Face Mask",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "「all」= face_oval+lips+eyes+irises 的聯集（實際上等同於 face_oval，因其包含其他區域）。「custom」= 可單獨切換各區域，例如 lips+eyes 組合。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "description": "在輸入圖像上繪製臉部關鍵點網格。",
+    "display_name": "MediaPipe Face Mesh 視覺化",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "「all」= oval+eyes+brows+lips+irises+nose。「fill」= 實心 face_oval 多邊形（輪廓 mask）。「custom」= 可單獨切換各特徵（包含「tesselation」，即完整 2547 邊線框）。"
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "若未連接，將使用黑色畫布。"
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "地標點半徑（像素）。0 代表不繪製點。"
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "邊線粗細（像素）。0 代表不繪製邊線。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MergeImageLists": {
+    "description": "將多個圖像清單合併為一個。",
     "display_name": "合併圖片清單",
     "inputs": {
       "images": {
@@ -9777,6 +9944,7 @@
     }
   },
   "MoGeInference": {
+    "description": "在單張圖像上執行MoGe以估算深度與幾何資訊。",
     "display_name": "MoGe 推論",
     "inputs": {
       "apply_mask": {
@@ -9813,6 +9981,7 @@
     }
   },
   "MoGePanoramaInference": {
+    "description": "將全景圖像分割為12個透視視角，分別執行MoGe推論，並合併結果為單一深度圖。",
     "display_name": "MoGe 全景推論",
     "inputs": {
       "batch_size": {
@@ -9847,6 +10016,7 @@
     }
   },
   "MoGePointMapToMesh": {
+    "description": "將MoGe點雲圖轉換為3D網格。",
     "display_name": "MoGe 點雲轉網格",
     "inputs": {
       "batch_index": {
@@ -9876,6 +10046,7 @@
     }
   },
   "MoGeRender": {
+    "description": "根據幾何資料渲染深度圖或法線圖。",
     "display_name": "MoGe 渲染",
     "inputs": {
       "moge_geometry": {
@@ -12137,6 +12308,23 @@
       }
     }
   },
+  "MultiGPU_WorkUnits": {
+    "description": "將模型準備好以透過分割工作單元來加速取樣。\n\n應放置於會修改模型物件本身的節點之後，例如 compile 或 attention-switch 節點。\n\n除了這些例外情況外，此節點可在任何順序中放置。",
+    "display_name": "多 GPU CFG 分割",
+    "inputs": {
+      "max_gpus": {
+        "name": "max_gpus"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "NAGuidance": {
     "description": "對模型應用標準化注意力引導，讓蒸餾／schnell 模型支援負面提示。",
     "display_name": "標準化注意力引導",
@@ -12164,6 +12352,7 @@
     }
   },
   "NormalizeImages": {
+    "description": "使用平均值與標準差對圖像進行正規化。",
     "display_name": "標準化圖片",
     "inputs": {
       "images": {
@@ -12485,6 +12674,39 @@
       },
       "size": {
         "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterLLMNode": {
+    "description": "透過OpenRouter產生文字回應。路由至xAI、DeepSeek、Qwen、Mistral、Z.AI（GLM）、Moonshot（Kimi）、Perplexity Sonar等熱門模型。",
+    "display_name": "OpenRouter LLM",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用於產生回應的OpenRouter模型。"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "輸入給模型的文字。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "取樣用的種子。設為0則不指定。大多數模型僅將此作為參考。"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "決定模型行為的基礎指令。"
       }
     },
     "outputs": {
@@ -13306,6 +13528,7 @@
     }
   },
   "RandomCropImages": {
+    "description": "隨機裁切圖像至指定尺寸。",
     "display_name": "隨機裁切影像",
     "inputs": {
       "control_after_generate": {
@@ -13989,6 +14212,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "使用背景去除模型產生前景遮罩，以從圖像中移除背景。",
     "display_name": "移除背景",
     "inputs": {
       "bg_removal_model": {
@@ -14167,6 +14391,7 @@
     }
   },
   "ResizeImagesByLongerEdge": {
+    "description": "將圖像較長邊縮放至指定尺寸，並保持長寬比。",
     "display_name": "依較長邊調整圖片尺寸",
     "inputs": {
       "images": {
@@ -14186,6 +14411,7 @@
     }
   },
   "ResizeImagesByShorterEdge": {
+    "description": "調整圖像大小，使較短的邊緣符合指定尺寸，同時保持長寬比。",
     "display_name": "依較短邊調整圖片尺寸",
     "inputs": {
       "images": {
@@ -14205,6 +14431,7 @@
     }
   },
   "ResolutionBucket": {
+    "description": "將 latent 和 conditioning 分組到不同的桶中",
     "display_name": "解析度分桶",
     "inputs": {
       "conditioning": {
@@ -14433,6 +14660,164 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Image": {
+    "description": "透過 Rodin Gen-2.5，從 1-5 張參考圖像生成 3D 模型。選擇模式（快速／標準／極高）以調整品質與成本。",
+    "display_name": "Rodin 3D Gen-2.5 - 圖像轉 3D",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "人形模型的 T/A 姿勢。"
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "HighPack 附加功能：4K 材質與 Quad 模式下約 16 倍面數。"
+      },
+      "bbox_height": {
+        "name": "bbox_height",
+        "tooltip": "包圍盒高度（Z 軸）。"
+      },
+      "bbox_length": {
+        "name": "bbox_length",
+        "tooltip": "包圍盒長度（X 軸）。"
+      },
+      "bbox_width": {
+        "name": "bbox_width",
+        "tooltip": "包圍盒寬度（Y 軸）。與其他設為 0 可跳過包圍盒。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "geometry_file_format": {
+        "name": "geometry_file_format"
+      },
+      "hd_texture": {
+        "name": "hd_texture",
+        "tooltip": "高品質材質增強。"
+      },
+      "height_cm": {
+        "name": "height_cm",
+        "tooltip": "模型大約高度（公分，0 為跳過）。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "1-5 張圖像。多視角時，第一張圖像用於材質。"
+      },
+      "material": {
+        "name": "material"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "生成模式。標準＝平衡。快速＝1K-20K 面，適合快速原型。極高＝20K-2M 面，可選微細節。"
+      },
+      "mode_creative": {
+        "name": "creative"
+      },
+      "mode_polygon_count": {
+        "name": "polygon_count"
+      },
+      "mode_tier": {
+        "name": "tier"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "texture_delight": {
+        "name": "texture_delight",
+        "tooltip": "移除材質中的烘焙光影。"
+      },
+      "texture_mode": {
+        "name": "texture_mode",
+        "tooltip": "材質品質預設。『預設』會使用伺服器針對所選等級的預設值。"
+      },
+      "use_original_alpha": {
+        "name": "use_original_alpha",
+        "tooltip": "保留圖像透明度。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "description": "透過 Rodin Gen-2.5，根據文字提示生成 3D 模型。請選擇模式（快速 / 標準 / 極高）以調整品質與成本。",
+    "display_name": "Rodin 3D Gen-2.5 - 文字轉3D",
+    "inputs": {
+      "TAPose": {
+        "name": "T/A 姿勢",
+        "tooltip": "適用於類人模型的 T/A 姿勢。"
+      },
+      "addon_highpack": {
+        "name": "HighPack 附加包",
+        "tooltip": "HighPack 附加包：4K 材質與 Quad 模式下約 16 倍面數。"
+      },
+      "bbox_height": {
+        "name": "包圍盒高度",
+        "tooltip": "包圍盒高度（Z 軸）。"
+      },
+      "bbox_length": {
+        "name": "包圍盒長度",
+        "tooltip": "包圍盒長度（X 軸）。"
+      },
+      "bbox_width": {
+        "name": "包圍盒寬度",
+        "tooltip": "包圍盒寬度（Y 軸）。與其他設為 0 可跳過包圍盒。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "geometry_file_format": {
+        "name": "幾何檔案格式"
+      },
+      "hd_texture": {
+        "name": "高畫質材質",
+        "tooltip": "高品質材質增強。"
+      },
+      "height_cm": {
+        "name": "模型高度（公分）",
+        "tooltip": "模型大約高度（公分，0 表示略過）。"
+      },
+      "material": {
+        "name": "材質"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "生成模式。標準 = 平衡。快速 = 1K-20K 面數，適合快速原型。極高 = 20K-2M 面數，可選微細節。"
+      },
+      "mode_creative": {
+        "name": "創意"
+      },
+      "mode_polygon_count": {
+        "name": "多邊形數"
+      },
+      "mode_tier": {
+        "name": "等級"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "3D 模型的文字提示。"
+      },
+      "seed": {
+        "name": "隨機種子"
+      },
+      "texture_delight": {
+        "name": "材質去光照",
+        "tooltip": "移除材質中的烘焙光照。"
+      },
+      "texture_mode": {
+        "name": "材質品質",
+        "tooltip": "材質品質預設。『預設』會使用伺服器針對所選等級的預設值。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型檔案",
         "tooltip": null
       }
     }
@@ -15548,7 +15933,32 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "description": "將輸入的影像儲存到你的 ComfyUI 輸出目錄。",
+    "display_name": "儲存影像（進階）",
+    "inputs": {
+      "filename_prefix": {
+        "name": "檔名字首",
+        "tooltip": "要儲存檔案的字首。可包含格式化標記，例如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width%。"
+      },
+      "format": {
+        "name": "格式",
+        "tooltip": "儲存影像時使用的檔案格式。"
+      },
+      "format_bit_depth": {
+        "name": "位元深度"
+      },
+      "format_input_color_space": {
+        "name": "輸入色彩空間"
+      },
+      "images": {
+        "name": "影像",
+        "tooltip": "要儲存的影像。"
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
+    "description": "將圖像資料集儲存到指定資料夾。支援格式：PNG。",
     "display_name": "儲存影像資料集到資料夾",
     "inputs": {
       "filename_prefix": {
@@ -15566,6 +15976,7 @@
     }
   },
   "SaveImageTextDataSetToFolder": {
+    "description": "將圖像與文字標題配對的資料集儲存到指定資料夾。圖像以 PNG 檔案儲存，標題以相同檔名前綴的 TXT 檔案儲存。",
     "display_name": "儲存影像與文字資料集到資料夾",
     "inputs": {
       "filename_prefix": {
@@ -15636,6 +16047,7 @@
     }
   },
   "SaveTrainingDataset": {
+    "description": "將已編碼的訓練資料集（latent + conditioning）儲存到磁碟，以便訓練時高效載入。",
     "display_name": "儲存訓練資料集",
     "inputs": {
       "conditioning": {
@@ -15723,6 +16135,57 @@
       },
       "shift_y": {
         "name": "y軸平移"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectCLIPDevice": {
+    "description": "將 CLIP 文字編碼器放置於指定裝置（default / cpu / gpu:N）。\n\n- 「default」會還原為載入器分配的裝置。\n- 「cpu」會將載入與卸載裝置都固定於 CPU。\n- 「gpu:N」會將載入裝置固定於第 N 張可用 GPU。\n\n當所選裝置在目前機器上不存在時\n（例如在 2-GPU 機器建立的工作流程於 1-GPU 機器開啟），\n此節點會直接傳遞 CLIP 並記錄訊息，而不會導致失敗。",
+    "display_name": "選擇 CLIP 裝置",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "device": {
+        "name": "device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectModelDevice": {
+    "description": "將 diffusion 模型放置於指定裝置（default / cpu / gpu:N）。\n\n- 「default」會還原為載入器分配的裝置（即使在先前已呼叫過 Select Model Device 後）。\n- 「cpu」會將載入與卸載裝置都固定於 CPU。\n- 「gpu:N」會將載入裝置固定於第 N 張可用 GPU；卸載裝置則還原為載入器的原始選擇。\n\n當所要求的裝置與輸入模型目前所在裝置不同時，會透過載入器的 reload factory（cached_patcher_init）產生新的模型，讓新的 patcher 在新裝置上擁有獨立權重。不支援多 GPU 的載入器（無 factory）會使此節點直接傳遞且顯示警告。\n\n若工作流程已套用多 GPU CFG 分割，且所選 GPU 與現有 multigpu 複本衝突，該複本會被移除，以避免兩個 patcher 綁定於同一裝置。\n\n當所選裝置在目前機器上不存在時\n（例如在 2-GPU 機器建立的工作流程於 1-GPU 機器開啟），\n此節點會直接傳遞模型並記錄訊息，而不會導致失敗。\n\n注意：將 Select Model Device 放在已經消耗過同一模型的節點（例如已在原始裝置上執行過的 KSampler）之後並不建議——若所選裝置與原始裝置相同（快速路徑），則先前消費者對原始模型所做的任何狀態變更都會被觀察到。請將 Select Model Device 放在任何模型消費者之前。",
+    "display_name": "選擇模型裝置",
+    "inputs": {
+      "device": {
+        "name": "device"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectVAEDevice": {
+    "description": "將 VAE 放置於特定裝置（default / gpu:N）。\n\n- 「default」會還原為載入器分配的裝置。\n- 「gpu:N」會將載入裝置固定於第 N 個可用 GPU；卸載裝置則設為標準 VAE 卸載裝置。\n\nUI 中刻意不提供 CPU 作為 VAE 的選項；如果工作流程仍然提供「cpu」（例如從其他機器開啟），該請求會被記錄並略過，VAE 會保持不變。\n\n當所選裝置在目前機器上不存在時（例如在 2-GPU 機器上建立的工作流程於 1-GPU 機器上開啟），此節點會保持 VAE 不變並記錄訊息，而不會導致失敗。",
+    "display_name": "選擇 VAE 裝置",
+    "inputs": {
+      "device": {
+        "name": "裝置"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -15822,6 +16285,7 @@
     }
   },
   "ShuffleDataset": {
+    "description": "隨機打亂圖像清單中的順序。",
     "display_name": "隨機重排影像資料集",
     "inputs": {
       "control_after_generate": {
@@ -15844,6 +16308,7 @@
     }
   },
   "ShuffleImageTextDataset": {
+    "description": "隨機打亂圖像與文字配對清單中的順序。",
     "display_name": "隨機重排影像-文字資料集",
     "inputs": {
       "control_after_generate": {
@@ -16656,6 +17121,23 @@
     "outputs": {
       "0": {
         "name": "包含",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "與 Python 的字串格式化方法相同。支援所有 Python 格式化選項與功能。",
+    "display_name": "格式化文字",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -19327,6 +19809,7 @@
     }
   },
   "VoxelToMesh": {
+    "description": "將 voxel 格點轉換為 mesh。",
     "display_name": "體素轉網格",
     "inputs": {
       "algorithm": {
@@ -19346,6 +19829,7 @@
     }
   },
   "VoxelToMeshBasic": {
+    "description": "將 voxel 格點轉換為 mesh。",
     "display_name": "體素轉網格（基礎）",
     "inputs": {
       "threshold": {

@@ -22,31 +22,33 @@ function cancelDrag() {
   dragMode.value = 'click'
 }
 
-function addNodeAtPosition(clientX: number, clientY: number): boolean {
-  if (!draggedNode.value) return false
-
-  const canvasStore = useCanvasStore()
-  const canvas = canvasStore.canvas
-  if (!canvas) return false
-
-  const canvasElement = canvas.canvas as HTMLCanvasElement
+function isOverCanvas(clientX: number, clientY: number): boolean {
+  const canvasElement = useCanvasStore().canvas?.canvas as
+    | HTMLCanvasElement
+    | undefined
+  if (!canvasElement) return false
   const rect = canvasElement.getBoundingClientRect()
-  const isOverCanvas =
+  return (
     clientX >= rect.left &&
     clientX <= rect.right &&
     clientY >= rect.top &&
     clientY <= rect.bottom
+  )
+}
 
-  if (isOverCanvas) {
-    const pos = canvas.convertEventToCanvasOffset({
-      clientX,
-      clientY
-    } as PointerEvent)
-    const litegraphService = useLitegraphService()
-    litegraphService.addNodeOnGraph(draggedNode.value, { pos })
-    return true
-  }
-  return false
+function addNodeAtPosition(clientX: number, clientY: number): boolean {
+  if (!draggedNode.value) return false
+  const canvas = useCanvasStore().canvas
+  if (!canvas) return false
+  if (!isOverCanvas(clientX, clientY)) return false
+
+  const pos = canvas.convertEventToCanvasOffset({
+    clientX,
+    clientY
+  } as PointerEvent)
+  const node = useLitegraphService().addNodeOnGraph(draggedNode.value, { pos })
+  if (node) canvas.selectItems([node])
+  return true
 }
 
 function endDrag(e: PointerEvent) {
@@ -64,11 +66,19 @@ function handleKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') cancelDrag()
 }
 
+// Prevent LiteGraph's empty-canvas hit-test from deselecting the placed node on pointerup.
+function blockCommitPointerDown(e: PointerEvent) {
+  if (!isDragging.value || dragMode.value !== 'click') return
+  if (!isOverCanvas(e.clientX, e.clientY)) return
+  e.stopImmediatePropagation()
+}
+
 function setupGlobalListeners() {
   if (listenersSetup) return
   listenersSetup = true
 
   document.addEventListener('pointermove', updatePosition)
+  document.addEventListener('pointerdown', blockCommitPointerDown, true)
   document.addEventListener('pointerup', endDrag, true)
   document.addEventListener('keydown', handleKeydown)
 }
@@ -78,6 +88,7 @@ function cleanupGlobalListeners() {
   listenersSetup = false
 
   document.removeEventListener('pointermove', updatePosition)
+  document.removeEventListener('pointerdown', blockCommitPointerDown, true)
   document.removeEventListener('pointerup', endDrag, true)
   document.removeEventListener('keydown', handleKeydown)
 

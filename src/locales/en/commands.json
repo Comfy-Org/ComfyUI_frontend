@@ -158,9 +158,6 @@
   "Comfy_Graph_UnpackSubgraph": {
     "label": "Unpack the selected Subgraph"
   },
-  "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
-    "label": "Convert selected nodes to group node"
-  },
   "Comfy_GroupNode_ManageGroupNodes": {
     "label": "Manage group nodes"
   },

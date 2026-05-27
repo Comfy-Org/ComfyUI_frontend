@@ -507,25 +507,6 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
         .toBe(initialGroupCount + 1)
     })
 
-    test('should convert to group node via context menu', async ({
-      comfyPage
-    }) => {
-      await openMultiNodeContextMenu(comfyPage, nodeTitles)
-      await clickExactMenuItem(comfyPage, 'Convert to Group Node')
-
-      await comfyPage.nodeOps.promptDialogInput.waitFor({ state: 'visible' })
-      await comfyPage.nodeOps.fillPromptDialog('TestGroupNode')
-
-      await expect
-        .poll(async () => {
-          const groupNodes = await comfyPage.nodeOps.getNodeRefsByType(
-            'workflow>TestGroupNode'
-          )
-          return groupNodes.length
-        })
-        .toBe(1)
-    })
-
     test('should convert selected nodes to subgraph via context menu', async ({
       comfyPage
     }) => {

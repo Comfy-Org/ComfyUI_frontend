@@ -29,9 +29,10 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
-import { usePromotionStore } from '@/stores/promotionStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import type { WidgetEntityId } from '@/world/entityIds'
+import { getWidgetState } from '@/world/widgetValueIO'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   LinkedUpstreamInfo,
@@ -50,6 +51,7 @@ interface ProcessedWidget {
   hasError: boolean
   hidden: boolean
   id: string
+  entityId?: WidgetEntityId
   name: string
   renderKey: string
   simplified: SimplifiedWidget
@@ -126,26 +128,28 @@ export function getWidgetIdentity(
   dedupeIdentity?: string
   renderKey: string
 } {
-  const rawWidgetId = widget.storeNodeId ?? widget.nodeId
-  const storeWidgetName = widget.storeName ?? widget.name
+  if (widget.entityId) {
+    const dedupeIdentity = `${widget.entityId}:${widget.type}`
+    return { dedupeIdentity, renderKey: dedupeIdentity }
+  }
   const slotNameForIdentity = widget.slotName ?? widget.name
-  const stableIdentityRoot = rawWidgetId
-    ? `node:${String(stripGraphPrefix(rawWidgetId))}`
+  const hostNodeIdRoot =
+    nodeId !== undefined && nodeId !== ''
+      ? `node:${String(stripGraphPrefix(nodeId))}`
+      : undefined
+  const stableIdentityRoot = widget.nodeId
+    ? `node:${String(stripGraphPrefix(widget.nodeId))}`
     : widget.sourceExecutionId
       ? `exec:${widget.sourceExecutionId}`
-      : undefined
+      : hostNodeIdRoot
 
   const dedupeIdentity = stableIdentityRoot
-    ? `${stableIdentityRoot}:${storeWidgetName}:${slotNameForIdentity}:${widget.type}`
+    ? `${stableIdentityRoot}:${widget.name}:${slotNameForIdentity}:${widget.type}`
     : undefined
   const renderKey =
     dedupeIdentity ??
-    `transient:${String(nodeId ?? '')}:${storeWidgetName}:${slotNameForIdentity}:${widget.type}:${index}`
-
-  return {
-    dedupeIdentity,
-    renderKey
-  }
+    `transient:${String(nodeId ?? '')}:${widget.name}:${slotNameForIdentity}:${widget.type}:${index}`
+  return { dedupeIdentity, renderKey }
 }
 
 export function isWidgetVisible(
@@ -167,7 +171,6 @@ export function computeProcessedWidgets({
 }: ComputeProcessedWidgetsOptions): ProcessedWidget[] {
   if (!nodeData?.widgets) return []
 
-  const promotionStore = usePromotionStore()
   const executionErrorStore = useExecutionErrorStore()
   const missingModelStore = useMissingModelStore()
   const widgetValueStore = useWidgetValueStore()
@@ -195,13 +198,15 @@ export function computeProcessedWidgets({
     if (!shouldRenderAsVue(widget)) continue
 
     const identity = getWidgetIdentity(widget, nodeId, index)
-    const storeWidgetName = widget.storeName ?? widget.name
-    const bareWidgetId = String(
-      stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
-    )
-    const widgetState = graphId
-      ? widgetValueStore.getWidget(graphId, bareWidgetId, storeWidgetName)
-      : undefined
+    const widgetState = widget.entityId
+      ? getWidgetState(widget.entityId)
+      : graphId
+        ? widgetValueStore.getWidget(
+            graphId,
+            String(stripGraphPrefix(widget.nodeId ?? nodeId ?? '')),
+            widget.name
+          )
+        : undefined
     const mergedOptions: IWidgetOptions = {
       ...(widget.options ?? {}),
       ...(widgetState?.options ?? {})
@@ -249,13 +254,7 @@ export function computeProcessedWidgets({
     widgetState,
     identity: { renderKey }
   } of uniqueWidgets) {
-    const hostNodeId = String(nodeId ?? '')
-    const bareWidgetId = String(
-      stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
-    )
-    const promotionSourceNodeId = widget.storeName
-      ? String(bareWidgetId)
-      : undefined
+    const bareWidgetId = String(stripGraphPrefix(widget.nodeId ?? nodeId ?? ''))
 
     const vueComponent =
       getComponent(widget.type) ||
@@ -270,17 +269,9 @@ export function computeProcessedWidgets({
       ? { ...mergedOptions, disabled: true }
       : mergedOptions
 
-    const borderStyle =
-      graphId &&
-      promotionStore.isPromotedByAny(graphId, {
-        sourceNodeId: hostNodeId,
-        sourceWidgetName: widget.storeName ?? widget.name,
-        disambiguatingSourceNodeId: promotionSourceNodeId
-      })
-        ? 'ring ring-component-node-widget-promoted'
-        : mergedOptions.advanced
-          ? 'ring ring-component-node-widget-advanced'
-          : undefined
+    const borderStyle = mergedOptions.advanced
+      ? 'ring ring-component-node-widget-advanced'
+      : undefined
 
     const linkedUpstream: LinkedUpstreamInfo | undefined =
       slotMetadata?.linked && slotMetadata.originNodeId
@@ -345,6 +336,7 @@ export function computeProcessedWidgets({
       ),
       hidden: mergedOptions.hidden ?? false,
       id: String(bareWidgetId),
+      entityId: widget.entityId,
       name: widget.name,
       renderKey,
       type: widget.type,

@@ -663,7 +663,6 @@
     "Collapse": "جمع کردن",
     "Color": "رنگ",
     "Colors": "رنگ‌ها",
-    "Convert to Group Node": "تبدیل به Group Node",
     "Convert to Subgraph": "تبدیل به Subgraph",
     "Copy": "کپی",
     "Copy (Clipspace)": "کپی (Clipspace)",
@@ -800,6 +799,8 @@
     "CONTROL_NET": "controlnet",
     "CURVE": "CURVE",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "مدل تشخیص چهره",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
@@ -908,6 +909,161 @@
     "pause": "توقف دانلود",
     "paused": "متوقف شده",
     "resume": "ادامه دانلود"
+  },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "ورودی نامشخص",
+      "nodeName": "این نود"
+    },
+    "promptErrors": {
+      "image_not_loaded": {
+        "desc": "سیستم نتوانست این تصویر را بارگذاری کند.",
+        "title": "تصویر بارگذاری نشد"
+      },
+      "missing_node_type": {
+        "desc": "یک نوع node وجود ندارد یا در دسترس نیست. ممکن است workflow خراب شده باشد یا به node سفارشی نیاز داشته باشد.",
+        "title": "نوع node وجود ندارد"
+      },
+      "no_prompt": {
+        "desc": "داده‌های ورک‌فلو ارسال‌شده به سرور خالی است. این ممکن است یک خطای غیرمنتظره سیستمی باشد.",
+        "title": "داده‌های workflow خالی است"
+      },
+      "out_of_memory": {
+        "descCloud": "حافظه GPU کافی نیست. پیچیدگی را کاهش دهید و دوباره تلاش کنید. هیچ اعتباری کسر نشد.",
+        "descLocal": "حافظه GPU کافی نیست. پیچیدگی را کاهش دهید و دوباره تلاش کنید.",
+        "title": "تولید ناموفق بود"
+      },
+      "prompt_no_outputs": {
+        "desc": "در این ورک‌فلو هیچ نود خروجی (مانند Save Image یا Preview Image) برای تولید نتیجه وجود ندارد.",
+        "title": "پرومپت خروجی ندارد"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "workflow دارای ورودی‌های نامعتبر node است. قبل از اجرای مجدد، nodeهای مشخص‌شده را اصلاح کنید.",
+        "title": "اعتبارسنجی پرومپت ناموفق بود"
+      },
+      "server_error_cloud": {
+        "desc": "سرور با یک خطای غیرمنتظره مواجه شد. لطفاً بعداً دوباره تلاش کنید.",
+        "title": "خطای سرور"
+      },
+      "server_error_local": {
+        "desc": "سرور با یک خطای غیرمنتظره مواجه شد. لطفاً لاگ‌های سرور را بررسی کنید.",
+        "title": "خطای سرور"
+      }
+    },
+    "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName} دارای اتصال نامعتبر برای {inputName} است.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "اتصال یک node به درستی خوانده نشد.",
+        "title": "اتصال نامعتبر",
+        "toastMessage": "{nodeName} دارای اتصال نامعتبر برای {inputName} است.",
+        "toastTitle": "اتصال نامعتبر"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName} مقدار {inputName} را رد کرد.",
+        "detailsWithRawDetails": "{nodeName} در اعتبارسنجی سفارشی شکست خورد: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "یک node یک یا چند مقدار ورودی را رد کرد.",
+        "title": "ورودی نامعتبر",
+        "toastMessage": "{nodeName} مقدار {inputName} را رد کرد.",
+        "toastTitle": "ورودی نامعتبر"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName} بخشی از یک اتصال حلقه‌ای است.",
+        "detailsWithRawDetails": "{nodeName} بخشی از یک اتصال حلقه‌ای است: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "workflow دارای اتصال حلقه‌ای node است.",
+        "title": "workflow نامعتبر",
+        "toastMessage": "{nodeName} بخشی از یک اتصال حلقه‌ای است.",
+        "toastTitle": "workflow نامعتبر"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName} نتوانست {inputName} را اعتبارسنجی کند.",
+        "detailsWithRawDetails": "{nodeName} نتوانست {inputName} را اعتبارسنجی کند: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "workflow نتوانست یک node متصل را اعتبارسنجی کند.",
+        "title": "اعتبارسنجی ناموفق",
+        "toastMessage": "{nodeName} نتوانست {inputName} را اعتبارسنجی کند.",
+        "toastMessageWithRawDetails": "{nodeName} نتوانست {inputName} را اعتبارسنجی کند: {rawDetails}",
+        "toastTitle": "اعتبارسنجی ناموفق"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName} در طول اعتبارسنجی شکست خورد.",
+        "detailsWithRawDetails": "{nodeName} در طول اعتبارسنجی شکست خورد: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "workflow قابل اعتبارسنجی نیست زیرا بررسی اعتبار یک node به طور غیرمنتظره‌ای شکست خورد.",
+        "title": "اعتبارسنجی ناموفق",
+        "toastMessage": "{nodeName} در طول اعتبارسنجی شکست خورد.",
+        "toastMessageWithRawDetails": "{nodeName} در طول اعتبارسنجی شکست خورد: {rawDetails}",
+        "toastTitle": "اعتبارسنجی ناموفق"
+      },
+      "image_not_loaded": {
+        "details": "تصویر مربوط به {nodeName} بارگذاری نشد. لطفاً دوباره آن را اضافه کنید.",
+        "itemLabel": "{nodeName}",
+        "message": "سیستم نتوانست این تصویر را بارگذاری کند.",
+        "title": "تصویر بارگذاری نشد",
+        "toastMessage": "تصویر مربوط به {nodeName} بارگذاری نشد. لطفاً دوباره آن را اضافه کنید.",
+        "toastTitle": "تصویر ورودی بارگذاری نشد"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName} نتوانست {inputName} را به نوع مورد انتظار تبدیل کند.",
+        "detailsWithValue": "مقدار {receivedValue} برای {inputName} در {nodeName} قابل تبدیل به {expectedType} نیست.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "مقدار ورودی از نوع نادرست است.",
+        "title": "ورودی نامعتبر",
+        "toastMessage": "{nodeName} نتوانست {inputName} را به نوع مورد انتظار تبدیل کند.",
+        "toastMessageWithValue": "مقدار {receivedValue} برای {inputName} در {nodeName} قابل تبدیل به {expectedType} نیست.",
+        "toastTitle": "ورودی نامعتبر"
+      },
+      "required_input_missing": {
+        "details": "{nodeName} یک ورودی ضروری را ندارد: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "ورودی‌های ضروری بدون اتصال هستند.",
+        "title": "اتصال وجود ندارد",
+        "toastMessage": "{nodeName} یک ورودی ضروری را ندارد: {inputName}",
+        "toastTitle": "ورودی ضروری وجود ندارد"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName} دارای اتصال ناسازگار برای {inputName} است.",
+        "detailsWithTypes": "ورودی {inputName} در {nodeName} انتظار {expectedType} را دارد، اما خروجی متصل {receivedType} است.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "nodeهای متصل از نوع ورودی و خروجی ناسازگار استفاده می‌کنند.",
+        "title": "اتصال نامعتبر",
+        "toastMessage": "{nodeName} دارای اتصال ناسازگار برای {inputName} است.",
+        "toastMessageWithTypes": "ورودی {inputName} در {nodeName} انتظار {expectedType} را دارد، اما خروجی متصل {receivedType} است.",
+        "toastTitle": "اتصال نامعتبر"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName} دارای مقداری بیشتر از حداکثر برای {inputName} است.",
+        "detailsWithValue": "مقدار {receivedValue} برای {inputName} در {nodeName} بیشتر از حداکثر {maxValue} است.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "برخی مقادیر ورودی خارج از محدوده مجاز هستند.",
+        "title": "ورودی خارج از محدوده",
+        "toastMessage": "{nodeName} دارای مقداری بیشتر از حداکثر برای {inputName} است.",
+        "toastMessageWithValue": "مقدار {receivedValue} برای {inputName} در {nodeName} بیشتر از حداکثر {maxValue} است.",
+        "toastTitle": "ورودی خارج از محدوده"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName} دارای مقدار پشتیبانی‌نشده برای {inputName} است.",
+        "detailsWithValue": "مقدار {receivedValue} برای {inputName} در {nodeName} در دسترس نیست.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "برخی مقادیر ورودی برای این node در دسترس نیستند.",
+        "title": "ورودی نامعتبر",
+        "toastMessage": "{nodeName} دارای مقدار پشتیبانی‌نشده برای {inputName} است.",
+        "toastMessageWithValue": "مقدار {receivedValue} برای {inputName} در {nodeName} در دسترس نیست.",
+        "toastTitle": "ورودی نامعتبر"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName} دارای مقداری کمتر از حداقل برای {inputName} است.",
+        "detailsWithValue": "مقدار {receivedValue} برای {inputName} در {nodeName} کمتر از حداقل {minValue} است.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "برخی مقادیر ورودی خارج از محدوده مجاز هستند.",
+        "title": "ورودی خارج از محدوده",
+        "toastMessage": "{nodeName} دارای مقداری کمتر از حداقل برای {inputName} است.",
+        "toastMessageWithValue": "مقدار {receivedValue} برای {inputName} در {nodeName} کمتر از حداقل {minValue} است.",
+        "toastTitle": "ورودی خارج از محدوده"
+      }
+    }
   },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
@@ -1711,6 +1867,7 @@
     "reloadingModel": "در حال بارگذاری مجدد مدل...",
     "removeBackgroundImage": "حذف تصویر پس‌زمینه",
     "resizeNodeMatchOutput": "تغییر اندازه node مطابق خروجی",
+    "retainViewOnReload": "قفل کردن نمای دوربین هنگام بارگذاری مجدد مدل",
     "scene": "صحنه",
     "showGrid": "نمایش شبکه",
     "showSkeleton": "نمایش اسکلت",
@@ -1744,6 +1901,10 @@
     "outdatedVersion": "این workflow با نسخه جدیدتری از ComfyUI ({version}) ایجاد شده است. برخی nodeها ممکن است به درستی کار نکنند.",
     "outdatedVersionGeneric": "این workflow با نسخه جدیدتری از ComfyUI ایجاد شده است. برخی nodeها ممکن است به درستی کار نکنند.",
     "unknownVersion": "نامشخص"
+  },
+  "logsTerminal": {
+    "loadError": "امکان بارگذاری لاگ‌ها وجود ندارد، لطفاً اطمینان حاصل کنید که ComfyUI backend خود را به‌روزرسانی کرده‌اید.",
+    "resyncError": "امکان همگام‌سازی مجدد لاگ‌ها پس از اتصال مجدد backend وجود ندارد. برای تلاش مجدد، کنسول را دوباره باز کنید."
   },
   "maintenance": {
     "None": "هیچ‌کدام",
@@ -2097,7 +2258,6 @@
     "ComfyUI Issues": "مشکلات ComfyUI",
     "Contact Support": "تماس با پشتیبانی",
     "Convert Selection to Subgraph": "تبدیل انتخاب به Subgraph",
-    "Convert selected nodes to group node": "تبدیل Nodeهای انتخاب‌شده به group node",
     "Copy": "کپی",
     "Custom Nodes (Legacy)": "Custom Nodes (قدیمی)",
     "Custom Nodes Manager": "مدیر Custom Nodes",
@@ -2274,6 +2434,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2290,8 +2451,8 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "تنظیمات",
     "advanced": "پیشرفته",
-    "animation": "انیمیشن",
     "api node": "گره API",
     "attention_experiments": "آزمایش‌های توجه",
     "audio": "صدا",
@@ -2314,6 +2475,7 @@
     "detection": "شناسایی",
     "edit_models": "ویرایش مدل‌ها",
     "experimental": "آزمایشی",
+    "filters": "فیلترها",
     "flux": "flux",
     "geometry_estimation": "برآورد هندسه",
     "gligen": "gligen",
@@ -2334,16 +2496,15 @@
     "model_merging": "ادغام مدل",
     "model_patches": "وصله‌های مدل",
     "model_specific": "ویژه مدل",
+    "multigpu": "چند GPU",
     "noise": "نویز",
     "operations": "عملیات",
     "photomaker": "photomaker",
-    "postprocessing": "پس‌پردازش",
     "preprocessors": "پیش‌پردازنده‌ها",
     "primitive": "ابتدایی",
     "qwen": "qwen",
     "samplers": "نمونه‌گیرها",
     "sampling": "نمونه‌گیری",
-    "save": "ذخیره",
     "schedulers": "زمان‌بندی‌ها",
     "scheduling": "زمان‌بندی",
     "sd3": "sd3",
@@ -2431,6 +2592,43 @@
     },
     "title": "دستگاه شما پشتیبانی نمی‌شود"
   },
+  "oauth": {
+    "consent": {
+      "allow": "ادامه",
+      "appTypeNative": "برنامه بومی",
+      "appTypeWeb": "برنامه وب",
+      "deny": "لغو",
+      "errorExpired": "این درخواست تأیید منقضی شده یا قبلاً استفاده شده است. لطفاً از برنامه کلاینت مجدداً اقدام کنید.",
+      "errorScopeBroadening": "دسترسی‌های قبلاً تأییدشده این درخواست را پوشش نمی‌دهند. لازم است با دسترسی‌های جدید مجدداً تأیید کنید.",
+      "errorUnavailable": "این قابلیت در حال حاضر در دسترس نیست. در صورت تداوم مشکل با پشتیبانی تماس بگیرید.",
+      "genericError": "درخواست OAuth با خطا مواجه شد. لطفاً از برنامه کلاینت مجدداً اقدام کنید.",
+      "loading": "در حال بارگذاری درخواست احراز هویت…",
+      "missingRequest": "این درخواست احراز هویت وجود ندارد. لطفاً از برنامه کلاینت مجدداً اقدام کنید.",
+      "noWorkspaces": "هیچ ورک‌اسپیس واجدی برای این درخواست موجود نیست.",
+      "permissionsHeader": "دسترسی‌ها",
+      "redirectNotice": "شما به این آدرس هدایت خواهید شد",
+      "resourceFallback": "این برنامه",
+      "sessionError": "برقراری نشست با خطا مواجه شد. لطفاً دوباره تلاش کنید.",
+      "sessionErrorToastSummary": "ورود با OAuth ادامه نیافت",
+      "subtitle": "برای ادامه وارد {resource} شوید",
+      "title": "{client} درخواست دسترسی دارد",
+      "workspaceHelp": "دسترسی‌ها فقط برای این ورک‌اسپیس اعمال می‌شوند.",
+      "workspaceLabel": "ورک‌اسپیس"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "اجرای workflowها به نمایندگی از شما"
+      },
+      "mcp:tools:read": {
+        "label": "مشاهده ابزارهای workflow موجود"
+      }
+    },
+    "workspace": {
+      "member": "عضو",
+      "owner": "مالک",
+      "personal": "شخصی"
+    }
+  },
   "openSharedWorkflow": {
     "author": "نویسنده:",
     "copyAssetsAndOpen": "وارد کردن دارایی‌ها و باز کردن گردش‌کار",
@@ -2441,7 +2639,8 @@
     "nonPublicAssetsWarningLine1": "این گردش‌کار دارای دارایی‌های غیرعمومی است.",
     "nonPublicAssetsWarningLine2": "این موارد هنگام باز کردن گردش‌کار به کتابخانه شما وارد می‌شوند",
     "openWithoutImporting": "باز کردن بدون وارد کردن",
-    "openWorkflow": "باز کردن گردش‌کار"
+    "openWorkflow": "باز کردن گردش‌کار",
+    "opening": "در حال باز کردن گردش‌کار مشترک..."
   },
   "painter": {
     "background": "پس‌زمینه",
@@ -2657,20 +2856,6 @@
     "normal": "عادی",
     "parameters": "پارامترها",
     "pinned": "سنجاق شده",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "داده‌های گردش‌کار ارسال‌شده به سرور خالی است. این ممکن است یک خطای غیرمنتظره سیستمی باشد."
-      },
-      "prompt_no_outputs": {
-        "desc": "گردش‌کار هیچ نود خروجی (مانند Save Image یا Preview Image) برای تولید نتیجه ندارد."
-      },
-      "server_error_cloud": {
-        "desc": "سرور با خطای غیرمنتظره‌ای مواجه شد. لطفاً بعداً دوباره تلاش کنید."
-      },
-      "server_error_local": {
-        "desc": "سرور با خطای غیرمنتظره‌ای مواجه شد. لطفاً لاگ‌های سرور را بررسی کنید."
-      }
-    },
     "properties": "ویژگی‌ها",
     "removeFavorite": "حذف از علاقه‌مندی‌ها",
     "resetAllParameters": "بازنشانی همه پارامترها",
@@ -3080,6 +3265,7 @@
         "sourceDesc": "گروه‌بندی بر اساس نوع منبع (Core، Custom، API)"
       },
       "noBookmarkedNodes": "هنوز مورد علاقه‌ای وجود ندارد",
+      "noMatchingNodes": "هیچ نودی با «{query}» مطابقت ندارد",
       "resetView": "بازنشانی نمای پیش‌فرض",
       "sections": {
         "bookmarked": "نشان‌شده‌ها",
@@ -3465,8 +3651,7 @@
       "newest": "جدیدترین",
       "popular": "محبوب",
       "recommended": "پیشنهادی",
-      "searchPlaceholder": "جستجو...",
-      "vramLowToHigh": "مصرف VRAM (کم به زیاد)"
+      "searchPlaceholder": "جستجو..."
     },
     "sorting": "مرتب‌سازی بر اساس",
     "title": "شروع با یک قالب",
@@ -3630,7 +3815,8 @@
       "placeholderMesh": "مش را انتخاب کنید...",
       "placeholderModel": "انتخاب مدل...",
       "placeholderUnknown": "انتخاب رسانه...",
-      "placeholderVideo": "انتخاب ویدیو..."
+      "placeholderVideo": "انتخاب ویدیو...",
+      "topResult": "نتیجه برتر: {result}"
     },
     "valueControl": {
       "decrement": "کاهش مقدار",

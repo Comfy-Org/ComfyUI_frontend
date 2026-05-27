@@ -10,7 +10,7 @@ const prefix = locale === 'zh-CN' ? '/zh-CN' : ''
 
 <template>
   <section
-    class="grid grid-cols-1 gap-6 px-6 py-16 lg:grid-cols-2 lg:px-16 lg:py-24"
+    class="max-w-9xl mx-auto grid grid-cols-1 gap-6 px-6 py-16 lg:grid-cols-2 lg:px-16 lg:py-24"
   >
     <a
       v-for="story in customerStories"
