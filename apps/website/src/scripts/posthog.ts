@@ -18,7 +18,16 @@ export function initPostHog() {
       ui_host: POSTHOG_UI_HOST,
       capture_pageview: false,
       capture_pageleave: true,
-      person_profiles: 'identified_only'
+      person_profiles: 'identified_only',
+      cookie_domain: '.comfy.org',
+      before_send: (event) => {
+        if (event?.properties) {
+          for (const key of ['email', 'prompt', 'user_email', '$email']) {
+            delete event.properties[key]
+          }
+        }
+        return event
+      }
     })
     initialized = true
   } catch (error) {

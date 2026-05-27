@@ -114,7 +114,22 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               capture_pageleave: false,
               persistence: 'localStorage+cookie',
               debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',
-              ...serverConfig
+              ...serverConfig,
+              person_profiles: 'identified_only',
+              cookie_domain: '.comfy.org',
+              before_send: (event) => {
+                if (event?.properties) {
+                  for (const key of [
+                    'email',
+                    'prompt',
+                    'user_email',
+                    '$email'
+                  ]) {
+                    delete event.properties[key]
+                  }
+                }
+                return event
+              }
             })
             this.isInitialized = true
             this.flushEventQueue()
