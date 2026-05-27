@@ -1113,6 +1113,10 @@
       "model": {
         "name": "模型"
       },
+      "pre_cfg": {
+        "name": "pre_cfg",
+        "tooltip": "如果为 true，则在采样器的 CFG 合并之前对组合噪声进行重新缩放，不进行限制（可能会放大）。这与 Lens 等模型使用的 norm-scaled CFG 相匹配。默认 false 保持原有的 post-CFG x0 空间仅衰减行为。"
+      },
       "strength": {
         "name": "强度"
       }
@@ -12304,6 +12308,23 @@
       }
     }
   },
+  "MultiGPU_WorkUnits": {
+    "description": "准备模型以通过拆分工作单元加速采样。\n\n应放置在修改模型对象本身的节点之后，例如编译或注意力切换节点。\n\n除这些例外外，此节点可按任意顺序放置。",
+    "display_name": "多GPU CFG 拆分",
+    "inputs": {
+      "max_gpus": {
+        "name": "max_gpus"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "NAGuidance": {
     "description": "对模型应用归一化注意力引导，使蒸馏/快速模型支持负向提示。",
     "display_name": "归一化注意力引导",
@@ -15912,6 +15933,30 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "description": "将输入图像保存到您的 ComfyUI 输出目录。",
+    "display_name": "保存图像（高级）",
+    "inputs": {
+      "filename_prefix": {
+        "name": "文件名前缀",
+        "tooltip": "要保存文件的前缀。可包含格式化标记，如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width%。"
+      },
+      "format": {
+        "name": "格式",
+        "tooltip": "保存图像的文件格式。"
+      },
+      "format_bit_depth": {
+        "name": "位深度"
+      },
+      "format_input_color_space": {
+        "name": "输入色彩空间"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "要保存的图像。"
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
     "description": "将图像数据集保存到指定文件夹。支持的格式：PNG。",
     "display_name": "保存图像数据集",
@@ -16090,6 +16135,57 @@
       },
       "shift_y": {
         "name": "shift_y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectCLIPDevice": {
+    "description": "将 CLIP 文本编码器放置在指定设备上（default / cpu / gpu:N）。\n\n- “default” 恢复加载器分配的设备。\n- “cpu” 将加载和卸载设备都固定为 CPU。\n- “gpu:N” 将加载设备固定为第 N 个可用 GPU。\n\n当所选设备在当前机器上不存在时\n（例如在 2-GPU 机器上构建的工作流在 1-GPU 机器上打开），\n节点会直接传递 CLIP 并记录消息，而不会报错。",
+    "display_name": "选择 CLIP 设备",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "device": {
+        "name": "device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectModelDevice": {
+    "description": "将扩散模型放置在指定设备上（default / cpu / gpu:N）。\n\n- “default” 恢复加载器分配的设备（即使在之前调用过选择模型设备后）。\n- “cpu” 将加载和卸载设备都固定为 CPU。\n- “gpu:N” 将加载设备固定为第 N 个可用 GPU；卸载设备恢复为加载器的原始选择。\n\n当请求的设备与输入模型当前所在设备不同时，会通过加载器的 reload factory（cached_patcher_init）生成一个新的模型实例，使新的 patcher 在新设备上拥有独立权重。不支持多 GPU 的加载器（无 factory）会导致节点直接传递且发出警告。\n\n如果工作流已应用多GPU CFG 拆分，且所选 GPU 与现有多 GPU 克隆冲突，则该克隆会被移除，避免两个 patcher 绑定到同一设备。\n\n当所选设备在当前机器上不存在时\n（例如在 2-GPU 机器上构建的工作流在 1-GPU 机器上打开），\n节点会直接传递模型并记录消息，而不会报错。\n\n注意：不建议在已被其他节点消费过的模型之后放置选择模型设备节点（例如 KSampler 已在原设备上运行过该模型）——如果所选设备与原设备一致（快速路径），则会观察到之前消费者对原模型的状态更改。请在任何模型消费者之前放置选择模型设备节点。",
+    "display_name": "选择模型设备",
+    "inputs": {
+      "device": {
+        "name": "device"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectVAEDevice": {
+    "description": "将VAE放置在指定设备上（default / gpu:N）。\n\n- “default” 恢复加载器分配的设备。\n- “gpu:N” 将加载设备固定到第N个可用GPU；卸载设备设置为标准VAE卸载设备。\n\nVAE在UI中故意不暴露CPU选项；如果工作流仍然提供了“cpu”（例如从其他机器打开），请求会被记录日志并丢弃，VAE保持不变。\n\n当所选设备在当前机器上不存在时（例如在2-GPU机器上构建的工作流在1-GPU机器上打开），节点会直接传递VAE并记录日志，而不会报错。",
+    "display_name": "选择VAE设备",
+    "inputs": {
+      "device": {
+        "name": "设备"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

@@ -663,7 +663,6 @@
     "Collapse": "Réduire",
     "Color": "Couleur",
     "Colors": "Couleurs",
-    "Convert to Group Node": "Convertir en Nœud de Groupe",
     "Convert to Subgraph": "Convertir en sous-graphe",
     "Copy": "Copier",
     "Copy (Clipspace)": "Copier (Clipspace)",
@@ -917,28 +916,105 @@
       "nodeName": "Ce nœud"
     },
     "promptErrors": {
+      "image_not_loaded": {
+        "desc": "Le système n'a pas pu charger cette image.",
+        "title": "Image non chargée"
+      },
+      "missing_node_type": {
+        "desc": "Un type de nœud est manquant ou indisponible. Le workflow peut être corrompu ou nécessiter un nœud personnalisé.",
+        "title": "Type de nœud manquant"
+      },
       "no_prompt": {
-        "desc": "Les données du workflow envoyées au serveur sont vides. Il peut s’agir d’une erreur système inattendue."
+        "desc": "Les données du workflow envoyées au serveur sont vides. Il peut s’agir d’une erreur système inattendue.",
+        "title": "Les données du workflow sont vides"
+      },
+      "out_of_memory": {
+        "descCloud": "Pas assez de mémoire GPU. Essayez de réduire la complexité et relancez. Aucun crédit n'a été débité.",
+        "descLocal": "Pas assez de mémoire GPU. Essayez de réduire la complexité et relancez.",
+        "title": "Échec de la génération"
       },
       "prompt_no_outputs": {
-        "desc": "Le workflow ne contient aucun nœud de sortie (par exemple, Enregistrer l’image, Prévisualiser l’image) pour produire un résultat."
+        "desc": "Le workflow ne contient aucun nœud de sortie (par exemple, Enregistrer l’image, Prévisualiser l’image) pour produire un résultat.",
+        "title": "L'invite n'a pas de sorties"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "Le workflow comporte des entrées de nœud invalides. Corrigez les nœuds surlignés avant de le relancer.",
+        "title": "Échec de la validation de l'invite"
       },
       "server_error_cloud": {
-        "desc": "Le serveur a rencontré une erreur inattendue. Veuillez réessayer plus tard."
+        "desc": "Le serveur a rencontré une erreur inattendue. Veuillez réessayer plus tard.",
+        "title": "Erreur du serveur"
       },
       "server_error_local": {
-        "desc": "Le serveur a rencontré une erreur inattendue. Veuillez consulter les journaux du serveur."
-      }
-    },
-    "runtimeErrors": {
-      "execution_failed": {
-        "itemLabel": "{nodeName}",
-        "toastMessageCloud": "Ce nœud a généré une erreur lors de l’exécution. Vérifiez ses entrées ou essayez une autre configuration. Aucun crédit n’a été déduit.",
-        "toastMessageLocal": "Ce nœud a généré une erreur lors de l’exécution. Vérifiez ses entrées ou essayez une autre configuration.",
-        "toastTitle": "Échec de {nodeName}"
+        "desc": "Le serveur a rencontré une erreur inattendue. Veuillez consulter les journaux du serveur.",
+        "title": "Erreur du serveur"
       }
     },
     "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName} a une connexion invalide pour {inputName}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Une connexion de nœud n'a pas pu être lue correctement.",
+        "title": "Connexion invalide",
+        "toastMessage": "{nodeName} a une connexion invalide pour {inputName}.",
+        "toastTitle": "Connexion invalide"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName} a rejeté la valeur pour {inputName}.",
+        "detailsWithRawDetails": "{nodeName} a échoué à la validation personnalisée : {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Un nœud a rejeté une ou plusieurs valeurs d'entrée.",
+        "title": "Entrée invalide",
+        "toastMessage": "{nodeName} a rejeté la valeur pour {inputName}.",
+        "toastTitle": "Entrée invalide"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName} fait partie d'une connexion circulaire.",
+        "detailsWithRawDetails": "{nodeName} fait partie d'une connexion circulaire : {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "Le workflow comporte une connexion circulaire de nœuds.",
+        "title": "Workflow invalide",
+        "toastMessage": "{nodeName} fait partie d'une connexion circulaire.",
+        "toastTitle": "Workflow invalide"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName} n'a pas pu valider {inputName}.",
+        "detailsWithRawDetails": "{nodeName} n'a pas pu valider {inputName} : {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Le workflow n'a pas pu valider un nœud connecté.",
+        "title": "Échec de la validation",
+        "toastMessage": "{nodeName} n'a pas pu valider {inputName}.",
+        "toastMessageWithRawDetails": "{nodeName} n'a pas pu valider {inputName} : {rawDetails}",
+        "toastTitle": "Échec de la validation"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName} a échoué lors de la validation.",
+        "detailsWithRawDetails": "{nodeName} a échoué lors de la validation : {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "Le workflow n'a pas pu être validé car une vérification de validation de nœud a échoué de façon inattendue.",
+        "title": "Échec de la validation",
+        "toastMessage": "{nodeName} a échoué lors de la validation.",
+        "toastMessageWithRawDetails": "{nodeName} a échoué lors de la validation : {rawDetails}",
+        "toastTitle": "Échec de la validation"
+      },
+      "image_not_loaded": {
+        "details": "L'image pour {nodeName} n'a pas pu être chargée. Essayez de l'ajouter à nouveau.",
+        "itemLabel": "{nodeName}",
+        "message": "Le système n'a pas pu charger cette image.",
+        "title": "Image non chargée",
+        "toastMessage": "L'image pour {nodeName} n'a pas pu être chargée. Essayez de l'ajouter à nouveau.",
+        "toastTitle": "Impossible de charger l'image d'entrée"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName} n'a pas pu convertir {inputName} au type attendu.",
+        "detailsWithValue": "La valeur {receivedValue} pour l'entrée {inputName} de {nodeName} n'a pas pu être convertie en {expectedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Une valeur d'entrée a un type incorrect.",
+        "title": "Entrée invalide",
+        "toastMessage": "{nodeName} n'a pas pu convertir {inputName} au type attendu.",
+        "toastMessageWithValue": "La valeur {receivedValue} pour l'entrée {inputName} de {nodeName} n'a pas pu être convertie en {expectedType}.",
+        "toastTitle": "Entrée invalide"
+      },
       "required_input_missing": {
         "details": "{nodeName} nécessite une entrée obligatoire : {inputName}",
         "itemLabel": "{nodeName} - {inputName}",
@@ -946,6 +1022,46 @@
         "title": "Connexion manquante",
         "toastMessage": "{nodeName} nécessite une entrée obligatoire : {inputName}",
         "toastTitle": "Entrée requise manquante"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName} a une connexion incompatible pour {inputName}.",
+        "detailsWithTypes": "L'entrée {inputName} de {nodeName} attend {expectedType}, mais la sortie connectée est {receivedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Les nœuds connectés utilisent des types d'entrée et de sortie incompatibles.",
+        "title": "Connexion invalide",
+        "toastMessage": "{nodeName} a une connexion incompatible pour {inputName}.",
+        "toastMessageWithTypes": "L'entrée {inputName} de {nodeName} attend {expectedType}, mais la sortie connectée est {receivedType}.",
+        "toastTitle": "Connexion invalide"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName} a une valeur supérieure au maximum pour {inputName}.",
+        "detailsWithValue": "La valeur {receivedValue} pour l'entrée {inputName} de {nodeName} est supérieure au maximum {maxValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Certaines valeurs d'entrée sont en dehors de la plage autorisée.",
+        "title": "Entrée hors limites",
+        "toastMessage": "{nodeName} a une valeur supérieure au maximum pour {inputName}.",
+        "toastMessageWithValue": "La valeur {receivedValue} pour l'entrée {inputName} de {nodeName} est supérieure au maximum {maxValue}.",
+        "toastTitle": "Entrée hors limites"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName} a une valeur non prise en charge pour {inputName}.",
+        "detailsWithValue": "La valeur {receivedValue} pour l'entrée {inputName} de {nodeName} n'est pas disponible.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Certaines valeurs d'entrée ne sont pas disponibles pour ce nœud.",
+        "title": "Entrée invalide",
+        "toastMessage": "{nodeName} a une valeur non prise en charge pour {inputName}.",
+        "toastMessageWithValue": "La valeur {receivedValue} pour l'entrée {inputName} de {nodeName} n'est pas disponible.",
+        "toastTitle": "Entrée invalide"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName} a une valeur inférieure au minimum pour {inputName}.",
+        "detailsWithValue": "La valeur {receivedValue} pour l'entrée {inputName} de {nodeName} est inférieure au minimum {minValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Certaines valeurs d'entrée sont en dehors de la plage autorisée.",
+        "title": "Entrée hors limites",
+        "toastMessage": "{nodeName} a une valeur inférieure au minimum pour {inputName}.",
+        "toastMessageWithValue": "La valeur {receivedValue} pour l'entrée {inputName} de {nodeName} est inférieure au minimum {minValue}.",
+        "toastTitle": "Entrée hors limites"
       }
     }
   },
@@ -2142,7 +2258,6 @@
     "ComfyUI Issues": "Problèmes de ComfyUI",
     "Contact Support": "Contacter le support",
     "Convert Selection to Subgraph": "Convertir la sélection en sous-graphe",
-    "Convert selected nodes to group node": "Convertir les nœuds sélectionnés en nœud de groupe",
     "Copy": "Copier",
     "Custom Nodes (Legacy)": "Nœuds personnalisés (héritage)",
     "Custom Nodes Manager": "Gestionnaire de Nœuds Personnalisés",
@@ -2381,6 +2496,7 @@
     "model_merging": "fusion_de_modèles",
     "model_patches": "patches_de_modèle",
     "model_specific": "spécifique_au_modèle",
+    "multigpu": "multigpu",
     "noise": "bruit",
     "operations": "opérations",
     "photomaker": "photomaker",

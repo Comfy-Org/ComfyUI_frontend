@@ -1113,6 +1113,10 @@
       "model": {
         "name": "modèle"
       },
+      "pre_cfg": {
+        "name": "pre_cfg",
+        "tooltip": "Si activé, rescinde le bruit combiné AVANT la combinaison CFG du sampler, sans limitation (peut amplifier). Correspond au CFG à norme rescalée utilisé par des modèles comme Lens. Par défaut, false conserve le comportement original d’atténuation uniquement dans l’espace x0 après CFG."
+      },
       "strength": {
         "name": "intensité"
       }
@@ -12304,6 +12308,23 @@
       }
     }
   },
+  "MultiGPU_WorkUnits": {
+    "description": "Prépare le modèle pour accélérer l’échantillonnage via la division des unités de travail.\n\nDoit être placé après les nœuds qui modifient l’objet modèle lui-même, comme les nœuds de compilation ou de changement d’attention.\n\nÀ l’exception de ces cas, ce nœud peut être placé dans n’importe quel ordre.",
+    "display_name": "Division CFG MultiGPU",
+    "inputs": {
+      "max_gpus": {
+        "name": "max_gpus"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "NAGuidance": {
     "description": "Applique le Guidage d’Attention Normalisée aux modèles, permettant l’utilisation de prompts négatifs sur les modèles distilled/schnell.",
     "display_name": "Guidage d’Attention Normalisée",
@@ -15912,6 +15933,30 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "description": "Enregistre les images d’entrée dans votre dossier de sortie ComfyUI.",
+    "display_name": "Enregistrer l’image (Avancé)",
+    "inputs": {
+      "filename_prefix": {
+        "name": "préfixe_nom_fichier",
+        "tooltip": "Le préfixe du fichier à enregistrer. Peut inclure des jetons de formatage comme %date:yyyy-MM-dd% ou %Empty Latent Image.width%."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "Le format de fichier dans lequel enregistrer l’image."
+      },
+      "format_bit_depth": {
+        "name": "profondeur_bits"
+      },
+      "format_input_color_space": {
+        "name": "espace_couleur_entrée"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Les images à enregistrer."
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
     "description": "Enregistrer un ensemble d'images dans un dossier spécifié. Formats pris en charge : PNG.",
     "display_name": "Enregistrer l'ensemble d'images dans un dossier",
@@ -16090,6 +16135,57 @@
       },
       "shift_y": {
         "name": "décalage_y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectCLIPDevice": {
+    "description": "Place l’encodeur de texte CLIP sur un périphérique spécifique (default / cpu / gpu:N).\n\n- « default » restaure le périphérique assigné par le chargeur.\n- « cpu » force le chargement et le déchargement sur le CPU.\n- « gpu:N » force le chargement sur le N-ième GPU disponible.\n\nLorsque le périphérique sélectionné n’existe pas sur la machine actuelle\n(par exemple, un workflow créé sur une machine à 2 GPU ouvert sur une machine à 1 GPU),\nle nœud transmet le CLIP inchangé et enregistre un message\nau lieu d’échouer.",
+    "display_name": "Sélectionner le périphérique CLIP",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "device": {
+        "name": "device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectModelDevice": {
+    "description": "Place le modèle de diffusion sur un périphérique spécifique (default / cpu / gpu:N).\n\n- « default » restaure le périphérique assigné par le chargeur (même après un appel précédent à Sélectionner le périphérique du modèle).\n- « cpu » force le chargement et le déchargement sur le CPU.\n- « gpu:N » force le chargement sur le N-ième GPU disponible ; le périphérique de déchargement est restauré au choix original du chargeur.\n\nLorsque le périphérique demandé diffère de celui sur lequel le modèle d’entrée est déjà, un nouveau modèle est généré via la fabrique de rechargement du chargeur (cached_patcher_init) afin que le nouveau patcher possède des poids indépendants sur le nouveau périphérique. Les chargeurs qui ne supportent pas le multigpu (pas de fabrique) feront passer le nœud inchangé avec un avertissement.\n\nSi le workflow a déjà appliqué la Division CFG MultiGPU et que le GPU choisi entre en collision avec l’un des clones multigpu existants, ce clone est supprimé pour éviter que deux patchers ne soient liés au même périphérique.\n\nLorsque le périphérique sélectionné n’existe pas sur la machine actuelle\n(par exemple, un workflow créé sur une machine à 2 GPU ouvert sur une machine à 1 GPU),\nle nœud transmet le modèle inchangé et enregistre un message\nau lieu d’échouer.\n\nREMARQUE : Placer Sélectionner le périphérique du modèle APRÈS un nœud ayant déjà consommé le même modèle (par exemple, un KSampler ayant fonctionné sur ce modèle sur le périphérique original) n’est pas recommandé — tout état modifié par le consommateur précédent sur le modèle original sera observé lorsque le périphérique sélectionné correspond à l’original (chemin rapide). Placez Sélectionner le périphérique du modèle avant tout consommateur du modèle.",
+    "display_name": "Sélectionner le périphérique du modèle",
+    "inputs": {
+      "device": {
+        "name": "device"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectVAEDevice": {
+    "description": "Placez le VAE sur un périphérique spécifique (par défaut / gpu:N).\n\n- « default » restaure le périphérique assigné par le chargeur.\n- « gpu:N » fixe le périphérique de chargement au N-ième GPU disponible ; le périphérique de déchargement\n  est défini sur le périphérique de déchargement VAE standard.\n\nLe CPU n'est volontairement pas proposé dans l'interface pour le VAE ; si un workflow\nfournit tout de même « cpu » (par exemple, ouvert depuis une autre machine), la demande\nest ignorée avec un message dans le journal et le VAE est transmis sans modification.\n\nLorsque le périphérique sélectionné n'existe pas sur la machine actuelle\n(par exemple, un workflow créé sur une machine à 2 GPU ouvert sur une machine à 1 GPU),\nle nœud transmet le VAE sans modification et consigne un message dans le journal\nau lieu d'échouer.",
+    "display_name": "Sélectionner le périphérique VAE",
+    "inputs": {
+      "device": {
+        "name": "périphérique"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

@@ -1113,6 +1113,10 @@
       "model": {
         "name": "modelo"
       },
+      "pre_cfg": {
+        "name": "pre_cfg",
+        "tooltip": "Se verdadeiro, reescala o ruído combinado ANTES da combinação CFG do sampler, sem limitar (pode amplificar). Corresponde ao CFG com normalização usado por modelos como Lens. O padrão falso mantém o comportamento original de atenuação apenas no espaço x0 após o CFG."
+      },
       "strength": {
         "name": "força"
       }
@@ -12304,6 +12308,23 @@
       }
     }
   },
+  "MultiGPU_WorkUnits": {
+    "description": "Prepara o modelo para ter a amostragem acelerada via divisão de unidades de trabalho.\n\nDeve ser colocado após nós que modificam o próprio objeto do modelo, como nós de compilação ou troca de atenção.\n\nFora essas exceções, este nó pode ser colocado em qualquer ordem.",
+    "display_name": "Divisão de CFG MultiGPU",
+    "inputs": {
+      "max_gpus": {
+        "name": "max_gpus"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "NAGuidance": {
     "description": "Aplica Orientação de Atenção Normalizada aos modelos, permitindo prompts negativos em modelos distilled/schnell.",
     "display_name": "Orientação de Atenção Normalizada",
@@ -15912,6 +15933,30 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "description": "Salva as imagens de entrada no diretório de saída do seu ComfyUI.",
+    "display_name": "Salvar Imagem (Avançado)",
+    "inputs": {
+      "filename_prefix": {
+        "name": "prefixo_do_nome_do_arquivo",
+        "tooltip": "O prefixo para o arquivo a ser salvo. Pode incluir tokens de formatação como %date:yyyy-MM-dd% ou %Empty Latent Image.width%."
+      },
+      "format": {
+        "name": "formato",
+        "tooltip": "O formato de arquivo no qual salvar a imagem."
+      },
+      "format_bit_depth": {
+        "name": "profundidade_de_bits"
+      },
+      "format_input_color_space": {
+        "name": "espaço_de_cor_de_entrada"
+      },
+      "images": {
+        "name": "imagens",
+        "tooltip": "As imagens a serem salvas."
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
     "description": "Salva um conjunto de imagens em uma pasta especificada. Formatos suportados: PNG.",
     "display_name": "Salvar Conjunto de Imagens na Pasta",
@@ -16090,6 +16135,57 @@
       },
       "shift_y": {
         "name": "deslocamento_y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectCLIPDevice": {
+    "description": "Coloca o codificador de texto CLIP em um dispositivo específico (default / cpu / gpu:N).\n\n- \"default\" restaura o dispositivo atribuído pelo carregador.\n- \"cpu\" fixa tanto o carregamento quanto o descarregamento no CPU.\n- \"gpu:N\" fixa o carregamento no N-ésimo GPU disponível.\n\nQuando o dispositivo selecionado não existe na máquina atual\n(por exemplo, um fluxo de trabalho criado em uma máquina com 2 GPUs aberto em uma com 1 GPU),\no nó passa o CLIP sem alterações e registra uma mensagem\nem vez de falhar.",
+    "display_name": "Selecionar Dispositivo CLIP",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "device": {
+        "name": "device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectModelDevice": {
+    "description": "Coloca o modelo de difusão em um dispositivo específico (default / cpu / gpu:N).\n\n- \"default\" restaura o dispositivo atribuído pelo carregador (mesmo após uma\n  chamada anterior de Selecionar Dispositivo do Modelo).\n- \"cpu\" fixa tanto o carregamento quanto o descarregamento no CPU.\n- \"gpu:N\" fixa o carregamento no N-ésimo GPU disponível; o dispositivo de descarregamento\n  é restaurado para a escolha original do carregador.\n\nQuando o dispositivo solicitado difere do dispositivo em que o modelo de entrada já está,\num novo modelo é criado via a fábrica de recarregamento do carregador\n(cached_patcher_init) para que o novo patcher tenha pesos independentes no\nnovo dispositivo. Carregadores que não suportam multigpu (sem fábrica)\nfarão com que o nó passe sem alterações com um aviso.\n\nSe o fluxo de trabalho já tiver a Divisão de CFG MultiGPU aplicada e o GPU escolhido\ncolidir com um dos clones multigpu existentes, esse clone é\ndescartado para que dois patchers não fiquem vinculados ao mesmo dispositivo.\n\nQuando o dispositivo selecionado não existe na máquina atual\n(por exemplo, um fluxo de trabalho criado em uma máquina com 2 GPUs aberto em uma com 1 GPU),\no nó passa o modelo sem alterações e registra uma mensagem\nem vez de falhar.\n\nNOTA: Colocar Selecionar Dispositivo do Modelo *após* um nó que já\nconsumiu o mesmo modelo (por exemplo, um KSampler que rodou neste modelo no\ndispositivo original) não é recomendado -- qualquer estado que o consumidor anterior\nmutou no modelo original será observado quando o dispositivo selecionado corresponder ao original (caminho rápido). Coloque Selecionar Dispositivo do Modelo antes de qualquer consumidor do modelo.",
+    "display_name": "Selecionar Dispositivo do Modelo",
+    "inputs": {
+      "device": {
+        "name": "device"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectVAEDevice": {
+    "description": "Coloque o VAE em um dispositivo específico (padrão / gpu:N).\n\n- \"default\" restaura o dispositivo atribuído pelo carregador.\n- \"gpu:N\" fixa o dispositivo de carregamento para a N-ésima GPU disponível; o dispositivo de offload\n  é definido para o dispositivo padrão de offload do VAE.\n\nA CPU não é exibida intencionalmente na interface para o VAE; se um fluxo de trabalho\nfornecer \"cpu\" de qualquer forma (por exemplo, aberto de outra máquina), a solicitação\né ignorada com uma mensagem de log e o VAE é passado sem alterações.\n\nQuando o dispositivo selecionado não existe na máquina atual\n(por exemplo, um fluxo de trabalho criado em uma máquina com 2 GPUs aberto em uma máquina com 1 GPU),\no nó passa o VAE sem alterações e registra uma mensagem\nem vez de falhar.",
+    "display_name": "Selecionar Dispositivo VAE",
+    "inputs": {
+      "device": {
+        "name": "dispositivo"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

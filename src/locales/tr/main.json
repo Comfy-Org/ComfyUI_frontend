@@ -663,7 +663,6 @@
     "Collapse": "Daralt",
     "Color": "Renk",
     "Colors": "Renkler",
-    "Convert to Group Node": "Grup Düğümüne Dönüştür",
     "Convert to Subgraph": "Alt Grafiğe Dönüştür",
     "Copy": "Kopyala",
     "Copy (Clipspace)": "Kopyala (Clipspace)",
@@ -917,28 +916,105 @@
       "nodeName": "Bu düğüm"
     },
     "promptErrors": {
+      "image_not_loaded": {
+        "desc": "Sistem bu görseli yükleyemedi.",
+        "title": "Görsel yüklenemedi"
+      },
+      "missing_node_type": {
+        "desc": "Bir düğüm türü eksik veya kullanılamıyor. Çalışma akışı bozulmuş olabilir veya özel bir düğüm gerektiriyor olabilir.",
+        "title": "Eksik düğüm türü"
+      },
       "no_prompt": {
-        "desc": "Sunucuya gönderilen çalışma akışı verisi boş. Bu beklenmeyen bir sistem hatası olabilir."
+        "desc": "Sunucuya gönderilen çalışma akışı verisi boş. Bu beklenmeyen bir sistem hatası olabilir.",
+        "title": "Çalışma akışı verisi boş"
+      },
+      "out_of_memory": {
+        "descCloud": "Yeterli GPU belleği yok. Karmaşıklığı azaltıp tekrar deneyin. Kredi harcanmadı.",
+        "descLocal": "Yeterli GPU belleği yok. Karmaşıklığı azaltıp tekrar deneyin.",
+        "title": "Oluşturma başarısız"
       },
       "prompt_no_outputs": {
-        "desc": "Çalışma akışında sonuç üretecek herhangi bir çıktı düğümü (örn. Görseli Kaydet, Görseli Önizle) bulunmuyor."
+        "desc": "Çalışma akışında sonuç üretecek herhangi bir çıktı düğümü (örn. Görseli Kaydet, Görseli Önizle) bulunmuyor.",
+        "title": "İstemde çıktı yok"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "Çalışma akışında geçersiz düğüm girişleri var. Tekrar çalıştırmadan önce vurgulanan düğümleri düzeltin.",
+        "title": "İstem doğrulaması başarısız"
       },
       "server_error_cloud": {
-        "desc": "Sunucuda beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin."
+        "desc": "Sunucuda beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin.",
+        "title": "Sunucu hatası"
       },
       "server_error_local": {
-        "desc": "Sunucuda beklenmeyen bir hata oluştu. Lütfen sunucu günlüklerini kontrol edin."
-      }
-    },
-    "runtimeErrors": {
-      "execution_failed": {
-        "itemLabel": "{nodeName}",
-        "toastMessageCloud": "Bu düğüm çalıştırılırken bir hata oluştu. Girişlerini kontrol edin veya farklı bir yapılandırmayı deneyin. Kredi harcanmadı.",
-        "toastMessageLocal": "Bu düğüm çalıştırılırken bir hata oluştu. Girişlerini kontrol edin veya farklı bir yapılandırmayı deneyin.",
-        "toastTitle": "{nodeName} başarısız oldu"
+        "desc": "Sunucuda beklenmeyen bir hata oluştu. Lütfen sunucu günlüklerini kontrol edin.",
+        "title": "Sunucu hatası"
       }
     },
     "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName} için {inputName} bağlantısı geçersiz.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Bir düğüm bağlantısı doğru şekilde okunamadı.",
+        "title": "Geçersiz bağlantı",
+        "toastMessage": "{nodeName} için {inputName} bağlantısı geçersiz.",
+        "toastTitle": "Geçersiz bağlantı"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName}, {inputName} değerini reddetti.",
+        "detailsWithRawDetails": "{nodeName} özel doğrulamadan geçemedi: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Bir düğüm bir veya daha fazla giriş değerini reddetti.",
+        "title": "Geçersiz giriş",
+        "toastMessage": "{nodeName}, {inputName} değerini reddetti.",
+        "toastTitle": "Geçersiz giriş"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName} döngüsel bir bağlantının parçası.",
+        "detailsWithRawDetails": "{nodeName} döngüsel bir bağlantının parçası: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "Çalışma akışında döngüsel bir düğüm bağlantısı var.",
+        "title": "Geçersiz çalışma akışı",
+        "toastMessage": "{nodeName} döngüsel bir bağlantının parçası.",
+        "toastTitle": "Geçersiz çalışma akışı"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName}, {inputName} değerini doğrulayamadı.",
+        "detailsWithRawDetails": "{nodeName}, {inputName} değerini doğrulayamadı: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Çalışma akışı bağlı bir düğümü doğrulayamadı.",
+        "title": "Doğrulama başarısız",
+        "toastMessage": "{nodeName}, {inputName} değerini doğrulayamadı.",
+        "toastMessageWithRawDetails": "{nodeName}, {inputName} değerini doğrulayamadı: {rawDetails}",
+        "toastTitle": "Doğrulama başarısız"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName} doğrulama sırasında başarısız oldu.",
+        "detailsWithRawDetails": "{nodeName} doğrulama sırasında başarısız oldu: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "Çalışma akışı doğrulanamadı çünkü bir düğüm doğrulama kontrolü beklenmedik şekilde başarısız oldu.",
+        "title": "Doğrulama başarısız",
+        "toastMessage": "{nodeName} doğrulama sırasında başarısız oldu.",
+        "toastMessageWithRawDetails": "{nodeName} doğrulama sırasında başarısız oldu: {rawDetails}",
+        "toastTitle": "Doğrulama başarısız"
+      },
+      "image_not_loaded": {
+        "details": "{nodeName} için görsel yüklenemedi. Tekrar eklemeyi deneyin.",
+        "itemLabel": "{nodeName}",
+        "message": "Sistem bu görseli yükleyemedi.",
+        "title": "Görsel yüklenemedi",
+        "toastMessage": "{nodeName} için görsel yüklenemedi. Tekrar eklemeyi deneyin.",
+        "toastTitle": "Giriş görseli yüklenemedi"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName}, {inputName} değerini beklenen tipe dönüştüremedi.",
+        "detailsWithValue": "{nodeName} adlı düğümün {inputName} girişi için {receivedValue} değeri {expectedType} tipine dönüştürülemedi.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Bir giriş değeri yanlış tipte.",
+        "title": "Geçersiz giriş",
+        "toastMessage": "{nodeName}, {inputName} değerini beklenen tipe dönüştüremedi.",
+        "toastMessageWithValue": "{nodeName} adlı düğümün {inputName} girişi için {receivedValue} değeri {expectedType} tipine dönüştürülemedi.",
+        "toastTitle": "Geçersiz giriş"
+      },
       "required_input_missing": {
         "details": "{nodeName} için gerekli bir giriş eksik: {inputName}",
         "itemLabel": "{nodeName} - {inputName}",
@@ -946,6 +1022,46 @@
         "title": "Eksik bağlantı",
         "toastMessage": "{nodeName} için gerekli bir giriş eksik: {inputName}",
         "toastTitle": "Gerekli giriş eksik"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName} için {inputName} bağlantısı uyumsuz.",
+        "detailsWithTypes": "{nodeName} adlı düğümün {inputName} girişi {expectedType} bekliyor, ancak bağlı çıkış {receivedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Bağlı düğümler uyumsuz giriş ve çıkış tipleri kullanıyor.",
+        "title": "Geçersiz bağlantı",
+        "toastMessage": "{nodeName} için {inputName} bağlantısı uyumsuz.",
+        "toastMessageWithTypes": "{nodeName} adlı düğümün {inputName} girişi {expectedType} bekliyor, ancak bağlı çıkış {receivedType}.",
+        "toastTitle": "Geçersiz bağlantı"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName} için {inputName} değeri maksimumun üstünde.",
+        "detailsWithValue": "{nodeName} adlı düğümün {inputName} girişi için {receivedValue} değeri maksimum {maxValue} değerinin üstünde.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Bazı giriş değerleri izin verilen aralığın dışında.",
+        "title": "Giriş aralık dışında",
+        "toastMessage": "{nodeName} için {inputName} değeri maksimumun üstünde.",
+        "toastMessageWithValue": "{nodeName} adlı düğümün {inputName} girişi için {receivedValue} değeri maksimum {maxValue} değerinin üstünde.",
+        "toastTitle": "Giriş aralık dışında"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName} için {inputName} değeri desteklenmiyor.",
+        "detailsWithValue": "{nodeName} adlı düğümün {inputName} girişi için {receivedValue} değeri mevcut değil.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Bazı giriş değerleri bu düğüm için mevcut değil.",
+        "title": "Geçersiz giriş",
+        "toastMessage": "{nodeName} için {inputName} değeri desteklenmiyor.",
+        "toastMessageWithValue": "{nodeName} adlı düğümün {inputName} girişi için {receivedValue} değeri mevcut değil.",
+        "toastTitle": "Geçersiz giriş"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName} için {inputName} değeri minimumun altında.",
+        "detailsWithValue": "{nodeName} adlı düğümün {inputName} girişi için {receivedValue} değeri minimum {minValue} değerinin altında.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Bazı giriş değerleri izin verilen aralığın dışında.",
+        "title": "Giriş aralık dışında",
+        "toastMessage": "{nodeName} için {inputName} değeri minimumun altında.",
+        "toastMessageWithValue": "{nodeName} adlı düğümün {inputName} girişi için {receivedValue} değeri minimum {minValue} değerinin altında.",
+        "toastTitle": "Giriş aralık dışında"
       }
     }
   },
@@ -2142,7 +2258,6 @@
     "ComfyUI Issues": "ComfyUI Sorunları",
     "Contact Support": "Destekle İletişime Geç",
     "Convert Selection to Subgraph": "Seçimi Alt Grafiğe Dönüştür",
-    "Convert selected nodes to group node": "Seçili düğümleri grup düğümüne dönüştür",
     "Copy": "Kopyala",
     "Custom Nodes (Legacy)": "Özel Düğümler (Eski)",
     "Custom Nodes Manager": "Özel Düğüm Yöneticisi",
@@ -2381,6 +2496,7 @@
     "model_merging": "model_birleştirme",
     "model_patches": "model_yamaları",
     "model_specific": "modele_özgü",
+    "multigpu": "çoklu gpu",
     "noise": "gürültü",
     "operations": "işlemler",
     "photomaker": "photomaker",

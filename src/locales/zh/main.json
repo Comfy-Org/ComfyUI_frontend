@@ -663,7 +663,6 @@
     "Collapse": "折叠",
     "Color": "颜色",
     "Colors": "颜色",
-    "Convert to Group Node": "转换为组节点",
     "Convert to Subgraph": "转换为子工作流",
     "Copy": "复制",
     "Copy (Clipspace)": "复制 (Clipspace)",
@@ -917,28 +916,105 @@
       "nodeName": "此节点"
     },
     "promptErrors": {
+      "image_not_loaded": {
+        "desc": "系统无法加载该图像。",
+        "title": "图像未加载"
+      },
+      "missing_node_type": {
+        "desc": "缺少或不可用的节点类型。工作流可能已损坏或需要自定义节点。",
+        "title": "缺少节点类型"
+      },
       "no_prompt": {
-        "desc": "发送到服务器的工作流数据为空。这可能是系统的意外错误。"
+        "desc": "发送到服务器的工作流数据为空。这可能是系统的意外错误。",
+        "title": "工作流数据为空"
+      },
+      "out_of_memory": {
+        "descCloud": "GPU 显存不足。请尝试降低复杂度后重试。未扣除积分。",
+        "descLocal": "GPU 显存不足。请尝试降低复杂度后重试。",
+        "title": "生成失败"
       },
       "prompt_no_outputs": {
-        "desc": "工作流未包含任何输出节点（如保存图像、预览图像），无法生成结果。"
+        "desc": "工作流未包含任何输出节点（如保存图像、预览图像），无法生成结果。",
+        "title": "提示无输出"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "工作流存在无效的节点输入。请修正高亮节点后重试。",
+        "title": "提示校验失败"
       },
       "server_error_cloud": {
-        "desc": "服务器遇到意外错误。请稍后再试。"
+        "desc": "服务器遇到意外错误。请稍后再试。",
+        "title": "服务器错误"
       },
       "server_error_local": {
-        "desc": "服务器遇到意外错误。请检查服务器日志。"
-      }
-    },
-    "runtimeErrors": {
-      "execution_failed": {
-        "itemLabel": "{nodeName}",
-        "toastMessageCloud": "此节点在执行过程中发生错误。请检查其输入或尝试其他配置。未扣除积分。",
-        "toastMessageLocal": "此节点在执行过程中发生错误。请检查其输入或尝试其他配置。",
-        "toastTitle": "{nodeName} 执行失败"
+        "desc": "服务器遇到意外错误。请检查服务器日志。",
+        "title": "服务器错误"
       }
     },
     "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName} 的 {inputName} 连接无效。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "无法正确读取节点连接。",
+        "title": "无效连接",
+        "toastMessage": "{nodeName} 的 {inputName} 连接无效。",
+        "toastTitle": "无效连接"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName} 拒绝了 {inputName} 的值。",
+        "detailsWithRawDetails": "{nodeName} 自定义校验失败：{rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "节点拒绝了一个或多个输入值。",
+        "title": "无效输入",
+        "toastMessage": "{nodeName} 拒绝了 {inputName} 的值。",
+        "toastTitle": "无效输入"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName} 是循环连接的一部分。",
+        "detailsWithRawDetails": "{nodeName} 是循环连接的一部分：{rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "工作流存在循环节点连接。",
+        "title": "无效工作流",
+        "toastMessage": "{nodeName} 是循环连接的一部分。",
+        "toastTitle": "无效工作流"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName} 无法校验 {inputName}。",
+        "detailsWithRawDetails": "{nodeName} 无法校验 {inputName}：{rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "工作流无法校验已连接的节点。",
+        "title": "校验失败",
+        "toastMessage": "{nodeName} 无法校验 {inputName}。",
+        "toastMessageWithRawDetails": "{nodeName} 无法校验 {inputName}：{rawDetails}",
+        "toastTitle": "校验失败"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName} 校验时失败。",
+        "detailsWithRawDetails": "{nodeName} 校验时失败：{rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "由于节点校验检查意外失败，工作流无法通过校验。",
+        "title": "校验失败",
+        "toastMessage": "{nodeName} 校验时失败。",
+        "toastMessageWithRawDetails": "{nodeName} 校验时失败：{rawDetails}",
+        "toastTitle": "校验失败"
+      },
+      "image_not_loaded": {
+        "details": "{nodeName} 的图像无法加载。请尝试重新添加。",
+        "itemLabel": "{nodeName}",
+        "message": "系统无法加载该图像。",
+        "title": "图像未加载",
+        "toastMessage": "{nodeName} 的图像无法加载。请尝试重新添加。",
+        "toastTitle": "输入图像无法加载"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName} 无法将 {inputName} 转换为期望类型。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 无法转换为 {expectedType}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "输入值类型错误。",
+        "title": "无效输入",
+        "toastMessage": "{nodeName} 无法将 {inputName} 转换为期望类型。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 无法转换为 {expectedType}。",
+        "toastTitle": "无效输入"
+      },
       "required_input_missing": {
         "details": "{nodeName} 缺少必需的输入：{inputName}",
         "itemLabel": "{nodeName} - {inputName}",
@@ -946,6 +1022,46 @@
         "title": "缺少连接",
         "toastMessage": "{nodeName} 缺少必需的输入：{inputName}",
         "toastTitle": "缺少必需输入"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName} 的 {inputName} 连接类型不兼容。",
+        "detailsWithTypes": "{nodeName} 的 {inputName} 输入需要 {expectedType}，但连接的输出为 {receivedType}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "已连接的节点输入输出类型不兼容。",
+        "title": "无效连接",
+        "toastMessage": "{nodeName} 的 {inputName} 连接类型不兼容。",
+        "toastMessageWithTypes": "{nodeName} 的 {inputName} 输入需要 {expectedType}，但连接的输出为 {receivedType}。",
+        "toastTitle": "无效连接"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName} 的 {inputName} 值高于最大值。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 高于最大值 {maxValue}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "部分输入值超出允许范围。",
+        "title": "输入超出范围",
+        "toastMessage": "{nodeName} 的 {inputName} 值高于最大值。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 高于最大值 {maxValue}。",
+        "toastTitle": "输入超出范围"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName} 的 {inputName} 值不被支持。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 不可用。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "部分输入值不适用于该节点。",
+        "title": "无效输入",
+        "toastMessage": "{nodeName} 的 {inputName} 值不被支持。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 不可用。",
+        "toastTitle": "无效输入"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName} 的 {inputName} 值低于最小值。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 低于最小值 {minValue}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "部分输入值超出允许范围。",
+        "title": "输入超出范围",
+        "toastMessage": "{nodeName} 的 {inputName} 值低于最小值。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 低于最小值 {minValue}。",
+        "toastTitle": "输入超出范围"
       }
     }
   },
@@ -2142,7 +2258,6 @@
     "ComfyUI Issues": "ComfyUI 问题",
     "Contact Support": "联系支持",
     "Convert Selection to Subgraph": "将选中内容转换为子工作流",
-    "Convert selected nodes to group node": "将选中节点转换为组节点",
     "Copy": "复制",
     "Custom Nodes (Legacy)": "自定义节点（旧版）",
     "Custom Nodes Manager": "自定义节点管理器",
@@ -2381,6 +2496,7 @@
     "model_merging": "模型合并",
     "model_patches": "模型微调",
     "model_specific": "模型特定",
+    "multigpu": "多GPU",
     "noise": "噪波",
     "operations": "操作",
     "photomaker": "PhotoMaker",

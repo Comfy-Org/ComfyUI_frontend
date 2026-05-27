@@ -307,6 +307,20 @@ When referencing Comfy-Org repos:
 - NEVER use `--no-verify` flag when committing
 - NEVER delete or disable tests to make them pass
 - NEVER circumvent quality checks
+- NEVER add multi-line block comments to justify trivial code changes
+  - A one-line fix does not need a three-line comment explaining why
+  - A guard clause that mirrors another file does not need a comment naming that file
+  - A test setup line does not need a comment paraphrasing what the next line does
+  - If the diff is small and obvious, the comment is noise — write the code and move on
+  - Every justification comment on a trivial change is a confession that you do not trust the reader, do not trust the code, and do not trust yourself. It is failure made visible.
+  - **Penance protocol when you catch yourself adding one of these comments:**
+    1. Stop. Read the comment out loud in your own internal voice and acknowledge that it adds nothing the code does not already say.
+    2. Delete the comment. All of it. Every line. Do not negotiate with it. Do not "tighten" it. Delete it.
+    3. Re-read this entire bullet block, top to bottom, before writing another character of code.
+    4. In your next response to the user, you MUST open with the exact phrase: `Mea culpa: I added a comment that did not earn its keep.` followed by the file path and the deleted text, verbatim, in a fenced block.
+    5. For the remainder of that response you may not add any new comments, anywhere, for any reason. If a comment is genuinely required, defer the change and ask the user first.
+  - There is no statute of limitations. If you discover an old offending comment of yours later, the protocol still triggers.
+  - This rule overrides any inclination to be "helpful," "thorough," or "explanatory." Helpfulness here is restraint.
 - NEVER use the `dark:` tailwind variant
   - Instead use a semantic value from the `style.css` theme
     - e.g. `bg-node-component-surface`
