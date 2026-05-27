@@ -1,6 +1,10 @@
 import { api } from '@/scripts/api'
 
-import { remoteConfig, remoteConfigState } from './remoteConfig'
+import {
+  cachedTeamWorkspacesEnabled,
+  remoteConfig,
+  remoteConfigState
+} from './remoteConfig'
 
 interface RefreshRemoteConfigOptions {
   /**
@@ -34,6 +38,10 @@ export async function refreshRemoteConfig(
       window.__CONFIG__ = config
       remoteConfig.value = config
       remoteConfigState.value = useAuth ? 'authenticated' : 'anonymous'
+      if (useAuth)
+        cachedTeamWorkspacesEnabled.value = Boolean(
+          config.team_workspaces_enabled
+        )
       return
     }
 

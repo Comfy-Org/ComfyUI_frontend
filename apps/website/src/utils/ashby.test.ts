@@ -40,7 +40,7 @@ function makeSnapshot(roleCount = 2): RolesSnapshot {
     title: `Snapshot Role ${i}`,
     department: 'Engineering',
     location: 'San Francisco',
-    applyUrl: `https://jobs.ashbyhq.com/comfy-org/snapshot-${i}`
+    jobUrl: `https://jobs.ashbyhq.com/comfy-org/snapshot-${i}`
   }))
   return {
     fetchedAt: '2026-04-01T00:00:00.000Z',
@@ -85,26 +85,7 @@ describe('fetchRolesForBuild', () => {
     if (outcome.status !== 'fresh') return
     expect(outcome.droppedCount).toBe(0)
     expect(outcome.snapshot.departments).toHaveLength(1)
-    expect(outcome.snapshot.departments[0]!.roles[0]!.applyUrl).toMatch(
-      /design-engineer\/apply$/
-    )
-  })
-
-  it('falls back to jobUrl when applyUrl is missing and keeps the role', async () => {
-    const job = validJob()
-    delete (job as Record<string, unknown>).applyUrl
-    const fetchImpl = vi.fn(async () =>
-      response({ apiVersion: '1', jobs: [job] })
-    )
-    const outcome = await fetchRolesForBuild({
-      apiKey: KEY,
-      boardName: BOARD,
-      baseUrl: BASE_URL,
-      fetchImpl: fetchImpl as unknown as typeof fetch
-    })
-    expect(outcome.status).toBe('fresh')
-    if (outcome.status !== 'fresh') return
-    expect(outcome.snapshot.departments[0]!.roles[0]!.applyUrl).toBe(
+    expect(outcome.snapshot.departments[0]!.roles[0]!.jobUrl).toBe(
       'https://jobs.ashbyhq.com/comfy-org/design-engineer'
     )
   })

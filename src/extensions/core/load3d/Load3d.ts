@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js'
 
 import type { AnimationManager } from './AnimationManager'
 import type { CameraManager } from './CameraManager'
@@ -103,6 +104,8 @@ class Load3d {
   private disposeContextMenuGuard: (() => void) | null = null
   private resizeObserver: ResizeObserver | null = null
   private getZoomScaleCallback: (() => number) | undefined
+  private retainViewOnReload: boolean = false
+  private hasLoadedModel: boolean = false
 
   constructor(
     container: Element | HTMLElement,
@@ -344,8 +347,30 @@ class Load3d {
     const exportMessage = `Exporting as ${format.toUpperCase()}...`
     this.eventManager.emitEvent('exportLoadingStart', exportMessage)
 
+    const source = this.modelManager.currentModel
+    const savedPos = source.position.clone()
+    const savedRot = source.rotation.clone()
+    const savedScale = source.scale.clone()
+    source.position.set(0, 0, 0)
+    source.rotation.set(0, 0, 0)
+    source.scale.set(1, 1, 1)
+    source.updateMatrixWorld(true)
+
     try {
-      const model = this.modelManager.currentModel.clone()
+      const original = this.modelManager.originalModel
+      const clipsFromOriginal =
+        original &&
+        'animations' in original &&
+        Array.isArray(original.animations)
+          ? original.animations
+          : []
+      const clips = source.animations?.length
+        ? source.animations
+        : clipsFromOriginal
+      const model =
+        format === 'fbx'
+          ? Object.assign(cloneSkinned(source), { animations: clips })
+          : source.clone()
 
       const originalFileName = this.modelManager.originalFileName || 'model'
       const filename = `${originalFileName}.${format}`
@@ -364,6 +389,9 @@ class Load3d {
         case 'stl':
           ;(await ModelExporter.exportSTL(model, filename), originalURL)
           break
+        case 'fbx':
+          await ModelExporter.exportFBX(model, filename, originalURL)
+          break
         default:
           throw new Error(`Unsupported export format: ${format}`)
       }
@@ -373,6 +401,10 @@ class Load3d {
       console.error(`Error exporting model as ${format}:`, error)
       throw error
     } finally {
+      source.position.copy(savedPos)
+      source.rotation.copy(savedRot)
+      source.scale.copy(savedScale)
+      source.updateMatrixWorld(true)
       this.eventManager.emitEvent('exportLoadingEnd', null)
     }
   }
@@ -534,13 +566,25 @@ class Load3d {
     }
   }
 
+  public setRetainViewOnReload(value: boolean): void {
+    this.retainViewOnReload = value
+  }
+
   private async _loadModelInternal(
     url: string,
     originalFileName?: string,
     options?: LoadModelOptions
   ): Promise<void> {
-    this.cameraManager.reset()
-    this.controlsManager.reset()
+    // First load always uses default framing; retain only applies on reload.
+    const shouldRetainView = this.retainViewOnReload && this.hasLoadedModel
+    const savedCameraState = shouldRetainView
+      ? this.cameraManager.getCameraState()
+      : null
+
+    if (!shouldRetainView) {
+      this.cameraManager.reset()
+      this.controlsManager.reset()
+    }
     this.gizmoManager.detach()
     this.modelManager.clearModel()
     this.animationManager.dispose()
@@ -553,6 +597,18 @@ class Load3d {
         this.modelManager.currentModel,
         this.modelManager.originalModel
       )
+      this.hasLoadedModel = true
+    }
+
+    if (savedCameraState) {
+      // setupForModel runs during loadModel and clobbers the camera; restore on top.
+      if (
+        savedCameraState.cameraType !==
+        this.cameraManager.getCurrentCameraType()
+      ) {
+        this.toggleCamera(savedCameraState.cameraType)
+      }
+      this.cameraManager.setCameraState(savedCameraState)
     }
 
     this.handleResize()
@@ -577,6 +633,7 @@ class Load3d {
     this.gizmoManager.detach()
     this.modelManager.clearModel()
     this.adapterRef.current = null
+    this.hasLoadedModel = false
     this.forceRender()
   }
 
@@ -630,6 +687,10 @@ class Load3d {
 
   removeEventListener<T>(event: string, callback: EventCallback<T>): void {
     this.eventManager.removeEventListener(event, callback)
+  }
+
+  emitModelReady(): void {
+    this.eventManager.emitEvent('modelReady', null)
   }
 
   refreshViewport(): void {
@@ -812,6 +873,8 @@ class Load3d {
       }
       this.cameraManager.setCameraState(savedState)
       this.controlsManager.controls?.update()
+
+      this.forceRender()
     }
   }
 

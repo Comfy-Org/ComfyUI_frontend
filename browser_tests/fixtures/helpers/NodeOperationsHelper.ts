@@ -18,9 +18,7 @@ export class NodeOperationsHelper {
   public readonly promptDialogInput: Locator
 
   constructor(private comfyPage: ComfyPage) {
-    this.promptDialogInput = this.page.locator(
-      '.p-dialog-content input[type="text"]'
-    )
+    this.promptDialogInput = this.page.getByRole('dialog').getByRole('textbox')
   }
 
   private get page() {
@@ -216,16 +214,6 @@ export class NodeOperationsHelper {
         bottomRight
       )
     }
-  }
-
-  async convertAllNodesToGroupNode(groupNodeName: string): Promise<void> {
-    await this.comfyPage.canvas.press('Control+a')
-    const node = await this.getFirstNodeRef()
-    if (!node) {
-      throw new Error('No nodes found to convert')
-    }
-    await node.clickContextMenuOption('Convert to Group Node')
-    await this.fillPromptDialog(groupNodeName)
   }
 
   async fillPromptDialog(value: string): Promise<void> {

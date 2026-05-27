@@ -33,6 +33,7 @@ export interface MenuOption {
   disabled?: boolean
   source?: 'litegraph' | 'vue'
   isColorPicker?: boolean
+  isShapePicker?: boolean
 }
 
 export interface SubMenuOption {
@@ -44,8 +45,7 @@ export interface SubMenuOption {
 }
 
 export enum BadgeVariant {
-  NEW = 'new',
-  DEPRECATED = 'deprecated'
+  NEW = 'new'
 }
 
 // Global singleton for NodeOptions component reference
@@ -124,8 +124,8 @@ export function useMoreOptionsMenu() {
   const {
     selectedItems,
     selectedNodes,
-    nodeDef,
-    showNodeHelp,
+    canOpenNodeInfo,
+    openNodeInfo,
     hasSubgraphs: hasSubgraphsComputed,
     hasImageNode,
     hasOutputNodesSelected,
@@ -243,8 +243,8 @@ export function useMoreOptionsMenu() {
     options.push({ type: 'divider' })
 
     // Section 4: Node properties (Node Info, Shape, Color)
-    if (nodeDef.value) {
-      options.push(getNodeInfoOption(showNodeHelp))
+    if (canOpenNodeInfo.value) {
+      options.push(getNodeInfoOption(openNodeInfo))
     }
     if (groupContext) {
       options.push(getGroupColorOptions(groupContext, bump))

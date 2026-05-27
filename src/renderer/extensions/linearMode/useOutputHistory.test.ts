@@ -23,8 +23,8 @@ const selectAsLatestFn = vi.fn()
 const resolveIfReadyFn = vi.fn()
 const resolvedOutputsCacheRef = new Map<string, ResultItemImpl[]>()
 
-vi.mock('@/platform/assets/composables/media/useMediaAssets', () => ({
-  useMediaAssets: () => ({
+vi.mock('@/platform/assets/composables/media/useAssetsApi', () => ({
+  useAssetsApi: () => ({
     media: mediaRef,
     loading: ref(false),
     error: ref(null),

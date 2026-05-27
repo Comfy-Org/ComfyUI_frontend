@@ -87,42 +87,26 @@ const rightSidePanelStore = useRightSidePanelStore()
 const canvasStore = useCanvasStore()
 
 const { totalErrorCount, isErrorOverlayOpen } = storeToRefs(executionErrorStore)
-const { allErrorGroups, missingModelGroups } = useErrorGroups(ref(''), t)
+const { allErrorGroups } = useErrorGroups(ref(''))
 
 const singleErrorType = computed(() => {
   const types = new Set(allErrorGroups.value.map((g) => g.type))
   return types.size === 1 ? [...types][0] : null
 })
 
-const friendlyMessageMap: Record<string, () => string> = {
-  missing_node: () => t('errorOverlay.missingNodes'),
-  swap_nodes: () => t('errorOverlay.swapNodes'),
-  missing_media: () => t('errorOverlay.missingMedia'),
-  missing_model: () => {
-    const modelCount = missingModelGroups.value.reduce(
-      (count, g) => count + g.models.length,
-      0
-    )
-    return t('errorOverlay.missingModels', { count: modelCount }, modelCount)
-  }
-}
-
-function toFriendlyMessage(group: (typeof allErrorGroups.value)[number]) {
-  return friendlyMessageMap[group.type]?.() ?? null
-}
-
 const overlayMessages = computed<string[]>(() => {
   const messages = new Set<string>()
   for (const group of allErrorGroups.value) {
-    const friendly = toFriendlyMessage(group)
-    if (friendly) {
-      messages.add(friendly)
-    } else if (group.type === 'execution') {
+    if (group.type === 'execution') {
+      // TODO(FE-816 overlay-redesign): Keep runtime overlay copy raw until the
+      // overlay redesign decides how to use catalog toast fields.
       for (const card of group.cards) {
         for (const err of card.errors) {
           messages.add(err.message)
         }
       }
+    } else {
+      messages.add(group.displayMessage ?? group.displayTitle)
     }
   }
   return Array.from(messages)

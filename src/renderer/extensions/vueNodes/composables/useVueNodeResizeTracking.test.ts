@@ -43,7 +43,8 @@ const testState = vi.hoisted(() => ({
   nodeLayouts: new Map<NodeId, NodeLayout>(),
   batchUpdateNodeBounds: vi.fn(),
   setSource: vi.fn(),
-  syncNodeSlotLayoutsFromDOM: vi.fn()
+  syncNodeSlotLayoutsFromDOM: vi.fn(),
+  scheduleSlotLayoutSync: vi.fn()
 }))
 
 vi.mock('@vueuse/core', () => ({
@@ -73,6 +74,7 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
 }))
 
 vi.mock('./useSlotElementTracking', () => ({
+  scheduleSlotLayoutSync: testState.scheduleSlotLayoutSync,
   syncNodeSlotLayoutsFromDOM: testState.syncNodeSlotLayoutsFromDOM
 }))
 
@@ -159,6 +161,7 @@ describe('useVueNodeResizeTracking', () => {
     testState.batchUpdateNodeBounds.mockReset()
     testState.setSource.mockReset()
     testState.syncNodeSlotLayoutsFromDOM.mockReset()
+    testState.scheduleSlotLayoutSync.mockReset()
     resizeObserverState.observe.mockReset()
     resizeObserverState.unobserve.mockReset()
     resizeObserverState.disconnect.mockReset()
@@ -316,5 +319,26 @@ describe('useVueNodeResizeTracking', () => {
 
     expect(testState.setSource).toHaveBeenCalledWith(LayoutSource.DOM)
     expect(testState.batchUpdateNodeBounds).toHaveBeenCalled()
+  })
+
+  it('widgets-grid resize schedules a slot resync without writing node bounds', () => {
+    const parentNodeId: NodeId = 'parent-node'
+    const element = document.createElement('div')
+    element.dataset.widgetsGridNodeId = parentNodeId
+    const boxSizes = [{ inlineSize: 200, blockSize: 80 }]
+    const entry = {
+      target: element,
+      borderBoxSize: boxSizes,
+      contentBoxSize: boxSizes,
+      devicePixelContentBoxSize: boxSizes,
+      contentRect: new DOMRect(0, 0, 200, 80)
+    } satisfies ResizeEntryLike
+
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    expect(testState.scheduleSlotLayoutSync).toHaveBeenCalledWith(parentNodeId)
+    expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
+    expect(testState.setSource).not.toHaveBeenCalled()
+    expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
   })
 })

@@ -1,8 +1,8 @@
 import { toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
 
-import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
+import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
@@ -84,6 +84,7 @@ import {
 } from './measure'
 import { NodeInputSlot } from './node/NodeInputSlot'
 import type { Subgraph } from './subgraph/Subgraph'
+import { topologicalSortSubgraphs } from './subgraph/subgraphDeduplication'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphNode } from './subgraph/SubgraphNode'
@@ -1179,7 +1180,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const categories = LiteGraph.getNodeTypesCategories(
         canvas.filter || graph.filter
       ).filter((category) => category.startsWith(base_category))
-      const entries: AddNodeMenu[] = []
+      const categoryEntries: AddNodeMenu[] = []
 
       for (const category of categories) {
         if (!category) continue
@@ -1197,11 +1198,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         // in case it has a namespace like "shader::math/rand" it hides the namespace
         if (name.includes('::')) name = name.split('::', 2)[1]
 
-        const index = entries.findIndex(
+        const index = categoryEntries.findIndex(
           (entry) => entry.value === category_path
         )
         if (index === -1) {
-          entries.push({
+          categoryEntries.push({
             value: category_path,
             content: name,
             has_submenu: true,
@@ -1212,11 +1213,19 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         }
       }
 
+      const compareByContent = (a: AddNodeMenu, b: AddNodeMenu) =>
+        (a.content ?? '').localeCompare(b.content ?? '', undefined, {
+          numeric: true,
+          sensitivity: 'base'
+        })
+      categoryEntries.sort(compareByContent)
+
       const nodes = LiteGraph.getNodeTypesInCategory(
         base_category.slice(0, -1),
         canvas.filter || graph.filter
       )
 
+      const nodeEntries: AddNodeMenu[] = []
       for (const node of nodes) {
         if (node.skip_list) continue
 
@@ -1246,8 +1255,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
         }
 
-        entries.push(entry)
+        nodeEntries.push(entry)
       }
+
+      nodeEntries.sort(compareByContent)
+
+      const entries: AddNodeMenu[] = [...categoryEntries, ...nodeEntries]
 
       new LiteGraph.ContextMenu(entries, { event: e, parentMenu: prev_menu })
     }
@@ -1825,6 +1838,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // this.offset = [0,0];
     this.dragging_rectangle = null
 
+    for (const item of this.selectedItems.keys()) item.selected = undefined
     this.selected_nodes = {}
     this.selected_group = null
     this.selectedItems.clear()
@@ -3294,11 +3308,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (result != null) this.dirty_canvas = result
       }
     }
+    const firstLink: RenderLink | undefined = linkConnector.renderLinks.at(0)
+    const isSubgraphIOLink =
+      linkConnector.isConnecting && firstLink?.isIoNodeLink
 
     // get node over
-    const node = LiteGraph.vueNodesMode
-      ? null
-      : graph.getNodeOnPos(x, y, this.visible_nodes)
+    const node =
+      LiteGraph.vueNodesMode && !isSubgraphIOLink
+        ? null
+        : graph.getNodeOnPos(x, y, this.visible_nodes)
 
     const dragRect = this.dragging_rectangle
     if (dragRect) {
@@ -3389,8 +3407,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
           // Check if link is over anything it could connect to - record position of valid target for snap / highlight
           if (linkConnector.isConnecting) {
-            const firstLink = linkConnector.renderLinks.at(0)
-
             // Default: nothing highlighted
             let highlightPos: Point | undefined
             let highlightInput: INodeInputSlot | undefined
@@ -3441,7 +3457,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
                   highlightInput = node.inputs[inputId]
                 }
 
-                if (highlightInput) {
+                if (highlightInput && !LiteGraph.vueNodesMode) {
                   const widget = node.getWidgetFromSlot(highlightInput)
                   if (widget) linkConnector.overWidget = widget
                 }
@@ -4176,7 +4192,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const subgraph = graph.createSubgraph(info)
       results.subgraphs.set(info.id, subgraph)
     }
-    for (const info of parsed.subgraphs)
+    const configureOrder = topologicalSortSubgraphs(parsed.subgraphs)
+    for (const info of configureOrder)
       results.subgraphs.get(info.id)?.configure(info)
 
     // Groups
@@ -4202,6 +4219,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       graph.add(node)
       node.configure(info)
+
+      if (node instanceof SubgraphNode) {
+        if (
+          node.properties?.proxyWidgets !== undefined &&
+          LiteGraph.LGraph.proxyWidgetMigrationFlush
+        ) {
+          LiteGraph.LGraph.proxyWidgetMigrationFlush(node, info)
+        }
+        LiteGraph.LGraph.autoExposePreviewNodes?.(node)
+      }
 
       created.push(node)
     }
@@ -8490,40 +8517,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       options = [
         {
           content: 'Convert to Subgraph',
-          callback: () => {
-            // find groupnodes, degroup and select children
-            if (this.selectedItems.size) {
-              let hasGroups = false
-              for (const item of this.selectedItems) {
-                const node = item as LGraphNode
-                const isGroup =
-                  typeof node.type === 'string' &&
-                  node.type.startsWith(`${PREFIX}${SEPARATOR}`)
-                if (isGroup && node.convertToNodes) {
-                  hasGroups = true
-                  const nodes = node.convertToNodes()
-
-                  requestAnimationFrame(() => {
-                    this.selectItems(nodes, true)
-
-                    if (!this.selectedItems.size)
-                      throw new Error('Convert to Subgraph: Nothing selected.')
-                    this._graph.convertToSubgraph(this.selectedItems)
-                  })
-                  return
-                }
-              }
-
-              // If no groups were found, continue normally
-              if (!hasGroups) {
-                if (!this.selectedItems.size)
-                  throw new Error('Convert to Subgraph: Nothing selected.')
-                this._graph.convertToSubgraph(this.selectedItems)
-              }
-            } else {
-              throw new Error('Convert to Subgraph: Nothing selected.')
-            }
-          }
+          callback: () => this._graph.convertToSubgraph(this.selectedItems)
         },
         {
           content: 'Properties',
@@ -9063,12 +9057,35 @@ function remapProxyWidgets(
   }
 }
 
-/**
- * Remaps pasted subgraph interior node IDs that would collide with existing
- * node IDs in the root graph. Also patches subgraph link node IDs and
- * SubgraphNode `properties.proxyWidgets` references so promoted widget
- * associations stay aligned with remapped interior IDs.
- */
+function hasStringSourceNodeId(
+  value: unknown
+): value is { sourceNodeId: string } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'sourceNodeId' in value &&
+    typeof value.sourceNodeId === 'string'
+  )
+}
+
+function remapPreviewExposures(
+  info: ISerialisedNode,
+  remappedIds: Map<NodeId, NodeId> | undefined
+) {
+  if (!remappedIds || remappedIds.size === 0) return
+
+  const previewExposures = info.properties?.previewExposures
+  if (!Array.isArray(previewExposures)) return
+
+  for (const entry of previewExposures) {
+    if (!hasStringSourceNodeId(entry) || entry.sourceNodeId === '-1') continue
+
+    const remappedNodeId = remapNodeId(entry.sourceNodeId, remappedIds)
+    if (remappedNodeId !== undefined)
+      entry.sourceNodeId = String(remappedNodeId)
+  }
+}
+
 export function remapClipboardSubgraphNodeIds(
   parsed: ClipboardItems,
   rootGraph: LGraph
@@ -9122,6 +9139,8 @@ export function remapClipboardSubgraphNodeIds(
 
   for (const nodeInfo of allNodeInfo) {
     if (typeof nodeInfo.type !== 'string') continue
-    remapProxyWidgets(nodeInfo, subgraphNodeIdMap.get(nodeInfo.type))
+    const remappedIds = subgraphNodeIdMap.get(nodeInfo.type)
+    remapProxyWidgets(nodeInfo, remappedIds)
+    remapPreviewExposures(nodeInfo, remappedIds)
   }
 }

@@ -50,6 +50,7 @@ export interface CameraConfig {
   cameraType: CameraType
   fov: number
   state?: CameraState
+  retainViewOnReload?: boolean
 }
 
 export interface LightConfig {
