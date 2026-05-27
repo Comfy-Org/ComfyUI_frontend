@@ -3,7 +3,12 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import {
+  ComfyNodeDefImpl,
+  SYSTEM_NODE_DEFS,
+  buildNodeDefTree,
+  useNodeDefStore
+} from '@/stores/nodeDefStore'
 import type { NodeDefFilter } from '@/stores/nodeDefStore'
 
 describe('useNodeDefStore', () => {
@@ -357,6 +362,48 @@ describe('useNodeDefStore', () => {
 
       // Each node (10) should be checked by each filter (5 test + 2 core = 7 total)
       expect(filterCallCount).toBe(10 * 5)
+    })
+  })
+
+  describe('SYSTEM_NODE_DEFS', () => {
+    it('places PrimitiveNode under the utils/primitive subcategory', () => {
+      expect(SYSTEM_NODE_DEFS.PrimitiveNode.category).toBe('utils/primitive')
+    })
+
+    it('keeps remaining frontend-only virtual nodes under the flat utils category', () => {
+      expect(SYSTEM_NODE_DEFS.Reroute.category).toBe('utils')
+      expect(SYSTEM_NODE_DEFS.Note.category).toBe('utils')
+      expect(SYSTEM_NODE_DEFS.MarkdownNote.category).toBe('utils')
+    })
+
+    it('routes PrimitiveNode into the utils/primitive branch of the node tree', () => {
+      const systemDefs = Object.values(SYSTEM_NODE_DEFS).map(
+        (def) => new ComfyNodeDefImpl(def)
+      )
+      const tree = buildNodeDefTree(systemDefs)
+
+      const utilsBranch = tree.children?.find(
+        (child) => child.label === 'utils'
+      )
+      expect(utilsBranch).toBeDefined()
+
+      const primitiveBranch = utilsBranch?.children?.find(
+        (child) => child.label === 'primitive'
+      )
+      expect(primitiveBranch).toBeDefined()
+
+      const primitiveLeaf = primitiveBranch?.children?.find(
+        (child) => child.data?.name === 'PrimitiveNode'
+      )
+      expect(primitiveLeaf).toBeDefined()
+
+      const flatUtilsLeaves =
+        utilsBranch?.children
+          ?.filter((child) => child.label !== 'primitive')
+          .map((child) => child.data?.name) ?? []
+      expect(flatUtilsLeaves).toEqual(
+        expect.arrayContaining(['Reroute', 'Note', 'MarkdownNote'])
+      )
     })
   })
 })

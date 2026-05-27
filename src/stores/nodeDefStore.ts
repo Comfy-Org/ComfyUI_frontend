@@ -25,6 +25,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { ESSENTIALS_CATEGORY_CANONICAL } from '@/constants/essentialsNodes'
+import { PRIMITIVE_NODE_CATEGORY } from '@/constants/primitiveNodes'
 import { CORE_NODE_MODULES, getNodeSource } from '@/types/nodeSource'
 import type { NodeSource } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
@@ -212,7 +213,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
   PrimitiveNode: {
     name: 'PrimitiveNode',
     display_name: 'Primitive',
-    category: 'utils',
+    category: PRIMITIVE_NODE_CATEGORY,
     input: { required: {}, optional: {} },
     output: ['*'],
     output_name: ['connect to widget input'],
