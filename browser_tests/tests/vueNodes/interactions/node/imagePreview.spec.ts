@@ -111,12 +111,10 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
         )
         .toBe(1)
 
-      await expect(
-        firstSubgraphNode.locator('.lg-node-widgets')
-      ).not.toContainText('$$canvas-image-preview')
-      await expect(
-        secondSubgraphNode.locator('.lg-node-widgets')
-      ).not.toContainText('$$canvas-image-preview')
+      await expect(firstSubgraphNode.locator('.lg-node-widgets')).toHaveCount(0)
+      await expect(secondSubgraphNode.locator('.lg-node-widgets')).toHaveCount(
+        0
+      )
 
       await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
       await comfyPage.command.executeCommand('Comfy.QueuePrompt')
