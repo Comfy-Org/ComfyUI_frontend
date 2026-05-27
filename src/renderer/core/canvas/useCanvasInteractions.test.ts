@@ -4,6 +4,7 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { app } from '@/scripts/app'
 
 // Mock stores
 vi.mock('@/renderer/core/canvas/canvasStore', () => {
@@ -87,17 +88,24 @@ describe('useCanvasInteractions', () => {
       expect(mockEvent.stopPropagation).toHaveBeenCalled()
     })
 
-    it('should forward middle mouse button events to canvas', () => {
+    it('should forward middle pointerdown events to canvas', () => {
       const { getCanvas } = useCanvasStore()
       const mockCanvas = createMockLGraphCanvas(false)
       vi.mocked(getCanvas).mockReturnValue(mockCanvas)
       const { handlePointer } = useCanvasInteractions()
 
-      const mockEvent = createMockPointerEvent({ buttons: 4 })
+      const mockEvent = createMockPointerEvent({
+        type: 'pointerdown',
+        button: 1,
+        buttons: 4
+      })
       handlePointer(mockEvent)
 
       expect(mockEvent.preventDefault).toHaveBeenCalled()
       expect(mockEvent.stopPropagation).toHaveBeenCalled()
+      expect(app.canvas.canvas.dispatchEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'pointerdown' })
+      )
     })
 
     it('should forward chorded middle-button drags to canvas', () => {
@@ -111,6 +119,9 @@ describe('useCanvasInteractions', () => {
 
       expect(mockEvent.preventDefault).toHaveBeenCalled()
       expect(mockEvent.stopPropagation).toHaveBeenCalled()
+      expect(app.canvas.canvas.dispatchEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'pointermove' })
+      )
     })
 
     it('should not prevent default when canvas is not in read_only mode and not middle button', () => {

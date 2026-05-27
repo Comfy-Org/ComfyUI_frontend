@@ -74,5 +74,18 @@ describe('pointerUtils', () => {
         )
       ).toBe(true)
     })
+
+    it('treats pointercancel like a held-button event', () => {
+      expect(
+        isMiddleForPointerEvent(
+          new PointerEvent('pointercancel', { buttons: 5 })
+        )
+      ).toBe(true)
+      expect(
+        isMiddleForPointerEvent(
+          new PointerEvent('pointercancel', { buttons: 1 })
+        )
+      ).toBe(false)
+    })
   })
 })
