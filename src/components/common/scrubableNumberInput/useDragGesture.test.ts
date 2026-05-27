@@ -1,14 +1,19 @@
+import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { EffectScope } from 'vue'
 import { effectScope, ref } from 'vue'
 
 import { useDragGesture } from './useDragGesture'
 
+type DragOptions = NonNullable<Parameters<typeof useDragGesture>[1]>
+
+// Explicitly-typed mocks so the callbacks stay assignable to DragOptions and
+// the merged setup object needs no cast (which would otherwise mask typos).
 interface Callbacks {
-  onClick: ReturnType<typeof vi.fn>
-  onDragStart: ReturnType<typeof vi.fn>
-  onDrag: ReturnType<typeof vi.fn>
-  onDragEnd: ReturnType<typeof vi.fn>
+  onClick: Mock<(event: PointerEvent) => void>
+  onDragStart: Mock<(event: PointerEvent) => void>
+  onDrag: Mock<(dx: number, dy: number, event: PointerEvent) => void>
+  onDragEnd: Mock<(event: PointerEvent) => void>
 }
 
 function makeEvent(type: string, init: PointerEventInit = {}): PointerEvent {
@@ -31,7 +36,7 @@ function setLocked(target: Element | null) {
   ).pointerLockElement = target
 }
 
-function mount(options: Record<string, unknown> = {}) {
+function mount(options: Partial<DragOptions> = {}) {
   el = document.createElement('div')
   el.setPointerCapture = vi.fn()
   el.releasePointerCapture = vi.fn()
@@ -44,14 +49,13 @@ function mount(options: Record<string, unknown> = {}) {
   document.body.appendChild(el)
 
   cb = {
-    onClick: vi.fn(),
-    onDragStart: vi.fn(),
-    onDrag: vi.fn(),
-    onDragEnd: vi.fn()
+    onClick: vi.fn<(event: PointerEvent) => void>(),
+    onDragStart: vi.fn<(event: PointerEvent) => void>(),
+    onDrag: vi.fn<(dx: number, dy: number, event: PointerEvent) => void>(),
+    onDragEnd: vi.fn<(event: PointerEvent) => void>()
   }
   scope = effectScope()
-  const merged = { ...cb, ...options } as Parameters<typeof useDragGesture>[1]
-  scope.run(() => useDragGesture(ref(el), merged))
+  scope.run(() => useDragGesture(ref(el), { ...cb, ...options }))
 }
 
 beforeEach(() => {
@@ -170,7 +174,7 @@ describe('useDragGesture', () => {
         pointerType: 'touch'
       })
     )
-    const [dx, dy] = cb.onDrag.mock.calls.at(-1) as [number, number]
+    const [dx, dy] = cb.onDrag.mock.calls.at(-1)!
     expect(dx).toBe(30)
     expect(dy).toBe(0)
   })
@@ -191,7 +195,7 @@ describe('useDragGesture', () => {
         movementY: -3
       })
     )
-    const [dx, dy] = cb.onDrag.mock.calls.at(-1) as [number, number]
+    const [dx, dy] = cb.onDrag.mock.calls.at(-1)!
     expect(dx).toBe(8)
     expect(dy).toBe(-3)
   })
@@ -201,6 +205,16 @@ describe('useDragGesture', () => {
     el.dispatchEvent(makeEvent('pointerdown', { clientX: 0, clientY: 0 }))
     el.dispatchEvent(makeEvent('pointermove', { clientX: 10, clientY: 0 }))
     el.dispatchEvent(makeEvent('pointercancel', { clientX: 10, clientY: 0 }))
+
+    expect(cb.onDragEnd).toHaveBeenCalledTimes(1)
+    expect(el.releasePointerCapture).toHaveBeenCalledWith(1)
+  })
+
+  it('ends the drag and releases pointer capture on pointerleave', () => {
+    mount()
+    el.dispatchEvent(makeEvent('pointerdown', { clientX: 0, clientY: 0 }))
+    el.dispatchEvent(makeEvent('pointermove', { clientX: 10, clientY: 0 }))
+    el.dispatchEvent(makeEvent('pointerleave', { clientX: 10, clientY: 0 }))
 
     expect(cb.onDragEnd).toHaveBeenCalledTimes(1)
     expect(el.releasePointerCapture).toHaveBeenCalledWith(1)
