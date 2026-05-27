@@ -138,6 +138,8 @@
     "hideLeftPanel": "Hide left panel",
     "showRightPanel": "Show right panel",
     "hideRightPanel": "Hide right panel",
+    "maximizeDialog": "Maximize dialog",
+    "restoreDialog": "Restore dialog",
     "or": "or",
     "defaultBanner": "default banner",
     "enableOrDisablePack": "Enable or disable pack",
