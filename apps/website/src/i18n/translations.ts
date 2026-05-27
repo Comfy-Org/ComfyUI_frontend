@@ -4531,6 +4531,20 @@ const translations = {
   'affiliate.hero.imageAlt': {
     en: 'Comfy affiliate program',
     'zh-CN': 'Comfy 联盟计划'
+  },
+
+  // AffiliateAudienceSection
+  'affiliate.audience.heading': {
+    en: "Who We're Looking For",
+    'zh-CN': '我们在寻找谁'
+  },
+  'affiliate.audience.subheading': {
+    en: 'The voices in AI creative tools',
+    'zh-CN': 'AI 创作工具领域的声音'
+  },
+  'affiliate.audience.eyebrow': {
+    en: 'If You Are…',
+    'zh-CN': '如果你是…'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
