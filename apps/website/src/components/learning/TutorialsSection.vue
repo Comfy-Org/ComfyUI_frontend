@@ -19,7 +19,13 @@ const activeTutorial = () =>
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 pb-16 lg:pb-24">
+  <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
+    <h2
+      class="text-primary-comfy-canvas mb-12 text-4xl font-light tracking-tight lg:mb-16 lg:text-6xl"
+    >
+      {{ t('learning.tutorials.heading', locale) }}
+    </h2>
+
     <ul
       class="grid grid-cols-1 gap-x-6 gap-y-10 md:grid-cols-2 lg:grid-cols-3 lg:gap-x-8"
     >

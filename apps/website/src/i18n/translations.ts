@@ -1479,6 +1479,10 @@ const translations = {
   },
 
   // LearningTutorialsSection
+  'learning.tutorials.heading': {
+    en: 'Demos',
+    'zh-CN': '演示'
+  },
   'learning.tutorials.titlePrefix': {
     en: 'Learn how to:',
     'zh-CN': '学习如何：'

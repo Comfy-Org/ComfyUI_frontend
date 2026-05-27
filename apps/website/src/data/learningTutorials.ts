@@ -23,49 +23,61 @@ export const getTutorialPosterSrc = (tutorial: LearningTutorial): string =>
 export const learningTutorials: readonly LearningTutorial[] = [
   {
     id: 'cleanplate_walkthrough_v03',
-    title: { en: 'Title here', 'zh-CN': '标题占位' },
+    title: { en: 'Cleanplate Walkthrough', 'zh-CN': '净板演练' },
     videoSrc:
       'https://media.comfy.org/website/learning/cleanplate_walkthrough_v03.mp4',
+    poster:
+      'https://media.comfy.org/website/learning/cleanplate_walkthrough_v03_thumbnail.jpg',
     href: '#',
     tags: [partnerNodesTag, imageToVideoTag]
   },
   {
     id: 'deaging_workflow_v03',
-    title: { en: 'Title here', 'zh-CN': '标题占位' },
+    title: { en: 'Deaging Workflow', 'zh-CN': '减龄工作流' },
     videoSrc:
       'https://media.comfy.org/website/learning/deaging_workflow_v03.mp4',
+    poster:
+      'https://media.comfy.org/website/learning/deaging_workflow_v03_thumbnail.jpg',
     href: '#',
     tags: [partnerNodesTag, imageToVideoTag]
   },
   {
     id: 'frame_adjustments_demo_v03',
-    title: { en: 'Title here', 'zh-CN': '标题占位' },
+    title: { en: 'Frame Adjustments Demo', 'zh-CN': '帧调整演示' },
     videoSrc:
       'https://media.comfy.org/website/learning/frame_adjustments_demo_v03.mp4',
+    poster:
+      'https://media.comfy.org/website/learning/frame_adjustments_demo_v03_thumbnail.jpg',
     href: '#',
     tags: [partnerNodesTag, imageToVideoTag]
   },
   {
     id: 'mattes_and_utilities_v03',
-    title: { en: 'Title here', 'zh-CN': '标题占位' },
+    title: { en: 'Mattes and Utilities', 'zh-CN': '遮罩与实用工具' },
     videoSrc:
       'https://media.comfy.org/website/learning/mattes_and_utilities_v03.mp4',
+    poster:
+      'https://media.comfy.org/website/learning/mattes_and_utilities_v03_thumbnail.jpg',
     href: '#',
     tags: [partnerNodesTag, imageToVideoTag]
   },
   {
     id: 'seedance_demo_comfyui_v03',
-    title: { en: 'Title here', 'zh-CN': '标题占位' },
+    title: { en: 'Seedance Demo ComfyUI', 'zh-CN': 'Seedance ComfyUI 演示' },
     videoSrc:
       'https://media.comfy.org/website/learning/seedance_demo_comfyui_v03.mp4',
+    poster:
+      'https://media.comfy.org/website/learning/seedance seedance_demo_comfyui_v03_thumbnail.jpg',
     href: '#',
     tags: [partnerNodesTag, imageToVideoTag]
   },
   {
     id: 'skyreplacement_smaller_v06',
-    title: { en: 'Title here', 'zh-CN': '标题占位' },
+    title: { en: 'Sky Replacement', 'zh-CN': '天空替换' },
     videoSrc:
       'https://media.comfy.org/website/learning/skyreplacement_smaller_v06.mp4',
+    poster:
+      'https://media.comfy.org/website/learning/skyreplacement_smaller_v06_thumbnail.jpg',
     href: '#',
     tags: [partnerNodesTag, imageToVideoTag]
   }
