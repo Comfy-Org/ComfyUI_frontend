@@ -4502,14 +4502,35 @@ const translations = {
   },
 
   // AffiliateHeroSection
-  'affiliate.hero.label': { en: 'AFFILIATE PROGRAM', 'zh-CN': '联盟计划' },
-  'affiliate.hero.heading': {
-    en: 'Earn with Comfy',
-    'zh-CN': '与 Comfy 一起赚钱'
+  'affiliate.hero.label': { en: 'AFFILIATE', 'zh-CN': '联盟' },
+  'affiliate.hero.headingHighlight': {
+    en: 'Earn 30%',
+    'zh-CN': '赚取 30%'
   },
-  'affiliate.hero.body': {
-    en: 'Share Comfy with your audience and earn a commission on every customer you refer.',
-    'zh-CN': '与您的受众分享 Comfy，并从您推荐的每位客户中赚取佣金。'
+  'affiliate.hero.headingMuted': {
+    en: 'Commission Month 1.\n20% Recurring After.',
+    'zh-CN': '首月佣金，\n之后 20% 持续返佣。'
+  },
+  'affiliate.hero.feature1': {
+    en: '30% recurring commission for 3 months',
+    'zh-CN': '30% 持续佣金，连续 3 个月'
+  },
+  'affiliate.hero.feature2': {
+    en: '60-day cookie window',
+    'zh-CN': '60 天 Cookie 窗口'
+  },
+  'affiliate.hero.feature3': {
+    en: '$100 minimum payout',
+    'zh-CN': '$100 起付'
+  },
+  'affiliate.hero.feature4': {
+    en: 'Monthly payouts',
+    'zh-CN': '每月结算'
+  },
+  'affiliate.hero.apply': { en: 'APPLY NOW', 'zh-CN': '立即申请' },
+  'affiliate.hero.imageAlt': {
+    en: 'Comfy affiliate program',
+    'zh-CN': 'Comfy 联盟计划'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
