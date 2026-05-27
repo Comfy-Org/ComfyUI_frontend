@@ -27,7 +27,8 @@ export enum ServerFeatureFlag {
   WORKFLOW_SHARING_ENABLED = 'workflow_sharing_enabled',
   COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
-  SHOW_SIGNIN_BUTTON = 'show_signin_button'
+  SHOW_SIGNIN_BUTTON = 'show_signin_button',
+  ASSET_BULK_EXPORT_ENABLED = 'asset_bulk_export_enabled'
 }
 
 /**
@@ -162,6 +163,20 @@ export function useFeatureFlags() {
       return api.getServerFeature<boolean | undefined>(
         ServerFeatureFlag.SHOW_SIGNIN_BUTTON,
         undefined
+      )
+    },
+    /**
+     * Whether the backend supports bundling a multi-asset selection into a
+     * single ZIP via `POST /assets/export`, falling back to per-file direct
+     * downloads otherwise. Defaults to `isCloud` so behavior is unchanged
+     * before the backend advertises the flag (Cloud has the endpoint today,
+     * OSS does not); the served value wins once BE-997 registers it.
+     */
+    get assetBulkExportEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.ASSET_BULK_EXPORT_ENABLED,
+        remoteConfig.value.asset_bulk_export_enabled,
+        isCloud
       )
     }
   })

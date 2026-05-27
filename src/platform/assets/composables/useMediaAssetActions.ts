@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -71,6 +72,7 @@ export function useMediaAssetActions() {
   const dialogStore = useDialogStore()
   const mediaContext = inject(MediaAssetKey, null)
   const { copyToClipboard } = useCopyToClipboard()
+  const { flags } = useFeatureFlags()
   const workflowActions = useWorkflowActionsService()
   const litegraphService = useLitegraphService()
   const nodeDefStore = useNodeDefStore()
@@ -102,10 +104,11 @@ export function useMediaAssetActions() {
 
   /**
    * Download one or more assets.
-   * In cloud mode, creates a ZIP export via the backend when called with
-   * 2+ assets or with any asset whose job has `outputCount > 1`.
-   * Falls back to direct downloads in OSS mode and for single single-output
-   * assets. With no argument, uses the asset from `MediaAssetKey` context.
+   * When the backend advertises bulk export, creates a ZIP export via the
+   * backend when called with 2+ assets or with any asset whose job has
+   * `outputCount > 1`. Falls back to per-file direct downloads otherwise and
+   * for single single-output assets. With no argument, uses the asset from
+   * `MediaAssetKey` context.
    */
   const downloadAssets = (assets?: AssetItem[]) => {
     const targetAssets =
@@ -117,7 +120,10 @@ export function useMediaAssetActions() {
       return typeof count === 'number' && count > 1
     })
 
-    if (isCloud && (targetAssets.length > 1 || hasMultiOutputJobs)) {
+    if (
+      flags.assetBulkExportEnabled &&
+      (targetAssets.length > 1 || hasMultiOutputJobs)
+    ) {
       void downloadAssetsAsZip(targetAssets)
       return
     }

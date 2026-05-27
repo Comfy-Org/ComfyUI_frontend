@@ -78,6 +78,12 @@ vi.mock('@/composables/useCopyToClipboard', () => ({
   })
 }))
 
+// Capability flag gating the server-side ZIP bulk-export path (FE-781).
+const mockFeatureFlags = vi.hoisted(() => ({ assetBulkExportEnabled: false }))
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({ flags: mockFeatureFlags })
+}))
+
 const mockExportWorkflowAction = vi.hoisted(() => vi.fn())
 const mockOpenWorkflowAction = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/workflow/core/services/workflowActionsService', () => ({
@@ -280,6 +286,7 @@ describe('useMediaAssetActions', () => {
     vi.clearAllMocks()
     capturedFilenames.values = []
     mockIsCloud.value = false
+    mockFeatureFlags.assetBulkExportEnabled = false
     mockGetOutputAssetMetadata.mockReset()
     mockGetOutputAssetMetadata.mockReturnValue(null)
     mockGetAssetType.mockReset()
@@ -520,8 +527,8 @@ describe('useMediaAssetActions', () => {
       unmount()
     })
 
-    it('keeps single explicit assets on the direct download path in cloud', () => {
-      mockIsCloud.value = true
+    it('keeps single single-output assets on the direct download path even with bulk export enabled', () => {
+      mockFeatureFlags.assetBulkExportEnabled = true
       mockGetOutputAssetMetadata.mockReturnValue({
         jobId: 'job1',
         outputCount: 1
@@ -547,8 +554,8 @@ describe('useMediaAssetActions', () => {
       expect(mockTrackExport).not.toHaveBeenCalled()
     })
 
-    it('uses ZIP export for an injected single multi-output asset in cloud', async () => {
-      mockIsCloud.value = true
+    it('uses ZIP export for an injected single multi-output asset when bulk export is enabled', async () => {
+      mockFeatureFlags.assetBulkExportEnabled = true
       mockGetAssetType.mockReturnValue('output')
       mockGetOutputAssetMetadata.mockReturnValue({
         jobId: 'job1',
@@ -581,9 +588,72 @@ describe('useMediaAssetActions', () => {
     })
   })
 
-  describe('downloadAssets - cloud zip filters', () => {
-    beforeEach(() => {
+  describe('downloadAssets - bulk export capability gating (FE-781)', () => {
+    function createMultiOutputAssets(): AssetItem[] {
+      mockGetAssetType.mockReturnValue('output')
+      mockGetOutputAssetMetadata.mockImplementation(
+        (meta: Record<string, unknown> | undefined) =>
+          meta && 'jobId' in meta ? meta : null
+      )
+      return [
+        createMockAsset({
+          id: 'a1',
+          name: 'img1.png',
+          preview_url: 'https://example.com/img1.png',
+          tags: ['output'],
+          user_metadata: { jobId: 'job1', outputCount: 1 }
+        }),
+        createMockAsset({
+          id: 'a2',
+          name: 'img2.png',
+          preview_url: 'https://example.com/img2.png',
+          tags: ['output'],
+          user_metadata: { jobId: 'job2', outputCount: 1 }
+        })
+      ]
+    }
+
+    it('falls back to per-file direct downloads when bulk export is disabled', () => {
+      mockFeatureFlags.assetBulkExportEnabled = false
+      const assets = createMultiOutputAssets()
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets(assets)
+
+      expect(mockCreateAssetExport).not.toHaveBeenCalled()
+      expect(mockTrackExport).not.toHaveBeenCalled()
+      expect(mockDownloadFile).toHaveBeenCalledTimes(2)
+    })
+
+    it('routes multi-asset selections to ZIP export when bulk export is enabled', async () => {
+      mockFeatureFlags.assetBulkExportEnabled = true
+      const assets = createMultiOutputAssets()
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets(assets)
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
+      })
+      expect(mockDownloadFile).not.toHaveBeenCalled()
+    })
+
+    it('gates on the capability flag, not isCloud', () => {
       mockIsCloud.value = true
+      mockFeatureFlags.assetBulkExportEnabled = false
+      const assets = createMultiOutputAssets()
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets(assets)
+
+      expect(mockCreateAssetExport).not.toHaveBeenCalled()
+      expect(mockDownloadFile).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('downloadAssets - zip export filters', () => {
+    beforeEach(() => {
+      mockFeatureFlags.assetBulkExportEnabled = true
       mockCreateAssetExport.mockClear()
       mockTrackExport.mockClear()
       mockGetAssetType.mockReturnValue('output')
@@ -702,7 +772,7 @@ describe('useMediaAssetActions', () => {
 
   describe('downloadAssets - export toast file count', () => {
     beforeEach(() => {
-      mockIsCloud.value = true
+      mockFeatureFlags.assetBulkExportEnabled = true
       mockCreateAssetExport.mockClear()
       mockGetAssetType.mockReturnValue('output')
       mockGetOutputAssetMetadata.mockImplementation(
