@@ -8,7 +8,8 @@ import VideoPlayer from '../common/VideoPlayer.vue'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const tags = ['Seadance 2.0', 'Image To Video']
-const demoVideoSrc = 'https://media.comfy.org/videos/compressed_512/swings.webm'
+const demoVideoSrc =
+  'https://media.comfy.org/website/learning/skyreplacement_smaller_v06.mp4'
 </script>
 
 <template>
