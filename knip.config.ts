@@ -74,7 +74,7 @@ const config: KnipConfig = {
   },
   playwright: {
     config: ['playwright?(.*).config.ts'],
-    entry: ['**/*.@(spec|test).?(c|m)[jt]s?(x)', 'browser_tests/**/*.ts']
+    entry: ['browser_tests/**/*.@(spec|test).?(c|m)[jt]s?(x)']
   },
   tags: [
     '-knipIgnoreUnusedButUsedByCustomNodes',
