@@ -41,24 +41,17 @@ jobs:
 
             core.info(`Found PR #${pr.number}: ${pr.title}`);
 
-            // Determine effective approval state using latest review per reviewer
+            // Check for approvals. DISMISSED counts because "dismiss stale reviews
+            // on new commits" changes APPROVED → DISMISSED when commits are pushed
+            // after approval — the review still happened.
             const reviews = await github.paginate(github.rest.pulls.listReviews, {
               owner,
               repo,
               pull_number: pr.number,
             });
 
-            const latestByReviewer = new Map();
-            for (const r of reviews) {
-              if (!r.user || r.state === 'COMMENTED') continue;
-              const prev = latestByReviewer.get(r.user.login);
-              if (!prev || new Date(r.submitted_at) > new Date(prev.submitted_at)) {
-                latestByReviewer.set(r.user.login, r);
-              }
-            }
-
-            const hasApproval = Array.from(latestByReviewer.values()).some(
-              r => r.state === 'APPROVED'
+            const hasApproval = reviews.some(
+              r => r.state === 'APPROVED' || r.state === 'DISMISSED'
             );
             if (hasApproval) {
               core.info('PR has an approving review — no action needed.');
