@@ -3,7 +3,7 @@
     <div>
       {{ getDownloadLabel(download.savePath ?? '') }}
     </div>
-    <div v-if="['cancelled', 'error'].includes(download.status ?? '')">
+    <div v-if="['cancelled', 'failed'].includes(download.status)">
       <Chip
         class="mt-2 h-6 bg-red-700 text-sm font-light"
         removable
@@ -14,7 +14,7 @@
     </div>
     <div
       v-if="
-        ['in_progress', 'paused', 'completed'].includes(download.status ?? '')
+        ['created', 'running', 'paused', 'completed'].includes(download.status)
       "
       class="mt-2 flex flex-row items-center gap-2"
     >
@@ -28,7 +28,7 @@
       />
 
       <Button
-        v-if="download.status === 'in_progress'"
+        v-if="download.status === 'running'"
         v-tooltip.top="t('electronFileDownload.pause')"
         class="size-[22px] rounded-full"
         variant="secondary"
@@ -52,7 +52,7 @@
       </Button>
 
       <Button
-        v-if="['in_progress', 'paused'].includes(download.status ?? '')"
+        v-if="['running', 'paused'].includes(download.status)"
         v-tooltip.top="t('electronFileDownload.cancel')"
         class="size-[22px] rounded-full"
         variant="destructive"
@@ -91,17 +91,21 @@ const getDownloadLabel = (savePath: string) => {
   return `${dir}/${name}`
 }
 
+const getDownloadIdentifier = () =>
+  props.download.downloadId ?? props.download.url
+
 const triggerCancelDownload = () =>
-  electronDownloadStore.cancel(props.download.url)
+  electronDownloadStore.cancel(getDownloadIdentifier())
 const triggerPauseDownload = () =>
-  electronDownloadStore.pause(props.download.url)
+  electronDownloadStore.pause(getDownloadIdentifier())
 const triggerResumeDownload = () =>
-  electronDownloadStore.resume(props.download.url)
+  electronDownloadStore.resume(getDownloadIdentifier())
 
 const handleRemoveDownload = () => {
   electronDownloadStore.$patch((state) => {
     state.downloads = state.downloads.filter(
-      ({ url }) => url !== props.download.url
+      (download) =>
+        (download.downloadId ?? download.url) !== getDownloadIdentifier()
     )
   })
 }

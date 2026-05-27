@@ -13,15 +13,18 @@ import { validateSourceUrl } from '@/platform/assets/utils/importSourceUtil'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { app } from '@/scripts/app'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import type {
   MissingModelCandidate,
+  MissingModelDownloadStatus,
   MissingModelViewModel
 } from '@/platform/missingModel/types'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+export { getModelStateKey } from '@/platform/missingModel/missingModelViewUtils'
 
 const importSources = [civitaiImportSource, huggingfaceImportSource]
 
@@ -34,15 +37,6 @@ const MODEL_TYPE_TAGS = [
 ] as const
 
 const URL_DEBOUNCE_MS = 800
-
-export function getModelStateKey(
-  modelName: string,
-  directory: string | null,
-  isAssetSupported: boolean
-): string {
-  const prefix = isAssetSupported ? 'supported' : 'unsupported'
-  return `${prefix}::${directory ?? ''}::${modelName}`
-}
 
 export function getNodeDisplayLabel(
   nodeId: string | number,
@@ -90,6 +84,7 @@ export function useMissingModelInteractions() {
   const store = useMissingModelStore()
   const assetsStore = useAssetsStore()
   const assetDownloadStore = useAssetDownloadStore()
+  const electronDownloadStore = useElectronDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
 
   const _requestTokens: Record<string, symbol> = {}
@@ -130,19 +125,17 @@ export function useMissingModelInteractions() {
     if (!store.selectedLibraryModel[key]) return false
     if (store.importCategoryMismatch[key]) return false
 
+    const downloadRef = store.downloadRefs[key]
     const status = getDownloadStatus(key)
-    if (
-      status &&
-      (status.status === 'running' || status.status === 'created')
-    ) {
-      return false
-    }
-    return true
+    if (downloadRef?.kind === 'electron-download' && !status) return false
+
+    return !status || status.status === 'completed'
   }
 
   function cancelLibrarySelect(key: string) {
     delete store.selectedLibraryModel[key]
     delete store.importCategoryMismatch[key]
+    delete store.downloadRefs[key]
   }
 
   /** Apply selected model to referencing nodes, removing only that model from the error list. */
@@ -189,6 +182,7 @@ export function useMissingModelInteractions() {
     }
 
     delete store.selectedLibraryModel[key]
+    delete store.downloadRefs[key]
     const nodeIdSet = new Set(referencingNodes.map((ref) => String(ref.nodeId)))
     store.removeMissingModelByNameOnNodes(modelName, nodeIdSet)
   }
@@ -280,12 +274,34 @@ export function useMissingModelInteractions() {
     return null
   }
 
-  function getDownloadStatus(key: string) {
-    const taskId = store.importTaskIds[key]
-    if (!taskId) return null
-    return (
-      assetDownloadStore.downloadList.find((d) => d.taskId === taskId) ?? null
-    )
+  function getDownloadStatus(key: string): MissingModelDownloadStatus | null {
+    const downloadRef = store.downloadRefs[key]
+    if (!downloadRef) return null
+
+    if (downloadRef.kind === 'asset-import') {
+      const assetDownload = assetDownloadStore.downloadList.find(
+        (download) => download.taskId === downloadRef.taskId
+      )
+
+      return assetDownload
+        ? {
+            progress: assetDownload.progress,
+            status: assetDownload.status,
+            error: assetDownload.error
+          }
+        : null
+    }
+
+    const download = downloadRef.downloadId
+      ? electronDownloadStore.findByDownloadId(downloadRef.downloadId)
+      : electronDownloadStore.findByUrl(downloadRef.url)
+    return download
+      ? {
+          progress: download.progress,
+          status: download.status,
+          error: download.error
+        }
+      : null
   }
 
   function handleAsyncPending(
@@ -294,7 +310,7 @@ export function useMissingModelInteractions() {
     modelType: string | undefined,
     filename: string
   ) {
-    store.importTaskIds[key] = taskId
+    store.downloadRefs[key] = { kind: 'asset-import', taskId }
     if (modelType) {
       assetDownloadStore.trackDownload(taskId, modelType, filename)
     }

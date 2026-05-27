@@ -15,8 +15,15 @@ const mockGetAssetFilename = vi.fn((a: { name: string }) => a.name)
 const mockGetAssets = vi.fn()
 const mockUpdateModelsForNodeType = vi.fn()
 const mockGetAllNodeProviders = vi.fn()
+const mockFindElectronDownloadById = vi.fn()
+const mockFindElectronDownloadByUrl = vi.fn()
 const mockDownloadList = vi.fn(
-  (): Array<{ taskId: string; status: string }> => []
+  (): Array<{
+    taskId: string
+    status: string
+    progress?: number
+    error?: string
+  }> => []
 )
 
 vi.mock('@/i18n', () => ({
@@ -24,7 +31,8 @@ vi.mock('@/i18n', () => ({
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: false
+  isCloud: false,
+  isDesktop: false
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -68,6 +76,14 @@ vi.mock('@/stores/assetDownloadStore', () => ({
       return mockDownloadList()
     },
     trackDownload: mockTrackDownload
+  })
+}))
+
+vi.mock('@/stores/electronDownloadStore', () => ({
+  useElectronDownloadStore: () => ({
+    findByDownloadId: (...args: unknown[]) =>
+      mockFindElectronDownloadById(...args),
+    findByUrl: (...args: unknown[]) => mockFindElectronDownloadByUrl(...args)
   })
 }))
 
@@ -141,6 +157,10 @@ describe('useMissingModelInteractions', () => {
     mockDownloadList.mockImplementation(
       (): Array<{ taskId: string; status: string }> => []
     )
+    mockFindElectronDownloadById.mockReset()
+    mockFindElectronDownloadById.mockReturnValue(null)
+    mockFindElectronDownloadByUrl.mockReset()
+    mockFindElectronDownloadByUrl.mockReturnValue(null)
     ;(app as { rootGraph: unknown }).rootGraph = null
   })
 
@@ -285,7 +305,7 @@ describe('useMissingModelInteractions', () => {
     it('returns false when download is running', () => {
       const store = useMissingModelStore()
       store.selectedLibraryModel['key1'] = 'model.safetensors'
-      store.importTaskIds['key1'] = 'task-123'
+      store.downloadRefs['key1'] = { kind: 'asset-import', taskId: 'task-123' }
       mockDownloadList.mockReturnValue([
         { taskId: 'task-123', status: 'running' }
       ])
@@ -311,19 +331,180 @@ describe('useMissingModelInteractions', () => {
       const { isSelectionConfirmable } = useMissingModelInteractions()
       expect(isSelectionConfirmable('key1')).toBe(true)
     })
+
+    it('returns false when an Electron download ref no longer has a status', () => {
+      const store = useMissingModelStore()
+      store.selectedLibraryModel['key1'] = 'model.safetensors'
+      store.downloadRefs['key1'] = {
+        kind: 'electron-download',
+        url: 'https://example.com/model.safetensors'
+      }
+      mockFindElectronDownloadByUrl.mockReturnValue(null)
+
+      const { isSelectionConfirmable } = useMissingModelInteractions()
+      expect(isSelectionConfirmable('key1')).toBe(false)
+    })
+
+    it('returns true when a tracked download is completed', () => {
+      const store = useMissingModelStore()
+      store.selectedLibraryModel['key1'] = 'model.safetensors'
+      store.downloadRefs['key1'] = {
+        kind: 'electron-download',
+        url: 'https://example.com/model.safetensors'
+      }
+      mockFindElectronDownloadByUrl.mockReturnValue({
+        progress: 1,
+        status: 'completed'
+      })
+
+      const { isSelectionConfirmable } = useMissingModelInteractions()
+      expect(isSelectionConfirmable('key1')).toBe(true)
+    })
+
+    it('returns false when a tracked download failed', () => {
+      const store = useMissingModelStore()
+      store.selectedLibraryModel['key1'] = 'model.safetensors'
+      store.downloadRefs['key1'] = {
+        kind: 'electron-download',
+        url: 'https://example.com/model.safetensors'
+      }
+      mockFindElectronDownloadByUrl.mockReturnValue({
+        progress: 0.3,
+        status: 'failed'
+      })
+
+      const { isSelectionConfirmable } = useMissingModelInteractions()
+      expect(isSelectionConfirmable('key1')).toBe(false)
+    })
+
+    it('does not use URL fallback to confirm an Electron ref with a missing download id', () => {
+      const store = useMissingModelStore()
+      store.selectedLibraryModel['key1'] = 'model.safetensors'
+      store.downloadRefs['key1'] = {
+        kind: 'electron-download',
+        downloadId: '/models/checkpoints/model.safetensors',
+        url: 'https://example.com/model.safetensors'
+      }
+      mockFindElectronDownloadById.mockReturnValue(null)
+      mockFindElectronDownloadByUrl.mockReturnValue({
+        progress: 1,
+        status: 'completed'
+      })
+
+      const { isSelectionConfirmable } = useMissingModelInteractions()
+      expect(isSelectionConfirmable('key1')).toBe(false)
+      expect(mockFindElectronDownloadByUrl).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('getDownloadStatus', () => {
+    it('returns the tracked asset import status for asset-import refs', () => {
+      const store = useMissingModelStore()
+      store.downloadRefs['key1'] = { kind: 'asset-import', taskId: 'task-123' }
+      mockDownloadList.mockReturnValue([
+        {
+          taskId: 'task-123',
+          status: 'running',
+          progress: 0.5,
+          error: undefined
+        }
+      ])
+
+      const { getDownloadStatus } = useMissingModelInteractions()
+      expect(getDownloadStatus('key1')).toEqual({
+        progress: 0.5,
+        status: 'running',
+        error: undefined
+      })
+    })
+
+    it('returns the tracked Electron download status for electron refs', () => {
+      const store = useMissingModelStore()
+      store.downloadRefs['key1'] = {
+        kind: 'electron-download',
+        url: 'https://example.com/model.safetensors'
+      }
+      mockFindElectronDownloadByUrl.mockReturnValue({
+        progress: 0.4,
+        status: 'paused',
+        error: 'network stalled'
+      })
+
+      const { getDownloadStatus } = useMissingModelInteractions()
+      expect(getDownloadStatus('key1')).toEqual({
+        progress: 0.4,
+        status: 'paused',
+        error: 'network stalled'
+      })
+    })
+
+    it('prefers download id over URL for Electron download status', () => {
+      const store = useMissingModelStore()
+      store.downloadRefs['key1'] = {
+        kind: 'electron-download',
+        downloadId: '/models/checkpoints/model.safetensors',
+        url: 'https://example.com/model.safetensors'
+      }
+      mockFindElectronDownloadById.mockReturnValue({
+        progress: 0.8,
+        status: 'running'
+      })
+      mockFindElectronDownloadByUrl.mockReturnValue({
+        progress: 0.1,
+        status: 'paused'
+      })
+
+      const { getDownloadStatus } = useMissingModelInteractions()
+      expect(getDownloadStatus('key1')).toEqual({
+        progress: 0.8,
+        status: 'running',
+        error: undefined
+      })
+      expect(mockFindElectronDownloadById).toHaveBeenCalledWith(
+        '/models/checkpoints/model.safetensors'
+      )
+    })
+
+    it('returns null instead of falling back to URL when a download id is present but missing', () => {
+      const store = useMissingModelStore()
+      store.downloadRefs['key1'] = {
+        kind: 'electron-download',
+        downloadId: '/models/checkpoints/model.safetensors',
+        url: 'https://example.com/model.safetensors'
+      }
+      mockFindElectronDownloadById.mockReturnValue(null)
+      mockFindElectronDownloadByUrl.mockReturnValue({
+        progress: 1,
+        status: 'completed'
+      })
+
+      const { getDownloadStatus } = useMissingModelInteractions()
+      expect(getDownloadStatus('key1')).toBeNull()
+      expect(mockFindElectronDownloadByUrl).not.toHaveBeenCalled()
+    })
+
+    it('returns null when no tracked download ref exists', () => {
+      const { getDownloadStatus } = useMissingModelInteractions()
+      expect(getDownloadStatus('key1')).toBeNull()
+    })
   })
 
   describe('cancelLibrarySelect', () => {
-    it('clears selectedLibraryModel and importCategoryMismatch', () => {
+    it('clears selectedLibraryModel, importCategoryMismatch, and download refs', () => {
       const store = useMissingModelStore()
       store.selectedLibraryModel['key1'] = 'model.safetensors'
       store.importCategoryMismatch['key1'] = 'loras'
+      store.downloadRefs['key1'] = {
+        kind: 'electron-download',
+        url: 'https://example.com/model.safetensors'
+      }
 
       const { cancelLibrarySelect } = useMissingModelInteractions()
       cancelLibrarySelect('key1')
 
       expect(store.selectedLibraryModel['key1']).toBeUndefined()
       expect(store.importCategoryMismatch['key1']).toBeUndefined()
+      expect(store.downloadRefs['key1']).toBeUndefined()
     })
   })
 
@@ -347,6 +528,10 @@ describe('useMissingModelInteractions', () => {
 
       const store = useMissingModelStore()
       store.selectedLibraryModel['key1'] = 'new_model.safetensors'
+      store.downloadRefs['key1'] = {
+        kind: 'electron-download',
+        url: 'https://example.com/old_model.safetensors'
+      }
       store.setMissingModels([
         makeCandidate({ name: 'old_model.safetensors', nodeId: '10' }),
         makeCandidate({ name: 'old_model.safetensors', nodeId: '20' })
@@ -371,6 +556,7 @@ describe('useMissingModelInteractions', () => {
         'old_model.safetensors',
         new Set(['10', '20'])
       )
+      expect(store.downloadRefs['key1']).toBeUndefined()
       expect(store.selectedLibraryModel['key1']).toBeUndefined()
     })
 
@@ -568,14 +754,14 @@ describe('useMissingModelInteractions', () => {
   })
 
   describe('getDownloadStatus', () => {
-    it('returns null when no taskId is tracked for the key', () => {
+    it('returns null when no download ref is tracked for the key', () => {
       const { getDownloadStatus } = useMissingModelInteractions()
       expect(getDownloadStatus('key1')).toBeNull()
     })
 
-    it('returns the matching download record when a taskId is tracked', () => {
+    it('returns the matching download record when an asset import ref is tracked', () => {
       const store = useMissingModelStore()
-      store.importTaskIds['key1'] = 'task-42'
+      store.downloadRefs['key1'] = { kind: 'asset-import', taskId: 'task-42' }
       mockDownloadList.mockReturnValue([
         { taskId: 'task-other', status: 'running' },
         { taskId: 'task-42', status: 'created' }
@@ -583,7 +769,6 @@ describe('useMissingModelInteractions', () => {
 
       const { getDownloadStatus } = useMissingModelInteractions()
       expect(getDownloadStatus('key1')).toEqual({
-        taskId: 'task-42',
         status: 'created'
       })
     })
@@ -601,7 +786,7 @@ describe('useMissingModelInteractions', () => {
       return store
     }
 
-    it('tracks an async-pending result via importTaskIds and trackDownload', async () => {
+    it('tracks an async-pending result via download refs and trackDownload', async () => {
       const store = setupImportableState('key1')
       mockUploadAssetAsync.mockResolvedValueOnce({
         type: 'async',
@@ -611,7 +796,10 @@ describe('useMissingModelInteractions', () => {
       const { handleImport } = useMissingModelInteractions()
       await handleImport('key1', 'checkpoints')
 
-      expect(store.importTaskIds['key1']).toBe('task-99')
+      expect(store.downloadRefs['key1']).toEqual({
+        kind: 'asset-import',
+        taskId: 'task-99'
+      })
       expect(mockTrackDownload).toHaveBeenCalledWith(
         'task-99',
         'checkpoints',

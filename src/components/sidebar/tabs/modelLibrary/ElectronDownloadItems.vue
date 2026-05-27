@@ -4,7 +4,10 @@
       {{ $t('electronFileDownload.inProgress') }}
     </div>
 
-    <template v-for="download in inProgressDownloads" :key="download.url">
+    <template
+      v-for="download in inProgressDownloads"
+      :key="download.downloadId ?? download.url"
+    >
       <DownloadItem :download="download" />
     </template>
   </div>
