@@ -4,33 +4,9 @@ import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
-import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
-import {
-  makeTemplate,
-  mockTemplateIndex
-} from '@e2e/fixtures/data/templateFixtures'
+import { mockTemplateIndex } from '@e2e/fixtures/data/templateFixtures'
 
-/**
- * Generate N deterministic templates, optionally restricted to a distribution.
- *
- * Lives here (not in `fixtures/data/`) because `fixtures/data/` is reserved
- * for static test data with no executable fixture logic.
- */
-function generateTemplates(
-  count: number,
-  distribution?: TemplateIncludeOnDistributionEnum
-): TemplateInfo[] {
-  const slug = distribution ?? 'unrestricted'
-  return Array.from({ length: count }, (_, i) =>
-    makeTemplate({
-      name: `gen-${slug}-${String(i + 1).padStart(3, '0')}`,
-      title: `Generated ${slug} ${i + 1}`,
-      ...(distribution ? { includeOnDistributions: [distribution] } : {})
-    })
-  )
-}
-
-export interface TemplateConfig {
+interface TemplateConfig {
   readonly templates: readonly TemplateInfo[]
   readonly index: readonly WorkflowTemplates[] | null
 }
@@ -39,7 +15,7 @@ function emptyConfig(): TemplateConfig {
   return { templates: [], index: null }
 }
 
-export type TemplateOperator = (config: TemplateConfig) => TemplateConfig
+type TemplateOperator = (config: TemplateConfig) => TemplateConfig
 
 function cloneTemplates(templates: readonly TemplateInfo[]): TemplateInfo[] {
   return templates.map((t) => structuredClone(t))
@@ -60,46 +36,6 @@ function addTemplates(
 
 export function withTemplates(templates: TemplateInfo[]): TemplateOperator {
   return (config) => addTemplates(config, templates)
-}
-
-export function withTemplate(template: TemplateInfo): TemplateOperator {
-  return (config) => addTemplates(config, [template])
-}
-
-export function withCloudTemplates(count: number): TemplateOperator {
-  return (config) =>
-    addTemplates(
-      config,
-      generateTemplates(count, TemplateIncludeOnDistributionEnum.Cloud)
-    )
-}
-
-export function withDesktopTemplates(count: number): TemplateOperator {
-  return (config) =>
-    addTemplates(
-      config,
-      generateTemplates(count, TemplateIncludeOnDistributionEnum.Desktop)
-    )
-}
-
-export function withLocalTemplates(count: number): TemplateOperator {
-  return (config) =>
-    addTemplates(
-      config,
-      generateTemplates(count, TemplateIncludeOnDistributionEnum.Local)
-    )
-}
-
-export function withUnrestrictedTemplates(count: number): TemplateOperator {
-  return (config) => addTemplates(config, generateTemplates(count))
-}
-
-/**
- * Override the index payload entirely. Useful when a test needs a custom
- * `WorkflowTemplates[]` shape (e.g. multiple modules).
- */
-export function withRawIndex(index: WorkflowTemplates[]): TemplateOperator {
-  return (config) => ({ ...config, index })
 }
 
 export class TemplateHelper {
