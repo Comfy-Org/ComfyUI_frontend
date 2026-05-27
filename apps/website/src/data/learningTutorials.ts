@@ -1,16 +1,24 @@
 import type { LocalizedText, TranslationKey } from '../i18n/translations'
 
-interface LearningTutorial {
+export interface LearningTutorial {
   id: string
   title: LocalizedText
   videoSrc: string
   poster?: string
+  posterTime?: number
   href: string
   tags: readonly TranslationKey[]
 }
 
+const DEFAULT_POSTER_TIME_SECONDS = 1
+
 const partnerNodesTag: TranslationKey = 'tags.partnerNodes'
 const imageToVideoTag: TranslationKey = 'tags.imageToVideo'
+
+export const getTutorialPosterSrc = (tutorial: LearningTutorial): string =>
+  tutorial.poster
+    ? tutorial.videoSrc
+    : `${tutorial.videoSrc}#t=${tutorial.posterTime ?? DEFAULT_POSTER_TIME_SECONDS}`
 
 export const learningTutorials: readonly LearningTutorial[] = [
   {
