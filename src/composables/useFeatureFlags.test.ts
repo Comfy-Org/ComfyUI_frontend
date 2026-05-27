@@ -220,4 +220,33 @@ describe('useFeatureFlags', () => {
       expect(flags.teamWorkspacesEnabled).toBe(true)
     })
   })
+
+  describe('assetModelWizardEnabled', () => {
+    afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+    })
+
+    it('defaults to isCloud until the server serves the flag (BE-997)', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      vi.mocked(distributionTypes).isCloud = false
+      expect(useFeatureFlags().flags.assetModelWizardEnabled).toBe(false)
+
+      vi.mocked(distributionTypes).isCloud = true
+      expect(useFeatureFlags().flags.assetModelWizardEnabled).toBe(true)
+    })
+
+    it('prefers the served flag value over the isCloud default', () => {
+      vi.mocked(distributionTypes).isCloud = true
+      vi.mocked(api.getServerFeature).mockImplementation((path) =>
+        path === ServerFeatureFlag.ASSET_MODEL_WIZARD_ENABLED
+          ? false
+          : undefined
+      )
+
+      expect(useFeatureFlags().flags.assetModelWizardEnabled).toBe(false)
+    })
+  })
 })

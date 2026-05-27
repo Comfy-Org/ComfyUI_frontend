@@ -19,6 +19,9 @@ const { mockHandles } = vi.hoisted(() => {
   return {
     mockHandles: {
       state,
+      featureFlags: {
+        assetModelWizardEnabled: false
+      },
       missingModelStore: {
         missingModelCandidates: null as MissingModelCandidate[] | null,
         createVerificationAbortController: vi.fn(() => new AbortController()),
@@ -83,8 +86,10 @@ const { mockHandles } = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/platform/distribution/types', () => ({
-  isCloud: false
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: mockHandles.featureFlags
+  })
 }))
 
 vi.mock('@/platform/assets/services/assetService', () => ({
@@ -180,6 +185,7 @@ function createGraph(graphData = createWorkflowGraphData()): LGraph {
 describe('missingModelPipeline', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockHandles.featureFlags.assetModelWizardEnabled = false
     mockHandles.state.enrichedCandidates = []
     mockHandles.missingModelStore.missingModelCandidates = null
     mockHandles.workspaceWorkflow.activeWorkflow = null
@@ -596,6 +602,40 @@ describe('missingModelPipeline', () => {
       expect(
         mockHandles.executionErrorStore.surfaceMissingModels
       ).not.toHaveBeenCalled()
+    })
+
+    it('verifies asset-supported candidates instead of fetching folder paths when the model wizard is enabled', async () => {
+      mockHandles.featureFlags.assetModelWizardEnabled = true
+      const confirmedCandidate = {
+        nodeId: '1',
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'missing.safetensors',
+        url: 'https://example.com/missing.safetensors',
+        directory: 'checkpoints',
+        isMissing: true,
+        isAssetSupported: true
+      } satisfies MissingModelCandidate
+      mockHandles.state.enrichedCandidates = [confirmedCandidate]
+      mockHandles.workspaceWorkflow.activeWorkflow = {
+        activeState: null,
+        pendingWarnings: null
+      }
+
+      await runMissingModelPipeline({
+        graph: createGraph(),
+        graphData: createWorkflowGraphData(),
+        missingModelStore: mockHandles.missingModelStore
+      })
+      await vi.dynamicImportSettled()
+
+      expect(mockHandles.verifyAssetSupportedCandidates).toHaveBeenCalledOnce()
+      expect(mockHandles.api.getFolderPaths).not.toHaveBeenCalled()
+      expect(mockHandles.fetchModelMetadata).not.toHaveBeenCalled()
+      // Asset-browser detection feeds the scan only when the wizard is enabled.
+      const enrichAssetSupportedArg =
+        mockHandles.enrichWithEmbeddedMetadata.mock.calls[0]?.[3]
+      expect(enrichAssetSupportedArg).toBeTypeOf('function')
     })
   })
 })
