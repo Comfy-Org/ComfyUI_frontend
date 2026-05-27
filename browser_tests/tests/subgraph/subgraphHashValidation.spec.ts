@@ -3,14 +3,14 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
-async function waitForStoreInitialSync(page: Page) {
+async function waitForRootCanvasReady(page: Page) {
   await expect
     .poll(async () => {
       const state = await page.evaluate(() => ({
         rootId: window.app?.rootGraph?.id ?? '',
-        hash: window.location.hash
+        canvasGraphId: window.app?.canvas?.graph?.id ?? ''
       }))
-      return state.rootId !== '' && state.hash === `#${state.rootId}`
+      return state.rootId !== '' && state.canvasGraphId === state.rootId
     })
     .toBe(true)
 }
@@ -45,7 +45,7 @@ test.describe(
     test('redirects URL and canvas to root for a non-existent subgraph hash', async ({
       comfyPage
     }) => {
-      await waitForStoreInitialSync(comfyPage.page)
+      await waitForRootCanvasReady(comfyPage.page)
       const rootId = await comfyPage.page.evaluate(
         () => window.app!.rootGraph.id
       )
@@ -67,7 +67,7 @@ test.describe(
     test('redirects URL and canvas to root when hash is malformed', async ({
       comfyPage
     }) => {
-      await waitForStoreInitialSync(comfyPage.page)
+      await waitForRootCanvasReady(comfyPage.page)
       const rootId = await comfyPage.page.evaluate(
         () => window.app!.rootGraph.id
       )

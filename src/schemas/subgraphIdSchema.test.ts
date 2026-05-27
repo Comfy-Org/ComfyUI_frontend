@@ -6,6 +6,23 @@ import { isUuidShapedSubgraphId, zSubgraphId } from './subgraphIdSchema'
 
 const CANONICAL_UUID = '550e8400-e29b-41d4-a716-446655440000'
 
+const INVALID_STRING_CASES: Array<[label: string, value: string]> = [
+  ['empty string', ''],
+  ['arbitrary path', '/some/path'],
+  ['plain word', 'subgraph'],
+  ['hash leftover', '#abc'],
+  ['hex but not UUID-shaped', 'abcdef0123456789'],
+  ['UUID with leading hash', `#${CANONICAL_UUID}`],
+  ['UUID with whitespace', ` ${CANONICAL_UUID} `]
+]
+
+const NON_STRING_CASES: Array<[label: string, value: unknown]> = [
+  ['number', 123],
+  ['undefined', undefined],
+  ['null', null],
+  ['object', { id: 'abc' }]
+]
+
 describe('subgraphIdSchema', () => {
   describe('zSubgraphId', () => {
     it('accepts a freshly generated UUID v4', () => {
@@ -16,24 +33,11 @@ describe('subgraphIdSchema', () => {
       expect(zSubgraphId.safeParse(CANONICAL_UUID).success).toBe(true)
     })
 
-    it.each([
-      ['empty string', ''],
-      ['arbitrary path', '/some/path'],
-      ['plain word', 'subgraph'],
-      ['hash leftover', '#abc'],
-      ['hex but not UUID-shaped', 'abcdef0123456789'],
-      ['UUID with leading hash', `#${CANONICAL_UUID}`],
-      ['UUID with whitespace', ` ${CANONICAL_UUID} `]
-    ])('rejects %s', (_label, value) => {
+    it.for(INVALID_STRING_CASES)('rejects %s', ([_label, value]) => {
       expect(zSubgraphId.safeParse(value).success).toBe(false)
     })
 
-    it.each([
-      ['number', 123],
-      ['undefined', undefined],
-      ['null', null],
-      ['object', { id: 'abc' }]
-    ])('rejects non-string %s', (_label, value) => {
+    it.for(NON_STRING_CASES)('rejects non-string %s', ([_label, value]) => {
       expect(zSubgraphId.safeParse(value).success).toBe(false)
     })
   })
