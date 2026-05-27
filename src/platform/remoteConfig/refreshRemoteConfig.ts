@@ -1,14 +1,10 @@
-import { useStorage } from '@vueuse/core'
-
-import type { ServerFeatureFlag } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
 
-import { remoteConfig, remoteConfigState } from './remoteConfig'
-
-export const cachedTeamWorkspacesEnabled = useStorage<boolean | undefined>(
-  'team_workspaces_enabled' satisfies `${ServerFeatureFlag.TEAM_WORKSPACES_ENABLED}`,
-  undefined
-)
+import {
+  cachedTeamWorkspacesEnabled,
+  remoteConfig,
+  remoteConfigState
+} from './remoteConfig'
 
 interface RefreshRemoteConfigOptions {
   /**

@@ -2,10 +2,10 @@ import { computed, reactive, readonly } from 'vue'
 
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
+  cachedTeamWorkspacesEnabled,
   isAuthenticatedConfigLoaded,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
-import { cachedTeamWorkspacesEnabled } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { api } from '@/scripts/api'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
