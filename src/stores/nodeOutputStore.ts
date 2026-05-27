@@ -473,6 +473,9 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     node.imgs = [element]
     node.imageIndex = activeIndex
+
+    const outputs = getNodeOutputs(node)
+    if (outputs?.images) node.images = outputs.images
   }
 
   return {
