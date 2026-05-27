@@ -11,6 +11,7 @@ import { useCanvasTools } from './useCanvasTools'
 import { useCoordinateTransform } from './useCoordinateTransform'
 import type { useKeyboard } from './useKeyboard'
 import type { usePanAndZoom } from './usePanAndZoom'
+import { isMiddleForPointerEvent } from '@/base/pointerUtils'
 import { app } from '@/scripts/app'
 
 export function useToolManager(
@@ -118,9 +119,10 @@ export function useToolManager(
       panZoom.addPenPointerId(event.pointerId)
     }
 
-    const isSpacePressed = keyboard.isKeyDown(' ')
-
-    if (event.buttons === 4 || (event.buttons === 1 && isSpacePressed)) {
+    if (
+      isMiddleForPointerEvent(event) ||
+      (event.buttons === 1 && keyboard.isKeyDown(' '))
+    ) {
       panZoom.handlePanStart(event)
 
       store.brushVisible = false
@@ -177,9 +179,10 @@ export function useToolManager(
     const newCursorPoint = { x: event.clientX, y: event.clientY }
     panZoom.updateCursorPosition(newCursorPoint)
 
-    const isSpacePressed = keyboard.isKeyDown(' ')
-
-    if (event.buttons === 4 || (event.buttons === 1 && isSpacePressed)) {
+    if (
+      isMiddleForPointerEvent(event) ||
+      (event.buttons === 1 && keyboard.isKeyDown(' '))
+    ) {
       await panZoom.handlePanMove(event)
       return
     }

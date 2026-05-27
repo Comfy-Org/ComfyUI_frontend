@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 
-import { isMiddlePointerInput } from '@/base/pointerUtils'
+import { isMiddleForPointerEvent } from '@/base/pointerUtils'
 import { isCanvasGestureWheel } from '@/base/wheelGestures'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -77,7 +77,7 @@ export function useCanvasInteractions() {
    * be forwarded to canvas (e.g., space+drag for panning)
    */
   const handlePointer = (event: PointerEvent) => {
-    if (isMiddlePointerInput(event)) {
+    if (isMiddleForPointerEvent(event)) {
       forwardEventToCanvas(event)
       return
     }
@@ -86,15 +86,10 @@ export function useCanvasInteractions() {
     const canvas = getCanvas()
     if (!canvas) return
 
-    // Check conditions for forwarding events to canvas
-    const isSpacePanningDrag = canvas.read_only && event.buttons === 1 // Space key pressed + left mouse drag
-    const isMiddleMousePanning = event.buttons === 4 // Middle mouse button for panning
-
-    if (isSpacePanningDrag || isMiddleMousePanning) {
+    if (canvas.read_only && event.buttons === 1) {
       event.preventDefault()
       event.stopPropagation()
       forwardEventToCanvas(event)
-      return
     }
   }
 

@@ -35,15 +35,19 @@ function createMockLGraphCanvas(read_only = true): LGraphCanvas {
   return mockCanvas as LGraphCanvas
 }
 
-function createMockPointerEvent(
-  buttons: PointerEvent['buttons'] = 1
-): PointerEvent {
-  const mockEvent: Partial<PointerEvent> = {
-    buttons,
-    preventDefault: vi.fn(),
-    stopPropagation: vi.fn()
-  }
-  return mockEvent as PointerEvent
+function createMockPointerEvent({
+  type = 'pointermove',
+  button = 0,
+  buttons = 1
+}: {
+  type?: string
+  button?: PointerEvent['button']
+  buttons?: PointerEvent['buttons']
+} = {}): PointerEvent {
+  const event = new PointerEvent(type, { button, buttons })
+  vi.spyOn(event, 'preventDefault')
+  vi.spyOn(event, 'stopPropagation')
+  return event
 }
 
 function createMockWheelEvent(
@@ -76,7 +80,7 @@ describe('useCanvasInteractions', () => {
 
       const { handlePointer } = useCanvasInteractions()
 
-      const mockEvent = createMockPointerEvent(1) // Left Mouse Button
+      const mockEvent = createMockPointerEvent({ buttons: 1 })
       handlePointer(mockEvent)
 
       expect(mockEvent.preventDefault).toHaveBeenCalled()
@@ -89,7 +93,20 @@ describe('useCanvasInteractions', () => {
       vi.mocked(getCanvas).mockReturnValue(mockCanvas)
       const { handlePointer } = useCanvasInteractions()
 
-      const mockEvent = createMockPointerEvent(4) // Middle mouse button
+      const mockEvent = createMockPointerEvent({ buttons: 4 })
+      handlePointer(mockEvent)
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled()
+      expect(mockEvent.stopPropagation).toHaveBeenCalled()
+    })
+
+    it('should forward chorded middle-button drags to canvas', () => {
+      const { getCanvas } = useCanvasStore()
+      const mockCanvas = createMockLGraphCanvas(false)
+      vi.mocked(getCanvas).mockReturnValue(mockCanvas)
+      const { handlePointer } = useCanvasInteractions()
+
+      const mockEvent = createMockPointerEvent({ buttons: 5 })
       handlePointer(mockEvent)
 
       expect(mockEvent.preventDefault).toHaveBeenCalled()
@@ -102,7 +119,7 @@ describe('useCanvasInteractions', () => {
       vi.mocked(getCanvas).mockReturnValue(mockCanvas)
       const { handlePointer } = useCanvasInteractions()
 
-      const mockEvent = createMockPointerEvent(1)
+      const mockEvent = createMockPointerEvent({ buttons: 1 })
       handlePointer(mockEvent)
 
       expect(mockEvent.preventDefault).not.toHaveBeenCalled()
@@ -114,7 +131,7 @@ describe('useCanvasInteractions', () => {
       vi.mocked(getCanvas).mockReturnValue(null!)
       const { handlePointer } = useCanvasInteractions()
 
-      const mockEvent = createMockPointerEvent(1)
+      const mockEvent = createMockPointerEvent({ buttons: 1 })
       handlePointer(mockEvent)
 
       expect(getCanvas).toHaveBeenCalled()
