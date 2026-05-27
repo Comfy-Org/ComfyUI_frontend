@@ -9,8 +9,10 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
-import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import {
+  resolveConcretePromotedWidget,
+  resolvePromotedWidgetSource
+} from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type {
   INodeInputSlot,
@@ -27,6 +29,8 @@ import { IS_CONTROL_WIDGET } from '@/scripts/widgets'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
 import { normalizeControlOption } from '@/types/simplifiedWidget'
+import { getWidgetEntityIdForNode } from '@/utils/litegraphUtil'
+import type { WidgetEntityId } from '@/world/entityIds'
 
 import type {
   LGraph,
@@ -56,10 +60,9 @@ type Badges = (LGraphBadge | (() => LGraphBadge))[]
  * Value and metadata (label, hidden, disabled, etc.) are accessed via widgetValueStore.
  */
 export interface SafeWidgetData {
+  entityId?: WidgetEntityId
   nodeId?: NodeId
-  storeNodeId?: NodeId
   name: string
-  storeName?: string
   type: string
   /** Callback to invoke when widget value changes (wraps LiteGraph callback + triggerDraw) */
   callback?: ((value: unknown) => void) | undefined
@@ -228,18 +231,15 @@ function safeWidgetMapper(
     }
   }
 
-  function resolvePromotedSourceByInputName(inputName: string): {
-    sourceNodeId: string
-    sourceWidgetName: string
-    disambiguatingSourceNodeId?: string
-  } | null {
+  function resolvePromotedSourceByInputName(
+    inputName: string
+  ): PromotedWidgetSource | null {
     const resolvedTarget = resolveSubgraphInputTarget(node, inputName)
     if (!resolvedTarget) return null
 
     return {
       sourceNodeId: resolvedTarget.nodeId,
-      sourceWidgetName: resolvedTarget.widgetName,
-      disambiguatingSourceNodeId: resolvedTarget.sourceNodeId
+      sourceWidgetName: resolvedTarget.widgetName
     }
   }
 
@@ -257,10 +257,9 @@ function safeWidgetMapper(
     const matchedInput = matchPromotedInput(node.inputs, widget)
     const promotedInputName = matchedInput?.name
     const displayName = promotedInputName ?? widget.name
-    const directSource = {
+    const directSource: PromotedWidgetSource = {
       sourceNodeId: widget.sourceNodeId,
-      sourceWidgetName: widget.sourceWidgetName,
-      disambiguatingSourceNodeId: widget.disambiguatingSourceNodeId
+      sourceWidgetName: widget.sourceWidgetName
     }
     const promotedSource =
       matchedInput?._widget === widget
@@ -307,8 +306,7 @@ function safeWidgetMapper(
           ? resolveConcretePromotedWidget(
               node,
               promotedSource.sourceNodeId,
-              promotedSource.sourceWidgetName,
-              promotedSource.disambiguatingSourceNodeId
+              promotedSource.sourceWidgetName
             )
           : null
       const resolvedSource =
@@ -321,24 +319,21 @@ function safeWidgetMapper(
       const effectiveWidget = sourceWidget ?? widget
 
       const localId = isPromotedWidgetView(widget)
-        ? String(
-            sourceNode?.id ??
-              promotedSource?.disambiguatingSourceNodeId ??
-              promotedSource?.sourceNodeId
-          )
+        ? String(sourceNode?.id ?? promotedSource?.sourceNodeId)
         : undefined
       const nodeId =
         subgraphId && localId ? `${subgraphId}:${localId}` : undefined
-      const storeName = isPromotedWidgetView(widget)
+      const sourceWidgetName = isPromotedWidgetView(widget)
         ? (sourceWidget?.name ?? promotedSource?.sourceWidgetName)
         : undefined
-      const name = storeName ?? displayName
+      const name = sourceWidgetName ?? displayName
+
+      if (isPromotedWidgetView(widget)) widget.ensureHostWidgetState()
 
       return {
+        entityId: getWidgetEntityIdForNode(node, widget),
         nodeId,
-        storeNodeId: nodeId,
         name,
-        storeName,
         type: effectiveWidget.type,
         ...sharedEnhancements,
         callback,
@@ -386,10 +381,10 @@ function buildSlotMetadata(
 
     if (input.link != null && graphRef) {
       const link = graphRef.getLink(input.link)
-      if (link) {
+      const originNode = link ? graphRef.getNodeById(link.origin_id) : null
+      if (link && originNode) {
         originNodeId = String(link.origin_id)
-        const originNode = graphRef.getNodeById(link.origin_id)
-        originOutputName = originNode?.outputs?.[link.origin_slot]?.name
+        originOutputName = originNode.outputs?.[link.origin_slot]?.name
       }
     }
 
