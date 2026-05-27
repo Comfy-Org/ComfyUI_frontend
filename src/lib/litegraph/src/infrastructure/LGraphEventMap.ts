@@ -1,8 +1,9 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink, ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
+import type { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type {
   ExportedSubgraph,
   ISerialisedGraph,
@@ -55,5 +56,24 @@ export interface LGraphEventMap {
    */
   'node:before-removed': {
     node: LGraphNode
+  }
+
+  'node:property:changed': {
+    nodeId: NodeId
+    property: string
+    oldValue: unknown
+    newValue: unknown
+  }
+  'node:slot-errors:changed': { nodeId: NodeId }
+  'node:slot-links:changed': {
+    nodeId: NodeId
+    slotType: NodeSlotType
+    slotIndex: number
+    connected: boolean
+    linkId: number
+  }
+  'node:slot-label:changed': {
+    nodeId: NodeId
+    slotType?: NodeSlotType
   }
 }

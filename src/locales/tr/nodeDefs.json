@@ -1113,6 +1113,10 @@
       "model": {
         "name": "model"
       },
+      "pre_cfg": {
+        "name": "pre_cfg",
+        "tooltip": "Eğer doğruysa, birleştirilmiş gürültüyü örnekleyicinin CFG birleştirmesinden ÖNCE yeniden ölçeklendirir, sıkıştırma olmadan (büyütebilir). Lens gibi modellerde kullanılan norm-ölçekli CFG ile eşleşir. Varsayılan olarak yanlış seçiliyse, orijinal CFG sonrası x0-uzayı sadece zayıflatma davranışını korur."
+      },
       "strength": {
         "name": "güç"
       }
@@ -1800,6 +1804,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "description": "Mantıksal VE işlemi. Tüm değerler doğruysa true döner. Python'un doğruluk kurallarını kullanır.",
+    "display_name": "Ve",
+    "inputs": {
+      "values": {
+        "name": "değerler"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "Matematiksel İfade",
     "inputs": {
@@ -1823,6 +1841,20 @@
       }
     }
   },
+  "ComfyNotNode": {
+    "description": "Mantıksal DEĞİL işlemi. Değer yanlışsa true döner. Python'un doğruluk kurallarını kullanır.",
+    "display_name": "Değil",
+    "inputs": {
+      "value": {
+        "name": "değer"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyNumberConvert": {
     "display_name": "Sayı Dönüştürme",
     "inputs": {
@@ -1835,6 +1867,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "description": "Mantıksal VEYA işlemi. Herhangi bir değer doğruysa true döner. Python'un doğruluk kurallarını kullanır.",
+    "display_name": "Veya",
+    "inputs": {
+      "values": {
+        "name": "değerler"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -12262,6 +12308,23 @@
       }
     }
   },
+  "MultiGPU_WorkUnits": {
+    "description": "Modelin örneklemesinin iş birimlerini bölerek hızlandırılması için hazırlar.\n\nModel nesnesini doğrudan değiştiren düğümlerden (ör. derleme veya attention-switch düğümleri) sonra yerleştirilmelidir.\n\nBu istisnalar dışında, bu düğüm herhangi bir sırada yerleştirilebilir.",
+    "display_name": "MultiGPU CFG Bölme",
+    "inputs": {
+      "max_gpus": {
+        "name": "max_gpus"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "NAGuidance": {
     "description": "Modellere Normalize Edilmiş Dikkat Yönlendirmesi uygular, distilled/schnell modellerde negatif istemlere olanak tanır.",
     "display_name": "Normalize Edilmiş Dikkat Yönlendirmesi",
@@ -14601,6 +14664,164 @@
       }
     }
   },
+  "Rodin3D_Gen25_Image": {
+    "description": "Rodin Gen-2.5 ile 1-5 referans görüntüsünden 3D model oluşturun. Kalite ve maliyet dengesini ayarlamak için bir mod seçin (Hızlı / Normal / Aşırı-Yüksek).",
+    "display_name": "Rodin 3D Gen-2.5 - Görüntüden 3D'ye",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "İnsan benzeri modeller için T/A pozu."
+      },
+      "addon_highpack": {
+        "name": "ek_highpack",
+        "tooltip": "HighPack eklentisi: 4K dokular ve Quad modunda ~16x yüz."
+      },
+      "bbox_height": {
+        "name": "bbox_yüksekliği",
+        "tooltip": "Sınır kutusu yüksekliği (Z ekseni)."
+      },
+      "bbox_length": {
+        "name": "bbox_uzunluğu",
+        "tooltip": "Sınır kutusu uzunluğu (X ekseni)."
+      },
+      "bbox_width": {
+        "name": "bbox_genişliği",
+        "tooltip": "Sınır kutusu genişliği (Y ekseni). Diğerleriyle birlikte 0 ayarlanırsa bbox atlanır."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "geometry_file_format": {
+        "name": "geometri_dosya_formatı"
+      },
+      "hd_texture": {
+        "name": "hd_doku",
+        "tooltip": "Yüksek kaliteli doku iyileştirmesi."
+      },
+      "height_cm": {
+        "name": "yükseklik_cm",
+        "tooltip": "Yaklaşık model yüksekliği santimetre cinsinden (0 ise atlanır)."
+      },
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "1-5 görüntü. Çoklu bakışta ilk görüntü materyaller için kullanılır."
+      },
+      "material": {
+        "name": "materyal"
+      },
+      "mode": {
+        "name": "mod",
+        "tooltip": "Oluşturma modu. Normal = dengeli. Hızlı = hızlı prototipleme için 1K-20K yüz. Aşırı-Yüksek = isteğe bağlı mikro detaylarla 20K-2M yüz."
+      },
+      "mode_creative": {
+        "name": "yaratıcı"
+      },
+      "mode_polygon_count": {
+        "name": "poligon_sayısı"
+      },
+      "mode_tier": {
+        "name": "katman"
+      },
+      "seed": {
+        "name": "tohum"
+      },
+      "texture_delight": {
+        "name": "doku_aydınlatma",
+        "tooltip": "Dokulardan pişmiş ışıklandırmayı kaldır."
+      },
+      "texture_mode": {
+        "name": "doku_modu",
+        "tooltip": "Doku kalitesi ön ayarı. 'Varsayılan', seçilen katman için sunucunun varsayılanını kullanır."
+      },
+      "use_original_alpha": {
+        "name": "orijinal_alfa_kullan",
+        "tooltip": "Görüntü şeffaflığını koru."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "description": "Rodin Gen-2.5 ile bir metin isteminden 3D model oluşturun. Kalite ve maliyet dengesini ayarlamak için bir mod seçin (Hızlı / Normal / Aşırı-Yüksek).",
+    "display_name": "Rodin 3D Gen-2.5 - Metinden 3D'ye",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "İnsan benzeri modeller için T/A pozu."
+      },
+      "addon_highpack": {
+        "name": "eklenti_highpack",
+        "tooltip": "HighPack eklentisi: 4K dokular ve Quad modunda ~16x yüzey."
+      },
+      "bbox_height": {
+        "name": "bbox_yükseklik",
+        "tooltip": "Sınır kutusu yüksekliği (Z ekseni)."
+      },
+      "bbox_length": {
+        "name": "bbox_uzunluk",
+        "tooltip": "Sınır kutusu uzunluğu (X ekseni)."
+      },
+      "bbox_width": {
+        "name": "bbox_genişlik",
+        "tooltip": "Sınır kutusu genişliği (Y ekseni). Diğerleriyle birlikte 0 ayarlanırsa bbox atlanır."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "geometry_file_format": {
+        "name": "geometri_dosya_formatı"
+      },
+      "hd_texture": {
+        "name": "hd_doku",
+        "tooltip": "Yüksek kaliteli doku iyileştirmesi."
+      },
+      "height_cm": {
+        "name": "yükseklik_cm",
+        "tooltip": "Yaklaşık model yüksekliği (santimetre cinsinden, atlamak için 0 girin)."
+      },
+      "material": {
+        "name": "malzeme"
+      },
+      "mode": {
+        "name": "mod",
+        "tooltip": "Oluşturma modu. Normal = dengeli. Hızlı = hızlı prototipleme için 1K-20K yüzey. Aşırı-Yüksek = isteğe bağlı mikro detaylarla 20K-2M yüzey."
+      },
+      "mode_creative": {
+        "name": "yaratıcı"
+      },
+      "mode_polygon_count": {
+        "name": "poligon_sayısı"
+      },
+      "mode_tier": {
+        "name": "katman"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "3D model için metin istemi."
+      },
+      "seed": {
+        "name": "tohum"
+      },
+      "texture_delight": {
+        "name": "doku_aydınlatma_kaldır",
+        "tooltip": "Dokulardan pişmiş aydınlatmayı kaldır."
+      },
+      "texture_mode": {
+        "name": "doku_modu",
+        "tooltip": "Doku kalitesi ön ayarı. 'Varsayılan', seçilen katman için sunucunun varsayılanını kullanır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      }
+    }
+  },
   "Rodin3D_Regular": {
     "description": "Rodin API kullanarak 3D Varlıklar Oluştur",
     "display_name": "Rodin 3D Oluştur - Normal Oluştur",
@@ -15712,6 +15933,30 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "description": "Girdi görüntülerini ComfyUI çıktı dizinine kaydeder.",
+    "display_name": "Görüntüyü Kaydet (Gelişmiş)",
+    "inputs": {
+      "filename_prefix": {
+        "name": "dosya_adı_ön_eki",
+        "tooltip": "Kaydedilecek dosya için ön ek. %date:yyyy-MM-dd% veya %Empty Latent Image.width% gibi biçimlendirme belirteçleri içerebilir."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "Görüntünün kaydedileceği dosya formatı."
+      },
+      "format_bit_depth": {
+        "name": "bit_derinliği"
+      },
+      "format_input_color_space": {
+        "name": "giriş_renk_uzayı"
+      },
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "Kaydedilecek görüntüler."
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
     "description": "Bir görüntü veri setini belirtilen klasöre kaydet. Desteklenen formatlar: PNG.",
     "display_name": "Görüntü Veri Setini Klasöre Kaydet",
@@ -15890,6 +16135,57 @@
       },
       "shift_y": {
         "name": "y_kaydırma"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectCLIPDevice": {
+    "description": "CLIP metin kodlayıcısını belirli bir cihaza yerleştir (default / cpu / gpu:N).\n\n- \"default\" yükleyici tarafından atanan cihazı geri yükler.\n- \"cpu\" hem yükleme hem de boşaltma cihazını CPU'ya sabitler.\n- \"gpu:N\" yükleme cihazını mevcut N. GPU'ya sabitler.\n\nSeçilen cihaz mevcut makinede yoksa\n(ör. 2-GPU'lu bir sistemde oluşturulan bir iş akışı 1-GPU'lu bir sistemde açılırsa),\ndüğüm CLIP'i değiştirmeden iletir ve hata vermek yerine bir mesaj kaydeder.",
+    "display_name": "CLIP Cihazı Seç",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "device": {
+        "name": "device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectModelDevice": {
+    "description": "Diffusion modelini belirli bir cihaza yerleştir (default / cpu / gpu:N).\n\n- \"default\" yükleyici tarafından atanan cihazı geri yükler (önceki bir\n  Model Cihazı Seç çağrısından sonra bile).\n- \"cpu\" hem yükleme hem de boşaltma cihazını CPU'ya sabitler.\n- \"gpu:N\" yükleme cihazını mevcut N. GPU'ya sabitler; boşaltma\n  cihazı yükleyicinin orijinal seçimine geri döner.\n\nİstenen cihaz, giriş modelinin zaten bulunduğu cihazdan farklıysa,\nyeni bir model yükleyicinin yeniden yükleme fabrikası\n(cached_patcher_init) ile başlatılır, böylece yeni patcher yeni cihazda bağımsız ağırlıklara sahip olur. Çoklu GPU desteklemeyen yükleyiciler (fabrika yoksa)\ndüğümü değiştirmeden iletir ve bir uyarı verir.\n\nİş akışında zaten MultiGPU CFG Bölme uygulanmışsa ve seçilen\nGPU mevcut çoklu GPU klonlarından biriyle çakışıyorsa, o klon\ndüşürülür, böylece iki patcher aynı cihaza bağlı olmaz.\n\nSeçilen cihaz mevcut makinede yoksa\n(ör. 2-GPU'lu bir sistemde oluşturulan bir iş akışı 1-GPU'lu bir sistemde açılırsa),\ndüğüm modeli değiştirmeden iletir ve hata vermek yerine bir mesaj kaydeder.\n\nNOT: Model Cihazı Seç düğümünü, aynı modeli zaten tüketmiş bir düğümden (ör. bu modelde orijinal cihazda çalışan bir KSampler) SONRA yerleştirmek önerilmez -- önceki tüketicinin orijinal modelde değiştirdiği herhangi bir durum, seçilen cihaz orijinal ile eşleştiğinde (hızlı yol) gözlemlenir. Model Cihazı Seç düğümünü modelin herhangi bir tüketicisinden ÖNCE yerleştirin.",
+    "display_name": "Model Cihazı Seç",
+    "inputs": {
+      "device": {
+        "name": "device"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectVAEDevice": {
+    "description": "VAE'yi belirli bir cihaza yerleştirir (varsayılan / gpu:N).\n\n- \"default\" yükleyici tarafından atanan cihazı geri yükler.\n- \"gpu:N\" yükleme cihazını mevcut N'inci GPU'ya sabitler; offload cihazı standart VAE offload cihazı olarak ayarlanır.\n\nVAE için CPU, arayüzde kasıtlı olarak gösterilmez; eğer bir iş akışı yine de \"cpu\" sağlarsa (ör. başka bir makineden açılmışsa), istek bir günlük mesajı ile bırakılır ve VAE değişmeden iletilir.\n\nSeçilen cihaz mevcut makinede yoksa\n(ör. 2-GPU'lu bir kutuda oluşturulan bir iş akışı 1-GPU'lu bir kutuda açılırsa),\ndüğüm VAE'yi değişmeden iletir ve hata vermek yerine bir mesaj kaydeder.",
+    "display_name": "VAE Cihazını Seç",
+    "inputs": {
+      "device": {
+        "name": "cihaz"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

@@ -1113,6 +1113,10 @@
       "model": {
         "name": "模型"
       },
+      "pre_cfg": {
+        "name": "pre_cfg",
+        "tooltip": "如果为 true，则在采样器的 CFG 合并之前对组合噪声进行重新缩放，不进行限制（可能会放大）。这与 Lens 等模型使用的 norm-scaled CFG 相匹配。默认 false 保持原有的 post-CFG x0 空间仅衰减行为。"
+      },
       "strength": {
         "name": "强度"
       }
@@ -1800,6 +1804,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "description": "逻辑与操作。如果所有值都为真，则返回 true。使用 Python 的真值规则。",
+    "display_name": "与",
+    "inputs": {
+      "values": {
+        "name": "值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "数学表达式",
     "inputs": {
@@ -1823,6 +1841,20 @@
       }
     }
   },
+  "ComfyNotNode": {
+    "description": "逻辑非操作。如果值为假，则返回 true。使用 Python 的真值规则。",
+    "display_name": "非",
+    "inputs": {
+      "value": {
+        "name": "值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyNumberConvert": {
     "display_name": "数字转换",
     "inputs": {
@@ -1835,6 +1867,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "description": "逻辑或操作。如果任意值为真，则返回 true。使用 Python 的真值规则。",
+    "display_name": "或",
+    "inputs": {
+      "values": {
+        "name": "值"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -12262,6 +12308,23 @@
       }
     }
   },
+  "MultiGPU_WorkUnits": {
+    "description": "准备模型以通过拆分工作单元加速采样。\n\n应放置在修改模型对象本身的节点之后，例如编译或注意力切换节点。\n\n除这些例外外，此节点可按任意顺序放置。",
+    "display_name": "多GPU CFG 拆分",
+    "inputs": {
+      "max_gpus": {
+        "name": "max_gpus"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "NAGuidance": {
     "description": "对模型应用归一化注意力引导，使蒸馏/快速模型支持负向提示。",
     "display_name": "归一化注意力引导",
@@ -14601,6 +14664,164 @@
       }
     }
   },
+  "Rodin3D_Gen25_Image": {
+    "description": "通过 Rodin Gen-2.5 从 1-5 张参考图像生成 3D 模型。选择模式（快速 / 常规 / 极高）以平衡质量与成本。",
+    "display_name": "Rodin 3D Gen-2.5 - 图像转3D",
+    "inputs": {
+      "TAPose": {
+        "name": "T/A 姿势",
+        "tooltip": "用于类人模型的 T/A 姿势。"
+      },
+      "addon_highpack": {
+        "name": "HighPack 插件",
+        "tooltip": "HighPack 插件：4K 贴图和 Quad 模式下约 16 倍面数。"
+      },
+      "bbox_height": {
+        "name": "包围盒高度",
+        "tooltip": "包围盒高度（Z 轴）。"
+      },
+      "bbox_length": {
+        "name": "包围盒长度",
+        "tooltip": "包围盒长度（X 轴）。"
+      },
+      "bbox_width": {
+        "name": "包围盒宽度",
+        "tooltip": "包围盒宽度（Y 轴）。与其他设置为 0 可跳过包围盒。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "geometry_file_format": {
+        "name": "几何文件格式"
+      },
+      "hd_texture": {
+        "name": "高清贴图",
+        "tooltip": "高质量贴图增强。"
+      },
+      "height_cm": {
+        "name": "模型高度（厘米）",
+        "tooltip": "模型大致高度（厘米，0 表示跳过）。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "1-5 张图像。多视角时第一张图像用于材质。"
+      },
+      "material": {
+        "name": "材质"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "生成模式。常规 = 平衡。快速 = 1K-20K 面，适合快速原型。极高 = 20K-200 万面，可选微细节。"
+      },
+      "mode_creative": {
+        "name": "创意"
+      },
+      "mode_polygon_count": {
+        "name": "面数"
+      },
+      "mode_tier": {
+        "name": "档位"
+      },
+      "seed": {
+        "name": "种子"
+      },
+      "texture_delight": {
+        "name": "贴图去光照",
+        "tooltip": "去除贴图中的烘焙光照。"
+      },
+      "texture_mode": {
+        "name": "贴图模式",
+        "tooltip": "贴图质量预设。'默认'使用服务器为所选档位设置的默认值。"
+      },
+      "use_original_alpha": {
+        "name": "保留原始透明度",
+        "tooltip": "保留图像透明通道。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "description": "通过 Rodin Gen-2.5 根据文本提示生成3D模型。选择模式（快速 / 常规 / 极高）以平衡质量与成本。",
+    "display_name": "Rodin 3D Gen-2.5 - 文本转3D",
+    "inputs": {
+      "TAPose": {
+        "name": "T/A 姿势",
+        "tooltip": "用于类人模型的T/A姿势。"
+      },
+      "addon_highpack": {
+        "name": "HighPack 插件",
+        "tooltip": "HighPack 插件：4K贴图和Quad模式下约16倍面数。"
+      },
+      "bbox_height": {
+        "name": "包围盒高度",
+        "tooltip": "包围盒高度（Z轴）。"
+      },
+      "bbox_length": {
+        "name": "包围盒长度",
+        "tooltip": "包围盒长度（X轴）。"
+      },
+      "bbox_width": {
+        "name": "包围盒宽度",
+        "tooltip": "包围盒宽度（Y轴）。与其他设置为0可跳过包围盒。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "geometry_file_format": {
+        "name": "几何文件格式"
+      },
+      "hd_texture": {
+        "name": "高清贴图",
+        "tooltip": "高质量贴图增强。"
+      },
+      "height_cm": {
+        "name": "模型高度（厘米）",
+        "tooltip": "模型近似高度（厘米，0为跳过）。"
+      },
+      "material": {
+        "name": "材质"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "生成模式。常规 = 平衡。快速 = 1K-20K面数，适合快速原型。极高 = 20K-200万面数，可选微细节。"
+      },
+      "mode_creative": {
+        "name": "创意"
+      },
+      "mode_polygon_count": {
+        "name": "面数"
+      },
+      "mode_tier": {
+        "name": "档位"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于生成3D模型的文本提示。"
+      },
+      "seed": {
+        "name": "随机种子"
+      },
+      "texture_delight": {
+        "name": "贴图去光照",
+        "tooltip": "移除贴图中的烘焙光照。"
+      },
+      "texture_mode": {
+        "name": "贴图模式",
+        "tooltip": "贴图质量预设。“默认”将使用所选档位的服务器默认值。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      }
+    }
+  },
   "Rodin3D_Regular": {
     "description": "使用Rodin API生成3D资源",
     "display_name": "Rodin 3D生成 - 常规生成",
@@ -15712,6 +15933,30 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "description": "将输入图像保存到您的 ComfyUI 输出目录。",
+    "display_name": "保存图像（高级）",
+    "inputs": {
+      "filename_prefix": {
+        "name": "文件名前缀",
+        "tooltip": "要保存文件的前缀。可包含格式化标记，如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width%。"
+      },
+      "format": {
+        "name": "格式",
+        "tooltip": "保存图像的文件格式。"
+      },
+      "format_bit_depth": {
+        "name": "位深度"
+      },
+      "format_input_color_space": {
+        "name": "输入色彩空间"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "要保存的图像。"
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
     "description": "将图像数据集保存到指定文件夹。支持的格式：PNG。",
     "display_name": "保存图像数据集",
@@ -15890,6 +16135,57 @@
       },
       "shift_y": {
         "name": "shift_y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectCLIPDevice": {
+    "description": "将 CLIP 文本编码器放置在指定设备上（default / cpu / gpu:N）。\n\n- “default” 恢复加载器分配的设备。\n- “cpu” 将加载和卸载设备都固定为 CPU。\n- “gpu:N” 将加载设备固定为第 N 个可用 GPU。\n\n当所选设备在当前机器上不存在时\n（例如在 2-GPU 机器上构建的工作流在 1-GPU 机器上打开），\n节点会直接传递 CLIP 并记录消息，而不会报错。",
+    "display_name": "选择 CLIP 设备",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "device": {
+        "name": "device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectModelDevice": {
+    "description": "将扩散模型放置在指定设备上（default / cpu / gpu:N）。\n\n- “default” 恢复加载器分配的设备（即使在之前调用过选择模型设备后）。\n- “cpu” 将加载和卸载设备都固定为 CPU。\n- “gpu:N” 将加载设备固定为第 N 个可用 GPU；卸载设备恢复为加载器的原始选择。\n\n当请求的设备与输入模型当前所在设备不同时，会通过加载器的 reload factory（cached_patcher_init）生成一个新的模型实例，使新的 patcher 在新设备上拥有独立权重。不支持多 GPU 的加载器（无 factory）会导致节点直接传递且发出警告。\n\n如果工作流已应用多GPU CFG 拆分，且所选 GPU 与现有多 GPU 克隆冲突，则该克隆会被移除，避免两个 patcher 绑定到同一设备。\n\n当所选设备在当前机器上不存在时\n（例如在 2-GPU 机器上构建的工作流在 1-GPU 机器上打开），\n节点会直接传递模型并记录消息，而不会报错。\n\n注意：不建议在已被其他节点消费过的模型之后放置选择模型设备节点（例如 KSampler 已在原设备上运行过该模型）——如果所选设备与原设备一致（快速路径），则会观察到之前消费者对原模型的状态更改。请在任何模型消费者之前放置选择模型设备节点。",
+    "display_name": "选择模型设备",
+    "inputs": {
+      "device": {
+        "name": "device"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectVAEDevice": {
+    "description": "将VAE放置在指定设备上（default / gpu:N）。\n\n- “default” 恢复加载器分配的设备。\n- “gpu:N” 将加载设备固定到第N个可用GPU；卸载设备设置为标准VAE卸载设备。\n\nVAE在UI中故意不暴露CPU选项；如果工作流仍然提供了“cpu”（例如从其他机器打开），请求会被记录日志并丢弃，VAE保持不变。\n\n当所选设备在当前机器上不存在时（例如在2-GPU机器上构建的工作流在1-GPU机器上打开），节点会直接传递VAE并记录日志，而不会报错。",
+    "display_name": "选择VAE设备",
+    "inputs": {
+      "device": {
+        "name": "设备"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

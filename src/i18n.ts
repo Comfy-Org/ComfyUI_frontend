@@ -155,6 +155,7 @@ export const i18n = createI18n({
 
 /** Convenience shorthand: i18n.global */
 export const { t, te, d } = i18n.global
+const { tm } = i18n.global
 
 /**
  * Safe translation function that returns the fallback message if the key is not found.
@@ -165,4 +166,18 @@ export const { t, te, d } = i18n.global
 export function st(key: string, fallbackMessage: string) {
   // The normal defaultMsg overload fails in some cases for custom nodes
   return te(key) ? t(key) : fallbackMessage
+}
+
+/**
+ * Safe raw translation function for strings that may contain i18n syntax.
+ *
+ * @param key - The key for the raw locale message.
+ * @param fallbackMessage - The fallback message to use if the key is not found
+ * or the locale message is not a string.
+ */
+export function stRaw(key: string, fallbackMessage: string) {
+  if (!te(key)) return fallbackMessage
+
+  const message = tm(key)
+  return typeof message === 'string' ? message : fallbackMessage
 }

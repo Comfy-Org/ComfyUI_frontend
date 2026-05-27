@@ -213,7 +213,8 @@ export class VueNodeHelpers {
     return {
       input: widget.locator('input'),
       decrementButton: widget.getByTestId(TestIds.widgets.decrement),
-      incrementButton: widget.getByTestId(TestIds.widgets.increment)
+      incrementButton: widget.getByTestId(TestIds.widgets.increment),
+      valueControl: widget.getByTestId(TestIds.widgets.valueControl)
     }
   }
 

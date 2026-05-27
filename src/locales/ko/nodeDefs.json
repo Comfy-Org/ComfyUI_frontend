@@ -1113,6 +1113,10 @@
       "model": {
         "name": "model"
       },
+      "pre_cfg": {
+        "name": "pre_cfg",
+        "tooltip": "참이면, 샘플러의 CFG 결합 전에 결합된 노이즈를 클램핑 없이 리스케일합니다(증폭될 수 있음). Lens와 같은 모델에서 사용되는 norm-scaled CFG와 일치합니다. 기본값 false는 원래의 post-CFG x0-space 감쇠 전용 동작을 유지합니다."
+      },
       "strength": {
         "name": "strength"
       }
@@ -1800,6 +1804,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "description": "논리 AND 연산. 모든 값이 참(truthy)이면 true를 반환합니다. Python의 truthiness 규칙을 따릅니다.",
+    "display_name": "And",
+    "inputs": {
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "수학식",
     "inputs": {
@@ -1823,6 +1841,20 @@
       }
     }
   },
+  "ComfyNotNode": {
+    "description": "논리 NOT 연산. 값이 거짓(falsy)이면 true를 반환합니다. Python의 truthiness 규칙을 따릅니다.",
+    "display_name": "Not",
+    "inputs": {
+      "value": {
+        "name": "value"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyNumberConvert": {
     "display_name": "숫자 변환",
     "inputs": {
@@ -1835,6 +1867,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "description": "논리 OR 연산. 값 중 하나라도 참(truthy)이면 true를 반환합니다. Python의 truthiness 규칙을 따릅니다.",
+    "display_name": "Or",
+    "inputs": {
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -12262,6 +12308,23 @@
       }
     }
   },
+  "MultiGPU_WorkUnits": {
+    "description": "작업 단위를 분할하여 샘플링 속도를 높이도록 모델을 준비합니다.\n\n모델 객체 자체를 수정하는 노드(예: compile 또는 attention-switch 노드) 뒤에 배치해야 합니다.\n\n이러한 예외를 제외하면, 이 노드는 어떤 순서로든 배치할 수 있습니다.",
+    "display_name": "MultiGPU CFG 분할",
+    "inputs": {
+      "max_gpus": {
+        "name": "max_gpus"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "NAGuidance": {
     "description": "정규화된 어텐션 가이던스를 모델에 적용하여, distilled/schnell 모델에서 네거티브 프롬프트를 사용할 수 있게 합니다.",
     "display_name": "정규화된 어텐션 가이던스",
@@ -14601,6 +14664,164 @@
       }
     }
   },
+  "Rodin3D_Gen25_Image": {
+    "description": "Rodin Gen-2.5를 통해 1~5개의 참조 이미지를 사용하여 3D 모델을 생성합니다. 품질과 비용을 조정하려면 모드(빠름 / 일반 / 극고화질)를 선택하세요.",
+    "display_name": "Rodin 3D Gen-2.5 - 이미지에서 3D 생성",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "사람 형태 모델을 위한 T/A 포즈."
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "HighPack 애드온: 쿼드 모드에서 4K 텍스처 및 약 16배 폴리곤."
+      },
+      "bbox_height": {
+        "name": "bbox_height",
+        "tooltip": "바운딩 박스 높이(Z축)."
+      },
+      "bbox_length": {
+        "name": "bbox_length",
+        "tooltip": "바운딩 박스 길이(X축)."
+      },
+      "bbox_width": {
+        "name": "bbox_width",
+        "tooltip": "바운딩 박스 너비(Y축). 다른 값들과 함께 0으로 설정하면 바운딩 박스를 생략합니다."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "geometry_file_format": {
+        "name": "geometry_file_format"
+      },
+      "hd_texture": {
+        "name": "hd_texture",
+        "tooltip": "고품질 텍스처 향상."
+      },
+      "height_cm": {
+        "name": "height_cm",
+        "tooltip": "모델의 대략적인 높이(센티미터, 0이면 생략)."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "1~5개의 이미지. 다중 뷰일 경우 첫 번째 이미지는 재질에 사용됩니다."
+      },
+      "material": {
+        "name": "material"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "생성 모드. 일반 = 균형 잡힘. 빠름 = 빠른 프로토타이핑을 위한 1K~20K 폴리곤. 극고화질 = 마이크로 디테일 옵션 포함 20K~2M 폴리곤."
+      },
+      "mode_creative": {
+        "name": "creative"
+      },
+      "mode_polygon_count": {
+        "name": "polygon_count"
+      },
+      "mode_tier": {
+        "name": "tier"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "texture_delight": {
+        "name": "texture_delight",
+        "tooltip": "텍스처에서 베이크된 조명을 제거합니다."
+      },
+      "texture_mode": {
+        "name": "texture_mode",
+        "tooltip": "텍스처 품질 프리셋. 'Default'는 선택한 티어의 서버 기본값을 사용합니다."
+      },
+      "use_original_alpha": {
+        "name": "use_original_alpha",
+        "tooltip": "이미지의 투명도를 보존합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "description": "Rodin Gen-2.5를 통해 텍스트 프롬프트로부터 3D 모델을 생성합니다. 품질과 비용을 조정하려면 모드(빠름 / 일반 / 극고화질)를 선택하세요.",
+    "display_name": "Rodin 3D Gen-2.5 - 텍스트에서 3D 생성",
+    "inputs": {
+      "TAPose": {
+        "name": "T/A 포즈",
+        "tooltip": "사람 형태 모델을 위한 T/A 포즈입니다."
+      },
+      "addon_highpack": {
+        "name": "HighPack 애드온",
+        "tooltip": "HighPack 애드온: 쿼드 모드에서 4K 텍스처와 약 16배 폴리곤."
+      },
+      "bbox_height": {
+        "name": "바운딩 박스 높이",
+        "tooltip": "바운딩 박스 높이(Z축)."
+      },
+      "bbox_length": {
+        "name": "바운딩 박스 길이",
+        "tooltip": "바운딩 박스 길이(X축)."
+      },
+      "bbox_width": {
+        "name": "바운딩 박스 너비",
+        "tooltip": "바운딩 박스 너비(Y축). 다른 값들과 함께 0으로 설정하면 바운딩 박스를 생략합니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "geometry_file_format": {
+        "name": "지오메트리 파일 형식"
+      },
+      "hd_texture": {
+        "name": "고화질 텍스처",
+        "tooltip": "고품질 텍스처 향상."
+      },
+      "height_cm": {
+        "name": "모델 높이(cm)",
+        "tooltip": "모델의 대략적인 높이(센티미터, 0이면 생략)."
+      },
+      "material": {
+        "name": "재질"
+      },
+      "mode": {
+        "name": "모드",
+        "tooltip": "생성 모드입니다. 일반 = 균형 잡힘. 빠름 = 빠른 프로토타이핑을 위한 1K-20K 폴리곤. 극고화질 = 선택적 마이크로 디테일이 포함된 20K-2M 폴리곤."
+      },
+      "mode_creative": {
+        "name": "창의적"
+      },
+      "mode_polygon_count": {
+        "name": "폴리곤 수"
+      },
+      "mode_tier": {
+        "name": "등급"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "3D 모델을 위한 텍스트 프롬프트입니다."
+      },
+      "seed": {
+        "name": "시드"
+      },
+      "texture_delight": {
+        "name": "텍스처 디라이트",
+        "tooltip": "텍스처에서 베이크된 조명을 제거합니다."
+      },
+      "texture_mode": {
+        "name": "텍스처 모드",
+        "tooltip": "텍스처 품질 프리셋입니다. '기본값'은 선택한 등급의 서버 기본값을 사용합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "모델 파일",
+        "tooltip": null
+      }
+    }
+  },
   "Rodin3D_Regular": {
     "description": "Rodin API를 사용하여 3D 에셋 생성",
     "display_name": "Rodin 3D 생성 - 일반 생성",
@@ -15712,6 +15933,30 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "description": "입력된 이미지를 ComfyUI 출력 디렉터리에 저장합니다.",
+    "display_name": "이미지 저장 (고급)",
+    "inputs": {
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "저장할 파일의 접두사입니다. %date:yyyy-MM-dd% 또는 %Empty Latent Image.width%와 같은 포맷 토큰을 포함할 수 있습니다."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "이미지를 저장할 파일 형식입니다."
+      },
+      "format_bit_depth": {
+        "name": "bit_depth"
+      },
+      "format_input_color_space": {
+        "name": "input_color_space"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "저장할 이미지입니다."
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
     "description": "이미지 데이터셋을 지정한 폴더에 저장합니다. 지원 포맷: PNG.",
     "display_name": "이미지 데이터셋을 폴더에 저장",
@@ -15890,6 +16135,57 @@
       },
       "shift_y": {
         "name": "Y축 이동"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectCLIPDevice": {
+    "description": "CLIP 텍스트 인코더를 특정 디바이스에 배치합니다 (default / cpu / gpu:N).\n\n- \"default\"는 로더에서 할당된 디바이스로 복원합니다.\n- \"cpu\"는 로드 및 오프로딩 디바이스를 모두 CPU로 고정합니다.\n- \"gpu:N\"은 로드 디바이스를 N번째 사용 가능한 GPU로 고정합니다.\n\n선택한 디바이스가 현재 머신에 존재하지 않을 경우\n(예: 2-GPU 환경에서 만든 워크플로우를 1-GPU 환경에서 열 때),\n노드는 CLIP을 변경 없이 통과시키고 실패 대신 메시지를 기록합니다.",
+    "display_name": "CLIP 디바이스 선택",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "device": {
+        "name": "device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectModelDevice": {
+    "description": "디퓨전 모델을 특정 디바이스에 배치합니다 (default / cpu / gpu:N).\n\n- \"default\"는 로더에서 할당된 디바이스로 복원합니다 (이전 Select Model Device 호출 이후에도).\n- \"cpu\"는 로드 및 오프로딩 디바이스를 모두 CPU로 고정합니다.\n- \"gpu:N\"은 로드 디바이스를 N번째 사용 가능한 GPU로 고정하며, 오프로딩 디바이스는 로더의 원래 선택으로 복원됩니다.\n\n요청한 디바이스가 입력 모델이 이미 위치한 디바이스와 다를 경우, 로더의 reload factory(cached_patcher_init)를 통해 새로운 모델이 생성되어 새로운 디바이스에서 독립적인 가중치를 갖게 됩니다. 멀티GPU를 지원하지 않는 로더(팩토리 없음)는 경고와 함께 변경 없이 통과됩니다.\n\n워크플로우에 이미 MultiGPU CFG Split이 적용되어 있고 선택한 GPU가 기존 멀티GPU 클론 중 하나와 충돌할 경우, 해당 클론은 삭제되어 두 patcher가 동일한 디바이스에 바인딩되지 않도록 합니다.\n\n선택한 디바이스가 현재 머신에 존재하지 않을 경우\n(예: 2-GPU 환경에서 만든 워크플로우를 1-GPU 환경에서 열 때),\n노드는 모델을 변경 없이 통과시키고 실패 대신 메시지를 기록합니다.\n\n참고: 이미 동일한 모델을 소비한 노드(예: 원래 디바이스에서 이 모델로 실행된 KSampler) 뒤에 Select Model Device를 배치하는 것은 권장하지 않습니다. 선택한 디바이스가 원래와 일치할 경우(빠른 경로), 이전 소비자가 원래 모델에서 변경한 상태가 관찰될 수 있습니다. Select Model Device는 모델의 소비자보다 먼저 배치하세요.",
+    "display_name": "모델 디바이스 선택",
+    "inputs": {
+      "device": {
+        "name": "device"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectVAEDevice": {
+    "description": "VAE를 특정 장치에 할당합니다 (기본값 / gpu:N).\n\n- \"default\"는 로더에 의해 할당된 장치로 복원합니다.\n- \"gpu:N\"은 N번째 사용 가능한 GPU에 로드를 고정하며,\n  오프로딩 장치는 표준 VAE 오프로딩 장치로 설정됩니다.\n\nVAE의 경우 CPU는 UI에서 의도적으로 노출되지 않습니다. 만약 워크플로우에서\n\"cpu\"가 제공될 경우(예: 다른 기기에서 열었을 때), 요청은 로그 메시지와 함께\n무시되고 VAE는 변경 없이 전달됩니다.\n\n선택한 장치가 현재 머신에 존재하지 않을 경우\n(예: 2-GPU 환경에서 만든 워크플로우를 1-GPU 머신에서 열었을 때),\n노드는 VAE를 변경 없이 전달하고 실패 대신 로그 메시지를 남깁니다.",
+    "display_name": "VAE 장치 선택",
+    "inputs": {
+      "device": {
+        "name": "장치"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

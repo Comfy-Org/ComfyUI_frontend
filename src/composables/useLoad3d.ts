@@ -483,6 +483,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         nodeRef.value.properties['Camera Config'] = newValue
         load3d.toggleCamera(newValue.cameraType)
         load3d.setFOV(newValue.fov)
+        load3d.setRetainViewOnReload(newValue.retainViewOnReload ?? false)
       }
     },
     { deep: true }
