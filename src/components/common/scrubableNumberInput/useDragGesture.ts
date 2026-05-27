@@ -29,6 +29,7 @@ interface DragGestureOptions {
  *   - pointercancel / pointerleave fallbacks so onDragEnd always fires
  *   - primary-button / pointer-type filtering
  *   - browser zoom compensation (event.movementX scaled by 1/zoom)
+ *   - movementX/Y under pointer lock, clientX/Y deltas otherwise (touch)
  *
  * Consumers receive dx/dy and don't need to know any of the above exists.
  */
@@ -44,6 +45,7 @@ export function useDragGesture(
 
   let pointerId: number | null = null
   let pointerDownAt: [number, number] | null = null
+  let lastClient: [number, number] = [0, 0]
   let dragDelayTimer: ReturnType<typeof setTimeout> | undefined
   let pointerLocked = false
 
@@ -74,6 +76,7 @@ export function useDragGesture(
 
     pointerId = event.pointerId
     pointerDownAt = [event.clientX, event.clientY]
+    lastClient = [event.clientX, event.clientY]
     const el = unref(target)
     el?.setPointerCapture(pointerId)
 
@@ -107,8 +110,19 @@ export function useDragGesture(
     // device-pixel-like units that don't honor the browser zoom level; the
     // ratio outerWidth/innerWidth backs that out.
     const browserZoom = window.outerWidth / window.innerWidth || 1
-    const dx = (event.movementX || 0) / browserZoom
-    const dy = (event.movementY || 0) / browserZoom
+
+    // Under an active pointer lock the cursor is pinned, so clientX/Y stop
+    // changing and movementX/Y is the only usable signal. Without a lock —
+    // notably on touch, where movementX/Y is frequently 0 or undefined — fall
+    // back to deltas between successive clientX/Y instead.
+    const locked = document.pointerLockElement === unref(target)
+    const dx =
+      (locked ? event.movementX || 0 : event.clientX - lastClient[0]) /
+      browserZoom
+    const dy =
+      (locked ? event.movementY || 0 : event.clientY - lastClient[1]) /
+      browserZoom
+    lastClient = [event.clientX, event.clientY]
     options.onDrag?.(dx, dy, event)
   }
 
