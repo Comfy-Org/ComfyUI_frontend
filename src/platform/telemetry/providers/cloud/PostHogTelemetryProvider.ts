@@ -233,7 +233,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackAuth(metadata: AuthMetadata): void {
-    this.trackEvent(TelemetryEvents.USER_AUTH_COMPLETED, metadata)
+    this.captureRaw(TelemetryEvents.USER_AUTH_COMPLETED, {
+      ...metadata,
+      $set_once: { first_auth_at: new Date().toISOString() }
+    })
   }
 
   trackUserLoggedIn(): void {
