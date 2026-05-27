@@ -15,11 +15,39 @@ export type UpDirection = 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
 export type CameraType = 'perspective' | 'orthographic'
 export type BackgroundRenderModeType = 'tiled' | 'panorama'
 
+export interface CameraQuaternion {
+  x: number
+  y: number
+  z: number
+  w: number
+}
+
+export interface CameraRotation {
+  x: number
+  y: number
+  z: number
+  order: string
+}
+
+export interface CameraFrustum {
+  left: number
+  right: number
+  top: number
+  bottom: number
+}
+
 export interface CameraState {
   position: THREE.Vector3
   target: THREE.Vector3
   zoom: number
   cameraType: CameraType
+  quaternion?: CameraQuaternion
+  rotation?: CameraRotation
+  fov?: number
+  aspect?: number
+  near?: number
+  far?: number
+  frustum?: CameraFrustum
 }
 
 export interface SceneConfig {
