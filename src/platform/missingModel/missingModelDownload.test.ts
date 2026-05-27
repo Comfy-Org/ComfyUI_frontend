@@ -1,22 +1,46 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  downloadModel,
   fetchModelMetadata,
   isModelDownloadable,
   toBrowsableUrl
 } from './missingModelDownload'
 
-const fetchMock = vi.fn()
+const { fetchMock, mockIsDesktop, mockSidebarTabStore, mockStartDownload } =
+  vi.hoisted(() => ({
+    fetchMock: vi.fn(),
+    mockIsDesktop: { value: false },
+    mockSidebarTabStore: { activeSidebarTabId: null as string | null },
+    mockStartDownload: vi.fn()
+  }))
+
 vi.stubGlobal('fetch', fetchMock)
 
-vi.mock('@/platform/distribution/types', () => ({ isDesktop: false }))
-vi.mock('@/stores/electronDownloadStore', () => ({}))
+vi.mock('@/platform/distribution/types', () => ({
+  get isDesktop() {
+    return mockIsDesktop.value
+  }
+}))
+
+vi.mock('@/stores/electronDownloadStore', () => ({
+  useElectronDownloadStore: () => ({
+    start: mockStartDownload
+  })
+}))
+
+vi.mock('@/stores/workspace/sidebarTabStore', () => ({
+  useSidebarTabStore: () => mockSidebarTabStore
+}))
 
 let testId = 0
 
 describe('fetchModelMetadata', () => {
   beforeEach(() => {
     fetchMock.mockReset()
+    mockIsDesktop.value = false
+    mockSidebarTabStore.activeSidebarTabId = null
+    mockStartDownload.mockReset()
     testId++
   })
 
@@ -211,5 +235,33 @@ describe('isModelDownloadable', () => {
         directory: 'checkpoints'
       })
     ).toBe(false)
+  })
+})
+
+describe('downloadModel', () => {
+  beforeEach(() => {
+    mockIsDesktop.value = false
+    mockSidebarTabStore.activeSidebarTabId = null
+    mockStartDownload.mockReset()
+  })
+
+  it('opens the model library sidebar before starting a desktop download', () => {
+    mockIsDesktop.value = true
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/models/checkpoints'] }
+    )
+
+    expect(mockSidebarTabStore.activeSidebarTabId).toBe('model-library')
+    expect(mockStartDownload).toHaveBeenCalledWith({
+      url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+      savePath: '/models/checkpoints',
+      filename: 'model.safetensors'
+    })
   })
 })
