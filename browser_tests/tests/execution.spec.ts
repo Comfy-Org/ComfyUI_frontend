@@ -133,6 +133,12 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
     comfyPage,
     getWebSocket
   }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting(
+      'Comfy.RightSidePanel.ShowErrorsTab',
+      true
+    )
+    await comfyPage.setup()
     await comfyPage.workflow.loadWorkflow('execution/partial_execution')
 
     const ws = await getWebSocket()
@@ -152,6 +158,10 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
     await expect
       .poll(() => getValidationErrorMessage(comfyPage))
       .toBe(VALIDATION_ERROR_MESSAGE)
+    const errorOverlay = comfyPage.page.getByTestId(
+      TestIds.dialogs.errorOverlay
+    )
+    await expect(errorOverlay).toBeVisible()
 
     await comfyPage.nextFrame()
     exec.executionStart(jobId)
@@ -159,5 +169,6 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
     await expect
       .poll(() => getValidationErrorMessage(comfyPage))
       .toBe(VALIDATION_ERROR_MESSAGE)
+    await expect(errorOverlay).toBeVisible()
   })
 })

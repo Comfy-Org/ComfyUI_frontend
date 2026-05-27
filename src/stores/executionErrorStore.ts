@@ -67,7 +67,12 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   function clearExecutionStartErrors() {
     lastExecutionError.value = null
     lastPromptError.value = null
-    isErrorOverlayOpen.value = false
+    if (
+      !lastNodeErrors.value ||
+      Object.keys(lastNodeErrors.value).length === 0
+    ) {
+      isErrorOverlayOpen.value = false
+    }
   }
 
   /** Clear only prompt-level errors. Called during resetExecutionState. */

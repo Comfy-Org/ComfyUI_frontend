@@ -987,7 +987,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(errorStore.lastExecutionError).toBeNull()
       expect(errorStore.lastPromptError).toBeNull()
       expect(errorStore.lastNodeErrors).toEqual(nodeErrors)
-      expect(errorStore.isErrorOverlayOpen).toBe(false)
+      expect(errorStore.isErrorOverlayOpen).toBe(true)
     })
 
     it('clears initializing state for the starting job', () => {

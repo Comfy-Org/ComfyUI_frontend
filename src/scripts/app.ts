@@ -1623,8 +1623,16 @@ export class ComfyApp {
             })
             delete api.authToken
             delete api.apiKey
-            executionErrorStore.lastNodeErrors = res.node_errors ?? null
-            if (executionErrorStore.lastNodeErrors?.length) {
+            const nodeErrors = res.node_errors
+            const hasNodeErrors =
+              nodeErrors && Object.keys(nodeErrors).length > 0
+            executionErrorStore.lastNodeErrors = hasNodeErrors
+              ? nodeErrors
+              : null
+            if (hasNodeErrors) {
+              if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+                executionErrorStore.showErrorOverlay()
+              }
               this.canvas.draw(true, true)
             } else {
               try {
