@@ -1113,6 +1113,10 @@
       "model": {
         "name": "modelo"
       },
+      "pre_cfg": {
+        "name": "pre_cfg",
+        "tooltip": "Si está activado, reajusta el ruido combinado ANTES de la combinación CFG del muestreador, sin limitar (puede amplificar). Coincide con el CFG escalado por norma utilizado por modelos como Lens. El valor predeterminado en falso mantiene el comportamiento original de atenuación solo en el espacio x0 después del CFG."
+      },
       "strength": {
         "name": "intensidad"
       }
@@ -12304,6 +12308,23 @@
       }
     }
   },
+  "MultiGPU_WorkUnits": {
+    "description": "Prepara el modelo para acelerar el muestreo dividiendo las unidades de trabajo.\n\nDebe colocarse después de los nodos que modifican el propio objeto del modelo, como los nodos de compilación o cambio de atención.\n\nA excepción de esos casos, este nodo puede colocarse en cualquier orden.",
+    "display_name": "División CFG MultiGPU",
+    "inputs": {
+      "max_gpus": {
+        "name": "max_gpus"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "NAGuidance": {
     "description": "Aplica la Guía de Atención Normalizada a los modelos, permitiendo prompts negativos en modelos distilled/schnell.",
     "display_name": "Guía de Atención Normalizada",
@@ -16114,6 +16135,57 @@
       },
       "shift_y": {
         "name": "desplazamiento_y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectCLIPDevice": {
+    "description": "Coloca el codificador de texto CLIP en un dispositivo específico (default / cpu / gpu:N).\n\n- \"default\" restaura el dispositivo asignado por el cargador.\n- \"cpu\" fija tanto la carga como la descarga en la CPU.\n- \"gpu:N\" fija el dispositivo de carga en la N-ésima GPU disponible.\n\nCuando el dispositivo seleccionado no existe en la máquina actual\n(por ejemplo, un flujo de trabajo creado en una máquina con 2 GPU abierto en una con 1 GPU),\nel nodo pasa el CLIP sin cambios y registra un mensaje\nen lugar de fallar.",
+    "display_name": "Seleccionar Dispositivo CLIP",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "device": {
+        "name": "device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectModelDevice": {
+    "description": "Coloca el modelo de difusión en un dispositivo específico (default / cpu / gpu:N).\n\n- \"default\" restaura el dispositivo asignado por el cargador (incluso después de una\n  llamada previa a Seleccionar Dispositivo del Modelo).\n- \"cpu\" fija tanto la carga como la descarga en la CPU.\n- \"gpu:N\" fija el dispositivo de carga en la N-ésima GPU disponible; el dispositivo de descarga\n  se restaura a la elección original del cargador.\n\nCuando el dispositivo solicitado difiere del dispositivo en el que ya está\nel modelo de entrada, se genera un modelo nuevo a través de la fábrica de recarga del cargador\n(cached_patcher_init) para que el nuevo patcher tenga pesos independientes en\nel nuevo dispositivo. Los cargadores que no soportan multigpu (sin fábrica)\nharán que el nodo pase sin cambios con una advertencia.\n\nSi el flujo de trabajo ya tiene aplicada la División CFG MultiGPU y la GPU elegida\ncolisiona con uno de los clones multigpu existentes, ese clon se elimina para que dos patchers no terminen asignados al mismo dispositivo.\n\nCuando el dispositivo seleccionado no existe en la máquina actual\n(por ejemplo, un flujo de trabajo creado en una máquina con 2 GPU abierto en una con 1 GPU),\nel nodo pasa el modelo sin cambios y registra un mensaje\nen lugar de fallar.\n\nNOTA: Colocar Seleccionar Dispositivo del Modelo *después* de un nodo que ya\nhaya consumido el mismo modelo (por ejemplo, un KSampler que se ejecutó en este modelo en\nel dispositivo original) no es recomendable -- cualquier estado que el consumidor previo\nhaya modificado en el modelo original se observará cuando el dispositivo seleccionado coincida con el original (ruta rápida). Coloque Seleccionar Dispositivo del Modelo antes de cualquier consumidor del modelo.",
+    "display_name": "Seleccionar Dispositivo del Modelo",
+    "inputs": {
+      "device": {
+        "name": "device"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectVAEDevice": {
+    "description": "Coloca el VAE en un dispositivo específico (por defecto / gpu:N).\n\n- \"default\" restaura el dispositivo asignado por el cargador.\n- \"gpu:N\" fija el dispositivo de carga en la N-ésima GPU disponible; el dispositivo de descarga\n  se establece en el dispositivo estándar de descarga de VAE.\n\nLa CPU no se muestra intencionadamente en la interfaz para el VAE; si un flujo de trabajo\nproporciona \"cpu\" de todos modos (por ejemplo, abierto desde otra máquina), la solicitud\nse descarta con un mensaje en el registro y el VAE pasa sin cambios.\n\nCuando el dispositivo seleccionado no existe en la máquina actual\n(por ejemplo, un flujo de trabajo creado en una caja con 2 GPU abierto en una caja con 1 GPU),\nel nodo pasa el VAE sin cambios y registra un mensaje\nen lugar de fallar.",
+    "display_name": "Seleccionar dispositivo VAE",
+    "inputs": {
+      "device": {
+        "name": "dispositivo"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
