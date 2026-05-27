@@ -10,23 +10,7 @@
         >
           {{ t('auth.login.title') }}
         </h1>
-        <i18n-t
-          v-if="isFreeTierEnabled && !googleSsoBlockedReason"
-          keypath="auth.login.signUpFreeTierPromo"
-          tag="p"
-          class="my-0 text-sm/6 tracking-[-0.02em] text-sand-500 sm:text-base/6"
-          :plural="freeTierCredits ?? undefined"
-        >
-          <template #signUp>
-            <span
-              class="cursor-pointer text-azure-600"
-              @click="navigateToSignup"
-              >{{ t('auth.login.signUp') }}</span
-            >
-          </template>
-          <template #credits>{{ freeTierCredits }}</template>
-        </i18n-t>
-        <p v-else class="my-0 text-base/6 tracking-[-0.02em] text-sand-500">
+        <p class="my-0 text-base/6 tracking-[-0.02em] text-sand-500">
           {{ t('auth.login.newUser') }}
           <span
             class="cursor-pointer text-azure-600"
@@ -64,8 +48,8 @@
           </Button>
 
           <Button
-            variant="secondary"
-            class="mt-1 h-10 w-full rounded-md border-none bg-smoke-800/5 text-sm/5 font-normal tracking-[-0.011em] text-sand-500/55 hover:bg-sand-300/10"
+            variant="link"
+            class="text-sm/4 text-sand-500/70 hover:text-sand-500"
             @click="switchToEmailForm"
           >
             {{ t('auth.login.useEmailInstead') }}
@@ -119,7 +103,6 @@ import { useRoute, useRouter } from 'vue-router'
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
-import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
 import type { SignInData } from '@/schemas/signInSchema'
 import { getGoogleSsoBlockedReason } from '@/base/webviewDetection'
@@ -131,7 +114,6 @@ const authActions = useAuthActions()
 const isSecureContext = globalThis.isSecureContext
 const authError = ref('')
 const showEmailForm = ref(false)
-const { isFreeTierEnabled, freeTierCredits } = useFreeTierOnboarding()
 const googleSsoBlockedReason = getGoogleSsoBlockedReason()
 const { onAuthSuccess } = usePostAuthRedirect({
   authError,

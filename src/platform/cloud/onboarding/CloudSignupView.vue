@@ -27,36 +27,16 @@
 
       <div class="flex w-full flex-col gap-4 pt-5 pb-2">
         <template v-if="!showEmailForm">
-          <p
-            v-if="isFreeTierEnabled && !googleSsoBlockedReason"
-            class="m-0 text-sm text-sand-500/70"
+          <Button
+            v-if="!googleSsoBlockedReason"
+            type="button"
+            variant="secondary"
+            class="relative h-10 w-full gap-4 rounded-md border border-solid border-smoke-800/9 bg-smoke-800/10 text-sm/4 font-medium text-sand-500 shadow-inset-highlight hover:bg-sand-300/20"
+            @click="signInWithGoogle"
           >
-            {{
-              freeTierCredits
-                ? t('auth.login.freeTierDescription', {
-                    credits: freeTierCredits
-                  })
-                : t('auth.login.freeTierDescriptionGeneric')
-            }}
-          </p>
-
-          <div v-if="!googleSsoBlockedReason" class="relative">
-            <Button
-              type="button"
-              variant="secondary"
-              class="relative h-10 w-full gap-4 rounded-md border border-solid border-smoke-800/9 bg-smoke-800/10 text-sm/4 font-medium text-sand-500 shadow-inset-highlight hover:bg-sand-300/20"
-              @click="signInWithGoogle"
-            >
-              <i class="pi pi-google text-base" />
-              {{ t('auth.signup.signUpWithGoogle') }}
-            </Button>
-            <span
-              v-if="isFreeTierEnabled"
-              class="absolute -top-2.5 -right-2.5 rounded-full bg-brand-yellow px-2 py-0.5 text-2xs font-bold whitespace-nowrap text-charcoal-750"
-            >
-              {{ t('auth.login.freeTierBadge') }}
-            </span>
-          </div>
+            <i class="pi pi-google text-base" />
+            {{ t('auth.signup.signUpWithGoogle') }}
+          </Button>
 
           <Button
             type="button"
@@ -69,8 +49,8 @@
           </Button>
 
           <Button
-            variant="secondary"
-            class="mt-1 h-10 w-full rounded-md border-none bg-smoke-800/5 text-sm/5 font-normal tracking-[-0.011em] text-sand-500/55 hover:bg-sand-300/10"
+            variant="link"
+            class="text-sm/4 text-sand-500/70 hover:text-sand-500"
             @click="switchToEmailForm"
           >
             {{ t('auth.login.useEmailInstead') }}
@@ -169,7 +149,6 @@ const userIsInChina = ref(false)
 const telemetry = useTelemetry()
 const {
   showEmailForm,
-  freeTierCredits,
   isFreeTierEnabled,
   switchToEmailForm,
   switchToSocialLogin

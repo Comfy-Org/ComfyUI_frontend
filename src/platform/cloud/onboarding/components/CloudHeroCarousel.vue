@@ -1,10 +1,6 @@
 <template>
   <div
     class="relative flex size-full flex-col items-center overflow-hidden rounded-lg bg-sand-500/4 pt-10 pb-4"
-    @mouseenter="pause"
-    @mouseleave="resume"
-    @focusin="pause"
-    @focusout="resume"
   >
     <div
       class="flex w-full flex-1 flex-col items-center justify-center gap-6 md:gap-8 lg:gap-10"
@@ -16,13 +12,7 @@
           Chip and card positions use absolute % offsets per design spec.
           Tailwind fractions don't match these exact values, so [N%] is intentional here.
         -->
-        <div
-          v-for="(slide, index) in slides"
-          v-show="index === currentIndex"
-          :key="slide.id"
-          class="absolute inset-0"
-          :aria-hidden="index !== currentIndex"
-        >
+        <div class="absolute inset-0">
           <!-- Center card (anchors Gemini + Grok chips) -->
           <div
             class="absolute top-1/2 left-1/2 aspect-3/2 w-3/4 -translate-1/2"
@@ -85,47 +75,11 @@
         class="relative flex w-full max-w-md flex-col items-center gap-1 text-center"
       >
         <p class="m-0 font-inter text-base font-semibold text-sand-500">
-          {{ t(`cloudHero.slides.${currentSlide.id}.title`) }}
+          {{ t('cloudHero.slides.cloud.title') }}
         </p>
         <p class="m-0 font-inter text-sm text-sand-500/70">
-          {{ t(`cloudHero.slides.${currentSlide.id}.description`) }}
+          {{ t('cloudHero.slides.cloud.description') }}
         </p>
-      </div>
-
-      <!-- Pager -->
-      <div class="relative flex items-center gap-12">
-        <Button
-          variant="secondary"
-          size="icon"
-          class="rounded-lg border border-charcoal-400 bg-charcoal-400 text-sand-500 hover:bg-charcoal-500"
-          :aria-label="t('cloudHero.previousSlide')"
-          @click="goPrev"
-        >
-          <i class="pi pi-chevron-left" />
-        </Button>
-
-        <div class="flex items-center gap-2">
-          <button
-            v-for="(slide, index) in slides"
-            :key="slide.id"
-            type="button"
-            class="size-2 shrink-0 cursor-pointer rounded-full border-none p-0 transition-colors"
-            :class="index === currentIndex ? 'bg-sand-500' : 'bg-sand-500/30'"
-            :aria-label="t('cloudHero.slidePagerLabel', { index: index + 1 })"
-            :aria-current="index === currentIndex ? 'true' : undefined"
-            @click="goTo(index)"
-          />
-        </div>
-
-        <Button
-          variant="secondary"
-          size="icon"
-          class="rounded-lg border border-charcoal-400 bg-charcoal-400 text-sand-500 hover:bg-charcoal-500"
-          :aria-label="t('cloudHero.nextSlide')"
-          @click="goNext"
-        >
-          <i class="pi pi-chevron-right" />
-        </Button>
       </div>
     </div>
 
@@ -151,11 +105,8 @@
 </template>
 
 <script setup lang="ts">
-import { useIntervalFn } from '@vueuse/core'
-import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
 import bottomLeft from '@/platform/cloud/onboarding/assets/hero/bottom-left.jpg'
 import bottomRight from '@/platform/cloud/onboarding/assets/hero/bottom-right.jpg'
 import centerImage from '@/platform/cloud/onboarding/assets/hero/center-image.jpg'
@@ -165,29 +116,5 @@ import GeminiLogo from '@/platform/cloud/onboarding/components/logos/GeminiLogo.
 import GrokLogo from '@/platform/cloud/onboarding/components/logos/GrokLogo.vue'
 import SeedanceLogo from '@/platform/cloud/onboarding/components/logos/SeedanceLogo.vue'
 
-type SlideId = 'cloud' | 'workflows' | 'team' | 'models'
-
-type Slide = {
-  id: SlideId
-}
-
-const slides: readonly Slide[] = [
-  { id: 'cloud' },
-  { id: 'workflows' },
-  { id: 'team' },
-  { id: 'models' }
-] as const
-
 const { t } = useI18n()
-const currentIndex = ref(0)
-const currentSlide = computed(() => slides[currentIndex.value])
-
-const goTo = (index: number) => {
-  currentIndex.value = (index + slides.length) % slides.length
-}
-
-const goNext = () => goTo(currentIndex.value + 1)
-const goPrev = () => goTo(currentIndex.value - 1)
-
-const { pause, resume } = useIntervalFn(goNext, 6000)
 </script>
