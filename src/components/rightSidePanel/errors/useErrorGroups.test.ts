@@ -47,7 +47,6 @@ vi.mock('@/i18n', () => {
       'Prompt has no outputs',
     'errorCatalog.promptErrors.prompt_no_outputs.desc':
       'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.',
-    'errorCatalog.runtimeErrors.noCreditsCharged': 'No credits charged.',
     'errorCatalog.runtimeErrors.execution_failed.title': 'Execution failed',
     'errorCatalog.runtimeErrors.execution_failed.message':
       'Node threw an error during execution.',
@@ -467,12 +466,11 @@ describe('useErrorGroups', () => {
         exceptionType: 'RuntimeError',
         catalogId: 'execution_failed',
         displayTitle: 'Execution failed',
-        displayMessage:
-          'Node threw an error during execution. No credits charged.',
+        displayMessage: 'Node threw an error during execution.',
         displayItemLabel: 'KSampler',
         toastTitle: 'KSampler failed',
         toastMessage:
-          'This node threw an error during execution. Check its inputs or try a different configuration. No credits charged.'
+          'This node threw an error during execution. Check its inputs or try a different configuration.'
       })
     })
 
@@ -504,7 +502,7 @@ describe('useErrorGroups', () => {
       expect(error.message).toContain('torch.OutOfMemoryError:')
       expect(error.catalogId).toBe('out_of_memory')
       expect(error.displayMessage).toBe(
-        'Not enough GPU memory. Try reducing image resolution or batch size and run again. No credits charged.'
+        'Not enough GPU memory. Try reducing image resolution or batch size and run again.'
       )
       expect(error.displayItemLabel).toBe('KSampler')
       expect(error.toastTitle).toBe('Generation failed')

@@ -552,7 +552,7 @@ describe('errorMessageResolver', () => {
       catalogId: 'out_of_memory',
       displayTitle: 'Generation failed',
       displayMessage:
-        'Not enough GPU memory. Try reducing image resolution or batch size and run again. No credits charged.',
+        'Not enough GPU memory. Try reducing image resolution or batch size and run again.',
       displayDetails: 'Workflow execution failed'
     })
 
@@ -587,8 +587,7 @@ describe('errorMessageResolver', () => {
     ).toEqual({
       catalogId: 'image_not_loaded',
       displayTitle: 'Image not loaded',
-      displayMessage:
-        "The system couldn't load this image. No credits charged.",
+      displayMessage: "The system couldn't load this image.",
       displayDetails: 'Failed to validate images'
     })
 
@@ -624,13 +623,13 @@ describe('errorMessageResolver', () => {
       catalogId: 'out_of_memory',
       displayTitle: 'Generation failed',
       displayMessage:
-        'Not enough GPU memory. Try reducing image resolution or batch size and run again. No credits charged.',
+        'Not enough GPU memory. Try reducing image resolution or batch size and run again.',
       displayDetails:
         'Allocation on device 0 failed.\nThis error means you ran out of memory on your GPU.',
       displayItemLabel: 'KSampler',
       toastTitle: 'Generation failed',
       toastMessage:
-        'Not enough GPU memory. Try reducing image resolution or batch size and run again. No credits charged.'
+        'Not enough GPU memory. Try reducing image resolution or batch size and run again.'
     })
 
     expect(
@@ -643,12 +642,11 @@ describe('errorMessageResolver', () => {
     ).toMatchObject({
       catalogId: 'image_not_loaded',
       displayTitle: 'Image not loaded',
-      displayMessage:
-        "The system couldn't load this image. No credits charged.",
+      displayMessage: "The system couldn't load this image.",
       displayItemLabel: 'Load Image',
       toastTitle: "Input image couldn't be loaded",
       toastMessage:
-        "The image for Load Image couldn't be loaded. Try adding it again. No credits charged."
+        "The image for Load Image couldn't be loaded. Try adding it again."
     })
 
     expect(
@@ -664,8 +662,7 @@ describe('errorMessageResolver', () => {
     ).toMatchObject({
       catalogId: 'image_not_loaded',
       displayTitle: 'Image not loaded',
-      displayMessage:
-        "The system couldn't load this image. No credits charged.",
+      displayMessage: "The system couldn't load this image.",
       displayItemLabel: 'Load Image'
     })
 
@@ -717,7 +714,7 @@ describe('errorMessageResolver', () => {
       catalogId: 'out_of_memory',
       displayTitle: 'Generation failed',
       displayMessage:
-        'Not enough GPU memory. Try reducing image resolution or batch size and run again. No credits charged.',
+        'Not enough GPU memory. Try reducing image resolution or batch size and run again.',
       displayItemLabel: 'KSampler'
     })
 
@@ -761,8 +758,7 @@ describe('errorMessageResolver', () => {
       expected: {
         catalogId: 'insufficient_credits',
         displayTitle: 'Insufficient credits',
-        displayMessage:
-          'Add credits to your account to use this node. No credits charged.'
+        displayMessage: 'Add credits to your account to use this node.'
       }
     },
     {
@@ -772,8 +768,7 @@ describe('errorMessageResolver', () => {
       expected: {
         catalogId: 'workspace_insufficient_credits',
         displayTitle: 'Insufficient credits',
-        displayMessage:
-          'Add credits to your workspace to continue. No credits charged.'
+        displayMessage: 'Add credits to your workspace to continue.'
       }
     },
     {
@@ -783,8 +778,7 @@ describe('errorMessageResolver', () => {
       expected: {
         catalogId: 'subscription_required',
         displayTitle: 'Subscription required',
-        displayMessage:
-          'Subscribe to a plan to continue running this workflow. No credits charged.'
+        displayMessage: 'Subscribe to a plan to continue running this workflow.'
       }
     },
     {
@@ -795,11 +789,11 @@ describe('errorMessageResolver', () => {
         catalogId: 'subscription_upgrade_required',
         displayTitle: 'Subscription upgrade required',
         displayMessage:
-          'Upgrade your subscription to use the private models in this workflow. No credits charged.',
+          'Upgrade your subscription to use the private models in this workflow.',
         displayDetails:
           'Private models require a subscription upgrade: Skullgirls_Cerebella.safetensors',
         toastMessage:
-          'Upgrade your subscription to use these private models: Skullgirls_Cerebella.safetensors. No credits charged.'
+          'Upgrade your subscription to use these private models: Skullgirls_Cerebella.safetensors.'
       }
     },
     {
@@ -809,7 +803,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'sign_in_required',
         displayTitle: 'Sign in required',
         displayMessage:
-          'Partner nodes require a Comfy account. Sign in to continue. No credits charged.'
+          'Partner nodes require a Comfy account. Sign in to continue.'
       }
     },
     {
@@ -819,8 +813,7 @@ describe('errorMessageResolver', () => {
       expected: {
         catalogId: 'rate_limited',
         displayTitle: 'Servers are busy',
-        displayMessage:
-          'High demand right now. Try again in a moment. No credits charged.'
+        displayMessage: 'High demand right now. Try again in a moment.'
       }
     }
   ])(
@@ -848,7 +841,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'timeout',
         displayTitle: 'Generation timed out',
         displayMessage:
-          'This workflow reached the maximum run time. Try reducing image resolution, batch size, or workflow length and run again. No credits charged.'
+          'This workflow reached the maximum run time. Try reducing image resolution, batch size, or workflow length and run again.'
       }
     },
     {
@@ -858,7 +851,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'generation_stalled',
         displayTitle: 'Generation stalled',
         displayMessage:
-          'This workflow stopped making progress. Try running it again. No credits charged.'
+          'This workflow stopped making progress. Try running it again.'
       }
     },
     {
@@ -868,7 +861,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'generation_stalled',
         displayTitle: 'Generation stalled',
         displayMessage:
-          'This workflow stopped making progress. Try running it again. No credits charged.'
+          'This workflow stopped making progress. Try running it again.'
       }
     },
     {
@@ -878,7 +871,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'server_crashed',
         displayTitle: 'Server crashed',
         displayMessage:
-          'The server stopped while running this workflow. Try again. No credits charged.'
+          'The server stopped while running this workflow. Try again.'
       }
     },
     {
@@ -887,8 +880,7 @@ describe('errorMessageResolver', () => {
       expected: {
         catalogId: 'server_busy',
         displayTitle: 'Servers are busy',
-        displayMessage:
-          'The servers are busy right now. Try again in a moment. No credits charged.'
+        displayMessage: 'The servers are busy right now. Try again in a moment.'
       }
     },
     {
@@ -898,7 +890,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'preprocessing_timeout',
         displayTitle: 'Preparation timed out',
         displayMessage:
-          'The workflow took too long to prepare. Try running it again. No credits charged.'
+          'The workflow took too long to prepare. Try running it again.'
       }
     },
     {
@@ -908,7 +900,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'preprocessing_failed',
         displayTitle: 'Preparation failed',
         displayMessage:
-          'The workflow could not be prepared. Try running it again. No credits charged.'
+          'The workflow could not be prepared. Try running it again.'
       }
     },
     {
@@ -918,7 +910,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'preprocessing_failed',
         displayTitle: 'Preparation failed',
         displayMessage:
-          'The workflow could not be prepared. Try running it again. No credits charged.',
+          'The workflow could not be prepared. Try running it again.',
         displayDetails: 'Preprocessing failed: input archive missing'
       }
     },
@@ -930,7 +922,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'access_required',
         displayTitle: 'Access required',
         displayMessage:
-          'This run requires access that is not available for the current account. No credits charged.'
+          'This run requires access that is not available for the current account.'
       }
     },
     {
@@ -940,8 +932,7 @@ describe('errorMessageResolver', () => {
       expected: {
         catalogId: 'model_access_error',
         displayTitle: 'Model access required',
-        displayMessage:
-          'One or more required models could not be accessed. No credits charged.'
+        displayMessage: 'One or more required models could not be accessed.'
       }
     },
     {
@@ -951,8 +942,7 @@ describe('errorMessageResolver', () => {
       expected: {
         catalogId: 'invalid_prompt',
         displayTitle: 'Prompt is empty',
-        displayMessage:
-          'Enter a prompt before running this workflow. No credits charged.'
+        displayMessage: 'Enter a prompt before running this workflow.'
       }
     },
     {
@@ -961,8 +951,7 @@ describe('errorMessageResolver', () => {
       expected: {
         catalogId: 'invalid_prompt',
         displayTitle: 'Prompt is empty',
-        displayMessage:
-          'Enter a prompt before running this workflow. No credits charged.'
+        displayMessage: 'Enter a prompt before running this workflow.'
       }
     },
     {
@@ -972,7 +961,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'invalid_workflow_request',
         displayTitle: 'Invalid workflow request',
         displayMessage:
-          'The workflow request is invalid. Check the workflow and try again. No credits charged.'
+          'The workflow request is invalid. Check the workflow and try again.'
       }
     },
     {
@@ -982,7 +971,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'invalid_workflow_request',
         displayTitle: 'Invalid workflow request',
         displayMessage:
-          'The workflow request is invalid. Check the workflow and try again. No credits charged.'
+          'The workflow request is invalid. Check the workflow and try again.'
       }
     },
     {
@@ -992,7 +981,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'invalid_workflow_request',
         displayTitle: 'Invalid workflow request',
         displayMessage:
-          'The workflow request is invalid. Check the workflow and try again. No credits charged.'
+          'The workflow request is invalid. Check the workflow and try again.'
       }
     },
     {
@@ -1003,7 +992,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'invalid_workflow_request',
         displayTitle: 'Invalid workflow request',
         displayMessage:
-          'The workflow request is invalid. Check the workflow and try again. No credits charged.'
+          'The workflow request is invalid. Check the workflow and try again.'
       }
     },
     {
@@ -1024,8 +1013,7 @@ describe('errorMessageResolver', () => {
       expected: {
         catalogId: 'model_download_failed',
         displayTitle: 'Model download failed',
-        displayMessage:
-          'A model could not be downloaded. Try again. No credits charged.'
+        displayMessage: 'A model could not be downloaded. Try again.'
       }
     },
     {
@@ -1034,8 +1022,7 @@ describe('errorMessageResolver', () => {
       expected: {
         catalogId: 'model_download_failed',
         displayTitle: 'Model download failed',
-        displayMessage:
-          'A model could not be downloaded. Try again. No credits charged.'
+        displayMessage: 'A model could not be downloaded. Try again.'
       }
     },
     {
@@ -1044,8 +1031,7 @@ describe('errorMessageResolver', () => {
       expected: {
         catalogId: 'run_ended_unexpectedly',
         displayTitle: 'Run ended unexpectedly',
-        displayMessage:
-          'The run ended unexpectedly. Try again. No credits charged.'
+        displayMessage: 'The run ended unexpectedly. Try again.'
       }
     },
     {
@@ -1055,7 +1041,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'unexpected_service_error',
         displayTitle: 'Service error',
         displayMessage:
-          'The service encountered an unexpected error. Try again. No credits charged.'
+          'The service encountered an unexpected error. Try again.'
       }
     },
     {
@@ -1066,7 +1052,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'request_failed',
         displayTitle: 'Request failed',
         displayMessage:
-          'The request failed before the run could complete. Try again. No credits charged.'
+          'The request failed before the run could complete. Try again.'
       }
     },
     {
@@ -1076,7 +1062,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'preprocessing_timeout',
         displayTitle: 'Preparation timed out',
         displayMessage:
-          'The workflow took too long to prepare. Try running it again. No credits charged.'
+          'The workflow took too long to prepare. Try running it again.'
       }
     },
     {
@@ -1085,8 +1071,7 @@ describe('errorMessageResolver', () => {
       expected: {
         catalogId: 'run_start_failed',
         displayTitle: 'Run could not start',
-        displayMessage:
-          'The run could not be started. Try again. No credits charged.'
+        displayMessage: 'The run could not be started. Try again.'
       }
     },
     {
@@ -1095,8 +1080,7 @@ describe('errorMessageResolver', () => {
       expected: {
         catalogId: 'run_start_failed',
         displayTitle: 'Run could not start',
-        displayMessage:
-          'The run could not be started. Try again. No credits charged.',
+        displayMessage: 'The run could not be started. Try again.',
         displayDetails: 'Failed to start WebSocket client: EOF'
       }
     },
@@ -1108,7 +1092,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'request_failed',
         displayTitle: 'Request failed',
         displayMessage:
-          'The request failed before the run could complete. Try again. No credits charged.',
+          'The request failed before the run could complete. Try again.',
         displayDetails: 'Failed to send prompt request: connection refused'
       }
     },
@@ -1120,7 +1104,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'preprocessing_failed',
         displayTitle: 'Preparation failed',
         displayMessage:
-          'The workflow could not be prepared. Try running it again. No credits charged.',
+          'The workflow could not be prepared. Try running it again.',
         displayDetails: 'Failed to complete preparation: transition failed'
       }
     },
@@ -1130,8 +1114,7 @@ describe('errorMessageResolver', () => {
       expected: {
         catalogId: 'run_ended_unexpectedly',
         displayTitle: 'Run ended unexpectedly',
-        displayMessage:
-          'The run ended unexpectedly. Try again. No credits charged.'
+        displayMessage: 'The run ended unexpectedly. Try again.'
       }
     },
     {
@@ -1140,8 +1123,7 @@ describe('errorMessageResolver', () => {
       expected: {
         catalogId: 'server_busy',
         displayTitle: 'Servers are busy',
-        displayMessage:
-          'The servers are busy right now. Try again in a moment. No credits charged.'
+        displayMessage: 'The servers are busy right now. Try again in a moment.'
       }
     },
     {
@@ -1152,7 +1134,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'content_blocked',
         displayTitle: 'Content blocked',
         displayMessage:
-          'This request was blocked by the content moderation system. Try changing the prompt or inputs. No credits charged.'
+          'This request was blocked by the content moderation system. Try changing the prompt or inputs.'
       }
     },
     {
@@ -1162,7 +1144,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'content_blocked',
         displayTitle: 'Content blocked',
         displayMessage:
-          'This request was blocked by the content moderation system. Try changing the prompt or inputs. No credits charged.'
+          'This request was blocked by the content moderation system. Try changing the prompt or inputs.'
       }
     },
     {
@@ -1172,7 +1154,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'content_blocked',
         displayTitle: 'Content blocked',
         displayMessage:
-          'This request was blocked by the content moderation system. Try changing the prompt or inputs. No credits charged.'
+          'This request was blocked by the content moderation system. Try changing the prompt or inputs.'
       }
     },
     {
@@ -1183,7 +1165,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'content_blocked',
         displayTitle: 'Content blocked',
         displayMessage:
-          'This request was blocked by the content moderation system. Try changing the prompt or inputs. No credits charged.'
+          'This request was blocked by the content moderation system. Try changing the prompt or inputs.'
       }
     },
     {
@@ -1194,7 +1176,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'content_blocked',
         displayTitle: 'Content blocked',
         displayMessage:
-          'This request was blocked by the content moderation system. Try changing the prompt or inputs. No credits charged.'
+          'This request was blocked by the content moderation system. Try changing the prompt or inputs.'
       }
     },
     {
@@ -1205,7 +1187,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'content_blocked',
         displayTitle: 'Content blocked',
         displayMessage:
-          'This request was blocked by the content moderation system. Try changing the prompt or inputs. No credits charged.'
+          'This request was blocked by the content moderation system. Try changing the prompt or inputs.'
       }
     },
     {
@@ -1215,7 +1197,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'content_blocked',
         displayTitle: 'Content blocked',
         displayMessage:
-          'This request was blocked by the content moderation system. Try changing the prompt or inputs. No credits charged.'
+          'This request was blocked by the content moderation system. Try changing the prompt or inputs.'
       }
     }
   ])(
@@ -1235,7 +1217,7 @@ describe('errorMessageResolver', () => {
     }
   )
 
-  it('does not append credit copy outside cloud mode', () => {
+  it('resolves timeout copy without credit copy', () => {
     expect(
       resolveRunErrorMessage({
         kind: 'execution',
@@ -1327,12 +1309,11 @@ describe('errorMessageResolver', () => {
     ).toEqual({
       catalogId: 'execution_failed',
       displayTitle: 'Execution failed',
-      displayMessage:
-        'Node threw an error during execution. No credits charged.',
+      displayMessage: 'Node threw an error during execution.',
       displayItemLabel: 'KSampler',
       toastTitle: 'KSampler failed',
       toastMessage:
-        'This node threw an error during execution. Check its inputs or try a different configuration. No credits charged.'
+        'This node threw an error during execution. Check its inputs or try a different configuration.'
     })
   })
 
