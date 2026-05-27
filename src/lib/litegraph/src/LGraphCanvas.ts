@@ -84,6 +84,7 @@ import {
 } from './measure'
 import { NodeInputSlot } from './node/NodeInputSlot'
 import type { Subgraph } from './subgraph/Subgraph'
+import { topologicalSortSubgraphs } from './subgraph/subgraphDeduplication'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphNode } from './subgraph/SubgraphNode'
@@ -4191,7 +4192,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const subgraph = graph.createSubgraph(info)
       results.subgraphs.set(info.id, subgraph)
     }
-    for (const info of parsed.subgraphs)
+    const configureOrder = topologicalSortSubgraphs(parsed.subgraphs)
+    for (const info of configureOrder)
       results.subgraphs.get(info.id)?.configure(info)
 
     // Groups
@@ -4217,6 +4219,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       graph.add(node)
       node.configure(info)
+
+      if (node instanceof SubgraphNode) {
+        if (
+          node.properties?.proxyWidgets !== undefined &&
+          LiteGraph.LGraph.proxyWidgetMigrationFlush
+        ) {
+          LiteGraph.LGraph.proxyWidgetMigrationFlush(node, info)
+        }
+        LiteGraph.LGraph.autoExposePreviewNodes?.(node)
+      }
 
       created.push(node)
     }
@@ -9045,12 +9057,35 @@ function remapProxyWidgets(
   }
 }
 
-/**
- * Remaps pasted subgraph interior node IDs that would collide with existing
- * node IDs in the root graph. Also patches subgraph link node IDs and
- * SubgraphNode `properties.proxyWidgets` references so promoted widget
- * associations stay aligned with remapped interior IDs.
- */
+function hasStringSourceNodeId(
+  value: unknown
+): value is { sourceNodeId: string } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'sourceNodeId' in value &&
+    typeof value.sourceNodeId === 'string'
+  )
+}
+
+function remapPreviewExposures(
+  info: ISerialisedNode,
+  remappedIds: Map<NodeId, NodeId> | undefined
+) {
+  if (!remappedIds || remappedIds.size === 0) return
+
+  const previewExposures = info.properties?.previewExposures
+  if (!Array.isArray(previewExposures)) return
+
+  for (const entry of previewExposures) {
+    if (!hasStringSourceNodeId(entry) || entry.sourceNodeId === '-1') continue
+
+    const remappedNodeId = remapNodeId(entry.sourceNodeId, remappedIds)
+    if (remappedNodeId !== undefined)
+      entry.sourceNodeId = String(remappedNodeId)
+  }
+}
+
 export function remapClipboardSubgraphNodeIds(
   parsed: ClipboardItems,
   rootGraph: LGraph
@@ -9104,6 +9139,8 @@ export function remapClipboardSubgraphNodeIds(
 
   for (const nodeInfo of allNodeInfo) {
     if (typeof nodeInfo.type !== 'string') continue
-    remapProxyWidgets(nodeInfo, subgraphNodeIdMap.get(nodeInfo.type))
+    const remappedIds = subgraphNodeIdMap.get(nodeInfo.type)
+    remapProxyWidgets(nodeInfo, remappedIds)
+    remapPreviewExposures(nodeInfo, remappedIds)
   }
 }

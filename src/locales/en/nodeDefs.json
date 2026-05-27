@@ -1174,6 +1174,10 @@
       },
       "strength": {
         "name": "strength"
+      },
+      "pre_cfg": {
+        "name": "pre_cfg",
+        "tooltip": "If true, rescale the combined noise BEFORE the sampler's CFG combine, without clamping (can amplify). Matches the norm-scaled CFG used by models like Lens. Default false keeps the original post-CFG x0-space attenuate-only behavior."
       }
     },
     "outputs": {
@@ -1346,7 +1350,7 @@
   },
   "CLIPLoader": {
     "display_name": "Load CLIP",
-    "description": "[Recipes]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\n hidream: llama-3.1 (Recommend) or t5\nomnigen2: qwen vl 2.5 3B",
+    "description": "[Recipes]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\n hidream: llama-3.1 (Recommend) or t5\nomnigen2: qwen vl 2.5 3B\nlens: gpt-oss-20b",
     "inputs": {
       "clip_name": {
         "name": "clip_name"
@@ -12304,6 +12308,23 @@
       }
     }
   },
+  "MultiGPU_WorkUnits": {
+    "display_name": "MultiGPU CFG Split",
+    "description": "Prepares model to have sampling accelerated via splitting work units.\n\nShould be placed after nodes that modify the model object itself, such as compile or attention-switch nodes.\n\nOther than those exceptions, this node can be placed in any order.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "max_gpus": {
+        "name": "max_gpus"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "NAGuidance": {
     "display_name": "Normalized Attention Guidance",
     "description": "Applies Normalized Attention Guidance to models, enabling negative prompts on distilled/schnell models.",
@@ -15993,6 +16014,57 @@
       },
       "denoise": {
         "name": "denoise"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectCLIPDevice": {
+    "display_name": "Select CLIP Device",
+    "description": "Place the CLIP text encoder on a specific device (default / cpu / gpu:N).\n\n- \"default\" restores the device assigned by the loader.\n- \"cpu\" pins both the load and offload device to CPU.\n- \"gpu:N\" pins the load device to the Nth available GPU.\n\nWhen the selected device does not exist on the current machine\n(e.g. a workflow built on a 2-GPU box opened on a 1-GPU box),\nthe node passes the CLIP through unchanged and logs a message\ninstead of failing.",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "device": {
+        "name": "device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectModelDevice": {
+    "display_name": "Select Model Device",
+    "description": "Place the diffusion model on a specific device (default / cpu / gpu:N).\n\n- \"default\" restores the device assigned by the loader (even after a\n  prior Select Model Device call).\n- \"cpu\" pins both the load and offload device to CPU.\n- \"gpu:N\" pins the load device to the Nth available GPU; the offload\n  device is restored to the loader's original choice.\n\nWhen the requested device differs from the device the input model is\nalready on, a fresh model is spawned via the loader's reload factory\n(cached_patcher_init) so the new patcher owns independent weights on\nthe new device. Loaders that don't support multigpu (no factory) will\ncause the node to pass through unchanged with a warning.\n\nIf the workflow already has MultiGPU CFG Split applied and the chosen\nGPU collides with one of the existing multigpu clones, that clone is\ndropped so two patchers don't end up bound to the same device.\n\nWhen the selected device does not exist on the current machine\n(e.g. a workflow built on a 2-GPU box opened on a 1-GPU box),\nthe node passes the model through unchanged and logs a message\ninstead of failing.\n\nNOTE: Placing Select Model Device *after* a node that has already\nconsumed the same model (e.g. a KSampler that ran on this model on\nthe original device) is not recommended -- any state the prior\nconsumer mutated on the original model will be observed when the\nselected device matches the original (fast path). Place Select Model\nDevice before any consumer of the model.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "device": {
+        "name": "device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectVAEDevice": {
+    "display_name": "Select VAE Device",
+    "description": "Place the VAE on a specific device (default / gpu:N).\n\n- \"default\" restores the device assigned by the loader.\n- \"gpu:N\" pins the load device to the Nth available GPU; the offload\n  device is set to the standard VAE offload device.\n\nCPU is intentionally not exposed in the UI for the VAE; if a workflow\nsupplies \"cpu\" anyway (e.g. opened from another machine), the request\nis dropped with a log message and the VAE is passed through unchanged.\n\nWhen the selected device does not exist on the current machine\n(e.g. a workflow built on a 2-GPU box opened on a 1-GPU box),\nthe node passes the VAE through unchanged and logs a message\ninstead of failing.",
+    "inputs": {
+      "vae": {
+        "name": "vae"
+      },
+      "device": {
+        "name": "device"
       }
     },
     "outputs": {

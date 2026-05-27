@@ -1731,6 +1731,7 @@
     "MiniMax": "MiniMax",
     "model_specific": "model_specific",
     "geometry_estimation": "geometry_estimation",
+    "multigpu": "multigpu",
     "OpenAI": "OpenAI",
     "Sora": "Sora",
     "OpenRouter": "OpenRouter",

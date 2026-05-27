@@ -1113,6 +1113,10 @@
       "model": {
         "name": "模型"
       },
+      "pre_cfg": {
+        "name": "pre_cfg",
+        "tooltip": "若為 true，則在取樣器的 CFG 組合之前對合併後的雜訊進行重新縮放，且不進行夾制（可能會放大）。這與像 Lens 這類模型所使用的 norm-scaled CFG 相符。預設為 false，則保持原本在 CFG 後僅於 x0 空間進行衰減的行為。"
+      },
       "strength": {
         "name": "強度"
       }
@@ -12304,6 +12308,23 @@
       }
     }
   },
+  "MultiGPU_WorkUnits": {
+    "description": "將模型準備好以透過分割工作單元來加速取樣。\n\n應放置於會修改模型物件本身的節點之後，例如 compile 或 attention-switch 節點。\n\n除了這些例外情況外，此節點可在任何順序中放置。",
+    "display_name": "多 GPU CFG 分割",
+    "inputs": {
+      "max_gpus": {
+        "name": "max_gpus"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "NAGuidance": {
     "description": "對模型應用標準化注意力引導，讓蒸餾／schnell 模型支援負面提示。",
     "display_name": "標準化注意力引導",
@@ -16114,6 +16135,57 @@
       },
       "shift_y": {
         "name": "y軸平移"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectCLIPDevice": {
+    "description": "將 CLIP 文字編碼器放置於指定裝置（default / cpu / gpu:N）。\n\n- 「default」會還原為載入器分配的裝置。\n- 「cpu」會將載入與卸載裝置都固定於 CPU。\n- 「gpu:N」會將載入裝置固定於第 N 張可用 GPU。\n\n當所選裝置在目前機器上不存在時\n（例如在 2-GPU 機器建立的工作流程於 1-GPU 機器開啟），\n此節點會直接傳遞 CLIP 並記錄訊息，而不會導致失敗。",
+    "display_name": "選擇 CLIP 裝置",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "device": {
+        "name": "device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectModelDevice": {
+    "description": "將 diffusion 模型放置於指定裝置（default / cpu / gpu:N）。\n\n- 「default」會還原為載入器分配的裝置（即使在先前已呼叫過 Select Model Device 後）。\n- 「cpu」會將載入與卸載裝置都固定於 CPU。\n- 「gpu:N」會將載入裝置固定於第 N 張可用 GPU；卸載裝置則還原為載入器的原始選擇。\n\n當所要求的裝置與輸入模型目前所在裝置不同時，會透過載入器的 reload factory（cached_patcher_init）產生新的模型，讓新的 patcher 在新裝置上擁有獨立權重。不支援多 GPU 的載入器（無 factory）會使此節點直接傳遞且顯示警告。\n\n若工作流程已套用多 GPU CFG 分割，且所選 GPU 與現有 multigpu 複本衝突，該複本會被移除，以避免兩個 patcher 綁定於同一裝置。\n\n當所選裝置在目前機器上不存在時\n（例如在 2-GPU 機器建立的工作流程於 1-GPU 機器開啟），\n此節點會直接傳遞模型並記錄訊息，而不會導致失敗。\n\n注意：將 Select Model Device 放在已經消耗過同一模型的節點（例如已在原始裝置上執行過的 KSampler）之後並不建議——若所選裝置與原始裝置相同（快速路徑），則先前消費者對原始模型所做的任何狀態變更都會被觀察到。請將 Select Model Device 放在任何模型消費者之前。",
+    "display_name": "選擇模型裝置",
+    "inputs": {
+      "device": {
+        "name": "device"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectVAEDevice": {
+    "description": "將 VAE 放置於特定裝置（default / gpu:N）。\n\n- 「default」會還原為載入器分配的裝置。\n- 「gpu:N」會將載入裝置固定於第 N 個可用 GPU；卸載裝置則設為標準 VAE 卸載裝置。\n\nUI 中刻意不提供 CPU 作為 VAE 的選項；如果工作流程仍然提供「cpu」（例如從其他機器開啟），該請求會被記錄並略過，VAE 會保持不變。\n\n當所選裝置在目前機器上不存在時（例如在 2-GPU 機器上建立的工作流程於 1-GPU 機器上開啟），此節點會保持 VAE 不變並記錄訊息，而不會導致失敗。",
+    "display_name": "選擇 VAE 裝置",
+    "inputs": {
+      "device": {
+        "name": "裝置"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

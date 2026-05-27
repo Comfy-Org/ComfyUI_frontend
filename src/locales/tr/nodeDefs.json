@@ -1113,6 +1113,10 @@
       "model": {
         "name": "model"
       },
+      "pre_cfg": {
+        "name": "pre_cfg",
+        "tooltip": "Eğer doğruysa, birleştirilmiş gürültüyü örnekleyicinin CFG birleştirmesinden ÖNCE yeniden ölçeklendirir, sıkıştırma olmadan (büyütebilir). Lens gibi modellerde kullanılan norm-ölçekli CFG ile eşleşir. Varsayılan olarak yanlış seçiliyse, orijinal CFG sonrası x0-uzayı sadece zayıflatma davranışını korur."
+      },
       "strength": {
         "name": "güç"
       }
@@ -12304,6 +12308,23 @@
       }
     }
   },
+  "MultiGPU_WorkUnits": {
+    "description": "Modelin örneklemesinin iş birimlerini bölerek hızlandırılması için hazırlar.\n\nModel nesnesini doğrudan değiştiren düğümlerden (ör. derleme veya attention-switch düğümleri) sonra yerleştirilmelidir.\n\nBu istisnalar dışında, bu düğüm herhangi bir sırada yerleştirilebilir.",
+    "display_name": "MultiGPU CFG Bölme",
+    "inputs": {
+      "max_gpus": {
+        "name": "max_gpus"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "NAGuidance": {
     "description": "Modellere Normalize Edilmiş Dikkat Yönlendirmesi uygular, distilled/schnell modellerde negatif istemlere olanak tanır.",
     "display_name": "Normalize Edilmiş Dikkat Yönlendirmesi",
@@ -16114,6 +16135,57 @@
       },
       "shift_y": {
         "name": "y_kaydırma"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectCLIPDevice": {
+    "description": "CLIP metin kodlayıcısını belirli bir cihaza yerleştir (default / cpu / gpu:N).\n\n- \"default\" yükleyici tarafından atanan cihazı geri yükler.\n- \"cpu\" hem yükleme hem de boşaltma cihazını CPU'ya sabitler.\n- \"gpu:N\" yükleme cihazını mevcut N. GPU'ya sabitler.\n\nSeçilen cihaz mevcut makinede yoksa\n(ör. 2-GPU'lu bir sistemde oluşturulan bir iş akışı 1-GPU'lu bir sistemde açılırsa),\ndüğüm CLIP'i değiştirmeden iletir ve hata vermek yerine bir mesaj kaydeder.",
+    "display_name": "CLIP Cihazı Seç",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "device": {
+        "name": "device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectModelDevice": {
+    "description": "Diffusion modelini belirli bir cihaza yerleştir (default / cpu / gpu:N).\n\n- \"default\" yükleyici tarafından atanan cihazı geri yükler (önceki bir\n  Model Cihazı Seç çağrısından sonra bile).\n- \"cpu\" hem yükleme hem de boşaltma cihazını CPU'ya sabitler.\n- \"gpu:N\" yükleme cihazını mevcut N. GPU'ya sabitler; boşaltma\n  cihazı yükleyicinin orijinal seçimine geri döner.\n\nİstenen cihaz, giriş modelinin zaten bulunduğu cihazdan farklıysa,\nyeni bir model yükleyicinin yeniden yükleme fabrikası\n(cached_patcher_init) ile başlatılır, böylece yeni patcher yeni cihazda bağımsız ağırlıklara sahip olur. Çoklu GPU desteklemeyen yükleyiciler (fabrika yoksa)\ndüğümü değiştirmeden iletir ve bir uyarı verir.\n\nİş akışında zaten MultiGPU CFG Bölme uygulanmışsa ve seçilen\nGPU mevcut çoklu GPU klonlarından biriyle çakışıyorsa, o klon\ndüşürülür, böylece iki patcher aynı cihaza bağlı olmaz.\n\nSeçilen cihaz mevcut makinede yoksa\n(ör. 2-GPU'lu bir sistemde oluşturulan bir iş akışı 1-GPU'lu bir sistemde açılırsa),\ndüğüm modeli değiştirmeden iletir ve hata vermek yerine bir mesaj kaydeder.\n\nNOT: Model Cihazı Seç düğümünü, aynı modeli zaten tüketmiş bir düğümden (ör. bu modelde orijinal cihazda çalışan bir KSampler) SONRA yerleştirmek önerilmez -- önceki tüketicinin orijinal modelde değiştirdiği herhangi bir durum, seçilen cihaz orijinal ile eşleştiğinde (hızlı yol) gözlemlenir. Model Cihazı Seç düğümünü modelin herhangi bir tüketicisinden ÖNCE yerleştirin.",
+    "display_name": "Model Cihazı Seç",
+    "inputs": {
+      "device": {
+        "name": "device"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectVAEDevice": {
+    "description": "VAE'yi belirli bir cihaza yerleştirir (varsayılan / gpu:N).\n\n- \"default\" yükleyici tarafından atanan cihazı geri yükler.\n- \"gpu:N\" yükleme cihazını mevcut N'inci GPU'ya sabitler; offload cihazı standart VAE offload cihazı olarak ayarlanır.\n\nVAE için CPU, arayüzde kasıtlı olarak gösterilmez; eğer bir iş akışı yine de \"cpu\" sağlarsa (ör. başka bir makineden açılmışsa), istek bir günlük mesajı ile bırakılır ve VAE değişmeden iletilir.\n\nSeçilen cihaz mevcut makinede yoksa\n(ör. 2-GPU'lu bir kutuda oluşturulan bir iş akışı 1-GPU'lu bir kutuda açılırsa),\ndüğüm VAE'yi değişmeden iletir ve hata vermek yerine bir mesaj kaydeder.",
+    "display_name": "VAE Cihazını Seç",
+    "inputs": {
+      "device": {
+        "name": "cihaz"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
