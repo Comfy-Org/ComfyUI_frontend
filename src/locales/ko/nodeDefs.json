@@ -119,6 +119,7 @@
     }
   },
   "AdjustBrightness": {
+    "description": "이미지의 밝기를 조절합니다.",
     "display_name": "밝기 조정",
     "inputs": {
       "factor": {
@@ -138,6 +139,7 @@
     }
   },
   "AdjustContrast": {
+    "description": "이미지의 대비를 조절합니다.",
     "display_name": "명암 조정",
     "inputs": {
       "factor": {
@@ -176,6 +178,7 @@
     }
   },
   "AudioAdjustVolume": {
+    "description": "오디오의 볼륨을 데시벨(dB) 단위로 지정한 만큼 조절합니다.",
     "display_name": "오디오 볼륨 조절",
     "inputs": {
       "audio": {
@@ -577,6 +580,9 @@
       "model_auto_downscale": {
         "name": "auto_downscale"
       },
+      "model_auto_upscale": {
+        "name": "auto_upscale"
+      },
       "model_duration": {
         "name": "duration"
       },
@@ -888,6 +894,39 @@
       "watermark": {
         "name": "워터마크",
         "tooltip": "비디오에 \"AI 생성\" 워터마크를 추가할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedNode": {
+    "description": "ByteDance의 Seed 2.0 모델로 텍스트 응답을 생성합니다. 텍스트 프롬프트와 선택적으로 하나 이상의 이미지 또는 비디오를 멀티모달 컨텍스트로 제공합니다.",
+    "display_name": "ByteDance Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "응답을 생성하는 데 사용되는 Seed 모델입니다."
+      },
+      "model_temperature": {
+        "name": "온도"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "모델에 입력할 텍스트입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "system_prompt": {
+        "name": "시스템 프롬프트",
+        "tooltip": "모델의 동작을 지시하는 기본 지침입니다."
       }
     },
     "outputs": {
@@ -1514,6 +1553,7 @@
     }
   },
   "CenterCropImages": {
+    "description": "이미지를 지정한 크기로 중앙에서 자릅니다.",
     "display_name": "중앙 자르기",
     "inputs": {
       "height": {
@@ -1632,6 +1672,9 @@
       },
       "model_max_tokens": {
         "name": "최대 토큰"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
       },
       "model_temperature": {
         "name": "온도"
@@ -1757,6 +1800,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "description": "논리 AND 연산. 모든 값이 참(truthy)이면 true를 반환합니다. Python의 truthiness 규칙을 따릅니다.",
+    "display_name": "And",
+    "inputs": {
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "수학식",
     "inputs": {
@@ -1780,6 +1837,20 @@
       }
     }
   },
+  "ComfyNotNode": {
+    "description": "논리 NOT 연산. 값이 거짓(falsy)이면 true를 반환합니다. Python의 truthiness 규칙을 따릅니다.",
+    "display_name": "Not",
+    "inputs": {
+      "value": {
+        "name": "value"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyNumberConvert": {
     "display_name": "숫자 변환",
     "inputs": {
@@ -1792,6 +1863,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "description": "논리 OR 연산. 값 중 하나라도 참(truthy)이면 true를 반환합니다. Python의 truthiness 규칙을 따릅니다.",
+    "display_name": "Or",
+    "inputs": {
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -5666,6 +5751,7 @@
     }
   },
   "ImageCropV2": {
+    "description": "이미지를 지정한 크기로 자릅니다.",
     "display_name": "이미지 자르기",
     "inputs": {
       "crop_region": {
@@ -5686,6 +5772,7 @@
     }
   },
   "ImageDeduplication": {
+    "description": "목록에서 중복되거나 매우 유사한 이미지를 제거합니다.",
     "display_name": "이미지 중복 제거",
     "inputs": {
       "images": {
@@ -5740,6 +5827,7 @@
     }
   },
   "ImageGrid": {
+    "description": "여러 이미지를 그리드 레이아웃으로 배열합니다.",
     "display_name": "이미지 그리드",
     "inputs": {
       "cell_height": {
@@ -7395,6 +7483,10 @@
   "LTXVAddGuide": {
     "display_name": "LTXV 가이드 추가",
     "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "선택적 픽셀 공간 마스크입니다. self-attention을 통해 각 영역별 조건 영향력을 strength 값과 곱하여 제어합니다."
+      },
       "frame_idx": {
         "name": "프레임 번호",
         "tooltip": "조건을 시작할 프레임 번호. 단일 프레임 이미지 또는 1-8 프레임의 비디오의 경우 어떤 프레임 번호 값도 허용됩니다. 9+ 프레임의 비디오의 경우, 프레임 번호는 8의 배수여야 합니다. 그렇지 않으면 가장 가까운 8의 배수로 내림됩니다. 음수 값은 비디오의 끝에서부터 계산됩니다."
@@ -8329,6 +8421,7 @@
     }
   },
   "LoadImageDataSetFromFolder": {
+    "description": "지정한 폴더에서 이미지 데이터셋을 불러와 이미지 목록으로 반환합니다. 지원 포맷: PNG, JPG, JPEG, WEBP.",
     "display_name": "폴더에서 이미지 데이터셋 불러오기",
     "inputs": {
       "folder": {
@@ -8372,6 +8465,7 @@
     }
   },
   "LoadImageTextDataSetFromFolder": {
+    "description": "지정한 폴더에서 이미지와 텍스트 캡션 쌍의 데이터셋을 불러와 목록으로 반환합니다. 지원 포맷: PNG, JPG, JPEG, WEBP.",
     "display_name": "폴더에서 이미지 및 텍스트 데이터셋 불러오기",
     "inputs": {
       "folder": {
@@ -8398,6 +8492,20 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "MediaPipe 얼굴 랜드마커 불러오기",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "models/mediapipe/의 Face Landmarker safetensors."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadMoGeModel": {
     "display_name": "MoGe 모델 불러오기",
     "inputs": {
@@ -8412,6 +8520,7 @@
     }
   },
   "LoadTrainingDataset": {
+    "description": "디스크에서 인코딩된 학습 데이터셋(latents + conditioning)을 불러와 학습에 사용합니다.",
     "display_name": "학습 데이터셋 불러오기",
     "inputs": {
       "folder_name": {
@@ -9195,6 +9304,7 @@
     }
   },
   "MakeTrainingDataset": {
+    "description": "이미지를 VAE로, 텍스트를 CLIP으로 인코딩하여 latents와 conditioning으로 구성된 학습 데이터셋을 생성합니다.",
     "display_name": "학습 데이터셋 만들기",
     "inputs": {
       "clip": {
@@ -9285,7 +9395,97 @@
       }
     }
   },
+  "MediaPipeFaceLandmarker": {
+    "description": "MediaPipe 모델을 사용하여 얼굴 랜드마크를 감지합니다.",
+    "display_name": "MediaPipe 얼굴 랜드마커",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "얼굴 감지기 범위. 'short'는 카메라에서 약 2m 이내의 근접 얼굴에 최적화되어 있습니다. 'full'은 더 멀리 있거나 작은 얼굴(최대 약 5m)까지 감지하지만 느립니다. 'both'는 두 감지기를 모두 실행하여 프레임당 더 많은 얼굴을 찾은 결과를 사용합니다(감지 비용 약 2배)."
+      },
+      "face_detection_model": {
+        "name": "face_detection_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "BlazeFace 점수 임계값. 낮출수록 작거나 가려진 얼굴도 감지할 수 있습니다."
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "배치 내 감지 실패 시 프레임별 동작. 'empty'는 얼굴 없는 프레임으로 둡니다. 'previous'는 가장 최근의 성공한 감지 결과를 복사합니다. 'interpolate'는 성공한 프레임 사이에서 랜드마크/바운딩박스/블렌드셰이프를 보간합니다. 다중 얼굴: 프레임 간 바운딩박스 중심 NN으로 얼굴을 매칭합니다."
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "프레임당 반환할 최대 얼굴 수. 0 = 제한 없음(모든 감지된 얼굴 반환)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "description": "얼굴 랜드마크로부터 마스크를 그립니다.",
+    "display_name": "MediaPipe 얼굴 마스크",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = face_oval+lips+eyes+irises의 합집합(실제로는 face_oval이 나머지를 모두 포함하므로 face_oval로 축소됨). 'custom' = 각 영역을 개별적으로 토글하여 lips+eyes와 같은 조합 가능."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "description": "입력 이미지에 얼굴 랜드마크 메시(mesh)를 그립니다.",
+    "display_name": "MediaPipe 얼굴 메시 시각화",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = oval+eyes+brows+lips+irises+nose. 'fill' = 실루엣 마스크로서의 단색 face_oval 폴리곤. 'custom' = 각 특징을 개별적으로 토글(2547개 엣지의 전체 와이어프레임인 'tesselation' 포함)."
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "연결되지 않은 경우 검은색 캔버스가 사용됩니다."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "랜드마크 점 반지름(픽셀 단위). 0이면 점 그리기 비활성화."
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "엣지 선 두께(픽셀 단위). 0이면 엣지 그리기 비활성화."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MergeImageLists": {
+    "description": "여러 이미지 목록을 하나로 합칩니다.",
     "display_name": "이미지 리스트 병합",
     "inputs": {
       "images": {
@@ -9740,6 +9940,7 @@
     }
   },
   "MoGeInference": {
+    "description": "단일 이미지에서 MoGe를 실행하여 깊이와 기하 정보를 추정합니다.",
     "display_name": "MoGe 추론",
     "inputs": {
       "apply_mask": {
@@ -9776,6 +9977,7 @@
     }
   },
   "MoGePanoramaInference": {
+    "description": "MoGe를 사용하여 등각 파노라마 이미지를 12개의 투시 뷰로 분할하고, 각 뷰에 대해 추론을 실행한 후 결과를 하나의 깊이 맵으로 병합합니다.",
     "display_name": "MoGe 파노라마 추론",
     "inputs": {
       "batch_size": {
@@ -9810,6 +10012,7 @@
     }
   },
   "MoGePointMapToMesh": {
+    "description": "MoGe 포인트 맵을 3D 메시(mesh)로 변환합니다.",
     "display_name": "MoGe 포인트 맵 → 메시",
     "inputs": {
       "batch_index": {
@@ -9839,6 +10042,7 @@
     }
   },
   "MoGeRender": {
+    "description": "기하 데이터로부터 깊이 맵 또는 노멀 맵을 렌더링합니다.",
     "display_name": "MoGe 렌더",
     "inputs": {
       "moge_geometry": {
@@ -12127,6 +12331,7 @@
     }
   },
   "NormalizeImages": {
+    "description": "평균과 표준편차를 사용하여 이미지를 정규화합니다.",
     "display_name": "이미지 정규화",
     "inputs": {
       "images": {
@@ -12448,6 +12653,39 @@
       },
       "size": {
         "name": "크기"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterLLMNode": {
+    "description": "OpenRouter를 통해 텍스트 응답을 생성합니다. xAI, DeepSeek, Qwen, Mistral, Z.AI(GLM), Moonshot(Kimi), Perplexity Sonar 등에서 엄선된 인기 모델로 라우팅됩니다.",
+    "display_name": "OpenRouter LLM",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "응답 생성을 위해 사용되는 OpenRouter 모델입니다."
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "모델에 입력할 텍스트입니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "샘플링을 위한 시드 값입니다. 0으로 설정하면 생략됩니다. 대부분의 모델은 이를 참고 값으로만 사용합니다."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "모델의 동작을 지시하는 기본 지침입니다."
       }
     },
     "outputs": {
@@ -13269,6 +13507,7 @@
     }
   },
   "RandomCropImages": {
+    "description": "이미지를 지정한 크기로 무작위로 자릅니다.",
     "display_name": "무작위 이미지 자르기",
     "inputs": {
       "control_after_generate": {
@@ -13952,6 +14191,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "배경 제거 모델을 사용하여 이미지에서 배경을 제거하기 위한 전경 마스크를 생성합니다.",
     "display_name": "배경 제거",
     "inputs": {
       "bg_removal_model": {
@@ -14130,6 +14370,7 @@
     }
   },
   "ResizeImagesByLongerEdge": {
+    "description": "이미지의 긴 변이 지정한 크기에 맞도록 비율을 유지하며 크기를 조정합니다.",
     "display_name": "긴 변 기준 이미지 크기 조정",
     "inputs": {
       "images": {
@@ -14149,6 +14390,7 @@
     }
   },
   "ResizeImagesByShorterEdge": {
+    "description": "이미지의 짧은 변이 지정된 크기에 맞도록 크기를 조정하며, 비율을 유지합니다.",
     "display_name": "짧은 변 기준 이미지 크기 조정",
     "inputs": {
       "images": {
@@ -14168,6 +14410,7 @@
     }
   },
   "ResolutionBucket": {
+    "description": "latent 및 conditioning을 버킷으로 그룹화합니다.",
     "display_name": "해상도 버킷",
     "inputs": {
       "conditioning": {
@@ -14396,6 +14639,164 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Image": {
+    "description": "Rodin Gen-2.5를 통해 1~5개의 참조 이미지를 사용하여 3D 모델을 생성합니다. 품질과 비용을 조정하려면 모드(빠름 / 일반 / 극고화질)를 선택하세요.",
+    "display_name": "Rodin 3D Gen-2.5 - 이미지에서 3D 생성",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "사람 형태 모델을 위한 T/A 포즈."
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "HighPack 애드온: 쿼드 모드에서 4K 텍스처 및 약 16배 폴리곤."
+      },
+      "bbox_height": {
+        "name": "bbox_height",
+        "tooltip": "바운딩 박스 높이(Z축)."
+      },
+      "bbox_length": {
+        "name": "bbox_length",
+        "tooltip": "바운딩 박스 길이(X축)."
+      },
+      "bbox_width": {
+        "name": "bbox_width",
+        "tooltip": "바운딩 박스 너비(Y축). 다른 값들과 함께 0으로 설정하면 바운딩 박스를 생략합니다."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "geometry_file_format": {
+        "name": "geometry_file_format"
+      },
+      "hd_texture": {
+        "name": "hd_texture",
+        "tooltip": "고품질 텍스처 향상."
+      },
+      "height_cm": {
+        "name": "height_cm",
+        "tooltip": "모델의 대략적인 높이(센티미터, 0이면 생략)."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "1~5개의 이미지. 다중 뷰일 경우 첫 번째 이미지는 재질에 사용됩니다."
+      },
+      "material": {
+        "name": "material"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "생성 모드. 일반 = 균형 잡힘. 빠름 = 빠른 프로토타이핑을 위한 1K~20K 폴리곤. 극고화질 = 마이크로 디테일 옵션 포함 20K~2M 폴리곤."
+      },
+      "mode_creative": {
+        "name": "creative"
+      },
+      "mode_polygon_count": {
+        "name": "polygon_count"
+      },
+      "mode_tier": {
+        "name": "tier"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "texture_delight": {
+        "name": "texture_delight",
+        "tooltip": "텍스처에서 베이크된 조명을 제거합니다."
+      },
+      "texture_mode": {
+        "name": "texture_mode",
+        "tooltip": "텍스처 품질 프리셋. 'Default'는 선택한 티어의 서버 기본값을 사용합니다."
+      },
+      "use_original_alpha": {
+        "name": "use_original_alpha",
+        "tooltip": "이미지의 투명도를 보존합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "description": "Rodin Gen-2.5를 통해 텍스트 프롬프트로부터 3D 모델을 생성합니다. 품질과 비용을 조정하려면 모드(빠름 / 일반 / 극고화질)를 선택하세요.",
+    "display_name": "Rodin 3D Gen-2.5 - 텍스트에서 3D 생성",
+    "inputs": {
+      "TAPose": {
+        "name": "T/A 포즈",
+        "tooltip": "사람 형태 모델을 위한 T/A 포즈입니다."
+      },
+      "addon_highpack": {
+        "name": "HighPack 애드온",
+        "tooltip": "HighPack 애드온: 쿼드 모드에서 4K 텍스처와 약 16배 폴리곤."
+      },
+      "bbox_height": {
+        "name": "바운딩 박스 높이",
+        "tooltip": "바운딩 박스 높이(Z축)."
+      },
+      "bbox_length": {
+        "name": "바운딩 박스 길이",
+        "tooltip": "바운딩 박스 길이(X축)."
+      },
+      "bbox_width": {
+        "name": "바운딩 박스 너비",
+        "tooltip": "바운딩 박스 너비(Y축). 다른 값들과 함께 0으로 설정하면 바운딩 박스를 생략합니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "geometry_file_format": {
+        "name": "지오메트리 파일 형식"
+      },
+      "hd_texture": {
+        "name": "고화질 텍스처",
+        "tooltip": "고품질 텍스처 향상."
+      },
+      "height_cm": {
+        "name": "모델 높이(cm)",
+        "tooltip": "모델의 대략적인 높이(센티미터, 0이면 생략)."
+      },
+      "material": {
+        "name": "재질"
+      },
+      "mode": {
+        "name": "모드",
+        "tooltip": "생성 모드입니다. 일반 = 균형 잡힘. 빠름 = 빠른 프로토타이핑을 위한 1K-20K 폴리곤. 극고화질 = 선택적 마이크로 디테일이 포함된 20K-2M 폴리곤."
+      },
+      "mode_creative": {
+        "name": "창의적"
+      },
+      "mode_polygon_count": {
+        "name": "폴리곤 수"
+      },
+      "mode_tier": {
+        "name": "등급"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "3D 모델을 위한 텍스트 프롬프트입니다."
+      },
+      "seed": {
+        "name": "시드"
+      },
+      "texture_delight": {
+        "name": "텍스처 디라이트",
+        "tooltip": "텍스처에서 베이크된 조명을 제거합니다."
+      },
+      "texture_mode": {
+        "name": "텍스처 모드",
+        "tooltip": "텍스처 품질 프리셋입니다. '기본값'은 선택한 등급의 서버 기본값을 사용합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "모델 파일",
         "tooltip": null
       }
     }
@@ -15511,7 +15912,32 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "description": "입력된 이미지를 ComfyUI 출력 디렉터리에 저장합니다.",
+    "display_name": "이미지 저장 (고급)",
+    "inputs": {
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "저장할 파일의 접두사입니다. %date:yyyy-MM-dd% 또는 %Empty Latent Image.width%와 같은 포맷 토큰을 포함할 수 있습니다."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "이미지를 저장할 파일 형식입니다."
+      },
+      "format_bit_depth": {
+        "name": "bit_depth"
+      },
+      "format_input_color_space": {
+        "name": "input_color_space"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "저장할 이미지입니다."
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
+    "description": "이미지 데이터셋을 지정한 폴더에 저장합니다. 지원 포맷: PNG.",
     "display_name": "이미지 데이터셋을 폴더에 저장",
     "inputs": {
       "filename_prefix": {
@@ -15529,6 +15955,7 @@
     }
   },
   "SaveImageTextDataSetToFolder": {
+    "description": "이미지와 텍스트 캡션 쌍의 데이터셋을 지정한 폴더에 저장합니다. 이미지는 PNG 파일로, 캡션은 동일한 파일명 접두사를 가진 TXT 파일로 저장됩니다.",
     "display_name": "이미지 및 텍스트 데이터셋을 폴더에 저장",
     "inputs": {
       "filename_prefix": {
@@ -15599,6 +16026,7 @@
     }
   },
   "SaveTrainingDataset": {
+    "description": "인코딩된 학습 데이터셋(latent + conditioning)을 디스크에 저장하여 학습 시 효율적으로 불러올 수 있습니다.",
     "display_name": "학습 데이터셋 저장",
     "inputs": {
       "conditioning": {
@@ -15785,6 +16213,7 @@
     }
   },
   "ShuffleDataset": {
+    "description": "목록 내 이미지의 순서를 무작위로 섞습니다.",
     "display_name": "이미지 데이터셋 섞기",
     "inputs": {
       "control_after_generate": {
@@ -15807,6 +16236,7 @@
     }
   },
   "ShuffleImageTextDataset": {
+    "description": "목록 내 이미지-텍스트 쌍의 순서를 무작위로 섞습니다.",
     "display_name": "이미지-텍스트 데이터셋 섞기",
     "inputs": {
       "control_after_generate": {
@@ -16619,6 +17049,23 @@
     "outputs": {
       "0": {
         "name": "포함 여부",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "Python의 문자열 포맷 메서드와 동일합니다. Python의 모든 포맷 옵션과 기능을 지원합니다.",
+    "display_name": "텍스트 포맷",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -19290,6 +19737,7 @@
     }
   },
   "VoxelToMesh": {
+    "description": "voxel 그리드를 mesh로 변환합니다.",
     "display_name": "복셀 → 매시",
     "inputs": {
       "algorithm": {
@@ -19309,6 +19757,7 @@
     }
   },
   "VoxelToMeshBasic": {
+    "description": "voxel 그리드를 mesh로 변환합니다.",
     "display_name": "복셀 → 매시 (기본)",
     "inputs": {
       "threshold": {

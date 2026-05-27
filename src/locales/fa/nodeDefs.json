@@ -119,6 +119,7 @@
     }
   },
   "AdjustBrightness": {
+    "description": "تنظیم روشنایی یک تصویر.",
     "display_name": "تنظیم روشنایی",
     "inputs": {
       "factor": {
@@ -138,6 +139,7 @@
     }
   },
   "AdjustContrast": {
+    "description": "تنظیم کنتراست یک تصویر.",
     "display_name": "تنظیم کنتراست",
     "inputs": {
       "factor": {
@@ -176,6 +178,7 @@
     }
   },
   "AudioAdjustVolume": {
+    "description": "تنظیم حجم صدا به میزان مشخص بر حسب دسی‌بل (dB).",
     "display_name": "تنظیم حجم صدا",
     "inputs": {
       "audio": {
@@ -577,6 +580,9 @@
       "model_auto_downscale": {
         "name": "auto_downscale"
       },
+      "model_auto_upscale": {
+        "name": "auto_upscale"
+      },
       "model_duration": {
         "name": "مدت زمان"
       },
@@ -888,6 +894,39 @@
       "watermark": {
         "name": "واترمارک",
         "tooltip": "آیا واترمارک «تولید شده توسط هوش مصنوعی» به ویدیو اضافه شود؟"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedNode": {
+    "description": "تولید پاسخ متنی با مدل‌های Seed 2.0 شرکت ByteDance. یک متن ورودی (prompt) و در صورت نیاز یک یا چند تصویر یا ویدیو برای زمینه چندرسانه‌ای ارائه دهید.",
+    "display_name": "ByteDance Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدل Seed مورد استفاده برای تولید پاسخ."
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "ورودی متنی برای مدل."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از مقدار seed غیرقطعی هستند."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "دستورالعمل‌های پایه‌ای که رفتار مدل را تعیین می‌کنند."
       }
     },
     "outputs": {
@@ -1514,6 +1553,7 @@
     }
   },
   "CenterCropImages": {
+    "description": "برش مرکزی تصویر به ابعاد مشخص شده.",
     "display_name": "برش مرکزی تصاویر",
     "inputs": {
       "height": {
@@ -1632,6 +1672,9 @@
       },
       "model_max_tokens": {
         "name": "حداکثر توکن‌ها"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
       },
       "model_temperature": {
         "name": "دمای مدل"
@@ -1757,6 +1800,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "description": "عملگر منطقی AND. اگر همه مقادیر صحیح باشند، مقدار true را بازمی‌گرداند. از قواعد صحت‌سنجی پایتون استفاده می‌کند.",
+    "display_name": "و",
+    "inputs": {
+      "values": {
+        "name": "مقادیر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "عبارت ریاضی",
     "inputs": {
@@ -1780,6 +1837,20 @@
       }
     }
   },
+  "ComfyNotNode": {
+    "description": "عملگر منطقی NOT. اگر مقدار نادرست باشد، مقدار true را بازمی‌گرداند. از قواعد صحت‌سنجی پایتون استفاده می‌کند.",
+    "display_name": "نقیض",
+    "inputs": {
+      "value": {
+        "name": "مقدار"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyNumberConvert": {
     "display_name": "تبدیل عدد",
     "inputs": {
@@ -1792,6 +1863,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "description": "عملگر منطقی OR. اگر هر یک از مقادیر صحیح باشند، مقدار true را بازمی‌گرداند. از قواعد صحت‌سنجی پایتون استفاده می‌کند.",
+    "display_name": "یا",
+    "inputs": {
+      "values": {
+        "name": "مقادیر"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -5666,6 +5751,7 @@
     }
   },
   "ImageCropV2": {
+    "description": "برش تصویر به ابعاد مشخص شده.",
     "display_name": "برش تصویر",
     "inputs": {
       "crop_region": {
@@ -5686,6 +5772,7 @@
     }
   },
   "ImageDeduplication": {
+    "description": "حذف تصاویر تکراری یا بسیار مشابه از یک لیست.",
     "display_name": "حذف تصاویر تکراری",
     "inputs": {
       "images": {
@@ -5740,6 +5827,7 @@
     }
   },
   "ImageGrid": {
+    "description": "چیدمان چندین تصویر در یک ساختار شبکه‌ای.",
     "display_name": "شبکه تصاویر",
     "inputs": {
       "cell_height": {
@@ -7395,6 +7483,10 @@
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "ماسک فضایی اختیاری در فضای پیکسل. تأثیر شرطی‌سازی هر ناحیه را از طریق self-attention و ضرب در میزان قدرت کنترل می‌کند."
+      },
       "frame_idx": {
         "name": "اندیس فریم",
         "tooltip": "اندیس فریم برای شروع شرط‌گذاری. برای تصاویر تک‌فریم یا ویدیوهای ۱ تا ۸ فریم، هر مقدار frame_idx قابل قبول است. برای ویدیوهای ۹ فریم به بالا، frame_idx باید بر ۸ بخش‌پذیر باشد، در غیر این صورت به نزدیک‌ترین مضرب ۸ گرد می‌شود. مقادیر منفی از انتهای ویدیو شمرده می‌شوند."
@@ -8329,6 +8421,7 @@
     }
   },
   "LoadImageDataSetFromFolder": {
+    "description": "بارگذاری مجموعه‌ای از تصاویر از یک پوشه مشخص و بازگرداندن لیستی از تصاویر. فرمت‌های پشتیبانی‌شده: PNG، JPG، JPEG، WEBP.",
     "display_name": "بارگذاری مجموعه تصاویر از پوشه",
     "inputs": {
       "folder": {
@@ -8372,6 +8465,7 @@
     }
   },
   "LoadImageTextDataSetFromFolder": {
+    "description": "بارگذاری مجموعه‌ای از جفت‌های تصویر و کپشن متنی از یک پوشه مشخص و بازگرداندن آن‌ها به صورت لیست. فرمت‌های پشتیبانی‌شده: PNG، JPG، JPEG، WEBP.",
     "display_name": "بارگذاری مجموعه داده تصویر و متن از پوشه",
     "inputs": {
       "folder": {
@@ -8398,6 +8492,20 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "بارگذاری MediaPipe Face Landmarker",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "safetensors مربوط به Face Landmarker از مسیر models/mediapipe/."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadMoGeModel": {
     "display_name": "بارگذاری مدل MoGe",
     "inputs": {
@@ -8412,6 +8520,7 @@
     }
   },
   "LoadTrainingDataset": {
+    "description": "بارگذاری دیتاست آموزش رمزگذاری‌شده (latents + conditioning) از دیسک برای استفاده در آموزش.",
     "display_name": "بارگذاری مجموعه داده آموزشی",
     "inputs": {
       "folder_name": {
@@ -9195,6 +9304,7 @@
     }
   },
   "MakeTrainingDataset": {
+    "description": "رمزگذاری تصاویر با VAE و متون با CLIP برای ساخت دیتاست آموزشی از latents و conditioning.",
     "display_name": "ایجاد دیتاست آموزش",
     "inputs": {
       "clip": {
@@ -9285,7 +9395,97 @@
       }
     }
   },
+  "MediaPipeFaceLandmarker": {
+    "description": "شناسایی نقاط کلیدی صورت با استفاده از مدل MediaPipe.",
+    "display_name": "MediaPipe Face Landmarker",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "محدوده تشخیص چهره. 'short' برای چهره‌های نزدیک (تا حدود ۲ متر از دوربین) تنظیم شده است؛ 'full' چهره‌های دورتر/کوچکتر (تا حدود ۵ متر) را پوشش می‌دهد اما کندتر است. 'both' هر دو تشخیص‌دهنده را اجرا می‌کند و هر کدام که چهره‌های بیشتری در هر فریم پیدا کند را نگه می‌دارد (هزینه تشخیص تقریباً ۲ برابر)."
+      },
+      "face_detection_model": {
+        "name": "face_detection_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "آستانه امتیاز BlazeFace. برای شناسایی چهره‌های کوچک یا پوشیده مقدار را کاهش دهید."
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "رفتار هر فریم زمانی که تشخیص در یک دسته ناموفق باشد. 'empty' فریم را بدون چهره باقی می‌گذارد. 'previous' آخرین تشخیص موفق را کپی می‌کند. 'interpolate' نقاط/باکس/شکل‌های ترکیبی را بین فریم‌های موفق مجاور میان‌یابی می‌کند. چند چهره: جفت‌سازی چهره‌ها بین فریم‌ها با نزدیک‌ترین مرکز باکس به صورت حریصانه."
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "حداکثر تعداد چهره برای بازگشت در هر فریم. ۰ = بدون محدودیت (همه چهره‌های شناسایی‌شده بازگردانده می‌شوند)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "description": "ترسیم ماسک از نقاط کلیدی صورت.",
+    "display_name": "ماسک چهره MediaPipe",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = اجتماع face_oval+lips+eyes+irises (که به دلیل احاطه شدن توسط face_oval به همان face_oval تبدیل می‌شود). 'custom' = فعال/غیرفعال کردن هر ناحیه به صورت جداگانه برای ترکیب‌هایی مانند lips+eyes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "description": "ترسیم مش نقاط کلیدی صورت روی تصویر ورودی.",
+    "display_name": "بصری‌سازی Face Mesh MediaPipe",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = بیضی+چشم‌ها+ابروها+لب‌ها+عنبیه‌ها+بینی. 'fill' = چندضلعی face_oval پر (ماسک سیلوئت). 'custom' = فعال/غیرفعال کردن هر ویژگی به صورت جداگانه (شامل 'tesselation'، شبکه سیمی کامل با ۲۵۴۷ لبه)."
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "در صورت عدم اتصال، یک بوم سیاه استفاده خواهد شد."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "شعاع نقطه‌های نشانه‌گذاری بر حسب پیکسل. ۰ یعنی رسم نقطه غیرفعال است."
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "ضخامت خطوط لبه بر حسب پیکسل. ۰ یعنی رسم لبه غیرفعال است."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MergeImageLists": {
+    "description": "ادغام چندین لیست تصویر در یک لیست.",
     "display_name": "ادغام فهرست تصاویر",
     "inputs": {
       "images": {
@@ -9740,6 +9940,7 @@
     }
   },
   "MoGeInference": {
+    "description": "اجرای MoGe روی یک تصویر برای تخمین عمق و هندسه.",
     "display_name": "استنتاج MoGe",
     "inputs": {
       "apply_mask": {
@@ -9776,6 +9977,7 @@
     }
   },
   "MoGePanoramaInference": {
+    "description": "اجرای MoGe روی یک پانورامای equirectangular با تقسیم آن به ۱۲ نمای پرسپکتیو، اجرای inference روی هر کدام و ادغام نتایج در یک نقشه عمق واحد.",
     "display_name": "استنتاج پانورامای MoGe",
     "inputs": {
       "batch_size": {
@@ -9810,6 +10012,7 @@
     }
   },
   "MoGePointMapToMesh": {
+    "description": "تبدیل نقشه نقاط MoGe به یک مش سه‌بعدی.",
     "display_name": "MoGe Point Map to Mesh",
     "inputs": {
       "batch_index": {
@@ -9839,6 +10042,7 @@
     }
   },
   "MoGeRender": {
+    "description": "رندر نقشه عمق یا نقشه نرمال از داده‌های هندسی.",
     "display_name": "MoGe Render",
     "inputs": {
       "moge_geometry": {
@@ -12127,6 +12331,7 @@
     }
   },
   "NormalizeImages": {
+    "description": "نرمال‌سازی تصاویر با استفاده از میانگین و انحراف معیار.",
     "display_name": "نرمال‌سازی تصاویر",
     "inputs": {
       "images": {
@@ -12448,6 +12653,39 @@
       },
       "size": {
         "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterLLMNode": {
+    "description": "تولید پاسخ متنی از طریق OpenRouter. مسیریابی به مجموعه‌ای منتخب از مدل‌های محبوب xAI، DeepSeek، Qwen، Mistral، Z.AI (GLM)، Moonshot (Kimi) و Perplexity Sonar.",
+    "display_name": "OpenRouter LLM",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدل OpenRouter مورد استفاده برای تولید پاسخ."
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "ورودی متنی برای مدل."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذر نمونه‌گیری. برای حذف، مقدار ۰ را قرار دهید. اکثر مدل‌ها این مقدار را فقط به عنوان راهنما در نظر می‌گیرند."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "دستورالعمل‌های پایه که رفتار مدل را تعیین می‌کند."
       }
     },
     "outputs": {
@@ -13269,6 +13507,7 @@
     }
   },
   "RandomCropImages": {
+    "description": "برش تصادفی تصویر به ابعاد مشخص شده.",
     "display_name": "برش تصادفی تصاویر",
     "inputs": {
       "control_after_generate": {
@@ -13952,6 +14191,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "یک ماسک پیش‌زمینه ایجاد می‌کند تا پس‌زمینه را با استفاده از مدل حذف پس‌زمینه از تصویر حذف کند.",
     "display_name": "حذف پس‌زمینه",
     "inputs": {
       "bg_removal_model": {
@@ -14130,6 +14370,7 @@
     }
   },
   "ResizeImagesByLongerEdge": {
+    "description": "تغییر اندازه تصاویر به گونه‌ای که لبه بلندتر با بعد مشخص شده مطابقت داشته باشد و نسبت ابعاد حفظ شود.",
     "display_name": "تغییر اندازه تصاویر بر اساس ضلع بلندتر",
     "inputs": {
       "images": {
@@ -14149,6 +14390,7 @@
     }
   },
   "ResizeImagesByShorterEdge": {
+    "description": "تغییر اندازه تصاویر به گونه‌ای که لبه کوتاه‌تر با ابعاد مشخص شده مطابقت داشته باشد و نسبت ابعاد حفظ شود.",
     "display_name": "تغییر اندازه تصاویر بر اساس ضلع کوتاه‌تر",
     "inputs": {
       "images": {
@@ -14168,6 +14410,7 @@
     }
   },
   "ResolutionBucket": {
+    "description": "گروه‌بندی latentها و conditioningها در سطل‌ها",
     "display_name": "دسته‌بندی بر اساس وضوح",
     "inputs": {
       "conditioning": {
@@ -14396,6 +14639,164 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Image": {
+    "description": "تولید مدل سه‌بعدی از ۱ تا ۵ تصویر مرجع با استفاده از Rodin Gen-2.5. یک حالت (سریع / معمولی / فوق‌العاده بالا) را برای تنظیم کیفیت نسبت به هزینه انتخاب کنید.",
+    "display_name": "Rodin 3D Gen-2.5 - تصویر به سه‌بعدی",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "حالت T/A برای مدل‌های انسان‌نما."
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "افزونه HighPack: بافت ۴K و حدود ۱۶ برابر وجه در حالت Quad."
+      },
+      "bbox_height": {
+        "name": "ارتفاع جعبه محدودکننده",
+        "tooltip": "ارتفاع جعبه محدودکننده (محور Z)."
+      },
+      "bbox_length": {
+        "name": "طول جعبه محدودکننده",
+        "tooltip": "طول جعبه محدودکننده (محور X)."
+      },
+      "bbox_width": {
+        "name": "عرض جعبه محدودکننده",
+        "tooltip": "عرض جعبه محدودکننده (محور Y). برای صرف‌نظر کردن از جعبه، مقدار ۰ را با سایر ابعاد وارد کنید."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "geometry_file_format": {
+        "name": "فرمت فایل هندسه"
+      },
+      "hd_texture": {
+        "name": "hd_texture",
+        "tooltip": "افزایش کیفیت بافت به صورت باکیفیت."
+      },
+      "height_cm": {
+        "name": "ارتفاع مدل (سانتی‌متر)",
+        "tooltip": "ارتفاع تقریبی مدل به سانتی‌متر (۰ برای صرف‌نظر)."
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "۱ تا ۵ تصویر. اولین تصویر برای مواد در حالت چندنما استفاده می‌شود."
+      },
+      "material": {
+        "name": "material"
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "حالت تولید. معمولی = متعادل. سریع = ۱۰۰۰ تا ۲۰۰۰۰ وجه برای نمونه‌سازی سریع. فوق‌العاده بالا = ۲۰۰۰۰ تا ۲ میلیون وجه با جزئیات میکرو اختیاری."
+      },
+      "mode_creative": {
+        "name": "خلاقانه"
+      },
+      "mode_polygon_count": {
+        "name": "تعداد چندضلعی"
+      },
+      "mode_tier": {
+        "name": "سطح"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "texture_delight": {
+        "name": "texture_delight",
+        "tooltip": "حذف نورپردازی baked از بافت‌ها."
+      },
+      "texture_mode": {
+        "name": "حالت بافت",
+        "tooltip": "پیش‌تنظیم کیفیت بافت. «پیش‌فرض» از تنظیمات سرور برای سطح انتخاب‌شده استفاده می‌کند."
+      },
+      "use_original_alpha": {
+        "name": "use_original_alpha",
+        "tooltip": "حفظ شفافیت تصویر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فایل مدل",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "description": "تولید مدل سه‌بعدی از یک متن ورودی با استفاده از Rodin Gen-2.5. یک حالت (سریع / معمولی / بسیار پیشرفته) را برای تنظیم کیفیت نسبت به هزینه انتخاب کنید.",
+    "display_name": "Rodin 3D Gen-2.5 - تبدیل متن به مدل سه‌بعدی",
+    "inputs": {
+      "TAPose": {
+        "name": "T/A pose",
+        "tooltip": "حالت T/A برای مدل‌های انسان‌نما."
+      },
+      "addon_highpack": {
+        "name": "افزونه HighPack",
+        "tooltip": "افزونه HighPack: بافت ۴K و تقریباً ۱۶ برابر وجه بیشتر در حالت Quad."
+      },
+      "bbox_height": {
+        "name": "ارتفاع جعبه محدودکننده",
+        "tooltip": "ارتفاع جعبه محدودکننده (محور Z)."
+      },
+      "bbox_length": {
+        "name": "طول جعبه محدودکننده",
+        "tooltip": "طول جعبه محدودکننده (محور X)."
+      },
+      "bbox_width": {
+        "name": "عرض جعبه محدودکننده",
+        "tooltip": "عرض جعبه محدودکننده (محور Y). برای صرف‌نظر کردن از جعبه، مقدار ۰ را با سایر ابعاد وارد کنید."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "geometry_file_format": {
+        "name": "فرمت فایل هندسه"
+      },
+      "hd_texture": {
+        "name": "افزایش کیفیت بافت",
+        "tooltip": "افزایش کیفیت بافت به صورت پیشرفته."
+      },
+      "height_cm": {
+        "name": "ارتفاع مدل (سانتی‌متر)",
+        "tooltip": "ارتفاع تقریبی مدل به سانتی‌متر (۰ برای صرف‌نظر کردن)."
+      },
+      "material": {
+        "name": "جنس"
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "حالت تولید. معمولی = متعادل. سریع = ۱٬۰۰۰ تا ۲۰٬۰۰۰ وجه برای نمونه‌سازی سریع. بسیار پیشرفته = ۲۰٬۰۰۰ تا ۲٬۰۰۰٬۰۰۰ وجه با جزئیات میکرو اختیاری."
+      },
+      "mode_creative": {
+        "name": "خلاقانه"
+      },
+      "mode_polygon_count": {
+        "name": "تعداد وجه‌ها"
+      },
+      "mode_tier": {
+        "name": "سطح"
+      },
+      "prompt": {
+        "name": "متن ورودی",
+        "tooltip": "متن ورودی برای مدل سه‌بعدی."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "texture_delight": {
+        "name": "حذف نورپردازی بافت",
+        "tooltip": "حذف نورپردازی baked از بافت‌ها."
+      },
+      "texture_mode": {
+        "name": "حالت بافت",
+        "tooltip": "پیش‌تنظیم کیفیت بافت. «پیش‌فرض» از تنظیمات سرور برای سطح انتخاب‌شده استفاده می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فایل مدل",
         "tooltip": null
       }
     }
@@ -15511,7 +15912,32 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "description": "تصاویر ورودی را در پوشه خروجی ComfyUI شما ذخیره می‌کند.",
+    "display_name": "ذخیره تصویر (پیشرفته)",
+    "inputs": {
+      "filename_prefix": {
+        "name": "پیشوند نام فایل",
+        "tooltip": "پیشوند فایل برای ذخیره. می‌تواند شامل توکن‌های قالب‌بندی مانند ‎%date:yyyy-MM-dd%‎ یا ‎%Empty Latent Image.width%‎ باشد."
+      },
+      "format": {
+        "name": "فرمت",
+        "tooltip": "فرمت فایل برای ذخیره تصویر."
+      },
+      "format_bit_depth": {
+        "name": "عمق بیت"
+      },
+      "format_input_color_space": {
+        "name": "فضای رنگ ورودی"
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصاویری که باید ذخیره شوند."
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
+    "description": "ذخیره یک مجموعه داده تصویر در پوشه‌ای مشخص. فرمت‌های پشتیبانی‌شده: PNG.",
     "display_name": "ذخیره مجموعه تصاویر در پوشه",
     "inputs": {
       "filename_prefix": {
@@ -15529,6 +15955,7 @@
     }
   },
   "SaveImageTextDataSetToFolder": {
+    "description": "ذخیره یک مجموعه داده شامل جفت‌های تصویر و کپشن متنی در پوشه‌ای مشخص. تصاویر به صورت فایل PNG و کپشن‌ها به صورت فایل TXT با همان پیشوند نام فایل ذخیره می‌شوند.",
     "display_name": "ذخیره مجموعه تصویر و متن در پوشه",
     "inputs": {
       "filename_prefix": {
@@ -15599,6 +16026,7 @@
     }
   },
   "SaveTrainingDataset": {
+    "description": "ذخیره مجموعه داده آموزش کدگذاری‌شده (latentها + conditioning) روی دیسک برای بارگذاری سریع‌تر در زمان آموزش.",
     "display_name": "ذخیره مجموعه داده آموزشی",
     "inputs": {
       "conditioning": {
@@ -15785,6 +16213,7 @@
     }
   },
   "ShuffleDataset": {
+    "description": "ترتیب تصاویر را در یک لیست به صورت تصادفی جابجا می‌کند.",
     "display_name": "درهم‌ریختن دیتاست تصویر",
     "inputs": {
       "control_after_generate": {
@@ -15807,6 +16236,7 @@
     }
   },
   "ShuffleImageTextDataset": {
+    "description": "ترتیب جفت‌های تصویر-متن را در یک لیست به صورت تصادفی جابجا می‌کند.",
     "display_name": "درهم‌ریختن دیتاست تصویر-متن",
     "inputs": {
       "control_after_generate": {
@@ -16619,6 +17049,23 @@
     "outputs": {
       "0": {
         "name": "شامل",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "همانند متد فرمت رشته در پایتون. از تمام گزینه‌ها و ویژگی‌های فرمت پایتون پشتیبانی می‌کند.",
+    "display_name": "فرمت متن",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -19290,6 +19737,7 @@
     }
   },
   "VoxelToMesh": {
+    "description": "تبدیل شبکه voxel به mesh.",
     "display_name": "VoxelToMesh",
     "inputs": {
       "algorithm": {
@@ -19309,6 +19757,7 @@
     }
   },
   "VoxelToMeshBasic": {
+    "description": "تبدیل شبکه voxel به mesh.",
     "display_name": "VoxelToMeshBasic",
     "inputs": {
       "threshold": {

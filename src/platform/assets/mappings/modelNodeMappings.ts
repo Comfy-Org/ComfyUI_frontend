@@ -91,6 +91,16 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
     'AILab_QwenVL_PromptEnhancer',
     'model_name'
   ],
+  ['LLM/Qwen-VL/Qwen2.5-VL-3B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
+  ['LLM/Qwen-VL/Qwen2.5-VL-7B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
+  ['LLM/Qwen-VL/Qwen3-VL-2B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
+  ['LLM/Qwen-VL/Qwen3-VL-2B-Thinking', 'AILab_QwenVL_Advanced', 'model_name'],
+  ['LLM/Qwen-VL/Qwen3-VL-4B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
+  ['LLM/Qwen-VL/Qwen3-VL-4B-Thinking', 'AILab_QwenVL_Advanced', 'model_name'],
+  ['LLM/Qwen-VL/Qwen3-VL-8B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
+  ['LLM/Qwen-VL/Qwen3-VL-8B-Thinking', 'AILab_QwenVL_Advanced', 'model_name'],
+  ['LLM/Qwen-VL/Qwen3-VL-32B-Instruct', 'AILab_QwenVL_Advanced', 'model_name'],
+  ['LLM/Qwen-VL/Qwen3-VL-32B-Thinking', 'AILab_QwenVL_Advanced', 'model_name'],
   ['LLM/checkpoints', 'LoadChatGLM3', 'chatglm3_checkpoint'],
 
   // ---- Qwen3 TTS (ComfyUI-FunBox) ----
@@ -148,6 +158,8 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
     'DownloadAndLoadDynamiCrafterCNModel',
     'model'
   ],
+  ['checkpoints', 'DynamiCrafterModelLoader', 'ckpt_name'],
+  ['controlnet', 'DynamiCrafterCNLoader', 'ckpt_name'],
 
   // ---- LayerStyle (ComfyUI_LayerStyle_Advance) ----
   ['BEN', 'LS_LoadBenModel', 'model'],
@@ -157,6 +169,8 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
 
   // ---- Inpaint (comfyui-inpaint-nodes) ----
   ['inpaint', 'INPAINT_LoadInpaintModel', 'model_name'],
+  ['inpaint', 'INPAINT_LoadFooocusInpaint', 'head'],
+  ['inpaint', 'INPAINT_LoadFooocusInpaint', 'patch'],
 
   // ---- LayerDiffuse (comfyui-layerdiffuse) ----
   ['layer_model', 'LayeredDiffusionApply', 'config'],
@@ -210,5 +224,17 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
 
   // ---- Ultralytics YOLO detectors (ComfyUI-Impact-Pack) ----
   ['ultralytics/bbox', 'UltralyticsDetectorProvider', 'model_name'],
-  ['ultralytics/segm', 'UltralyticsDetectorProvider', 'model_name']
+  ['ultralytics/segm', 'UltralyticsDetectorProvider', 'model_name'],
+
+  // ---- Mel-Band RoFormer audio separation (ComfyUI-MelBandRoFormer) ----
+  ['diffusion_models', 'MelBandRoFormerModelLoader', 'model_name'],
+
+  // ---- ComfyUI core geometry estimation (MoGe) ----
+  ['geometry_estimation', 'LoadMoGeModel', 'model_name'],
+
+  // ---- ComfyUI core optical flow (RAFT) ----
+  ['optical_flow', 'OpticalFlowLoader', 'model_name'],
+
+  // ---- WanVideo (ComfyUI-WanVideoWrapper) ----
+  ['loras', 'WanVideoLoraSelect', 'lora']
 ] as const satisfies ReadonlyArray<readonly [string, string, string]>

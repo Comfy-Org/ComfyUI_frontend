@@ -23,6 +23,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
+import { IS_CONTROL_WIDGET } from '@/scripts/widgets'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
 import { normalizeControlOption } from '@/types/simplifiedWidget'
@@ -47,6 +48,8 @@ export interface WidgetSlotMetadata {
   originOutputName?: string
   type: string
 }
+
+type Badges = (LGraphBadge | (() => LGraphBadge))[]
 
 /**
  * Minimal render-specific widget data extracted from LiteGraph widgets.
@@ -107,7 +110,7 @@ export interface VueNodeData {
   title: string
   type: string
   apiNode?: boolean
-  badges?: (LGraphBadge | (() => LGraphBadge))[]
+  badges?: Badges
   bgcolor?: string
   color?: string
   flags?: {
@@ -152,9 +155,7 @@ function isPromotedDOMWidget(widget: IBaseWidget): boolean {
 export function getControlWidget(
   widget: IBaseWidget
 ): SafeControlWidget | undefined {
-  const cagWidget = widget.linkedWidgets?.find(
-    (w) => w.name == 'control_after_generate'
-  )
+  const cagWidget = widget.linkedWidgets?.find((w) => w[IS_CONTROL_WIDGET])
   if (!cagWidget) return
   return {
     value: normalizeControlOption(cagWidget.value),
@@ -784,6 +785,12 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
               vueNodeData.set(nodeId, {
                 ...currentData,
                 showAdvanced: Boolean(propertyEvent.newValue)
+              })
+              break
+            case 'badges':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                badges: propertyEvent.newValue as Badges
               })
               break
           }
