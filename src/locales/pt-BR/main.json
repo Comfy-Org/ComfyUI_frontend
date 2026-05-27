@@ -663,7 +663,6 @@
     "Collapse": "Recolher",
     "Color": "Cor",
     "Colors": "Cores",
-    "Convert to Group Node": "Converter para Nó de Grupo",
     "Convert to Subgraph": "Converter para Subgrafo",
     "Copy": "Copiar",
     "Copy (Clipspace)": "Copiar (Clipspace)",
@@ -800,7 +799,7 @@
     "CONTROL_NET": "controlnet",
     "CURVE": "CURVA",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
-    "FACE_LANDMARKER": "FACE_LANDMARKER",
+    "FACE_DETECTION_MODEL": "MODELO_DE_DETECÇÃO_DE_FACE",
     "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "ARQUIVO_3D",
     "FILE_3D_FBX": "ARQUIVO_3D_FBX",
@@ -910,6 +909,161 @@
     "pause": "Pausar download",
     "paused": "Pausado",
     "resume": "Retomar download"
+  },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "entrada desconhecida",
+      "nodeName": "Este nó"
+    },
+    "promptErrors": {
+      "image_not_loaded": {
+        "desc": "O sistema não conseguiu carregar esta imagem.",
+        "title": "Imagem não carregada"
+      },
+      "missing_node_type": {
+        "desc": "Um tipo de nó está ausente ou indisponível. O fluxo de trabalho pode estar corrompido ou requerer um nó personalizado.",
+        "title": "Tipo de nó ausente"
+      },
+      "no_prompt": {
+        "desc": "Os dados do fluxo de trabalho enviados ao servidor estão vazios. Isso pode ser um erro inesperado do sistema.",
+        "title": "Dados do fluxo de trabalho estão vazios"
+      },
+      "out_of_memory": {
+        "descCloud": "Memória de GPU insuficiente. Tente reduzir a complexidade e execute novamente. Nenhum crédito foi cobrado.",
+        "descLocal": "Memória de GPU insuficiente. Tente reduzir a complexidade e execute novamente.",
+        "title": "Falha na geração"
+      },
+      "prompt_no_outputs": {
+        "desc": "O fluxo de trabalho não contém nenhum nó de saída (ex: Salvar Imagem, Visualizar Imagem) para produzir um resultado.",
+        "title": "Prompt sem saídas"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "O fluxo de trabalho possui entradas de nó inválidas. Corrija os nós destacados antes de executá-lo novamente.",
+        "title": "Falha na validação do prompt"
+      },
+      "server_error_cloud": {
+        "desc": "O servidor encontrou um erro inesperado. Por favor, tente novamente mais tarde.",
+        "title": "Erro no servidor"
+      },
+      "server_error_local": {
+        "desc": "O servidor encontrou um erro inesperado. Por favor, verifique os logs do servidor.",
+        "title": "Erro no servidor"
+      }
+    },
+    "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName} possui uma conexão inválida para {inputName}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Uma conexão de nó não pôde ser lida corretamente.",
+        "title": "Conexão inválida",
+        "toastMessage": "{nodeName} possui uma conexão inválida para {inputName}.",
+        "toastTitle": "Conexão inválida"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName} rejeitou o valor para {inputName}.",
+        "detailsWithRawDetails": "{nodeName} falhou na validação personalizada: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Um nó rejeitou um ou mais valores de entrada.",
+        "title": "Entrada inválida",
+        "toastMessage": "{nodeName} rejeitou o valor para {inputName}.",
+        "toastTitle": "Entrada inválida"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName} faz parte de uma conexão circular.",
+        "detailsWithRawDetails": "{nodeName} faz parte de uma conexão circular: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "O fluxo de trabalho possui uma conexão circular de nós.",
+        "title": "Fluxo de trabalho inválido",
+        "toastMessage": "{nodeName} faz parte de uma conexão circular.",
+        "toastTitle": "Fluxo de trabalho inválido"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName} não conseguiu validar {inputName}.",
+        "detailsWithRawDetails": "{nodeName} não conseguiu validar {inputName}: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "O fluxo de trabalho não pôde validar um nó conectado.",
+        "title": "Falha na validação",
+        "toastMessage": "{nodeName} não conseguiu validar {inputName}.",
+        "toastMessageWithRawDetails": "{nodeName} não conseguiu validar {inputName}: {rawDetails}",
+        "toastTitle": "Falha na validação"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName} falhou durante a validação.",
+        "detailsWithRawDetails": "{nodeName} falhou durante a validação: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "O fluxo de trabalho não pôde ser validado porque uma verificação de validação de nó falhou inesperadamente.",
+        "title": "Falha na validação",
+        "toastMessage": "{nodeName} falhou durante a validação.",
+        "toastMessageWithRawDetails": "{nodeName} falhou durante a validação: {rawDetails}",
+        "toastTitle": "Falha na validação"
+      },
+      "image_not_loaded": {
+        "details": "A imagem de {nodeName} não pôde ser carregada. Tente adicioná-la novamente.",
+        "itemLabel": "{nodeName}",
+        "message": "O sistema não conseguiu carregar esta imagem.",
+        "title": "Imagem não carregada",
+        "toastMessage": "A imagem de {nodeName} não pôde ser carregada. Tente adicioná-la novamente.",
+        "toastTitle": "Imagem de entrada não pôde ser carregada"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName} não conseguiu converter {inputName} para o tipo esperado.",
+        "detailsWithValue": "O valor {receivedValue} para {inputName} de {nodeName} não pôde ser convertido para {expectedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Um valor de entrada está com o tipo incorreto.",
+        "title": "Entrada inválida",
+        "toastMessage": "{nodeName} não conseguiu converter {inputName} para o tipo esperado.",
+        "toastMessageWithValue": "O valor {receivedValue} para {inputName} de {nodeName} não pôde ser convertido para {expectedType}.",
+        "toastTitle": "Entrada inválida"
+      },
+      "required_input_missing": {
+        "details": "{nodeName} está sem uma entrada obrigatória: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Entradas obrigatórias não possuem conexão.",
+        "title": "Conexão ausente",
+        "toastMessage": "{nodeName} está sem uma entrada obrigatória: {inputName}",
+        "toastTitle": "Entrada obrigatória ausente"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName} possui uma conexão incompatível para {inputName}.",
+        "detailsWithTypes": "A entrada {inputName} de {nodeName} espera {expectedType}, mas a saída conectada é {receivedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Os nós conectados estão usando tipos de entrada e saída incompatíveis.",
+        "title": "Conexão inválida",
+        "toastMessage": "{nodeName} possui uma conexão incompatível para {inputName}.",
+        "toastMessageWithTypes": "A entrada {inputName} de {nodeName} espera {expectedType}, mas a saída conectada é {receivedType}.",
+        "toastTitle": "Conexão inválida"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName} possui um valor acima do máximo para {inputName}.",
+        "detailsWithValue": "O valor {receivedValue} para {inputName} de {nodeName} está acima do máximo {maxValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Alguns valores de entrada estão fora do intervalo permitido.",
+        "title": "Entrada fora do intervalo",
+        "toastMessage": "{nodeName} possui um valor acima do máximo para {inputName}.",
+        "toastMessageWithValue": "O valor {receivedValue} para {inputName} de {nodeName} está acima do máximo {maxValue}.",
+        "toastTitle": "Entrada fora do intervalo"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName} possui um valor não suportado para {inputName}.",
+        "detailsWithValue": "O valor {receivedValue} para {inputName} de {nodeName} não está disponível.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Alguns valores de entrada não estão disponíveis para este nó.",
+        "title": "Entrada inválida",
+        "toastMessage": "{nodeName} possui um valor não suportado para {inputName}.",
+        "toastMessageWithValue": "O valor {receivedValue} para {inputName} de {nodeName} não está disponível.",
+        "toastTitle": "Entrada inválida"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName} possui um valor abaixo do mínimo para {inputName}.",
+        "detailsWithValue": "O valor {receivedValue} para {inputName} de {nodeName} está abaixo do mínimo {minValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Alguns valores de entrada estão fora do intervalo permitido.",
+        "title": "Entrada fora do intervalo",
+        "toastMessage": "{nodeName} possui um valor abaixo do mínimo para {inputName}.",
+        "toastMessageWithValue": "O valor {receivedValue} para {inputName} de {nodeName} está abaixo do mínimo {minValue}.",
+        "toastTitle": "Entrada fora do intervalo"
+      }
+    }
   },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
@@ -1713,6 +1867,7 @@
     "reloadingModel": "Recarregando modelo...",
     "removeBackgroundImage": "Remover Imagem de Fundo",
     "resizeNodeMatchOutput": "Redimensionar Nó para corresponder à saída",
+    "retainViewOnReload": "Manter a visão da câmera ao recarregar o modelo",
     "scene": "Cena",
     "showGrid": "Mostrar Grade",
     "showSkeleton": "Mostrar Esqueleto",
@@ -2103,7 +2258,6 @@
     "ComfyUI Issues": "Problemas do ComfyUI",
     "Contact Support": "Contatar suporte",
     "Convert Selection to Subgraph": "Converter seleção em subgrafo",
-    "Convert selected nodes to group node": "Converter nós selecionados em nó de grupo",
     "Copy": "Copiar",
     "Custom Nodes (Legacy)": "Nós personalizados (Legado)",
     "Custom Nodes Manager": "Gerenciador de nós personalizados",
@@ -2280,6 +2434,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2296,6 +2451,7 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "ajustes",
     "advanced": "avançado",
     "api node": "nó da API",
     "attention_experiments": "experimentos_de_atenção",
@@ -2340,6 +2496,7 @@
     "model_merging": "mesclagem_de_modelos",
     "model_patches": "correções_de_modelo",
     "model_specific": "específico_do_modelo",
+    "multigpu": "multigpu",
     "noise": "ruído",
     "operations": "operações",
     "photomaker": "photomaker",
@@ -2434,6 +2591,43 @@
       "windows": "Windows (GPU Nvidia com suporte a CUDA)"
     },
     "title": "Seu dispositivo não é suportado"
+  },
+  "oauth": {
+    "consent": {
+      "allow": "Continuar",
+      "appTypeNative": "Aplicativo nativo",
+      "appTypeWeb": "Aplicativo web",
+      "deny": "Cancelar",
+      "errorExpired": "Esta solicitação de consentimento expirou ou já foi utilizada. Por favor, reinicie a partir do aplicativo cliente.",
+      "errorScopeBroadening": "As permissões previamente aprovadas não cobrem esta solicitação. Você precisará autorizar novamente com as novas permissões.",
+      "errorUnavailable": "Este recurso não está disponível no momento. Por favor, entre em contato com o suporte se o problema persistir.",
+      "genericError": "A solicitação OAuth falhou. Por favor, reinicie a partir do aplicativo cliente.",
+      "loading": "Carregando solicitação de autorização…",
+      "missingRequest": "Esta solicitação de autorização está ausente. Por favor, reinicie a partir do aplicativo cliente.",
+      "noWorkspaces": "Nenhum workspace elegível está disponível para esta solicitação.",
+      "permissionsHeader": "Permissões",
+      "redirectNotice": "Você será redirecionado para",
+      "resourceFallback": "este aplicativo",
+      "sessionError": "Falha ao estabelecer sessão. Por favor, tente novamente.",
+      "sessionErrorToastSummary": "Não foi possível continuar o login OAuth",
+      "subtitle": "Faça login em {resource} para continuar",
+      "title": "{client} deseja acesso",
+      "workspaceHelp": "As permissões se aplicam somente a este workspace.",
+      "workspaceLabel": "Workspace"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "Executar workflows em seu nome"
+      },
+      "mcp:tools:read": {
+        "label": "Visualizar ferramentas de workflow disponíveis"
+      }
+    },
+    "workspace": {
+      "member": "Membro",
+      "owner": "Proprietário",
+      "personal": "Pessoal"
+    }
   },
   "openSharedWorkflow": {
     "author": "Autor:",
@@ -2662,20 +2856,6 @@
     "normal": "Normal",
     "parameters": "Parâmetros",
     "pinned": "Fixado",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "Os dados do fluxo de trabalho enviados ao servidor estão vazios. Isso pode ser um erro de sistema inesperado."
-      },
-      "prompt_no_outputs": {
-        "desc": "O fluxo de trabalho não contém nenhum nó de saída (por exemplo, Salvar Imagem, Visualizar Imagem) para produzir um resultado."
-      },
-      "server_error_cloud": {
-        "desc": "O servidor encontrou um erro inesperado. Por favor, tente novamente mais tarde."
-      },
-      "server_error_local": {
-        "desc": "O servidor encontrou um erro inesperado. Por favor, verifique os logs do servidor."
-      }
-    },
     "properties": "Propriedades",
     "removeFavorite": "Desfavoritar",
     "resetAllParameters": "Redefinir todos os parâmetros",
@@ -3085,6 +3265,7 @@
         "sourceDesc": "Agrupar por tipo de fonte (Core, Custom, API)"
       },
       "noBookmarkedNodes": "Nenhum favorito ainda",
+      "noMatchingNodes": "Nenhum nó corresponde a \"{query}\"",
       "resetView": "Restaurar visualização padrão",
       "sections": {
         "bookmarked": "Favoritos",
@@ -3470,8 +3651,7 @@
       "newest": "Mais Recentes",
       "popular": "Popular",
       "recommended": "Recomendado",
-      "searchPlaceholder": "Buscar...",
-      "vramLowToHigh": "Uso de VRAM (Menor para Maior)"
+      "searchPlaceholder": "Buscar..."
     },
     "sorting": "Ordenar por",
     "title": "Comece com um Modelo",
@@ -3635,7 +3815,8 @@
       "placeholderMesh": "Selecionar malha...",
       "placeholderModel": "Selecionar modelo...",
       "placeholderUnknown": "Selecionar mídia...",
-      "placeholderVideo": "Selecionar vídeo..."
+      "placeholderVideo": "Selecionar vídeo...",
+      "topResult": "Melhor resultado: {result}"
     },
     "valueControl": {
       "decrement": "Decrementar Valor",

@@ -128,7 +128,8 @@ export const TestIds = {
     pinIndicator: 'node-pin-indicator',
     innerWrapper: 'node-inner-wrapper',
     mainImage: 'main-image',
-    slotConnectionDot: 'slot-connection-dot'
+    slotConnectionDot: 'slot-connection-dot',
+    imageGrid: 'image-grid'
   },
   selectionToolbox: {
     root: 'selection-toolbox',
@@ -152,6 +153,7 @@ export const TestIds = {
     widget: 'node-widget',
     decrement: 'decrement',
     increment: 'increment',
+    valueControl: 'value-control',
     domWidgetTextarea: 'dom-widget-textarea',
     subgraphEnterButton: 'subgraph-enter-button',
     selectDefaultSearchInput: 'widget-select-default-search-input',

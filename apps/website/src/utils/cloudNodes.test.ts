@@ -8,12 +8,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { NodesSnapshot } from '../data/cloudNodes'
 import type * as ObjectInfoParser from '@comfyorg/object-info-parser'
 
-const fetchRegistryPacksMock = vi.hoisted(() => vi.fn(async () => new Map()))
+import type { RegistryPackWithNodes } from './cloudNodes.registry'
+
+const fetchRegistryPacksWithNodesMock = vi.hoisted(() =>
+  vi.fn(async () => new Map<string, RegistryPackWithNodes | null>())
+)
 const sanitizeCallSpy = vi.hoisted(() => vi.fn())
 
 vi.mock('./cloudNodes.registry', () => ({
   DEFAULT_REGISTRY_BASE_URL: 'https://api.comfy.org',
-  fetchRegistryPacks: fetchRegistryPacksMock
+  fetchRegistryPacksWithNodes: fetchRegistryPacksWithNodesMock
 }))
 
 vi.mock('@comfyorg/object-info-parser', async (importOriginal) => {
@@ -90,8 +94,8 @@ describe('fetchCloudNodesForBuild', () => {
 
   beforeEach(() => {
     resetCloudNodesFetcherForTests()
-    fetchRegistryPacksMock.mockReset()
-    fetchRegistryPacksMock.mockResolvedValue(new Map())
+    fetchRegistryPacksWithNodesMock.mockReset()
+    fetchRegistryPacksWithNodesMock.mockResolvedValue(new Map())
     sanitizeCallSpy.mockReset()
     delete process.env.WEBSITE_CLOUD_API_KEY
   })
@@ -102,14 +106,21 @@ describe('fetchCloudNodesForBuild', () => {
   })
 
   it('returns fresh when API succeeds', async () => {
-    fetchRegistryPacksMock.mockResolvedValue(
-      new Map([
+    fetchRegistryPacksWithNodesMock.mockResolvedValue(
+      new Map<string, RegistryPackWithNodes | null>([
         [
           'comfyui-impact-pack',
           {
-            id: 'comfyui-impact-pack',
-            name: 'ComfyUI Impact Pack',
-            repository: 'https://github.com/ltdrdata/ComfyUI-Impact-Pack'
+            pack: {
+              id: 'comfyui-impact-pack',
+              name: 'ComfyUI Impact Pack',
+              repository: 'https://github.com/ltdrdata/ComfyUI-Impact-Pack',
+              latest_version: { version: '1.0.0' }
+            },
+            nodes: [
+              { comfy_node_name: 'FaceDetailer', category: 'detailer' },
+              { comfy_node_name: 'DetailerForEach', category: 'detailer' }
+            ]
           }
         ]
       ])
@@ -129,6 +140,10 @@ describe('fetchCloudNodesForBuild', () => {
     expect(outcome.snapshot.packs[0]?.repoUrl).toBe(
       'https://github.com/ltdrdata/ComfyUI-Impact-Pack'
     )
+    // Nodes should come from registry, not object_info
+    expect(outcome.snapshot.packs[0]?.nodes).toHaveLength(2)
+    expect(outcome.snapshot.packs[0]?.nodes[0]?.name).toBe('DetailerForEach')
+    expect(outcome.snapshot.packs[0]?.nodes[1]?.name).toBe('FaceDetailer')
   })
 
   it('drops invalid nodes individually and keeps valid nodes', async () => {
@@ -297,7 +312,7 @@ describe('fetchCloudNodesForBuild', () => {
   })
 
   it('returns fresh even when registry enrichment fails', async () => {
-    fetchRegistryPacksMock.mockResolvedValue(new Map())
+    fetchRegistryPacksWithNodesMock.mockResolvedValue(new Map())
     const fetchImpl = vi.fn(async () => response({ ImpactNode: validNode() }))
     const outcome = await fetchCloudNodesForBuild({
       apiKey: KEY,
@@ -305,5 +320,8 @@ describe('fetchCloudNodesForBuild', () => {
       fetchImpl: fetchImpl as typeof fetch
     })
     expect(outcome.status).toBe('fresh')
+    // Falls back to object_info nodes when registry fails
+    if (outcome.status !== 'fresh') return
+    expect(outcome.snapshot.packs[0]?.nodes[0]?.name).toBe('ImpactNode')
   })
 })
