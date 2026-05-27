@@ -66,6 +66,7 @@
     "@comfyorg/registry-types": "workspace:*",
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
+    "@comfyorg/workflow-validation": "workspace:*",
     "@formkit/auto-animate": "catalog:",
     "@iconify/json": "catalog:",
     "@primeuix/forms": "catalog:",
@@ -202,6 +203,7 @@
     "vue-component-type-helpers": "catalog:",
     "vue-eslint-parser": "catalog:",
     "vue-tsc": "catalog:",
+    "yaml": "catalog:",
     "zip-dir": "^2.0.0",
     "zod-to-json-schema": "catalog:"
   },

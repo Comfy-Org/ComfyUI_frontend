@@ -1,3 +1,4 @@
+import { fixBadLinks } from '@comfyorg/workflow-validation'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
@@ -5,8 +6,6 @@ import type {
   ISerialisedGraph,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
-
-import { fixBadLinks } from './linkFixer'
 
 type SerialisedInput = NonNullable<ISerialisedNode['inputs']>[number]
 type SerialisedOutput = NonNullable<ISerialisedNode['outputs']>[number]
