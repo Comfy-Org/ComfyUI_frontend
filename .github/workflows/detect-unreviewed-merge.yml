@@ -1,0 +1,157 @@
+name: Detect Unreviewed Merge
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for unreviewed merge
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        env:
+          UNREVIEWED_MERGES_TOKEN: ${{ secrets.UNREVIEWED_MERGES_TOKEN }}
+        with:
+          script: |
+            const sha = context.sha;
+            const { owner, repo } = context.repo;
+
+            // Find the PR associated with this merge commit
+            const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner,
+              repo,
+              commit_sha: sha,
+            });
+
+            const pr = prs.find(p => p.merged_at && p.base.ref === 'main');
+            if (!pr) {
+              core.info('No merged PR found for this commit — skipping.');
+              return;
+            }
+
+            core.info(`Found PR #${pr.number}: ${pr.title}`);
+
+            // Check for approving reviews
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              owner,
+              repo,
+              pull_number: pr.number,
+            });
+
+            if (reviews.some(r => r.state === 'APPROVED')) {
+              core.info('PR has an approving review — no action needed.');
+              return;
+            }
+
+            core.info('No approving review found. Checking for inline justification...');
+
+            // Search PR body and author comments for "Justification: <reason>"
+            const pattern = /^justification:\s*(.+)$/im;
+            let justification = null;
+
+            if (pr.body) {
+              const match = pr.body.match(pattern);
+              if (match) justification = match[1].trim();
+            }
+
+            if (!justification) {
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner,
+                repo,
+                issue_number: pr.number,
+              });
+
+              for (const c of comments) {
+                if (c.user.login === pr.user.login) {
+                  const match = c.body.match(pattern);
+                  if (match) {
+                    justification = match[1].trim();
+                    break;
+                  }
+                }
+              }
+            }
+
+            const hasJustification = !!justification;
+            core.info(hasJustification
+              ? `Found inline justification: ${justification}`
+              : 'No inline justification found.');
+
+            // Build issue body
+            const mergedBy = pr.merged_by ? pr.merged_by.login : 'unknown';
+            const table = [
+              '## Unreviewed Merge Detected',
+              '',
+              '| Field | Value |',
+              '|-------|-------|',
+              `| **Repository** | ${owner}/${repo} |`,
+              `| **PR** | ${owner}/${repo}#${pr.number} |`,
+              `| **Author** | @${pr.user.login} |`,
+              `| **Merged by** | @${mergedBy} |`,
+              `| **Merged at** | ${pr.merged_at} |`,
+              '| **Branch** | main |',
+            ];
+
+            const policyRef = [
+              '## Policy reference',
+              '',
+              'Per the Secure Development Policy (Emergency Change Procedures), changes merged',
+              'without prior approval must be justified and peer-reviewed within 1 business day.',
+              'Unresolved items older than 3 business days are escalated to engineering leadership.',
+            ];
+
+            let body;
+            if (hasJustification) {
+              body = [
+                ...table,
+                '',
+                '## Justification (provided at merge time)',
+                '',
+                `> ${justification}`,
+                '',
+                '## Required actions',
+                '',
+                '- [x] **Justification** — Provided at merge time (see above)',
+                '- [ ] **Post-merge review** — A peer must review the PR and comment confirmation here (within 1 business day)',
+                '',
+                'Once both items are checked, close this issue.',
+                '',
+                ...policyRef,
+              ].join('\n');
+            } else {
+              body = [
+                ...table,
+                '',
+                '## Required actions',
+                '',
+                '- [ ] **Justification** — Author must comment on this issue explaining why pre-merge approval was bypassed (within 1 business day)',
+                '- [ ] **Post-merge review** — A peer must review the PR and comment confirmation here (within 1 business day)',
+                '',
+                'Once both items are checked, close this issue.',
+                '',
+                ...policyRef,
+              ].join('\n');
+            }
+
+            // Create issue in the tracking repo with the dedicated PAT
+            const { getOctokit } = require('@actions/github');
+            const tracking = getOctokit(process.env.UNREVIEWED_MERGES_TOKEN);
+
+            const repoLabel = `repo:${repo.toLowerCase()}`;
+            const statusLabel = hasJustification ? 'needs-review' : 'needs-justification';
+
+            const issue = await tracking.rest.issues.create({
+              owner: 'Comfy-Org',
+              repo: 'unreviewed-merges',
+              title: `[${repo}] PR #${pr.number} — ${pr.title}`,
+              body,
+              labels: ['unreviewed-merge', statusLabel, repoLabel],
+              assignees: [pr.user.login],
+            });
+
+            core.info(`Created tracking issue: ${issue.data.html_url}`);
