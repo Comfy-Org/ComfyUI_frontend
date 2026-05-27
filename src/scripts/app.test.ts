@@ -2,12 +2,12 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
-  LGraph,
-  LGraphCanvas,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import { ComfyApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
 import {
@@ -20,14 +20,29 @@ import {
 } from '@/composables/usePaste'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { api } from '@/scripts/api'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import type { NodeError } from '@/schemas/apiSchema'
 
 const {
+  mockApiKeyAuthStore,
+  mockAuthStore,
+  mockSettingStore,
   mockToastStore,
   mockExtensionService,
   mockNodeOutputStore,
   mockWorkspaceWorkflow,
   mockRefreshMissingModelPipeline
 } = vi.hoisted(() => ({
+  mockApiKeyAuthStore: {
+    getApiKey: vi.fn()
+  },
+  mockAuthStore: {
+    getAuthToken: vi.fn()
+  },
+  mockSettingStore: {
+    get: vi.fn()
+  },
   mockToastStore: {
     addAlert: vi.fn(),
     add: vi.fn(),
@@ -53,6 +68,18 @@ vi.mock('@/utils/litegraphUtil', () => ({
   isAudioNode: vi.fn(),
   executeWidgetsCallback: vi.fn(),
   fixLinkInputSlots: vi.fn()
+}))
+
+vi.mock('@/stores/apiKeyAuthStore', () => ({
+  useApiKeyAuthStore: vi.fn(() => mockApiKeyAuthStore)
+}))
+
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: vi.fn(() => mockAuthStore)
+}))
+
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: vi.fn(() => mockSettingStore)
 }))
 
 vi.mock('@/composables/usePaste', () => ({
@@ -110,6 +137,7 @@ function createMockCanvas(): Partial<LGraphCanvas> {
 
   return {
     graph: mockGraph as LGraph,
+    draw: vi.fn(),
     selectItems: vi.fn()
   }
 }
@@ -141,8 +169,58 @@ describe('ComfyApp', () => {
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
     app.canvas = mockCanvas as LGraphCanvas
+    mockApiKeyAuthStore.getApiKey.mockReturnValue(undefined)
+    mockAuthStore.getAuthToken.mockResolvedValue(undefined)
     mockExtensionService.invokeExtensions.mockReturnValue([])
     mockExtensionService.invokeExtensionsAsync.mockResolvedValue(undefined)
+    mockSettingStore.get.mockImplementation((key: string) =>
+      key === 'Comfy.RightSidePanel.ShowErrorsTab' ? true : undefined
+    )
+  })
+
+  describe('queuePrompt', () => {
+    it('shows the error overlay for successful prompt responses with node errors', async () => {
+      const graph = new LGraph()
+      const promptOutput: ComfyApiWorkflow = {
+        '1': {
+          class_type: 'PreviewAny',
+          inputs: {},
+          _meta: { title: 'PreviewAny' }
+        }
+      }
+      const nodeErrors: Record<string, NodeError> = {
+        '1': {
+          class_type: 'PreviewAny',
+          dependent_outputs: ['1'],
+          errors: [
+            {
+              type: 'required_input_missing',
+              message: 'Required input is missing: source',
+              details: '',
+              extra_info: { input_name: 'source' }
+            }
+          ]
+        }
+      }
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
+        output: promptOutput,
+        workflow: createWorkflowGraphData()
+      })
+      vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1',
+        node_errors: nodeErrors,
+        error: ''
+      })
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      const errorStore = useExecutionErrorStore()
+      expect(errorStore.lastNodeErrors).toEqual(nodeErrors)
+      expect(errorStore.isErrorOverlayOpen).toBe(true)
+      expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+    })
   })
 
   describe('refreshComboInNodes', () => {
