@@ -5,7 +5,7 @@ on:
     branches: [main, master]
 
 concurrency:
-  group: detect-unreviewed-merge
+  group: detect-unreviewed-merge-${{ github.sha }}
   cancel-in-progress: false
 
 permissions:
@@ -40,6 +40,13 @@ jobs:
             }
 
             core.info(`Found PR #${pr.number}: ${pr.title}`);
+
+            // Fetch full PR to get merged_by (not in pull-request-simple schema)
+            const { data: fullPr } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: pr.number,
+            });
 
             // Check for approving reviews using latest review per reviewer.
             // DISMISSED approvals (from "dismiss stale reviews on new commits")
@@ -86,7 +93,7 @@ jobs:
               });
 
               for (const c of comments) {
-                if (c.user.login === pr.user.login) {
+                if (c.user && pr.user && c.user.login === pr.user.login) {
                   const match = c.body.match(pattern);
                   if (match) {
                     justification = match[1].trim();
@@ -102,7 +109,7 @@ jobs:
               : 'No inline justification found.');
 
             // Build issue body
-            const mergedBy = pr.merged_by ? pr.merged_by.login : 'unknown';
+            const mergedBy = fullPr.merged_by ? fullPr.merged_by.login : 'unknown';
             const table = [
               '## Unreviewed Merge Detected',
               '',
@@ -121,7 +128,7 @@ jobs:
               '',
               'Per the Secure Development Policy (Emergency Change Procedures), changes merged',
               'without prior approval must be justified and peer-reviewed within 1 business day.',
-              'Unresolved items older than 3 business days are escalated to engineering leadership.',
+              'Unresolved items older than 3 days are escalated to engineering leadership.',
             ];
 
             let body;
@@ -169,13 +176,39 @@ jobs:
             const repoLabel = `repo:${repo.toLowerCase()}`;
             const statusLabel = hasJustification ? 'needs-review' : 'needs-justification';
 
-            const issue = await tracking.rest.issues.create({
-              owner: 'Comfy-Org',
-              repo: 'unreviewed-merges',
-              title: `[${repo}] PR #${pr.number} — ${pr.title}`,
-              body,
-              labels: ['unreviewed-merge', statusLabel, repoLabel],
-              assignees: [pr.user.login],
+            // Idempotency check — avoid duplicate issues on workflow re-runs
+            const { data: search } = await tracking.rest.search.issuesAndPullRequests({
+              q: `repo:Comfy-Org/unreviewed-merges in:title "PR #${pr.number}" label:${repoLabel}`,
             });
+            if (search.total_count > 0) {
+              core.info(`Tracking issue already exists: ${search.items[0].html_url}`);
+              return;
+            }
+
+            let issue;
+            try {
+              issue = await tracking.rest.issues.create({
+                owner: 'Comfy-Org',
+                repo: 'unreviewed-merges',
+                title: `[${repo}] PR #${pr.number} — ${pr.title}`,
+                body,
+                labels: ['unreviewed-merge', statusLabel, repoLabel],
+                assignees: [pr.user.login],
+              });
+            } catch (e) {
+              if (e.status === 422) {
+                // Assignee may be invalid (deleted account, no repo access)
+                core.warning(`Retrying without assignee: ${e.message}`);
+                issue = await tracking.rest.issues.create({
+                  owner: 'Comfy-Org',
+                  repo: 'unreviewed-merges',
+                  title: `[${repo}] PR #${pr.number} — ${pr.title}`,
+                  body,
+                  labels: ['unreviewed-merge', statusLabel, repoLabel],
+                });
+              } else {
+                throw e;
+              }
+            }
 
             core.info(`Created tracking issue: ${issue.data.html_url}`);
