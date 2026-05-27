@@ -15912,6 +15912,30 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "description": "将输入图像保存到您的 ComfyUI 输出目录。",
+    "display_name": "保存图像（高级）",
+    "inputs": {
+      "filename_prefix": {
+        "name": "文件名前缀",
+        "tooltip": "要保存文件的前缀。可包含格式化标记，如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width%。"
+      },
+      "format": {
+        "name": "格式",
+        "tooltip": "保存图像的文件格式。"
+      },
+      "format_bit_depth": {
+        "name": "位深度"
+      },
+      "format_input_color_space": {
+        "name": "输入色彩空间"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "要保存的图像。"
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
     "description": "将图像数据集保存到指定文件夹。支持的格式：PNG。",
     "display_name": "保存图像数据集",

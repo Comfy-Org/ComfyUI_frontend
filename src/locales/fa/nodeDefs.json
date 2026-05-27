@@ -15912,6 +15912,30 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "description": "تصاویر ورودی را در پوشه خروجی ComfyUI شما ذخیره می‌کند.",
+    "display_name": "ذخیره تصویر (پیشرفته)",
+    "inputs": {
+      "filename_prefix": {
+        "name": "پیشوند نام فایل",
+        "tooltip": "پیشوند فایل برای ذخیره. می‌تواند شامل توکن‌های قالب‌بندی مانند ‎%date:yyyy-MM-dd%‎ یا ‎%Empty Latent Image.width%‎ باشد."
+      },
+      "format": {
+        "name": "فرمت",
+        "tooltip": "فرمت فایل برای ذخیره تصویر."
+      },
+      "format_bit_depth": {
+        "name": "عمق بیت"
+      },
+      "format_input_color_space": {
+        "name": "فضای رنگ ورودی"
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصاویری که باید ذخیره شوند."
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
     "description": "ذخیره یک مجموعه داده تصویر در پوشه‌ای مشخص. فرمت‌های پشتیبانی‌شده: PNG.",
     "display_name": "ذخیره مجموعه تصاویر در پوشه",

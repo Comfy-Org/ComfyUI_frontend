@@ -32,12 +32,12 @@
           {
             "type": "command",
             "if": "Bash(npx vitest *)",
-            "command": "echo 'Use `pnpm test:unit` (or `pnpm test:unit -- <path>`) instead of npx vitest.' >&2 && exit 2"
+            "command": "echo 'Use `pnpm test:unit` (or `pnpm test:unit <path>`) instead of npx vitest.' >&2 && exit 2"
           },
           {
             "type": "command",
             "if": "Bash(pnpx vitest *)",
-            "command": "echo 'Use `pnpm test:unit` (or `pnpm test:unit -- <path>`) instead of pnpx vitest.' >&2 && exit 2"
+            "command": "echo 'Use `pnpm test:unit` (or `pnpm test:unit <path>`) instead of pnpx vitest.' >&2 && exit 2"
           },
           {
             "type": "command",

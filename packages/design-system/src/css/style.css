@@ -406,9 +406,7 @@
     --secondary-background-selected
   );
   --component-node-widget-background-selected: var(--color-charcoal-100);
-  --component-node-widget-background-disabled: var(
-    --color-alpha-charcoal-600-30
-  );
+  --component-node-widget-background-disabled: var(--color-charcoal-800);
   --component-node-widget-background-highlighted: var(--color-smoke-800);
   --component-node-widget-promoted: var(--color-purple-700);
   --component-node-widget-advanced: var(--color-azure-600);

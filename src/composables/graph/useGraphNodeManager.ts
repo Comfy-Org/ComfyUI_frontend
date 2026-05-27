@@ -23,6 +23,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
+import { IS_CONTROL_WIDGET } from '@/scripts/widgets'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
 import { normalizeControlOption } from '@/types/simplifiedWidget'
@@ -154,9 +155,7 @@ function isPromotedDOMWidget(widget: IBaseWidget): boolean {
 export function getControlWidget(
   widget: IBaseWidget
 ): SafeControlWidget | undefined {
-  const cagWidget = widget.linkedWidgets?.find(
-    (w) => w.name == 'control_after_generate'
-  )
+  const cagWidget = widget.linkedWidgets?.find((w) => w[IS_CONTROL_WIDGET])
   if (!cagWidget) return
   return {
     value: normalizeControlOption(cagWidget.value),
