@@ -55,4 +55,24 @@ test.describe('Vue Widget Reactivity', { tag: '@vue-nodes' }, () => {
     })
     await expect(loadCheckpointNode).toHaveCount(3)
   })
+
+  test('Can load dynamic combos', async ({ comfyPage }) => {
+    await comfyPage.searchBoxV2.addNode('Resize Image/Mask')
+    const widgetTuple = ['Resize Image/Mask', 'resize_type'] as const
+    const widget = comfyPage.vueNodes.getWidgetByName(...widgetTuple)
+
+    await test.step('Update value of the dynamic combo widget', async () => {
+      await comfyPage.vueNodes.selectComboOption(...widgetTuple, 'scale width')
+      await expect(widget).toHaveText('scale width')
+    })
+
+    await test.step('Swap to a different workflow and back', async () => {
+      await comfyPage.menu.topbar.newWorkflowButton.click()
+      await expect(widget).toBeHidden()
+      await comfyPage.menu.topbar.getTab(0).click()
+      await expect(widget).toBeVisible()
+    })
+
+    await expect(widget, 'Widget has restored value').toHaveText('scale width')
+  })
 })
