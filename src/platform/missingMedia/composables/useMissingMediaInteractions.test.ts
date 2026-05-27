@@ -7,12 +7,15 @@ import {
   useMissingMediaInteractions
 } from '@/platform/missingMedia/composables/useMissingMediaInteractions'
 
-const mockInputAssetsByFilename = new Map<string, AssetItem>()
+const mockedState = vi.hoisted(() => ({
+  inputAssetsByFilename: new Map<string, AssetItem>(),
+  getNodeByExecutionId: vi.fn(),
+  resolveComboValues: vi.fn()
+}))
 
 vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({
-    inputAssetsByFilename: mockInputAssetsByFilename,
-    updateInputs: vi.fn()
+    inputAssetsByFilename: mockedState.inputAssetsByFilename
   })
 }))
 
@@ -21,20 +24,16 @@ vi.mock('@/platform/missingMedia/missingMediaStore', () => ({
     expandState: {},
     pendingSelection: {},
     uploadState: {},
-    missingMediaCandidates: null,
-    removeMissingMediaByName: vi.fn()
+    missingMediaCandidates: null
   })
 }))
 
-const mockGetNodeByExecutionId = vi.fn()
 vi.mock('@/utils/graphTraversalUtil', () => ({
-  getNodeByExecutionId: (...args: unknown[]) =>
-    mockGetNodeByExecutionId(...args)
+  getNodeByExecutionId: mockedState.getNodeByExecutionId
 }))
 
-const mockResolveComboValues = vi.fn()
 vi.mock('@/utils/litegraphUtil', () => ({
-  resolveComboValues: (widget: unknown) => mockResolveComboValues(widget),
+  resolveComboValues: mockedState.resolveComboValues,
   addToComboValues: vi.fn()
 }))
 
@@ -61,7 +60,7 @@ const baseAsset: AssetItem = {
 
 describe('getMediaDisplayName', () => {
   beforeEach(() => {
-    mockInputAssetsByFilename.clear()
+    mockedState.inputAssetsByFilename.clear()
   })
 
   it('returns the input string when no matching asset is in the store (OSS pass-through)', () => {
@@ -70,7 +69,7 @@ describe('getMediaDisplayName', () => {
 
   it('returns display_name when the matched asset carries one (Cloud unified shape)', () => {
     const hash = 'blake3:abc1234567890def.png'
-    mockInputAssetsByFilename.set(hash, {
+    mockedState.inputAssetsByFilename.set(hash, {
       ...baseAsset,
       name: hash,
       asset_hash: hash,
@@ -81,7 +80,7 @@ describe('getMediaDisplayName', () => {
 
   it('falls back to asset.name when display_name is absent (legacy Cloud asset)', () => {
     const hash = 'blake3:def4567890abc1234.png'
-    mockInputAssetsByFilename.set(hash, {
+    mockedState.inputAssetsByFilename.set(hash, {
       ...baseAsset,
       name: 'beach.png',
       asset_hash: hash
@@ -91,7 +90,7 @@ describe('getMediaDisplayName', () => {
 
   it('prefers metadata.filename over display_name and asset.name (shared helper chain)', () => {
     const hash = 'blake3:fff1111222.png'
-    mockInputAssetsByFilename.set(hash, {
+    mockedState.inputAssetsByFilename.set(hash, {
       ...baseAsset,
       name: hash,
       asset_hash: hash,
@@ -103,7 +102,7 @@ describe('getMediaDisplayName', () => {
 
   it('falls back to display_name when filename metadata is absent (Cloud hash-keyed asset)', () => {
     const hash = 'blake3:aaa2222333.png'
-    mockInputAssetsByFilename.set(hash, {
+    mockedState.inputAssetsByFilename.set(hash, {
       ...baseAsset,
       name: hash,
       asset_hash: hash,
@@ -138,37 +137,41 @@ describe('getLibraryOptions (integration with getMediaDisplayName)', () => {
   })
 
   beforeEach(() => {
-    mockInputAssetsByFilename.clear()
-    mockGetNodeByExecutionId.mockReset()
-    mockResolveComboValues.mockReset()
+    mockedState.inputAssetsByFilename.clear()
+    mockedState.getNodeByExecutionId.mockReset()
+    mockedState.resolveComboValues.mockReset()
   })
 
   it('returns empty array when the combo widget cannot be resolved', () => {
-    mockGetNodeByExecutionId.mockReturnValue(null)
+    mockedState.getNodeByExecutionId.mockReturnValue(null)
     const { getLibraryOptions } = useMissingMediaInteractions()
 
     expect(getLibraryOptions(makeCandidate())).toEqual([])
-    expect(mockResolveComboValues).not.toHaveBeenCalled()
+    expect(mockedState.resolveComboValues).not.toHaveBeenCalled()
   })
 
   it('maps Cloud hash combo values to display_name via the shared helper chain', () => {
     const candidateName = 'blake3:missing.png'
     const hashA = 'blake3:aaa.png'
     const hashB = 'blake3:bbb.png'
-    mockInputAssetsByFilename.set(hashA, {
+    mockedState.inputAssetsByFilename.set(hashA, {
       ...baseAsset,
       name: hashA,
       asset_hash: hashA,
       display_name: 'sunset.png'
     })
-    mockInputAssetsByFilename.set(hashB, {
+    mockedState.inputAssetsByFilename.set(hashB, {
       ...baseAsset,
       name: hashB,
       asset_hash: hashB,
       metadata: { filename: 'beach.png' }
     })
-    mockGetNodeByExecutionId.mockReturnValue(makeNode())
-    mockResolveComboValues.mockReturnValue([hashA, hashB, candidateName])
+    mockedState.getNodeByExecutionId.mockReturnValue(makeNode())
+    mockedState.resolveComboValues.mockReturnValue([
+      hashA,
+      hashB,
+      candidateName
+    ])
 
     const { getLibraryOptions } = useMissingMediaInteractions()
     const options = getLibraryOptions(makeCandidate({ name: candidateName }))
@@ -180,8 +183,8 @@ describe('getLibraryOptions (integration with getMediaDisplayName)', () => {
   })
 
   it('passes OSS filename combo values through when no matching asset exists', () => {
-    mockGetNodeByExecutionId.mockReturnValue(makeNode())
-    mockResolveComboValues.mockReturnValue([
+    mockedState.getNodeByExecutionId.mockReturnValue(makeNode())
+    mockedState.resolveComboValues.mockReturnValue([
       'kitten.png',
       'puppy.png',
       'missing.png'
@@ -197,8 +200,8 @@ describe('getLibraryOptions (integration with getMediaDisplayName)', () => {
   })
 
   it('filters out the candidate name from the alternatives list', () => {
-    mockGetNodeByExecutionId.mockReturnValue(makeNode())
-    mockResolveComboValues.mockReturnValue([
+    mockedState.getNodeByExecutionId.mockReturnValue(makeNode())
+    mockedState.resolveComboValues.mockReturnValue([
       'other.png',
       'missing.png',
       'extra.png'

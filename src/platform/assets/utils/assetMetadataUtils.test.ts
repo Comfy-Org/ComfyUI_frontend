@@ -418,7 +418,6 @@ describe('assetMetadataUtils', () => {
     it('honours OSS-emitted display_name when present', () => {
       const ossWithDisplayName: AssetItem = {
         ...ossShape,
-        name: 'sunset.png',
         display_name: 'Curated Sunset'
       }
       expect(getAssetDisplayFilename(ossWithDisplayName)).toBe('Curated Sunset')
