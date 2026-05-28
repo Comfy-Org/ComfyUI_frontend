@@ -601,6 +601,7 @@ function createAssetService() {
     const queryParams = new URLSearchParams({
       asset_hash: hash,
       include_tags: OUTPUT_TAG,
+      exclude_tags: MISSING_TAG,
       limit: '1',
       include_public: 'false'
     })

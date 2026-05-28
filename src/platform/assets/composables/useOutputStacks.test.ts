@@ -202,4 +202,65 @@ describe('useOutputStacks', () => {
       child.id
     ])
   })
+
+  it('drops cached children whose filename is no longer in the cover.allOutputs (FE-814)', async () => {
+    const childKept = createAsset({
+      id: 'child-keep',
+      name: 'keep.png',
+      user_metadata: undefined
+    })
+    const childDeleted = createAsset({
+      id: 'child-gone',
+      name: 'gone.png',
+      user_metadata: undefined
+    })
+
+    vi.mocked(mocks.resolveOutputAssetItems).mockResolvedValue([
+      childKept,
+      childDeleted
+    ])
+
+    const initialCover = createAsset({
+      id: 'parent',
+      name: 'parent.png',
+      user_metadata: {
+        jobId: 'job-1',
+        nodeId: 'node-1',
+        subfolder: 'outputs',
+        allOutputs: [
+          { filename: 'parent.png' },
+          { filename: 'keep.png' },
+          { filename: 'gone.png' }
+        ]
+      }
+    })
+    const assets = ref<AssetItem[]>([initialCover])
+
+    const { assetItems, toggleStack } = useOutputStacks({ assets })
+    await toggleStack(initialCover)
+
+    expect(assetItems.value.map((i) => i.asset.id)).toEqual([
+      initialCover.id,
+      childKept.id,
+      childDeleted.id
+    ])
+
+    // Simulate a successful per-output delete: updateHistory() refreshes the
+    // cover with a shorter allOutputs. The previously cached child whose
+    // filename is no longer present must vanish from the rendered list.
+    assets.value = [
+      createAsset({
+        ...initialCover,
+        user_metadata: {
+          ...initialCover.user_metadata!,
+          allOutputs: [{ filename: 'parent.png' }, { filename: 'keep.png' }]
+        }
+      })
+    ]
+
+    expect(assetItems.value.map((i) => i.asset.id)).toEqual([
+      'parent',
+      childKept.id
+    ])
+  })
 })

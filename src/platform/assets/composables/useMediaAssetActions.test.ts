@@ -174,6 +174,11 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
+const mockInvalidateJobOutputs = vi.hoisted(() => vi.fn())
+vi.mock('@/services/jobOutputCache', () => ({
+  invalidateJobOutputs: mockInvalidateJobOutputs
+}))
+
 const mockAppGraph = vi.hoisted(() => ({ value: { _nodes: [] as unknown[] } }))
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -1084,6 +1089,7 @@ describe('useMediaAssetActions', () => {
 
     it('routes cloud output deletion through assetService.deleteAsset using the resolved UUID', async () => {
       mockIsCloud.value = true
+      mockGetOutputAssetMetadata.mockReturnValue({ jobId: 'job-abc' })
       mockFindOutputAssetIdByHash.mockResolvedValue(
         'real-output-asset-uuid-1234'
       )
@@ -1111,6 +1117,10 @@ describe('useMediaAssetActions', () => {
 
       const { api } = await import('@/scripts/api')
       expect(api.deleteItem).not.toHaveBeenCalled()
+
+      // Stack/folder/job-detail caches must be invalidated so the deleted
+      // child does not linger in the rendered list after success.
+      expect(mockInvalidateJobOutputs).toHaveBeenCalledWith('job-abc')
     })
 
     it('falls back to history delete in OSS mode (no per-asset endpoint available)', async () => {

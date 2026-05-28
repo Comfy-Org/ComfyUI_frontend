@@ -114,3 +114,12 @@ export async function getJobWorkflow(
   const detail = await getJobDetail(jobId)
   return await extractWorkflow(detail)
 }
+
+/**
+ * Drops cached task and detail entries for a job so subsequent reads pick up
+ * server-side changes (e.g. an output deleted via DELETE /assets/{id}).
+ */
+export function invalidateJobOutputs(jobId: string): void {
+  taskCache.delete(jobId)
+  jobDetailCache.delete(jobId)
+}

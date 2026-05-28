@@ -7,6 +7,7 @@ import {
   getOutputKey,
   resolveOutputAssetItems
 } from '@/platform/assets/utils/outputAssetUtil'
+import type { ResultItemImpl } from '@/stores/queueStore'
 
 export type OutputStackListItem = {
   key: string
@@ -38,7 +39,8 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
       }
 
       const children = stackChildrenByJobId.value[jobId] ?? []
-      for (const child of children) {
+      const filteredChildren = filterChildrenAgainstCover(asset, children)
+      for (const child of filteredChildren) {
         items.push({
           key: `asset-${child.id}`,
           asset: child,
@@ -57,6 +59,25 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
   function getStackJobId(asset: AssetItem): string | null {
     const metadata = getOutputAssetMetadata(asset.user_metadata)
     return metadata?.jobId ?? null
+  }
+
+  // Drops cached children whose underlying output is no longer present on the
+  // cover's refreshed `allOutputs` list. Lets per-output deletes disappear
+  // immediately after `updateHistory()` re-fetches the cover, without waiting
+  // for the user to collapse/expand the stack.
+  function filterChildrenAgainstCover(
+    cover: AssetItem,
+    children: AssetItem[]
+  ): AssetItem[] {
+    const metadata = getOutputAssetMetadata(cover.user_metadata)
+    const allOutputs = metadata?.allOutputs as
+      | readonly ResultItemImpl[]
+      | undefined
+    if (!allOutputs?.length) return children
+    const validFilenames = new Set(
+      allOutputs.map((output) => output.filename).filter(Boolean)
+    )
+    return children.filter((child) => validFilenames.has(child.name))
   }
 
   function isStackExpanded(asset: AssetItem): boolean {

@@ -14,6 +14,7 @@ import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
+import { invalidateJobOutputs } from '@/services/jobOutputCache'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -684,6 +685,16 @@ export function useMediaAssetActions() {
               )
 
               if (hasOutputAssets) {
+                // Drop cached job-detail/task entries so the next stack
+                // expand or folder open sees the post-delete output list.
+                assetArray.forEach((asset, index) => {
+                  if (results[index].status !== 'fulfilled') return
+                  if (getAssetType(asset) !== 'output') return
+                  const jobId =
+                    getOutputAssetMetadata(asset.user_metadata)?.jobId ??
+                    asset.id
+                  if (jobId) invalidateJobOutputs(jobId)
+                })
                 await assetsStore.updateHistory()
               }
               if (hasInputAssets) {
