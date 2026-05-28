@@ -1,0 +1,63 @@
+name: 'CI: Website Security Scan'
+
+on:
+  push:
+    branches: [main, master, website/*]
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      app-website-changes: ${{ steps.changes.outputs.app-website-changes }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
+  scan:
+    needs: changes
+    if: ${{ needs.changes.outputs.app-website-changes == 'true' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Scan for new Astro `define:vars` usage
+        run: |
+          set -euo pipefail
+          hits=$(rg -n --glob '*.astro' \
+            --glob '!apps/website/src/layouts/BaseLayout.astro' \
+            'define:vars' apps/website/src || true)
+          if [ -n "$hits" ]; then
+            echo "$hits"
+            echo 'ERROR: New `define:vars` usage detected.'
+            echo 'Pre-6.1.6 Astro versions had an XSS in define:vars (GHSA-j687-52p2-xcff).'
+            echo 'If the value is statically known and trusted, allow-list the file in'
+            echo '.github/workflows/ci-website-security-scan.yaml with a justification.'
+            exit 1
+          fi
+          echo 'No new define:vars usage'
+
+      - name: Scan for Astro server islands (`server:defer`)
+        run: |
+          set -euo pipefail
+          if rg -n --glob '*.astro' 'server:defer' apps/website/src; then
+            echo 'ERROR: Astro server islands (`server:defer`) are not permitted.'
+            echo 'Pre-6.1.10 Astro versions are vulnerable to cross-component replay'
+            echo 'of encrypted island parameters (GHSA-xr5h-phrj-8vxv).'
+            echo 'If server islands are needed, first upgrade Astro to >=6.1.10 and'
+            echo 'remove this check.'
+            exit 1
+          fi
+          echo 'No server:defer usage'
