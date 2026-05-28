@@ -4545,6 +4545,12 @@ const translations = {
   'affiliate.audience.eyebrow': {
     en: 'If You Are…',
     'zh-CN': '如果你是…'
+  },
+
+  // AffiliateHowItWorksSection
+  'affiliate.howItWorks.heading': {
+    en: 'How it works',
+    'zh-CN': '运作方式'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
