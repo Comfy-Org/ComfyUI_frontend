@@ -12,13 +12,27 @@ export function getWidgetState(
 }
 
 /**
- * Lookup helper for callers that hold a raw `(graphId, nodeId, name)` triple
- * rather than a widget instance with a derived `entityId`. Returns
- * `undefined` when any input would produce a non-derivable entity id.
+ * Transitional bridge — DO NOT use from new code.
  *
- * Prefer `getWidgetState(widget.entityId)` when a widget object is in scope;
- * the branded `WidgetEntityId` prevents producer/consumer drift that loose
- * triples allow.
+ * This function exists only so the existing `(graphId, nodeId, name)`-keyed
+ * call sites can migrate to the world-backed lookup incrementally. Every
+ * new consumer must take a `WidgetEntityId` instead and call
+ * `getWidgetState(widget.entityId)` directly; the branded entity id is the
+ * canonical key (see ADR 0008 §3.3 and the entity-id contract in
+ * `src/world/entityIds.ts`).
+ *
+ * Removal plan: refactor the remaining triple-form callers
+ * (`src/renderer/glsl/*`, `src/renderer/extensions/vueNodes/**`,
+ * `src/extensions/core/uploadAudio.ts`) to plumb the `WidgetEntityId`
+ * through their call chain, then delete this function. Until then, treat
+ * every new reference as a regression — extend the upstream API so the
+ * caller can hold the entity id instead.
+ *
+ * Returns `undefined` when any input would produce a non-derivable entity
+ * id (missing graph, unbound node id `-1`, etc.).
+ *
+ * @deprecated Use `getWidgetState(widget.entityId)`. Pending removal once
+ * the listed call sites migrate.
  */
 export function getWidgetStateByTriple(
   graphId: UUID | undefined,
