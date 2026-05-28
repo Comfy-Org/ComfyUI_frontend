@@ -9,6 +9,7 @@ import {
 } from '../../data/learningTutorials'
 import { t } from '../../i18n/translations'
 import Badge from '../common/Badge.vue'
+import PillButton from '../common/PillButton.vue'
 import TutorialDetailDialog from './TutorialDetailDialog.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -75,28 +76,29 @@ const activeTutorial = () =>
               {{ t('learning.tutorials.titlePrefix', locale) }}
               {{ tutorial.title[locale] }}
             </h3>
-            <a
+            <PillButton
+              v-if="tutorial.href"
               :href="tutorial.href"
-              class="text-primary-comfy-yellow group flex shrink-0 items-center gap-2 text-xs leading-[115%] font-extrabold tracking-wide uppercase lg:text-sm"
+              icon-position="left"
+              class="shrink-0 uppercase"
+              variant="ghost"
+              size="sm"
             >
-              <span
-                class="bg-primary-comfy-yellow flex size-6 items-center justify-center rounded-lg transition-transform group-hover:translate-x-0.5 lg:size-7"
-              >
+              {{ t('cta.tryWorkflow', locale) }}
+              <template #icon>
                 <svg
-                  class="text-primary-comfy-ink size-3 lg:size-3.5"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   stroke-width="3"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  aria-hidden="true"
+                  class="size-4"
                 >
                   <polyline points="9 6 15 12 9 18" />
                 </svg>
-              </span>
-              {{ t('cta.tryWorkflow', locale) }}
-            </a>
+              </template>
+            </PillButton>
           </div>
 
           <ul class="flex flex-wrap gap-2">
