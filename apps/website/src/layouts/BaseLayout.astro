@@ -32,7 +32,7 @@ const ogImageURL = new URL(ogImage, siteBase)
 const rawLocale = Astro.currentLocale ?? 'en'
 const locale: Locale = rawLocale === 'zh-CN' ? 'zh-CN' : 'en'
 const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
-const githubStars = rawStars !== null ? formatStarCount(rawStars) : ''
+const githubStars = rawStars ? formatStarCount(rawStars) : ''
 
 const gtmId = 'GTM-NP9JM6K7'
 const gtmEnabled = import.meta.env.PROD
