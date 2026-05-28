@@ -139,7 +139,7 @@ function addMultilineWidget(
         const atTop = deltaY < 0 && inputEl.scrollTop === 0
         const atBottom =
           deltaY > 0 &&
-          inputEl.scrollTop + inputEl.clientHeight >= inputEl.scrollHeight
+          inputEl.scrollHeight - inputEl.scrollTop - inputEl.clientHeight < 1
         if (!atTop && !atBottom) {
           event.stopPropagation()
           return

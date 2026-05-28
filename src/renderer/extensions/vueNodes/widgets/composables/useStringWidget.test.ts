@@ -7,13 +7,14 @@ import type { DOMWidget } from '@/scripts/domWidget'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import { createMockDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 
-const { canvasMock } = vi.hoisted(() => ({
+const { canvasMock, settingsMock } = vi.hoisted(() => ({
   canvasMock: {
     processMouseDown: vi.fn(),
     processMouseMove: vi.fn(),
     processMouseUp: vi.fn(),
     processMouseWheel: vi.fn()
-  }
+  },
+  settingsMock: { get: vi.fn((_key: string) => false as boolean) }
 }))
 
 vi.mock('@/scripts/app', () => ({
@@ -27,7 +28,7 @@ vi.mock('@/stores/widgetValueStore', () => ({
   useWidgetValueStore: () => ({ getWidget: () => undefined })
 }))
 vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: () => false })
+  useSettingStore: () => settingsMock
 }))
 
 function createStringWidget(node: LGraphNode) {
@@ -107,10 +108,15 @@ describe('useStringWidget (multiline)', () => {
         scrollHeight: 500,
         clientHeight: 100
       })
-      inputEl.dispatchEvent(
-        new WheelEvent('wheel', { deltaY: 100, bubbles: true })
-      )
+      const event = new WheelEvent('wheel', {
+        deltaY: 100,
+        bubbles: true,
+        cancelable: true
+      })
+      const stopPropSpy = vi.spyOn(event, 'stopPropagation')
+      inputEl.dispatchEvent(event)
       expect(canvasMock.processMouseWheel).not.toHaveBeenCalled()
+      expect(stopPropSpy).toHaveBeenCalledOnce()
     })
 
     it('passes scroll to canvas when scrollable textarea reaches bottom boundary', () => {
@@ -121,7 +127,28 @@ describe('useStringWidget (multiline)', () => {
         clientHeight: 100
       })
       inputEl.dispatchEvent(
-        new WheelEvent('wheel', { deltaY: 100, bubbles: true })
+        new WheelEvent('wheel', {
+          deltaY: 100,
+          bubbles: true,
+          cancelable: true
+        })
+      )
+      expect(canvasMock.processMouseWheel).toHaveBeenCalledTimes(1)
+    })
+
+    it('passes scroll to canvas at bottom boundary with sub-pixel scrollTop (HiDPI)', () => {
+      const { inputEl } = setup()
+      makeScrollableTextarea(inputEl, {
+        scrollTop: 399.6,
+        scrollHeight: 500,
+        clientHeight: 100
+      })
+      inputEl.dispatchEvent(
+        new WheelEvent('wheel', {
+          deltaY: 100,
+          bubbles: true,
+          cancelable: true
+        })
       )
       expect(canvasMock.processMouseWheel).toHaveBeenCalledTimes(1)
     })
@@ -134,7 +161,11 @@ describe('useStringWidget (multiline)', () => {
         clientHeight: 100
       })
       inputEl.dispatchEvent(
-        new WheelEvent('wheel', { deltaY: -100, bubbles: true })
+        new WheelEvent('wheel', {
+          deltaY: -100,
+          bubbles: true,
+          cancelable: true
+        })
       )
       expect(canvasMock.processMouseWheel).toHaveBeenCalledTimes(1)
     })
@@ -146,10 +177,35 @@ describe('useStringWidget (multiline)', () => {
         scrollHeight: 500,
         clientHeight: 100
       })
-      inputEl.dispatchEvent(
-        new WheelEvent('wheel', { deltaY: -100, bubbles: true })
-      )
+      const event = new WheelEvent('wheel', {
+        deltaY: -100,
+        bubbles: true,
+        cancelable: true
+      })
+      const stopPropSpy = vi.spyOn(event, 'stopPropagation')
+      inputEl.dispatchEvent(event)
       expect(canvasMock.processMouseWheel).not.toHaveBeenCalled()
+      expect(stopPropSpy).toHaveBeenCalledOnce()
+    })
+
+    it('passes scroll to canvas when mouse wheel (not trackpad) scrolls at boundary with gestures enabled', () => {
+      settingsMock.get.mockImplementation(
+        (key: string) => key === 'LiteGraph.Pointer.TrackpadGestures'
+      )
+      const { inputEl } = setup()
+      makeScrollableTextarea(inputEl, {
+        scrollTop: 400,
+        scrollHeight: 500,
+        clientHeight: 100
+      })
+      inputEl.dispatchEvent(
+        new WheelEvent('wheel', {
+          deltaY: 100,
+          bubbles: true,
+          cancelable: true
+        })
+      )
+      expect(canvasMock.processMouseWheel).toHaveBeenCalledTimes(1)
     })
 
     it('passes scroll to canvas when textarea is not scrollable', () => {
@@ -160,7 +216,11 @@ describe('useStringWidget (multiline)', () => {
         clientHeight: 100
       })
       inputEl.dispatchEvent(
-        new WheelEvent('wheel', { deltaY: 100, bubbles: true })
+        new WheelEvent('wheel', {
+          deltaY: 100,
+          bubbles: true,
+          cancelable: true
+        })
       )
       expect(canvasMock.processMouseWheel).toHaveBeenCalledTimes(1)
     })
