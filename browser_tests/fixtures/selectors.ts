@@ -10,6 +10,7 @@ export const TestIds = {
     nodeLibrarySearch: 'node-library-search',
     nodePreviewCard: 'node-preview-card',
     workflows: 'workflows-sidebar',
+    workflowsRefreshButton: 'workflows-refresh-button',
     modeToggle: 'mode-toggle'
   },
   tree: {
