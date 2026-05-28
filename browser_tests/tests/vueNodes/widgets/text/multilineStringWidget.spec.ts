@@ -54,4 +54,65 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
     await textarea.click({ button: 'right' })
     await expect(vueContextMenu).toBeVisible()
   })
+
+  test.describe('wheel scroll boundary', () => {
+    async function fillScrollable(
+      textarea: ReturnType<typeof getFirstMultilineStringWidget>
+    ) {
+      await textarea.fill(
+        Array.from({ length: 50 }, () => 'Lorem ipsum dolor sit amet').join(
+          '\n'
+        )
+      )
+      await expect
+        .poll(() =>
+          textarea.evaluate((el) => el.scrollHeight > el.clientHeight)
+        )
+        .toBe(true)
+    }
+
+    test('does not zoom canvas when scrolling mid-content', async ({
+      comfyPage
+    }) => {
+      const textarea = getFirstMultilineStringWidget(comfyPage)
+      await fillScrollable(textarea)
+      await textarea.evaluate((el) => {
+        el.scrollTop = Math.floor((el.scrollHeight - el.clientHeight) / 2)
+      })
+
+      const scaleBefore = await comfyPage.canvasOps.getScale()
+      const box = await textarea.boundingBox()
+      if (!box) throw new Error('textarea has no bounding box')
+      await comfyPage.page.mouse.move(
+        box.x + box.width / 2,
+        box.y + box.height / 2
+      )
+      await comfyPage.page.mouse.wheel(0, 120)
+      await comfyPage.nextFrame()
+
+      expect(await comfyPage.canvasOps.getScale()).toBeCloseTo(scaleBefore, 3)
+    })
+
+    test('passes wheel through to canvas at the bottom boundary', async ({
+      comfyPage
+    }) => {
+      const textarea = getFirstMultilineStringWidget(comfyPage)
+      await fillScrollable(textarea)
+      await textarea.evaluate((el) => {
+        el.scrollTop = el.scrollHeight
+      })
+
+      const scaleBefore = await comfyPage.canvasOps.getScale()
+      const box = await textarea.boundingBox()
+      if (!box) throw new Error('textarea has no bounding box')
+      await comfyPage.page.mouse.move(
+        box.x + box.width / 2,
+        box.y + box.height / 2
+      )
+      await comfyPage.page.mouse.wheel(0, 120)
+      await expect
+        .poll(() => comfyPage.canvasOps.getScale())
+        .not.toBeCloseTo(scaleBefore, 3)
+    })
+  })
 })
