@@ -22,14 +22,16 @@ const STROKE_WIDTHS = ['1', '1.3', '1.5', '2', '2.5']
 
 const SCALE = 1.2
 
+class InvalidIconProbeError extends Error {}
+
 function getDynamicCSSRulesWithStroke(icon, strokeWidth) {
   const nameParts = icon.split(/--|:/)
   if (nameParts.length !== 2) {
-    throw new Error(`Invalid icon name: "${icon}"`)
+    throw new InvalidIconProbeError(`Invalid icon name: "${icon}"`)
   }
   const [prefix, name] = nameParts
   if (!(prefix.match(matchIconName) && name.match(matchIconName))) {
-    throw new Error(`Invalid icon name: "${icon}"`)
+    throw new InvalidIconProbeError(`Invalid icon name: "${icon}"`)
   }
   const iconSet = loadIconSet(prefix)
   if (!iconSet) {
@@ -61,8 +63,9 @@ export default plugin(({ matchComponents }) => {
       [`icon-s${sw}`]: (icon) => {
         try {
           return getDynamicCSSRulesWithStroke(icon, sw)
-        } catch {
-          return {}
+        } catch (err) {
+          if (err instanceof InvalidIconProbeError) return {}
+          throw err
         }
       }
     })
