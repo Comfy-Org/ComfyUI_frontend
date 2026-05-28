@@ -437,7 +437,7 @@ describe('useErrorGroups', () => {
       )
     })
 
-    it('uses credit-note general display fields for unknown runtime execution errors', async () => {
+    it('uses general execution_failed display fields for unrecognized runtime execution errors', async () => {
       mockIsCloud.value = true
       const { store, groups } = createErrorGroups()
       store.lastExecutionError = {

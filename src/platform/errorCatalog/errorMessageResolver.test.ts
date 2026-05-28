@@ -612,7 +612,6 @@ describe('errorMessageResolver', () => {
     expect(
       resolveRunErrorMessage({
         kind: 'execution',
-        isCloud: true,
         nodeDisplayName: 'KSampler',
         error: executionError(
           'torch.OutOfMemoryError',
@@ -635,7 +634,6 @@ describe('errorMessageResolver', () => {
     expect(
       resolveRunErrorMessage({
         kind: 'execution',
-        isCloud: true,
         nodeDisplayName: 'Load Image',
         error: executionError('ImageDownloadError', 'Failed to validate images')
       })
@@ -652,7 +650,6 @@ describe('errorMessageResolver', () => {
     expect(
       resolveRunErrorMessage({
         kind: 'execution',
-        isCloud: true,
         nodeDisplayName: 'Load Image',
         error: executionError(
           'IsADirectoryError',
@@ -669,7 +666,6 @@ describe('errorMessageResolver', () => {
     expect(
       resolveRunErrorMessage({
         kind: 'execution',
-        isCloud: true,
         nodeDisplayName: 'File Reader',
         error: executionError(
           'RuntimeError',
@@ -684,7 +680,6 @@ describe('errorMessageResolver', () => {
     expect(
       resolveRunErrorMessage({
         kind: 'execution',
-        isCloud: false,
         nodeDisplayName: 'CLIP Text Encode',
         error: executionError(
           'RuntimeError',
@@ -703,7 +698,6 @@ describe('errorMessageResolver', () => {
     expect(
       resolveRunErrorMessage({
         kind: 'execution',
-        isCloud: true,
         nodeDisplayName: 'KSampler',
         error: executionError(
           'OOMError',
@@ -721,7 +715,6 @@ describe('errorMessageResolver', () => {
     expect(
       resolveRunErrorMessage({
         kind: 'execution',
-        isCloud: true,
         nodeDisplayName: 'KSampler',
         error: executionError(
           'RuntimeError',
@@ -738,7 +731,6 @@ describe('errorMessageResolver', () => {
     expect(
       resolveRunErrorMessage({
         kind: 'execution',
-        isCloud: false,
         nodeDisplayName: 'KSampler',
         error: executionError('RuntimeError', 'GPU out of memory')
       })
@@ -822,7 +814,6 @@ describe('errorMessageResolver', () => {
       expect(
         resolveRunErrorMessage({
           kind: 'execution',
-          isCloud: true,
           nodeDisplayName: 'API Node',
           error: executionError(type, message)
         })
@@ -1221,7 +1212,6 @@ describe('errorMessageResolver', () => {
     expect(
       resolveRunErrorMessage({
         kind: 'execution',
-        isCloud: false,
         nodeDisplayName: 'KSampler',
         error: executionError(
           'ServiceError',
@@ -1299,7 +1289,6 @@ describe('errorMessageResolver', () => {
     expect(
       resolveRunErrorMessage({
         kind: 'execution',
-        isCloud: true,
         nodeDisplayName: 'KSampler',
         error: executionError(
           'RuntimeError',

@@ -23,8 +23,7 @@ export function resolveRunErrorMessage(
       })
     case 'execution':
       return resolveExecutionErrorMessage(source.error, {
-        nodeDisplayName: source.nodeDisplayName,
-        isCloud: source.isCloud
+        nodeDisplayName: source.nodeDisplayName
       })
   }
 }

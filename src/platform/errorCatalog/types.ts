@@ -48,7 +48,6 @@ export type RunErrorMessageSource =
       kind: 'execution'
       error: ExecutionErrorWsMessage
       nodeDisplayName: string
-      isCloud: boolean
     }
 
 export type MissingErrorMessageSource =

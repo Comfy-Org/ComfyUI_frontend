@@ -432,8 +432,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
             kind: 'execution',
             error: e,
             nodeDisplayName:
-              resolveNodeInfo(String(e.node_id)).title || e.node_type,
-            isCloud
+              resolveNodeInfo(String(e.node_id)).title || e.node_type
           })
         }
       ],
