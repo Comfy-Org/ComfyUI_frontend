@@ -1638,7 +1638,12 @@ export class ComfyApp {
                   workflow: queuedWorkflow
                 })
               }
-            } catch (error) {}
+            } catch (error) {
+              console.warn('Failed to store queued job metadata', {
+                promptId: res.prompt_id,
+                error
+              })
+            }
             if (hasNodeErrors) {
               if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
                 executionErrorStore.showErrorOverlay()
