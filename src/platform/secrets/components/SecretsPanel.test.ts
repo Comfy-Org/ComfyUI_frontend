@@ -8,10 +8,11 @@ import { createI18n } from 'vue-i18n'
 import SecretsPanel from '@/platform/secrets/components/SecretsPanel.vue'
 import type { SecretMetadata } from '@/platform/secrets/types'
 
+const DIALOG_HANDLE = { key: 'confirm-delete-secret' }
 const mockDeleteSecret = vi.fn().mockResolvedValue(undefined)
 const mockFetchSecrets = vi.fn().mockResolvedValue(undefined)
 const mockCloseDialog = vi.fn()
-const mockShowConfirmDialog = vi.fn()
+const mockShowConfirmDialog = vi.fn(() => DIALOG_HANDLE)
 
 const mockSecret: SecretMetadata = {
   id: 'secret-1',
@@ -110,7 +111,7 @@ describe('SecretsPanel', () => {
     expect(opts.footerProps.confirmVariant).toBe('destructive')
   })
 
-  it('onConfirm closes the dialog and deletes the secret', async () => {
+  it('onConfirm closes the dialog with the helper handle and deletes the secret', async () => {
     const user = userEvent.setup()
     renderPanel()
     await user.click(screen.getByTestId('delete-trigger'))
@@ -118,11 +119,11 @@ describe('SecretsPanel', () => {
     const opts = mockShowConfirmDialog.mock.calls[0][0]
     await opts.footerProps.onConfirm()
 
-    expect(mockCloseDialog).toHaveBeenCalledOnce()
+    expect(mockCloseDialog).toHaveBeenCalledExactlyOnceWith(DIALOG_HANDLE)
     expect(mockDeleteSecret).toHaveBeenCalledWith(mockSecret)
   })
 
-  it('onCancel closes the dialog without deleting', async () => {
+  it('onCancel closes the dialog with the helper handle without deleting', async () => {
     const user = userEvent.setup()
     renderPanel()
     await user.click(screen.getByTestId('delete-trigger'))
@@ -130,7 +131,7 @@ describe('SecretsPanel', () => {
     const opts = mockShowConfirmDialog.mock.calls[0][0]
     opts.footerProps.onCancel()
 
-    expect(mockCloseDialog).toHaveBeenCalledOnce()
+    expect(mockCloseDialog).toHaveBeenCalledExactlyOnceWith(DIALOG_HANDLE)
     expect(mockDeleteSecret).not.toHaveBeenCalled()
   })
 })
