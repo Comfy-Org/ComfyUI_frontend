@@ -1,11 +1,15 @@
 # Appendix: ECS Pattern Survey
 
 _A survey of mainstream Entity Component System libraries — bitECS, miniplex,
-koota, ECSY, and Bevy — captured during the world-consolidation analysis that
-shipped slice 1 of [ADR 0008](../adr/0008-entity-component-system.md). This
-appendix records which structural patterns our `src/world/` substrate adopts,
-which it deliberately departs from, and where the trade-offs are load-bearing
-rather than incidental._
+koota, ECSY, Thyseus, and Bevy — captured during the world-consolidation
+analysis that shipped slice 1 of
+[ADR 0008](../adr/0008-entity-component-system.md). This appendix records
+which structural patterns our `src/world/` substrate adopts, which it
+deliberately departs from, and where the trade-offs are load-bearing rather
+than incidental. Thyseus is called out specifically because it is the most
+Bevy-shaped of the TypeScript ECSs surveyed — its `Commands` parameter is the
+closest external analog to the command layer ADR 0003 / ADR 0008 are
+converging on, so it gets dedicated treatment in §2.5 and §3.5._
 
 The in-code anchors for the load-bearing constraints discussed below are the
 doc-comments in [src/world/world.ts](../../src/world/world.ts) (storage
@@ -16,27 +20,34 @@ contract) — see §3 below.
 
 ## 1. Survey Comparison
 
-Five libraries were sampled for structural patterns: where component
+Six libraries were sampled for structural patterns: where component
 definitions live relative to the substrate, how components are declared,
 how entities are identified, and roughly how large the substrate's public
 surface is. Sources: the linked READMEs and docs.
 
-| Library                                           | Component placement                  | Component definition style    | Entity ID type       |  Approx. # core exports |
-| ------------------------------------------------- | ------------------------------------ | ----------------------------- | -------------------- | ----------------------: |
-| [bitECS](https://github.com/NateTheGreatt/bitECS) | Outside the substrate; user's choice | plain arrays / objects        | `number` (unbranded) |                     ~12 |
-| [miniplex](https://github.com/hmans/miniplex)     | Colocated with the `Entity` type     | properties on a TS type       | plain object ref     |                      ~5 |
-| [koota](https://github.com/pmndrs/koota)          | Colocated with the consumer          | `trait({...})` factory        | numeric `.id()`      | ~15 (core) + ~8 (react) |
-| [ECSY](https://github.com/ecsyjs/ecsy)            | User's choice                        | `class extends Component`     | `Entity` object      |                     ~10 |
-| [Bevy](https://bevyengine.org/) (Rust, for shape) | Plugin-owned (industry std)          | `#[derive(Component)] struct` | `Entity(u64)`        |                     n/a |
+| Library                                            | Component placement                  | Component definition style                     | Entity ID type       |                                                 Approx. # core exports |
+| -------------------------------------------------- | ------------------------------------ | ---------------------------------------------- | -------------------- | ---------------------------------------------------------------------: |
+| [bitECS](https://github.com/NateTheGreatt/bitECS)  | Outside the substrate; user's choice | plain arrays / objects                         | `number` (unbranded) |                                                                    ~12 |
+| [miniplex](https://github.com/hmans/miniplex)      | Colocated with the `Entity` type     | properties on a TS type                        | plain object ref     |                                                                     ~5 |
+| [koota](https://github.com/pmndrs/koota)           | Colocated with the consumer          | `trait({...})` factory                         | numeric `.id()`      |                                                ~15 (core) + ~8 (react) |
+| [ECSY](https://github.com/ecsyjs/ecsy)             | User's choice                        | `class extends Component`                      | `Entity` object      |                                                                    ~10 |
+| [Thyseus](https://github.com/JaimeGensler/thyseus) | Colocated with the consumer          | plain ES6 `class` (instances stored as values) | numeric (via handle) | ~25 (`World`/`Schedule`/`Query`/`Commands`/filters/`Resource`/`Event`) |
+| [Bevy](https://bevyengine.org/) (Rust, for shape)  | Plugin-owned (industry std)          | `#[derive(Component)] struct`                  | `Entity(u64)`        |                                                                    n/a |
 
 Two structural patterns are unanimous across the surveyed libraries:
 
 1. **Component definitions live with the code that owns the data**, not
    inside the substrate package. Whether by explicit recommendation
-   (Bevy plugins, koota's colocation guidance) or by default (bitECS,
-   miniplex), no surveyed substrate ships pre-defined component types.
+   (Bevy plugins, koota's colocation guidance, Thyseus's
+   `import { Position, Velocity } from './components'` convention) or by
+   default (bitECS, miniplex), no surveyed substrate ships pre-defined
+   component types.
 2. **Substrate surface area is small** — bitECS at ~12 exports, koota at
-   ~15, miniplex at ~5. ECSY is the outlier with a wider class hierarchy.
+   ~15, miniplex at ~5. ECSY and Thyseus are the outliers: ECSY exposes a
+   wider class hierarchy, and Thyseus exposes a broader Bevy-shaped
+   surface (Commands, Schedules, Resources, Events, filter combinators)
+   because it commits to a full system-execution runtime, not just
+   storage.
 
 Our slice-1 end state — five source files under
 [src/world/](../../src/world/), ~14 exported names total — sits squarely in
@@ -106,8 +117,9 @@ storage choice rather than being layered on top.
 
 No surveyed TypeScript ECS uses branded IDs. bitECS uses unbranded
 `number`, miniplex uses plain object references, koota uses a numeric
-`.id()`. Our `Brand<T, Tag>` over each entity kind enables the
-type-level cross-kind isolation assertion in
+`.id()`, and Thyseus hands back a numeric handle wrapped in `Commands`
+APIs. Our `Brand<T, Tag>` over each entity kind enables the type-level
+cross-kind isolation assertion in
 [world.test.ts](../../src/world/world.test.ts) and documents slice-2/3/4
 entity kinds at compile time.
 
@@ -116,6 +128,53 @@ once `Position` lands on `NodeEntityId | RerouteEntityId` (slice 2) and
 `Connectivity` lands on `SlotEntityId` (slice 4); without brands, those
 component-key declarations would accept any numeric ID and silently allow
 cross-kind misuse.
+
+### 2.5 Commands pattern (Thyseus / Bevy) — direction we are converging on
+
+Thyseus mutates the World exclusively through a `Commands` system
+parameter:
+
+```ts
+export function spawnEntities(commands: Commands) {
+  commands.spawn().add(new Position()).add(new Velocity(1, 2))
+}
+```
+
+`commands.spawn()`, `.add(component)`, and `.remove(component)` enqueue
+deferred mutations against a command buffer; the World applies them at
+defined sync points in the schedule. This is the same shape Bevy uses
+and is the closest direct external analog to the mutation layer
+[ADR 0003](../adr/0003-crdt-based-layout-system.md) and the
+[World API and Command Layer](./ecs-world-command-api.md) describe for
+this codebase.
+
+We deliberately match the **shape** of this pattern: external callers
+submit commands; only the executor calls the World's imperative
+`setComponent` / `deleteEntity`. ADR 0008 §"Relationship to ADR 0003"
+spells this out, and the parallel with Thyseus is intentional — when we
+extend slice 1 with a command executor, the public seam will look much
+more like Thyseus's `Commands` than like koota's `entity.set(...)` or
+bitECS's `addComponent(world, ...)`.
+
+What we deliberately do **not** copy from Thyseus's commands surface,
+yet:
+
+- **Deferred buffering with schedule sync points.** Thyseus batches
+  commands and flushes them at well-defined frame phases for archetype
+  efficiency. Our command executor stays synchronous in slice 1 because
+  Vue reactivity wants writes to be observable in the same microtask,
+  and we have no archetype churn cost to amortize.
+- **Auto-injected `Commands` parameter.** Thyseus's runtime inspects
+  system signatures and injects `Commands`, `Query<...>`, `Res<...>`,
+  etc. We do not have a system-runner yet (see §3.5), so commands today
+  are called through a plain executor module rather than constructor
+  injection.
+
+The point of calling Thyseus out separately is that when ADR 0008 lands
+its command executor slice, "what does this look like in Thyseus?" is a
+load-bearing comparison point — not a curiosity. Diverging from the
+Bevy/Thyseus shape there should require an explicit justification, not
+silent drift.
 
 ---
 
@@ -145,10 +204,11 @@ locks in the contract.
 
 ### 3.2 SoA / archetype storage
 
-bitECS, koota, and miniplex use sparse-set / archetype storage internally
-for cache locality. Our `reactive(Map<EntityId, unknown>)` is closer to
-ECSY's AoS — slower iteration but **integrates natively with Vue's
-tracking**.
+bitECS, koota, miniplex, and Thyseus use sparse-set / archetype storage
+internally for cache locality — Thyseus is explicitly archetypal and
+sells "lean memory use and cache-friendly iteration" as a headline
+feature. Our `reactive(Map<EntityId, unknown>)` is closer to ECSY's AoS
+— slower iteration but **integrates natively with Vue's tracking**.
 
 The surface trade-off is performance; the deeper trade-off is identity.
 SoA storage spreads each component's fields across parallel typed arrays,
@@ -228,6 +288,48 @@ parent component earns its keep yet. We may revisit this if multiple
 slices need a shared traversal API; until then, keeping hierarchy
 domain-local preserves the substrate's "no domain knowledge" property.
 
+### 3.5 Thyseus-style system runner, schedules, and worker threads
+
+Thyseus ships a full execution runtime alongside its storage:
+
+- **System functions as units of work**, written as plain functions
+  whose parameters (`Commands`, `Query<[Position, Velocity]>`,
+  `Res<Time>`, `Maybe<Velocity>`, `With<Active>`, `Without<Frozen>`)
+  describe the data they read and write.
+- **Schedules** (`class SetupSchedule extends Schedule {}`,
+  `world.runSchedule(SetupSchedule)`) name groups of systems and control
+  ordering / frequency, including fixed-update patterns.
+- **Boilerplate-free worker threads** for running disjoint systems in
+  parallel without `eval()`.
+- **Builder `World`** assembled imperatively
+  (`new World().addSystems(SetupSchedule, spawnEntities).prepare()`).
+
+We deliberately do not adopt any of this in slice 1. The reasons:
+
+1. **Vue already owns scheduling.** Reactivity-driven recomputation,
+   `watch`, and component render passes are how work runs in this
+   codebase. Inserting a parallel system scheduler would mean every
+   piece of work has two possible execution contexts, and consumers
+   would have to know which one applies. ADR 0008's planned executor is
+   a thin command-application layer, not a fixed-step ECS schedule.
+2. **No parallelism budget to spend.** Worker-thread parallelism pays
+   off when systems are CPU-bound and clearly data-disjoint. ComfyUI
+   frontend's hot paths are render and DOM-bound; the cost of marshaling
+   state across threads would dwarf any gain at our entity counts.
+3. **Constructor-style parameter injection has a real DX cost.**
+   Thyseus's `Query<[Position, Velocity]>` injection requires the
+   runtime to introspect and resolve types at registration time. That
+   couples every system to the runner. The plain-function +
+   `world.getComponent` shape we use today stays trivially testable
+   without a `World` fixture.
+
+Revisitable if (a) we end up running solver-style passes that are
+clearly CPU-bound and disjoint, or (b) the command executor grows enough
+phase ordering that an explicit schedule abstraction earns its keep over
+ad-hoc call sites. Until then, "Thyseus has a scheduler so we should
+too" is not a sufficient argument — the slice-1 substrate intentionally
+stops at storage + identity.
+
 ---
 
 ## 4. When to Revisit
@@ -265,6 +367,13 @@ would be a regression.
 
 **Substrate-side parent/child relations.** Revisitable when ≥2 subsystems
 need parent traversal. At one consumer it stays domain-local.
+
+**Thyseus-style system runner / schedule / worker threads.** Revisitable
+only when the command executor grows multiple explicit phases that have
+to be ordered against each other, or when a profiled CPU-bound, clearly
+data-disjoint pass shows worker-thread parallelism would pay for the
+marshaling cost. Until both of those conditions land in a real ticket,
+keep the substrate at storage + identity and let Vue own scheduling.
 
 ---
 
