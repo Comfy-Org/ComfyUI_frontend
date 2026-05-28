@@ -138,6 +138,8 @@
     "hideLeftPanel": "Hide left panel",
     "showRightPanel": "Show right panel",
     "hideRightPanel": "Hide right panel",
+    "maximizeDialog": "Maximize dialog",
+    "restoreDialog": "Restore dialog",
     "or": "or",
     "defaultBanner": "default banner",
     "enableOrDisablePack": "Enable or disable pack",
@@ -584,7 +586,6 @@
     "Copy (Clipspace)": "Copy (Clipspace)",
     "Add Node": "Add Node",
     "Add Group": "Add Group",
-    "Convert to Group Node": "Convert to Group Node",
     "Manage Group Nodes": "Manage Group Nodes",
     "Add Group For Selected Nodes": "Add Group For Selected Nodes",
     "Save Selected as Template": "Save Selected as Template",
@@ -1381,7 +1382,6 @@
     "Group Selected Nodes": "Group Selected Nodes",
     "Toggle promotion of hovered widget": "Toggle promotion of hovered widget",
     "Unpack the selected Subgraph": "Unpack the selected Subgraph",
-    "Convert selected nodes to group node": "Convert selected nodes to group node",
     "Manage group nodes": "Manage group nodes",
     "Ungroup selected group nodes": "Ungroup selected group nodes",
     "About ComfyUI": "About ComfyUI",
@@ -1673,8 +1673,9 @@
     "latent": "latent",
     "mask": "mask",
     "api node": "api node",
-    "Bria": "Bria",
+    "Beeble": "Beeble",
     "video": "video",
+    "Bria": "Bria",
     "ByteDance": "ByteDance",
     "filters": "filters",
     "transform": "transform",
@@ -1721,6 +1722,7 @@
     "upscaling": "upscaling",
     "instructpix2pix": "instructpix2pix",
     "Kling": "Kling",
+    "Krea": "Krea",
     "samplers": "samplers",
     "operations": "operations",
     "training": "training",
@@ -1733,6 +1735,7 @@
     "MiniMax": "MiniMax",
     "model_specific": "model_specific",
     "geometry_estimation": "geometry_estimation",
+    "multigpu": "multigpu",
     "OpenAI": "OpenAI",
     "Sora": "Sora",
     "OpenRouter": "OpenRouter",
@@ -1807,6 +1810,7 @@
     "IMAGECOMPARE": "IMAGECOMPARE",
     "INT": "INT",
     "INTERP_MODEL": "INTERP_MODEL",
+    "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "LATENT",
     "LATENT_OPERATION": "LATENT_OPERATION",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
@@ -1952,6 +1956,7 @@
   },
   "load3d": {
     "switchCamera": "Switch Camera",
+    "retainViewOnReload": "Lock camera view across model reloads",
     "showGrid": "Show Grid",
     "backgroundColor": "Background Color",
     "lightIntensity": "Light Intensity",
@@ -3570,20 +3575,6 @@
     "getHelpTooltip": "Report this error and we'll help you resolve it",
     "enterSubgraph": "Enter subgraph",
     "seeError": "See Error",
-    "promptErrors": {
-      "prompt_no_outputs": {
-        "desc": "The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result."
-      },
-      "no_prompt": {
-        "desc": "The workflow data sent to the server is empty. This may be an unexpected system error."
-      },
-      "server_error_local": {
-        "desc": "The server encountered an unexpected error. Please check the server logs."
-      },
-      "server_error_cloud": {
-        "desc": "The server encountered an unexpected error. Please try again later."
-      }
-    },
     "errorHelp": "For more help, {github} or {support}",
     "errorHelpGithub": "submit a GitHub issue",
     "errorHelpSupport": "contact our support",
@@ -3667,6 +3658,161 @@
     "missingModels": "{count} required model is missing | {count} required models are missing",
     "swapNodes": "Some nodes can be replaced with alternatives",
     "missingMedia": "Some nodes are missing required inputs"
+  },
+  "errorCatalog": {
+    "fallbacks": {
+      "nodeName": "This node",
+      "inputName": "unknown input"
+    },
+    "validationErrors": {
+      "required_input_missing": {
+        "title": "Missing connection",
+        "message": "Required input slots have no connection feeding them.",
+        "details": "{nodeName} is missing a required input: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastTitle": "Required input missing",
+        "toastMessage": "{nodeName} is missing a required input: {inputName}"
+      },
+      "bad_linked_input": {
+        "title": "Invalid connection",
+        "message": "A node connection could not be read correctly.",
+        "details": "{nodeName} has an invalid connection for {inputName}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastTitle": "Invalid connection",
+        "toastMessage": "{nodeName} has an invalid connection for {inputName}."
+      },
+      "return_type_mismatch": {
+        "title": "Invalid connection",
+        "message": "Connected nodes are using incompatible input and output types.",
+        "details": "{nodeName} has an incompatible connection for {inputName}.",
+        "detailsWithTypes": "{nodeName}'s {inputName} input expects {expectedType}, but the connected output is {receivedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastTitle": "Invalid connection",
+        "toastMessage": "{nodeName} has an incompatible connection for {inputName}.",
+        "toastMessageWithTypes": "{nodeName}'s {inputName} input expects {expectedType}, but the connected output is {receivedType}."
+      },
+      "invalid_input_type": {
+        "title": "Invalid input",
+        "message": "An input value has the wrong type.",
+        "details": "{nodeName} couldn't convert {inputName} to the expected type.",
+        "detailsWithValue": "The value {receivedValue} for {nodeName}'s {inputName} couldn't be converted to {expectedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastTitle": "Invalid input",
+        "toastMessage": "{nodeName} couldn't convert {inputName} to the expected type.",
+        "toastMessageWithValue": "The value {receivedValue} for {nodeName}'s {inputName} couldn't be converted to {expectedType}."
+      },
+      "value_smaller_than_min": {
+        "title": "Input out of range",
+        "message": "Some input values are outside the allowed range.",
+        "details": "{nodeName} has a value below the minimum for {inputName}.",
+        "detailsWithValue": "The value {receivedValue} for {nodeName}'s {inputName} is below the minimum {minValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastTitle": "Input out of range",
+        "toastMessage": "{nodeName} has a value below the minimum for {inputName}.",
+        "toastMessageWithValue": "The value {receivedValue} for {nodeName}'s {inputName} is below the minimum {minValue}."
+      },
+      "value_bigger_than_max": {
+        "title": "Input out of range",
+        "message": "Some input values are outside the allowed range.",
+        "details": "{nodeName} has a value above the maximum for {inputName}.",
+        "detailsWithValue": "The value {receivedValue} for {nodeName}'s {inputName} is above the maximum {maxValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastTitle": "Input out of range",
+        "toastMessage": "{nodeName} has a value above the maximum for {inputName}.",
+        "toastMessageWithValue": "The value {receivedValue} for {nodeName}'s {inputName} is above the maximum {maxValue}."
+      },
+      "value_not_in_list": {
+        "title": "Invalid input",
+        "message": "Some input values are not available for this node.",
+        "details": "{nodeName} has an unsupported value for {inputName}.",
+        "detailsWithValue": "The value {receivedValue} for {nodeName}'s {inputName} is not available.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastTitle": "Invalid input",
+        "toastMessage": "{nodeName} has an unsupported value for {inputName}.",
+        "toastMessageWithValue": "The value {receivedValue} for {nodeName}'s {inputName} is not available."
+      },
+      "custom_validation_failed": {
+        "title": "Invalid input",
+        "message": "A node rejected one or more input values.",
+        "details": "{nodeName} rejected the value for {inputName}.",
+        "detailsWithRawDetails": "{nodeName} failed custom validation: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastTitle": "Invalid input",
+        "toastMessage": "{nodeName} rejected the value for {inputName}."
+      },
+      "exception_during_inner_validation": {
+        "title": "Validation failed",
+        "message": "The workflow couldn't validate a connected node.",
+        "details": "{nodeName} couldn't validate {inputName}.",
+        "detailsWithRawDetails": "{nodeName} couldn't validate {inputName}: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastTitle": "Validation failed",
+        "toastMessage": "{nodeName} couldn't validate {inputName}.",
+        "toastMessageWithRawDetails": "{nodeName} couldn't validate {inputName}: {rawDetails}"
+      },
+      "exception_during_validation": {
+        "title": "Validation failed",
+        "message": "The workflow could not be validated because a node validation check failed unexpectedly.",
+        "details": "{nodeName} failed during validation.",
+        "detailsWithRawDetails": "{nodeName} failed during validation: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Validation failed",
+        "toastMessage": "{nodeName} failed during validation.",
+        "toastMessageWithRawDetails": "{nodeName} failed during validation: {rawDetails}"
+      },
+      "dependency_cycle": {
+        "title": "Invalid workflow",
+        "message": "The workflow has a circular node connection.",
+        "details": "{nodeName} is part of a circular connection.",
+        "detailsWithRawDetails": "{nodeName} is part of a circular connection: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Invalid workflow",
+        "toastMessage": "{nodeName} is part of a circular connection."
+      },
+      "image_not_loaded": {
+        "title": "Image not loaded",
+        "message": "The system couldn't load this image.",
+        "details": "The image for {nodeName} couldn't be loaded. Try adding it again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Input image couldn't be loaded",
+        "toastMessage": "The image for {nodeName} couldn't be loaded. Try adding it again."
+      }
+    },
+    "promptErrors": {
+      "prompt_no_outputs": {
+        "title": "Prompt has no outputs",
+        "desc": "The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result."
+      },
+      "no_prompt": {
+        "title": "Workflow data is empty",
+        "desc": "The workflow data sent to the server is empty. This may be an unexpected system error."
+      },
+      "server_error_local": {
+        "title": "Server error",
+        "desc": "The server encountered an unexpected error. Please check the server logs."
+      },
+      "server_error_cloud": {
+        "title": "Server error",
+        "desc": "The server encountered an unexpected error. Please try again later."
+      },
+      "missing_node_type": {
+        "title": "Missing node type",
+        "desc": "A node type is missing or unavailable. The workflow may be corrupted or require a custom node."
+      },
+      "prompt_outputs_failed_validation": {
+        "title": "Prompt validation failed",
+        "desc": "The workflow has invalid node inputs. Fix the highlighted nodes before running it again."
+      },
+      "image_not_loaded": {
+        "title": "Image not loaded",
+        "desc": "The system couldn't load this image."
+      },
+      "out_of_memory": {
+        "title": "Generation failed",
+        "descLocal": "Not enough GPU memory. Try reducing complexity and run again.",
+        "descCloud": "Not enough GPU memory. Try reducing complexity and run again. No credits charged."
+      }
+    }
   },
   "help": {
     "recentReleases": "Recent releases",

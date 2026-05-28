@@ -42,7 +42,7 @@ vi.mock('@/composables/graph/useGraphNodeManager', () => ({
   getControlWidget: vi.fn(() => undefined)
 }))
 
-vi.mock('@/core/graph/subgraph/resolvePromotedWidgetSource', () => ({
+vi.mock('@/core/graph/subgraph/resolveConcretePromotedWidget', () => ({
   resolvePromotedWidgetSource: vi.fn(() => undefined)
 }))
 

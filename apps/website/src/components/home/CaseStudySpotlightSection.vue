@@ -12,7 +12,9 @@ const routes = getRoutes(locale)
 </script>
 
 <template>
-  <section class="bg-primary-comfy-ink px-4 py-20 lg:px-20 lg:py-24">
+  <section
+    class="bg-primary-comfy-ink max-w-9xl mx-auto px-4 py-20 lg:px-20 lg:py-24"
+  >
     <GlassCard
       class="flex flex-col gap-12 lg:flex-row lg:items-stretch lg:gap-8"
     >

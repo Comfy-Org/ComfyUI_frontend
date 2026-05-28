@@ -30,7 +30,7 @@ type FirebaseRuntimeConfig = {
  * be tweaked without a frontend release. Field types map 1:1 to a component
  * in our internal UI library — see `DynamicSurveyField.vue`.
  */
-export type OnboardingSurveyFieldType = 'single' | 'multi' | 'text'
+type OnboardingSurveyFieldType = 'single' | 'multi' | 'text'
 
 /**
  * A translatable string. Either:

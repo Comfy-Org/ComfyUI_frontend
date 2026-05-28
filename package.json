@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.45.13",
+  "version": "1.46.4",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -89,7 +89,7 @@
     "axios": "catalog:",
     "chart.js": "^4.5.0",
     "cva": "catalog:",
-    "dompurify": "^3.2.5",
+    "dompurify": "catalog:",
     "dotenv": "catalog:",
     "es-toolkit": "^1.39.9",
     "extendable-media-recorder": "^9.2.27",
@@ -184,7 +184,7 @@
     "unplugin-icons": "catalog:",
     "unplugin-typegpu": "catalog:",
     "unplugin-vue-components": "catalog:",
-    "uuid": "^11.1.0",
+    "uuid": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",
     "vite-plugin-html": "catalog:",
@@ -197,8 +197,8 @@
     "zod-to-json-schema": "catalog:"
   },
   "engines": {
-    "node": "24.x",
-    "pnpm": ">=11"
+    "node": ">=25",
+    "pnpm": ">=11.3"
   },
-  "packageManager": "pnpm@11.1.1"
+  "packageManager": "pnpm@11.3.0"
 }

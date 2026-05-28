@@ -1,0 +1,49 @@
+// PrimeVue overlays (Select, ColorPicker, Popover, Autocomplete, stacked
+// PrimeVue Dialogs) teleport to body. Reka treats clicks on body-portaled
+// elements as outside its dialog and would auto-dismiss on the first
+// interaction, tearing the overlay down mid-interaction. Treat any
+// PrimeVue overlay click as inside.
+const PRIMEVUE_OVERLAY_SELECTORS =
+  '.p-select-overlay, .p-colorpicker-panel, .p-popover, .p-autocomplete-overlay, .p-overlay, .p-overlay-mask, .p-dialog'
+
+// Reka portals its own dialogs / popovers / menus into the body too. When a
+// nested Reka layer opens on top of a non-modal parent, the parent's
+// DismissableLayer sees the focus shift / pointer-down as "outside" and would
+// dismiss itself. These selectors cover the portaled roots so we can treat
+// interactions on them as inside.
+const REKA_PORTAL_SELECTORS =
+  '[data-reka-popper-content-wrapper], [data-reka-dialog-content], [data-reka-menu-content], [data-reka-context-menu-content], [role="dialog"], [role="menu"], [role="listbox"], [role="tooltip"]'
+
+const OUTSIDE_LAYER_SELECTORS = `${PRIMEVUE_OVERLAY_SELECTORS}, ${REKA_PORTAL_SELECTORS}`
+
+type OutsideEvent = CustomEvent<{ originalEvent: Event }>
+
+function isInsideOverlay(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    target.closest(OUTSIDE_LAYER_SELECTORS) !== null
+  )
+}
+
+export function onRekaPointerDownOutside(
+  options: { dismissableMask?: boolean },
+  event: OutsideEvent
+) {
+  if (isInsideOverlay(event.detail.originalEvent.target)) {
+    event.preventDefault()
+    return
+  }
+  if (options.dismissableMask === false) {
+    event.preventDefault()
+  }
+}
+
+// Focus / interact-outside fires when focus moves to a sibling portal (a
+// nested Reka or PrimeVue dialog teleported to body). Without this guard a
+// non-modal Reka dialog would dismiss itself the moment a nested dialog
+// receives focus.
+export function onRekaFocusOutside(event: OutsideEvent) {
+  if (isInsideOverlay(event.detail.originalEvent.target)) {
+    event.preventDefault()
+  }
+}

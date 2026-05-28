@@ -663,7 +663,6 @@
     "Collapse": "折叠",
     "Color": "颜色",
     "Colors": "颜色",
-    "Convert to Group Node": "转换为组节点",
     "Convert to Subgraph": "转换为子工作流",
     "Copy": "复制",
     "Copy (Clipspace)": "复制 (Clipspace)",
@@ -822,6 +821,7 @@
     "IMAGECOMPARE": "图像对比",
     "INT": "整数",
     "INTERP_MODEL": "插值模型",
+    "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "Latent",
     "LATENT_OPERATION": "Latent操作",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
@@ -910,6 +910,161 @@
     "pause": "暂停下载",
     "paused": "已暂停",
     "resume": "恢复下载"
+  },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "未知输入",
+      "nodeName": "此节点"
+    },
+    "promptErrors": {
+      "image_not_loaded": {
+        "desc": "系统无法加载该图像。",
+        "title": "图像未加载"
+      },
+      "missing_node_type": {
+        "desc": "缺少或不可用的节点类型。工作流可能已损坏或需要自定义节点。",
+        "title": "缺少节点类型"
+      },
+      "no_prompt": {
+        "desc": "发送到服务器的工作流数据为空。这可能是系统的意外错误。",
+        "title": "工作流数据为空"
+      },
+      "out_of_memory": {
+        "descCloud": "GPU 显存不足。请尝试降低复杂度后重试。未扣除积分。",
+        "descLocal": "GPU 显存不足。请尝试降低复杂度后重试。",
+        "title": "生成失败"
+      },
+      "prompt_no_outputs": {
+        "desc": "工作流未包含任何输出节点（如保存图像、预览图像），无法生成结果。",
+        "title": "提示无输出"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "工作流存在无效的节点输入。请修正高亮节点后重试。",
+        "title": "提示校验失败"
+      },
+      "server_error_cloud": {
+        "desc": "服务器遇到意外错误。请稍后再试。",
+        "title": "服务器错误"
+      },
+      "server_error_local": {
+        "desc": "服务器遇到意外错误。请检查服务器日志。",
+        "title": "服务器错误"
+      }
+    },
+    "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName} 的 {inputName} 连接无效。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "无法正确读取节点连接。",
+        "title": "无效连接",
+        "toastMessage": "{nodeName} 的 {inputName} 连接无效。",
+        "toastTitle": "无效连接"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName} 拒绝了 {inputName} 的值。",
+        "detailsWithRawDetails": "{nodeName} 自定义校验失败：{rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "节点拒绝了一个或多个输入值。",
+        "title": "无效输入",
+        "toastMessage": "{nodeName} 拒绝了 {inputName} 的值。",
+        "toastTitle": "无效输入"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName} 是循环连接的一部分。",
+        "detailsWithRawDetails": "{nodeName} 是循环连接的一部分：{rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "工作流存在循环节点连接。",
+        "title": "无效工作流",
+        "toastMessage": "{nodeName} 是循环连接的一部分。",
+        "toastTitle": "无效工作流"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName} 无法校验 {inputName}。",
+        "detailsWithRawDetails": "{nodeName} 无法校验 {inputName}：{rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "工作流无法校验已连接的节点。",
+        "title": "校验失败",
+        "toastMessage": "{nodeName} 无法校验 {inputName}。",
+        "toastMessageWithRawDetails": "{nodeName} 无法校验 {inputName}：{rawDetails}",
+        "toastTitle": "校验失败"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName} 校验时失败。",
+        "detailsWithRawDetails": "{nodeName} 校验时失败：{rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "由于节点校验检查意外失败，工作流无法通过校验。",
+        "title": "校验失败",
+        "toastMessage": "{nodeName} 校验时失败。",
+        "toastMessageWithRawDetails": "{nodeName} 校验时失败：{rawDetails}",
+        "toastTitle": "校验失败"
+      },
+      "image_not_loaded": {
+        "details": "{nodeName} 的图像无法加载。请尝试重新添加。",
+        "itemLabel": "{nodeName}",
+        "message": "系统无法加载该图像。",
+        "title": "图像未加载",
+        "toastMessage": "{nodeName} 的图像无法加载。请尝试重新添加。",
+        "toastTitle": "输入图像无法加载"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName} 无法将 {inputName} 转换为期望类型。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 无法转换为 {expectedType}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "输入值类型错误。",
+        "title": "无效输入",
+        "toastMessage": "{nodeName} 无法将 {inputName} 转换为期望类型。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 无法转换为 {expectedType}。",
+        "toastTitle": "无效输入"
+      },
+      "required_input_missing": {
+        "details": "{nodeName} 缺少必需的输入：{inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "必需的输入插槽没有连接。",
+        "title": "缺少连接",
+        "toastMessage": "{nodeName} 缺少必需的输入：{inputName}",
+        "toastTitle": "缺少必需输入"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName} 的 {inputName} 连接类型不兼容。",
+        "detailsWithTypes": "{nodeName} 的 {inputName} 输入需要 {expectedType}，但连接的输出为 {receivedType}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "已连接的节点输入输出类型不兼容。",
+        "title": "无效连接",
+        "toastMessage": "{nodeName} 的 {inputName} 连接类型不兼容。",
+        "toastMessageWithTypes": "{nodeName} 的 {inputName} 输入需要 {expectedType}，但连接的输出为 {receivedType}。",
+        "toastTitle": "无效连接"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName} 的 {inputName} 值高于最大值。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 高于最大值 {maxValue}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "部分输入值超出允许范围。",
+        "title": "输入超出范围",
+        "toastMessage": "{nodeName} 的 {inputName} 值高于最大值。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 高于最大值 {maxValue}。",
+        "toastTitle": "输入超出范围"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName} 的 {inputName} 值不被支持。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 不可用。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "部分输入值不适用于该节点。",
+        "title": "无效输入",
+        "toastMessage": "{nodeName} 的 {inputName} 值不被支持。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 不可用。",
+        "toastTitle": "无效输入"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName} 的 {inputName} 值低于最小值。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 低于最小值 {minValue}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "部分输入值超出允许范围。",
+        "title": "输入超出范围",
+        "toastMessage": "{nodeName} 的 {inputName} 值低于最小值。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 低于最小值 {minValue}。",
+        "toastTitle": "输入超出范围"
+      }
+    }
   },
   "errorDialog": {
     "accessRestrictedMessage": "您的账户无权使用此功能。",
@@ -1208,6 +1363,7 @@
     "logs": "日志",
     "manageExtensions": "管理扩展",
     "markdown": "markdown",
+    "maximizeDialog": "最大化对话框",
     "micPermissionDenied": "麦克风权限被拒绝",
     "migrate": "迁移",
     "missing": "缺失",
@@ -1308,6 +1464,7 @@
     "resizeFromTopLeft": "从左上角调整大小",
     "resizeFromTopRight": "从右上角调整大小",
     "restart": "重新启动",
+    "restoreDialog": "还原对话框",
     "resultsCount": "找到 {count} 个结果",
     "running": "正在运行",
     "save": "保存",
@@ -1713,6 +1870,7 @@
     "reloadingModel": "正在重新加载模型...",
     "removeBackgroundImage": "移除背景图片",
     "resizeNodeMatchOutput": "调整节点以匹配输出",
+    "retainViewOnReload": "模型重新加载时锁定相机视角",
     "scene": "场景",
     "showGrid": "显示网格",
     "showSkeleton": "显示骨架",
@@ -2103,7 +2261,6 @@
     "ComfyUI Issues": "ComfyUI 问题",
     "Contact Support": "联系支持",
     "Convert Selection to Subgraph": "将选中内容转换为子工作流",
-    "Convert selected nodes to group node": "将选中节点转换为组节点",
     "Copy": "复制",
     "Custom Nodes (Legacy)": "自定义节点（旧版）",
     "Custom Nodes Manager": "自定义节点管理器",
@@ -2266,6 +2423,7 @@
     "3d_models": "3D模型",
     "Anthropic": "Anthropic",
     "BFL": "BFL",
+    "Beeble": "Beeble",
     "Bria": "Bria",
     "ByteDance": "字节跳动",
     "ElevenLabs": "ElevenLabs",
@@ -2274,6 +2432,7 @@
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
+    "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
     "Magnific": "Magnific",
@@ -2342,6 +2501,7 @@
     "model_merging": "模型合并",
     "model_patches": "模型微调",
     "model_specific": "模型特定",
+    "multigpu": "多GPU",
     "noise": "噪波",
     "operations": "操作",
     "photomaker": "PhotoMaker",
@@ -2436,6 +2596,43 @@
       "windows": "Windows (支持 CUDA 的 Nvidia GPU)"
     },
     "title": "您的设备不受支持"
+  },
+  "oauth": {
+    "consent": {
+      "allow": "继续",
+      "appTypeNative": "本地应用",
+      "appTypeWeb": "网页应用",
+      "deny": "取消",
+      "errorExpired": "此授权请求已过期或已被使用。请从客户端应用重新开始。",
+      "errorScopeBroadening": "之前批准的权限不包含此次请求。您需要使用新权限重新授权。",
+      "errorUnavailable": "此功能当前不可用。如问题持续，请联系支持。",
+      "genericError": "OAuth 请求失败。请从客户端应用重新开始。",
+      "loading": "正在加载授权请求…",
+      "missingRequest": "缺少此授权请求。请从客户端应用重新开始。",
+      "noWorkspaces": "此请求没有可用的工作区。",
+      "permissionsHeader": "权限",
+      "redirectNotice": "您将被重定向到",
+      "resourceFallback": "此应用",
+      "sessionError": "建立会话失败。请重试。",
+      "sessionErrorToastSummary": "无法继续 OAuth 登录",
+      "subtitle": "登录 {resource} 以继续",
+      "title": "{client} 请求访问权限",
+      "workspaceHelp": "权限仅适用于此工作区。",
+      "workspaceLabel": "工作区"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "代表您运行工作流"
+      },
+      "mcp:tools:read": {
+        "label": "查看可用的工作流工具"
+      }
+    },
+    "workspace": {
+      "member": "成员",
+      "owner": "所有者",
+      "personal": "个人"
+    }
   },
   "openSharedWorkflow": {
     "author": "作者：",
@@ -2664,20 +2861,6 @@
     "normal": "正常",
     "parameters": "参数",
     "pinned": "顶固",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "发送到服务器的工作流数据为空。这可能是一个意外的系统错误。"
-      },
-      "prompt_no_outputs": {
-        "desc": "工作流中没有包含任何输出节点（例如：保存图像、预览图像），无法生成结果。"
-      },
-      "server_error_cloud": {
-        "desc": "服务器遇到意外错误。请稍后再试。"
-      },
-      "server_error_local": {
-        "desc": "服务器遇到意外错误。请检查服务器日志。"
-      }
-    },
     "properties": "属性",
     "removeFavorite": "取消收藏",
     "resetAllParameters": "重置所有参数",
@@ -3087,6 +3270,7 @@
         "sourceDesc": "按来源类型分组（核心，自定义，API）"
       },
       "noBookmarkedNodes": "暂无收藏",
+      "noMatchingNodes": "没有与“{query}”匹配的节点",
       "resetView": "重置视图为默认",
       "sections": {
         "bookmarked": "已收藏",
@@ -3472,8 +3656,7 @@
       "newest": "最新",
       "popular": "热门",
       "recommended": "推荐",
-      "searchPlaceholder": "搜索...",
-      "vramLowToHigh": "VRAM 使用量（从低到高）"
+      "searchPlaceholder": "搜索..."
     },
     "sorting": "排序方式",
     "title": "从模板开始",

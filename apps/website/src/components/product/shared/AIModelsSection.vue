@@ -77,7 +77,9 @@ function getCardClass(layoutClass: string): string {
 </script>
 
 <template>
-  <section class="bg-primary-comfy-ink px-4 py-24 lg:px-20 lg:py-40">
+  <section
+    class="bg-primary-comfy-ink max-w-9xl mx-auto px-4 py-24 lg:px-20 lg:py-40"
+  >
     <div class="mx-auto flex w-full max-w-7xl flex-col items-center">
       <p
         class="text-primary-comfy-yellow text-center text-sm font-bold tracking-widest uppercase"
