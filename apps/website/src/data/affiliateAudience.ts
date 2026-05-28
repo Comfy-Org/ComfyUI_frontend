@@ -1,8 +1,8 @@
 import type { Locale } from '../i18n/translations'
 
-export type LocalizedText = Record<Locale, string>
+type LocalizedText = Record<Locale, string>
 
-export interface AudienceCriterion {
+interface AudienceCriterion {
   id: string
   label: LocalizedText
 }
