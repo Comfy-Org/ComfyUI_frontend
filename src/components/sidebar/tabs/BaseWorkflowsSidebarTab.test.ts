@@ -192,10 +192,6 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   }
 }))
 
-vi.mock('primevue/confirmdialog', () => ({
-  default: { name: 'ConfirmDialog', template: '<div />' }
-}))
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
