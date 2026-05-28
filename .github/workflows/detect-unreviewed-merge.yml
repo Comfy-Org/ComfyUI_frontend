@@ -11,9 +11,13 @@ concurrency:
   group: detect-unreviewed-merge-${{ github.sha }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   detect:
-    uses: Comfy-Org/github-workflows/.github/workflows/detect-unreviewed-merge.yml@v1
+    uses: Comfy-Org/github-workflows/.github/workflows/detect-unreviewed-merge.yml@5d9602ee861466a7873270cd6b2037ebdfdee9a3 # v1
     with:
       approval-mode: latest-per-reviewer
     secrets:
