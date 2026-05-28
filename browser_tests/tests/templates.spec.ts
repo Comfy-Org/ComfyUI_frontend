@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
+import { getWav } from '@e2e/fixtures/components/AudioPreview'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
@@ -450,4 +451,57 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       )
     }
   )
+
+  test('Can open associated tutorial', async ({ comfyPage }) => {
+    const tutorialUrl = 'https://comfyanonymous.github.io/ComfyUI_examples/'
+    await comfyPage.page.route('**/templates/index.json', async (route) => {
+      const response = [
+        {
+          moduleName: 'default',
+          title: 'Test Templates',
+          type: 'image',
+          templates: [
+            {
+              name: 'template-with-tutorial',
+              title: 'Template with a tutorial',
+              mediaType: 'audio',
+              mediaSubtype: 'wav',
+              description: 'This template has a tutorial',
+              tutorialUrl
+            }
+          ]
+        }
+      ]
+      await route.fulfill({
+        status: 200,
+        body: JSON.stringify(response),
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        }
+      })
+    })
+
+    await comfyPage.page.route('**/templates/**.wav', async (route) => {
+      await route.fulfill({
+        status: 200,
+        body: getWav(),
+        headers: {
+          'Content-Type': 'image/webp',
+          'Cache-Control': 'no-store'
+        }
+      })
+    })
+    await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
+    const card = comfyPage.page.getByTestId(
+      'template-workflow-template-with-tutorial'
+    )
+    await card.hover()
+    const tutorialButton = card.getByRole('button', { name: 'See a tutorial' })
+    await expect(tutorialButton).toBeVisible()
+    const popupPromise = comfyPage.page.waitForEvent('popup', { timeout: 0 })
+    await tutorialButton.click()
+    const popup = await popupPromise
+    expect(popup.url()).toEqual(tutorialUrl)
+  })
 })

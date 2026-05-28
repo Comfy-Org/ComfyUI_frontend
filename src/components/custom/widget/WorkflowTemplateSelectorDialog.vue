@@ -317,7 +317,7 @@
                     >
                       <Button
                         v-tooltip.bottom="$t('g.seeTutorial')"
-                        v-bind="$attrs"
+                        :aria-label="$t('g.seeTutorial')"
                         variant="inverted"
                         size="icon"
                         class="not-group-hover/card:opacity-0"
