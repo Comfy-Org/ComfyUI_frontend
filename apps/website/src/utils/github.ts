@@ -41,7 +41,8 @@ async function doFetch(
 
 function readStargazerCount(data: unknown): number | null {
   if (data === null || typeof data !== 'object') return null
-  const count = (data as { stargazers_count?: unknown }).stargazers_count
+  if (!('stargazers_count' in data)) return null
+  const count = data.stargazers_count
   return typeof count === 'number' ? count : null
 }
 
