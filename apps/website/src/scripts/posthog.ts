@@ -19,13 +19,17 @@ export function initPostHog() {
       capture_pageview: false,
       capture_pageleave: true,
       person_profiles: 'identified_only',
-      cookie_domain: '.comfy.org',
+      // cookie_domain omitted — see PostHogTelemetryProvider.ts note + posthog-js#3578
       before_send: (event) => {
-        if (event?.properties) {
-          for (const key of ['email', 'prompt', 'user_email', '$email']) {
-            delete event.properties[key]
-          }
+        if (!event) return null
+        const PII_KEYS = ['email', 'prompt', 'user_email', '$email']
+        const strip = (obj?: Record<string, unknown>) => {
+          if (!obj) return
+          PII_KEYS.forEach((key) => { delete obj[key] })
         }
+        strip(event.properties)
+        strip(event.$set)
+        strip(event.$set_once)
         return event
       }
     })

@@ -116,18 +116,25 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',
               ...serverConfig,
               person_profiles: 'identified_only',
-              cookie_domain: '.comfy.org',
+              // cookie_domain omitted: posthog-js sets a first-party cross-subdomain cookie
+              // automatically when persistence includes 'cookie' (the default).
+              // Explicit override interacts badly with posthog-js#3578 where reset() fails
+              // to clear localStorage on other subdomains, causing identity bleed on logout.
               before_send: (event) => {
-                if (event?.properties) {
-                  for (const key of [
-                    'email',
-                    'prompt',
-                    'user_email',
-                    '$email'
-                  ]) {
-                    delete event.properties[key]
-                  }
+                if (!event) return null
+                const PII_KEYS = ['email', 'prompt', 'user_email', '$email']
+
+                // Strip PII from all three property bags an event can carry.
+                // event.$set and event.$set_once are also transmitted and must be sanitized —
+                // e.g. posthog.identify(id, { email }) lands in $set, not properties.
+                // Ref: posthog.com/tutorials/web-redact-properties
+                const strip = (obj?: Record<string, unknown>) => {
+                  if (!obj) return
+                  PII_KEYS.forEach((key) => { delete obj[key] })
                 }
+                strip(event.properties)
+                strip(event.$set)
+                strip(event.$set_once)
                 return event
               }
             })
