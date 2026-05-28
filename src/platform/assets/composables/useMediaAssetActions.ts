@@ -85,6 +85,17 @@ export function useMediaAssetActions() {
     assetType: string
   ): Promise<void> => {
     if (assetType === 'output') {
+      if (isCloud) {
+        // FE-814: deleting via /history wipes every sibling output in the job.
+        const realAssetId = await assetService.findOutputAssetIdByHash(
+          asset.name
+        )
+        if (!realAssetId) {
+          throw new Error(t('mediaAsset.failedToDeleteAsset'))
+        }
+        await assetService.deleteAsset(realAssetId)
+        return
+      }
       const jobId =
         getOutputAssetMetadata(asset.user_metadata)?.jobId || asset.id
       if (!jobId) {

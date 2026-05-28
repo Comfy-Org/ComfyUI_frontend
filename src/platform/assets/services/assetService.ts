@@ -588,6 +588,30 @@ function createAssetService() {
   }
 
   /**
+   * Resolves the cloud asset id for an output identified by its storage hash.
+   * Output assets in cloud are addressed by `asset_hash` (which equals the
+   * stored filename), while history-derived AssetItems carry that hash as
+   * `name`. Returns `null` when no matching record exists so callers can
+   * surface a meaningful error instead of falling back to a job-wide delete.
+   */
+  async function findOutputAssetIdByHash(
+    hash: string
+  ): Promise<AssetId | null> {
+    if (!hash) return null
+    const queryParams = new URLSearchParams({
+      asset_hash: hash,
+      include_tags: OUTPUT_TAG,
+      limit: '1',
+      include_public: 'false'
+    })
+    const res = await api.fetchApi(`${ASSETS_ENDPOINT}?${queryParams}`)
+    if (!res.ok) return null
+    const parsed = assetResponseSchema.safeParse(await res.json())
+    if (!parsed.success) return null
+    return parsed.data.assets[0]?.id ?? null
+  }
+
+  /**
    * Deletes an asset by ID
    * Only available in cloud environment
    *
@@ -952,6 +976,7 @@ function createAssetService() {
     getInputAssetsIncludingPublic,
     invalidateInputAssetsIncludingPublic,
     deleteAsset,
+    findOutputAssetIdByHash,
     updateAsset,
     addAssetTags,
     removeAssetTags,

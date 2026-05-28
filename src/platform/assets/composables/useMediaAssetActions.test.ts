@@ -146,12 +146,14 @@ vi.mock('../schemas/assetMetadataSchema', () => ({
 }))
 
 const mockDeleteAsset = vi.hoisted(() => vi.fn())
+const mockFindOutputAssetIdByHash = vi.hoisted(() => vi.fn())
 const mockCreateAssetExport = vi.hoisted(() =>
   vi.fn().mockResolvedValue({ task_id: 'test-task-id', status: 'pending' })
 )
 vi.mock('../services/assetService', () => ({
   assetService: {
     deleteAsset: mockDeleteAsset,
+    findOutputAssetIdByHash: mockFindOutputAssetIdByHash,
     createAssetExport: mockCreateAssetExport
   }
 }))
@@ -283,6 +285,8 @@ describe('useMediaAssetActions', () => {
     mockGetOutputAssetMetadata.mockReset()
     mockGetOutputAssetMetadata.mockReturnValue(null)
     mockGetAssetType.mockReset()
+    mockFindOutputAssetIdByHash.mockReset()
+    mockFindOutputAssetIdByHash.mockResolvedValue('resolved-cloud-asset-id')
   })
 
   describe('addWorkflow', () => {
@@ -1063,6 +1067,94 @@ describe('useMediaAssetActions', () => {
       expect(mockClearWidgetValues).not.toHaveBeenCalled()
       expect(mockMarkMissingMedia).not.toHaveBeenCalled()
       expect(mockCaptureCanvasState).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('deleteAssets — FE-814 individual output deletion', () => {
+    beforeEach(() => {
+      mockGetAssetType.mockReturnValue('output')
+      mockShowDialog.mockImplementation(
+        (opts: {
+          props: {
+            onConfirm: () => Promise<void> | void
+          }
+        }) => {
+          void opts.props.onConfirm()
+        }
+      )
+    })
+
+    it('routes cloud output deletion through assetService.deleteAsset using the resolved UUID', async () => {
+      mockIsCloud.value = true
+      mockFindOutputAssetIdByHash.mockResolvedValue(
+        'real-output-asset-uuid-1234'
+      )
+      mockDeleteAsset.mockResolvedValue(undefined)
+
+      const actions = useMediaAssetActions()
+      const stackChild = createMockAsset({
+        id: 'job-abc-1-output-key',
+        name: 'c885097ab185ced82f017bcbc98948918499f7480315fd5b928b5bb8d4951efc.png',
+        tags: ['output'],
+        user_metadata: { jobId: 'job-abc' }
+      })
+
+      await actions.deleteAssets(stackChild)
+
+      await vi.waitFor(() => {
+        expect(mockDeleteAsset).toHaveBeenCalledTimes(1)
+      })
+      expect(mockFindOutputAssetIdByHash).toHaveBeenCalledWith(
+        'c885097ab185ced82f017bcbc98948918499f7480315fd5b928b5bb8d4951efc.png'
+      )
+      expect(mockDeleteAsset).toHaveBeenCalledWith(
+        'real-output-asset-uuid-1234'
+      )
+
+      const { api } = await import('@/scripts/api')
+      expect(api.deleteItem).not.toHaveBeenCalled()
+    })
+
+    it('falls back to history delete in OSS mode (no per-asset endpoint available)', async () => {
+      mockIsCloud.value = false
+      mockGetOutputAssetMetadata.mockReturnValue({ jobId: 'job-oss-1' })
+
+      const actions = useMediaAssetActions()
+      const ossOutput = createMockAsset({
+        id: 'job-oss-1',
+        name: 'ComfyUI_00009_.png',
+        tags: ['output']
+      })
+
+      await actions.deleteAssets(ossOutput)
+
+      const { api } = await import('@/scripts/api')
+      await vi.waitFor(() => {
+        expect(api.deleteItem).toHaveBeenCalled()
+      })
+      expect(api.deleteItem).toHaveBeenCalledWith('history', 'job-oss-1')
+      expect(mockFindOutputAssetIdByHash).not.toHaveBeenCalled()
+      expect(mockDeleteAsset).not.toHaveBeenCalled()
+    })
+
+    it('surfaces an error instead of widening the delete to the whole job when no cloud record matches', async () => {
+      mockIsCloud.value = true
+      mockFindOutputAssetIdByHash.mockResolvedValue(null)
+
+      const actions = useMediaAssetActions()
+      const orphanedChild = createMockAsset({
+        id: 'job-zzz-1-output-key',
+        name: 'orphaned-hash.png',
+        tags: ['output']
+      })
+
+      await actions.deleteAssets(orphanedChild)
+
+      const { api } = await import('@/scripts/api')
+      // The whole-job delete endpoint must never run as a fallback —
+      // that is precisely the bug we are fixing.
+      expect(api.deleteItem).not.toHaveBeenCalled()
+      expect(mockDeleteAsset).not.toHaveBeenCalled()
     })
   })
 })
