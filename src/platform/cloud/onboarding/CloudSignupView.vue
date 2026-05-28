@@ -31,7 +31,7 @@
             v-if="!googleSsoBlockedReason"
             type="button"
             variant="secondary"
-            class="relative h-10 w-full gap-4 rounded-md border border-solid border-smoke-800/9 bg-smoke-800/10 text-sm/4 font-medium text-sand-500 shadow-inset-highlight hover:bg-sand-300/20"
+            class="relative h-10 w-full gap-4 rounded-md border border-solid border-smoke-800/10 bg-smoke-800/10 text-sm/4 font-medium text-sand-500 shadow-inset-highlight hover:bg-sand-300/20"
             @click="signInWithGoogle"
           >
             <i class="pi pi-google text-base" />
@@ -86,7 +86,7 @@
       </div>
 
       <p
-        class="mx-auto my-0 flex w-full max-w-10/12 flex-wrap items-center justify-center gap-x-1 py-[17px] text-center text-sm/5 tracking-[-0.011em] text-sand-500"
+        class="mx-auto my-0 flex w-full max-w-10/12 flex-wrap items-center justify-center gap-x-1 py-4 text-center text-sm/5 tracking-[-0.011em] text-sand-500"
       >
         {{ t('auth.login.termsText') }}
         <a
@@ -186,7 +186,6 @@ const signUpWithEmail = async (values: SignUpData) => {
 }
 
 onMounted(async () => {
-  // Track signup screen opened
   if (isCloud) {
     telemetry?.trackSignupOpened()
   }

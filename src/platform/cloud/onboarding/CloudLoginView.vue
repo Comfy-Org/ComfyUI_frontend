@@ -3,7 +3,6 @@
     class="flex size-full items-center justify-center px-4 py-8 sm:px-6 md:px-8 lg:py-12"
   >
     <div class="flex w-full max-w-md flex-col items-start">
-      <!-- Heading group: gap-4 (16px) -->
       <div class="flex w-full flex-col gap-4">
         <h1
           class="my-0 font-inter text-xl/8 font-extrabold tracking-wide text-sand-500 sm:text-2xl/8"
@@ -30,7 +29,7 @@
             v-if="!googleSsoBlockedReason"
             type="button"
             variant="secondary"
-            class="relative h-10 w-full gap-4 rounded-md border border-solid border-smoke-800/9 bg-smoke-800/10 text-sm/4 font-medium text-sand-500 shadow-inset-highlight hover:bg-sand-300/20"
+            class="relative h-10 w-full gap-4 rounded-md border border-solid border-smoke-800/10 bg-smoke-800/10 text-sm/4 font-medium text-sand-500 shadow-inset-highlight hover:bg-sand-300/20"
             @click="signInWithGoogle"
           >
             <i class="pi pi-google text-base" />
@@ -69,9 +68,8 @@
         </template>
       </div>
 
-      <!-- Terms: py-[17px], text-sm/20, tracking -0.011em -->
       <p
-        class="mx-auto my-0 flex w-full max-w-10/12 flex-wrap items-center justify-center gap-x-1 py-[17px] text-center text-sm/5 tracking-[-0.011em] text-sand-500"
+        class="mx-auto my-0 flex w-full max-w-10/12 flex-wrap items-center justify-center gap-x-1 py-4 text-center text-sm/5 tracking-[-0.011em] text-sand-500"
       >
         {{ t('auth.login.termsText') }}
         <a

@@ -1,22 +1,22 @@
 @layer theme, base, primevue, components, utilities;
 
-@import './fonts.css';
-@import './_palette.css';
-@import 'tailwindcss/theme' layer(theme);
-@import 'tailwindcss/utilities' layer(utilities);
-@import 'tw-animate-css';
+@import "./fonts.css";
+@import "./_palette.css";
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
+@import "tw-animate-css";
 
 @plugin 'tailwindcss-primeui';
 
 @plugin "@iconify/tailwind4" {
   scale: 1.2;
-  icon-sets: from-folder(comfy, './packages/design-system/src/icons');
+  icon-sets: from-folder(comfy, "./packages/design-system/src/icons");
 }
 
 @plugin "./lucideStrokePlugin.js";
 
 /* Safelist dynamic comfy icons for node library folders */
-@source inline("icon-[comfy--{ai-model,anthropic,bfl,bria,bytedance,credits,elevenlabs,extensions-blocks,file-output,gemini,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow,quiver}]");
+@source inline("icon-[comfy--{ai-model,anthropic,bfl,bria,bytedance,credits,elevenlabs,extensions-blocks,file-output,gemini,google,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,seedance,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow,quiver}]");
 
 /* Safelist dynamic comfy icons for essential nodes (kebab-case of node names) */
 @source inline("icon-[comfy--{save-image,load-video,save-video,load-3-d,save-glb,image-batch,batch-images-node,image-crop,image-scale,image-rotate,image-blur,image-invert,canny,recraft-remove-background-node,kling-lip-sync-audio-to-video-node,load-audio,save-audio,stability-text-to-audio,lora-loader,lora-loader-model-only,primitive-string-multiline,get-video-components,video-slice,tencent-text-to-model-node,tencent-image-to-model-node,open-ai-chat-node,preview-image,image-and-mask-preview,layer-mask-mask-preview,mask-preview,image-preview-from-latent,i-tools-preview-image,i-tools-compare-image,canny-to-image,image-edit,text-to-image,pose-to-image,depth-to-video,image-to-image,canny-to-video,depth-to-image,image-to-video,pose-to-video,text-to-video,image-inpainting,image-outpainting}]");
@@ -933,8 +933,8 @@ body {
 }
 
 .comfy-modal select,
-.comfy-modal input[type='button'],
-.comfy-modal input[type='checkbox'] {
+.comfy-modal input[type="button"],
+.comfy-modal input[type="checkbox"] {
   margin: 3px 3px 3px 4px;
 }
 
@@ -1055,7 +1055,7 @@ span.drag-handle {
 }
 
 span.drag-handle::after {
-  content: '.. .. ..';
+  content: ".. .. ..";
 }
 
 .comfy-queue-btn {
@@ -1111,11 +1111,11 @@ button.comfy-queue-btn {
   z-index: 99;
 }
 
-.comfy-modal.comfy-settings input[type='range'] {
+.comfy-modal.comfy-settings input[type="range"] {
   vertical-align: middle;
 }
 
-.comfy-modal.comfy-settings input[type='range'] + input[type='number'] {
+.comfy-modal.comfy-settings input[type="range"] + input[type="number"] {
   width: 3.5em;
 }
 
@@ -1246,7 +1246,7 @@ dialog::backdrop {
 }
 
 .litemenu-entry.has_submenu::after {
-  content: '>';
+  content: ">";
   position: absolute;
   top: 0;
   right: 2px;
@@ -1724,7 +1724,7 @@ audio.comfy-audio.empty-audio-widget {
 
 .maskEditor_sidePanelToggleSwitch::before,
 .maskEditor_sidePanelToggleSwitch::after {
-  content: '';
+  content: "";
 }
 .maskEditor_sidePanelToggleSwitch::before {
   display: block;
