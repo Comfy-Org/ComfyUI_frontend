@@ -384,6 +384,90 @@
       }
     }
   },
+  "BeebleSwitchXImageEdit": {
+    "display_name": "Beeble SwitchX Image Edit",
+    "description": "Edit a single image with Beeble SwitchX. Switches anything in the scene (background, lighting, costume) while preserving the original subject's pixels. Provide a reference image and/or text prompt to describe the new look. Max ~2.77MP.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of the desired output (max 2000 chars). At least one of 'prompt' or 'reference_image' is required."
+      },
+      "alpha_mode": {
+        "name": "alpha_mode",
+        "tooltip": "Controls how SwitchX decides what to keep vs. regenerate. 'auto' isolates the main subject automatically. 'fill' regenerates the entire frame while preserving geometry. 'select' propagates a first-frame keyframe across the clip. 'custom' uses a per-frame alpha matte you provide."
+      },
+      "max_resolution": {
+        "name": "max_resolution",
+        "tooltip": "Maximum output resolution."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "Reference image whose look (background, lighting, costume) the result should adopt. At least one of 'reference_image' or 'prompt' is required."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alpha",
+        "tooltip": "The alpha matte Beeble used. Empty for 'fill' mode, which has no separate matte."
+      }
+    }
+  },
+  "BeebleSwitchXVideoEdit": {
+    "display_name": "Beeble SwitchX Video Edit",
+    "description": "Edit a video with Beeble SwitchX. Switches anything in the scene (background, lighting, costume) while preserving the original subject's pixels and motion. Provide a reference image and/or text prompt to describe the new look. Max 240 frames, max ~2.77MP per frame.",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of the desired output (max 2000 chars). At least one of 'prompt' or 'reference_image' is required."
+      },
+      "alpha_mode": {
+        "name": "alpha_mode",
+        "tooltip": "Controls how SwitchX decides what to keep vs. regenerate. 'auto' isolates the main subject automatically. 'fill' regenerates the entire frame while preserving geometry. 'select' propagates a first-frame keyframe across the clip. 'custom' uses a per-frame alpha matte you provide."
+      },
+      "max_resolution": {
+        "name": "max_resolution",
+        "tooltip": "Maximum output resolution."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "Reference image whose look (background, lighting, costume) the result should adopt. At least one of 'reference_image' or 'prompt' is required."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "video",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alpha",
+        "tooltip": "The alpha matte Beeble used. Empty for 'fill' mode, which has no separate matte."
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "BetaSamplingScheduler",
     "inputs": {
@@ -1350,7 +1434,7 @@
   },
   "CLIPLoader": {
     "display_name": "Load CLIP",
-    "description": "[Recipes]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\n hidream: llama-3.1 (Recommend) or t5\nomnigen2: qwen vl 2.5 3B\nlens: gpt-oss-20b",
+    "description": "[Recipes]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\n hidream: llama-3.1 (Recommend) or t5\nomnigen2: qwen vl 2.5 3B\nlens: gpt-oss-20b\n pixeldit: gemma 2 2B elm",
     "inputs": {
       "clip_name": {
         "name": "clip_name"
@@ -7350,6 +7434,71 @@
       }
     }
   },
+  "Krea2ImageNode": {
+    "display_name": "Krea 2 Image",
+    "description": "Generate images via Krea 2 — pick Medium (expressive illustrations) or Large (expressive photorealism). Supports an optional moodboard and up to 10 chained image style references.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for the image."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Krea 2 Medium is best for expressive illustrations; Krea 2 Large is best for expressive photorealism."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Random seed for reproducibility."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_moodboard_id": {
+        "name": "moodboard_id"
+      },
+      "model_moodboard_strength": {
+        "name": "moodboard_strength"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Krea2StyleReferenceNode": {
+    "display_name": "Krea 2 Style Reference",
+    "description": "Add an image style reference to a Krea 2 generation. Chain multiple Krea 2 Style Reference nodes (max 10) and feed the final `style_reference` output into Krea 2 Image. Each image is uploaded to ComfyAPI storage and passed as URL.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Reference image whose style influences the generation."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Reference strength; negative values invert the style influence."
+      },
+      "style_reference": {
+        "name": "style_reference",
+        "tooltip": "Optional incoming chain of style references; this node appends one more."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_reference",
+        "tooltip": null
+      }
+    }
+  },
   "KSampler": {
     "display_name": "KSampler",
     "description": "Uses the provided model, positive and negative conditioning to denoise the latent image.",
@@ -8687,6 +8836,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -13028,6 +13182,32 @@
     "inputs": {
       "photomaker_model_name": {
         "name": "photomaker_model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PiDConditioning": {
+    "display_name": "PiD Conditioning",
+    "description": "Attaches a latent and a degrade_sigma scalar to a CONDITIONING for PiD decoding/upscaling",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent (from VAEEncode or a KSampler)."
+      },
+      "latent_format": {
+        "name": "latent_format",
+        "tooltip": "Flux1 and Flux2 latents auto-detected from channel dim, sd3 has to be selected manually."
+      },
+      "degrade_sigma": {
+        "name": "degrade_sigma",
+        "tooltip": "0 = clean latent. Increase to denoise corrupted latent outputs."
       }
     },
     "outputs": {

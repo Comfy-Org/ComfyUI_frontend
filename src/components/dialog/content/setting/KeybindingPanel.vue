@@ -244,7 +244,7 @@
       <ContextMenuPortal>
         <ContextMenuContent
           :style="keybindingOverlayContentStyle"
-          class="z-1200 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
+          class="z-1800 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
         >
           <ContextMenuItem
             class="flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm text-text-primary outline-none select-none hover:bg-node-component-surface-hovered focus:bg-node-component-surface-hovered data-disabled:cursor-default data-disabled:opacity-50"
