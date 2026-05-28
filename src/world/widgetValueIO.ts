@@ -43,11 +43,9 @@ export function writeWidgetValue(
   return useWidgetValueStore().setValue(graphId, nodeId, name, value)
 }
 
-type WidgetStateInit = Omit<WidgetState, 'nodeId' | 'name'>
-
 export function ensureWidgetState(
   entityId: WidgetEntityId,
-  init: WidgetStateInit
+  init: WidgetState
 ): WidgetState {
   const existing = getWidgetState(entityId)
   if (existing) return existing
