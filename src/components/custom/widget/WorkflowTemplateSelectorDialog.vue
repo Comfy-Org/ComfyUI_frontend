@@ -190,7 +190,7 @@
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
-            class="hover:bg-base-background"
+            class="group/card hover:bg-base-background"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template)"
@@ -316,11 +316,11 @@
                       class="flex flex-col-reverse justify-center"
                     >
                       <Button
-                        v-if="hoveredTemplate === template.name"
                         v-tooltip.bottom="$t('g.seeTutorial')"
                         v-bind="$attrs"
                         variant="inverted"
                         size="icon"
+                        class="not-group-hover/card:opacity-0"
                         @click.stop="openTutorial(template)"
                       >
                         <i class="icon-[lucide--info] size-4" />
