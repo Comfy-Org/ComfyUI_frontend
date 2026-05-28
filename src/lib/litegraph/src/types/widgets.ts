@@ -1,6 +1,12 @@
 import type { Bounds } from '@/renderer/core/layout/types'
 import type { CurveData } from '@/components/curve/types'
 import type { WidgetEntityId } from '@/world/entityIds'
+import type {
+  WidgetDisplayShape,
+  WidgetSchemaShape,
+  WidgetSerializeShape,
+  WidgetValueShape
+} from '@/world/widgets/widgetComponents'
 
 import type {
   CanvasColour,
@@ -394,7 +400,12 @@ export interface IBaseWidget<
   TValue = boolean | number | string | object | undefined,
   TType extends string = string,
   TOptions extends IWidgetOptions = IWidgetOptions
-> {
+>
+  extends
+    WidgetValueShape<TValue>,
+    WidgetDisplayShape,
+    Omit<WidgetSchemaShape<TOptions>, 'type'>,
+    WidgetSerializeShape {
   [symbol: symbol]: boolean
 
   linkedWidgets?: IBaseWidget[]
@@ -402,25 +413,9 @@ export interface IBaseWidget<
   readonly entityId?: WidgetEntityId
 
   name: string
-  options: TOptions
 
-  label?: string
   /** Widget type (see {@link TWidgetType}) */
   type: TType
-  value?: TValue
-
-  /**
-   * Whether the widget value is persisted in the workflow JSON
-   * (`widgets_values`). Checked by {@link LGraphNode.serialize} and
-   * {@link LGraphNode.configure}.
-   *
-   * This is distinct from {@link IWidgetOptions.serialize}, which controls
-   * whether the value is included in the API prompt sent for execution.
-   *
-   * @default true
-   * @see IWidgetOptions.serialize — API prompt inclusion
-   */
-  serialize?: boolean
 
   /**
    * The computed height of the widget. Used by customized node resize logic.
@@ -444,15 +439,10 @@ export interface IBaseWidget<
   last_y?: number
 
   width?: number
-  /**
-   * Whether the widget is disabled. Disabled widgets are rendered at half opacity.
-   * See also {@link IBaseWidget.computedDisabled}.
-   */
-  disabled?: boolean
 
   /**
    * The disabled state used for rendering based on various conditions including
-   * {@link IBaseWidget.disabled}.
+   * {@link WidgetDisplayShape.disabled}.
    * @readonly [Computed] This property is computed by the node.
    */
   computedDisabled?: boolean

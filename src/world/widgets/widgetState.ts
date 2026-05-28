@@ -1,10 +1,10 @@
-/* eslint-disable import-x/no-restricted-paths */
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/world/entityIds'
 import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
-/* eslint-enable import-x/no-restricted-paths */
+  WidgetDisplayShape,
+  WidgetSchemaShape,
+  WidgetSerializeShape,
+  WidgetValueShape
+} from '@/world/widgets/widgetComponents'
 
 /**
  * `WidgetState` is a *derived view* over the four widget-side components
@@ -25,11 +25,11 @@ import type {
 export type WidgetState<
   TValue = unknown,
   TType extends string = string,
-  TOptions extends IWidgetOptions = IWidgetOptions
-> = Pick<
-  IBaseWidget<TValue, TType, TOptions>,
-  'value' | 'options' | 'label' | 'serialize' | 'disabled' | 'type'
->
+  TOptions extends object = object
+> = WidgetValueShape<TValue> &
+  WidgetDisplayShape &
+  Omit<WidgetSchemaShape<TOptions>, 'type'> &
+  WidgetSerializeShape & { type: TType }
 
 /**
  * Input shape for `registerWidget`: a `WidgetState` view augmented with the
