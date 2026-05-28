@@ -29,12 +29,10 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('primevue/usetoast', () => {
-  const add = vi.fn()
-  return {
-    useToast: () => ({ add })
-  }
-})
+const mockToastAdd = vi.hoisted(() => vi.fn())
+vi.mock('primevue/usetoast', () => ({
+  useToast: () => ({ add: mockToastAdd })
+}))
 
 vi.mock('vue-i18n', () => {
   const t = vi.fn((key: string) => key)
@@ -1155,6 +1153,16 @@ describe('useMediaAssetActions', () => {
       // that is precisely the bug we are fixing.
       expect(api.deleteItem).not.toHaveBeenCalled()
       expect(mockDeleteAsset).not.toHaveBeenCalled()
+
+      await vi.waitFor(() => {
+        expect(mockToastAdd).toHaveBeenCalled()
+      })
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: 'mediaAsset.failedToDeleteAsset'
+        })
+      )
     })
   })
 })

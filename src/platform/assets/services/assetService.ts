@@ -608,7 +608,8 @@ function createAssetService() {
     if (!res.ok) return null
     const parsed = assetResponseSchema.safeParse(await res.json())
     if (!parsed.success) return null
-    return parsed.data.assets[0]?.id ?? null
+    const exactMatch = parsed.data.assets.find((a) => a.asset_hash === hash)
+    return exactMatch?.id ?? null
   }
 
   /**
