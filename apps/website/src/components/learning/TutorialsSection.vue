@@ -77,10 +77,10 @@ const activeTutorial = () =>
             </h3>
             <a
               :href="tutorial.href"
-              class="text-primary-comfy-yellow group flex shrink-0 items-center gap-2 text-xs font-medium tracking-wide uppercase lg:text-sm"
+              class="text-primary-comfy-yellow group flex shrink-0 items-center gap-2 text-xs leading-[115%] font-extrabold tracking-wide uppercase lg:text-sm"
             >
               <span
-                class="bg-primary-comfy-yellow flex size-6 items-center justify-center rounded-full transition-transform group-hover:translate-x-0.5 lg:size-7"
+                class="bg-primary-comfy-yellow flex size-6 items-center justify-center rounded-lg transition-transform group-hover:translate-x-0.5 lg:size-7"
               >
                 <svg
                   class="text-primary-comfy-ink size-3 lg:size-3.5"

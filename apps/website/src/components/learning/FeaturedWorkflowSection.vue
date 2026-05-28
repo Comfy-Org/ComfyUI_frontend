@@ -10,6 +10,8 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const tags = ['Seadance 2.0', 'Image To Video']
 const demoVideoSrc =
   'https://media.comfy.org/website/learning/skyreplacement_smaller_v06.mp4'
+const demoVideoPoster =
+  'https://media.comfy.org/website/learning/skyreplacement_smaller_v06_thumbnail.jpg'
 </script>
 
 <template>
@@ -54,7 +56,12 @@ const demoVideoSrc =
       </div>
 
       <div class="border-primary-warm-gray rounded-4.5xl border p-4">
-        <VideoPlayer :locale :src="demoVideoSrc" minimal />
+        <VideoPlayer
+          :locale
+          :src="demoVideoSrc"
+          :poster="demoVideoPoster"
+          minimal
+        />
       </div>
     </div>
   </section>
