@@ -61,8 +61,7 @@ export default plugin(({ matchComponents }) => {
       [`icon-s${sw}`]: (icon) => {
         try {
           return getDynamicCSSRulesWithStroke(icon, sw)
-        } catch (err) {
-          console.warn(err.message)
+        } catch {
           return {}
         }
       }

@@ -8,7 +8,7 @@
 
 @plugin 'tailwindcss-primeui';
 
-@plugin "@iconify/tailwind4" {
+@plugin "./iconifyDynamicPlugin.js" {
   scale: 1.2;
   icon-sets: from-folder(comfy, './packages/design-system/src/icons');
 }
