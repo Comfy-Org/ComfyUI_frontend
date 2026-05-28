@@ -15,21 +15,21 @@ export type UpDirection = 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
 export type CameraType = 'perspective' | 'orthographic'
 export type BackgroundRenderModeType = 'tiled' | 'panorama'
 
-export interface CameraQuaternion {
+interface CameraQuaternion {
   x: number
   y: number
   z: number
   w: number
 }
 
-export interface CameraRotation {
+interface CameraRotation {
   x: number
   y: number
   z: number
   order: string
 }
 
-export interface CameraFrustum {
+interface CameraFrustum {
   left: number
   right: number
   top: number
