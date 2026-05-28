@@ -487,7 +487,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
         status: 200,
         body: getWav(),
         headers: {
-          'Content-Type': 'image/webp',
+          'Content-Type': 'image/x-wav',
           'Cache-Control': 'no-store'
         }
       })
