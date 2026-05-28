@@ -384,6 +384,90 @@
       }
     }
   },
+  "BeebleSwitchXImageEdit": {
+    "description": "使用 Beeble SwitchX 編輯單張圖像。可切換場景中的任何元素（背景、光線、服裝），同時保留原始主體像素。請提供參考圖像及／或文字提示以描述新外觀。最大約 2.77MP。",
+    "display_name": "Beeble SwitchX 圖像編輯",
+    "inputs": {
+      "alpha_mode": {
+        "name": "alpha 模式",
+        "tooltip": "控制 SwitchX 如何決定保留或重建內容。「auto」自動分離主要主體。「fill」重建整個畫面並保留幾何結構。「select」將首幀關鍵影格套用至整個 clip。「custom」使用您提供的每幀 alpha 遮罩。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "圖像"
+      },
+      "max_resolution": {
+        "name": "最大解析度",
+        "tooltip": "輸出圖像的最大解析度。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "期望輸出內容的文字描述（最多 2000 字元）。「提示詞」或「參考圖像」至少需填寫一項。"
+      },
+      "reference_image": {
+        "name": "參考圖像",
+        "tooltip": "結果將採用此參考圖像的外觀（背景、光線、服裝）。「參考圖像」或「提示詞」至少需填寫一項。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制此節點是否重新執行；無論種子為何，結果皆為非確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "圖像",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alpha",
+        "tooltip": "Beeble 使用的 alpha 遮罩。「fill」模式下為空，無獨立遮罩。"
+      }
+    }
+  },
+  "BeebleSwitchXVideoEdit": {
+    "description": "使用 Beeble SwitchX 編輯影片。可切換場景中的任何元素（背景、光線、服裝），同時保留原始主體像素與動作。請提供參考圖像及／或文字提示以描述新外觀。最多 240 幀，每幀最大約 2.77MP。",
+    "display_name": "Beeble SwitchX 影片編輯",
+    "inputs": {
+      "alpha_mode": {
+        "name": "alpha 模式",
+        "tooltip": "控制 SwitchX 如何決定保留或重建內容。「auto」自動分離主要主體。「fill」重建整個畫面並保留幾何結構。「select」將首幀關鍵影格套用至整個 clip。「custom」使用您提供的每幀 alpha 遮罩。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "max_resolution": {
+        "name": "最大解析度",
+        "tooltip": "輸出影片的最大解析度。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "期望輸出內容的文字描述（最多 2000 字元）。「提示詞」或「參考圖像」至少需填寫一項。"
+      },
+      "reference_image": {
+        "name": "參考圖像",
+        "tooltip": "結果將採用此參考圖像的外觀（背景、光線、服裝）。「參考圖像」或「提示詞」至少需填寫一項。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制此節點是否重新執行；無論種子為何，結果皆為非確定性。"
+      },
+      "video": {
+        "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "影片",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alpha",
+        "tooltip": "Beeble 使用的 alpha 遮罩。「fill」模式下為空，無獨立遮罩。"
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "BetaSamplingScheduler",
     "inputs": {
@@ -7464,6 +7548,71 @@
       }
     }
   },
+  "Krea2ImageNode": {
+    "description": "透過 Krea 2 產生圖像 — 可選擇 Medium（表現性插畫）或 Large（表現性寫實照片）。支援選用 moodboard 及最多 10 個串接的圖像風格參考。",
+    "display_name": "Krea 2 圖像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "Krea 2 Medium 最適合表現性插畫；Krea 2 Large 最適合表現性寫實照片。"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_creativity": {
+        "name": "創意度"
+      },
+      "model_moodboard_id": {
+        "name": "moodboard_id"
+      },
+      "model_moodboard_strength": {
+        "name": "moodboard_strength"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "圖像的文字提示。"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "用於結果可重現的隨機種子。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Krea2StyleReferenceNode": {
+    "description": "為 Krea 2 生成加入圖像風格參考。可串接多個 Krea 2 風格參考節點（最多 10 個），並將最終的 `style_reference` 輸出連接到 Krea 2 圖像。每張圖像會上傳至 ComfyAPI 儲存並以 URL 傳遞。",
+    "display_name": "Krea 2 風格參考",
+    "inputs": {
+      "image": {
+        "name": "參考圖像",
+        "tooltip": "其風格會影響生成的參考圖像。"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "參考強度；負值會反轉風格影響。"
+      },
+      "style_reference": {
+        "name": "style_reference",
+        "tooltip": "可選的串接風格參考；本節點會再加入一個。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_reference",
+        "tooltip": null
+      }
+    }
+  },
   "LTXAVTextEncoderLoader": {
     "description": "[Recipes]\n\nltxav: gemma 3 12B",
     "display_name": "LTXV 音訊文字編碼器載入器",
@@ -7767,6 +7916,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -13028,6 +13182,32 @@
     "inputs": {
       "photomaker_model_name": {
         "name": "photomaker_model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PiDConditioning": {
+    "description": "將 latent 及 degrade_sigma 純量附加到 PiD 解碼／升頻的 CONDITIONING",
+    "display_name": "PiD 條件設定",
+    "inputs": {
+      "degrade_sigma": {
+        "name": "degrade_sigma",
+        "tooltip": "0 = 乾淨 latent。提高數值可去雜訊受損的 latent 輸出。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent（來自 VAEEncode 或 KSampler）。"
+      },
+      "latent_format": {
+        "name": "latent 格式",
+        "tooltip": "Flux1 與 Flux2 latent 會自動從 channel 維度偵測，sd3 需手動選擇。"
+      },
+      "positive": {
+        "name": "正向"
       }
     },
     "outputs": {
