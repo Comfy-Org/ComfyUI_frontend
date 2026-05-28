@@ -133,30 +133,28 @@ function scrollToDepartment(deptKey: string) {
               :href="role.jobUrl"
               target="_blank"
               rel="noopener noreferrer"
-              class="border-primary-warm-gray/20 group flex items-center justify-between border-b py-5"
+              class="border-primary-warm-gray/20 group flex items-start justify-between gap-4 border-b py-5"
               data-testid="careers-role-link"
             >
-              <div class="min-w-0">
-                <span
+              <div class="min-w-0 flex-1">
+                <div
                   class="text-primary-comfy-canvas text-base font-medium md:text-lg"
                 >
                   {{ role.title }}
-                </span>
-                <span class="text-primary-warm-gray ml-3 text-sm">
-                  {{ role.department }}
-                </span>
+                </div>
+                <div
+                  class="text-primary-warm-gray mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm"
+                >
+                  <span>{{ role.department }}</span>
+                  <span>{{ role.location }}</span>
+                </div>
               </div>
-              <div class="ml-4 flex shrink-0 items-center gap-3">
-                <span class="text-primary-warm-gray text-sm">
-                  {{ role.location }}
-                </span>
-                <img
-                  src="/icons/arrow-up-right.svg"
-                  alt=""
-                  class="size-5"
-                  aria-hidden="true"
-                />
-              </div>
+              <img
+                src="/icons/arrow-up-right.svg"
+                alt=""
+                class="mt-1 size-5 shrink-0"
+                aria-hidden="true"
+              />
             </a>
           </div>
         </div>
