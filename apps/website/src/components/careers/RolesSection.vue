@@ -88,7 +88,7 @@ function scrollToDepartment(deptKey: string) {
   <section class="px-6 py-20 md:px-20 md:py-32" data-testid="careers-roles">
     <div class="mx-auto max-w-6xl">
       <div class="flex flex-col gap-12 lg:flex-row lg:gap-20">
-        <div class="shrink-0">
+        <div class="shrink-0 lg:min-w-48">
           <div
             class="bg-primary-comfy-ink sticky top-20 z-10 py-4 md:top-28 md:py-0"
           >
