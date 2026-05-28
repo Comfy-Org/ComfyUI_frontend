@@ -15,18 +15,62 @@ export type UpDirection = 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
 export type CameraType = 'perspective' | 'orthographic'
 export type BackgroundRenderModeType = 'tiled' | 'panorama'
 
+interface CameraQuaternion {
+  x: number
+  y: number
+  z: number
+  w: number
+}
+
+interface CameraRotation {
+  x: number
+  y: number
+  z: number
+  order: string
+}
+
+interface CameraFrustum {
+  left: number
+  right: number
+  top: number
+  bottom: number
+}
+
 export interface CameraState {
   position: THREE.Vector3
   target: THREE.Vector3
   zoom: number
   cameraType: CameraType
+  quaternion?: CameraQuaternion
+  rotation?: CameraRotation
+  fov?: number
+  aspect?: number
+  near?: number
+  far?: number
+  frustum?: CameraFrustum
 }
+
+export interface ModelTransform {
+  uuid: string
+  name: string
+  type: string
+  position: { x: number; y: number; z: number }
+  rotation: { x: number; y: number; z: number; order: string }
+  quaternion: { x: number; y: number; z: number; w: number }
+  scale: { x: number; y: number; z: number }
+  up: { x: number; y: number; z: number }
+  visible: boolean
+  matrix: number[]
+}
+
+export type ModelInfo = ModelTransform[]
 
 export interface SceneConfig {
   showGrid: boolean
   backgroundColor: string
   backgroundImage?: string
   backgroundRenderMode?: BackgroundRenderModeType
+  models?: ModelInfo
 }
 
 export type GizmoMode = 'translate' | 'rotate' | 'scale'

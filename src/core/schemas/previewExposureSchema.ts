@@ -4,7 +4,7 @@ import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 
 import { parseNodePropertyArray } from './parseNodePropertyArray'
 
-export const previewExposureSchema = z.object({
+const previewExposureSchema = z.object({
   name: z.string(),
   sourceNodeId: z.string(),
   sourcePreviewName: z.string()
