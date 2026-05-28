@@ -22,11 +22,27 @@ export interface CameraState {
   cameraType: CameraType
 }
 
+export interface ModelTransform {
+  uuid: string
+  name: string
+  type: string
+  position: { x: number; y: number; z: number }
+  rotation: { x: number; y: number; z: number; order: string }
+  quaternion: { x: number; y: number; z: number; w: number }
+  scale: { x: number; y: number; z: number }
+  up: { x: number; y: number; z: number }
+  visible: boolean
+  matrix: number[]
+}
+
+export type ModelInfo = ModelTransform[]
+
 export interface SceneConfig {
   showGrid: boolean
   backgroundColor: string
   backgroundImage?: string
   backgroundRenderMode?: BackgroundRenderModeType
+  models?: ModelInfo
 }
 
 export type GizmoMode = 'translate' | 'rotate' | 'scale'
