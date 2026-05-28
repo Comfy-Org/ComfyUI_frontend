@@ -1,13 +1,11 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
 
-// eslint-disable-next-line import-x/no-restricted-paths
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
-// eslint-disable-next-line import-x/no-restricted-paths
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import type { UUID } from '@/utils/uuid'
 
-import type { NodeEntityId, WidgetEntityId } from './entityIds'
+import type { NodeEntityId, NodeId, WidgetEntityId } from './entityIds'
 import {
   asGraphId,
+  deriveWidgetEntityId,
   isWidgetEntityId,
   nodeEntityId,
   parseWidgetEntityId,
@@ -91,6 +89,34 @@ describe('isWidgetEntityId', () => {
     expect(isWidgetEntityId(null)).toBe(false)
     expect(isWidgetEntityId(undefined)).toBe(false)
     expect(isWidgetEntityId({})).toBe(false)
+  })
+})
+
+describe('deriveWidgetEntityId', () => {
+  const graphId = asGraphId('e1d2c3b4-a5f6-1234-5678-90abcdef1234' as UUID)
+
+  it('builds an entity id when all inputs are present', () => {
+    const id = deriveWidgetEntityId(graphId, 5 as NodeId, 'seed')
+    expect(id).toBe(widgetEntityId(graphId, 5 as NodeId, 'seed'))
+  })
+
+  it('returns undefined when graphId is missing', () => {
+    expect(deriveWidgetEntityId(undefined, 5 as NodeId, 'seed')).toBeUndefined()
+  })
+
+  it('returns undefined when nodeId is undefined', () => {
+    expect(deriveWidgetEntityId(graphId, undefined, 'seed')).toBeUndefined()
+  })
+
+  it('returns undefined for the sentinel nodeId -1', () => {
+    expect(deriveWidgetEntityId(graphId, -1, 'seed')).toBeUndefined()
+  })
+
+  it('accepts a plain UUID for graphId', () => {
+    const plain = 'f0e1d2c3-b4a5-6789-0123-456789abcdef' as UUID
+    expect(deriveWidgetEntityId(plain, 1 as NodeId, 'x')).toBe(
+      widgetEntityId(plain, 1 as NodeId, 'x')
+    )
   })
 })
 

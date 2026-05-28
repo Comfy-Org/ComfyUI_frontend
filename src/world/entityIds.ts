@@ -46,6 +46,24 @@ export function widgetEntityId(
 }
 
 /**
+ * Guarded factory for `WidgetEntityId`. Returns `undefined` when any input
+ * required to construct the id is missing — graphless widgets, unbound
+ * node ids (`-1`), or unknown node ids cannot have a valid entity id.
+ *
+ * Use this from call sites that hold raw widget identity (graphId, nodeId,
+ * name); use the `widget.entityId` getter directly when you already have a
+ * `BaseWidget` instance.
+ */
+export function deriveWidgetEntityId(
+  graphId: UUID | GraphId | undefined,
+  nodeId: NodeId | undefined,
+  name: string
+): WidgetEntityId | undefined {
+  if (!graphId || nodeId === undefined || nodeId === -1) return undefined
+  return widgetEntityId(graphId, nodeId, name)
+}
+
+/**
  * Parse a `WidgetEntityId` into its constituent parts.
  *
  * On-the-wire format: `widget:${graphId}:${nodeId}:${name}`. The regex

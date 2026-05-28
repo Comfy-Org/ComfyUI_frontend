@@ -20,7 +20,7 @@ import type {
 import type { WidgetState } from '@/stores/widgetValueStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetEntityId } from '@/world/entityIds'
-import { widgetEntityId } from '@/world/entityIds'
+import { deriveWidgetEntityId } from '@/world/entityIds'
 
 export interface DrawWidgetOptions {
   /** The width of the node where this widget will be displayed. */
@@ -133,9 +133,11 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   get entityId(): WidgetEntityId | undefined {
-    const graphId = this.node.graph?.rootGraph.id
-    if (!graphId || this._nodeId === undefined) return undefined
-    return widgetEntityId(graphId, this._nodeId, this.name)
+    return deriveWidgetEntityId(
+      this.node.graph?.rootGraph.id,
+      this._nodeId,
+      this.name
+    )
   }
 
   /**
