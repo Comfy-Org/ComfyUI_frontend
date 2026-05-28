@@ -54,12 +54,20 @@
           )
         "
       >
+        <!-- Human-friendly category/title when resolved by the error catalog. -->
+        <p
+          v-if="error.displayTitle"
+          class="m-0 px-0.5 text-sm font-semibold text-destructive-background-hover"
+        >
+          {{ error.displayTitle }}
+        </p>
+
         <!-- Error Message -->
         <p
-          v-if="error.message"
+          v-if="getDisplayMessage(error)"
           class="m-0 max-h-[4lh] overflow-y-auto px-0.5 text-sm/relaxed wrap-break-word whitespace-pre-wrap"
         >
-          {{ error.message }}
+          {{ getDisplayMessage(error) }}
         </p>
 
         <!-- Traceback / Details (enriched with full report for runtime errors) -->
@@ -171,11 +179,15 @@ function handleEnterSubgraph() {
 
 function handleCopyError(idx: number) {
   const details = displayedDetailsMap.value[idx]
-  const message = card.errors[idx]?.message
+  const message = getDisplayMessage(card.errors[idx])
   emit('copyToClipboard', [message, details].filter(Boolean).join('\n\n'))
 }
 
 function handleCheckGithub(error: ErrorItem) {
   findOnGitHub(error.message)
+}
+
+function getDisplayMessage(error: ErrorItem | undefined) {
+  return error?.displayMessage ?? error?.message
 }
 </script>

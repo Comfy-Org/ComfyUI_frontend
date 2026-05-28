@@ -663,7 +663,6 @@
     "Collapse": "Colapsar",
     "Color": "Color",
     "Colors": "Colores",
-    "Convert to Group Node": "Convertir en Nodo de Grupo",
     "Convert to Subgraph": "Convertir a Subgrafo",
     "Copy": "Copiar",
     "Copy (Clipspace)": "Copiar (Espacio de Clip)",
@@ -800,6 +799,8 @@
     "CONTROL_NET": "RED_DE_CONTROL",
     "CURVE": "CURVA",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "MODELO_DE_DETECCIÓN_DE_CARAS",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "ARCHIVO_3D",
     "FILE_3D_FBX": "ARCHIVO_3D_FBX",
     "FILE_3D_GLB": "ARCHIVO_3D_GLB",
@@ -908,6 +909,161 @@
     "pause": "Pausar descarga",
     "paused": "Pausado",
     "resume": "Reanudar descarga"
+  },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "entrada desconocida",
+      "nodeName": "Este nodo"
+    },
+    "promptErrors": {
+      "image_not_loaded": {
+        "desc": "El sistema no pudo cargar esta imagen.",
+        "title": "Imagen no cargada"
+      },
+      "missing_node_type": {
+        "desc": "Falta un tipo de nodo o no está disponible. El flujo de trabajo puede estar dañado o requerir un nodo personalizado.",
+        "title": "Falta tipo de nodo"
+      },
+      "no_prompt": {
+        "desc": "Los datos del flujo de trabajo enviados al servidor están vacíos. Esto puede ser un error inesperado del sistema.",
+        "title": "Los datos del flujo de trabajo están vacíos"
+      },
+      "out_of_memory": {
+        "descCloud": "No hay suficiente memoria GPU. Intenta reducir la complejidad y vuelve a ejecutar. No se cobraron créditos.",
+        "descLocal": "No hay suficiente memoria GPU. Intenta reducir la complejidad y vuelve a ejecutar.",
+        "title": "La generación falló"
+      },
+      "prompt_no_outputs": {
+        "desc": "El flujo de trabajo no contiene ningún nodo de salida (por ejemplo, Guardar imagen, Vista previa de imagen) para producir un resultado.",
+        "title": "El prompt no tiene salidas"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "El flujo de trabajo tiene entradas de nodo inválidas. Corrige los nodos resaltados antes de ejecutarlo de nuevo.",
+        "title": "La validación del prompt falló"
+      },
+      "server_error_cloud": {
+        "desc": "El servidor encontró un error inesperado. Por favor, inténtalo de nuevo más tarde.",
+        "title": "Error del servidor"
+      },
+      "server_error_local": {
+        "desc": "El servidor encontró un error inesperado. Por favor, revisa los registros del servidor.",
+        "title": "Error del servidor"
+      }
+    },
+    "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName} tiene una conexión inválida para {inputName}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "No se pudo leer correctamente una conexión de nodo.",
+        "title": "Conexión inválida",
+        "toastMessage": "{nodeName} tiene una conexión inválida para {inputName}.",
+        "toastTitle": "Conexión inválida"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName} rechazó el valor para {inputName}.",
+        "detailsWithRawDetails": "{nodeName} falló la validación personalizada: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Un nodo rechazó uno o más valores de entrada.",
+        "title": "Entrada inválida",
+        "toastMessage": "{nodeName} rechazó el valor para {inputName}.",
+        "toastTitle": "Entrada inválida"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName} es parte de una conexión circular.",
+        "detailsWithRawDetails": "{nodeName} es parte de una conexión circular: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "El flujo de trabajo tiene una conexión circular de nodos.",
+        "title": "Flujo de trabajo inválido",
+        "toastMessage": "{nodeName} es parte de una conexión circular.",
+        "toastTitle": "Flujo de trabajo inválido"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName} no pudo validar {inputName}.",
+        "detailsWithRawDetails": "{nodeName} no pudo validar {inputName}: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "El flujo de trabajo no pudo validar un nodo conectado.",
+        "title": "Validación fallida",
+        "toastMessage": "{nodeName} no pudo validar {inputName}.",
+        "toastMessageWithRawDetails": "{nodeName} no pudo validar {inputName}: {rawDetails}",
+        "toastTitle": "Validación fallida"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName} falló durante la validación.",
+        "detailsWithRawDetails": "{nodeName} falló durante la validación: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "El flujo de trabajo no pudo ser validado porque una comprobación de validación de nodo falló inesperadamente.",
+        "title": "Validación fallida",
+        "toastMessage": "{nodeName} falló durante la validación.",
+        "toastMessageWithRawDetails": "{nodeName} falló durante la validación: {rawDetails}",
+        "toastTitle": "Validación fallida"
+      },
+      "image_not_loaded": {
+        "details": "No se pudo cargar la imagen para {nodeName}. Intenta agregarla de nuevo.",
+        "itemLabel": "{nodeName}",
+        "message": "El sistema no pudo cargar esta imagen.",
+        "title": "Imagen no cargada",
+        "toastMessage": "No se pudo cargar la imagen para {nodeName}. Intenta agregarla de nuevo.",
+        "toastTitle": "No se pudo cargar la imagen de entrada"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName} no pudo convertir {inputName} al tipo esperado.",
+        "detailsWithValue": "El valor {receivedValue} para la entrada {inputName} de {nodeName} no pudo convertirse a {expectedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Un valor de entrada tiene el tipo incorrecto.",
+        "title": "Entrada inválida",
+        "toastMessage": "{nodeName} no pudo convertir {inputName} al tipo esperado.",
+        "toastMessageWithValue": "El valor {receivedValue} para la entrada {inputName} de {nodeName} no pudo convertirse a {expectedType}.",
+        "toastTitle": "Entrada inválida"
+      },
+      "required_input_missing": {
+        "details": "{nodeName} carece de una entrada requerida: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Las ranuras de entrada requeridas no tienen ninguna conexión.",
+        "title": "Conexión faltante",
+        "toastMessage": "{nodeName} carece de una entrada requerida: {inputName}",
+        "toastTitle": "Falta entrada requerida"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName} tiene una conexión incompatible para {inputName}.",
+        "detailsWithTypes": "La entrada {inputName} de {nodeName} espera {expectedType}, pero la salida conectada es {receivedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Los nodos conectados usan tipos de entrada y salida incompatibles.",
+        "title": "Conexión inválida",
+        "toastMessage": "{nodeName} tiene una conexión incompatible para {inputName}.",
+        "toastMessageWithTypes": "La entrada {inputName} de {nodeName} espera {expectedType}, pero la salida conectada es {receivedType}.",
+        "toastTitle": "Conexión inválida"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName} tiene un valor por encima del máximo para {inputName}.",
+        "detailsWithValue": "El valor {receivedValue} para la entrada {inputName} de {nodeName} está por encima del máximo {maxValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Algunos valores de entrada están fuera del rango permitido.",
+        "title": "Entrada fuera de rango",
+        "toastMessage": "{nodeName} tiene un valor por encima del máximo para {inputName}.",
+        "toastMessageWithValue": "El valor {receivedValue} para la entrada {inputName} de {nodeName} está por encima del máximo {maxValue}.",
+        "toastTitle": "Entrada fuera de rango"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName} tiene un valor no soportado para {inputName}.",
+        "detailsWithValue": "El valor {receivedValue} para la entrada {inputName} de {nodeName} no está disponible.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Algunos valores de entrada no están disponibles para este nodo.",
+        "title": "Entrada inválida",
+        "toastMessage": "{nodeName} tiene un valor no soportado para {inputName}.",
+        "toastMessageWithValue": "El valor {receivedValue} para la entrada {inputName} de {nodeName} no está disponible.",
+        "toastTitle": "Entrada inválida"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName} tiene un valor por debajo del mínimo para {inputName}.",
+        "detailsWithValue": "El valor {receivedValue} para la entrada {inputName} de {nodeName} está por debajo del mínimo {minValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Algunos valores de entrada están fuera del rango permitido.",
+        "title": "Entrada fuera de rango",
+        "toastMessage": "{nodeName} tiene un valor por debajo del mínimo para {inputName}.",
+        "toastMessageWithValue": "El valor {receivedValue} para la entrada {inputName} de {nodeName} está por debajo del mínimo {minValue}.",
+        "toastTitle": "Entrada fuera de rango"
+      }
+    }
   },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
@@ -1711,6 +1867,7 @@
     "reloadingModel": "Recargando modelo...",
     "removeBackgroundImage": "Eliminar imagen de fondo",
     "resizeNodeMatchOutput": "Redimensionar nodo para coincidir con la salida",
+    "retainViewOnReload": "Bloquear la vista de la cámara al recargar el modelo",
     "scene": "Escena",
     "showGrid": "Mostrar cuadrícula",
     "showSkeleton": "Mostrar esqueleto",
@@ -2101,7 +2258,6 @@
     "ComfyUI Issues": "Problemas de ComfyUI",
     "Contact Support": "Contactar soporte",
     "Convert Selection to Subgraph": "Convertir selección en subgrafo",
-    "Convert selected nodes to group node": "Convertir nodos seleccionados en nodo de grupo",
     "Copy": "Copiar",
     "Custom Nodes (Legacy)": "Nodos personalizados (heredado)",
     "Custom Nodes Manager": "Administrador de Nodos Personalizados",
@@ -2278,6 +2434,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2294,6 +2451,7 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "ajustes",
     "advanced": "avanzado",
     "api node": "nodo api",
     "attention_experiments": "experimentos_de_atención",
@@ -2338,6 +2496,7 @@
     "model_merging": "fusión_de_modelos",
     "model_patches": "parches_de_modelo",
     "model_specific": "modelo_específico",
+    "multigpu": "multigpu",
     "noise": "ruido",
     "operations": "operaciones",
     "photomaker": "photomaker",
@@ -2433,6 +2592,43 @@
     },
     "title": "Tu dispositivo no es compatible"
   },
+  "oauth": {
+    "consent": {
+      "allow": "Continuar",
+      "appTypeNative": "Aplicación nativa",
+      "appTypeWeb": "Aplicación web",
+      "deny": "Cancelar",
+      "errorExpired": "Esta solicitud de consentimiento ha expirado o ya ha sido utilizada. Por favor, reinicia desde la aplicación cliente.",
+      "errorScopeBroadening": "Los permisos aprobados previamente no cubren esta solicitud. Necesitas volver a autorizar con los nuevos permisos.",
+      "errorUnavailable": "Esta función no está disponible en este momento. Por favor, contacta con soporte si el problema persiste.",
+      "genericError": "La solicitud OAuth ha fallado. Por favor, reinicia desde la aplicación cliente.",
+      "loading": "Cargando solicitud de autorización…",
+      "missingRequest": "Falta esta solicitud de autorización. Por favor, reinicia desde la aplicación cliente.",
+      "noWorkspaces": "No hay espacios de trabajo elegibles disponibles para esta solicitud.",
+      "permissionsHeader": "Permisos",
+      "redirectNotice": "Serás redirigido a",
+      "resourceFallback": "esta aplicación",
+      "sessionError": "No se pudo establecer la sesión. Por favor, inténtalo de nuevo.",
+      "sessionErrorToastSummary": "No se pudo continuar con el inicio de sesión OAuth",
+      "subtitle": "Inicia sesión en {resource} para continuar",
+      "title": "{client} quiere acceder",
+      "workspaceHelp": "Los permisos se aplican solo a este espacio de trabajo.",
+      "workspaceLabel": "Espacio de trabajo"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "Ejecutar flujos de trabajo en tu nombre"
+      },
+      "mcp:tools:read": {
+        "label": "Ver herramientas de flujo de trabajo disponibles"
+      }
+    },
+    "workspace": {
+      "member": "Miembro",
+      "owner": "Propietario",
+      "personal": "Personal"
+    }
+  },
   "openSharedWorkflow": {
     "author": "Autor:",
     "copyAssetsAndOpen": "Importar recursos y abrir flujo de trabajo",
@@ -2443,7 +2639,8 @@
     "nonPublicAssetsWarningLine1": "Este flujo de trabajo incluye recursos no públicos.",
     "nonPublicAssetsWarningLine2": "Estos se importarán a tu biblioteca al abrir el flujo de trabajo",
     "openWithoutImporting": "Abrir sin importar",
-    "openWorkflow": "Abrir flujo de trabajo"
+    "openWorkflow": "Abrir flujo de trabajo",
+    "opening": "Abriendo flujo de trabajo compartido..."
   },
   "painter": {
     "background": "Fondo",
@@ -2659,20 +2856,6 @@
     "normal": "Normal",
     "parameters": "Parámetros",
     "pinned": "Fijado",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "Los datos del flujo de trabajo enviados al servidor están vacíos. Esto puede ser un error inesperado del sistema."
-      },
-      "prompt_no_outputs": {
-        "desc": "El flujo de trabajo no contiene ningún nodo de salida (por ejemplo, Guardar imagen, Vista previa de imagen) para producir un resultado."
-      },
-      "server_error_cloud": {
-        "desc": "El servidor encontró un error inesperado. Por favor, inténtalo de nuevo más tarde."
-      },
-      "server_error_local": {
-        "desc": "El servidor encontró un error inesperado. Por favor, revisa los registros del servidor."
-      }
-    },
     "properties": "Propiedades",
     "removeFavorite": "Quitar de favoritos",
     "resetAllParameters": "Restablecer todos los parámetros",
@@ -3070,6 +3253,7 @@
         "sourceDesc": "Agrupar por tipo de fuente (Core, Custom, API)"
       },
       "noBookmarkedNodes": "Aún no hay favoritos",
+      "noMatchingNodes": "No hay nodos que coincidan con \"{query}\"",
       "resetView": "Restablecer vista a la predeterminada",
       "sections": {
         "bookmarked": "Favoritos",
@@ -3455,8 +3639,7 @@
       "newest": "Más reciente",
       "popular": "Popular",
       "recommended": "Recomendado",
-      "searchPlaceholder": "Buscar...",
-      "vramLowToHigh": "Uso de VRAM (de bajo a alto)"
+      "searchPlaceholder": "Buscar..."
     },
     "sorting": "Ordenar por",
     "title": "Comienza con una Plantilla",
@@ -3620,7 +3803,8 @@
       "placeholderMesh": "Seleccionar malla...",
       "placeholderModel": "Seleccionar modelo...",
       "placeholderUnknown": "Seleccionar medio...",
-      "placeholderVideo": "Seleccionar video..."
+      "placeholderVideo": "Seleccionar video...",
+      "topResult": "Mejor resultado: {result}"
     },
     "valueControl": {
       "decrement": "Disminuir valor",

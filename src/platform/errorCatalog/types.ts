@@ -1,0 +1,69 @@
+import type { NodeError, PromptError } from '@/schemas/apiSchema'
+import type {
+  MissingMediaGroup,
+  MediaType
+} from '@/platform/missingMedia/types'
+import type { MissingModelGroup } from '@/platform/missingModel/types'
+import type { MissingNodeType } from '@/types/comfy'
+
+export type NodeValidationError = NodeError['errors'][number]
+
+export interface ResolvedErrorMessage {
+  catalogId?: string
+  /** Category/title for the error panel. */
+  displayTitle?: string
+  /** Message for grouped panel/overlay display. */
+  displayMessage?: string
+  /** Detail copy for expanded panel rows. */
+  displayDetails?: string
+  /** Short item label for rows/actions, e.g. "KSampler - model". */
+  displayItemLabel?: string
+  /** Title for single-error overlays/toasts. */
+  toastTitle?: string
+  /** Message for single-error overlays/toasts. */
+  toastMessage?: string
+}
+
+export type ResolvedMissingErrorMessage = ResolvedErrorMessage & {
+  displayTitle: string
+  displayMessage: string
+}
+
+export type RunErrorMessageSource =
+  | {
+      kind: 'node_validation'
+      error: NodeValidationError
+      nodeDisplayName: string
+    }
+  | {
+      kind: 'prompt'
+      error: PromptError
+      isCloud: boolean
+    }
+
+export type MissingErrorMessageSource =
+  | {
+      kind: 'missing_node'
+      nodeTypes: MissingNodeType[]
+      count: number
+      isCloud: boolean
+    }
+  | {
+      kind: 'swap_nodes'
+      nodeTypes: MissingNodeType[]
+      count: number
+      isCloud: boolean
+    }
+  | {
+      kind: 'missing_model'
+      groups: MissingModelGroup[]
+      count: number
+      isCloud: boolean
+    }
+  | {
+      kind: 'missing_media'
+      groups: MissingMediaGroup[]
+      count: number
+      mediaTypes: MediaType[]
+      isCloud: boolean
+    }
