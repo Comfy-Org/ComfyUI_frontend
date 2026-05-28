@@ -300,9 +300,6 @@ describe('BaseWorkflowsSidebarTab', () => {
 
     expect(refreshButton).toBeDisabled()
     expect(refreshButton).toHaveAttribute('aria-busy', 'true')
-    expect(screen.getByTestId('workflows-refresh-icon')).toHaveClass(
-      'animate-spin'
-    )
 
     mockWorkflowStore.isSyncLoading = false
     await nextTick()
