@@ -2,7 +2,6 @@
 import { computed, provide, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
 import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
 import { useFlatOutputAssets } from '@/platform/assets/composables/media/useFlatOutputAssets'
@@ -53,12 +52,9 @@ const outputMediaAssets = isCloud
   ? useFlatOutputAssets()
   : useAssetsApi('output')
 
-const transformCompatProps = useTransformCompatOverlayProps()
-
-const combinedProps = computed(() => ({
-  ...filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS),
-  ...transformCompatProps.value
-}))
+const combinedProps = computed(() =>
+  filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)
+)
 
 const getAssetData = () => {
   const nodeType: string | undefined =

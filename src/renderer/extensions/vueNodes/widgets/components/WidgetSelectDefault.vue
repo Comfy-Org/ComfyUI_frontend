@@ -60,7 +60,7 @@
         </ComboboxTrigger>
       </ComboboxAnchor>
 
-      <ComboboxPortal to="body">
+      <ComboboxPortal>
         <ComboboxContent
           data-capture-wheel="true"
           data-testid="widget-select-default-overlay"
