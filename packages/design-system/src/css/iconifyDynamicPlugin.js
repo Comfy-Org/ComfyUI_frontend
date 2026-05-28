@@ -16,14 +16,13 @@ function loadComfyIconSet() {
     const svgMatch = svg.match(/<svg\b([^>]*)>([\s\S]*?)<\/svg>/i)
     if (!svgMatch) continue
     const viewBox = svgMatch[1].match(/\bviewBox=(['"])(.*?)\1/i)?.[2]
-    const [, , width = '16', height = '16'] =
-      viewBox?.match(
-        /^(-?\d*\.?\d+)\s+(-?\d*\.?\d+)\s+(\d*\.?\d+)\s+(\d*\.?\d+)$/
-      ) ?? []
+    const viewBoxMatch = viewBox?.match(
+      /^(-?\d*\.?\d+)\s+(-?\d*\.?\d+)\s+(\d*\.?\d+)\s+(\d*\.?\d+)$/
+    )
     icons[name] = {
       body: svgMatch[2],
-      height: Number(height),
-      width: Number(width)
+      width: Number(viewBoxMatch?.[3] ?? '16'),
+      height: Number(viewBoxMatch?.[4] ?? '16')
     }
   }
   return { prefix: 'comfy', icons }
