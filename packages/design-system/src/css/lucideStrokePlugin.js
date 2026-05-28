@@ -20,6 +20,8 @@ import { matchIconName } from '@iconify/utils/lib/icon/name'
 
 const STROKE_WIDTHS = ['1', '1.3', '1.5', '2', '2.5']
 
+const SUPPORTED_PREFIX = 'lucide'
+
 const SCALE = 1.2
 
 class InvalidIconProbeError extends Error {}
@@ -30,6 +32,9 @@ function getDynamicCSSRulesWithStroke(icon, strokeWidth) {
     throw new InvalidIconProbeError(`Invalid icon name: "${icon}"`)
   }
   const [prefix, name] = nameParts
+  if (prefix !== SUPPORTED_PREFIX) {
+    throw new InvalidIconProbeError(`Unsupported icon prefix: "${prefix}"`)
+  }
   if (!(prefix.match(matchIconName) && name.match(matchIconName))) {
     throw new InvalidIconProbeError(`Invalid icon name: "${icon}"`)
   }
