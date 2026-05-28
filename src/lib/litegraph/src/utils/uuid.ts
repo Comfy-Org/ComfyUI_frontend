@@ -1,5 +1,6 @@
-// Using a template string for this is resulting in complex type workarounds. No current benefit beyond dev reading.
-export type UUID = string
+import type { UUID } from '@/utils/uuid'
+
+export type { UUID }
 
 /** Special-case zero-UUID, consisting entirely of zeros. Used as a default value. */
 export const zeroUuid = '00000000-0000-0000-0000-000000000000'
