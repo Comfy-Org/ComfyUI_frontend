@@ -105,14 +105,8 @@ export function useSelectedLiteGraphItems() {
   }
 
   /**
-   * Whether every selected node is already in the given mode.
-   *
-   * This is the predicate that determines whether toggling will turn the
-   * mode off, so menu labels (e.g. "Bypass" vs "Remove Bypass") can stay in
-   * sync with what {@link toggleSelectedNodesMode} will actually do. Returns
-   * false for an empty selection.
-   *
-   * @param mode - The LGraphEventMode to check against.
+   * True iff every selected node is in `mode`. Mirrors the predicate used by
+   * {@link toggleSelectedNodesMode} so labels match the toggle's effect.
    */
   const areAllSelectedNodesInMode = (mode: LGraphEventMode): boolean => {
     const selectedNodeArray = getSelectedNodeArray()
