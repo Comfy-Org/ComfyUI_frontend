@@ -1629,22 +1629,21 @@ export class ComfyApp {
             executionErrorStore.lastNodeErrors = hasNodeErrors
               ? nodeErrors
               : null
+            try {
+              if (res.prompt_id) {
+                executionStore.storeJob({
+                  id: res.prompt_id,
+                  nodes: Object.keys(p.output),
+                  promptOutput: p.output,
+                  workflow: queuedWorkflow
+                })
+              }
+            } catch (error) {}
             if (hasNodeErrors) {
               if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
                 executionErrorStore.showErrorOverlay()
               }
               this.canvas.draw(true, true)
-            } else {
-              try {
-                if (res.prompt_id) {
-                  executionStore.storeJob({
-                    id: res.prompt_id,
-                    nodes: Object.keys(p.output),
-                    promptOutput: p.output,
-                    workflow: queuedWorkflow
-                  })
-                }
-              } catch (error) {}
             }
           } catch (error: unknown) {
             if (

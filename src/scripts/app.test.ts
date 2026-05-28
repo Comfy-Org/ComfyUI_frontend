@@ -8,6 +8,7 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { ComfyApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
 import {
@@ -22,6 +23,7 @@ import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeError } from '@/schemas/apiSchema'
 
 const {
@@ -56,7 +58,7 @@ const {
     refreshNodeOutputs: vi.fn()
   },
   mockWorkspaceWorkflow: {
-    activeWorkflow: null
+    activeWorkflow: null as ComfyWorkflow | null
   },
   mockRefreshMissingModelPipeline: vi.fn()
 }))
@@ -169,6 +171,7 @@ describe('ComfyApp', () => {
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
     app.canvas = mockCanvas as LGraphCanvas
+    mockWorkspaceWorkflow.activeWorkflow = null
     mockApiKeyAuthStore.getApiKey.mockReturnValue(undefined)
     mockAuthStore.getAuthToken.mockResolvedValue(undefined)
     mockExtensionService.invokeExtensions.mockReturnValue([])
@@ -181,6 +184,11 @@ describe('ComfyApp', () => {
   describe('queuePrompt', () => {
     it('shows the error overlay for successful prompt responses with node errors', async () => {
       const graph = new LGraph()
+      const workflow = new ComfyWorkflow({
+        path: 'workflows/review.json',
+        modified: 0,
+        size: 0
+      })
       const promptOutput: ComfyApiWorkflow = {
         '1': {
           class_type: 'PreviewAny',
@@ -203,6 +211,7 @@ describe('ComfyApp', () => {
         }
       }
       Reflect.set(app, 'rootGraphInternal', graph)
+      mockWorkspaceWorkflow.activeWorkflow = workflow
       vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
         output: promptOutput,
         workflow: createWorkflowGraphData()
@@ -217,8 +226,13 @@ describe('ComfyApp', () => {
       await expect(app.queuePrompt(0)).resolves.toBe(false)
 
       const errorStore = useExecutionErrorStore()
+      const executionStore = useExecutionStore()
       expect(errorStore.lastNodeErrors).toEqual(nodeErrors)
       expect(errorStore.isErrorOverlayOpen).toBe(true)
+      expect(executionStore.queuedJobs['job-1']?.nodes).toEqual({ '1': false })
+      expect(executionStore.jobIdToSessionWorkflowPath.get('job-1')).toBe(
+        'workflows/review.json'
+      )
       expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
     })
   })
