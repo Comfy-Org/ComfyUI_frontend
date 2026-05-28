@@ -176,7 +176,8 @@ export const useLitegraphService = () => {
   const toastStore = useToastStore()
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
-  const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
+  const { areAllSelectedNodesInMode, toggleSelectedNodesMode } =
+    useSelectedLiteGraphItems()
   const subgraphPseudoWidgetCache = new WeakMap<
     SubgraphNode,
     SubgraphPseudoWidgetCache<LGraphNode, IBaseWidget>
@@ -719,7 +720,9 @@ export const useLitegraphService = () => {
       }
 
       options.push({
-        content: 'Bypass',
+        content: areAllSelectedNodesInMode(LGraphEventMode.BYPASS)
+          ? t('contextMenu.Remove Bypass')
+          : t('contextMenu.Bypass'),
         callback: () => {
           toggleSelectedNodesMode(LGraphEventMode.BYPASS)
           canvas.setDirty(true, true)

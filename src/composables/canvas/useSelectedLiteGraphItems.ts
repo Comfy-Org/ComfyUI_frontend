@@ -93,6 +93,35 @@ export function useSelectedLiteGraphItems() {
     return collectFromNodes(nodeArray)
   }
 
+  const getSelectedNodeArray = (): LGraphNode[] => {
+    const selectedNodes = app.canvas.selected_nodes
+    if (!selectedNodes) return []
+
+    const selectedNodeArray: LGraphNode[] = []
+    for (const i in selectedNodes) {
+      selectedNodeArray.push(selectedNodes[i])
+    }
+    return selectedNodeArray
+  }
+
+  /**
+   * Whether every selected node is already in the given mode.
+   *
+   * This is the predicate that determines whether toggling will turn the
+   * mode off, so menu labels (e.g. "Bypass" vs "Remove Bypass") can stay in
+   * sync with what {@link toggleSelectedNodesMode} will actually do. Returns
+   * false for an empty selection.
+   *
+   * @param mode - The LGraphEventMode to check against.
+   */
+  const areAllSelectedNodesInMode = (mode: LGraphEventMode): boolean => {
+    const selectedNodeArray = getSelectedNodeArray()
+    return (
+      selectedNodeArray.length > 0 &&
+      selectedNodeArray.every((node) => node.mode === mode)
+    )
+  }
+
   /**
    * Toggle the execution mode of all selected nodes
    *
@@ -102,18 +131,10 @@ export function useSelectedLiteGraphItems() {
    * @param mode - The LGraphEventMode to toggle to (e.g., NEVER for mute, BYPASS for bypass)
    */
   const toggleSelectedNodesMode = (mode: LGraphEventMode): void => {
-    const selectedNodes = app.canvas.selected_nodes
-    if (!selectedNodes) return
-
-    // Convert selected_nodes object to array
-    const selectedNodeArray: LGraphNode[] = []
-    for (const i in selectedNodes) {
-      selectedNodeArray.push(selectedNodes[i])
-    }
-    const allNodesMatch = !selectedNodeArray.some(
-      (selectedNode) => selectedNode.mode !== mode
-    )
-    const newModeForSelectedNode = allNodesMatch ? LGraphEventMode.ALWAYS : mode
+    const selectedNodeArray = getSelectedNodeArray()
+    const newModeForSelectedNode = areAllSelectedNodesInMode(mode)
+      ? LGraphEventMode.ALWAYS
+      : mode
 
     for (const selectedNode of selectedNodeArray)
       selectedNode.mode = newModeForSelectedNode
@@ -126,6 +147,7 @@ export function useSelectedLiteGraphItems() {
     hasSelectableItems,
     hasMultipleSelectableItems,
     getSelectedNodes,
+    areAllSelectedNodesInMode,
     toggleSelectedNodesMode
   }
 }
