@@ -48,7 +48,7 @@ describe('useWidgetValueStore', () => {
     it('getWidget returns undefined for unregistered widget', () => {
       const store = useWidgetValueStore()
       expect(
-        store.getWidget(graphA, 'missing' as NodeId, 'widget')
+        store._lookupWidgetState(graphA, 'missing' as NodeId, 'widget')
       ).toBeUndefined()
     })
 
@@ -61,9 +61,9 @@ describe('useWidgetValueStore', () => {
       expect(state.value).toBe(100)
 
       state.value = 200
-      expect(store.getWidget(graphA, 'node-1' as NodeId, 'seed')?.value).toBe(
-        200
-      )
+      expect(
+        store._lookupWidgetState(graphA, 'node-1' as NodeId, 'seed')?.value
+      ).toBe(200)
     })
 
     it('stores different value types', () => {
@@ -76,17 +76,17 @@ describe('useWidgetValueStore', () => {
         widget('node-1', 'array', 'combo', [1, 2, 3])
       )
 
-      expect(store.getWidget(graphA, 'node-1' as NodeId, 'text')?.value).toBe(
-        'hello'
-      )
-      expect(store.getWidget(graphA, 'node-1' as NodeId, 'number')?.value).toBe(
-        42
-      )
       expect(
-        store.getWidget(graphA, 'node-1' as NodeId, 'boolean')?.value
+        store._lookupWidgetState(graphA, 'node-1' as NodeId, 'text')?.value
+      ).toBe('hello')
+      expect(
+        store._lookupWidgetState(graphA, 'node-1' as NodeId, 'number')?.value
+      ).toBe(42)
+      expect(
+        store._lookupWidgetState(graphA, 'node-1' as NodeId, 'boolean')?.value
       ).toBe(true)
       expect(
-        store.getWidget(graphA, 'node-1' as NodeId, 'array')?.value
+        store._lookupWidgetState(graphA, 'node-1' as NodeId, 'array')?.value
       ).toEqual([1, 2, 3])
     })
   })
@@ -130,7 +130,7 @@ describe('useWidgetValueStore', () => {
       const store = useWidgetValueStore()
       store.registerWidget(graphA, widget('node-1', 'seed', 'number', 100))
 
-      const state = store.getWidget(graphA, 'node-1' as NodeId, 'seed')
+      const state = store._lookupWidgetState(graphA, 'node-1' as NodeId, 'seed')
       expect(state).toBeDefined()
       expect(state?.type).toBe('number')
       expect(state?.value).toBe(100)
@@ -139,7 +139,7 @@ describe('useWidgetValueStore', () => {
     it('getWidget returns undefined for missing widget', () => {
       const store = useWidgetValueStore()
       expect(
-        store.getWidget(graphA, 'missing' as NodeId, 'widget')
+        store._lookupWidgetState(graphA, 'missing' as NodeId, 'widget')
       ).toBeUndefined()
     })
 
@@ -164,7 +164,7 @@ describe('useWidgetValueStore', () => {
 
       state.disabled = true
       expect(
-        store.getWidget(graphA, 'node-1' as NodeId, 'seed')?.disabled
+        store._lookupWidgetState(graphA, 'node-1' as NodeId, 'seed')?.disabled
       ).toBe(true)
     })
 
@@ -176,13 +176,13 @@ describe('useWidgetValueStore', () => {
       )
 
       state.label = 'Random Seed'
-      expect(store.getWidget(graphA, 'node-1' as NodeId, 'seed')?.label).toBe(
-        'Random Seed'
-      )
+      expect(
+        store._lookupWidgetState(graphA, 'node-1' as NodeId, 'seed')?.label
+      ).toBe('Random Seed')
 
       state.label = undefined
       expect(
-        store.getWidget(graphA, 'node-1' as NodeId, 'seed')?.label
+        store._lookupWidgetState(graphA, 'node-1' as NodeId, 'seed')?.label
       ).toBeUndefined()
     })
   })
@@ -193,8 +193,12 @@ describe('useWidgetValueStore', () => {
       store.registerWidget(graphA, widget('node-1', 'seed', 'number', 1))
       store.registerWidget(graphB, widget('node-1', 'seed', 'number', 2))
 
-      expect(store.getWidget(graphA, 'node-1' as NodeId, 'seed')?.value).toBe(1)
-      expect(store.getWidget(graphB, 'node-1' as NodeId, 'seed')?.value).toBe(2)
+      expect(
+        store._lookupWidgetState(graphA, 'node-1' as NodeId, 'seed')?.value
+      ).toBe(1)
+      expect(
+        store._lookupWidgetState(graphB, 'node-1' as NodeId, 'seed')?.value
+      ).toBe(2)
     })
 
     it('clearGraph only removes one graph namespace', () => {
@@ -205,9 +209,11 @@ describe('useWidgetValueStore', () => {
       store.clearGraph(graphA)
 
       expect(
-        store.getWidget(graphA, 'node-1' as NodeId, 'seed')
+        store._lookupWidgetState(graphA, 'node-1' as NodeId, 'seed')
       ).toBeUndefined()
-      expect(store.getWidget(graphB, 'node-1' as NodeId, 'seed')?.value).toBe(2)
+      expect(
+        store._lookupWidgetState(graphB, 'node-1' as NodeId, 'seed')?.value
+      ).toBe(2)
     })
   })
 
@@ -269,7 +275,7 @@ describe('useWidgetValueStore', () => {
       view.label = 'ignored'
       view.disabled = true
       expect(
-        store.getWidget(graphA, sample.nodeId, sample.name)
+        store._lookupWidgetState(graphA, sample.nodeId, sample.name)
       ).toBeUndefined()
     })
 
@@ -309,7 +315,7 @@ describe('useWidgetValueStore', () => {
       store.registerWidget(graphA, sample)
       store.clearGraph(graphA)
       expect(
-        store.getWidget(graphA, sample.nodeId, sample.name)
+        store._lookupWidgetState(graphA, sample.nodeId, sample.name)
       ).toBeUndefined()
     })
   })

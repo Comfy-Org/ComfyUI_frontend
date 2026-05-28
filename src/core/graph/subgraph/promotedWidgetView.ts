@@ -1,4 +1,4 @@
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { Point } from '@/lib/litegraph/src/interfaces'
@@ -11,10 +11,6 @@ import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { t } from '@/i18n'
 import { nextValueForLinkedTarget } from '@/scripts/valueControl'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import {
-  stripGraphPrefix,
-  useWidgetValueStore
-} from '@/stores/widgetValueStore'
 import type { WidgetState } from '@/stores/widgetValueStore'
 import {
   resolveConcretePromotedWidget,
@@ -418,19 +414,11 @@ class PromotedWidgetView implements IPromotedWidgetView {
     if (linkedState) return linkedState
 
     const resolved = this.resolveDeepest()
-    if (!resolved) return undefined
-    return useWidgetValueStore().getWidget(
-      this.graphId,
-      stripGraphPrefix(String(resolved.node.id)),
-      resolved.widget.name
-    )
+    if (!resolved?.widget.entityId) return undefined
+    return getWidgetState(resolved.widget.entityId)
   }
 
-  private getLinkedInputWidgets(): Array<{
-    nodeId: NodeId
-    widgetName: string
-    widget: IBaseWidget
-  }> {
+  private getLinkedInputWidgets(): IBaseWidget[] {
     const linkedInputSlot = this.subgraphNode.inputs.find((input) => {
       if (!input._subgraphSlot) return false
       if (matchPromotedInput([input], this) !== input) return false
@@ -457,23 +445,14 @@ class PromotedWidgetView implements IPromotedWidgetView {
     const linkedInput = linkedInputSlot?._subgraphSlot
     if (!linkedInput) return []
 
-    return linkedInput
-      .getConnectedWidgets()
-      .filter(hasWidgetNode)
-      .map((widget) => ({
-        nodeId: stripGraphPrefix(String(widget.node.id)),
-        widgetName: widget.name,
-        widget
-      }))
+    return linkedInput.getConnectedWidgets().filter(hasWidgetNode)
   }
 
   private getLinkedInputWidgetStates(): WidgetState[] {
-    const widgetStore = useWidgetValueStore()
-
     return this.getLinkedInputWidgets()
-      .map(({ nodeId, widgetName }) =>
-        widgetStore.getWidget(this.graphId, nodeId, widgetName)
-      )
+      .map((widget) => widget.entityId)
+      .filter((id): id is WidgetEntityId => id !== undefined)
+      .map((id) => getWidgetState(id))
       .filter((state): state is WidgetState => state !== undefined)
   }
 

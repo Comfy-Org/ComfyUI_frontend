@@ -1075,11 +1075,18 @@ describe('SubgraphWidgetPromotion', () => {
         expectPromotedWidgetView(first)
         expectPromotedWidgetView(second)
         expect(
-          widgetStore.getWidget(reloaded.rootGraph.id, reloaded.id, first.name)
+          widgetStore._lookupWidgetState(
+            reloaded.rootGraph.id,
+            reloaded.id,
+            first.name
+          )
         ).toBeUndefined()
         expect(
-          widgetStore.getWidget(reloaded.rootGraph.id, reloaded.id, second.name)
-            ?.value
+          widgetStore._lookupWidgetState(
+            reloaded.rootGraph.id,
+            reloaded.id,
+            second.name
+          )?.value
         ).toBe('second host value')
         expect(
           widgetStore.getNodeWidgets(reloaded.rootGraph.id, reloaded.id)

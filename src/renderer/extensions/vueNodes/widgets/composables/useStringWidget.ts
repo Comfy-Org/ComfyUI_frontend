@@ -7,7 +7,7 @@ import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { getWidgetStateByTriple } from '@/world/widgetValueIO'
 
 const TRACKPAD_DETECTION_THRESHOLD = 50
 
@@ -18,7 +18,6 @@ function addMultilineWidget(
   name: string,
   opts: { defaultVal: string; placeholder?: string }
 ) {
-  const widgetStore = useWidgetValueStore()
   const inputEl = document.createElement('textarea')
   inputEl.className = 'comfy-multiline-input'
   inputEl.dataset.testid = 'dom-widget-textarea'
@@ -28,15 +27,20 @@ function addMultilineWidget(
 
   const widget = node.addDOMWidget(name, 'customtext', inputEl, {
     getValue(): string {
-      const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
-      const widgetState = widgetStore.getWidget(graphId, node.id, name)
-
+      const widgetState = getWidgetStateByTriple(
+        resolveNodeRootGraphId(node, app.rootGraph.id),
+        node.id,
+        name
+      )
       return (widgetState?.value as string) ?? inputEl.value
     },
     setValue(v: string) {
       inputEl.value = v
-      const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
-      const widgetState = widgetStore.getWidget(graphId, node.id, name)
+      const widgetState = getWidgetStateByTriple(
+        resolveNodeRootGraphId(node, app.rootGraph.id),
+        node.id,
+        name
+      )
       if (widgetState) widgetState.value = v
     }
   })

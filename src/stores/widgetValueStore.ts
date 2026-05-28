@@ -27,7 +27,14 @@ import { getWorld } from '@/world/worldInstance'
 
 export type { WidgetState } from '@/world/widgets/widgetState'
 
-export function stripGraphPrefix(scopedId: NodeId | string): NodeId {
+/**
+ * Strips graph-scope prefix segments from a node id, returning the
+ * trailing raw node id. Used by `useProcessedWidgets` to derive stable
+ * DOM identity keys for nested node renders — **not** for widget value
+ * lookup. Widget identity routes through {@link WidgetEntityId} via
+ * `src/world/widgetValueIO.ts`.
+ */
+export function extractRawNodeId(scopedId: NodeId | string): NodeId {
   return String(scopedId).replace(/^(.*:)+/, '') as NodeId
 }
 
@@ -120,12 +127,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   /**
-   * @deprecated Use `getWidgetState(widget.entityId)` or
-   * `readWidgetValue(widget.entityId)` from `src/world/widgetValueIO.ts` —
-   * the branded `WidgetEntityId` prevents producer/consumer drift that loose
-   * triples allow.
+   * Internal lookup primitive used by `src/world/widgetValueIO.ts`. External
+   * callers should use `getWidgetState(widget.entityId)` /
+   * `getWidgetStateByTriple(graphId, nodeId, name)` from widgetValueIO so
+   * the branded `WidgetEntityId` prevents producer/consumer drift.
    */
-  function getWidget(
+  function _lookupWidgetState(
     graphId: UUID,
     nodeId: NodeId,
     widgetName: string
@@ -201,7 +208,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
   return {
     registerWidget,
-    getWidget,
+    _lookupWidgetState,
     setValue,
     getNodeWidgets,
     getNodeWidgetsByName,

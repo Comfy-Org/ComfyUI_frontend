@@ -25,14 +25,11 @@ import {
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
 import type { WidgetState } from '@/stores/widgetValueStore'
-import {
-  stripGraphPrefix,
-  useWidgetValueStore
-} from '@/stores/widgetValueStore'
+import { extractRawNodeId } from '@/stores/widgetValueStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { WidgetEntityId } from '@/world/entityIds'
-import { getWidgetState } from '@/world/widgetValueIO'
+import { getWidgetState, getWidgetStateByTriple } from '@/world/widgetValueIO'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   LinkedUpstreamInfo,
@@ -135,10 +132,10 @@ export function getWidgetIdentity(
   const slotNameForIdentity = widget.slotName ?? widget.name
   const hostNodeIdRoot =
     nodeId !== undefined && nodeId !== ''
-      ? `node:${String(stripGraphPrefix(nodeId))}`
+      ? `node:${String(extractRawNodeId(nodeId))}`
       : undefined
   const stableIdentityRoot = widget.nodeId
-    ? `node:${String(stripGraphPrefix(widget.nodeId))}`
+    ? `node:${String(extractRawNodeId(widget.nodeId))}`
     : widget.sourceExecutionId
       ? `exec:${widget.sourceExecutionId}`
       : hostNodeIdRoot
@@ -173,7 +170,6 @@ export function computeProcessedWidgets({
 
   const executionErrorStore = useExecutionErrorStore()
   const missingModelStore = useMissingModelStore()
-  const widgetValueStore = useWidgetValueStore()
 
   const nodeExecId =
     isGraphReady && rootGraph
@@ -200,13 +196,11 @@ export function computeProcessedWidgets({
     const identity = getWidgetIdentity(widget, nodeId, index)
     const widgetState = widget.entityId
       ? getWidgetState(widget.entityId)
-      : graphId
-        ? widgetValueStore.getWidget(
-            graphId,
-            String(stripGraphPrefix(widget.nodeId ?? nodeId ?? '')),
-            widget.name
-          )
-        : undefined
+      : getWidgetStateByTriple(
+          graphId,
+          String(extractRawNodeId(widget.nodeId ?? nodeId ?? '')),
+          widget.name
+        )
     const mergedOptions: IWidgetOptions = {
       ...(widget.options ?? {}),
       ...(widgetState?.options ?? {})
@@ -254,7 +248,7 @@ export function computeProcessedWidgets({
     widgetState,
     identity: { renderKey }
   } of uniqueWidgets) {
-    const bareWidgetId = String(stripGraphPrefix(widget.nodeId ?? nodeId ?? ''))
+    const bareWidgetId = String(extractRawNodeId(widget.nodeId ?? nodeId ?? ''))
 
     const vueComponent =
       getComponent(widget.type) ||
@@ -318,7 +312,7 @@ export function computeProcessedWidgets({
         e,
         widget.name,
         widget.nodeId !== undefined
-          ? String(stripGraphPrefix(widget.nodeId))
+          ? String(extractRawNodeId(widget.nodeId))
           : undefined
       )
     }

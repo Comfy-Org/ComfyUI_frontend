@@ -7,7 +7,7 @@ import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { getWidgetStateByTriple } from '@/world/widgetValueIO'
 
 import { curveDataToFloatLUT } from '@/components/curve/curveUtils'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
@@ -121,7 +121,6 @@ function createInnerPreview(
   lastError: Ref<string | null>,
   isActiveOut: Ref<boolean>
 ): () => void {
-  const widgetValueStore = useWidgetValueStore()
   const nodeOutputStore = useNodeOutputStore()
   const { nodeToNodeLocatorId } = useWorkflowStore()
 
@@ -194,18 +193,15 @@ function createInnerPreview(
     if (isGLSLNode.value) {
       const nId = nodeId.value
       if (nId == null) return undefined
-      return widgetValueStore.getWidget(gId, nId, 'fragment_shader')?.value as
+      return getWidgetStateByTriple(gId, nId, 'fragment_shader')?.value as
         | string
         | undefined
     }
 
     const inner = innerGLSLNode
     if (inner) {
-      return widgetValueStore.getWidget(
-        gId,
-        inner.id as NodeId,
-        'fragment_shader'
-      )?.value as string | undefined
+      return getWidgetStateByTriple(gId, inner.id as NodeId, 'fragment_shader')
+        ?.value as string | undefined
     }
 
     return undefined
@@ -291,19 +287,15 @@ function createInnerPreview(
       : nodeId.value
     if (sizeModeNodeId == null) return null
 
-    const sizeMode = widgetValueStore.getWidget(
-      gId,
-      sizeModeNodeId,
-      'size_mode'
-    )
+    const sizeMode = getWidgetStateByTriple(gId, sizeModeNodeId, 'size_mode')
     if (sizeMode?.value !== 'custom') return null
 
-    const widthWidget = widgetValueStore.getWidget(
+    const widthWidget = getWidgetStateByTriple(
       gId,
       sizeModeNodeId,
       'size_mode.width'
     )
-    const heightWidget = widgetValueStore.getWidget(
+    const heightWidget = getWidgetStateByTriple(
       gId,
       sizeModeNodeId,
       'size_mode.height'

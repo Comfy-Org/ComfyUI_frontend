@@ -1,13 +1,13 @@
 import { setActivePinia, createPinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { resetWorldInstance } from '@/world/worldInstance'
 
 import { widgetEntityId } from './entityIds'
 import {
   ensureWidgetState,
   getWidgetState,
+  getWidgetStateByTriple,
   readWidgetValue,
   writeWidgetValue
 } from './widgetValueIO'
@@ -145,7 +145,7 @@ describe('widgetValueIO', () => {
       expect(readWidgetValue(idB)).toBe(22)
     })
 
-    it('matches the legacy triple-keyed API for the same widget', () => {
+    it('agrees with getWidgetStateByTriple for the same widget', () => {
       const id = widgetEntityId(graphA, 1, 'seed')
       const init = {
         type: 'number',
@@ -157,8 +157,9 @@ describe('widgetValueIO', () => {
       }
       ensureWidgetState(id, init)
 
-      const viaLegacy = useWidgetValueStore().getWidget(graphA, '1', 'seed')
-      expect(viaLegacy).toEqual(getWidgetState(id))
+      expect(getWidgetStateByTriple(graphA, '1', 'seed')).toEqual(
+        getWidgetState(id)
+      )
     })
   })
 })

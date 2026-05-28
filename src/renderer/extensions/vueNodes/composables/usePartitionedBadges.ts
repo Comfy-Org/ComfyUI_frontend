@@ -9,7 +9,7 @@ import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { app } from '@/scripts/app'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { getWidgetStateByTriple } from '@/world/widgetValueIO'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeBadgeMode } from '@/types/nodeSource'
 
@@ -40,13 +40,12 @@ export function trackNodePrice(node: TrackableNode) {
 
   // Access only the widget values that affect pricing (from widgetValueStore)
   const relevantNames = getRelevantWidgetNames(node.type)
-  const widgetStore = useWidgetValueStore()
   const graphId = app.canvas?.graph?.rootGraph.id
   if (relevantNames.length > 0 && node.id != null) {
     for (const name of relevantNames) {
       // Access value from store to create reactive dependency
       if (!graphId) continue
-      void widgetStore.getWidget(graphId, node.id, name)?.value
+      void getWidgetStateByTriple(graphId, node.id, name)?.value
     }
   }
   // Access input connections for regular inputs
@@ -142,13 +141,12 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
       if (isDynamicPricing.value) {
         // Access only the widget values that affect pricing (from widgetValueStore)
         const relevantNames = relevantPricingWidgets.value
-        const widgetStore = useWidgetValueStore()
         const graphId = app.canvas?.graph?.rootGraph.id
         if (relevantNames.length > 0 && nodeData?.id != null) {
           for (const name of relevantNames) {
             // Access value from store to create reactive dependency
             if (!graphId) continue
-            void widgetStore.getWidget(graphId, nodeData.id, name)?.value
+            void getWidgetStateByTriple(graphId, nodeData.id, name)?.value
           }
         }
         // Access input connections for regular inputs

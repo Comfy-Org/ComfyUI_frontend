@@ -16,11 +16,8 @@ import {
   shouldExpand
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import {
-  useWidgetValueStore,
-  stripGraphPrefix
-} from '@/stores/widgetValueStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
+import { getWidgetState } from '@/world/widgetValueIO'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -58,7 +55,6 @@ const { t } = useI18n()
 
 const canvasStore = useCanvasStore()
 const nodeDefStore = useNodeDefStore()
-const widgetValueStore = useWidgetValueStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
 const isEditing = ref(false)
 
@@ -74,10 +70,8 @@ function resolveSourceWidget(): { node: LGraphNode; widget: IBaseWidget } {
 
 const simplifiedWidget = computed((): SimplifiedWidget => {
   const { node: sourceNode, widget: sourceWidget } = resolveSourceWidget()
-  const graphId = node.graph?.rootGraph?.id
-  const bareNodeId = stripGraphPrefix(String(sourceNode.id))
-  const widgetState = graphId
-    ? widgetValueStore.getWidget(graphId, bareNodeId, sourceWidget.name)
+  const widgetState = sourceWidget.entityId
+    ? getWidgetState(sourceWidget.entityId)
     : undefined
 
   return {

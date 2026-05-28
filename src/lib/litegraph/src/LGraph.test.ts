@@ -307,9 +307,9 @@ describe('Graph Clearing and Callbacks', () => {
       disabled: undefined
     })
 
-    expect(widgetValueStore.getWidget(graphId, '10' as NodeId, 'seed')).toEqual(
-      expect.objectContaining({ value: 1 })
-    )
+    expect(
+      widgetValueStore._lookupWidgetState(graphId, '10' as NodeId, 'seed')
+    ).toEqual(expect.objectContaining({ value: 1 }))
     expect(
       previewExposureStore.getExposures(graphId, `${graphId}:1`)
     ).toHaveLength(1)
@@ -317,7 +317,7 @@ describe('Graph Clearing and Callbacks', () => {
     graph.clear()
 
     expect(
-      widgetValueStore.getWidget(graphId, '10' as NodeId, 'seed')
+      widgetValueStore._lookupWidgetState(graphId, '10' as NodeId, 'seed')
     ).toBeUndefined()
     expect(previewExposureStore.getExposures(graphId, `${graphId}:1`)).toEqual(
       []

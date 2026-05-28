@@ -90,7 +90,7 @@ describe('PromotedWidgetView — host-wins semantics', () => {
 
     view.value = 99
 
-    const interiorState = widgetStore.getWidget(
+    const interiorState = widgetStore._lookupWidgetState(
       subgraph.rootGraph.id,
       String(interior.id),
       'widget'

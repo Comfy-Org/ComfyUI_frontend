@@ -47,9 +47,11 @@ describe('Node Reactivity', () => {
     expect((widget as BaseWidget).node.id).toBe(node.id)
 
     // Initial value should be in store after setNodeId was called
-    expect(store.getWidget(graph.id, node.id, 'testnum')?.value).toBe(2)
+    expect(store._lookupWidgetState(graph.id, node.id, 'testnum')?.value).toBe(
+      2
+    )
 
-    const state = store.getWidget(graph.id, node.id, 'testnum')
+    const state = store._lookupWidgetState(graph.id, node.id, 'testnum')
     if (!state) throw new Error('Expected widget state to exist')
 
     const onValueChange = vi.fn()
@@ -74,7 +76,7 @@ describe('Node Reactivity', () => {
     })
     await nextTick()
 
-    const state = store.getWidget(graph.id, node.id, 'testnum')
+    const state = store._lookupWidgetState(graph.id, node.id, 'testnum')
     if (!state) throw new Error('Expected widget state to exist')
 
     const widgetValue = computed(() => state.value)
