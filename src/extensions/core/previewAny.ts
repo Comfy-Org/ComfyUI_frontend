@@ -58,7 +58,7 @@ useExtensionService().registerExtension({
         showValueWidget.options.hidden = true
         showValueWidget.options.read_only = true
         showValueWidget.options.serialize = false
-        showValueWidget.element.readOnly = true
+        if (showValueWidget.element) showValueWidget.element.readOnly = true
         showValueWidget.serialize = false
 
         showValueWidgetPlain.label = 'Preview'
@@ -66,7 +66,8 @@ useExtensionService().registerExtension({
         showValueWidgetPlain.options.hidden = false
         showValueWidgetPlain.options.read_only = true
         showValueWidgetPlain.options.serialize = false
-        showValueWidgetPlain.element.readOnly = true
+        if (showValueWidgetPlain.element)
+          showValueWidgetPlain.element.readOnly = true
         showValueWidgetPlain.serialize = false
 
         // The previewMode toggle is a frontend-only display preference and

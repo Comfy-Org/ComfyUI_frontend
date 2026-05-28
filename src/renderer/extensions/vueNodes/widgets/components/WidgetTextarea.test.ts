@@ -20,6 +20,12 @@ vi.mock('@/composables/graph/useMoreOptionsMenu', () => ({
   isNodeOptionsOpen: mockIsNodeOptionsOpen
 }))
 
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: () => ({
+    get: () => false
+  })
+}))
+
 function createTextareaWidget(
   value: string = 'default text',
   options: SimplifiedWidget<string>['options'] = {},
