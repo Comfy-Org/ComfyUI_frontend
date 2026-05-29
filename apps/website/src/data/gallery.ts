@@ -11,8 +11,7 @@ export interface GalleryItem {
   visible?: boolean
 }
 
-/** @knipIgnoreUsedByStackedPR */
-export const galleryItems: GalleryItem[] = [
+const galleryItems: GalleryItem[] = [
   {
     id: 'until-our-eye-interlink-harajuku',
     video: 'https://media.comfy.org/videos/compressed_512/eye.webm',
