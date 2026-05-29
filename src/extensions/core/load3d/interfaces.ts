@@ -22,13 +22,6 @@ interface CameraQuaternion {
   w: number
 }
 
-interface CameraRotation {
-  x: number
-  y: number
-  z: number
-  order: string
-}
-
 interface CameraFrustum {
   left: number
   right: number
@@ -42,7 +35,6 @@ export interface CameraState {
   zoom: number
   cameraType: CameraType
   quaternion?: CameraQuaternion
-  rotation?: CameraRotation
   fov?: number
   aspect?: number
   near?: number
@@ -50,27 +42,21 @@ export interface CameraState {
   frustum?: CameraFrustum
 }
 
-export interface ModelTransform {
-  uuid: string
-  name: string
-  type: string
-  position: { x: number; y: number; z: number }
-  rotation: { x: number; y: number; z: number; order: string }
-  quaternion: { x: number; y: number; z: number; w: number }
-  scale: { x: number; y: number; z: number }
-  up: { x: number; y: number; z: number }
-  visible: boolean
-  matrix: number[]
+// Coordinate system: right-handed, Y-up, world space
+export interface Model3DTransform {
+  position: { x: number; y: number; z: number } // scene units
+  quaternion: { x: number; y: number; z: number; w: number } // normalized, dimensionless; world rotation
+  scale: { x: number; y: number; z: number } // dimensionless multiplier
 }
 
-export type ModelInfo = ModelTransform[]
+export type Model3DInfo = Model3DTransform[]
 
 export interface SceneConfig {
   showGrid: boolean
   backgroundColor: string
   backgroundImage?: string
   backgroundRenderMode?: BackgroundRenderModeType
-  models?: ModelInfo
+  models?: Model3DInfo
 }
 
 export type GizmoMode = 'translate' | 'rotate' | 'scale'

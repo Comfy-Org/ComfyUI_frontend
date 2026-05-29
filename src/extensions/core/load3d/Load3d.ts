@@ -25,7 +25,7 @@ import type {
   Load3DOptions,
   LoadModelOptions,
   MaterialMode,
-  ModelTransform,
+  Model3DTransform,
   UpDirection
 } from './interfaces'
 import { attachContextMenuGuard } from './load3dContextMenuGuard'
@@ -915,7 +915,7 @@ class Load3d {
     return this.gizmoManager.getTransform()
   }
 
-  public getModelInfo(): ModelTransform | null {
+  public getModelInfo(): Model3DTransform | null {
     return this.gizmoManager.getModelInfo()
   }
 

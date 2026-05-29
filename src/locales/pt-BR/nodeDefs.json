@@ -16152,6 +16152,10 @@
       "images": {
         "name": "imagens",
         "tooltip": "Lista de imagens a serem salvas."
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Escolha entre sobrescrever arquivos existentes ou incrementar os nomes dos arquivos para evitar sobrescrita."
       }
     }
   },
@@ -16170,6 +16174,10 @@
       "images": {
         "name": "imagens",
         "tooltip": "Lista de imagens a serem salvas."
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Escolha entre sobrescrever arquivos existentes ou incrementar os nomes dos arquivos para evitar sobrescrita."
       },
       "texts": {
         "name": "textos",

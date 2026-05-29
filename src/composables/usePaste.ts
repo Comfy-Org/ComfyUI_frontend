@@ -236,7 +236,7 @@ export const usePaste = () => {
 
     // No image found. Look for node data
     data = data.getData('text/plain')
-    let workflow: ComfyWorkflowJSON | null = null
+    let workflow: ComfyWorkflowJSON | null
     try {
       data = data.slice(data.indexOf('{'))
       workflow = JSON.parse(data)
