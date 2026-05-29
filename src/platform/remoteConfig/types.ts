@@ -104,4 +104,5 @@ export type RemoteConfig = {
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
   sentry_dsn?: string
+  new_user_default_template_tab?: string
 }

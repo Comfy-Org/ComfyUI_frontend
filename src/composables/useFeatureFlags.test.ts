@@ -219,5 +219,66 @@ describe('useFeatureFlags', () => {
       const { flags } = useFeatureFlags()
       expect(flags.teamWorkspacesEnabled).toBe(true)
     })
+
+    it('newUserDefaultTemplateTab returns dev override value', () => {
+      localStorage.setItem(
+        'ff:new_user_default_template_tab',
+        JSON.stringify('popular')
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.newUserDefaultTemplateTab).toBe('popular')
+    })
+
+    it('newUserDefaultTemplateTab trims whitespace', () => {
+      localStorage.setItem(
+        'ff:new_user_default_template_tab',
+        JSON.stringify('  popular  ')
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.newUserDefaultTemplateTab).toBe('popular')
+    })
+
+    it.each(['', '   ', '\t\n'])(
+      'newUserDefaultTemplateTab normalizes %j to undefined',
+      (raw) => {
+        localStorage.setItem(
+          'ff:new_user_default_template_tab',
+          JSON.stringify(raw)
+        )
+
+        const { flags } = useFeatureFlags()
+        expect(flags.newUserDefaultTemplateTab).toBeUndefined()
+      }
+    )
+
+    it('newUserDefaultTemplateTab returns undefined when unset', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.newUserDefaultTemplateTab).toBeUndefined()
+    })
+
+    it('newUserDefaultTemplateTab falls through to server feature when remoteConfig is blank', async () => {
+      const { remoteConfig } =
+        await import('@/platform/remoteConfig/remoteConfig')
+      const previous = remoteConfig.value
+      remoteConfig.value = { new_user_default_template_tab: '   ' }
+      vi.mocked(api.getServerFeature).mockImplementation((path) => {
+        if (path === ServerFeatureFlag.NEW_USER_DEFAULT_TEMPLATE_TAB)
+          return 'popular'
+        return undefined
+      })
+
+      try {
+        const { flags } = useFeatureFlags()
+        expect(flags.newUserDefaultTemplateTab).toBe('popular')
+      } finally {
+        remoteConfig.value = previous
+      }
+    })
   })
 })
