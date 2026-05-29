@@ -1,33 +1,35 @@
-import { isMiddleForPointerEvent } from '@/base/pointerUtils'
+import {
+  isMiddleButtonEvent,
+  isMiddleButtonHeld,
+  isMiddlePointerInput
+} from '@/base/pointerUtils'
 import { app } from '@/scripts/app'
 
 export function forwardMiddleButtonToCanvas(
   inputEl: HTMLElement,
-  signal?: AbortSignal
+  signal: AbortSignal
 ): void {
-  const options = signal ? { signal } : undefined
-
   inputEl.addEventListener(
     'pointerdown',
-    (event: PointerEvent) => {
-      if (isMiddleForPointerEvent(event)) app.canvas.processMouseDown(event)
+    (event) => {
+      if (isMiddlePointerInput(event)) app.canvas.processMouseDown(event)
     },
-    options
+    { signal }
   )
 
   inputEl.addEventListener(
     'pointermove',
-    (event: PointerEvent) => {
-      if (isMiddleForPointerEvent(event)) app.canvas.processMouseMove(event)
+    (event) => {
+      if (isMiddleButtonHeld(event)) app.canvas.processMouseMove(event)
     },
-    options
+    { signal }
   )
 
   inputEl.addEventListener(
     'pointerup',
-    (event: PointerEvent) => {
-      if (isMiddleForPointerEvent(event)) app.canvas.processMouseUp(event)
+    (event) => {
+      if (isMiddleButtonEvent(event)) app.canvas.processMouseUp(event)
     },
-    options
+    { signal }
   )
 }

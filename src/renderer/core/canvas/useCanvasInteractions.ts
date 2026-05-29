@@ -1,6 +1,10 @@
 import { computed } from 'vue'
 
-import { isMiddleForPointerEvent } from '@/base/pointerUtils'
+import {
+  isMiddleButtonEvent,
+  isMiddleButtonHeld,
+  isMiddlePointerInput
+} from '@/base/pointerUtils'
 import { isCanvasGestureWheel } from '@/base/wheelGestures'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -76,12 +80,19 @@ export function useCanvasInteractions() {
    * Handles pointer events from media elements that should potentially
    * be forwarded to canvas (e.g., space+drag for panning)
    */
-  const handlePointer = (event: PointerEvent) => {
-    if (isMiddleForPointerEvent(event)) {
+  const forwardMiddlePointerIfNeeded = (
+    event: PointerEvent,
+    isMiddleInput: (event: PointerEvent) => boolean
+  ) => {
+    if (isMiddleInput(event)) {
       forwardEventToCanvas(event)
-      return
+      return true
     }
 
+    return false
+  }
+
+  const handleLeftButtonReadOnlyPointer = (event: PointerEvent) => {
     // Check if canvas exists using established pattern
     const canvas = getCanvas()
     if (!canvas) return
@@ -91,6 +102,21 @@ export function useCanvasInteractions() {
       event.stopPropagation()
       forwardEventToCanvas(event)
     }
+  }
+
+  const handlePointerDown = (event: PointerEvent) => {
+    if (forwardMiddlePointerIfNeeded(event, isMiddlePointerInput)) return
+    handleLeftButtonReadOnlyPointer(event)
+  }
+
+  const handlePointerMove = (event: PointerEvent) => {
+    if (forwardMiddlePointerIfNeeded(event, isMiddleButtonHeld)) return
+    handleLeftButtonReadOnlyPointer(event)
+  }
+
+  const handlePointerUp = (event: PointerEvent) => {
+    if (forwardMiddlePointerIfNeeded(event, isMiddleButtonEvent)) return
+    handleLeftButtonReadOnlyPointer(event)
   }
 
   /**
@@ -134,7 +160,9 @@ export function useCanvasInteractions() {
 
   return {
     handleWheel,
-    handlePointer,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
     forwardEventToCanvas,
     shouldHandleNodePointerEvents
   }

@@ -1,18 +1,19 @@
 import { ref, watch } from 'vue'
+
+import { isMiddleButtonHeld, isMiddlePointerInput } from '@/base/pointerUtils'
 import type {
   Point,
   ImageLayer,
   ToolInternalSettings
 } from '@/extensions/core/maskeditor/types'
 import { Tools } from '@/extensions/core/maskeditor/types'
+import { app } from '@/scripts/app'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useBrushDrawing } from './useBrushDrawing'
 import { useCanvasTools } from './useCanvasTools'
 import { useCoordinateTransform } from './useCoordinateTransform'
 import type { useKeyboard } from './useKeyboard'
 import type { usePanAndZoom } from './usePanAndZoom'
-import { isMiddleForPointerEvent } from '@/base/pointerUtils'
-import { app } from '@/scripts/app'
 
 export function useToolManager(
   keyboard: ReturnType<typeof useKeyboard>,
@@ -119,10 +120,7 @@ export function useToolManager(
       panZoom.addPenPointerId(event.pointerId)
     }
 
-    if (
-      isMiddleForPointerEvent(event) ||
-      (event.buttons === 1 && keyboard.isKeyDown(' '))
-    ) {
+    if (shouldStartPan(event)) {
       panZoom.handlePanStart(event)
 
       store.brushVisible = false
@@ -179,10 +177,7 @@ export function useToolManager(
     const newCursorPoint = { x: event.clientX, y: event.clientY }
     panZoom.updateCursorPosition(newCursorPoint)
 
-    if (
-      isMiddleForPointerEvent(event) ||
-      (event.buttons === 1 && keyboard.isKeyDown(' '))
-    ) {
+    if (shouldContinuePan(event)) {
       await panZoom.handlePanMove(event)
       return
     }
@@ -224,6 +219,18 @@ export function useToolManager(
     store.isAdjustingBrush = false
     await brushDrawing.drawEnd(event)
     mouseDownPoint.value = null
+  }
+
+  function isLeftButtonSpacePan(event: PointerEvent) {
+    return event.buttons === 1 && keyboard.isKeyDown(' ')
+  }
+
+  function shouldStartPan(event: PointerEvent) {
+    return isMiddlePointerInput(event) || isLeftButtonSpacePan(event)
+  }
+
+  function shouldContinuePan(event: PointerEvent) {
+    return isMiddleButtonHeld(event) || isLeftButtonSpacePan(event)
   }
 
   return {

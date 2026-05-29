@@ -73,16 +73,16 @@ describe('useCanvasInteractions', () => {
     vi.resetAllMocks()
   })
 
-  describe('handlePointer', () => {
+  describe('pointer handlers', () => {
     it('should intercept left mouse events when canvas is read_only to enable space+drag navigation', () => {
       const { getCanvas } = useCanvasStore()
       const mockCanvas = createMockLGraphCanvas(true)
       vi.mocked(getCanvas).mockReturnValue(mockCanvas)
 
-      const { handlePointer } = useCanvasInteractions()
+      const { handlePointerMove } = useCanvasInteractions()
 
       const mockEvent = createMockPointerEvent({ buttons: 1 })
-      handlePointer(mockEvent)
+      handlePointerMove(mockEvent)
 
       expect(mockEvent.preventDefault).toHaveBeenCalled()
       expect(mockEvent.stopPropagation).toHaveBeenCalled()
@@ -92,14 +92,14 @@ describe('useCanvasInteractions', () => {
       const { getCanvas } = useCanvasStore()
       const mockCanvas = createMockLGraphCanvas(false)
       vi.mocked(getCanvas).mockReturnValue(mockCanvas)
-      const { handlePointer } = useCanvasInteractions()
+      const { handlePointerDown } = useCanvasInteractions()
 
       const mockEvent = createMockPointerEvent({
         type: 'pointerdown',
         button: 1,
         buttons: 4
       })
-      handlePointer(mockEvent)
+      handlePointerDown(mockEvent)
 
       expect(mockEvent.preventDefault).toHaveBeenCalled()
       expect(mockEvent.stopPropagation).toHaveBeenCalled()
@@ -112,10 +112,10 @@ describe('useCanvasInteractions', () => {
       const { getCanvas } = useCanvasStore()
       const mockCanvas = createMockLGraphCanvas(false)
       vi.mocked(getCanvas).mockReturnValue(mockCanvas)
-      const { handlePointer } = useCanvasInteractions()
+      const { handlePointerMove } = useCanvasInteractions()
 
       const mockEvent = createMockPointerEvent({ buttons: 5 })
-      handlePointer(mockEvent)
+      handlePointerMove(mockEvent)
 
       expect(mockEvent.preventDefault).toHaveBeenCalled()
       expect(mockEvent.stopPropagation).toHaveBeenCalled()
@@ -128,10 +128,10 @@ describe('useCanvasInteractions', () => {
       const { getCanvas } = useCanvasStore()
       const mockCanvas = createMockLGraphCanvas(false)
       vi.mocked(getCanvas).mockReturnValue(mockCanvas)
-      const { handlePointer } = useCanvasInteractions()
+      const { handlePointerMove } = useCanvasInteractions()
 
       const mockEvent = createMockPointerEvent({ buttons: 1 })
-      handlePointer(mockEvent)
+      handlePointerMove(mockEvent)
 
       expect(mockEvent.preventDefault).not.toHaveBeenCalled()
       expect(mockEvent.stopPropagation).not.toHaveBeenCalled()
@@ -140,10 +140,10 @@ describe('useCanvasInteractions', () => {
     it('should return early when canvas is null', () => {
       const { getCanvas } = useCanvasStore()
       vi.mocked(getCanvas).mockReturnValue(null!)
-      const { handlePointer } = useCanvasInteractions()
+      const { handlePointerMove } = useCanvasInteractions()
 
       const mockEvent = createMockPointerEvent({ buttons: 1 })
-      handlePointer(mockEvent)
+      handlePointerMove(mockEvent)
 
       expect(getCanvas).toHaveBeenCalled()
       expect(mockEvent.preventDefault).not.toHaveBeenCalled()

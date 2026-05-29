@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import {
   isMiddleButtonEvent,
   isMiddleButtonHeld,
-  isMiddleForPointerEvent,
   isMiddlePointerInput
 } from '@/base/pointerUtils'
 
@@ -51,39 +50,6 @@ describe('pointerUtils', () => {
       expect(
         isMiddleButtonEvent(
           new MouseEvent('auxclick', { button: 2, buttons: 4 })
-        )
-      ).toBe(false)
-    })
-  })
-
-  describe('isMiddleForPointerEvent', () => {
-    it('dispatches by pointer event type', () => {
-      expect(
-        isMiddleForPointerEvent(
-          new PointerEvent('pointerdown', { button: 0, buttons: 5 })
-        )
-      ).toBe(false)
-      expect(
-        isMiddleForPointerEvent(
-          new PointerEvent('pointermove', { button: 0, buttons: 5 })
-        )
-      ).toBe(true)
-      expect(
-        isMiddleForPointerEvent(
-          new PointerEvent('pointerup', { button: 1, buttons: 0 })
-        )
-      ).toBe(true)
-    })
-
-    it('treats pointercancel like a held-button event', () => {
-      expect(
-        isMiddleForPointerEvent(
-          new PointerEvent('pointercancel', { buttons: 5 })
-        )
-      ).toBe(true)
-      expect(
-        isMiddleForPointerEvent(
-          new PointerEvent('pointercancel', { buttons: 1 })
         )
       ).toBe(false)
     })

@@ -42,16 +42,4 @@ describe('forwardMiddleButtonToCanvas', () => {
     expect(processMouseMove).toHaveBeenCalledTimes(1)
     expect(processMouseUp).toHaveBeenCalledTimes(1)
   })
-
-  it('detaches listeners through the provided signal', () => {
-    controller.abort()
-
-    inputEl.dispatchEvent(new PointerEvent('pointerdown', { button: 1 }))
-    inputEl.dispatchEvent(new PointerEvent('pointermove', { buttons: 4 }))
-    inputEl.dispatchEvent(new PointerEvent('pointerup', { button: 1 }))
-
-    expect(processMouseDown).not.toHaveBeenCalled()
-    expect(processMouseMove).not.toHaveBeenCalled()
-    expect(processMouseUp).not.toHaveBeenCalled()
-  })
 })

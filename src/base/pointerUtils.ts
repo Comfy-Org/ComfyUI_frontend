@@ -27,13 +27,3 @@ export function isMiddleButtonHeld(event: PointerEvent | MouseEvent): boolean {
 export function isMiddleButtonEvent(event: PointerEvent | MouseEvent): boolean {
   return 'button' in event && event.button === 1
 }
-
-export function isMiddleForPointerEvent(
-  event: PointerEvent | MouseEvent
-): boolean {
-  if (event.type === 'pointerdown') return isMiddlePointerInput(event)
-  if (event.type === 'pointermove' || event.type === 'pointercancel') {
-    return isMiddleButtonHeld(event)
-  }
-  return isMiddleButtonEvent(event)
-}

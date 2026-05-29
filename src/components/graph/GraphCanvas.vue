@@ -63,9 +63,9 @@
     v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
     :canvas="comfyApp.canvas"
     @wheel.capture="canvasInteractions.forwardEventToCanvas"
-    @pointerdown.capture="forwardPanEvent"
-    @pointerup.capture="forwardPanEvent"
-    @pointermove.capture="forwardPanEvent"
+    @pointerdown.capture="forwardPointerDownPanEvent"
+    @pointerup.capture="forwardPointerUpPanEvent"
+    @pointermove.capture="forwardPointerMovePanEvent"
   >
     <!-- Vue nodes rendered based on graph nodes -->
     <LGraphNode
@@ -120,7 +120,11 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { isMiddleForPointerEvent } from '@/base/pointerUtils'
+import {
+  isMiddleButtonEvent,
+  isMiddleButtonHeld,
+  isMiddlePointerInput
+} from '@/base/pointerUtils'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
@@ -593,8 +597,23 @@ onUnmounted(() => {
   cleanupErrorHooks = null
   vueNodeLifecycle.cleanup()
 })
-function forwardPanEvent(e: PointerEvent) {
-  if (!isMiddleForPointerEvent(e)) return
+function forwardPointerDownPanEvent(e: PointerEvent) {
+  forwardPanEvent(e, isMiddlePointerInput)
+}
+
+function forwardPointerMovePanEvent(e: PointerEvent) {
+  forwardPanEvent(e, isMiddleButtonHeld)
+}
+
+function forwardPointerUpPanEvent(e: PointerEvent) {
+  forwardPanEvent(e, isMiddleButtonEvent)
+}
+
+function forwardPanEvent(
+  e: PointerEvent,
+  isMiddleInput: (event: PointerEvent) => boolean
+) {
+  if (!isMiddleInput(e)) return
   if (shouldIgnoreCopyPaste(e.target) && document.activeElement === e.target)
     return
 
