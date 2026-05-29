@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import { app } from '@/scripts/app'
 import { ComfyWidgets } from '@/scripts/widgets'
 import { useExtensionService } from '@/services/extensionService'
@@ -18,7 +19,7 @@ useExtensionService().registerExtension({
         app
       ).widget
 
-      previewWidget.label = 'Preview'
+      previewWidget.label = t('saveTextPreview.preview')
       previewWidget.hidden = false
       previewWidget.options.hidden = false
       previewWidget.options.read_only = true
