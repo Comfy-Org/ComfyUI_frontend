@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ControlsManager } from './ControlsManager'
 import type { EventManagerInterface } from './interfaces'
@@ -26,6 +26,12 @@ vi.mock('three/examples/jsm/controls/OrbitControls', () => {
     addEventListener(event: string, cb: Listener) {
       if (!this.listeners.has(event)) this.listeners.set(event, [])
       this.listeners.get(event)!.push(cb)
+    }
+    removeEventListener(event: string, cb: Listener) {
+      const list = this.listeners.get(event)
+      if (!list) return
+      const idx = list.indexOf(cb)
+      if (idx >= 0) list.splice(idx, 1)
     }
     fire(event: string) {
       this.listeners.get(event)?.forEach((cb) => cb())
@@ -60,6 +66,10 @@ describe('ControlsManager', () => {
     vi.clearAllMocks()
     events = makeMockEventManager()
     camera = new THREE.PerspectiveCamera()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   describe('construction', () => {
@@ -133,6 +143,71 @@ describe('ControlsManager', () => {
       expect(newCamera.position.toArray()).toEqual([7, 8, 9])
       expect(manager.controls.target.toArray()).toEqual([1, 1, 1])
       expect(manager.controls.update).toHaveBeenCalled()
+    })
+  })
+
+  describe('setTarget', () => {
+    it('moves the orbit pivot and translates the camera by the same delta so distance is preserved', () => {
+      manager = new ControlsManager(makeRenderer(), camera, events)
+      camera.position.set(0, 0, 5)
+      camera.zoom = 1
+      manager.controls.target.set(0, 0, 0)
+
+      manager.setTarget(new THREE.Vector3(1, 2, 3))
+
+      expect(manager.controls.target.toArray()).toEqual([1, 2, 3])
+      expect(camera.position.toArray()).toEqual([1, 2, 8])
+      expect(manager.controls.update).toHaveBeenCalled()
+      expect(events.emitEvent).toHaveBeenCalledWith('cameraChanged', {
+        position: expect.objectContaining({ x: 1, y: 2, z: 8 }),
+        target: expect.objectContaining({ x: 1, y: 2, z: 3 }),
+        zoom: 1,
+        cameraType: 'perspective'
+      })
+    })
+
+    it('moves the camera to the specified distance from the new pivot along the previous direction', () => {
+      manager = new ControlsManager(makeRenderer(), camera, events)
+      camera.position.set(0, 0, 100)
+      manager.controls.target.set(0, 0, 0)
+
+      manager.setTarget(new THREE.Vector3(2, 0, 0), 10)
+
+      expect(camera.position.toArray()).toEqual([2, 0, 10])
+    })
+  })
+
+  describe('animateTarget', () => {
+    it('lerps camera position and target over time and emits cameraChanged on completion', () => {
+      manager = new ControlsManager(makeRenderer(), camera, events)
+      camera.position.set(0, 0, 10)
+      manager.controls.target.set(0, 0, 0)
+
+      let now = 1000
+      vi.spyOn(performance, 'now').mockImplementation(() => now)
+      const rafQueue: FrameRequestCallback[] = []
+      vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+        rafQueue.push(cb)
+        return rafQueue.length
+      })
+      vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {})
+
+      manager.animateTarget(new THREE.Vector3(0, 0, 0), 2, 100)
+      // Halfway through
+      now = 1050
+      rafQueue.shift()?.(now)
+      expect(camera.position.z).toBeGreaterThan(2)
+      expect(camera.position.z).toBeLessThan(10)
+      // Past end
+      now = 1200
+      rafQueue.shift()?.(now)
+      expect(camera.position.toArray()).toEqual([0, 0, 2])
+      expect(events.emitEvent).toHaveBeenCalledWith(
+        'cameraChanged',
+        expect.objectContaining({
+          position: expect.objectContaining({ x: 0, y: 0, z: 2 })
+        })
+      )
     })
   })
 

@@ -29,6 +29,7 @@ import type {
   UpDirection
 } from './interfaces'
 import { attachContextMenuGuard } from './load3dContextMenuGuard'
+import { attachFocusUnderCursor } from './load3dFocusUnderCursor'
 import type { RenderLoopHandle } from './load3dRenderLoop'
 import { startRenderLoop } from './load3dRenderLoop'
 import { computeLetterboxedViewport, isLoad3dActive } from './load3dViewport'
@@ -103,6 +104,7 @@ class Load3d {
   isViewerMode: boolean = false
 
   private disposeContextMenuGuard: (() => void) | null = null
+  private disposeFocusUnderCursor: (() => void) | null = null
   private resizeObserver: ResizeObserver | null = null
   private getZoomScaleCallback: (() => number) | undefined
   private retainViewOnReload: boolean = false
@@ -140,6 +142,8 @@ class Load3d {
     this.gizmoManager = deps.gizmoManager
     this.adapterRef = deps.adapterRef
 
+    this.controlsManager.setRequestRender(() => this.forceRender())
+
     this.sceneManager.init()
     this.cameraManager.init()
     this.controlsManager.init()
@@ -156,6 +160,7 @@ class Load3d {
     this.STATUS_MOUSE_ON_VIEWER = false
 
     this.initContextMenu()
+    this.initFocusUnderCursor()
     this.initResizeObserver(container)
 
     this.handleResize()
@@ -182,6 +187,26 @@ class Load3d {
       (event) => this.onContextMenuCallback?.(event),
       { isDisabled: () => this.isViewerMode }
     )
+  }
+
+  private initFocusUnderCursor(): void {
+    this.disposeFocusUnderCursor = attachFocusUnderCursor({
+      canvas: this.renderer.domElement,
+      getModel: () => this.modelManager.currentModel,
+      getCamera: () => this.cameraManager.activeCamera,
+      getRenderRegion: () => {
+        const w = this.renderer.domElement.clientWidth
+        const h = this.renderer.domElement.clientHeight
+        return this.shouldMaintainAspectRatio()
+          ? computeLetterboxedViewport(
+              { width: w, height: h },
+              this.targetAspectRatio
+            )
+          : { offsetX: 0, offsetY: 0, width: w, height: h }
+      },
+      focusOn: (point, distance) =>
+        this.controlsManager.animateTarget(point, distance)
+    })
   }
 
   getEventManager(): EventManager {
@@ -932,6 +957,9 @@ class Load3d {
 
     this.disposeContextMenuGuard?.()
     this.disposeContextMenuGuard = null
+
+    this.disposeFocusUnderCursor?.()
+    this.disposeFocusUnderCursor = null
 
     this.renderer.forceContextLoss()
     const canvas = this.renderer.domElement

@@ -165,6 +165,13 @@ export interface CameraManagerInterface extends BaseManager {
 export interface ControlsManagerInterface extends BaseManager {
   controls: OrbitControls
   handleResize(): void
+  setRequestRender(callback: () => void): void
+  setTarget(point: THREE.Vector3, distance?: number): void
+  animateTarget(
+    point: THREE.Vector3,
+    distance?: number,
+    durationMs?: number
+  ): void
 }
 
 export interface LightingManagerInterface extends BaseManager {
