@@ -161,13 +161,12 @@ overrides:
   vite: 'catalog:'
   '@tiptap/pm': 2.27.2
   '@types/eslint': '-'
-  protobufjs: ~7.6.0
-  flatted: ~3.4.2
-  defu: ~6.1.7
-  # Security overrides (see pnpm.overrides in package.json for the actual pins):
-  # protobufjs ~7.6.0 — CVE-2026-41242 (CVSS 9.8): arbitrary code execution.
-  #   Transitive via firebase, posthog-js. Remove after firebase upgrades protobufjs.
-  # flatted ~3.4.2 — GHSA-x7hr-w5r2-h6qg: prototype pollution.
-  #   Transitive via eslint flat-cache@4.0.1. Dev-only. Remove after eslint upgrades flat-cache.
-  # defu ~6.1.7 — GHSA-47f6-5gq3-vx9c: prototype pollution.
-  #   Transitive via reka-ui, c12, unplugin-typegpu. Remove after reka-ui upgrades defu.
+  #Security overrides
+  lodash: ^4.18.0
+  yaml: ^2.8.3
+  minimatch@^9.0.0: ^9.0.7
+  minimatch@^10.0.0: ^10.2.3
+  brace-expansion@^1.0.0: ^1.1.13
+  brace-expansion@^2.0.0: ^2.0.3
+  ajv@^8.0.0: ^8.18.0
+  ws@^8.0.0: ^8.20.1
