@@ -1,16 +1,16 @@
 @layer theme, base, primevue, components, utilities;
 
-@import "./fonts.css";
-@import "./_palette.css";
-@import "tailwindcss/theme" layer(theme);
-@import "tailwindcss/utilities" layer(utilities);
-@import "tw-animate-css";
+@import './fonts.css';
+@import './_palette.css';
+@import 'tailwindcss/theme' layer(theme);
+@import 'tailwindcss/utilities' layer(utilities);
+@import 'tw-animate-css';
 
 @plugin 'tailwindcss-primeui';
 
 @plugin "@iconify/tailwind4" {
   scale: 1.2;
-  icon-sets: from-folder(comfy, "./packages/design-system/src/icons");
+  icon-sets: from-folder(comfy, './packages/design-system/src/icons');
 }
 
 @plugin "./lucideStrokePlugin.js";
@@ -933,8 +933,8 @@ body {
 }
 
 .comfy-modal select,
-.comfy-modal input[type="button"],
-.comfy-modal input[type="checkbox"] {
+.comfy-modal input[type='button'],
+.comfy-modal input[type='checkbox'] {
   margin: 3px 3px 3px 4px;
 }
 
@@ -1055,7 +1055,7 @@ span.drag-handle {
 }
 
 span.drag-handle::after {
-  content: ".. .. ..";
+  content: '.. .. ..';
 }
 
 .comfy-queue-btn {
@@ -1111,11 +1111,11 @@ button.comfy-queue-btn {
   z-index: 99;
 }
 
-.comfy-modal.comfy-settings input[type="range"] {
+.comfy-modal.comfy-settings input[type='range'] {
   vertical-align: middle;
 }
 
-.comfy-modal.comfy-settings input[type="range"] + input[type="number"] {
+.comfy-modal.comfy-settings input[type='range'] + input[type='number'] {
   width: 3.5em;
 }
 
@@ -1246,7 +1246,7 @@ dialog::backdrop {
 }
 
 .litemenu-entry.has_submenu::after {
-  content: ">";
+  content: '>';
   position: absolute;
   top: 0;
   right: 2px;
@@ -1724,7 +1724,7 @@ audio.comfy-audio.empty-audio-widget {
 
 .maskEditor_sidePanelToggleSwitch::before,
 .maskEditor_sidePanelToggleSwitch::after {
-  content: "";
+  content: '';
 }
 .maskEditor_sidePanelToggleSwitch::before {
   display: block;

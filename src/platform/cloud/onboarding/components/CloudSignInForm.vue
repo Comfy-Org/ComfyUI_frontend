@@ -118,11 +118,21 @@ const onSubmit = (event: FormSubmitEvent) => {
   border: none !important;
   box-shadow: none !important;
   background: #2d2e32 !important;
+  color: var(--color-sand-500) !important;
+  caret-color: var(--color-sand-500);
+}
+
+:deep(.p-inputtext::placeholder) {
+  color: rgb(from var(--color-sand-500) r g b / 0.5);
 }
 
 :deep(.p-password input) {
   border: none !important;
   box-shadow: none !important;
+}
+
+:deep(.p-password-toggle-mask-icon) {
+  cursor: pointer;
 }
 :deep(.p-checkbox-checked .p-checkbox-box) {
   background-color: #f0ff41 !important;

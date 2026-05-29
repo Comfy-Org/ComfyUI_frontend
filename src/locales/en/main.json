@@ -2283,7 +2283,8 @@
       "auth/invalid-credential": "Invalid login credentials. Please check your email and password.",
       "auth/network-request-failed": "Network error. Please check your connection and try again.",
       "auth/popup-closed-by-user": "Sign-in was cancelled. Please try again.",
-      "auth/cancelled-popup-request": "Sign-in was cancelled. Please try again."
+      "auth/cancelled-popup-request": "Sign-in was cancelled. Please try again.",
+      "generic": "Something went wrong while signing you in. Please try again."
     },
     "deleteAccount": {
       "contactSupport": "To delete your account, please contact {email}"
