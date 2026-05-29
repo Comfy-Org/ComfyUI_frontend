@@ -134,12 +134,19 @@ function addMultilineWidget(
       }
 
       // Vertical scrolling when gestures disabled: let textarea scroll if scrollable
+      // and not at a boundary in the direction of the scroll
       if (canScrollY) {
-        event.stopPropagation()
-        return
+        const atTop = deltaY < 0 && inputEl.scrollTop === 0
+        const atBottom =
+          deltaY > 0 &&
+          inputEl.scrollHeight - inputEl.scrollTop - inputEl.clientHeight < 1
+        if (!atTop && !atBottom) {
+          event.stopPropagation()
+          return
+        }
       }
 
-      // If textarea can't scroll vertically, pass to canvas
+      // If textarea can't scroll vertically (or is at a boundary), pass to canvas
       event.preventDefault()
       app.canvas.processMouseWheel(event)
     },
