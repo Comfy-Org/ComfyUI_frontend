@@ -4,7 +4,7 @@ import { ComfyWidgets } from '@/scripts/widgets'
 import { useExtensionService } from '@/services/extensionService'
 
 useExtensionService().registerExtension({
-  name: 'Comfy.SaveTextPreview',
+  name: 'Comfy.saveText',
   async beforeRegisterNodeDef(nodeType, nodeData) {
     if (nodeData.name !== 'SaveText') return
 
@@ -19,7 +19,7 @@ useExtensionService().registerExtension({
         app
       ).widget
 
-      previewWidget.label = t('saveTextPreview.preview')
+      previewWidget.label = t('saveText.preview')
       previewWidget.hidden = false
       previewWidget.options.hidden = false
       previewWidget.options.read_only = true
