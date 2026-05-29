@@ -83,7 +83,16 @@ export function useNodePointerInteractions(
     const multiSelect = isMultiSelectKey(event)
 
     const lmbDown = event.buttons & 1
-    if (lmbDown && multiSelect && !layoutStore.isDraggingVueNodes.value) {
+    // Guard with hasDraggingStarted: only enter multiselect-drag branch if this node
+    // instance received the original pointerdown. Without this, a slot drag bubbling
+    // a pointermove with spurious modifier keys (observed on some Mac hardware) would
+    // incorrectly trigger node selection and a competing drag.
+    if (
+      lmbDown &&
+      multiSelect &&
+      hasDraggingStarted &&
+      !layoutStore.isDraggingVueNodes.value
+    ) {
       layoutStore.isDraggingVueNodes.value = true
       handleNodeSelect(event, nodeId)
       safeDragStart(event, nodeId)
@@ -156,8 +165,9 @@ export function useNodePointerInteractions(
   }
 
   function onPointercancel(event: PointerEvent) {
-    if (!layoutStore.isDraggingVueNodes.value) return
-    safeDragEnd(event)
+    if (hasDraggingStarted || layoutStore.isDraggingVueNodes.value) {
+      safeDragEnd(event)
+    }
   }
 
   /**

@@ -27,7 +27,10 @@ const config: KnipConfig = {
       project: ['src/**/*.{js,ts}']
     },
     'packages/registry-types': {
-      project: ['src/**/*.{js,ts}']
+      // Auto-generated API types — wrapper types (paths, webhooks, $defs) are
+      // consumed cross-workspace via src/types/comfyRegistryTypes.ts re-export.
+      // Exclude the generated file from per-workspace project analysis.
+      project: []
     },
     'packages/ingest-types': {
       project: ['src/**/*.{js,ts}']

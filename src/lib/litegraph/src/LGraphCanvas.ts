@@ -3801,8 +3801,20 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * Called when a mouse up event has to be processed
    */
   processMouseUp(e: PointerEvent): void {
-    // early exit for extra pointer
-    if (e.isPrimary === false) return
+    // Release pointer capture for non-primary pointers that match the captured pointer ID.
+    // Some devices (e.g. certain Mac trackpads/mice) send pointerup with isPrimary=false,
+    // which would otherwise leave the canvas holding capture indefinitely.
+    if (e.isPrimary === false) {
+      const { pointer } = this
+      if (
+        typeof pointer.pointerId === 'number' &&
+        pointer.pointerId === e.pointerId
+      ) {
+        this._finishDragZoom()
+        pointer.reset()
+      }
+      return
+    }
 
     const { graph, pointer } = this
     if (!graph) return

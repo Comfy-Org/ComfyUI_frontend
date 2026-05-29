@@ -133,8 +133,9 @@ const createMouseEvent = (
 
 describe('useNodePointerInteractions', () => {
   beforeEach(async () => {
-    vi.resetAllMocks()
+    vi.clearAllMocks()
     selectedItemsState.items = []
+    layoutStore.isDraggingVueNodes.value = false
     setActivePinia(createTestingPinia())
   })
 
@@ -268,6 +269,79 @@ describe('useNodePointerInteractions', () => {
 
     // Selection should still only have been called once
     expect(handleNodeSelect).toHaveBeenCalledTimes(1)
+  })
+
+  describe('spurious modifier key on pointermove — Mac hardware bug', () => {
+    it('does NOT trigger multiselect-drag when shiftKey is true but pointerdown was never received', () => {
+      // This simulates a slot drag where a pointermove bubbles up to the node
+      // with spurious shiftKey=true, but this node never received pointerdown.
+      const { handleNodeSelect } = useNodeEventHandlers()
+      const { startDrag } = useNodeDrag()
+
+      const { pointerHandlers } = useNodePointerInteractions('test-node-123')
+
+      // No pointerdown on this node — hasDraggingStarted remains false
+
+      // A pointermove arrives with shiftKey=true and LMB down (bubbling from a slot drag)
+      const moveEvent = createPointerEvent('pointermove', {
+        shiftKey: true,
+        buttons: 1,
+        clientX: 110,
+        clientY: 110
+      })
+      pointerHandlers.onPointermove(moveEvent)
+
+      // Should NOT have triggered multiselect-drag selection or drag start
+      expect(handleNodeSelect).not.toHaveBeenCalled()
+      expect(startDrag).not.toHaveBeenCalled()
+      expect(layoutStore.isDraggingVueNodes.value).toBe(false)
+    })
+
+    it('does NOT trigger multiselect-drag when metaKey is true but pointerdown was never received', () => {
+      const { handleNodeSelect } = useNodeEventHandlers()
+      const { startDrag } = useNodeDrag()
+
+      const { pointerHandlers } = useNodePointerInteractions('test-node-123')
+
+      // No pointerdown on this node
+
+      const moveEvent = createPointerEvent('pointermove', {
+        metaKey: true,
+        buttons: 1,
+        clientX: 110,
+        clientY: 110
+      })
+      pointerHandlers.onPointermove(moveEvent)
+
+      expect(handleNodeSelect).not.toHaveBeenCalled()
+      expect(startDrag).not.toHaveBeenCalled()
+    })
+
+    it('DOES trigger multiselect-drag when shiftKey is true and pointerdown was received first', () => {
+      const { handleNodeSelect } = useNodeEventHandlers()
+      const { startDrag } = useNodeDrag()
+
+      const { pointerHandlers } = useNodePointerInteractions('test-node-123')
+
+      // This node received pointerdown — hasDraggingStarted becomes true
+      pointerHandlers.onPointerdown(
+        createPointerEvent('pointerdown', { clientX: 100, clientY: 100 })
+      )
+
+      // pointermove with shiftKey (intentional multiselect drag)
+      const moveEvent = createPointerEvent('pointermove', {
+        shiftKey: true,
+        buttons: 1,
+        clientX: 110,
+        clientY: 110
+      })
+      pointerHandlers.onPointermove(moveEvent)
+
+      // Should trigger multiselect-drag selection and start drag
+      expect(handleNodeSelect).toHaveBeenCalledWith(moveEvent, 'test-node-123')
+      expect(startDrag).toHaveBeenCalled()
+      expect(layoutStore.isDraggingVueNodes.value).toBe(true)
+    })
   })
 
   it('on ctrl+click: calls toggleNodeSelectionAfterPointerUp on pointer up (not pointer down)', async () => {

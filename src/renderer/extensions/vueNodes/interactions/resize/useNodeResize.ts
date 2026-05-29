@@ -210,6 +210,8 @@ export function useNodeResize(
       }
     }
 
+    const capturedPointerId = event.pointerId
+
     const cleanup = () => {
       if (!isResizing.value) return
       isResizing.value = false
@@ -221,18 +223,22 @@ export function useNodeResize(
       // Stop tracking shift key state
       stopShiftSync()
 
+      // Release pointer capture — needed on pointercancel since browser doesn't auto-release
+      try {
+        if (target.hasPointerCapture(capturedPointerId)) {
+          target.releasePointerCapture(capturedPointerId)
+        }
+      } catch {
+        // Already released
+      }
+
       stopMoveListen()
       stopUpListen()
       stopCancelListen()
     }
 
-    const handlePointerUp = (upEvent: PointerEvent) => {
+    const handlePointerUp = () => {
       if (isResizing.value) {
-        try {
-          target.releasePointerCapture(upEvent.pointerId)
-        } catch {
-          // Pointer capture may already be released
-        }
         cleanup()
       }
     }
