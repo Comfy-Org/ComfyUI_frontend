@@ -137,6 +137,33 @@ describe('contextMenuConverter', () => {
       expect(getIndex('Node Info')).toBeLessThanOrEqual(getIndex('Color'))
     })
 
+    it('should collapse legacy and Vue Remove Bypass to the Vue item when a node is bypassed', () => {
+      const options: MenuOption[] = [
+        { label: 'Remove Bypass', action: () => {}, source: 'litegraph' },
+        { label: 'Remove Bypass', action: () => {}, source: 'vue' }
+      ]
+
+      const result = buildStructuredMenu(options)
+
+      const removeBypassItems = result.filter(
+        (opt) => opt.label === 'Remove Bypass'
+      )
+      expect(removeBypassItems).toHaveLength(1)
+      expect(removeBypassItems[0].source).toBe('vue')
+    })
+
+    it('should not treat Bypass and Remove Bypass as equivalent labels', () => {
+      const options: MenuOption[] = [
+        { label: 'Bypass', action: () => {}, source: 'litegraph' },
+        { label: 'Remove Bypass', action: () => {}, source: 'vue' }
+      ]
+
+      const result = buildStructuredMenu(options)
+
+      expect(result.find((opt) => opt.label === 'Bypass')).toBeDefined()
+      expect(result.find((opt) => opt.label === 'Remove Bypass')).toBeDefined()
+    })
+
     it('should recognize Frame Nodes as a core menu item', () => {
       const options: MenuOption[] = [
         { label: 'Rename', source: 'vue' },
