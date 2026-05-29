@@ -7,7 +7,8 @@ import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
-import { getWidgetStateByTriple } from '@/world/widgetValueIO'
+import { deriveWidgetEntityId } from '@/world/entityIds'
+import { getWidgetState } from '@/world/widgetValueIO'
 
 const TRACKPAD_DETECTION_THRESHOLD = 50
 
@@ -27,20 +28,22 @@ function addMultilineWidget(
 
   const widget = node.addDOMWidget(name, 'customtext', inputEl, {
     getValue(): string {
-      const widgetState = getWidgetStateByTriple(
+      const entityId = deriveWidgetEntityId(
         resolveNodeRootGraphId(node, app.rootGraph.id),
         node.id,
         name
       )
+      const widgetState = entityId ? getWidgetState(entityId) : undefined
       return (widgetState?.value as string) ?? inputEl.value
     },
     setValue(v: string) {
       inputEl.value = v
-      const widgetState = getWidgetStateByTriple(
+      const entityId = deriveWidgetEntityId(
         resolveNodeRootGraphId(node, app.rootGraph.id),
         node.id,
         name
       )
+      const widgetState = entityId ? getWidgetState(entityId) : undefined
       if (widgetState) widgetState.value = v
     }
   })

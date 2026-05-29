@@ -7,7 +7,8 @@ import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { UUID } from '@/utils/uuid'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { getWidgetStateByTriple } from '@/world/widgetValueIO'
+import { deriveWidgetEntityId } from '@/world/entityIds'
+import { getWidgetState } from '@/world/widgetValueIO'
 
 import { curveDataToFloatLUT } from '@/components/curve/curveUtils'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
@@ -193,15 +194,22 @@ function createInnerPreview(
     if (isGLSLNode.value) {
       const nId = nodeId.value
       if (nId == null) return undefined
-      return getWidgetStateByTriple(gId, nId, 'fragment_shader')?.value as
-        | string
-        | undefined
+      const entityId = deriveWidgetEntityId(gId, nId, 'fragment_shader')
+      return entityId
+        ? (getWidgetState(entityId)?.value as string | undefined)
+        : undefined
     }
 
     const inner = innerGLSLNode
     if (inner) {
-      return getWidgetStateByTriple(gId, inner.id as NodeId, 'fragment_shader')
-        ?.value as string | undefined
+      const entityId = deriveWidgetEntityId(
+        gId,
+        inner.id as NodeId,
+        'fragment_shader'
+      )
+      return entityId
+        ? (getWidgetState(entityId)?.value as string | undefined)
+        : undefined
     }
 
     return undefined
@@ -287,19 +295,16 @@ function createInnerPreview(
       : nodeId.value
     if (sizeModeNodeId == null) return null
 
-    const sizeMode = getWidgetStateByTriple(gId, sizeModeNodeId, 'size_mode')
+    const lookup = (name: string) => {
+      const entityId = deriveWidgetEntityId(gId, sizeModeNodeId, name)
+      return entityId ? getWidgetState(entityId) : undefined
+    }
+
+    const sizeMode = lookup('size_mode')
     if (sizeMode?.value !== 'custom') return null
 
-    const widthWidget = getWidgetStateByTriple(
-      gId,
-      sizeModeNodeId,
-      'size_mode.width'
-    )
-    const heightWidget = getWidgetStateByTriple(
-      gId,
-      sizeModeNodeId,
-      'size_mode.height'
-    )
+    const widthWidget = lookup('size_mode.width')
+    const heightWidget = lookup('size_mode.height')
     if (!widthWidget || !heightWidget) return null
 
     return clampResolution(

@@ -13,7 +13,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
-import { getWidgetStateByTriple } from '@/world/widgetValueIO'
+import { deriveWidgetEntityId } from '@/world/entityIds'
+import { getWidgetState } from '@/world/widgetValueIO'
 
 // TODO: This widget manually syncs with widgetValueStore via getValue/setValue.
 // Consolidate with useStringWidget into shared helpers (domWidgetHelpers.ts).
@@ -48,21 +49,23 @@ function addMarkdownWidget(
 
   const widget = node.addDOMWidget(name, 'MARKDOWN', inputEl, {
     getValue(): string {
-      const storedValue = getWidgetStateByTriple(
+      const entityId = deriveWidgetEntityId(
         resolveNodeRootGraphId(node, app.rootGraph.id),
         node.id,
         name
-      )?.value
+      )
+      const storedValue = entityId ? getWidgetState(entityId)?.value : undefined
       return typeof storedValue === 'string' ? storedValue : textarea.value
     },
     setValue(v: string) {
       textarea.value = v
       editor.commands.setContent(v)
-      const widgetState = getWidgetStateByTriple(
+      const entityId = deriveWidgetEntityId(
         resolveNodeRootGraphId(node, app.rootGraph.id),
         node.id,
         name
       )
+      const widgetState = entityId ? getWidgetState(entityId) : undefined
       if (widgetState) widgetState.value = v
     }
   })

@@ -128,9 +128,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
   /**
    * Internal lookup primitive used by `src/world/widgetValueIO.ts`. External
-   * callers should use `getWidgetState(widget.entityId)` /
-   * `getWidgetStateByTriple(graphId, nodeId, name)` from widgetValueIO so
-   * the branded `WidgetEntityId` prevents producer/consumer drift.
+   * callers should use `getWidgetState(widget.entityId)` from widgetValueIO
+   * so the branded `WidgetEntityId` prevents producer/consumer drift.
    */
   function _lookupWidgetState(
     graphId: UUID,

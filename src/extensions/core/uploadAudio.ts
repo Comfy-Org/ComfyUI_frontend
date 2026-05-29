@@ -24,7 +24,8 @@ import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
-import { getWidgetStateByTriple } from '@/world/widgetValueIO'
+import { deriveWidgetEntityId } from '@/world/entityIds'
+import { getWidgetState } from '@/world/widgetValueIO'
 
 function updateUIWidget(
   audioUIWidget: DOMWidget<HTMLAudioElement, string>,
@@ -150,18 +151,22 @@ app.registerExtension({
           }
         }
 
-        audioUIWidget.options.getValue = () =>
-          (getWidgetStateByTriple(
-            resolveNodeRootGraphId(node, app.rootGraph.id),
-            node.id,
-            inputName
-          )?.value as string) ?? ''
-        audioUIWidget.options.setValue = (v) => {
-          const widgetState = getWidgetStateByTriple(
+        audioUIWidget.options.getValue = () => {
+          const entityId = deriveWidgetEntityId(
             resolveNodeRootGraphId(node, app.rootGraph.id),
             node.id,
             inputName
           )
+          const widgetState = entityId ? getWidgetState(entityId) : undefined
+          return (widgetState?.value as string) ?? ''
+        }
+        audioUIWidget.options.setValue = (v) => {
+          const entityId = deriveWidgetEntityId(
+            resolveNodeRootGraphId(node, app.rootGraph.id),
+            node.id,
+            inputName
+          )
+          const widgetState = entityId ? getWidgetState(entityId) : undefined
           if (widgetState) widgetState.value = v
         }
 

@@ -7,7 +7,8 @@ import type { ComponentWidgetStandardProps } from '@/scripts/domWidget'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { getWidgetStateByTriple } from '@/world/widgetValueIO'
+import { deriveWidgetEntityId } from '@/world/entityIds'
+import { getWidgetState } from '@/world/widgetValueIO'
 
 type TextPreviewCustomProps = Omit<
   InstanceType<typeof TextPreviewWidget>['$props'],
@@ -37,18 +38,22 @@ export function useTextPreviewWidget(
         nodeId: node.id
       },
       options: {
-        getValue: () =>
-          getWidgetStateByTriple(
-            resolveNodeRootGraphId(node, app.rootGraph.id),
-            node.id,
-            inputSpec.name
-          )?.value ?? '',
-        setValue: (value: string | object) => {
-          const widgetState = getWidgetStateByTriple(
+        getValue: () => {
+          const entityId = deriveWidgetEntityId(
             resolveNodeRootGraphId(node, app.rootGraph.id),
             node.id,
             inputSpec.name
           )
+          const widgetState = entityId ? getWidgetState(entityId) : undefined
+          return widgetState?.value ?? ''
+        },
+        setValue: (value: string | object) => {
+          const entityId = deriveWidgetEntityId(
+            resolveNodeRootGraphId(node, app.rootGraph.id),
+            node.id,
+            inputSpec.name
+          )
+          const widgetState = entityId ? getWidgetState(entityId) : undefined
           if (widgetState)
             widgetState.value =
               typeof value === 'string' ? value : String(value)

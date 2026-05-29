@@ -28,8 +28,9 @@ import type { WidgetState } from '@/stores/widgetValueStore'
 import { extractRawNodeId } from '@/stores/widgetValueStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { deriveWidgetEntityId } from '@/world/entityIds'
 import type { WidgetEntityId } from '@/world/entityIds'
-import { getWidgetState, getWidgetStateByTriple } from '@/world/widgetValueIO'
+import { getWidgetState } from '@/world/widgetValueIO'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   LinkedUpstreamInfo,
@@ -194,13 +195,19 @@ export function computeProcessedWidgets({
     if (!shouldRenderAsVue(widget)) continue
 
     const identity = getWidgetIdentity(widget, nodeId, index)
-    const widgetState = widget.entityId
-      ? getWidgetState(widget.entityId)
-      : getWidgetStateByTriple(
-          graphId,
-          String(extractRawNodeId(widget.nodeId ?? nodeId ?? '')),
-          widget.name
-        )
+    let widgetState: WidgetState | undefined
+    if (widget.entityId) {
+      widgetState = getWidgetState(widget.entityId)
+    } else {
+      const fallbackEntityId = deriveWidgetEntityId(
+        graphId,
+        String(extractRawNodeId(widget.nodeId ?? nodeId ?? '')),
+        widget.name
+      )
+      widgetState = fallbackEntityId
+        ? getWidgetState(fallbackEntityId)
+        : undefined
+    }
     const mergedOptions: IWidgetOptions = {
       ...(widget.options ?? {}),
       ...(widgetState?.options ?? {})

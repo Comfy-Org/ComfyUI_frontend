@@ -7,7 +7,6 @@ import { widgetEntityId } from './entityIds'
 import {
   ensureWidgetState,
   getWidgetState,
-  getWidgetStateByTriple,
   readWidgetValue,
   writeWidgetValue
 } from './widgetValueIO'
@@ -143,23 +142,6 @@ describe('widgetValueIO', () => {
 
       expect(readWidgetValue(idA)).toBe(11)
       expect(readWidgetValue(idB)).toBe(22)
-    })
-
-    it('agrees with getWidgetStateByTriple for the same widget', () => {
-      const id = widgetEntityId(graphA, 1, 'seed')
-      const init = {
-        type: 'number',
-        value: 11,
-        options: {},
-        label: undefined,
-        serialize: true,
-        disabled: false
-      }
-      ensureWidgetState(id, init)
-
-      expect(getWidgetStateByTriple(graphA, '1', 'seed')).toEqual(
-        getWidgetState(id)
-      )
     })
   })
 })

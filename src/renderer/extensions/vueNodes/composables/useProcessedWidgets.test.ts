@@ -13,8 +13,8 @@ import {
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetEntityId } from '@/world/entityIds'
-import { getWidgetStateByTriple } from '@/world/widgetValueIO'
+import { deriveWidgetEntityId, widgetEntityId } from '@/world/entityIds'
+import { getWidgetState } from '@/world/widgetValueIO'
 
 const GRAPH_ID = 'graph-test'
 
@@ -478,7 +478,8 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     const [processed] = processWidgets([widget])
     processed.updateHandler(99)
 
-    const state = getWidgetStateByTriple(GRAPH_ID, NODE_ID, 'seed')
+    const entityId = deriveWidgetEntityId(GRAPH_ID, NODE_ID, 'seed')
+    const state = entityId ? getWidgetState(entityId) : undefined
     expect(state?.value).toBe(99)
   })
 
