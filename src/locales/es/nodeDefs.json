@@ -16152,6 +16152,10 @@
       "images": {
         "name": "images",
         "tooltip": "Lista de imágenes para guardar."
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Indica si se deben sobrescribir los archivos existentes o incrementar los nombres de archivo para evitar sobrescribir."
       }
     }
   },
@@ -16170,6 +16174,10 @@
       "images": {
         "name": "images",
         "tooltip": "Lista de imágenes para guardar."
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Indica si se deben sobrescribir los archivos existentes o incrementar los nombres de archivo para evitar sobrescribir."
       },
       "texts": {
         "name": "texts",
