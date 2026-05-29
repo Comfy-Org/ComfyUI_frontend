@@ -75,6 +75,10 @@ test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
       await expect(
         menu.getByRole('menuitem', { name: 'Collapse', exact: true })
       ).toHaveCount(0)
+
+      await menu.getByText('Minimize Node', { exact: true }).click()
+      await openMoreOptions(comfyPage)
+
       await expect(
         menu.getByRole('menuitem', { name: 'Expand', exact: true })
       ).toHaveCount(0)
