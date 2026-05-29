@@ -28,7 +28,10 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { WorkflowOpenSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import {
+  linearModeToAppMode,
+  useWorkflowService
+} from '@/platform/workflow/core/services/workflowService'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import type {
@@ -1425,7 +1428,9 @@ export class ComfyApp {
         missing_node_types: missingNodeTypes.map((node) =>
           typeof node === 'string' ? node : node.type
         ),
-        open_source: openSource ?? 'unknown'
+        open_source: openSource ?? 'unknown',
+        is_app: linearModeToAppMode(graphData?.extra?.linearMode) === 'app',
+        workflow_id: graphData?.id
       }
       useTelemetry()?.trackWorkflowOpened(telemetryPayload)
       useTelemetry()?.trackWorkflowImported(telemetryPayload)

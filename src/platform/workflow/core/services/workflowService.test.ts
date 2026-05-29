@@ -11,7 +11,10 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import {
+  linearModeToAppMode,
+  useWorkflowService
+} from '@/platform/workflow/core/services/workflowService'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -1331,5 +1334,17 @@ describe('useWorkflowService', () => {
       expect(workflowStore.renameWorkflow).not.toHaveBeenCalled()
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
     })
+  })
+})
+
+describe('linearModeToAppMode', () => {
+  it('maps the serialized linearMode boolean to an app mode', () => {
+    expect(linearModeToAppMode(true)).toBe('app')
+    expect(linearModeToAppMode(false)).toBe('graph')
+  })
+
+  it('returns null when linearMode is absent or not a boolean', () => {
+    expect(linearModeToAppMode(undefined)).toBeNull()
+    expect(linearModeToAppMode('app')).toBeNull()
   })
 })

@@ -38,7 +38,7 @@ import {
   generateUUID
 } from '@/utils/formatUtil'
 
-function linearModeToAppMode(linearMode: unknown): AppMode | null {
+export function linearModeToAppMode(linearMode: unknown): AppMode | null {
   if (typeof linearMode !== 'boolean') return null
   return linearMode ? 'app' : 'graph'
 }

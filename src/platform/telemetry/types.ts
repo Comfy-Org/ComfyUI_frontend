@@ -151,6 +151,8 @@ export interface WorkflowImportMetadata {
     | 'template'
     | 'shared_url'
     | 'unknown'
+  is_app?: boolean
+  workflow_id?: string
 }
 
 export interface EnterLinearMetadata {
