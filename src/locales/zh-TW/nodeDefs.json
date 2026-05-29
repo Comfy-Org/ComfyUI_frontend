@@ -16152,6 +16152,10 @@
       "images": {
         "name": "images",
         "tooltip": "要儲存的影像清單。"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "選擇是否覆蓋現有檔案，或自動遞增檔名以避免覆蓋。"
       }
     }
   },
@@ -16170,6 +16174,10 @@
       "images": {
         "name": "images",
         "tooltip": "要儲存的影像清單。"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "選擇是否覆蓋現有檔案，或自動遞增檔名以避免覆蓋。"
       },
       "texts": {
         "name": "texts",
