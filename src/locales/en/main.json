@@ -3150,6 +3150,7 @@
     }
   },
   "mediaAsset": {
+    "previewNotAvailable": "Preview not available",
     "deleteAssetTitle": "Delete this asset?",
     "deleteAssetDescription": "This asset will be permanently removed.",
     "deleteSelectedTitle": "Delete selected assets?",
