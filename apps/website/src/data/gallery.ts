@@ -11,6 +11,7 @@ export interface GalleryItem {
   visible?: boolean
 }
 
+/** @knipIgnoreUsedByStackedPR */
 export const galleryItems: GalleryItem[] = [
   {
     id: 'until-our-eye-interlink-harajuku',
@@ -183,6 +184,7 @@ export const visibleGalleryItems: GalleryItem[] = galleryItems.filter(
   (item) => item.visible !== false
 )
 
+/** @knipIgnoreUsedByStackedPR */
 export function getGalleryItemById(id: string): GalleryItem | undefined {
   return galleryItems.find((item) => item.id === id)
 }
