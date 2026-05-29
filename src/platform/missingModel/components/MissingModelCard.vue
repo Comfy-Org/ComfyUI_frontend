@@ -58,12 +58,13 @@
         <p
           class="min-w-0 flex-1 truncate text-sm font-medium"
           :class="
-            (isCloud && !group.isAssetSupported) || group.directory === null
+            (flags.assetModelWizardEnabled && !group.isAssetSupported) ||
+            group.directory === null
               ? 'text-warning-background'
               : 'text-destructive-background-hover'
           "
         >
-          <span v-if="isCloud && !group.isAssetSupported">
+          <span v-if="flags.assetModelWizardEnabled && !group.isAssetSupported">
             {{ t('rightSidePanel.missingModels.importNotSupported') }}
             ({{ group.models.length }})
           </span>
@@ -84,7 +85,7 @@
 
       <!-- Asset unsupported group notice -->
       <div
-        v-if="isCloud && !group.isAssetSupported"
+        v-if="flags.assetModelWizardEnabled && !group.isAssetSupported"
         data-testid="missing-model-import-unsupported"
         class="flex items-start gap-1.5 px-0.5 py-1 pl-2"
       >
@@ -117,7 +118,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
-import { isCloud } from '@/platform/distribution/types'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import MissingModelRow from '@/platform/missingModel/components/MissingModelRow.vue'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
@@ -136,10 +137,11 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { flags } = useFeatureFlags()
 const missingModelStore = useMissingModelStore()
 
 const downloadableModels = computed(() => {
-  if (isCloud) return []
+  if (flags.assetModelWizardEnabled) return []
 
   return getDownloadableModels(missingModelGroups)
 })

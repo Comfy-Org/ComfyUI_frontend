@@ -32,7 +32,11 @@
       </div>
 
       <Button
-        v-if="!isCloud && model.representative.url && !isAssetSupported"
+        v-if="
+          !flags.assetModelWizardEnabled &&
+          model.representative.url &&
+          !isAssetSupported
+        "
         data-testid="missing-model-copy-url"
         variant="secondary"
         size="sm"
@@ -148,7 +152,7 @@
           />
         </div>
         <div
-          v-else-if="!isCloud && downloadable"
+          v-else-if="!flags.assetModelWizardEnabled && downloadable"
           class="flex w-full items-start py-1"
         >
           <Button
@@ -203,7 +207,7 @@ import {
 } from '@/platform/missingModel/composables/useMissingModelInteractions'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { isCloud } from '@/platform/distribution/types'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   downloadModel,
   fetchModelMetadata,
@@ -225,6 +229,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
+const { flags } = useFeatureFlags()
 
 const modelKey = computed(() =>
   getModelStateKey(model.name, directory, isAssetSupported)

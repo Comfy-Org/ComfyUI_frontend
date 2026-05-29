@@ -18,6 +18,7 @@ export enum ServerFeatureFlag {
   MANAGER_SUPPORTS_V4 = 'extension.manager.supports_v4',
   MODEL_UPLOAD_BUTTON_ENABLED = 'model_upload_button_enabled',
   ASSET_RENAME_ENABLED = 'asset_rename_enabled',
+  ASSET_MODEL_WIZARD_ENABLED = 'asset_model_wizard_enabled',
   PRIVATE_MODELS_ENABLED = 'private_models_enabled',
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
@@ -70,6 +71,24 @@ export function useFeatureFlags() {
         ServerFeatureFlag.ASSET_RENAME_ENABLED,
         remoteConfig.value.asset_rename_enabled,
         false
+      )
+    },
+    /**
+     * Whether the model-import wizard and asset-backed missing-model UX are
+     * available. Capability for URL ingestion + the wizard flow (implies, but
+     * is broader than, `asset_url_import_enabled`).
+     *
+     * The default mirrors `isCloud` as a transitional measure: until BE-997
+     * registers this flag on `ServerFeatureFlag` (Cloud `true` / OSS `false`),
+     * the backends don't serve it and the FE preserves today's `isCloud`
+     * behavior. Once served, the server value takes precedence and OSS flips to
+     * `true` when BE-995 lands the URL-ingestion endpoints.
+     */
+    get assetModelWizardEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.ASSET_MODEL_WIZARD_ENABLED,
+        remoteConfig.value.asset_model_wizard_enabled,
+        isCloud
       )
     },
     get privateModelsEnabled() {

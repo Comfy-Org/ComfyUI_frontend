@@ -97,3 +97,5 @@ vitest.config.*.timestamp*
 /output.txt
 
 .amp
+# Local dev TLS certs (mkcert)
+.certs/

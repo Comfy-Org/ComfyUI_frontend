@@ -91,6 +91,7 @@ export type RemoteConfig = {
   telemetry_disabled_events?: TelemetryEventName[]
   model_upload_button_enabled?: boolean
   asset_rename_enabled?: boolean
+  asset_model_wizard_enabled?: boolean
   private_models_enabled?: boolean
   onboarding_survey_enabled?: boolean
   onboarding_survey?: OnboardingSurvey

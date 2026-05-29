@@ -23,11 +23,15 @@ vi.mock('./MissingModelRow.vue', () => ({
   }
 }))
 
-const mockIsCloud = vi.hoisted(() => ({ value: true }))
-vi.mock('@/platform/distribution/types', () => ({
-  get isCloud() {
-    return mockIsCloud.value
-  }
+const mockWizardEnabled = vi.hoisted(() => ({ value: true }))
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get assetModelWizardEnabled() {
+        return mockWizardEnabled.value
+      }
+    }
+  })
 }))
 
 import MissingModelCard from './MissingModelCard.vue'
@@ -126,7 +130,7 @@ function mountCard(
 
 describe('MissingModelCard', () => {
   beforeEach(() => {
-    mockIsCloud.value = true
+    mockWizardEnabled.value = true
   })
 
   describe('Rendering & Props', () => {
@@ -243,11 +247,11 @@ describe('MissingModelCard', () => {
 
 describe('MissingModelCard (OSS)', () => {
   beforeEach(() => {
-    mockIsCloud.value = false
+    mockWizardEnabled.value = false
   })
 
   afterEach(() => {
-    mockIsCloud.value = true
+    mockWizardEnabled.value = true
   })
 
   it('shows directory name instead of "Import Not Supported" for unsupported groups', () => {

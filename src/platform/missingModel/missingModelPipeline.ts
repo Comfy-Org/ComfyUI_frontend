@@ -1,7 +1,7 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { st } from '@/i18n'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { assetService } from '@/platform/assets/services/assetService'
-import { isCloud } from '@/platform/distribution/types'
 import {
   enrichWithEmbeddedMetadata,
   scanAllModelCandidates,
@@ -108,10 +108,12 @@ export async function runMissingModelPipeline({
   silent = false
 }: RunMissingModelPipelineOptions): Promise<MissingModelPipelineResult> {
   const controller = missingModelStore.createVerificationAbortController()
+  const { flags } = useFeatureFlags()
+  const assetModelWizardEnabled = flags.assetModelWizardEnabled
 
   const getDirectory = (nodeType: string) =>
     useModelToNodeStore().getCategoryForNodeType(nodeType)
-  const isAssetBrowserWidget = isCloud
+  const isAssetBrowserWidget = assetModelWizardEnabled
     ? assetService.shouldUseAssetBrowser
     : () => false
 
@@ -133,7 +135,7 @@ export async function runMissingModelPipeline({
         models && Object.values(models).some((m) => m.file_name === name)
       )
     },
-    isCloud ? isAssetBrowserWidget : undefined
+    assetModelWizardEnabled ? isAssetBrowserWidget : undefined
   )
 
   // Drop candidates whose enclosing subgraph is muted/bypassed. Per-node
@@ -161,7 +163,7 @@ export async function runMissingModelPipeline({
   })
 
   if (enrichedCandidates.length) {
-    if (isCloud) {
+    if (assetModelWizardEnabled) {
       void verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
         .then(() => {
           if (controller.signal.aborted) return
