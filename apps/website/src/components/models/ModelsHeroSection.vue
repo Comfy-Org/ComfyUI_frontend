@@ -8,14 +8,14 @@ const {
   locale = 'en',
   modelName,
   ctaHref,
-  mediaSrc,
-  mediaAlt = ''
+  videoSrc,
+  videoAriaLabel = ''
 } = defineProps<{
   locale?: Locale
   modelName: string
   ctaHref: string
-  mediaSrc: string
-  mediaAlt?: string
+  videoSrc: string
+  videoAriaLabel?: string
 }>()
 </script>
 
@@ -40,9 +40,14 @@ const {
       {{ t('models.list.heroCta', locale).replace('{name}', modelName) }}
     </BrandButton>
     <div class="mt-16 w-full max-w-5xl">
-      <img
-        :src="mediaSrc"
-        :alt="mediaAlt"
+      <video
+        :src="videoSrc"
+        :aria-label="videoAriaLabel"
+        autoplay
+        loop
+        muted
+        playsinline
+        preload="metadata"
         class="rounded-4.5xl size-full object-cover"
       />
     </div>
