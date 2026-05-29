@@ -312,5 +312,23 @@ describe('PostHogTelemetryProvider', () => {
       expect(result.$set_once).not.toHaveProperty('email')
       expect(result.$set_once).toHaveProperty('plan', 'free')
     })
+
+    it('remoteConfig.posthog_config cannot override before_send or person_profiles', async () => {
+      const remoteBefore_send = vi.fn()
+      mockRemoteConfig.value = {
+        posthog_config: {
+          before_send: remoteBefore_send,
+          person_profiles: 'always'
+        }
+      }
+
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const initConfig = hoisted.mockInit.mock.calls[0][1]
+
+      expect(initConfig.before_send).not.toBe(remoteBefore_send)
+      expect(initConfig.person_profiles).toBe('identified_only')
+    })
   })
 })
