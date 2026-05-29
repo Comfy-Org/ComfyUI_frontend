@@ -22,13 +22,6 @@ interface CameraQuaternion {
   w: number
 }
 
-interface CameraRotation {
-  x: number
-  y: number
-  z: number
-  order: string
-}
-
 interface CameraFrustum {
   left: number
   right: number
@@ -42,7 +35,6 @@ export interface CameraState {
   zoom: number
   cameraType: CameraType
   quaternion?: CameraQuaternion
-  rotation?: CameraRotation
   fov?: number
   aspect?: number
   near?: number
