@@ -1963,7 +1963,6 @@
   },
   "load3d": {
     "switchCamera": "Switch Camera",
-    "retainViewOnReload": "Lock camera view across model reloads",
     "showGrid": "Show Grid",
     "backgroundColor": "Background Color",
     "lightIntensity": "Light Intensity",
