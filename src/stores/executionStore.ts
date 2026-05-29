@@ -55,6 +55,12 @@ interface QueuedJob {
    * This stays stable even if the user switches workflows or edits the canvas.
    */
   nodeLookup?: Record<string, ExecutionNodeInfo>
+  /**
+   * Whether the run was triggered while the workflow was in App Mode.
+   * Captured at queue time so execution outcome events can be attributed
+   * to App Mode even after the active workflow changes.
+   */
+  isAppMode?: boolean
 }
 
 function buildExecutionNodeLookup(
@@ -297,7 +303,9 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
     if (isCloud && activeJobId.value) {
       useTelemetry()?.trackExecutionSuccess({
-        jobId: activeJobId.value
+        jobId: activeJobId.value,
+        is_app_mode: activeJob.value?.isAppMode ?? false,
+        workflow_id: jobIdToWorkflowId.value.get(activeJobId.value)
       })
     }
     const jobId = e.detail.prompt_id
@@ -399,11 +407,14 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
     if (isCloud) {
+      const jobId = e.detail.prompt_id
       useTelemetry()?.trackExecutionError({
-        jobId: e.detail.prompt_id,
+        jobId,
         nodeId: String(e.detail.node_id),
         nodeType: e.detail.node_type,
-        error: e.detail.exception_message
+        error: e.detail.exception_message,
+        is_app_mode: queuedJobs.value[jobId]?.isAppMode ?? false,
+        workflow_id: jobIdToWorkflowId.value.get(jobId)
       })
 
       // Cloud wraps validation errors (400) in exception_message as embedded JSON.
@@ -562,12 +573,14 @@ export const useExecutionStore = defineStore('execution', () => {
     nodes,
     id,
     promptOutput,
-    workflow
+    workflow,
+    isAppMode
   }: {
     nodes: string[]
     id: JobId
     promptOutput: ComfyApiWorkflow
     workflow: ComfyWorkflow
+    isAppMode?: boolean
   }) {
     queuedJobs.value[id] ??= { nodes: {} }
     const queuedJob = queuedJobs.value[id]
@@ -580,6 +593,7 @@ export const useExecutionStore = defineStore('execution', () => {
     }
     queuedJob.nodeLookup = buildExecutionNodeLookup(promptOutput)
     queuedJob.workflow = workflow
+    queuedJob.isAppMode = isAppMode
     const wid = workflow?.activeState?.id ?? workflow?.initialState?.id
     if (wid) {
       jobIdToWorkflowId.value.set(id, wid)
