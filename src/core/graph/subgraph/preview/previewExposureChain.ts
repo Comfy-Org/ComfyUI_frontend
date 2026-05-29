@@ -1,5 +1,5 @@
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import type { UUID } from '@/utils/uuid'
 
 export interface ResolvedPreviewChainStep {
   rootGraphId: UUID
