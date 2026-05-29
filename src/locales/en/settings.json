@@ -328,6 +328,10 @@
     "name": "Show node frequency in search results",
     "tooltip": "Only applies to v1 (legacy)"
   },
+  "Comfy_NodeSearchBox_ReplaceCanvasMenu": {
+    "name": "Replace canvas right-click \"Add Node\" with search box",
+    "tooltip": "When enabled, the right-click canvas menu opens the node search box instead of the LiteGraph category submenu. The search box includes blueprints, partner nodes, core nodes, and extensions."
+  },
   "Comfy_NodeSuggestions_number": {
     "name": "Number of nodes suggestions",
     "tooltip": "Only for litegraph searchbox/context menu"
