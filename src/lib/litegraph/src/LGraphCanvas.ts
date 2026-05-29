@@ -1,7 +1,7 @@
 import { toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
 
-import { isMiddleButtonEvent, isMiddlePointerInput } from '@/base/pointerUtils'
+import { isMiddleButtonEvent } from '@/base/pointerUtils'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
@@ -2314,7 +2314,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // left button mouse / single finger
     if (e.button === 0 && !pointer.isDouble) {
       this._processPrimaryButton(e, node)
-    } else if (isMiddlePointerInput(e)) {
+    } else if (isMiddleButtonEvent(e)) {
       this._processMiddleButton(e, node)
     } else if (
       (e.button === 2 || pointer.isDouble) &&
