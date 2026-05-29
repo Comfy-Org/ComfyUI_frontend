@@ -1,5 +1,7 @@
 import posthog from 'posthog-js'
 
+import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
+
 const POSTHOG_KEY =
   import.meta.env.PUBLIC_POSTHOG_KEY ??
   'phc_iKfK86id4xVYws9LybMje0h44eGtfwFgRPIBehmy8rO'
@@ -20,20 +22,7 @@ export function initPostHog() {
       capture_pageleave: true,
       person_profiles: 'identified_only',
       // cookie_domain omitted — see PostHogTelemetryProvider.ts note + posthog-js#3578
-      before_send: (event) => {
-        if (!event) return null
-        const PII_KEYS = ['email', 'prompt', 'user_email', '$email']
-        const strip = (obj?: Record<string, unknown>) => {
-          if (!obj) return
-          for (const key of PII_KEYS) {
-            delete obj[key]
-          }
-        }
-        strip(event.properties)
-        strip(event.$set)
-        strip(event.$set_once)
-        return event
-      }
+      before_send: createPostHogBeforeSend()
     })
     initialized = true
   } catch (error) {
