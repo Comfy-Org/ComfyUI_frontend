@@ -16152,6 +16152,10 @@
       "images": {
         "name": "images",
         "tooltip": "Liste des images à enregistrer."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Déterminer s'il faut écraser les fichiers existants ou incrémenter les noms de fichiers pour éviter l'écrasement."
       }
     }
   },
@@ -16170,6 +16174,10 @@
       "images": {
         "name": "images",
         "tooltip": "Liste des images à enregistrer."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Déterminer s'il faut écraser les fichiers existants ou incrémenter les noms de fichiers pour éviter l'écrasement."
       },
       "texts": {
         "name": "texts",

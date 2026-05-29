@@ -16152,6 +16152,10 @@
       "images": {
         "name": "images",
         "tooltip": "Kaydedilecek görüntülerin listesi."
+      },
+      "mode": {
+        "name": "mod",
+        "tooltip": "Mevcut dosyaların üzerine yazılsın mı yoksa üzerine yazmayı önlemek için dosya adları artırılsın mı?"
       }
     }
   },
@@ -16170,6 +16174,10 @@
       "images": {
         "name": "images",
         "tooltip": "Kaydedilecek görüntülerin listesi."
+      },
+      "mode": {
+        "name": "mod",
+        "tooltip": "Mevcut dosyaların üzerine yazılsın mı yoksa üzerine yazmayı önlemek için dosya adları artırılsın mı?"
       },
       "texts": {
         "name": "texts",

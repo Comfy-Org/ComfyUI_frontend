@@ -15894,6 +15894,10 @@
       "filename_prefix": {
         "name": "filename_prefix",
         "tooltip": "Prefix for saved image filenames."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Whether to overwrite existing files or increment filenames to avoid overwriting."
       }
     }
   },
@@ -15912,6 +15916,10 @@
       "filename_prefix": {
         "name": "filename_prefix",
         "tooltip": "Prefix for saved image filenames."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Whether to overwrite existing files or increment filenames to avoid overwriting."
       },
       "texts": {
         "name": "texts",
