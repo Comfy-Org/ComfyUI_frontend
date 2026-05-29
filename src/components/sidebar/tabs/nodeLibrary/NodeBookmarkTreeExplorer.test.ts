@@ -19,6 +19,7 @@ const {
   mockIsBookmarked,
   mockToggleBookmark,
   mockAddNodeOnGraph,
+  mockSelectItems,
   mockToggleNodeOnEvent,
   captureRoot,
   getRoot,
@@ -31,6 +32,7 @@ const {
     mockIsBookmarked: vi.fn().mockReturnValue(false),
     mockToggleBookmark: vi.fn(),
     mockAddNodeOnGraph: vi.fn(),
+    mockSelectItems: vi.fn(),
     mockToggleNodeOnEvent: vi.fn(),
     captureRoot: (root: TreeExplorerNode<unknown>) => {
       capturedRoot = root
@@ -99,6 +101,12 @@ vi.mock('@/stores/nodeBookmarkStore', () => ({
 
 vi.mock('@/services/litegraphService', () => ({
   useLitegraphService: () => ({ addNodeOnGraph: mockAddNodeOnGraph })
+}))
+
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => ({
+    canvas: { selectItems: mockSelectItems }
+  })
 }))
 
 vi.mock('@/composables/useTreeExpansion', () => ({
@@ -220,6 +228,29 @@ describe('NodeBookmarkTreeExplorer', () => {
       await leafNode?.handleClick?.call(leafNode, mockEvent)
 
       expect(mockAddNodeOnGraph).toHaveBeenCalledWith(mockLeafNodeDef)
+    })
+
+    it('selects the placed node so click placement matches drag (FE-564)', async () => {
+      const placedNode = { id: 7 }
+      mockAddNodeOnGraph.mockReturnValue(placedNode)
+
+      const root = await renderAndGetRoot()
+      const leafNode = root.children?.[0].children?.[0]
+
+      await leafNode?.handleClick?.call(leafNode, new MouseEvent('click'))
+
+      expect(mockSelectItems).toHaveBeenCalledWith([placedNode])
+    })
+
+    it('does not call selectItems when node creation fails', async () => {
+      mockAddNodeOnGraph.mockReturnValue(null)
+
+      const root = await renderAndGetRoot()
+      const leafNode = root.children?.[0].children?.[0]
+
+      await leafNode?.handleClick?.call(leafNode, new MouseEvent('click'))
+
+      expect(mockSelectItems).not.toHaveBeenCalled()
     })
 
     it('toggles node expansion when a folder node is clicked', async () => {

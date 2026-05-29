@@ -16,6 +16,7 @@ const {
   getRoot,
   resetRoot,
   mockAddNodeOnGraph,
+  mockSelectItems,
   mockSearchNode,
   mockOrganizeNodes,
   mockToggleNodeOnEvent
@@ -30,6 +31,7 @@ const {
       capturedRoot = null
     },
     mockAddNodeOnGraph: vi.fn(),
+    mockSelectItems: vi.fn(),
     mockSearchNode: vi.fn(() => []),
     mockOrganizeNodes: vi.fn(
       (): TreeNode => ({
@@ -44,6 +46,12 @@ const {
 
 vi.mock('@/services/litegraphService', () => ({
   useLitegraphService: () => ({ addNodeOnGraph: mockAddNodeOnGraph })
+}))
+
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => ({
+    canvas: { selectItems: mockSelectItems }
+  })
 }))
 
 vi.mock('@/services/nodeOrganizationService', () => ({
@@ -201,6 +209,41 @@ describe('NodeLibrarySidebarTab', () => {
 
     await leaf?.handleClick?.(new MouseEvent('click'))
     expect(mockAddNodeOnGraph).toHaveBeenCalledWith(mockNode)
+  })
+
+  it('selects the placed node so click placement matches drag (FE-564)', async () => {
+    const placedNode = { id: 42 }
+    mockAddNodeOnGraph.mockReturnValue(placedNode)
+    mockOrganizeNodes.mockReturnValue({
+      key: 'root',
+      label: 'Root',
+      children: [{ key: 'leaf', label: 'Leaf', leaf: true, data: mockNode }]
+    })
+
+    renderComponent()
+    await nextTick()
+
+    const leaf = getRoot().children?.[0]
+    await leaf?.handleClick?.(new MouseEvent('click'))
+
+    expect(mockSelectItems).toHaveBeenCalledWith([placedNode])
+  })
+
+  it('does not call selectItems when node creation fails', async () => {
+    mockAddNodeOnGraph.mockReturnValue(null)
+    mockOrganizeNodes.mockReturnValue({
+      key: 'root',
+      label: 'Root',
+      children: [{ key: 'leaf', label: 'Leaf', leaf: true, data: mockNode }]
+    })
+
+    renderComponent()
+    await nextTick()
+
+    const leaf = getRoot().children?.[0]
+    await leaf?.handleClick?.(new MouseEvent('click'))
+
+    expect(mockSelectItems).not.toHaveBeenCalled()
   })
 
   it('adds and removes filters', async () => {
