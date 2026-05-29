@@ -130,9 +130,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
                 // Ref: posthog.com/tutorials/web-redact-properties
                 const strip = (obj?: Record<string, unknown>) => {
                   if (!obj) return
-                  PII_KEYS.forEach((key) => {
+                  for (const key of PII_KEYS) {
                     delete obj[key]
-                  })
+                  }
                 }
                 strip(event.properties)
                 strip(event.$set)

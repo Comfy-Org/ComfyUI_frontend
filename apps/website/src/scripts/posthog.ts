@@ -25,9 +25,9 @@ export function initPostHog() {
         const PII_KEYS = ['email', 'prompt', 'user_email', '$email']
         const strip = (obj?: Record<string, unknown>) => {
           if (!obj) return
-          PII_KEYS.forEach((key) => {
+          for (const key of PII_KEYS) {
             delete obj[key]
-          })
+          }
         }
         strip(event.properties)
         strip(event.$set)
