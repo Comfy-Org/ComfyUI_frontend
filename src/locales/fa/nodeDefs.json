@@ -384,6 +384,90 @@
       }
     }
   },
+  "BeebleSwitchXImageEdit": {
+    "description": "ویرایش یک تصویر با Beeble SwitchX. هر چیزی را در صحنه (پس‌زمینه، نورپردازی، لباس) تغییر می‌دهد در حالی که پیکسل‌های سوژه اصلی را حفظ می‌کند. یک تصویر مرجع و/یا یک متن توصیفی برای ظاهر جدید ارائه دهید. حداکثر ~۲.۷۷ مگاپیکسل.",
+    "display_name": "ویرایش تصویر Beeble SwitchX",
+    "inputs": {
+      "alpha_mode": {
+        "name": "حالت آلفا",
+        "tooltip": "نحوه تصمیم‌گیری SwitchX برای حفظ یا بازتولید بخش‌ها را کنترل می‌کند. «خودکار» سوژه اصلی را به طور خودکار جدا می‌کند. «پر کردن» کل قاب را با حفظ هندسه بازتولید می‌کند. «انتخاب» یک کی‌فریم فریم اول را در سراسر کلیپ اعمال می‌کند. «سفارشی» از آلفا مت فریم به فریم که شما ارائه می‌دهید استفاده می‌کند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "max_resolution": {
+        "name": "حداکثر وضوح",
+        "tooltip": "حداکثر وضوح خروجی."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح متنی از خروجی مورد نظر (حداکثر ۲۰۰۰ کاراکتر). حداقل یکی از «پرامپت» یا «تصویر مرجع» الزامی است."
+      },
+      "reference_image": {
+        "name": "تصویر مرجع",
+        "tooltip": "تصویر مرجعی که ظاهر آن (پس‌زمینه، نورپردازی، لباس) باید در نتیجه اعمال شود. حداقل یکی از «تصویر مرجع» یا «پرامپت» الزامی است."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "تصویر",
+        "tooltip": null
+      },
+      "1": {
+        "name": "آلفا",
+        "tooltip": "آلفا مت استفاده‌شده توسط Beeble. در حالت «پر کردن» خالی است، زیرا مت جداگانه‌ای وجود ندارد."
+      }
+    }
+  },
+  "BeebleSwitchXVideoEdit": {
+    "description": "ویرایش یک ویدیو با Beeble SwitchX. هر چیزی را در صحنه (پس‌زمینه، نورپردازی، لباس) تغییر می‌دهد در حالی که پیکسل‌ها و حرکت سوژه اصلی را حفظ می‌کند. یک تصویر مرجع و/یا یک متن توصیفی برای ظاهر جدید ارائه دهید. حداکثر ۲۴۰ فریم، حداکثر ~۲.۷۷ مگاپیکسل برای هر فریم.",
+    "display_name": "ویرایش ویدیو Beeble SwitchX",
+    "inputs": {
+      "alpha_mode": {
+        "name": "حالت آلفا",
+        "tooltip": "نحوه تصمیم‌گیری SwitchX برای حفظ یا بازتولید بخش‌ها را کنترل می‌کند. «خودکار» سوژه اصلی را به طور خودکار جدا می‌کند. «پر کردن» کل قاب را با حفظ هندسه بازتولید می‌کند. «انتخاب» یک کی‌فریم فریم اول را در سراسر کلیپ اعمال می‌کند. «سفارشی» از آلفا مت فریم به فریم که شما ارائه می‌دهید استفاده می‌کند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "max_resolution": {
+        "name": "حداکثر وضوح",
+        "tooltip": "حداکثر وضوح خروجی."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح متنی از خروجی مورد نظر (حداکثر ۲۰۰۰ کاراکتر). حداقل یکی از «پرامپت» یا «تصویر مرجع» الزامی است."
+      },
+      "reference_image": {
+        "name": "تصویر مرجع",
+        "tooltip": "تصویر مرجعی که ظاهر آن (پس‌زمینه، نورپردازی، لباس) باید در نتیجه اعمال شود. حداقل یکی از «تصویر مرجع» یا «پرامپت» الزامی است."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "video": {
+        "name": "ویدیو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ویدیو",
+        "tooltip": null
+      },
+      "1": {
+        "name": "آلفا",
+        "tooltip": "آلفا مت استفاده‌شده توسط Beeble. در حالت «پر کردن» خالی است، زیرا مت جداگانه‌ای وجود ندارد."
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "BetaSamplingScheduler",
     "inputs": {
@@ -7464,6 +7548,71 @@
       }
     }
   },
+  "Krea2ImageNode": {
+    "description": "تولید تصویر با استفاده از Krea 2 — مد Medium (تصاویر بیانی) یا Large (فتورئالیسم بیانی) را انتخاب کنید. پشتیبانی از moodboard اختیاری و تا ۱۰ مرجع زنجیره‌ای سبک تصویر.",
+    "display_name": "Krea 2 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Krea 2 Medium برای تصاویر بیانی مناسب است؛ Krea 2 Large برای فتورئالیسم بیانی بهترین است."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_moodboard_id": {
+        "name": "moodboard_id"
+      },
+      "model_moodboard_strength": {
+        "name": "moodboard_strength"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "پرامپت متنی برای تصویر."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تصادفی برای تکرارپذیری."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Krea2StyleReferenceNode": {
+    "description": "افزودن مرجع سبک تصویر به تولید Krea 2. می‌توانید تا ۱۰ نود Krea 2 Style Reference را زنجیره کنید و خروجی نهایی `style_reference` را به Krea 2 Image بدهید. هر تصویر در فضای ذخیره‌سازی ComfyAPI آپلود شده و به صورت URL ارسال می‌شود.",
+    "display_name": "Krea 2 Style Reference",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "تصویر مرجع که سبک آن بر تولید تأثیر می‌گذارد."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "قدرت مرجع؛ مقادیر منفی تأثیر سبک را معکوس می‌کند."
+      },
+      "style_reference": {
+        "name": "style_reference",
+        "tooltip": "زنجیره اختیاری مراجع سبک ورودی؛ این نود یک مرجع دیگر اضافه می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_reference",
+        "tooltip": null
+      }
+    }
+  },
   "LTXAVTextEncoderLoader": {
     "description": "[دستورالعمل‌ها]\n\nltxav: gemma ۳ ۱۲B",
     "display_name": "بارگذاری رمزگذار متنی LTXV Audio",
@@ -7767,6 +7916,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -13028,6 +13182,32 @@
     "inputs": {
       "photomaker_model_name": {
         "name": "نام مدل photomaker"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PiDConditioning": {
+    "description": "یک latent و یک مقدار degrade_sigma را به CONDITIONING برای رمزگشایی/بزرگ‌نمایی PiD متصل می‌کند.",
+    "display_name": "PiD Conditioning",
+    "inputs": {
+      "degrade_sigma": {
+        "name": "degrade_sigma",
+        "tooltip": "۰ = latent تمیز. برای حذف نویز خروجی‌های latent خراب، مقدار را افزایش دهید."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent (از VAEEncode یا KSampler)."
+      },
+      "latent_format": {
+        "name": "latent_format",
+        "tooltip": "لاتنت‌های Flux1 و Flux2 به طور خودکار از بعد کانال تشخیص داده می‌شوند، sd3 باید به صورت دستی انتخاب شود."
+      },
+      "positive": {
+        "name": "positive"
       }
     },
     "outputs": {

@@ -384,6 +384,90 @@
       }
     }
   },
+  "BeebleSwitchXImageEdit": {
+    "description": "Tek bir görüntüyü Beeble SwitchX ile düzenleyin. Sahnedeki herhangi bir şeyi (arka plan, aydınlatma, kostüm) değiştirirken orijinal öznenin piksellerini korur. Yeni görünümü tanımlamak için bir referans görsel ve/veya metin istemi sağlayın. Maksimum ~2,77MP.",
+    "display_name": "Beeble SwitchX Görüntü Düzenleme",
+    "inputs": {
+      "alpha_mode": {
+        "name": "alfa_modu",
+        "tooltip": "SwitchX'in neyi koruyup neyi yeniden oluşturacağına nasıl karar verdiğini kontrol eder. 'otomatik' ana özneyi otomatik olarak izole eder. 'doldur' tüm çerçeveyi yeniden oluşturur ve geometrisini korur. 'seç' ilk çerçeve anahtar karesini klip boyunca yayar. 'özel' sizin sağladığınız kare başına alfa maskesini kullanır."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "max_resolution": {
+        "name": "maksimum_çözünürlük",
+        "tooltip": "Maksimum çıktı çözünürlüğü."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "İstenen çıktının metin açıklaması (maksimum 2000 karakter). 'istem' veya 'referans_görsel'den en az biri gereklidir."
+      },
+      "reference_image": {
+        "name": "referans_görsel",
+        "tooltip": "Sonucun görünümünü (arka plan, aydınlatma, kostüm) alacağı referans görsel. 'referans_görsel' veya 'istem'den en az biri gereklidir."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohuma bakılmaksızın deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "görüntü",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alfa",
+        "tooltip": "Beeble tarafından kullanılan alfa maskesi. Ayrı bir maske olmayan 'doldur' modu için boştur."
+      }
+    }
+  },
+  "BeebleSwitchXVideoEdit": {
+    "description": "Bir videoyu Beeble SwitchX ile düzenleyin. Sahnedeki herhangi bir şeyi (arka plan, aydınlatma, kostüm) değiştirirken orijinal öznenin piksellerini ve hareketini korur. Yeni görünümü tanımlamak için bir referans görsel ve/veya metin istemi sağlayın. Maksimum 240 kare, kare başına maksimum ~2,77MP.",
+    "display_name": "Beeble SwitchX Video Düzenleme",
+    "inputs": {
+      "alpha_mode": {
+        "name": "alfa_modu",
+        "tooltip": "SwitchX'in neyi koruyup neyi yeniden oluşturacağına nasıl karar verdiğini kontrol eder. 'otomatik' ana özneyi otomatik olarak izole eder. 'doldur' tüm çerçeveyi yeniden oluşturur ve geometrisini korur. 'seç' ilk çerçeve anahtar karesini klip boyunca yayar. 'özel' sizin sağladığınız kare başına alfa maskesini kullanır."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "max_resolution": {
+        "name": "maksimum_çözünürlük",
+        "tooltip": "Maksimum çıktı çözünürlüğü."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "İstenen çıktının metin açıklaması (maksimum 2000 karakter). 'istem' veya 'referans_görsel'den en az biri gereklidir."
+      },
+      "reference_image": {
+        "name": "referans_görsel",
+        "tooltip": "Sonucun görünümünü (arka plan, aydınlatma, kostüm) alacağı referans görsel. 'referans_görsel' veya 'istem'den en az biri gereklidir."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohuma bakılmaksızın deterministik değildir."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "video",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alfa",
+        "tooltip": "Beeble tarafından kullanılan alfa maskesi. Ayrı bir maske olmayan 'doldur' modu için boştur."
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "BetaÖrneklemeZamanlayıcısı",
     "inputs": {
@@ -7464,6 +7548,71 @@
       }
     }
   },
+  "Krea2ImageNode": {
+    "description": "Krea 2 ile görseller oluşturun — Orta (ifadeci illüstrasyonlar) veya Büyük (ifadeci fotogerçekçilik) seçin. İsteğe bağlı bir moodboard ve en fazla 10 zincirlenmiş görsel stil referansı destekler.",
+    "display_name": "Krea 2 Görsel",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Krea 2 Orta, ifadeci illüstrasyonlar için en iyisidir; Krea 2 Büyük, ifadeci fotogerçekçilik için en iyisidir."
+      },
+      "model_aspect_ratio": {
+        "name": "en-boy oranı"
+      },
+      "model_creativity": {
+        "name": "yaratıcılık"
+      },
+      "model_moodboard_id": {
+        "name": "moodboard_id"
+      },
+      "model_moodboard_strength": {
+        "name": "moodboard_gücü"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Görsel için metin istemi."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Tekrarlanabilirlik için rastgele tohum."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Krea2StyleReferenceNode": {
+    "description": "Bir Krea 2 üretimine görsel stil referansı ekleyin. Birden fazla Krea 2 Stil Referansı düğümünü zincirleyin (en fazla 10) ve son `style_reference` çıktısını Krea 2 Görsel'e aktarın. Her görsel ComfyAPI depolamasına yüklenir ve URL olarak iletilir.",
+    "display_name": "Krea 2 Stil Referansı",
+    "inputs": {
+      "image": {
+        "name": "görsel",
+        "tooltip": "Üretimi etkileyen stil referans görseli."
+      },
+      "strength": {
+        "name": "güç",
+        "tooltip": "Referans gücü; negatif değerler stil etkisini tersine çevirir."
+      },
+      "style_reference": {
+        "name": "stil_referansı",
+        "tooltip": "İsteğe bağlı gelen stil referans zinciri; bu düğüm bir tane daha ekler."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "stil_referansı",
+        "tooltip": null
+      }
+    }
+  },
   "LTXAVTextEncoderLoader": {
     "description": "[Tarifler]\n\nltxav: gemma 3 12B",
     "display_name": "LTXV Sesli Metin Kodlayıcı Yükleyici",
@@ -7767,6 +7916,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -13028,6 +13182,32 @@
     "inputs": {
       "photomaker_model_name": {
         "name": "photomaker_model_adı"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PiDConditioning": {
+    "description": "PiD kod çözme/yükseltme için bir latent ve bir degrade_sigma skalarını CONDITIONING'e ekler",
+    "display_name": "PiD Koşullandırma",
+    "inputs": {
+      "degrade_sigma": {
+        "name": "degrade_sigma",
+        "tooltip": "0 = temiz latent. Bozulmuş latent çıktıları gürültüsüzleştirmek için artırın."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent (VAEEncode veya bir KSampler'dan)."
+      },
+      "latent_format": {
+        "name": "latent_format",
+        "tooltip": "Flux1 ve Flux2 latent'leri kanal boyutundan otomatik algılanır, sd3 manuel seçilmelidir."
+      },
+      "positive": {
+        "name": "pozitif"
       }
     },
     "outputs": {

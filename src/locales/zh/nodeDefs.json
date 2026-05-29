@@ -384,6 +384,90 @@
       }
     }
   },
+  "BeebleSwitchXImageEdit": {
+    "description": "使用 Beeble SwitchX 编辑单张图像。可切换场景中的任何元素（背景、光照、服装），同时保留原始主体像素。请提供参考图像和/或文本提示来描述新外观。最大约 2.77MP。",
+    "display_name": "Beeble SwitchX 图像编辑",
+    "inputs": {
+      "alpha_mode": {
+        "name": "alpha_mode",
+        "tooltip": "控制 SwitchX 如何决定保留或重生成内容。'auto' 自动隔离主要主体。'fill' 重生成整个画面并保留几何结构。'select' 将首帧关键帧传播到整个 clip。'custom' 使用您提供的每帧 alpha mask。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "max_resolution": {
+        "name": "最大分辨率",
+        "tooltip": "输出的最大分辨率。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "期望输出的文本描述（最多 2000 字符）。“提示词”或“参考图像”至少需填写一项。"
+      },
+      "reference_image": {
+        "name": "参考图像",
+        "tooltip": "结果将采用该参考图像的外观（背景、光照、服装）。“参考图像”或“提示词”至少需填写一项。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alpha",
+        "tooltip": "Beeble 使用的 alpha mask。'fill' 模式下为空，该模式没有单独的 mask。"
+      }
+    }
+  },
+  "BeebleSwitchXVideoEdit": {
+    "description": "使用 Beeble SwitchX 编辑视频。可切换场景中的任何元素（背景、光照、服装），同时保留原始主体像素和动作。请提供参考图像和/或文本提示来描述新外观。最多 240 帧，每帧最大约 2.77MP。",
+    "display_name": "Beeble SwitchX 视频编辑",
+    "inputs": {
+      "alpha_mode": {
+        "name": "alpha_mode",
+        "tooltip": "控制 SwitchX 如何决定保留或重生成内容。'auto' 自动隔离主要主体。'fill' 重生成整个画面并保留几何结构。'select' 将首帧关键帧传播到整个 clip。'custom' 使用您提供的每帧 alpha mask。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "max_resolution": {
+        "name": "最大分辨率",
+        "tooltip": "输出的最大分辨率。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "期望输出的文本描述（最多 2000 字符）。“提示词”或“参考图像”至少需填写一项。"
+      },
+      "reference_image": {
+        "name": "参考图像",
+        "tooltip": "结果将采用该参考图像的外观（背景、光照、服装）。“参考图像”或“提示词”至少需填写一项。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      },
+      "video": {
+        "name": "视频"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "视频",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alpha",
+        "tooltip": "Beeble 使用的 alpha mask。'fill' 模式下为空，该模式没有单独的 mask。"
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "Beta采样调度器",
     "inputs": {
@@ -7464,6 +7548,71 @@
       }
     }
   },
+  "Krea2ImageNode": {
+    "description": "通过 Krea 2 生成图像 —— 选择 Medium（表现性插画）或 Large（表现性写实）。支持可选情绪板和最多 10 个串联图像风格参考。",
+    "display_name": "Krea 2 图像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "Krea 2 Medium 适合表现性插画；Krea 2 Large 适合表现性写实。"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_creativity": {
+        "name": "创造力"
+      },
+      "model_moodboard_id": {
+        "name": "情绪板 ID"
+      },
+      "model_moodboard_strength": {
+        "name": "情绪板强度"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于生成图像的文本提示。"
+      },
+      "seed": {
+        "name": "随机种子",
+        "tooltip": "用于结果复现的随机种子。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Krea2StyleReferenceNode": {
+    "description": "为 Krea 2 生成添加图像风格参考。可串联多个 Krea 2 风格参考节点（最多 10 个），并将最终的 `style_reference` 输出连接到 Krea 2 图像。每张图像会上传到 ComfyAPI 存储并以 URL 形式传递。",
+    "display_name": "Krea 2 风格参考",
+    "inputs": {
+      "image": {
+        "name": "参考图像",
+        "tooltip": "其风格影响生成结果的参考图像。"
+      },
+      "strength": {
+        "name": "参考强度",
+        "tooltip": "参考强度；负值会反转风格影响。"
+      },
+      "style_reference": {
+        "name": "风格参考",
+        "tooltip": "可选的风格参考链；此节点会追加一个。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "风格参考",
+        "tooltip": null
+      }
+    }
+  },
   "LTXAVTextEncoderLoader": {
     "description": "[Recipes]\n\nltxav: gemma 3 12B",
     "display_name": "LTXV音频文本编码器加载器",
@@ -7767,6 +7916,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -13028,6 +13182,32 @@
     "inputs": {
       "photomaker_model_name": {
         "name": "photomaker模型名称"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PiDConditioning": {
+    "description": "为 PiD 解码/放大附加 latent 和 degrade_sigma 标量到 CONDITIONING",
+    "display_name": "PiD 条件处理",
+    "inputs": {
+      "degrade_sigma": {
+        "name": "degrade_sigma",
+        "tooltip": "0 = 干净 latent。增加以去噪受损 latent 输出。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent（来自 VAEEncode 或 KSampler）。"
+      },
+      "latent_format": {
+        "name": "latent 格式",
+        "tooltip": "Flux1 和 Flux2 latent 可根据通道维自动检测，sd3 需手动选择。"
+      },
+      "positive": {
+        "name": "正向"
       }
     },
     "outputs": {

@@ -21,7 +21,7 @@ const DEFAULT_BASE_URL = 'https://cloud.comfy.org'
 const DEFAULT_TIMEOUT_MS = 10_000
 const RETRY_DELAYS_MS = [1_000, 2_000, 4_000]
 
-export interface DroppedNode {
+interface DroppedNode {
   name: string
   reason: string
 }
