@@ -128,6 +128,16 @@
     "name": "Live selection",
     "tooltip": "When enabled, nodes are selected/deselected in real-time as you drag the selection rectangle, similar to other design tools."
   },
+  "Comfy_Graph_WheelInputMode": {
+    "name": "Input device",
+    "tooltip": "Forces the zoom formula for a specific input device. Use this if auto-detection misclassifies your device when switching between mouse and trackpad.",
+    "options": {
+      "Auto-detect (Mouse)": "Auto-detect (Mouse)",
+      "Auto-detect (Trackpad)": "Auto-detect (Trackpad)",
+      "Mouse": "Mouse",
+      "Trackpad": "Trackpad"
+    }
+  },
   "Comfy_Graph_ZoomSpeed": {
     "name": "Canvas zoom speed"
   },
