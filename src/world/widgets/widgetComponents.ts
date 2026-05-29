@@ -1,4 +1,4 @@
-import { defineComponentKeys, slot } from '@/world/componentKey'
+import { defineComponentKey } from '@/world/componentKey'
 import type { NodeEntityId, WidgetEntityId } from '@/world/entityIds'
 
 /**
@@ -40,16 +40,27 @@ interface WidgetContainer {
   widgetIds: WidgetEntityId[]
 }
 
-export const {
-  WidgetComponentValue,
-  WidgetComponentDisplay,
-  WidgetComponentSchema,
-  WidgetComponentSerialize,
-  WidgetComponentContainer
-} = defineComponentKeys('Widget', {
-  Value: slot<WidgetValueShape, WidgetEntityId>(),
-  Display: slot<WidgetDisplayShape, WidgetEntityId>(),
-  Schema: slot<WidgetSchemaShape, WidgetEntityId>(),
-  Serialize: slot<WidgetSerializeShape, WidgetEntityId>(),
-  Container: slot<WidgetContainer, NodeEntityId>()
-})
+export const WidgetComponentValue = defineComponentKey<
+  WidgetValueShape,
+  WidgetEntityId
+>('WidgetComponentValue')
+
+export const WidgetComponentDisplay = defineComponentKey<
+  WidgetDisplayShape,
+  WidgetEntityId
+>('WidgetComponentDisplay')
+
+export const WidgetComponentSchema = defineComponentKey<
+  WidgetSchemaShape,
+  WidgetEntityId
+>('WidgetComponentSchema')
+
+export const WidgetComponentSerialize = defineComponentKey<
+  WidgetSerializeShape,
+  WidgetEntityId
+>('WidgetComponentSerialize')
+
+export const WidgetComponentContainer = defineComponentKey<
+  WidgetContainer,
+  NodeEntityId
+>('WidgetComponentContainer')
