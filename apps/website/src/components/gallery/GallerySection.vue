@@ -2,8 +2,8 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 
-import { visibleGalleryItems as items } from '../../data/gallery';
-import type { GalleryItem } from '../../data/gallery';
+import { visibleGalleryItems as items } from '../../data/gallery'
+import type { GalleryItem } from '../../data/gallery'
 import type { Locale } from '../../i18n/translations'
 import GalleryCard from './GalleryCard.vue'
 import GalleryDetailModal from './GalleryDetailModal.vue'
