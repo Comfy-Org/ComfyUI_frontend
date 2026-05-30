@@ -826,6 +826,7 @@
     "LATENT_OPERATION": "GİZLİ_İŞLEM",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
     "LOAD3D_CAMERA": "YÜKLE3D_KAMERA",
+    "LOAD3D_MODEL_INFO": "3D_MODEL_BİLGİSİNİ_YÜKLE",
     "LOAD_3D": "3D_YÜKLE",
     "LORA_MODEL": "LORA_MODEL",
     "LOSS_MAP": "KAYIP_HARITASI",
@@ -917,10 +918,6 @@
       "nodeName": "Bu düğüm"
     },
     "promptErrors": {
-      "image_not_loaded": {
-        "desc": "Sistem bu görseli yükleyemedi.",
-        "title": "Görsel yüklenemedi"
-      },
       "missing_node_type": {
         "desc": "Bir düğüm türü eksik veya kullanılamıyor. Çalışma akışı bozulmuş olabilir veya özel bir düğüm gerektiriyor olabilir.",
         "title": "Eksik düğüm türü"
@@ -928,11 +925,6 @@
       "no_prompt": {
         "desc": "Sunucuya gönderilen çalışma akışı verisi boş. Bu beklenmeyen bir sistem hatası olabilir.",
         "title": "Çalışma akışı verisi boş"
-      },
-      "out_of_memory": {
-        "descCloud": "Yeterli GPU belleği yok. Karmaşıklığı azaltıp tekrar deneyin. Kredi harcanmadı.",
-        "descLocal": "Yeterli GPU belleği yok. Karmaşıklığı azaltıp tekrar deneyin.",
-        "title": "Oluşturma başarısız"
       },
       "prompt_no_outputs": {
         "desc": "Çalışma akışında sonuç üretecek herhangi bir çıktı düğümü (örn. Görseli Kaydet, Görseli Önizle) bulunmuyor.",
@@ -949,6 +941,191 @@
       "server_error_local": {
         "desc": "Sunucuda beklenmeyen bir hata oluştu. Lütfen sunucu günlüklerini kontrol edin.",
         "title": "Sunucu hatası"
+      }
+    },
+    "runtimeErrors": {
+      "access_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Bu çalıştırma mevcut hesap için erişilemeyen bir izin gerektiriyor.",
+        "title": "Erişim gerekli",
+        "toastMessage": "Bu çalıştırma mevcut hesap için erişilemeyen bir izin gerektiriyor.",
+        "toastTitle": "Erişim gerekli"
+      },
+      "content_blocked": {
+        "itemLabel": "{nodeName}",
+        "message": "Bu istek içerik denetleme sistemi tarafından engellendi. İstemi veya girdileri değiştirip tekrar deneyin.",
+        "title": "İçerik engellendi",
+        "toastMessage": "Bu istek içerik denetleme sistemi tarafından engellendi. İstemi veya girdileri değiştirip tekrar deneyin.",
+        "toastTitle": "İçerik engellendi"
+      },
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "Düğüm çalıştırma sırasında bir hata verdi.",
+        "title": "Çalıştırma başarısız",
+        "toastMessage": "Bu düğüm çalıştırma sırasında bir hata verdi. Girdilerini kontrol edin veya farklı bir yapılandırmayı deneyin.",
+        "toastTitle": "{nodeName} başarısız oldu"
+      },
+      "generation_stalled": {
+        "itemLabel": "{nodeName}",
+        "message": "Bu iş akışı ilerleme kaydetmeyi durdurdu. Tekrar çalıştırmayı deneyin.",
+        "title": "Oluşturma durdu",
+        "toastMessage": "Bu iş akışı ilerleme kaydetmeyi durdurdu. Tekrar çalıştırmayı deneyin.",
+        "toastTitle": "Oluşturma durdu"
+      },
+      "image_not_loaded": {
+        "itemLabel": "{nodeName}",
+        "message": "Sistem bu görüntüyü yükleyemedi.",
+        "title": "Görüntü yüklenemedi",
+        "toastMessage": "{nodeName} için görüntü yüklenemedi. Tekrar eklemeyi deneyin.",
+        "toastTitle": "Girdi görüntüsü yüklenemedi"
+      },
+      "insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "Bu düğümü kullanmak için hesabınıza kredi ekleyin.",
+        "title": "Yetersiz kredi",
+        "toastMessage": "Bu düğümü kullanmak için hesabınıza kredi ekleyin.",
+        "toastTitle": "Yetersiz kredi"
+      },
+      "invalid_clip_input": {
+        "itemLabel": "{nodeName}",
+        "message": "CLIP girişi eksik veya geçersiz. Bağlı kontrol noktası veya CLIP yükleyicisini kontrol edin.",
+        "title": "Geçersiz CLIP girişi",
+        "toastMessage": "{nodeName} için CLIP girişi eksik veya geçersiz.",
+        "toastTitle": "Geçersiz CLIP girişi"
+      },
+      "invalid_prompt": {
+        "itemLabel": "{nodeName}",
+        "message": "Bu iş akışını çalıştırmadan önce bir istem girin.",
+        "title": "İstem boş",
+        "toastMessage": "Bu iş akışını çalıştırmadan önce bir istem girin.",
+        "toastTitle": "İstem boş"
+      },
+      "invalid_workflow_request": {
+        "itemLabel": "{nodeName}",
+        "message": "İş akışı isteği geçersiz. İş akışını kontrol edip tekrar deneyin.",
+        "title": "Geçersiz iş akışı isteği",
+        "toastMessage": "İş akışı isteği geçersiz. İş akışını kontrol edip tekrar deneyin.",
+        "toastTitle": "Geçersiz iş akışı isteği"
+      },
+      "model_access_error": {
+        "itemLabel": "{nodeName}",
+        "message": "Bir veya daha fazla gerekli modele erişilemiyor.",
+        "title": "Model erişimi gerekli",
+        "toastMessage": "Bir veya daha fazla gerekli modele erişilemiyor.",
+        "toastTitle": "Model erişimi gerekli"
+      },
+      "model_download_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "Bir model indirilemedi. Tekrar deneyin.",
+        "title": "Model indirme başarısız",
+        "toastMessage": "Bir model indirilemedi. Tekrar deneyin.",
+        "toastTitle": "Model indirme başarısız"
+      },
+      "out_of_memory": {
+        "itemLabel": "{nodeName}",
+        "message": "Yeterli GPU belleği yok. Görüntü çözünürlüğünü veya toplu iş boyutunu azaltıp tekrar deneyin.",
+        "title": "Oluşturma başarısız",
+        "toastMessage": "Yeterli GPU belleği yok. Görüntü çözünürlüğünü veya toplu iş boyutunu azaltıp tekrar deneyin.",
+        "toastTitle": "Oluşturma başarısız"
+      },
+      "preprocessing_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "İş akışı hazırlanamadı. Tekrar çalıştırmayı deneyin.",
+        "title": "Hazırlık başarısız",
+        "toastMessage": "İş akışı hazırlanamadı. Tekrar çalıştırmayı deneyin.",
+        "toastTitle": "Hazırlık başarısız"
+      },
+      "preprocessing_timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "İş akışının hazırlanması çok uzun sürdü. Tekrar çalıştırmayı deneyin.",
+        "title": "Hazırlık zaman aşımına uğradı",
+        "toastMessage": "İş akışının hazırlanması çok uzun sürdü. Tekrar çalıştırmayı deneyin.",
+        "toastTitle": "Hazırlık zaman aşımına uğradı"
+      },
+      "rate_limited": {
+        "itemLabel": "{nodeName}",
+        "message": "Şu anda yüksek talep var. Birazdan tekrar deneyin.",
+        "title": "Sunucular meşgul",
+        "toastMessage": "Şu anda yüksek talep var. Birazdan tekrar deneyin.",
+        "toastTitle": "Sunucular meşgul"
+      },
+      "request_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "İstek, çalıştırma tamamlanmadan önce başarısız oldu. Tekrar deneyin.",
+        "title": "İstek başarısız",
+        "toastMessage": "İstek, çalıştırma tamamlanmadan önce başarısız oldu. Tekrar deneyin.",
+        "toastTitle": "İstek başarısız"
+      },
+      "run_ended_unexpectedly": {
+        "itemLabel": "{nodeName}",
+        "message": "Çalıştırma beklenmedik şekilde sona erdi. Tekrar deneyin.",
+        "title": "Çalıştırma beklenmedik şekilde sona erdi",
+        "toastMessage": "Çalıştırma beklenmedik şekilde sona erdi. Tekrar deneyin.",
+        "toastTitle": "Çalıştırma beklenmedik şekilde sona erdi"
+      },
+      "run_start_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "Çalıştırma başlatılamadı. Tekrar deneyin.",
+        "title": "Çalıştırma başlatılamadı",
+        "toastMessage": "Çalıştırma başlatılamadı. Tekrar deneyin.",
+        "toastTitle": "Çalıştırma başlatılamadı"
+      },
+      "server_busy": {
+        "itemLabel": "{nodeName}",
+        "message": "Sunucular şu anda meşgul. Birazdan tekrar deneyin.",
+        "title": "Sunucular meşgul",
+        "toastMessage": "Sunucular şu anda meşgul. Birazdan tekrar deneyin.",
+        "toastTitle": "Sunucular meşgul"
+      },
+      "server_crashed": {
+        "itemLabel": "{nodeName}",
+        "message": "Sunucu bu iş akışını çalıştırırken durdu. Tekrar deneyin.",
+        "title": "Sunucu çöktü",
+        "toastMessage": "Sunucu bu iş akışını çalıştırırken durdu. Tekrar deneyin.",
+        "toastTitle": "Sunucu çöktü"
+      },
+      "sign_in_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Ortak düğümler için Comfy hesabı gereklidir. Devam etmek için giriş yapın.",
+        "title": "Giriş gerekli",
+        "toastMessage": "Ortak düğümler için Comfy hesabı gereklidir. Devam etmek için giriş yapın.",
+        "toastTitle": "Bu düğümü kullanmak için giriş yapın"
+      },
+      "subscription_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Bu iş akışını çalıştırmaya devam etmek için bir plana abone olun.",
+        "title": "Abonelik gerekli",
+        "toastMessage": "Bu iş akışını çalıştırmaya devam etmek için bir plana abone olun.",
+        "toastTitle": "Abonelik gerekli"
+      },
+      "subscription_upgrade_required": {
+        "details": "Özel modeller için abonelik yükseltmesi gerekli: {modelNames}",
+        "itemLabel": "{nodeName}",
+        "message": "Bu iş akışındaki özel modelleri kullanmak için aboneliğinizi yükseltin.",
+        "title": "Abonelik yükseltmesi gerekli",
+        "toastMessage": "Bu özel modelleri kullanmak için aboneliğinizi yükseltin: {modelNames}.",
+        "toastTitle": "Abonelik yükseltmesi gerekli"
+      },
+      "timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "Bu iş akışı maksimum çalışma süresine ulaştı. Görüntü çözünürlüğünü, toplu iş boyutunu veya iş akışı uzunluğunu azaltıp tekrar deneyin.",
+        "title": "Oluşturma zaman aşımına uğradı",
+        "toastMessage": "Bu iş akışı maksimum çalışma süresine ulaştı. Görüntü çözünürlüğünü, toplu iş boyutunu veya iş akışı uzunluğunu azaltıp tekrar deneyin.",
+        "toastTitle": "Oluşturma zaman aşımına uğradı"
+      },
+      "unexpected_service_error": {
+        "itemLabel": "{nodeName}",
+        "message": "Serviste beklenmeyen bir hata oluştu. Tekrar deneyin.",
+        "title": "Servis hatası",
+        "toastMessage": "Serviste beklenmeyen bir hata oluştu. Tekrar deneyin.",
+        "toastTitle": "Servis hatası"
+      },
+      "workspace_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "Devam etmek için çalışma alanınıza kredi ekleyin.",
+        "title": "Yetersiz kredi",
+        "toastMessage": "Devam etmek için çalışma alanınıza kredi ekleyin.",
+        "toastTitle": "Yetersiz kredi"
       }
     },
     "validationErrors": {
