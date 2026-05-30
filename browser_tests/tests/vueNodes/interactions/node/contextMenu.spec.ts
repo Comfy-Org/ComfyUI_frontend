@@ -185,11 +185,12 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
     }) => {
       const nodeTitle = 'Load Checkpoint'
       const nodeRef = await getNodeRef(comfyPage, nodeTitle)
-      const bypassItem = comfyPage.page.getByRole('menuitem', {
+      const menu = comfyPage.contextMenu.primeVueMenu
+      const bypassItem = menu.getByRole('menuitem', {
         name: 'Bypass',
         exact: true
       })
-      const removeBypassItem = comfyPage.page.getByRole('menuitem', {
+      const removeBypassItem = menu.getByRole('menuitem', {
         name: 'Remove Bypass',
         exact: true
       })
