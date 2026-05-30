@@ -180,6 +180,33 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
       )
     })
 
+    test('shows exactly one bypass menu item per state (FE-720 regression)', async ({
+      comfyPage
+    }) => {
+      const nodeTitle = 'Load Checkpoint'
+      const nodeRef = await getNodeRef(comfyPage, nodeTitle)
+      const bypassItem = comfyPage.page.getByRole('menuitem', {
+        name: 'Bypass',
+        exact: true
+      })
+      const removeBypassItem = comfyPage.page.getByRole('menuitem', {
+        name: 'Remove Bypass',
+        exact: true
+      })
+
+      await openContextMenu(comfyPage, nodeTitle)
+      await expect(bypassItem).toHaveCount(1)
+      await expect(removeBypassItem).toHaveCount(0)
+      await clickExactMenuItem(comfyPage, 'Bypass')
+      await expect.poll(() => nodeRef.isBypassed()).toBe(true)
+
+      await openContextMenu(comfyPage, nodeTitle)
+      await expect(removeBypassItem).toHaveCount(1)
+      await expect(bypassItem).toHaveCount(0)
+      await comfyPage.page.keyboard.press('Escape')
+      await comfyPage.contextMenu.waitForHidden()
+    })
+
     test('should minimize and expand node via context menu', async ({
       comfyPage
     }) => {
