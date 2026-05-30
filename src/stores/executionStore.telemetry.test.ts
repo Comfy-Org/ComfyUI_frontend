@@ -88,13 +88,19 @@ describe('useExecutionStore - App Mode execution attribution', () => {
     handler(new CustomEvent(event, { detail }))
   }
 
-  function queueJob(id: string, workflowId: string, isAppMode: boolean) {
+  function queueJob(
+    id: string,
+    workflowId: string,
+    isAppMode: boolean,
+    viewMode?: string
+  ) {
     store.storeJob({
       id,
       nodes: ['a'],
       promptOutput: { a: createPromptNode('A', 'X') },
       workflow: createWorkflow(workflowId),
-      isAppMode
+      isAppMode,
+      viewMode
     })
   }
 
@@ -106,8 +112,8 @@ describe('useExecutionStore - App Mode execution attribution', () => {
     store.bindExecutionEvents()
   })
 
-  it('attributes execution_success to App Mode with the workflow id', () => {
-    queueJob('job-1', 'wf-1', true)
+  it('attributes execution_success to App Mode with the workflow id and view mode', () => {
+    queueJob('job-1', 'wf-1', true, 'app')
     fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
 
     fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
@@ -115,12 +121,13 @@ describe('useExecutionStore - App Mode execution attribution', () => {
     expect(mockTrackExecutionSuccess).toHaveBeenCalledWith({
       jobId: 'job-1',
       is_app_mode: true,
-      workflow_id: 'wf-1'
+      workflow_id: 'wf-1',
+      view_mode: 'app'
     })
   })
 
   it('marks non-App-Mode runs as is_app_mode false', () => {
-    queueJob('job-2', 'wf-2', false)
+    queueJob('job-2', 'wf-2', false, 'graph')
     fire('execution_start', { prompt_id: 'job-2', timestamp: 0 })
 
     fire('execution_success', { prompt_id: 'job-2', timestamp: 0 })
@@ -128,12 +135,13 @@ describe('useExecutionStore - App Mode execution attribution', () => {
     expect(mockTrackExecutionSuccess).toHaveBeenCalledWith({
       jobId: 'job-2',
       is_app_mode: false,
-      workflow_id: 'wf-2'
+      workflow_id: 'wf-2',
+      view_mode: 'graph'
     })
   })
 
   it('attributes execution_error to App Mode with the workflow id', () => {
-    queueJob('job-3', 'wf-3', true)
+    queueJob('job-3', 'wf-3', true, 'app')
 
     fire('execution_error', {
       prompt_id: 'job-3',
@@ -149,7 +157,22 @@ describe('useExecutionStore - App Mode execution attribution', () => {
       nodeType: 'KSampler',
       error: 'CUDA OOM',
       is_app_mode: true,
-      workflow_id: 'wf-3'
+      workflow_id: 'wf-3',
+      view_mode: 'app'
+    })
+  })
+
+  it('distinguishes builder-preview runs from app runs via view_mode', () => {
+    queueJob('job-4', 'wf-4', true, 'builder:arrange')
+    fire('execution_start', { prompt_id: 'job-4', timestamp: 0 })
+
+    fire('execution_success', { prompt_id: 'job-4', timestamp: 0 })
+
+    expect(mockTrackExecutionSuccess).toHaveBeenCalledWith({
+      jobId: 'job-4',
+      is_app_mode: true,
+      workflow_id: 'wf-4',
+      view_mode: 'builder:arrange'
     })
   })
 })

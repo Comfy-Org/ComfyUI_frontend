@@ -98,6 +98,7 @@ export interface ExecutionContext {
   toolkit_node_count: number
   trigger_source?: ExecutionTriggerSource
   is_app_mode?: boolean
+  view_mode?: string
 }
 
 /**
@@ -110,6 +111,7 @@ export interface ExecutionErrorMetadata {
   error?: string
   is_app_mode?: boolean
   workflow_id?: string
+  view_mode?: string
 }
 
 /**
@@ -119,6 +121,7 @@ export interface ExecutionSuccessMetadata {
   jobId: string
   is_app_mode?: boolean
   workflow_id?: string
+  view_mode?: string
 }
 
 /**

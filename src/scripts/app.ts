@@ -1613,9 +1613,9 @@ export class ComfyApp {
           // user switches tabs while the request is in flight.
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
-          const queuedIsAppMode = modeIsAppMode(
+          const queuedViewMode =
             queuedWorkflow?.activeMode ?? queuedWorkflow?.initialMode ?? 'graph'
-          )
+          const queuedIsAppMode = modeIsAppMode(queuedViewMode)
           const p = await this.graphToPrompt(this.rootGraph)
           const queuedNodes = collectAllNodes(this.rootGraph)
           try {
@@ -1640,7 +1640,8 @@ export class ComfyApp {
                   nodes: Object.keys(p.output),
                   promptOutput: p.output,
                   workflow: queuedWorkflow,
-                  isAppMode: queuedIsAppMode
+                  isAppMode: queuedIsAppMode,
+                  viewMode: queuedViewMode
                 })
               }
             } catch (error) {

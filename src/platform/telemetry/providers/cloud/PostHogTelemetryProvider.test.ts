@@ -289,10 +289,11 @@ describe('PostHogTelemetryProvider', () => {
   })
 
   describe('execution tracking', () => {
-    it('stamps is_app_mode on the execution_start event', async () => {
+    it('stamps is_app_mode and view_mode on the execution_start event', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
       mockAppMode.isAppMode.value = true
+      mockAppMode.mode.value = 'app'
 
       provider.trackWorkflowExecution()
 
@@ -300,6 +301,7 @@ describe('PostHogTelemetryProvider', () => {
         TelemetryEvents.EXECUTION_START,
         expect.objectContaining({
           is_app_mode: true,
+          view_mode: 'app',
           trigger_source: 'unknown'
         })
       )
