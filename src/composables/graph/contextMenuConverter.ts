@@ -21,7 +21,10 @@ const HARD_BLACKLIST = new Set([
   'Title',
   'Mode',
   'Properties Panel',
-  'Copy (Clipspace)'
+  'Copy (Clipspace)',
+  // Vue getBypassOption supplies the single state-aware Bypass/Remove Bypass item
+  'Bypass',
+  'Remove Bypass'
 ])
 
 /**
