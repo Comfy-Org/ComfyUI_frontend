@@ -1503,9 +1503,11 @@ describe('useLoad3d', () => {
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
       await composable.initializeLoad3d(containerRef)
-      const call = vi
-        .mocked(mockLoad3d.addEventListener!)
-        .mock.calls.find(([event]) => event === 'modelReady')
+      const addEventListenerCalls = vi.mocked(mockLoad3d.addEventListener!).mock
+        .calls
+      const call = addEventListenerCalls.find(
+        ([event]) => event === 'modelReady'
+      )
       return { composable, handler: call![1] as () => void }
     }
 
@@ -1514,9 +1516,9 @@ describe('useLoad3d', () => {
       const containerRef = document.createElement('div')
       await composable.initializeLoad3d(containerRef)
 
-      const events = vi
-        .mocked(mockLoad3d.addEventListener!)
-        .mock.calls.map(([event]) => event)
+      const addEventListenerCalls = vi.mocked(mockLoad3d.addEventListener!).mock
+        .calls
+      const events = addEventListenerCalls.map(([event]) => event)
       expect(events).toContain('modelReady')
       expect(events).toContain('modelLoadingEnd')
       expect(composable).toBeDefined()
