@@ -8530,6 +8530,10 @@
       "6": {
         "name": "model_3d",
         "tooltip": null
+      },
+      "7": {
+        "name": "model_3d_info",
+        "tooltip": null
       }
     }
   },
@@ -18616,6 +18620,169 @@
       },
       "1": {
         "name": "模型任务ID",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1ImageToModelNode": {
+    "description": "Tripo P1 图像转 3D。针对低面数、游戏级网格进行了优化。",
+    "display_name": "Tripo P1：图像转模型",
+    "inputs": {
+      "auto_size": {
+        "name": "自动缩放",
+        "tooltip": "将输出缩放至接近真实世界米制。"
+      },
+      "compress_geometry": {
+        "name": "压缩几何体",
+        "tooltip": "应用基于几何体的压缩。编辑前需解压。"
+      },
+      "enable_image_autofix": {
+        "name": "启用图像自动修复",
+        "tooltip": "对输入图像进行预处理，以提升生成质量。"
+      },
+      "export_uv": {
+        "name": "导出 UV",
+        "tooltip": "生成时进行 UV 展开。关闭可加快仅几何体生成速度。"
+      },
+      "face_limit": {
+        "name": "面数限制",
+        "tooltip": "目标面数，48-20000。-1 让 Tripo 自适应选择。"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "model_seed": {
+        "name": "模型种子"
+      },
+      "output_mode": {
+        "name": "输出模式",
+        "tooltip": "“仅几何体”返回无贴图网格。“带贴图”添加颜色/PBR 贴图。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型任务 ID",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1MultiviewToModelNode": {
+    "description": "Tripo P1 多视图转 3D，支持 2-4 张参考图像，顺序为 [正面、左侧、背面、右侧]。正面为必填，其余三项可选。",
+    "display_name": "Tripo P1：多视图转模型",
+    "inputs": {
+      "auto_size": {
+        "name": "自动缩放",
+        "tooltip": "将输出缩放至接近真实世界米制。"
+      },
+      "compress_geometry": {
+        "name": "压缩几何体",
+        "tooltip": "应用基于几何体的压缩。编辑前需解压。"
+      },
+      "export_uv": {
+        "name": "导出 UV",
+        "tooltip": "生成时进行 UV 展开。关闭可加快仅几何体生成速度。"
+      },
+      "face_limit": {
+        "name": "面数限制",
+        "tooltip": "目标面数，48-20000。-1 让 Tripo 自适应选择。"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "正面视角（0°）。必填。"
+      },
+      "image_back": {
+        "name": "背面图像",
+        "tooltip": "背面视角（180°）。"
+      },
+      "image_left": {
+        "name": "左侧图像",
+        "tooltip": "左侧视角（90°），即主体左侧。"
+      },
+      "image_right": {
+        "name": "右侧图像",
+        "tooltip": "右侧视角（270°），即主体右侧。"
+      },
+      "model_seed": {
+        "name": "模型种子"
+      },
+      "output_mode": {
+        "name": "输出模式",
+        "tooltip": "“仅几何体”返回无贴图网格。“带贴图”添加颜色/PBR 贴图。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型任务 ID",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1TextToModelNode": {
+    "description": "Tripo P1 文本转 3D。针对低多边形、游戏级网格和稳定拓扑结构进行了优化。",
+    "display_name": "Tripo P1：文本转模型",
+    "inputs": {
+      "auto_size": {
+        "name": "自动缩放",
+        "tooltip": "将输出缩放至接近真实世界米制。"
+      },
+      "compress_geometry": {
+        "name": "压缩几何体",
+        "tooltip": "应用基于几何体的压缩。编辑前请先解压。"
+      },
+      "export_uv": {
+        "name": "导出 UV",
+        "tooltip": "生成时进行 UV 展开。关闭可加快仅几何体生成速度。"
+      },
+      "face_limit": {
+        "name": "面数限制",
+        "tooltip": "目标面数，48-20000。-1 让 Tripo 自适应选择。"
+      },
+      "image_seed": {
+        "name": "图像种子"
+      },
+      "model_seed": {
+        "name": "模型种子"
+      },
+      "negative_prompt": {
+        "name": "反向提示词",
+        "tooltip": "最多 255 个字符。"
+      },
+      "output_mode": {
+        "name": "输出模式",
+        "tooltip": "“仅几何体”返回无贴图网格。“带贴图”则添加颜色/PBR 贴图。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "最多 1024 个字符。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型任务 ID",
         "tooltip": null
       },
       "2": {
