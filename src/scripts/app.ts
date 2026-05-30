@@ -1421,19 +1421,19 @@ export class ComfyApp {
         missingNodeTypes
       )
 
+      const serializedGraph =
+        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       const telemetryPayload = {
         missing_node_count: missingNodeTypes.length,
         missing_node_types: missingNodeTypes.map((node) =>
           typeof node === 'string' ? node : node.type
         ),
-        open_source: openSource ?? 'unknown'
+        open_source: openSource ?? 'unknown',
+        is_app: serializedGraph.extra?.linearMode === true
       }
       useTelemetry()?.trackWorkflowOpened(telemetryPayload)
       useTelemetry()?.trackWorkflowImported(telemetryPayload)
-      await useWorkflowService().afterLoadNewGraph(
-        workflow,
-        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
-      )
+      await useWorkflowService().afterLoadNewGraph(workflow, serializedGraph)
 
       // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
       // This fixes switching from app mode to a new graph mode workflow (e.g. load template)

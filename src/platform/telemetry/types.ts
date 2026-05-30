@@ -159,6 +159,8 @@ export interface WorkflowImportMetadata {
     | 'template'
     | 'shared_url'
     | 'unknown'
+  /** Whether the imported/opened workflow is an app (extra.linearMode). */
+  is_app?: boolean
 }
 
 export interface EnterLinearMetadata {
@@ -185,6 +187,8 @@ type ShareFlowStep =
 export interface ShareFlowMetadata {
   step: ShareFlowStep
   source?: 'app_mode' | 'graph_mode'
+  is_app?: boolean
+  workflow_id?: string
 }
 
 /**
