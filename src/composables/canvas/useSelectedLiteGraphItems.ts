@@ -107,6 +107,7 @@ export function useSelectedLiteGraphItems() {
   /**
    * True iff every selected node is in `mode`. Mirrors the predicate used by
    * {@link toggleSelectedNodesMode} so labels match the toggle's effect.
+   * An empty selection returns `false` (no node is in the mode).
    */
   const areAllSelectedNodesInMode = (mode: LGraphEventMode): boolean => {
     const selectedNodeArray = getSelectedNodeArray()
