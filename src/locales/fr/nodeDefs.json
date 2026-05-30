@@ -384,6 +384,90 @@
       }
     }
   },
+  "BeebleSwitchXImageEdit": {
+    "description": "Modifiez une image unique avec Beeble SwitchX. Modifie tout élément de la scène (arrière-plan, éclairage, costume) tout en préservant les pixels du sujet original. Fournissez une image de référence et/ou une invite textuelle pour décrire le nouveau rendu. Max ~2,77MP.",
+    "display_name": "Beeble SwitchX Édition d’Image",
+    "inputs": {
+      "alpha_mode": {
+        "name": "mode alpha",
+        "tooltip": "Contrôle la façon dont SwitchX décide quoi conserver ou régénérer. « auto » isole automatiquement le sujet principal. « fill » régénère l’ensemble de l’image tout en préservant la géométrie. « select » propage une image clé de la première image sur tout le clip. « custom » utilise un cache alpha par image que vous fournissez."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_resolution": {
+        "name": "résolution maximale",
+        "tooltip": "Résolution de sortie maximale."
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Description textuelle du résultat souhaité (max 2000 caractères). Au moins l’un des champs « invite » ou « image de référence » est requis."
+      },
+      "reference_image": {
+        "name": "image de référence",
+        "tooltip": "Image de référence dont l’apparence (arrière-plan, éclairage, costume) doit être adoptée par le résultat. Au moins l’un des champs « image de référence » ou « invite » est requis."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alpha",
+        "tooltip": "Le cache alpha utilisé par Beeble. Vide en mode « fill », qui n’a pas de cache séparé."
+      }
+    }
+  },
+  "BeebleSwitchXVideoEdit": {
+    "description": "Modifiez une vidéo avec Beeble SwitchX. Modifie tout élément de la scène (arrière-plan, éclairage, costume) tout en préservant les pixels et le mouvement du sujet original. Fournissez une image de référence et/ou une invite textuelle pour décrire le nouveau rendu. Max 240 images, max ~2,77MP par image.",
+    "display_name": "Beeble SwitchX Édition Vidéo",
+    "inputs": {
+      "alpha_mode": {
+        "name": "mode alpha",
+        "tooltip": "Contrôle la façon dont SwitchX décide quoi conserver ou régénérer. « auto » isole automatiquement le sujet principal. « fill » régénère l’ensemble de l’image tout en préservant la géométrie. « select » propage une image clé de la première image sur tout le clip. « custom » utilise un cache alpha par image que vous fournissez."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "max_resolution": {
+        "name": "résolution maximale",
+        "tooltip": "Résolution de sortie maximale."
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Description textuelle du résultat souhaité (max 2000 caractères). Au moins l’un des champs « invite » ou « image de référence » est requis."
+      },
+      "reference_image": {
+        "name": "image de référence",
+        "tooltip": "Image de référence dont l’apparence (arrière-plan, éclairage, costume) doit être adoptée par le résultat. Au moins l’un des champs « image de référence » ou « invite » est requis."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit la graine."
+      },
+      "video": {
+        "name": "vidéo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "vidéo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alpha",
+        "tooltip": "Le cache alpha utilisé par Beeble. Vide en mode « fill », qui n’a pas de cache séparé."
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "PlanificateurÉchantillonnageBeta",
     "inputs": {
@@ -1113,6 +1197,10 @@
       "model": {
         "name": "modèle"
       },
+      "pre_cfg": {
+        "name": "pre_cfg",
+        "tooltip": "Si activé, rescinde le bruit combiné AVANT la combinaison CFG du sampler, sans limitation (peut amplifier). Correspond au CFG à norme rescalée utilisé par des modèles comme Lens. Par défaut, false conserve le comportement original d’atténuation uniquement dans l’espace x0 après CFG."
+      },
       "strength": {
         "name": "intensité"
       }
@@ -1800,6 +1888,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "description": "Opération logique ET. Renvoie vrai si toutes les valeurs sont vraies. Utilise les règles de vérité de Python.",
+    "display_name": "Et",
+    "inputs": {
+      "values": {
+        "name": "valeurs"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "Expression mathématique",
     "inputs": {
@@ -1823,6 +1925,20 @@
       }
     }
   },
+  "ComfyNotNode": {
+    "description": "Opération logique NON. Renvoie vrai si la valeur est fausse. Utilise les règles de vérité de Python.",
+    "display_name": "Non",
+    "inputs": {
+      "value": {
+        "name": "valeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyNumberConvert": {
     "display_name": "Conversion de nombre",
     "inputs": {
@@ -1835,6 +1951,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "description": "Opération logique OU. Renvoie vrai si l'une des valeurs est vraie. Utilise les règles de vérité de Python.",
+    "display_name": "Ou",
+    "inputs": {
+      "values": {
+        "name": "valeurs"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -7418,6 +7548,71 @@
       }
     }
   },
+  "Krea2ImageNode": {
+    "description": "Générez des images via Krea 2 — choisissez Medium (illustrations expressives) ou Large (photoréalisme expressif). Prend en charge un moodboard optionnel et jusqu'à 10 références de style d'image en chaîne.",
+    "display_name": "Krea 2 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Krea 2 Medium est idéal pour les illustrations expressives ; Krea 2 Large est idéal pour le photoréalisme expressif."
+      },
+      "model_aspect_ratio": {
+        "name": "rapport d'aspect"
+      },
+      "model_creativity": {
+        "name": "créativité"
+      },
+      "model_moodboard_id": {
+        "name": "moodboard_id"
+      },
+      "model_moodboard_strength": {
+        "name": "force du moodboard"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Invite textuelle pour l'image."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine aléatoire pour la reproductibilité."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Krea2StyleReferenceNode": {
+    "description": "Ajoutez une référence de style d'image à une génération Krea 2. Chaînez plusieurs nœuds Krea 2 Référence de Style (max 10) et transmettez la sortie finale `style_reference` à Krea 2 Image. Chaque image est téléchargée dans le stockage ComfyAPI et transmise sous forme d'URL.",
+    "display_name": "Krea 2 Référence de Style",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Image de référence dont le style influence la génération."
+      },
+      "strength": {
+        "name": "force",
+        "tooltip": "Force de la référence ; des valeurs négatives inversent l'influence du style."
+      },
+      "style_reference": {
+        "name": "style_reference",
+        "tooltip": "Chaîne optionnelle de références de style entrantes ; ce nœud en ajoute une de plus."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_reference",
+        "tooltip": null
+      }
+    }
+  },
   "LTXAVTextEncoderLoader": {
     "description": "[Recettes]\n\nltxav : gemma 3 12B",
     "display_name": "Chargeur d'encodeur texte audio LTXV",
@@ -7721,6 +7916,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -8329,6 +8529,10 @@
       },
       "6": {
         "name": "model_3d",
+        "tooltip": null
+      },
+      "7": {
+        "name": "model_3d_info",
         "tooltip": null
       }
     }
@@ -12262,6 +12466,23 @@
       }
     }
   },
+  "MultiGPU_WorkUnits": {
+    "description": "Prépare le modèle pour accélérer l’échantillonnage via la division des unités de travail.\n\nDoit être placé après les nœuds qui modifient l’objet modèle lui-même, comme les nœuds de compilation ou de changement d’attention.\n\nÀ l’exception de ces cas, ce nœud peut être placé dans n’importe quel ordre.",
+    "display_name": "Division CFG MultiGPU",
+    "inputs": {
+      "max_gpus": {
+        "name": "max_gpus"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "NAGuidance": {
     "description": "Applique le Guidage d’Attention Normalisée aux modèles, permettant l’utilisation de prompts négatifs sur les modèles distilled/schnell.",
     "display_name": "Guidage d’Attention Normalisée",
@@ -12965,6 +13186,32 @@
     "inputs": {
       "photomaker_model_name": {
         "name": "nom_du_modèle_photomaker"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PiDConditioning": {
+    "description": "Associe un latent et un scalaire degrade_sigma à un CONDITIONING pour le décodage/agrandissement PiD",
+    "display_name": "PiD Conditionnement",
+    "inputs": {
+      "degrade_sigma": {
+        "name": "degrade_sigma",
+        "tooltip": "0 = latent propre. Augmentez pour débruiter les sorties latentes corrompues."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent (depuis VAEEncode ou un KSampler)."
+      },
+      "latent_format": {
+        "name": "format latent",
+        "tooltip": "Les latents Flux1 et Flux2 sont détectés automatiquement à partir de la dimension du canal, sd3 doit être sélectionné manuellement."
+      },
+      "positive": {
+        "name": "positif"
       }
     },
     "outputs": {
@@ -14601,6 +14848,164 @@
       }
     }
   },
+  "Rodin3D_Gen25_Image": {
+    "description": "Générez un modèle 3D à partir de 1 à 5 images de référence via Rodin Gen-2.5. Choisissez un mode (Rapide / Régulier / Extrême-Haute) pour ajuster la qualité par rapport au coût.",
+    "display_name": "Rodin 3D Gen-2.5 - Image vers 3D",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "Pose T/A pour les modèles humanoïdes."
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "Addon HighPack : textures 4K et ~16x plus de faces en mode Quad."
+      },
+      "bbox_height": {
+        "name": "hauteur_boîte",
+        "tooltip": "Hauteur de la boîte englobante (axe Z)."
+      },
+      "bbox_length": {
+        "name": "longueur_boîte",
+        "tooltip": "Longueur de la boîte englobante (axe X)."
+      },
+      "bbox_width": {
+        "name": "largeur_boîte",
+        "tooltip": "Largeur de la boîte englobante (axe Y). Mettre à 0 avec les autres pour ignorer la boîte."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "geometry_file_format": {
+        "name": "format_fichier_géométrie"
+      },
+      "hd_texture": {
+        "name": "texture_hd",
+        "tooltip": "Amélioration de la texture haute qualité."
+      },
+      "height_cm": {
+        "name": "hauteur_cm",
+        "tooltip": "Hauteur approximative du modèle en centimètres (0 pour ignorer)."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "1 à 5 images. La première image est utilisée pour les matériaux en mode multi-vues."
+      },
+      "material": {
+        "name": "matériau"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Mode de génération. Régulier = équilibré. Rapide = 1K-20K faces pour le prototypage rapide. Extrême-Haute = 20K-2M faces avec micro-détails optionnels."
+      },
+      "mode_creative": {
+        "name": "créatif"
+      },
+      "mode_polygon_count": {
+        "name": "nombre_de_polygones"
+      },
+      "mode_tier": {
+        "name": "niveau"
+      },
+      "seed": {
+        "name": "graine"
+      },
+      "texture_delight": {
+        "name": "texture_delight",
+        "tooltip": "Supprimer l'éclairage intégré des textures."
+      },
+      "texture_mode": {
+        "name": "mode_texture",
+        "tooltip": "Préréglage de qualité de texture. 'Défaut' utilise la valeur par défaut du serveur pour le niveau sélectionné."
+      },
+      "use_original_alpha": {
+        "name": "utiliser_alpha_original",
+        "tooltip": "Préserver la transparence de l'image."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "fichier_modèle",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "description": "Générez un modèle 3D à partir d'une invite textuelle via Rodin Gen-2.5. Choisissez un mode (Rapide / Standard / Extrême-Haute) pour ajuster la qualité par rapport au coût.",
+    "display_name": "Rodin 3D Gen-2.5 - Texte vers 3D",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "Pose T/A pour les modèles humanoïdes."
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "Add-on HighPack : textures 4K et ~16x plus de faces en mode Quad."
+      },
+      "bbox_height": {
+        "name": "bbox_height",
+        "tooltip": "Hauteur de la boîte englobante (axe Z)."
+      },
+      "bbox_length": {
+        "name": "bbox_length",
+        "tooltip": "Longueur de la boîte englobante (axe X)."
+      },
+      "bbox_width": {
+        "name": "bbox_width",
+        "tooltip": "Largeur de la boîte englobante (axe Y). Mettre à 0 avec les autres pour ignorer la boîte."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "geometry_file_format": {
+        "name": "geometry_file_format"
+      },
+      "hd_texture": {
+        "name": "hd_texture",
+        "tooltip": "Amélioration de la texture en haute qualité."
+      },
+      "height_cm": {
+        "name": "height_cm",
+        "tooltip": "Hauteur approximative du modèle en centimètres (0 pour ignorer)."
+      },
+      "material": {
+        "name": "material"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Mode de génération. Standard = équilibré. Rapide = 1K-20K faces pour le prototypage rapide. Extrême-Haute = 20K-2M faces avec micro-détails optionnels."
+      },
+      "mode_creative": {
+        "name": "créatif"
+      },
+      "mode_polygon_count": {
+        "name": "nombre de polygones"
+      },
+      "mode_tier": {
+        "name": "niveau"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Invite textuelle pour le modèle 3D."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "texture_delight": {
+        "name": "texture_delight",
+        "tooltip": "Supprimer l'éclairage intégré des textures."
+      },
+      "texture_mode": {
+        "name": "texture_mode",
+        "tooltip": "Préréglage de qualité de texture. 'Défaut' utilise la valeur par défaut du serveur pour le niveau sélectionné."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "fichier_modèle",
+        "tooltip": null
+      }
+    }
+  },
   "Rodin3D_Regular": {
     "description": "Générer des actifs 3D en utilisant l'API Rodin",
     "display_name": "Rodin 3D Générer - Génération Régulière",
@@ -15712,6 +16117,30 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "description": "Enregistre les images d’entrée dans votre dossier de sortie ComfyUI.",
+    "display_name": "Enregistrer l’image (Avancé)",
+    "inputs": {
+      "filename_prefix": {
+        "name": "préfixe_nom_fichier",
+        "tooltip": "Le préfixe du fichier à enregistrer. Peut inclure des jetons de formatage comme %date:yyyy-MM-dd% ou %Empty Latent Image.width%."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "Le format de fichier dans lequel enregistrer l’image."
+      },
+      "format_bit_depth": {
+        "name": "profondeur_bits"
+      },
+      "format_input_color_space": {
+        "name": "espace_couleur_entrée"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Les images à enregistrer."
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
     "description": "Enregistrer un ensemble d'images dans un dossier spécifié. Formats pris en charge : PNG.",
     "display_name": "Enregistrer l'ensemble d'images dans un dossier",
@@ -15727,6 +16156,10 @@
       "images": {
         "name": "images",
         "tooltip": "Liste des images à enregistrer."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Déterminer s'il faut écraser les fichiers existants ou incrémenter les noms de fichiers pour éviter l'écrasement."
       }
     }
   },
@@ -15745,6 +16178,10 @@
       "images": {
         "name": "images",
         "tooltip": "Liste des images à enregistrer."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Déterminer s'il faut écraser les fichiers existants ou incrémenter les noms de fichiers pour éviter l'écrasement."
       },
       "texts": {
         "name": "texts",
@@ -15890,6 +16327,57 @@
       },
       "shift_y": {
         "name": "décalage_y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectCLIPDevice": {
+    "description": "Place l’encodeur de texte CLIP sur un périphérique spécifique (default / cpu / gpu:N).\n\n- « default » restaure le périphérique assigné par le chargeur.\n- « cpu » force le chargement et le déchargement sur le CPU.\n- « gpu:N » force le chargement sur le N-ième GPU disponible.\n\nLorsque le périphérique sélectionné n’existe pas sur la machine actuelle\n(par exemple, un workflow créé sur une machine à 2 GPU ouvert sur une machine à 1 GPU),\nle nœud transmet le CLIP inchangé et enregistre un message\nau lieu d’échouer.",
+    "display_name": "Sélectionner le périphérique CLIP",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "device": {
+        "name": "device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectModelDevice": {
+    "description": "Place le modèle de diffusion sur un périphérique spécifique (default / cpu / gpu:N).\n\n- « default » restaure le périphérique assigné par le chargeur (même après un appel précédent à Sélectionner le périphérique du modèle).\n- « cpu » force le chargement et le déchargement sur le CPU.\n- « gpu:N » force le chargement sur le N-ième GPU disponible ; le périphérique de déchargement est restauré au choix original du chargeur.\n\nLorsque le périphérique demandé diffère de celui sur lequel le modèle d’entrée est déjà, un nouveau modèle est généré via la fabrique de rechargement du chargeur (cached_patcher_init) afin que le nouveau patcher possède des poids indépendants sur le nouveau périphérique. Les chargeurs qui ne supportent pas le multigpu (pas de fabrique) feront passer le nœud inchangé avec un avertissement.\n\nSi le workflow a déjà appliqué la Division CFG MultiGPU et que le GPU choisi entre en collision avec l’un des clones multigpu existants, ce clone est supprimé pour éviter que deux patchers ne soient liés au même périphérique.\n\nLorsque le périphérique sélectionné n’existe pas sur la machine actuelle\n(par exemple, un workflow créé sur une machine à 2 GPU ouvert sur une machine à 1 GPU),\nle nœud transmet le modèle inchangé et enregistre un message\nau lieu d’échouer.\n\nREMARQUE : Placer Sélectionner le périphérique du modèle APRÈS un nœud ayant déjà consommé le même modèle (par exemple, un KSampler ayant fonctionné sur ce modèle sur le périphérique original) n’est pas recommandé — tout état modifié par le consommateur précédent sur le modèle original sera observé lorsque le périphérique sélectionné correspond à l’original (chemin rapide). Placez Sélectionner le périphérique du modèle avant tout consommateur du modèle.",
+    "display_name": "Sélectionner le périphérique du modèle",
+    "inputs": {
+      "device": {
+        "name": "device"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectVAEDevice": {
+    "description": "Placez le VAE sur un périphérique spécifique (par défaut / gpu:N).\n\n- « default » restaure le périphérique assigné par le chargeur.\n- « gpu:N » fixe le périphérique de chargement au N-ième GPU disponible ; le périphérique de déchargement\n  est défini sur le périphérique de déchargement VAE standard.\n\nLe CPU n'est volontairement pas proposé dans l'interface pour le VAE ; si un workflow\nfournit tout de même « cpu » (par exemple, ouvert depuis une autre machine), la demande\nest ignorée avec un message dans le journal et le VAE est transmis sans modification.\n\nLorsque le périphérique sélectionné n'existe pas sur la machine actuelle\n(par exemple, un workflow créé sur une machine à 2 GPU ouvert sur une machine à 1 GPU),\nle nœud transmet le VAE sans modification et consigne un message dans le journal\nau lieu d'échouer.",
+    "display_name": "Sélectionner le périphérique VAE",
+    "inputs": {
+      "device": {
+        "name": "périphérique"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -18132,6 +18620,169 @@
       },
       "1": {
         "name": "modèle task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1ImageToModelNode": {
+    "description": "Tripo P1 image-vers-3D. Optimisé pour des maillages low-poly, prêts pour les jeux.",
+    "display_name": "Tripo P1 : Image vers Modèle",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Met à l'échelle la sortie pour correspondre à des mètres réels approximatifs."
+      },
+      "compress_geometry": {
+        "name": "compress_geometry",
+        "tooltip": "Applique une compression basée sur la géométrie. Décompressez avant l'édition."
+      },
+      "enable_image_autofix": {
+        "name": "enable_image_autofix",
+        "tooltip": "Prétraite l'image d'entrée pour une meilleure qualité de génération."
+      },
+      "export_uv": {
+        "name": "export_uv",
+        "tooltip": "Dépliage UV pendant la génération. Désactivez pour des exécutions plus rapides en géométrie uniquement."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Nombre de faces cible, 48-20000. -1 laisse Tripo choisir de façon adaptative."
+      },
+      "image": {
+        "name": "image"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "output_mode": {
+        "name": "output_mode",
+        "tooltip": "\"Géométrie uniquement\" retourne un maillage sans texture. \"Texturé\" ajoute des cartes couleur/PBR."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1MultiviewToModelNode": {
+    "description": "Tripo P1 multivues-vers-3D à partir de 2 à 4 images de référence dans l'ordre [avant, gauche, arrière, droite]. L'avant est requis ; toute combinaison des trois autres peut être omise.",
+    "display_name": "Tripo P1 : Multivues vers Modèle",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Met à l'échelle la sortie pour correspondre à des mètres réels approximatifs."
+      },
+      "compress_geometry": {
+        "name": "compress_geometry",
+        "tooltip": "Applique une compression basée sur la géométrie. Décompressez avant l'édition."
+      },
+      "export_uv": {
+        "name": "export_uv",
+        "tooltip": "Dépliage UV pendant la génération. Désactivez pour des exécutions plus rapides en géométrie uniquement."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Nombre de faces cible, 48-20000. -1 laisse Tripo choisir de façon adaptative."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Vue avant (0°). Requise."
+      },
+      "image_back": {
+        "name": "image_back",
+        "tooltip": "Vue arrière (180°)."
+      },
+      "image_left": {
+        "name": "image_left",
+        "tooltip": "Vue gauche (90°), c'est-à-dire le côté gauche du sujet."
+      },
+      "image_right": {
+        "name": "image_right",
+        "tooltip": "Vue droite (270°), c'est-à-dire le côté droit du sujet."
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "output_mode": {
+        "name": "output_mode",
+        "tooltip": "\"Géométrie uniquement\" retourne un maillage sans texture. \"Texturé\" ajoute des cartes couleur/PBR."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1TextToModelNode": {
+    "description": "Tripo P1 texte-vers-3D. Optimisé pour des maillages low-poly, prêts pour le jeu, avec une topologie stable.",
+    "display_name": "Tripo P1 : Texte vers Modèle",
+    "inputs": {
+      "auto_size": {
+        "name": "taille automatique",
+        "tooltip": "Mettre à l'échelle la sortie pour approximer des mètres réels."
+      },
+      "compress_geometry": {
+        "name": "compresser la géométrie",
+        "tooltip": "Appliquer une compression basée sur la géométrie. Décompressez avant l'édition."
+      },
+      "export_uv": {
+        "name": "exporter UV",
+        "tooltip": "Déplier les UV pendant la génération. Désactivez pour des exécutions géométrie uniquement plus rapides."
+      },
+      "face_limit": {
+        "name": "limite de faces",
+        "tooltip": "Nombre de faces cible, 48-20000. -1 laisse Tripo choisir de façon adaptative."
+      },
+      "image_seed": {
+        "name": "graine d'image"
+      },
+      "model_seed": {
+        "name": "graine du modèle"
+      },
+      "negative_prompt": {
+        "name": "invite négative",
+        "tooltip": "Jusqu'à 255 caractères."
+      },
+      "output_mode": {
+        "name": "mode de sortie",
+        "tooltip": "\"Géométrie uniquement\" retourne un maillage sans texture. \"Texturé\" ajoute des cartes de couleur/PBR."
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Jusqu'à 1024 caractères."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "fichier modèle",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ID de tâche modèle",
         "tooltip": null
       },
       "2": {

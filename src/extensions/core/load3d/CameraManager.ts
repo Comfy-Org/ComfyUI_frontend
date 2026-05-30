@@ -144,6 +144,10 @@ export class CameraManager implements CameraManagerInterface {
   }
 
   getCameraState(): CameraState {
+    const { x, y, z, w } = this.activeCamera.quaternion
+    const activeCamera = this.activeCamera as
+      | THREE.PerspectiveCamera
+      | THREE.OrthographicCamera
     return {
       position: this.activeCamera.position.clone(),
       target: this.controls?.target.clone() || new THREE.Vector3(),
@@ -151,7 +155,18 @@ export class CameraManager implements CameraManagerInterface {
         this.activeCamera instanceof THREE.OrthographicCamera
           ? this.activeCamera.zoom
           : (this.activeCamera as THREE.PerspectiveCamera).zoom,
-      cameraType: this.getCurrentCameraType()
+      cameraType: this.getCurrentCameraType(),
+      quaternion: { x, y, z, w },
+      fov: this.perspectiveCamera.fov,
+      aspect: this.perspectiveCamera.aspect,
+      near: activeCamera.near,
+      far: activeCamera.far,
+      frustum: {
+        left: this.orthographicCamera.left,
+        right: this.orthographicCamera.right,
+        top: this.orthographicCamera.top,
+        bottom: this.orthographicCamera.bottom
+      }
     }
   }
 

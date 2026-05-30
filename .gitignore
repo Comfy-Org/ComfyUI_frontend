@@ -19,6 +19,7 @@ yarn.lock
 
 node_modules
 .pnpm-store
+.nx
 dist
 dist-ssr
 *.local

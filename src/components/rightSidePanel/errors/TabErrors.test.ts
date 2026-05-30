@@ -57,11 +57,6 @@ describe('TabErrors.vue', () => {
               downloadAll: 'Download all',
               refresh: 'Refresh',
               refreshing: 'Refreshing missing models.'
-            },
-            promptErrors: {
-              prompt_no_outputs: {
-                desc: 'Prompt has no outputs'
-              }
             }
           }
         }
@@ -103,7 +98,7 @@ describe('TabErrors.vue', () => {
     expect(screen.getByText('No errors')).toBeInTheDocument()
   })
 
-  it('renders prompt-level errors (Group title = error message)', async () => {
+  it('renders prompt-level errors with resolved display message', async () => {
     renderComponent({
       executionError: {
         lastPromptError: {
@@ -114,8 +109,14 @@ describe('TabErrors.vue', () => {
       }
     })
 
-    expect(screen.getByText('Server Error: No outputs')).toBeInTheDocument()
-    expect(screen.getByText('Prompt has no outputs')).toBeInTheDocument()
+    expect(screen.getAllByText('Prompt has no outputs').length).toBeGreaterThan(
+      0
+    )
+    expect(
+      screen.getByText(
+        'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.'
+      )
+    ).toBeInTheDocument()
     expect(screen.queryByText('Error details')).not.toBeInTheDocument()
   })
 
@@ -166,7 +167,10 @@ describe('TabErrors.vue', () => {
 
     expect(screen.getAllByText('KSampler').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('#10')).toBeInTheDocument()
-    expect(screen.getByText('RuntimeError: Out of memory')).toBeInTheDocument()
+    expect(screen.getByText('Execution failed')).toBeInTheDocument()
+    expect(
+      screen.getByText('Node threw an error during execution.')
+    ).toBeInTheDocument()
     expect(screen.getByText(/Line 1/)).toBeInTheDocument()
   })
 
@@ -245,9 +249,9 @@ describe('TabErrors.vue', () => {
     })
 
     expect(screen.getAllByText('KSampler').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText('RuntimeError: Out of memory')).toBeInTheDocument()
+    expect(screen.getByText('Execution failed')).toBeInTheDocument()
     expect(screen.getByTestId('runtime-error-panel')).toBeInTheDocument()
-    expect(screen.getAllByText('RuntimeError: Out of memory')).toHaveLength(1)
+    expect(screen.getAllByText('Execution failed')).toHaveLength(1)
   })
 
   it('shows missing model Refresh in the section header when no model is downloadable', async () => {

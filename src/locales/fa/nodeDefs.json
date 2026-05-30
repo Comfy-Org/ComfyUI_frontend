@@ -384,6 +384,90 @@
       }
     }
   },
+  "BeebleSwitchXImageEdit": {
+    "description": "ویرایش یک تصویر با Beeble SwitchX. هر چیزی را در صحنه (پس‌زمینه، نورپردازی، لباس) تغییر می‌دهد در حالی که پیکسل‌های سوژه اصلی را حفظ می‌کند. یک تصویر مرجع و/یا یک متن توصیفی برای ظاهر جدید ارائه دهید. حداکثر ~۲.۷۷ مگاپیکسل.",
+    "display_name": "ویرایش تصویر Beeble SwitchX",
+    "inputs": {
+      "alpha_mode": {
+        "name": "حالت آلفا",
+        "tooltip": "نحوه تصمیم‌گیری SwitchX برای حفظ یا بازتولید بخش‌ها را کنترل می‌کند. «خودکار» سوژه اصلی را به طور خودکار جدا می‌کند. «پر کردن» کل قاب را با حفظ هندسه بازتولید می‌کند. «انتخاب» یک کی‌فریم فریم اول را در سراسر کلیپ اعمال می‌کند. «سفارشی» از آلفا مت فریم به فریم که شما ارائه می‌دهید استفاده می‌کند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "max_resolution": {
+        "name": "حداکثر وضوح",
+        "tooltip": "حداکثر وضوح خروجی."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح متنی از خروجی مورد نظر (حداکثر ۲۰۰۰ کاراکتر). حداقل یکی از «پرامپت» یا «تصویر مرجع» الزامی است."
+      },
+      "reference_image": {
+        "name": "تصویر مرجع",
+        "tooltip": "تصویر مرجعی که ظاهر آن (پس‌زمینه، نورپردازی، لباس) باید در نتیجه اعمال شود. حداقل یکی از «تصویر مرجع» یا «پرامپت» الزامی است."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "تصویر",
+        "tooltip": null
+      },
+      "1": {
+        "name": "آلفا",
+        "tooltip": "آلفا مت استفاده‌شده توسط Beeble. در حالت «پر کردن» خالی است، زیرا مت جداگانه‌ای وجود ندارد."
+      }
+    }
+  },
+  "BeebleSwitchXVideoEdit": {
+    "description": "ویرایش یک ویدیو با Beeble SwitchX. هر چیزی را در صحنه (پس‌زمینه، نورپردازی، لباس) تغییر می‌دهد در حالی که پیکسل‌ها و حرکت سوژه اصلی را حفظ می‌کند. یک تصویر مرجع و/یا یک متن توصیفی برای ظاهر جدید ارائه دهید. حداکثر ۲۴۰ فریم، حداکثر ~۲.۷۷ مگاپیکسل برای هر فریم.",
+    "display_name": "ویرایش ویدیو Beeble SwitchX",
+    "inputs": {
+      "alpha_mode": {
+        "name": "حالت آلفا",
+        "tooltip": "نحوه تصمیم‌گیری SwitchX برای حفظ یا بازتولید بخش‌ها را کنترل می‌کند. «خودکار» سوژه اصلی را به طور خودکار جدا می‌کند. «پر کردن» کل قاب را با حفظ هندسه بازتولید می‌کند. «انتخاب» یک کی‌فریم فریم اول را در سراسر کلیپ اعمال می‌کند. «سفارشی» از آلفا مت فریم به فریم که شما ارائه می‌دهید استفاده می‌کند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "max_resolution": {
+        "name": "حداکثر وضوح",
+        "tooltip": "حداکثر وضوح خروجی."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح متنی از خروجی مورد نظر (حداکثر ۲۰۰۰ کاراکتر). حداقل یکی از «پرامپت» یا «تصویر مرجع» الزامی است."
+      },
+      "reference_image": {
+        "name": "تصویر مرجع",
+        "tooltip": "تصویر مرجعی که ظاهر آن (پس‌زمینه، نورپردازی، لباس) باید در نتیجه اعمال شود. حداقل یکی از «تصویر مرجع» یا «پرامپت» الزامی است."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "video": {
+        "name": "ویدیو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ویدیو",
+        "tooltip": null
+      },
+      "1": {
+        "name": "آلفا",
+        "tooltip": "آلفا مت استفاده‌شده توسط Beeble. در حالت «پر کردن» خالی است، زیرا مت جداگانه‌ای وجود ندارد."
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "BetaSamplingScheduler",
     "inputs": {
@@ -1113,6 +1197,10 @@
       "model": {
         "name": "مدل"
       },
+      "pre_cfg": {
+        "name": "pre_cfg",
+        "tooltip": "اگر فعال باشد، نویز ترکیبی قبل از ترکیب CFG نمونه‌گیر، بدون محدودسازی (clamping) بازتنظیم می‌شود (می‌تواند تقویت شود). این رفتار با CFG نرمال‌شده‌ای که توسط مدل‌هایی مانند Lens استفاده می‌شود مطابقت دارد. مقدار پیش‌فرض false رفتار اصلی کاهش‌دهنده فقط در فضای x0 پس از CFG را حفظ می‌کند."
+      },
       "strength": {
         "name": "شدت"
       }
@@ -1800,6 +1888,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "description": "عملگر منطقی AND. اگر همه مقادیر صحیح باشند، مقدار true را بازمی‌گرداند. از قواعد صحت‌سنجی پایتون استفاده می‌کند.",
+    "display_name": "و",
+    "inputs": {
+      "values": {
+        "name": "مقادیر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "عبارت ریاضی",
     "inputs": {
@@ -1823,6 +1925,20 @@
       }
     }
   },
+  "ComfyNotNode": {
+    "description": "عملگر منطقی NOT. اگر مقدار نادرست باشد، مقدار true را بازمی‌گرداند. از قواعد صحت‌سنجی پایتون استفاده می‌کند.",
+    "display_name": "نقیض",
+    "inputs": {
+      "value": {
+        "name": "مقدار"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyNumberConvert": {
     "display_name": "تبدیل عدد",
     "inputs": {
@@ -1835,6 +1951,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "description": "عملگر منطقی OR. اگر هر یک از مقادیر صحیح باشند، مقدار true را بازمی‌گرداند. از قواعد صحت‌سنجی پایتون استفاده می‌کند.",
+    "display_name": "یا",
+    "inputs": {
+      "values": {
+        "name": "مقادیر"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -7418,6 +7548,71 @@
       }
     }
   },
+  "Krea2ImageNode": {
+    "description": "تولید تصویر با استفاده از Krea 2 — مد Medium (تصاویر بیانی) یا Large (فتورئالیسم بیانی) را انتخاب کنید. پشتیبانی از moodboard اختیاری و تا ۱۰ مرجع زنجیره‌ای سبک تصویر.",
+    "display_name": "Krea 2 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Krea 2 Medium برای تصاویر بیانی مناسب است؛ Krea 2 Large برای فتورئالیسم بیانی بهترین است."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_moodboard_id": {
+        "name": "moodboard_id"
+      },
+      "model_moodboard_strength": {
+        "name": "moodboard_strength"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "پرامپت متنی برای تصویر."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تصادفی برای تکرارپذیری."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Krea2StyleReferenceNode": {
+    "description": "افزودن مرجع سبک تصویر به تولید Krea 2. می‌توانید تا ۱۰ نود Krea 2 Style Reference را زنجیره کنید و خروجی نهایی `style_reference` را به Krea 2 Image بدهید. هر تصویر در فضای ذخیره‌سازی ComfyAPI آپلود شده و به صورت URL ارسال می‌شود.",
+    "display_name": "Krea 2 Style Reference",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "تصویر مرجع که سبک آن بر تولید تأثیر می‌گذارد."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "قدرت مرجع؛ مقادیر منفی تأثیر سبک را معکوس می‌کند."
+      },
+      "style_reference": {
+        "name": "style_reference",
+        "tooltip": "زنجیره اختیاری مراجع سبک ورودی؛ این نود یک مرجع دیگر اضافه می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_reference",
+        "tooltip": null
+      }
+    }
+  },
   "LTXAVTextEncoderLoader": {
     "description": "[دستورالعمل‌ها]\n\nltxav: gemma ۳ ۱۲B",
     "display_name": "بارگذاری رمزگذار متنی LTXV Audio",
@@ -7721,6 +7916,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -8329,6 +8529,10 @@
       },
       "6": {
         "name": "مدل_۳بعدی",
+        "tooltip": null
+      },
+      "7": {
+        "name": "model_3d_info",
         "tooltip": null
       }
     }
@@ -12262,6 +12466,23 @@
       }
     }
   },
+  "MultiGPU_WorkUnits": {
+    "description": "مدل را برای تسریع نمونه‌گیری از طریق تقسیم واحدهای کاری آماده می‌کند.\n\nباید پس از nodeهایی که شیء مدل را تغییر می‌دهند، مانند nodeهای compile یا attention-switch قرار گیرد.\n\nبه جز این استثناها، این node را می‌توان به هر ترتیبی قرار داد.",
+    "display_name": "تقسیم CFG چند GPU",
+    "inputs": {
+      "max_gpus": {
+        "name": "max_gpus"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "NAGuidance": {
     "description": "راهنمای توجه نرمال‌سازی‌شده را به مدل‌ها اعمال می‌کند و امکان استفاده از پرامپت منفی را در مدل‌های distilled/schnell فراهم می‌سازد.",
     "display_name": "راهنمای توجه نرمال‌سازی‌شده",
@@ -12965,6 +13186,32 @@
     "inputs": {
       "photomaker_model_name": {
         "name": "نام مدل photomaker"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PiDConditioning": {
+    "description": "یک latent و یک مقدار degrade_sigma را به CONDITIONING برای رمزگشایی/بزرگ‌نمایی PiD متصل می‌کند.",
+    "display_name": "PiD Conditioning",
+    "inputs": {
+      "degrade_sigma": {
+        "name": "degrade_sigma",
+        "tooltip": "۰ = latent تمیز. برای حذف نویز خروجی‌های latent خراب، مقدار را افزایش دهید."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent (از VAEEncode یا KSampler)."
+      },
+      "latent_format": {
+        "name": "latent_format",
+        "tooltip": "لاتنت‌های Flux1 و Flux2 به طور خودکار از بعد کانال تشخیص داده می‌شوند، sd3 باید به صورت دستی انتخاب شود."
+      },
+      "positive": {
+        "name": "positive"
       }
     },
     "outputs": {
@@ -14601,6 +14848,164 @@
       }
     }
   },
+  "Rodin3D_Gen25_Image": {
+    "description": "تولید مدل سه‌بعدی از ۱ تا ۵ تصویر مرجع با استفاده از Rodin Gen-2.5. یک حالت (سریع / معمولی / فوق‌العاده بالا) را برای تنظیم کیفیت نسبت به هزینه انتخاب کنید.",
+    "display_name": "Rodin 3D Gen-2.5 - تصویر به سه‌بعدی",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "حالت T/A برای مدل‌های انسان‌نما."
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "افزونه HighPack: بافت ۴K و حدود ۱۶ برابر وجه در حالت Quad."
+      },
+      "bbox_height": {
+        "name": "ارتفاع جعبه محدودکننده",
+        "tooltip": "ارتفاع جعبه محدودکننده (محور Z)."
+      },
+      "bbox_length": {
+        "name": "طول جعبه محدودکننده",
+        "tooltip": "طول جعبه محدودکننده (محور X)."
+      },
+      "bbox_width": {
+        "name": "عرض جعبه محدودکننده",
+        "tooltip": "عرض جعبه محدودکننده (محور Y). برای صرف‌نظر کردن از جعبه، مقدار ۰ را با سایر ابعاد وارد کنید."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "geometry_file_format": {
+        "name": "فرمت فایل هندسه"
+      },
+      "hd_texture": {
+        "name": "hd_texture",
+        "tooltip": "افزایش کیفیت بافت به صورت باکیفیت."
+      },
+      "height_cm": {
+        "name": "ارتفاع مدل (سانتی‌متر)",
+        "tooltip": "ارتفاع تقریبی مدل به سانتی‌متر (۰ برای صرف‌نظر)."
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "۱ تا ۵ تصویر. اولین تصویر برای مواد در حالت چندنما استفاده می‌شود."
+      },
+      "material": {
+        "name": "material"
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "حالت تولید. معمولی = متعادل. سریع = ۱۰۰۰ تا ۲۰۰۰۰ وجه برای نمونه‌سازی سریع. فوق‌العاده بالا = ۲۰۰۰۰ تا ۲ میلیون وجه با جزئیات میکرو اختیاری."
+      },
+      "mode_creative": {
+        "name": "خلاقانه"
+      },
+      "mode_polygon_count": {
+        "name": "تعداد چندضلعی"
+      },
+      "mode_tier": {
+        "name": "سطح"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "texture_delight": {
+        "name": "texture_delight",
+        "tooltip": "حذف نورپردازی baked از بافت‌ها."
+      },
+      "texture_mode": {
+        "name": "حالت بافت",
+        "tooltip": "پیش‌تنظیم کیفیت بافت. «پیش‌فرض» از تنظیمات سرور برای سطح انتخاب‌شده استفاده می‌کند."
+      },
+      "use_original_alpha": {
+        "name": "use_original_alpha",
+        "tooltip": "حفظ شفافیت تصویر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فایل مدل",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "description": "تولید مدل سه‌بعدی از یک متن ورودی با استفاده از Rodin Gen-2.5. یک حالت (سریع / معمولی / بسیار پیشرفته) را برای تنظیم کیفیت نسبت به هزینه انتخاب کنید.",
+    "display_name": "Rodin 3D Gen-2.5 - تبدیل متن به مدل سه‌بعدی",
+    "inputs": {
+      "TAPose": {
+        "name": "T/A pose",
+        "tooltip": "حالت T/A برای مدل‌های انسان‌نما."
+      },
+      "addon_highpack": {
+        "name": "افزونه HighPack",
+        "tooltip": "افزونه HighPack: بافت ۴K و تقریباً ۱۶ برابر وجه بیشتر در حالت Quad."
+      },
+      "bbox_height": {
+        "name": "ارتفاع جعبه محدودکننده",
+        "tooltip": "ارتفاع جعبه محدودکننده (محور Z)."
+      },
+      "bbox_length": {
+        "name": "طول جعبه محدودکننده",
+        "tooltip": "طول جعبه محدودکننده (محور X)."
+      },
+      "bbox_width": {
+        "name": "عرض جعبه محدودکننده",
+        "tooltip": "عرض جعبه محدودکننده (محور Y). برای صرف‌نظر کردن از جعبه، مقدار ۰ را با سایر ابعاد وارد کنید."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "geometry_file_format": {
+        "name": "فرمت فایل هندسه"
+      },
+      "hd_texture": {
+        "name": "افزایش کیفیت بافت",
+        "tooltip": "افزایش کیفیت بافت به صورت پیشرفته."
+      },
+      "height_cm": {
+        "name": "ارتفاع مدل (سانتی‌متر)",
+        "tooltip": "ارتفاع تقریبی مدل به سانتی‌متر (۰ برای صرف‌نظر کردن)."
+      },
+      "material": {
+        "name": "جنس"
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "حالت تولید. معمولی = متعادل. سریع = ۱٬۰۰۰ تا ۲۰٬۰۰۰ وجه برای نمونه‌سازی سریع. بسیار پیشرفته = ۲۰٬۰۰۰ تا ۲٬۰۰۰٬۰۰۰ وجه با جزئیات میکرو اختیاری."
+      },
+      "mode_creative": {
+        "name": "خلاقانه"
+      },
+      "mode_polygon_count": {
+        "name": "تعداد وجه‌ها"
+      },
+      "mode_tier": {
+        "name": "سطح"
+      },
+      "prompt": {
+        "name": "متن ورودی",
+        "tooltip": "متن ورودی برای مدل سه‌بعدی."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "texture_delight": {
+        "name": "حذف نورپردازی بافت",
+        "tooltip": "حذف نورپردازی baked از بافت‌ها."
+      },
+      "texture_mode": {
+        "name": "حالت بافت",
+        "tooltip": "پیش‌تنظیم کیفیت بافت. «پیش‌فرض» از تنظیمات سرور برای سطح انتخاب‌شده استفاده می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فایل مدل",
+        "tooltip": null
+      }
+    }
+  },
   "Rodin3D_Regular": {
     "description": "تولید دارایی‌های سه‌بعدی با استفاده از Rodin API",
     "display_name": "Rodin 3D Generate - تولید معمولی",
@@ -15712,6 +16117,30 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "description": "تصاویر ورودی را در پوشه خروجی ComfyUI شما ذخیره می‌کند.",
+    "display_name": "ذخیره تصویر (پیشرفته)",
+    "inputs": {
+      "filename_prefix": {
+        "name": "پیشوند نام فایل",
+        "tooltip": "پیشوند فایل برای ذخیره. می‌تواند شامل توکن‌های قالب‌بندی مانند ‎%date:yyyy-MM-dd%‎ یا ‎%Empty Latent Image.width%‎ باشد."
+      },
+      "format": {
+        "name": "فرمت",
+        "tooltip": "فرمت فایل برای ذخیره تصویر."
+      },
+      "format_bit_depth": {
+        "name": "عمق بیت"
+      },
+      "format_input_color_space": {
+        "name": "فضای رنگ ورودی"
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصاویری که باید ذخیره شوند."
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
     "description": "ذخیره یک مجموعه داده تصویر در پوشه‌ای مشخص. فرمت‌های پشتیبانی‌شده: PNG.",
     "display_name": "ذخیره مجموعه تصاویر در پوشه",
@@ -15727,6 +16156,10 @@
       "images": {
         "name": "تصاویر",
         "tooltip": "فهرست تصاویر برای ذخیره."
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "آیا فایل‌های موجود بازنویسی شوند یا نام فایل‌ها به‌صورت افزایشی تغییر کند تا از بازنویسی جلوگیری شود."
       }
     }
   },
@@ -15745,6 +16178,10 @@
       "images": {
         "name": "تصاویر",
         "tooltip": "فهرست تصاویر برای ذخیره."
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "آیا فایل‌های موجود بازنویسی شوند یا نام فایل‌ها به‌صورت افزایشی تغییر کند تا از بازنویسی جلوگیری شود."
       },
       "texts": {
         "name": "متون",
@@ -15890,6 +16327,57 @@
       },
       "shift_y": {
         "name": "جابجایی Y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectCLIPDevice": {
+    "description": "رمزگذار متنی CLIP را روی یک دستگاه خاص قرار دهید (پیش‌فرض / cpu / gpu:N).\n\n- «default» دستگاه اختصاص داده‌شده توسط loader را بازمی‌گرداند.\n- «cpu» هر دو دستگاه بارگذاری و offload را به CPU اختصاص می‌دهد.\n- «gpu:N» دستگاه بارگذاری را به Nامین GPU موجود اختصاص می‌دهد.\n\nزمانی که دستگاه انتخاب‌شده روی سیستم فعلی وجود نداشته باشد\n(مثلاً یک workflow ساخته‌شده روی سیستمی با ۲ GPU که روی سیستمی با ۱ GPU باز می‌شود)،\nnode بدون تغییر CLIP را عبور می‌دهد و به جای خطا، پیامی را ثبت می‌کند.",
+    "display_name": "انتخاب دستگاه CLIP",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "device": {
+        "name": "device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectModelDevice": {
+    "description": "مدل diffusion را روی یک دستگاه خاص قرار دهید (پیش‌فرض / cpu / gpu:N).\n\n- «default» دستگاه اختصاص داده‌شده توسط loader را بازمی‌گرداند (حتی پس از یک\n  فراخوانی قبلی Select Model Device).\n- «cpu» هر دو دستگاه بارگذاری و offload را به CPU اختصاص می‌دهد.\n- «gpu:N» دستگاه بارگذاری را به Nامین GPU موجود اختصاص می‌دهد؛ دستگاه offload\n  به انتخاب اولیه loader بازمی‌گردد.\n\nاگر دستگاه درخواست‌شده با دستگاهی که مدل ورودی هم‌اکنون روی آن قرار دارد متفاوت باشد،\nیک مدل جدید از طریق reload factory loader (cached_patcher_init) ایجاد می‌شود تا patcher جدید وزن‌های مستقل روی دستگاه جدید داشته باشد. loaderهایی که از multigpu پشتیبانی نمی‌کنند (بدون factory) باعث می‌شوند node بدون تغییر عبور کند و هشدار دهد.\n\nاگر workflow قبلاً تقسیم CFG چند GPU را اعمال کرده باشد و GPU انتخاب‌شده با یکی از کلون‌های multigpu موجود تداخل داشته باشد، آن کلون حذف می‌شود تا دو patcher به یک دستگاه متصل نشوند.\n\nزمانی که دستگاه انتخاب‌شده روی سیستم فعلی وجود نداشته باشد\n(مثلاً یک workflow ساخته‌شده روی سیستمی با ۲ GPU که روی سیستمی با ۱ GPU باز می‌شود)،\nnode مدل را بدون تغییر عبور می‌دهد و به جای خطا، پیامی را ثبت می‌کند.\n\nتوجه: قرار دادن Select Model Device بعد از nodeی که قبلاً همان مدل را مصرف کرده است (مثلاً یک KSampler که روی این مدل روی دستگاه اصلی اجرا شده) توصیه نمی‌شود -- هر وضعیتی که مصرف‌کننده قبلی روی مدل اصلی تغییر داده باشد زمانی که دستگاه انتخابی با دستگاه اصلی یکسان باشد (fast path) مشاهده خواهد شد. Select Model Device را قبل از هر مصرف‌کننده مدل قرار دهید.",
+    "display_name": "انتخاب دستگاه مدل",
+    "inputs": {
+      "device": {
+        "name": "device"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectVAEDevice": {
+    "description": "قرار دادن VAE بر روی یک دستگاه مشخص (پیش‌فرض / gpu:N).\n\n- «پیش‌فرض» دستگاه اختصاص داده‌شده توسط لودر را بازیابی می‌کند.\n- «gpu:N» دستگاه بارگذاری را به Nاُمین GPU موجود اختصاص می‌دهد؛ دستگاه offload\n  به دستگاه استاندارد offload برای VAE تنظیم می‌شود.\n\nCPU عمداً در رابط کاربری برای VAE نمایش داده نمی‌شود؛ اگر یک workflow\nبه هر حال «cpu» را ارائه دهد (مثلاً از یک رایانه دیگر باز شده باشد)، درخواست\nبا یک پیام ثبت‌شده رد می‌شود و VAE بدون تغییر عبور داده می‌شود.\n\nزمانی که دستگاه انتخاب‌شده روی دستگاه فعلی وجود نداشته باشد\n(مثلاً یک workflow ساخته‌شده روی سیستمی با ۲ GPU که روی سیستمی با ۱ GPU باز شود)،\nگره VAE را بدون تغییر عبور می‌دهد و به جای خطا، یک پیام ثبت می‌کند.",
+    "display_name": "انتخاب دستگاه VAE",
+    "inputs": {
+      "device": {
+        "name": "دستگاه"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -18123,6 +18611,169 @@
       },
       "texture_seed": {
         "name": "بذر تکسچر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فایل مدل",
+        "tooltip": null
+      },
+      "1": {
+        "name": "شناسه وظیفه مدل",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1ImageToModelNode": {
+    "description": "تبدیل تصویر به مدل سه‌بعدی با Tripo P1. بهینه‌شده برای مش‌های کم‌پلی و مناسب بازی.",
+    "display_name": "Tripo P1: تبدیل تصویر به مدل",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "مقیاس خروجی برای تقریب اندازه واقعی (متر)."
+      },
+      "compress_geometry": {
+        "name": "compress_geometry",
+        "tooltip": "فشرده‌سازی مبتنی بر هندسه. قبل از ویرایش، از حالت فشرده خارج کنید."
+      },
+      "enable_image_autofix": {
+        "name": "enable_image_autofix",
+        "tooltip": "پیش‌پردازش تصویر ورودی برای بهبود کیفیت تولید."
+      },
+      "export_uv": {
+        "name": "export_uv",
+        "tooltip": "بازکردن UV هنگام تولید. برای سرعت بیشتر در حالت فقط هندسه، غیرفعال کنید."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "تعداد هدف برای وجوه مش، از ۴۸ تا ۲۰۰۰۰. مقدار ‎-۱ اجازه می‌دهد Tripo به صورت تطبیقی انتخاب کند."
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "output_mode": {
+        "name": "output_mode",
+        "tooltip": "در حالت «فقط هندسه»، مش بدون بافت خروجی می‌شود. «بافت‌دار» نقشه‌های رنگی/PBR را اضافه می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1MultiviewToModelNode": {
+    "description": "تبدیل چندنما به مدل سه‌بعدی با Tripo P1 از ۲ تا ۴ تصویر مرجع به ترتیب [جلو، چپ، پشت، راست]. نمای جلو الزامی است؛ هر ترکیبی از سه نمای دیگر می‌تواند حذف شود.",
+    "display_name": "Tripo P1: تبدیل چندنما به مدل",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "مقیاس خروجی برای تقریب اندازه واقعی (متر)."
+      },
+      "compress_geometry": {
+        "name": "compress_geometry",
+        "tooltip": "فشرده‌سازی مبتنی بر هندسه. قبل از ویرایش، از حالت فشرده خارج کنید."
+      },
+      "export_uv": {
+        "name": "export_uv",
+        "tooltip": "بازکردن UV هنگام تولید. برای سرعت بیشتر در حالت فقط هندسه، غیرفعال کنید."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "تعداد هدف برای وجوه مش، از ۴۸ تا ۲۰۰۰۰. مقدار ‎-۱ اجازه می‌دهد Tripo به صورت تطبیقی انتخاب کند."
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "نمای جلو (۰°). الزامی."
+      },
+      "image_back": {
+        "name": "image_back",
+        "tooltip": "نمای پشت (۱۸۰°)."
+      },
+      "image_left": {
+        "name": "image_left",
+        "tooltip": "نمای چپ (۹۰°)، یعنی سمت چپ سوژه."
+      },
+      "image_right": {
+        "name": "image_right",
+        "tooltip": "نمای راست (۲۷۰°)، یعنی سمت راست سوژه."
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "output_mode": {
+        "name": "output_mode",
+        "tooltip": "در حالت «فقط هندسه»، مش بدون بافت خروجی می‌شود. «بافت‌دار» نقشه‌های رنگی/PBR را اضافه می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1TextToModelNode": {
+    "description": "تبدیل متن به مدل سه‌بعدی با Tripo P1. بهینه‌شده برای مش‌های کم‌پلی و آماده برای بازی با توپولوژی پایدار.",
+    "display_name": "Tripo P1: تبدیل متن به مدل",
+    "inputs": {
+      "auto_size": {
+        "name": "اندازه خودکار",
+        "tooltip": "خروجی را برای تقریب ابعاد واقعی (متر) مقیاس‌بندی می‌کند."
+      },
+      "compress_geometry": {
+        "name": "فشرده‌سازی هندسه",
+        "tooltip": "فشرده‌سازی مبتنی بر هندسه را اعمال می‌کند. قبل از ویرایش، از حالت فشرده خارج کنید."
+      },
+      "export_uv": {
+        "name": "خروجی UV",
+        "tooltip": "بازکردن UV هنگام تولید. برای اجرای سریع‌تر فقط هندسه، غیرفعال کنید."
+      },
+      "face_limit": {
+        "name": "محدودیت وجه",
+        "tooltip": "تعداد هدف وجه، ۴۸ تا ۲۰۰۰۰. مقدار ‎-۱ اجازه می‌دهد Tripo به صورت تطبیقی انتخاب کند."
+      },
+      "image_seed": {
+        "name": "بذر تصویر"
+      },
+      "model_seed": {
+        "name": "بذر مدل"
+      },
+      "negative_prompt": {
+        "name": "پرامپت منفی",
+        "tooltip": "حداکثر ۲۵۵ کاراکتر."
+      },
+      "output_mode": {
+        "name": "حالت خروجی",
+        "tooltip": "«فقط هندسه» یک مش بدون بافت بازمی‌گرداند. «بافت‌دار» نقشه‌های رنگی/PBR را اضافه می‌کند."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "حداکثر ۱۰۲۴ کاراکتر."
       }
     },
     "outputs": {
