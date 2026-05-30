@@ -203,8 +203,8 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
       await openContextMenu(comfyPage, nodeTitle)
       await expect(removeBypassItem).toHaveCount(1)
       await expect(bypassItem).toHaveCount(0)
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.contextMenu.waitForHidden()
+      await clickExactMenuItem(comfyPage, 'Remove Bypass')
+      await expect.poll(() => nodeRef.isBypassed()).toBe(false)
     })
 
     test('should minimize and expand node via context menu', async ({
