@@ -84,6 +84,8 @@
     "typescript/no-unused-vars": "off",
     "unicorn/no-empty-file": "off",
     "vitest/require-mock-type-parameters": "off",
+    "vitest/hoisted-apis-on-top": "error",
+    "typescript/no-misused-spread": "error",
     "vitest/consistent-each-for": [
       "error",
       {
