@@ -8530,6 +8530,10 @@
       "6": {
         "name": "model_3d",
         "tooltip": null
+      },
+      "7": {
+        "name": "model_3d_info",
+        "tooltip": null
       }
     }
   },
@@ -18616,6 +18620,169 @@
       },
       "1": {
         "name": "modèle task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1ImageToModelNode": {
+    "description": "Tripo P1 image-vers-3D. Optimisé pour des maillages low-poly, prêts pour les jeux.",
+    "display_name": "Tripo P1 : Image vers Modèle",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Met à l'échelle la sortie pour correspondre à des mètres réels approximatifs."
+      },
+      "compress_geometry": {
+        "name": "compress_geometry",
+        "tooltip": "Applique une compression basée sur la géométrie. Décompressez avant l'édition."
+      },
+      "enable_image_autofix": {
+        "name": "enable_image_autofix",
+        "tooltip": "Prétraite l'image d'entrée pour une meilleure qualité de génération."
+      },
+      "export_uv": {
+        "name": "export_uv",
+        "tooltip": "Dépliage UV pendant la génération. Désactivez pour des exécutions plus rapides en géométrie uniquement."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Nombre de faces cible, 48-20000. -1 laisse Tripo choisir de façon adaptative."
+      },
+      "image": {
+        "name": "image"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "output_mode": {
+        "name": "output_mode",
+        "tooltip": "\"Géométrie uniquement\" retourne un maillage sans texture. \"Texturé\" ajoute des cartes couleur/PBR."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1MultiviewToModelNode": {
+    "description": "Tripo P1 multivues-vers-3D à partir de 2 à 4 images de référence dans l'ordre [avant, gauche, arrière, droite]. L'avant est requis ; toute combinaison des trois autres peut être omise.",
+    "display_name": "Tripo P1 : Multivues vers Modèle",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Met à l'échelle la sortie pour correspondre à des mètres réels approximatifs."
+      },
+      "compress_geometry": {
+        "name": "compress_geometry",
+        "tooltip": "Applique une compression basée sur la géométrie. Décompressez avant l'édition."
+      },
+      "export_uv": {
+        "name": "export_uv",
+        "tooltip": "Dépliage UV pendant la génération. Désactivez pour des exécutions plus rapides en géométrie uniquement."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Nombre de faces cible, 48-20000. -1 laisse Tripo choisir de façon adaptative."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Vue avant (0°). Requise."
+      },
+      "image_back": {
+        "name": "image_back",
+        "tooltip": "Vue arrière (180°)."
+      },
+      "image_left": {
+        "name": "image_left",
+        "tooltip": "Vue gauche (90°), c'est-à-dire le côté gauche du sujet."
+      },
+      "image_right": {
+        "name": "image_right",
+        "tooltip": "Vue droite (270°), c'est-à-dire le côté droit du sujet."
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "output_mode": {
+        "name": "output_mode",
+        "tooltip": "\"Géométrie uniquement\" retourne un maillage sans texture. \"Texturé\" ajoute des cartes couleur/PBR."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1TextToModelNode": {
+    "description": "Tripo P1 texte-vers-3D. Optimisé pour des maillages low-poly, prêts pour le jeu, avec une topologie stable.",
+    "display_name": "Tripo P1 : Texte vers Modèle",
+    "inputs": {
+      "auto_size": {
+        "name": "taille automatique",
+        "tooltip": "Mettre à l'échelle la sortie pour approximer des mètres réels."
+      },
+      "compress_geometry": {
+        "name": "compresser la géométrie",
+        "tooltip": "Appliquer une compression basée sur la géométrie. Décompressez avant l'édition."
+      },
+      "export_uv": {
+        "name": "exporter UV",
+        "tooltip": "Déplier les UV pendant la génération. Désactivez pour des exécutions géométrie uniquement plus rapides."
+      },
+      "face_limit": {
+        "name": "limite de faces",
+        "tooltip": "Nombre de faces cible, 48-20000. -1 laisse Tripo choisir de façon adaptative."
+      },
+      "image_seed": {
+        "name": "graine d'image"
+      },
+      "model_seed": {
+        "name": "graine du modèle"
+      },
+      "negative_prompt": {
+        "name": "invite négative",
+        "tooltip": "Jusqu'à 255 caractères."
+      },
+      "output_mode": {
+        "name": "mode de sortie",
+        "tooltip": "\"Géométrie uniquement\" retourne un maillage sans texture. \"Texturé\" ajoute des cartes de couleur/PBR."
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Jusqu'à 1024 caractères."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "fichier modèle",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ID de tâche modèle",
         "tooltip": null
       },
       "2": {
