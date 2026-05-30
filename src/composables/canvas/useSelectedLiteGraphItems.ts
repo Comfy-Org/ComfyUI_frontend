@@ -93,16 +93,8 @@ export function useSelectedLiteGraphItems() {
     return collectFromNodes(nodeArray)
   }
 
-  const getSelectedNodeArray = (): LGraphNode[] => {
-    const selectedNodes = app.canvas.selected_nodes
-    if (!selectedNodes) return []
-
-    const selectedNodeArray: LGraphNode[] = []
-    for (const i in selectedNodes) {
-      selectedNodeArray.push(selectedNodes[i])
-    }
-    return selectedNodeArray
-  }
+  const getSelectedNodeArray = (): LGraphNode[] =>
+    Object.values(app.canvas.selected_nodes ?? {})
 
   /**
    * True iff every selected node is in `mode`. Mirrors the predicate used by
