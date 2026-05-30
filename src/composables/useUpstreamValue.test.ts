@@ -6,6 +6,7 @@ import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { UUID } from '@/utils/uuid'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetState } from '@/stores/widgetValueStore'
+import { asGraphId, widgetEntityId } from '@/world/entityIds'
 import { resetWorldInstance } from '@/world/worldInstance'
 
 import {
@@ -155,9 +156,12 @@ describe('useUpstreamValue (store-backed read path)', () => {
 
   it('reads upstream node widgets via the widget value store', () => {
     const graphId = '00000000-0000-0000-0000-000000000001' as UUID
-    const state = useWidgetValueStore().registerWidget(graphId, {
-      nodeId: 'upstream-1' as NodeId,
-      name: 'value',
+    const widgetId = widgetEntityId(
+      asGraphId(graphId),
+      'upstream-1' as NodeId,
+      'value'
+    )
+    const state = useWidgetValueStore().registerWidget(widgetId, {
       type: 'number',
       value: 7,
       options: {}

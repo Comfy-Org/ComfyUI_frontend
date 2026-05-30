@@ -1,4 +1,3 @@
-import type { NodeId } from '@/world/entityIds'
 import type {
   WidgetDisplayShape,
   WidgetSchemaShape,
@@ -30,16 +29,3 @@ export type WidgetState<
   WidgetDisplayShape &
   Omit<WidgetSchemaShape<TOptions>, 'type'> &
   WidgetSerializeShape & { type: TType }
-
-/**
- * Input shape for `registerWidget`: a `WidgetState` view augmented with the
- * identity fields (`name`, `nodeId`) needed to construct the widget's
- * `WidgetEntityId`. The view returned from `registerWidget` is the
- * un-augmented `WidgetState` because identity fields live in the entity id.
- */
-export interface WidgetRegistration<
-  TValue = unknown
-> extends WidgetState<TValue> {
-  name: string
-  nodeId: NodeId
-}

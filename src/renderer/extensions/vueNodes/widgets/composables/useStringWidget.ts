@@ -7,8 +7,8 @@ import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { deriveWidgetEntityId } from '@/world/entityIds'
-import { getWidgetState } from '@/world/widgetValueIO'
 
 const TRACKPAD_DETECTION_THRESHOLD = 50
 
@@ -26,6 +26,7 @@ function addMultilineWidget(
   inputEl.placeholder = opts.placeholder || name
   inputEl.spellcheck = useSettingStore().get('Comfy.TextareaWidget.Spellcheck')
 
+  const widgetValueStore = useWidgetValueStore()
   const widget = node.addDOMWidget(name, 'customtext', inputEl, {
     getValue(): string {
       const entityId = deriveWidgetEntityId(
@@ -33,7 +34,9 @@ function addMultilineWidget(
         node.id,
         name
       )
-      const widgetState = entityId ? getWidgetState(entityId) : undefined
+      const widgetState = entityId
+        ? widgetValueStore.getWidget(entityId)
+        : undefined
       return (widgetState?.value as string) ?? inputEl.value
     },
     setValue(v: string) {
@@ -43,7 +46,9 @@ function addMultilineWidget(
         node.id,
         name
       )
-      const widgetState = entityId ? getWidgetState(entityId) : undefined
+      const widgetState = entityId
+        ? widgetValueStore.getWidget(entityId)
+        : undefined
       if (widgetState) widgetState.value = v
     }
   })

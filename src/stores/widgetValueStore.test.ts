@@ -4,7 +4,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { UUID } from '@/utils/uuid'
-import { asGraphId, widgetEntityId } from '@/world/entityIds'
+import { asGraphId, nodeEntityId, widgetEntityId } from '@/world/entityIds'
+import type { WidgetEntityId } from '@/world/entityIds'
 import {
   WidgetComponentDisplay,
   WidgetComponentValue
@@ -14,21 +15,12 @@ import { getWorld, resetWorldInstance } from '@/world/worldInstance'
 import type { WidgetState } from './widgetValueStore'
 import { useWidgetValueStore } from './widgetValueStore'
 
-type WidgetInput<T = unknown> = WidgetState<T> & {
-  name: string
-  nodeId: NodeId
-}
-
-function widget<T>(
-  nodeId: string,
-  name: string,
+function widgetState<T>(
   type: string,
   value: T,
   extra: Partial<Omit<WidgetState<T>, 'type' | 'value'>> = {}
-): WidgetInput<T> {
+): WidgetState<T> {
   return {
-    nodeId: nodeId as NodeId,
-    name,
     type,
     value,
     options: {},
@@ -39,6 +31,9 @@ function widget<T>(
 describe('useWidgetValueStore', () => {
   const graphA = 'graph-a' as UUID
   const graphB = 'graph-b' as UUID
+  const wid = (graphId: UUID, nodeId: NodeId, name: string): WidgetEntityId =>
+    widgetEntityId(asGraphId(graphId), nodeId, name)
+
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     resetWorldInstance()
@@ -48,46 +43,46 @@ describe('useWidgetValueStore', () => {
     it('getWidget returns undefined for unregistered widget', () => {
       const store = useWidgetValueStore()
       expect(
-        store._lookupWidgetState(graphA, 'missing' as NodeId, 'widget')
+        store.getWidget(wid(graphA, 'missing' as NodeId, 'widget'))
       ).toBeUndefined()
     })
 
     it('widgetState.value can be read and written directly', () => {
       const store = useWidgetValueStore()
-      const state = store.registerWidget(
-        graphA,
-        widget('node-1', 'seed', 'number', 100)
-      )
+      const id = wid(graphA, 'node-1' as NodeId, 'seed')
+      const state = store.registerWidget(id, widgetState('number', 100))
       expect(state.value).toBe(100)
 
       state.value = 200
-      expect(
-        store._lookupWidgetState(graphA, 'node-1' as NodeId, 'seed')?.value
-      ).toBe(200)
+      expect(store.getWidget(id)?.value).toBe(200)
     })
 
     it('stores different value types', () => {
       const store = useWidgetValueStore()
-      store.registerWidget(graphA, widget('node-1', 'text', 'string', 'hello'))
-      store.registerWidget(graphA, widget('node-1', 'number', 'number', 42))
-      store.registerWidget(graphA, widget('node-1', 'boolean', 'toggle', true))
+      const node = 'node-1' as NodeId
       store.registerWidget(
-        graphA,
-        widget('node-1', 'array', 'combo', [1, 2, 3])
+        wid(graphA, node, 'text'),
+        widgetState('string', 'hello')
+      )
+      store.registerWidget(
+        wid(graphA, node, 'number'),
+        widgetState('number', 42)
+      )
+      store.registerWidget(
+        wid(graphA, node, 'boolean'),
+        widgetState('toggle', true)
+      )
+      store.registerWidget(
+        wid(graphA, node, 'array'),
+        widgetState('combo', [1, 2, 3])
       )
 
-      expect(
-        store._lookupWidgetState(graphA, 'node-1' as NodeId, 'text')?.value
-      ).toBe('hello')
-      expect(
-        store._lookupWidgetState(graphA, 'node-1' as NodeId, 'number')?.value
-      ).toBe(42)
-      expect(
-        store._lookupWidgetState(graphA, 'node-1' as NodeId, 'boolean')?.value
-      ).toBe(true)
-      expect(
-        store._lookupWidgetState(graphA, 'node-1' as NodeId, 'array')?.value
-      ).toEqual([1, 2, 3])
+      expect(store.getWidget(wid(graphA, node, 'text'))?.value).toBe('hello')
+      expect(store.getWidget(wid(graphA, node, 'number'))?.value).toBe(42)
+      expect(store.getWidget(wid(graphA, node, 'boolean'))?.value).toBe(true)
+      expect(store.getWidget(wid(graphA, node, 'array'))?.value).toEqual([
+        1, 2, 3
+      ])
     })
   })
 
@@ -95,8 +90,8 @@ describe('useWidgetValueStore', () => {
     it('registers a widget with minimal properties', () => {
       const store = useWidgetValueStore()
       const state = store.registerWidget(
-        graphA,
-        widget('node-1', 'seed', 'number', 12345)
+        wid(graphA, 'node-1' as NodeId, 'seed'),
+        widgetState('number', 12345)
       )
 
       expect(state.type).toBe('number')
@@ -109,8 +104,8 @@ describe('useWidgetValueStore', () => {
     it('registers a widget with all properties', () => {
       const store = useWidgetValueStore()
       const state = store.registerWidget(
-        graphA,
-        widget('node-1', 'prompt', 'string', 'test', {
+        wid(graphA, 'node-1' as NodeId, 'prompt'),
+        widgetState('string', 'test', {
           label: 'Prompt Text',
           disabled: true,
           serialize: false,
@@ -123,14 +118,41 @@ describe('useWidgetValueStore', () => {
       expect(state.serialize).toBe(false)
       expect(state.options).toEqual({ multiline: true })
     })
+
+    it('overwrites existing widget state when registerWidget is called twice', () => {
+      const store = useWidgetValueStore()
+      const id = wid(graphA, 'node-1' as NodeId, 'seed')
+      const first = store.registerWidget(id, widgetState('number', 11))
+      first.value = 99
+
+      store.registerWidget(id, widgetState('number', 11))
+      expect(store.getWidget(id)?.value).toBe(11)
+    })
+
+    it('register-if-absent pattern preserves existing state', () => {
+      // Captures the idempotency guarantee that the prior IO helper used to
+      // provide: callers that want non-destructive init must check getWidget
+      // first.
+      const store = useWidgetValueStore()
+      const id = wid(graphA, 'node-1' as NodeId, 'seed')
+      store.registerWidget(id, widgetState('number', 11))
+      const first = store.getWidget(id)!
+      first.value = 99
+
+      const existing = store.getWidget(id)
+      if (!existing) store.registerWidget(id, widgetState('number', 11))
+
+      expect(store.getWidget(id)?.value).toBe(99)
+    })
   })
 
   describe('widget getters', () => {
     it('getWidget returns widget state', () => {
       const store = useWidgetValueStore()
-      store.registerWidget(graphA, widget('node-1', 'seed', 'number', 100))
+      const id = wid(graphA, 'node-1' as NodeId, 'seed')
+      store.registerWidget(id, widgetState('number', 100))
 
-      const state = store._lookupWidgetState(graphA, 'node-1' as NodeId, 'seed')
+      const state = store.getWidget(id)
       expect(state).toBeDefined()
       expect(state?.type).toBe('number')
       expect(state?.value).toBe(100)
@@ -139,17 +161,24 @@ describe('useWidgetValueStore', () => {
     it('getWidget returns undefined for missing widget', () => {
       const store = useWidgetValueStore()
       expect(
-        store._lookupWidgetState(graphA, 'missing' as NodeId, 'widget')
+        store.getWidget(wid(graphA, 'missing' as NodeId, 'widget'))
       ).toBeUndefined()
     })
 
     it('getNodeWidgets returns all widgets for a node', () => {
       const store = useWidgetValueStore()
-      store.registerWidget(graphA, widget('node-1', 'seed', 'number', 1))
-      store.registerWidget(graphA, widget('node-1', 'steps', 'number', 20))
-      store.registerWidget(graphA, widget('node-2', 'cfg', 'number', 7))
+      const node1 = 'node-1' as NodeId
+      const node2 = 'node-2' as NodeId
+      store.registerWidget(wid(graphA, node1, 'seed'), widgetState('number', 1))
+      store.registerWidget(
+        wid(graphA, node1, 'steps'),
+        widgetState('number', 20)
+      )
+      store.registerWidget(wid(graphA, node2, 'cfg'), widgetState('number', 7))
 
-      const widgets = store.getNodeWidgets(graphA, 'node-1' as NodeId)
+      const widgets = store.getNodeWidgets(
+        nodeEntityId(asGraphId(graphA), node1)
+      )
       expect(widgets).toHaveLength(2)
     })
   })
@@ -157,63 +186,47 @@ describe('useWidgetValueStore', () => {
   describe('direct property mutation', () => {
     it('disabled can be set directly via getWidget', () => {
       const store = useWidgetValueStore()
-      const state = store.registerWidget(
-        graphA,
-        widget('node-1', 'seed', 'number', 100)
-      )
+      const id = wid(graphA, 'node-1' as NodeId, 'seed')
+      const state = store.registerWidget(id, widgetState('number', 100))
 
       state.disabled = true
-      expect(
-        store._lookupWidgetState(graphA, 'node-1' as NodeId, 'seed')?.disabled
-      ).toBe(true)
+      expect(store.getWidget(id)?.disabled).toBe(true)
     })
 
     it('label can be set directly via getWidget', () => {
       const store = useWidgetValueStore()
-      const state = store.registerWidget(
-        graphA,
-        widget('node-1', 'seed', 'number', 100)
-      )
+      const id = wid(graphA, 'node-1' as NodeId, 'seed')
+      const state = store.registerWidget(id, widgetState('number', 100))
 
       state.label = 'Random Seed'
-      expect(
-        store._lookupWidgetState(graphA, 'node-1' as NodeId, 'seed')?.label
-      ).toBe('Random Seed')
+      expect(store.getWidget(id)?.label).toBe('Random Seed')
 
       state.label = undefined
-      expect(
-        store._lookupWidgetState(graphA, 'node-1' as NodeId, 'seed')?.label
-      ).toBeUndefined()
+      expect(store.getWidget(id)?.label).toBeUndefined()
     })
   })
 
   describe('graph isolation', () => {
     it('isolates widget states by graph', () => {
       const store = useWidgetValueStore()
-      store.registerWidget(graphA, widget('node-1', 'seed', 'number', 1))
-      store.registerWidget(graphB, widget('node-1', 'seed', 'number', 2))
+      const node = 'node-1' as NodeId
+      store.registerWidget(wid(graphA, node, 'seed'), widgetState('number', 1))
+      store.registerWidget(wid(graphB, node, 'seed'), widgetState('number', 2))
 
-      expect(
-        store._lookupWidgetState(graphA, 'node-1' as NodeId, 'seed')?.value
-      ).toBe(1)
-      expect(
-        store._lookupWidgetState(graphB, 'node-1' as NodeId, 'seed')?.value
-      ).toBe(2)
+      expect(store.getWidget(wid(graphA, node, 'seed'))?.value).toBe(1)
+      expect(store.getWidget(wid(graphB, node, 'seed'))?.value).toBe(2)
     })
 
     it('clearGraph only removes one graph namespace', () => {
       const store = useWidgetValueStore()
-      store.registerWidget(graphA, widget('node-1', 'seed', 'number', 1))
-      store.registerWidget(graphB, widget('node-1', 'seed', 'number', 2))
+      const node = 'node-1' as NodeId
+      store.registerWidget(wid(graphA, node, 'seed'), widgetState('number', 1))
+      store.registerWidget(wid(graphB, node, 'seed'), widgetState('number', 2))
 
       store.clearGraph(graphA)
 
-      expect(
-        store._lookupWidgetState(graphA, 'node-1' as NodeId, 'seed')
-      ).toBeUndefined()
-      expect(
-        store._lookupWidgetState(graphB, 'node-1' as NodeId, 'seed')?.value
-      ).toBe(2)
+      expect(store.getWidget(wid(graphA, node, 'seed'))).toBeUndefined()
+      expect(store.getWidget(wid(graphB, node, 'seed'))?.value).toBe(2)
     })
   })
 
@@ -221,13 +234,13 @@ describe('useWidgetValueStore', () => {
     // The view is a delegating accessor object built fresh per call.
     // Identity is intentionally NOT preserved across getWidget calls. See
     // temp/plans/widget-component-decomposition.md §10.4.
-    const branded = asGraphId(graphA)
-    const sample = widget('node-1', 'seed', 'number', 100)
+    const node = 'node-1' as NodeId
+    const sample = widgetState('number', 100)
+    const widgetId = wid(graphA, node, 'seed')
 
     it('reads delegate live to the underlying components', () => {
       const store = useWidgetValueStore()
-      const view = store.registerWidget(graphA, sample)
-      const widgetId = widgetEntityId(branded, sample.nodeId, sample.name)
+      const view = store.registerWidget(widgetId, sample)
       const valueBucket = getWorld().getComponent(
         widgetId,
         WidgetComponentValue
@@ -237,8 +250,7 @@ describe('useWidgetValueStore', () => {
 
     it('writes round-trip through the underlying components', () => {
       const store = useWidgetValueStore()
-      const view = store.registerWidget(graphA, sample)
-      const widgetId = widgetEntityId(branded, sample.nodeId, sample.name)
+      const view = store.registerWidget(widgetId, sample)
 
       view.value = 42
       expect(
@@ -258,8 +270,7 @@ describe('useWidgetValueStore', () => {
 
     it('underlying component writes are visible through the view', () => {
       const store = useWidgetValueStore()
-      const view = store.registerWidget(graphA, sample)
-      const widgetId = widgetEntityId(branded, sample.nodeId, sample.name)
+      const view = store.registerWidget(widgetId, sample)
       const display = getWorld().getComponent(widgetId, WidgetComponentDisplay)
       if (!display) throw new Error('display bucket missing')
       display.label = 'fresh'
@@ -268,20 +279,18 @@ describe('useWidgetValueStore', () => {
 
     it('setters no-op safely after clearGraph', () => {
       const store = useWidgetValueStore()
-      const view = store.registerWidget(graphA, sample)
+      const view = store.registerWidget(widgetId, sample)
       store.clearGraph(graphA)
       // Should not throw. Subsequent getWidget remains undefined.
       view.value = 999
       view.label = 'ignored'
       view.disabled = true
-      expect(
-        store._lookupWidgetState(graphA, sample.nodeId, sample.name)
-      ).toBeUndefined()
+      expect(store.getWidget(widgetId)).toBeUndefined()
     })
 
     it('view properties are enumerable for spread/objectContaining', () => {
       const store = useWidgetValueStore()
-      const view = store.registerWidget(graphA, sample)
+      const view = store.registerWidget(widgetId, sample)
       const keys = Object.keys(view).sort()
       expect(keys).toEqual(
         ['disabled', 'label', 'options', 'serialize', 'type', 'value'].sort()
@@ -292,15 +301,20 @@ describe('useWidgetValueStore', () => {
   describe('getNodeWidgetsByName', () => {
     it('returns empty map when node has no widgets', () => {
       const store = useWidgetValueStore()
-      const map = store.getNodeWidgetsByName(graphA, 'no-such' as NodeId)
+      const map = store.getNodeWidgetsByName(
+        nodeEntityId(asGraphId(graphA), 'no-such' as NodeId)
+      )
       expect(map.size).toBe(0)
     })
 
     it('returns map keyed by widget name', () => {
       const store = useWidgetValueStore()
-      store.registerWidget(graphA, widget('node-1', 'seed', 'number', 1))
-      store.registerWidget(graphA, widget('node-1', 'cfg', 'number', 7))
-      const map = store.getNodeWidgetsByName(graphA, 'node-1' as NodeId)
+      const node = 'node-1' as NodeId
+      store.registerWidget(wid(graphA, node, 'seed'), widgetState('number', 1))
+      store.registerWidget(wid(graphA, node, 'cfg'), widgetState('number', 7))
+      const map = store.getNodeWidgetsByName(
+        nodeEntityId(asGraphId(graphA), node)
+      )
       expect(map.size).toBe(2)
       expect(map.get('seed')?.value).toBe(1)
       expect(map.get('cfg')?.value).toBe(7)
@@ -308,15 +322,29 @@ describe('useWidgetValueStore', () => {
     })
   })
 
+  describe('setValue', () => {
+    it('updates an existing widget value and returns true', () => {
+      const store = useWidgetValueStore()
+      const id = wid(graphA, 'node-1' as NodeId, 'seed')
+      store.registerWidget(id, widgetState('number', 1))
+      expect(store.setValue(id, 99)).toBe(true)
+      expect(store.getWidget(id)?.value).toBe(99)
+    })
+
+    it('returns false when setting value on an unregistered widget', () => {
+      const store = useWidgetValueStore()
+      const id = wid(graphA, 'node-1' as NodeId, 'seed')
+      expect(store.setValue(id, 99)).toBe(false)
+    })
+  })
+
   describe('reactivity through the view', () => {
     it('clearGraph removes data; subsequent getWidget returns undefined', () => {
       const store = useWidgetValueStore()
-      const sample = widget('node-1', 'seed', 'number', 100)
-      store.registerWidget(graphA, sample)
+      const id = wid(graphA, 'node-1' as NodeId, 'seed')
+      store.registerWidget(id, widgetState('number', 100))
       store.clearGraph(graphA)
-      expect(
-        store._lookupWidgetState(graphA, sample.nodeId, sample.name)
-      ).toBeUndefined()
+      expect(store.getWidget(id)).toBeUndefined()
     })
   })
 })

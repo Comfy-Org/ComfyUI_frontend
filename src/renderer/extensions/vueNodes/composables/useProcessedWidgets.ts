@@ -25,12 +25,14 @@ import {
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
 import type { WidgetState } from '@/stores/widgetValueStore'
-import { extractRawNodeId } from '@/stores/widgetValueStore'
+import {
+  extractRawNodeId,
+  useWidgetValueStore
+} from '@/stores/widgetValueStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { deriveWidgetEntityId } from '@/world/entityIds'
 import type { WidgetEntityId } from '@/world/entityIds'
-import { getWidgetState } from '@/world/widgetValueIO'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   LinkedUpstreamInfo,
@@ -171,6 +173,7 @@ export function computeProcessedWidgets({
 
   const executionErrorStore = useExecutionErrorStore()
   const missingModelStore = useMissingModelStore()
+  const widgetValueStore = useWidgetValueStore()
 
   const nodeExecId =
     isGraphReady && rootGraph
@@ -197,7 +200,7 @@ export function computeProcessedWidgets({
     const identity = getWidgetIdentity(widget, nodeId, index)
     let widgetState: WidgetState | undefined
     if (widget.entityId) {
-      widgetState = getWidgetState(widget.entityId)
+      widgetState = widgetValueStore.getWidget(widget.entityId)
     } else {
       const fallbackEntityId = deriveWidgetEntityId(
         graphId,
@@ -205,7 +208,7 @@ export function computeProcessedWidgets({
         widget.name
       )
       widgetState = fallbackEntityId
-        ? getWidgetState(fallbackEntityId)
+        ? widgetValueStore.getWidget(fallbackEntityId)
         : undefined
     }
     const mergedOptions: IWidgetOptions = {

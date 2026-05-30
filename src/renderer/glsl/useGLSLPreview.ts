@@ -7,8 +7,8 @@ import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { UUID } from '@/utils/uuid'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { deriveWidgetEntityId } from '@/world/entityIds'
-import { getWidgetState } from '@/world/widgetValueIO'
 
 import { curveDataToFloatLUT } from '@/components/curve/curveUtils'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
@@ -123,6 +123,7 @@ function createInnerPreview(
   isActiveOut: Ref<boolean>
 ): () => void {
   const nodeOutputStore = useNodeOutputStore()
+  const widgetValueStore = useWidgetValueStore()
   const { nodeToNodeLocatorId } = useWorkflowStore()
 
   let renderer: ReturnType<typeof useGLSLRenderer> | null = null
@@ -196,7 +197,7 @@ function createInnerPreview(
       if (nId == null) return undefined
       const entityId = deriveWidgetEntityId(gId, nId, 'fragment_shader')
       return entityId
-        ? (getWidgetState(entityId)?.value as string | undefined)
+        ? (widgetValueStore.getWidget(entityId)?.value as string | undefined)
         : undefined
     }
 
@@ -208,7 +209,7 @@ function createInnerPreview(
         'fragment_shader'
       )
       return entityId
-        ? (getWidgetState(entityId)?.value as string | undefined)
+        ? (widgetValueStore.getWidget(entityId)?.value as string | undefined)
         : undefined
     }
 
@@ -297,7 +298,7 @@ function createInnerPreview(
 
     const lookup = (name: string) => {
       const entityId = deriveWidgetEntityId(gId, sizeModeNodeId, name)
-      return entityId ? getWidgetState(entityId) : undefined
+      return entityId ? widgetValueStore.getWidget(entityId) : undefined
     }
 
     const sizeMode = lookup('size_mode')

@@ -45,7 +45,7 @@ import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuara
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { readWidgetValue } from '@/world/widgetValueIO'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
@@ -1088,10 +1088,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       )
     }
 
+    const widgetValueStore = useWidgetValueStore()
     const widgetValues = this.inputs.flatMap((input) => {
       const widget = input._widget
       if (!widget || !isPromotedWidgetView(widget)) return []
-      const value = readWidgetValue(widget.entityId)
+      const value = widgetValueStore.getWidget(widget.entityId)?.value
       return [isWidgetValue(value) ? value : undefined]
     })
 

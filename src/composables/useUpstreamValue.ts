@@ -5,6 +5,7 @@ import type { Bounds } from '@/renderer/core/layout/types'
 import type { WidgetState } from '@/stores/widgetValueStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { LinkedUpstreamInfo } from '@/types/simplifiedWidget'
+import { asGraphId, nodeEntityId } from '@/world/entityIds'
 
 type ValueExtractor<T = unknown> = (
   widgets: Map<string, WidgetState>,
@@ -24,8 +25,7 @@ export function useUpstreamValue<T>(
     const graphId = canvasStore.canvas?.graph?.rootGraph.id
     if (!graphId) return undefined
     const widgets = widgetValueStore.getNodeWidgetsByName(
-      graphId,
-      upstream.nodeId
+      nodeEntityId(asGraphId(graphId), upstream.nodeId)
     )
     return extractValue(widgets, upstream.outputName)
   })

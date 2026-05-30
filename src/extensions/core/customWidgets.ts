@@ -5,7 +5,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
-import { getWidgetState } from '@/world/widgetValueIO'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
 
@@ -47,18 +47,19 @@ function onCustomComboCreated(this: LGraphNode) {
     const widget = node.addWidget('string', widgetName, '', () => {})
     if (!widget) return
     let localValue = `${widget.value ?? ''}`
+    const widgetValueStore = useWidgetValueStore()
 
     Object.defineProperty(widget, 'value', {
       get() {
         const state = widget.entityId
-          ? getWidgetState(widget.entityId)
+          ? widgetValueStore.getWidget(widget.entityId)
           : undefined
         return state?.value ?? localValue
       },
       set(v: string) {
         localValue = v
         const state = widget.entityId
-          ? getWidgetState(widget.entityId)
+          ? widgetValueStore.getWidget(widget.entityId)
           : undefined
         if (state) state.value = v
         updateCombo()

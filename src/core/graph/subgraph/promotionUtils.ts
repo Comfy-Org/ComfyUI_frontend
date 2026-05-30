@@ -18,7 +18,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { readWidgetValue } from '@/world/widgetValueIO'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
 
@@ -121,7 +121,7 @@ function getExplicitHostWidgetValue(
   if (!widget) return undefined
   if (!isPromotedWidgetView(widget)) return widget.value
 
-  const value = readWidgetValue(widget.entityId)
+  const value = useWidgetValueStore().getWidget(widget.entityId)?.value
   return isWidgetValue(value) ? value : undefined
 }
 

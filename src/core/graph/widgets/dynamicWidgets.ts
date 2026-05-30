@@ -23,7 +23,7 @@ import {
 import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
-import { getWidgetState } from '@/world/widgetValueIO'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 const INLINE_INPUTS = false
 
@@ -187,8 +187,9 @@ function dynamicComboWidget(
   //A little hacky, but onConfigure won't work.
   //It fires too late and is overly disruptive
   let widgetValue = widget.value
+  const widgetValueStore = useWidgetValueStore()
   const getState = () =>
-    widget.entityId ? getWidgetState(widget.entityId) : undefined
+    widget.entityId ? widgetValueStore.getWidget(widget.entityId) : undefined
   Object.defineProperty(widget, 'value', {
     get() {
       return getState()?.value ?? widgetValue

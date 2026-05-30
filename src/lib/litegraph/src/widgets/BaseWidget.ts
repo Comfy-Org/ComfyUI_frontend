@@ -145,18 +145,16 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    * Once set, value reads/writes will be delegated to the store.
    */
   setNodeId(nodeId: NodeId): void {
-    const graphId = this.node.graph?.rootGraph.id
-    if (!graphId) return
-
     this._nodeId = nodeId
-    this._state = useWidgetValueStore().registerWidget(graphId, {
+    const widgetId = this.entityId
+    if (!widgetId) return
+
+    this._state = useWidgetValueStore().registerWidget(widgetId, {
       ...this._state,
       // BaseWidget: this.value getter returns this._state.value. So value: this.value === value: this._state.value.
       // BaseDOMWidgetImpl: this.value getter returns options.getValue?.() ?? ''. Resolves the correct initial value instead of undefined.
       // I.e., calls overriden getter -> options.getValue() -> correct value (https://github.com/Comfy-Org/ComfyUI_frontend/issues/9194).
-      value: this.value,
-      name: this.name,
-      nodeId
+      value: this.value
     })
   }
 

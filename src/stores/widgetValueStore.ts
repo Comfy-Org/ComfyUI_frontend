@@ -8,10 +8,9 @@ import {
   isNodeIdForGraph,
   isWidgetIdForGraph,
   nodeEntityId,
-  parseWidgetEntityId,
-  widgetEntityId
+  parseWidgetEntityId
 } from '@/world/entityIds'
-import type { WidgetEntityId } from '@/world/entityIds'
+import type { NodeEntityId, WidgetEntityId } from '@/world/entityIds'
 import {
   WidgetComponentContainer,
   WidgetComponentDisplay,
@@ -19,10 +18,7 @@ import {
   WidgetComponentSerialize,
   WidgetComponentValue
 } from '@/world/widgets/widgetComponents'
-import type {
-  WidgetRegistration,
-  WidgetState
-} from '@/world/widgets/widgetState'
+import type { WidgetState } from '@/world/widgets/widgetState'
 import { getWorld } from '@/world/worldInstance'
 
 export type { WidgetState } from '@/world/widgets/widgetState'
@@ -31,8 +27,7 @@ export type { WidgetState } from '@/world/widgets/widgetState'
  * Strips graph-scope prefix segments from a node id, returning the
  * trailing raw node id. Used by `useProcessedWidgets` to derive stable
  * DOM identity keys for nested node renders — **not** for widget value
- * lookup. Widget identity routes through {@link WidgetEntityId} via
- * `src/world/widgetValueIO.ts`.
+ * lookup. Widget identity routes through {@link WidgetEntityId}.
  */
 export function extractRawNodeId(scopedId: NodeId | string): NodeId {
   return String(scopedId).replace(/^(.*:)+/, '') as NodeId
@@ -40,12 +35,11 @@ export function extractRawNodeId(scopedId: NodeId | string): NodeId {
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
   function registerWidget<TValue = unknown>(
-    graphId: UUID,
-    state: WidgetRegistration<TValue>
+    widgetId: WidgetEntityId,
+    state: WidgetState<TValue>
   ): WidgetState<TValue> {
     const world = getWorld()
-    const branded = asGraphId(graphId)
-    const widgetId = widgetEntityId(branded, state.nodeId, state.name)
+    const { graphId, nodeId } = parseWidgetEntityId(widgetId)
 
     world.setComponent(widgetId, WidgetComponentValue, { value: state.value })
     world.setComponent(widgetId, WidgetComponentDisplay, {
@@ -60,7 +54,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       serialize: state.serialize
     })
 
-    const ownerId = nodeEntityId(branded, state.nodeId)
+    const ownerId = nodeEntityId(graphId, nodeId)
     const container = world.getComponent(ownerId, WidgetComponentContainer)
     if (!container) {
       world.setComponent(ownerId, WidgetComponentContainer, {
@@ -126,26 +120,15 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     }
   }
 
-  /**
-   * Internal lookup primitive used by `src/world/widgetValueIO.ts`. External
-   * callers should use `getWidgetState(widget.entityId)` from widgetValueIO
-   * so the branded `WidgetEntityId` prevents producer/consumer drift.
-   */
-  function _lookupWidgetState(
-    graphId: UUID,
-    nodeId: NodeId,
-    widgetName: string
-  ): WidgetState | undefined {
+  function getWidget(widgetId: WidgetEntityId): WidgetState | undefined {
     const world = getWorld()
-    const widgetId = widgetEntityId(asGraphId(graphId), nodeId, widgetName)
     if (!world.getComponent(widgetId, WidgetComponentValue)) return undefined
     return buildView(widgetId)
   }
 
-  function getNodeWidgets(graphId: UUID, nodeId: NodeId): WidgetState[] {
+  function getNodeWidgets(nodeId: NodeEntityId): WidgetState[] {
     const world = getWorld()
-    const ownerId = nodeEntityId(asGraphId(graphId), nodeId)
-    const container = world.getComponent(ownerId, WidgetComponentContainer)
+    const container = world.getComponent(nodeId, WidgetComponentContainer)
     if (!container) return []
     const widgets: WidgetState[] = []
     for (const widgetId of container.widgetIds) {
@@ -157,12 +140,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function getNodeWidgetsByName(
-    graphId: UUID,
-    nodeId: NodeId
+    nodeId: NodeEntityId
   ): Map<string, WidgetState> {
     const world = getWorld()
-    const ownerId = nodeEntityId(asGraphId(graphId), nodeId)
-    const container = world.getComponent(ownerId, WidgetComponentContainer)
+    const container = world.getComponent(nodeId, WidgetComponentContainer)
     const result = new Map<string, WidgetState>()
     if (!container) return result
     for (const widgetId of container.widgetIds) {
@@ -174,13 +155,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function setValue(
-    graphId: UUID,
-    nodeId: NodeId,
-    widgetName: string,
+    widgetId: WidgetEntityId,
     value: WidgetState['value']
   ): boolean {
     const world = getWorld()
-    const widgetId = widgetEntityId(asGraphId(graphId), nodeId, widgetName)
     const component = world.getComponent(widgetId, WidgetComponentValue)
     if (!component) return false
     component.value = value
@@ -207,7 +185,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
   return {
     registerWidget,
-    _lookupWidgetState,
+    getWidget,
     setValue,
     getNodeWidgets,
     getNodeWidgetsByName,

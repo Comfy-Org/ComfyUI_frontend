@@ -14,7 +14,6 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { deriveWidgetEntityId, widgetEntityId } from '@/world/entityIds'
-import { getWidgetState } from '@/world/widgetValueIO'
 
 const GRAPH_ID = 'graph-test'
 
@@ -433,13 +432,14 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
       callback
     })
 
-    useWidgetValueStore().registerWidget(GRAPH_ID, {
-      nodeId: NODE_ID,
-      name: 'seed',
-      type: 'combo',
-      value: 0,
-      options: {}
-    })
+    useWidgetValueStore().registerWidget(
+      widgetEntityId(GRAPH_ID, NODE_ID, 'seed'),
+      {
+        type: 'combo',
+        value: 0,
+        options: {}
+      }
+    )
 
     const [processed] = processWidgets([widget])
     processed.updateHandler(42)
@@ -467,19 +467,22 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
       nodeId: NODE_ID
     })
 
-    useWidgetValueStore().registerWidget(GRAPH_ID, {
-      nodeId: NODE_ID,
-      name: 'seed',
-      type: 'combo',
-      value: 0,
-      options: {}
-    })
+    useWidgetValueStore().registerWidget(
+      widgetEntityId(GRAPH_ID, NODE_ID, 'seed'),
+      {
+        type: 'combo',
+        value: 0,
+        options: {}
+      }
+    )
 
     const [processed] = processWidgets([widget])
     processed.updateHandler(99)
 
     const entityId = deriveWidgetEntityId(GRAPH_ID, NODE_ID, 'seed')
-    const state = entityId ? getWidgetState(entityId) : undefined
+    const state = entityId
+      ? useWidgetValueStore().getWidget(entityId)
+      : undefined
     expect(state?.value).toBe(99)
   })
 

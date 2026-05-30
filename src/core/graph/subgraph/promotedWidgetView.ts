@@ -12,6 +12,7 @@ import { t } from '@/i18n'
 import { nextValueForLinkedTarget } from '@/scripts/valueControl'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import type { WidgetState } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import {
   resolveConcretePromotedWidget,
   resolvePromotedWidgetAtHost
@@ -20,7 +21,6 @@ import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
 import { hasWidgetNode } from '@/core/graph/subgraph/widgetNodeTypeGuard'
 import type { WidgetEntityId } from '@/world/entityIds'
 import { widgetEntityId } from '@/world/entityIds'
-import { ensureWidgetState, getWidgetState } from '@/world/widgetValueIO'
 
 import { isPromotedWidgetView } from './promotedWidgetTypes'
 import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidgetTypes'
@@ -158,7 +158,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   private getHostWidgetState(): WidgetState | undefined {
-    return getWidgetState(this.entityId)
+    return useWidgetValueStore().getWidget(this.entityId)
   }
 
   private setHostWidgetState(value: IBaseWidget['value']): void {
@@ -203,8 +203,12 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   private registerHostWidgetState(value: IBaseWidget['value']): void {
+    const widgetValueStore = useWidgetValueStore()
+    const existing = widgetValueStore.getWidget(this.entityId)
+    if (existing) return
+
     const resolved = this.resolveDeepest()
-    ensureWidgetState(this.entityId, {
+    widgetValueStore.registerWidget(this.entityId, {
       type: resolved?.widget.type ?? 'button',
       value,
       options: { ...(resolved?.widget.options ?? {}) },
@@ -415,7 +419,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
     const resolved = this.resolveDeepest()
     if (!resolved?.widget.entityId) return undefined
-    return getWidgetState(resolved.widget.entityId)
+    return useWidgetValueStore().getWidget(resolved.widget.entityId)
   }
 
   private getLinkedInputWidgets(): IBaseWidget[] {
@@ -449,10 +453,11 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   private getLinkedInputWidgetStates(): WidgetState[] {
+    const widgetValueStore = useWidgetValueStore()
     return this.getLinkedInputWidgets()
       .map((widget) => widget.entityId)
       .filter((id): id is WidgetEntityId => id !== undefined)
-      .map((id) => getWidgetState(id))
+      .map((id) => widgetValueStore.getWidget(id))
       .filter((state): state is WidgetState => state !== undefined)
   }
 
