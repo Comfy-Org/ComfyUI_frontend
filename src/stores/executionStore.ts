@@ -4,6 +4,7 @@ import { computed, ref, shallowRef } from 'vue'
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { workflowTelemetryId } from '@/platform/telemetry/utils/workflowTelemetryId'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
@@ -601,7 +602,7 @@ export const useExecutionStore = defineStore('execution', () => {
     queuedJob.workflow = workflow
     queuedJob.isAppMode = isAppMode
     queuedJob.viewMode = viewMode
-    const wid = workflow?.activeState?.id ?? workflow?.initialState?.id
+    const wid = workflowTelemetryId(workflow)
     if (wid) {
       jobIdToWorkflowId.value.set(id, wid)
     }

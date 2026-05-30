@@ -163,11 +163,13 @@ export interface WorkflowImportMetadata {
 
 export interface EnterLinearMetadata {
   source?: string
+  workflow_id?: string
 }
 
 export interface WorkflowSavedMetadata {
   is_app: boolean
   is_new: boolean
+  workflow_id?: string
 }
 
 export interface DefaultViewSetMetadata {
