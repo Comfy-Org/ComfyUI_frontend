@@ -3723,6 +3723,7 @@
       "workflowWarningTitle": "Workflow has errors",
       "workflowWarningDescription": "Review them in graph mode before running.",
       "workflowWarningAction": "View in Graph",
+      "runWithErrorsAction": "Run, workflow has errors",
       "github": "submit a GitHub issue",
       "guide": "troubleshooting guide",
       "support": "contact our support",

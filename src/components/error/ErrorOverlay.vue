@@ -37,7 +37,7 @@
             size="unset"
             class="min-h-8 rounded-lg px-3 py-2 text-xs font-normal"
             data-testid="error-overlay-see-errors"
-            @click="seeErrors"
+            @click="viewErrorsInGraph"
           >
             {{
               appMode
@@ -80,9 +80,5 @@ const { isVisible, overlayMessage, overlayTitle } = useErrorOverlayState()
 
 function dismiss() {
   executionErrorStore.dismissErrorOverlay()
-}
-
-function seeErrors() {
-  viewErrorsInGraph()
 }
 </script>

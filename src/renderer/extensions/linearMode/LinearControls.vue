@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useTimeout } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
@@ -47,6 +47,12 @@ const { ready: jobToastTimeout, start: resetJobToastTimeout } = useTimeout(
   { controls: true, immediate: false }
 )
 const widgetListRef = useTemplateRef('widgetListRef')
+const runButtonIcon = computed(() =>
+  hasAnyError.value ? 'icon-[lucide--triangle-alert]' : 'icon-[lucide--play]'
+)
+const runButtonAriaLabel = computed(() =>
+  hasAnyError.value ? t('linearMode.error.runWithErrorsAction') : undefined
+)
 
 //TODO: refactor out of this file.
 //code length is small, but changes should propagate
@@ -171,15 +177,10 @@ function handleDragDrop() {
             variant="primary"
             class="grow"
             size="lg"
+            :aria-label="runButtonAriaLabel"
             @click="runButtonClick"
           >
-            <i
-              :class="
-                hasAnyError
-                  ? 'icon-[lucide--triangle-alert]'
-                  : 'icon-[lucide--play]'
-              "
-            />
+            <i aria-hidden="true" :class="runButtonIcon" />
             {{ t('menu.run') }}
           </Button>
         </div>
@@ -210,15 +211,10 @@ function handleDragDrop() {
           variant="primary"
           class="mt-4 w-full text-sm"
           size="lg"
+          :aria-label="runButtonAriaLabel"
           @click="runButtonClick"
         >
-          <i
-            :class="
-              hasAnyError
-                ? 'icon-[lucide--triangle-alert]'
-                : 'icon-[lucide--play]'
-            "
-          />
+          <i aria-hidden="true" :class="runButtonIcon" />
           {{ t('menu.run') }}
         </Button>
       </section>

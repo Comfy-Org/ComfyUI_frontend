@@ -25,7 +25,8 @@ const i18n = createI18n({
           workflowWarningTitle: 'Workflow has errors',
           workflowWarningDescription:
             'Review them in graph mode before running.',
-          workflowWarningAction: 'View in Graph'
+          workflowWarningAction: 'View in Graph',
+          runWithErrorsAction: 'Run, workflow has errors'
         },
         mobileNoWorkflow: 'No workflow',
         runCount: 'Run count',
@@ -117,6 +118,9 @@ describe('LinearControls', () => {
     expect(
       within(warning).getByRole('button', { name: 'View in Graph' })
     ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Run, workflow has errors' })
+    ).toBeInTheDocument()
   })
 
   it.for([
@@ -131,6 +135,7 @@ describe('LinearControls', () => {
       expect(
         screen.queryByRole('button', { name: 'View in Graph' })
       ).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Run' })).toBeInTheDocument()
     }
   )
 })
