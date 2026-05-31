@@ -1,13 +1,12 @@
 import type { AxiosError, AxiosResponse } from 'axios'
 import axios from 'axios'
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
 const registryApiClient = axios.create({
-  baseURL: getComfyApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json'
   },
@@ -17,19 +16,20 @@ const registryApiClient = axios.create({
   }
 })
 
+// Resolve the base URL per request so server-provided overrides applied
+// after this module is first imported (e.g. via remoteConfig) take effect
+// on the next call, without temporal coupling to module-load order.
+registryApiClient.interceptors.request.use((config) => {
+  config.baseURL = getComfyApiBaseUrl()
+  return config
+})
+
 /**
  * Service for interacting with the Comfy Registry API
  */
 export const useComfyRegistryService = () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
-
-  watch(
-    () => getComfyApiBaseUrl(),
-    (url) => {
-      registryApiClient.defaults.baseURL = url
-    }
-  )
 
   const handleApiError = (
     err: unknown,
