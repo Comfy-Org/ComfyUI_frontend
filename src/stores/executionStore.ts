@@ -261,7 +261,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
     executionIdToLocatorCache.clear()
-    executionErrorStore.clearAllErrors()
+    executionErrorStore.clearExecutionStartErrors()
     activeJobId.value = e.detail.prompt_id
     queuedJobs.value[activeJobId.value] ??= { nodes: {} }
     clearInitializationByJobId(activeJobId.value)
