@@ -1,8 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from './comfyApi'
+
+vi.stubGlobal('fetch', vi.fn())
 
 describe('getComfyApiBaseUrl', () => {
   const originalConfig = remoteConfig.value
@@ -56,6 +59,36 @@ describe('getComfyPlatformBaseUrl', () => {
 
   it('falls back to the build-time default when the value is empty', () => {
     remoteConfig.value = { comfy_platform_base_url: '' }
+    expect(getComfyPlatformBaseUrl()).toBe('https://stagingplatform.comfy.org')
+  })
+})
+
+describe('compatibility with comfyui servers that predate the override keys', () => {
+  const originalConfig = remoteConfig.value
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    remoteConfig.value = {}
+  })
+
+  afterEach(() => {
+    remoteConfig.value = originalConfig
+  })
+
+  it('falls back to build-time defaults when /features omits the URL keys', async () => {
+    // An older comfyui server has /features but doesn't know about
+    // comfy_api_base_url / comfy_platform_base_url yet.
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        supports_preview_metadata: true,
+        max_upload_size: 104857600
+      })
+    } as Response)
+
+    await refreshRemoteConfig({ useAuth: false })
+
+    expect(getComfyApiBaseUrl()).toBe('https://stagingapi.comfy.org')
     expect(getComfyPlatformBaseUrl()).toBe('https://stagingplatform.comfy.org')
   })
 })
