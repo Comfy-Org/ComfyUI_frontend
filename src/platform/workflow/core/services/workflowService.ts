@@ -16,7 +16,10 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useTelemetry } from '@/platform/telemetry'
-import type { WorkflowOpenSource } from '@/platform/telemetry/types'
+import type {
+  WorkflowOpenSource,
+  AppModeOpenSource
+} from '@/platform/telemetry/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
@@ -42,6 +45,13 @@ import {
 function linearModeToAppMode(linearMode: unknown): AppMode | null {
   if (typeof linearMode !== 'boolean') return null
   return linearMode ? 'app' : 'graph'
+}
+
+function normalizeOpenSource(
+  source: WorkflowOpenSource | undefined
+): AppModeOpenSource {
+  if (source === 'shared_url' || source === 'original') return source
+  return 'unknown'
 }
 
 export const useWorkflowService = () => {
@@ -462,7 +472,7 @@ export const useWorkflowService = () => {
       if (!wasAppMode && workflow.initialMode === 'app') {
         useTelemetry()?.trackEnterLinear({
           source: 'workflow',
-          open_source: openSource ?? 'unknown'
+          open_source: normalizeOpenSource(openSource)
         })
       }
     }

@@ -160,7 +160,7 @@ export interface EnterLinearMetadata {
    * was reached via a link someone shared (`?share=`), as opposed to the user
    * opening their own/original workflow.
    */
-  open_source?: WorkflowOpenSource
+  open_source?: AppModeOpenSource
 }
 
 export interface WorkflowSavedMetadata {
@@ -192,6 +192,12 @@ export interface ShareFlowMetadata {
 export type WorkflowOpenSource = NonNullable<
   WorkflowImportMetadata['open_source']
 >
+
+/**
+ * Narrower type for app mode entry tracking.
+ * Maps WorkflowOpenSource values to allowed app mode sources.
+ */
+export type AppModeOpenSource = 'shared_url' | 'original' | 'unknown'
 
 /**
  * Template library metadata
