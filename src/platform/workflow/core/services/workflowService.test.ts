@@ -61,10 +61,12 @@ function makeWorkflowData(
   }
 }
 
-const { mockConfirm, mockTrackWorkflowSaved } = vi.hoisted(() => ({
-  mockConfirm: vi.fn(),
-  mockTrackWorkflowSaved: vi.fn()
-}))
+const { mockConfirm, mockTrackWorkflowSaved, mockTrackEnterLinear } =
+  vi.hoisted(() => ({
+    mockConfirm: vi.fn(),
+    mockTrackWorkflowSaved: vi.fn(),
+    mockTrackEnterLinear: vi.fn()
+  }))
 
 const draftStoreMocks = vi.hoisted(() => ({
   saveDraft: vi.fn(() => true),
@@ -108,7 +110,7 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackDefaultViewSet: vi.fn(),
     trackWorkflowSaved: mockTrackWorkflowSaved,
-    trackEnterLinear: vi.fn()
+    trackEnterLinear: mockTrackEnterLinear
   })
 }))
 
@@ -841,6 +843,54 @@ describe('useWorkflowService', () => {
 
         // initialMode should come from the file, not the draft
         expect(persistedWorkflow.initialMode).toBe('app')
+      })
+    })
+
+    describe('app:app_mode_opened open_source', () => {
+      beforeEach(() => {
+        mockOpenWorkflow()
+        mockTrackEnterLinear.mockClear()
+      })
+
+      it('tags the entry as shared_url when loaded from a shared link', async () => {
+        const workflow = createModeTestWorkflow({ loaded: false })
+
+        await service.afterLoadNewGraph(
+          workflow,
+          makeWorkflowData({ linearMode: true }),
+          'shared_url'
+        )
+
+        expect(mockTrackEnterLinear).toHaveBeenCalledWith({
+          source: 'workflow',
+          open_source: 'shared_url'
+        })
+      })
+
+      it('defaults open_source to unknown when no source is provided', async () => {
+        const workflow = createModeTestWorkflow({ loaded: false })
+
+        await service.afterLoadNewGraph(
+          workflow,
+          makeWorkflowData({ linearMode: true })
+        )
+
+        expect(mockTrackEnterLinear).toHaveBeenCalledWith({
+          source: 'workflow',
+          open_source: 'unknown'
+        })
+      })
+
+      it('does not fire when the workflow is not in app mode', async () => {
+        const workflow = createModeTestWorkflow({ loaded: false })
+
+        await service.afterLoadNewGraph(
+          workflow,
+          makeWorkflowData({ linearMode: false }),
+          'shared_url'
+        )
+
+        expect(mockTrackEnterLinear).not.toHaveBeenCalled()
       })
     })
 

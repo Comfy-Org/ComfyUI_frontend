@@ -280,7 +280,8 @@ export class GtmTelemetryProvider implements TelemetryProvider {
 
   trackEnterLinear(metadata: EnterLinearMetadata): void {
     this.pushEvent('app_mode_opened', {
-      source: metadata.source
+      source: metadata.source,
+      open_source: metadata.open_source
     })
   }
 

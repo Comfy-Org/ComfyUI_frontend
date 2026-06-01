@@ -16,6 +16,7 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useTelemetry } from '@/platform/telemetry'
+import type { WorkflowOpenSource } from '@/platform/telemetry/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
@@ -445,7 +446,8 @@ export const useWorkflowService = () => {
    */
   const afterLoadNewGraph = async (
     value: string | ComfyWorkflow | null,
-    workflowData: ComfyWorkflowJSON
+    workflowData: ComfyWorkflowJSON,
+    openSource?: WorkflowOpenSource
   ) => {
     const workflowStore = useWorkspaceStore().workflow
     const { isAppMode } = useAppMode()
@@ -458,7 +460,10 @@ export const useWorkflowService = () => {
 
     function trackIfEnteringApp(workflow: ComfyWorkflow) {
       if (!wasAppMode && workflow.initialMode === 'app') {
-        useTelemetry()?.trackEnterLinear({ source: 'workflow' })
+        useTelemetry()?.trackEnterLinear({
+          source: 'workflow',
+          open_source: openSource ?? 'unknown'
+        })
       }
     }
 

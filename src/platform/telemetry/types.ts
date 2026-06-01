@@ -155,6 +155,12 @@ export interface WorkflowImportMetadata {
 
 export interface EnterLinearMetadata {
   source?: string
+  /**
+   * The workflow's entry path for this session. `'shared_url'` means App Mode
+   * was reached via a link someone shared (`?share=`), as opposed to the user
+   * opening their own/original workflow.
+   */
+  open_source?: WorkflowOpenSource
 }
 
 export interface WorkflowSavedMetadata {

@@ -1431,7 +1431,8 @@ export class ComfyApp {
       useTelemetry()?.trackWorkflowImported(telemetryPayload)
       await useWorkflowService().afterLoadNewGraph(
         workflow,
-        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
+        openSource
       )
 
       // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
