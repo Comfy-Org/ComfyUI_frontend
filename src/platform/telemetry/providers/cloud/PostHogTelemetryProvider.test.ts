@@ -162,7 +162,12 @@ describe('PostHogTelemetryProvider', () => {
 
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.USER_AUTH_COMPLETED,
-        expect.objectContaining({ method: 'google' })
+        expect.objectContaining({
+          method: 'google',
+          $set_once: expect.objectContaining({
+            first_auth_at: expect.any(String)
+          })
+        })
       )
     })
 
