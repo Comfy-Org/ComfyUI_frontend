@@ -4,6 +4,7 @@ import QuickLRU from '@alloc/quick-lru'
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
+import { isLoad3dPreviewNode } from '@/extensions/core/load3d/nodeTypes'
 import type {
   AnimationItem,
   BackgroundRenderModeType,
@@ -368,10 +369,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         | LightConfig
         | undefined
 
-      isPreview.value =
-        node.type === 'Preview3D' ||
-        node.type === 'PreviewGaussianSplat' ||
-        node.type === 'PreviewPointCloud'
+      isPreview.value = isLoad3dPreviewNode(node.type ?? '')
 
       if (sceneConfig) {
         backgroundColor.value =

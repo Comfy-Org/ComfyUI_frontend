@@ -226,6 +226,8 @@ useExtensionService().registerExtension({
       type: 'combo',
       options: ['threejs', 'fastply'],
       defaultValue: 'threejs',
+      migrateDeprecatedValue: (value) =>
+        value === 'sparkjs' ? 'threejs' : value,
       experimental: true
     }
   ],

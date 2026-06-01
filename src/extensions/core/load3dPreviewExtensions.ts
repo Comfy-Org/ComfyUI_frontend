@@ -38,8 +38,8 @@ function applyResultToLoad3d(
       | CameraConfig
       | undefined
     node.properties['Camera Config'] = {
-      cameraType: existing?.cameraType ?? load3d.getCurrentCameraType(),
-      fov: existing?.fov ?? 75,
+      cameraType: load3d.getCurrentCameraType(),
+      fov: 75,
       ...existing,
       state: cameraState
     }
@@ -112,8 +112,9 @@ function createPreview3DExtension(
       await nextTick()
 
       const onExecuted = node.onExecuted
+      const { onLoad3dReady, waitForLoad3d } = useLoad3d(node)
 
-      useLoad3d(node).onLoad3dReady((load3d) => {
+      onLoad3dReady((load3d) => {
         const lastTimeModelFile = node.properties['Last Time Model File']
         if (!lastTimeModelFile) return
 
@@ -134,7 +135,7 @@ function createPreview3DExtension(
         })
       })
 
-      useLoad3d(node).waitForLoad3d((load3d) => {
+      waitForLoad3d((load3d) => {
         const sceneWidget = node.widgets?.find((w) => w.name === 'image')
         const widthWidget = node.widgets?.find((w) => w.name === 'width')
         const heightWidget = node.widgets?.find((w) => w.name === 'height')

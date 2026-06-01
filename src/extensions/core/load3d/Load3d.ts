@@ -162,7 +162,8 @@ class Load3d {
     this.startAnimation()
 
     this.eventManager.addEventListener('modelReady', () => {
-      this.startPostLoadRenderBurst()
+      if (this.adapterRef.current?.kind !== 'splat') return
+      void this.repaintWhenSparkPaintable()
     })
 
     setTimeout(() => {
@@ -170,20 +171,11 @@ class Load3d {
     }, 100)
   }
 
-  private postLoadBurstEndsAt = 0
-  private postLoadBurstFrameId: number | null = null
-  private startPostLoadRenderBurst(): void {
-    this.postLoadBurstEndsAt = performance.now() + 2000
-    if (this.postLoadBurstFrameId !== null) return
-    const tick = () => {
-      this.forceRender()
-      if (performance.now() < this.postLoadBurstEndsAt) {
-        this.postLoadBurstFrameId = requestAnimationFrame(tick)
-      } else {
-        this.postLoadBurstFrameId = null
-      }
-    }
-    this.postLoadBurstFrameId = requestAnimationFrame(tick)
+  private async repaintWhenSparkPaintable(): Promise<void> {
+    const sortComplete = this.sceneManager.awaitNextSparkDirty()
+    this.forceRender()
+    await sortComplete
+    this.forceRender()
   }
 
   private initResizeObserver(container: Element | HTMLElement): void {
@@ -646,7 +638,7 @@ class Load3d {
   }
 
   getCurrentModelCapabilities(): ModelAdapterCapabilities {
-    return this.adapterRef.current?.capabilities ?? DEFAULT_MODEL_CAPABILITIES
+    return this.adapterRef.capabilities ?? DEFAULT_MODEL_CAPABILITIES
   }
 
   clearModel(): void {
@@ -964,11 +956,6 @@ class Load3d {
     if (this.resizeObserver) {
       this.resizeObserver.disconnect()
       this.resizeObserver = null
-    }
-
-    if (this.postLoadBurstFrameId !== null) {
-      cancelAnimationFrame(this.postLoadBurstFrameId)
-      this.postLoadBurstFrameId = null
     }
 
     this.disposeContextMenuGuard?.()

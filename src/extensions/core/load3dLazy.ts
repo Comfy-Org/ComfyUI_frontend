@@ -15,13 +15,7 @@ import { useExtensionStore } from '@/stores/extensionStore'
 
 import type { ComfyExtension } from '@/types/comfy'
 
-const LOAD3D_NODE_TYPES = new Set([
-  'Load3D',
-  'Preview3D',
-  'PreviewGaussianSplat',
-  'PreviewPointCloud',
-  'SaveGLB'
-])
+import { isLoad3dNode } from './load3d/nodeTypes'
 
 let load3dExtensionsLoaded = false
 let load3dExtensionsLoading: Promise<ComfyExtension[]> | null = null
@@ -55,13 +49,6 @@ async function loadLoad3dExtensions(): Promise<ComfyExtension[]> {
   return load3dExtensionsLoading
 }
 
-/**
- * Check if a node type is a 3D node that requires THREE.js
- */
-function isLoad3dNodeType(nodeTypeName: string): boolean {
-  return LOAD3D_NODE_TYPES.has(nodeTypeName)
-}
-
 // Register a lightweight extension that triggers lazy loading
 useExtensionService().registerExtension({
   name: 'Comfy.Load3DLazy',
@@ -70,7 +57,7 @@ useExtensionService().registerExtension({
     nodeType: typeof LGraphNode,
     nodeData: ComfyNodeDef
   ) {
-    if (isLoad3dNodeType(nodeData.name)) {
+    if (isLoad3dNode(nodeData.name)) {
       // Inject mesh_upload spec flags so WidgetSelect.vue can detect
       // Load3D's model_file as a mesh upload widget without hardcoding.
       if (nodeData.name === 'Load3D') {

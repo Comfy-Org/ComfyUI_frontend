@@ -7,7 +7,11 @@ import type {
   ModelManagerInterface
 } from './interfaces'
 import { LoaderManager } from './LoaderManager'
-import type { ModelAdapter, ModelLoadContext } from './ModelAdapter'
+import type {
+  ModelAdapter,
+  ModelAdapterCapabilities,
+  ModelLoadContext
+} from './ModelAdapter'
 
 function makeEventManagerStub() {
   return {
@@ -27,6 +31,12 @@ type ModelManagerStub = {
   originalFileName: string | null
   originalURL: string | null
 }
+
+const STUB_CAPS = {} as ModelAdapterCapabilities
+const loadResult = (object: THREE.Object3D) => ({
+  object,
+  capabilities: STUB_CAPS
+})
 
 function makeModelManagerStub(): ModelManagerStub {
   return {
@@ -78,8 +88,15 @@ vi.mock('./PointCloudModelAdapter', () => ({
 vi.mock('./SplatModelAdapter', () => ({
   SplatModelAdapter: class {
     readonly kind = 'splat' as const
-    readonly extensions = ['spz', 'splat', 'ksplat'] as const
+    readonly extensions = ['spz', 'splat', 'ksplat', 'ply'] as const
     readonly capabilities = {}
+    matches = async (
+      ext: string,
+      fetchBytes: () => Promise<ArrayBuffer>
+    ): Promise<boolean> => {
+      if (ext !== 'ply') return true
+      return isGaussianSplatPLYMock(await fetchBytes())
+    }
     load = splatLoad
   }
 }))
@@ -103,7 +120,10 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 }))
 
 type LoaderManagerInternals = {
-  pickAdapter(extension: string): ModelAdapter | null
+  pickAdapter(
+    extension: string,
+    fetchBytes: () => Promise<ArrayBuffer>
+  ): Promise<ModelAdapter | null>
 }
 
 function makeLoaderManager() {
@@ -114,12 +134,11 @@ function makeLoaderManager() {
     eventManager
   )
   const internals = lm as unknown as LoaderManagerInternals
-  return {
-    lm,
-    modelManager,
-    eventManager,
-    pick: internals.pickAdapter.bind(lm)
-  }
+  const pick = (ext: string) =>
+    internals.pickAdapter.call(lm, ext, () =>
+      fetchModelDataMock()
+    ) as Promise<ModelAdapter | null>
+  return { lm, modelManager, eventManager, pick }
 }
 
 describe('LoaderManager', () => {
@@ -140,7 +159,7 @@ describe('LoaderManager', () => {
 
     it('exposes the picked adapter after a successful load', async () => {
       const { lm } = makeLoaderManager()
-      meshLoad.mockResolvedValueOnce(new THREE.Object3D())
+      meshLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
 
       await lm.loadModel('api/view?filename=cube.glb')
 
@@ -149,7 +168,7 @@ describe('LoaderManager', () => {
 
     it('resets to null at the start of a new load', async () => {
       const { lm } = makeLoaderManager()
-      meshLoad.mockResolvedValueOnce(new THREE.Object3D())
+      meshLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
 
       await lm.loadModel('api/view?filename=cube.glb')
       expect(lm.getCurrentAdapter()?.kind).toBe('mesh')
@@ -161,7 +180,7 @@ describe('LoaderManager', () => {
     it('stays null when the adapter rejects (does not publish stale adapter)', async () => {
       const { lm } = makeLoaderManager()
 
-      meshLoad.mockResolvedValueOnce(new THREE.Object3D())
+      meshLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
       await lm.loadModel('api/view?filename=cube.glb')
       expect(lm.getCurrentAdapter()?.kind).toBe('mesh')
 
@@ -212,7 +231,10 @@ describe('LoaderManager', () => {
       }
 
       let adapterDuringClear: ModelAdapter | null | undefined
-      const adapterRef = { current: oldAdapter as ModelAdapter | null }
+      const adapterRef = {
+        current: oldAdapter as ModelAdapter | null,
+        capabilities: oldAdapter.capabilities as ModelAdapterCapabilities | null
+      }
       const lm = new LoaderManager(
         modelManager,
         eventManager,
@@ -240,8 +262,8 @@ describe('LoaderManager', () => {
       const slowSplatLoad = new Promise<THREE.Object3D>((resolve) => {
         resolveSplatLoad = resolve
       })
-      splatLoad.mockReturnValueOnce(slowSplatLoad)
-      meshLoad.mockResolvedValueOnce(new THREE.Object3D())
+      splatLoad.mockReturnValueOnce(slowSplatLoad.then(loadResult))
+      meshLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
 
       const aPromise = lm.loadModel('api/view?filename=a.splat')
 
@@ -260,29 +282,36 @@ describe('LoaderManager', () => {
   describe('pickAdapter', () => {
     it.for(['stl', 'fbx', 'obj', 'gltf', 'glb'])(
       'routes %s to the mesh adapter',
-      (ext) => {
+      async (ext) => {
         const { pick } = makeLoaderManager()
-        expect(pick(ext)?.kind).toBe('mesh')
+        expect((await pick(ext))?.kind).toBe('mesh')
       }
     )
 
     it.for(['spz', 'splat', 'ksplat'])(
       'routes %s to the splat adapter',
-      (ext) => {
+      async (ext) => {
         const { pick } = makeLoaderManager()
-        expect(pick(ext)?.kind).toBe('splat')
+        expect((await pick(ext))?.kind).toBe('splat')
       }
     )
 
-    it('returns the point-cloud adapter for .ply by extension lookup (the actual .ply load path bypasses pickAdapter and dispatches by header content)', () => {
+    it('routes .ply to the splat adapter when the bytes look like 3DGS', async () => {
+      isGaussianSplatPLYMock.mockResolvedValue(true)
       const { pick } = makeLoaderManager()
-      expect(pick('ply')?.kind).toBe('pointCloud')
+      expect((await pick('ply'))?.kind).toBe('splat')
     })
 
-    it('returns null for unknown extensions', () => {
+    it('falls back to the point-cloud adapter for .ply that is not 3DGS', async () => {
+      isGaussianSplatPLYMock.mockResolvedValue(false)
       const { pick } = makeLoaderManager()
-      expect(pick('xyz')).toBeNull()
-      expect(pick('')).toBeNull()
+      expect((await pick('ply'))?.kind).toBe('pointCloud')
+    })
+
+    it('returns null for unknown extensions', async () => {
+      const { pick } = makeLoaderManager()
+      expect(await pick('xyz')).toBeNull()
+      expect(await pick('')).toBeNull()
     })
   })
 
@@ -352,7 +381,7 @@ describe('LoaderManager', () => {
     it('passes setupModel the object returned by the adapter', async () => {
       const { lm, modelManager } = makeLoaderManager()
       const loaded = new THREE.Object3D()
-      meshLoad.mockResolvedValueOnce(loaded)
+      meshLoad.mockResolvedValueOnce(loadResult(loaded))
 
       await lm.loadModel('api/view?filename=cube.glb')
 
@@ -370,7 +399,7 @@ describe('LoaderManager', () => {
 
     it('emits modelLoadingEnd when the load completes', async () => {
       const { lm, eventManager } = makeLoaderManager()
-      meshLoad.mockResolvedValueOnce(new THREE.Object3D())
+      meshLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
 
       await lm.loadModel('api/view?filename=cube.glb')
 
@@ -382,7 +411,7 @@ describe('LoaderManager', () => {
 
     it('forwards a decoded path and filename to the adapter', async () => {
       const { lm } = makeLoaderManager()
-      meshLoad.mockResolvedValueOnce(new THREE.Object3D())
+      meshLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
 
       await lm.loadModel(
         'api/view?type=output&subfolder=nested%2Fdir&filename=cube.glb'
@@ -394,27 +423,29 @@ describe('LoaderManager', () => {
           registerOriginalMaterial: expect.any(Function)
         }),
         'api/view?type=output&subfolder=nested%2Fdir&filename=',
-        'cube.glb'
+        'cube.glb',
+        expect.any(Function)
       )
     })
 
     it('defaults the path to type=input when no type param is given', async () => {
       const { lm } = makeLoaderManager()
-      meshLoad.mockResolvedValueOnce(new THREE.Object3D())
+      meshLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
 
       await lm.loadModel('api/view?filename=cube.glb')
 
       expect(meshLoad).toHaveBeenCalledWith(
         expect.anything(),
         'api/view?type=input&subfolder=&filename=',
-        'cube.glb'
+        'cube.glb',
+        expect.any(Function)
       )
     })
 
     it('routes .ply to the point-cloud adapter when the header does not look like 3DGS', async () => {
       isGaussianSplatPLYMock.mockResolvedValue(false)
       const { lm } = makeLoaderManager()
-      pointCloudLoad.mockResolvedValueOnce(new THREE.Object3D())
+      pointCloudLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
 
       await lm.loadModel('api/view?filename=scan.ply')
 
@@ -426,7 +457,7 @@ describe('LoaderManager', () => {
     it('reroutes .ply through the splat adapter when the header looks like 3DGS', async () => {
       isGaussianSplatPLYMock.mockResolvedValue(true)
       const { lm } = makeLoaderManager()
-      splatLoad.mockResolvedValueOnce(new THREE.Object3D())
+      splatLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
 
       await lm.loadModel('api/view?filename=scan.ply')
 
@@ -435,38 +466,42 @@ describe('LoaderManager', () => {
       expect(lm.getCurrentAdapter()?.kind).toBe('splat')
     })
 
-    it('forwards the fetched bytes to the chosen adapter so .ply is not re-downloaded', async () => {
+    it('shares a single fetch between matches() and load() so .ply is not re-downloaded', async () => {
       const buf = new ArrayBuffer(16)
       fetchModelDataMock.mockResolvedValueOnce(buf)
       isGaussianSplatPLYMock.mockResolvedValue(true)
       const { lm } = makeLoaderManager()
-      splatLoad.mockResolvedValueOnce(new THREE.Object3D())
+      splatLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
 
       await lm.loadModel('api/view?filename=scan.ply')
 
+      // Adapter receives a fetchBytes function (memoized), not bytes directly.
       expect(splatLoad).toHaveBeenCalledWith(
         expect.anything(),
         expect.any(String),
         'scan.ply',
-        buf
+        expect.any(Function)
       )
+      // matches() called fetchBytes once; load()'s call hit the cached promise.
       expect(fetchModelDataMock).toHaveBeenCalledTimes(1)
     })
 
-    it('dispatches .ply by adapter kind, not extension order — a splat adapter that also claims .ply does NOT bypass detection', async () => {
+    it('dispatches .ply via the adapter matches() tiebreaker, not extension order — a splat adapter whose matches() returns false yields to point-cloud', async () => {
       const modelManager =
         makeModelManagerStub() as unknown as ConstructorParameters<
           typeof LoaderManager
         >[0]
       const eventManager = makeEventManagerStub()
-      // Pathological adapter list: a splat adapter also claims '.ply'
-      // and is listed first. With a plain extension-first match, .ply
-      // would skip the 3DGS detection. The kind-based dispatch should
-      // still run isGaussianSplatPLY and pick the point-cloud adapter.
+      // A splat adapter that ALSO claims '.ply' and is listed first.
+      // Without matches(), it would short-circuit. With matches() returning
+      // false (not a 3DGS PLY), the dispatcher must skip to the next
+      // candidate (point cloud).
       const splatAdapter = {
         kind: 'splat' as const,
         extensions: ['ply', 'spz', 'splat', 'ksplat'] as const,
         capabilities: {} as never,
+        matches: async (ext: string, fetchBytes: () => Promise<ArrayBuffer>) =>
+          ext === 'ply' ? isGaussianSplatPLYMock(await fetchBytes()) : true,
         load: splatLoad
       }
       const pointCloudAdapter = {
@@ -480,7 +515,7 @@ describe('LoaderManager', () => {
         pointCloudAdapter
       ])
       isGaussianSplatPLYMock.mockResolvedValue(false)
-      pointCloudLoad.mockResolvedValueOnce(new THREE.Object3D())
+      pointCloudLoad.mockResolvedValueOnce(loadResult(new THREE.Object3D()))
 
       await lm.loadModel('api/view?filename=scan.ply')
 
@@ -569,8 +604,8 @@ describe('LoaderManager', () => {
       secondModel.name = 'second'
 
       meshLoad
-        .mockImplementationOnce(() => firstLoad)
-        .mockResolvedValueOnce(secondModel)
+        .mockImplementationOnce(() => firstLoad.then(loadResult))
+        .mockResolvedValueOnce(loadResult(secondModel))
 
       const firstPromise = lm.loadModel('api/view?filename=first.glb')
       const secondPromise = lm.loadModel('api/view?filename=second.glb')

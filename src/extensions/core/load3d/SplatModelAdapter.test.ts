@@ -69,7 +69,7 @@ describe('SplatModelAdapter', () => {
 
   it('handles the Gaussian splat extensions', () => {
     const adapter = new SplatModelAdapter()
-    expect([...adapter.extensions]).toEqual(['spz', 'splat', 'ksplat'])
+    expect([...adapter.extensions]).toEqual(['spz', 'splat', 'ksplat', 'ply'])
   })
 
   it('fetches the file, builds a SplatMesh, and wraps it in a Group', async () => {
@@ -89,11 +89,14 @@ describe('SplatModelAdapter', () => {
       fileBytes: buf,
       fileName: 'scene.splat'
     })
-    expect(result).toBeInstanceOf(THREE.Group)
-    expect(result.children).toHaveLength(1)
+    expect(result!.object).toBeInstanceOf(THREE.Group)
+    expect(result!.object.children).toHaveLength(1)
+    expect(result!.capabilities.lighting).toBe(false)
 
     expect(ctx.setOriginalModel).toHaveBeenCalledTimes(1)
-    expect(ctx.setOriginalModel).toHaveBeenCalledWith(result.children[0])
+    expect(ctx.setOriginalModel).toHaveBeenCalledWith(
+      result!.object.children[0]
+    )
   })
 
   it('rotates the splat 180° around X (OpenCV → three.js convention)', async () => {
@@ -103,7 +106,7 @@ describe('SplatModelAdapter', () => {
       'scene.splat'
     )
 
-    const splat = result.children[0]
+    const splat = result!.object.children[0]
     expect(splat.quaternion.x).toBe(1)
     expect(splat.quaternion.y).toBe(0)
     expect(splat.quaternion.z).toBe(0)
@@ -124,11 +127,12 @@ describe('SplatModelAdapter', () => {
   describe('computeBounds', () => {
     it('returns the SplatMesh bounding box transformed to world space', async () => {
       const adapter = new SplatModelAdapter()
-      const group = await adapter.load(
+      const result = await adapter.load(
         makeContext(),
         '/api/view?',
         'scene.splat'
       )
+      const group = result!.object
       const splat = group.children[0]
       splat.position.set(10, 0, 0)
 
@@ -155,13 +159,13 @@ describe('SplatModelAdapter', () => {
   describe('disposeModel', () => {
     it('calls dispose on every SplatMesh in the model tree', async () => {
       const adapter = new SplatModelAdapter()
-      const group = await adapter.load(
+      const result = await adapter.load(
         makeContext(),
         '/api/view?',
         'scene.splat'
       )
 
-      adapter.disposeModel(group)
+      adapter.disposeModel(result!.object)
 
       expect(splatMeshSpies.dispose).toHaveBeenCalledOnce()
     })

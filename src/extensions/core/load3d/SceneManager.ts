@@ -14,6 +14,17 @@ export class SceneManager implements SceneManagerInterface {
   gridHelper: THREE.GridHelper
   private sparkRenderer: SparkRenderer
 
+  private nextSparkDirtyPromise: Promise<void> | null = null
+  private nextSparkDirtyResolve: (() => void) | null = null
+
+  awaitNextSparkDirty(): Promise<void> {
+    if (this.nextSparkDirtyPromise) return this.nextSparkDirtyPromise
+    this.nextSparkDirtyPromise = new Promise<void>((resolve) => {
+      this.nextSparkDirtyResolve = resolve
+    })
+    return this.nextSparkDirtyPromise
+  }
+
   backgroundScene!: THREE.Scene
   backgroundCamera: THREE.OrthographicCamera
   backgroundMesh: THREE.Mesh | null = null
@@ -46,7 +57,22 @@ export class SceneManager implements SceneManagerInterface {
 
     // Spark 2.x requires a SparkRenderer in the scene tree to render SplatMesh
     // instances; without it splats are silent no-ops.
-    this.sparkRenderer = new SparkRenderer({ renderer })
+    //
+    // onDirty fires twice per splat first-paint cycle: once from updateInternal
+    // (data uploaded) and again from driveSort (sort completed; line 1105 in
+    // SparkRenderer.ts). We expose it as a passive promise — awaiters get
+    // notified, but the callback itself does NOT trigger a render. Wiring
+    // forceRender directly into onDirty caused a per-frame render-setDirty
+    // cascade that made splats visibly "balloon" during camera interaction.
+    this.sparkRenderer = new SparkRenderer({
+      renderer,
+      onDirty: () => {
+        const resolve = this.nextSparkDirtyResolve
+        this.nextSparkDirtyResolve = null
+        this.nextSparkDirtyPromise = null
+        resolve?.()
+      }
+    })
     this.scene.add(this.sparkRenderer)
 
     this.gridHelper = new THREE.GridHelper(20, 20)

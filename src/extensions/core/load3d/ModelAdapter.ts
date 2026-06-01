@@ -65,25 +65,59 @@ export const DEFAULT_MODEL_CAPABILITIES: ModelAdapterCapabilities = {
 }
 
 /**
- * Mutable handle to the currently active ModelAdapter. A single ref is
- * created in `createLoad3d` and shared between LoaderManager (writer) and
- * SceneModelManager + Load3d (readers), so capability/bounds/dispose lookups
- * don't depend on construction order between those collaborators.
+ * Result returned by `ModelAdapter.load()`. Capabilities ride with the model
+ * because some adapters (notably PLY) produce different capability sets
+ * depending on the file contents — face-less point clouds expose only the
+ * 'pointCloud' material mode, indexed meshes expose the full set. Keeping
+ * capabilities per-load (not per-adapter) prevents stale state on the
+ * adapter instance between two successive loads.
  */
-export type AdapterRef = { current: ModelAdapter | null }
+export type ModelLoadResult = {
+  object: THREE.Object3D
+  capabilities: ModelAdapterCapabilities
+}
 
-export const createAdapterRef = (): AdapterRef => ({ current: null })
+/**
+ * Mutable handle to the currently active ModelAdapter plus the capabilities
+ * reported by its most recent load. A single ref is created in `createLoad3d`
+ * and shared between LoaderManager (writer) and SceneModelManager + Load3d
+ * (readers), so capability/bounds/dispose lookups don't depend on
+ * construction order between those collaborators.
+ */
+export type AdapterRef = {
+  current: ModelAdapter | null
+  capabilities: ModelAdapterCapabilities | null
+}
+
+export const createAdapterRef = (): AdapterRef => ({
+  current: null,
+  capabilities: null
+})
 
 export interface ModelAdapter {
   readonly kind: ModelAdapterKind
   readonly extensions: readonly string[]
+  /**
+   * Default capabilities for this adapter family. `load()` may return a
+   * narrowed set for a specific model — read `adapterRef.capabilities` for
+   * the live per-model value rather than this.
+   */
   readonly capabilities: ModelAdapterCapabilities
+  /**
+   * Async tiebreaker when multiple adapters claim the same extension
+   * (e.g. .ply is shared by Gaussian splats and classic point clouds).
+   * Adapters that uniquely own their extensions can omit this.
+   */
+  matches?(
+    extension: string,
+    fetchBytes: () => Promise<ArrayBuffer>
+  ): Promise<boolean>
   load(
     ctx: ModelLoadContext,
     path: string,
     filename: string,
-    fileBytes?: ArrayBuffer
-  ): Promise<THREE.Object3D | null>
+    fetchBytes?: () => Promise<ArrayBuffer>
+  ): Promise<ModelLoadResult | null>
   /**
    * Optional. Return a world-space AABB for the given model. Adapters for
    * renderers whose geometry is not walked by `Box3.setFromObject` (e.g.
