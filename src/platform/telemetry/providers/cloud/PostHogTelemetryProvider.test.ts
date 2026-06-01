@@ -7,6 +7,7 @@ const hoisted = vi.hoisted(() => {
   const mockInit = vi.fn()
   const mockIdentify = vi.fn()
   const mockPeopleSet = vi.fn()
+  const mockReset = vi.fn()
   const mockOnUserResolved = vi.fn()
 
   return {
@@ -14,13 +15,15 @@ const hoisted = vi.hoisted(() => {
     mockInit,
     mockIdentify,
     mockPeopleSet,
+    mockReset,
     mockOnUserResolved,
     mockPosthog: {
       default: {
         init: mockInit,
         capture: mockCapture,
         identify: mockIdentify,
-        people: { set: mockPeopleSet }
+        people: { set: mockPeopleSet },
+        reset: mockReset
       }
     }
   }
@@ -233,6 +236,42 @@ describe('PostHogTelemetryProvider', () => {
         {}
       )
       expect(hoisted.mockPeopleSet).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('logout', () => {
+    it('calls posthog.reset(true) when logout fires after init', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackLogout()
+
+      expect(hoisted.mockReset).toHaveBeenCalledWith(true)
+    })
+
+    it('defers reset to init when logout fires before init resolves', async () => {
+      const provider = createProvider()
+
+      provider.trackLogout()
+      expect(hoisted.mockReset).not.toHaveBeenCalled()
+
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockReset).toHaveBeenCalledWith(true)
+    })
+
+    it('drops pre-logout queued events when logout fires before init', async () => {
+      const provider = createProvider()
+
+      provider.trackUserLoggedIn()
+      provider.trackLogout()
+
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockCapture).not.toHaveBeenCalledWith(
+        TelemetryEvents.USER_LOGGED_IN,
+        expect.anything()
+      )
     })
   })
 

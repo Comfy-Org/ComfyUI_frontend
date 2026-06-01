@@ -83,6 +83,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private posthog: PostHog | null = null
   private eventQueue: QueuedEvent[] = []
   private isInitialized = false
+  private shouldResetOnInit = false
   private lastTriggerSource: ExecutionTriggerSource | undefined
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
 
@@ -117,6 +118,11 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               ...serverConfig
             })
             this.isInitialized = true
+            if (this.shouldResetOnInit) {
+              this.posthog!.reset(true)
+              this.eventQueue = []
+              this.shouldResetOnInit = false
+            }
             this.flushEventQueue()
 
             useCurrentUser().onUserResolved((user) => {
@@ -241,7 +247,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackLogout(): void {
-    this.posthog?.reset(true)
+    if (!this.posthog) {
+      this.shouldResetOnInit = true
+      this.eventQueue = []
+      return
+    }
+    this.posthog.reset(true)
   }
 
   trackSubscription(
