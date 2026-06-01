@@ -9,9 +9,9 @@ publicHoistPattern:
 
 catalog:
   '@alloc/quick-lru': ^5.2.0
-  '@astrojs/check': ^0.9.8
-  '@astrojs/sitemap': ^3.7.1
-  '@astrojs/vue': ^5.0.0
+  '@astrojs/check': ^0.9.9
+  '@astrojs/sitemap': ^3.7.3
+  '@astrojs/vue': ^6.0.1
   '@comfyorg/comfyui-electron-types': 0.6.2
   '@eslint/js': ^10.0.1
   '@formkit/auto-animate': ^0.9.0
@@ -65,7 +65,7 @@ catalog:
   '@vueuse/integrations': ^14.2.0
   '@webgpu/types': ^0.1.66
   algoliasearch: ^5.21.0
-  astro: ^5.10.0
+  astro: ^6.4.2
   axios: ^1.15.2
   cross-env: ^10.1.0
   cva: 1.0.0-beta.4
