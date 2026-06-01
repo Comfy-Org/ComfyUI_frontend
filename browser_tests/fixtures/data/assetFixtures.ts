@@ -86,46 +86,6 @@ export const STABLE_LORA: Asset = createModelAsset({
   updated_at: '2025-02-20T14:00:00Z'
 })
 
-export const STABLE_LORA_2: Asset = createModelAsset({
-  id: 'test-lora-002',
-  name: 'add_detail_v2.safetensors',
-  size: 226_492_416,
-  tags: ['models', 'loras'],
-  user_metadata: {
-    base_model: 'sd15',
-    description: 'Add Detail LoRA v2'
-  },
-  created_at: '2025-02-25T11:00:00Z',
-  updated_at: '2025-02-25T11:00:00Z'
-})
-
-export const STABLE_VAE: Asset = createModelAsset({
-  id: 'test-vae-001',
-  name: 'sdxl_vae.safetensors',
-  size: 334_641_152,
-  tags: ['models', 'vae'],
-  user_metadata: {
-    base_model: 'sdxl',
-    description: 'SDXL VAE'
-  },
-  created_at: '2025-01-18T16:00:00Z',
-  updated_at: '2025-01-18T16:00:00Z'
-})
-
-export const STABLE_EMBEDDING: Asset = createModelAsset({
-  id: 'test-embedding-001',
-  name: 'bad_prompt_v2.pt',
-  size: 32_768,
-  mime_type: 'application/x-pytorch',
-  tags: ['models', 'embeddings'],
-  user_metadata: {
-    base_model: 'sd15',
-    description: 'Negative Embedding: Bad Prompt v2'
-  },
-  created_at: '2025-02-01T09:30:00Z',
-  updated_at: '2025-02-01T09:30:00Z'
-})
-
 export const STABLE_INPUT_IMAGE: Asset = createInputAsset({
   id: 'test-input-001',
   name: 'reference_photo.png',
@@ -134,26 +94,6 @@ export const STABLE_INPUT_IMAGE: Asset = createInputAsset({
   tags: ['input'],
   created_at: '2025-03-01T09:00:00Z',
   updated_at: '2025-03-01T09:00:00Z'
-})
-
-export const STABLE_INPUT_IMAGE_2: Asset = createInputAsset({
-  id: 'test-input-002',
-  name: 'mask_layer.png',
-  size: 1_048_576,
-  mime_type: 'image/png',
-  tags: ['input'],
-  created_at: '2025-03-05T10:00:00Z',
-  updated_at: '2025-03-05T10:00:00Z'
-})
-
-export const STABLE_INPUT_VIDEO: Asset = createInputAsset({
-  id: 'test-input-003',
-  name: 'clip_720p.mp4',
-  size: 15_728_640,
-  mime_type: 'video/mp4',
-  tags: ['input'],
-  created_at: '2025-03-08T14:30:00Z',
-  updated_at: '2025-03-08T14:30:00Z'
 })
 
 export const STABLE_OUTPUT: Asset = createOutputAsset({
@@ -166,31 +106,6 @@ export const STABLE_OUTPUT: Asset = createOutputAsset({
   updated_at: '2025-03-10T12:00:00Z'
 })
 
-export const STABLE_OUTPUT_2: Asset = createOutputAsset({
-  id: 'test-output-002',
-  name: 'ComfyUI_00002_.png',
-  size: 3_670_016,
-  mime_type: 'image/png',
-  tags: ['output'],
-  created_at: '2025-03-10T12:05:00Z',
-  updated_at: '2025-03-10T12:05:00Z'
-})
-export const ALL_MODEL_FIXTURES: Asset[] = [
-  STABLE_CHECKPOINT,
-  STABLE_CHECKPOINT_2,
-  STABLE_LORA,
-  STABLE_LORA_2,
-  STABLE_VAE,
-  STABLE_EMBEDDING
-]
-
-export const ALL_INPUT_FIXTURES: Asset[] = [
-  STABLE_INPUT_IMAGE,
-  STABLE_INPUT_IMAGE_2,
-  STABLE_INPUT_VIDEO
-]
-
-export const ALL_OUTPUT_FIXTURES: Asset[] = [STABLE_OUTPUT, STABLE_OUTPUT_2]
 const CHECKPOINT_NAMES = [
   'sd_xl_base_1.0.safetensors',
   'v1-5-pruned-emaonly.safetensors',

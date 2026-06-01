@@ -303,12 +303,3 @@ export const TestIds = {
     typeFilter: (key: 'input' | 'output') => `search-filter-${key}`
   }
 } as const
-
-export type TestId<K extends keyof typeof TestIds> = Exclude<
-  (typeof TestIds)[K][keyof (typeof TestIds)[K]],
-  (...args: never[]) => string
->
-
-export type TestIdValue = {
-  [K in keyof typeof TestIds]: TestId<K>
-}[keyof typeof TestIds]
