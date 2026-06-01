@@ -119,6 +119,7 @@
     }
   },
   "AdjustBrightness": {
+    "description": "调整图像的亮度。",
     "display_name": "调整亮度",
     "inputs": {
       "factor": {
@@ -138,6 +139,7 @@
     }
   },
   "AdjustContrast": {
+    "description": "调整图像的对比度。",
     "display_name": "调整对比度",
     "inputs": {
       "factor": {
@@ -176,6 +178,7 @@
     }
   },
   "AudioAdjustVolume": {
+    "description": "按指定的分贝（dB）调整音频音量。",
     "display_name": "音频调整音量",
     "inputs": {
       "audio": {
@@ -381,6 +384,90 @@
       }
     }
   },
+  "BeebleSwitchXImageEdit": {
+    "description": "使用 Beeble SwitchX 编辑单张图像。可切换场景中的任何元素（背景、光照、服装），同时保留原始主体像素。请提供参考图像和/或文本提示来描述新外观。最大约 2.77MP。",
+    "display_name": "Beeble SwitchX 图像编辑",
+    "inputs": {
+      "alpha_mode": {
+        "name": "alpha_mode",
+        "tooltip": "控制 SwitchX 如何决定保留或重生成内容。'auto' 自动隔离主要主体。'fill' 重生成整个画面并保留几何结构。'select' 将首帧关键帧传播到整个 clip。'custom' 使用您提供的每帧 alpha mask。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "max_resolution": {
+        "name": "最大分辨率",
+        "tooltip": "输出的最大分辨率。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "期望输出的文本描述（最多 2000 字符）。“提示词”或“参考图像”至少需填写一项。"
+      },
+      "reference_image": {
+        "name": "参考图像",
+        "tooltip": "结果将采用该参考图像的外观（背景、光照、服装）。“参考图像”或“提示词”至少需填写一项。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alpha",
+        "tooltip": "Beeble 使用的 alpha mask。'fill' 模式下为空，该模式没有单独的 mask。"
+      }
+    }
+  },
+  "BeebleSwitchXVideoEdit": {
+    "description": "使用 Beeble SwitchX 编辑视频。可切换场景中的任何元素（背景、光照、服装），同时保留原始主体像素和动作。请提供参考图像和/或文本提示来描述新外观。最多 240 帧，每帧最大约 2.77MP。",
+    "display_name": "Beeble SwitchX 视频编辑",
+    "inputs": {
+      "alpha_mode": {
+        "name": "alpha_mode",
+        "tooltip": "控制 SwitchX 如何决定保留或重生成内容。'auto' 自动隔离主要主体。'fill' 重生成整个画面并保留几何结构。'select' 将首帧关键帧传播到整个 clip。'custom' 使用您提供的每帧 alpha mask。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "max_resolution": {
+        "name": "最大分辨率",
+        "tooltip": "输出的最大分辨率。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "期望输出的文本描述（最多 2000 字符）。“提示词”或“参考图像”至少需填写一项。"
+      },
+      "reference_image": {
+        "name": "参考图像",
+        "tooltip": "结果将采用该参考图像的外观（背景、光照、服装）。“参考图像”或“提示词”至少需填写一项。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      },
+      "video": {
+        "name": "视频"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "视频",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alpha",
+        "tooltip": "Beeble 使用的 alpha mask。'fill' 模式下为空，该模式没有单独的 mask。"
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "Beta采样调度器",
     "inputs": {
@@ -576,6 +663,9 @@
       },
       "model_auto_downscale": {
         "name": "自动降采样"
+      },
+      "model_auto_upscale": {
+        "name": "auto_upscale"
       },
       "model_duration": {
         "name": "时长"
@@ -1107,6 +1197,10 @@
       "model": {
         "name": "模型"
       },
+      "pre_cfg": {
+        "name": "pre_cfg",
+        "tooltip": "如果为 true，则在采样器的 CFG 合并之前对组合噪声进行重新缩放，不进行限制（可能会放大）。这与 Lens 等模型使用的 norm-scaled CFG 相匹配。默认 false 保持原有的 post-CFG x0 空间仅衰减行为。"
+      },
       "strength": {
         "name": "强度"
       }
@@ -1547,6 +1641,7 @@
     }
   },
   "CenterCropImages": {
+    "description": "将图像居中裁剪为指定尺寸。",
     "display_name": "裁剪图像（中心）",
     "inputs": {
       "height": {
@@ -1665,6 +1760,9 @@
       },
       "model_max_tokens": {
         "name": "最大tokens数"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
       },
       "model_temperature": {
         "name": "temperature"
@@ -1790,6 +1888,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "description": "逻辑与操作。如果所有值都为真，则返回 true。使用 Python 的真值规则。",
+    "display_name": "与",
+    "inputs": {
+      "values": {
+        "name": "值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "数学表达式",
     "inputs": {
@@ -1813,6 +1925,20 @@
       }
     }
   },
+  "ComfyNotNode": {
+    "description": "逻辑非操作。如果值为假，则返回 true。使用 Python 的真值规则。",
+    "display_name": "非",
+    "inputs": {
+      "value": {
+        "name": "值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyNumberConvert": {
     "display_name": "数字转换",
     "inputs": {
@@ -1825,6 +1951,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "description": "逻辑或操作。如果任意值为真，则返回 true。使用 Python 的真值规则。",
+    "display_name": "或",
+    "inputs": {
+      "values": {
+        "name": "值"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -5699,6 +5839,7 @@
     }
   },
   "ImageCropV2": {
+    "description": "将图像裁剪为指定尺寸。",
     "display_name": "图像裁剪",
     "inputs": {
       "crop_region": {
@@ -5719,6 +5860,7 @@
     }
   },
   "ImageDeduplication": {
+    "description": "从列表中移除重复或非常相似的图像。",
     "display_name": "图像去重",
     "inputs": {
       "images": {
@@ -5773,6 +5915,7 @@
     }
   },
   "ImageGrid": {
+    "description": "将多张图像排列为网格布局。",
     "display_name": "图像表格",
     "inputs": {
       "cell_height": {
@@ -7405,6 +7548,71 @@
       }
     }
   },
+  "Krea2ImageNode": {
+    "description": "通过 Krea 2 生成图像 —— 选择 Medium（表现性插画）或 Large（表现性写实）。支持可选情绪板和最多 10 个串联图像风格参考。",
+    "display_name": "Krea 2 图像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "Krea 2 Medium 适合表现性插画；Krea 2 Large 适合表现性写实。"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_creativity": {
+        "name": "创造力"
+      },
+      "model_moodboard_id": {
+        "name": "情绪板 ID"
+      },
+      "model_moodboard_strength": {
+        "name": "情绪板强度"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于生成图像的文本提示。"
+      },
+      "seed": {
+        "name": "随机种子",
+        "tooltip": "用于结果复现的随机种子。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Krea2StyleReferenceNode": {
+    "description": "为 Krea 2 生成添加图像风格参考。可串联多个 Krea 2 风格参考节点（最多 10 个），并将最终的 `style_reference` 输出连接到 Krea 2 图像。每张图像会上传到 ComfyAPI 存储并以 URL 形式传递。",
+    "display_name": "Krea 2 风格参考",
+    "inputs": {
+      "image": {
+        "name": "参考图像",
+        "tooltip": "其风格影响生成结果的参考图像。"
+      },
+      "strength": {
+        "name": "参考强度",
+        "tooltip": "参考强度；负值会反转风格影响。"
+      },
+      "style_reference": {
+        "name": "风格参考",
+        "tooltip": "可选的风格参考链；此节点会追加一个。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "风格参考",
+        "tooltip": null
+      }
+    }
+  },
   "LTXAVTextEncoderLoader": {
     "description": "[Recipes]\n\nltxav: gemma 3 12B",
     "display_name": "LTXV音频文本编码器加载器",
@@ -7708,6 +7916,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -8317,6 +8530,10 @@
       "6": {
         "name": "model_3d",
         "tooltip": null
+      },
+      "7": {
+        "name": "model_3d_info",
+        "tooltip": null
       }
     }
   },
@@ -8366,6 +8583,7 @@
     }
   },
   "LoadImageDataSetFromFolder": {
+    "description": "从指定文件夹加载图像数据集并返回图像列表。支持格式：PNG、JPG、JPEG、WEBP。",
     "display_name": "加载图像数据集",
     "inputs": {
       "folder": {
@@ -8409,6 +8627,7 @@
     }
   },
   "LoadImageTextDataSetFromFolder": {
+    "description": "从指定文件夹加载图像与文本描述对的数据集，并以列表形式返回。支持格式：PNG、JPG、JPEG、WEBP。",
     "display_name": "加载图像和文本数据集",
     "inputs": {
       "folder": {
@@ -8435,6 +8654,20 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "加载 MediaPipe 人脸标记器",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "来自 models/mediapipe/ 的 Face Landmarker safetensors。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadMoGeModel": {
     "display_name": "加载 MoGe 模型",
     "inputs": {
@@ -8449,6 +8682,7 @@
     }
   },
   "LoadTrainingDataset": {
+    "description": "从磁盘加载已编码的训练数据集（latent + 条件信息），用于训练。",
     "display_name": "加载训练数据集",
     "inputs": {
       "folder_name": {
@@ -9232,6 +9466,7 @@
     }
   },
   "MakeTrainingDataset": {
+    "description": "使用VAE对图像编码，使用CLIP对文本编码，生成包含latent和条件信息的训练数据集。",
     "display_name": "制作训练数据集",
     "inputs": {
       "clip": {
@@ -9322,7 +9557,97 @@
       }
     }
   },
+  "MediaPipeFaceLandmarker": {
+    "description": "使用MediaPipe模型检测人脸关键点。",
+    "display_name": "MediaPipe 人脸标记器",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "人脸检测器范围。'short' 适用于近距离人脸（距离相机约 2 米内）；'full' 适用于更远/更小的人脸（最多约 5 米），但速度较慢。'both' 同时运行两个检测器，并保留每帧检测到更多人脸的结果（检测成本约为 2 倍）。"
+      },
+      "face_detection_model": {
+        "name": "face_detection_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "BlazeFace 分数阈值。降低以捕捉较小/被遮挡的人脸。"
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "批量检测失败时每帧的处理方式。'empty' 表示该帧无人脸。'previous' 复制最近一次成功检测的结果。'interpolate' 在包围的成功帧之间插值地标/边框/混合形状。多脸：通过贪婪边框中心最近邻配对跨帧人脸。"
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "每帧返回的最大人脸数。0 = 不限制（返回所有检测到的人脸）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "description": "根据人脸关键点绘制mask。",
+    "display_name": "MediaPipe 人脸蒙版",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = face_oval+lips+eyes+irises 的并集（由于 face_oval 包含其他区域，最终为 face_oval）。'custom' = 可单独切换每个区域，组合如 lips+eyes。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "description": "在输入图像上绘制人脸关键点网格。",
+    "display_name": "MediaPipe 人脸网格可视化",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = oval+eyes+brows+lips+irises+nose。'fill' = 实心 face_oval 多边形（轮廓蒙版）。'custom' = 可单独切换每个特征（包括 'tesselation'，即完整的 2547 边线框）。"
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "如果未连接，将使用黑色画布。"
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "地标点像素半径。0 表示不绘制点。"
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "边线像素粗细。0 表示不绘制边线。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MergeImageLists": {
+    "description": "将多个图像列表合并为一个。",
     "display_name": "融合图像序列",
     "inputs": {
       "images": {
@@ -9777,6 +10102,7 @@
     }
   },
   "MoGeInference": {
+    "description": "在单张图像上运行MoGe以估算深度和几何信息。",
     "display_name": "MoGe 推理",
     "inputs": {
       "apply_mask": {
@@ -9813,6 +10139,7 @@
     }
   },
   "MoGePanoramaInference": {
+    "description": "将全景图像分割为12个透视视图，分别运行MoGe推理，并将结果合并为单一深度图。",
     "display_name": "MoGe 全景推理",
     "inputs": {
       "batch_size": {
@@ -9847,6 +10174,7 @@
     }
   },
   "MoGePointMapToMesh": {
+    "description": "将MoGe点图转换为3D网格。",
     "display_name": "MoGe 点云映射到网格",
     "inputs": {
       "batch_index": {
@@ -9876,6 +10204,7 @@
     }
   },
   "MoGeRender": {
+    "description": "根据几何数据渲染深度图或法线图。",
     "display_name": "MoGe 渲染",
     "inputs": {
       "moge_geometry": {
@@ -12137,6 +12466,23 @@
       }
     }
   },
+  "MultiGPU_WorkUnits": {
+    "description": "准备模型以通过拆分工作单元加速采样。\n\n应放置在修改模型对象本身的节点之后，例如编译或注意力切换节点。\n\n除这些例外外，此节点可按任意顺序放置。",
+    "display_name": "多GPU CFG 拆分",
+    "inputs": {
+      "max_gpus": {
+        "name": "max_gpus"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "NAGuidance": {
     "description": "对模型应用归一化注意力引导，使蒸馏/快速模型支持负向提示。",
     "display_name": "归一化注意力引导",
@@ -12164,6 +12510,7 @@
     }
   },
   "NormalizeImages": {
+    "description": "使用均值和标准差对图像进行归一化处理。",
     "display_name": "规格化图像",
     "inputs": {
       "images": {
@@ -12493,6 +12840,39 @@
       }
     }
   },
+  "OpenRouterLLMNode": {
+    "description": "通过OpenRouter生成文本回复。路由到xAI、DeepSeek、Qwen、Mistral、Z.AI（GLM）、Moonshot（Kimi）、Perplexity Sonar等精选热门模型。",
+    "display_name": "OpenRouter LLM",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于生成回复的OpenRouter模型。"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "模型的文本输入。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "采样种子。设为0表示不使用。大多数模型仅将其作为参考。"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "决定模型行为的基础指令。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpticalFlowLoader": {
     "display_name": "加载光流模型",
     "inputs": {
@@ -12806,6 +13186,32 @@
     "inputs": {
       "photomaker_model_name": {
         "name": "photomaker模型名称"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PiDConditioning": {
+    "description": "为 PiD 解码/放大附加 latent 和 degrade_sigma 标量到 CONDITIONING",
+    "display_name": "PiD 条件处理",
+    "inputs": {
+      "degrade_sigma": {
+        "name": "degrade_sigma",
+        "tooltip": "0 = 干净 latent。增加以去噪受损 latent 输出。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent（来自 VAEEncode 或 KSampler）。"
+      },
+      "latent_format": {
+        "name": "latent 格式",
+        "tooltip": "Flux1 和 Flux2 latent 可根据通道维自动检测，sd3 需手动选择。"
+      },
+      "positive": {
+        "name": "正向"
       }
     },
     "outputs": {
@@ -13306,6 +13712,7 @@
     }
   },
   "RandomCropImages": {
+    "description": "随机裁剪图像为指定尺寸。",
     "display_name": "裁剪图像（随机）",
     "inputs": {
       "control_after_generate": {
@@ -14168,6 +14575,7 @@
     }
   },
   "ResizeImagesByLongerEdge": {
+    "description": "调整图像尺寸，使较长边匹配指定长度，同时保持宽高比。",
     "display_name": "缩放图像（长边）",
     "inputs": {
       "images": {
@@ -14187,6 +14595,7 @@
     }
   },
   "ResizeImagesByShorterEdge": {
+    "description": "调整图像尺寸，使较短边与指定尺寸相同，同时保持宽高比。",
     "display_name": "Resize Images by Shorter Edge",
     "inputs": {
       "images": {
@@ -14206,6 +14615,7 @@
     }
   },
   "ResolutionBucket": {
+    "description": "将latent和conditioning分组到不同的桶中",
     "display_name": "分辨率 Bucket",
     "inputs": {
       "conditioning": {
@@ -14434,6 +14844,164 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Image": {
+    "description": "通过 Rodin Gen-2.5 从 1-5 张参考图像生成 3D 模型。选择模式（快速 / 常规 / 极高）以平衡质量与成本。",
+    "display_name": "Rodin 3D Gen-2.5 - 图像转3D",
+    "inputs": {
+      "TAPose": {
+        "name": "T/A 姿势",
+        "tooltip": "用于类人模型的 T/A 姿势。"
+      },
+      "addon_highpack": {
+        "name": "HighPack 插件",
+        "tooltip": "HighPack 插件：4K 贴图和 Quad 模式下约 16 倍面数。"
+      },
+      "bbox_height": {
+        "name": "包围盒高度",
+        "tooltip": "包围盒高度（Z 轴）。"
+      },
+      "bbox_length": {
+        "name": "包围盒长度",
+        "tooltip": "包围盒长度（X 轴）。"
+      },
+      "bbox_width": {
+        "name": "包围盒宽度",
+        "tooltip": "包围盒宽度（Y 轴）。与其他设置为 0 可跳过包围盒。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "geometry_file_format": {
+        "name": "几何文件格式"
+      },
+      "hd_texture": {
+        "name": "高清贴图",
+        "tooltip": "高质量贴图增强。"
+      },
+      "height_cm": {
+        "name": "模型高度（厘米）",
+        "tooltip": "模型大致高度（厘米，0 表示跳过）。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "1-5 张图像。多视角时第一张图像用于材质。"
+      },
+      "material": {
+        "name": "材质"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "生成模式。常规 = 平衡。快速 = 1K-20K 面，适合快速原型。极高 = 20K-200 万面，可选微细节。"
+      },
+      "mode_creative": {
+        "name": "创意"
+      },
+      "mode_polygon_count": {
+        "name": "面数"
+      },
+      "mode_tier": {
+        "name": "档位"
+      },
+      "seed": {
+        "name": "种子"
+      },
+      "texture_delight": {
+        "name": "贴图去光照",
+        "tooltip": "去除贴图中的烘焙光照。"
+      },
+      "texture_mode": {
+        "name": "贴图模式",
+        "tooltip": "贴图质量预设。'默认'使用服务器为所选档位设置的默认值。"
+      },
+      "use_original_alpha": {
+        "name": "保留原始透明度",
+        "tooltip": "保留图像透明通道。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "description": "通过 Rodin Gen-2.5 根据文本提示生成3D模型。选择模式（快速 / 常规 / 极高）以平衡质量与成本。",
+    "display_name": "Rodin 3D Gen-2.5 - 文本转3D",
+    "inputs": {
+      "TAPose": {
+        "name": "T/A 姿势",
+        "tooltip": "用于类人模型的T/A姿势。"
+      },
+      "addon_highpack": {
+        "name": "HighPack 插件",
+        "tooltip": "HighPack 插件：4K贴图和Quad模式下约16倍面数。"
+      },
+      "bbox_height": {
+        "name": "包围盒高度",
+        "tooltip": "包围盒高度（Z轴）。"
+      },
+      "bbox_length": {
+        "name": "包围盒长度",
+        "tooltip": "包围盒长度（X轴）。"
+      },
+      "bbox_width": {
+        "name": "包围盒宽度",
+        "tooltip": "包围盒宽度（Y轴）。与其他设置为0可跳过包围盒。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "geometry_file_format": {
+        "name": "几何文件格式"
+      },
+      "hd_texture": {
+        "name": "高清贴图",
+        "tooltip": "高质量贴图增强。"
+      },
+      "height_cm": {
+        "name": "模型高度（厘米）",
+        "tooltip": "模型近似高度（厘米，0为跳过）。"
+      },
+      "material": {
+        "name": "材质"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "生成模式。常规 = 平衡。快速 = 1K-20K面数，适合快速原型。极高 = 20K-200万面数，可选微细节。"
+      },
+      "mode_creative": {
+        "name": "创意"
+      },
+      "mode_polygon_count": {
+        "name": "面数"
+      },
+      "mode_tier": {
+        "name": "档位"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于生成3D模型的文本提示。"
+      },
+      "seed": {
+        "name": "随机种子"
+      },
+      "texture_delight": {
+        "name": "贴图去光照",
+        "tooltip": "移除贴图中的烘焙光照。"
+      },
+      "texture_mode": {
+        "name": "贴图模式",
+        "tooltip": "贴图质量预设。“默认”将使用所选档位的服务器默认值。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型文件",
         "tooltip": null
       }
     }
@@ -15549,7 +16117,32 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "description": "将输入图像保存到您的 ComfyUI 输出目录。",
+    "display_name": "保存图像（高级）",
+    "inputs": {
+      "filename_prefix": {
+        "name": "文件名前缀",
+        "tooltip": "要保存文件的前缀。可包含格式化标记，如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width%。"
+      },
+      "format": {
+        "name": "格式",
+        "tooltip": "保存图像的文件格式。"
+      },
+      "format_bit_depth": {
+        "name": "位深度"
+      },
+      "format_input_color_space": {
+        "name": "输入色彩空间"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "要保存的图像。"
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
+    "description": "将图像数据集保存到指定文件夹。支持的格式：PNG。",
     "display_name": "保存图像数据集",
     "inputs": {
       "filename_prefix": {
@@ -15563,10 +16156,15 @@
       "images": {
         "name": "图像",
         "tooltip": "需要保存的图像序列。"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "选择覆盖已有文件，或通过递增文件名来避免覆盖。"
       }
     }
   },
   "SaveImageTextDataSetToFolder": {
+    "description": "将图像和文本描述对的数据集保存到指定文件夹。图像以PNG格式保存，描述以与文件名前缀相同的TXT文件保存。",
     "display_name": "保存图像文本数据集",
     "inputs": {
       "filename_prefix": {
@@ -15580,6 +16178,10 @@
       "images": {
         "name": "图像",
         "tooltip": "需要保存的图像序列。"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "选择覆盖已有文件，或通过递增文件名来避免覆盖。"
       },
       "texts": {
         "name": "文本",
@@ -15637,6 +16239,7 @@
     }
   },
   "SaveTrainingDataset": {
+    "description": "将编码后的训练数据集（latent + conditioning）保存到磁盘，以便训练时高效加载。",
     "display_name": "保存训练数据集",
     "inputs": {
       "conditioning": {
@@ -15724,6 +16327,57 @@
       },
       "shift_y": {
         "name": "shift_y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectCLIPDevice": {
+    "description": "将 CLIP 文本编码器放置在指定设备上（default / cpu / gpu:N）。\n\n- “default” 恢复加载器分配的设备。\n- “cpu” 将加载和卸载设备都固定为 CPU。\n- “gpu:N” 将加载设备固定为第 N 个可用 GPU。\n\n当所选设备在当前机器上不存在时\n（例如在 2-GPU 机器上构建的工作流在 1-GPU 机器上打开），\n节点会直接传递 CLIP 并记录消息，而不会报错。",
+    "display_name": "选择 CLIP 设备",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "device": {
+        "name": "device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectModelDevice": {
+    "description": "将扩散模型放置在指定设备上（default / cpu / gpu:N）。\n\n- “default” 恢复加载器分配的设备（即使在之前调用过选择模型设备后）。\n- “cpu” 将加载和卸载设备都固定为 CPU。\n- “gpu:N” 将加载设备固定为第 N 个可用 GPU；卸载设备恢复为加载器的原始选择。\n\n当请求的设备与输入模型当前所在设备不同时，会通过加载器的 reload factory（cached_patcher_init）生成一个新的模型实例，使新的 patcher 在新设备上拥有独立权重。不支持多 GPU 的加载器（无 factory）会导致节点直接传递且发出警告。\n\n如果工作流已应用多GPU CFG 拆分，且所选 GPU 与现有多 GPU 克隆冲突，则该克隆会被移除，避免两个 patcher 绑定到同一设备。\n\n当所选设备在当前机器上不存在时\n（例如在 2-GPU 机器上构建的工作流在 1-GPU 机器上打开），\n节点会直接传递模型并记录消息，而不会报错。\n\n注意：不建议在已被其他节点消费过的模型之后放置选择模型设备节点（例如 KSampler 已在原设备上运行过该模型）——如果所选设备与原设备一致（快速路径），则会观察到之前消费者对原模型的状态更改。请在任何模型消费者之前放置选择模型设备节点。",
+    "display_name": "选择模型设备",
+    "inputs": {
+      "device": {
+        "name": "device"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectVAEDevice": {
+    "description": "将VAE放置在指定设备上（default / gpu:N）。\n\n- “default” 恢复加载器分配的设备。\n- “gpu:N” 将加载设备固定到第N个可用GPU；卸载设备设置为标准VAE卸载设备。\n\nVAE在UI中故意不暴露CPU选项；如果工作流仍然提供了“cpu”（例如从其他机器打开），请求会被记录日志并丢弃，VAE保持不变。\n\n当所选设备在当前机器上不存在时（例如在2-GPU机器上构建的工作流在1-GPU机器上打开），节点会直接传递VAE并记录日志，而不会报错。",
+    "display_name": "选择VAE设备",
+    "inputs": {
+      "device": {
+        "name": "设备"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -15823,6 +16477,7 @@
     }
   },
   "ShuffleDataset": {
+    "description": "随机打乱列表中图像的顺序。",
     "display_name": "打乱图像数据集",
     "inputs": {
       "control_after_generate": {
@@ -15845,6 +16500,7 @@
     }
   },
   "ShuffleImageTextDataset": {
+    "description": "随机打乱列表中图像-文本对的顺序。",
     "display_name": "打乱图像文本数据集",
     "inputs": {
       "control_after_generate": {
@@ -16657,6 +17313,23 @@
     "outputs": {
       "0": {
         "name": "包含",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "与 Python 的字符串格式化方法相同。支持所有 Python 的格式化选项和功能。",
+    "display_name": "格式化文本",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -17947,6 +18620,169 @@
       },
       "1": {
         "name": "模型任务ID",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1ImageToModelNode": {
+    "description": "Tripo P1 图像转 3D。针对低面数、游戏级网格进行了优化。",
+    "display_name": "Tripo P1：图像转模型",
+    "inputs": {
+      "auto_size": {
+        "name": "自动缩放",
+        "tooltip": "将输出缩放至接近真实世界米制。"
+      },
+      "compress_geometry": {
+        "name": "压缩几何体",
+        "tooltip": "应用基于几何体的压缩。编辑前需解压。"
+      },
+      "enable_image_autofix": {
+        "name": "启用图像自动修复",
+        "tooltip": "对输入图像进行预处理，以提升生成质量。"
+      },
+      "export_uv": {
+        "name": "导出 UV",
+        "tooltip": "生成时进行 UV 展开。关闭可加快仅几何体生成速度。"
+      },
+      "face_limit": {
+        "name": "面数限制",
+        "tooltip": "目标面数，48-20000。-1 让 Tripo 自适应选择。"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "model_seed": {
+        "name": "模型种子"
+      },
+      "output_mode": {
+        "name": "输出模式",
+        "tooltip": "“仅几何体”返回无贴图网格。“带贴图”添加颜色/PBR 贴图。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型任务 ID",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1MultiviewToModelNode": {
+    "description": "Tripo P1 多视图转 3D，支持 2-4 张参考图像，顺序为 [正面、左侧、背面、右侧]。正面为必填，其余三项可选。",
+    "display_name": "Tripo P1：多视图转模型",
+    "inputs": {
+      "auto_size": {
+        "name": "自动缩放",
+        "tooltip": "将输出缩放至接近真实世界米制。"
+      },
+      "compress_geometry": {
+        "name": "压缩几何体",
+        "tooltip": "应用基于几何体的压缩。编辑前需解压。"
+      },
+      "export_uv": {
+        "name": "导出 UV",
+        "tooltip": "生成时进行 UV 展开。关闭可加快仅几何体生成速度。"
+      },
+      "face_limit": {
+        "name": "面数限制",
+        "tooltip": "目标面数，48-20000。-1 让 Tripo 自适应选择。"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "正面视角（0°）。必填。"
+      },
+      "image_back": {
+        "name": "背面图像",
+        "tooltip": "背面视角（180°）。"
+      },
+      "image_left": {
+        "name": "左侧图像",
+        "tooltip": "左侧视角（90°），即主体左侧。"
+      },
+      "image_right": {
+        "name": "右侧图像",
+        "tooltip": "右侧视角（270°），即主体右侧。"
+      },
+      "model_seed": {
+        "name": "模型种子"
+      },
+      "output_mode": {
+        "name": "输出模式",
+        "tooltip": "“仅几何体”返回无贴图网格。“带贴图”添加颜色/PBR 贴图。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型任务 ID",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1TextToModelNode": {
+    "description": "Tripo P1 文本转 3D。针对低多边形、游戏级网格和稳定拓扑结构进行了优化。",
+    "display_name": "Tripo P1：文本转模型",
+    "inputs": {
+      "auto_size": {
+        "name": "自动缩放",
+        "tooltip": "将输出缩放至接近真实世界米制。"
+      },
+      "compress_geometry": {
+        "name": "压缩几何体",
+        "tooltip": "应用基于几何体的压缩。编辑前请先解压。"
+      },
+      "export_uv": {
+        "name": "导出 UV",
+        "tooltip": "生成时进行 UV 展开。关闭可加快仅几何体生成速度。"
+      },
+      "face_limit": {
+        "name": "面数限制",
+        "tooltip": "目标面数，48-20000。-1 让 Tripo 自适应选择。"
+      },
+      "image_seed": {
+        "name": "图像种子"
+      },
+      "model_seed": {
+        "name": "模型种子"
+      },
+      "negative_prompt": {
+        "name": "反向提示词",
+        "tooltip": "最多 255 个字符。"
+      },
+      "output_mode": {
+        "name": "输出模式",
+        "tooltip": "“仅几何体”返回无贴图网格。“带贴图”则添加颜色/PBR 贴图。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "最多 1024 个字符。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型任务 ID",
         "tooltip": null
       },
       "2": {
@@ -19328,6 +20164,7 @@
     }
   },
   "VoxelToMesh": {
+    "description": "将体素网格转换为网格模型。",
     "display_name": "体素到网格",
     "inputs": {
       "algorithm": {
@@ -19347,6 +20184,7 @@
     }
   },
   "VoxelToMeshBasic": {
+    "description": "将体素网格转换为网格模型。",
     "display_name": "体素到网格（基础）",
     "inputs": {
       "threshold": {

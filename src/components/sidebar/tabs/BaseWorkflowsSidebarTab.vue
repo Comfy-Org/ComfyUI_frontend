@@ -11,12 +11,24 @@
     <template #tool-buttons>
       <Button
         v-tooltip.bottom="$t('g.refresh')"
+        data-testid="workflows-refresh-button"
         variant="muted-textonly"
         size="icon"
         :aria-label="$t('g.refresh')"
+        :aria-busy="workflowStore.isSyncLoading"
+        :disabled="workflowStore.isSyncLoading"
         @click="workflowStore.syncWorkflows()"
       >
-        <i class="icon-[lucide--refresh-cw] size-4" />
+        <i
+          aria-hidden="true"
+          data-testid="workflows-refresh-icon"
+          :class="
+            cn(
+              'icon-[lucide--refresh-cw] size-4',
+              workflowStore.isSyncLoading && 'animate-spin'
+            )
+          "
+        />
       </Button>
     </template>
     <template #header>
@@ -168,6 +180,7 @@ import {
   getWorkflowSuffix
 } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { title, filter, searchSubject, dataTestid, hideLeafIcon } = defineProps<{
   title: string

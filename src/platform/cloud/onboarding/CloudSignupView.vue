@@ -142,10 +142,9 @@ import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
-import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
+import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SignUpData } from '@/schemas/signInSchema'
 import { isInChina } from '@/utils/networkUtil'
 import { getGoogleSsoBlockedReason } from '@/base/webviewDetection'
@@ -157,7 +156,6 @@ const authActions = useAuthActions()
 const isSecureContext = globalThis.isSecureContext
 const authError = ref('')
 const userIsInChina = ref(false)
-const toastStore = useToastStore()
 const telemetry = useTelemetry()
 const {
   showEmailForm,
@@ -167,46 +165,34 @@ const {
   switchToSocialLogin
 } = useFreeTierOnboarding()
 const googleSsoBlockedReason = getGoogleSsoBlockedReason()
+const { onAuthSuccess } = usePostAuthRedirect({
+  authError,
+  successSummary: 'Sign up Completed',
+  defaultRedirect: () => ({ path: '/', query: route.query })
+})
 
 const navigateToLogin = async () => {
   await router.push({ name: 'cloud-login', query: route.query })
 }
 
-const onSuccess = async () => {
-  toastStore.add({
-    severity: 'success',
-    summary: 'Sign up Completed',
-    life: 2000
-  })
-
-  const previousFullPath = getSafePreviousFullPath(route.query)
-  if (previousFullPath) {
-    await router.replace(previousFullPath)
-    return
-  }
-
-  // Default redirect to the normal onboarding flow
-  await router.push({ path: '/', query: route.query })
-}
-
 const signInWithGoogle = async () => {
   authError.value = ''
   if (await authActions.signInWithGoogle({ isNewUser: true })) {
-    await onSuccess()
+    await onAuthSuccess()
   }
 }
 
 const signInWithGithub = async () => {
   authError.value = ''
   if (await authActions.signInWithGithub({ isNewUser: true })) {
-    await onSuccess()
+    await onAuthSuccess()
   }
 }
 
 const signUpWithEmail = async (values: SignUpData) => {
   authError.value = ''
   if (await authActions.signUpWithEmail(values.email, values.password)) {
-    await onSuccess()
+    await onAuthSuccess()
   }
 }
 

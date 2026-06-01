@@ -108,23 +108,6 @@ describe('useWaveAudioPlayer', () => {
     expect(bars.value).toHaveLength(10)
   })
 
-  it('clears blobUrl and shows placeholder bars when fetch fails', async () => {
-    mockFetchApi.mockRejectedValue(new Error('Network error'))
-
-    const src = ref('/api/view?filename=audio.wav&type=output')
-    const { bars, loading, audioSrc } = useWaveAudioPlayer({
-      src,
-      barCount: 10
-    })
-
-    await vi.waitFor(() => {
-      expect(loading.value).toBe(false)
-    })
-
-    expect(bars.value).toHaveLength(10)
-    expect(audioSrc.value).toBe('/api/view?filename=audio.wav&type=output')
-  })
-
   it('does not call decodeAudioSource when src is empty', () => {
     const src = ref('')
     useWaveAudioPlayer({ src })

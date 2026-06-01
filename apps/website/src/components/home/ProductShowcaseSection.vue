@@ -55,7 +55,10 @@ watch(activeIndex, (current, previous) => {
 </script>
 
 <template>
-  <section ref="sectionRef" class="px-4 py-20 lg:px-20 lg:py-24">
+  <section
+    ref="sectionRef"
+    class="max-w-9xl mx-auto px-4 py-20 lg:px-20 lg:py-24"
+  >
     <!-- Section header -->
     <div class="flex flex-col items-center text-center">
       <NodeBadge :segments="badgeSegments" segment-class="" />

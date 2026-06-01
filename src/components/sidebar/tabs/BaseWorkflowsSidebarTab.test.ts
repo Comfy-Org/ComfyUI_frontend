@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { nextTick, reactive, ref, watchEffect } from 'vue'
@@ -34,6 +35,7 @@ const {
     bookmarkedWorkflows: [] as ComfyWorkflow[],
     openWorkflows: [] as ComfyWorkflow[],
     activeWorkflow: null as ComfyWorkflow | null,
+    isSyncLoading: false,
     syncWorkflows: vi.fn().mockResolvedValue(undefined)
   }
 
@@ -228,6 +230,7 @@ describe('BaseWorkflowsSidebarTab', () => {
     mockWorkflowStore.bookmarkedWorkflows = []
     mockWorkflowStore.openWorkflows = []
     mockWorkflowStore.activeWorkflow = null
+    mockWorkflowStore.isSyncLoading = false
   })
 
   const renderComponent = () =>
@@ -273,6 +276,36 @@ describe('BaseWorkflowsSidebarTab', () => {
     await nextTick()
 
     expect(getLeafPaths(getSearchRoot())).toEqual(['workflows/test-alpha.json'])
+  })
+
+  it('refreshes when idle and exposes busy state while workflows are syncing', async () => {
+    const user = userEvent.setup()
+
+    renderComponent()
+
+    const refreshButton = screen.getByRole('button', { name: 'g.refresh' })
+    expect(refreshButton).toBeEnabled()
+    expect(refreshButton).toHaveAttribute('aria-busy', 'false')
+
+    await user.click(refreshButton)
+
+    expect(mockWorkflowStore.syncWorkflows).toHaveBeenCalledTimes(1)
+
+    mockWorkflowStore.isSyncLoading = true
+    await nextTick()
+
+    expect(refreshButton).toBeDisabled()
+    expect(refreshButton).toHaveAttribute('aria-busy', 'true')
+
+    mockWorkflowStore.isSyncLoading = false
+    await nextTick()
+
+    expect(refreshButton).toBeEnabled()
+    expect(refreshButton).toHaveAttribute('aria-busy', 'false')
+
+    await user.click(refreshButton)
+
+    expect(mockWorkflowStore.syncWorkflows).toHaveBeenCalledTimes(2)
   })
 
   it('reactively updates filtered workflows when a workflow is removed', async () => {

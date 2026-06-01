@@ -948,6 +948,48 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(store.queuedJobs['job-1']).toEqual({ nodes: {} })
     })
 
+    it('clears transient errors while preserving validation errors', () => {
+      const errorStore = useExecutionErrorStore()
+      const nodeErrors = {
+        '1': {
+          class_type: 'Test',
+          dependent_outputs: [],
+          errors: [
+            {
+              type: 'required_input_missing',
+              message: 'Missing',
+              details: '',
+              extra_info: { input_name: 'x' }
+            }
+          ]
+        }
+      }
+      errorStore.lastExecutionError = {
+        prompt_id: 'old-job',
+        timestamp: 0,
+        node_id: '1',
+        node_type: 'Test',
+        executed: [],
+        exception_message: 'boom',
+        exception_type: 'RuntimeError',
+        traceback: []
+      }
+      errorStore.lastPromptError = {
+        type: 'old-error',
+        message: 'old prompt error',
+        details: ''
+      }
+      errorStore.lastNodeErrors = nodeErrors
+      errorStore.showErrorOverlay()
+
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(errorStore.lastExecutionError).toBeNull()
+      expect(errorStore.lastPromptError).toBeNull()
+      expect(errorStore.lastNodeErrors).toEqual(nodeErrors)
+      expect(errorStore.isErrorOverlayOpen).toBe(true)
+    })
+
     it('clears initializing state for the starting job', () => {
       store.initializingJobIds = new Set([
         'job-1',

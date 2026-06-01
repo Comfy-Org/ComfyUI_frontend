@@ -23,7 +23,7 @@ export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
     return Object.fromEntries(
       card.errors.map((error, idx) => [
         idx,
-        enrichedDetails[idx] ?? error.details
+        enrichedDetails[idx] ?? error.displayDetails ?? error.details
       ])
     )
   })

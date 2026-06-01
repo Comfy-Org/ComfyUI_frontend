@@ -997,7 +997,6 @@ export class LGraphNode
     return o
   }
 
-  /* Creates a clone of this node */
   clone(): LGraphNode | null {
     if (this.type == null) return null
     const node = LiteGraph.createNode(this.type)
@@ -1023,9 +1022,9 @@ export class LGraphNode
     // @ts-expect-error Exceptional case: id is removed so that the graph can assign a new one on add.
     data.id = undefined
 
-    if (LiteGraph.use_uuids) data.id = LiteGraph.uuidv4()
-
+    node.id = this.id
     node.configure(data)
+    if (LiteGraph.use_uuids) node.id = LiteGraph.uuidv4()
 
     return node
   }
