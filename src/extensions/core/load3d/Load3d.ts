@@ -25,6 +25,7 @@ import type {
   Load3DOptions,
   LoadModelOptions,
   MaterialMode,
+  Model3DTransform,
   UpDirection
 } from './interfaces'
 import { attachContextMenuGuard } from './load3dContextMenuGuard'
@@ -160,9 +161,21 @@ class Load3d {
     this.handleResize()
     this.startAnimation()
 
+    this.eventManager.addEventListener('modelReady', () => {
+      if (this.adapterRef.current?.kind !== 'splat') return
+      void this.repaintWhenSparkPaintable()
+    })
+
     setTimeout(() => {
       this.forceRender()
     }, 100)
+  }
+
+  private async repaintWhenSparkPaintable(): Promise<void> {
+    const sortComplete = this.sceneManager.awaitNextSparkDirty()
+    this.forceRender()
+    await sortComplete
+    this.forceRender()
   }
 
   private initResizeObserver(container: Element | HTMLElement): void {
@@ -625,7 +638,7 @@ class Load3d {
   }
 
   getCurrentModelCapabilities(): ModelAdapterCapabilities {
-    return this.adapterRef.current?.capabilities ?? DEFAULT_MODEL_CAPABILITIES
+    return this.adapterRef.capabilities ?? DEFAULT_MODEL_CAPABILITIES
   }
 
   clearModel(): void {
@@ -914,8 +927,28 @@ class Load3d {
     return this.gizmoManager.getTransform()
   }
 
+  public getModelInfo(): Model3DTransform | null {
+    return this.gizmoManager.getModelInfo()
+  }
+
   public fitToViewer(): void {
     this.modelManager.fitToViewer()
+    this.forceRender()
+  }
+
+  public centerCameraOnModel(): void {
+    const bounds = this.modelManager.getCurrentBounds()
+    if (!bounds || bounds.isEmpty()) return
+
+    const center = bounds.getCenter(new THREE.Vector3())
+    const camera = this.cameraManager.activeCamera
+    const controls = this.controlsManager.controls
+    const offset = center.clone().sub(camera.position)
+
+    camera.position.add(offset)
+    controls.target.add(offset)
+    camera.updateMatrixWorld(true)
+    controls.update()
     this.forceRender()
   }
 

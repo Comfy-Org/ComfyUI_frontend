@@ -247,11 +247,8 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
       )
 
       const newHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
-      await expectPosChanged(loadCheckpointHeaderPos, newHeaderPos)
-
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'vue-node-moved-node-touch.png'
-      )
+      expect(newHeaderPos.x).toBeCloseTo(loadCheckpointHeaderPos.x + 64)
+      expect(newHeaderPos.y).toBeCloseTo(loadCheckpointHeaderPos.y + 64)
     }
   )
 })

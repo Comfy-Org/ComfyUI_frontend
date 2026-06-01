@@ -384,6 +384,90 @@
       }
     }
   },
+  "BeebleSwitchXImageEdit": {
+    "description": "使用 Beeble SwitchX 编辑单张图像。可切换场景中的任何元素（背景、光照、服装），同时保留原始主体像素。请提供参考图像和/或文本提示来描述新外观。最大约 2.77MP。",
+    "display_name": "Beeble SwitchX 图像编辑",
+    "inputs": {
+      "alpha_mode": {
+        "name": "alpha_mode",
+        "tooltip": "控制 SwitchX 如何决定保留或重生成内容。'auto' 自动隔离主要主体。'fill' 重生成整个画面并保留几何结构。'select' 将首帧关键帧传播到整个 clip。'custom' 使用您提供的每帧 alpha mask。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "max_resolution": {
+        "name": "最大分辨率",
+        "tooltip": "输出的最大分辨率。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "期望输出的文本描述（最多 2000 字符）。“提示词”或“参考图像”至少需填写一项。"
+      },
+      "reference_image": {
+        "name": "参考图像",
+        "tooltip": "结果将采用该参考图像的外观（背景、光照、服装）。“参考图像”或“提示词”至少需填写一项。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alpha",
+        "tooltip": "Beeble 使用的 alpha mask。'fill' 模式下为空，该模式没有单独的 mask。"
+      }
+    }
+  },
+  "BeebleSwitchXVideoEdit": {
+    "description": "使用 Beeble SwitchX 编辑视频。可切换场景中的任何元素（背景、光照、服装），同时保留原始主体像素和动作。请提供参考图像和/或文本提示来描述新外观。最多 240 帧，每帧最大约 2.77MP。",
+    "display_name": "Beeble SwitchX 视频编辑",
+    "inputs": {
+      "alpha_mode": {
+        "name": "alpha_mode",
+        "tooltip": "控制 SwitchX 如何决定保留或重生成内容。'auto' 自动隔离主要主体。'fill' 重生成整个画面并保留几何结构。'select' 将首帧关键帧传播到整个 clip。'custom' 使用您提供的每帧 alpha mask。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "max_resolution": {
+        "name": "最大分辨率",
+        "tooltip": "输出的最大分辨率。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "期望输出的文本描述（最多 2000 字符）。“提示词”或“参考图像”至少需填写一项。"
+      },
+      "reference_image": {
+        "name": "参考图像",
+        "tooltip": "结果将采用该参考图像的外观（背景、光照、服装）。“参考图像”或“提示词”至少需填写一项。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      },
+      "video": {
+        "name": "视频"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "视频",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alpha",
+        "tooltip": "Beeble 使用的 alpha mask。'fill' 模式下为空，该模式没有单独的 mask。"
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "Beta采样调度器",
     "inputs": {
@@ -1112,6 +1196,10 @@
     "inputs": {
       "model": {
         "name": "模型"
+      },
+      "pre_cfg": {
+        "name": "pre_cfg",
+        "tooltip": "如果为 true，则在采样器的 CFG 合并之前对组合噪声进行重新缩放，不进行限制（可能会放大）。这与 Lens 等模型使用的 norm-scaled CFG 相匹配。默认 false 保持原有的 post-CFG x0 空间仅衰减行为。"
       },
       "strength": {
         "name": "强度"
@@ -7460,6 +7548,71 @@
       }
     }
   },
+  "Krea2ImageNode": {
+    "description": "通过 Krea 2 生成图像 —— 选择 Medium（表现性插画）或 Large（表现性写实）。支持可选情绪板和最多 10 个串联图像风格参考。",
+    "display_name": "Krea 2 图像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "Krea 2 Medium 适合表现性插画；Krea 2 Large 适合表现性写实。"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_creativity": {
+        "name": "创造力"
+      },
+      "model_moodboard_id": {
+        "name": "情绪板 ID"
+      },
+      "model_moodboard_strength": {
+        "name": "情绪板强度"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于生成图像的文本提示。"
+      },
+      "seed": {
+        "name": "随机种子",
+        "tooltip": "用于结果复现的随机种子。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Krea2StyleReferenceNode": {
+    "description": "为 Krea 2 生成添加图像风格参考。可串联多个 Krea 2 风格参考节点（最多 10 个），并将最终的 `style_reference` 输出连接到 Krea 2 图像。每张图像会上传到 ComfyAPI 存储并以 URL 形式传递。",
+    "display_name": "Krea 2 风格参考",
+    "inputs": {
+      "image": {
+        "name": "参考图像",
+        "tooltip": "其风格影响生成结果的参考图像。"
+      },
+      "strength": {
+        "name": "参考强度",
+        "tooltip": "参考强度；负值会反转风格影响。"
+      },
+      "style_reference": {
+        "name": "风格参考",
+        "tooltip": "可选的风格参考链；此节点会追加一个。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "风格参考",
+        "tooltip": null
+      }
+    }
+  },
   "LTXAVTextEncoderLoader": {
     "description": "[Recipes]\n\nltxav: gemma 3 12B",
     "display_name": "LTXV音频文本编码器加载器",
@@ -7763,6 +7916,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -8371,6 +8529,10 @@
       },
       "6": {
         "name": "model_3d",
+        "tooltip": null
+      },
+      "7": {
+        "name": "model_3d_info",
         "tooltip": null
       }
     }
@@ -12304,6 +12466,23 @@
       }
     }
   },
+  "MultiGPU_WorkUnits": {
+    "description": "准备模型以通过拆分工作单元加速采样。\n\n应放置在修改模型对象本身的节点之后，例如编译或注意力切换节点。\n\n除这些例外外，此节点可按任意顺序放置。",
+    "display_name": "多GPU CFG 拆分",
+    "inputs": {
+      "max_gpus": {
+        "name": "max_gpus"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "NAGuidance": {
     "description": "对模型应用归一化注意力引导，使蒸馏/快速模型支持负向提示。",
     "display_name": "归一化注意力引导",
@@ -13007,6 +13186,32 @@
     "inputs": {
       "photomaker_model_name": {
         "name": "photomaker模型名称"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PiDConditioning": {
+    "description": "为 PiD 解码/放大附加 latent 和 degrade_sigma 标量到 CONDITIONING",
+    "display_name": "PiD 条件处理",
+    "inputs": {
+      "degrade_sigma": {
+        "name": "degrade_sigma",
+        "tooltip": "0 = 干净 latent。增加以去噪受损 latent 输出。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent（来自 VAEEncode 或 KSampler）。"
+      },
+      "latent_format": {
+        "name": "latent 格式",
+        "tooltip": "Flux1 和 Flux2 latent 可根据通道维自动检测，sd3 需手动选择。"
+      },
+      "positive": {
+        "name": "正向"
       }
     },
     "outputs": {
@@ -15951,6 +16156,10 @@
       "images": {
         "name": "图像",
         "tooltip": "需要保存的图像序列。"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "选择覆盖已有文件，或通过递增文件名来避免覆盖。"
       }
     }
   },
@@ -15969,6 +16178,10 @@
       "images": {
         "name": "图像",
         "tooltip": "需要保存的图像序列。"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "选择覆盖已有文件，或通过递增文件名来避免覆盖。"
       },
       "texts": {
         "name": "文本",
@@ -16114,6 +16327,57 @@
       },
       "shift_y": {
         "name": "shift_y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectCLIPDevice": {
+    "description": "将 CLIP 文本编码器放置在指定设备上（default / cpu / gpu:N）。\n\n- “default” 恢复加载器分配的设备。\n- “cpu” 将加载和卸载设备都固定为 CPU。\n- “gpu:N” 将加载设备固定为第 N 个可用 GPU。\n\n当所选设备在当前机器上不存在时\n（例如在 2-GPU 机器上构建的工作流在 1-GPU 机器上打开），\n节点会直接传递 CLIP 并记录消息，而不会报错。",
+    "display_name": "选择 CLIP 设备",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "device": {
+        "name": "device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectModelDevice": {
+    "description": "将扩散模型放置在指定设备上（default / cpu / gpu:N）。\n\n- “default” 恢复加载器分配的设备（即使在之前调用过选择模型设备后）。\n- “cpu” 将加载和卸载设备都固定为 CPU。\n- “gpu:N” 将加载设备固定为第 N 个可用 GPU；卸载设备恢复为加载器的原始选择。\n\n当请求的设备与输入模型当前所在设备不同时，会通过加载器的 reload factory（cached_patcher_init）生成一个新的模型实例，使新的 patcher 在新设备上拥有独立权重。不支持多 GPU 的加载器（无 factory）会导致节点直接传递且发出警告。\n\n如果工作流已应用多GPU CFG 拆分，且所选 GPU 与现有多 GPU 克隆冲突，则该克隆会被移除，避免两个 patcher 绑定到同一设备。\n\n当所选设备在当前机器上不存在时\n（例如在 2-GPU 机器上构建的工作流在 1-GPU 机器上打开），\n节点会直接传递模型并记录消息，而不会报错。\n\n注意：不建议在已被其他节点消费过的模型之后放置选择模型设备节点（例如 KSampler 已在原设备上运行过该模型）——如果所选设备与原设备一致（快速路径），则会观察到之前消费者对原模型的状态更改。请在任何模型消费者之前放置选择模型设备节点。",
+    "display_name": "选择模型设备",
+    "inputs": {
+      "device": {
+        "name": "device"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectVAEDevice": {
+    "description": "将VAE放置在指定设备上（default / gpu:N）。\n\n- “default” 恢复加载器分配的设备。\n- “gpu:N” 将加载设备固定到第N个可用GPU；卸载设备设置为标准VAE卸载设备。\n\nVAE在UI中故意不暴露CPU选项；如果工作流仍然提供了“cpu”（例如从其他机器打开），请求会被记录日志并丢弃，VAE保持不变。\n\n当所选设备在当前机器上不存在时（例如在2-GPU机器上构建的工作流在1-GPU机器上打开），节点会直接传递VAE并记录日志，而不会报错。",
+    "display_name": "选择VAE设备",
+    "inputs": {
+      "device": {
+        "name": "设备"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -18356,6 +18620,169 @@
       },
       "1": {
         "name": "模型任务ID",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1ImageToModelNode": {
+    "description": "Tripo P1 图像转 3D。针对低面数、游戏级网格进行了优化。",
+    "display_name": "Tripo P1：图像转模型",
+    "inputs": {
+      "auto_size": {
+        "name": "自动缩放",
+        "tooltip": "将输出缩放至接近真实世界米制。"
+      },
+      "compress_geometry": {
+        "name": "压缩几何体",
+        "tooltip": "应用基于几何体的压缩。编辑前需解压。"
+      },
+      "enable_image_autofix": {
+        "name": "启用图像自动修复",
+        "tooltip": "对输入图像进行预处理，以提升生成质量。"
+      },
+      "export_uv": {
+        "name": "导出 UV",
+        "tooltip": "生成时进行 UV 展开。关闭可加快仅几何体生成速度。"
+      },
+      "face_limit": {
+        "name": "面数限制",
+        "tooltip": "目标面数，48-20000。-1 让 Tripo 自适应选择。"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "model_seed": {
+        "name": "模型种子"
+      },
+      "output_mode": {
+        "name": "输出模式",
+        "tooltip": "“仅几何体”返回无贴图网格。“带贴图”添加颜色/PBR 贴图。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型任务 ID",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1MultiviewToModelNode": {
+    "description": "Tripo P1 多视图转 3D，支持 2-4 张参考图像，顺序为 [正面、左侧、背面、右侧]。正面为必填，其余三项可选。",
+    "display_name": "Tripo P1：多视图转模型",
+    "inputs": {
+      "auto_size": {
+        "name": "自动缩放",
+        "tooltip": "将输出缩放至接近真实世界米制。"
+      },
+      "compress_geometry": {
+        "name": "压缩几何体",
+        "tooltip": "应用基于几何体的压缩。编辑前需解压。"
+      },
+      "export_uv": {
+        "name": "导出 UV",
+        "tooltip": "生成时进行 UV 展开。关闭可加快仅几何体生成速度。"
+      },
+      "face_limit": {
+        "name": "面数限制",
+        "tooltip": "目标面数，48-20000。-1 让 Tripo 自适应选择。"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "正面视角（0°）。必填。"
+      },
+      "image_back": {
+        "name": "背面图像",
+        "tooltip": "背面视角（180°）。"
+      },
+      "image_left": {
+        "name": "左侧图像",
+        "tooltip": "左侧视角（90°），即主体左侧。"
+      },
+      "image_right": {
+        "name": "右侧图像",
+        "tooltip": "右侧视角（270°），即主体右侧。"
+      },
+      "model_seed": {
+        "name": "模型种子"
+      },
+      "output_mode": {
+        "name": "输出模式",
+        "tooltip": "“仅几何体”返回无贴图网格。“带贴图”添加颜色/PBR 贴图。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型任务 ID",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1TextToModelNode": {
+    "description": "Tripo P1 文本转 3D。针对低多边形、游戏级网格和稳定拓扑结构进行了优化。",
+    "display_name": "Tripo P1：文本转模型",
+    "inputs": {
+      "auto_size": {
+        "name": "自动缩放",
+        "tooltip": "将输出缩放至接近真实世界米制。"
+      },
+      "compress_geometry": {
+        "name": "压缩几何体",
+        "tooltip": "应用基于几何体的压缩。编辑前请先解压。"
+      },
+      "export_uv": {
+        "name": "导出 UV",
+        "tooltip": "生成时进行 UV 展开。关闭可加快仅几何体生成速度。"
+      },
+      "face_limit": {
+        "name": "面数限制",
+        "tooltip": "目标面数，48-20000。-1 让 Tripo 自适应选择。"
+      },
+      "image_seed": {
+        "name": "图像种子"
+      },
+      "model_seed": {
+        "name": "模型种子"
+      },
+      "negative_prompt": {
+        "name": "反向提示词",
+        "tooltip": "最多 255 个字符。"
+      },
+      "output_mode": {
+        "name": "输出模式",
+        "tooltip": "“仅几何体”返回无贴图网格。“带贴图”则添加颜色/PBR 贴图。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "最多 1024 个字符。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型任务 ID",
         "tooltip": null
       },
       "2": {

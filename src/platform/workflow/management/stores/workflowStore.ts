@@ -72,6 +72,7 @@ interface WorkflowStore {
   modifiedWorkflows: ComfyWorkflow[]
   getWorkflowByPath: (path: string) => ComfyWorkflow | null
   syncWorkflows: (dir?: string) => Promise<void>
+  isSyncLoading: boolean
   reorderWorkflows: (from: number, to: number) => void
 
   /** `true` if any subgraph is currently being viewed. */
@@ -785,6 +786,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     modifiedWorkflows,
     getWorkflowByPath,
     syncWorkflows,
+    isSyncLoading,
     loadWorkflows,
 
     isSubgraphActive,

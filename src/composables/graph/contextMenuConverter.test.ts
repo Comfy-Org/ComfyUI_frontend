@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
 
+import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+
 import type { MenuOption } from './useMoreOptionsMenu'
 import {
   buildStructuredMenu,
@@ -174,6 +176,28 @@ describe('contextMenuConverter', () => {
       const result = convertContextMenuToOptions(items, undefined, false)
       expect(result.find((opt) => opt.label === 'Properties')).toBeUndefined()
     })
+
+    it.for([
+      { label: 'Resize', callback: LGraphCanvas.onMenuResizeNode },
+      { label: 'Collapse', callback: LGraphCanvas.onMenuNodeCollapse },
+      { label: 'Expand', callback: LGraphCanvas.onMenuNodeCollapse }
+    ])(
+      'should skip built-in LiteGraph $label entry by callback identity',
+      ({ label, callback }) => {
+        const items = [{ content: label, callback }]
+        const result = convertContextMenuToOptions(items, undefined, false)
+        expect(result.find((opt) => opt.label === label)).toBeUndefined()
+      }
+    )
+
+    it.for(['Resize', 'Collapse', 'Expand'])(
+      'should keep extension-provided %s entries (different callback identity)',
+      (label) => {
+        const items = [{ content: label, callback: () => {} }]
+        const result = convertContextMenuToOptions(items, undefined, false)
+        expect(result.find((opt) => opt.label === label)).toBeDefined()
+      }
+    )
 
     it('should convert basic menu items with content', () => {
       const items = [{ content: 'Test Item', callback: () => {} }]
