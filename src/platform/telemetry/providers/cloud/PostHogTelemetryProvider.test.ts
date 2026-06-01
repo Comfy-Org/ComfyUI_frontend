@@ -287,7 +287,7 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
   })
-
+  
   describe('execution tracking', () => {
     it('stamps is_app_mode and view_mode on the execution_start event', async () => {
       const provider = createProvider()
@@ -305,6 +305,73 @@ describe('PostHogTelemetryProvider', () => {
           trigger_source: 'unknown'
         })
       )
+    })
+  })
+  describe('before_send', () => {
+    it('strips PII keys from event properties, $set, and $set_once', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const { before_send } = hoisted.mockInit.mock.calls[0][1]
+
+      const event = {
+        event: 'test',
+        properties: {
+          email: 'props@example.com',
+          prompt: 'hello',
+          user_email: 'props_user@example.com',
+          $email: 'props_posthog@example.com',
+          method: 'google'
+        },
+        $set: {
+          email: 'set@example.com',
+          user_email: 'set_user@example.com',
+          $email: 'set_posthog@example.com',
+          name: 'keep me'
+        },
+        $set_once: {
+          email: 'set_once@example.com',
+          plan: 'free'
+        }
+      }
+
+      const result = before_send(event)
+
+      // event.properties — all four PII keys stripped, non-PII preserved
+      expect(result.properties).not.toHaveProperty('email')
+      expect(result.properties).not.toHaveProperty('prompt')
+      expect(result.properties).not.toHaveProperty('user_email')
+      expect(result.properties).not.toHaveProperty('$email')
+      expect(result.properties).toHaveProperty('method', 'google')
+
+      // event.$set — PII stripped, non-PII preserved
+      // posthog.identify(id, { email }) lands here, not in properties
+      expect(result.$set).not.toHaveProperty('email')
+      expect(result.$set).not.toHaveProperty('user_email')
+      expect(result.$set).not.toHaveProperty('$email')
+      expect(result.$set).toHaveProperty('name', 'keep me')
+
+      // event.$set_once — PII stripped, non-PII preserved
+      expect(result.$set_once).not.toHaveProperty('email')
+      expect(result.$set_once).toHaveProperty('plan', 'free')
+    })
+
+    it('remoteConfig.posthog_config cannot override before_send or person_profiles', async () => {
+      const remoteBefore_send = vi.fn()
+      mockRemoteConfig.value = {
+        posthog_config: {
+          before_send: remoteBefore_send,
+          person_profiles: 'always'
+        }
+      }
+
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const initConfig = hoisted.mockInit.mock.calls[0][1]
+
+      expect(initConfig.before_send).not.toBe(remoteBefore_send)
+      expect(initConfig.person_profiles).toBe('identified_only')
     })
   })
 })

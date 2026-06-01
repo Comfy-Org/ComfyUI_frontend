@@ -1,6 +1,8 @@
 import type { PostHog } from 'posthog-js'
 import { watch } from 'vue'
 
+import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
+
 import { useAppMode } from '@/composables/useAppMode'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
@@ -114,7 +116,13 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               capture_pageleave: false,
               persistence: 'localStorage+cookie',
               debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',
-              ...serverConfig
+              ...serverConfig,
+              person_profiles: 'identified_only',
+              // cookie_domain omitted: posthog-js sets a first-party cross-subdomain cookie
+              // automatically when persistence includes 'cookie' (the default).
+              // Explicit override interacts badly with posthog-js#3578 where reset() fails
+              // to clear localStorage on other subdomains, causing identity bleed on logout.
+              before_send: createPostHogBeforeSend()
             })
             this.isInitialized = true
             this.flushEventQueue()
