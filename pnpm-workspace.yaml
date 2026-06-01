@@ -92,7 +92,7 @@ catalog:
   jiti: 2.6.1
   jsdom: ^27.4.0
   jsonata: ^2.1.0
-  knip: ^6.14.1
+  knip: ^6.15.0
   lenis: ^1.3.21
   lint-staged: ^16.2.7
   markdown-table: ^3.0.4
