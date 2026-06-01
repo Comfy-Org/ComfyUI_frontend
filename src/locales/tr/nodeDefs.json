@@ -8530,6 +8530,10 @@
       "6": {
         "name": "model_3d",
         "tooltip": null
+      },
+      "7": {
+        "name": "model_3d_info",
+        "tooltip": null
       }
     }
   },
@@ -18607,6 +18611,169 @@
       },
       "texture_seed": {
         "name": "doku_tohumu"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_görev_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1ImageToModelNode": {
+    "description": "Tripo P1 görüntüden 3D'ye. Düşük poligonlu, oyun için hazır ağlar için optimize edilmiştir.",
+    "display_name": "Tripo P1: Görüntüden Modele",
+    "inputs": {
+      "auto_size": {
+        "name": "oto_boyut",
+        "tooltip": "Çıktıyı gerçek dünya metrelerine yaklaşık olarak ölçeklendir."
+      },
+      "compress_geometry": {
+        "name": "geometriyi_sıkıştır",
+        "tooltip": "Geometri tabanlı sıkıştırma uygula. Düzenlemeden önce aç."
+      },
+      "enable_image_autofix": {
+        "name": "görüntü_oto_düzeltme_aktif",
+        "tooltip": "Daha iyi üretim kalitesi için giriş görüntüsünü ön işle."
+      },
+      "export_uv": {
+        "name": "uv_dışa_aktar",
+        "tooltip": "Oluşturma sırasında UV açma işlemi yap. Yalnızca geometri için daha hızlı çalıştırmak için kapat."
+      },
+      "face_limit": {
+        "name": "yüz_sınırı",
+        "tooltip": "Hedef yüz sayısı, 48-20000. -1, Tripo'nun uyarlamalı olarak seçmesine izin verir."
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "model_seed": {
+        "name": "model_tohumu"
+      },
+      "output_mode": {
+        "name": "çıktı_modu",
+        "tooltip": "\"Yalnızca geometri\" dokusuz bir ağ döndürür. \"Dokulu\" renk/PBR haritaları ekler."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1MultiviewToModelNode": {
+    "description": "Tripo P1 çoklu görünüşten 3D'ye, [ön, sol, arka, sağ] sırasıyla 2-4 referans görüntüsünden. Ön zorunludur; diğer üçünden herhangi bir kombinasyon atlanabilir.",
+    "display_name": "Tripo P1: Çoklu Görünüşten Modele",
+    "inputs": {
+      "auto_size": {
+        "name": "oto_boyut",
+        "tooltip": "Çıktıyı gerçek dünya metrelerine yaklaşık olarak ölçeklendir."
+      },
+      "compress_geometry": {
+        "name": "geometriyi_sıkıştır",
+        "tooltip": "Geometri tabanlı sıkıştırma uygula. Düzenlemeden önce aç."
+      },
+      "export_uv": {
+        "name": "uv_dışa_aktar",
+        "tooltip": "Oluşturma sırasında UV açma işlemi yap. Yalnızca geometri için daha hızlı çalıştırmak için kapat."
+      },
+      "face_limit": {
+        "name": "yüz_sınırı",
+        "tooltip": "Hedef yüz sayısı, 48-20000. -1, Tripo'nun uyarlamalı olarak seçmesine izin verir."
+      },
+      "image": {
+        "name": "görüntü",
+        "tooltip": "Ön görünüş (0°). Zorunlu."
+      },
+      "image_back": {
+        "name": "görüntü_arka",
+        "tooltip": "Arka görünüş (180°)."
+      },
+      "image_left": {
+        "name": "görüntü_sol",
+        "tooltip": "Sol görünüş (90°), yani konunun sol tarafı."
+      },
+      "image_right": {
+        "name": "görüntü_sağ",
+        "tooltip": "Sağ görünüş (270°), yani konunun sağ tarafı."
+      },
+      "model_seed": {
+        "name": "model_tohumu"
+      },
+      "output_mode": {
+        "name": "çıktı_modu",
+        "tooltip": "\"Yalnızca geometri\" dokusuz bir ağ döndürür. \"Dokulu\" renk/PBR haritaları ekler."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1TextToModelNode": {
+    "description": "Tripo P1 metinden 3D'ye. Düşük poligonlu, oyun için hazır ağlar ve stabil topoloji için optimize edilmiştir.",
+    "display_name": "Tripo P1: Metinden Modele",
+    "inputs": {
+      "auto_size": {
+        "name": "otomatik_boyut",
+        "tooltip": "Çıktıyı gerçek dünya metrelerine yaklaşık olarak ölçeklendir."
+      },
+      "compress_geometry": {
+        "name": "geometriyi_sıkıştır",
+        "tooltip": "Geometri tabanlı sıkıştırma uygula. Düzenlemeden önce açın."
+      },
+      "export_uv": {
+        "name": "uv_dışa_aktar",
+        "tooltip": "Oluşturma sırasında UV açma. Yalnızca geometri için daha hızlı çalıştırmak için kapatın."
+      },
+      "face_limit": {
+        "name": "yüz_sınırı",
+        "tooltip": "Hedef yüz sayısı, 48-20000. -1 Tripo'nun uyarlamasına izin verir."
+      },
+      "image_seed": {
+        "name": "görüntü_tohumu"
+      },
+      "model_seed": {
+        "name": "model_tohumu"
+      },
+      "negative_prompt": {
+        "name": "negatif_istem",
+        "tooltip": "En fazla 255 karakter."
+      },
+      "output_mode": {
+        "name": "çıktı_modu",
+        "tooltip": "\"Yalnızca Geometri\" dokusuz bir ağ döndürür. \"Dokulu\" renk/PBR haritaları ekler."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "En fazla 1024 karakter."
       }
     },
     "outputs": {

@@ -199,7 +199,6 @@
     "name": "موتور PLY",
     "options": {
       "fastply": "fastply",
-      "sparkjs": "sparkjs",
       "threejs": "threejs"
     },
     "tooltip": "موتور بارگذاری فایل‌های PLY را انتخاب کنید. «threejs» از PLYLoader بومی Three.js استفاده می‌کند (مناسب برای فایل‌های مش PLY). «fastply» از یک بارگذار بهینه‌شده برای فایل‌های point cloud PLY به صورت ASCII استفاده می‌کند. «sparkjs» از Spark.js برای فایل‌های 3D Gaussian Splatting PLY استفاده می‌کند."

@@ -826,6 +826,7 @@
     "LATENT_OPERATION": "latent 操作",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
     "LOAD3D_CAMERA": "載入 3D 攝影機",
+    "LOAD3D_MODEL_INFO": "載入3D模型資訊",
     "LOAD_3D": "載入 3D",
     "LORA_MODEL": "LoRA模型",
     "LOSS_MAP": "損失圖",
@@ -917,10 +918,6 @@
       "nodeName": "此節點"
     },
     "promptErrors": {
-      "image_not_loaded": {
-        "desc": "系統無法載入此圖片。",
-        "title": "圖片未載入"
-      },
       "missing_node_type": {
         "desc": "缺少或無法取得某個節點類型。工作流程可能已損壞或需要自訂節點。",
         "title": "缺少節點類型"
@@ -928,11 +925,6 @@
       "no_prompt": {
         "desc": "傳送到伺服器的工作流程資料為空。這可能是系統的非預期錯誤。",
         "title": "工作流程資料為空"
-      },
-      "out_of_memory": {
-        "descCloud": "GPU 記憶體不足。請嘗試降低複雜度後再執行。不會扣除點數。",
-        "descLocal": "GPU 記憶體不足。請嘗試降低複雜度後再執行。",
-        "title": "生成失敗"
       },
       "prompt_no_outputs": {
         "desc": "工作流程中沒有包含任何輸出節點（例如：儲存圖像、預覽圖像），無法產生結果。",
@@ -949,6 +941,191 @@
       "server_error_local": {
         "desc": "伺服器發生非預期錯誤。請檢查伺服器日誌。",
         "title": "伺服器錯誤"
+      }
+    },
+    "runtimeErrors": {
+      "access_required": {
+        "itemLabel": "{nodeName}",
+        "message": "此執行需要目前帳戶無法取得的存取權限。",
+        "title": "需要存取權限",
+        "toastMessage": "此執行需要目前帳戶無法取得的存取權限。",
+        "toastTitle": "需要存取權限"
+      },
+      "content_blocked": {
+        "itemLabel": "{nodeName}",
+        "message": "此請求已被內容審查系統封鎖。請嘗試更改提示詞或輸入內容。",
+        "title": "內容已封鎖",
+        "toastMessage": "此請求已被內容審查系統封鎖。請嘗試更改提示詞或輸入內容。",
+        "toastTitle": "內容已封鎖"
+      },
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "節點在執行時發生錯誤。",
+        "title": "執行失敗",
+        "toastMessage": "此節點在執行時發生錯誤。請檢查其輸入或嘗試不同的設定。",
+        "toastTitle": "{nodeName} 執行失敗"
+      },
+      "generation_stalled": {
+        "itemLabel": "{nodeName}",
+        "message": "此工作流程已停止進行。請重新執行。",
+        "title": "生成停滯",
+        "toastMessage": "此工作流程已停止進行。請重新執行。",
+        "toastTitle": "生成停滯"
+      },
+      "image_not_loaded": {
+        "itemLabel": "{nodeName}",
+        "message": "系統無法載入這張圖片。",
+        "title": "圖片未載入",
+        "toastMessage": "{nodeName} 的圖片無法載入。請重新加入圖片。",
+        "toastTitle": "輸入圖片無法載入"
+      },
+      "insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "請為您的帳戶儲值以使用此節點。",
+        "title": "點數不足",
+        "toastMessage": "請為您的帳戶儲值以使用此節點。",
+        "toastTitle": "點數不足"
+      },
+      "invalid_clip_input": {
+        "itemLabel": "{nodeName}",
+        "message": "CLIP 輸入遺失或無效。請檢查連接的 checkpoint 或 CLIP 載入器。",
+        "title": "CLIP 輸入無效",
+        "toastMessage": "{nodeName} 缺少或有無效的 CLIP 輸入。",
+        "toastTitle": "CLIP 輸入無效"
+      },
+      "invalid_prompt": {
+        "itemLabel": "{nodeName}",
+        "message": "請在執行此工作流程前輸入提示詞。",
+        "title": "提示詞為空",
+        "toastMessage": "請在執行此工作流程前輸入提示詞。",
+        "toastTitle": "提示詞為空"
+      },
+      "invalid_workflow_request": {
+        "itemLabel": "{nodeName}",
+        "message": "工作流程請求無效。請檢查工作流程後再試一次。",
+        "title": "工作流程請求無效",
+        "toastMessage": "工作流程請求無效。請檢查工作流程後再試一次。",
+        "toastTitle": "工作流程請求無效"
+      },
+      "model_access_error": {
+        "itemLabel": "{nodeName}",
+        "message": "一個或多個必要模型無法存取。",
+        "title": "需要模型存取權限",
+        "toastMessage": "一個或多個必要模型無法存取。",
+        "toastTitle": "需要模型存取權限"
+      },
+      "model_download_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "模型無法下載。請再試一次。",
+        "title": "模型下載失敗",
+        "toastMessage": "模型無法下載。請再試一次。",
+        "toastTitle": "模型下載失敗"
+      },
+      "out_of_memory": {
+        "itemLabel": "{nodeName}",
+        "message": "GPU 記憶體不足。請嘗試降低圖片解析度或批次大小後再執行。",
+        "title": "生成失敗",
+        "toastMessage": "GPU 記憶體不足。請嘗試降低圖片解析度或批次大小後再執行。",
+        "toastTitle": "生成失敗"
+      },
+      "preprocessing_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "無法準備此工作流程。請重新執行。",
+        "title": "準備失敗",
+        "toastMessage": "無法準備此工作流程。請重新執行。",
+        "toastTitle": "準備失敗"
+      },
+      "preprocessing_timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "工作流程準備時間過長。請重新執行。",
+        "title": "準備逾時",
+        "toastMessage": "工作流程準備時間過長。請重新執行。",
+        "toastTitle": "準備逾時"
+      },
+      "rate_limited": {
+        "itemLabel": "{nodeName}",
+        "message": "目前需求量大。請稍後再試。",
+        "title": "伺服器忙碌中",
+        "toastMessage": "目前需求量大。請稍後再試。",
+        "toastTitle": "伺服器忙碌中"
+      },
+      "request_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "請求在執行前失敗。請再試一次。",
+        "title": "請求失敗",
+        "toastMessage": "請求在執行前失敗。請再試一次。",
+        "toastTitle": "請求失敗"
+      },
+      "run_ended_unexpectedly": {
+        "itemLabel": "{nodeName}",
+        "message": "執行意外結束。請再試一次。",
+        "title": "執行意外結束",
+        "toastMessage": "執行意外結束。請再試一次。",
+        "toastTitle": "執行意外結束"
+      },
+      "run_start_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "無法開始執行。請再試一次。",
+        "title": "無法開始執行",
+        "toastMessage": "無法開始執行。請再試一次。",
+        "toastTitle": "無法開始執行"
+      },
+      "server_busy": {
+        "itemLabel": "{nodeName}",
+        "message": "伺服器目前忙碌。請稍後再試。",
+        "title": "伺服器忙碌中",
+        "toastMessage": "伺服器目前忙碌。請稍後再試。",
+        "toastTitle": "伺服器忙碌中"
+      },
+      "server_crashed": {
+        "itemLabel": "{nodeName}",
+        "message": "伺服器在執行此工作流程時停止運作。請再試一次。",
+        "title": "伺服器當機",
+        "toastMessage": "伺服器在執行此工作流程時停止運作。請再試一次。",
+        "toastTitle": "伺服器當機"
+      },
+      "sign_in_required": {
+        "itemLabel": "{nodeName}",
+        "message": "合作夥伴節點需要 Comfy 帳戶。請登入以繼續。",
+        "title": "需要登入",
+        "toastMessage": "合作夥伴節點需要 Comfy 帳戶。請登入以繼續。",
+        "toastTitle": "登入以使用此節點"
+      },
+      "subscription_required": {
+        "itemLabel": "{nodeName}",
+        "message": "請訂閱方案以繼續執行此工作流程。",
+        "title": "需要訂閱",
+        "toastMessage": "請訂閱方案以繼續執行此工作流程。",
+        "toastTitle": "需要訂閱"
+      },
+      "subscription_upgrade_required": {
+        "details": "私人模型需要升級訂閱：{modelNames}",
+        "itemLabel": "{nodeName}",
+        "message": "請升級您的訂閱以使用此工作流程中的私人模型。",
+        "title": "需要升級訂閱",
+        "toastMessage": "請升級您的訂閱以使用這些私人模型：{modelNames}。",
+        "toastTitle": "需要升級訂閱"
+      },
+      "timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "此工作流程已達最大執行時間。請嘗試降低圖片解析度、批次大小或縮短流程後再執行。",
+        "title": "生成逾時",
+        "toastMessage": "此工作流程已達最大執行時間。請嘗試降低圖片解析度、批次大小或縮短流程後再執行。",
+        "toastTitle": "生成逾時"
+      },
+      "unexpected_service_error": {
+        "itemLabel": "{nodeName}",
+        "message": "服務發生非預期錯誤。請再試一次。",
+        "title": "服務錯誤",
+        "toastMessage": "服務發生非預期錯誤。請再試一次。",
+        "toastTitle": "服務錯誤"
+      },
+      "workspace_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "請為您的工作區儲值以繼續使用。",
+        "title": "點數不足",
+        "toastMessage": "請為您的工作區儲值以繼續使用。",
+        "toastTitle": "點數不足"
       }
     },
     "validationErrors": {

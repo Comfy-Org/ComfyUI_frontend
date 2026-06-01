@@ -826,6 +826,7 @@
     "LATENT_OPERATION": "عملیات latent",
     "LATENT_UPSCALE_MODEL": "مدل بزرگ‌نمایی latent",
     "LOAD3D_CAMERA": "دوربین بارگذاری سه‌بعدی",
+    "LOAD3D_MODEL_INFO": "بارگذاری اطلاعات مدل سه‌بعدی",
     "LOAD_3D": "بارگذاری سه‌بعدی",
     "LORA_MODEL": "مدل lora",
     "LOSS_MAP": "نقشه خطا",
@@ -917,10 +918,6 @@
       "nodeName": "این نود"
     },
     "promptErrors": {
-      "image_not_loaded": {
-        "desc": "سیستم نتوانست این تصویر را بارگذاری کند.",
-        "title": "تصویر بارگذاری نشد"
-      },
       "missing_node_type": {
         "desc": "یک نوع node وجود ندارد یا در دسترس نیست. ممکن است workflow خراب شده باشد یا به node سفارشی نیاز داشته باشد.",
         "title": "نوع node وجود ندارد"
@@ -928,11 +925,6 @@
       "no_prompt": {
         "desc": "داده‌های ورک‌فلو ارسال‌شده به سرور خالی است. این ممکن است یک خطای غیرمنتظره سیستمی باشد.",
         "title": "داده‌های workflow خالی است"
-      },
-      "out_of_memory": {
-        "descCloud": "حافظه GPU کافی نیست. پیچیدگی را کاهش دهید و دوباره تلاش کنید. هیچ اعتباری کسر نشد.",
-        "descLocal": "حافظه GPU کافی نیست. پیچیدگی را کاهش دهید و دوباره تلاش کنید.",
-        "title": "تولید ناموفق بود"
       },
       "prompt_no_outputs": {
         "desc": "در این ورک‌فلو هیچ نود خروجی (مانند Save Image یا Preview Image) برای تولید نتیجه وجود ندارد.",
@@ -949,6 +941,191 @@
       "server_error_local": {
         "desc": "سرور با یک خطای غیرمنتظره مواجه شد. لطفاً لاگ‌های سرور را بررسی کنید.",
         "title": "خطای سرور"
+      }
+    },
+    "runtimeErrors": {
+      "access_required": {
+        "itemLabel": "{nodeName}",
+        "message": "این اجرا به دسترسی نیاز دارد که برای حساب فعلی در دسترس نیست.",
+        "title": "دسترسی لازم است",
+        "toastMessage": "این اجرا به دسترسی نیاز دارد که برای حساب فعلی در دسترس نیست.",
+        "toastTitle": "دسترسی لازم است"
+      },
+      "content_blocked": {
+        "itemLabel": "{nodeName}",
+        "message": "این درخواست توسط سیستم مدیریت محتوا مسدود شد. متن یا ورودی‌ها را تغییر دهید.",
+        "title": "محتوا مسدود شد",
+        "toastMessage": "این درخواست توسط سیستم مدیریت محتوا مسدود شد. متن یا ورودی‌ها را تغییر دهید.",
+        "toastTitle": "محتوا مسدود شد"
+      },
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "گره در هنگام اجرا با خطا مواجه شد.",
+        "title": "اجرا ناموفق بود",
+        "toastMessage": "این گره در هنگام اجرا با خطا مواجه شد. ورودی‌ها را بررسی کنید یا پیکربندی دیگری را امتحان نمایید.",
+        "toastTitle": "{nodeName} ناموفق بود"
+      },
+      "generation_stalled": {
+        "itemLabel": "{nodeName}",
+        "message": "این workflow پیشرفتی نداشت. دوباره اجرا کنید.",
+        "title": "تولید متوقف شد",
+        "toastMessage": "این workflow پیشرفتی نداشت. دوباره اجرا کنید.",
+        "toastTitle": "تولید متوقف شد"
+      },
+      "image_not_loaded": {
+        "itemLabel": "{nodeName}",
+        "message": "سیستم نتوانست این تصویر را بارگذاری کند.",
+        "title": "تصویر بارگذاری نشد",
+        "toastMessage": "تصویر مربوط به {nodeName} بارگذاری نشد. دوباره آن را اضافه کنید.",
+        "toastTitle": "تصویر ورودی بارگذاری نشد"
+      },
+      "insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "برای استفاده از این گره به حساب خود اعتبار اضافه کنید.",
+        "title": "اعتبار کافی نیست",
+        "toastMessage": "برای استفاده از این گره به حساب خود اعتبار اضافه کنید.",
+        "toastTitle": "اعتبار کافی نیست"
+      },
+      "invalid_clip_input": {
+        "itemLabel": "{nodeName}",
+        "message": "ورودی CLIP وجود ندارد یا نامعتبر است. نقطه بازیابی یا بارگذار CLIP متصل را بررسی کنید.",
+        "title": "ورودی CLIP نامعتبر است",
+        "toastMessage": "{nodeName} ورودی CLIP نامعتبر یا مفقود دارد.",
+        "toastTitle": "ورودی CLIP نامعتبر است"
+      },
+      "invalid_prompt": {
+        "itemLabel": "{nodeName}",
+        "message": "قبل از اجرای این workflow یک متن وارد کنید.",
+        "title": "متن خالی است",
+        "toastMessage": "قبل از اجرای این workflow یک متن وارد کنید.",
+        "toastTitle": "متن خالی است"
+      },
+      "invalid_workflow_request": {
+        "itemLabel": "{nodeName}",
+        "message": "درخواست workflow نامعتبر است. workflow را بررسی و دوباره امتحان کنید.",
+        "title": "درخواست workflow نامعتبر است",
+        "toastMessage": "درخواست workflow نامعتبر است. workflow را بررسی و دوباره امتحان کنید.",
+        "toastTitle": "درخواست workflow نامعتبر است"
+      },
+      "model_access_error": {
+        "itemLabel": "{nodeName}",
+        "message": "یک یا چند مدل مورد نیاز قابل دسترسی نیست.",
+        "title": "دسترسی به مدل لازم است",
+        "toastMessage": "یک یا چند مدل مورد نیاز قابل دسترسی نیست.",
+        "toastTitle": "دسترسی به مدل لازم است"
+      },
+      "model_download_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "یک مدل دانلود نشد. دوباره امتحان کنید.",
+        "title": "دانلود مدل ناموفق بود",
+        "toastMessage": "یک مدل دانلود نشد. دوباره امتحان کنید.",
+        "toastTitle": "دانلود مدل ناموفق بود"
+      },
+      "out_of_memory": {
+        "itemLabel": "{nodeName}",
+        "message": "حافظه GPU کافی نیست. وضوح تصویر یا اندازه دسته را کاهش دهید و دوباره اجرا کنید.",
+        "title": "تولید ناموفق بود",
+        "toastMessage": "حافظه GPU کافی نیست. وضوح تصویر یا اندازه دسته را کاهش دهید و دوباره اجرا کنید.",
+        "toastTitle": "تولید ناموفق بود"
+      },
+      "preprocessing_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "workflow آماده نشد. دوباره اجرا کنید.",
+        "title": "آماده‌سازی ناموفق بود",
+        "toastMessage": "workflow آماده نشد. دوباره اجرا کنید.",
+        "toastTitle": "آماده‌سازی ناموفق بود"
+      },
+      "preprocessing_timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "آماده‌سازی workflow بیش از حد طول کشید. دوباره اجرا کنید.",
+        "title": "زمان آماده‌سازی به پایان رسید",
+        "toastMessage": "آماده‌سازی workflow بیش از حد طول کشید. دوباره اجرا کنید.",
+        "toastTitle": "زمان آماده‌سازی به پایان رسید"
+      },
+      "rate_limited": {
+        "itemLabel": "{nodeName}",
+        "message": "در حال حاضر تقاضا زیاد است. لحظاتی بعد دوباره امتحان کنید.",
+        "title": "سرورها شلوغ هستند",
+        "toastMessage": "در حال حاضر تقاضا زیاد است. لحظاتی بعد دوباره امتحان کنید.",
+        "toastTitle": "سرورها شلوغ هستند"
+      },
+      "request_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "درخواست قبل از اتمام اجرا ناموفق بود. دوباره امتحان کنید.",
+        "title": "درخواست ناموفق بود",
+        "toastMessage": "درخواست قبل از اتمام اجرا ناموفق بود. دوباره امتحان کنید.",
+        "toastTitle": "درخواست ناموفق بود"
+      },
+      "run_ended_unexpectedly": {
+        "itemLabel": "{nodeName}",
+        "message": "اجرا به طور غیرمنتظره پایان یافت. دوباره امتحان کنید.",
+        "title": "اجرا به طور غیرمنتظره پایان یافت",
+        "toastMessage": "اجرا به طور غیرمنتظره پایان یافت. دوباره امتحان کنید.",
+        "toastTitle": "اجرا به طور غیرمنتظره پایان یافت"
+      },
+      "run_start_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "اجرا شروع نشد. دوباره امتحان کنید.",
+        "title": "اجرا شروع نشد",
+        "toastMessage": "اجرا شروع نشد. دوباره امتحان کنید.",
+        "toastTitle": "اجرا شروع نشد"
+      },
+      "server_busy": {
+        "itemLabel": "{nodeName}",
+        "message": "در حال حاضر سرورها شلوغ هستند. لحظاتی بعد دوباره امتحان کنید.",
+        "title": "سرورها شلوغ هستند",
+        "toastMessage": "در حال حاضر سرورها شلوغ هستند. لحظاتی بعد دوباره امتحان کنید.",
+        "toastTitle": "سرورها شلوغ هستند"
+      },
+      "server_crashed": {
+        "itemLabel": "{nodeName}",
+        "message": "سرور هنگام اجرای این workflow متوقف شد. دوباره امتحان کنید.",
+        "title": "سرور متوقف شد",
+        "toastMessage": "سرور هنگام اجرای این workflow متوقف شد. دوباره امتحان کنید.",
+        "toastTitle": "سرور متوقف شد"
+      },
+      "sign_in_required": {
+        "itemLabel": "{nodeName}",
+        "message": "گره‌های شریک نیاز به حساب Comfy دارند. برای ادامه وارد شوید.",
+        "title": "ورود لازم است",
+        "toastMessage": "گره‌های شریک نیاز به حساب Comfy دارند. برای ادامه وارد شوید.",
+        "toastTitle": "برای استفاده از این گره وارد شوید"
+      },
+      "subscription_required": {
+        "itemLabel": "{nodeName}",
+        "message": "برای ادامه اجرای این workflow اشتراک تهیه کنید.",
+        "title": "اشتراک لازم است",
+        "toastMessage": "برای ادامه اجرای این workflow اشتراک تهیه کنید.",
+        "toastTitle": "اشتراک لازم است"
+      },
+      "subscription_upgrade_required": {
+        "details": "مدل‌های خصوصی نیاز به ارتقای اشتراک دارند: {modelNames}",
+        "itemLabel": "{nodeName}",
+        "message": "برای استفاده از مدل‌های خصوصی در این workflow اشتراک خود را ارتقا دهید.",
+        "title": "ارتقای اشتراک لازم است",
+        "toastMessage": "برای استفاده از این مدل‌های خصوصی اشتراک خود را ارتقا دهید: {modelNames}.",
+        "toastTitle": "ارتقای اشتراک لازم است"
+      },
+      "timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "این workflow به حداکثر زمان اجرا رسید. وضوح تصویر، اندازه دسته یا طول workflow را کاهش دهید و دوباره اجرا کنید.",
+        "title": "زمان تولید به پایان رسید",
+        "toastMessage": "این workflow به حداکثر زمان اجرا رسید. وضوح تصویر، اندازه دسته یا طول workflow را کاهش دهید و دوباره اجرا کنید.",
+        "toastTitle": "زمان تولید به پایان رسید"
+      },
+      "unexpected_service_error": {
+        "itemLabel": "{nodeName}",
+        "message": "سرویس با خطای غیرمنتظره مواجه شد. دوباره امتحان کنید.",
+        "title": "خطای سرویس",
+        "toastMessage": "سرویس با خطای غیرمنتظره مواجه شد. دوباره امتحان کنید.",
+        "toastTitle": "خطای سرویس"
+      },
+      "workspace_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "برای ادامه به workspace خود اعتبار اضافه کنید.",
+        "title": "اعتبار کافی نیست",
+        "toastMessage": "برای ادامه به workspace خود اعتبار اضافه کنید.",
+        "toastTitle": "اعتبار کافی نیست"
       }
     },
     "validationErrors": {

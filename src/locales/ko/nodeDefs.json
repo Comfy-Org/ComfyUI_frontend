@@ -8530,6 +8530,10 @@
       "6": {
         "name": "model_3d",
         "tooltip": null
+      },
+      "7": {
+        "name": "model_3d_info",
+        "tooltip": null
       }
     }
   },
@@ -18607,6 +18611,169 @@
       },
       "texture_seed": {
         "name": "텍스처 시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "모델 파일",
+        "tooltip": null
+      },
+      "1": {
+        "name": "모델 task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1ImageToModelNode": {
+    "description": "Tripo P1 이미지-3D 변환. 저폴리곤, 게임용 메시 최적화.",
+    "display_name": "Tripo P1: 이미지에서 모델로",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "출력 크기를 실제 미터 단위에 가깝게 조정합니다."
+      },
+      "compress_geometry": {
+        "name": "compress_geometry",
+        "tooltip": "지오메트리 기반 압축을 적용합니다. 편집 전에는 압축을 해제하세요."
+      },
+      "enable_image_autofix": {
+        "name": "enable_image_autofix",
+        "tooltip": "입력 이미지를 사전 처리하여 생성 품질을 향상시킵니다."
+      },
+      "export_uv": {
+        "name": "export_uv",
+        "tooltip": "생성 중 UV 언랩을 수행합니다. 빠른 geometry only 실행을 원하면 끄세요."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "목표 면 개수, 48-20000. -1은 Tripo가 자동으로 선택합니다."
+      },
+      "image": {
+        "name": "image"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "output_mode": {
+        "name": "output_mode",
+        "tooltip": "\"Geometry only\"는 텍스처 없는 메시를 반환합니다. \"Textured\"는 컬러/PBR 맵을 추가합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1MultiviewToModelNode": {
+    "description": "Tripo P1 멀티뷰-3D 변환. [정면, 좌측, 후면, 우측] 순서의 2~4개 참조 이미지 사용. 정면은 필수이며, 나머지 세 이미지는 선택입니다.",
+    "display_name": "Tripo P1: 멀티뷰에서 모델로",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "출력 크기를 실제 미터 단위에 가깝게 조정합니다."
+      },
+      "compress_geometry": {
+        "name": "compress_geometry",
+        "tooltip": "지오메트리 기반 압축을 적용합니다. 편집 전에는 압축을 해제하세요."
+      },
+      "export_uv": {
+        "name": "export_uv",
+        "tooltip": "생성 중 UV 언랩을 수행합니다. 빠른 geometry only 실행을 원하면 끄세요."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "목표 면 개수, 48-20000. -1은 Tripo가 자동으로 선택합니다."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "정면(0°). 필수."
+      },
+      "image_back": {
+        "name": "image_back",
+        "tooltip": "후면(180°)."
+      },
+      "image_left": {
+        "name": "image_left",
+        "tooltip": "좌측(90°), 즉 피사체의 왼쪽."
+      },
+      "image_right": {
+        "name": "image_right",
+        "tooltip": "우측(270°), 즉 피사체의 오른쪽."
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "output_mode": {
+        "name": "output_mode",
+        "tooltip": "\"Geometry only\"는 텍스처 없는 메시를 반환합니다. \"Textured\"는 컬러/PBR 맵을 추가합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1TextToModelNode": {
+    "description": "Tripo P1 텍스트-투-3D. 안정적인 토폴로지로 게임에 바로 사용할 수 있는 저폴리 메시에 최적화됨.",
+    "display_name": "Tripo P1: 텍스트 → 모델",
+    "inputs": {
+      "auto_size": {
+        "name": "자동 크기 조정",
+        "tooltip": "출력 결과를 실제 미터 단위에 가깝게 스케일합니다."
+      },
+      "compress_geometry": {
+        "name": "지오메트리 압축",
+        "tooltip": "지오메트리 기반 압축을 적용합니다. 편집 전 압축을 해제하세요."
+      },
+      "export_uv": {
+        "name": "UV 내보내기",
+        "tooltip": "생성 중 UV 언랩을 수행합니다. 빠른 geometry-only 실행을 원하면 끄세요."
+      },
+      "face_limit": {
+        "name": "페이스 제한",
+        "tooltip": "목표 페이스 수, 48-20000. -1은 Tripo가 자동으로 선택합니다."
+      },
+      "image_seed": {
+        "name": "이미지 시드"
+      },
+      "model_seed": {
+        "name": "모델 시드"
+      },
+      "negative_prompt": {
+        "name": "네거티브 프롬프트",
+        "tooltip": "최대 255자까지 입력 가능합니다."
+      },
+      "output_mode": {
+        "name": "출력 모드",
+        "tooltip": "\"Geometry only\"는 텍스처 없는 메시를 반환합니다. \"Textured\"는 컬러/PBR 맵을 추가합니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "최대 1024자까지 입력 가능합니다."
       }
     },
     "outputs": {

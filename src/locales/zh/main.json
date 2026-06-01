@@ -826,6 +826,7 @@
     "LATENT_OPERATION": "Latent操作",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
     "LOAD3D_CAMERA": "加载3D相机",
+    "LOAD3D_MODEL_INFO": "加载3D模型信息",
     "LOAD_3D": "加载3D",
     "LORA_MODEL": "LORA模型",
     "LOSS_MAP": "损失图",
@@ -917,10 +918,6 @@
       "nodeName": "此节点"
     },
     "promptErrors": {
-      "image_not_loaded": {
-        "desc": "系统无法加载该图像。",
-        "title": "图像未加载"
-      },
       "missing_node_type": {
         "desc": "缺少或不可用的节点类型。工作流可能已损坏或需要自定义节点。",
         "title": "缺少节点类型"
@@ -928,11 +925,6 @@
       "no_prompt": {
         "desc": "发送到服务器的工作流数据为空。这可能是系统的意外错误。",
         "title": "工作流数据为空"
-      },
-      "out_of_memory": {
-        "descCloud": "GPU 显存不足。请尝试降低复杂度后重试。未扣除积分。",
-        "descLocal": "GPU 显存不足。请尝试降低复杂度后重试。",
-        "title": "生成失败"
       },
       "prompt_no_outputs": {
         "desc": "工作流未包含任何输出节点（如保存图像、预览图像），无法生成结果。",
@@ -949,6 +941,191 @@
       "server_error_local": {
         "desc": "服务器遇到意外错误。请检查服务器日志。",
         "title": "服务器错误"
+      }
+    },
+    "runtimeErrors": {
+      "access_required": {
+        "itemLabel": "{nodeName}",
+        "message": "本次运行需要当前账户没有的访问权限。",
+        "title": "需要访问权限",
+        "toastMessage": "本次运行需要当前账户没有的访问权限。",
+        "toastTitle": "需要访问权限"
+      },
+      "content_blocked": {
+        "itemLabel": "{nodeName}",
+        "message": "该请求被内容审核系统拦截。请尝试更改提示词或输入内容。",
+        "title": "内容被拦截",
+        "toastMessage": "该请求被内容审核系统拦截。请尝试更改提示词或输入内容。",
+        "toastTitle": "内容被拦截"
+      },
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "节点在执行过程中发生错误。",
+        "title": "执行失败",
+        "toastMessage": "该节点在执行过程中发生错误。请检查其输入或尝试其他配置。",
+        "toastTitle": "{nodeName} 执行失败"
+      },
+      "generation_stalled": {
+        "itemLabel": "{nodeName}",
+        "message": "此工作流停止进展。请重新运行。",
+        "title": "生成停滞",
+        "toastMessage": "此工作流停止进展。请重新运行。",
+        "toastTitle": "生成停滞"
+      },
+      "image_not_loaded": {
+        "itemLabel": "{nodeName}",
+        "message": "系统无法加载此图像。",
+        "title": "图像未加载",
+        "toastMessage": "{nodeName} 的图像无法加载。请重新添加。",
+        "toastTitle": "输入图像无法加载"
+      },
+      "insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "请为您的账户充值以使用此节点。",
+        "title": "余额不足",
+        "toastMessage": "请为您的账户充值以使用此节点。",
+        "toastTitle": "余额不足"
+      },
+      "invalid_clip_input": {
+        "itemLabel": "{nodeName}",
+        "message": "CLIP 输入缺失或无效。请检查已连接的 checkpoint 或 CLIP 加载器。",
+        "title": "无效的 CLIP 输入",
+        "toastMessage": "{nodeName} 缺失或无效的 CLIP 输入。",
+        "toastTitle": "无效的 CLIP 输入"
+      },
+      "invalid_prompt": {
+        "itemLabel": "{nodeName}",
+        "message": "请在运行此工作流前输入提示词。",
+        "title": "提示词为空",
+        "toastMessage": "请在运行此工作流前输入提示词。",
+        "toastTitle": "提示词为空"
+      },
+      "invalid_workflow_request": {
+        "itemLabel": "{nodeName}",
+        "message": "工作流请求无效。请检查工作流后重试。",
+        "title": "无效的工作流请求",
+        "toastMessage": "工作流请求无效。请检查工作流后重试。",
+        "toastTitle": "无效的工作流请求"
+      },
+      "model_access_error": {
+        "itemLabel": "{nodeName}",
+        "message": "一个或多个所需模型无法访问。",
+        "title": "需要模型访问权限",
+        "toastMessage": "一个或多个所需模型无法访问。",
+        "toastTitle": "需要模型访问权限"
+      },
+      "model_download_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "模型无法下载。请重试。",
+        "title": "模型下载失败",
+        "toastMessage": "模型无法下载。请重试。",
+        "toastTitle": "模型下载失败"
+      },
+      "out_of_memory": {
+        "itemLabel": "{nodeName}",
+        "message": "GPU 显存不足。请尝试降低图像分辨率或批量大小后重新运行。",
+        "title": "生成失败",
+        "toastMessage": "GPU 显存不足。请尝试降低图像分辨率或批量大小后重新运行。",
+        "toastTitle": "生成失败"
+      },
+      "preprocessing_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "无法准备工作流。请重新运行。",
+        "title": "准备失败",
+        "toastMessage": "无法准备工作流。请重新运行。",
+        "toastTitle": "准备失败"
+      },
+      "preprocessing_timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "工作流准备时间过长。请重新运行。",
+        "title": "准备超时",
+        "toastMessage": "工作流准备时间过长。请重新运行。",
+        "toastTitle": "准备超时"
+      },
+      "rate_limited": {
+        "itemLabel": "{nodeName}",
+        "message": "当前访问量较高。请稍后重试。",
+        "title": "服务器繁忙",
+        "toastMessage": "当前访问量较高。请稍后重试。",
+        "toastTitle": "服务器繁忙"
+      },
+      "request_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "请求在运行完成前失败。请重试。",
+        "title": "请求失败",
+        "toastMessage": "请求在运行完成前失败。请重试。",
+        "toastTitle": "请求失败"
+      },
+      "run_ended_unexpectedly": {
+        "itemLabel": "{nodeName}",
+        "message": "运行意外结束。请重试。",
+        "title": "运行意外结束",
+        "toastMessage": "运行意外结束。请重试。",
+        "toastTitle": "运行意外结束"
+      },
+      "run_start_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "无法启动运行。请重试。",
+        "title": "无法启动运行",
+        "toastMessage": "无法启动运行。请重试。",
+        "toastTitle": "无法启动运行"
+      },
+      "server_busy": {
+        "itemLabel": "{nodeName}",
+        "message": "服务器当前繁忙。请稍后重试。",
+        "title": "服务器繁忙",
+        "toastMessage": "服务器当前繁忙。请稍后重试。",
+        "toastTitle": "服务器繁忙"
+      },
+      "server_crashed": {
+        "itemLabel": "{nodeName}",
+        "message": "服务器在运行此工作流时停止。请重试。",
+        "title": "服务器崩溃",
+        "toastMessage": "服务器在运行此工作流时停止。请重试。",
+        "toastTitle": "服务器崩溃"
+      },
+      "sign_in_required": {
+        "itemLabel": "{nodeName}",
+        "message": "合作节点需要 Comfy 账户。请登录以继续。",
+        "title": "需要登录",
+        "toastMessage": "合作节点需要 Comfy 账户。请登录以继续。",
+        "toastTitle": "登录以使用此节点"
+      },
+      "subscription_required": {
+        "itemLabel": "{nodeName}",
+        "message": "请订阅套餐以继续运行此工作流。",
+        "title": "需要订阅",
+        "toastMessage": "请订阅套餐以继续运行此工作流。",
+        "toastTitle": "需要订阅"
+      },
+      "subscription_upgrade_required": {
+        "details": "私有模型需要升级订阅：{modelNames}",
+        "itemLabel": "{nodeName}",
+        "message": "请升级您的订阅以使用此工作流中的私有模型。",
+        "title": "需要升级订阅",
+        "toastMessage": "请升级您的订阅以使用这些私有模型：{modelNames}。",
+        "toastTitle": "需要升级订阅"
+      },
+      "timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "此工作流已达到最大运行时间。请尝试降低图像分辨率、批量大小或缩短工作流后重试。",
+        "title": "生成超时",
+        "toastMessage": "此工作流已达到最大运行时间。请尝试降低图像分辨率、批量大小或缩短工作流后重试。",
+        "toastTitle": "生成超时"
+      },
+      "unexpected_service_error": {
+        "itemLabel": "{nodeName}",
+        "message": "服务遇到意外错误。请重试。",
+        "title": "服务错误",
+        "toastMessage": "服务遇到意外错误。请重试。",
+        "toastTitle": "服务错误"
+      },
+      "workspace_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "请为您的工作区充值以继续使用。",
+        "title": "余额不足",
+        "toastMessage": "请为您的工作区充值以继续使用。",
+        "toastTitle": "余额不足"
       }
     },
     "validationErrors": {
@@ -1832,6 +2009,7 @@
     "exportRecording": "导出录制",
     "exportingModel": "正在导出模型...",
     "fitToViewer": "适应视图",
+    "centerCameraOnModel": "将相机居中到模型",
     "fov": "视场",
     "gizmo": {
       "label": "控件",
