@@ -6,7 +6,8 @@ const GRID_THUMBNAIL_PREVIEW_FORMAT = 'webp;75'
  * Converts a full-resolution `/api/view` image URL into a lightweight
  * thumbnail URL for small on-node grid cells: server-resized on cloud (`res`)
  * and re-encoded to a compact format on every backend (`preview`). Non-view
- * URLs and URLs that already request a preview are returned unchanged.
+ * URLs, SVGs (the server cannot rasterize them into a preview), and URLs that
+ * already request a preview are returned unchanged.
  */
 export function getGridThumbnailUrl(url: string): string {
   if (!url) return url
@@ -19,8 +20,10 @@ export function getGridThumbnailUrl(url: string): string {
   if (!parsed.pathname.endsWith('/view')) return url
 
   const { searchParams } = parsed
-  appendCloudResParam(searchParams, searchParams.get('filename') ?? undefined)
-  if (!searchParams.has('preview'))
+  const filename = searchParams.get('filename') ?? undefined
+  const isSvg = !!filename && filename.toLowerCase().endsWith('.svg')
+  appendCloudResParam(searchParams, filename)
+  if (!isSvg && !searchParams.has('preview'))
     searchParams.set('preview', GRID_THUMBNAIL_PREVIEW_FORMAT)
 
   return url.startsWith('http')
