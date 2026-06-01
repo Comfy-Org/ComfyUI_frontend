@@ -1,13 +1,13 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-export interface SlotMeasurement {
+interface SlotMeasurement {
   key: string
   offsetX: number
   offsetY: number
 }
 
-export interface NodeSlotData {
+interface NodeSlotData {
   nodeId: string
   nodeW: number
   nodeH: number

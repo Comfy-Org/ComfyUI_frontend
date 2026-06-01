@@ -7,7 +7,7 @@ import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper
 import type {
   CameraConfig,
   CameraState,
-  ModelInfo
+  Model3DInfo
 } from '@/extensions/core/load3d/interfaces'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import {
@@ -219,13 +219,15 @@ useExtensionService().registerExtension({
     },
     {
       id: 'Comfy.Load3D.PLYEngine',
-      category: ['3D', 'PLY', 'PLY Engine'],
-      name: 'PLY Engine',
+      category: ['3D', 'PointCloud', 'Point Cloud Engine'],
+      name: 'Point Cloud Engine',
       tooltip:
-        'Select the engine for loading PLY files. "threejs" uses the native Three.js PLYLoader (best for mesh PLY files). "fastply" uses an optimized loader for ASCII point cloud PLY files. "sparkjs" uses Spark.js for 3D Gaussian Splatting PLY files.',
+        'Select the engine for loading point cloud PLY files. "threejs" uses the native Three.js PLYLoader (handles binary + ASCII, mesh-capable). "fastply" uses an optimized parser for ASCII PLY files. 3D Gaussian Splat PLYs are detected automatically and always rendered via sparkjs regardless of this setting.',
       type: 'combo',
-      options: ['threejs', 'fastply', 'sparkjs'],
+      options: ['threejs', 'fastply'],
       defaultValue: 'threejs',
+      migrateDeprecatedValue: (value) =>
+        value === 'sparkjs' ? 'threejs' : value,
       experimental: true
     }
   ],
@@ -267,40 +269,44 @@ useExtensionService().registerExtension({
   getCustomWidgets() {
     return {
       LOAD_3D(node) {
-        const fileInput = createFileInput(SUPPORTED_EXTENSIONS_ACCEPT, false)
+        if (node.constructor.comfyClass === 'Load3D') {
+          const fileInput = createFileInput(SUPPORTED_EXTENSIONS_ACCEPT, false)
 
-        node.properties['Resource Folder'] = ''
+          node.properties['Resource Folder'] = ''
 
-        fileInput.onchange = async () => {
-          await handleModelUpload(fileInput.files!, node)
-        }
-
-        node.addWidget('button', 'upload 3d model', 'upload3dmodel', () => {
-          fileInput.click()
-        })
-
-        const resourcesInput = createFileInput('*', true)
-
-        resourcesInput.onchange = async () => {
-          await handleResourcesUpload(resourcesInput.files!, node)
-          resourcesInput.value = ''
-        }
-
-        node.addWidget(
-          'button',
-          'upload extra resources',
-          'uploadExtraResources',
-          () => {
-            resourcesInput.click()
+          fileInput.onchange = async () => {
+            await handleModelUpload(fileInput.files!, node)
           }
-        )
 
-        node.addWidget('button', 'clear', 'clear', () => {
-          const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
-          if (modelWidget) {
-            modelWidget.value = LOAD3D_NONE_MODEL
+          node.addWidget('button', 'upload 3d model', 'upload3dmodel', () => {
+            fileInput.click()
+          })
+
+          const resourcesInput = createFileInput('*', true)
+
+          resourcesInput.onchange = async () => {
+            await handleResourcesUpload(resourcesInput.files!, node)
+            resourcesInput.value = ''
           }
-        })
+
+          node.addWidget(
+            'button',
+            'upload extra resources',
+            'uploadExtraResources',
+            () => {
+              resourcesInput.click()
+            }
+          )
+
+          node.addWidget('button', 'clear', 'clear', () => {
+            const modelWidget = node.widgets?.find(
+              (w) => w.name === 'model_file'
+            )
+            if (modelWidget) {
+              modelWidget.value = LOAD3D_NONE_MODEL
+            }
+          })
+        }
 
         const widget = new ComponentWidgetImpl({
           node: node,
@@ -404,7 +410,7 @@ useExtensionService().registerExtension({
           currentLoad3d.handleResize()
 
           const modelInfo = currentLoad3d.getModelInfo()
-          const model_info: ModelInfo = modelInfo ? [modelInfo] : []
+          const model_3d_info: Model3DInfo = modelInfo ? [modelInfo] : []
 
           const returnVal = {
             image: `threed/${data.name} [temp]`,
@@ -414,7 +420,7 @@ useExtensionService().registerExtension({
               (node.properties['Camera Config'] as CameraConfig | undefined)
                 ?.state || null,
             recording: '',
-            model_info
+            model_3d_info
           }
 
           const recordingData = currentLoad3d.getRecordingData()

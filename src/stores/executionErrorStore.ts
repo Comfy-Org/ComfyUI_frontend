@@ -52,7 +52,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     isErrorOverlayOpen.value = false
   }
 
-  /** Clear all error state. Called at execution start and workflow changes.
+  /** Clear all error state.
    *  Missing model state is intentionally preserved here to avoid wiping
    *  in-progress model repairs (importTaskIds, URL inputs, etc.).
    *  Missing models are cleared separately during workflow load/clean paths. */
@@ -62,6 +62,17 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     lastNodeErrors.value = null
     missingNodesStore.setMissingNodeTypes([])
     isErrorOverlayOpen.value = false
+  }
+
+  function clearExecutionStartErrors() {
+    lastExecutionError.value = null
+    lastPromptError.value = null
+    if (
+      !lastNodeErrors.value ||
+      Object.keys(lastNodeErrors.value).length === 0
+    ) {
+      isErrorOverlayOpen.value = false
+    }
   }
 
   /** Clear only prompt-level errors. Called during resetExecutionState. */
@@ -361,6 +372,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     // Clearing
     clearAllErrors,
+    clearExecutionStartErrors,
     clearPromptError,
 
     // Overlay UI

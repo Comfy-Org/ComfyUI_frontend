@@ -20,9 +20,7 @@ function previewExposureToEntry(
   return [exposure.sourceNodeId, exposure.sourcePreviewName]
 }
 
-export function isPromotedWidgetSource(
-  value: unknown
-): value is PromotedWidgetSource {
+function isPromotedWidgetSource(value: unknown): value is PromotedWidgetSource {
   return (
     !!value &&
     typeof value === 'object' &&
@@ -33,7 +31,7 @@ export function isPromotedWidgetSource(
   )
 }
 
-export function isNodeProperty(value: unknown): value is NodeProperty {
+function isNodeProperty(value: unknown): value is NodeProperty {
   if (value === null || value === undefined) return false
   const t = typeof value
   return t === 'string' || t === 'number' || t === 'boolean' || t === 'object'

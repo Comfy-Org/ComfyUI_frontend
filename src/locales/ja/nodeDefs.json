@@ -384,6 +384,90 @@
       }
     }
   },
+  "BeebleSwitchXImageEdit": {
+    "description": "Beeble SwitchX で単一画像を編集します。シーン内のあらゆる要素（背景、照明、衣装など）を切り替えつつ、元の被写体のピクセルを保持します。新しい外観を説明する参照画像やテキストプロンプトを入力してください。最大約2.77MP。",
+    "display_name": "Beeble SwitchX 画像編集",
+    "inputs": {
+      "alpha_mode": {
+        "name": "アルファモード",
+        "tooltip": "SwitchX が保持する部分と再生成する部分を決定する方法を制御します。「auto」は主被写体を自動で分離します。「fill」はジオメトリを保持しつつ全フレームを再生成します。「select」は最初のフレームのキーフレームをクリップ全体に適用します。「custom」はフレームごとのアルファマットを使用します。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "max_resolution": {
+        "name": "最大解像度",
+        "tooltip": "出力の最大解像度。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "希望する出力のテキスト説明（最大2000文字）。「プロンプト」または「参照画像」のいずれかが必須です。"
+      },
+      "reference_image": {
+        "name": "参照画像",
+        "tooltip": "結果が採用すべき外観（背景、照明、衣装など）の参照画像。「参照画像」または「プロンプト」のいずれかが必須です。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像",
+        "tooltip": null
+      },
+      "1": {
+        "name": "アルファ",
+        "tooltip": "Beeble が使用したアルファマット。「fill」モードではマットはありません。"
+      }
+    }
+  },
+  "BeebleSwitchXVideoEdit": {
+    "description": "Beeble SwitchX で動画を編集します。シーン内のあらゆる要素（背景、照明、衣装など）を切り替えつつ、元の被写体のピクセルと動きを保持します。新しい外観を説明する参照画像やテキストプロンプトを入力してください。最大240フレーム、1フレームあたり最大約2.77MP。",
+    "display_name": "Beeble SwitchX 動画編集",
+    "inputs": {
+      "alpha_mode": {
+        "name": "アルファモード",
+        "tooltip": "SwitchX が保持する部分と再生成する部分を決定する方法を制御します。「auto」は主被写体を自動で分離します。「fill」はジオメトリを保持しつつ全フレームを再生成します。「select」は最初のフレームのキーフレームをクリップ全体に適用します。「custom」はフレームごとのアルファマットを使用します。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "max_resolution": {
+        "name": "最大解像度",
+        "tooltip": "出力の最大解像度。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "希望する出力のテキスト説明（最大2000文字）。「プロンプト」または「参照画像」のいずれかが必須です。"
+      },
+      "reference_image": {
+        "name": "参照画像",
+        "tooltip": "結果が採用すべき外観（背景、照明、衣装など）の参照画像。「参照画像」または「プロンプト」のいずれかが必須です。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "video": {
+        "name": "動画"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "動画",
+        "tooltip": null
+      },
+      "1": {
+        "name": "アルファ",
+        "tooltip": "Beeble が使用したアルファマット。「fill」モードではマットはありません。"
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "ベータサンプリングスケジューラー",
     "inputs": {
@@ -7464,6 +7548,71 @@
       }
     }
   },
+  "Krea2ImageNode": {
+    "description": "Krea 2 を使って画像を生成します — Medium（表現力豊かなイラスト）または Large（表現力豊かなフォトリアリズム）を選択できます。オプションでムードボードと最大10個までの連鎖した画像スタイル参照をサポートします。",
+    "display_name": "Krea 2 画像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "Krea 2 Medium は表現力豊かなイラストに最適です。Krea 2 Large は表現力豊かなフォトリアリズムに最適です。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_creativity": {
+        "name": "創造性"
+      },
+      "model_moodboard_id": {
+        "name": "ムードボードID"
+      },
+      "model_moodboard_strength": {
+        "name": "ムードボード強度"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像のためのテキストプロンプト。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "再現性のためのランダムシード。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Krea2StyleReferenceNode": {
+    "description": "Krea 2 生成に画像スタイル参照を追加します。複数の Krea 2 スタイル参照ノード（最大10個）を連鎖させ、最終的な `style_reference` 出力を Krea 2 画像ノードに入力します。各画像は ComfyAPI ストレージにアップロードされ、URL として渡されます。",
+    "display_name": "Krea 2 スタイル参照",
+    "inputs": {
+      "image": {
+        "name": "画像",
+        "tooltip": "生成に影響を与えるスタイル参照画像。"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "参照強度。負の値でスタイルの影響を反転します。"
+      },
+      "style_reference": {
+        "name": "スタイル参照",
+        "tooltip": "オプションの連鎖スタイル参照。このノードでさらに1つ追加します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "スタイル参照",
+        "tooltip": null
+      }
+    }
+  },
   "LTXAVTextEncoderLoader": {
     "description": "[レシピ]\n\nltxav: gemma 3 12B",
     "display_name": "LTXV オーディオテキストエンコーダーローダー",
@@ -7767,6 +7916,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -8375,6 +8529,10 @@
       },
       "6": {
         "name": "model_3d",
+        "tooltip": null
+      },
+      "7": {
+        "name": "model_3d_info",
         "tooltip": null
       }
     }
@@ -13036,6 +13194,32 @@
       }
     }
   },
+  "PiDConditioning": {
+    "description": "PiD デコード／アップスケーリング用に latent と degrade_sigma スカラーを CONDITIONING に付加します。",
+    "display_name": "PiD コンディショニング",
+    "inputs": {
+      "degrade_sigma": {
+        "name": "degrade_sigma",
+        "tooltip": "0 = クリーンな latent。値を上げると破損した latent 出力をノイズ除去します。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent（VAEEncode または KSampler から）。"
+      },
+      "latent_format": {
+        "name": "latent_format",
+        "tooltip": "Flux1 および Flux2 の latent はチャンネル次元から自動検出されます。sd3 は手動で選択する必要があります。"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PixverseImageToVideoNode": {
     "description": "プロンプトと出力サイズに基づいて同期的に動画を生成します。",
     "display_name": "PixVerse 画像から動画へ",
@@ -15972,6 +16156,10 @@
       "images": {
         "name": "images",
         "tooltip": "保存する画像のリスト。"
+      },
+      "mode": {
+        "name": "モード",
+        "tooltip": "既存のファイルを上書きするか、上書きを避けるためにファイル名を増分するかを選択します。"
       }
     }
   },
@@ -15990,6 +16178,10 @@
       "images": {
         "name": "images",
         "tooltip": "保存する画像のリスト。"
+      },
+      "mode": {
+        "name": "モード",
+        "tooltip": "既存のファイルを上書きするか、上書きを避けるためにファイル名を増分するかを選択します。"
       },
       "texts": {
         "name": "texts",
@@ -18419,6 +18611,169 @@
       },
       "texture_seed": {
         "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデルファイル",
+        "tooltip": null
+      },
+      "1": {
+        "name": "モデルタスクID",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1ImageToModelNode": {
+    "description": "Tripo P1 画像から3Dへ。低ポリゴンでゲーム向けメッシュに最適化。",
+    "display_name": "Tripo P1：画像からモデルへ",
+    "inputs": {
+      "auto_size": {
+        "name": "自動サイズ調整",
+        "tooltip": "出力を実際のメートル単位に近づけてスケーリングします。"
+      },
+      "compress_geometry": {
+        "name": "ジオメトリ圧縮",
+        "tooltip": "ジオメトリベースの圧縮を適用します。編集前に解凍してください。"
+      },
+      "enable_image_autofix": {
+        "name": "画像自動補正を有効化",
+        "tooltip": "生成品質向上のため入力画像を前処理します。"
+      },
+      "export_uv": {
+        "name": "UV展開を出力",
+        "tooltip": "生成時にUV展開を行います。オフにするとジオメトリのみの高速処理になります。"
+      },
+      "face_limit": {
+        "name": "面数制限",
+        "tooltip": "目標面数（48～20000）。-1でTripoが自動調整します。"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "model_seed": {
+        "name": "モデルシード"
+      },
+      "output_mode": {
+        "name": "出力モード",
+        "tooltip": "「ジオメトリのみ」はテクスチャなしのメッシュを返します。「テクスチャ付き」はカラー／PBRマップを追加します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデルファイル",
+        "tooltip": null
+      },
+      "1": {
+        "name": "モデルタスクID",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1MultiviewToModelNode": {
+    "description": "Tripo P1 マルチビューから3Dへ。[前面、左側、背面、右側]の順で2～4枚の参照画像から生成。前面は必須、他3つは任意。",
+    "display_name": "Tripo P1：マルチビューからモデルへ",
+    "inputs": {
+      "auto_size": {
+        "name": "自動サイズ調整",
+        "tooltip": "出力を実際のメートル単位に近づけてスケーリングします。"
+      },
+      "compress_geometry": {
+        "name": "ジオメトリ圧縮",
+        "tooltip": "ジオメトリベースの圧縮を適用します。編集前に解凍してください。"
+      },
+      "export_uv": {
+        "name": "UV展開を出力",
+        "tooltip": "生成時にUV展開を行います。オフにするとジオメトリのみの高速処理になります。"
+      },
+      "face_limit": {
+        "name": "面数制限",
+        "tooltip": "目標面数（48～20000）。-1でTripoが自動調整します。"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "前面ビュー（0°）。必須。"
+      },
+      "image_back": {
+        "name": "背面画像",
+        "tooltip": "背面ビュー（180°）。"
+      },
+      "image_left": {
+        "name": "左側画像",
+        "tooltip": "左側ビュー（90°）、被写体の左側。"
+      },
+      "image_right": {
+        "name": "右側画像",
+        "tooltip": "右側ビュー（270°）、被写体の右側。"
+      },
+      "model_seed": {
+        "name": "モデルシード"
+      },
+      "output_mode": {
+        "name": "出力モード",
+        "tooltip": "「ジオメトリのみ」はテクスチャなしのメッシュを返します。「テクスチャ付き」はカラー／PBRマップを追加します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデルファイル",
+        "tooltip": null
+      },
+      "1": {
+        "name": "モデルタスクID",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1TextToModelNode": {
+    "description": "Tripo P1 テキストから3Dへ。安定したトポロジーで、ローポリ・ゲーム向けメッシュに最適化。",
+    "display_name": "Tripo P1：テキストからモデルへ",
+    "inputs": {
+      "auto_size": {
+        "name": "自動サイズ調整",
+        "tooltip": "出力を実際のメートル単位に近づけてスケーリングします。"
+      },
+      "compress_geometry": {
+        "name": "ジオメトリ圧縮",
+        "tooltip": "ジオメトリベースの圧縮を適用します。編集前に解凍してください。"
+      },
+      "export_uv": {
+        "name": "UVエクスポート",
+        "tooltip": "生成時にUVアンラップを行います。高速なジオメトリのみの場合はオフにしてください。"
+      },
+      "face_limit": {
+        "name": "面数制限",
+        "tooltip": "目標面数：48～20000。-1でTripoが自動調整します。"
+      },
+      "image_seed": {
+        "name": "画像シード"
+      },
+      "model_seed": {
+        "name": "モデルシード"
+      },
+      "negative_prompt": {
+        "name": "ネガティブプロンプト",
+        "tooltip": "最大255文字まで。"
+      },
+      "output_mode": {
+        "name": "出力モード",
+        "tooltip": "「ジオメトリのみ」はテクスチャなしのメッシュを返します。「テクスチャ付き」はカラー／PBRマップを追加します。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "最大1024文字まで。"
       }
     },
     "outputs": {

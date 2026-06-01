@@ -1658,10 +1658,10 @@
     "experimental": "experimental",
     "custom_sampling": "custom_sampling",
     "noise": "noise",
-    "dataset": "dataset",
     "text": "text",
     "image": "image",
     "adjustments": "adjustments",
+    "model": "model",
     "sampling": "sampling",
     "schedulers": "schedulers",
     "conditioning": "conditioning",
@@ -1672,22 +1672,23 @@
     "batch": "batch",
     "latent": "latent",
     "mask": "mask",
-    "api node": "api node",
-    "Bria": "Bria",
+    "partner": "partner",
+    "Beeble": "Beeble",
     "video": "video",
+    "Bria": "Bria",
     "ByteDance": "ByteDance",
     "filters": "filters",
     "transform": "transform",
     "advanced": "advanced",
     "guidance": "guidance",
     "model_merging": "model_merging",
-    "model_patches": "model_patches",
+    "patch": "patch",
     "chroma_radiance": "chroma_radiance",
     "Anthropic": "Anthropic",
     "attention_experiments": "attention_experiments",
     "flux": "flux",
     "kandinsky5": "kandinsky5",
-    "utils": "utils",
+    "utilities": "utilities",
     "hooks": "hooks",
     "combine": "combine",
     "logic": "logic",
@@ -1699,7 +1700,6 @@
     "deprecated": "deprecated",
     "detection": "detection",
     "debug": "debug",
-    "model": "model",
     "ElevenLabs": "ElevenLabs",
     "3d": "3d",
     "ltxv": "ltxv",
@@ -1721,6 +1721,7 @@
     "upscaling": "upscaling",
     "instructpix2pix": "instructpix2pix",
     "Kling": "Kling",
+    "Krea": "Krea",
     "samplers": "samplers",
     "operations": "operations",
     "training": "training",
@@ -1732,7 +1733,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "model_specific": "model_specific",
-    "geometry_estimation": "geometry_estimation",
+    "geometry estimation": "geometry estimation",
     "multigpu": "multigpu",
     "OpenAI": "OpenAI",
     "Sora": "Sora",
@@ -1808,11 +1809,13 @@
     "IMAGECOMPARE": "IMAGECOMPARE",
     "INT": "INT",
     "INTERP_MODEL": "INTERP_MODEL",
+    "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "LATENT",
     "LATENT_OPERATION": "LATENT_OPERATION",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
     "LOAD_3D": "LOAD_3D",
     "LOAD3D_CAMERA": "LOAD3D_CAMERA",
+    "LOAD3D_MODEL_INFO": "LOAD3D_MODEL_INFO",
     "LORA_MODEL": "LORA_MODEL",
     "LOSS_MAP": "LOSS_MAP",
     "LUMA_CONCEPTS": "LUMA_CONCEPTS",
@@ -1968,6 +1971,7 @@
     "materialMode": "Material Mode",
     "showSkeleton": "Show Skeleton",
     "fitToViewer": "Fit to Viewer",
+    "centerCameraOnModel": "Center Camera on Model",
     "scene": "Scene",
     "model": "Model",
     "camera": "Camera",
@@ -3775,6 +3779,191 @@
         "toastMessage": "The image for {nodeName} couldn't be loaded. Try adding it again."
       }
     },
+    "runtimeErrors": {
+      "execution_failed": {
+        "title": "Execution failed",
+        "message": "Node threw an error during execution.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "{nodeName} failed",
+        "toastMessage": "This node threw an error during execution. Check its inputs or try a different configuration."
+      },
+      "image_not_loaded": {
+        "title": "Image not loaded",
+        "message": "The system couldn't load this image.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Input image couldn't be loaded",
+        "toastMessage": "The image for {nodeName} couldn't be loaded. Try adding it again."
+      },
+      "out_of_memory": {
+        "title": "Generation failed",
+        "message": "Not enough GPU memory. Try reducing image resolution or batch size and run again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Generation failed",
+        "toastMessage": "Not enough GPU memory. Try reducing image resolution or batch size and run again."
+      },
+      "content_blocked": {
+        "title": "Content blocked",
+        "message": "This request was blocked by the content moderation system. Try changing the prompt or inputs.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Content blocked",
+        "toastMessage": "This request was blocked by the content moderation system. Try changing the prompt or inputs."
+      },
+      "access_required": {
+        "title": "Access required",
+        "message": "This run requires access that is not available for the current account.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Access required",
+        "toastMessage": "This run requires access that is not available for the current account."
+      },
+      "model_access_error": {
+        "title": "Model access required",
+        "message": "One or more required models could not be accessed.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Model access required",
+        "toastMessage": "One or more required models could not be accessed."
+      },
+      "invalid_clip_input": {
+        "title": "Invalid CLIP input",
+        "message": "The CLIP input is missing or invalid. Check the connected checkpoint or CLIP loader.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Invalid CLIP input",
+        "toastMessage": "{nodeName} has a missing or invalid CLIP input."
+      },
+      "invalid_prompt": {
+        "title": "Prompt is empty",
+        "message": "Enter a prompt before running this workflow.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Prompt is empty",
+        "toastMessage": "Enter a prompt before running this workflow."
+      },
+      "invalid_workflow_request": {
+        "title": "Invalid workflow request",
+        "message": "The workflow request is invalid. Check the workflow and try again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Invalid workflow request",
+        "toastMessage": "The workflow request is invalid. Check the workflow and try again."
+      },
+      "insufficient_credits": {
+        "title": "Insufficient credits",
+        "message": "Add credits to your account to use this node.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Insufficient credits",
+        "toastMessage": "Add credits to your account to use this node."
+      },
+      "workspace_insufficient_credits": {
+        "title": "Insufficient credits",
+        "message": "Add credits to your workspace to continue.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Insufficient credits",
+        "toastMessage": "Add credits to your workspace to continue."
+      },
+      "subscription_required": {
+        "title": "Subscription required",
+        "message": "Subscribe to a plan to continue running this workflow.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Subscription required",
+        "toastMessage": "Subscribe to a plan to continue running this workflow."
+      },
+      "subscription_upgrade_required": {
+        "title": "Subscription upgrade required",
+        "message": "Upgrade your subscription to use the private models in this workflow.",
+        "details": "Private models require a subscription upgrade: {modelNames}",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Subscription upgrade required",
+        "toastMessage": "Upgrade your subscription to use these private models: {modelNames}."
+      },
+      "model_download_failed": {
+        "title": "Model download failed",
+        "message": "A model could not be downloaded. Try again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Model download failed",
+        "toastMessage": "A model could not be downloaded. Try again."
+      },
+      "unexpected_service_error": {
+        "title": "Service error",
+        "message": "The service encountered an unexpected error. Try again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Service error",
+        "toastMessage": "The service encountered an unexpected error. Try again."
+      },
+      "request_failed": {
+        "title": "Request failed",
+        "message": "The request failed before the run could complete. Try again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Request failed",
+        "toastMessage": "The request failed before the run could complete. Try again."
+      },
+      "run_start_failed": {
+        "title": "Run could not start",
+        "message": "The run could not be started. Try again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Run could not start",
+        "toastMessage": "The run could not be started. Try again."
+      },
+      "run_ended_unexpectedly": {
+        "title": "Run ended unexpectedly",
+        "message": "The run ended unexpectedly. Try again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Run ended unexpectedly",
+        "toastMessage": "The run ended unexpectedly. Try again."
+      },
+      "sign_in_required": {
+        "title": "Sign in required",
+        "message": "Partner nodes require a Comfy account. Sign in to continue.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Sign in to use this node",
+        "toastMessage": "Partner nodes require a Comfy account. Sign in to continue."
+      },
+      "rate_limited": {
+        "title": "Servers are busy",
+        "message": "High demand right now. Try again in a moment.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Servers are busy",
+        "toastMessage": "High demand right now. Try again in a moment."
+      },
+      "timeout": {
+        "title": "Generation timed out",
+        "message": "This workflow reached the maximum run time. Try reducing image resolution, batch size, or workflow length and run again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Generation timed out",
+        "toastMessage": "This workflow reached the maximum run time. Try reducing image resolution, batch size, or workflow length and run again."
+      },
+      "generation_stalled": {
+        "title": "Generation stalled",
+        "message": "This workflow stopped making progress. Try running it again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Generation stalled",
+        "toastMessage": "This workflow stopped making progress. Try running it again."
+      },
+      "preprocessing_failed": {
+        "title": "Preparation failed",
+        "message": "The workflow could not be prepared. Try running it again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Preparation failed",
+        "toastMessage": "The workflow could not be prepared. Try running it again."
+      },
+      "preprocessing_timeout": {
+        "title": "Preparation timed out",
+        "message": "The workflow took too long to prepare. Try running it again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Preparation timed out",
+        "toastMessage": "The workflow took too long to prepare. Try running it again."
+      },
+      "server_crashed": {
+        "title": "Server crashed",
+        "message": "The server stopped while running this workflow. Try again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Server crashed",
+        "toastMessage": "The server stopped while running this workflow. Try again."
+      },
+      "server_busy": {
+        "title": "Servers are busy",
+        "message": "The servers are busy right now. Try again in a moment.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Servers are busy",
+        "toastMessage": "The servers are busy right now. Try again in a moment."
+      }
+    },
     "promptErrors": {
       "prompt_no_outputs": {
         "title": "Prompt has no outputs",
@@ -3799,15 +3988,6 @@
       "prompt_outputs_failed_validation": {
         "title": "Prompt validation failed",
         "desc": "The workflow has invalid node inputs. Fix the highlighted nodes before running it again."
-      },
-      "image_not_loaded": {
-        "title": "Image not loaded",
-        "desc": "The system couldn't load this image."
-      },
-      "out_of_memory": {
-        "title": "Generation failed",
-        "descLocal": "Not enough GPU memory. Try reducing complexity and run again.",
-        "descCloud": "Not enough GPU memory. Try reducing complexity and run again. No credits charged."
       }
     }
   },

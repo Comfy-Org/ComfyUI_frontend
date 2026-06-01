@@ -1,6 +1,7 @@
 import { toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
 
+import { isMiddleButtonEvent } from '@/base/pointerUtils'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
@@ -1987,7 +1988,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   /** Prevents default for middle-click auxclick only. */
   _preventMiddleAuxClick(e: MouseEvent): void {
-    if (e.button === 1) e.preventDefault()
+    if (isMiddleButtonEvent(e)) e.preventDefault()
   }
 
   /** Captures an event and prevents default - returns true. */
@@ -2313,7 +2314,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // left button mouse / single finger
     if (e.button === 0 && !pointer.isDouble) {
       this._processPrimaryButton(e, node)
-    } else if (e.button === 1) {
+    } else if (isMiddleButtonEvent(e)) {
       this._processMiddleButton(e, node)
     } else if (
       (e.button === 2 || pointer.isDouble) &&
@@ -3594,7 +3595,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             this._highlight_pos = reroute.pos
           }
 
-          return (underPointer |= CanvasItem.RerouteSlot)
+          return underPointer | CanvasItem.RerouteSlot
         }
       }
     }
@@ -3864,7 +3865,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           this
         )
       }
-    } else if (e.button === 1) {
+    } else if (isMiddleButtonEvent(e)) {
       // middle button
       this.dirty_canvas = true
       this.dragging_canvas = false
@@ -5452,7 +5453,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ctx.fillText('No graph selected', 5, lineHeight * line++)
     }
     if (this.info_text) {
-      ctx.fillText(this.info_text, 5, lineHeight * line++)
+      ctx.fillText(this.info_text, 5, lineHeight * line)
     }
     ctx.restore()
   }
@@ -5774,7 +5775,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // @ts-expect-error TODO: Better value typing
     if (this.onDrawLinkTooltip?.(ctx, link, this) == true) return
 
-    let text: string | null = null
+    let text: string | null
 
     if (typeof data === 'number') text = data.toFixed(2)
     else if (typeof data === 'string') text = `"${data}"`
@@ -6734,7 +6735,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     let slotX = isFrom ? opts.slotFrom : opts.slotTo
 
-    let iSlotConn: number | false = false
+    let iSlotConn: number | false
     if (nodeX instanceof SubgraphIONodeBase) {
       if (typeof slotX !== 'object' || !slotX) {
         console.warn('Cant get slot information', slotX)
@@ -7527,7 +7528,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
           // join node after inserting
           if (options.node_from) {
-            let iS: number | false = false
+            let iS: number | false
             switch (typeof options.slot_from) {
               case 'string':
                 iS = options.node_from.findOutputSlot(options.slot_from)
@@ -7571,7 +7572,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             }
           }
           if (options.node_to) {
-            let iS: number | false = false
+            let iS: number | false
             switch (typeof options.slot_from) {
               case 'string':
                 iS = options.node_to.findInputSlot(options.slot_from)
@@ -7828,7 +7829,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const info = node.getPropertyInfo(property)
     const { type } = info
 
-    let input_html = ''
+    let input_html: string
 
     if (
       type == 'string' ||

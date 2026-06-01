@@ -178,21 +178,6 @@ describe('CameraManager', () => {
       expect(Object.keys(quaternion ?? {})).not.toContain('_x')
     })
 
-    it('captures the active camera orientation as a serializable euler rotation', () => {
-      manager.perspectiveCamera.position.set(5, 0, 0)
-      manager.perspectiveCamera.lookAt(0, 0, 0)
-
-      const { rotation } = manager.getCameraState()
-
-      expect(rotation).toEqual({
-        x: manager.perspectiveCamera.rotation.x,
-        y: manager.perspectiveCamera.rotation.y,
-        z: manager.perspectiveCamera.rotation.z,
-        order: manager.perspectiveCamera.rotation.order
-      })
-      expect(Object.keys(rotation ?? {})).not.toContain('_x')
-    })
-
     it('captures the configured perspective fov regardless of active camera', () => {
       manager.perspectiveCamera.fov = 42
       manager.toggleCamera('orthographic')

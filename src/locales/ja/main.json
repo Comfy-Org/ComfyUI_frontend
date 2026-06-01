@@ -821,10 +821,12 @@
     "IMAGECOMPARE": "画像比較",
     "INT": "整数",
     "INTERP_MODEL": "補間モデル",
+    "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "潜在",
     "LATENT_OPERATION": "潜在操作",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
     "LOAD3D_CAMERA": "3Dカメラの読み込み",
+    "LOAD3D_MODEL_INFO": "3Dモデル情報を読み込む",
     "LOAD_3D": "3Dをロード",
     "LORA_MODEL": "LoRAモデル",
     "LOSS_MAP": "損失マップ",
@@ -916,10 +918,6 @@
       "nodeName": "このノード"
     },
     "promptErrors": {
-      "image_not_loaded": {
-        "desc": "システムがこの画像を読み込めませんでした。",
-        "title": "画像が読み込まれていません"
-      },
       "missing_node_type": {
         "desc": "ノードタイプが存在しないか利用できません。ワークフローが破損しているか、カスタムノードが必要な場合があります。",
         "title": "ノードタイプがありません"
@@ -927,11 +925,6 @@
       "no_prompt": {
         "desc": "サーバーに送信されたワークフローデータが空です。これは予期しないシステムエラーの可能性があります。",
         "title": "ワークフローデータが空です"
-      },
-      "out_of_memory": {
-        "descCloud": "GPUメモリが不足しています。複雑さを減らして再実行してください。クレジットは消費されません。",
-        "descLocal": "GPUメモリが不足しています。複雑さを減らして再実行してください。",
-        "title": "生成に失敗しました"
       },
       "prompt_no_outputs": {
         "desc": "ワークフローに出力ノード（例：画像を保存、画像をプレビュー）が含まれていないため、結果を生成できません。",
@@ -948,6 +941,191 @@
       "server_error_local": {
         "desc": "サーバーで予期しないエラーが発生しました。サーバーログを確認してください。",
         "title": "サーバーエラー"
+      }
+    },
+    "runtimeErrors": {
+      "access_required": {
+        "itemLabel": "{nodeName}",
+        "message": "この実行には現在のアカウントで利用できないアクセス権が必要です。",
+        "title": "アクセス権が必要です",
+        "toastMessage": "この実行には現在のアカウントで利用できないアクセス権が必要です。",
+        "toastTitle": "アクセス権が必要です"
+      },
+      "content_blocked": {
+        "itemLabel": "{nodeName}",
+        "message": "このリクエストはコンテンツモデレーションシステムによってブロックされました。プロンプトや入力内容を変更してお試しください。",
+        "title": "コンテンツがブロックされました",
+        "toastMessage": "このリクエストはコンテンツモデレーションシステムによってブロックされました。プロンプトや入力内容を変更してお試しください。",
+        "toastTitle": "コンテンツがブロックされました"
+      },
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "ノードの実行中にエラーが発生しました。",
+        "title": "実行に失敗しました",
+        "toastMessage": "このノードの実行中にエラーが発生しました。入力内容を確認するか、別の設定をお試しください。",
+        "toastTitle": "{nodeName} の実行に失敗しました"
+      },
+      "generation_stalled": {
+        "itemLabel": "{nodeName}",
+        "message": "このワークフローの進行が止まりました。再度実行してください。",
+        "title": "生成が停止しました",
+        "toastMessage": "このワークフローの進行が止まりました。再度実行してください。",
+        "toastTitle": "生成が停止しました"
+      },
+      "image_not_loaded": {
+        "itemLabel": "{nodeName}",
+        "message": "システムがこの画像を読み込めませんでした。",
+        "title": "画像の読み込みに失敗しました",
+        "toastMessage": "{nodeName} の画像を読み込めませんでした。もう一度追加してください。",
+        "toastTitle": "入力画像の読み込みに失敗しました"
+      },
+      "insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "このノードを使用するにはアカウントにクレジットを追加してください。",
+        "title": "クレジットが不足しています",
+        "toastMessage": "このノードを使用するにはアカウントにクレジットを追加してください。",
+        "toastTitle": "クレジットが不足しています"
+      },
+      "invalid_clip_input": {
+        "itemLabel": "{nodeName}",
+        "message": "CLIP入力が不足しているか無効です。接続されているチェックポイントまたはCLIPローダーを確認してください。",
+        "title": "無効なCLIP入力",
+        "toastMessage": "{nodeName} のCLIP入力が不足しているか無効です。",
+        "toastTitle": "無効なCLIP入力"
+      },
+      "invalid_prompt": {
+        "itemLabel": "{nodeName}",
+        "message": "このワークフローを実行する前にプロンプトを入力してください。",
+        "title": "プロンプトが空です",
+        "toastMessage": "このワークフローを実行する前にプロンプトを入力してください。",
+        "toastTitle": "プロンプトが空です"
+      },
+      "invalid_workflow_request": {
+        "itemLabel": "{nodeName}",
+        "message": "ワークフローリクエストが無効です。ワークフローを確認して再度お試しください。",
+        "title": "無効なワークフローリクエスト",
+        "toastMessage": "ワークフローリクエストが無効です。ワークフローを確認して再度お試しください。",
+        "toastTitle": "無効なワークフローリクエスト"
+      },
+      "model_access_error": {
+        "itemLabel": "{nodeName}",
+        "message": "必要なモデルの一部にアクセスできませんでした。",
+        "title": "モデルへのアクセスが必要です",
+        "toastMessage": "必要なモデルの一部にアクセスできませんでした。",
+        "toastTitle": "モデルへのアクセスが必要です"
+      },
+      "model_download_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "モデルをダウンロードできませんでした。再度お試しください。",
+        "title": "モデルのダウンロードに失敗しました",
+        "toastMessage": "モデルをダウンロードできませんでした。再度お試しください。",
+        "toastTitle": "モデルのダウンロードに失敗しました"
+      },
+      "out_of_memory": {
+        "itemLabel": "{nodeName}",
+        "message": "GPUメモリが不足しています。画像解像度やバッチサイズを下げて再実行してください。",
+        "title": "生成に失敗しました",
+        "toastMessage": "GPUメモリが不足しています。画像解像度やバッチサイズを下げて再実行してください。",
+        "toastTitle": "生成に失敗しました"
+      },
+      "preprocessing_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "ワークフローの準備ができませんでした。再度実行してください。",
+        "title": "準備に失敗しました",
+        "toastMessage": "ワークフローの準備ができませんでした。再度実行してください。",
+        "toastTitle": "準備に失敗しました"
+      },
+      "preprocessing_timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "ワークフローの準備に時間がかかりすぎました。再度実行してください。",
+        "title": "準備がタイムアウトしました",
+        "toastMessage": "ワークフローの準備に時間がかかりすぎました。再度実行してください。",
+        "toastTitle": "準備がタイムアウトしました"
+      },
+      "rate_limited": {
+        "itemLabel": "{nodeName}",
+        "message": "現在アクセスが集中しています。しばらくしてから再度お試しください。",
+        "title": "サーバーが混雑しています",
+        "toastMessage": "現在アクセスが集中しています。しばらくしてから再度お試しください。",
+        "toastTitle": "サーバーが混雑しています"
+      },
+      "request_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "実行が完了する前にリクエストが失敗しました。再度お試しください。",
+        "title": "リクエストに失敗しました",
+        "toastMessage": "実行が完了する前にリクエストが失敗しました。再度お試しください。",
+        "toastTitle": "リクエストに失敗しました"
+      },
+      "run_ended_unexpectedly": {
+        "itemLabel": "{nodeName}",
+        "message": "実行が予期せず終了しました。再度お試しください。",
+        "title": "実行が予期せず終了しました",
+        "toastMessage": "実行が予期せず終了しました。再度お試しください。",
+        "toastTitle": "実行が予期せず終了しました"
+      },
+      "run_start_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "実行を開始できませんでした。再度お試しください。",
+        "title": "実行を開始できませんでした",
+        "toastMessage": "実行を開始できませんでした。再度お試しください。",
+        "toastTitle": "実行を開始できませんでした"
+      },
+      "server_busy": {
+        "itemLabel": "{nodeName}",
+        "message": "現在サーバーが混雑しています。しばらくしてから再度お試しください。",
+        "title": "サーバーが混雑しています",
+        "toastMessage": "現在サーバーが混雑しています。しばらくしてから再度お試しください。",
+        "toastTitle": "サーバーが混雑しています"
+      },
+      "server_crashed": {
+        "itemLabel": "{nodeName}",
+        "message": "このワークフローの実行中にサーバーが停止しました。再度お試しください。",
+        "title": "サーバーがクラッシュしました",
+        "toastMessage": "このワークフローの実行中にサーバーが停止しました。再度お試しください。",
+        "toastTitle": "サーバーがクラッシュしました"
+      },
+      "sign_in_required": {
+        "itemLabel": "{nodeName}",
+        "message": "パートナーノードの利用にはComfyアカウントが必要です。サインインして続行してください。",
+        "title": "サインインが必要です",
+        "toastMessage": "パートナーノードの利用にはComfyアカウントが必要です。サインインして続行してください。",
+        "toastTitle": "このノードを利用するにはサインインが必要です"
+      },
+      "subscription_required": {
+        "itemLabel": "{nodeName}",
+        "message": "このワークフローを実行し続けるにはプランに加入してください。",
+        "title": "サブスクリプションが必要です",
+        "toastMessage": "このワークフローを実行し続けるにはプランに加入してください。",
+        "toastTitle": "サブスクリプションが必要です"
+      },
+      "subscription_upgrade_required": {
+        "details": "プライベートモデルにはサブスクリプションのアップグレードが必要です: {modelNames}",
+        "itemLabel": "{nodeName}",
+        "message": "このワークフローのプライベートモデルを使用するにはサブスクリプションのアップグレードが必要です。",
+        "title": "サブスクリプションのアップグレードが必要です",
+        "toastMessage": "これらのプライベートモデルを使用するにはサブスクリプションのアップグレードが必要です: {modelNames}。",
+        "toastTitle": "サブスクリプションのアップグレードが必要です"
+      },
+      "timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "このワークフローは最大実行時間に達しました。画像解像度、バッチサイズ、またはワークフローの長さを減らして再実行してください。",
+        "title": "生成がタイムアウトしました",
+        "toastMessage": "このワークフローは最大実行時間に達しました。画像解像度、バッチサイズ、またはワークフローの長さを減らして再実行してください。",
+        "toastTitle": "生成がタイムアウトしました"
+      },
+      "unexpected_service_error": {
+        "itemLabel": "{nodeName}",
+        "message": "サービスで予期しないエラーが発生しました。再度お試しください。",
+        "title": "サービスエラー",
+        "toastMessage": "サービスで予期しないエラーが発生しました。再度お試しください。",
+        "toastTitle": "サービスエラー"
+      },
+      "workspace_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "作業スペースにクレジットを追加して続行してください。",
+        "title": "クレジットが不足しています",
+        "toastMessage": "作業スペースにクレジットを追加して続行してください。",
+        "toastTitle": "クレジットが不足しています"
       }
     },
     "validationErrors": {
@@ -1362,6 +1540,7 @@
     "logs": "ログ",
     "manageExtensions": "拡張機能の管理",
     "markdown": "マークダウン",
+    "maximizeDialog": "ダイアログを最大化",
     "micPermissionDenied": "マイクの許可が拒否されました",
     "migrate": "移行する",
     "missing": "不足している",
@@ -1462,6 +1641,7 @@
     "resizeFromTopLeft": "左上隅からリサイズ",
     "resizeFromTopRight": "右上隅からリサイズ",
     "restart": "再起動",
+    "restoreDialog": "ダイアログを元に戻す",
     "resultsCount": "{count}件の結果が見つかりました",
     "running": "実行中",
     "save": "保存",
@@ -2420,6 +2600,7 @@
     "3d_models": "3Dモデル",
     "Anthropic": "Anthropic",
     "BFL": "BFL",
+    "Beeble": "Beeble",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "ElevenLabs": "ElevenLabs",
@@ -2428,6 +2609,7 @@
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
+    "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
     "Magnific": "Magnific",
@@ -2453,7 +2635,6 @@
     "WaveSpeed": "WaveSpeed",
     "adjustments": "調整",
     "advanced": "高度な機能",
-    "api node": "apiノード",
     "attention_experiments": "アテンション実験",
     "audio": "オーディオ",
     "background removal": "背景除去",
@@ -2469,7 +2650,6 @@
     "controlnet": "コントロールネット",
     "create": "作成",
     "custom_sampling": "カスタムサンプリング",
-    "dataset": "データセット",
     "debug": "デバッグ",
     "deprecated": "非推奨",
     "detection": "検出",
@@ -2477,7 +2657,7 @@
     "experimental": "実験的",
     "filters": "フィルター",
     "flux": "flux",
-    "geometry_estimation": "geometry_estimation",
+    "geometry estimation": "ジオメトリ推定",
     "gligen": "グライジェン",
     "guidance": "ガイダンス",
     "guiders": "ガイダー",
@@ -2494,11 +2674,12 @@
     "mask": "マスク",
     "model": "モデル",
     "model_merging": "モデルマージ",
-    "model_patches": "モデルパッチ",
     "model_specific": "モデル特有",
     "multigpu": "マルチGPU",
     "noise": "ノイズ",
     "operations": "操作",
+    "partner": "パートナー",
+    "patch": "パッチ",
     "photomaker": "photomaker",
     "preprocessors": "前処理",
     "primitive": "プリミティブ",
@@ -2519,7 +2700,7 @@
     "unet": "U-Net",
     "upscale_diffusion": "アップスケール拡散",
     "upscaling": "アップスケーリング",
-    "utils": "ユーティリティ",
+    "utilities": "ユーティリティ",
     "video": "ビデオ",
     "video_models": "ビデオモデル",
     "zimage": "zimage"

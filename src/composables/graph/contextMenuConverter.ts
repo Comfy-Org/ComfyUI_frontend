@@ -1,6 +1,6 @@
 import { default as DOMPurify } from 'dompurify'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   IContextMenuValue,
   LGraphNode,
@@ -28,6 +28,17 @@ const HARD_BLACKLIST = new Set([
 ])
 
 /**
+ * Callbacks of built-in LiteGraph node menu items that are superseded by
+ * the Vue node menu (Minimize Node / Expand Node) or have no working
+ * Vue-side equivalent. Matched by callback identity so that extensions
+ * providing their own items with the same labels are not affected.
+ */
+const SUPPRESSED_LITEGRAPH_CALLBACKS = new Set<unknown>([
+  LGraphCanvas.onMenuResizeNode,
+  LGraphCanvas.onMenuNodeCollapse
+])
+
+/**
  * Core menu items - items that should appear in the main menu, not under Extensions
  * Includes both LiteGraph base menu items and ComfyUI built-in functionality
  */
@@ -49,11 +60,9 @@ const CORE_MENU_ITEMS = new Set([
   'Frame selection',
   'Frame Nodes',
   'Minimize Node',
-  'Expand',
-  'Collapse',
+  'Expand Node',
   // Info and adjustments
   'Node Info',
-  'Resize',
   'Title',
   'Properties Panel',
   'Adjust Size',
@@ -234,9 +243,7 @@ const MENU_ORDER: string[] = [
   'Frame selection',
   'Frame Nodes',
   'Minimize Node',
-  'Expand',
-  'Collapse',
-  'Resize',
+  'Expand Node',
   'Clone',
   // Section 4: Node properties
   'Node Info',
@@ -304,14 +311,14 @@ export function buildStructuredMenu(options: MenuOption[]): MenuOption[] {
   // Section boundaries based on MENU_ORDER indices
   // Section 1: 0-2 (Rename, Copy, Duplicate)
   // Section 2: 3-8 (Run Branch, Pin, Unpin, Bypass, Remove Bypass, Mute)
-  // Section 3: 9-15 (Convert to Subgraph, Frame selection, Minimize Node, Expand, Collapse, Resize, Clone)
-  // Section 4: 16-17 (Node Info, Color)
-  // Section 5: 18+ (Image operations and fallback items)
+  // Section 3: 9-14 (Convert to Subgraph, Frame selection, Frame Nodes, Minimize Node, Expand Node, Clone)
+  // Section 4: 15-16 (Node Info, Color)
+  // Section 5: 17+ (Image operations and fallback items)
   const getSectionNumber = (index: number): number => {
     if (index <= 2) return 1
     if (index <= 8) return 2
-    if (index <= 15) return 3
-    if (index <= 17) return 4
+    if (index <= 14) return 3
+    if (index <= 16) return 4
     return 5
   }
 
@@ -389,6 +396,13 @@ export function convertContextMenuToOptions(
 
     // Skip hard blacklisted items
     if (HARD_BLACKLIST.has(item.content)) {
+      continue
+    }
+
+    // Skip built-in LiteGraph items that the Vue menu replaces.
+    // Matched by callback identity, not label, to avoid suppressing
+    // extension-provided items that happen to share a label.
+    if (item.callback && SUPPRESSED_LITEGRAPH_CALLBACKS.has(item.callback)) {
       continue
     }
 
