@@ -384,6 +384,90 @@
       }
     }
   },
+  "BeebleSwitchXImageEdit": {
+    "description": "Beeble SwitchX로 단일 이미지를 편집합니다. 장면의 모든 요소(배경, 조명, 의상 등)를 변경하면서 원본 피사체의 픽셀은 그대로 유지합니다. 참조 이미지 및/또는 텍스트 프롬프트로 새로운 모습을 설명하세요. 최대 약 2.77MP.",
+    "display_name": "Beeble SwitchX 이미지 편집",
+    "inputs": {
+      "alpha_mode": {
+        "name": "alpha_mode",
+        "tooltip": "SwitchX가 무엇을 유지하고 재생성할지 결정하는 방식을 제어합니다. 'auto'는 주요 피사체를 자동으로 분리합니다. 'fill'은 기하학을 유지하면서 전체 프레임을 재생성합니다. 'select'는 첫 프레임의 키프레임을 clip 전체에 적용합니다. 'custom'은 사용자가 제공한 프레임별 알파 매트를 사용합니다."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image"
+      },
+      "max_resolution": {
+        "name": "max_resolution",
+        "tooltip": "최대 출력 해상도."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "원하는 출력에 대한 텍스트 설명(최대 2000자). 'prompt' 또는 'reference_image' 중 하나는 반드시 필요합니다."
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "결과가 적용할 참조 이미지의 스타일(배경, 조명, 의상 등). 'reference_image' 또는 'prompt' 중 하나는 반드시 필요합니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alpha",
+        "tooltip": "Beeble이 사용한 알파 매트입니다. 별도의 매트가 없는 'fill' 모드에서는 비어 있습니다."
+      }
+    }
+  },
+  "BeebleSwitchXVideoEdit": {
+    "description": "Beeble SwitchX로 비디오를 편집합니다. 장면의 모든 요소(배경, 조명, 의상 등)를 변경하면서 원본 피사체의 픽셀과 동작은 그대로 유지합니다. 참조 이미지 및/또는 텍스트 프롬프트로 새로운 모습을 설명하세요. 최대 240프레임, 프레임당 최대 약 2.77MP.",
+    "display_name": "Beeble SwitchX 비디오 편집",
+    "inputs": {
+      "alpha_mode": {
+        "name": "alpha_mode",
+        "tooltip": "SwitchX가 무엇을 유지하고 재생성할지 결정하는 방식을 제어합니다. 'auto'는 주요 피사체를 자동으로 분리합니다. 'fill'은 기하학을 유지하면서 전체 프레임을 재생성합니다. 'select'는 첫 프레임의 키프레임을 clip 전체에 적용합니다. 'custom'은 사용자가 제공한 프레임별 알파 매트를 사용합니다."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "max_resolution": {
+        "name": "max_resolution",
+        "tooltip": "최대 출력 해상도."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "원하는 출력에 대한 텍스트 설명(최대 2000자). 'prompt' 또는 'reference_image' 중 하나는 반드시 필요합니다."
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "결과가 적용할 참조 이미지의 스타일(배경, 조명, 의상 등). 'reference_image' 또는 'prompt' 중 하나는 반드시 필요합니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "video",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alpha",
+        "tooltip": "Beeble이 사용한 알파 매트입니다. 별도의 매트가 없는 'fill' 모드에서는 비어 있습니다."
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "베타 샘플링 스케줄러",
     "inputs": {
@@ -7464,6 +7548,71 @@
       }
     }
   },
+  "Krea2ImageNode": {
+    "description": "Krea 2를 통해 이미지를 생성합니다 — Medium(표현적인 일러스트) 또는 Large(표현적인 사진 실사)를 선택하세요. 선택적으로 무드보드를 지원하며 최대 10개의 연쇄된 이미지 스타일 참조를 지원합니다.",
+    "display_name": "Krea 2 이미지",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "Krea 2 Medium은 표현적인 일러스트에, Krea 2 Large는 표현적인 사진 실사에 적합합니다."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_creativity": {
+        "name": "창의성"
+      },
+      "model_moodboard_id": {
+        "name": "무드보드 ID"
+      },
+      "model_moodboard_strength": {
+        "name": "무드보드 강도"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지에 대한 텍스트 프롬프트입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "재현성을 위한 랜덤 시드입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Krea2StyleReferenceNode": {
+    "description": "Krea 2 생성에 이미지 스타일 참조를 추가합니다. 여러 개의 Krea 2 스타일 참조 노드를 연쇄(최대 10개)하여 마지막 `style_reference` 출력을 Krea 2 이미지에 연결하세요. 각 이미지는 ComfyAPI 저장소에 업로드되고 URL로 전달됩니다.",
+    "display_name": "Krea 2 스타일 참조",
+    "inputs": {
+      "image": {
+        "name": "이미지",
+        "tooltip": "생성에 스타일 영향을 주는 참조 이미지입니다."
+      },
+      "strength": {
+        "name": "강도",
+        "tooltip": "참조 강도; 음수 값은 스타일 영향을 반전시킵니다."
+      },
+      "style_reference": {
+        "name": "스타일 참조",
+        "tooltip": "선택적 연쇄 스타일 참조 입력; 이 노드는 하나를 추가합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "스타일 참조",
+        "tooltip": null
+      }
+    }
+  },
   "LTXAVTextEncoderLoader": {
     "description": "[Recipes]\n\nltxav: gemma 3 12B",
     "display_name": "LTXV 오디오 텍스트 인코더 로더",
@@ -7767,6 +7916,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -8375,6 +8529,10 @@
       },
       "6": {
         "name": "model_3d",
+        "tooltip": null
+      },
+      "7": {
+        "name": "model_3d_info",
         "tooltip": null
       }
     }
@@ -13036,6 +13194,32 @@
       }
     }
   },
+  "PiDConditioning": {
+    "description": "PiD 디코딩/업스케일링을 위해 latent와 degrade_sigma 스칼라를 CONDITIONING에 첨부합니다.",
+    "display_name": "PiD 컨디셔닝",
+    "inputs": {
+      "degrade_sigma": {
+        "name": "degrade_sigma",
+        "tooltip": "0 = 깨끗한 latent. 값을 높이면 손상된 latent 출력을 디노이즈합니다."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent(VAEEncode 또는 KSampler에서 가져옴)."
+      },
+      "latent_format": {
+        "name": "latent_format",
+        "tooltip": "Flux1 및 Flux2 latent는 채널 차원에서 자동 감지되며, sd3는 수동 선택이 필요합니다."
+      },
+      "positive": {
+        "name": "포지티브"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PixverseImageToVideoNode": {
     "description": "프롬프트와 output_size에 따라 동기적으로 비디오를 생성합니다.",
     "display_name": "PixVerse 이미지에서 비디오로",
@@ -15972,6 +16156,10 @@
       "images": {
         "name": "images",
         "tooltip": "저장할 이미지 목록입니다."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "기존 파일을 덮어쓸지, 아니면 파일 이름을 증가시켜 덮어쓰기를 방지할지 여부입니다."
       }
     }
   },
@@ -15990,6 +16178,10 @@
       "images": {
         "name": "images",
         "tooltip": "저장할 이미지 목록입니다."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "기존 파일을 덮어쓸지, 아니면 파일 이름을 증가시켜 덮어쓰기를 방지할지 여부입니다."
       },
       "texts": {
         "name": "texts",
@@ -18419,6 +18611,169 @@
       },
       "texture_seed": {
         "name": "텍스처 시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "모델 파일",
+        "tooltip": null
+      },
+      "1": {
+        "name": "모델 task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1ImageToModelNode": {
+    "description": "Tripo P1 이미지-3D 변환. 저폴리곤, 게임용 메시 최적화.",
+    "display_name": "Tripo P1: 이미지에서 모델로",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "출력 크기를 실제 미터 단위에 가깝게 조정합니다."
+      },
+      "compress_geometry": {
+        "name": "compress_geometry",
+        "tooltip": "지오메트리 기반 압축을 적용합니다. 편집 전에는 압축을 해제하세요."
+      },
+      "enable_image_autofix": {
+        "name": "enable_image_autofix",
+        "tooltip": "입력 이미지를 사전 처리하여 생성 품질을 향상시킵니다."
+      },
+      "export_uv": {
+        "name": "export_uv",
+        "tooltip": "생성 중 UV 언랩을 수행합니다. 빠른 geometry only 실행을 원하면 끄세요."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "목표 면 개수, 48-20000. -1은 Tripo가 자동으로 선택합니다."
+      },
+      "image": {
+        "name": "image"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "output_mode": {
+        "name": "output_mode",
+        "tooltip": "\"Geometry only\"는 텍스처 없는 메시를 반환합니다. \"Textured\"는 컬러/PBR 맵을 추가합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1MultiviewToModelNode": {
+    "description": "Tripo P1 멀티뷰-3D 변환. [정면, 좌측, 후면, 우측] 순서의 2~4개 참조 이미지 사용. 정면은 필수이며, 나머지 세 이미지는 선택입니다.",
+    "display_name": "Tripo P1: 멀티뷰에서 모델로",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "출력 크기를 실제 미터 단위에 가깝게 조정합니다."
+      },
+      "compress_geometry": {
+        "name": "compress_geometry",
+        "tooltip": "지오메트리 기반 압축을 적용합니다. 편집 전에는 압축을 해제하세요."
+      },
+      "export_uv": {
+        "name": "export_uv",
+        "tooltip": "생성 중 UV 언랩을 수행합니다. 빠른 geometry only 실행을 원하면 끄세요."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "목표 면 개수, 48-20000. -1은 Tripo가 자동으로 선택합니다."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "정면(0°). 필수."
+      },
+      "image_back": {
+        "name": "image_back",
+        "tooltip": "후면(180°)."
+      },
+      "image_left": {
+        "name": "image_left",
+        "tooltip": "좌측(90°), 즉 피사체의 왼쪽."
+      },
+      "image_right": {
+        "name": "image_right",
+        "tooltip": "우측(270°), 즉 피사체의 오른쪽."
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "output_mode": {
+        "name": "output_mode",
+        "tooltip": "\"Geometry only\"는 텍스처 없는 메시를 반환합니다. \"Textured\"는 컬러/PBR 맵을 추가합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1TextToModelNode": {
+    "description": "Tripo P1 텍스트-투-3D. 안정적인 토폴로지로 게임에 바로 사용할 수 있는 저폴리 메시에 최적화됨.",
+    "display_name": "Tripo P1: 텍스트 → 모델",
+    "inputs": {
+      "auto_size": {
+        "name": "자동 크기 조정",
+        "tooltip": "출력 결과를 실제 미터 단위에 가깝게 스케일합니다."
+      },
+      "compress_geometry": {
+        "name": "지오메트리 압축",
+        "tooltip": "지오메트리 기반 압축을 적용합니다. 편집 전 압축을 해제하세요."
+      },
+      "export_uv": {
+        "name": "UV 내보내기",
+        "tooltip": "생성 중 UV 언랩을 수행합니다. 빠른 geometry-only 실행을 원하면 끄세요."
+      },
+      "face_limit": {
+        "name": "페이스 제한",
+        "tooltip": "목표 페이스 수, 48-20000. -1은 Tripo가 자동으로 선택합니다."
+      },
+      "image_seed": {
+        "name": "이미지 시드"
+      },
+      "model_seed": {
+        "name": "모델 시드"
+      },
+      "negative_prompt": {
+        "name": "네거티브 프롬프트",
+        "tooltip": "최대 255자까지 입력 가능합니다."
+      },
+      "output_mode": {
+        "name": "출력 모드",
+        "tooltip": "\"Geometry only\"는 텍스처 없는 메시를 반환합니다. \"Textured\"는 컬러/PBR 맵을 추가합니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "최대 1024자까지 입력 가능합니다."
       }
     },
     "outputs": {

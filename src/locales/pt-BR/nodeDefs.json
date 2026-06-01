@@ -384,6 +384,90 @@
       }
     }
   },
+  "BeebleSwitchXImageEdit": {
+    "description": "Edite uma única imagem com Beeble SwitchX. Altere qualquer elemento da cena (fundo, iluminação, figurino) enquanto preserva os pixels originais do sujeito. Forneça uma imagem de referência e/ou um prompt de texto para descrever o novo visual. Máx. ~2,77MP.",
+    "display_name": "Beeble SwitchX Edição de Imagem",
+    "inputs": {
+      "alpha_mode": {
+        "name": "alpha_mode",
+        "tooltip": "Controla como o SwitchX decide o que manter ou regenerar. 'auto' isola automaticamente o sujeito principal. 'fill' regenera todo o quadro preservando a geometria. 'select' propaga um keyframe do primeiro quadro ao longo do clip. 'custom' utiliza um alpha matte por quadro fornecido por você."
+      },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "max_resolution": {
+        "name": "resolução_máxima",
+        "tooltip": "Resolução máxima de saída."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição em texto do resultado desejado (máx. 2000 caracteres). Pelo menos um dos campos 'prompt' ou 'reference_image' é obrigatório."
+      },
+      "reference_image": {
+        "name": "imagem_de_referência",
+        "tooltip": "Imagem de referência cujo visual (fundo, iluminação, figurino) o resultado deve adotar. Pelo menos um dos campos 'reference_image' ou 'prompt' é obrigatório."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagem",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alpha",
+        "tooltip": "O alpha matte utilizado pelo Beeble. Vazio no modo 'fill', que não possui matte separado."
+      }
+    }
+  },
+  "BeebleSwitchXVideoEdit": {
+    "description": "Edite um vídeo com Beeble SwitchX. Altere qualquer elemento da cena (fundo, iluminação, figurino) enquanto preserva os pixels e o movimento originais do sujeito. Forneça uma imagem de referência e/ou um prompt de texto para descrever o novo visual. Máx. 240 quadros, máx. ~2,77MP por quadro.",
+    "display_name": "Beeble SwitchX Edição de Vídeo",
+    "inputs": {
+      "alpha_mode": {
+        "name": "alpha_mode",
+        "tooltip": "Controla como o SwitchX decide o que manter ou regenerar. 'auto' isola automaticamente o sujeito principal. 'fill' regenera todo o quadro preservando a geometria. 'select' propaga um keyframe do primeiro quadro ao longo do clip. 'custom' utiliza um alpha matte por quadro fornecido por você."
+      },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "max_resolution": {
+        "name": "resolução_máxima",
+        "tooltip": "Resolução máxima de saída."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição em texto do resultado desejado (máx. 2000 caracteres). Pelo menos um dos campos 'prompt' ou 'reference_image' é obrigatório."
+      },
+      "reference_image": {
+        "name": "imagem_de_referência",
+        "tooltip": "Imagem de referência cujo visual (fundo, iluminação, figurino) o resultado deve adotar. Pelo menos um dos campos 'reference_image' ou 'prompt' é obrigatório."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
+      },
+      "video": {
+        "name": "vídeo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "vídeo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alpha",
+        "tooltip": "O alpha matte utilizado pelo Beeble. Vazio no modo 'fill', que não possui matte separado."
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "Agendador de Amostragem Beta",
     "inputs": {
@@ -7464,6 +7548,71 @@
       }
     }
   },
+  "Krea2ImageNode": {
+    "description": "Gere imagens via Krea 2 — escolha Medium (ilustrações expressivas) ou Large (fotorrealismo expressivo). Suporta um moodboard opcional e até 10 referências de estilo de imagem encadeadas.",
+    "display_name": "Krea 2 Imagem",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Krea 2 Medium é melhor para ilustrações expressivas; Krea 2 Large é melhor para fotorrealismo expressivo."
+      },
+      "model_aspect_ratio": {
+        "name": "proporção"
+      },
+      "model_creativity": {
+        "name": "criatividade"
+      },
+      "model_moodboard_id": {
+        "name": "moodboard_id"
+      },
+      "model_moodboard_strength": {
+        "name": "força do moodboard"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto para a imagem."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente aleatória para reprodutibilidade."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Krea2StyleReferenceNode": {
+    "description": "Adicione uma referência de estilo de imagem a uma geração do Krea 2. Encadeie múltiplos nós de Referência de Estilo Krea 2 (máx. 10) e envie a saída final `style_reference` para o Krea 2 Imagem. Cada imagem é enviada para o armazenamento ComfyAPI e passada como URL.",
+    "display_name": "Krea 2 Referência de Estilo",
+    "inputs": {
+      "image": {
+        "name": "imagem",
+        "tooltip": "Imagem de referência cujo estilo influencia a geração."
+      },
+      "strength": {
+        "name": "força",
+        "tooltip": "Força da referência; valores negativos invertem a influência do estilo."
+      },
+      "style_reference": {
+        "name": "style_reference",
+        "tooltip": "Cadeia opcional de referências de estilo recebidas; este nó adiciona mais uma."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_reference",
+        "tooltip": null
+      }
+    }
+  },
   "LTXAVTextEncoderLoader": {
     "description": "[Receitas]\n\nltxav: gemma 3 12B",
     "display_name": "Carregador de Codificador de Texto LTXV Áudio",
@@ -7767,6 +7916,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -8375,6 +8529,10 @@
       },
       "6": {
         "name": "model_3d",
+        "tooltip": null
+      },
+      "7": {
+        "name": "model_3d_info",
         "tooltip": null
       }
     }
@@ -13036,6 +13194,32 @@
       }
     }
   },
+  "PiDConditioning": {
+    "description": "Anexa um latent e um escalar degrade_sigma a um CONDITIONING para decodificação/upscaling PiD",
+    "display_name": "PiD Condicionamento",
+    "inputs": {
+      "degrade_sigma": {
+        "name": "degrade_sigma",
+        "tooltip": "0 = latent limpo. Aumente para remover ruído de saídas latentes corrompidas."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent (de VAEEncode ou um KSampler)."
+      },
+      "latent_format": {
+        "name": "formato do latent",
+        "tooltip": "Latents do Flux1 e Flux2 são detectados automaticamente pela dimensão do canal, sd3 deve ser selecionado manualmente."
+      },
+      "positive": {
+        "name": "positivo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PixverseImageToVideoNode": {
     "description": "Gera vídeos com base no prompt e no output_size.",
     "display_name": "PixVerse Imagem para Vídeo",
@@ -15972,6 +16156,10 @@
       "images": {
         "name": "imagens",
         "tooltip": "Lista de imagens a serem salvas."
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Escolha entre sobrescrever arquivos existentes ou incrementar os nomes dos arquivos para evitar sobrescrita."
       }
     }
   },
@@ -15990,6 +16178,10 @@
       "images": {
         "name": "imagens",
         "tooltip": "Lista de imagens a serem salvas."
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Escolha entre sobrescrever arquivos existentes ou incrementar os nomes dos arquivos para evitar sobrescrita."
       },
       "texts": {
         "name": "textos",
@@ -18428,6 +18620,169 @@
       },
       "1": {
         "name": "task_id_do_modelo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1ImageToModelNode": {
+    "description": "Tripo P1 imagem para 3D. Otimizado para malhas low-poly prontas para jogos.",
+    "display_name": "Tripo P1: Imagem para Modelo",
+    "inputs": {
+      "auto_size": {
+        "name": "tamanho_automático",
+        "tooltip": "Escala a saída para aproximar metros reais."
+      },
+      "compress_geometry": {
+        "name": "comprimir_geometria",
+        "tooltip": "Aplicar compressão baseada em geometria. Descompacte antes de editar."
+      },
+      "enable_image_autofix": {
+        "name": "habilitar_autoajuste_imagem",
+        "tooltip": "Pré-processa a imagem de entrada para melhor qualidade de geração."
+      },
+      "export_uv": {
+        "name": "exportar_uv",
+        "tooltip": "Desenrolar UV durante a geração. Desative para execuções mais rápidas apenas de geometria."
+      },
+      "face_limit": {
+        "name": "limite_de_faces",
+        "tooltip": "Quantidade alvo de faces, 48-20000. -1 permite que o Tripo escolha de forma adaptativa."
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "model_seed": {
+        "name": "semente_do_modelo"
+      },
+      "output_mode": {
+        "name": "modo_de_saida",
+        "tooltip": "\"Apenas geometria\" retorna uma malha sem textura. \"Texturizado\" adiciona mapas de cor/PBR."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "arquivo_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "id_tarefa_modelo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1MultiviewToModelNode": {
+    "description": "Tripo P1 multivisual para 3D a partir de 2-4 imagens de referência nas ordens [frente, esquerda, trás, direita]. Frente é obrigatória; qualquer combinação das outras três pode ser omitida.",
+    "display_name": "Tripo P1: Multivisual para Modelo",
+    "inputs": {
+      "auto_size": {
+        "name": "tamanho_automático",
+        "tooltip": "Escala a saída para aproximar metros reais."
+      },
+      "compress_geometry": {
+        "name": "comprimir_geometria",
+        "tooltip": "Aplicar compressão baseada em geometria. Descompacte antes de editar."
+      },
+      "export_uv": {
+        "name": "exportar_uv",
+        "tooltip": "Desenrolar UV durante a geração. Desative para execuções mais rápidas apenas de geometria."
+      },
+      "face_limit": {
+        "name": "limite_de_faces",
+        "tooltip": "Quantidade alvo de faces, 48-20000. -1 permite que o Tripo escolha de forma adaptativa."
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "Vista frontal (0°). Obrigatória."
+      },
+      "image_back": {
+        "name": "imagem_traseira",
+        "tooltip": "Vista traseira (180°)."
+      },
+      "image_left": {
+        "name": "imagem_esquerda",
+        "tooltip": "Vista esquerda (90°), ou seja, o lado esquerdo do sujeito."
+      },
+      "image_right": {
+        "name": "imagem_direita",
+        "tooltip": "Vista direita (270°), ou seja, o lado direito do sujeito."
+      },
+      "model_seed": {
+        "name": "semente_do_modelo"
+      },
+      "output_mode": {
+        "name": "modo_de_saida",
+        "tooltip": "\"Apenas geometria\" retorna uma malha sem textura. \"Texturizado\" adiciona mapas de cor/PBR."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "arquivo_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "id_tarefa_modelo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1TextToModelNode": {
+    "description": "Tripo P1 texto para 3D. Otimizado para malhas low-poly, prontas para jogos, com topologia estável.",
+    "display_name": "Tripo P1: Texto para Modelo",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Escala a saída para aproximar metros reais."
+      },
+      "compress_geometry": {
+        "name": "compress_geometry",
+        "tooltip": "Aplica compressão baseada em geometria. Descompacte antes de editar."
+      },
+      "export_uv": {
+        "name": "export_uv",
+        "tooltip": "Faz o UV unwrap durante a geração. Desative para execuções mais rápidas apenas com geometria."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Quantidade alvo de faces, 48-20000. -1 permite que o Tripo escolha de forma adaptativa."
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Até 255 caracteres."
+      },
+      "output_mode": {
+        "name": "output_mode",
+        "tooltip": "\"Apenas geometria\" retorna uma malha sem textura. \"Texturizado\" adiciona mapas de cor/PBR."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Até 1024 caracteres."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
         "tooltip": null
       },
       "2": {

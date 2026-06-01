@@ -646,7 +646,7 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
         statusText: e instanceof Error ? e.message : String(e)
       })
       toastStore.addAlert(err)
-      throw new Error(err)
+      throw new Error(err, { cause: e })
     }
 
     if (resp.status !== 200) {
@@ -667,7 +667,7 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
         statusText: e instanceof Error ? e.message : String(e)
       })
       toastStore.addAlert(err)
-      throw new Error(err)
+      throw new Error(err, { cause: e })
     }
 
     const result = isCloud

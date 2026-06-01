@@ -11,7 +11,8 @@ import OBJLoader2WorkerUrl from 'wwobjloader2/bundle/worker/module?url'
 import type {
   ModelAdapter,
   ModelAdapterCapabilities,
-  ModelLoadContext
+  ModelLoadContext,
+  ModelLoadResult
 } from './ModelAdapter'
 
 export class MeshModelAdapter implements ModelAdapter {
@@ -45,20 +46,18 @@ export class MeshModelAdapter implements ModelAdapter {
     ctx: ModelLoadContext,
     path: string,
     filename: string
-  ): Promise<THREE.Object3D | null> {
+  ): Promise<ModelLoadResult | null> {
     const extension = filename.split('.').pop()?.toLowerCase()
-    switch (extension) {
-      case 'stl':
-        return this.loadSTL(ctx, path, filename)
-      case 'fbx':
-        return this.loadFBX(ctx, path, filename)
-      case 'obj':
-        return this.loadOBJ(ctx, path, filename)
-      case 'gltf':
-      case 'glb':
-        return this.loadGLTF(ctx, path, filename)
-    }
-    return null
+    const object = await (extension === 'stl'
+      ? this.loadSTL(ctx, path, filename)
+      : extension === 'fbx'
+        ? this.loadFBX(ctx, path, filename)
+        : extension === 'obj'
+          ? this.loadOBJ(ctx, path, filename)
+          : extension === 'gltf' || extension === 'glb'
+            ? this.loadGLTF(ctx, path, filename)
+            : Promise.resolve(null))
+    return object ? { object, capabilities: this.capabilities } : null
   }
 
   private async loadSTL(

@@ -6,7 +6,7 @@ import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { parseNodePropertyArray } from './parseNodePropertyArray'
 import { serializedProxyWidgetTupleSchema } from './promotionSchema'
 
-export const proxyWidgetQuarantineReasonSchema = z.enum([
+const proxyWidgetQuarantineReasonSchema = z.enum([
   'missingSourceNode',
   'missingSourceWidget',
   'missingSubgraphInput',
@@ -18,7 +18,7 @@ export type ProxyWidgetQuarantineReason = z.infer<
   typeof proxyWidgetQuarantineReasonSchema
 >
 
-export const proxyWidgetErrorQuarantineEntrySchema = z.object({
+const proxyWidgetErrorQuarantineEntrySchema = z.object({
   originalEntry: serializedProxyWidgetTupleSchema,
   reason: proxyWidgetQuarantineReasonSchema,
   hostValue: z.unknown().optional(),
