@@ -1971,6 +1971,7 @@
     "materialMode": "Material Mode",
     "showSkeleton": "Show Skeleton",
     "fitToViewer": "Fit to Viewer",
+    "centerCameraOnModel": "Center Camera on Model",
     "scene": "Scene",
     "model": "Model",
     "camera": "Camera",
