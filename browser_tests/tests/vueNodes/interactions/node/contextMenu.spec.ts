@@ -166,7 +166,7 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
       await openContextMenu(comfyPage, nodeTitle)
       await clickExactMenuItem(comfyPage, 'Bypass')
 
-      await expect.poll(() => nodeRef.isBypassed()).toBe(true)
+      await expect(nodeRef).toBeBypassed()
       await expect(getNodeWrapper(comfyPage, nodeTitle)).toHaveClass(
         BYPASS_CLASS
       )
@@ -174,7 +174,7 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
       await openContextMenu(comfyPage, nodeTitle)
       await clickExactMenuItem(comfyPage, 'Remove Bypass')
 
-      await expect.poll(() => nodeRef.isBypassed()).toBe(false)
+      await expect(nodeRef).not.toBeBypassed()
       await expect(getNodeWrapper(comfyPage, nodeTitle)).not.toHaveClass(
         BYPASS_CLASS
       )
@@ -185,27 +185,20 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
     }) => {
       const nodeTitle = 'Load Checkpoint'
       const nodeRef = await getNodeRef(comfyPage, nodeTitle)
-      const menu = comfyPage.contextMenu.primeVueMenu
-      const bypassItem = menu.getByRole('menuitem', {
-        name: 'Bypass',
-        exact: true
-      })
-      const removeBypassItem = menu.getByRole('menuitem', {
-        name: 'Remove Bypass',
-        exact: true
-      })
+      const bypassItem = comfyPage.contextMenu.menuItem('Bypass')
+      const removeBypassItem = comfyPage.contextMenu.menuItem('Remove Bypass')
 
       await openContextMenu(comfyPage, nodeTitle)
       await expect(bypassItem).toHaveCount(1)
       await expect(removeBypassItem).toHaveCount(0)
       await clickExactMenuItem(comfyPage, 'Bypass')
-      await expect.poll(() => nodeRef.isBypassed()).toBe(true)
+      await expect(nodeRef).toBeBypassed()
 
       await openContextMenu(comfyPage, nodeTitle)
       await expect(removeBypassItem).toHaveCount(1)
       await expect(bypassItem).toHaveCount(0)
       await clickExactMenuItem(comfyPage, 'Remove Bypass')
-      await expect.poll(() => nodeRef.isBypassed()).toBe(false)
+      await expect(nodeRef).not.toBeBypassed()
     })
 
     test('should minimize and expand node via context menu', async ({
@@ -479,7 +472,7 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
 
       for (const title of nodeTitles) {
         const nodeRef = await getNodeRef(comfyPage, title)
-        await expect.poll(() => nodeRef.isBypassed()).toBe(true)
+        await expect(nodeRef).toBeBypassed()
         await expect(getNodeWrapper(comfyPage, title)).toHaveClass(BYPASS_CLASS)
       }
 
@@ -488,7 +481,7 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
 
       for (const title of nodeTitles) {
         const nodeRef = await getNodeRef(comfyPage, title)
-        await expect.poll(() => nodeRef.isBypassed()).toBe(false)
+        await expect(nodeRef).not.toBeBypassed()
         await expect(getNodeWrapper(comfyPage, title)).not.toHaveClass(
           BYPASS_CLASS
         )
