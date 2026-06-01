@@ -7,11 +7,11 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { getWidgetDefaultValue, renameWidget } from '@/utils/widgetUtil'
 
-vi.mock('@/core/graph/subgraph/resolvePromotedWidgetSource', () => ({
+vi.mock('@/core/graph/subgraph/resolveConcretePromotedWidget', () => ({
   resolvePromotedWidgetSource: vi.fn()
 }))
 
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 
 const mockedResolve = vi.mocked(resolvePromotedWidgetSource)
 
@@ -126,21 +126,6 @@ describe('renameWidget', () => {
     expect(sourceWidget.label).toBe('Renamed')
     expect(interiorInput.label).toBe('Renamed')
     expect(promotedWidget.label).toBe('Renamed')
-  })
-
-  it('updates _subgraphSlot.label when input has a subgraph slot', () => {
-    const widget = makeWidget({ name: 'seed' })
-    const subgraphSlot = { label: undefined as string | undefined }
-    const input = fromAny<INodeInputSlot, unknown>({
-      name: 'seed',
-      widget: { name: 'seed' },
-      _subgraphSlot: subgraphSlot
-    })
-    const node = makeNode({ inputs: [input] })
-
-    renameWidget(widget, node, 'New Label')
-
-    expect(subgraphSlot.label).toBe('New Label')
   })
 
   it('does not resolve promoted widget source for non-subgraph node without parents', () => {

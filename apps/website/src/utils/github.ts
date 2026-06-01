@@ -1,20 +1,49 @@
+const inflight = new Map<string, Promise<number | null>>()
+
+export function resetGitHubStarsFetcherForTests(): void {
+  inflight.clear()
+}
+
 export async function fetchGitHubStars(
   owner: string,
-  repo: string
+  repo: string,
+  fetchImpl: typeof fetch = fetch
 ): Promise<number | null> {
   const override = readGitHubStarsOverride()
   if (override !== undefined) return override
 
+  const key = `${owner}/${repo}`
+  const cached = inflight.get(key)
+  if (cached) return cached
+
+  const request = doFetch(owner, repo, fetchImpl)
+  inflight.set(key, request)
+  return request
+}
+
+async function doFetch(
+  owner: string,
+  repo: string,
+  fetchImpl: typeof fetch
+): Promise<number | null> {
   try {
-    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
-      headers: { Accept: 'application/vnd.github.v3+json' }
-    })
+    const res = await fetchImpl(
+      `https://api.github.com/repos/${owner}/${repo}`,
+      { headers: { Accept: 'application/vnd.github.v3+json' } }
+    )
     if (!res.ok) return null
-    const data = await res.json()
-    return data.stargazers_count ?? null
+    const data: unknown = await res.json()
+    return readStargazerCount(data)
   } catch {
     return null
   }
+}
+
+function readStargazerCount(data: unknown): number | null {
+  if (data === null || typeof data !== 'object') return null
+  if (!('stargazers_count' in data)) return null
+  const count = data.stargazers_count
+  return typeof count === 'number' ? count : null
 }
 
 export function formatStarCount(count: number): string {
