@@ -760,6 +760,39 @@ describe('useComboWidget', () => {
       expect(mockUpdateInputs).toHaveBeenCalledTimes(1)
     })
 
+    it('should keep empty cloud input value after lazy-loaded inputs resolve a default', async () => {
+      const scenario = cloudInputScenarios[0]
+      mockDistributionState.isCloud = true
+      mockAssetsStoreState.inputAssets = []
+      mockAssetsStoreState.inputLoading = false
+      mockUpdateInputs.mockImplementationOnce(async () => {
+        mockAssetsStoreState.inputAssets = [
+          createMockAssetItem({
+            name: scenario.assetName,
+            asset_hash: scenario.assetHash
+          })
+        ]
+      })
+
+      const constructor = useComboWidget()
+      const mockNode = createMockNode(scenario.nodeClass)
+      const inputSpec = createMockInputSpec({
+        name: scenario.inputName,
+        default: scenario.assetName
+      })
+
+      const widget = constructor(mockNode, inputSpec)
+
+      expect(mockUpdateInputs).toHaveBeenCalledTimes(1)
+      expect(getInputWidgetDefault(mockNode)).toBe('')
+      expect(widget.value).toBe('')
+
+      await mockUpdateInputs.mock.results[0]?.value
+
+      expect(getInputWidgetValues(mockNode)).toEqual([scenario.assetHash])
+      expect(widget.value).toBe('')
+    })
+
     it('should not trigger lazy load if assets already loading', () => {
       const scenario = cloudInputScenarios[0]
       mockDistributionState.isCloud = true

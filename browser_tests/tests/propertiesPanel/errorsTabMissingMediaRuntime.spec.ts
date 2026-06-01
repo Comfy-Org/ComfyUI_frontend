@@ -229,13 +229,8 @@ const cloudOutputTest = createCloudAssetsFixture([cloudOutputAsset]).extend({
   }
 })
 
-const cloudMissingInputErrorsByPage = new WeakMap<
-  Page,
-  MissingInputErrorWatcher
->()
-
 const cloudEmptyMediaInputsTest = createCloudAssetsFixture([]).extend<{
-  missingInputErrors: MissingInputErrorWatcher
+  startMissingInputErrorWatcher: () => MissingInputErrorWatcher
 }>({
   page: async ({ page }, use) => {
     await routeCloudBootstrapApis(page)
@@ -247,24 +242,21 @@ const cloudEmptyMediaInputsTest = createCloudAssetsFixture([]).extend<{
         ])
       }
     })
-    const missingInputErrors = watchMissingInputErrors(page)
-    cloudMissingInputErrorsByPage.set(page, missingInputErrors)
 
     try {
       await use(page)
     } finally {
       await unrouteObjectInfo()
-      missingInputErrors.dispose()
-      cloudMissingInputErrorsByPage.delete(page)
     }
   },
-  missingInputErrors: async ({ page }, use) => {
-    const missingInputErrors = cloudMissingInputErrorsByPage.get(page)
-    if (!missingInputErrors) {
-      throw new Error('Missing input error watcher was not initialized')
-    }
-
-    await use(missingInputErrors)
+  startMissingInputErrorWatcher: async ({ page }, use) => {
+    const watchers: MissingInputErrorWatcher[] = []
+    await use(() => {
+      const watcher = watchMissingInputErrors(page)
+      watchers.push(watcher)
+      return watcher
+    })
+    watchers.forEach((watcher) => watcher.dispose())
   }
 })
 const cloudUploadAssetStateByPage = new WeakMap<Page, CloudUploadAssetState>()
@@ -607,8 +599,13 @@ cloudEmptyMediaInputsTest.describe(
 
     cloudEmptyMediaInputsTest(
       'does not surface missing inputs after adding LoadImage, LoadVideo, and LoadAudio nodes with no cloud input assets',
-      async ({ cloudAssetRequests, comfyPage, missingInputErrors }) => {
+      async ({
+        cloudAssetRequests,
+        comfyPage,
+        startMissingInputErrorWatcher
+      }) => {
         await comfyPage.nodeOps.clearGraph()
+        const missingInputErrors = startMissingInputErrorWatcher()
 
         for (const node of emptyMediaLoaderNodes) {
           await comfyPage.nodeOps.addNode(
