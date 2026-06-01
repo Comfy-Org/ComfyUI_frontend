@@ -67,7 +67,7 @@ const createAttemptId = (): string => {
 }
 
 const getStorage = (): Storage | null => {
-  let storage: Storage | null = null
+  let storage: Storage | null
 
   try {
     storage = globalThis.localStorage

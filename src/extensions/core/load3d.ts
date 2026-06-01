@@ -6,7 +6,8 @@ import { nodeToLoad3dMap, useLoad3d } from '@/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import type {
   CameraConfig,
-  CameraState
+  CameraState,
+  Model3DInfo
 } from '@/extensions/core/load3d/interfaces'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import {
@@ -402,6 +403,9 @@ useExtensionService().registerExtension({
 
           currentLoad3d.handleResize()
 
+          const modelInfo = currentLoad3d.getModelInfo()
+          const model_3d_info: Model3DInfo = modelInfo ? [modelInfo] : []
+
           const returnVal = {
             image: `threed/${data.name} [temp]`,
             mask: `threed/${dataMask.name} [temp]`,
@@ -409,7 +413,8 @@ useExtensionService().registerExtension({
             camera_info:
               (node.properties['Camera Config'] as CameraConfig | undefined)
                 ?.state || null,
-            recording: ''
+            recording: '',
+            model_3d_info
           }
 
           const recordingData = currentLoad3d.getRecordingData()

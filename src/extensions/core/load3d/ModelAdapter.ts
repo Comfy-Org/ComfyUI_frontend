@@ -15,7 +15,7 @@ export interface ModelLoadContext {
   readonly materialMode: MaterialMode
 }
 
-export type ModelAdapterKind = 'mesh' | 'pointCloud' | 'splat'
+type ModelAdapterKind = 'mesh' | 'pointCloud' | 'splat'
 
 export interface ModelAdapterCapabilities {
   /**

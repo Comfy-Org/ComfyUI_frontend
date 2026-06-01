@@ -1458,9 +1458,9 @@ const translations = {
   // ContactSection
   'gallery.contact.label': { en: 'CONTACT', 'zh-CN': '联系' },
   'gallery.contact.heading': {
-    en: 'Built something cool with ComfyUI? <a href="https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Submit</a> your work to be featured on our website and socials and get seen by the global ComfyUI community.',
+    en: 'Built something cool with ComfyUI?<br> <a href="https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Submit</a> your work to be featured on our website and socials and get seen by the global ComfyUI community.',
     'zh-CN':
-      '用 ComfyUI 创作了很酷的作品？<a href="https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">提交</a>你的作品，展示在我们的网站和社交媒体上，让全球 ComfyUI 社区看到。'
+      '用 ComfyUI 创作了很酷的作品？<br><a href="https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">提交</a>你的作品，展示在我们的网站和社交媒体上，让全球 ComfyUI 社区看到。'
   },
 
   // AboutHeroSection

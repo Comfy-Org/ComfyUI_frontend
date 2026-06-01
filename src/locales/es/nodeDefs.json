@@ -384,6 +384,90 @@
       }
     }
   },
+  "BeebleSwitchXImageEdit": {
+    "description": "Edita una sola imagen con Beeble SwitchX. Cambia cualquier elemento de la escena (fondo, iluminación, vestuario) mientras conserva los píxeles originales del sujeto. Proporciona una imagen de referencia y/o un prompt de texto para describir el nuevo aspecto. Máx. ~2,77MP.",
+    "display_name": "Beeble SwitchX Edición de Imagen",
+    "inputs": {
+      "alpha_mode": {
+        "name": "modo_alpha",
+        "tooltip": "Controla cómo SwitchX decide qué conservar y qué regenerar. 'auto' aísla automáticamente el sujeto principal. 'fill' regenera todo el fotograma conservando la geometría. 'select' propaga un keyframe del primer fotograma a lo largo del clip. 'custom' utiliza un alfa matte por fotograma que proporciones."
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "max_resolution": {
+        "name": "resolución_máxima",
+        "tooltip": "Resolución máxima de salida."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descripción en texto del resultado deseado (máx. 2000 caracteres). Se requiere al menos uno de 'prompt' o 'reference_image'."
+      },
+      "reference_image": {
+        "name": "imagen_de_referencia",
+        "tooltip": "Imagen de referencia cuyo aspecto (fondo, iluminación, vestuario) debe adoptar el resultado. Se requiere al menos uno de 'reference_image' o 'prompt'."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagen",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alfa",
+        "tooltip": "El alfa matte utilizado por Beeble. Vacío en modo 'fill', que no tiene matte separado."
+      }
+    }
+  },
+  "BeebleSwitchXVideoEdit": {
+    "description": "Edita un video con Beeble SwitchX. Cambia cualquier elemento de la escena (fondo, iluminación, vestuario) mientras conserva los píxeles y el movimiento originales del sujeto. Proporciona una imagen de referencia y/o un prompt de texto para describir el nuevo aspecto. Máx. 240 fotogramas, máx. ~2,77MP por fotograma.",
+    "display_name": "Beeble SwitchX Edición de Video",
+    "inputs": {
+      "alpha_mode": {
+        "name": "modo_alpha",
+        "tooltip": "Controla cómo SwitchX decide qué conservar y qué regenerar. 'auto' aísla automáticamente el sujeto principal. 'fill' regenera todo el fotograma conservando la geometría. 'select' propaga un keyframe del primer fotograma a lo largo del clip. 'custom' utiliza un alfa matte por fotograma que proporciones."
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "max_resolution": {
+        "name": "resolución_máxima",
+        "tooltip": "Resolución máxima de salida."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descripción en texto del resultado deseado (máx. 2000 caracteres). Se requiere al menos uno de 'prompt' o 'reference_image'."
+      },
+      "reference_image": {
+        "name": "imagen_de_referencia",
+        "tooltip": "Imagen de referencia cuyo aspecto (fondo, iluminación, vestuario) debe adoptar el resultado. Se requiere al menos uno de 'reference_image' o 'prompt'."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "video",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alfa",
+        "tooltip": "El alfa matte utilizado por Beeble. Vacío en modo 'fill', que no tiene matte separado."
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "ProgramadorMuestreoBeta",
     "inputs": {
@@ -1112,6 +1196,10 @@
     "inputs": {
       "model": {
         "name": "modelo"
+      },
+      "pre_cfg": {
+        "name": "pre_cfg",
+        "tooltip": "Si está activado, reajusta el ruido combinado ANTES de la combinación CFG del muestreador, sin limitar (puede amplificar). Coincide con el CFG escalado por norma utilizado por modelos como Lens. El valor predeterminado en falso mantiene el comportamiento original de atenuación solo en el espacio x0 después del CFG."
       },
       "strength": {
         "name": "intensidad"
@@ -7460,6 +7548,71 @@
       }
     }
   },
+  "Krea2ImageNode": {
+    "description": "Genera imágenes con Krea 2: elige Medium (ilustraciones expresivas) o Large (fotorrealismo expresivo). Admite un moodboard opcional y hasta 10 referencias de estilo de imagen encadenadas.",
+    "display_name": "Krea 2 Imagen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Krea 2 Medium es ideal para ilustraciones expresivas; Krea 2 Large es ideal para fotorrealismo expresivo."
+      },
+      "model_aspect_ratio": {
+        "name": "relación_de_aspecto"
+      },
+      "model_creativity": {
+        "name": "creatividad"
+      },
+      "model_moodboard_id": {
+        "name": "moodboard_id"
+      },
+      "model_moodboard_strength": {
+        "name": "fuerza_moodboard"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Texto de entrada para la imagen."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla aleatoria para reproducibilidad."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Krea2StyleReferenceNode": {
+    "description": "Agrega una referencia de estilo de imagen a una generación de Krea 2. Encadena múltiples nodos de Referencia de Estilo Krea 2 (máx. 10) y conecta la salida final `style_reference` a Krea 2 Imagen. Cada imagen se sube al almacenamiento de ComfyAPI y se pasa como URL.",
+    "display_name": "Referencia de Estilo Krea 2",
+    "inputs": {
+      "image": {
+        "name": "imagen",
+        "tooltip": "Imagen de referencia cuyo estilo influye en la generación."
+      },
+      "strength": {
+        "name": "fuerza",
+        "tooltip": "Fuerza de la referencia; los valores negativos invierten la influencia del estilo."
+      },
+      "style_reference": {
+        "name": "style_reference",
+        "tooltip": "Cadena opcional de referencias de estilo entrantes; este nodo añade una más."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_reference",
+        "tooltip": null
+      }
+    }
+  },
   "LTXAVTextEncoderLoader": {
     "description": "[Recetas]\n\nltxav: gemma 3 12B",
     "display_name": "Cargador de codificador de texto LTXV Audio",
@@ -7763,6 +7916,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -8371,6 +8529,10 @@
       },
       "6": {
         "name": "model_3d",
+        "tooltip": null
+      },
+      "7": {
+        "name": "model_3d_info",
         "tooltip": null
       }
     }
@@ -12304,6 +12466,23 @@
       }
     }
   },
+  "MultiGPU_WorkUnits": {
+    "description": "Prepara el modelo para acelerar el muestreo dividiendo las unidades de trabajo.\n\nDebe colocarse después de los nodos que modifican el propio objeto del modelo, como los nodos de compilación o cambio de atención.\n\nA excepción de esos casos, este nodo puede colocarse en cualquier orden.",
+    "display_name": "División CFG MultiGPU",
+    "inputs": {
+      "max_gpus": {
+        "name": "max_gpus"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "NAGuidance": {
     "description": "Aplica la Guía de Atención Normalizada a los modelos, permitiendo prompts negativos en modelos distilled/schnell.",
     "display_name": "Guía de Atención Normalizada",
@@ -13007,6 +13186,32 @@
     "inputs": {
       "photomaker_model_name": {
         "name": "nombre_del_modelo_photomaker"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PiDConditioning": {
+    "description": "Adjunta un latent y un escalar degrade_sigma a un CONDITIONING para decodificación/upsampling PiD",
+    "display_name": "Condicionamiento PiD",
+    "inputs": {
+      "degrade_sigma": {
+        "name": "degrade_sigma",
+        "tooltip": "0 = latent limpio. Aumenta para eliminar ruido de salidas latentes corruptas."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent (de VAEEncode o un KSampler)."
+      },
+      "latent_format": {
+        "name": "formato_latent",
+        "tooltip": "Los latents de Flux1 y Flux2 se detectan automáticamente por la dimensión de canal, sd3 debe seleccionarse manualmente."
+      },
+      "positive": {
+        "name": "positivo"
       }
     },
     "outputs": {
@@ -15951,6 +16156,10 @@
       "images": {
         "name": "images",
         "tooltip": "Lista de imágenes para guardar."
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Indica si se deben sobrescribir los archivos existentes o incrementar los nombres de archivo para evitar sobrescribir."
       }
     }
   },
@@ -15969,6 +16178,10 @@
       "images": {
         "name": "images",
         "tooltip": "Lista de imágenes para guardar."
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Indica si se deben sobrescribir los archivos existentes o incrementar los nombres de archivo para evitar sobrescribir."
       },
       "texts": {
         "name": "texts",
@@ -16114,6 +16327,57 @@
       },
       "shift_y": {
         "name": "desplazamiento_y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectCLIPDevice": {
+    "description": "Coloca el codificador de texto CLIP en un dispositivo específico (default / cpu / gpu:N).\n\n- \"default\" restaura el dispositivo asignado por el cargador.\n- \"cpu\" fija tanto la carga como la descarga en la CPU.\n- \"gpu:N\" fija el dispositivo de carga en la N-ésima GPU disponible.\n\nCuando el dispositivo seleccionado no existe en la máquina actual\n(por ejemplo, un flujo de trabajo creado en una máquina con 2 GPU abierto en una con 1 GPU),\nel nodo pasa el CLIP sin cambios y registra un mensaje\nen lugar de fallar.",
+    "display_name": "Seleccionar Dispositivo CLIP",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "device": {
+        "name": "device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectModelDevice": {
+    "description": "Coloca el modelo de difusión en un dispositivo específico (default / cpu / gpu:N).\n\n- \"default\" restaura el dispositivo asignado por el cargador (incluso después de una\n  llamada previa a Seleccionar Dispositivo del Modelo).\n- \"cpu\" fija tanto la carga como la descarga en la CPU.\n- \"gpu:N\" fija el dispositivo de carga en la N-ésima GPU disponible; el dispositivo de descarga\n  se restaura a la elección original del cargador.\n\nCuando el dispositivo solicitado difiere del dispositivo en el que ya está\nel modelo de entrada, se genera un modelo nuevo a través de la fábrica de recarga del cargador\n(cached_patcher_init) para que el nuevo patcher tenga pesos independientes en\nel nuevo dispositivo. Los cargadores que no soportan multigpu (sin fábrica)\nharán que el nodo pase sin cambios con una advertencia.\n\nSi el flujo de trabajo ya tiene aplicada la División CFG MultiGPU y la GPU elegida\ncolisiona con uno de los clones multigpu existentes, ese clon se elimina para que dos patchers no terminen asignados al mismo dispositivo.\n\nCuando el dispositivo seleccionado no existe en la máquina actual\n(por ejemplo, un flujo de trabajo creado en una máquina con 2 GPU abierto en una con 1 GPU),\nel nodo pasa el modelo sin cambios y registra un mensaje\nen lugar de fallar.\n\nNOTA: Colocar Seleccionar Dispositivo del Modelo *después* de un nodo que ya\nhaya consumido el mismo modelo (por ejemplo, un KSampler que se ejecutó en este modelo en\nel dispositivo original) no es recomendable -- cualquier estado que el consumidor previo\nhaya modificado en el modelo original se observará cuando el dispositivo seleccionado coincida con el original (ruta rápida). Coloque Seleccionar Dispositivo del Modelo antes de cualquier consumidor del modelo.",
+    "display_name": "Seleccionar Dispositivo del Modelo",
+    "inputs": {
+      "device": {
+        "name": "device"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectVAEDevice": {
+    "description": "Coloca el VAE en un dispositivo específico (por defecto / gpu:N).\n\n- \"default\" restaura el dispositivo asignado por el cargador.\n- \"gpu:N\" fija el dispositivo de carga en la N-ésima GPU disponible; el dispositivo de descarga\n  se establece en el dispositivo estándar de descarga de VAE.\n\nLa CPU no se muestra intencionadamente en la interfaz para el VAE; si un flujo de trabajo\nproporciona \"cpu\" de todos modos (por ejemplo, abierto desde otra máquina), la solicitud\nse descarta con un mensaje en el registro y el VAE pasa sin cambios.\n\nCuando el dispositivo seleccionado no existe en la máquina actual\n(por ejemplo, un flujo de trabajo creado en una caja con 2 GPU abierto en una caja con 1 GPU),\nel nodo pasa el VAE sin cambios y registra un mensaje\nen lugar de fallar.",
+    "display_name": "Seleccionar dispositivo VAE",
+    "inputs": {
+      "device": {
+        "name": "dispositivo"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -18356,6 +18620,169 @@
       },
       "1": {
         "name": "id_de_tarea_de_modelo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1ImageToModelNode": {
+    "description": "Tripo P1 de imagen a 3D. Optimizado para mallas low-poly listas para videojuegos.",
+    "display_name": "Tripo P1: Imagen a Modelo",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_escala",
+        "tooltip": "Escala la salida para aproximar metros reales."
+      },
+      "compress_geometry": {
+        "name": "comprimir_geometría",
+        "tooltip": "Aplicar compresión basada en geometría. Descomprimir antes de editar."
+      },
+      "enable_image_autofix": {
+        "name": "activar_autocorrección_imagen",
+        "tooltip": "Preprocesa la imagen de entrada para mejorar la calidad de generación."
+      },
+      "export_uv": {
+        "name": "exportar_uv",
+        "tooltip": "Desplegar UV durante la generación. Desactivar para ejecuciones solo de geometría más rápidas."
+      },
+      "face_limit": {
+        "name": "límite_de_caras",
+        "tooltip": "Cantidad objetivo de caras, 48-20000. -1 permite que Tripo elija adaptativamente."
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "model_seed": {
+        "name": "semilla_modelo"
+      },
+      "output_mode": {
+        "name": "modo_de_salida",
+        "tooltip": "\"Solo geometría\" devuelve una malla sin texturas. \"Texturizado\" añade mapas de color/PBR."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "archivo_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "id_tarea_modelo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1MultiviewToModelNode": {
+    "description": "Tripo P1 de multivista a 3D a partir de 2-4 imágenes de referencia en orden [frontal, izquierda, trasera, derecha]. La vista frontal es obligatoria; cualquier combinación de las otras tres puede omitirse.",
+    "display_name": "Tripo P1: Multivista a Modelo",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_escala",
+        "tooltip": "Escala la salida para aproximar metros reales."
+      },
+      "compress_geometry": {
+        "name": "comprimir_geometría",
+        "tooltip": "Aplicar compresión basada en geometría. Descomprimir antes de editar."
+      },
+      "export_uv": {
+        "name": "exportar_uv",
+        "tooltip": "Desplegar UV durante la generación. Desactivar para ejecuciones solo de geometría más rápidas."
+      },
+      "face_limit": {
+        "name": "límite_de_caras",
+        "tooltip": "Cantidad objetivo de caras, 48-20000. -1 permite que Tripo elija adaptativamente."
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Vista frontal (0°). Obligatoria."
+      },
+      "image_back": {
+        "name": "imagen_trasera",
+        "tooltip": "Vista trasera (180°)."
+      },
+      "image_left": {
+        "name": "imagen_izquierda",
+        "tooltip": "Vista izquierda (90°), es decir, el lado izquierdo del sujeto."
+      },
+      "image_right": {
+        "name": "imagen_derecha",
+        "tooltip": "Vista derecha (270°), es decir, el lado derecho del sujeto."
+      },
+      "model_seed": {
+        "name": "semilla_modelo"
+      },
+      "output_mode": {
+        "name": "modo_de_salida",
+        "tooltip": "\"Solo geometría\" devuelve una malla sin texturas. \"Texturizado\" añade mapas de color/PBR."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "archivo_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "id_tarea_modelo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1TextToModelNode": {
+    "description": "Tripo P1 texto a 3D. Optimizado para mallas low-poly, listas para juegos, con topología estable.",
+    "display_name": "Tripo P1: Texto a Modelo",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_escala",
+        "tooltip": "Escala la salida para aproximar metros reales."
+      },
+      "compress_geometry": {
+        "name": "comprimir_geometría",
+        "tooltip": "Aplicar compresión basada en geometría. Descomprime antes de editar."
+      },
+      "export_uv": {
+        "name": "exportar_uv",
+        "tooltip": "Desplegar UV durante la generación. Desactiva para ejecuciones solo de geometría más rápidas."
+      },
+      "face_limit": {
+        "name": "límite_de_caras",
+        "tooltip": "Cantidad objetivo de caras, 48-20000. -1 permite que Tripo elija de forma adaptativa."
+      },
+      "image_seed": {
+        "name": "semilla_imagen"
+      },
+      "model_seed": {
+        "name": "semilla_modelo"
+      },
+      "negative_prompt": {
+        "name": "prompt_negativo",
+        "tooltip": "Hasta 255 caracteres."
+      },
+      "output_mode": {
+        "name": "modo_de_salida",
+        "tooltip": "\"Solo geometría\" devuelve una malla sin texturas. \"Texturizado\" añade mapas de color/PBR."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Hasta 1024 caracteres."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "archivo_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "id_tarea_modelo",
         "tooltip": null
       },
       "2": {

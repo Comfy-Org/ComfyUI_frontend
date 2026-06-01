@@ -10,6 +10,7 @@ export const TestIds = {
     nodeLibrarySearch: 'node-library-search',
     nodePreviewCard: 'node-preview-card',
     workflows: 'workflows-sidebar',
+    workflowsRefreshButton: 'workflows-refresh-button',
     modeToggle: 'mode-toggle'
   },
   tree: {
@@ -128,7 +129,8 @@ export const TestIds = {
     pinIndicator: 'node-pin-indicator',
     innerWrapper: 'node-inner-wrapper',
     mainImage: 'main-image',
-    slotConnectionDot: 'slot-connection-dot'
+    slotConnectionDot: 'slot-connection-dot',
+    imageGrid: 'image-grid'
   },
   selectionToolbox: {
     root: 'selection-toolbox',
@@ -301,12 +303,3 @@ export const TestIds = {
     typeFilter: (key: 'input' | 'output') => `search-filter-${key}`
   }
 } as const
-
-export type TestId<K extends keyof typeof TestIds> = Exclude<
-  (typeof TestIds)[K][keyof (typeof TestIds)[K]],
-  (...args: never[]) => string
->
-
-export type TestIdValue = {
-  [K in keyof typeof TestIds]: TestId<K>
-}[keyof typeof TestIds]
