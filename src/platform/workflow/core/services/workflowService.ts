@@ -50,8 +50,8 @@ function linearModeToAppMode(linearMode: unknown): AppMode | null {
 function normalizeOpenSource(
   source: WorkflowOpenSource | undefined
 ): AppModeOpenSource {
-  if (source === 'shared_url' || source === 'original') return source
-  return 'unknown'
+  if (source === 'shared_url') return 'shared_url'
+  return source ? 'original' : 'unknown'
 }
 
 export const useWorkflowService = () => {

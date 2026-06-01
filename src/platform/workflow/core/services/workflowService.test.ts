@@ -881,6 +881,21 @@ describe('useWorkflowService', () => {
         })
       })
 
+      it('tags the entry as original when loaded from a non-shared source', async () => {
+        const workflow = createModeTestWorkflow({ loaded: false })
+
+        await service.afterLoadNewGraph(
+          workflow,
+          makeWorkflowData({ linearMode: true }),
+          'template'
+        )
+
+        expect(mockTrackEnterLinear).toHaveBeenCalledWith({
+          source: 'workflow',
+          open_source: 'original'
+        })
+      })
+
       it('does not fire when the workflow is not in app mode', async () => {
         const workflow = createModeTestWorkflow({ loaded: false })
 

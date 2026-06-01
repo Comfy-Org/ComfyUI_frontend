@@ -124,6 +124,12 @@ const telemetry = useTelemetry()
 const authStore = useAuthStore()
 let hasTrackedLogin = false
 
+// Track active time spent in each mode (cloud only). Must run in the
+// synchronous setup scope so the composable's scope-bound cleanup registers.
+if (isCloud && telemetry) {
+  useModeTimeTracking()
+}
+
 watch(
   () => colorPaletteStore.completedActivePalette,
   (newTheme) => {
@@ -308,11 +314,6 @@ const onGraphReady = () => {
           visibility_state: document.visibilityState as 'visible' | 'hidden'
         })
       })
-    }
-
-    // Track active time spent in each mode (cloud only)
-    if (isCloud && telemetry) {
-      useModeTimeTracking()
     }
 
     // Set up tab count tracking (cloud only)
