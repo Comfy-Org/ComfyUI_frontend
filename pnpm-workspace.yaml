@@ -18,6 +18,7 @@ catalog:
   '@iconify-json/lucide': ^1.1.178
   '@iconify/json': ^2.2.380
   '@iconify/tailwind4': ^1.2.0
+  '@iconify/tools': ^5.0.3
   '@iconify/utils': ^3.1.0
   '@intlify/eslint-plugin-vue-i18n': ^4.1.1
   '@lobehub/i18n-cli': ^1.26.1
