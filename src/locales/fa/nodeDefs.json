@@ -8530,6 +8530,10 @@
       "6": {
         "name": "مدل_۳بعدی",
         "tooltip": null
+      },
+      "7": {
+        "name": "model_3d_info",
+        "tooltip": null
       }
     }
   },
@@ -16152,6 +16156,10 @@
       "images": {
         "name": "تصاویر",
         "tooltip": "فهرست تصاویر برای ذخیره."
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "آیا فایل‌های موجود بازنویسی شوند یا نام فایل‌ها به‌صورت افزایشی تغییر کند تا از بازنویسی جلوگیری شود."
       }
     }
   },
@@ -16170,6 +16178,10 @@
       "images": {
         "name": "تصاویر",
         "tooltip": "فهرست تصاویر برای ذخیره."
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "آیا فایل‌های موجود بازنویسی شوند یا نام فایل‌ها به‌صورت افزایشی تغییر کند تا از بازنویسی جلوگیری شود."
       },
       "texts": {
         "name": "متون",
@@ -18599,6 +18611,169 @@
       },
       "texture_seed": {
         "name": "بذر تکسچر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فایل مدل",
+        "tooltip": null
+      },
+      "1": {
+        "name": "شناسه وظیفه مدل",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1ImageToModelNode": {
+    "description": "تبدیل تصویر به مدل سه‌بعدی با Tripo P1. بهینه‌شده برای مش‌های کم‌پلی و مناسب بازی.",
+    "display_name": "Tripo P1: تبدیل تصویر به مدل",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "مقیاس خروجی برای تقریب اندازه واقعی (متر)."
+      },
+      "compress_geometry": {
+        "name": "compress_geometry",
+        "tooltip": "فشرده‌سازی مبتنی بر هندسه. قبل از ویرایش، از حالت فشرده خارج کنید."
+      },
+      "enable_image_autofix": {
+        "name": "enable_image_autofix",
+        "tooltip": "پیش‌پردازش تصویر ورودی برای بهبود کیفیت تولید."
+      },
+      "export_uv": {
+        "name": "export_uv",
+        "tooltip": "بازکردن UV هنگام تولید. برای سرعت بیشتر در حالت فقط هندسه، غیرفعال کنید."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "تعداد هدف برای وجوه مش، از ۴۸ تا ۲۰۰۰۰. مقدار ‎-۱ اجازه می‌دهد Tripo به صورت تطبیقی انتخاب کند."
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "output_mode": {
+        "name": "output_mode",
+        "tooltip": "در حالت «فقط هندسه»، مش بدون بافت خروجی می‌شود. «بافت‌دار» نقشه‌های رنگی/PBR را اضافه می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1MultiviewToModelNode": {
+    "description": "تبدیل چندنما به مدل سه‌بعدی با Tripo P1 از ۲ تا ۴ تصویر مرجع به ترتیب [جلو، چپ، پشت، راست]. نمای جلو الزامی است؛ هر ترکیبی از سه نمای دیگر می‌تواند حذف شود.",
+    "display_name": "Tripo P1: تبدیل چندنما به مدل",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "مقیاس خروجی برای تقریب اندازه واقعی (متر)."
+      },
+      "compress_geometry": {
+        "name": "compress_geometry",
+        "tooltip": "فشرده‌سازی مبتنی بر هندسه. قبل از ویرایش، از حالت فشرده خارج کنید."
+      },
+      "export_uv": {
+        "name": "export_uv",
+        "tooltip": "بازکردن UV هنگام تولید. برای سرعت بیشتر در حالت فقط هندسه، غیرفعال کنید."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "تعداد هدف برای وجوه مش، از ۴۸ تا ۲۰۰۰۰. مقدار ‎-۱ اجازه می‌دهد Tripo به صورت تطبیقی انتخاب کند."
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "نمای جلو (۰°). الزامی."
+      },
+      "image_back": {
+        "name": "image_back",
+        "tooltip": "نمای پشت (۱۸۰°)."
+      },
+      "image_left": {
+        "name": "image_left",
+        "tooltip": "نمای چپ (۹۰°)، یعنی سمت چپ سوژه."
+      },
+      "image_right": {
+        "name": "image_right",
+        "tooltip": "نمای راست (۲۷۰°)، یعنی سمت راست سوژه."
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "output_mode": {
+        "name": "output_mode",
+        "tooltip": "در حالت «فقط هندسه»، مش بدون بافت خروجی می‌شود. «بافت‌دار» نقشه‌های رنگی/PBR را اضافه می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1TextToModelNode": {
+    "description": "تبدیل متن به مدل سه‌بعدی با Tripo P1. بهینه‌شده برای مش‌های کم‌پلی و آماده برای بازی با توپولوژی پایدار.",
+    "display_name": "Tripo P1: تبدیل متن به مدل",
+    "inputs": {
+      "auto_size": {
+        "name": "اندازه خودکار",
+        "tooltip": "خروجی را برای تقریب ابعاد واقعی (متر) مقیاس‌بندی می‌کند."
+      },
+      "compress_geometry": {
+        "name": "فشرده‌سازی هندسه",
+        "tooltip": "فشرده‌سازی مبتنی بر هندسه را اعمال می‌کند. قبل از ویرایش، از حالت فشرده خارج کنید."
+      },
+      "export_uv": {
+        "name": "خروجی UV",
+        "tooltip": "بازکردن UV هنگام تولید. برای اجرای سریع‌تر فقط هندسه، غیرفعال کنید."
+      },
+      "face_limit": {
+        "name": "محدودیت وجه",
+        "tooltip": "تعداد هدف وجه، ۴۸ تا ۲۰۰۰۰. مقدار ‎-۱ اجازه می‌دهد Tripo به صورت تطبیقی انتخاب کند."
+      },
+      "image_seed": {
+        "name": "بذر تصویر"
+      },
+      "model_seed": {
+        "name": "بذر مدل"
+      },
+      "negative_prompt": {
+        "name": "پرامپت منفی",
+        "tooltip": "حداکثر ۲۵۵ کاراکتر."
+      },
+      "output_mode": {
+        "name": "حالت خروجی",
+        "tooltip": "«فقط هندسه» یک مش بدون بافت بازمی‌گرداند. «بافت‌دار» نقشه‌های رنگی/PBR را اضافه می‌کند."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "حداکثر ۱۰۲۴ کاراکتر."
       }
     },
     "outputs": {

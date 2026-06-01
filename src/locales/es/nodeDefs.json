@@ -8530,6 +8530,10 @@
       "6": {
         "name": "model_3d",
         "tooltip": null
+      },
+      "7": {
+        "name": "model_3d_info",
+        "tooltip": null
       }
     }
   },
@@ -16152,6 +16156,10 @@
       "images": {
         "name": "images",
         "tooltip": "Lista de imágenes para guardar."
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Indica si se deben sobrescribir los archivos existentes o incrementar los nombres de archivo para evitar sobrescribir."
       }
     }
   },
@@ -16170,6 +16178,10 @@
       "images": {
         "name": "images",
         "tooltip": "Lista de imágenes para guardar."
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Indica si se deben sobrescribir los archivos existentes o incrementar los nombres de archivo para evitar sobrescribir."
       },
       "texts": {
         "name": "texts",
@@ -18608,6 +18620,169 @@
       },
       "1": {
         "name": "id_de_tarea_de_modelo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1ImageToModelNode": {
+    "description": "Tripo P1 de imagen a 3D. Optimizado para mallas low-poly listas para videojuegos.",
+    "display_name": "Tripo P1: Imagen a Modelo",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_escala",
+        "tooltip": "Escala la salida para aproximar metros reales."
+      },
+      "compress_geometry": {
+        "name": "comprimir_geometría",
+        "tooltip": "Aplicar compresión basada en geometría. Descomprimir antes de editar."
+      },
+      "enable_image_autofix": {
+        "name": "activar_autocorrección_imagen",
+        "tooltip": "Preprocesa la imagen de entrada para mejorar la calidad de generación."
+      },
+      "export_uv": {
+        "name": "exportar_uv",
+        "tooltip": "Desplegar UV durante la generación. Desactivar para ejecuciones solo de geometría más rápidas."
+      },
+      "face_limit": {
+        "name": "límite_de_caras",
+        "tooltip": "Cantidad objetivo de caras, 48-20000. -1 permite que Tripo elija adaptativamente."
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "model_seed": {
+        "name": "semilla_modelo"
+      },
+      "output_mode": {
+        "name": "modo_de_salida",
+        "tooltip": "\"Solo geometría\" devuelve una malla sin texturas. \"Texturizado\" añade mapas de color/PBR."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "archivo_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "id_tarea_modelo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1MultiviewToModelNode": {
+    "description": "Tripo P1 de multivista a 3D a partir de 2-4 imágenes de referencia en orden [frontal, izquierda, trasera, derecha]. La vista frontal es obligatoria; cualquier combinación de las otras tres puede omitirse.",
+    "display_name": "Tripo P1: Multivista a Modelo",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_escala",
+        "tooltip": "Escala la salida para aproximar metros reales."
+      },
+      "compress_geometry": {
+        "name": "comprimir_geometría",
+        "tooltip": "Aplicar compresión basada en geometría. Descomprimir antes de editar."
+      },
+      "export_uv": {
+        "name": "exportar_uv",
+        "tooltip": "Desplegar UV durante la generación. Desactivar para ejecuciones solo de geometría más rápidas."
+      },
+      "face_limit": {
+        "name": "límite_de_caras",
+        "tooltip": "Cantidad objetivo de caras, 48-20000. -1 permite que Tripo elija adaptativamente."
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Vista frontal (0°). Obligatoria."
+      },
+      "image_back": {
+        "name": "imagen_trasera",
+        "tooltip": "Vista trasera (180°)."
+      },
+      "image_left": {
+        "name": "imagen_izquierda",
+        "tooltip": "Vista izquierda (90°), es decir, el lado izquierdo del sujeto."
+      },
+      "image_right": {
+        "name": "imagen_derecha",
+        "tooltip": "Vista derecha (270°), es decir, el lado derecho del sujeto."
+      },
+      "model_seed": {
+        "name": "semilla_modelo"
+      },
+      "output_mode": {
+        "name": "modo_de_salida",
+        "tooltip": "\"Solo geometría\" devuelve una malla sin texturas. \"Texturizado\" añade mapas de color/PBR."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "archivo_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "id_tarea_modelo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1TextToModelNode": {
+    "description": "Tripo P1 texto a 3D. Optimizado para mallas low-poly, listas para juegos, con topología estable.",
+    "display_name": "Tripo P1: Texto a Modelo",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_escala",
+        "tooltip": "Escala la salida para aproximar metros reales."
+      },
+      "compress_geometry": {
+        "name": "comprimir_geometría",
+        "tooltip": "Aplicar compresión basada en geometría. Descomprime antes de editar."
+      },
+      "export_uv": {
+        "name": "exportar_uv",
+        "tooltip": "Desplegar UV durante la generación. Desactiva para ejecuciones solo de geometría más rápidas."
+      },
+      "face_limit": {
+        "name": "límite_de_caras",
+        "tooltip": "Cantidad objetivo de caras, 48-20000. -1 permite que Tripo elija de forma adaptativa."
+      },
+      "image_seed": {
+        "name": "semilla_imagen"
+      },
+      "model_seed": {
+        "name": "semilla_modelo"
+      },
+      "negative_prompt": {
+        "name": "prompt_negativo",
+        "tooltip": "Hasta 255 caracteres."
+      },
+      "output_mode": {
+        "name": "modo_de_salida",
+        "tooltip": "\"Solo geometría\" devuelve una malla sin texturas. \"Texturizado\" añade mapas de color/PBR."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Hasta 1024 caracteres."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "archivo_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "id_tarea_modelo",
         "tooltip": null
       },
       "2": {

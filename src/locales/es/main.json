@@ -826,6 +826,7 @@
     "LATENT_OPERATION": "OPERACIÓN_LATENTE",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
     "LOAD3D_CAMERA": "CARGAR CÁMARA 3D",
+    "LOAD3D_MODEL_INFO": "CARGAR_INFO_MODELO_3D",
     "LOAD_3D": "CARGAR_3D",
     "LORA_MODEL": "MODELO_LORA",
     "LOSS_MAP": "MAPA_PÉRDIDAS",
@@ -917,10 +918,6 @@
       "nodeName": "Este nodo"
     },
     "promptErrors": {
-      "image_not_loaded": {
-        "desc": "El sistema no pudo cargar esta imagen.",
-        "title": "Imagen no cargada"
-      },
       "missing_node_type": {
         "desc": "Falta un tipo de nodo o no está disponible. El flujo de trabajo puede estar dañado o requerir un nodo personalizado.",
         "title": "Falta tipo de nodo"
@@ -928,11 +925,6 @@
       "no_prompt": {
         "desc": "Los datos del flujo de trabajo enviados al servidor están vacíos. Esto puede ser un error inesperado del sistema.",
         "title": "Los datos del flujo de trabajo están vacíos"
-      },
-      "out_of_memory": {
-        "descCloud": "No hay suficiente memoria GPU. Intenta reducir la complejidad y vuelve a ejecutar. No se cobraron créditos.",
-        "descLocal": "No hay suficiente memoria GPU. Intenta reducir la complejidad y vuelve a ejecutar.",
-        "title": "La generación falló"
       },
       "prompt_no_outputs": {
         "desc": "El flujo de trabajo no contiene ningún nodo de salida (por ejemplo, Guardar imagen, Vista previa de imagen) para producir un resultado.",
@@ -949,6 +941,191 @@
       "server_error_local": {
         "desc": "El servidor encontró un error inesperado. Por favor, revisa los registros del servidor.",
         "title": "Error del servidor"
+      }
+    },
+    "runtimeErrors": {
+      "access_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Esta ejecución requiere acceso que no está disponible para la cuenta actual.",
+        "title": "Acceso requerido",
+        "toastMessage": "Esta ejecución requiere acceso que no está disponible para la cuenta actual.",
+        "toastTitle": "Acceso requerido"
+      },
+      "content_blocked": {
+        "itemLabel": "{nodeName}",
+        "message": "Esta solicitud fue bloqueada por el sistema de moderación de contenido. Intenta cambiar el prompt o las entradas.",
+        "title": "Contenido bloqueado",
+        "toastMessage": "Esta solicitud fue bloqueada por el sistema de moderación de contenido. Intenta cambiar el prompt o las entradas.",
+        "toastTitle": "Contenido bloqueado"
+      },
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "El nodo generó un error durante la ejecución.",
+        "title": "Ejecución fallida",
+        "toastMessage": "Este nodo generó un error durante la ejecución. Revisa sus entradas o prueba una configuración diferente.",
+        "toastTitle": "{nodeName} falló"
+      },
+      "generation_stalled": {
+        "itemLabel": "{nodeName}",
+        "message": "Este flujo de trabajo dejó de avanzar. Intenta ejecutarlo de nuevo.",
+        "title": "Generación detenida",
+        "toastMessage": "Este flujo de trabajo dejó de avanzar. Intenta ejecutarlo de nuevo.",
+        "toastTitle": "Generación detenida"
+      },
+      "image_not_loaded": {
+        "itemLabel": "{nodeName}",
+        "message": "El sistema no pudo cargar esta imagen.",
+        "title": "Imagen no cargada",
+        "toastMessage": "No se pudo cargar la imagen para {nodeName}. Intenta agregarla de nuevo.",
+        "toastTitle": "No se pudo cargar la imagen de entrada"
+      },
+      "insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "Agrega créditos a tu cuenta para usar este nodo.",
+        "title": "Créditos insuficientes",
+        "toastMessage": "Agrega créditos a tu cuenta para usar este nodo.",
+        "toastTitle": "Créditos insuficientes"
+      },
+      "invalid_clip_input": {
+        "itemLabel": "{nodeName}",
+        "message": "La entrada de CLIP falta o es inválida. Revisa el checkpoint conectado o el cargador de CLIP.",
+        "title": "Entrada CLIP inválida",
+        "toastMessage": "{nodeName} tiene una entrada CLIP faltante o inválida.",
+        "toastTitle": "Entrada CLIP inválida"
+      },
+      "invalid_prompt": {
+        "itemLabel": "{nodeName}",
+        "message": "Introduce un prompt antes de ejecutar este flujo de trabajo.",
+        "title": "El prompt está vacío",
+        "toastMessage": "Introduce un prompt antes de ejecutar este flujo de trabajo.",
+        "toastTitle": "El prompt está vacío"
+      },
+      "invalid_workflow_request": {
+        "itemLabel": "{nodeName}",
+        "message": "La solicitud del flujo de trabajo es inválida. Revisa el flujo de trabajo y vuelve a intentarlo.",
+        "title": "Solicitud de flujo de trabajo inválida",
+        "toastMessage": "La solicitud del flujo de trabajo es inválida. Revisa el flujo de trabajo y vuelve a intentarlo.",
+        "toastTitle": "Solicitud de flujo de trabajo inválida"
+      },
+      "model_access_error": {
+        "itemLabel": "{nodeName}",
+        "message": "Uno o más modelos requeridos no pudieron ser accedidos.",
+        "title": "Acceso al modelo requerido",
+        "toastMessage": "Uno o más modelos requeridos no pudieron ser accedidos.",
+        "toastTitle": "Acceso al modelo requerido"
+      },
+      "model_download_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "No se pudo descargar un modelo. Intenta de nuevo.",
+        "title": "Descarga del modelo fallida",
+        "toastMessage": "No se pudo descargar un modelo. Intenta de nuevo.",
+        "toastTitle": "Descarga del modelo fallida"
+      },
+      "out_of_memory": {
+        "itemLabel": "{nodeName}",
+        "message": "No hay suficiente memoria GPU. Intenta reducir la resolución de la imagen o el tamaño del lote y vuelve a ejecutar.",
+        "title": "Generación fallida",
+        "toastMessage": "No hay suficiente memoria GPU. Intenta reducir la resolución de la imagen o el tamaño del lote y vuelve a ejecutar.",
+        "toastTitle": "Generación fallida"
+      },
+      "preprocessing_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "No se pudo preparar el flujo de trabajo. Intenta ejecutarlo de nuevo.",
+        "title": "Preparación fallida",
+        "toastMessage": "No se pudo preparar el flujo de trabajo. Intenta ejecutarlo de nuevo.",
+        "toastTitle": "Preparación fallida"
+      },
+      "preprocessing_timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "El flujo de trabajo tardó demasiado en prepararse. Intenta ejecutarlo de nuevo.",
+        "title": "Tiempo de preparación agotado",
+        "toastMessage": "El flujo de trabajo tardó demasiado en prepararse. Intenta ejecutarlo de nuevo.",
+        "toastTitle": "Tiempo de preparación agotado"
+      },
+      "rate_limited": {
+        "itemLabel": "{nodeName}",
+        "message": "Alta demanda en este momento. Intenta de nuevo en un momento.",
+        "title": "Los servidores están ocupados",
+        "toastMessage": "Alta demanda en este momento. Intenta de nuevo en un momento.",
+        "toastTitle": "Los servidores están ocupados"
+      },
+      "request_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "La solicitud falló antes de que la ejecución pudiera completarse. Intenta de nuevo.",
+        "title": "Solicitud fallida",
+        "toastMessage": "La solicitud falló antes de que la ejecución pudiera completarse. Intenta de nuevo.",
+        "toastTitle": "Solicitud fallida"
+      },
+      "run_ended_unexpectedly": {
+        "itemLabel": "{nodeName}",
+        "message": "La ejecución terminó inesperadamente. Intenta de nuevo.",
+        "title": "La ejecución terminó inesperadamente",
+        "toastMessage": "La ejecución terminó inesperadamente. Intenta de nuevo.",
+        "toastTitle": "La ejecución terminó inesperadamente"
+      },
+      "run_start_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "No se pudo iniciar la ejecución. Intenta de nuevo.",
+        "title": "No se pudo iniciar la ejecución",
+        "toastMessage": "No se pudo iniciar la ejecución. Intenta de nuevo.",
+        "toastTitle": "No se pudo iniciar la ejecución"
+      },
+      "server_busy": {
+        "itemLabel": "{nodeName}",
+        "message": "Los servidores están ocupados en este momento. Intenta de nuevo en un momento.",
+        "title": "Los servidores están ocupados",
+        "toastMessage": "Los servidores están ocupados en este momento. Intenta de nuevo en un momento.",
+        "toastTitle": "Los servidores están ocupados"
+      },
+      "server_crashed": {
+        "itemLabel": "{nodeName}",
+        "message": "El servidor se detuvo mientras ejecutaba este flujo de trabajo. Intenta de nuevo.",
+        "title": "El servidor falló",
+        "toastMessage": "El servidor se detuvo mientras ejecutaba este flujo de trabajo. Intenta de nuevo.",
+        "toastTitle": "El servidor falló"
+      },
+      "sign_in_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Los nodos de socios requieren una cuenta de Comfy. Inicia sesión para continuar.",
+        "title": "Inicio de sesión requerido",
+        "toastMessage": "Los nodos de socios requieren una cuenta de Comfy. Inicia sesión para continuar.",
+        "toastTitle": "Inicia sesión para usar este nodo"
+      },
+      "subscription_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Suscríbete a un plan para continuar ejecutando este flujo de trabajo.",
+        "title": "Suscripción requerida",
+        "toastMessage": "Suscríbete a un plan para continuar ejecutando este flujo de trabajo.",
+        "toastTitle": "Suscripción requerida"
+      },
+      "subscription_upgrade_required": {
+        "details": "Los modelos privados requieren una actualización de suscripción: {modelNames}",
+        "itemLabel": "{nodeName}",
+        "message": "Actualiza tu suscripción para usar los modelos privados en este flujo de trabajo.",
+        "title": "Actualización de suscripción requerida",
+        "toastMessage": "Actualiza tu suscripción para usar estos modelos privados: {modelNames}.",
+        "toastTitle": "Actualización de suscripción requerida"
+      },
+      "timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "Este flujo de trabajo alcanzó el tiempo máximo de ejecución. Intenta reducir la resolución de la imagen, el tamaño del lote o la longitud del flujo de trabajo y vuelve a ejecutar.",
+        "title": "Tiempo de generación agotado",
+        "toastMessage": "Este flujo de trabajo alcanzó el tiempo máximo de ejecución. Intenta reducir la resolución de la imagen, el tamaño del lote o la longitud del flujo de trabajo y vuelve a ejecutar.",
+        "toastTitle": "Tiempo de generación agotado"
+      },
+      "unexpected_service_error": {
+        "itemLabel": "{nodeName}",
+        "message": "El servicio encontró un error inesperado. Intenta de nuevo.",
+        "title": "Error del servicio",
+        "toastMessage": "El servicio encontró un error inesperado. Intenta de nuevo.",
+        "toastTitle": "Error del servicio"
+      },
+      "workspace_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "Agrega créditos a tu espacio de trabajo para continuar.",
+        "title": "Créditos insuficientes",
+        "toastMessage": "Agrega créditos a tu espacio de trabajo para continuar.",
+        "toastTitle": "Créditos insuficientes"
       }
     },
     "validationErrors": {
@@ -2458,7 +2635,6 @@
     "WaveSpeed": "WaveSpeed",
     "adjustments": "ajustes",
     "advanced": "avanzado",
-    "api node": "nodo api",
     "attention_experiments": "experimentos_de_atención",
     "audio": "audio",
     "background removal": "eliminación de fondo",
@@ -2474,7 +2650,6 @@
     "controlnet": "controlnet",
     "create": "crear",
     "custom_sampling": "muestreo_personalizado",
-    "dataset": "conjunto de datos",
     "debug": "depurar",
     "deprecated": "obsoleto",
     "detection": "detección",
@@ -2482,7 +2657,7 @@
     "experimental": "experimental",
     "filters": "filtros",
     "flux": "flux",
-    "geometry_estimation": "estimación de geometría",
+    "geometry estimation": "estimación de geometría",
     "gligen": "gligen",
     "guidance": "orientación",
     "guiders": "guías",
@@ -2499,11 +2674,12 @@
     "mask": "mask",
     "model": "modelo",
     "model_merging": "fusión_de_modelos",
-    "model_patches": "parches_de_modelo",
     "model_specific": "modelo_específico",
     "multigpu": "multigpu",
     "noise": "ruido",
     "operations": "operaciones",
+    "partner": "partner",
+    "patch": "patch",
     "photomaker": "photomaker",
     "preprocessors": "preprocesadores",
     "primitive": "primitivo",
@@ -2524,7 +2700,7 @@
     "unet": "unet",
     "upscale_diffusion": "difusión_de_escalado",
     "upscaling": "escalado",
-    "utils": "utilidades",
+    "utilities": "utilidades",
     "video": "video",
     "video_models": "modelos_de_video",
     "zimage": "zimage"

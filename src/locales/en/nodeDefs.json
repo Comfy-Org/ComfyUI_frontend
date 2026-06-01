@@ -8104,6 +8104,10 @@
       "6": {
         "name": "model_3d",
         "tooltip": null
+      },
+      "7": {
+        "name": "model_3d_info",
+        "tooltip": null
       }
     }
   },
@@ -15894,6 +15898,10 @@
       "filename_prefix": {
         "name": "filename_prefix",
         "tooltip": "Prefix for saved image filenames."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Whether to overwrite existing files or increment filenames to avoid overwriting."
       }
     }
   },
@@ -15912,6 +15920,10 @@
       "filename_prefix": {
         "name": "filename_prefix",
         "tooltip": "Prefix for saved image filenames."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Whether to overwrite existing files or increment filenames to avoid overwriting."
       },
       "texts": {
         "name": "texts",
@@ -18599,6 +18611,169 @@
       },
       "geometry_quality": {
         "name": "geometry_quality"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1ImageToModelNode": {
+    "display_name": "Tripo P1: Image to Model",
+    "description": "Tripo P1 image-to-3D. Optimized for low-poly, game-ready meshes.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "output_mode": {
+        "name": "output_mode",
+        "tooltip": "\"Geometry only\" returns an untextured mesh. \"Textured\" adds color/PBR maps."
+      },
+      "enable_image_autofix": {
+        "name": "enable_image_autofix",
+        "tooltip": "Pre-process the input image for better generation quality."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Target face count, 48-20000. -1 lets Tripo pick adaptively."
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Scale the output to approximate real-world meters."
+      },
+      "export_uv": {
+        "name": "export_uv",
+        "tooltip": "UV unwrap during generation. Turn off for faster geometry-only runs."
+      },
+      "compress_geometry": {
+        "name": "compress_geometry",
+        "tooltip": "Apply geometry-based compression. Decompress before editing."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1MultiviewToModelNode": {
+    "display_name": "Tripo P1: Multiview to Model",
+    "description": "Tripo P1 multiview-to-3D from 2-4 reference images in [front, left, back, right] order. Front is required; any combination of the other three may be omitted.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Front view (0°). Required."
+      },
+      "output_mode": {
+        "name": "output_mode",
+        "tooltip": "\"Geometry only\" returns an untextured mesh. \"Textured\" adds color/PBR maps."
+      },
+      "image_left": {
+        "name": "image_left",
+        "tooltip": "Left view (90°), i.e. the subject's left side."
+      },
+      "image_back": {
+        "name": "image_back",
+        "tooltip": "Back view (180°)."
+      },
+      "image_right": {
+        "name": "image_right",
+        "tooltip": "Right view (270°), i.e. the subject's right side."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Target face count, 48-20000. -1 lets Tripo pick adaptively."
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Scale the output to approximate real-world meters."
+      },
+      "export_uv": {
+        "name": "export_uv",
+        "tooltip": "UV unwrap during generation. Turn off for faster geometry-only runs."
+      },
+      "compress_geometry": {
+        "name": "compress_geometry",
+        "tooltip": "Apply geometry-based compression. Decompress before editing."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1TextToModelNode": {
+    "display_name": "Tripo P1: Text to Model",
+    "description": "Tripo P1 text-to-3D. Optimized for low-poly, game-ready meshes with stable topology.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Up to 1024 characters."
+      },
+      "output_mode": {
+        "name": "output_mode",
+        "tooltip": "\"Geometry only\" returns an untextured mesh. \"Textured\" adds color/PBR maps."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Up to 255 characters."
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Target face count, 48-20000. -1 lets Tripo pick adaptively."
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Scale the output to approximate real-world meters."
+      },
+      "export_uv": {
+        "name": "export_uv",
+        "tooltip": "UV unwrap during generation. Turn off for faster geometry-only runs."
+      },
+      "compress_geometry": {
+        "name": "compress_geometry",
+        "tooltip": "Apply geometry-based compression. Decompress before editing."
       }
     },
     "outputs": {
