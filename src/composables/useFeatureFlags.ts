@@ -46,6 +46,7 @@ function resolveFlag<T>(
 /**
  * Reactive feature-flag shape returned by {@link useFeatureFlags}.
  * Exported so test mocks can stay in sync with the real shape.
+ * @knipIgnoreUsedByStackedPR
  */
 export type FeatureFlags = ReturnType<typeof useFeatureFlags>['flags']
 
