@@ -6,7 +6,8 @@ import { createMockMediaNode } from '@/renderer/extensions/vueNodes/widgets/comp
 const { canvasInteractionsMock, nodeOutputStoreMock } = vi.hoisted(() => ({
   canvasInteractionsMock: {
     handleWheel: vi.fn(),
-    handlePointer: vi.fn()
+    handlePointerDown: vi.fn(),
+    handlePointerMove: vi.fn()
   },
   nodeOutputStoreMock: {
     getNodeImageUrls: vi.fn<(node: unknown) => string[] | undefined>()
@@ -75,7 +76,8 @@ describe('useNodeVideo', () => {
     video.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
 
     expect(canvasInteractionsMock.handleWheel).toHaveBeenCalledTimes(1)
-    expect(canvasInteractionsMock.handlePointer).toHaveBeenCalledTimes(2)
+    expect(canvasInteractionsMock.handlePointerMove).toHaveBeenCalledTimes(1)
+    expect(canvasInteractionsMock.handlePointerDown).toHaveBeenCalledTimes(1)
   })
 
   it('detaches every listener when the widget is removed', async () => {
@@ -88,6 +90,7 @@ describe('useNodeVideo', () => {
     video.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
 
     expect(canvasInteractionsMock.handleWheel).not.toHaveBeenCalled()
-    expect(canvasInteractionsMock.handlePointer).not.toHaveBeenCalled()
+    expect(canvasInteractionsMock.handlePointerMove).not.toHaveBeenCalled()
+    expect(canvasInteractionsMock.handlePointerDown).not.toHaveBeenCalled()
   })
 })

@@ -11,6 +11,11 @@ import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 
 const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
 
+type RunOptions = {
+  nodeErrors?: Record<string, NodeError>
+  onPromptRequest?: (requestBody: unknown) => void | Promise<void>
+}
+
 /**
  * Build a `NodeError` describing a single failed input on a KSampler node.
  * Shared between specs that surface validation rings via 400 responses.
@@ -70,8 +75,9 @@ export class ExecutionHelper {
    * The app receives a valid PromptResponse so storeJob() fires
    * and registers the job against the active workflow path.
    */
-  async run(): Promise<string> {
+  async run(options: RunOptions = {}): Promise<string> {
     const jobId = `test-job-${++this.jobCounter}`
+    const { nodeErrors = {}, onPromptRequest } = options
 
     let fulfilled!: () => void
     const prompted = new Promise<void>((r) => {
@@ -81,12 +87,13 @@ export class ExecutionHelper {
     await this.page.route(
       PROMPT_ROUTE_PATTERN,
       async (route) => {
+        await onPromptRequest?.(route.request().postDataJSON())
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
             prompt_id: jobId,
-            node_errors: {}
+            node_errors: nodeErrors
           })
         })
         fulfilled()

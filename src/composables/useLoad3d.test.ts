@@ -1357,16 +1357,9 @@ describe('useLoad3d', () => {
 
     it('gizmoTransformChange mirrors the live scene into Scene Config models', async () => {
       const modelTransform = {
-        uuid: 'abc',
-        name: 'mesh',
-        type: 'Mesh',
         position: { x: 5, y: 6, z: 7 },
-        rotation: { x: 0.5, y: 0.6, z: 0.7, order: 'XYZ' },
         quaternion: { x: 0, y: 0, z: 0, w: 1 },
-        scale: { x: 3, y: 3, z: 3 },
-        up: { x: 0, y: 1, z: 0 },
-        visible: true,
-        matrix: new Array(16).fill(0)
+        scale: { x: 3, y: 3, z: 3 }
       }
       vi.mocked(mockLoad3d.getModelInfo!).mockReturnValue(modelTransform)
 

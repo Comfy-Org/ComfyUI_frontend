@@ -8530,6 +8530,10 @@
       "6": {
         "name": "3D 模型",
         "tooltip": null
+      },
+      "7": {
+        "name": "model_3d_info",
+        "tooltip": null
       }
     }
   },
@@ -16152,6 +16156,10 @@
       "images": {
         "name": "images",
         "tooltip": "要儲存的影像清單。"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "選擇是否覆蓋現有檔案，或自動遞增檔名以避免覆蓋。"
       }
     }
   },
@@ -16170,6 +16178,10 @@
       "images": {
         "name": "images",
         "tooltip": "要儲存的影像清單。"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "選擇是否覆蓋現有檔案，或自動遞增檔名以避免覆蓋。"
       },
       "texts": {
         "name": "texts",
@@ -18599,6 +18611,169 @@
       },
       "texture_seed": {
         "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型檔案",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型任務 ID",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1ImageToModelNode": {
+    "description": "Tripo P1 圖片轉 3D。針對低多邊形、遊戲用網格進行最佳化。",
+    "display_name": "Tripo P1：圖片轉模型",
+    "inputs": {
+      "auto_size": {
+        "name": "自動尺寸",
+        "tooltip": "將輸出縮放至接近真實世界公尺。"
+      },
+      "compress_geometry": {
+        "name": "壓縮幾何",
+        "tooltip": "套用幾何壓縮。編輯前請先解壓縮。"
+      },
+      "enable_image_autofix": {
+        "name": "啟用圖片自動修正",
+        "tooltip": "預處理輸入圖片以提升生成品質。"
+      },
+      "export_uv": {
+        "name": "匯出 UV",
+        "tooltip": "生成時進行 UV 展開。僅幾何模式可關閉以加快速度。"
+      },
+      "face_limit": {
+        "name": "面數上限",
+        "tooltip": "目標面數，48-20000。-1 讓 Tripo 自行調整。"
+      },
+      "image": {
+        "name": "圖片"
+      },
+      "model_seed": {
+        "name": "模型種子"
+      },
+      "output_mode": {
+        "name": "輸出模式",
+        "tooltip": "「僅幾何」僅輸出無貼圖網格。「有貼圖」則包含顏色/PBR 貼圖。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型檔案",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型任務 ID",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1MultiviewToModelNode": {
+    "description": "Tripo P1 多視角轉 3D，需 2-4 張參考圖片，順序為［正面、左側、背面、右側］。正面為必填，其餘三個可任意省略。",
+    "display_name": "Tripo P1：多視角轉模型",
+    "inputs": {
+      "auto_size": {
+        "name": "自動尺寸",
+        "tooltip": "將輸出縮放至接近真實世界公尺。"
+      },
+      "compress_geometry": {
+        "name": "壓縮幾何",
+        "tooltip": "套用幾何壓縮。編輯前請先解壓縮。"
+      },
+      "export_uv": {
+        "name": "匯出 UV",
+        "tooltip": "生成時進行 UV 展開。僅幾何模式可關閉以加快速度。"
+      },
+      "face_limit": {
+        "name": "面數上限",
+        "tooltip": "目標面數，48-20000。-1 讓 Tripo 自行調整。"
+      },
+      "image": {
+        "name": "圖片",
+        "tooltip": "正面視角（0°）。必填。"
+      },
+      "image_back": {
+        "name": "背面圖片",
+        "tooltip": "背面視角（180°）。"
+      },
+      "image_left": {
+        "name": "左側圖片",
+        "tooltip": "左側視角（90°），即主體的左邊。"
+      },
+      "image_right": {
+        "name": "右側圖片",
+        "tooltip": "右側視角（270°），即主體的右邊。"
+      },
+      "model_seed": {
+        "name": "模型種子"
+      },
+      "output_mode": {
+        "name": "輸出模式",
+        "tooltip": "「僅幾何」僅輸出無貼圖網格。「有貼圖」則包含顏色/PBR 貼圖。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型檔案",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型任務 ID",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1TextToModelNode": {
+    "description": "Tripo P1 文字轉 3D。針對低多邊形、遊戲用網格與穩定拓撲進行最佳化。",
+    "display_name": "Tripo P1：文字轉模型",
+    "inputs": {
+      "auto_size": {
+        "name": "自動尺寸",
+        "tooltip": "將輸出縮放至接近真實世界公尺。"
+      },
+      "compress_geometry": {
+        "name": "壓縮幾何",
+        "tooltip": "套用幾何壓縮。編輯前請先解壓縮。"
+      },
+      "export_uv": {
+        "name": "匯出 UV",
+        "tooltip": "生成時進行 UV 展開。關閉可加快僅幾何輸出。"
+      },
+      "face_limit": {
+        "name": "面數上限",
+        "tooltip": "目標面數，48-20000。-1 讓 Tripo 自動調整。"
+      },
+      "image_seed": {
+        "name": "圖像種子"
+      },
+      "model_seed": {
+        "name": "模型種子"
+      },
+      "negative_prompt": {
+        "name": "負面提示詞",
+        "tooltip": "最多 255 字元。"
+      },
+      "output_mode": {
+        "name": "輸出模式",
+        "tooltip": "「僅幾何」僅輸出無材質網格。「有材質」則加入顏色／PBR 貼圖。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "最多 1024 字元。"
       }
     },
     "outputs": {
