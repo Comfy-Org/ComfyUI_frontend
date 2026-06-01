@@ -1378,14 +1378,12 @@ export class LGraph
   beforeChange(info?: LGraphNode): void {
     this.onBeforeChange?.(this, info)
     this.canvasAction((c) => c.onBeforeChange?.(this))
-    this.canvasAction((c) => c.emitBeforeChange())
   }
 
   // used to resend actions, called after any change is made to the graph
   afterChange(info?: LGraphNode | null): void {
     this.onAfterChange?.(this, info)
     this.canvasAction((c) => c.onAfterChange?.(this))
-    this.canvasAction((c) => c.emitAfterChange())
   }
 
   /**
@@ -1677,6 +1675,7 @@ export class LGraph
 
     // Record state before conversion for proper undo support
     this.beforeChange()
+    this.canvasAction((c) => c.emitBeforeChange())
 
     try {
       function extractNodes(item: Positionable): Positionable[] {
@@ -1691,6 +1690,7 @@ export class LGraph
     } finally {
       // Mark state change complete for proper undo support
       this.afterChange()
+      this.canvasAction((c) => c.emitAfterChange())
     }
   }
 
