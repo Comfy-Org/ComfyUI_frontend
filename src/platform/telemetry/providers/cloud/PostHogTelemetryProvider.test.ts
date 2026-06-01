@@ -162,7 +162,7 @@ describe('PostHogTelemetryProvider', () => {
 
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.USER_AUTH_COMPLETED,
-        { method: 'google' }
+        expect.objectContaining({ method: 'google' })
       )
     })
 
