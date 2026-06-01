@@ -1,12 +1,7 @@
 import type { Bounds } from '@/renderer/core/layout/types'
 import type { CurveData } from '@/components/curve/types'
 import type { WidgetEntityId } from '@/world/entityIds'
-import type {
-  WidgetDisplayShape,
-  WidgetSchemaShape,
-  WidgetSerializeShape,
-  WidgetValueShape
-} from '@/world/widgets/widgetComponents'
+import type { WidgetState } from '@/world/widgets/widgetState'
 
 import type {
   CanvasColour,
@@ -400,12 +395,7 @@ export interface IBaseWidget<
   TValue = boolean | number | string | object | undefined,
   TType extends string = string,
   TOptions extends IWidgetOptions = IWidgetOptions
->
-  extends
-    WidgetValueShape<TValue>,
-    WidgetDisplayShape,
-    Omit<WidgetSchemaShape<TOptions>, 'type'>,
-    WidgetSerializeShape {
+> extends WidgetState<TValue, TType, TOptions> {
   [symbol: symbol]: boolean
 
   linkedWidgets?: IBaseWidget[]
@@ -442,7 +432,7 @@ export interface IBaseWidget<
 
   /**
    * The disabled state used for rendering based on various conditions including
-   * {@link WidgetDisplayShape.disabled}.
+   * {@link WidgetState.disabled}.
    * @readonly [Computed] This property is computed by the node.
    */
   computedDisabled?: boolean

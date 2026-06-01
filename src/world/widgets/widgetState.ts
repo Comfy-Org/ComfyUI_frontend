@@ -1,31 +1,19 @@
-import type {
-  WidgetDisplayShape,
-  WidgetSchemaShape,
-  WidgetSerializeShape,
-  WidgetValueShape
-} from '@/world/widgets/widgetComponents'
-
-/**
- * `WidgetState` is a *derived view* over the four widget-side components
- * (`WidgetComponentValue` / `Display` / `Schema` / `Serialize`). Property
- * accessors are installed via `Object.defineProperty` and delegate live
- * to the world; reads always hit the underlying reactive proxies, so
- * Vue tracking propagates through the view.
- *
- * Object identity is **not** preserved across `getWidget` calls — each
- * call constructs a fresh view. Data semantics round-trip; identity does
- * not. Do not cache views or rely on `===`.
- *
- * `name` and `nodeId` are not present on the view: they live in the
- * underlying `WidgetEntityId` and would be a redundant copy here. Callers
- * that need them should derive from the entity id (or from the BaseWidget
- * instance, which still owns them).
- */
-export type WidgetState<
+export interface WidgetState<
   TValue = unknown,
   TType extends string = string,
   TOptions extends object = object
-> = WidgetValueShape<TValue> &
-  WidgetDisplayShape &
-  Omit<WidgetSchemaShape<TOptions>, 'type'> &
-  WidgetSerializeShape & { type: TType }
+> {
+  value?: TValue
+  label?: string
+  disabled?: boolean
+  type: TType
+  options: TOptions
+  /**
+   * Whether the widget value is persisted in the workflow JSON
+   * (`widgets_values`). Distinct from `IWidgetOptions.serialize`, which
+   * controls whether the value is included in the API prompt sent for
+   * execution. See `src/lib/litegraph/docs/WIDGET_SERIALIZATION.md`.
+   * @default true
+   */
+  serialize?: boolean
+}

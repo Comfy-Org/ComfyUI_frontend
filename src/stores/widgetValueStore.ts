@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { UUID } from '@/utils/uuid'
-import type { ComponentKey } from '@/world/componentKey'
 import {
   asGraphId,
   isNodeIdForGraph,
@@ -12,11 +11,8 @@ import {
 } from '@/world/entityIds'
 import type { NodeEntityId, WidgetEntityId } from '@/world/entityIds'
 import {
-  WidgetComponentContainer,
-  WidgetComponentDisplay,
-  WidgetComponentSchema,
-  WidgetComponentSerialize,
-  WidgetComponentValue
+  WidgetComponent,
+  WidgetComponentContainer
 } from '@/world/widgets/widgetComponents'
 import type { WidgetState } from '@/world/widgets/widgetState'
 import { getWorld } from '@/world/worldInstance'
@@ -41,17 +37,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const world = getWorld()
     const { graphId, nodeId } = parseWidgetEntityId(widgetId)
 
-    world.setComponent(widgetId, WidgetComponentValue, { value: state.value })
-    world.setComponent(widgetId, WidgetComponentDisplay, {
-      label: state.label,
+    world.setComponent(widgetId, WidgetComponent, {
+      ...state,
       disabled: state.disabled ?? false
-    })
-    world.setComponent(widgetId, WidgetComponentSchema, {
-      type: state.type,
-      options: state.options
-    })
-    world.setComponent(widgetId, WidgetComponentSerialize, {
-      serialize: state.serialize
     })
 
     const ownerId = nodeEntityId(graphId, nodeId)
@@ -64,66 +52,11 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       container.widgetIds.push(widgetId)
     }
 
-    return buildView(widgetId) as WidgetState<TValue>
-  }
-
-  /**
-   * Build a delegating view object for a widget entity. The view owns no
-   * data — every accessor routes through the world. Getters assert the
-   * underlying bucket exists; setters silently no-op when the bucket is
-   * missing (post-`clearGraph` safety) and never re-create buckets.
-   */
-  function buildView(widgetId: WidgetEntityId): WidgetState {
-    const world = getWorld()
-
-    function read<T>(key: ComponentKey<T, WidgetEntityId>): T {
-      const bucket = world.getComponent(widgetId, key)
-      if (!bucket) {
-        throw new Error(
-          `Widget ${widgetId} missing component ${key.name}; view is invalid (likely accessed after clearGraph).`
-        )
-      }
-      return bucket
-    }
-
-    return {
-      get value() {
-        return read(WidgetComponentValue).value
-      },
-      set value(v: unknown) {
-        const bucket = world.getComponent(widgetId, WidgetComponentValue)
-        if (bucket) bucket.value = v
-      },
-      get label() {
-        return read(WidgetComponentDisplay).label
-      },
-      set label(v: string | undefined) {
-        const bucket = world.getComponent(widgetId, WidgetComponentDisplay)
-        if (bucket) bucket.label = v
-      },
-      get disabled() {
-        return read(WidgetComponentDisplay).disabled
-      },
-      set disabled(v: boolean | undefined) {
-        const bucket = world.getComponent(widgetId, WidgetComponentDisplay)
-        if (bucket) bucket.disabled = v ?? false
-      },
-      get type() {
-        return read(WidgetComponentSchema).type
-      },
-      get options() {
-        return read(WidgetComponentSchema).options
-      },
-      get serialize() {
-        return read(WidgetComponentSerialize).serialize
-      }
-    }
+    return world.getComponent(widgetId, WidgetComponent) as WidgetState<TValue>
   }
 
   function getWidget(widgetId: WidgetEntityId): WidgetState | undefined {
-    const world = getWorld()
-    if (!world.getComponent(widgetId, WidgetComponentValue)) return undefined
-    return buildView(widgetId)
+    return getWorld().getComponent(widgetId, WidgetComponent)
   }
 
   function getNodeWidgets(nodeId: NodeEntityId): WidgetState[] {
@@ -132,9 +65,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (!container) return []
     const widgets: WidgetState[] = []
     for (const widgetId of container.widgetIds) {
-      if (world.getComponent(widgetId, WidgetComponentValue)) {
-        widgets.push(buildView(widgetId))
-      }
+      const w = world.getComponent(widgetId, WidgetComponent)
+      if (w) widgets.push(w)
     }
     return widgets
   }
@@ -147,9 +79,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const result = new Map<string, WidgetState>()
     if (!container) return result
     for (const widgetId of container.widgetIds) {
-      if (!world.getComponent(widgetId, WidgetComponentValue)) continue
+      const w = world.getComponent(widgetId, WidgetComponent)
+      if (!w) continue
       const { name } = parseWidgetEntityId(widgetId)
-      result.set(name, buildView(widgetId))
+      result.set(name, w)
     }
     return result
   }
@@ -158,22 +91,18 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     widgetId: WidgetEntityId,
     value: WidgetState['value']
   ): boolean {
-    const world = getWorld()
-    const component = world.getComponent(widgetId, WidgetComponentValue)
-    if (!component) return false
-    component.value = value
+    const bucket = getWorld().getComponent(widgetId, WidgetComponent)
+    if (!bucket) return false
+    bucket.value = value
     return true
   }
 
   function clearGraph(graphId: UUID): void {
     const world = getWorld()
     const branded = asGraphId(graphId)
-    for (const widgetId of world.entitiesWith(WidgetComponentValue)) {
+    for (const widgetId of world.entitiesWith(WidgetComponent)) {
       if (isWidgetIdForGraph(branded, widgetId)) {
-        world.removeComponent(widgetId, WidgetComponentValue)
-        world.removeComponent(widgetId, WidgetComponentDisplay)
-        world.removeComponent(widgetId, WidgetComponentSchema)
-        world.removeComponent(widgetId, WidgetComponentSerialize)
+        world.removeComponent(widgetId, WidgetComponent)
       }
     }
     for (const nodeId of world.entitiesWith(WidgetComponentContainer)) {

@@ -6,10 +6,7 @@ import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { UUID } from '@/utils/uuid'
 import { asGraphId, nodeEntityId, widgetEntityId } from '@/world/entityIds'
 import type { WidgetEntityId } from '@/world/entityIds'
-import {
-  WidgetComponentDisplay,
-  WidgetComponentValue
-} from '@/world/widgets/widgetComponents'
+import { WidgetComponent } from '@/world/widgets/widgetComponents'
 import { getWorld, resetWorldInstance } from '@/world/worldInstance'
 
 import type { WidgetState } from './widgetValueStore'
@@ -230,50 +227,51 @@ describe('useWidgetValueStore', () => {
     })
   })
 
-  describe('view contract: data semantics, not identity', () => {
-    // The view is a delegating accessor object built fresh per call.
-    // Identity is intentionally NOT preserved across getWidget calls. See
-    // temp/plans/widget-component-decomposition.md §10.4.
+  describe('returned state is the live component bucket', () => {
+    // registerWidget and getWidget both return the same underlying
+    // WidgetComponent bucket. Identity is preserved and mutations
+    // round-trip through the world's reactive proxy.
     const node = 'node-1' as NodeId
     const sample = widgetState('number', 100)
     const widgetId = wid(graphA, node, 'seed')
 
-    it('reads delegate live to the underlying components', () => {
+    it('getWidget returns the same reference as registerWidget', () => {
       const store = useWidgetValueStore()
-      const view = store.registerWidget(widgetId, sample)
-      const valueBucket = getWorld().getComponent(
-        widgetId,
-        WidgetComponentValue
-      )
-      expect(view.value).toBe(valueBucket?.value)
+      const registered = store.registerWidget(widgetId, sample)
+      expect(store.getWidget(widgetId)).toBe(registered)
     })
 
-    it('writes round-trip through the underlying components', () => {
+    it('reads delegate live to the underlying component', () => {
+      const store = useWidgetValueStore()
+      const view = store.registerWidget(widgetId, sample)
+      const bucket = getWorld().getComponent(widgetId, WidgetComponent)
+      expect(view.value).toBe(bucket?.value)
+    })
+
+    it('writes round-trip through the underlying component', () => {
       const store = useWidgetValueStore()
       const view = store.registerWidget(widgetId, sample)
 
       view.value = 42
-      expect(
-        getWorld().getComponent(widgetId, WidgetComponentValue)?.value
-      ).toBe(42)
+      expect(getWorld().getComponent(widgetId, WidgetComponent)?.value).toBe(42)
 
       view.label = 'hello'
-      expect(
-        getWorld().getComponent(widgetId, WidgetComponentDisplay)?.label
-      ).toBe('hello')
+      expect(getWorld().getComponent(widgetId, WidgetComponent)?.label).toBe(
+        'hello'
+      )
 
       view.disabled = true
-      expect(
-        getWorld().getComponent(widgetId, WidgetComponentDisplay)?.disabled
-      ).toBe(true)
+      expect(getWorld().getComponent(widgetId, WidgetComponent)?.disabled).toBe(
+        true
+      )
     })
 
     it('underlying component writes are visible through the view', () => {
       const store = useWidgetValueStore()
       const view = store.registerWidget(widgetId, sample)
-      const display = getWorld().getComponent(widgetId, WidgetComponentDisplay)
-      if (!display) throw new Error('display bucket missing')
-      display.label = 'fresh'
+      const bucket = getWorld().getComponent(widgetId, WidgetComponent)
+      if (!bucket) throw new Error('widget bucket missing')
+      bucket.label = 'fresh'
       expect(view.label).toBe('fresh')
     })
 
@@ -281,20 +279,12 @@ describe('useWidgetValueStore', () => {
       const store = useWidgetValueStore()
       const view = store.registerWidget(widgetId, sample)
       store.clearGraph(graphA)
-      // Should not throw. Subsequent getWidget remains undefined.
+      // The held reference is detached from the world but writes
+      // must not throw. Subsequent getWidget remains undefined.
       view.value = 999
       view.label = 'ignored'
       view.disabled = true
       expect(store.getWidget(widgetId)).toBeUndefined()
-    })
-
-    it('view properties are enumerable for spread/objectContaining', () => {
-      const store = useWidgetValueStore()
-      const view = store.registerWidget(widgetId, sample)
-      const keys = Object.keys(view).sort()
-      expect(keys).toEqual(
-        ['disabled', 'label', 'options', 'serialize', 'type', 'value'].sort()
-      )
     })
   })
 
