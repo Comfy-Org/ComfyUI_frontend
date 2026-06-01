@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { oauthConsentRedirect } from '@/platform/cloud/onboarding/onboardingCloudRoutes'
+import {
+  captureOAuthRequestId,
+  clearOAuthRequestId
+} from '@/platform/cloud/oauth/oauthState'
 
 const VALID_REQUEST_ID = '550e8400-e29b-41d4-a716-446655440000'
-const OAUTH_REQUEST_ID_STORAGE_KEY = 'Comfy.OAuthRequestId'
 
 const createSessionOrThrow = vi.fn().mockResolvedValue(undefined)
 
@@ -13,7 +16,7 @@ vi.mock('@/platform/auth/session/useSessionCookie', () => ({
 
 describe('oauthConsentRedirect', () => {
   beforeEach(() => {
-    sessionStorage.clear()
+    clearOAuthRequestId()
     createSessionOrThrow.mockReset().mockResolvedValue(undefined)
   })
 
@@ -28,7 +31,7 @@ describe('oauthConsentRedirect', () => {
     // Regression: an already-signed-in user (Firebase) carries no Cloud session
     // cookie, so the consent challenge fetch fails unless the cookie is minted
     // here, mirroring the post-login resume path.
-    sessionStorage.setItem(OAUTH_REQUEST_ID_STORAGE_KEY, VALID_REQUEST_ID)
+    captureOAuthRequestId({ oauth_request_id: VALID_REQUEST_ID })
 
     const target = await oauthConsentRedirect()
 
@@ -40,18 +43,23 @@ describe('oauthConsentRedirect', () => {
   })
 
   it('still lands on consent when session minting fails so the view can surface the error', async () => {
-    sessionStorage.setItem(OAUTH_REQUEST_ID_STORAGE_KEY, VALID_REQUEST_ID)
+    captureOAuthRequestId({ oauth_request_id: VALID_REQUEST_ID })
     createSessionOrThrow.mockRejectedValue(new Error('Unauthorized'))
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-    const target = await oauthConsentRedirect()
+    try {
+      const target = await oauthConsentRedirect()
 
-    expect(target).toEqual({
-      name: 'cloud-oauth-consent',
-      query: { oauth_request_id: VALID_REQUEST_ID }
-    })
-    expect(warn).toHaveBeenCalled()
-
-    warn.mockRestore()
+      expect(target).toEqual({
+        name: 'cloud-oauth-consent',
+        query: { oauth_request_id: VALID_REQUEST_ID }
+      })
+      expect(warn).toHaveBeenCalledWith(
+        'Failed to establish Cloud session cookie before OAuth consent:',
+        expect.any(Error)
+      )
+    } finally {
+      warn.mockRestore()
+    }
   })
 })
