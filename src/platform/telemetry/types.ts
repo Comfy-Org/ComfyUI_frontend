@@ -12,6 +12,7 @@
  * 3. Check dist/assets/*.js files contain no tracking code
  */
 
+import type { AppMode } from '@/composables/useAppMode'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
@@ -166,6 +167,16 @@ export interface EnterLinearMetadata {
 export interface WorkflowSavedMetadata {
   is_app: boolean
   is_new: boolean
+}
+
+/**
+ * Mode time-spent metadata. Emitted when leaving a mode (or hiding the tab),
+ * reporting the active (tab-visible) seconds spent in that mode. Summing
+ * `duration_seconds` grouped by `mode` yields time spent per mode.
+ */
+export interface ModeTimeSpentMetadata {
+  mode: AppMode
+  duration_seconds: number
 }
 
 export interface DefaultViewSetMetadata {
@@ -437,6 +448,7 @@ export interface TelemetryProvider {
   trackWorkflowSaved?(metadata: WorkflowSavedMetadata): void
   trackDefaultViewSet?(metadata: DefaultViewSetMetadata): void
   trackEnterLinear?(metadata: EnterLinearMetadata): void
+  trackModeTimeSpent?(metadata: ModeTimeSpentMetadata): void
   trackShareFlow?(metadata: ShareFlowMetadata): void
 
   // Page visibility events
@@ -524,6 +536,7 @@ export const TelemetryEvents = {
   WORKFLOW_IMPORTED: 'app:workflow_imported',
   WORKFLOW_OPENED: 'app:workflow_opened',
   ENTER_LINEAR_MODE: 'app:app_mode_opened',
+  MODE_TIME_SPENT: 'app:mode_time_spent',
   SHARE_FLOW: 'app:share_flow',
 
   // Page Visibility
@@ -600,6 +613,7 @@ export type TelemetryEventProperties =
   | HelpCenterClosedMetadata
   | WorkflowCreatedMetadata
   | EnterLinearMetadata
+  | ModeTimeSpentMetadata
   | ShareFlowMetadata
   | WorkflowSavedMetadata
   | DefaultViewSetMetadata

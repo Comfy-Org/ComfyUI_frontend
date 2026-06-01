@@ -3,6 +3,7 @@ import type {
   BeginCheckoutMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
+  ModeTimeSpentMetadata,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
   ExecutionTriggerSource,
@@ -282,6 +283,13 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     this.pushEvent('app_mode_opened', {
       source: metadata.source,
       open_source: metadata.open_source
+    })
+  }
+
+  trackModeTimeSpent(metadata: ModeTimeSpentMetadata): void {
+    this.pushEvent('mode_time_spent', {
+      mode: metadata.mode,
+      duration_seconds: metadata.duration_seconds
     })
   }
 
