@@ -73,13 +73,9 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
       versionAdded: '1.3.9',
       category: 'view-controls' as const,
       function: async () => {
-        const settingStore = useSettingStore()
         const commandStore = useCommandStore()
 
-        if (
-          tab.id === 'model-library' &&
-          settingStore.get('Comfy.Assets.UseAssetAPI')
-        ) {
+        if (tab.id === 'model-library') {
           await commandStore.commands
             .find((cmd) => cmd.id === 'Comfy.BrowseModelAssets')
             ?.function?.()

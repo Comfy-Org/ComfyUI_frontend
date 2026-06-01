@@ -2337,7 +2337,6 @@
     "deleteAssetTitle": "¿Eliminar este recurso?",
     "deleteSelectedDescription": "{count} recurso(s) será(n) eliminado(s) permanentemente.",
     "deleteSelectedTitle": "¿Eliminar los recursos seleccionados?",
-    "deletingImportedFilesCloudOnly": "La eliminación de archivos importados solo es compatible en la versión cloud",
     "failedToCreateNode": "No se pudo crear el nodo",
     "failedToDeleteAsset": "Error al eliminar el recurso",
     "failedToExportWorkflow": "No se pudo exportar el flujo de trabajo",

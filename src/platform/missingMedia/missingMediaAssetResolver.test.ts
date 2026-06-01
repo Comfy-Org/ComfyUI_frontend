@@ -20,6 +20,18 @@ const { mockFetchHistoryPage } = vi.hoisted(() => ({
   mockFetchHistoryPage: vi.fn()
 }))
 
+// Mutable holder so each test can flip the runtime `isCloud` to drive the
+// resolver's generated-assets oracle selection (Cloud /api/assets vs OSS
+// job history). The named-import binding into the resolver re-reads the
+// getter on each access (ESM live binding semantics).
+const isCloudHolder = vi.hoisted(() => ({ value: false }))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return isCloudHolder.value
+  }
+}))
+
 vi.mock('@/platform/assets/services/assetService', async () => {
   const actual = await vi.importActual<typeof AssetServiceModule>(
     '@/platform/assets/services/assetService'
@@ -102,17 +114,17 @@ function makeAssetPage(
 describe('resolveMissingMediaAssetSources', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    isCloudHolder.value = false
     mockGetInputAssetsIncludingPublic.mockResolvedValue([])
     mockGetAssetsPageByTag.mockResolvedValue(makeAssetPage([]))
     mockFetchHistoryPage.mockResolvedValue(makeHistoryPage([]))
   })
 
-  it('loads cloud input assets when requested', async () => {
+  it('loads input assets from the unified listing on both backends', async () => {
     const inputAsset = makeAsset('photo.png')
     mockGetInputAssetsIncludingPublic.mockResolvedValue([inputAsset])
 
     const result = await resolveMissingMediaAssetSources({
-      isCloud: true,
       includeGeneratedAssets: false,
       generatedMatchNames: new Set(),
       allowCompactSuffix: true
@@ -127,11 +139,11 @@ describe('resolveMissingMediaAssetSources', () => {
   })
 
   it('loads cloud output assets by tag when generated candidates need verification', async () => {
+    isCloudHolder.value = true
     const outputAsset = makeAsset('output.png')
     mockGetAssetsPageByTag.mockResolvedValue(makeAssetPage([outputAsset]))
 
     const result = await resolveMissingMediaAssetSources({
-      isCloud: true,
       includeGeneratedAssets: true,
       generatedMatchNames: new Set(['output.png']),
       allowCompactSuffix: true
@@ -151,13 +163,13 @@ describe('resolveMissingMediaAssetSources', () => {
   })
 
   it('stops reading cloud output asset pages once all requested names are found', async () => {
+    isCloudHolder.value = true
     const target = 'target-output.png'
     mockGetAssetsPageByTag.mockResolvedValueOnce(
       makeAssetPage([makeAsset(target)], { hasMore: true, total: 501 })
     )
 
     const result = await resolveMissingMediaAssetSources({
-      isCloud: true,
       includeGeneratedAssets: true,
       generatedMatchNames: new Set([target]),
       allowCompactSuffix: true
@@ -167,41 +179,40 @@ describe('resolveMissingMediaAssetSources', () => {
     expect(mockGetAssetsPageByTag).toHaveBeenCalledOnce()
   })
 
-  it('aborts cloud output asset loading when input asset loading fails', async () => {
-    const inputError = new Error('input failed')
-    let rejectInputAssets!: (err: Error) => void
-    let resolveOutputAssets!: (page: ReturnType<typeof makeAssetPage>) => void
-    mockGetInputAssetsIncludingPublic.mockReturnValueOnce(
-      new Promise<AssetItem[]>((_, reject) => {
-        rejectInputAssets = reject
-      })
-    )
-    mockGetAssetsPageByTag.mockReturnValueOnce(
-      new Promise((resolve) => {
-        resolveOutputAssets = resolve
-      })
+  it('returns empty inputAssets and keeps generated fetch alive when input fails (soft degrade)', async () => {
+    isCloudHolder.value = true
+    const inputError = new Error('GET /api/assets 404')
+    mockGetInputAssetsIncludingPublic.mockRejectedValueOnce(inputError)
+    mockGetAssetsPageByTag.mockResolvedValueOnce(
+      makeAssetPage([makeAsset('survivor.png')])
     )
 
-    const promise = resolveMissingMediaAssetSources({
-      isCloud: true,
+    const result = await resolveMissingMediaAssetSources({
       includeGeneratedAssets: true,
-      generatedMatchNames: new Set(['target.png']),
+      generatedMatchNames: new Set(['survivor.png']),
       allowCompactSuffix: true
     })
 
-    await Promise.resolve()
-    expect(mockGetAssetsPageByTag).toHaveBeenCalledOnce()
-
-    rejectInputAssets(inputError)
-    await expect(promise).rejects.toBe(inputError)
-
-    resolveOutputAssets(makeAssetPage([makeAsset('other.png')]))
-    await Promise.resolve()
-
-    const outputSignal = mockGetAssetsPageByTag.mock.calls[0]?.[2]?.signal
-    expect(outputSignal).toBeInstanceOf(AbortSignal)
-    expect(outputSignal.aborted).toBe(true)
+    // Input oracle failed: degrade to empty. Generated oracle is independent
+    // and must keep running so output candidates can still verify.
+    expect(result.inputAssets).toEqual([])
+    expect(result.generatedAssets).toEqual([makeAsset('survivor.png')])
     expect(mockFetchHistoryPage).not.toHaveBeenCalled()
+  })
+
+  it('returns empty generatedAssets when history fetch fails but inputs succeed', async () => {
+    const inputAsset = makeAsset('local-photo.png')
+    mockGetInputAssetsIncludingPublic.mockResolvedValueOnce([inputAsset])
+    mockFetchHistoryPage.mockRejectedValueOnce(new Error('500 history'))
+
+    const result = await resolveMissingMediaAssetSources({
+      includeGeneratedAssets: true,
+      generatedMatchNames: new Set(['rendered.png']),
+      allowCompactSuffix: true
+    })
+
+    expect(result.inputAssets).toEqual([inputAsset])
+    expect(result.generatedAssets).toEqual([])
   })
 
   it('stops reading generated history once all requested names are found', async () => {
@@ -214,7 +225,6 @@ describe('resolveMissingMediaAssetSources', () => {
     )
 
     const result = await resolveMissingMediaAssetSources({
-      isCloud: false,
       includeGeneratedAssets: true,
       generatedMatchNames: new Set([target]),
       allowCompactSuffix: true
@@ -245,7 +255,6 @@ describe('resolveMissingMediaAssetSources', () => {
       )
 
     await resolveMissingMediaAssetSources({
-      isCloud: false,
       includeGeneratedAssets: true,
       generatedMatchNames: new Set([target]),
       allowCompactSuffix: true
@@ -271,7 +280,6 @@ describe('resolveMissingMediaAssetSources', () => {
     )
 
     const result = await resolveMissingMediaAssetSources({
-      isCloud: false,
       includeGeneratedAssets: true,
       generatedMatchNames: new Set(['missing.png']),
       allowCompactSuffix: true
@@ -292,7 +300,6 @@ describe('resolveMissingMediaAssetSources', () => {
       )
 
     const result = await resolveMissingMediaAssetSources({
-      isCloud: false,
       includeGeneratedAssets: true,
       generatedMatchNames: new Set(['missing.png']),
       allowCompactSuffix: true
@@ -301,8 +308,69 @@ describe('resolveMissingMediaAssetSources', () => {
     expect(result.generatedAssets).toHaveLength(1)
     expect(mockFetchHistoryPage).toHaveBeenCalledTimes(2)
   })
+})
 
-  it('includes slash and backslash subfolder identifiers for detection', () => {
+describe('getAssetDetectionNames', () => {
+  it('unions file_path with legacy keys so deprecation-window widget values keep matching', () => {
+    const names = getAssetDetectionNames(
+      {
+        id: 'a1',
+        name: 'legacy.png',
+        asset_hash: 'blake3:abc',
+        file_path: 'input/sub/photo.png',
+        mime_type: null,
+        tags: ['input'],
+        user_metadata: { subfolder: 'old-subfolder' }
+      },
+      { allowCompactSuffix: true }
+    )
+
+    // A widget value in any of these legacy shapes (or the new file_path
+    // shape) must match — BE-808 RFC §4 says file_path is a locator, not the
+    // identity, and workflow widget values do not auto-upgrade.
+    expect(names).toEqual(
+      expect.arrayContaining([
+        'input/sub/photo.png',
+        'blake3:abc',
+        'legacy.png',
+        'old-subfolder/legacy.png'
+      ])
+    )
+  })
+
+  it('falls back to the legacy union when file_path is null', () => {
+    const names = getAssetDetectionNames(
+      {
+        id: 'a1',
+        name: 'legacy.png',
+        asset_hash: 'blake3:abc',
+        file_path: null,
+        mime_type: null,
+        tags: ['input']
+      },
+      { allowCompactSuffix: true }
+    )
+
+    expect(names).toEqual(expect.arrayContaining(['legacy.png', 'blake3:abc']))
+  })
+
+  it('returns an empty list when file_path, asset_hash, and name are all absent', () => {
+    const names = getAssetDetectionNames(
+      {
+        id: 'a1',
+        name: '',
+        asset_hash: null,
+        file_path: null,
+        mime_type: null,
+        tags: []
+      },
+      { allowCompactSuffix: true }
+    )
+
+    expect(names).toEqual([])
+  })
+
+  it('includes slash and backslash subfolder identifiers when file_path is null', () => {
     const names = getAssetDetectionNames(
       {
         ...makeAsset('child\\photo.png', 'hash.png'),

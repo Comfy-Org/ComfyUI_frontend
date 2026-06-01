@@ -8,13 +8,14 @@ import type {
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { createMixedMediaJobs } from '@e2e/fixtures/helpers/AssetsHelper'
 
-// The assets sidebar's media-type filter menu only renders in cloud mode
-// (`MediaAssetFilterBar.vue` gates `MediaAssetFilterButton` behind `isCloud`).
-// We tag tests `@cloud` so they run against the cloud Playwright project,
-// and register both `/api/assets` and `/api/jobs` route handlers as auto
-// fixtures — Playwright runs auto fixtures before the `comfyPage` fixture's
-// internal `setup()`, so the page first-loads with mocks already in place.
-// See cloud-asset-default.spec.ts for the same pattern.
+// Post-FE-732 the media-type filter menu renders unconditionally on both
+// Cloud and OSS builds. These tests keep the `@cloud` tag because the
+// `/api/jobs` dependency is still cloud-only; once OSS exposes equivalent
+// jobs data we can drop the tag. Auto fixtures register `/api/assets` and
+// `/api/jobs` route handlers — Playwright runs auto fixtures before the
+// `comfyPage` fixture's internal `setup()`, so the page first-loads with
+// mocks already in place. See cloud-asset-default.spec.ts for the same
+// pattern.
 
 const MIXED_JOBS = createMixedMediaJobs(['images', 'video', 'audio', '3D'])
 

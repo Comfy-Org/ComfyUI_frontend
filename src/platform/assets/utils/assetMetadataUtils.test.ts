@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
@@ -10,12 +10,24 @@ import {
   getAssetDisplayFilename,
   getAssetDisplayName,
   getAssetFilename,
+  getAssetMetadataDimensions,
   getAssetModelType,
   getAssetSourceUrl,
+  getAssetStoredFilename,
   getAssetTriggerPhrases,
   getAssetUserDescription,
   getSourceName
 } from '@/platform/assets/utils/assetMetadataUtils'
+
+const { isCloudRef } = vi.hoisted(() => ({
+  isCloudRef: { value: true }
+}))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return isCloudRef.value
+  }
+}))
 
 describe('assetMetadataUtils', () => {
   const mockAsset: AssetItem = {
@@ -295,6 +307,28 @@ describe('assetMetadataUtils', () => {
     })
   })
 
+  describe('getAssetStoredFilename', () => {
+    afterEach(() => {
+      isCloudRef.value = true
+    })
+
+    it('returns asset_hash on cloud when present', () => {
+      isCloudRef.value = true
+      expect(getAssetStoredFilename(mockAsset)).toBe('hash123')
+    })
+
+    it('falls back to name on cloud when asset_hash is missing', () => {
+      isCloudRef.value = true
+      const asset = { ...mockAsset, asset_hash: undefined }
+      expect(getAssetStoredFilename(asset)).toBe('test-model')
+    })
+
+    it('returns name on OSS regardless of asset_hash', () => {
+      isCloudRef.value = false
+      expect(getAssetStoredFilename(mockAsset)).toBe('test-model')
+    })
+  })
+
   describe('getAssetFilename', () => {
     it('returns user_metadata.filename when present', () => {
       const asset = {
@@ -381,6 +415,82 @@ describe('assetMetadataUtils', () => {
         display_name: 'pretty.png'
       }
       expect(getAssetCardTitle(asset)).toBe('pretty.png')
+    })
+  })
+
+  describe('getAssetMetadataDimensions', () => {
+    it('returns dimensions when width/height are positive integers', () => {
+      const asset = { ...mockAsset, metadata: { width: 1024, height: 768 } }
+      expect(getAssetMetadataDimensions(asset)).toEqual({
+        width: 1024,
+        height: 768
+      })
+    })
+
+    it.for([
+      { name: 'NaN width', width: Number.NaN, height: 768 },
+      {
+        name: 'Infinity height',
+        width: 1024,
+        height: Number.POSITIVE_INFINITY
+      },
+      { name: 'zero width', width: 0, height: 768 },
+      { name: 'negative height', width: 1024, height: -1 },
+      { name: 'fractional width', width: 1024.5, height: 768 },
+      { name: 'string width', width: '1024', height: 768 },
+      { name: 'missing width', width: undefined, height: 768 }
+    ])('returns undefined for invalid shape: $name', ({ width, height }) => {
+      const asset = { ...mockAsset, metadata: { width, height } }
+      expect(getAssetMetadataDimensions(asset)).toBeUndefined()
+    })
+
+    it('returns undefined when metadata is absent', () => {
+      expect(getAssetMetadataDimensions(mockAsset)).toBeUndefined()
+    })
+
+    it('returns undefined when asset itself is undefined', () => {
+      expect(getAssetMetadataDimensions(undefined)).toBeUndefined()
+    })
+  })
+
+  describe('unified asset response shape (BE-808 RFC)', () => {
+    // Cloud asset: `asset.name` is a content hash; `display_name` carries
+    // the user-facing label.
+    const cloudShape: AssetItem = {
+      ...mockAsset,
+      id: 'cloud-asset-id',
+      name: 'blake3:abc1234567890def.png',
+      asset_hash: 'blake3:abc1234567890def.png',
+      display_name: 'sunset.png'
+    }
+
+    // OSS asset: `asset.name` is already the filename; `display_name` is
+    // nullable per BE-1045 spec — clients fall back to `asset.name`.
+    const ossShape: AssetItem = {
+      ...mockAsset,
+      id: 'oss-asset-id',
+      name: 'sunset.png',
+      asset_hash: null,
+      display_name: undefined
+    }
+
+    it('renders the same label for the Cloud and OSS shapes via getAssetDisplayFilename', () => {
+      expect(getAssetDisplayFilename(cloudShape)).toBe('sunset.png')
+      expect(getAssetDisplayFilename(ossShape)).toBe('sunset.png')
+    })
+
+    it('renders the same label via getAssetCardTitle', () => {
+      expect(getAssetCardTitle(cloudShape)).toBe('sunset.png')
+      expect(getAssetCardTitle(ossShape)).toBe('sunset.png')
+    })
+
+    it('honours OSS-emitted display_name when present', () => {
+      const ossWithDisplayName: AssetItem = {
+        ...ossShape,
+        name: 'sunset.png',
+        display_name: 'Curated Sunset'
+      }
+      expect(getAssetDisplayFilename(ossWithDisplayName)).toBe('Curated Sunset')
     })
   })
 })

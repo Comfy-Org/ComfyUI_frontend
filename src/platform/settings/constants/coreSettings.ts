@@ -1219,14 +1219,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.30.3'
   },
   {
-    id: 'Comfy.Assets.UseAssetAPI',
-    name: 'Use Asset API for model library',
-    type: 'hidden',
-    tooltip: 'Use new Asset API for model browsing',
-    defaultValue: isCloud ? true : false,
-    experimental: true
-  },
-  {
     id: 'Comfy.VersionCompatibility.DisableWarnings',
     name: 'Disable version compatibility warnings',
     type: 'hidden',

@@ -6,6 +6,13 @@ const zAsset = z.object({
   id: z.string(),
   name: z.string(),
   asset_hash: z.string().nullish(),
+  // BE-933 / BE-934 (RFC: BE-808 Asset Identity Semantics v2): namespace-rooted
+  // locator/display string, e.g. `input/sub/image.png` or
+  // `models/checkpoints/flux.safetensors`. Emitted on a BEST EFFORT basis
+  // (MAY, nullable). Identity is `id`, not `file_path`. Consumers MUST NOT
+  // assume `file_path` is populated and MUST degrade gracefully — see
+  // missingMediaAssetResolver.getAssetDetectionNames.
+  file_path: z.string().nullish(),
   size: z.number().optional(), // TBD: Will be provided by history API in the future
   mime_type: z.string().nullish(),
   tags: z.array(z.string()).optional().default([]),

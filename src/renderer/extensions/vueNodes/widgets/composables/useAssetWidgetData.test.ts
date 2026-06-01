@@ -4,10 +4,6 @@ import { nextTick, ref } from 'vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 
-vi.mock('@/platform/distribution/types', () => ({
-  isCloud: true
-}))
-
 const mockAssetsByKey = new Map<string, AssetItem[]>()
 const mockLoadingByKey = new Map<string, boolean>()
 const mockErrorByKey = new Map<string, Error | undefined>()
@@ -31,7 +27,7 @@ vi.mock('@/stores/modelToNodeStore', () => ({
   })
 }))
 
-describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
+describe('useAssetWidgetData', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockAssetsByKey.clear()
@@ -244,6 +240,57 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
       expect(assets.value).toEqual([])
       expect(isLoading.value).toBe(false)
       expect(error.value).toBeNull()
+    })
+  })
+
+  describe('refresh()', () => {
+    it('refetches assets for the current node type, bypassing the initial-load cache guard', async () => {
+      mockGetCategoryForNodeType.mockReturnValue('checkpoints')
+      mockUpdateModelsForNodeType.mockImplementation(
+        async (_nodeType: string): Promise<AssetItem[]> => {
+          mockInitializedKeys.add(_nodeType)
+          mockLoadingByKey.set(_nodeType, false)
+          return []
+        }
+      )
+
+      const { refresh, isLoading } = useAssetWidgetData(
+        'CheckpointLoaderSimple'
+      )
+
+      await nextTick()
+      await vi.waitFor(() => !isLoading.value)
+      expect(mockUpdateModelsForNodeType).toHaveBeenCalledTimes(1)
+
+      await refresh()
+      expect(mockUpdateModelsForNodeType).toHaveBeenCalledTimes(2)
+      expect(mockUpdateModelsForNodeType).toHaveBeenLastCalledWith(
+        'CheckpointLoaderSimple'
+      )
+    })
+
+    it('skips refresh when a fetch is already in flight', async () => {
+      mockGetCategoryForNodeType.mockReturnValue('checkpoints')
+      mockUpdateModelsForNodeType.mockImplementation(
+        async (_nodeType: string): Promise<AssetItem[]> => {
+          mockInitializedKeys.add(_nodeType)
+          return []
+        }
+      )
+
+      const { refresh } = useAssetWidgetData('CheckpointLoaderSimple')
+      await nextTick()
+
+      mockLoadingByKey.set('CheckpointLoaderSimple', true)
+      mockUpdateModelsForNodeType.mockClear()
+      await refresh()
+      expect(mockUpdateModelsForNodeType).not.toHaveBeenCalled()
+    })
+
+    it('no-ops when node type is undefined', async () => {
+      const { refresh } = useAssetWidgetData(undefined)
+      await refresh()
+      expect(mockUpdateModelsForNodeType).not.toHaveBeenCalled()
     })
   })
 })

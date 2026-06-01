@@ -989,12 +989,8 @@ describe('scan skips interior of bypassed subgraph containers', () => {
       expect.any(Function),
       expect.any(Function)
     )
-    expect(mediaScanSpy).toHaveBeenCalledWith(rootGraph, leafNode, false)
-    expect(mediaScanSpy).not.toHaveBeenCalledWith(
-      rootGraph,
-      innerSubgraphNode,
-      false
-    )
+    expect(mediaScanSpy).toHaveBeenCalledWith(rootGraph, leafNode)
+    expect(mediaScanSpy).not.toHaveBeenCalledWith(rootGraph, innerSubgraphNode)
   })
 })
 

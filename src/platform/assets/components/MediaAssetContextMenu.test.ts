@@ -105,7 +105,13 @@ interface MediaAssetContextMenuExposed {
 
 let capturedRef: MediaAssetContextMenuExposed | null = null
 
-function mountComponent() {
+interface MountOptions {
+  assetType?: 'output' | 'input'
+  showDeleteButton?: boolean
+}
+
+function mountComponent(opts: MountOptions = {}) {
+  const { assetType = 'output', showDeleteButton } = opts
   const onHide = vi.fn()
   const { container, unmount } = render(
     defineComponent({
@@ -115,10 +121,10 @@ function mountComponent() {
         onMounted(() => {
           capturedRef = menuRef.value
         })
-        return { menuRef, asset, onHide }
+        return { menuRef, asset, onHide, assetType, showDeleteButton }
       },
       template:
-        '<MediaAssetContextMenu ref="menuRef" :asset="asset" asset-type="output" file-kind="image" @hide="onHide" />'
+        '<MediaAssetContextMenu ref="menuRef" :asset="asset" :asset-type="assetType" :show-delete-button="showDeleteButton" file-kind="image" @hide="onHide" />'
     }),
     {
       global: {
@@ -195,6 +201,35 @@ describe('MediaAssetContextMenu', () => {
     })
 
     expect(mediaAssetActions.downloadAssets).toHaveBeenCalledWith([asset])
+
+    unmount()
+  })
+
+  it('shows Delete for input assets regardless of cloud mode (FE-732)', async () => {
+    const { container, unmount } = mountComponent({ assetType: 'input' })
+    await showMenu(container)
+
+    const deleteItem = capturedMenu.model.find(
+      (item) => item.label === 'mediaAsset.actions.delete'
+    )
+
+    expect(deleteItem).toBeDefined()
+
+    unmount()
+  })
+
+  it('hides Delete when parent explicitly passes showDeleteButton: false', async () => {
+    const { container, unmount } = mountComponent({
+      assetType: 'input',
+      showDeleteButton: false
+    })
+    await showMenu(container)
+
+    const deleteItem = capturedMenu.model.find(
+      (item) => item.label === 'mediaAsset.actions.delete'
+    )
+
+    expect(deleteItem).toBeUndefined()
 
     unmount()
   })

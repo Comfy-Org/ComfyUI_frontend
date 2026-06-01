@@ -3155,7 +3155,6 @@
     "deleteSelectedTitle": "Delete selected assets?",
     "deleteSelectedDescription": "{count} asset(s) will be permanently removed.",
     "assetDeletedSuccessfully": "Asset deleted successfully",
-    "deletingImportedFilesCloudOnly": "Deleting imported files is only supported in cloud version",
     "failedToDeleteAsset": "Failed to delete asset",
     "actions": {
       "inspect": "Inspect asset",

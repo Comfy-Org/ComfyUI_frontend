@@ -1,4 +1,5 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { isCloud } from '@/platform/distribution/types'
 import { isCivitaiUrl } from '@/utils/formatUtil'
 
 /**
@@ -172,13 +173,27 @@ export function getAssetFilename(asset: AssetItem): string {
 }
 
 /**
- * Gets the human-readable filename to render in UI surfaces.
- * Fallback chain: user_metadata.filename → metadata.filename →
- * asset.display_name → asset.name.
+ * Resolves the *stored* filename for an asset — the filename used to
+ * construct asset paths (for /view URLs, widget values), not the
+ * user-facing display name.
  *
- * `display_name` is populated by queue output mappers in Cloud where
- * `asset.name` is a content hash. Use this helper for labels/titles only;
- * for serialized identifiers use {@link getAssetFilename}.
+ * Cloud stores assets with `asset_hash` as the filename (content-
+ * addressed); OSS uses `name` (filesystem-backed). After BE-933/934
+ * emit `file_path` on both backends and the cloud spec sync brings
+ * the field into generated types, this collapses to
+ * `asset.file_path ?? asset.name` (no isCloud branch).
+ *
+ * For display use {@link getAssetDisplayFilename}; for serialized
+ * identifiers use {@link getAssetFilename}.
+ */
+export function getAssetStoredFilename(asset: AssetItem): string {
+  return isCloud && asset.asset_hash ? asset.asset_hash : asset.name
+}
+
+/**
+ * Human-readable filename for UI labels.
+ * Fallback: user_metadata.filename → metadata.filename → display_name → asset.name.
+ * For serialized identifiers use {@link getAssetFilename}.
  */
 export function getAssetDisplayFilename(asset: AssetItem): string {
   return (
@@ -191,7 +206,7 @@ export function getAssetDisplayFilename(asset: AssetItem): string {
  * Prefers a user-curated name (user_metadata.name / metadata.name) when it
  * actually differs from asset.name, so a user-renamed model keeps its
  * display name. Falls through to {@link getAssetDisplayFilename} when the
- * curated name is absent or equal to asset.name (Cloud hash case).
+ * curated name is absent or equal to asset.name (hash-keyed asset case).
  */
 export function getAssetCardTitle(asset: AssetItem): string {
   const curatedName = getStringProperty(asset, 'name')
@@ -207,4 +222,31 @@ export function getAssetCardTitle(asset: AssetItem): string {
  */
 export function getAssetUrlFilename(asset: AssetItem): string {
   return asset.asset_hash || asset.name
+}
+
+/**
+ * Type guard: a pixel dimension is a finite positive integer. `metadata` is
+ * typed as `Record<string, unknown>`, so `typeof === 'number'` alone admits
+ * NaN, Infinity, 0, negatives, and fractional values.
+ */
+function isValidDimension(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
+}
+
+/**
+ * Returns the original image dimensions from `asset.metadata.{width,height}`
+ * when both pass shape validation, otherwise `undefined`. Callers should fall
+ * back to the locally-computed `<img>.naturalWidth/Height`, which is correct
+ * on runtimes that serve the original file but reports preview size on
+ * runtimes that serve a downscaled preview.
+ */
+export function getAssetMetadataDimensions(
+  asset: AssetItem | undefined
+): { width: number; height: number } | undefined {
+  const w = asset?.metadata?.width
+  const h = asset?.metadata?.height
+  if (isValidDimension(w) && isValidDimension(h)) {
+    return { width: w, height: h }
+  }
+  return undefined
 }
