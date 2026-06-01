@@ -16,10 +16,16 @@ function stripPiiKeys(obj?: Record<string, unknown>): void {
  *
  * Ref: posthog.com/tutorials/web-redact-properties
  */
+interface PostHogEventLike {
+  properties?: Record<string, unknown>
+  $set?: Record<string, unknown>
+  $set_once?: Record<string, unknown>
+}
+
 export function createPostHogBeforeSend() {
-  return function beforeSend(
-    event: { properties?: Record<string, unknown>; $set?: Record<string, unknown>; $set_once?: Record<string, unknown> } | null
-  ) {
+  return function beforeSend<E extends PostHogEventLike>(
+    event: E | null
+  ): E | null {
     if (!event) return null
     stripPiiKeys(event.properties)
     stripPiiKeys(event.$set)
