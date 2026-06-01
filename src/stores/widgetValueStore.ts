@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { UUID } from '@/utils/uuid'
 import {
   asGraphId,
@@ -18,16 +17,6 @@ import type { WidgetState } from '@/world/widgets/widgetState'
 import { getWorld } from '@/world/worldInstance'
 
 export type { WidgetState } from '@/world/widgets/widgetState'
-
-/**
- * Strips graph-scope prefix segments from a node id, returning the
- * trailing raw node id. Used by `useProcessedWidgets` to derive stable
- * DOM identity keys for nested node renders — **not** for widget value
- * lookup. Widget identity routes through {@link WidgetEntityId}.
- */
-export function extractRawNodeId(scopedId: NodeId | string): NodeId {
-  return String(scopedId).replace(/^(.*:)+/, '') as NodeId
-}
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
   function registerWidget<TValue = unknown>(

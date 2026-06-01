@@ -25,10 +25,7 @@ import {
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
 import type { WidgetState } from '@/stores/widgetValueStore'
-import {
-  extractRawNodeId,
-  useWidgetValueStore
-} from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { deriveWidgetEntityId } from '@/world/entityIds'
@@ -75,6 +72,15 @@ interface ComputeProcessedWidgetsOptions {
   isGraphReady: boolean
   rootGraph: LGraph | null
   ui: WidgetUiCallbacks
+}
+
+/**
+ * Strips graph-scope prefix segments from a node id (e.g. `outer:inner:42`
+ * → `42`) so nested node renders get stable DOM identity keys. Not for
+ * widget value lookup — that routes through {@link WidgetEntityId}.
+ */
+function extractRawNodeId(scopedId: string | number): string {
+  return String(scopedId).replace(/^(.*:)+/, '')
 }
 
 function createWidgetUpdateHandler(
