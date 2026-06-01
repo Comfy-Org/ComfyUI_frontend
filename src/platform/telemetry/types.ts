@@ -377,12 +377,13 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
 
 /**
  * App Mode panel resize (LinearView splitter) — UX signal for whether the
- * default prompt panel is too small (users widening it to read prompts).
+ * default prompt panel is too small (users widening it to read prompts). Only
+ * emitted for genuine resizes, so the direction is always wider or narrower.
  */
 export interface AppModePanelResizedMetadata {
   panel: 'input' | 'preview'
-  direction: 'wider' | 'narrower' | 'same'
-  previous_width_px: number | null
+  direction: 'wider' | 'narrower'
+  previous_width_px: number
   new_width_px: number
   sidebar_location: 'left' | 'right'
 }

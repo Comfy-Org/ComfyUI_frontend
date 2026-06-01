@@ -166,6 +166,25 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures App Mode panel resize events with metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = {
+        panel: 'input',
+        direction: 'wider',
+        previous_width_px: 320,
+        new_width_px: 480,
+        sidebar_location: 'left'
+      } as const
+      provider.trackAppModePanelResized(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.APP_MODE_PANEL_RESIZED,
+        metadata
+      )
+    })
+
     it('queues events before initialization and flushes after', async () => {
       const provider = createProvider()
 

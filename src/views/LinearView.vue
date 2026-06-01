@@ -30,6 +30,10 @@ import {
   SIDE_PANEL_SIZE
 } from '@/constants/splitterConstants'
 import { useAppModeStore } from '@/stores/appModeStore'
+import {
+  LINEAR_VIEW_PANEL_STORAGE_KEY,
+  buildInputPanelResizeMetadata
+} from './linearViewPanelTelemetry'
 
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
@@ -81,41 +85,16 @@ const rightPanelRef = useTemplateRef<MaybeElement>('rightPanel')
 
 const telemetry = useTelemetry()
 
-const INPUT_PANEL_STORAGE_KEY = {
-  left: 'Comfy.LinearView.LeftPanelWidth',
-  right: 'Comfy.LinearView.RightPanelWidth'
-} as const
-
-function resizeDirection(
-  oldWidth: number | null,
-  newWidth: number
-): 'wider' | 'narrower' | 'same' {
-  if (oldWidth === null || oldWidth === newWidth) return 'same'
-  return newWidth > oldWidth ? 'wider' : 'narrower'
-}
-
 const { onResizeEnd } = useStablePrimeVueSplitterSizer(
   [
-    { ref: leftPanelRef, storageKey: INPUT_PANEL_STORAGE_KEY.left },
-    { ref: rightPanelRef, storageKey: INPUT_PANEL_STORAGE_KEY.right }
+    { ref: leftPanelRef, storageKey: LINEAR_VIEW_PANEL_STORAGE_KEY.left },
+    { ref: rightPanelRef, storageKey: LINEAR_VIEW_PANEL_STORAGE_KEY.right }
   ],
   [activeTab, splitterKey],
   (changes) => {
-    // Only the consume/app view (not the builder) — this measures whether the
-    // prompt panel is too narrow, so we track the input panel the user widens.
     if (isBuilderMode.value) return
-    const sidebar = sidebarOnLeft.value ? 'left' : 'right'
-    const inputChange = changes.find(
-      (c) => c.storageKey === INPUT_PANEL_STORAGE_KEY[sidebar]
-    )
-    if (!inputChange) return
-    telemetry?.trackAppModePanelResized({
-      panel: 'input',
-      direction: resizeDirection(inputChange.oldWidth, inputChange.newWidth),
-      previous_width_px: inputChange.oldWidth,
-      new_width_px: inputChange.newWidth,
-      sidebar_location: sidebar
-    })
+    const metadata = buildInputPanelResizeMetadata(changes, sidebarOnLeft.value)
+    if (metadata) telemetry?.trackAppModePanelResized(metadata)
   }
 )
 
