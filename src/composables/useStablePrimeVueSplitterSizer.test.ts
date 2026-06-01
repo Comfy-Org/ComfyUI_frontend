@@ -130,4 +130,44 @@ describe('useStablePrimeVueSplitterSizer', () => {
 
     expect(validRef.value!.style.flexBasis).toBe('200px')
   })
+
+  it('passes old→new widths to onResize (null old on first resize)', async () => {
+    const panelRef = createPanel(320)
+    const trigger = ref(0)
+    const onResize = vi.fn()
+
+    const { onResizeEnd } = useStablePrimeVueSplitterSizer(
+      [{ ref: panelRef, storageKey: 'test-onresize-first' }],
+      [trigger],
+      onResize
+    )
+    await flushWatcher()
+
+    onResizeEnd(resizeEndEvent())
+
+    expect(onResize).toHaveBeenCalledWith([
+      { storageKey: 'test-onresize-first', oldWidth: null, newWidth: 320 }
+    ])
+  })
+
+  it('reports the previous width as old on the next resize', async () => {
+    const panelRef = createPanel(320)
+    const trigger = ref(0)
+    const onResize = vi.fn()
+
+    const { onResizeEnd } = useStablePrimeVueSplitterSizer(
+      [{ ref: panelRef, storageKey: 'test-onresize-next' }],
+      [trigger],
+      onResize
+    )
+    await flushWatcher()
+
+    onResizeEnd(resizeEndEvent())
+    panelRef.value = createPanel(480).value
+    onResizeEnd(resizeEndEvent())
+
+    expect(onResize).toHaveBeenLastCalledWith([
+      { storageKey: 'test-onresize-next', oldWidth: 320, newWidth: 480 }
+    ])
+  })
 })

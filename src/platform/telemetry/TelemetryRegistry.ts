@@ -1,6 +1,7 @@
 import type { AuditLog } from '@/services/customerEventsService'
 
 import type {
+  AppModePanelResizedMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   DefaultViewSetMetadata,
@@ -240,5 +241,9 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {
     this.dispatch((provider) => provider.trackPageView?.(pageName, properties))
+  }
+
+  trackAppModePanelResized(metadata: AppModePanelResizedMetadata): void {
+    this.dispatch((provider) => provider.trackAppModePanelResized?.(metadata))
   }
 }

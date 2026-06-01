@@ -376,6 +376,18 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
 }
 
 /**
+ * App Mode panel resize (LinearView splitter) — UX signal for whether the
+ * default prompt panel is too small (users widening it to read prompts).
+ */
+export interface AppModePanelResizedMetadata {
+  panel: 'input' | 'preview'
+  direction: 'wider' | 'narrower' | 'same'
+  previous_width_px: number | null
+  new_width_px: number
+  sidebar_location: 'left' | 'right'
+}
+
+/**
  * Telemetry provider interface for individual providers.
  * All methods are optional - providers only implement what they need.
  */
@@ -458,6 +470,9 @@ export interface TelemetryProvider {
 
   // Generic UI button click events
   trackUiButtonClicked?(metadata: UiButtonClickMetadata): void
+
+  // App Mode UI events
+  trackAppModePanelResized?(metadata: AppModePanelResizedMetadata): void
 
   // Page view tracking
   trackPageView?(pageName: string, properties?: PageViewMetadata): void
@@ -547,6 +562,9 @@ export const TelemetryEvents = {
   // Generic UI Button Click
   UI_BUTTON_CLICKED: 'app:ui_button_clicked',
 
+  // App Mode UI
+  APP_MODE_PANEL_RESIZED: 'app:app_mode_panel_resized',
+
   // Page View
   PAGE_VIEW: 'app:page_view'
 } as const
@@ -583,6 +601,7 @@ export type TelemetryEventProperties =
   | TemplateFilterMetadata
   | SettingChangedMetadata
   | UiButtonClickMetadata
+  | AppModePanelResizedMetadata
   | HelpCenterOpenedMetadata
   | HelpResourceClickedMetadata
   | HelpCenterClosedMetadata

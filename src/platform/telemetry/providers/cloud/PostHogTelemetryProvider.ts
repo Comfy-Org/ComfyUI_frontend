@@ -8,6 +8,7 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type {
+  AppModePanelResizedMetadata,
   AuthMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
@@ -454,5 +455,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
       page_name: pageName,
       ...properties
     })
+  }
+
+  trackAppModePanelResized(metadata: AppModePanelResizedMetadata): void {
+    this.trackEvent(TelemetryEvents.APP_MODE_PANEL_RESIZED, metadata)
   }
 }

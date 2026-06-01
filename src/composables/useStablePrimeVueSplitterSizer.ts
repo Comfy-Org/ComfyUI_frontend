@@ -10,6 +10,12 @@ interface PanelConfig {
   storageKey: string
 }
 
+export interface PanelResizeChange {
+  storageKey: string
+  oldWidth: number | null
+  newWidth: number
+}
+
 /**
  * Works around PrimeVue Splitter not properly initializing flexBasis
  * when panels are conditionally rendered. Captures pixel widths on
@@ -21,9 +27,11 @@ interface PanelConfig {
  */
 export function useStablePrimeVueSplitterSizer(
   panels: PanelConfig[],
-  watchSources: WatchSource[]
+  watchSources: WatchSource[],
+  onResize?: (changes: PanelResizeChange[]) => void
 ) {
   const storedWidths = panels.map((panel) => ({
+    storageKey: panel.storageKey,
     ref: panel.ref,
     width: useStorage<number | null>(panel.storageKey, null)
   }))
@@ -45,10 +53,16 @@ export function useStablePrimeVueSplitterSizer(
   }
 
   function onResizeEnd(_event: SplitterResizeEndEvent) {
-    for (const { ref, width } of storedWidths) {
+    const changes: PanelResizeChange[] = []
+    for (const { storageKey, ref, width } of storedWidths) {
       const el = resolveElement(ref)
-      if (el) width.value = el.offsetWidth
+      if (!el) continue
+      const oldWidth = width.value
+      const newWidth = el.offsetWidth
+      width.value = newWidth
+      changes.push({ storageKey, oldWidth, newWidth })
     }
+    onResize?.(changes)
   }
 
   watch(

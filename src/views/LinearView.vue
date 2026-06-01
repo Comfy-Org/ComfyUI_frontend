@@ -14,6 +14,7 @@ import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { cn } from '@comfyorg/tailwind-utils'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
@@ -78,12 +79,44 @@ const splitterKey = computed(() => {
 const leftPanelRef = useTemplateRef<MaybeElement>('leftPanel')
 const rightPanelRef = useTemplateRef<MaybeElement>('rightPanel')
 
+const telemetry = useTelemetry()
+
+const INPUT_PANEL_STORAGE_KEY = {
+  left: 'Comfy.LinearView.LeftPanelWidth',
+  right: 'Comfy.LinearView.RightPanelWidth'
+} as const
+
+function resizeDirection(
+  oldWidth: number | null,
+  newWidth: number
+): 'wider' | 'narrower' | 'same' {
+  if (oldWidth === null || oldWidth === newWidth) return 'same'
+  return newWidth > oldWidth ? 'wider' : 'narrower'
+}
+
 const { onResizeEnd } = useStablePrimeVueSplitterSizer(
   [
-    { ref: leftPanelRef, storageKey: 'Comfy.LinearView.LeftPanelWidth' },
-    { ref: rightPanelRef, storageKey: 'Comfy.LinearView.RightPanelWidth' }
+    { ref: leftPanelRef, storageKey: INPUT_PANEL_STORAGE_KEY.left },
+    { ref: rightPanelRef, storageKey: INPUT_PANEL_STORAGE_KEY.right }
   ],
-  [activeTab, splitterKey]
+  [activeTab, splitterKey],
+  (changes) => {
+    // Only the consume/app view (not the builder) — this measures whether the
+    // prompt panel is too narrow, so we track the input panel the user widens.
+    if (isBuilderMode.value) return
+    const sidebar = sidebarOnLeft.value ? 'left' : 'right'
+    const inputChange = changes.find(
+      (c) => c.storageKey === INPUT_PANEL_STORAGE_KEY[sidebar]
+    )
+    if (!inputChange) return
+    telemetry?.trackAppModePanelResized({
+      panel: 'input',
+      direction: resizeDirection(inputChange.oldWidth, inputChange.newWidth),
+      previous_width_px: inputChange.oldWidth,
+      new_width_px: inputChange.newWidth,
+      sidebar_location: sidebar
+    })
+  }
 )
 
 const TYPEFORM_WIDGET_ID = 'jmmzmlKw'
