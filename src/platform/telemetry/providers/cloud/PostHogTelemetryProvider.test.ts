@@ -287,7 +287,7 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
   })
-  
+
   describe('execution tracking', () => {
     it('stamps is_app_mode and view_mode on the execution_start event', async () => {
       const provider = createProvider()
