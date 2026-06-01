@@ -27,6 +27,9 @@
       ],
       "@/utils/networkUtil": [
         "./packages/shared-frontend-utils/src/networkUtil.ts"
+      ],
+      "@total-typescript/shoehorn": [
+        "./node_modules/@total-typescript/shoehorn/dist/index.d.ts"
       ]
     },
     "typeRoots": ["src/types", "node_modules/@types", "./node_modules"],
