@@ -16,7 +16,7 @@ type MockStore = {
   isPanning: boolean
 }
 
-const mockStore: MockStore = reactive({
+const mockStore = reactive<MockStore>({
   currentTool: Tools.MaskPen,
   activeLayer: 'mask',
   pointerZone: null,
@@ -24,7 +24,7 @@ const mockStore: MockStore = reactive({
   brushPreviewGradientVisible: false,
   isAdjustingBrush: false,
   isPanning: false
-}) as MockStore
+})
 
 const mockBrushDrawing = {
   startDrawing: vi.fn().mockResolvedValue(undefined),
@@ -82,7 +82,7 @@ const mockKeyboard = {
   isKeyDown: vi.fn().mockReturnValue(false),
   addListeners: vi.fn(),
   removeListeners: vi.fn()
-}
+} satisfies Parameters<typeof useToolManager>[0]
 
 const mockPanZoom = {
   initializeCanvasPanZoom: vi.fn(),
@@ -96,36 +96,43 @@ const mockPanZoom = {
   invalidatePanZoom: vi.fn(),
   addPenPointerId: vi.fn(),
   removePenPointerId: vi.fn()
+} satisfies Parameters<typeof useToolManager>[1]
+
+type TestPointerEventInit = PointerEventInit & {
+  offsetX?: number
+  offsetY?: number
+  type?: string
 }
 
-const pointerEvent = (
-  init: Partial<PointerEvent> & { pointerType?: string }
-): PointerEvent => {
-  return {
-    preventDefault: vi.fn(),
+const pointerEvent = ({
+  offsetX = 0,
+  offsetY = 0,
+  type = 'pointerdown',
+  ...init
+}: TestPointerEventInit = {}): PointerEvent => {
+  const event = new PointerEvent(type, {
     pointerId: 1,
     pointerType: 'mouse',
     button: 0,
     buttons: 0,
     clientX: 0,
     clientY: 0,
-    offsetX: 0,
-    offsetY: 0,
     altKey: false,
     ...init
-  } as unknown as PointerEvent
+  })
+  vi.spyOn(event, 'preventDefault')
+  Object.defineProperties(event, {
+    offsetX: { value: offsetX },
+    offsetY: { value: offsetY }
+  })
+  return event
 }
 
 let scope: EffectScope | null = null
 
 const setup = (): ReturnType<typeof useToolManager> => {
   scope = effectScope()
-  return scope.run(() =>
-    useToolManager(
-      mockKeyboard as unknown as Parameters<typeof useToolManager>[0],
-      mockPanZoom as unknown as Parameters<typeof useToolManager>[1]
-    )
-  )!
+  return scope.run(() => useToolManager(mockKeyboard, mockPanZoom))!
 }
 
 describe('useToolManager', () => {
@@ -307,7 +314,9 @@ describe('useToolManager', () => {
 
     it('should start panning on middle mouse button (buttons===4)', async () => {
       const tm = setup()
-      await tm.handlePointerDown(pointerEvent({ buttons: 4 }))
+      await tm.handlePointerDown(
+        pointerEvent({ type: 'pointerdown', buttons: 4 })
+      )
 
       expect(mockPanZoom.handlePanStart).toHaveBeenCalled()
       expect(mockStore.brushVisible).toBe(false)
@@ -434,7 +443,19 @@ describe('useToolManager', () => {
 
     it('should pan on middle button drag', async () => {
       const tm = setup()
-      await tm.handlePointerMove(pointerEvent({ buttons: 4 }))
+      await tm.handlePointerMove(
+        pointerEvent({ type: 'pointermove', buttons: 4 })
+      )
+
+      expect(mockPanZoom.handlePanMove).toHaveBeenCalled()
+      expect(mockBrushDrawing.handleDrawing).not.toHaveBeenCalled()
+    })
+
+    it('should keep panning when middle button is held with another button', async () => {
+      const tm = setup()
+      await tm.handlePointerMove(
+        pointerEvent({ type: 'pointermove', buttons: 5 })
+      )
 
       expect(mockPanZoom.handlePanMove).toHaveBeenCalled()
       expect(mockBrushDrawing.handleDrawing).not.toHaveBeenCalled()

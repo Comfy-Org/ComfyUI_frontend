@@ -1,5 +1,6 @@
 import type { Bounds } from '@/renderer/core/layout/types'
 import type { CurveData } from '@/components/curve/types'
+import type { WidgetEntityId } from '@/world/entityIds'
 
 import type {
   CanvasColour,
@@ -374,6 +375,14 @@ export interface IRangeWidget extends IBaseWidget<
 export type TWidgetType = IWidget['type']
 export type TWidgetValue = IWidget['value']
 
+export function isWidgetValue(value: unknown): value is TWidgetValue {
+  if (value === undefined) return true
+  if (typeof value === 'string') return true
+  if (typeof value === 'number') return true
+  if (typeof value === 'boolean') return true
+  return value !== null && typeof value === 'object'
+}
+
 /**
  * The base type for all widgets.  Should not be implemented directly.
  * @template TValue The type of value this widget holds.
@@ -389,6 +398,8 @@ export interface IBaseWidget<
   [symbol: symbol]: boolean
 
   linkedWidgets?: IBaseWidget[]
+
+  readonly entityId?: WidgetEntityId
 
   name: string
   options: TOptions

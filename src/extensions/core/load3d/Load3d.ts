@@ -25,6 +25,7 @@ import type {
   Load3DOptions,
   LoadModelOptions,
   MaterialMode,
+  Model3DTransform,
   UpDirection
 } from './interfaces'
 import { attachContextMenuGuard } from './load3dContextMenuGuard'
@@ -566,12 +567,6 @@ class Load3d {
     }
   }
 
-  /**
-   * Toggles whether `_loadModelInternal` preserves the current camera state
-   * across model loads. When enabled and a model has previously loaded, the
-   * camera position/target/zoom (and camera type) are captured before the
-   * scene clears and restored after the new model is in place.
-   */
   public setRetainViewOnReload(value: boolean): void {
     this.retainViewOnReload = value
   }
@@ -581,9 +576,7 @@ class Load3d {
     originalFileName?: string,
     options?: LoadModelOptions
   ): Promise<void> {
-    // Retain view only kicks in after a successful first load — on the very
-    // first load there's no meaningful "current" framing to preserve, so the
-    // default `setupForModel` framing wins.
+    // First load always uses default framing; retain only applies on reload.
     const shouldRetainView = this.retainViewOnReload && this.hasLoadedModel
     const savedCameraState = shouldRetainView
       ? this.cameraManager.getCameraState()
@@ -609,8 +602,7 @@ class Load3d {
     }
 
     if (savedCameraState) {
-      // SceneModelManager.setupModel called setupForModel which clobbered the
-      // camera. Restore the captured state on top of that.
+      // setupForModel runs during loadModel and clobbers the camera; restore on top.
       if (
         savedCameraState.cameraType !==
         this.cameraManager.getCurrentCameraType()
@@ -921,6 +913,10 @@ class Load3d {
     scale: { x: number; y: number; z: number }
   } {
     return this.gizmoManager.getTransform()
+  }
+
+  public getModelInfo(): Model3DTransform | null {
+    return this.gizmoManager.getModelInfo()
   }
 
   public fitToViewer(): void {

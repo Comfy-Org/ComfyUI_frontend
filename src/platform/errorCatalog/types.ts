@@ -40,15 +40,14 @@ export type RunErrorMessageSource =
       nodeDisplayName: string
     }
   | {
-      kind: 'execution'
-      error: ExecutionErrorWsMessage
-      nodeDisplayName?: string
-      isCloud: boolean
-    }
-  | {
       kind: 'prompt'
       error: PromptError
       isCloud: boolean
+    }
+  | {
+      kind: 'execution'
+      error: ExecutionErrorWsMessage
+      nodeDisplayName: string
     }
 
 export type MissingErrorMessageSource =

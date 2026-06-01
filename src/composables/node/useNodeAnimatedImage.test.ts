@@ -6,7 +6,9 @@ import { createMockMediaNode } from '@/renderer/extensions/vueNodes/widgets/comp
 const { canvasInteractionsMock } = vi.hoisted(() => ({
   canvasInteractionsMock: {
     handleWheel: vi.fn(),
-    handlePointer: vi.fn(),
+    handlePointerDown: vi.fn(),
+    handlePointerMove: vi.fn(),
+    handlePointerUp: vi.fn(),
     forwardEventToCanvas: vi.fn()
   }
 }))
@@ -41,16 +43,18 @@ describe('useNodeAnimatedImage', () => {
     element.dispatchEvent(new PointerEvent('pointerdown', { button: 0 }))
 
     expect(canvasInteractionsMock.handleWheel).toHaveBeenCalledTimes(1)
-    expect(canvasInteractionsMock.handlePointer).toHaveBeenCalledTimes(3)
+    expect(canvasInteractionsMock.handlePointerMove).toHaveBeenCalledTimes(1)
+    expect(canvasInteractionsMock.handlePointerUp).toHaveBeenCalledTimes(1)
+    expect(canvasInteractionsMock.handlePointerDown).toHaveBeenCalledTimes(1)
     expect(canvasInteractionsMock.forwardEventToCanvas).not.toHaveBeenCalled()
   })
 
-  it('routes right-click pointerdown through forwardEventToCanvas, not handlePointer', () => {
+  it('routes right-click pointerdown through forwardEventToCanvas, not handlePointerDown', () => {
     const { element } = setup()
     element.dispatchEvent(new PointerEvent('pointerdown', { button: 2 }))
 
     expect(canvasInteractionsMock.forwardEventToCanvas).toHaveBeenCalledTimes(1)
-    expect(canvasInteractionsMock.handlePointer).not.toHaveBeenCalled()
+    expect(canvasInteractionsMock.handlePointerDown).not.toHaveBeenCalled()
   })
 
   it('detaches every listener when the preview is removed', () => {
@@ -64,7 +68,9 @@ describe('useNodeAnimatedImage', () => {
     element.dispatchEvent(new PointerEvent('pointerdown', { button: 2 }))
 
     expect(canvasInteractionsMock.handleWheel).not.toHaveBeenCalled()
-    expect(canvasInteractionsMock.handlePointer).not.toHaveBeenCalled()
+    expect(canvasInteractionsMock.handlePointerMove).not.toHaveBeenCalled()
+    expect(canvasInteractionsMock.handlePointerUp).not.toHaveBeenCalled()
+    expect(canvasInteractionsMock.handlePointerDown).not.toHaveBeenCalled()
     expect(canvasInteractionsMock.forwardEventToCanvas).not.toHaveBeenCalled()
   })
 })
