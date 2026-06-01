@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { reactive } from 'vue'
 
 import type { UUID } from '@/utils/uuid'
 import {
@@ -9,66 +10,59 @@ import {
   parseWidgetEntityId
 } from '@/world/entityIds'
 import type { NodeEntityId, WidgetEntityId } from '@/world/entityIds'
-import {
-  WidgetComponent,
-  WidgetComponentContainer
-} from '@/world/widgets/widgetComponents'
 import type { WidgetState } from '@/world/widgets/widgetState'
-import { getWorld } from '@/world/worldInstance'
 
 export type { WidgetState } from '@/world/widgets/widgetState'
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
+  const widgets = reactive(new Map<WidgetEntityId, WidgetState>())
+  const widgetIdsByNode = reactive(new Map<NodeEntityId, WidgetEntityId[]>())
+
   function registerWidget<TValue = unknown>(
     widgetId: WidgetEntityId,
     state: WidgetState<TValue>
   ): WidgetState<TValue> {
-    const world = getWorld()
     const { graphId, nodeId } = parseWidgetEntityId(widgetId)
 
-    world.setComponent(widgetId, WidgetComponent, {
+    widgets.set(widgetId, {
       ...state,
       disabled: state.disabled ?? false
     })
 
     const ownerId = nodeEntityId(graphId, nodeId)
-    const container = world.getComponent(ownerId, WidgetComponentContainer)
-    if (!container) {
-      world.setComponent(ownerId, WidgetComponentContainer, {
-        widgetIds: [widgetId]
-      })
-    } else if (!container.widgetIds.includes(widgetId)) {
-      container.widgetIds.push(widgetId)
+    const ids = widgetIdsByNode.get(ownerId)
+    if (!ids) {
+      widgetIdsByNode.set(ownerId, [widgetId])
+    } else if (!ids.includes(widgetId)) {
+      ids.push(widgetId)
     }
 
-    return world.getComponent(widgetId, WidgetComponent) as WidgetState<TValue>
+    return widgets.get(widgetId) as WidgetState<TValue>
   }
 
   function getWidget(widgetId: WidgetEntityId): WidgetState | undefined {
-    return getWorld().getComponent(widgetId, WidgetComponent)
+    return widgets.get(widgetId)
   }
 
   function getNodeWidgets(nodeId: NodeEntityId): WidgetState[] {
-    const world = getWorld()
-    const container = world.getComponent(nodeId, WidgetComponentContainer)
-    if (!container) return []
-    const widgets: WidgetState[] = []
-    for (const widgetId of container.widgetIds) {
-      const w = world.getComponent(widgetId, WidgetComponent)
-      if (w) widgets.push(w)
+    const ids = widgetIdsByNode.get(nodeId)
+    if (!ids) return []
+    const result: WidgetState[] = []
+    for (const widgetId of ids) {
+      const w = widgets.get(widgetId)
+      if (w) result.push(w)
     }
-    return widgets
+    return result
   }
 
   function getNodeWidgetsByName(
     nodeId: NodeEntityId
   ): Map<string, WidgetState> {
-    const world = getWorld()
-    const container = world.getComponent(nodeId, WidgetComponentContainer)
     const result = new Map<string, WidgetState>()
-    if (!container) return result
-    for (const widgetId of container.widgetIds) {
-      const w = world.getComponent(widgetId, WidgetComponent)
+    const ids = widgetIdsByNode.get(nodeId)
+    if (!ids) return result
+    for (const widgetId of ids) {
+      const w = widgets.get(widgetId)
       if (!w) continue
       const { name } = parseWidgetEntityId(widgetId)
       result.set(name, w)
@@ -80,23 +74,22 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     widgetId: WidgetEntityId,
     value: WidgetState['value']
   ): boolean {
-    const bucket = getWorld().getComponent(widgetId, WidgetComponent)
-    if (!bucket) return false
-    bucket.value = value
+    const widget = widgets.get(widgetId)
+    if (!widget) return false
+    widget.value = value
     return true
   }
 
   function clearGraph(graphId: UUID): void {
-    const world = getWorld()
     const branded = asGraphId(graphId)
-    for (const widgetId of world.entitiesWith(WidgetComponent)) {
+    for (const widgetId of widgets.keys()) {
       if (isWidgetIdForGraph(branded, widgetId)) {
-        world.removeComponent(widgetId, WidgetComponent)
+        widgets.delete(widgetId)
       }
     }
-    for (const nodeId of world.entitiesWith(WidgetComponentContainer)) {
+    for (const nodeId of widgetIdsByNode.keys()) {
       if (isNodeIdForGraph(branded, nodeId)) {
-        world.removeComponent(nodeId, WidgetComponentContainer)
+        widgetIdsByNode.delete(nodeId)
       }
     }
   }

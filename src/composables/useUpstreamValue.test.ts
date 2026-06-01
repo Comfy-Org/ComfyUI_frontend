@@ -7,7 +7,6 @@ import type { UUID } from '@/utils/uuid'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetState } from '@/stores/widgetValueStore'
 import { asGraphId, widgetEntityId } from '@/world/entityIds'
-import { resetWorldInstance } from '@/world/worldInstance'
 
 import {
   boundsExtractor,
@@ -151,7 +150,6 @@ describe('boundsExtractor', () => {
 describe('useUpstreamValue (store-backed read path)', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    resetWorldInstance()
   })
 
   it('reads upstream node widgets via the widget value store', () => {

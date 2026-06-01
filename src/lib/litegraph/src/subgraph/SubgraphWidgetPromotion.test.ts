@@ -25,7 +25,6 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { asGraphId, nodeEntityId, widgetEntityId } from '@/world/entityIds'
-import { resetWorldInstance } from '@/world/worldInstance'
 
 import {
   createEventCapture,
@@ -90,7 +89,6 @@ function expectPromotedWidgetView(
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
-  resetWorldInstance()
   resetSubgraphFixtureState()
 })
 

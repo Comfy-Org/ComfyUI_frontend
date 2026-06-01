@@ -6,8 +6,6 @@ import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { UUID } from '@/utils/uuid'
 import { asGraphId, nodeEntityId, widgetEntityId } from '@/world/entityIds'
 import type { WidgetEntityId } from '@/world/entityIds'
-import { WidgetComponent } from '@/world/widgets/widgetComponents'
-import { getWorld, resetWorldInstance } from '@/world/worldInstance'
 
 import type { WidgetState } from './widgetValueStore'
 import { useWidgetValueStore } from './widgetValueStore'
@@ -33,7 +31,6 @@ describe('useWidgetValueStore', () => {
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    resetWorldInstance()
   })
 
   describe('widgetState.value access', () => {
@@ -227,10 +224,7 @@ describe('useWidgetValueStore', () => {
     })
   })
 
-  describe('returned state is the live component bucket', () => {
-    // registerWidget and getWidget both return the same underlying
-    // WidgetComponent bucket. Identity is preserved and mutations
-    // round-trip through the world's reactive proxy.
+  describe('returned state identity', () => {
     const node = 'node-1' as NodeId
     const sample = widgetState('number', 100)
     const widgetId = wid(graphA, node, 'seed')
@@ -241,46 +235,10 @@ describe('useWidgetValueStore', () => {
       expect(store.getWidget(widgetId)).toBe(registered)
     })
 
-    it('reads delegate live to the underlying component', () => {
-      const store = useWidgetValueStore()
-      const view = store.registerWidget(widgetId, sample)
-      const bucket = getWorld().getComponent(widgetId, WidgetComponent)
-      expect(view.value).toBe(bucket?.value)
-    })
-
-    it('writes round-trip through the underlying component', () => {
-      const store = useWidgetValueStore()
-      const view = store.registerWidget(widgetId, sample)
-
-      view.value = 42
-      expect(getWorld().getComponent(widgetId, WidgetComponent)?.value).toBe(42)
-
-      view.label = 'hello'
-      expect(getWorld().getComponent(widgetId, WidgetComponent)?.label).toBe(
-        'hello'
-      )
-
-      view.disabled = true
-      expect(getWorld().getComponent(widgetId, WidgetComponent)?.disabled).toBe(
-        true
-      )
-    })
-
-    it('underlying component writes are visible through the view', () => {
-      const store = useWidgetValueStore()
-      const view = store.registerWidget(widgetId, sample)
-      const bucket = getWorld().getComponent(widgetId, WidgetComponent)
-      if (!bucket) throw new Error('widget bucket missing')
-      bucket.label = 'fresh'
-      expect(view.label).toBe('fresh')
-    })
-
-    it('setters no-op safely after clearGraph', () => {
+    it('cached references detach safely after clearGraph', () => {
       const store = useWidgetValueStore()
       const view = store.registerWidget(widgetId, sample)
       store.clearGraph(graphA)
-      // The held reference is detached from the world but writes
-      // must not throw. Subsequent getWidget remains undefined.
       view.value = 999
       view.label = 'ignored'
       view.disabled = true

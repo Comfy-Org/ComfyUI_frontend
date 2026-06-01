@@ -107,5 +107,3 @@ export function isWidgetIdForGraph(
 ): boolean {
   return id.startsWith(graphWidgetPrefix(graphId))
 }
-
-export type EntityId = NodeEntityId | WidgetEntityId
