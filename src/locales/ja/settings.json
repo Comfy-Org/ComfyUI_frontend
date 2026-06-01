@@ -199,7 +199,6 @@
     "name": "PLYエンジン",
     "options": {
       "fastply": "fastply",
-      "sparkjs": "sparkjs",
       "threejs": "threejs"
     },
     "tooltip": "PLYファイルを読み込むエンジンを選択します。「threejs」はネイティブのThree.js PLYLoaderを使用（メッシュPLYファイルに最適）。「fastply」はASCIIポイントクラウドPLYファイル用の最適化ローダーを使用。「sparkjs」は3DガウシアンスプラッティングPLYファイル用にSpark.jsを使用します。"
