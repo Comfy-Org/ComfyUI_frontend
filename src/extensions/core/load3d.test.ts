@@ -164,6 +164,7 @@ function makeLoad3DNode(
     constructor: { comfyClass: overrides.comfyClass ?? 'Load3D' },
     size: [300, 600],
     setSize: vi.fn(),
+    addWidget: vi.fn(),
     widgets: overrides.widgets ?? [
       { name: 'model_file', value: '' },
       { name: 'width', value: 512 },

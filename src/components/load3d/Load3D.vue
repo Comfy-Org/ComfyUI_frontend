@@ -44,11 +44,14 @@
       />
     </div>
     <div
-      v-if="canFitToViewer"
-      class="pointer-events-auto absolute top-12 right-2 z-20"
+      class="pointer-events-auto absolute top-12 right-2 z-20 flex flex-col gap-2"
     >
-      <div class="flex flex-col rounded-lg bg-backdrop/30">
+      <div
+        v-if="canFitToViewer || canCenterCameraOnModel"
+        class="flex flex-col rounded-lg bg-backdrop/30"
+      >
         <Button
+          v-if="canFitToViewer"
           v-tooltip.left="{
             value: $t('load3d.fitToViewer'),
             showDelay: 300
@@ -61,25 +64,29 @@
         >
           <i class="pi pi-window-maximize text-lg text-base-foreground" />
         </Button>
+        <Button
+          v-if="canCenterCameraOnModel"
+          v-tooltip.left="{
+            value: $t('load3d.centerCameraOnModel'),
+            showDelay: 300
+          }"
+          size="icon"
+          variant="textonly"
+          class="rounded-full"
+          :aria-label="$t('load3d.centerCameraOnModel')"
+          @click="handleCenterCameraOnModel"
+        >
+          <i class="pi pi-compass text-lg text-base-foreground" />
+        </Button>
       </div>
-    </div>
 
-    <div
-      v-if="enable3DViewer && node"
-      class="pointer-events-auto absolute top-24 right-2 z-20"
-    >
-      <ViewerControls :node="node as LGraphNode" />
-    </div>
+      <ViewerControls
+        v-if="enable3DViewer && node"
+        :node="node as LGraphNode"
+      />
 
-    <div
-      v-if="!isPreview"
-      class="pointer-events-auto absolute right-2 z-20"
-      :class="{
-        'top-24': !enable3DViewer,
-        'top-36': enable3DViewer
-      }"
-    >
       <RecordingControls
+        v-if="!isPreview"
         v-model:is-recording="isRecording"
         v-model:has-recording="hasRecording"
         v-model:recording-duration="recordingDuration"
@@ -142,6 +149,7 @@ const {
   isRecording,
   isPreview,
   canFitToViewer,
+  canCenterCameraOnModel,
   canUseGizmo,
   canUseLighting,
   canExport,
@@ -175,6 +183,7 @@ const {
   handleSetGizmoMode,
   handleResetGizmoTransform,
   handleFitToViewer,
+  handleCenterCameraOnModel,
   cleanup
 } = useLoad3d(node as Ref<LGraphNode | null>)
 

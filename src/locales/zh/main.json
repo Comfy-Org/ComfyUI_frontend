@@ -2009,6 +2009,7 @@
     "exportRecording": "导出录制",
     "exportingModel": "正在导出模型...",
     "fitToViewer": "适应视图",
+    "centerCameraOnModel": "将相机居中到模型",
     "fov": "视场",
     "gizmo": {
       "label": "控件",

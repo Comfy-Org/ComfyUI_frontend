@@ -132,6 +132,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const isSplatModel = ref(false)
   const isPlyModel = ref(false)
   const canFitToViewer = ref(true)
+  const canCenterCameraOnModel = ref(false)
   const canUseGizmo = ref(true)
   const canUseLighting = ref(true)
   const canExport = ref(true)
@@ -853,6 +854,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       loading.value = false
       isSplatModel.value = load3d?.isSplatModel() ?? false
       isPlyModel.value = load3d?.isPlyModel() ?? false
+      canCenterCameraOnModel.value = isSplatModel.value || isPlyModel.value
       const caps = load3d?.getCurrentModelCapabilities()
       canFitToViewer.value = caps?.fitToViewer ?? true
       canUseGizmo.value = caps?.gizmoTransform ?? true
@@ -971,6 +973,10 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     syncSceneModels()
   }
 
+  const handleCenterCameraOnModel = () => {
+    load3d?.centerCameraOnModel()
+  }
+
   const handleResetGizmoTransform = () => {
     if (load3d) {
       load3d.resetGizmoTransform()
@@ -1011,6 +1017,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     isSplatModel,
     isPlyModel,
     canFitToViewer,
+    canCenterCameraOnModel,
     canUseGizmo,
     canUseLighting,
     canExport,
@@ -1046,6 +1053,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     handleSetGizmoMode,
     handleResetGizmoTransform,
     handleFitToViewer,
+    handleCenterCameraOnModel,
     cleanup
   }
 }
