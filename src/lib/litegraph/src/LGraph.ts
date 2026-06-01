@@ -1378,12 +1378,14 @@ export class LGraph
   beforeChange(info?: LGraphNode): void {
     this.onBeforeChange?.(this, info)
     this.canvasAction((c) => c.onBeforeChange?.(this))
+    this.canvasAction((c) => c.emitBeforeChange())
   }
 
   // used to resend actions, called after any change is made to the graph
   afterChange(info?: LGraphNode | null): void {
     this.onAfterChange?.(this, info)
     this.canvasAction((c) => c.onAfterChange?.(this))
+    this.canvasAction((c) => c.emitAfterChange())
   }
 
   /**
