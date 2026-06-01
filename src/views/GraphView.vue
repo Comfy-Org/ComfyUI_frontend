@@ -54,6 +54,7 @@ import InviteAcceptedToast from '@/platform/workspace/components/toasts/InviteAc
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
+import { useModeTimeTracking } from '@/composables/useModeTimeTracking'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
@@ -307,6 +308,11 @@ const onGraphReady = () => {
           visibility_state: document.visibilityState as 'visible' | 'hidden'
         })
       })
+    }
+
+    // Track active time spent in each mode (cloud only)
+    if (isCloud && telemetry) {
+      useModeTimeTracking()
     }
 
     // Set up tab count tracking (cloud only)

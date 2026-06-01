@@ -61,6 +61,7 @@ import type {
   EnterLinearMetadata,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
+  ModeTimeSpentMetadata,
   ShareFlowMetadata,
   SurveyResponses,
   TemplateLibraryClosedMetadata,
@@ -287,6 +288,10 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
     default_view: 'graph'
   }
   const enterLinearMetadata: EnterLinearMetadata = {}
+  const modeTimeSpentMetadata: ModeTimeSpentMetadata = {
+    mode: 'app',
+    duration_seconds: 42
+  }
   const shareFlowMetadata: ShareFlowMetadata = { step: 'dialog_opened' }
   const executionErrorMetadata: ExecutionErrorMetadata = { jobId: 'job-1' }
   const executionSuccessMetadata: ExecutionSuccessMetadata = { jobId: 'job-1' }
@@ -349,6 +354,11 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
       'trackEnterLinear',
       (p) => p.trackEnterLinear(enterLinearMetadata),
       TelemetryEvents.ENTER_LINEAR_MODE
+    ],
+    [
+      'trackModeTimeSpent',
+      (p) => p.trackModeTimeSpent(modeTimeSpentMetadata),
+      TelemetryEvents.MODE_TIME_SPENT
     ],
     [
       'trackShareFlow',

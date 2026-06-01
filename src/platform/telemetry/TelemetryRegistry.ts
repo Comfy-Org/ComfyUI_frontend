@@ -5,6 +5,7 @@ import type {
   BeginCheckoutMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
+  ModeTimeSpentMetadata,
   ShareFlowMetadata,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
@@ -174,6 +175,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackEnterLinear(metadata: EnterLinearMetadata): void {
     this.dispatch((provider) => provider.trackEnterLinear?.(metadata))
+  }
+
+  trackModeTimeSpent(metadata: ModeTimeSpentMetadata): void {
+    this.dispatch((provider) => provider.trackModeTimeSpent?.(metadata))
   }
 
   trackShareFlow(metadata: ShareFlowMetadata): void {

@@ -11,6 +11,7 @@ import type {
   AuthMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
+  ModeTimeSpentMetadata,
   ShareFlowMetadata,
   ExecutionContext,
   ExecutionErrorMetadata,
@@ -381,6 +382,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackEnterLinear(metadata: EnterLinearMetadata): void {
     this.trackEvent(TelemetryEvents.ENTER_LINEAR_MODE, metadata)
+  }
+
+  trackModeTimeSpent(metadata: ModeTimeSpentMetadata): void {
+    this.trackEvent(TelemetryEvents.MODE_TIME_SPENT, metadata)
   }
 
   trackShareFlow(metadata: ShareFlowMetadata): void {
