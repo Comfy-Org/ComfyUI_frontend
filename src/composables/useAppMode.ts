@@ -9,6 +9,10 @@ export type AppMode =
   | 'builder:outputs'
   | 'builder:arrange'
 
+export function modeIsAppMode(mode: AppMode): boolean {
+  return mode === 'app' || mode === 'builder:arrange'
+}
+
 const enableAppBuilder = ref(true)
 
 export function useAppMode() {
@@ -29,9 +33,7 @@ export function useAppMode() {
     () => isSelectInputsMode.value || isSelectOutputsMode.value
   )
   const isArrangeMode = computed(() => mode.value === 'builder:arrange')
-  const isAppMode = computed(
-    () => mode.value === 'app' || mode.value === 'builder:arrange'
-  )
+  const isAppMode = computed(() => modeIsAppMode(mode.value))
   const isGraphMode = computed(
     () => mode.value === 'graph' || isSelectMode.value
   )
