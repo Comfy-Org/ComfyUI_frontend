@@ -399,7 +399,6 @@ export interface IBaseWidget<
 
   linkedWidgets?: IBaseWidget[]
 
-  readonly entityId?: WidgetId
   readonly widgetId?: WidgetId
 
   name: string

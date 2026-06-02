@@ -29,7 +29,7 @@ function makeNode(id: number, widgetNames: string[]): LGraphNode {
     id,
     widgets: widgetNames.map((name) => ({
       name,
-      entityId: `${rootGraphId}:${id}:${name}` as WidgetId
+      widgetId: `${rootGraphId}:${id}:${name}` as WidgetId
     }))
   })
 }

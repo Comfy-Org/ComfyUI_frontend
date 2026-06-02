@@ -110,8 +110,8 @@ function getWidgetBounding(entry: ResolvedSelection): BoundStyle | undefined {
   }
 }
 
-function removeSelectedEntityId(entityId: WidgetId): void {
-  const index = appModeStore.selectedInputs.findIndex(([id]) => id === entityId)
+function removeSelectedWidgetId(widgetId: WidgetId): void {
+  const index = appModeStore.selectedInputs.findIndex(([id]) => id === widgetId)
   if (index !== -1) appModeStore.selectedInputs.splice(index, 1)
 }
 
@@ -139,11 +139,11 @@ function handleClick(e: MouseEvent) {
   }
   if (!isSelectInputsMode.value || widget.options.canvasOnly) return
 
-  const entityId = widget.entityId
-  if (!entityId) return
-  const index = appModeStore.selectedInputs.findIndex(([id]) => id === entityId)
+  const widgetId = widget.widgetId
+  if (!widgetId) return
+  const index = appModeStore.selectedInputs.findIndex(([id]) => id === widgetId)
   if (index === -1)
-    appModeStore.selectedInputs.push([entityId, widget.name, undefined])
+    appModeStore.selectedInputs.push([widgetId, widget.name, undefined])
   else appModeStore.selectedInputs.splice(index, 1)
 }
 
@@ -172,7 +172,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
   () =>
     resolvedInputs.value.map(
       (entry) =>
-        [entry.entityId, getWidgetBounding(entry)] as [
+        [entry.widgetId, getWidgetBounding(entry)] as [
           string,
           MaybeRef<BoundStyle> | undefined
         ]
@@ -220,7 +220,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
           v-slot="{ dragClass }"
           v-model="appModeStore.selectedInputs"
         >
-          <template v-for="entry in resolvedInputs" :key="entry.entityId">
+          <template v-for="entry in resolvedInputs" :key="entry.widgetId">
             <IoItem
               v-if="entry.status === 'resolved'"
               :class="
@@ -239,7 +239,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
               "
               :title="entry.displayName"
               :sub-title="t('linearMode.builder.unknownWidget')"
-              :remove="() => removeSelectedEntityId(entry.entityId)"
+              :remove="() => removeSelectedWidgetId(entry.widgetId)"
             />
           </template>
         </DraggableList>

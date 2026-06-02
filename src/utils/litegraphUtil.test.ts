@@ -155,16 +155,16 @@ describe('getWidgetIdForNode', () => {
     } as unknown as LGraphNode
   }
 
-  it('returns widget.entityId when present', () => {
+  it('returns widget.widgetId when present', () => {
     const node = fakeNode(7)
     const widget = {
       name: 'seed',
-      entityId: 'precomputed:7:seed' as WidgetId
+      widgetId: 'precomputed:7:seed' as WidgetId
     }
     expect(getWidgetIdForNode(node, widget)).toBe('precomputed:7:seed')
   })
 
-  it('derives an entityId for plain POJO widgets bound to a node', () => {
+  it('derives an widgetId for plain POJO widgets bound to a node', () => {
     const node = fakeNode(42)
     expect(getWidgetIdForNode(node, { name: 'legacy_widget' })).toBe(
       widgetId(graphId, 42, 'legacy_widget')

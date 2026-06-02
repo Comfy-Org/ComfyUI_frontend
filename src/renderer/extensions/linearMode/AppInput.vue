@@ -7,8 +7,8 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import type { WidgetId } from '@/world/entityIds'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { entityId, name } = defineProps<{
-  entityId?: WidgetId
+const { widgetId, name } = defineProps<{
+  widgetId?: WidgetId
   enable: boolean
   name: string
 }>()
@@ -17,12 +17,12 @@ const appModeStore = useAppModeStore()
 const isPromoted = computed(() => appModeStore.selectedInputs.some(matchesThis))
 
 function matchesThis([storedId]: LinearInput) {
-  return entityId !== undefined && storedId === entityId
+  return widgetId !== undefined && storedId === widgetId
 }
 function togglePromotion() {
-  if (!entityId) return
+  if (!widgetId) return
   if (isPromoted.value) remove(appModeStore.selectedInputs, matchesThis)
-  else appModeStore.selectedInputs.push([entityId, name])
+  else appModeStore.selectedInputs.push([widgetId, name])
 }
 </script>
 <template>

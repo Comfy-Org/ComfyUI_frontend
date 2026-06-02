@@ -54,7 +54,7 @@
         </div>
         <!-- Widget Component -->
         <AppInput
-          :entity-id="widget.entityId"
+          :widget-id="widget.widgetId"
           :name="widget.name"
           :enable="canSelectInputs && !widget.simplified.options?.disabled"
         >

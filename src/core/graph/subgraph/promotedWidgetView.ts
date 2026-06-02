@@ -119,10 +119,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
     return this.identityName ?? this.sourceWidgetName
   }
 
-  get entityId(): WidgetId {
-    return this.widgetId
-  }
-
   get widgetId(): WidgetId {
     return widgetId(this.graphId, this.subgraphNode.id, this.name)
   }

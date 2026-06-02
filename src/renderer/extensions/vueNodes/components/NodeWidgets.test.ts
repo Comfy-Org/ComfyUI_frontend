@@ -143,21 +143,21 @@ describe('NodeWidgets', () => {
       name: 'string_a',
       type: 'text',
       nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
-      entityId: duplicateEntityId,
+      widgetId: duplicateEntityId,
       slotName: 'string_a'
     })
     const duplicateB = createMockWidget({
       name: 'string_a',
       type: 'text',
       nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
-      entityId: duplicateEntityId,
+      widgetId: duplicateEntityId,
       slotName: 'string_a'
     })
     const distinct = createMockWidget({
       name: 'string_a',
       type: 'text',
       nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:20',
-      entityId: distinctEntityId,
+      widgetId: distinctEntityId,
       slotName: 'string_a'
     })
     const nodeData = createMockNodeData('SubgraphNode', [
@@ -181,7 +181,7 @@ describe('NodeWidgets', () => {
       name: 'string_a',
       type: 'text',
       nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
-      entityId: sharedEntityId,
+      widgetId: sharedEntityId,
       slotName: 'string_a',
       options: { hidden: true }
     })
@@ -189,7 +189,7 @@ describe('NodeWidgets', () => {
       name: 'string_a',
       type: 'text',
       nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
-      entityId: sharedEntityId,
+      widgetId: sharedEntityId,
       slotName: 'string_a',
       options: { hidden: false }
     })
@@ -213,14 +213,14 @@ describe('NodeWidgets', () => {
       name: 'string_a',
       type: 'text',
       nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
-      entityId: sharedEntityId,
+      widgetId: sharedEntityId,
       slotName: 'string_a'
     })
     const comboWidget = createMockWidget({
       name: 'string_a',
       type: 'combo',
       nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
-      entityId: sharedEntityId,
+      widgetId: sharedEntityId,
       slotName: 'string_a'
     })
     const nodeData = createMockNodeData('SubgraphNode', [
@@ -263,14 +263,14 @@ describe('NodeWidgets', () => {
       name: 'text',
       type: 'text',
       nodeId: 'outer-subgraph:1',
-      entityId: widgetId(GRAPH_ID, 'outer-subgraph:1', 'text'),
+      widgetId: widgetId(GRAPH_ID, 'outer-subgraph:1', 'text'),
       slotName: 'text'
     })
     const secondPromoted = createMockWidget({
       name: 'text',
       type: 'text',
       nodeId: 'outer-subgraph:2',
-      entityId: widgetId(GRAPH_ID, 'outer-subgraph:2', 'text'),
+      widgetId: widgetId(GRAPH_ID, 'outer-subgraph:2', 'text'),
       slotName: 'text'
     })
 
@@ -311,7 +311,7 @@ describe('NodeWidgets', () => {
     expect(container.querySelectorAll('.lg-node-widget')).toHaveLength(0)
   })
 
-  it('forwards canonical entityId to AppInput for selection', () => {
+  it('forwards canonical widgetId to AppInput for selection', () => {
     const seedAEntityId = widgetId(GRAPH_ID, 'test_node', 'seed_a')
     const seedBEntityId = widgetId(GRAPH_ID, 'test_node', 'seed_b')
     const nodeData = createMockNodeData('TestNode', [
@@ -319,13 +319,13 @@ describe('NodeWidgets', () => {
         nodeId: 'test_node',
         name: 'seed_a',
         type: 'text',
-        entityId: seedAEntityId
+        widgetId: seedAEntityId
       }),
       createMockWidget({
         nodeId: 'test_node',
         name: 'seed_b',
         type: 'text',
-        entityId: seedBEntityId
+        widgetId: seedBEntityId
       })
     ])
 
@@ -342,9 +342,9 @@ describe('NodeWidgets', () => {
         stubs: {
           InputSlot: true,
           AppInput: {
-            props: ['entityId', 'name', 'enable'],
+            props: ['widgetId', 'name', 'enable'],
             template:
-              '<div class="app-input-stub" :data-entity-id="entityId"><slot /></div>'
+              '<div class="app-input-stub" :data-entity-id="widgetId"><slot /></div>'
           }
         },
         mocks: {

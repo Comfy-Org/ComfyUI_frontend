@@ -449,7 +449,7 @@ describe('Nested promoted widget mapping', () => {
 
     expect(mappedWidget).toBeDefined()
     expect(mappedWidget?.type).toBe('combo')
-    expect(mappedWidget?.entityId).toBe(
+    expect(mappedWidget?.widgetId).toBe(
       widgetId(graph.id, subgraphNodeB.id, 'b_input')
     )
   })
@@ -485,13 +485,13 @@ describe('Nested promoted widget mapping', () => {
     const widgets = nodeData?.widgets
 
     expect(widgets).toHaveLength(2)
-    expect(widgets?.[0]?.entityId).toBe(
+    expect(widgets?.[0]?.widgetId).toBe(
       widgetId(graph.id, subgraphNode.id, 'first_seed')
     )
-    expect(widgets?.[1]?.entityId).toBe(
+    expect(widgets?.[1]?.widgetId).toBe(
       widgetId(graph.id, subgraphNode.id, 'second_seed')
     )
-    expect(widgets?.[0]?.entityId).not.toBe(widgets?.[1]?.entityId)
+    expect(widgets?.[0]?.widgetId).not.toBe(widgets?.[1]?.widgetId)
   })
 })
 

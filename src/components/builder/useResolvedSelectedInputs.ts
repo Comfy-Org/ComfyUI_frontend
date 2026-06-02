@@ -12,7 +12,7 @@ import { isWidgetId, parseWidgetId } from '@/world/entityIds'
 export type ResolvedSelection =
   | {
       status: 'resolved'
-      entityId: WidgetId
+      widgetId: WidgetId
       node: LGraphNode
       widget: IBaseWidget
       displayName: string
@@ -20,7 +20,7 @@ export type ResolvedSelection =
     }
   | {
       status: 'unknown'
-      entityId: WidgetId
+      widgetId: WidgetId
       displayName: string
       config?: InputWidgetConfig
     }
@@ -54,16 +54,16 @@ export function useResolvedSelectedInputs() {
     if (!rootGraph) return []
 
     return appModeStore.selectedInputs.flatMap(
-      ([entityId, displayName, config]): ResolvedSelection[] => {
-        if (!isWidgetId(entityId)) return []
-        const { nodeId, name } = parseWidgetId(entityId)
+      ([widgetId, displayName, config]): ResolvedSelection[] => {
+        if (!isWidgetId(widgetId)) return []
+        const { nodeId, name } = parseWidgetId(widgetId)
         const node = rootGraph.getNodeById(nodeId)
         const widget = node?.widgets?.find((w) => w.name === name)
         if (!node || !widget) {
-          return [{ status: 'unknown', entityId, displayName, config }]
+          return [{ status: 'unknown', widgetId, displayName, config }]
         }
         return [
-          { status: 'resolved', entityId, node, widget, displayName, config }
+          { status: 'resolved', widgetId, node, widget, displayName, config }
         ]
       }
     )

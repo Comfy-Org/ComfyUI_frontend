@@ -62,7 +62,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
 
   return resolvedInputs.value.flatMap((entry) => {
     if (entry.status !== 'resolved') return []
-    const { entityId, node, widget, config } = entry
+    const { widgetId, node, widget, config } = entry
     if (node.mode !== LGraphEventMode.ALWAYS) return []
 
     if (!nodeDataByNode.has(node)) {
@@ -72,7 +72,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
 
     const matchingWidget = fullNodeData.widgets?.find((vueWidget) => {
       if (vueWidget.slotMetadata?.linked) return false
-      return vueWidget.entityId === entityId
+      return vueWidget.widgetId === widgetId
     })
     if (!matchingWidget) return []
 
@@ -81,7 +81,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
 
     return [
       {
-        key: entityId,
+        key: widgetId,
         persistedHeight: config?.height,
         nodeData: {
           ...fullNodeData,

@@ -15,7 +15,6 @@ export interface PromotedWidgetSource {
 
 export interface PromotedWidgetView extends IBaseWidget {
   readonly node: SubgraphNode
-  readonly entityId: WidgetId
   readonly widgetId: WidgetId
   readonly sourceNodeId: string
   readonly sourceWidgetName: string

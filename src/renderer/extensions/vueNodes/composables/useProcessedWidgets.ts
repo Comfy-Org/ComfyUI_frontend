@@ -51,7 +51,7 @@ interface ProcessedWidget {
   hasError: boolean
   hidden: boolean
   id: string
-  entityId?: WidgetId
+  widgetId?: WidgetId
   name: string
   renderKey: string
   simplified: SimplifiedWidget
@@ -128,8 +128,8 @@ export function getWidgetIdentity(
   dedupeIdentity?: string
   renderKey: string
 } {
-  if (widget.entityId) {
-    const dedupeIdentity = `${widget.entityId}:${widget.type}`
+  if (widget.widgetId) {
+    const dedupeIdentity = `${widget.widgetId}:${widget.type}`
     return { dedupeIdentity, renderKey: dedupeIdentity }
   }
   const slotNameForIdentity = widget.slotName ?? widget.name
@@ -198,8 +198,8 @@ export function computeProcessedWidgets({
     if (!shouldRenderAsVue(widget)) continue
 
     const identity = getWidgetIdentity(widget, nodeId, index)
-    const widgetState = widget.entityId
-      ? widgetValueStore.getWidget(widget.entityId)
+    const widgetState = widget.widgetId
+      ? widgetValueStore.getWidget(widget.widgetId)
       : graphId
         ? widgetValueStore.getWidget(
             widgetId(
@@ -290,7 +290,7 @@ export function computeProcessedWidgets({
         : undefined
 
     const simplified: SimplifiedWidget = {
-      name: widget.name,
+      name: widgetState?.name ?? widget.name,
       type: widget.type,
       value,
       borderStyle,
@@ -338,7 +338,7 @@ export function computeProcessedWidgets({
       ),
       hidden: mergedOptions.hidden ?? false,
       id: String(bareWidgetId),
-      entityId: widget.entityId,
+      widgetId: widget.widgetId,
       name: widget.name,
       renderKey,
       type: widget.type,

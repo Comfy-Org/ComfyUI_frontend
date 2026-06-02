@@ -132,10 +132,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._state.value = value
   }
 
-  get entityId(): WidgetId | undefined {
-    return this.widgetId
-  }
-
   get widgetId(): WidgetId | undefined {
     const graphId = this.node.graph?.rootGraph.id
     const nodeId = this._state.nodeId

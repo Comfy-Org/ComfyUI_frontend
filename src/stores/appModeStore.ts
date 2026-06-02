@@ -30,11 +30,11 @@ import { isWidgetId, parseWidgetId } from '@/world/entityIds'
 
 function findWidgetByEntityId(
   rootGraph: LGraph,
-  entityId: WidgetId
+  widgetId: WidgetId
 ): IBaseWidget | undefined {
   for (const node of rootGraph.nodes) {
     const widget = node.widgets?.find(
-      (w) => getWidgetIdForNode(node, w) === entityId
+      (w) => getWidgetIdForNode(node, w) === widgetId
     )
     if (widget) return widget
   }
@@ -82,11 +82,11 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   function buildEntry(
-    entityId: WidgetId,
+    widgetId: WidgetId,
     name: string,
     config: InputWidgetConfig | undefined
   ): LinearInput {
-    return config === undefined ? [entityId, name] : [entityId, name, config]
+    return config === undefined ? [widgetId, name] : [widgetId, name, config]
   }
 
   function upgradeAndValidateInput(
@@ -107,8 +107,8 @@ export const useAppModeStore = defineStore('appMode', () => {
 
     if (typeof storedId === 'string' && storedId.includes(':')) {
       const [, widget] = resolveNodeWidget(storedId, widgetName)
-      if (!widget?.entityId) return null
-      return buildEntry(widget.entityId, widgetName, config)
+      if (!widget?.widgetId) return null
+      return buildEntry(widget.widgetId, widgetName, config)
     }
 
     const directNode = rootGraph.getNodeById?.(storedId)
@@ -129,8 +129,8 @@ export const useAppModeStore = defineStore('appMode', () => {
         ) {
           return []
         }
-        return widget.entityId
-          ? [buildEntry(widget.entityId, inputSlot.name, config)]
+        return widget.widgetId
+          ? [buildEntry(widget.widgetId, inputSlot.name, config)]
           : []
       })
     })
@@ -246,7 +246,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   function removeSelectedInput(widget: IBaseWidget) {
-    const targetEntityId = widget.entityId
+    const targetEntityId = widget.widgetId
     if (!targetEntityId) return
     const index = selectedInputs.value.findIndex(
       ([id]) => id === targetEntityId
@@ -255,7 +255,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   function updateInputConfig(widget: IBaseWidget, config: InputWidgetConfig) {
-    const targetEntityId = widget.entityId
+    const targetEntityId = widget.widgetId
     if (!targetEntityId) return
     const index = selectedInputs.value.findIndex(
       ([id]) => id === targetEntityId

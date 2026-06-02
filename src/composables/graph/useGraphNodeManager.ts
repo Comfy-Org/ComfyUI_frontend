@@ -61,7 +61,6 @@ type Badges = (LGraphBadge | (() => LGraphBadge))[]
  * Value and metadata (label, hidden, disabled, etc.) are accessed via widgetValueStore.
  */
 export interface SafeWidgetData {
-  entityId?: WidgetId
   widgetId?: WidgetId
   nodeId?: NodeId
   name: string
@@ -336,7 +335,7 @@ function safeWidgetMapper(
       if (isPromotedWidgetView(widget)) widget.ensureHostWidgetState()
 
       return {
-        entityId: getWidgetIdForNode(node, widget),
+        widgetId: getWidgetIdForNode(node, widget),
         nodeId,
         name,
         type: effectiveWidget.type,

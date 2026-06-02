@@ -136,7 +136,7 @@ function nodeWithWidgets(id: number, widgetNames: string[]) {
     id,
     widgets: widgetNames.map((name) => ({
       name,
-      entityId: `${rootGraphId}:${id}:${name}` as WidgetId
+      widgetId: `${rootGraphId}:${id}:${name}` as WidgetId
     }))
   })
 }
@@ -662,8 +662,8 @@ describe('appModeStore', () => {
   describe('updateInputConfig', () => {
     const entity = 'g:1:prompt' as WidgetId
     const otherEntity = 'g:99:prompt' as WidgetId
-    const widget = fromAny<IBaseWidget, unknown>({ entityId: entity })
-    const otherWidget = fromAny<IBaseWidget, unknown>({ entityId: otherEntity })
+    const widget = fromAny<IBaseWidget, unknown>({ widgetId: entity })
+    const otherWidget = fromAny<IBaseWidget, unknown>({ widgetId: otherEntity })
 
     it('sets config on an existing input', () => {
       store.selectedInputs.push([entity, 'prompt'])
@@ -681,11 +681,11 @@ describe('appModeStore', () => {
       expect(store.selectedInputs[0][2]).toBeUndefined()
     })
 
-    it('is a no-op when the widget has no entityId', () => {
+    it('is a no-op when the widget has no widgetId', () => {
       store.selectedInputs.push([entity, 'prompt'])
 
       store.updateInputConfig(
-        fromAny<IBaseWidget, unknown>({ entityId: undefined }),
+        fromAny<IBaseWidget, unknown>({ widgetId: undefined }),
         { height: 200 }
       )
 
@@ -724,7 +724,7 @@ describe('appModeStore', () => {
       const promptEntity = 'g:1:prompt' as WidgetId
       const stepsEntity = 'g:2:steps' as WidgetId
       const stepsWidget = fromAny<IBaseWidget, unknown>({
-        entityId: stepsEntity,
+        widgetId: stepsEntity,
         name: 'steps'
       })
       store.selectedInputs.push([promptEntity, 'prompt'])
@@ -814,7 +814,7 @@ describe('appModeStore', () => {
         name: subgraphInputName,
         sourceNodeId: String(sourceNodeId),
         sourceWidgetName,
-        entityId: promotedEntityId
+        widgetId: promotedEntityId
       }
       const hostNode = Object.assign(Object.create(SubgraphNode.prototype), {
         id: hostId,
@@ -847,13 +847,13 @@ describe('appModeStore', () => {
         `${rootGraphId}:${sourceNodeId}:${sourceWidgetName}` as WidgetId
       const rootNode = fromAny<LGraphNode, unknown>({
         id: sourceNodeId,
-        widgets: [{ name: sourceWidgetName, entityId: rootEntityId }]
+        widgets: [{ name: sourceWidgetName, widgetId: rootEntityId }]
       })
       const hostWidget = {
         name: 'Prompt',
         sourceNodeId: String(sourceNodeId),
         sourceWidgetName,
-        entityId: `${rootGraphId}:${hostId}:Prompt` as WidgetId
+        widgetId: `${rootGraphId}:${hostId}:Prompt` as WidgetId
       }
       const hostNode = Object.assign(Object.create(SubgraphNode.prototype), {
         id: hostId,
@@ -911,7 +911,7 @@ describe('appModeStore', () => {
       const hostNode = fromAny<LGraphNode, unknown>({
         id: hostId,
         isSubgraphNode: () => true,
-        widgets: [{ name: 'subgraph_input_name', entityId: promotedEntityId }]
+        widgets: [{ name: 'subgraph_input_name', widgetId: promotedEntityId }]
       })
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [hostNode]
