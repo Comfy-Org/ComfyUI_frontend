@@ -9,12 +9,10 @@ const PAYMENT_STATUSES = ['success', 'failed'] as const
 const LOCALE_PREFIXES = LOCALES.map((locale) =>
   locale === DEFAULT_LOCALE ? '' : `/${locale}`
 )
-const NOINDEX_PATHNAMES = ['/affiliates/terms']
 const SITEMAP_EXCLUDED_PATHNAMES = new Set(
-  LOCALE_PREFIXES.flatMap((prefix) => [
-    ...PAYMENT_STATUSES.map((status) => `${prefix}/payment/${status}`),
-    ...NOINDEX_PATHNAMES.map((path) => `${prefix}${path}`)
-  ])
+  LOCALE_PREFIXES.flatMap((prefix) =>
+    PAYMENT_STATUSES.map((status) => `${prefix}/payment/${status}`)
+  )
 )
 
 function isExcludedFromSitemap(page: string): boolean {

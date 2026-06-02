@@ -23,15 +23,12 @@ test.describe('Affiliate Terms — desktop @smoke', () => {
     await page.goto(PATH)
   })
 
-  test('renders heading and is marked noindex', async ({ page }) => {
+  test('renders heading and is indexable', async ({ page }) => {
     await expect(
       page.getByRole('heading', { name: 'Affiliate Terms', level: 1 })
     ).toBeVisible()
 
-    const robotsContent = await page
-      .locator('meta[name="robots"]')
-      .getAttribute('content')
-    expect(robotsContent).toContain('noindex')
+    await expect(page.locator('meta[name="robots"]')).toHaveCount(0)
   })
 
   test('exposes one anchor per legal section in order', async ({ page }) => {
