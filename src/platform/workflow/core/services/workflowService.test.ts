@@ -21,6 +21,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import type { AppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+import { t } from '@/i18n'
 
 function createModeTestWorkflow(
   options: {
@@ -65,6 +66,13 @@ const { mockConfirm, mockTrackWorkflowSaved } = vi.hoisted(() => ({
   mockTrackWorkflowSaved: vi.fn()
 }))
 
+const draftStoreMocks = vi.hoisted(() => ({
+  saveDraft: vi.fn(() => true),
+  getDraft: vi.fn(),
+  removeDraft: vi.fn(),
+  markDraftUsed: vi.fn()
+}))
+
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
     prompt: vi.fn(),
@@ -104,13 +112,8 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
-vi.mock('@/platform/workflow/persistence/stores/workflowDraftStore', () => ({
-  useWorkflowDraftStore: () => ({
-    saveDraft: vi.fn(),
-    getDraft: vi.fn(),
-    removeDraft: vi.fn(),
-    markDraftUsed: vi.fn()
-  })
+vi.mock('@/platform/workflow/persistence/stores/workflowDraftStoreV2', () => ({
+  useWorkflowDraftStoreV2: () => draftStoreMocks
 }))
 
 vi.mock('@/stores/domWidgetStore', () => ({
@@ -162,6 +165,7 @@ describe('useWorkflowService', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
+    draftStoreMocks.saveDraft.mockReturnValue(true)
   })
 
   describe('showPendingWarnings', () => {
@@ -310,6 +314,85 @@ describe('useWorkflowService', () => {
           missingMediaCandidates: mediaCandidates
         })
       )
+    })
+
+    it('should save active workflow state through the V2 draft store', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
+        return key === 'Comfy.Workflow.Persist'
+      })
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      workflowStore.activeWorkflow = activeWorkflow
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(draftStoreMocks.saveDraft).toHaveBeenCalledWith(
+        activeWorkflow.path,
+        JSON.stringify(activeWorkflow.activeState),
+        {
+          name: activeWorkflow.key,
+          isTemporary: activeWorkflow.isTemporary
+        }
+      )
+    })
+
+    it('should show an error toast when the V2 draft store cannot save', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
+        return key === 'Comfy.Workflow.Persist'
+      })
+      const addToastSpy = vi.spyOn(useToastStore(), 'add')
+      draftStoreMocks.saveDraft.mockReturnValue(false)
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      workflowStore.activeWorkflow = activeWorkflow
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(addToastSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          summary: t('g.error'),
+          detail: t('toastMessages.failedToSaveDraft')
+        })
+      )
+    })
+
+    it('should log and show an error toast when the V2 draft store throws', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
+        return key === 'Comfy.Workflow.Persist'
+      })
+      const addToastSpy = vi.spyOn(useToastStore(), 'add')
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      const error = new Error('storage unavailable')
+      draftStoreMocks.saveDraft.mockImplementation(() => {
+        throw error
+      })
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      workflowStore.activeWorkflow = activeWorkflow
+
+      try {
+        useWorkflowService().beforeLoadNewGraph()
+
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          'Failed to persist active workflow draft',
+          error
+        )
+        expect(addToastSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('toastMessages.failedToSaveDraft')
+          })
+        )
+      } finally {
+        consoleErrorSpy.mockRestore()
+      }
     })
   })
 

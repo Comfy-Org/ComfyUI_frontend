@@ -33,6 +33,7 @@ export interface MenuOption {
   disabled?: boolean
   source?: 'litegraph' | 'vue'
   isColorPicker?: boolean
+  isShapePicker?: boolean
 }
 
 export interface SubMenuOption {
@@ -44,8 +45,7 @@ export interface SubMenuOption {
 }
 
 export enum BadgeVariant {
-  NEW = 'new',
-  DEPRECATED = 'deprecated'
+  NEW = 'new'
 }
 
 // Global singleton for NodeOptions component reference

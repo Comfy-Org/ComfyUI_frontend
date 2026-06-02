@@ -2,6 +2,7 @@ import { computed, reactive, readonly } from 'vue'
 
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
+  cachedTeamWorkspacesEnabled,
   isAuthenticatedConfigLoaded,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
@@ -114,7 +115,8 @@ export function useFeatureFlags() {
       if (override !== undefined) return override
 
       if (!isCloud) return false
-      if (!isAuthenticatedConfigLoaded.value) return false
+      if (!isAuthenticatedConfigLoaded.value)
+        return cachedTeamWorkspacesEnabled.value ?? false
 
       return (
         remoteConfig.value.team_workspaces_enabled ??

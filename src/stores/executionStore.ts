@@ -4,11 +4,11 @@ import { computed, ref, shallowRef } from 'vue'
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { workflowTelemetryId } from '@/platform/telemetry/utils/workflowTelemetryId'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
-  ComfyNode,
-  ComfyWorkflowJSON,
+  ComfyApiWorkflow,
   NodeId,
   WorkflowId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -36,6 +36,11 @@ import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 
+interface ExecutionNodeInfo {
+  title?: string | null
+  type?: string | null
+}
+
 interface QueuedJob {
   /**
    * The nodes that are queued to be executed. The key is the node id and the
@@ -46,6 +51,33 @@ interface QueuedJob {
    * The workflow that is queued to be executed
    */
   workflow?: ComfyWorkflow
+  /**
+   * Queue-time node metadata keyed by execution ID.
+   * This stays stable even if the user switches workflows or edits the canvas.
+   */
+  nodeLookup?: Record<string, ExecutionNodeInfo>
+  /**
+   * Whether the run was triggered while the workflow was in App Mode.
+   * Captured at queue time so execution outcome events can be attributed
+   * to App Mode even after the active workflow changes.
+   */
+  isAppMode?: boolean
+  /** Exact queue-time view mode (e.g. 'app' vs 'builder:arrange') for app-run attribution. */
+  viewMode?: string
+}
+
+function buildExecutionNodeLookup(
+  promptOutput: ComfyApiWorkflow
+): Record<string, ExecutionNodeInfo> {
+  return Object.fromEntries(
+    Object.entries(promptOutput).map(([executionId, node]) => [
+      executionId,
+      {
+        title: node._meta.title,
+        type: node.class_type
+      }
+    ])
+  )
 }
 
 /**
@@ -168,21 +200,11 @@ export const useExecutionStore = defineStore('execution', () => {
     () => new Set(executingNodeIds.value.map(String))
   )
 
-  // For backward compatibility - returns the primary executing node
-  const executingNode = computed<ComfyNode | null>(() => {
+  // For backward compatibility - returns the primary executing node info
+  const executingNode = computed<ExecutionNodeInfo | null>(() => {
     if (!executingNodeId.value) return null
 
-    const workflow: ComfyWorkflow | undefined = activeJob.value?.workflow
-    if (!workflow) return null
-
-    const canvasState: ComfyWorkflowJSON | null =
-      workflow.changeTracker?.activeState ?? null
-    if (!canvasState) return null
-
-    return (
-      canvasState.nodes.find((n) => String(n.id) === executingNodeId.value) ??
-      null
-    )
+    return activeJob.value?.nodeLookup?.[String(executingNodeId.value)] ?? null
   })
 
   // This is the progress of the currently executing node (for backward compatibility)
@@ -248,7 +270,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
     executionIdToLocatorCache.clear()
-    executionErrorStore.clearAllErrors()
+    executionErrorStore.clearExecutionStartErrors()
     activeJobId.value = e.detail.prompt_id
     queuedJobs.value[activeJobId.value] ??= { nodes: {} }
     clearInitializationByJobId(activeJobId.value)
@@ -284,7 +306,10 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
     if (isCloud && activeJobId.value) {
       useTelemetry()?.trackExecutionSuccess({
-        jobId: activeJobId.value
+        jobId: activeJobId.value,
+        is_app_mode: activeJob.value?.isAppMode ?? false,
+        workflow_id: jobIdToWorkflowId.value.get(activeJobId.value),
+        view_mode: activeJob.value?.viewMode
       })
     }
     const jobId = e.detail.prompt_id
@@ -386,11 +411,15 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
     if (isCloud) {
+      const jobId = e.detail.prompt_id
       useTelemetry()?.trackExecutionError({
-        jobId: e.detail.prompt_id,
+        jobId,
         nodeId: String(e.detail.node_id),
         nodeType: e.detail.node_type,
-        error: e.detail.exception_message
+        error: e.detail.exception_message,
+        is_app_mode: queuedJobs.value[jobId]?.isAppMode ?? false,
+        workflow_id: jobIdToWorkflowId.value.get(jobId),
+        view_mode: queuedJobs.value[jobId]?.viewMode
       })
 
       // Cloud wraps validation errors (400) in exception_message as embedded JSON.
@@ -548,11 +577,17 @@ export const useExecutionStore = defineStore('execution', () => {
   function storeJob({
     nodes,
     id,
-    workflow
+    promptOutput,
+    workflow,
+    isAppMode,
+    viewMode
   }: {
     nodes: string[]
     id: JobId
+    promptOutput: ComfyApiWorkflow
     workflow: ComfyWorkflow
+    isAppMode?: boolean
+    viewMode?: string
   }) {
     queuedJobs.value[id] ??= { nodes: {} }
     const queuedJob = queuedJobs.value[id]
@@ -563,8 +598,11 @@ export const useExecutionStore = defineStore('execution', () => {
       }, {}),
       ...queuedJob.nodes
     }
+    queuedJob.nodeLookup = buildExecutionNodeLookup(promptOutput)
     queuedJob.workflow = workflow
-    const wid = workflow?.activeState?.id ?? workflow?.initialState?.id
+    queuedJob.isAppMode = isAppMode
+    queuedJob.viewMode = viewMode
+    const wid = workflowTelemetryId(workflow)
     if (wid) {
       jobIdToWorkflowId.value.set(id, wid)
     }

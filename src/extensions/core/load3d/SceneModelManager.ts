@@ -1,3 +1,4 @@
+import { SparkRenderer } from '@sparkjsdev/spark'
 import * as THREE from 'three'
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
 
@@ -317,6 +318,7 @@ export class SceneModelManager implements ModelManagerInterface {
         object instanceof THREE.GridHelper ||
         object instanceof THREE.Light ||
         object instanceof THREE.Camera ||
+        object instanceof SparkRenderer ||
         object.name === 'GizmoTransformControls'
 
       if (!isEnvironmentObject) {
@@ -433,6 +435,11 @@ export class SceneModelManager implements ModelManagerInterface {
     )
   }
 
+  getCurrentBounds(): THREE.Box3 | null {
+    if (!this.currentModel) return null
+    return this.computeWorldBounds(this.currentModel)
+  }
+
   async setupModel(model: THREE.Object3D): Promise<void> {
     this.currentModel = model
     model.name = 'MainModel'
@@ -452,6 +459,12 @@ export class SceneModelManager implements ModelManagerInterface {
 
     if (pendingMaterialMode !== 'original') {
       this.setMaterialMode(pendingMaterialMode)
+    }
+
+    const validModes = this.getCurrentCapabilities().materialModes
+    if (validModes.length > 0 && !validModes.includes(this.materialMode)) {
+      this.materialMode = validModes[0]
+      this.eventManager.emitEvent('materialModeChange', this.materialMode)
     }
 
     if (this.currentUpDirection !== 'original') {

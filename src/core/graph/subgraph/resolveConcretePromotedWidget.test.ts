@@ -30,7 +30,6 @@ type PromotedWidgetStub = Pick<
 > & {
   sourceNodeId: string
   sourceWidgetName: string
-  disambiguatingSourceNodeId?: string
   node?: SubgraphNode
 }
 
@@ -52,8 +51,7 @@ function createPromotedWidget(
   name: string,
   sourceNodeId: string,
   sourceWidgetName: string,
-  node?: SubgraphNode,
-  disambiguatingSourceNodeId?: string
+  node?: SubgraphNode
 ): IBaseWidget {
   const promotedWidget: PromotedWidgetStub = {
     name,
@@ -63,7 +61,6 @@ function createPromotedWidget(
     value: undefined,
     sourceNodeId,
     sourceWidgetName,
-    disambiguatingSourceNodeId,
     node
   }
   return promotedWidget as IBaseWidget
@@ -96,27 +93,6 @@ describe('resolvePromotedWidgetAtHost', () => {
     const resolved = resolvePromotedWidgetAtHost(host, 'missing', 'seed')
 
     expect(resolved).toBeUndefined()
-  })
-
-  test('resolves duplicate-name promoted host widgets by disambiguating source node id', () => {
-    const host = createHostNode(100)
-    const sourceNode = addNodeToHost(host, 'source')
-    sourceNode.widgets = [
-      createPromotedWidget('text', String(sourceNode.id), 'text', host, '1'),
-      createPromotedWidget('text', String(sourceNode.id), 'text', host, '2')
-    ]
-
-    const resolved = resolvePromotedWidgetAtHost(
-      host,
-      String(sourceNode.id),
-      'text',
-      '2'
-    )
-
-    expect(resolved).toBeDefined()
-    expect(
-      (resolved!.widget as PromotedWidgetStub).disambiguatingSourceNodeId
-    ).toBe('2')
   })
 })
 
