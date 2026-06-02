@@ -69,7 +69,7 @@ function createTestI18n() {
         },
         linearMode: {
           error: {
-            goto: 'Go to error'
+            goto: 'Show errors in graph'
           }
         }
       }
@@ -174,7 +174,7 @@ describe('ErrorOverlay', () => {
     await nextTick()
 
     expect(screen.getByTestId('error-overlay-see-errors')).toHaveTextContent(
-      'Go to error'
+      'Show errors in graph'
     )
   })
 })
