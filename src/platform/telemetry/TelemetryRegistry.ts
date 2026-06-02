@@ -70,10 +70,6 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackUserLoggedIn?.())
   }
 
-  trackLogout(): void {
-    this.dispatch((provider) => provider.trackLogout?.())
-  }
-
   trackSubscription(
     event: 'modal_opened' | 'subscribe_clicked',
     metadata?: SubscriptionMetadata

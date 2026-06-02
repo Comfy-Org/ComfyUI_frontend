@@ -384,7 +384,6 @@ export interface TelemetryProvider {
   trackSignupOpened?(): void
   trackAuth?(metadata: AuthMetadata): void
   trackUserLoggedIn?(): void
-  trackLogout?(): void
 
   // Subscription flow events
   trackSubscription?(

@@ -9,6 +9,7 @@ const hoisted = vi.hoisted(() => {
   const mockPeopleSet = vi.fn()
   const mockReset = vi.fn()
   const mockOnUserResolved = vi.fn()
+  const mockOnUserLogout = vi.fn()
 
   return {
     mockCapture,
@@ -17,6 +18,7 @@ const hoisted = vi.hoisted(() => {
     mockPeopleSet,
     mockReset,
     mockOnUserResolved,
+    mockOnUserLogout,
     mockPosthog: {
       default: {
         init: mockInit,
@@ -39,7 +41,8 @@ vi.mock('vue', async () => {
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({
-    onUserResolved: hoisted.mockOnUserResolved
+    onUserResolved: hoisted.mockOnUserResolved,
+    onUserLogout: hoisted.mockOnUserLogout
   })
 }))
 
@@ -240,38 +243,28 @@ describe('PostHogTelemetryProvider', () => {
   })
 
   describe('logout', () => {
-    it('calls posthog.reset(true) when logout fires after init', async () => {
-      const provider = createProvider()
+    it('registers onUserLogout watcher after init', async () => {
+      createProvider()
       await vi.dynamicImportSettled()
 
-      provider.trackLogout()
+      expect(hoisted.mockOnUserLogout).toHaveBeenCalledOnce()
+    })
+
+    it('calls posthog.reset(true) when the watcher fires', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const callback = hoisted.mockOnUserLogout.mock.calls[0][0]
+      callback()
 
       expect(hoisted.mockReset).toHaveBeenCalledWith(true)
     })
 
-    it('defers reset to init when logout fires before init resolves', async () => {
-      const provider = createProvider()
+    it('does not register the watcher before init resolves', () => {
+      createProvider()
 
-      provider.trackLogout()
+      expect(hoisted.mockOnUserLogout).not.toHaveBeenCalled()
       expect(hoisted.mockReset).not.toHaveBeenCalled()
-
-      await vi.dynamicImportSettled()
-
-      expect(hoisted.mockReset).toHaveBeenCalledWith(true)
-    })
-
-    it('drops pre-logout queued events when logout fires before init', async () => {
-      const provider = createProvider()
-
-      provider.trackUserLoggedIn()
-      provider.trackLogout()
-
-      await vi.dynamicImportSettled()
-
-      expect(hoisted.mockCapture).not.toHaveBeenCalledWith(
-        TelemetryEvents.USER_LOGGED_IN,
-        expect.anything()
-      )
     })
   })
 
