@@ -11,7 +11,7 @@ import {
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
 
-import { isPromotedWidgetView } from './promotedWidgetTypes'
+import { createPromotedWidgetView } from './promotedWidgetView'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})
@@ -53,10 +53,20 @@ describe('PromotedWidgetView — host-wins semantics', () => {
     const hostA = createTestSubgraphNode(subgraph, { id: 100 })
     const hostB = createTestSubgraphNode(subgraph, { id: 101 })
 
-    const viewA = hostA.widgets.find(isPromotedWidgetView)
-    const viewB = hostB.widgets.find(isPromotedWidgetView)
-    if (!viewA || !viewB)
-      throw new Error('Expected promoted views on both hosts')
+    const viewA = createPromotedWidgetView(
+      hostA,
+      String(interior.id),
+      'widget',
+      'value',
+      'value'
+    )
+    const viewB = createPromotedWidgetView(
+      hostB,
+      String(interior.id),
+      'widget',
+      'value',
+      'value'
+    )
 
     viewA.value = 7
 
@@ -87,8 +97,13 @@ describe('PromotedWidgetView — host-wins semantics', () => {
     )
 
     const host = createTestSubgraphNode(subgraph, { id: 200 })
-    const view = host.widgets.find(isPromotedWidgetView)
-    if (!view) throw new Error('Expected promoted view on host')
+    const view = createPromotedWidgetView(
+      host,
+      String(interior.id),
+      'widget',
+      'value',
+      'value'
+    )
 
     view.value = 99
 
