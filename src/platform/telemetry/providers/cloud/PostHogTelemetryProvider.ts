@@ -82,6 +82,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private isEnabled = true
   private posthog: PostHog | null = null
   private eventQueue: QueuedEvent[] = []
+  private pendingFirstAuthAt = new Map<string, string>()
   private isInitialized = false
   private lastTriggerSource: ExecutionTriggerSource | undefined
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
@@ -121,9 +122,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
             useCurrentUser().onUserResolved((user) => {
               if (this.posthog && user.id) {
-                this.posthog.identify(user.id, undefined, {
-                  first_auth_at: new Date().toISOString()
-                })
+                this.posthog.identify(user.id)
                 this.setSubscriptionProperties()
               }
             })
@@ -145,6 +144,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private flushEventQueue(): void {
     if (!this.isInitialized || !this.posthog) return
 
+    this.flushPendingFirstAuthAt()
+
     while (this.eventQueue.length > 0) {
       const event = this.eventQueue.shift()!
       try {
@@ -152,6 +153,33 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
       } catch (error) {
         console.error('Failed to track queued PostHog event:', error)
       }
+    }
+  }
+
+  private flushPendingFirstAuthAt(): void {
+    for (const [userId, firstAuthAt] of this.pendingFirstAuthAt) {
+      this.setFirstAuthAt(userId, firstAuthAt)
+    }
+    this.pendingFirstAuthAt.clear()
+  }
+
+  private setFirstAuthAt(
+    userId: string,
+    firstAuthAt = new Date().toISOString()
+  ): void {
+    if (!this.isEnabled) return
+
+    if (this.isInitialized && this.posthog) {
+      try {
+        this.posthog.identify(userId, undefined, { first_auth_at: firstAuthAt })
+      } catch (error) {
+        console.error('Failed to set PostHog first auth timestamp:', error)
+      }
+      return
+    }
+
+    if (!this.pendingFirstAuthAt.has(userId)) {
+      this.pendingFirstAuthAt.set(userId, firstAuthAt)
     }
   }
 
@@ -235,6 +263,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackAuth(metadata: AuthMetadata): void {
+    if (metadata.is_new_user && metadata.user_id) {
+      this.setFirstAuthAt(metadata.user_id)
+    }
     this.trackEvent(TelemetryEvents.USER_AUTH_COMPLETED, metadata)
   }
 

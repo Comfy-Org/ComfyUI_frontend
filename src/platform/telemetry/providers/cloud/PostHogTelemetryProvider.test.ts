@@ -130,20 +130,14 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockOnUserResolved).toHaveBeenCalledOnce()
     })
 
-    it('identifies user when onUserResolved fires', async () => {
+    it('identifies user without setting first_auth_at when onUserResolved fires', async () => {
       createProvider()
       await vi.dynamicImportSettled()
 
       const callback = hoisted.mockOnUserResolved.mock.calls[0][0]
       callback({ id: 'user-123' })
 
-      expect(hoisted.mockIdentify).toHaveBeenCalledWith(
-        'user-123',
-        undefined,
-        expect.objectContaining({
-          first_auth_at: expect.any(String)
-        })
-      )
+      expect(hoisted.mockIdentify).toHaveBeenCalledWith('user-123')
     })
   })
 
@@ -169,6 +163,88 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.USER_AUTH_COMPLETED,
         { method: 'google' }
+      )
+    })
+
+    it('sets first_auth_at on new-user auth', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAuth({
+        method: 'google',
+        is_new_user: true,
+        user_id: 'user-123'
+      })
+
+      expect(hoisted.mockIdentify).toHaveBeenCalledWith(
+        'user-123',
+        undefined,
+        expect.objectContaining({
+          first_auth_at: expect.any(String)
+        })
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.USER_AUTH_COMPLETED,
+        {
+          method: 'google',
+          is_new_user: true,
+          user_id: 'user-123'
+        }
+      )
+    })
+
+    it('does not set first_auth_at on returning-user auth', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAuth({
+        method: 'google',
+        is_new_user: false,
+        user_id: 'user-123'
+      })
+
+      expect(hoisted.mockIdentify).not.toHaveBeenCalled()
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.USER_AUTH_COMPLETED,
+        {
+          method: 'google',
+          is_new_user: false,
+          user_id: 'user-123'
+        }
+      )
+    })
+
+    it('flushes queued first_auth_at before queued auth event', async () => {
+      const provider = createProvider()
+
+      provider.trackAuth({
+        method: 'google',
+        is_new_user: true,
+        user_id: 'user-123'
+      })
+
+      expect(hoisted.mockIdentify).not.toHaveBeenCalled()
+      expect(hoisted.mockCapture).not.toHaveBeenCalled()
+
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockIdentify).toHaveBeenCalledWith(
+        'user-123',
+        undefined,
+        expect.objectContaining({
+          first_auth_at: expect.any(String)
+        })
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.USER_AUTH_COMPLETED,
+        {
+          method: 'google',
+          is_new_user: true,
+          user_id: 'user-123'
+        }
+      )
+      expect(hoisted.mockIdentify.mock.invocationCallOrder[0]).toBeLessThan(
+        hoisted.mockCapture.mock.invocationCallOrder[0]
       )
     })
 
