@@ -5,8 +5,8 @@ import { computed, onMounted, shallowRef, watch } from 'vue'
 
 import DraggableList from '@/components/common/DraggableList.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import {
   demoteWidget,
   getPromotableWidgets,
@@ -16,6 +16,7 @@ import {
   pruneDisconnected,
   reorderSubgraphInputsByWidgetOrder
 } from '@/core/graph/subgraph/promotionUtils'
+import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type { WidgetItem } from '@/core/graph/subgraph/promotionUtils'
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -54,9 +55,26 @@ const activeNode = computed(() => {
   return undefined
 })
 
-const promotedWidgets = shallowRef<readonly IBaseWidget[]>([])
+const promotedWidgets = shallowRef<readonly PromotedWidgetView[]>([])
+function buildPromotedViews(node: SubgraphNode): PromotedWidgetView[] {
+  return node.inputs.flatMap((input) => {
+    if (!input.widgetId) return []
+    const target = resolveSubgraphInputTarget(node, input.name)
+    if (!target) return []
+    return [
+      createPromotedWidgetView(
+        node,
+        target.nodeId,
+        target.widgetName,
+        input.label ?? input.name,
+        input.name
+      )
+    ]
+  })
+}
 function refreshPromotedWidgets() {
-  promotedWidgets.value = activeNode.value?.widgets ?? []
+  const node = activeNode.value
+  promotedWidgets.value = node ? buildPromotedViews(node) : []
 }
 watch(activeNode, refreshPromotedWidgets, { immediate: true })
 useEventListener(
@@ -89,7 +107,6 @@ const activePromotedRows = computed<PromotedRow[]>({
 
 function getActivePromotedRows(node: SubgraphNode): PromotedRow[] {
   return promotedWidgets.value.flatMap((widget): PromotedRow[] => {
-    if (!isPromotedWidgetView(widget)) return []
     const sourceNode = node.subgraph._nodes_by_id[widget.sourceNodeId]
     if (!sourceNode) return []
     return [{ kind: 'promoted', node: sourceNode, widget }]

@@ -14,8 +14,9 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
+import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import SubgraphEditor from './SubgraphEditor.vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import type DraggableList from '@/components/common/DraggableList.vue'
@@ -167,10 +168,27 @@ describe('SubgraphEditor', () => {
         .map((el) => el.textContent?.trim())
     ).toEqual(['first', 'second'])
 
-    const promotedWidgets = host.widgets.filter(isPromotedWidgetView)
+    const promotedWidgets = host.inputs
+      .filter((input) => input.widgetId)
+      .map((input) => {
+        const target = resolveSubgraphInputTarget(host, input.name)!
+        return createPromotedWidgetView(
+          host,
+          target.nodeId,
+          target.widgetName,
+          input.label ?? input.name,
+          input.name
+        )
+      })
+    const firstView = promotedWidgets.find(
+      (w) => w.sourceNodeId === String(firstNode.id)
+    )!
+    const secondView = promotedWidgets.find(
+      (w) => w.sourceNodeId === String(secondNode.id)
+    )!
     const reversed = [
-      { kind: 'promoted', node: secondNode, widget: promotedWidgets[1] },
-      { kind: 'promoted', node: firstNode, widget: promotedWidgets[0] }
+      { kind: 'promoted', node: secondNode, widget: secondView },
+      { kind: 'promoted', node: firstNode, widget: firstView }
     ] as PromotedRow[]
     listSetter?.(reversed)
     await nextTick()
@@ -213,13 +231,13 @@ describe('SubgraphEditor', () => {
       }
     })
 
-    expect(host.widgets.filter(isPromotedWidgetView)).toHaveLength(2)
+    expect(host.inputs.filter((input) => input.widgetId)).toHaveLength(2)
 
     const shown = screen.getByTestId('subgraph-editor-shown-section')
     const hideAllLink = within(shown).getByText('Hide all')
     await userEvent.click(hideAllLink)
 
-    expect(host.widgets.filter(isPromotedWidgetView)).toHaveLength(0)
+    expect(host.inputs.filter((input) => input.widgetId)).toHaveLength(0)
   })
 
   it('removes the exposure when a preview row without a real source widget is demoted', async () => {
