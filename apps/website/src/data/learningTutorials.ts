@@ -2,12 +2,12 @@ import type { LocalizedText, TranslationKey } from '../i18n/translations'
 
 export interface LearningTutorial {
   id: string
+  tags: readonly TranslationKey[]
   title: LocalizedText
   videoSrc: string
+  href?: string
   poster?: string
   posterTime?: number
-  href?: string
-  tags: readonly TranslationKey[]
 }
 
 const DEFAULT_POSTER_TIME_SECONDS = 1
