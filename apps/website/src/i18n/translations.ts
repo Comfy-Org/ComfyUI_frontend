@@ -1775,6 +1775,10 @@ const translations = {
   'footer.press': { en: 'Press', 'zh-CN': '媒体' },
   'footer.cloudStatus': { en: 'Cloud Status', 'zh-CN': '云端状态' },
   'footer.blog': { en: 'Blog', 'zh-CN': '博客' },
+  'footer.affiliateProgram': {
+    en: 'Affiliate Program',
+    'zh-CN': 'Affiliate Program'
+  },
   'footer.location': {
     en: 'San Francisco, USA',
     'zh-CN': '美国旧金山'
