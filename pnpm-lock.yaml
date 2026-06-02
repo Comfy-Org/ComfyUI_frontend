@@ -91,8 +91,8 @@ catalogs:
       specifier: ^10.32.1
       version: 10.32.1
     '@sparkjsdev/spark':
-      specifier: ^0.1.10
-      version: 0.1.10
+      specifier: ^2.1.0
+      version: 2.1.0
     '@storybook/addon-docs':
       specifier: ^10.2.10
       version: 10.2.10
@@ -160,8 +160,8 @@ catalogs:
       specifier: ^7.7.0
       version: 7.7.0
     '@types/three':
-      specifier: ^0.170.0
-      version: 0.170.0
+      specifier: ^0.184.1
+      version: 0.184.1
     '@vee-validate/zod':
       specifier: ^4.15.1
       version: 4.15.1
@@ -340,8 +340,8 @@ catalogs:
       specifier: ^0.6.1
       version: 0.6.1
     three:
-      specifier: ^0.170.0
-      version: 0.170.0
+      specifier: ^0.184.0
+      version: 0.184.0
     tsx:
       specifier: ^4.15.6
       version: 4.19.4
@@ -437,6 +437,9 @@ importers:
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:packages/design-system
+      '@comfyorg/fbx-exporter-three':
+        specifier: ^1.0.1
+        version: 1.0.1(@types/three@0.184.1)(three@0.184.0)
       '@comfyorg/registry-types':
         specifier: workspace:*
         version: link:packages/registry-types
@@ -478,7 +481,7 @@ importers:
         version: 10.32.1(pinia@3.0.4(typescript@5.9.3)(vue@3.5.13(typescript@5.9.3)))(vue@3.5.13(typescript@5.9.3))
       '@sparkjsdev/spark':
         specifier: 'catalog:'
-        version: 0.1.10
+        version: 2.1.0(three@0.184.0)
       '@tanstack/vue-virtual':
         specifier: 'catalog:'
         version: 3.13.12(vue@3.5.13(typescript@5.9.3))
@@ -591,8 +594,8 @@ importers:
         specifier: ^7.7.2
         version: 7.7.4
       three:
-        specifier: ^0.170.0
-        version: 0.170.0
+        specifier: 'catalog:'
+        version: 0.184.0
       tiptap-markdown:
         specifier: ^0.8.10
         version: 0.8.10(@tiptap/core@2.27.2(@tiptap/pm@2.27.2))
@@ -616,7 +619,7 @@ importers:
         version: 3.2.1(consola@3.4.2)(firebase@11.6.0)(vue@3.5.13(typescript@5.9.3))
       wwobjloader2:
         specifier: 'catalog:'
-        version: 6.2.1(three@0.170.0)
+        version: 6.2.1(three@0.184.0)
       yjs:
         specifier: 'catalog:'
         version: 13.6.27
@@ -701,7 +704,7 @@ importers:
         version: 7.7.0
       '@types/three':
         specifier: 'catalog:'
-        version: 0.170.0
+        version: 0.184.1
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 6.0.3(vite@8.0.0(@types/node@24.10.4)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2))(vue@3.5.13(typescript@5.9.3))
@@ -969,7 +972,7 @@ importers:
         version: 1.358.1
       three:
         specifier: 'catalog:'
-        version: 0.170.0
+        version: 0.184.0
       vue:
         specifier: 'catalog:'
         version: 3.5.13(typescript@5.9.3)
@@ -1765,6 +1768,16 @@ packages:
   '@comfyorg/comfyui-electron-types@0.6.2':
     resolution: {integrity: sha512-r3By5Wbizq8jagUrhtcym79HYUTinsvoBnYkFFWbUmrURBWIaC0HduFVkRkI1PNdI76piW+JSOJJnw00YCVXeg==}
 
+  '@comfyorg/fbx-exporter-three@1.0.1':
+    resolution: {integrity: sha512-fQ1zBsgmmwfio6iEi91hRiFCr946yEgqR2DGh/UMismaLyUohiKGOJL/OnJQnW3+yne/PXxVoYgcortyumsO5w==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@types/three': '>=0.160.0'
+      three: '>=0.160.0'
+    peerDependenciesMeta:
+      '@types/three':
+        optional: true
+
   '@csstools/color-helpers@5.1.0':
     resolution: {integrity: sha512-S11EXWJyy0Mz5SYvRmY8nJYTFFd1LCNV+7cXyAgQtOOuzb4EsgfqDufL+9esx72/eLhsRdGZwaldu/h+E4t4BA==}
     engines: {node: '>=18'}
@@ -1812,6 +1825,9 @@ packages:
 
   '@cyberalien/svg-utils@1.1.1':
     resolution: {integrity: sha512-i05Cnpzeezf3eJAXLx7aFirTYYoq5D1XUItp1XsjqkerNJh//6BG9sOYHbiO7v0KYMvJAx3kosrZaRcNlQPdsA==}
+
+  '@dimforge/rapier3d-compat@0.12.0':
+    resolution: {integrity: sha512-uekIGetywIgopfD97oDL5PfeezkFpNhwlzlaEYNOA0N6ghdsOvh/HYjSMek5Q2O1PYvRSDFcqFVJl4r4ZBwOow==}
 
   '@dual-bundle/import-meta-resolve@4.2.1':
     resolution: {integrity: sha512-id+7YRUgoUX6CgV0DtuhirQWodeeA7Lf4i2x71JS/vtA5pRb/hIGWlw+G6MeXvsM+MXrz0VAydTGElX1rAfgPg==}
@@ -4035,8 +4051,10 @@ packages:
     resolution: {integrity: sha512-tlqY9xq5ukxTUZBmoOp+m61cqwQD5pHJtFY3Mn8CA8ps6yghLH/Hw8UPdqg4OLmFW3IFlcXnQNmo/dh8HzXYIQ==}
     engines: {node: '>=18'}
 
-  '@sparkjsdev/spark@0.1.10':
-    resolution: {integrity: sha512-CiijdZQuj7KPDUqIZPiEqyUkJCYo1JqR05vq/V+ElxMwqR7L70ZuZDyIKcasjZHSiPB8pGRMH8HZGqUKO9aRPQ==}
+  '@sparkjsdev/spark@2.1.0':
+    resolution: {integrity: sha512-BRw+MuMzx0B3K8fDLQygt2OHEhYUV+41RX7btq9pZ3rCVrq42o57jW34VAIvC7JO/84DJh/1AutACV9ym6BfVg==}
+    peerDependencies:
+      three: '>=0.180.0'
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
@@ -4514,8 +4532,8 @@ packages:
   '@types/stats.js@0.17.3':
     resolution: {integrity: sha512-pXNfAD3KHOdif9EQXZ9deK82HVNaXP5ZIF5RP2QG6OQFNTaY2YIetfrE9t528vEreGQvEPRDDc8muaoYeK0SxQ==}
 
-  '@types/three@0.170.0':
-    resolution: {integrity: sha512-CUm2uckq+zkCY7ZbFpviRttY+6f9fvwm6YqSqPfA5K22s9w7R4VnA3rzJse8kHVvuzLcTx+CjNCs2NYe0QFAyg==}
+  '@types/three@0.184.1':
+    resolution: {integrity: sha512-6q4VdiqVsrTRqmk62/BnlcAvIrnDM0zf2ZDVKI5kZiniWrSaOHaQzmbp+BNzoggc/8tgW412pL//wZIxu2PPTA==}
 
   '@types/tough-cookie@4.0.5':
     resolution: {integrity: sha512-/Ad8+nIOV7Rl++6f1BdKxFSMgmoqEoYbHRpPcx3JEfv8VRsQe9Z4mCXeJBzxs7mbHY/XOZZuXlRNfhpVPbs6ZA==}
@@ -7742,8 +7760,8 @@ packages:
     resolution: {integrity: sha512-8q7VEgMJW4J8tcfVPy8g09NcQwZdbwFEqhe/WZkoIzjn/3TGDwtOCYtXGxA3O8tPzpczCCDgv+P2P5y00ZJOOg==}
     engines: {node: '>= 8'}
 
-  meshoptimizer@0.18.1:
-    resolution: {integrity: sha512-ZhoIoL7TNV4s5B6+rx5mC//fw8/POGyNxS/DZyCJeiZ12ScLfVwRE/GfsxwiTkMYYD5DmK2/JXnEVXqL4rF+Sw==}
+  meshoptimizer@1.1.1:
+    resolution: {integrity: sha512-oRFNWJRDA/WTrVj7NWvqa5HqE1t9MYDj2VaWirQCzCCrAd2GHrqR/sQezCxiWATPNlKTcRaPRHPJwIRoPBAp5g==}
 
   micromark-core-commonmark@2.0.3:
     resolution: {integrity: sha512-RDBrHEMSxVFLg6xvnXmb1Ayr2WzLAWjeSATAoxwKYJV94TeNavgoIdA0a9ytzDSVzBy2YKFK+emCPOEibLeCrg==}
@@ -9168,8 +9186,8 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
-  three@0.170.0:
-    resolution: {integrity: sha512-FQK+LEpYc0fBD+J8g6oSEyyNzjp+Q7Ks1C568WWaoMRLW+TkNNWmenWeGgJjV105Gd+p/2ql1ZcjYvNiPZBhuQ==}
+  three@0.184.0:
+    resolution: {integrity: sha512-wtTRjG92pM5eUg/KuUnHsqSAlPM296brTOcLgMRqEeylYTh/CdtvKUvCyyCQTzFuStieWxvZb8mVTMvdPyUpxg==}
 
   tiny-inflate@1.0.3:
     resolution: {integrity: sha512-pkY1fj1cKHb2seWDy0B16HeWyczlJA9/WW3u3c4z/NiWDsO3DOU5D7nhTLE9CF0yXv/QZFY7sEJmj24dK+Rrqw==}
@@ -9889,8 +9907,8 @@ packages:
   vue-component-type-helpers@3.2.6:
     resolution: {integrity: sha512-O02tnvIfOQVmnvoWwuSydwRoHjZVt8UEBR+2p4rT35p8GAy5VTlWP8o5qXfJR/GWCN0nVZoYWsVUvx2jwgdBmQ==}
 
-  vue-component-type-helpers@3.2.8:
-    resolution: {integrity: sha512-9689efAXhN/EV86plgkL/XFiJSXhGtWPG6JDboZ+QnjlUWUUQrQ0ILKQtw4iQsuwIwu5k6Aw+JnehDe7161e7A==}
+  vue-component-type-helpers@3.3.3:
+    resolution: {integrity: sha512-x4nsFpy5Pe8fqPzp/5vkTPeTTDBpAx4WVtV47Ejt0+2FQrq4pRRsJs7JmYRqMFzTu/LW+pCWEjQ3YVCkPV7f9g==}
 
   vue-demi@0.14.10:
     resolution: {integrity: sha512-nMZBOwuzabUO0nLgIcc6rycZEebF6eeUfaiQx9+WSk8e29IbLvPU9feI6tqW4kTo3hvoYAJkMh8n8D0fuISphg==}
@@ -11242,6 +11260,13 @@ snapshots:
 
   '@comfyorg/comfyui-electron-types@0.6.2': {}
 
+  '@comfyorg/fbx-exporter-three@1.0.1(@types/three@0.184.1)(three@0.184.0)':
+    dependencies:
+      fflate: 0.8.2
+      three: 0.184.0
+    optionalDependencies:
+      '@types/three': 0.184.1
+
   '@csstools/color-helpers@5.1.0': {}
 
   '@csstools/css-calc@2.1.4(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)':
@@ -11276,6 +11301,8 @@ snapshots:
   '@cyberalien/svg-utils@1.1.1':
     dependencies:
       '@iconify/types': 2.0.0
+
+  '@dimforge/rapier3d-compat@0.12.0': {}
 
   '@dual-bundle/import-meta-resolve@4.2.1': {}
 
@@ -13311,9 +13338,10 @@ snapshots:
 
   '@sindresorhus/merge-streams@4.0.0': {}
 
-  '@sparkjsdev/spark@0.1.10':
+  '@sparkjsdev/spark@2.1.0(three@0.184.0)':
     dependencies:
       fflate: 0.8.2
+      three: 0.184.0
 
   '@standard-schema/spec@1.1.0': {}
 
@@ -13411,7 +13439,7 @@ snapshots:
       storybook: 10.2.10(@testing-library/dom@10.4.1)(prettier@3.7.4)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       type-fest: 2.19.0
       vue: 3.5.13(typescript@5.9.3)
-      vue-component-type-helpers: 3.2.8
+      vue-component-type-helpers: 3.3.3
 
   '@swc/helpers@0.5.17':
     dependencies:
@@ -13840,14 +13868,14 @@ snapshots:
 
   '@types/stats.js@0.17.3': {}
 
-  '@types/three@0.170.0':
+  '@types/three@0.184.1':
     dependencies:
+      '@dimforge/rapier3d-compat': 0.12.0
       '@tweenjs/tween.js': 23.1.3
       '@types/stats.js': 0.17.3
       '@types/webxr': 0.5.20
-      '@webgpu/types': 0.1.66
       fflate: 0.8.2
-      meshoptimizer: 0.18.1
+      meshoptimizer: 1.1.1
 
   '@types/tough-cookie@4.0.5': {}
 
@@ -17673,7 +17701,7 @@ snapshots:
 
   merge2@1.4.1: {}
 
-  meshoptimizer@0.18.1: {}
+  meshoptimizer@1.1.1: {}
 
   micromark-core-commonmark@2.0.3:
     dependencies:
@@ -19653,7 +19681,7 @@ snapshots:
       commander: 2.20.3
       source-map-support: 0.5.21
 
-  three@0.170.0: {}
+  three@0.184.0: {}
 
   tiny-inflate@1.0.3: {}
 
@@ -20536,7 +20564,7 @@ snapshots:
 
   vue-component-type-helpers@3.2.6: {}
 
-  vue-component-type-helpers@3.2.8: {}
+  vue-component-type-helpers@3.3.3: {}
 
   vue-demi@0.14.10(vue@3.5.13(typescript@5.9.3)):
     dependencies:
@@ -20782,16 +20810,16 @@ snapshots:
 
   wtd-core@3.0.0: {}
 
-  wtd-three-ext@3.0.0(three@0.170.0):
+  wtd-three-ext@3.0.0(three@0.184.0):
     dependencies:
-      three: 0.170.0
+      three: 0.184.0
       wtd-core: 3.0.0
 
-  wwobjloader2@6.2.1(three@0.170.0):
+  wwobjloader2@6.2.1(three@0.184.0):
     dependencies:
-      three: 0.170.0
+      three: 0.184.0
       wtd-core: 3.0.0
-      wtd-three-ext: 3.0.0(three@0.170.0)
+      wtd-three-ext: 3.0.0(three@0.184.0)
 
   xdg-basedir@5.1.0: {}
 
