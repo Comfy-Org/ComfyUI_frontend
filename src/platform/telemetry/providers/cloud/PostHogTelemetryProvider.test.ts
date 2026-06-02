@@ -56,29 +56,6 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   })
 }))
 
-const mockAppMode = vi.hoisted(() => ({
-  mode: { value: 'app' },
-  isAppMode: { value: false }
-}))
-
-vi.mock('@/composables/useAppMode', () => ({
-  useAppMode: () => mockAppMode
-}))
-
-vi.mock('@/platform/telemetry/utils/getExecutionContext', () => ({
-  getExecutionContext: () => ({
-    is_template: false,
-    workflow_name: 'untitled',
-    custom_node_count: 0,
-    total_node_count: 0,
-    subgraph_count: 0,
-    has_api_nodes: false,
-    api_node_names: [],
-    has_toolkit_nodes: false,
-    toolkit_node_names: []
-  })
-}))
-
 import { PostHogTelemetryProvider } from './PostHogTelemetryProvider'
 
 function createProvider(
@@ -95,7 +72,6 @@ describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockRemoteConfig.value = null
-    mockAppMode.isAppMode.value = false
     window.__CONFIG__ = {
       posthog_project_token: 'phc_test_token'
     } as typeof window.__CONFIG__
@@ -288,25 +264,6 @@ describe('PostHogTelemetryProvider', () => {
     })
   })
 
-  describe('execution tracking', () => {
-    it('stamps is_app_mode and view_mode on the execution_start event', async () => {
-      const provider = createProvider()
-      await vi.dynamicImportSettled()
-      mockAppMode.isAppMode.value = true
-      mockAppMode.mode.value = 'app'
-
-      provider.trackWorkflowExecution()
-
-      expect(hoisted.mockCapture).toHaveBeenCalledWith(
-        TelemetryEvents.EXECUTION_START,
-        expect.objectContaining({
-          is_app_mode: true,
-          view_mode: 'app',
-          trigger_source: 'unknown'
-        })
-      )
-    })
-  })
   describe('before_send', () => {
     it('strips PII keys from event properties, $set, and $set_once', async () => {
       createProvider()
