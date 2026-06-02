@@ -22,7 +22,8 @@ const { isCloudRef } = vi.hoisted(() => ({
   isCloudRef: { value: true }
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock('@/platform/distribution/types', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   get isCloud() {
     return isCloudRef.value
   }

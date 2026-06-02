@@ -174,17 +174,14 @@ export function getAssetFilename(asset: AssetItem): string {
 
 /**
  * Resolves the *stored* filename for an asset — the filename used to
- * construct asset paths (for /view URLs, widget values), not the
- * user-facing display name.
- *
- * Cloud stores assets with `asset_hash` as the filename (content-
- * addressed); OSS uses `name` (filesystem-backed). After BE-933/934
- * emit `file_path` on both backends and the cloud spec sync brings
- * the field into generated types, this collapses to
- * `asset.file_path ?? asset.name` (no isCloud branch).
+ * construct asset paths (for /view URLs and widget values), not the
+ * user-facing display string. Cloud uses `asset_hash` (content-
+ * addressed); OSS uses `name` (filesystem-backed).
  *
  * For display use {@link getAssetDisplayFilename}; for serialized
  * identifiers use {@link getAssetFilename}.
+ *
+ * TODO(BE-933/934): collapse to `asset.file_path ?? asset.name`.
  */
 export function getAssetStoredFilename(asset: AssetItem): string {
   return isCloud && asset.asset_hash ? asset.asset_hash : asset.name
