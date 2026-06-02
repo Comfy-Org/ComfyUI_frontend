@@ -1,8 +1,8 @@
 import type { LGraphNode, Positionable } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode, Reroute } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
 import { collectFromNodes } from '@/utils/graphTraversalUtil'
+import { isLGraphNode } from '@/utils/litegraphUtil'
 
 /**
  * Composable for handling selected LiteGraph items filtering and operations.
@@ -64,37 +64,31 @@ export function useSelectedLiteGraphItems() {
   }
 
   /**
+   * The top-level selected nodes from the canonical selection set.
+   * Shallow — does NOT expand subgraph children, unlike {@link getSelectedNodes}.
+   * Mode toggles use this so they apply to the selected subgraph node, not its
+   * descendants. Returns `[]` when the canvas is not yet available, preserving
+   * the prior null-tolerance for callers wired to early-firing commands.
+   */
+  const getSelectedNodesShallow = (): LGraphNode[] =>
+    Array.from(canvasStore.canvas?.selectedItems ?? []).filter(isLGraphNode)
+
+  /**
    * Get only the selected nodes (LGraphNode instances) from the canvas.
    * This filters out other types of selected items like groups or reroutes.
    * If a selected node is a subgraph, this also includes all nodes within it.
    * @returns Array of selected LGraphNode instances and their descendants.
    */
   const getSelectedNodes = (): LGraphNode[] => {
-    const selectedNodes = app.canvas.selected_nodes
-    if (!selectedNodes) return []
+    const nodeArray = getSelectedNodesShallow()
 
-    // Convert selected_nodes object to array, preserving order
-    const nodeArray: LGraphNode[] = []
-    for (const i in selectedNodes) {
-      nodeArray.push(selectedNodes[i])
-    }
-
-    // Check if any selected nodes are subgraphs
     const hasSubgraphs = nodeArray.some(
       (node) => node.isSubgraphNode?.() && node.subgraph
     )
+    if (!hasSubgraphs) return nodeArray
 
-    // If no subgraphs, just return the array directly to preserve order
-    if (!hasSubgraphs) {
-      return nodeArray
-    }
-
-    // Use collectFromNodes to get all nodes including those in subgraphs
     return collectFromNodes(nodeArray)
   }
-
-  const getSelectedNodesShallow = (): LGraphNode[] =>
-    Object.values(app.canvas.selected_nodes ?? {})
 
   /**
    * True iff every selected node is in `mode`. Mirrors the predicate used by
