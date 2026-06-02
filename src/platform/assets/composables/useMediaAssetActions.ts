@@ -61,7 +61,8 @@ function widgetValueVariantsForAsset(asset: AssetItem): string[] {
       variants.push(`${name} [input]`)
     }
   }
-  if (asset.asset_hash) variants.push(asset.asset_hash)
+  const hash = asset.hash ?? asset.asset_hash
+  if (hash) variants.push(hash)
   return variants
 }
 
@@ -296,12 +297,11 @@ export function useMediaAssetActions() {
     const metadata = getOutputAssetMetadata(targetAsset.user_metadata)
     const assetType = getAssetType(targetAsset, 'input')
 
-    // In Cloud mode, use asset_hash (the actual stored filename)
-    // In OSS mode, use the original name
-    const filename =
-      isCloud && targetAsset.asset_hash
-        ? targetAsset.asset_hash
-        : targetAsset.name
+    // In Cloud mode, use the content hash (the actual stored filename),
+    // preferring hash and falling back to the deprecated asset_hash alias.
+    // In OSS mode, use the original name.
+    const cloudHash = targetAsset.hash ?? targetAsset.asset_hash
+    const filename = isCloud && cloudHash ? cloudHash : targetAsset.name
 
     // Create annotated path for the asset
     const annotated = createAnnotatedPath(
@@ -440,10 +440,11 @@ export function useMediaAssetActions() {
       const metadata = getOutputAssetMetadata(asset.user_metadata)
       const assetType = getAssetType(asset, 'input')
 
-      // In Cloud mode, use asset_hash (the actual stored filename)
-      // In OSS mode, use the original name
-      const filename =
-        isCloud && asset.asset_hash ? asset.asset_hash : asset.name
+      // In Cloud mode, use the content hash (the actual stored filename),
+      // preferring hash and falling back to the deprecated asset_hash alias.
+      // In OSS mode, use the original name.
+      const cloudHash = asset.hash ?? asset.asset_hash
+      const filename = isCloud && cloudHash ? cloudHash : asset.name
 
       const annotated = createAnnotatedPath(
         {
