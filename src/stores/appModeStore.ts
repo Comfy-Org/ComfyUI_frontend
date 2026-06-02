@@ -26,7 +26,11 @@ import {
   resolveNodeWidget
 } from '@/utils/litegraphUtil'
 import type { WidgetEntityId } from '@/world/entityIds'
-import { isWidgetEntityId, parseWidgetEntityId } from '@/world/entityIds'
+import {
+  isWidgetEntityId,
+  parseLegacyWidgetEntityId,
+  parseWidgetEntityId
+} from '@/world/entityIds'
 
 function findWidgetByEntityId(
   rootGraph: LGraph,
@@ -103,6 +107,17 @@ export const useAppModeStore = defineStore('appMode', () => {
         return buildEntry(storedId, widgetName, config)
       }
       return null
+    }
+
+    if (typeof storedId === 'string') {
+      const legacyId = parseLegacyWidgetEntityId(storedId, rootGraph.id)
+      if (legacyId) {
+        const node = rootGraph.getNodeById?.(legacyId.nodeId)
+        const widget = node?.widgets?.find((w) => w.name === legacyId.name)
+        const entityId =
+          node && widget && getWidgetEntityIdForNode(node, widget)
+        return entityId ? buildEntry(entityId, widgetName, config) : null
+      }
     }
 
     if (typeof storedId === 'string' && storedId.includes(':')) {

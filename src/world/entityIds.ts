@@ -97,6 +97,25 @@ export function isWidgetEntityId(value: unknown): value is WidgetEntityId {
   return typeof value === 'string' && WIDGET_ID_RE.test(value)
 }
 
+export function parseLegacyWidgetEntityId(
+  id: string,
+  graphId: UUID | GraphId
+): { graphId: GraphId; nodeId: NodeId; name: string } | undefined {
+  const brandedGraphId = graphId as GraphId
+  const prefix = `${brandedGraphId}:`
+  if (!id.startsWith(prefix)) return undefined
+
+  const rest = id.slice(prefix.length)
+  const separator = rest.indexOf(':')
+  if (separator <= 0) return undefined
+
+  return {
+    graphId: brandedGraphId,
+    nodeId: rest.slice(0, separator) as NodeId,
+    name: rest.slice(separator + 1)
+  }
+}
+
 export function isNodeIdForGraph(graphId: GraphId, id: NodeEntityId): boolean {
   return id.startsWith(graphNodePrefix(graphId))
 }

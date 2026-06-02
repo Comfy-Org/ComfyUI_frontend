@@ -804,6 +804,30 @@ describe('appModeStore', () => {
   describe('legacy selectedInput tuple migration', () => {
     const rootGraphId = '11111111-1111-4111-8111-111111111111'
 
+    it('migrates legacy unprefixed widget entity ids to canonical widget ids', () => {
+      const legacyEntityId = `${rootGraphId}:42:seed`
+      const canonicalEntityId = widgetEntityId(rootGraphId, 42, 'seed')
+      const rootNode = fromAny<LGraphNode, unknown>({
+        id: 42,
+        widgets: [{ name: 'seed', entityId: canonicalEntityId }]
+      })
+
+      vi.mocked(app.rootGraph).id = rootGraphId
+      vi.mocked(app.rootGraph).nodes = [rootNode]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn(
+        (id: NodeId | null | undefined) => (id == 42 ? rootNode : null)
+      )
+
+      const result = store.pruneLinearData({
+        inputs: [[legacyEntityId, 'seed', { height: 120 }]],
+        outputs: []
+      })
+
+      expect(result.inputs).toEqual([
+        [canonicalEntityId, 'seed', { height: 120 }]
+      ])
+    })
+
     it('migrates legacy `(sourceNodeId, sourceWidgetName)` to the host promoted widget entity id', () => {
       const hostId = 5
       const sourceNodeId = 42

@@ -8,6 +8,7 @@ import {
   deriveWidgetEntityId,
   isWidgetEntityId,
   nodeEntityId,
+  parseLegacyWidgetEntityId,
   parseWidgetEntityId,
   widgetEntityId
 } from './entityIds'
@@ -89,6 +90,36 @@ describe('isWidgetEntityId', () => {
     expect(isWidgetEntityId(null)).toBe(false)
     expect(isWidgetEntityId(undefined)).toBe(false)
     expect(isWidgetEntityId({})).toBe(false)
+  })
+})
+
+describe('parseLegacyWidgetEntityId', () => {
+  const graphId = asGraphId('11111111-1111-4111-8111-111111111111' as UUID)
+
+  it('parses an unprefixed widget id for the current graph', () => {
+    expect(parseLegacyWidgetEntityId(`${graphId}:42:seed`, graphId)).toEqual({
+      graphId,
+      nodeId: '42',
+      name: 'seed'
+    })
+  })
+
+  it('preserves widget names containing colons', () => {
+    expect(
+      parseLegacyWidgetEntityId(`${graphId}:7:images.image:0`, graphId)?.name
+    ).toBe('images.image:0')
+  })
+
+  it('rejects canonical widget ids and other graph ids', () => {
+    expect(
+      parseLegacyWidgetEntityId(widgetEntityId(graphId, 42, 'seed'), graphId)
+    ).toBeUndefined()
+    expect(
+      parseLegacyWidgetEntityId(
+        '22222222-2222-4222-8222-222222222222:42:seed',
+        graphId
+      )
+    ).toBeUndefined()
   })
 })
 
