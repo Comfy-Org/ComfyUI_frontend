@@ -73,14 +73,14 @@ const activeTutorial = () =>
             <h3
               class="text-primary-comfy-canvas text-sm/snug lg:text-base/snug"
             >
-              {{ t('learning.tutorials.titlePrefix', locale) }}
+              {{ t('learning.tutorials.titlePrefix', locale) }}<wbr />
               {{ tutorial.title[locale] }}
             </h3>
             <MaskRevealButton
               v-if="tutorial.href"
               :href="tutorial.href"
               icon-position="right"
-              class="shrink-0 uppercase"
+              class="shrink-0"
               variant="ghost"
               size="sm"
             >

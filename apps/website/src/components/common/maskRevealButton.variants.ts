@@ -2,7 +2,7 @@ import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
 export const maskRevealButtonVariants = cva({
-  base: 'group relative inline-flex w-fit cursor-pointer items-center overflow-hidden rounded-lg p-1 font-bold text-nowrap transition-all duration-500 disabled:cursor-not-allowed disabled:opacity-50',
+  base: 'group relative uppercase inline-flex w-fit cursor-pointer items-center overflow-hidden rounded-lg p-1 font-bold text-nowrap transition-all duration-500 disabled:cursor-not-allowed disabled:opacity-50',
   variants: {
     variant: {
       solid: 'bg-primary-comfy-yellow text-primary-comfy-ink',
@@ -91,7 +91,7 @@ export const maskRevealButtonBadgeVariants = cva({
 
 export const maskRevealLabelVariants = cva({
   base: [
-    'relative inline-block leading-none align-baseline',
+    'relative inline-block align-baseline',
     '[will-change:mask-size,-webkit-mask-size]',
     '[mask-image:linear-gradient(black,black)] [-webkit-mask-image:linear-gradient(black,black)]',
     'mask-no-repeat [-webkit-mask-repeat:no-repeat]',
