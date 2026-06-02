@@ -2523,6 +2523,57 @@
       }
     }
   },
+  "CreateCameraInfo": {
+    "description": "Construit une camera_info. Le mode 'orbit' vise avec les angles de lacet/tangage/distance autour de la cible ; 'look_at' place la caméra à une position dans l'espace mondial. Les coordonnées sont dans l'espace mondial du spectateur (main droite, Y vers le haut).",
+    "display_name": "Créer des informations de caméra",
+    "inputs": {
+      "camera_type": {
+        "name": "camera_type",
+        "tooltip": "Projection utilisée par Render Splat : perspective (raccourcissement) ou orthographique (parallèle)."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "Champ de vision vertical en degrés."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Comment définir la caméra : angles d'orbite, position explicite, ou position + quaternion."
+      },
+      "mode_distance": {
+        "name": "distance"
+      },
+      "mode_pitch": {
+        "name": "pitch"
+      },
+      "mode_yaw": {
+        "name": "yaw"
+      },
+      "roll": {
+        "name": "roll",
+        "tooltip": "Rotation de la caméra autour de l'axe de vue, en degrés."
+      },
+      "target_x": {
+        "name": "target_x",
+        "tooltip": "Point de visée (pivot d'orbite / cible). En mode orbite, le déplacer permet de translater toute la caméra. Ignoré en mode quaternion. Par défaut à l'origine."
+      },
+      "target_y": {
+        "name": "target_y"
+      },
+      "target_z": {
+        "name": "target_z"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "Zoom numérique (multiplicateur de longueur focale). >1 zoome sans déplacer la caméra."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      }
+    }
+  },
   "CreateHookKeyframe": {
     "display_name": "Créer une image clé de crochet",
     "inputs": {
@@ -3696,6 +3747,22 @@
       }
     }
   },
+  "File3DToSplat": {
+    "description": "Analyse un fichier 3D splat en un splat gaussien. Inverse de Créer un fichier 3D (à partir de Splat). Formats supportés : PLY, SPLAT, KSPLAT, SPZ. PLY contient les harmoniques sphériques complètes, les autres formats ne contiennent que la couleur de base. Le format est détecté automatiquement à partir du contenu du fichier.",
+    "display_name": "Obtenir Splat",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Un fichier 3D splat gaussien"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "FlipSigmas": {
     "display_name": "InverserSigmas",
     "inputs": {
@@ -3837,6 +3904,28 @@
     "inputs": {
       "conditioning": {
         "name": "conditionnement"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxEraseNode": {
+    "description": "Supprime l'objet masqué d'une image et reconstruit l'arrière-plan. Peignez le mask sur ce que vous souhaitez effacer.",
+    "display_name": "Flux Effacer l'image",
+    "inputs": {
+      "dilate_pixels": {
+        "name": "dilate_pixels",
+        "tooltip": "Étend les bords du mask pour garantir une couverture propre des contours de l'objet."
+      },
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "Les zones blanches sont supprimées ; les zones noires sont conservées."
       }
     },
     "outputs": {
@@ -4110,6 +4199,36 @@
       "raw": {
         "name": "raw",
         "tooltip": "Si vrai, génère des images moins traitées et d'apparence plus naturelle."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "La graine aléatoire utilisée pour créer le bruit."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVTONode": {
+    "description": "Essayage virtuel : habille la personne avec le vêtement fourni.",
+    "display_name": "Flux Essayage Virtuel",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "garment": {
+        "name": "garment",
+        "tooltip": "Image du vêtement à appliquer."
+      },
+      "person": {
+        "name": "person",
+        "tooltip": "Image de la personne à habiller."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Instruction de style optionnelle en langage naturel (ex : comment le vêtement doit être ajusté)."
       },
       "seed": {
         "name": "seed",
@@ -4716,6 +4835,25 @@
       }
     }
   },
+  "GetSplatCount": {
+    "description": "Retourne le nombre de splats additionnés à travers le lot.",
+    "display_name": "Obtenir le nombre de Splats",
+    "inputs": {
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "nombre",
+        "tooltip": null
+      }
+    }
+  },
   "GetVideoComponents": {
     "description": "Extrait tous les composants d'une vidéo : images, audio et fréquence d’images.",
     "display_name": "Obtenir les composants vidéo",
@@ -4926,10 +5064,12 @@
         "tooltip": "La durée de la vidéo générée en secondes."
       },
       "image": {
-        "name": "image"
+        "name": "image",
+        "tooltip": "Image de départ optionnelle pour grok-imagine-video. Requise pour grok-imagine-video-1.5."
       },
       "model": {
-        "name": "modèle"
+        "name": "modèle",
+        "tooltip": "grok-imagine-video-1.5 nécessite actuellement toujours une image d'entrée."
       },
       "prompt": {
         "name": "invite",
@@ -9662,6 +9802,21 @@
       }
     }
   },
+  "MergeSplat": {
+    "description": "Concatène n'importe quel nombre de splats gaussiens en un seul. L'union de plusieurs décodages du même latent avec différentes graines densifie la surface, ce qui peut améliorer la qualité de la surface lors du maillage.",
+    "display_name": "Fusionner les Splats",
+    "inputs": {
+      "splats": {
+        "name": "splats"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "MergeTextLists": {
     "display_name": "Fusionner les listes de textes",
     "inputs": {
@@ -13427,6 +13582,52 @@
       }
     }
   },
+  "Preview3DAdvanced": {
+    "display_name": "Aperçu 3D (Avancé)",
+    "inputs": {
+      "camera_info": {
+        "name": "infos_caméra"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model_3d_info": {
+        "name": "infos_modèle_3d"
+      },
+      "model_file": {
+        "name": "fichier_modèle",
+        "tooltip": "Fichier de modèle 3D provenant d'un nœud 3D en amont."
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "fichier_modèle",
+        "tooltip": null
+      },
+      "1": {
+        "name": "infos_caméra",
+        "tooltip": null
+      },
+      "2": {
+        "name": "infos_modèle_3d",
+        "tooltip": null
+      },
+      "3": {
+        "name": "largeur",
+        "tooltip": null
+      },
+      "4": {
+        "name": "hauteur",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewAny": {
     "display_name": "Aperçu de n'importe quel",
     "inputs": {
@@ -14412,6 +14613,66 @@
       "0": {
         "name": "masque",
         "tooltip": "Masque de premier plan généré"
+      }
+    }
+  },
+  "RenderSplat": {
+    "description": "Rendez une projection gaussienne sous forme d’image avec un rasteriseur EWA anisotrope (splats elliptiques orientés, anti-aliasés, triés en profondeur de l’avant vers l’arrière). La caméra provient d’une entrée camera_info (Load / Preview 3D, ou un nœud Create Camera Info) ; laissez vide pour cadrer automatiquement le splat. Définissez frames supérieur à 1 pour générer une séquence d’images (tour de plateau) à utiliser dans un nœud Vidéo.",
+    "display_name": "Render Splat",
+    "inputs": {
+      "background": {
+        "name": "arrière-plan"
+      },
+      "bg_image": {
+        "name": "image_fond",
+        "tooltip": "Image de fond optionnelle composée derrière le splat (remplace la couleur d’arrière-plan unie). Redimensionnée à la taille du rendu ; une séquence est utilisée par image, une seule image pour toutes. Uniquement pour color/argile."
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "Caméra à utiliser pour le rendu – une caméra Load3D / Preview3D ou un nœud Create Camera Info. Si vide, le splat est cadré automatiquement depuis une vue 3/4 par défaut."
+      },
+      "frames": {
+        "name": "images",
+        "tooltip": "-1, 0, 1 = image fixe unique ; >1 = tour de plateau, la caméra effectue une orbite complète à 360° (fonctionne avec n’importe quel camera_info). Une valeur négative fait tourner dans l’autre sens."
+      },
+      "headlight_shading": {
+        "name": "ombrage_phare",
+        "tooltip": "Ombrage diffus depuis une lumière placée à la caméra (phare), utilisant les normales surfel du splat : assombrit les surfaces qui s’éloignent du point de vue pour révéler la forme/la courbure. 0 = albédo uniforme, 1 = ombrage maximal."
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "opacity_threshold": {
+        "name": "seuil_opacité",
+        "tooltip": "Élimine les gaussiennes dont l’opacité est inférieure à ce seuil (supprime les éléments flottants faibles)."
+      },
+      "render_style": {
+        "name": "style_rendu",
+        "tooltip": "Ce que l’image produite affiche : couleur, argile (ombrage neutre-albédo), profondeur (proche=clair), normal (carte de normales OpenGL)."
+      },
+      "sharpen": {
+        "name": "accentuer",
+        "tooltip": "Accentue les splats qui se chevauchent : 1,0 = mélange physiquement correct ; une valeur plus élevée accentue chaque pixel vers son splat dominant (le plus proche) pour une texture plus nette, sans réduire la taille des splats ni créer d’espaces. Non physique au-dessus de 1."
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "splat_scale": {
+        "name": "échelle_splat",
+        "tooltip": "Multiplicateur sur l’empreinte projetée de chaque splat (plus bas = points plus nets, plus haut = surface plus douce/pleine)."
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": null
       }
     }
   },
@@ -16685,6 +16946,68 @@
       }
     }
   },
+  "SplatToFile3D": {
+    "description": "Sérialise un splat gaussien dans un objet File3D pour les nœuds Save / Preview 3D. Prend en charge un seul élément par lot.",
+    "display_name": "Créer un fichier 3D (à partir d’un Splat)",
+    "inputs": {
+      "format": {
+        "name": "format",
+        "tooltip": "ply : Splat gaussien 3D standard avec harmoniques sphériques complètes. ksplat : SplatBuffer mkkellogg (niveau 0, non compressé), couleur de base uniquement. spz : Niantic gzip-compressé (~10x plus petit), couleur de base uniquement."
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "modèle_3d",
+        "tooltip": null
+      }
+    }
+  },
+  "SplatToMesh": {
+    "description": "Extrait un maillage coloré à partir d’un splat gaussien.",
+    "display_name": "Extraire un maillage depuis un Splat",
+    "inputs": {
+      "color_sharpen": {
+        "name": "accentuation_couleur",
+        "tooltip": "Affûte la texture des sommets : 1.0 = mélange physiquement correct ; plus élevé rapproche la couleur de chaque voxel de sa gaussienne dominante au lieu de faire la moyenne des voisines (désembue la texture). Couleur uniquement – la géométrie ne change pas."
+      },
+      "kernel": {
+        "name": "noyau",
+        "tooltip": "Largeur maximale du demi-splat en voxels. Chaque gaussienne est rasterisée sur une fenêtre dimensionnée à son propre 3-sigma, plafonnée ici – les petits surfels restent peu coûteux, les grands ne sont pas tronqués. Augmentez si les splats clairsemés laissent des trous."
+      },
+      "level": {
+        "name": "niveau",
+        "tooltip": "Niveau d’iso-surface. Choisi automatiquement par Otsu ; ceci le biaise (1.0 = auto, plus bas = surface plus épaisse/connectée, plus haut = plus fine/serrée)."
+      },
+      "min_component": {
+        "name": "composant_min",
+        "tooltip": "Supprime les composants connectés plus petits que ce nombre de sommets (0 = tout garder). Élimine les blobs flottants détachés et la coque interne du double mur."
+      },
+      "min_opacity": {
+        "name": "opacité_min",
+        "tooltip": "Ignore les gaussiennes plus faibles que cette valeur avant la création du maillage."
+      },
+      "resolution": {
+        "name": "résolution",
+        "tooltip": "Résolution de la grille de densité le long de l’axe le plus long. Plus élevé = surface plus fine, plus de VRAM/temps (augmente avec résolution^3)."
+      },
+      "smooth": {
+        "name": "lissage",
+        "tooltip": "Itérations de lissage de maillage Taubin. Lisse la surface sans la rétrécir (préserve le volume), contrairement au flou de densité. 0 = surface brute."
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "maillage",
+        "tooltip": null
+      }
+    }
+  },
   "SplitAudioChannels": {
     "description": "Sépare l'audio en canaux gauche et droit.",
     "display_name": "Séparer les canaux audio",
@@ -18383,6 +18706,48 @@
       }
     }
   },
+  "TransformSplat": {
+    "description": "Déplace, fait pivoter et met à l’échelle un splat gaussien. L’échelle non uniforme modifie aussi la forme de chaque splat individuel, processus plus lent.",
+    "display_name": "Transformer Splat",
+    "inputs": {
+      "rotate_x": {
+        "name": "rotation_x"
+      },
+      "rotate_y": {
+        "name": "rotation_y"
+      },
+      "rotate_z": {
+        "name": "rotation_z"
+      },
+      "scale_x": {
+        "name": "échelle_x"
+      },
+      "scale_y": {
+        "name": "échelle_y"
+      },
+      "scale_z": {
+        "name": "échelle_z"
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "translate_x": {
+        "name": "translation_x"
+      },
+      "translate_y": {
+        "name": "translation_y"
+      },
+      "translate_z": {
+        "name": "translation_z"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "TrimAudioDuration": {
     "description": "Tronquer le tenseur audio dans la plage de temps choisie.",
     "display_name": "Régler la Durée Audio",
@@ -18862,6 +19227,101 @@
       }
     }
   },
+  "TripoSplatConditioning": {
+    "description": "Encode l’image avec DINOv3 et le Flux2 VAE en conditionnement positif/négatif TripoSplat, et crée la cible de bruit de taille fixe (latent + caméra) pour le KSampler",
+    "display_name": "Conditionnement TripoSplat",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision",
+        "tooltip": "Encodeur d’image DINOv3 ViT-H/16+"
+      },
+      "image": {
+        "name": "image"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Flux2 VAE"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "négatif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "La cible de bruit de taille fixe (latent + caméra)."
+      }
+    }
+  },
+  "TripoSplatPreprocessImage": {
+    "description": "Recadre le centre de chaque image sur une toile carrée avec un fond noir et ajoute une marge.",
+    "display_name": "Prétraitement d'image TripoSplat",
+    "inputs": {
+      "erode_radius": {
+        "name": "erode_radius",
+        "tooltip": "Érode le masque alpha de ce rayon en pixels avant le recadrage (évite les débordements de bordure)."
+      },
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "Taille de l'image carrée. Le modèle est entraîné à 1024 ; d'autres tailles fonctionnent mais sont hors distribution."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSplatSamplingPreview": {
+    "description": "Modifie le modèle TripoSplat pour le nœud Ksampler standard afin d'afficher un aperçu en direct du gaussian splat décodé à chaque étape.",
+    "display_name": "Aperçu d'échantillonnage TripoSplat",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "num_gaussians": {
+        "name": "num_gaussians",
+        "tooltip": "Nombre de gaussiennes à générer pour l'aperçu (arrondi à un multiple de 32)."
+      },
+      "octree_level": {
+        "name": "octree_level",
+        "tooltip": "Profondeur de l'octree pour le décodage de l'aperçu (plus bas = moins coûteux/plus grossier)."
+      },
+      "pitch": {
+        "name": "pitch",
+        "tooltip": "Inclinaison verticale de la caméra d'aperçu en degrés."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "Rayon maximal du splat en pixels. Chaque gaussienne est dimensionnée selon son échelle et limitée ici ; plus bas = plus fin/pointu, plus haut = plus massif."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Décodeur VAE TripoSplat"
+      },
+      "yaw": {
+        "name": "yaw",
+        "tooltip": "Inclinaison horizontale de la caméra d'aperçu en degrés."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TripoTextToModelNode": {
     "display_name": "Tripo : Texte vers Modèle",
     "inputs": {
@@ -19190,6 +19650,36 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "VAEDecodeTripoSplat": {
+    "description": "Décode le latent TripoSplat échantillonné en un gaussian splat 3D. Modifiez le nombre de gaussiennes pour faire varier la densité.",
+    "display_name": "Décodage TripoSplat",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "num_gaussians": {
+        "name": "num_gaussians",
+        "tooltip": "Nombre de gaussiennes à générer (arrondi à un multiple de 32). 262144 correspond à la densité de points de l'octree ; plus élevé suréchantillonne les mêmes points (plus dense, mais pas de nouveau détail) et coûte proportionnellement plus de VRAM/temps."
+      },
+      "samples": {
+        "name": "samples"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Définit la graine du générateur de points de l'octree (RNG global) pour des décodages déterministes."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Décodeur VAE TripoSplat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
       }
     }
   },
