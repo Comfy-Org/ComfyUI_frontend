@@ -663,7 +663,6 @@
     "Collapse": "折りたたむ",
     "Color": "色",
     "Colors": "色",
-    "Convert to Group Node": "グループノードに変換",
     "Convert to Subgraph": "サブグラフに変換",
     "Copy": "コピー",
     "Copy (Clipspace)": "コピー (Clipspace)",
@@ -800,11 +799,17 @@
     "CONTROL_NET": "コントロールネット",
     "CURVE": "カーブ",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "顔検出モデル",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
     "FILE_3D_GLTF": "FILE_3D_GLTF",
+    "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FILE_3D_OBJ",
+    "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
     "FLOAT": "浮動小数点",
@@ -820,10 +825,12 @@
     "IMAGECOMPARE": "画像比較",
     "INT": "整数",
     "INTERP_MODEL": "補間モデル",
+    "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "潜在",
     "LATENT_OPERATION": "潜在操作",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
     "LOAD3D_CAMERA": "3Dカメラの読み込み",
+    "LOAD3D_MODEL_INFO": "3Dモデル情報を読み込む",
     "LOAD_3D": "3Dをロード",
     "LORA_MODEL": "LoRAモデル",
     "LOSS_MAP": "損失マップ",
@@ -853,6 +860,7 @@
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "サンプラー",
     "SIGMAS": "シグマ",
+    "SPLAT": "スプラット",
     "STRING": "文字列",
     "STYLE_MODEL": "スタイルモデル",
     "SVG": "SVG",
@@ -908,6 +916,337 @@
     "pause": "ダウンロードを一時停止",
     "paused": "一時停止",
     "resume": "ダウンロードを再開"
+  },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "不明な入力",
+      "nodeName": "このノード"
+    },
+    "promptErrors": {
+      "missing_node_type": {
+        "desc": "ノードタイプが存在しないか利用できません。ワークフローが破損しているか、カスタムノードが必要な場合があります。",
+        "title": "ノードタイプがありません"
+      },
+      "no_prompt": {
+        "desc": "サーバーに送信されたワークフローデータが空です。これは予期しないシステムエラーの可能性があります。",
+        "title": "ワークフローデータが空です"
+      },
+      "prompt_no_outputs": {
+        "desc": "ワークフローに出力ノード（例：画像を保存、画像をプレビュー）が含まれていないため、結果を生成できません。",
+        "title": "プロンプトに出力がありません"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "ワークフローに無効なノード入力があります。ハイライトされたノードを修正してから再実行してください。",
+        "title": "プロンプトの検証に失敗しました"
+      },
+      "server_error_cloud": {
+        "desc": "サーバーで予期しないエラーが発生しました。しばらくしてから再度お試しください。",
+        "title": "サーバーエラー"
+      },
+      "server_error_local": {
+        "desc": "サーバーで予期しないエラーが発生しました。サーバーログを確認してください。",
+        "title": "サーバーエラー"
+      }
+    },
+    "runtimeErrors": {
+      "access_required": {
+        "itemLabel": "{nodeName}",
+        "message": "この実行には現在のアカウントで利用できないアクセス権が必要です。",
+        "title": "アクセス権が必要です",
+        "toastMessage": "この実行には現在のアカウントで利用できないアクセス権が必要です。",
+        "toastTitle": "アクセス権が必要です"
+      },
+      "content_blocked": {
+        "itemLabel": "{nodeName}",
+        "message": "このリクエストはコンテンツモデレーションシステムによってブロックされました。プロンプトや入力内容を変更してお試しください。",
+        "title": "コンテンツがブロックされました",
+        "toastMessage": "このリクエストはコンテンツモデレーションシステムによってブロックされました。プロンプトや入力内容を変更してお試しください。",
+        "toastTitle": "コンテンツがブロックされました"
+      },
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "ノードの実行中にエラーが発生しました。",
+        "title": "実行に失敗しました",
+        "toastMessage": "このノードの実行中にエラーが発生しました。入力内容を確認するか、別の設定をお試しください。",
+        "toastTitle": "{nodeName} の実行に失敗しました"
+      },
+      "generation_stalled": {
+        "itemLabel": "{nodeName}",
+        "message": "このワークフローの進行が止まりました。再度実行してください。",
+        "title": "生成が停止しました",
+        "toastMessage": "このワークフローの進行が止まりました。再度実行してください。",
+        "toastTitle": "生成が停止しました"
+      },
+      "image_not_loaded": {
+        "itemLabel": "{nodeName}",
+        "message": "システムがこの画像を読み込めませんでした。",
+        "title": "画像の読み込みに失敗しました",
+        "toastMessage": "{nodeName} の画像を読み込めませんでした。もう一度追加してください。",
+        "toastTitle": "入力画像の読み込みに失敗しました"
+      },
+      "insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "このノードを使用するにはアカウントにクレジットを追加してください。",
+        "title": "クレジットが不足しています",
+        "toastMessage": "このノードを使用するにはアカウントにクレジットを追加してください。",
+        "toastTitle": "クレジットが不足しています"
+      },
+      "invalid_clip_input": {
+        "itemLabel": "{nodeName}",
+        "message": "CLIP入力が不足しているか無効です。接続されているチェックポイントまたはCLIPローダーを確認してください。",
+        "title": "無効なCLIP入力",
+        "toastMessage": "{nodeName} のCLIP入力が不足しているか無効です。",
+        "toastTitle": "無効なCLIP入力"
+      },
+      "invalid_prompt": {
+        "itemLabel": "{nodeName}",
+        "message": "このワークフローを実行する前にプロンプトを入力してください。",
+        "title": "プロンプトが空です",
+        "toastMessage": "このワークフローを実行する前にプロンプトを入力してください。",
+        "toastTitle": "プロンプトが空です"
+      },
+      "invalid_workflow_request": {
+        "itemLabel": "{nodeName}",
+        "message": "ワークフローリクエストが無効です。ワークフローを確認して再度お試しください。",
+        "title": "無効なワークフローリクエスト",
+        "toastMessage": "ワークフローリクエストが無効です。ワークフローを確認して再度お試しください。",
+        "toastTitle": "無効なワークフローリクエスト"
+      },
+      "model_access_error": {
+        "itemLabel": "{nodeName}",
+        "message": "必要なモデルの一部にアクセスできませんでした。",
+        "title": "モデルへのアクセスが必要です",
+        "toastMessage": "必要なモデルの一部にアクセスできませんでした。",
+        "toastTitle": "モデルへのアクセスが必要です"
+      },
+      "model_download_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "モデルをダウンロードできませんでした。再度お試しください。",
+        "title": "モデルのダウンロードに失敗しました",
+        "toastMessage": "モデルをダウンロードできませんでした。再度お試しください。",
+        "toastTitle": "モデルのダウンロードに失敗しました"
+      },
+      "out_of_memory": {
+        "itemLabel": "{nodeName}",
+        "message": "GPUメモリが不足しています。画像解像度やバッチサイズを下げて再実行してください。",
+        "title": "生成に失敗しました",
+        "toastMessage": "GPUメモリが不足しています。画像解像度やバッチサイズを下げて再実行してください。",
+        "toastTitle": "生成に失敗しました"
+      },
+      "preprocessing_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "ワークフローの準備ができませんでした。再度実行してください。",
+        "title": "準備に失敗しました",
+        "toastMessage": "ワークフローの準備ができませんでした。再度実行してください。",
+        "toastTitle": "準備に失敗しました"
+      },
+      "preprocessing_timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "ワークフローの準備に時間がかかりすぎました。再度実行してください。",
+        "title": "準備がタイムアウトしました",
+        "toastMessage": "ワークフローの準備に時間がかかりすぎました。再度実行してください。",
+        "toastTitle": "準備がタイムアウトしました"
+      },
+      "rate_limited": {
+        "itemLabel": "{nodeName}",
+        "message": "現在アクセスが集中しています。しばらくしてから再度お試しください。",
+        "title": "サーバーが混雑しています",
+        "toastMessage": "現在アクセスが集中しています。しばらくしてから再度お試しください。",
+        "toastTitle": "サーバーが混雑しています"
+      },
+      "request_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "実行が完了する前にリクエストが失敗しました。再度お試しください。",
+        "title": "リクエストに失敗しました",
+        "toastMessage": "実行が完了する前にリクエストが失敗しました。再度お試しください。",
+        "toastTitle": "リクエストに失敗しました"
+      },
+      "run_ended_unexpectedly": {
+        "itemLabel": "{nodeName}",
+        "message": "実行が予期せず終了しました。再度お試しください。",
+        "title": "実行が予期せず終了しました",
+        "toastMessage": "実行が予期せず終了しました。再度お試しください。",
+        "toastTitle": "実行が予期せず終了しました"
+      },
+      "run_start_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "実行を開始できませんでした。再度お試しください。",
+        "title": "実行を開始できませんでした",
+        "toastMessage": "実行を開始できませんでした。再度お試しください。",
+        "toastTitle": "実行を開始できませんでした"
+      },
+      "server_busy": {
+        "itemLabel": "{nodeName}",
+        "message": "現在サーバーが混雑しています。しばらくしてから再度お試しください。",
+        "title": "サーバーが混雑しています",
+        "toastMessage": "現在サーバーが混雑しています。しばらくしてから再度お試しください。",
+        "toastTitle": "サーバーが混雑しています"
+      },
+      "server_crashed": {
+        "itemLabel": "{nodeName}",
+        "message": "このワークフローの実行中にサーバーが停止しました。再度お試しください。",
+        "title": "サーバーがクラッシュしました",
+        "toastMessage": "このワークフローの実行中にサーバーが停止しました。再度お試しください。",
+        "toastTitle": "サーバーがクラッシュしました"
+      },
+      "sign_in_required": {
+        "itemLabel": "{nodeName}",
+        "message": "パートナーノードの利用にはComfyアカウントが必要です。サインインして続行してください。",
+        "title": "サインインが必要です",
+        "toastMessage": "パートナーノードの利用にはComfyアカウントが必要です。サインインして続行してください。",
+        "toastTitle": "このノードを利用するにはサインインが必要です"
+      },
+      "subscription_required": {
+        "itemLabel": "{nodeName}",
+        "message": "このワークフローを実行し続けるにはプランに加入してください。",
+        "title": "サブスクリプションが必要です",
+        "toastMessage": "このワークフローを実行し続けるにはプランに加入してください。",
+        "toastTitle": "サブスクリプションが必要です"
+      },
+      "subscription_upgrade_required": {
+        "details": "プライベートモデルにはサブスクリプションのアップグレードが必要です: {modelNames}",
+        "itemLabel": "{nodeName}",
+        "message": "このワークフローのプライベートモデルを使用するにはサブスクリプションのアップグレードが必要です。",
+        "title": "サブスクリプションのアップグレードが必要です",
+        "toastMessage": "これらのプライベートモデルを使用するにはサブスクリプションのアップグレードが必要です: {modelNames}。",
+        "toastTitle": "サブスクリプションのアップグレードが必要です"
+      },
+      "timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "このワークフローは最大実行時間に達しました。画像解像度、バッチサイズ、またはワークフローの長さを減らして再実行してください。",
+        "title": "生成がタイムアウトしました",
+        "toastMessage": "このワークフローは最大実行時間に達しました。画像解像度、バッチサイズ、またはワークフローの長さを減らして再実行してください。",
+        "toastTitle": "生成がタイムアウトしました"
+      },
+      "unexpected_service_error": {
+        "itemLabel": "{nodeName}",
+        "message": "サービスで予期しないエラーが発生しました。再度お試しください。",
+        "title": "サービスエラー",
+        "toastMessage": "サービスで予期しないエラーが発生しました。再度お試しください。",
+        "toastTitle": "サービスエラー"
+      },
+      "workspace_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "作業スペースにクレジットを追加して続行してください。",
+        "title": "クレジットが不足しています",
+        "toastMessage": "作業スペースにクレジットを追加して続行してください。",
+        "toastTitle": "クレジットが不足しています"
+      }
+    },
+    "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName} の {inputName} に無効な接続があります。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "ノード接続が正しく読み取れませんでした。",
+        "title": "無効な接続",
+        "toastMessage": "{nodeName} の {inputName} に無効な接続があります。",
+        "toastTitle": "無効な接続"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName} は {inputName} の値を拒否しました。",
+        "detailsWithRawDetails": "{nodeName} のカスタム検証に失敗しました: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "ノードが1つ以上の入力値を拒否しました。",
+        "title": "無効な入力",
+        "toastMessage": "{nodeName} は {inputName} の値を拒否しました。",
+        "toastTitle": "無効な入力"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName} は循環接続の一部です。",
+        "detailsWithRawDetails": "{nodeName} は循環接続の一部です: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "ワークフローに循環ノード接続があります。",
+        "title": "無効なワークフロー",
+        "toastMessage": "{nodeName} は循環接続の一部です。",
+        "toastTitle": "無効なワークフロー"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName} は {inputName} を検証できませんでした。",
+        "detailsWithRawDetails": "{nodeName} は {inputName} を検証できませんでした: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "ワークフローが接続されたノードを検証できませんでした。",
+        "title": "検証失敗",
+        "toastMessage": "{nodeName} は {inputName} を検証できませんでした。",
+        "toastMessageWithRawDetails": "{nodeName} は {inputName} を検証できませんでした: {rawDetails}",
+        "toastTitle": "検証失敗"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName} の検証中に失敗しました。",
+        "detailsWithRawDetails": "{nodeName} の検証中に失敗しました: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "ノードの検証チェックが予期せず失敗したため、ワークフローを検証できませんでした。",
+        "title": "検証失敗",
+        "toastMessage": "{nodeName} の検証中に失敗しました。",
+        "toastMessageWithRawDetails": "{nodeName} の検証中に失敗しました: {rawDetails}",
+        "toastTitle": "検証失敗"
+      },
+      "image_not_loaded": {
+        "details": "{nodeName} の画像を読み込めませんでした。もう一度追加してください。",
+        "itemLabel": "{nodeName}",
+        "message": "システムがこの画像を読み込めませんでした。",
+        "title": "画像が読み込まれていません",
+        "toastMessage": "{nodeName} の画像を読み込めませんでした。もう一度追加してください。",
+        "toastTitle": "入力画像を読み込めませんでした"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName} の {inputName} を期待される型に変換できませんでした。",
+        "detailsWithValue": "{nodeName} の {inputName} に対する値 {receivedValue} は {expectedType} に変換できませんでした。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "入力値の型が正しくありません。",
+        "title": "無効な入力",
+        "toastMessage": "{nodeName} の {inputName} を期待される型に変換できませんでした。",
+        "toastMessageWithValue": "{nodeName} の {inputName} に対する値 {receivedValue} は {expectedType} に変換できませんでした。",
+        "toastTitle": "無効な入力"
+      },
+      "required_input_missing": {
+        "details": "{nodeName} に必須入力 {inputName} がありません。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "必須入力スロットに接続がありません。",
+        "title": "接続がありません",
+        "toastMessage": "{nodeName} に必須入力 {inputName} がありません。",
+        "toastTitle": "必須入力がありません"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName} の {inputName} に互換性のない接続があります。",
+        "detailsWithTypes": "{nodeName} の {inputName} 入力は {expectedType} を期待していますが、接続された出力は {receivedType} です。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "接続されたノードが互換性のない入力・出力タイプを使用しています。",
+        "title": "無効な接続",
+        "toastMessage": "{nodeName} の {inputName} に互換性のない接続があります。",
+        "toastMessageWithTypes": "{nodeName} の {inputName} 入力は {expectedType} を期待していますが、接続された出力は {receivedType} です。",
+        "toastTitle": "無効な接続"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName} の {inputName} が最大値を超えています。",
+        "detailsWithValue": "{nodeName} の {inputName} に対する値 {receivedValue} は最大値 {maxValue} を超えています。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "一部の入力値が許可された範囲外です。",
+        "title": "入力値が範囲外",
+        "toastMessage": "{nodeName} の {inputName} が最大値を超えています。",
+        "toastMessageWithValue": "{nodeName} の {inputName} に対する値 {receivedValue} は最大値 {maxValue} を超えています。",
+        "toastTitle": "入力値が範囲外"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName} の {inputName} にサポートされていない値があります。",
+        "detailsWithValue": "{nodeName} の {inputName} に対する値 {receivedValue} は利用できません。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "一部の入力値はこのノードで利用できません。",
+        "title": "無効な入力",
+        "toastMessage": "{nodeName} の {inputName} にサポートされていない値があります。",
+        "toastMessageWithValue": "{nodeName} の {inputName} に対する値 {receivedValue} は利用できません。",
+        "toastTitle": "無効な入力"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName} の {inputName} が最小値未満です。",
+        "detailsWithValue": "{nodeName} の {inputName} に対する値 {receivedValue} は最小値 {minValue} 未満です。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "一部の入力値が許可された範囲外です。",
+        "title": "入力値が範囲外",
+        "toastMessage": "{nodeName} の {inputName} が最小値未満です。",
+        "toastMessageWithValue": "{nodeName} の {inputName} に対する値 {receivedValue} は最小値 {minValue} 未満です。",
+        "toastTitle": "入力値が範囲外"
+      }
+    }
   },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
@@ -1206,6 +1545,7 @@
     "logs": "ログ",
     "manageExtensions": "拡張機能の管理",
     "markdown": "マークダウン",
+    "maximizeDialog": "ダイアログを最大化",
     "micPermissionDenied": "マイクの許可が拒否されました",
     "migrate": "移行する",
     "missing": "不足している",
@@ -1306,6 +1646,7 @@
     "resizeFromTopLeft": "左上隅からリサイズ",
     "resizeFromTopRight": "右上隅からリサイズ",
     "restart": "再起動",
+    "restoreDialog": "ダイアログを元に戻す",
     "resultsCount": "{count}件の結果が見つかりました",
     "running": "実行中",
     "save": "保存",
@@ -1665,6 +2006,7 @@
       "orthographic": "オルソグラフィック",
       "perspective": "パースペクティブ"
     },
+    "centerCameraOnModel": "モデルにカメラを中央揃え",
     "clearRecording": "録画をクリア",
     "dropToLoad": "3Dモデルをドロップして読み込み",
     "edgeThreshold": "エッジしきい値",
@@ -1711,6 +2053,7 @@
     "reloadingModel": "モデルを再読み込み中...",
     "removeBackgroundImage": "背景画像を削除",
     "resizeNodeMatchOutput": "ノードを出力に合わせてリサイズ",
+    "retainViewOnReload": "モデルの再読み込み時にカメラビューを固定する",
     "scene": "シーン",
     "showGrid": "グリッドを表示",
     "showSkeleton": "スケルトンを表示",
@@ -2101,7 +2444,6 @@
     "ComfyUI Issues": "ComfyUIの問題",
     "Contact Support": "サポートに連絡",
     "Convert Selection to Subgraph": "選択範囲をサブグラフに変換",
-    "Convert selected nodes to group node": "選択したノードをグループノードに変換",
     "Copy": "コピー",
     "Custom Nodes (Legacy)": "カスタムノード（レガシー）",
     "Custom Nodes Manager": "カスタムノードマネージャ",
@@ -2264,6 +2606,7 @@
     "3d_models": "3Dモデル",
     "Anthropic": "Anthropic",
     "BFL": "BFL",
+    "Beeble": "Beeble",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "ElevenLabs": "ElevenLabs",
@@ -2272,12 +2615,14 @@
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
+    "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2294,8 +2639,8 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "調整",
     "advanced": "高度な機能",
-    "api node": "apiノード",
     "attention_experiments": "アテンション実験",
     "audio": "オーディオ",
     "background removal": "背景除去",
@@ -2311,7 +2656,6 @@
     "controlnet": "コントロールネット",
     "create": "作成",
     "custom_sampling": "カスタムサンプリング",
-    "dataset": "データセット",
     "debug": "デバッグ",
     "deprecated": "非推奨",
     "detection": "検出",
@@ -2319,7 +2663,7 @@
     "experimental": "実験的",
     "filters": "フィルター",
     "flux": "flux",
-    "geometry_estimation": "geometry_estimation",
+    "geometry estimation": "ジオメトリ推定",
     "gligen": "グライジェン",
     "guidance": "ガイダンス",
     "guiders": "ガイダー",
@@ -2336,10 +2680,12 @@
     "mask": "マスク",
     "model": "モデル",
     "model_merging": "モデルマージ",
-    "model_patches": "モデルパッチ",
     "model_specific": "モデル特有",
+    "multigpu": "マルチGPU",
     "noise": "ノイズ",
     "operations": "操作",
+    "partner": "パートナー",
+    "patch": "パッチ",
     "photomaker": "photomaker",
     "preprocessors": "前処理",
     "primitive": "プリミティブ",
@@ -2351,6 +2697,7 @@
     "sd3": "SD3",
     "shader": "shader",
     "sigmas": "シグマ",
+    "splat": "スプラット",
     "stable_cascade": "安定したカスケード",
     "style_model": "スタイルモデル",
     "supir": "supir",
@@ -2360,7 +2707,7 @@
     "unet": "U-Net",
     "upscale_diffusion": "アップスケール拡散",
     "upscaling": "アップスケーリング",
-    "utils": "ユーティリティ",
+    "utilities": "ユーティリティ",
     "video": "ビデオ",
     "video_models": "ビデオモデル",
     "zimage": "zimage"
@@ -2433,6 +2780,43 @@
     },
     "title": "お使いのデバイスはサポートされていません"
   },
+  "oauth": {
+    "consent": {
+      "allow": "続行",
+      "appTypeNative": "ネイティブアプリ",
+      "appTypeWeb": "ウェブアプリ",
+      "deny": "キャンセル",
+      "errorExpired": "この同意リクエストは期限切れ、またはすでに使用されています。クライアントアプリから再起動してください。",
+      "errorScopeBroadening": "以前に承認された権限ではこのリクエストをカバーできません。新しい権限で再認可が必要です。",
+      "errorUnavailable": "現在この機能は利用できません。問題が続く場合はサポートにお問い合わせください。",
+      "genericError": "OAuthリクエストに失敗しました。クライアントアプリから再起動してください。",
+      "loading": "認可リクエストを読み込み中…",
+      "missingRequest": "この認可リクエストが見つかりません。クライアントアプリから再起動してください。",
+      "noWorkspaces": "このリクエストに利用可能なワークスペースがありません。",
+      "permissionsHeader": "権限",
+      "redirectNotice": "リダイレクト先：",
+      "resourceFallback": "このアプリ",
+      "sessionError": "セッションの確立に失敗しました。もう一度お試しください。",
+      "sessionErrorToastSummary": "OAuthサインインを続行できませんでした",
+      "subtitle": "続行するには{resource}にサインインしてください",
+      "title": "{client} がアクセスを要求しています",
+      "workspaceHelp": "権限はこのワークスペースのみに適用されます。",
+      "workspaceLabel": "ワークスペース"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "あなたに代わってワークフローを実行"
+      },
+      "mcp:tools:read": {
+        "label": "利用可能なワークフローツールの表示"
+      }
+    },
+    "workspace": {
+      "member": "メンバー",
+      "owner": "オーナー",
+      "personal": "個人"
+    }
+  },
   "openSharedWorkflow": {
     "author": "作成者：",
     "copyAssetsAndOpen": "アセットをインポートしてワークフローを開く",
@@ -2443,7 +2827,8 @@
     "nonPublicAssetsWarningLine1": "このワークフローには非公開のアセットが含まれています。",
     "nonPublicAssetsWarningLine2": "ワークフローを開くと、これらがライブラリにインポートされます",
     "openWithoutImporting": "インポートせずに開く",
-    "openWorkflow": "ワークフローを開く"
+    "openWorkflow": "ワークフローを開く",
+    "opening": "共有ワークフローを開いています..."
   },
   "painter": {
     "background": "背景",
@@ -2659,20 +3044,6 @@
     "normal": "ノーマル",
     "parameters": "パラメータ",
     "pinned": "ピン留め",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "サーバーに送信されたワークフローデータが空です。これは予期しないシステムエラーの可能性があります。"
-      },
-      "prompt_no_outputs": {
-        "desc": "ワークフローに結果を生成する出力ノード（例：画像を保存、画像をプレビュー）が含まれていません。"
-      },
-      "server_error_cloud": {
-        "desc": "サーバーで予期しないエラーが発生しました。しばらくしてから再度お試しください。"
-      },
-      "server_error_local": {
-        "desc": "サーバーで予期しないエラーが発生しました。サーバーログをご確認ください。"
-      }
-    },
     "properties": "プロパティ",
     "removeFavorite": "お気に入りを解除",
     "resetAllParameters": "すべてのパラメータをリセット",
@@ -2929,6 +3300,7 @@
     "Other": "その他",
     "PLY": "PLY",
     "PlanCredits": "プランとクレジット",
+    "PointCloud": "ポイントクラウド",
     "Pointer": "ポインタ",
     "Queue": "キュー",
     "QueueButton": "キューボタン",
@@ -3070,6 +3442,7 @@
         "sourceDesc": "ソースタイプ（Core、Custom、API）でグループ化"
       },
       "noBookmarkedNodes": "お気に入りはまだありません",
+      "noMatchingNodes": "「{query}」に一致するノードはありません",
       "resetView": "ビューをデフォルトにリセット",
       "sections": {
         "bookmarked": "ブックマーク済み",
@@ -3455,8 +3828,7 @@
       "newest": "新着順",
       "popular": "人気",
       "recommended": "おすすめ",
-      "searchPlaceholder": "検索...",
-      "vramLowToHigh": "VRAM使用量（少ない順）"
+      "searchPlaceholder": "検索..."
     },
     "sorting": "並び替え",
     "title": "テンプレートを利用して開始",
@@ -3620,7 +3992,8 @@
       "placeholderMesh": "メッシュを選択...",
       "placeholderModel": "モデルを選択...",
       "placeholderUnknown": "メディアを選択...",
-      "placeholderVideo": "動画を選択..."
+      "placeholderVideo": "動画を選択...",
+      "topResult": "最上位の結果: {result}"
     },
     "valueControl": {
       "decrement": "値を減少",

@@ -59,12 +59,11 @@ This means the render pass is not idempotent — drawing a node changes its stat
 
 ### Store Dependencies in Domain Objects
 
-`BaseWidget` (line 20-22) imports two Pinia stores at the module level:
+`BaseWidget` imports a Pinia store at the module level:
 
-- `usePromotionStore` — queried on every `getOutlineColor()` call
 - `useWidgetValueStore` — widget state delegation via `setNodeId()`
 
-Similarly, `LGraph` (lines 10-13) imports `useLayoutMutations`, `usePromotionStore`, and `useWidgetValueStore`. Domain objects should not have direct dependencies on UI framework stores.
+Similarly, `LGraph` imports `useLayoutMutations` and `useWidgetValueStore`. Domain objects should not have direct dependencies on UI framework stores.
 
 ### Serialization Interleaved with Container Logic
 
@@ -171,7 +170,7 @@ Domain objects call Pinia composables at the module level or in methods, creatin
 
 - `LLink.ts:24` — `const layoutMutations = useLayoutMutations()` (module scope)
 - `Reroute.ts` — same pattern at module scope
-- `BaseWidget.ts:20-22` — imports `usePromotionStore` and `useWidgetValueStore`
+- `BaseWidget.ts` — imports `useWidgetValueStore`
 
 These make the domain objects untestable without a Vue app context.
 
@@ -192,7 +191,6 @@ The render pass is not pure — it mutates state as a side effect:
 | ----------------------------------- | ------------------------------------------------------------------- |
 | `LGraphCanvas.drawNode()` line 5562 | `node._setConcreteSlots()` — rebuilds concrete slot arrays          |
 | `LGraphCanvas.drawNode()` line 5564 | `node.arrange()` — recalculates widget positions and sizes          |
-| `BaseWidget.getOutlineColor()`      | Queries `PromotionStore` on every frame                             |
 | Link rendering                      | Caches `_pos` center point and `_centreAngle` on the LLink instance |
 
 This means:

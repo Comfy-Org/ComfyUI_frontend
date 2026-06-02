@@ -23,6 +23,9 @@ const {
   debounceMaxWaitMs?: number
   class?: HTMLAttributes['class']
 }>()
+const emit = defineEmits<{
+  enter: [event: KeyboardEvent]
+}>()
 
 const searchQuery = defineModel<string>({ default: '' })
 
@@ -62,6 +65,11 @@ function handleFocus(event: FocusEvent) {
     target.select()
   }
 }
+
+function handleKeydownEnter(event: KeyboardEvent) {
+  if (event.isComposing) return
+  emit('enter', event)
+}
 </script>
 
 <template>
@@ -97,6 +105,7 @@ function handleFocus(event: FocusEvent) {
       :placeholder="$t('g.searchPlaceholder', { subject: '' })"
       :autofocus
       @focus="handleFocus"
+      @keydown.enter="handleKeydownEnter"
     />
     <button
       v-if="searchQuery.trim().length > 0"

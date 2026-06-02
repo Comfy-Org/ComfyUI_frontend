@@ -84,7 +84,7 @@ function buildLoad3dDeps(container: Element | HTMLElement): Load3dDeps {
     getActiveCamera,
     (size, center) => cameraManager.setupForModel(size, center),
     (model) => gizmoManager.setupForModel(model),
-    () => adapterRef.current?.capabilities ?? DEFAULT_MODEL_CAPABILITIES,
+    () => adapterRef.capabilities ?? DEFAULT_MODEL_CAPABILITIES,
     (model) => adapterRef.current?.computeBounds?.(model) ?? null,
     (model) => adapterRef.current?.disposeModel?.(model),
     () => adapterRef.current?.defaultCameraPose?.() ?? null

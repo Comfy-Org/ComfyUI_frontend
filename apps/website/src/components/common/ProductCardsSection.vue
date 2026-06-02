@@ -37,7 +37,7 @@ const allCards: (ReturnType<typeof cardDef> & { product: Product })[] = [
   cardDef('local', routes.download, 'bg-primary-warm-gray'),
   cardDef('cloud', routes.cloud, 'bg-secondary-mauve'),
   cardDef('api', routes.api, 'bg-primary-comfy-plum'),
-  cardDef('enterprise', routes.cloudEnterprise, 'bg-illustration-forest')
+  cardDef('enterprise', routes.cloudEnterprise, 'bg-secondary-cool-gray')
 ]
 
 const cards = excludeProduct
@@ -46,7 +46,9 @@ const cards = excludeProduct
 </script>
 
 <template>
-  <section class="bg-primary-comfy-ink px-0 py-20 lg:px-20 lg:py-24">
+  <section
+    class="bg-primary-comfy-ink max-w-9xl mx-auto px-0 py-20 lg:px-20 lg:py-24"
+  >
     <!-- Header -->
     <div class="flex flex-col items-center px-4 text-center">
       <SectionLabel v-if="labelKey">

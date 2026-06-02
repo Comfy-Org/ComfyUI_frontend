@@ -9,8 +9,6 @@ const file1 = 'workflow.mp4' as const
 const file2 = 'workflow.webm' as const
 
 test('@vue-nodes Load Video', async ({ comfyPage, comfyFiles }) => {
-  await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'v1 (legacy)')
-
   const loadVideoNode = comfyPage.vueNodes.getNodeByTitle('Load Video')
   const loadVideo = new VideoPreview(loadVideoNode)
 
@@ -18,9 +16,7 @@ test('@vue-nodes Load Video', async ({ comfyPage, comfyFiles }) => {
     await comfyPage.menu.topbar.newWorkflowButton.click()
     await comfyPage.nextFrame()
 
-    await comfyPage.page.mouse.dblclick(500, 300, { delay: 5 })
-    await comfyPage.searchBox.fillAndSelectFirstNode('Load Video')
-
+    await comfyPage.searchBoxV2.addNode('Load Video')
     await expect(loadVideoNode).toHaveCount(1)
     await expect(loadVideoNode).toBeVisible()
   })

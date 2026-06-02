@@ -663,7 +663,6 @@
     "Collapse": "طي",
     "Color": "اللون",
     "Colors": "الألوان",
-    "Convert to Group Node": "تحويل إلى عقدة مجموعة",
     "Convert to Subgraph": "تحويل إلى رسم بياني فرعي",
     "Copy": "نسخ",
     "Copy (Clipspace)": "نسخ (Clipspace)",
@@ -800,11 +799,17 @@
     "CONTROL_NET": "ControlNet",
     "CURVE": "منحنى",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "نموذج كشف الوجه",
+    "FACE_LANDMARKS": "معالم الوجه",
     "FILE_3D": "ملف ثلاثي الأبعاد",
     "FILE_3D_FBX": "ملف FBX ثلاثي الأبعاد",
     "FILE_3D_GLB": "ملف GLB ثلاثي الأبعاد",
     "FILE_3D_GLTF": "ملف GLTF ثلاثي الأبعاد",
+    "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "ملف OBJ ثلاثي الأبعاد",
+    "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "ملف STL ثلاثي الأبعاد",
     "FILE_3D_USDZ": "ملف USDZ ثلاثي الأبعاد",
     "FLOAT": "رقم عشري",
@@ -820,10 +825,12 @@
     "IMAGECOMPARE": "مقارنة الصور",
     "INT": "عدد صحيح",
     "INTERP_MODEL": "نموذج التفسير",
+    "KREA_STYLE_REF": "مرجع نمط KREA",
     "LATENT": "كامِن",
     "LATENT_OPERATION": "عملية كامنة",
     "LATENT_UPSCALE_MODEL": "نموذج تكبير latent",
     "LOAD3D_CAMERA": "كاميرا ثلاثية الأبعاد",
+    "LOAD3D_MODEL_INFO": "تحميل معلومات نموذج ثلاثي الأبعاد",
     "LOAD_3D": "تحميل ثلاثي الأبعاد",
     "LORA_MODEL": "نموذج لورا",
     "LOSS_MAP": "خريطة الخسارة",
@@ -853,6 +860,7 @@
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "جهاز تجميع",
     "SIGMAS": "سيجمات",
+    "SPLAT": "SPLAT",
     "STRING": "نص",
     "STYLE_MODEL": "نموذج النمط",
     "SVG": "SVG",
@@ -908,6 +916,337 @@
     "pause": "إيقاف التنزيل مؤقتًا",
     "paused": "تم الإيقاف مؤقتًا",
     "resume": "استئناف التنزيل"
+  },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "مدخل غير معروف",
+      "nodeName": "هذه العقدة"
+    },
+    "promptErrors": {
+      "missing_node_type": {
+        "desc": "نوع عقدة مفقود أو غير متوفر. قد يكون سير العمل تالفًا أو يحتاج إلى عقدة مخصصة.",
+        "title": "نوع العقدة مفقود"
+      },
+      "no_prompt": {
+        "desc": "بيانات سير العمل المرسلة إلى الخادم فارغة. قد يكون هذا خطأ غير متوقع في النظام.",
+        "title": "بيانات سير العمل فارغة"
+      },
+      "prompt_no_outputs": {
+        "desc": "سير العمل لا يحتوي على أي عقدة إخراج (مثل حفظ الصورة أو معاينة الصورة) لإنتاج نتيجة.",
+        "title": "المطالبة لا تحتوي على مخرجات"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "سير العمل يحتوي على مدخلات عقدة غير صالحة. يرجى تصحيح العقد المميزة قبل إعادة التشغيل.",
+        "title": "فشل التحقق من صحة المطالبة"
+      },
+      "server_error_cloud": {
+        "desc": "واجه الخادم خطأ غير متوقع. يرجى المحاولة لاحقاً.",
+        "title": "خطأ في الخادم"
+      },
+      "server_error_local": {
+        "desc": "واجه الخادم خطأ غير متوقع. يرجى مراجعة سجلات الخادم.",
+        "title": "خطأ في الخادم"
+      }
+    },
+    "runtimeErrors": {
+      "access_required": {
+        "itemLabel": "{nodeName}",
+        "message": "يتطلب هذا التشغيل وصولاً غير متوفر للحساب الحالي.",
+        "title": "يتطلب الوصول",
+        "toastMessage": "يتطلب هذا التشغيل وصولاً غير متوفر للحساب الحالي.",
+        "toastTitle": "يتطلب الوصول"
+      },
+      "content_blocked": {
+        "itemLabel": "{nodeName}",
+        "message": "تم حظر هذا الطلب بواسطة نظام مراقبة المحتوى. حاول تغيير النص أو المدخلات.",
+        "title": "تم حظر المحتوى",
+        "toastMessage": "تم حظر هذا الطلب بواسطة نظام مراقبة المحتوى. حاول تغيير النص أو المدخلات.",
+        "toastTitle": "تم حظر المحتوى"
+      },
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "حدث خطأ في العقدة أثناء التنفيذ.",
+        "title": "فشل التنفيذ",
+        "toastMessage": "حدث خطأ في هذه العقدة أثناء التنفيذ. تحقق من المدخلات أو جرّب إعدادًا مختلفًا.",
+        "toastTitle": "فشل {nodeName}"
+      },
+      "generation_stalled": {
+        "itemLabel": "{nodeName}",
+        "message": "توقف سير العمل عن التقدم. حاول تشغيله مرة أخرى.",
+        "title": "توقف التوليد",
+        "toastMessage": "توقف سير العمل عن التقدم. حاول تشغيله مرة أخرى.",
+        "toastTitle": "توقف التوليد"
+      },
+      "image_not_loaded": {
+        "itemLabel": "{nodeName}",
+        "message": "تعذر على النظام تحميل هذه الصورة.",
+        "title": "لم يتم تحميل الصورة",
+        "toastMessage": "تعذر تحميل الصورة لـ {nodeName}. حاول إضافتها مرة أخرى.",
+        "toastTitle": "تعذر تحميل صورة الإدخال"
+      },
+      "insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "أضف رصيدًا إلى حسابك لاستخدام هذه العقدة.",
+        "title": "الرصيد غير كافٍ",
+        "toastMessage": "أضف رصيدًا إلى حسابك لاستخدام هذه العقدة.",
+        "toastTitle": "الرصيد غير كافٍ"
+      },
+      "invalid_clip_input": {
+        "itemLabel": "{nodeName}",
+        "message": "مدخل CLIP مفقود أو غير صالح. تحقق من نقطة التحقق المتصلة أو محمل CLIP.",
+        "title": "مدخل CLIP غير صالح",
+        "toastMessage": "{nodeName} لديه مدخل CLIP مفقود أو غير صالح.",
+        "toastTitle": "مدخل CLIP غير صالح"
+      },
+      "invalid_prompt": {
+        "itemLabel": "{nodeName}",
+        "message": "أدخل نصًا قبل تشغيل سير العمل هذا.",
+        "title": "النص فارغ",
+        "toastMessage": "أدخل نصًا قبل تشغيل سير العمل هذا.",
+        "toastTitle": "النص فارغ"
+      },
+      "invalid_workflow_request": {
+        "itemLabel": "{nodeName}",
+        "message": "طلب سير العمل غير صالح. تحقق من سير العمل وحاول مرة أخرى.",
+        "title": "طلب سير عمل غير صالح",
+        "toastMessage": "طلب سير العمل غير صالح. تحقق من سير العمل وحاول مرة أخرى.",
+        "toastTitle": "طلب سير عمل غير صالح"
+      },
+      "model_access_error": {
+        "itemLabel": "{nodeName}",
+        "message": "تعذر الوصول إلى نموذج أو أكثر من النماذج المطلوبة.",
+        "title": "يتطلب الوصول إلى النموذج",
+        "toastMessage": "تعذر الوصول إلى نموذج أو أكثر من النماذج المطلوبة.",
+        "toastTitle": "يتطلب الوصول إلى النموذج"
+      },
+      "model_download_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "تعذر تحميل نموذج. حاول مرة أخرى.",
+        "title": "فشل تحميل النموذج",
+        "toastMessage": "تعذر تحميل نموذج. حاول مرة أخرى.",
+        "toastTitle": "فشل تحميل النموذج"
+      },
+      "out_of_memory": {
+        "itemLabel": "{nodeName}",
+        "message": "لا توجد ذاكرة GPU كافية. حاول تقليل دقة الصورة أو حجم الدفعة وأعد المحاولة.",
+        "title": "فشل التوليد",
+        "toastMessage": "لا توجد ذاكرة GPU كافية. حاول تقليل دقة الصورة أو حجم الدفعة وأعد المحاولة.",
+        "toastTitle": "فشل التوليد"
+      },
+      "preprocessing_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "تعذر تحضير سير العمل. حاول تشغيله مرة أخرى.",
+        "title": "فشل التحضير",
+        "toastMessage": "تعذر تحضير سير العمل. حاول تشغيله مرة أخرى.",
+        "toastTitle": "فشل التحضير"
+      },
+      "preprocessing_timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "استغرق تحضير سير العمل وقتًا طويلاً. حاول تشغيله مرة أخرى.",
+        "title": "انتهت مهلة التحضير",
+        "toastMessage": "استغرق تحضير سير العمل وقتًا طويلاً. حاول تشغيله مرة أخرى.",
+        "toastTitle": "انتهت مهلة التحضير"
+      },
+      "rate_limited": {
+        "itemLabel": "{nodeName}",
+        "message": "هناك طلب مرتفع حاليًا. حاول مرة أخرى بعد قليل.",
+        "title": "الخوادم مشغولة",
+        "toastMessage": "هناك طلب مرتفع حاليًا. حاول مرة أخرى بعد قليل.",
+        "toastTitle": "الخوادم مشغولة"
+      },
+      "request_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "فشل الطلب قبل اكتمال التشغيل. حاول مرة أخرى.",
+        "title": "فشل الطلب",
+        "toastMessage": "فشل الطلب قبل اكتمال التشغيل. حاول مرة أخرى.",
+        "toastTitle": "فشل الطلب"
+      },
+      "run_ended_unexpectedly": {
+        "itemLabel": "{nodeName}",
+        "message": "انتهى التشغيل بشكل غير متوقع. حاول مرة أخرى.",
+        "title": "انتهى التشغيل بشكل غير متوقع",
+        "toastMessage": "انتهى التشغيل بشكل غير متوقع. حاول مرة أخرى.",
+        "toastTitle": "انتهى التشغيل بشكل غير متوقع"
+      },
+      "run_start_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "تعذر بدء التشغيل. حاول مرة أخرى.",
+        "title": "تعذر بدء التشغيل",
+        "toastMessage": "تعذر بدء التشغيل. حاول مرة أخرى.",
+        "toastTitle": "تعذر بدء التشغيل"
+      },
+      "server_busy": {
+        "itemLabel": "{nodeName}",
+        "message": "الخوادم مشغولة حاليًا. حاول مرة أخرى بعد قليل.",
+        "title": "الخوادم مشغولة",
+        "toastMessage": "الخوادم مشغولة حاليًا. حاول مرة أخرى بعد قليل.",
+        "toastTitle": "الخوادم مشغولة"
+      },
+      "server_crashed": {
+        "itemLabel": "{nodeName}",
+        "message": "توقف الخادم أثناء تشغيل سير العمل هذا. حاول مرة أخرى.",
+        "title": "تعطل الخادم",
+        "toastMessage": "توقف الخادم أثناء تشغيل سير العمل هذا. حاول مرة أخرى.",
+        "toastTitle": "تعطل الخادم"
+      },
+      "sign_in_required": {
+        "itemLabel": "{nodeName}",
+        "message": "العقد الشريكة تتطلب حساب Comfy. سجّل الدخول للمتابعة.",
+        "title": "تسجيل الدخول مطلوب",
+        "toastMessage": "العقد الشريكة تتطلب حساب Comfy. سجّل الدخول للمتابعة.",
+        "toastTitle": "سجّل الدخول لاستخدام هذه العقدة"
+      },
+      "subscription_required": {
+        "itemLabel": "{nodeName}",
+        "message": "اشترك في خطة للمتابعة في تشغيل سير العمل هذا.",
+        "title": "الاشتراك مطلوب",
+        "toastMessage": "اشترك في خطة للمتابعة في تشغيل سير العمل هذا.",
+        "toastTitle": "الاشتراك مطلوب"
+      },
+      "subscription_upgrade_required": {
+        "details": "النماذج الخاصة تتطلب ترقية الاشتراك: {modelNames}",
+        "itemLabel": "{nodeName}",
+        "message": "قم بترقية اشتراكك لاستخدام النماذج الخاصة في سير العمل هذا.",
+        "title": "ترقية الاشتراك مطلوبة",
+        "toastMessage": "قم بترقية اشتراكك لاستخدام هذه النماذج الخاصة: {modelNames}.",
+        "toastTitle": "ترقية الاشتراك مطلوبة"
+      },
+      "timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "وصل سير العمل إلى الحد الأقصى لمدة التشغيل. حاول تقليل دقة الصورة أو حجم الدفعة أو طول سير العمل وأعد المحاولة.",
+        "title": "انتهت مهلة التوليد",
+        "toastMessage": "وصل سير العمل إلى الحد الأقصى لمدة التشغيل. حاول تقليل دقة الصورة أو حجم الدفعة أو طول سير العمل وأعد المحاولة.",
+        "toastTitle": "انتهت مهلة التوليد"
+      },
+      "unexpected_service_error": {
+        "itemLabel": "{nodeName}",
+        "message": "واجهت الخدمة خطأ غير متوقع. حاول مرة أخرى.",
+        "title": "خطأ في الخدمة",
+        "toastMessage": "واجهت الخدمة خطأ غير متوقع. حاول مرة أخرى.",
+        "toastTitle": "خطأ في الخدمة"
+      },
+      "workspace_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "أضف رصيدًا إلى مساحة العمل الخاصة بك للمتابعة.",
+        "title": "الرصيد غير كافٍ",
+        "toastMessage": "أضف رصيدًا إلى مساحة العمل الخاصة بك للمتابعة.",
+        "toastTitle": "الرصيد غير كافٍ"
+      }
+    },
+    "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName} لديه اتصال غير صالح لـ {inputName}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "تعذر قراءة اتصال العقدة بشكل صحيح.",
+        "title": "اتصال غير صالح",
+        "toastMessage": "{nodeName} لديه اتصال غير صالح لـ {inputName}.",
+        "toastTitle": "اتصال غير صالح"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName} رفض القيمة لـ {inputName}.",
+        "detailsWithRawDetails": "{nodeName} فشل في التحقق المخصص: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "رفضت العقدة قيمة أو أكثر من قيم الإدخال.",
+        "title": "إدخال غير صالح",
+        "toastMessage": "{nodeName} رفض القيمة لـ {inputName}.",
+        "toastTitle": "إدخال غير صالح"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName} جزء من اتصال دائري.",
+        "detailsWithRawDetails": "{nodeName} جزء من اتصال دائري: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "سير العمل يحتوي على اتصال دائري بين العقد.",
+        "title": "سير عمل غير صالح",
+        "toastMessage": "{nodeName} جزء من اتصال دائري.",
+        "toastTitle": "سير عمل غير صالح"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName} لم يتمكن من التحقق من {inputName}.",
+        "detailsWithRawDetails": "{nodeName} لم يتمكن من التحقق من {inputName}: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "تعذر على سير العمل التحقق من عقدة متصلة.",
+        "title": "فشل التحقق",
+        "toastMessage": "{nodeName} لم يتمكن من التحقق من {inputName}.",
+        "toastMessageWithRawDetails": "{nodeName} لم يتمكن من التحقق من {inputName}: {rawDetails}",
+        "toastTitle": "فشل التحقق"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName} فشل أثناء التحقق.",
+        "detailsWithRawDetails": "{nodeName} فشل أثناء التحقق: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "تعذر التحقق من سير العمل لأن فحص تحقق العقدة فشل بشكل غير متوقع.",
+        "title": "فشل التحقق",
+        "toastMessage": "{nodeName} فشل أثناء التحقق.",
+        "toastMessageWithRawDetails": "{nodeName} فشل أثناء التحقق: {rawDetails}",
+        "toastTitle": "فشل التحقق"
+      },
+      "image_not_loaded": {
+        "details": "تعذر تحميل الصورة لـ {nodeName}. حاول إضافتها مرة أخرى.",
+        "itemLabel": "{nodeName}",
+        "message": "تعذر على النظام تحميل هذه الصورة.",
+        "title": "لم يتم تحميل الصورة",
+        "toastMessage": "تعذر تحميل الصورة لـ {nodeName}. حاول إضافتها مرة أخرى.",
+        "toastTitle": "تعذر تحميل صورة الإدخال"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName} لم يتمكن من تحويل {inputName} إلى النوع المتوقع.",
+        "detailsWithValue": "القيمة {receivedValue} لـ {inputName} في {nodeName} لم يتم تحويلها إلى {expectedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "قيمة الإدخال من نوع غير صحيح.",
+        "title": "إدخال غير صالح",
+        "toastMessage": "{nodeName} لم يتمكن من تحويل {inputName} إلى النوع المتوقع.",
+        "toastMessageWithValue": "القيمة {receivedValue} لـ {inputName} في {nodeName} لم يتم تحويلها إلى {expectedType}.",
+        "toastTitle": "إدخال غير صالح"
+      },
+      "required_input_missing": {
+        "details": "{nodeName} تفتقد إلى مدخل مطلوب: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "بعض منافذ الإدخال المطلوبة غير متصلة.",
+        "title": "الاتصال مفقود",
+        "toastMessage": "{nodeName} تفتقد إلى مدخل مطلوب: {inputName}",
+        "toastTitle": "مدخل مطلوب مفقود"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName} لديه اتصال غير متوافق لـ {inputName}.",
+        "detailsWithTypes": "مدخل {inputName} في {nodeName} يتطلب {expectedType}، لكن الإخراج المتصل هو {receivedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "العقد المتصلة تستخدم أنواع إدخال وإخراج غير متوافقة.",
+        "title": "اتصال غير صالح",
+        "toastMessage": "{nodeName} لديه اتصال غير متوافق لـ {inputName}.",
+        "toastMessageWithTypes": "مدخل {inputName} في {nodeName} يتطلب {expectedType}، لكن الإخراج المتصل هو {receivedType}.",
+        "toastTitle": "اتصال غير صالح"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName} لديه قيمة أعلى من الحد الأقصى لـ {inputName}.",
+        "detailsWithValue": "القيمة {receivedValue} لـ {inputName} في {nodeName} أعلى من الحد الأقصى {maxValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "بعض قيم الإدخال خارج النطاق المسموح.",
+        "title": "إدخال خارج النطاق",
+        "toastMessage": "{nodeName} لديه قيمة أعلى من الحد الأقصى لـ {inputName}.",
+        "toastMessageWithValue": "القيمة {receivedValue} لـ {inputName} في {nodeName} أعلى من الحد الأقصى {maxValue}.",
+        "toastTitle": "إدخال خارج النطاق"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName} لديه قيمة غير مدعومة لـ {inputName}.",
+        "detailsWithValue": "القيمة {receivedValue} لـ {inputName} في {nodeName} غير متوفرة.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "بعض قيم الإدخال غير متوفرة لهذه العقدة.",
+        "title": "إدخال غير صالح",
+        "toastMessage": "{nodeName} لديه قيمة غير مدعومة لـ {inputName}.",
+        "toastMessageWithValue": "القيمة {receivedValue} لـ {inputName} في {nodeName} غير متوفرة.",
+        "toastTitle": "إدخال غير صالح"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName} لديه قيمة أقل من الحد الأدنى لـ {inputName}.",
+        "detailsWithValue": "القيمة {receivedValue} لـ {inputName} في {nodeName} أقل من الحد الأدنى {minValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "بعض قيم الإدخال خارج النطاق المسموح.",
+        "title": "إدخال خارج النطاق",
+        "toastMessage": "{nodeName} لديه قيمة أقل من الحد الأدنى لـ {inputName}.",
+        "toastMessageWithValue": "القيمة {receivedValue} لـ {inputName} في {nodeName} أقل من الحد الأدنى {minValue}.",
+        "toastTitle": "إدخال خارج النطاق"
+      }
+    }
   },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
@@ -1206,6 +1545,7 @@
     "logs": "السجلات",
     "manageExtensions": "إدارة الإضافات",
     "markdown": "ماركداون",
+    "maximizeDialog": "تكبير الحوار",
     "micPermissionDenied": "تم رفض إذن الميكروفون",
     "migrate": "ترحيل",
     "missing": "مفقود",
@@ -1306,6 +1646,7 @@
     "resizeFromTopLeft": "تغيير الحجم من الزاوية اليسرى العلوية",
     "resizeFromTopRight": "تغيير الحجم من الزاوية اليمنى العلوية",
     "restart": "إعادة التشغيل",
+    "restoreDialog": "استعادة الحوار",
     "resultsCount": "تم العثور على {count} نتيجة",
     "running": "يعمل",
     "save": "حفظ",
@@ -1665,6 +2006,7 @@
       "orthographic": "أرثوغرافي",
       "perspective": "منظور"
     },
+    "centerCameraOnModel": "توسيط الكاميرا على النموذج",
     "clearRecording": "مسح التسجيل",
     "dropToLoad": "أسقط نموذج ثلاثي الأبعاد للتحميل",
     "edgeThreshold": "عتبة الحافة",
@@ -1711,6 +2053,7 @@
     "reloadingModel": "جاري إعادة تحميل النموذج...",
     "removeBackgroundImage": "إزالة صورة الخلفية",
     "resizeNodeMatchOutput": "تغيير حجم العقدة لتتناسب مع المخرج",
+    "retainViewOnReload": "تثبيت عرض الكاميرا عند إعادة تحميل النموذج",
     "scene": "المشهد",
     "showGrid": "عرض الشبكة",
     "showSkeleton": "إظهار الهيكل العظمي",
@@ -2101,7 +2444,6 @@
     "ComfyUI Issues": "مشاكل ComfyUI",
     "Contact Support": "الاتصال بالدعم",
     "Convert Selection to Subgraph": "تحويل التحديد إلى رسم فرعي",
-    "Convert selected nodes to group node": "تحويل العقد المحددة إلى عقدة مجموعة",
     "Copy": "نسخ",
     "Custom Nodes (Legacy)": "العقد المخصصة (قديم)",
     "Custom Nodes Manager": "مدير العقد المخصصة",
@@ -2264,6 +2606,7 @@
     "3d_models": "نماذج ثلاثية الأبعاد",
     "Anthropic": "Anthropic",
     "BFL": "BFL",
+    "Beeble": "Beeble",
     "Bria": "Bria",
     "ByteDance": "بايت دانس",
     "ElevenLabs": "ElevenLabs",
@@ -2272,12 +2615,14 @@
     "HitPaw": "HitPaw",
     "Ideogram": "إيديوغرام",
     "Kling": "Kling",
+    "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2294,8 +2639,8 @@
     "Vidu": "فيدو",
     "Wan": "وان",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "تعديلات",
     "advanced": "متقدم",
-    "api node": "عقدة API",
     "attention_experiments": "تجارب الانتباه",
     "audio": "صوت",
     "background removal": "إزالة الخلفية",
@@ -2311,7 +2656,6 @@
     "controlnet": "كونترول نت",
     "create": "إنشاء",
     "custom_sampling": "تجميع مخصص",
-    "dataset": "مجموعة بيانات",
     "debug": "تصحيح",
     "deprecated": "مهمل",
     "detection": "الكشف",
@@ -2319,7 +2663,7 @@
     "experimental": "تجريبي",
     "filters": "مرشحات",
     "flux": "تدفق",
-    "geometry_estimation": "تقدير الهندسة",
+    "geometry estimation": "تقدير الهندسة",
     "gligen": "gligen",
     "guidance": "التوجيه",
     "guiders": "الموجهات",
@@ -2336,10 +2680,12 @@
     "mask": "قناع",
     "model": "نموذج",
     "model_merging": "دمج النماذج",
-    "model_patches": "تصحيحات النموذج",
     "model_specific": "خاص بالنموذج",
+    "multigpu": "تعدد وحدات معالجة الرسومات",
     "noise": "ضجيج",
     "operations": "العمليات",
+    "partner": "شريك",
+    "patch": "تصحيح",
     "photomaker": "صانع الصور",
     "preprocessors": "المعالجون المسبقون",
     "primitive": "بدائي",
@@ -2351,6 +2697,7 @@
     "sd3": "sd3",
     "shader": "shader",
     "sigmas": "سيجمات",
+    "splat": "splat",
     "stable_cascade": "سلسلة ثابتة",
     "style_model": "نموذج النمط",
     "supir": "supir",
@@ -2360,7 +2707,7 @@
     "unet": "unet",
     "upscale_diffusion": "انتشار التكبير",
     "upscaling": "تكبير",
-    "utils": "أدوات مساعدة",
+    "utilities": "أدوات مساعدة",
     "video": "فيديو",
     "video_models": "نماذج الفيديو",
     "zimage": "zimage"
@@ -2433,6 +2780,43 @@
     },
     "title": "جهازك غير مدعوم"
   },
+  "oauth": {
+    "consent": {
+      "allow": "متابعة",
+      "appTypeNative": "تطبيق أصلي",
+      "appTypeWeb": "تطبيق ويب",
+      "deny": "إلغاء",
+      "errorExpired": "انتهت صلاحية طلب الموافقة هذا أو تم استخدامه بالفعل. يرجى إعادة البدء من تطبيق العميل.",
+      "errorScopeBroadening": "الأذونات التي تمت الموافقة عليها سابقًا لا تغطي هذا الطلب. ستحتاج إلى إعادة التفويض بالأذونات الجديدة.",
+      "errorUnavailable": "هذه الميزة غير متوفرة حاليًا. يرجى التواصل مع الدعم إذا استمرت المشكلة.",
+      "genericError": "فشل طلب OAuth. يرجى إعادة البدء من تطبيق العميل.",
+      "loading": "جارٍ تحميل طلب التفويض…",
+      "missingRequest": "هذا الطلب التفويضي غير موجود. يرجى إعادة البدء من تطبيق العميل.",
+      "noWorkspaces": "لا توجد مساحات عمل مؤهلة لهذا الطلب.",
+      "permissionsHeader": "الأذونات",
+      "redirectNotice": "سيتم إعادة توجيهك إلى",
+      "resourceFallback": "هذا التطبيق",
+      "sessionError": "فشل في إنشاء الجلسة. يرجى المحاولة مرة أخرى.",
+      "sessionErrorToastSummary": "تعذر متابعة تسجيل الدخول عبر OAuth",
+      "subtitle": "سجّل الدخول إلى {resource} للمتابعة",
+      "title": "{client} يطلب الوصول",
+      "workspaceHelp": "تنطبق الأذونات على مساحة العمل هذه فقط.",
+      "workspaceLabel": "مساحة العمل"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "تشغيل سير العمل نيابةً عنك"
+      },
+      "mcp:tools:read": {
+        "label": "عرض أدوات سير العمل المتاحة"
+      }
+    },
+    "workspace": {
+      "member": "عضو",
+      "owner": "المالك",
+      "personal": "شخصي"
+    }
+  },
   "openSharedWorkflow": {
     "author": "المؤلف:",
     "copyAssetsAndOpen": "استيراد الأصول وفتح سير العمل",
@@ -2443,7 +2827,8 @@
     "nonPublicAssetsWarningLine1": "يأتي هذا سير العمل مع أصول غير عامة.",
     "nonPublicAssetsWarningLine2": "سيتم استيراد هذه الأصول إلى مكتبتك عند فتح سير العمل",
     "openWithoutImporting": "فتح بدون استيراد",
-    "openWorkflow": "فتح سير العمل"
+    "openWorkflow": "فتح سير العمل",
+    "opening": "جارٍ فتح سير العمل المشترك..."
   },
   "painter": {
     "background": "الخلفية",
@@ -2659,20 +3044,6 @@
     "normal": "عادي",
     "parameters": "المعلمات",
     "pinned": "مثبت",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "بيانات سير العمل المرسلة إلى الخادم فارغة. قد يكون هذا خطأ غير متوقع في النظام."
-      },
-      "prompt_no_outputs": {
-        "desc": "سير العمل لا يحتوي على أي عقدة إخراج (مثل حفظ الصورة، معاينة الصورة) لإنتاج نتيجة."
-      },
-      "server_error_cloud": {
-        "desc": "واجه الخادم خطأ غير متوقع. يرجى المحاولة لاحقاً."
-      },
-      "server_error_local": {
-        "desc": "واجه الخادم خطأ غير متوقع. يرجى مراجعة سجلات الخادم."
-      }
-    },
     "properties": "الخصائص",
     "removeFavorite": "إزالة من المفضلة",
     "resetAllParameters": "إعادة تعيين جميع المعلمات",
@@ -2929,6 +3300,7 @@
     "Other": "أخرى",
     "PLY": "PLY",
     "PlanCredits": "الخطة والاعتمادات",
+    "PointCloud": "سحابة نقطية",
     "Pointer": "المؤشر",
     "Queue": "قائمة الانتظار",
     "QueueButton": "زر قائمة الانتظار",
@@ -3070,6 +3442,7 @@
         "sourceDesc": "التجميع حسب نوع المصدر (أساسي، مخصص، API)"
       },
       "noBookmarkedNodes": "لا توجد مفضلات بعد",
+      "noMatchingNodes": "لا توجد عقد تطابق \"{query}\"",
       "resetView": "إعادة تعيين العرض إلى الافتراضي",
       "sections": {
         "bookmarked": "المفضلة",
@@ -3455,8 +3828,7 @@
       "newest": "الأحدث",
       "popular": "الأكثر شيوعًا",
       "recommended": "موصى به",
-      "searchPlaceholder": "بحث...",
-      "vramLowToHigh": "استخدام VRAM (من الأقل إلى الأعلى)"
+      "searchPlaceholder": "بحث..."
     },
     "sorting": "ترتيب حسب",
     "title": "ابدأ باستخدام قالب",
@@ -3620,7 +3992,8 @@
       "placeholderMesh": "اختر شبكة...",
       "placeholderModel": "اختر نموذج...",
       "placeholderUnknown": "اختر وسائط...",
-      "placeholderVideo": "اختر فيديو..."
+      "placeholderVideo": "اختر فيديو...",
+      "topResult": "أفضل نتيجة: {result}"
     },
     "valueControl": {
       "decrement": "إنقاص القيمة",

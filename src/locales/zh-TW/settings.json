@@ -199,7 +199,6 @@
     "name": "PLY 引擎",
     "options": {
       "fastply": "fastply",
-      "sparkjs": "sparkjs",
       "threejs": "threejs"
     },
     "tooltip": "選擇用於載入 PLY 檔案的引擎。「threejs」使用原生 Three.js PLYLoader（適合網格 PLY 檔案）。「fastply」使用優化的 ASCII 點雲 PLY 檔案載入器。「sparkjs」使用 Spark.js 處理 3D Gaussian Splatting PLY 檔案。"
