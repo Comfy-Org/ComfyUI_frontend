@@ -97,6 +97,8 @@ export interface ExecutionContext {
   toolkit_node_names: string[]
   toolkit_node_count: number
   trigger_source?: ExecutionTriggerSource
+  is_app_mode?: boolean
+  view_mode?: string
 }
 
 /**
@@ -107,6 +109,9 @@ export interface ExecutionErrorMetadata {
   nodeId?: string
   nodeType?: string
   error?: string
+  is_app_mode?: boolean
+  workflow_id?: string
+  view_mode?: string
 }
 
 /**
@@ -114,6 +119,9 @@ export interface ExecutionErrorMetadata {
  */
 export interface ExecutionSuccessMetadata {
   jobId: string
+  is_app_mode?: boolean
+  workflow_id?: string
+  view_mode?: string
 }
 
 /**
@@ -151,15 +159,19 @@ export interface WorkflowImportMetadata {
     | 'template'
     | 'shared_url'
     | 'unknown'
+  /** Whether the imported/opened workflow is an app (extra.linearMode). */
+  is_app?: boolean
 }
 
 export interface EnterLinearMetadata {
   source?: string
+  workflow_id?: string
 }
 
 export interface WorkflowSavedMetadata {
   is_app: boolean
   is_new: boolean
+  workflow_id?: string
 }
 
 export interface DefaultViewSetMetadata {
@@ -175,6 +187,8 @@ type ShareFlowStep =
 export interface ShareFlowMetadata {
   step: ShareFlowStep
   source?: 'app_mode' | 'graph_mode'
+  is_app?: boolean
+  workflow_id?: string
 }
 
 /**

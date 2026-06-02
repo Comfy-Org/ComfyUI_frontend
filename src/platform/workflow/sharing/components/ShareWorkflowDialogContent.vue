@@ -206,6 +206,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { useAppMode } from '@/composables/useAppMode'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
+import { workflowTelemetryId } from '@/platform/telemetry/utils/workflowTelemetryId'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -437,7 +438,9 @@ const {
     acknowledged.value = false
     useTelemetry()?.trackShareFlow({
       step: 'link_created',
-      source: getShareSource()
+      source: getShareSource(),
+      is_app: workflow.initialMode === 'app',
+      workflow_id: workflowTelemetryId(workflow)
     })
 
     return result

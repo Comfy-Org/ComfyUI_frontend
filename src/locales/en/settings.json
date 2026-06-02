@@ -196,12 +196,11 @@
     "tooltip": "Sets the minimum allowable light intensity value for 3D scenes. This defines the lower brightness limit that can be set when adjusting lighting in any 3D widget."
   },
   "Comfy_Load3D_PLYEngine": {
-    "name": "PLY Engine",
-    "tooltip": "Select the engine for loading PLY files. \"threejs\" uses the native Three.js PLYLoader (best for mesh PLY files). \"fastply\" uses an optimized loader for ASCII point cloud PLY files. \"sparkjs\" uses Spark.js for 3D Gaussian Splatting PLY files.",
+    "name": "Point Cloud Engine",
+    "tooltip": "Select the engine for loading point cloud PLY files. \"threejs\" uses the native Three.js PLYLoader (handles binary + ASCII, mesh-capable). \"fastply\" uses an optimized parser for ASCII PLY files. 3D Gaussian Splat PLYs are detected automatically and always rendered via sparkjs regardless of this setting.",
     "options": {
       "threejs": "threejs",
-      "fastply": "fastply",
-      "sparkjs": "sparkjs"
+      "fastply": "fastply"
     }
   },
   "Comfy_Load3D_ShowGrid": {

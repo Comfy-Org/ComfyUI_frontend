@@ -16,6 +16,7 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { workflowTelemetryId } from '@/platform/telemetry/utils/workflowTelemetryId'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
@@ -178,6 +179,7 @@ export const useWorkflowService = () => {
       }
     }
 
+    let savedWorkflow = workflow
     if (isSelfOverwrite) {
       workflow.changeTracker?.prepareForSave()
       // Call workflowStore.saveWorkflow directly: saveWorkflowAs emits its own is_new:true event below, so delegating to saveWorkflow() would also fire is_new:false and run prepareForSave a second time.
@@ -199,9 +201,14 @@ export const useWorkflowService = () => {
       }
       target.changeTracker?.prepareForSave()
       await workflowStore.saveWorkflow(target)
+      savedWorkflow = target
     }
 
-    useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: true })
+    useTelemetry()?.trackWorkflowSaved({
+      is_app: isApp,
+      is_new: true,
+      workflow_id: workflowTelemetryId(savedWorkflow)
+    })
     return true
   }
 
@@ -240,7 +247,11 @@ export const useWorkflowService = () => {
     }
 
     await workflowStore.saveWorkflow(workflow)
-    useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: false })
+    useTelemetry()?.trackWorkflowSaved({
+      is_app: isApp,
+      is_new: false,
+      workflow_id: workflowTelemetryId(workflow)
+    })
     return true
   }
 
@@ -458,7 +469,10 @@ export const useWorkflowService = () => {
 
     function trackIfEnteringApp(workflow: ComfyWorkflow) {
       if (!wasAppMode && workflow.initialMode === 'app') {
-        useTelemetry()?.trackEnterLinear({ source: 'workflow' })
+        useTelemetry()?.trackEnterLinear({
+          source: 'workflow',
+          workflow_id: workflowTelemetryId(workflow)
+        })
       }
     }
 
