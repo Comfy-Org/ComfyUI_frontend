@@ -183,7 +183,7 @@ const createInputMappingWidget = (
           getMediaTypeFromFilename(asset.name) ===
           NODE_MEDIA_TYPE_MAP[node.comfyClass ?? '']
       )
-      .map((asset) => asset.asset_hash)
+      .map((asset) => asset.hash ?? asset.asset_hash)
       .filter((hash): hash is string => !!hash)
   )
 
