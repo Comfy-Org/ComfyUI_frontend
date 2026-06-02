@@ -80,10 +80,6 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => mockCanvasStore
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({ activeWorkflow: null })
-}))
-
 describe('useTemplateUrlLoader', () => {
   beforeEach(() => {
     vi.clearAllMocks()
