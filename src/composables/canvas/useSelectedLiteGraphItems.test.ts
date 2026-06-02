@@ -240,13 +240,16 @@ describe('useSelectedLiteGraphItems', () => {
       const { getSelectedNodes } = useSelectedLiteGraphItems()
       const node1 = makeNode(LGraphEventMode.ALWAYS, 1)
       const node2 = makeNode(LGraphEventMode.NEVER, 2)
+      const reroute = new MockReroute()
 
-      mockCanvas.selectedItems = new Set([node1, node2])
+      // The non-node (reroute) must be filtered out by isLGraphNode.
+      mockCanvas.selectedItems = new Set([node1, reroute, node2])
 
       const selectedNodes = getSelectedNodes()
       expect(selectedNodes).toHaveLength(2)
       expect(selectedNodes[0]).toBe(node1)
       expect(selectedNodes[1]).toBe(node2)
+      expect(selectedNodes).not.toContain(reroute)
     })
 
     it('getSelectedNodes should return empty array when no nodes selected', () => {
