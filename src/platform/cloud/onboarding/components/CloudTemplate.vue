@@ -1,8 +1,12 @@
 <template>
-  <div class="flex h-svh w-screen bg-charcoal-750 font-sans text-sand-500">
+  <div
+    class="flex h-svh w-screen bg-primary-comfy-ink font-sans text-primary-comfy-canvas"
+  >
     <div class="relative flex flex-1 flex-col">
       <div class="flex h-16 shrink-0 items-center px-6">
-        <CloudLogo class="h-5 w-auto text-brand-yellow md:h-6" />
+        <i
+          class="icon-[comfy--comfy-logo] h-5 w-22 text-brand-yellow md:h-6 md:w-26"
+        />
       </div>
       <div class="flex flex-1 items-center justify-center overflow-auto">
         <slot />
@@ -17,7 +21,6 @@
 
 <script setup lang="ts">
 import CloudHeroCarousel from '@/platform/cloud/onboarding/components/CloudHeroCarousel.vue'
-import CloudLogo from '@/platform/cloud/onboarding/components/CloudLogo.vue'
 import CloudTemplateFooter from '@/platform/cloud/onboarding/components/CloudTemplateFooter.vue'
 </script>
 <style>

@@ -16,7 +16,7 @@
 @plugin "./lucideStrokePlugin.js";
 
 /* Safelist dynamic comfy icons for node library folders */
-@source inline("icon-[comfy--{ai-model,anthropic,bfl,bria,bytedance,credits,elevenlabs,extensions-blocks,file-output,gemini,google,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,seedance,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow,quiver}]");
+@source inline("icon-[comfy--{ai-model,anthropic,bfl,bria,bytedance,bytedance-mono,comfy-logo,credits,elevenlabs,extensions-blocks,file-output,gemini,gemini-mono,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow,quiver}]");
 
 /* Safelist dynamic comfy icons for essential nodes (kebab-case of node names) */
 @source inline("icon-[comfy--{save-image,load-video,save-video,load-3-d,save-glb,image-batch,batch-images-node,image-crop,image-scale,image-rotate,image-blur,image-invert,canny,recraft-remove-background-node,kling-lip-sync-audio-to-video-node,load-audio,save-audio,stability-text-to-audio,lora-loader,lora-loader-model-only,primitive-string-multiline,get-video-components,video-slice,tencent-text-to-model-node,tencent-image-to-model-node,open-ai-chat-node,preview-image,image-and-mask-preview,layer-mask-mask-preview,mask-preview,image-preview-from-latent,i-tools-preview-image,i-tools-compare-image,canny-to-image,image-edit,text-to-image,pose-to-image,depth-to-video,image-to-image,canny-to-video,depth-to-image,image-to-video,pose-to-video,text-to-video,image-inpainting,image-outpainting}]");
@@ -41,7 +41,6 @@
   --color-sand-200: #fff7d5;
   --color-sand-300: #888682;
   --color-sand-400: #eed7ac;
-  --color-sand-500: #c2bfb9;
 
   --color-azure-300: #78bae9;
   --color-azure-400: #31b9f4;
@@ -66,6 +65,9 @@
   --color-ocean-300: #badde8;
   --color-ocean-600: #2f687a;
   --color-ocean-900: #253236;
+
+  --color-primary-comfy-ink: #211927;
+  --color-primary-comfy-canvas: #c2bfb9;
 
   --color-danger-100: #c02323;
   --color-danger-200: #d62952;

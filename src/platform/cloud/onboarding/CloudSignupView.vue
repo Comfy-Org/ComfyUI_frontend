@@ -5,12 +5,14 @@
     <div class="flex w-full max-w-md flex-col items-start">
       <div class="flex w-full flex-col gap-4">
         <h1
-          class="my-0 font-inter text-xl/8 font-extrabold tracking-wide text-sand-500 sm:text-2xl/8"
+          class="my-0 font-inter text-xl/8 font-extrabold tracking-wide text-primary-comfy-canvas sm:text-2xl/8"
         >
           {{ t('auth.signup.title') }}
         </h1>
-        <p class="my-0 text-base/6 tracking-[-0.02em] text-sand-500">
-          <span class="text-sand-500/70">{{
+        <p
+          class="my-0 text-base/6 tracking-[-0.02em] text-primary-comfy-canvas"
+        >
+          <span class="text-primary-comfy-canvas/70">{{
             t('auth.signup.alreadyHaveAccount')
           }}</span>
           <span
@@ -31,7 +33,7 @@
             v-if="!googleSsoBlockedReason"
             type="button"
             variant="secondary"
-            class="relative h-10 w-full gap-4 rounded-md border border-solid border-smoke-800/10 bg-smoke-800/10 text-sm/4 font-medium text-sand-500 shadow-inset-highlight hover:bg-sand-300/20"
+            class="relative h-10 w-full gap-4 rounded-md border border-solid border-smoke-800/10 bg-smoke-800/10 text-sm/4 font-medium text-primary-comfy-canvas shadow-inset-highlight hover:bg-sand-300/20"
             @click="signInWithGoogle"
           >
             <i class="pi pi-google text-base" />
@@ -41,7 +43,7 @@
           <Button
             type="button"
             variant="secondary"
-            class="relative h-10 w-full gap-4 rounded-md border border-solid border-smoke-800/10 bg-smoke-800/10 font-inter text-sm/4 font-medium text-sand-500 shadow-inset-highlight hover:bg-sand-300/20"
+            class="relative h-10 w-full gap-4 rounded-md border border-solid border-smoke-800/10 bg-smoke-800/10 font-inter text-sm/4 font-medium text-primary-comfy-canvas shadow-inset-highlight hover:bg-sand-300/20"
             @click="signInWithGithub"
           >
             <i class="pi pi-github text-base" />
@@ -50,7 +52,7 @@
 
           <Button
             variant="link"
-            class="text-sm/4 text-sand-500/70 hover:text-sand-500"
+            class="text-sm/4 text-primary-comfy-canvas/70 hover:text-primary-comfy-canvas"
             @click="switchToEmailForm"
           >
             {{ t('auth.login.useEmailInstead') }}
@@ -73,7 +75,7 @@
 
           <Button
             variant="secondary"
-            class="mt-1 h-10 w-full rounded-md border-none bg-smoke-800/5 text-sm/5 font-normal tracking-[-0.011em] text-sand-500/55 hover:bg-sand-300/10"
+            class="mt-1 h-10 w-full rounded-md border-none bg-smoke-800/5 text-sm/5 font-normal tracking-[-0.011em] text-primary-comfy-canvas/55 hover:bg-sand-300/10"
             @click="switchToSocialLogin"
           >
             {{
@@ -86,7 +88,7 @@
       </div>
 
       <p
-        class="mx-auto my-0 flex w-full max-w-10/12 flex-wrap items-center justify-center gap-x-1 py-4 text-center text-sm/5 tracking-[-0.011em] text-sand-500"
+        class="mx-auto my-0 flex w-full max-w-10/12 flex-wrap items-center justify-center gap-x-1 py-4 text-center text-sm/5 tracking-[-0.011em] text-primary-comfy-canvas"
       >
         {{ t('auth.login.termsText') }}
         <a
@@ -106,7 +108,7 @@
         >.
       </p>
       <p
-        class="mx-auto mt-2 mb-0 flex w-full max-w-10/12 flex-wrap items-center justify-center gap-x-1 text-center text-sm/5 tracking-[-0.011em] text-sand-500"
+        class="mx-auto mt-2 mb-0 flex w-full max-w-10/12 flex-wrap items-center justify-center gap-x-1 text-center text-sm/5 tracking-[-0.011em] text-primary-comfy-canvas"
       >
         {{ t('cloudWaitlist_questionsText') }}
         <a
@@ -198,12 +200,12 @@ onMounted(async () => {
   border: none !important;
   box-shadow: none !important;
   background: #2d2e32 !important;
-  color: var(--color-sand-500) !important;
-  caret-color: var(--color-sand-500);
+  color: var(--color-primary-comfy-canvas) !important;
+  caret-color: var(--color-primary-comfy-canvas);
 }
 
 :deep(.p-inputtext::placeholder) {
-  color: rgb(from var(--color-sand-500) r g b / 0.5);
+  color: rgb(from var(--color-primary-comfy-canvas) r g b / 0.5);
 }
 
 :deep(.p-password input) {
