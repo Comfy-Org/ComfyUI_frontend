@@ -135,6 +135,51 @@ describe('contextMenuConverter', () => {
       expect(getIndex('Node Info')).toBeLessThanOrEqual(getIndex('Color'))
     })
 
+    it('blacklists the legacy Bypass push so Vue supplies the only item', () => {
+      const legacyOptions = convertContextMenuToOptions(
+        [{ content: 'Bypass', callback: () => {} }],
+        undefined,
+        false
+      )
+      expect(
+        legacyOptions.find(
+          (opt) => opt.label === 'Bypass' || opt.label === 'Remove Bypass'
+        )
+      ).toBeUndefined()
+
+      const vueBypass: MenuOption = {
+        label: 'Remove Bypass',
+        icon: 'icon-[lucide--redo-dot]',
+        shortcut: 'Ctrl+B',
+        action: () => {},
+        source: 'vue'
+      }
+      const result = buildStructuredMenu([...legacyOptions, vueBypass])
+
+      const bypassItems = result.filter(
+        (opt) => opt.label === 'Bypass' || opt.label === 'Remove Bypass'
+      )
+      expect(bypassItems).toHaveLength(1)
+      expect(bypassItems[0].source).toBe('vue')
+      expect(bypassItems[0].shortcut).toBe('Ctrl+B')
+    })
+
+    it('does not treat Bypass and Remove Bypass as label equivalents', () => {
+      const options: MenuOption[] = [
+        { label: 'Bypass', action: () => {}, source: 'vue' },
+        { label: 'Remove Bypass', action: () => {}, source: 'litegraph' }
+      ]
+
+      const result = buildStructuredMenu(options)
+
+      const labels = result
+        .map((opt) => opt.label)
+        .filter((l) => l === 'Bypass' || l === 'Remove Bypass')
+      expect(labels).toEqual(
+        expect.arrayContaining(['Bypass', 'Remove Bypass'])
+      )
+    })
+
     it('should recognize Frame Nodes as a core menu item', () => {
       const options: MenuOption[] = [
         { label: 'Rename', source: 'vue' },
