@@ -57,7 +57,6 @@ describe('useSettingsDialog', () => {
     useSettingsDialog().show()
     const [args] = showDialog.mock.calls[0]
     expect(args.key).toBe('global-settings')
-    expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('full')
     expect(args.dialogComponentProps.contentClass).toContain('max-w-[960px]')
     expect(args.dialogComponentProps.contentClass).toContain('h-[80vh]')

@@ -31,7 +31,6 @@ export function useSettingsDialog() {
         ...(settingId ? { scrollToSettingId: settingId } : {})
       },
       dialogComponentProps: {
-        renderer: 'reka',
         // Settings hosts nested PrimeVue dialogs (Edit Keybinding, Overwrite
         // confirm, etc.) that teleport to body. Reka's modal mode traps focus
         // inside the Settings content and disables body pointer-events, which

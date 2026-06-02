@@ -1,32 +1,12 @@
-// We should consider moving to https://primevue.org/dynamicdialog/ once everything is in Vue.
-// Currently we need to bridge between legacy app code and Vue app with a Pinia store.
-import { merge } from 'es-toolkit/compat'
+// Bridges legacy app code and the Vue app: callers push dialogs through this
+// Pinia store and `GlobalDialog` renders them with the Reka-UI primitives
+// under `src/components/ui/dialog/`.
 import { defineStore } from 'pinia'
-import type { DialogPassThroughOptions } from 'primevue/dialog'
 import { markRaw, ref } from 'vue'
 import type { Component, HTMLAttributes, Ref } from 'vue'
 
 import type { DialogContentSize } from '@/components/ui/dialog/dialog.variants'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
-
-type DialogPosition =
-  | 'center'
-  | 'top'
-  | 'bottom'
-  | 'left'
-  | 'right'
-  | 'topleft'
-  | 'topright'
-  | 'bottomleft'
-  | 'bottomright'
-
-/**
- * Selects the dialog renderer used by `GlobalDialog`. `'reka'` (the default)
- * renders the Reka-UI primitive set under `src/components/ui/dialog/`.
- * `'primevue'` is the legacy PrimeVue `Dialog` escape hatch, kept only until
- * the branch is deleted in the Phase 6 cleanup (FE-578).
- */
-type DialogRenderer = 'primevue' | 'reka'
 
 interface CustomDialogComponentProps {
   maximizable?: boolean
@@ -34,38 +14,27 @@ interface CustomDialogComponentProps {
   onClose?: () => void
   closable?: boolean
   modal?: boolean
-  position?: DialogPosition
-  pt?: DialogPassThroughOptions
   closeOnEscape?: boolean
   dismissableMask?: boolean
-  unstyled?: boolean
   headless?: boolean
-  renderer?: DialogRenderer
   size?: DialogContentSize
-  /**
-   * Class applied to the Reka-UI `DialogContent` element. Ignored on the
-   * PrimeVue path — use `pt` for that renderer.
-   */
+  /** Class applied to the Reka-UI `DialogContent` element. */
   contentClass?: HTMLAttributes['class']
-  /**
-   * Class applied to the Reka-UI `DialogOverlay` element. Ignored on the
-   * PrimeVue path — use `pt.mask` for that renderer.
-   */
+  /** Class applied to the Reka-UI `DialogOverlay` element. */
   overlayClass?: HTMLAttributes['class']
   /**
    * Class applied to the Reka-UI `DialogHeader` element on the non-headless
-   * path. Ignored on the PrimeVue path — use `pt.header` for that renderer.
+   * path.
    */
   headerClass?: HTMLAttributes['class']
   /**
    * Class applied to the wrapper around the content component on the Reka-UI
-   * non-headless path. Ignored on the PrimeVue path — use `pt.content` for
-   * that renderer.
+   * non-headless path.
    */
   bodyClass?: HTMLAttributes['class']
   /**
    * Class applied to the Reka-UI `DialogFooter` element on the non-headless
-   * path. Ignored on the PrimeVue path — use `pt.footer` for that renderer.
+   * path.
    */
   footerClass?: HTMLAttributes['class']
 }
@@ -201,25 +170,8 @@ export const useDialogStore = defineStore('dialog', () => {
         closable: true,
         closeOnEscape: true,
         dismissableMask: true,
-        renderer: 'reka' as DialogRenderer,
         ...options.dialogComponentProps,
-        maximized: false,
-        onMaximize: () => {
-          dialog.dialogComponentProps.maximized = true
-        },
-        onUnmaximize: () => {
-          dialog.dialogComponentProps.maximized = false
-        },
-        onAfterHide: () => {
-          closeDialog(dialog)
-        },
-        pt: merge(options.dialogComponentProps?.pt || {}, {
-          root: {
-            onMousedown: () => {
-              riseDialog(dialog)
-            }
-          }
-        })
+        maximized: false
       }
     }
 

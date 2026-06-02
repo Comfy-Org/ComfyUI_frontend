@@ -781,7 +781,6 @@ export function useMediaAssetActions() {
           }
         },
         dialogComponentProps: {
-          renderer: 'reka',
           size: 'md'
         }
       })
