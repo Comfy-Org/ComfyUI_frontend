@@ -206,5 +206,5 @@ export function getAssetCardTitle(asset: AssetItem): string {
  * values or media URLs that must round-trip through the view endpoint.
  */
 export function getAssetUrlFilename(asset: AssetItem): string {
-  return asset.asset_hash || asset.name
+  return asset.hash ?? asset.asset_hash ?? asset.name
 }
