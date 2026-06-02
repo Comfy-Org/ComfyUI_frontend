@@ -251,59 +251,6 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     expect(store.lastNodeErrors).toBeNull()
     expect(mediaStore.missingMediaCandidates).toBeNull()
   })
-
-  it('uses interior node execution ID for promoted widget error clearing', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [{ name: 'ckpt_input', type: '*' }]
-    })
-    const interiorNode = new LGraphNode('CheckpointLoaderSimple')
-    const interiorInput = interiorNode.addInput('ckpt_input', '*')
-    interiorNode.addWidget(
-      'combo',
-      'ckpt_name',
-      'model.safetensors',
-      () => undefined,
-      { values: ['model.safetensors'] }
-    )
-    interiorInput.widget = { name: 'ckpt_name' }
-    subgraph.add(interiorNode)
-    subgraph.inputNode.slots[0].connect(interiorInput, interiorNode)
-
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 65 })
-    subgraphNode._internalConfigureAfterSlots()
-    const graph = subgraphNode.graph as LGraph
-    graph.add(subgraphNode)
-
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    installErrorClearingHooks(graph)
-
-    const store = useExecutionErrorStore()
-    const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
-
-    const promotedWidget = subgraphNode.widgets?.find(
-      (w) => 'sourceWidgetName' in w && w.sourceWidgetName === 'ckpt_name'
-    )
-    expect(promotedWidget).toBeDefined()
-
-    // PromotedWidgetView.name returns displayName ("ckpt_input"), which is
-    // passed as errorInputName to clearSimpleNodeErrors. Seed the error
-    // with that name so the slot-name filter matches.
-    seedRequiredInputMissingNodeError(
-      store,
-      interiorExecId,
-      promotedWidget!.name
-    )
-
-    subgraphNode.onWidgetChanged!.call(
-      subgraphNode,
-      'ckpt_name',
-      'other_model.safetensors',
-      'model.safetensors',
-      promotedWidget!
-    )
-
-    expect(store.lastNodeErrors).toBeNull()
-  })
 })
 
 describe('installErrorClearingHooks lifecycle', () => {

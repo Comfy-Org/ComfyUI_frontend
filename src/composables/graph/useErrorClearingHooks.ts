@@ -6,11 +6,8 @@
  * works in legacy canvas mode as well.
  */
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
   LGraphEventMode,
   NodeSlotType
@@ -44,24 +41,6 @@ import {
   getNodeByExecutionId,
   isAncestorPathActive
 } from '@/utils/graphTraversalUtil'
-
-function resolvePromotedExecId(
-  rootGraph: LGraph,
-  node: LGraphNode,
-  widget: IBaseWidget,
-  hostExecId: string
-): string {
-  if (!isPromotedWidgetView(widget)) return hostExecId
-  const result = resolveConcretePromotedWidget(
-    node,
-    widget.sourceNodeId,
-    widget.sourceWidgetName
-  )
-  if (result.status === 'resolved' && result.resolved.node) {
-    return getExecutionIdByNode(rootGraph, result.resolved.node) ?? hostExecId
-  }
-  return hostExecId
-}
 
 const hookedNodes = new WeakSet<LGraphNode>()
 
@@ -103,20 +82,10 @@ function installNodeHooks(node: LGraphNode): void {
       const hostExecId = getExecutionIdByNode(app.rootGraph, node)
       if (!hostExecId) return
 
-      const execId = resolvePromotedExecId(
-        app.rootGraph,
-        node,
-        widget,
-        hostExecId
-      )
-      const widgetName = isPromotedWidgetView(widget)
-        ? widget.sourceWidgetName
-        : widget.name
-
       useExecutionErrorStore().clearWidgetRelatedErrors(
-        execId,
+        hostExecId,
         widget.name,
-        widgetName,
+        widget.name,
         newValue,
         { min: widget.options?.min, max: widget.options?.max }
       )
