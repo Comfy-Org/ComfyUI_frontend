@@ -17,7 +17,7 @@ const imageToVideoTag: TranslationKey = 'tags.imageToVideo'
 
 export const getTutorialPosterSrc = (tutorial: LearningTutorial): string =>
   tutorial.poster
-    ? tutorial.videoSrc
+    ? tutorial.poster
     : `${tutorial.videoSrc}#t=${tutorial.posterTime ?? DEFAULT_POSTER_TIME_SECONDS}`
 
 export const learningTutorials: readonly LearningTutorial[] = [

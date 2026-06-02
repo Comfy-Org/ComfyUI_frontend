@@ -5,7 +5,7 @@ import FeaturedWorkflowSection from '../../components/learning/FeaturedWorkflowS
 import TutorialsSection from '../../components/learning/TutorialsSection.vue'
 import CallToActionSection from '../../components/common/CallToActionSection.vue'
 import EventsSection from '../../components/common/EventsSection.vue'
-import { getRoutes } from '../../config/routes'
+import { getRoutes, externalLinks } from '../../config/routes'
 import { learningEvents } from '../../data/events'
 
 const routes = getRoutes('zh-CN')
@@ -21,7 +21,7 @@ const routes = getRoutes('zh-CN')
     primaryLabelKey="learning.cta.contactSales"
     primaryHref={routes.contact}
     secondaryLabelKey="cta.tryWorkflow"
-    secondaryHref={routes.demos}
+    secondaryHref={externalLinks.workflows}
     client:visible
   />
   <!-- <EventsSection

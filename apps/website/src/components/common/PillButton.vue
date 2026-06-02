@@ -39,7 +39,7 @@ const {
 <template>
   <component
     :is="href ? 'a' : 'button'"
-    :href="href"
+    :href="href || undefined"
     :target="href ? target : undefined"
     :rel="href ? rel : undefined"
     :type="!href ? type : undefined"
