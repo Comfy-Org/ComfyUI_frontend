@@ -16,6 +16,7 @@ import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@/utils/uuid'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { asGraphId, widgetEntityId } from '@/world/entityIds'
 import {
   createTestSubgraph,
   createTestSubgraphData,
@@ -296,9 +297,8 @@ describe('Graph Clearing and Callbacks', () => {
     })
 
     const widgetValueStore = useWidgetValueStore()
-    widgetValueStore.registerWidget(graphId, {
-      nodeId: '10' as NodeId,
-      name: 'seed',
+    const seedId = widgetEntityId(asGraphId(graphId), '10' as NodeId, 'seed')
+    widgetValueStore.registerWidget(seedId, {
       type: 'number',
       value: 1,
       options: {},
@@ -307,7 +307,7 @@ describe('Graph Clearing and Callbacks', () => {
       disabled: undefined
     })
 
-    expect(widgetValueStore.getWidget(graphId, '10' as NodeId, 'seed')).toEqual(
+    expect(widgetValueStore.getWidget(seedId)).toEqual(
       expect.objectContaining({ value: 1 })
     )
     expect(
@@ -316,9 +316,7 @@ describe('Graph Clearing and Callbacks', () => {
 
     graph.clear()
 
-    expect(
-      widgetValueStore.getWidget(graphId, '10' as NodeId, 'seed')
-    ).toBeUndefined()
+    expect(widgetValueStore.getWidget(seedId)).toBeUndefined()
     expect(previewExposureStore.getExposures(graphId, `${graphId}:1`)).toEqual(
       []
     )

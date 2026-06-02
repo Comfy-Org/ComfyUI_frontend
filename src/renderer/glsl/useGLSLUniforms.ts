@@ -6,6 +6,11 @@ import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { UUID } from '@/utils/uuid'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import {
+  asGraphId,
+  deriveWidgetEntityId,
+  nodeEntityId
+} from '@/world/entityIds'
 
 import { isCurveData } from '@/components/curve/curveUtils'
 import type { CurveData } from '@/components/curve/types'
@@ -132,7 +137,10 @@ export function useGLSLUniforms(
 
     if (subgraphSources) {
       return subgraphSources.map(({ nodeId: nId, widgetName, directValue }) => {
-        const widget = widgetValueStore.getWidget(gId, nId, widgetName)
+        const entityId = deriveWidgetEntityId(gId, nId, widgetName)
+        const widget = entityId
+          ? widgetValueStore.getWidget(entityId)
+          : undefined
         return coerce(widget?.value ?? directValue() ?? defaultValue)
       })
     }
@@ -144,7 +152,8 @@ export function useGLSLUniforms(
     const values: T[] = []
     for (let i = 0; i < maxCount; i++) {
       const inputName = `${groupName}.${uniformPrefix}${i}`
-      const widget = widgetValueStore.getWidget(gId, nId, inputName)
+      const entityId = deriveWidgetEntityId(gId, nId, inputName)
+      const widget = entityId ? widgetValueStore.getWidget(entityId) : undefined
       if (widget !== undefined) {
         values.push(coerce(widget.value))
         continue
@@ -158,8 +167,7 @@ export function useGLSLUniforms(
       const upstreamNode = node.getInputNode(slot)
       if (!upstreamNode) break
       const upstreamWidgets = widgetValueStore.getNodeWidgets(
-        gId,
-        upstreamNode.id as NodeId
+        nodeEntityId(asGraphId(gId), upstreamNode.id as NodeId)
       )
       if (
         upstreamWidgets.length === 0 ||
@@ -214,7 +222,10 @@ export function useGLSLUniforms(
     if (sources && sources.length > 0) {
       return sources
         .map(({ nodeId: nId, widgetName, directValue }) => {
-          const widget = widgetValueStore.getWidget(gId, nId, widgetName)
+          const entityId = deriveWidgetEntityId(gId, nId, widgetName)
+          const widget = entityId
+            ? widgetValueStore.getWidget(entityId)
+            : undefined
           const value = widget?.value ?? directValue()
           return isCurveData(value) ? (value as CurveData) : null
         })
@@ -230,7 +241,8 @@ export function useGLSLUniforms(
     for (let i = 0; i < max; i++) {
       const inputName = `curves.u_curve${i}`
 
-      const widget = widgetValueStore.getWidget(gId, nId, inputName)
+      const entityId = deriveWidgetEntityId(gId, nId, inputName)
+      const widget = entityId ? widgetValueStore.getWidget(entityId) : undefined
       if (widget && isCurveData(widget.value)) {
         values.push(widget.value as CurveData)
         continue
@@ -243,8 +255,7 @@ export function useGLSLUniforms(
       if (!upstreamNode) break
 
       const upstreamWidgets = widgetValueStore.getNodeWidgets(
-        gId,
-        upstreamNode.id as NodeId
+        nodeEntityId(asGraphId(gId), upstreamNode.id as NodeId)
       )
       const curveWidget = upstreamWidgets.find((w) => isCurveData(w.value))
       if (!curveWidget) break

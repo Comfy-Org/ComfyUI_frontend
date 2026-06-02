@@ -18,6 +18,7 @@ import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import type { WidgetEntityId } from '@/world/entityIds'
+import { widgetEntityId } from '@/world/entityIds'
 
 const mockEmptyWorkflowDialog = vi.hoisted(() => {
   let lastOptions: { onEnterBuilder: () => void; onDismiss: () => void }
@@ -127,16 +128,16 @@ function createWorkflowWithLinearData(
 }
 
 const rootGraphId = '11111111-1111-4111-8111-111111111111'
-const entityPrompt = `${rootGraphId}:1:prompt` as WidgetEntityId
-const entitySeed = `${rootGraphId}:1:seed` as WidgetEntityId
-const entitySteps = `${rootGraphId}:1:steps` as WidgetEntityId
+const entityPrompt = widgetEntityId(rootGraphId, 1, 'prompt')
+const entitySeed = widgetEntityId(rootGraphId, 1, 'seed')
+const entitySteps = widgetEntityId(rootGraphId, 1, 'steps')
 
 function nodeWithWidgets(id: number, widgetNames: string[]) {
   return fromAny<LGraphNode, unknown>({
     id,
     widgets: widgetNames.map((name) => ({
       name,
-      entityId: `${rootGraphId}:${id}:${name}` as WidgetEntityId
+      entityId: widgetEntityId(rootGraphId, id, name)
     }))
   })
 }

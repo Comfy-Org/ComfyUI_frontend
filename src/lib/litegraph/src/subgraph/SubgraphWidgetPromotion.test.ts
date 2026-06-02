@@ -24,6 +24,7 @@ import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
+import { asGraphId, nodeEntityId, widgetEntityId } from '@/world/entityIds'
 
 import {
   createEventCapture,
@@ -588,13 +589,18 @@ describe('SubgraphWidgetPromotion', () => {
       const hostNode = createTestSubgraphNode(subgraph)
       const hostWidget = hostNode.widgets[0]
       expectPromotedWidgetView(hostWidget)
-      useWidgetValueStore().registerWidget(hostNode.rootGraph.id, {
-        nodeId: hostNode.id,
-        name: hostWidget.name,
-        type: hostWidget.type,
-        value: 99,
-        options: {}
-      })
+      useWidgetValueStore().registerWidget(
+        widgetEntityId(
+          asGraphId(hostNode.rootGraph.id),
+          hostNode.id,
+          hostWidget.name
+        ),
+        {
+          type: hostWidget.type,
+          value: 99,
+          options: {}
+        }
+      )
       hostNode.serialize()
 
       expect(interiorWidget.value).toBe(42)
@@ -944,8 +950,10 @@ describe('SubgraphWidgetPromotion', () => {
         if (c.expect.storeSeedValue !== undefined) {
           expect(
             useWidgetValueStore()
-              .getNodeWidgets(host.rootGraph.id, host.id)
-              .find((entry) => entry.name === 'seed')?.value
+              .getNodeWidgetsByName(
+                nodeEntityId(asGraphId(host.rootGraph.id), host.id)
+              )
+              .get('seed')?.value
           ).toBe(c.expect.storeSeedValue)
         }
       })
@@ -1006,13 +1014,14 @@ describe('SubgraphWidgetPromotion', () => {
         const host = createTestSubgraphNode(subgraph)
         const widgetStore = useWidgetValueStore()
         for (const { node, widget } of sources) {
-          widgetStore.registerWidget(host.rootGraph.id, {
-            nodeId: node.id,
-            name: widget.name,
-            type: widget.type,
-            value: `${node.title} value`,
-            options: {}
-          })
+          widgetStore.registerWidget(
+            widgetEntityId(asGraphId(host.rootGraph.id), node.id, widget.name),
+            {
+              type: widget.type,
+              value: `${node.title} value`,
+              options: {}
+            }
+          )
         }
         reorderSubgraphInputsByName(host, ['second', 'first'])
         expect(host.serialize().widgets_values).toBeUndefined()
@@ -1032,13 +1041,18 @@ describe('SubgraphWidgetPromotion', () => {
 
         const host = createTestSubgraphNode(subgraph, { id: 101 })
         const widgetStore = useWidgetValueStore()
-        widgetStore.registerWidget(host.rootGraph.id, {
-          nodeId: interiorNode.id,
-          name: interiorWidget.name,
-          type: interiorWidget.type,
-          value: 'source fallback',
-          options: {}
-        })
+        widgetStore.registerWidget(
+          widgetEntityId(
+            asGraphId(host.rootGraph.id),
+            interiorNode.id,
+            interiorWidget.name
+          ),
+          {
+            type: interiorWidget.type,
+            value: 'source fallback',
+            options: {}
+          }
+        )
         const serialized = host.serialize()
         expect(serialized.widgets_values).toBeUndefined()
 
@@ -1047,7 +1061,9 @@ describe('SubgraphWidgetPromotion', () => {
         reloaded.configure(serialized)
 
         expect(
-          widgetStore.getNodeWidgets(reloaded.rootGraph.id, reloaded.id)
+          widgetStore.getNodeWidgets(
+            nodeEntityId(asGraphId(reloaded.rootGraph.id), reloaded.id)
+          )
         ).toEqual([])
         expect(reloaded.serialize().widgets_values).toBeUndefined()
       })
@@ -1073,14 +1089,27 @@ describe('SubgraphWidgetPromotion', () => {
         expectPromotedWidgetView(first)
         expectPromotedWidgetView(second)
         expect(
-          widgetStore.getWidget(reloaded.rootGraph.id, reloaded.id, first.name)
+          widgetStore.getWidget(
+            widgetEntityId(
+              asGraphId(reloaded.rootGraph.id),
+              reloaded.id,
+              first.name
+            )
+          )
         ).toBeUndefined()
         expect(
-          widgetStore.getWidget(reloaded.rootGraph.id, reloaded.id, second.name)
-            ?.value
+          widgetStore.getWidget(
+            widgetEntityId(
+              asGraphId(reloaded.rootGraph.id),
+              reloaded.id,
+              second.name
+            )
+          )?.value
         ).toBe('second host value')
         expect(
-          widgetStore.getNodeWidgets(reloaded.rootGraph.id, reloaded.id)
+          widgetStore.getNodeWidgets(
+            nodeEntityId(asGraphId(reloaded.rootGraph.id), reloaded.id)
+          )
         ).toHaveLength(1)
         expect(reloaded.serialize().widgets_values).toEqual([
           undefined,

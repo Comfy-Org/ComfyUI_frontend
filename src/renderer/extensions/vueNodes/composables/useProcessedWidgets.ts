@@ -25,14 +25,11 @@ import {
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
 import type { WidgetState } from '@/stores/widgetValueStore'
-import {
-  stripGraphPrefix,
-  useWidgetValueStore
-} from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { deriveWidgetEntityId } from '@/world/entityIds'
 import type { WidgetEntityId } from '@/world/entityIds'
-import { getWidgetState } from '@/world/widgetValueIO'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   LinkedUpstreamInfo,
@@ -75,6 +72,15 @@ interface ComputeProcessedWidgetsOptions {
   isGraphReady: boolean
   rootGraph: LGraph | null
   ui: WidgetUiCallbacks
+}
+
+/**
+ * Strips graph-scope prefix segments from a node id (e.g. `outer:inner:42`
+ * → `42`) so nested node renders get stable DOM identity keys. Not for
+ * widget value lookup — that routes through {@link WidgetEntityId}.
+ */
+function extractRawNodeId(scopedId: string | number): string {
+  return String(scopedId).replace(/^(.*:)+/, '')
 }
 
 function createWidgetUpdateHandler(
@@ -135,10 +141,10 @@ export function getWidgetIdentity(
   const slotNameForIdentity = widget.slotName ?? widget.name
   const hostNodeIdRoot =
     nodeId !== undefined && nodeId !== ''
-      ? `node:${String(stripGraphPrefix(nodeId))}`
+      ? `node:${String(extractRawNodeId(nodeId))}`
       : undefined
   const stableIdentityRoot = widget.nodeId
-    ? `node:${String(stripGraphPrefix(widget.nodeId))}`
+    ? `node:${String(extractRawNodeId(widget.nodeId))}`
     : widget.sourceExecutionId
       ? `exec:${widget.sourceExecutionId}`
       : hostNodeIdRoot
@@ -198,15 +204,19 @@ export function computeProcessedWidgets({
     if (!shouldRenderAsVue(widget)) continue
 
     const identity = getWidgetIdentity(widget, nodeId, index)
-    const widgetState = widget.entityId
-      ? getWidgetState(widget.entityId)
-      : graphId
-        ? widgetValueStore.getWidget(
-            graphId,
-            String(stripGraphPrefix(widget.nodeId ?? nodeId ?? '')),
-            widget.name
-          )
+    let widgetState: WidgetState | undefined
+    if (widget.entityId) {
+      widgetState = widgetValueStore.getWidget(widget.entityId)
+    } else {
+      const fallbackEntityId = deriveWidgetEntityId(
+        graphId,
+        String(extractRawNodeId(widget.nodeId ?? nodeId ?? '')),
+        widget.name
+      )
+      widgetState = fallbackEntityId
+        ? widgetValueStore.getWidget(fallbackEntityId)
         : undefined
+    }
     const mergedOptions: IWidgetOptions = {
       ...(widget.options ?? {}),
       ...(widgetState?.options ?? {})
@@ -254,7 +264,7 @@ export function computeProcessedWidgets({
     widgetState,
     identity: { renderKey }
   } of uniqueWidgets) {
-    const bareWidgetId = String(stripGraphPrefix(widget.nodeId ?? nodeId ?? ''))
+    const bareWidgetId = String(extractRawNodeId(widget.nodeId ?? nodeId ?? ''))
 
     const vueComponent =
       getComponent(widget.type) ||
@@ -318,7 +328,7 @@ export function computeProcessedWidgets({
         e,
         widget.name,
         widget.nodeId !== undefined
-          ? String(stripGraphPrefix(widget.nodeId))
+          ? String(extractRawNodeId(widget.nodeId))
           : undefined
       )
     }

@@ -8,6 +8,7 @@ import type { UUID } from '@/utils/uuid'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { deriveWidgetEntityId } from '@/world/entityIds'
 
 import { curveDataToFloatLUT } from '@/components/curve/curveUtils'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
@@ -121,8 +122,8 @@ function createInnerPreview(
   lastError: Ref<string | null>,
   isActiveOut: Ref<boolean>
 ): () => void {
-  const widgetValueStore = useWidgetValueStore()
   const nodeOutputStore = useNodeOutputStore()
+  const widgetValueStore = useWidgetValueStore()
   const { nodeToNodeLocatorId } = useWorkflowStore()
 
   let renderer: ReturnType<typeof useGLSLRenderer> | null = null
@@ -194,18 +195,22 @@ function createInnerPreview(
     if (isGLSLNode.value) {
       const nId = nodeId.value
       if (nId == null) return undefined
-      return widgetValueStore.getWidget(gId, nId, 'fragment_shader')?.value as
-        | string
-        | undefined
+      const entityId = deriveWidgetEntityId(gId, nId, 'fragment_shader')
+      return entityId
+        ? (widgetValueStore.getWidget(entityId)?.value as string | undefined)
+        : undefined
     }
 
     const inner = innerGLSLNode
     if (inner) {
-      return widgetValueStore.getWidget(
+      const entityId = deriveWidgetEntityId(
         gId,
         inner.id as NodeId,
         'fragment_shader'
-      )?.value as string | undefined
+      )
+      return entityId
+        ? (widgetValueStore.getWidget(entityId)?.value as string | undefined)
+        : undefined
     }
 
     return undefined
@@ -291,23 +296,16 @@ function createInnerPreview(
       : nodeId.value
     if (sizeModeNodeId == null) return null
 
-    const sizeMode = widgetValueStore.getWidget(
-      gId,
-      sizeModeNodeId,
-      'size_mode'
-    )
+    const lookup = (name: string) => {
+      const entityId = deriveWidgetEntityId(gId, sizeModeNodeId, name)
+      return entityId ? widgetValueStore.getWidget(entityId) : undefined
+    }
+
+    const sizeMode = lookup('size_mode')
     if (sizeMode?.value !== 'custom') return null
 
-    const widthWidget = widgetValueStore.getWidget(
-      gId,
-      sizeModeNodeId,
-      'size_mode.width'
-    )
-    const heightWidget = widgetValueStore.getWidget(
-      gId,
-      sizeModeNodeId,
-      'size_mode.height'
-    )
+    const widthWidget = lookup('size_mode.width')
+    const heightWidget = lookup('size_mode.height')
     if (!widthWidget || !heightWidget) return null
 
     return clampResolution(

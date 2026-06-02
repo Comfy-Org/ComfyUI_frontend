@@ -3,12 +3,12 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import { defineDeprecatedProperty } from '@/lib/litegraph/src/utils/feedback'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
 import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { deriveWidgetEntityId } from '@/world/entityIds'
 
 const TRACKPAD_DETECTION_THRESHOLD = 50
 
@@ -19,7 +19,6 @@ function addMultilineWidget(
   name: string,
   opts: { defaultVal: string; placeholder?: string }
 ) {
-  const widgetStore = useWidgetValueStore()
   const inputEl = document.createElement('textarea')
   inputEl.className = 'comfy-multiline-input'
   inputEl.dataset.testid = 'dom-widget-textarea'
@@ -27,17 +26,29 @@ function addMultilineWidget(
   inputEl.placeholder = opts.placeholder || name
   inputEl.spellcheck = useSettingStore().get('Comfy.TextareaWidget.Spellcheck')
 
+  const widgetValueStore = useWidgetValueStore()
   const widget = node.addDOMWidget(name, 'customtext', inputEl, {
     getValue(): string {
-      const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
-      const widgetState = widgetStore.getWidget(graphId, node.id, name)
-
+      const entityId = deriveWidgetEntityId(
+        resolveNodeRootGraphId(node, app.rootGraph.id),
+        node.id,
+        name
+      )
+      const widgetState = entityId
+        ? widgetValueStore.getWidget(entityId)
+        : undefined
       return (widgetState?.value as string) ?? inputEl.value
     },
     setValue(v: string) {
       inputEl.value = v
-      const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
-      const widgetState = widgetStore.getWidget(graphId, node.id, name)
+      const entityId = deriveWidgetEntityId(
+        resolveNodeRootGraphId(node, app.rootGraph.id),
+        node.id,
+        name
+      )
+      const widgetState = entityId
+        ? widgetValueStore.getWidget(entityId)
+        : undefined
       if (widgetState) widgetState.value = v
     }
   })
@@ -67,7 +78,30 @@ function addMultilineWidget(
     { signal }
   )
 
-  forwardMiddleButtonToCanvas(inputEl, signal)
+  // Allow middle mouse button panning
+  inputEl.addEventListener(
+    'pointerdown',
+    (event: PointerEvent) => {
+      if (event.button === 1) app.canvas.processMouseDown(event)
+    },
+    { signal }
+  )
+
+  inputEl.addEventListener(
+    'pointermove',
+    (event: PointerEvent) => {
+      if ((event.buttons & 4) === 4) app.canvas.processMouseMove(event)
+    },
+    { signal }
+  )
+
+  inputEl.addEventListener(
+    'pointerup',
+    (event: PointerEvent) => {
+      if (event.button === 1) app.canvas.processMouseUp(event)
+    },
+    { signal }
+  )
 
   inputEl.addEventListener(
     'wheel',

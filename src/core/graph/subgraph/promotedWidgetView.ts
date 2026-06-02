@@ -1,4 +1,4 @@
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { Point } from '@/lib/litegraph/src/interfaces'
@@ -11,11 +11,8 @@ import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { t } from '@/i18n'
 import { nextValueForLinkedTarget } from '@/scripts/valueControl'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import {
-  stripGraphPrefix,
-  useWidgetValueStore
-} from '@/stores/widgetValueStore'
 import type { WidgetState } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import {
   resolveConcretePromotedWidget,
   resolvePromotedWidgetAtHost
@@ -24,7 +21,6 @@ import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
 import { hasWidgetNode } from '@/core/graph/subgraph/widgetNodeTypeGuard'
 import type { WidgetEntityId } from '@/world/entityIds'
 import { widgetEntityId } from '@/world/entityIds'
-import { ensureWidgetState, getWidgetState } from '@/world/widgetValueIO'
 
 import { isPromotedWidgetView } from './promotedWidgetTypes'
 import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidgetTypes'
@@ -162,7 +158,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   private getHostWidgetState(): WidgetState | undefined {
-    return getWidgetState(this.entityId)
+    return useWidgetValueStore().getWidget(this.entityId)
   }
 
   private setHostWidgetState(value: IBaseWidget['value']): void {
@@ -207,8 +203,12 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   private registerHostWidgetState(value: IBaseWidget['value']): void {
+    const widgetValueStore = useWidgetValueStore()
+    const existing = widgetValueStore.getWidget(this.entityId)
+    if (existing) return
+
     const resolved = this.resolveDeepest()
-    ensureWidgetState(this.entityId, {
+    widgetValueStore.registerWidget(this.entityId, {
       type: resolved?.widget.type ?? 'button',
       value,
       options: { ...(resolved?.widget.options ?? {}) },
@@ -418,19 +418,11 @@ class PromotedWidgetView implements IPromotedWidgetView {
     if (linkedState) return linkedState
 
     const resolved = this.resolveDeepest()
-    if (!resolved) return undefined
-    return useWidgetValueStore().getWidget(
-      this.graphId,
-      stripGraphPrefix(String(resolved.node.id)),
-      resolved.widget.name
-    )
+    if (!resolved?.widget.entityId) return undefined
+    return useWidgetValueStore().getWidget(resolved.widget.entityId)
   }
 
-  private getLinkedInputWidgets(): Array<{
-    nodeId: NodeId
-    widgetName: string
-    widget: IBaseWidget
-  }> {
+  private getLinkedInputWidgets(): IBaseWidget[] {
     const linkedInputSlot = this.subgraphNode.inputs.find((input) => {
       if (!input._subgraphSlot) return false
       if (matchPromotedInput([input], this) !== input) return false
@@ -457,23 +449,15 @@ class PromotedWidgetView implements IPromotedWidgetView {
     const linkedInput = linkedInputSlot?._subgraphSlot
     if (!linkedInput) return []
 
-    return linkedInput
-      .getConnectedWidgets()
-      .filter(hasWidgetNode)
-      .map((widget) => ({
-        nodeId: stripGraphPrefix(String(widget.node.id)),
-        widgetName: widget.name,
-        widget
-      }))
+    return linkedInput.getConnectedWidgets().filter(hasWidgetNode)
   }
 
   private getLinkedInputWidgetStates(): WidgetState[] {
-    const widgetStore = useWidgetValueStore()
-
+    const widgetValueStore = useWidgetValueStore()
     return this.getLinkedInputWidgets()
-      .map(({ nodeId, widgetName }) =>
-        widgetStore.getWidget(this.graphId, nodeId, widgetName)
-      )
+      .map((widget) => widget.entityId)
+      .filter((id): id is WidgetEntityId => id !== undefined)
+      .map((id) => widgetValueStore.getWidget(id))
       .filter((state): state is WidgetState => state !== undefined)
   }
 

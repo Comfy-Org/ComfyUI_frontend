@@ -4,9 +4,23 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
 import { NumberWidget } from '@/lib/litegraph/src/widgets/NumberWidget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { UUID } from '@/utils/uuid'
+import { asGraphId, widgetEntityId } from '@/world/entityIds'
+
+function lookup(
+  store: ReturnType<typeof useWidgetValueStore>,
+  graphId: string,
+  nodeId: NodeId,
+  name: string
+) {
+  return store.getWidget(
+    widgetEntityId(asGraphId(graphId as UUID), nodeId, name)
+  )
+}
 
 function createTestWidget(
   node: LGraphNode,
@@ -95,7 +109,7 @@ describe('BaseWidget store integration', () => {
       widget.disabled = true
       widget.advanced = true
 
-      const state = store.getWidget(graph.id, 1, 'writeWidget')
+      const state = lookup(store, graph.id, 1, 'writeWidget')
       expect(state?.label).toBe('Updated Label')
       expect(state?.disabled).toBe(true)
 
@@ -108,9 +122,9 @@ describe('BaseWidget store integration', () => {
       widget.setNodeId(1)
 
       widget.value = 99
-      expect(store.getWidget(graph.id, 1, 'valueWidget')?.value).toBe(99)
+      expect(lookup(store, graph.id, 1, 'valueWidget')?.value).toBe(99)
 
-      const state = store.getWidget(graph.id, 1, 'valueWidget')!
+      const state = lookup(store, graph.id, 1, 'valueWidget')!
       state.value = 55
       expect(widget.value).toBe(55)
     })
@@ -128,10 +142,8 @@ describe('BaseWidget store integration', () => {
       })
       widget.setNodeId(1)
 
-      const state = store.getWidget(graph.id, 1, 'autoRegWidget')
+      const state = lookup(store, graph.id, 1, 'autoRegWidget')
       expect(state).toBeDefined()
-      expect(state?.nodeId).toBe(1)
-      expect(state?.name).toBe('autoRegWidget')
       expect(state?.type).toBe('number')
       expect(state?.value).toBe(100)
       expect(state?.label).toBe('Auto Label')
@@ -146,7 +158,7 @@ describe('BaseWidget store integration', () => {
       const widget = createTestWidget(node, { name: 'defaultsWidget' })
       widget.setNodeId(1)
 
-      const state = store.getWidget(graph.id, 1, 'defaultsWidget')
+      const state = lookup(store, graph.id, 1, 'defaultsWidget')
       expect(state).toBeDefined()
       expect(state?.disabled).toBe(false)
       expect(state?.label).toBeUndefined()
@@ -159,7 +171,7 @@ describe('BaseWidget store integration', () => {
       const widget = createTestWidget(node, { name: 'valuesWidget', value: 77 })
       widget.setNodeId(1)
 
-      expect(store.getWidget(graph.id, 1, 'valuesWidget')?.value).toBe(77)
+      expect(lookup(store, graph.id, 1, 'valuesWidget')?.value).toBe(77)
     })
   })
 
@@ -177,20 +189,20 @@ describe('BaseWidget store integration', () => {
         get() {
           const graphId = widget.node.graph?.rootGraph.id
           if (!graphId) return defaultValue
-          const state = store.getWidget(graphId, node.id, 'system_prompt')
+          const state = lookup(store, graphId, node.id, 'system_prompt')
           return (state?.value as string) ?? defaultValue
         },
         set(v: string) {
           const graphId = widget.node.graph?.rootGraph.id
           if (!graphId) return
-          const state = store.getWidget(graphId, node.id, 'system_prompt')
+          const state = lookup(store, graphId, node.id, 'system_prompt')
           if (state) state.value = v
         }
       })
 
       widget.setNodeId(node.id)
 
-      const state = store.getWidget(graph.id, node.id, 'system_prompt')
+      const state = lookup(store, graph.id, node.id, 'system_prompt')
       expect(state?.value).toBe(defaultValue)
     })
   })
@@ -211,7 +223,7 @@ describe('BaseWidget store integration', () => {
 
       widget.disabled = undefined
 
-      const state = store.getWidget(graph.id, 1, 'testWidget')
+      const state = lookup(store, graph.id, 1, 'testWidget')
       expect(state?.disabled).toBe(false)
     })
   })

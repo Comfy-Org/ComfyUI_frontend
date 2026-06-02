@@ -20,7 +20,7 @@ import type {
 import type { WidgetState } from '@/stores/widgetValueStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetEntityId } from '@/world/entityIds'
-import { widgetEntityId } from '@/world/entityIds'
+import { deriveWidgetEntityId } from '@/world/entityIds'
 
 export interface DrawWidgetOptions {
   /** The width of the node where this widget will be displayed. */
@@ -85,8 +85,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   computedDisabled?: boolean
   tooltip?: string
 
-  private _state: Omit<WidgetState, 'nodeId'> &
-    Partial<Pick<WidgetState, 'nodeId'>>
+  private _state: WidgetState
+  private _nodeId?: NodeId
 
   get label(): string | undefined {
     return this._state.label
@@ -133,10 +133,11 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   get entityId(): WidgetEntityId | undefined {
-    const graphId = this.node.graph?.rootGraph.id
-    const nodeId = this._state.nodeId
-    if (!graphId || nodeId === undefined) return undefined
-    return widgetEntityId(graphId, nodeId, this.name)
+    return deriveWidgetEntityId(
+      this.node.graph?.rootGraph.id,
+      this._nodeId,
+      this.name
+    )
   }
 
   /**
@@ -144,16 +145,16 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    * Once set, value reads/writes will be delegated to the store.
    */
   setNodeId(nodeId: NodeId): void {
-    const graphId = this.node.graph?.rootGraph.id
-    if (!graphId) return
+    this._nodeId = nodeId
+    const widgetId = this.entityId
+    if (!widgetId) return
 
-    this._state = useWidgetValueStore().registerWidget(graphId, {
+    this._state = useWidgetValueStore().registerWidget(widgetId, {
       ...this._state,
       // BaseWidget: this.value getter returns this._state.value. So value: this.value === value: this._state.value.
       // BaseDOMWidgetImpl: this.value getter returns options.getValue?.() ?? ''. Resolves the correct initial value instead of undefined.
       // I.e., calls overriden getter -> options.getValue() -> correct value (https://github.com/Comfy-Org/ComfyUI_frontend/issues/9194).
-      value: this.value,
-      nodeId
+      value: this.value
     })
   }
 
@@ -202,7 +203,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     Object.assign(this, safeValues)
 
     this._state = {
-      name: this.name,
       type: this.type as TWidgetType,
       value,
       label,

@@ -294,16 +294,17 @@ describe('NodeWidgets', () => {
 
     const { container } = renderComponent(nodeData)
     const widgetValueStore = useWidgetValueStore()
-    widgetValueStore.registerWidget('graph-test', {
-      nodeId: 'test_node',
-      name: 'test_widget',
-      type: 'combo',
-      value: 'value',
-      options: { hidden: true },
-      label: undefined,
-      serialize: true,
-      disabled: false
-    })
+    widgetValueStore.registerWidget(
+      widgetEntityId(GRAPH_ID, 'test_node', 'test_widget'),
+      {
+        type: 'combo',
+        value: 'value',
+        options: { hidden: true },
+        label: undefined,
+        serialize: true,
+        disabled: false
+      }
+    )
 
     await nextTick()
 

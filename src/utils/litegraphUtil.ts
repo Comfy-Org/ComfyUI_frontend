@@ -29,7 +29,7 @@ import { app } from '@/scripts/app'
 import { t } from '@/i18n'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import type { WidgetEntityId } from '@/world/entityIds'
-import { widgetEntityId } from '@/world/entityIds'
+import { deriveWidgetEntityId } from '@/world/entityIds'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
 type VideoNode = LGraphNode & {
@@ -377,9 +377,7 @@ export function getWidgetEntityIdForNode(
   widget: Pick<IBaseWidget, 'name' | 'entityId'>
 ): WidgetEntityId | undefined {
   if (widget.entityId) return widget.entityId
-  const graphId = node.graph?.rootGraph.id
-  if (!graphId || node.id === -1) return undefined
-  return widgetEntityId(graphId, node.id, widget.name)
+  return deriveWidgetEntityId(node.graph?.rootGraph.id, node.id, widget.name)
 }
 
 export function isLoad3dNode(node: LGraphNode) {

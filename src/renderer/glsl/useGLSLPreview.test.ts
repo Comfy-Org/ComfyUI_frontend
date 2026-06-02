@@ -76,14 +76,18 @@ vi.mock('@/stores/nodeOutputStore', () => ({
   })
 }))
 
-vi.mock('@/stores/widgetValueStore', () => {
+vi.mock('@/stores/widgetValueStore', async () => {
+  const { parseWidgetEntityId } = await import('@/world/entityIds')
   const widgetMap = new Map<string, { value: unknown }>()
-  const getWidget = vi.fn((_graphId: string, _nodeId: string, name: string) =>
-    widgetMap.get(name)
-  )
+  const getWidget = vi.fn((widgetId: string) => {
+    const { name } = parseWidgetEntityId(widgetId as never)
+    return widgetMap.get(name)
+  })
+  const getNodeWidgets = vi.fn(() => [])
   return {
     useWidgetValueStore: () => ({
       getWidget,
+      getNodeWidgets,
       _widgetMap: widgetMap
     })
   }

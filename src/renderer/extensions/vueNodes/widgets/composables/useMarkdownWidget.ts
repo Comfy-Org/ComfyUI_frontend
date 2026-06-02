@@ -10,11 +10,11 @@ import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { deriveWidgetEntityId } from '@/world/entityIds'
 
 // TODO: This widget manually syncs with widgetValueStore via getValue/setValue.
 // Consolidate with useStringWidget into shared helpers (domWidgetHelpers.ts).
@@ -42,24 +42,35 @@ function addMarkdownWidget(
     editable: false
   })
 
-  const widgetStore = useWidgetValueStore()
-
   const inputEl = editor.options.element as HTMLElement
   inputEl.classList.add('comfy-markdown')
   const textarea = document.createElement('textarea')
   inputEl.append(textarea)
 
+  const widgetValueStore = useWidgetValueStore()
   const widget = node.addDOMWidget(name, 'MARKDOWN', inputEl, {
     getValue(): string {
-      const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
-      const storedValue = widgetStore.getWidget(graphId, node.id, name)?.value
+      const entityId = deriveWidgetEntityId(
+        resolveNodeRootGraphId(node, app.rootGraph.id),
+        node.id,
+        name
+      )
+      const storedValue = entityId
+        ? widgetValueStore.getWidget(entityId)?.value
+        : undefined
       return typeof storedValue === 'string' ? storedValue : textarea.value
     },
     setValue(v: string) {
       textarea.value = v
       editor.commands.setContent(v)
-      const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
-      const widgetState = widgetStore.getWidget(graphId, node.id, name)
+      const entityId = deriveWidgetEntityId(
+        resolveNodeRootGraphId(node, app.rootGraph.id),
+        node.id,
+        name
+      )
+      const widgetState = entityId
+        ? widgetValueStore.getWidget(entityId)
+        : undefined
       if (widgetState) widgetState.value = v
     }
   })
@@ -106,7 +117,29 @@ function addMarkdownWidget(
     signal
   })
 
-  forwardMiddleButtonToCanvas(inputEl, signal)
+  inputEl.addEventListener(
+    'pointerdown',
+    (event) => {
+      if (event.button === 1) app.canvas.processMouseDown(event)
+    },
+    { signal }
+  )
+
+  inputEl.addEventListener(
+    'pointermove',
+    (event) => {
+      if ((event.buttons & 4) === 4) app.canvas.processMouseMove(event)
+    },
+    { signal }
+  )
+
+  inputEl.addEventListener(
+    'pointerup',
+    (event) => {
+      if (event.button === 1) app.canvas.processMouseUp(event)
+    },
+    { signal }
+  )
 
   widget.onRemove = useChainCallback(widget.onRemove, () => {
     controller.abort()

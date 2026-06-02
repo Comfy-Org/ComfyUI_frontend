@@ -9,6 +9,7 @@ import {
   resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { asGraphId, widgetEntityId } from '@/world/entityIds'
 
 import { isPromotedWidgetView } from './promotedWidgetTypes'
 
@@ -73,9 +74,12 @@ describe('PromotedWidgetView — host-wins semantics', () => {
     subgraph.inputNode.slots[0].connect(interior.inputs[0], interior)
 
     const widgetStore = useWidgetValueStore()
-    widgetStore.registerWidget(subgraph.rootGraph.id, {
-      nodeId: String(interior.id),
-      name: 'widget',
+    const interiorWidgetId = widgetEntityId(
+      asGraphId(subgraph.rootGraph.id),
+      String(interior.id),
+      'widget'
+    )
+    widgetStore.registerWidget(interiorWidgetId, {
       type: 'number',
       value: 42,
       options: {},
@@ -90,11 +94,7 @@ describe('PromotedWidgetView — host-wins semantics', () => {
 
     view.value = 99
 
-    const interiorState = widgetStore.getWidget(
-      subgraph.rootGraph.id,
-      String(interior.id),
-      'widget'
-    )
+    const interiorState = widgetStore.getWidget(interiorWidgetId)
     expect(interiorState?.value).toBe(42)
   })
 })

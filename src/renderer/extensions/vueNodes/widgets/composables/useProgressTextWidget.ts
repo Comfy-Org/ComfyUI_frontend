@@ -8,6 +8,7 @@ import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { deriveWidgetEntityId } from '@/world/entityIds'
 
 type TextPreviewCustomProps = Omit<
   InstanceType<typeof TextPreviewWidget>['$props'],
@@ -25,6 +26,7 @@ export function useTextPreviewWidget(
     node: LGraphNode,
     inputSpec: InputSpec
   ): IBaseWidget {
+    const widgetValueStore = useWidgetValueStore()
     const widget = new ComponentWidgetImpl<
       string | object,
       TextPreviewCustomProps
@@ -37,19 +39,26 @@ export function useTextPreviewWidget(
         nodeId: node.id
       },
       options: {
-        getValue: () =>
-          useWidgetValueStore().getWidget(
+        getValue: () => {
+          const entityId = deriveWidgetEntityId(
             resolveNodeRootGraphId(node, app.rootGraph.id),
             node.id,
             inputSpec.name
-          )?.value ?? '',
+          )
+          const widgetState = entityId
+            ? widgetValueStore.getWidget(entityId)
+            : undefined
+          return widgetState?.value ?? ''
+        },
         setValue: (value: string | object) => {
-          const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
-          const widgetState = useWidgetValueStore().getWidget(
-            graphId,
+          const entityId = deriveWidgetEntityId(
+            resolveNodeRootGraphId(node, app.rootGraph.id),
             node.id,
             inputSpec.name
           )
+          const widgetState = entityId
+            ? widgetValueStore.getWidget(entityId)
+            : undefined
           if (widgetState)
             widgetState.value =
               typeof value === 'string' ? value : String(value)

@@ -1,97 +1,97 @@
 import { defineStore } from 'pinia'
-import { reactive, ref } from 'vue'
+import { reactive } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { UUID } from '@/utils/uuid'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
+import {
+  asGraphId,
+  isNodeIdForGraph,
+  isWidgetIdForGraph,
+  nodeEntityId,
+  parseWidgetEntityId
+} from '@/world/entityIds'
+import type { NodeEntityId, WidgetEntityId } from '@/world/entityIds'
+import type { WidgetState } from '@/world/widgets/widgetState'
 
-type WidgetKey = `${NodeId}:${string}`
-
-export function stripGraphPrefix(scopedId: NodeId | string): NodeId {
-  return String(scopedId).replace(/^(.*:)+/, '') as NodeId
-}
-
-export interface WidgetState<
-  TValue = unknown,
-  TType extends string = string,
-  TOptions extends IWidgetOptions = IWidgetOptions
-> extends Pick<
-  IBaseWidget<TValue, TType, TOptions>,
-  'name' | 'type' | 'value' | 'options' | 'label' | 'serialize' | 'disabled'
-> {
-  nodeId: NodeId
-}
+export type { WidgetState } from '@/world/widgets/widgetState'
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
-  const graphWidgetStates = ref(new Map<UUID, Map<WidgetKey, WidgetState>>())
+  const widgets = reactive(new Map<WidgetEntityId, WidgetState>())
+  const widgetIdsByNode = reactive(new Map<NodeEntityId, WidgetEntityId[]>())
 
-  function getWidgetStateMap(graphId: UUID): Map<WidgetKey, WidgetState> {
-    const widgetStates = graphWidgetStates.value.get(graphId)
-    if (widgetStates) return widgetStates
-
-    const nextWidgetStates = reactive(new Map<WidgetKey, WidgetState>())
-    graphWidgetStates.value.set(graphId, nextWidgetStates)
-    return nextWidgetStates
-  }
-
-  function makeKey(nodeId: NodeId, widgetName: string): WidgetKey {
-    return `${nodeId}:${widgetName}`
-  }
-
-  /**
-   * @deprecated Use `ensureWidgetState(widget.entityId, init)` from
-   * `src/world/widgetValueIO.ts` — the branded `WidgetEntityId` prevents
-   * producer/consumer drift that loose triples allow.
-   */
   function registerWidget<TValue = unknown>(
-    graphId: UUID,
+    widgetId: WidgetEntityId,
     state: WidgetState<TValue>
   ): WidgetState<TValue> {
-    const widgetStates = getWidgetStateMap(graphId)
-    const key = makeKey(state.nodeId, state.name)
-    widgetStates.set(key, state)
-    return widgetStates.get(key) as WidgetState<TValue>
+    const { graphId, nodeId } = parseWidgetEntityId(widgetId)
+
+    widgets.set(widgetId, {
+      ...state,
+      disabled: state.disabled ?? false
+    })
+
+    const ownerId = nodeEntityId(graphId, nodeId)
+    const ids = widgetIdsByNode.get(ownerId)
+    if (!ids) {
+      widgetIdsByNode.set(ownerId, [widgetId])
+    } else if (!ids.includes(widgetId)) {
+      ids.push(widgetId)
+    }
+
+    return widgets.get(widgetId) as WidgetState<TValue>
   }
 
-  function getNodeWidgets(graphId: UUID, nodeId: NodeId): WidgetState[] {
-    const widgetStates = getWidgetStateMap(graphId)
-    const prefix = `${nodeId}:`
-    return [...widgetStates]
-      .filter(([key]) => key.startsWith(prefix))
-      .map(([, state]) => state)
+  function getWidget(widgetId: WidgetEntityId): WidgetState | undefined {
+    return widgets.get(widgetId)
   }
 
-  /**
-   * @deprecated Use `getWidgetState(widget.entityId)` or
-   * `readWidgetValue(widget.entityId)` from `src/world/widgetValueIO.ts` —
-   * the branded `WidgetEntityId` prevents producer/consumer drift that loose
-   * triples allow.
-   */
-  function getWidget(
-    graphId: UUID,
-    nodeId: NodeId,
-    widgetName: string
-  ): WidgetState | undefined {
-    return getWidgetStateMap(graphId).get(makeKey(nodeId, widgetName))
+  function getNodeWidgets(nodeId: NodeEntityId): WidgetState[] {
+    const ids = widgetIdsByNode.get(nodeId)
+    if (!ids) return []
+    const result: WidgetState[] = []
+    for (const widgetId of ids) {
+      const w = widgets.get(widgetId)
+      if (w) result.push(w)
+    }
+    return result
+  }
+
+  function getNodeWidgetsByName(
+    nodeId: NodeEntityId
+  ): Map<string, WidgetState> {
+    const result = new Map<string, WidgetState>()
+    const ids = widgetIdsByNode.get(nodeId)
+    if (!ids) return result
+    for (const widgetId of ids) {
+      const w = widgets.get(widgetId)
+      if (!w) continue
+      const { name } = parseWidgetEntityId(widgetId)
+      result.set(name, w)
+    }
+    return result
   }
 
   function setValue(
-    graphId: UUID,
-    nodeId: NodeId,
-    widgetName: string,
+    widgetId: WidgetEntityId,
     value: WidgetState['value']
   ): boolean {
-    const state = getWidgetStateMap(graphId).get(makeKey(nodeId, widgetName))
-    if (!state) return false
-    state.value = value
+    const widget = widgets.get(widgetId)
+    if (!widget) return false
+    widget.value = value
     return true
   }
 
   function clearGraph(graphId: UUID): void {
-    graphWidgetStates.value.delete(graphId)
+    const branded = asGraphId(graphId)
+    for (const widgetId of widgets.keys()) {
+      if (isWidgetIdForGraph(branded, widgetId)) {
+        widgets.delete(widgetId)
+      }
+    }
+    for (const nodeId of widgetIdsByNode.keys()) {
+      if (isNodeIdForGraph(branded, nodeId)) {
+        widgetIdsByNode.delete(nodeId)
+      }
+    }
   }
 
   return {
@@ -99,6 +99,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getWidget,
     setValue,
     getNodeWidgets,
+    getNodeWidgetsByName,
     clearGraph
   }
 })

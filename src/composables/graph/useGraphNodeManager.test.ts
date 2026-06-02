@@ -7,7 +7,7 @@ import { computed, nextTick, watch } from 'vue'
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { widgetEntityId } from '@/world/entityIds'
+import { asGraphId, widgetEntityId } from '@/world/entityIds'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -47,9 +47,10 @@ describe('Node Reactivity', () => {
     expect((widget as BaseWidget).node.id).toBe(node.id)
 
     // Initial value should be in store after setNodeId was called
-    expect(store.getWidget(graph.id, node.id, 'testnum')?.value).toBe(2)
+    const testnumId = widgetEntityId(asGraphId(graph.id), node.id, 'testnum')
+    expect(store.getWidget(testnumId)?.value).toBe(2)
 
-    const state = store.getWidget(graph.id, node.id, 'testnum')
+    const state = store.getWidget(testnumId)
     if (!state) throw new Error('Expected widget state to exist')
 
     const onValueChange = vi.fn()
@@ -74,7 +75,9 @@ describe('Node Reactivity', () => {
     })
     await nextTick()
 
-    const state = store.getWidget(graph.id, node.id, 'testnum')
+    const state = store.getWidget(
+      widgetEntityId(asGraphId(graph.id), node.id, 'testnum')
+    )
     if (!state) throw new Error('Expected widget state to exist')
 
     const widgetValue = computed(() => state.value)
