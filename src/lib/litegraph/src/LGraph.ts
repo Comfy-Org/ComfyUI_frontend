@@ -1670,6 +1670,7 @@ export class LGraph
 
     // Record state before conversion for proper undo support
     this.beforeChange()
+    this.canvasAction((c) => c.emitBeforeChange())
 
     try {
       function extractNodes(item: Positionable): Positionable[] {
@@ -1684,6 +1685,7 @@ export class LGraph
     } finally {
       // Mark state change complete for proper undo support
       this.afterChange()
+      this.canvasAction((c) => c.emitAfterChange())
     }
   }
 
