@@ -83,6 +83,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private posthog: PostHog | null = null
   private eventQueue: QueuedEvent[] = []
   private isInitialized = false
+  private shouldResetOnInit = false
   private lastTriggerSource: ExecutionTriggerSource | undefined
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
 
@@ -101,6 +102,17 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     const apiKey = window.__CONFIG__?.posthog_project_token
     if (apiKey) {
       try {
+        const currentUser = useCurrentUser()
+        currentUser.onUserLogout(() => {
+          if (this.isInitialized && this.posthog) {
+            this.posthog.reset(true)
+            return
+          }
+
+          this.shouldResetOnInit = true
+          this.eventQueue = []
+        })
+
         void import('posthog-js')
           .then((posthogModule) => {
             this.posthog = posthogModule.default
@@ -117,26 +129,17 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               ...serverConfig
             })
             this.isInitialized = true
+            if (this.shouldResetOnInit) {
+              this.posthog.reset(true)
+              this.shouldResetOnInit = false
+            }
             this.flushEventQueue()
 
-            const currentUser = useCurrentUser()
             currentUser.onUserResolved((user) => {
               if (this.posthog && user.id) {
                 this.posthog.identify(user.id)
                 this.setSubscriptionProperties()
               }
-            })
-            // Anchored to session state rather than the logout button so it
-            // also covers token revocation, account deletion, and cross-tab
-            // sign-out (browserLocalPersistence). A logout that lands during
-            // the posthog-js dynamic-import window will not be observed here:
-            // events buffered pre-init are intentionally NOT queue-cleared on
-            // logout, which leaves a narrow race where a logout + different
-            // login both inside the import window would flush pre-init events
-            // under the new identity. Accepted as a known edge — re-adding
-            // pre-init logout handling would defeat the simplification.
-            currentUser.onUserLogout(() => {
-              this.posthog?.reset(true)
             })
           })
           .catch((error) => {

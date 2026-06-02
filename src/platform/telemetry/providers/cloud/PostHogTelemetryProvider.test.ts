@@ -243,9 +243,8 @@ describe('PostHogTelemetryProvider', () => {
   })
 
   describe('logout', () => {
-    it('registers onUserLogout watcher after init', async () => {
+    it('registers onUserLogout watcher before init', () => {
       createProvider()
-      await vi.dynamicImportSettled()
 
       expect(hoisted.mockOnUserLogout).toHaveBeenCalledOnce()
     })
@@ -260,11 +259,30 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockReset).toHaveBeenCalledWith(true)
     })
 
-    it('does not register the watcher before init resolves', () => {
-      createProvider()
+    it('resets before flushing events queued after a pre-init logout', async () => {
+      const provider = createProvider()
+      const callback = hoisted.mockOnUserLogout.mock.calls[0][0]
 
-      expect(hoisted.mockOnUserLogout).not.toHaveBeenCalled()
+      provider.trackUserLoggedIn()
+      callback()
+      provider.trackAuth({ method: 'google' })
+
       expect(hoisted.mockReset).not.toHaveBeenCalled()
+
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockReset).toHaveBeenCalledWith(true)
+      expect(hoisted.mockCapture).not.toHaveBeenCalledWith(
+        TelemetryEvents.USER_LOGGED_IN,
+        expect.anything()
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.USER_AUTH_COMPLETED,
+        { method: 'google' }
+      )
+      expect(hoisted.mockReset.mock.invocationCallOrder[0]).toBeLessThan(
+        hoisted.mockCapture.mock.invocationCallOrder[0]
+      )
     })
   })
 
