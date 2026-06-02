@@ -12,7 +12,7 @@
   </span>
   <span
     v-if="rest"
-    class="-ml-2.5 max-w-max min-w-0 grow basis-0 truncate rounded-r-full bg-component-node-widget-background"
+    class="-ml-2.5 flex h-5 max-w-max min-w-0 grow basis-0 items-center truncate rounded-r-full bg-component-node-widget-background text-xs"
   >
     <span class="pr-2" v-text="rest" />
   </span>

@@ -1623,19 +1623,32 @@ export class ComfyApp {
             })
             delete api.authToken
             delete api.apiKey
-            executionErrorStore.lastNodeErrors = res.node_errors ?? null
-            if (executionErrorStore.lastNodeErrors?.length) {
+            const nodeErrors = res.node_errors
+            const hasNodeErrors =
+              nodeErrors && Object.keys(nodeErrors).length > 0
+            executionErrorStore.lastNodeErrors = hasNodeErrors
+              ? nodeErrors
+              : null
+            try {
+              if (res.prompt_id) {
+                executionStore.storeJob({
+                  id: res.prompt_id,
+                  nodes: Object.keys(p.output),
+                  promptOutput: p.output,
+                  workflow: queuedWorkflow
+                })
+              }
+            } catch (error) {
+              console.warn('Failed to store queued job metadata', {
+                promptId: res.prompt_id,
+                error
+              })
+            }
+            if (hasNodeErrors) {
+              if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+                executionErrorStore.showErrorOverlay()
+              }
               this.canvas.draw(true, true)
-            } else {
-              try {
-                if (res.prompt_id) {
-                  executionStore.storeJob({
-                    id: res.prompt_id,
-                    nodes: Object.keys(p.output),
-                    workflow: queuedWorkflow
-                  })
-                }
-              } catch (error) {}
             }
           } catch (error: unknown) {
             if (

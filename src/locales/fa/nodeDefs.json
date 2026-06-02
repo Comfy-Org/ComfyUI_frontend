@@ -119,6 +119,7 @@
     }
   },
   "AdjustBrightness": {
+    "description": "تنظیم روشنایی یک تصویر.",
     "display_name": "تنظیم روشنایی",
     "inputs": {
       "factor": {
@@ -138,6 +139,7 @@
     }
   },
   "AdjustContrast": {
+    "description": "تنظیم کنتراست یک تصویر.",
     "display_name": "تنظیم کنتراست",
     "inputs": {
       "factor": {
@@ -176,6 +178,7 @@
     }
   },
   "AudioAdjustVolume": {
+    "description": "تنظیم حجم صدا به میزان مشخص بر حسب دسی‌بل (dB).",
     "display_name": "تنظیم حجم صدا",
     "inputs": {
       "audio": {
@@ -381,6 +384,90 @@
       }
     }
   },
+  "BeebleSwitchXImageEdit": {
+    "description": "ویرایش یک تصویر با Beeble SwitchX. هر چیزی را در صحنه (پس‌زمینه، نورپردازی، لباس) تغییر می‌دهد در حالی که پیکسل‌های سوژه اصلی را حفظ می‌کند. یک تصویر مرجع و/یا یک متن توصیفی برای ظاهر جدید ارائه دهید. حداکثر ~۲.۷۷ مگاپیکسل.",
+    "display_name": "ویرایش تصویر Beeble SwitchX",
+    "inputs": {
+      "alpha_mode": {
+        "name": "حالت آلفا",
+        "tooltip": "نحوه تصمیم‌گیری SwitchX برای حفظ یا بازتولید بخش‌ها را کنترل می‌کند. «خودکار» سوژه اصلی را به طور خودکار جدا می‌کند. «پر کردن» کل قاب را با حفظ هندسه بازتولید می‌کند. «انتخاب» یک کی‌فریم فریم اول را در سراسر کلیپ اعمال می‌کند. «سفارشی» از آلفا مت فریم به فریم که شما ارائه می‌دهید استفاده می‌کند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "max_resolution": {
+        "name": "حداکثر وضوح",
+        "tooltip": "حداکثر وضوح خروجی."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح متنی از خروجی مورد نظر (حداکثر ۲۰۰۰ کاراکتر). حداقل یکی از «پرامپت» یا «تصویر مرجع» الزامی است."
+      },
+      "reference_image": {
+        "name": "تصویر مرجع",
+        "tooltip": "تصویر مرجعی که ظاهر آن (پس‌زمینه، نورپردازی، لباس) باید در نتیجه اعمال شود. حداقل یکی از «تصویر مرجع» یا «پرامپت» الزامی است."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "تصویر",
+        "tooltip": null
+      },
+      "1": {
+        "name": "آلفا",
+        "tooltip": "آلفا مت استفاده‌شده توسط Beeble. در حالت «پر کردن» خالی است، زیرا مت جداگانه‌ای وجود ندارد."
+      }
+    }
+  },
+  "BeebleSwitchXVideoEdit": {
+    "description": "ویرایش یک ویدیو با Beeble SwitchX. هر چیزی را در صحنه (پس‌زمینه، نورپردازی، لباس) تغییر می‌دهد در حالی که پیکسل‌ها و حرکت سوژه اصلی را حفظ می‌کند. یک تصویر مرجع و/یا یک متن توصیفی برای ظاهر جدید ارائه دهید. حداکثر ۲۴۰ فریم، حداکثر ~۲.۷۷ مگاپیکسل برای هر فریم.",
+    "display_name": "ویرایش ویدیو Beeble SwitchX",
+    "inputs": {
+      "alpha_mode": {
+        "name": "حالت آلفا",
+        "tooltip": "نحوه تصمیم‌گیری SwitchX برای حفظ یا بازتولید بخش‌ها را کنترل می‌کند. «خودکار» سوژه اصلی را به طور خودکار جدا می‌کند. «پر کردن» کل قاب را با حفظ هندسه بازتولید می‌کند. «انتخاب» یک کی‌فریم فریم اول را در سراسر کلیپ اعمال می‌کند. «سفارشی» از آلفا مت فریم به فریم که شما ارائه می‌دهید استفاده می‌کند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "max_resolution": {
+        "name": "حداکثر وضوح",
+        "tooltip": "حداکثر وضوح خروجی."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح متنی از خروجی مورد نظر (حداکثر ۲۰۰۰ کاراکتر). حداقل یکی از «پرامپت» یا «تصویر مرجع» الزامی است."
+      },
+      "reference_image": {
+        "name": "تصویر مرجع",
+        "tooltip": "تصویر مرجعی که ظاهر آن (پس‌زمینه، نورپردازی، لباس) باید در نتیجه اعمال شود. حداقل یکی از «تصویر مرجع» یا «پرامپت» الزامی است."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "video": {
+        "name": "ویدیو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ویدیو",
+        "tooltip": null
+      },
+      "1": {
+        "name": "آلفا",
+        "tooltip": "آلفا مت استفاده‌شده توسط Beeble. در حالت «پر کردن» خالی است، زیرا مت جداگانه‌ای وجود ندارد."
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "BetaSamplingScheduler",
     "inputs": {
@@ -576,6 +663,9 @@
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
+      },
+      "model_auto_upscale": {
+        "name": "auto_upscale"
       },
       "model_duration": {
         "name": "مدت زمان"
@@ -896,6 +986,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "description": "تولید پاسخ متنی با مدل‌های Seed 2.0 شرکت ByteDance. یک متن ورودی (prompt) و در صورت نیاز یک یا چند تصویر یا ویدیو برای زمینه چندرسانه‌ای ارائه دهید.",
+    "display_name": "ByteDance Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدل Seed مورد استفاده برای تولید پاسخ."
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "ورودی متنی برای مدل."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از مقدار seed غیرقطعی هستند."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "دستورالعمل‌های پایه‌ای که رفتار مدل را تعیین می‌کنند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "description": "تولید یکپارچه تصویر از متن و ویرایش دقیق جمله‌ای تا وضوح ۴K.",
     "display_name": "ByteDance Seedream ۴.۵",
@@ -1073,6 +1196,10 @@
     "inputs": {
       "model": {
         "name": "مدل"
+      },
+      "pre_cfg": {
+        "name": "pre_cfg",
+        "tooltip": "اگر فعال باشد، نویز ترکیبی قبل از ترکیب CFG نمونه‌گیر، بدون محدودسازی (clamping) بازتنظیم می‌شود (می‌تواند تقویت شود). این رفتار با CFG نرمال‌شده‌ای که توسط مدل‌هایی مانند Lens استفاده می‌شود مطابقت دارد. مقدار پیش‌فرض false رفتار اصلی کاهش‌دهنده فقط در فضای x0 پس از CFG را حفظ می‌کند."
       },
       "strength": {
         "name": "شدت"
@@ -1514,6 +1641,7 @@
     }
   },
   "CenterCropImages": {
+    "description": "برش مرکزی تصویر به ابعاد مشخص شده.",
     "display_name": "برش مرکزی تصاویر",
     "inputs": {
       "height": {
@@ -1632,6 +1760,9 @@
       },
       "model_max_tokens": {
         "name": "حداکثر توکن‌ها"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
       },
       "model_temperature": {
         "name": "دمای مدل"
@@ -1757,6 +1888,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "description": "عملگر منطقی AND. اگر همه مقادیر صحیح باشند، مقدار true را بازمی‌گرداند. از قواعد صحت‌سنجی پایتون استفاده می‌کند.",
+    "display_name": "و",
+    "inputs": {
+      "values": {
+        "name": "مقادیر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "عبارت ریاضی",
     "inputs": {
@@ -1780,6 +1925,20 @@
       }
     }
   },
+  "ComfyNotNode": {
+    "description": "عملگر منطقی NOT. اگر مقدار نادرست باشد، مقدار true را بازمی‌گرداند. از قواعد صحت‌سنجی پایتون استفاده می‌کند.",
+    "display_name": "نقیض",
+    "inputs": {
+      "value": {
+        "name": "مقدار"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyNumberConvert": {
     "display_name": "تبدیل عدد",
     "inputs": {
@@ -1792,6 +1951,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "description": "عملگر منطقی OR. اگر هر یک از مقادیر صحیح باشند، مقدار true را بازمی‌گرداند. از قواعد صحت‌سنجی پایتون استفاده می‌کند.",
+    "display_name": "یا",
+    "inputs": {
+      "values": {
+        "name": "مقادیر"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -2346,6 +2519,57 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreateCameraInfo": {
+    "description": "ساخت camera_info. حالت 'orbit' با استفاده از yaw/pitch/distance به دور هدف می‌چرخد؛ حالت 'look_at' دوربین را در موقعیت جهانی قرار می‌دهد. مختصات در فضای جهانی بیننده (راست‌دست، محور Y رو به بالا) هستند.",
+    "display_name": "ایجاد اطلاعات دوربین",
+    "inputs": {
+      "camera_type": {
+        "name": "camera_type",
+        "tooltip": "پروژکشن مورد استفاده توسط Render Splat: پرسپکتیو (کوتاه‌شدگی) یا اورتوگرافیک (موازی)."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "زاویه دید عمودی بر حسب درجه."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "نحوه تعریف دوربین: زاویه‌های orbit، موقعیت صریح یا موقعیت به‌علاوه کواترنیون."
+      },
+      "mode_distance": {
+        "name": "distance"
+      },
+      "mode_pitch": {
+        "name": "pitch"
+      },
+      "mode_yaw": {
+        "name": "yaw"
+      },
+      "roll": {
+        "name": "roll",
+        "tooltip": "چرخش دوربین حول محور دید، بر حسب درجه."
+      },
+      "target_x": {
+        "name": "target_x",
+        "tooltip": "نقطه نگاه (محور چرخش/هدف). در حالت orbit، با جابجایی آن کل دوربین حرکت می‌کند. در حالت کواترنیون نادیده گرفته می‌شود. مقدار پیش‌فرض مبدأ است."
+      },
+      "target_y": {
+        "name": "target_y"
+      },
+      "target_z": {
+        "name": "target_z"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "بزرگنمایی دیجیتال (ضریب فاصله کانونی). بیشتر از ۱ بدون حرکت دوربین بزرگنمایی می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
         "tooltip": null
       }
     }
@@ -3523,6 +3747,22 @@
       }
     }
   },
+  "File3DToSplat": {
+    "description": "یک فایل File3D splat را به gaussian splat تجزیه می‌کند. معکوس ایجاد فایل سه‌بعدی (از Splat). فرمت‌های پشتیبانی‌شده: PLY، SPLAT، KSPLAT، SPZ. فرمت PLY شامل هارمونیک‌های کروی کامل است، سایر فرمت‌ها فقط رنگ پایه دارند. فرمت به طور خودکار از محتوای فایل تشخیص داده می‌شود.",
+    "display_name": "دریافت Splat",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "یک فایل سه‌بعدی gaussian splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "FlipSigmas": {
     "display_name": "FlipSigmas",
     "inputs": {
@@ -3664,6 +3904,28 @@
     "inputs": {
       "conditioning": {
         "name": "شرایط"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxEraseNode": {
+    "description": "شیء ماسک‌شده را از تصویر حذف کرده و پس‌زمینه را بازسازی می‌کند. ماسک را روی بخشی که می‌خواهید حذف شود بکشید.",
+    "display_name": "حذف تصویر Flux",
+    "inputs": {
+      "dilate_pixels": {
+        "name": "dilate_pixels",
+        "tooltip": "مرزهای ماسک را گسترش می‌دهد تا پوشش تمیز لبه‌های شیء تضمین شود."
+      },
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "ناحیه‌های سفید حذف می‌شوند؛ ناحیه‌های سیاه حفظ می‌شوند."
       }
     },
     "outputs": {
@@ -3941,6 +4203,36 @@
       "seed": {
         "name": "seed",
         "tooltip": "seed تصادفی مورد استفاده برای ایجاد نویز."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVTONode": {
+    "description": "پرو لباس مجازی: شخص را با لباس ارائه‌شده می‌پوشاند.",
+    "display_name": "پرو لباس مجازی Flux",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "garment": {
+        "name": "garment",
+        "tooltip": "تصویر لباسی که باید اعمال شود."
+      },
+      "person": {
+        "name": "person",
+        "tooltip": "تصویر شخصی که قرار است لباس بپوشد."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "دستورالعمل اختیاری به زبان طبیعی برای استایل‌دهی (مثلاً نحوه قرارگیری لباس)."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذر تصادفی مورد استفاده برای ایجاد نویز."
       }
     },
     "outputs": {
@@ -4504,6 +4796,22 @@
       }
     }
   },
+  "GetICLoRAParameters": {
+    "description": "پارامترهای IC-LoRA را از متادیتای safetensors یک مدل بارگذاری‌شده LoRA استخراج می‌کند و آن‌ها را برای LTXVAddGuide (مثلاً reference_downscale_factor) خروجی می‌دهد.",
+    "display_name": "دریافت پارامترهای IC-LoRA",
+    "inputs": {
+      "iclora_model": {
+        "name": "iclora_model",
+        "tooltip": "خروجی مستقیم از LoRA Loader برای IC-LoRA مشخص که متادیتا باید از آن استخراج شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iclora_parameters",
+        "tooltip": "پارامترهای IC-LoRA استخراج‌شده از متادیتای LoRA (مثلاً reference_downscale_factor). در صورتی که LoRA نیاز به مدیریت ویژه راهنماها داشته باشد، به LTXVAddGuide متصل شود."
+      }
+    }
+  },
   "GetImageSize": {
     "description": "عرض و ارتفاع تصویر را بازمی‌گرداند و تصویر را بدون تغییر عبور می‌دهد.",
     "display_name": "دریافت ابعاد تصویر",
@@ -4523,6 +4831,25 @@
       },
       "2": {
         "name": "اندازه دسته",
+        "tooltip": null
+      }
+    }
+  },
+  "GetSplatCount": {
+    "description": "تعداد splatهای جمع‌شده در کل دسته را بازمی‌گرداند.",
+    "display_name": "دریافت تعداد Splat",
+    "inputs": {
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "تعداد",
         "tooltip": null
       }
     }
@@ -4737,10 +5064,12 @@
         "tooltip": "مدت زمان ویدیوی خروجی بر حسب ثانیه."
       },
       "image": {
-        "name": "تصویر"
+        "name": "تصویر",
+        "tooltip": "تصویر ابتدایی اختیاری برای grok-imagine-video. برای grok-imagine-video-1.5 الزامی است."
       },
       "model": {
-        "name": "مدل"
+        "name": "مدل",
+        "tooltip": "grok-imagine-video-1.5 همواره به یک تصویر ورودی نیاز دارد."
       },
       "prompt": {
         "name": "راهنما",
@@ -5650,6 +5979,7 @@
     }
   },
   "ImageCropV2": {
+    "description": "برش تصویر به ابعاد مشخص شده.",
     "display_name": "برش تصویر",
     "inputs": {
       "crop_region": {
@@ -5670,6 +6000,7 @@
     }
   },
   "ImageDeduplication": {
+    "description": "حذف تصاویر تکراری یا بسیار مشابه از یک لیست.",
     "display_name": "حذف تصاویر تکراری",
     "inputs": {
       "images": {
@@ -5724,6 +6055,7 @@
     }
   },
   "ImageGrid": {
+    "description": "چیدمان چندین تصویر در یک ساختار شبکه‌ای.",
     "display_name": "شبکه تصاویر",
     "inputs": {
       "cell_height": {
@@ -7356,6 +7688,71 @@
       }
     }
   },
+  "Krea2ImageNode": {
+    "description": "تولید تصویر با استفاده از Krea 2 — مد Medium (تصاویر بیانی) یا Large (فتورئالیسم بیانی) را انتخاب کنید. پشتیبانی از moodboard اختیاری و تا ۱۰ مرجع زنجیره‌ای سبک تصویر.",
+    "display_name": "Krea 2 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Krea 2 Medium برای تصاویر بیانی مناسب است؛ Krea 2 Large برای فتورئالیسم بیانی بهترین است."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_moodboard_id": {
+        "name": "moodboard_id"
+      },
+      "model_moodboard_strength": {
+        "name": "moodboard_strength"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "پرامپت متنی برای تصویر."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تصادفی برای تکرارپذیری."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Krea2StyleReferenceNode": {
+    "description": "افزودن مرجع سبک تصویر به تولید Krea 2. می‌توانید تا ۱۰ نود Krea 2 Style Reference را زنجیره کنید و خروجی نهایی `style_reference` را به Krea 2 Image بدهید. هر تصویر در فضای ذخیره‌سازی ComfyAPI آپلود شده و به صورت URL ارسال می‌شود.",
+    "display_name": "Krea 2 Style Reference",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "تصویر مرجع که سبک آن بر تولید تأثیر می‌گذارد."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "قدرت مرجع؛ مقادیر منفی تأثیر سبک را معکوس می‌کند."
+      },
+      "style_reference": {
+        "name": "style_reference",
+        "tooltip": "زنجیره اختیاری مراجع سبک ورودی؛ این نود یک مرجع دیگر اضافه می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_reference",
+        "tooltip": null
+      }
+    }
+  },
   "LTXAVTextEncoderLoader": {
     "description": "[دستورالعمل‌ها]\n\nltxav: gemma ۳ ۱۲B",
     "display_name": "بارگذاری رمزگذار متنی LTXV Audio",
@@ -7379,9 +7776,17 @@
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "ماسک فضایی اختیاری در فضای پیکسل. تأثیر شرطی‌سازی هر ناحیه را از طریق self-attention و ضرب در میزان قدرت کنترل می‌کند."
+      },
       "frame_idx": {
         "name": "اندیس فریم",
         "tooltip": "اندیس فریم برای شروع شرط‌گذاری. برای تصاویر تک‌فریم یا ویدیوهای ۱ تا ۸ فریم، هر مقدار frame_idx قابل قبول است. برای ویدیوهای ۹ فریم به بالا، frame_idx باید بر ۸ بخش‌پذیر باشد، در غیر این صورت به نزدیک‌ترین مضرب ۸ گرد می‌شود. مقادیر منفی از انتهای ویدیو شمرده می‌شوند."
+      },
+      "iclora_parameters": {
+        "name": "iclora_parameters",
+        "tooltip": "پارامترهای اختیاری IC-LoRA از یک node دریافت IC-LoRA Parameters. برای تنظیم پردازش راهنما طبق نیاز برخی IC-LoRAها (مثلاً آن‌هایی که reference_downscale_factor بالاتر از ۱ دارند) استفاده می‌شود. در زنجیره، هر LTXVAddGuide فقط از پارامترهای متصل به خود استفاده می‌کند."
       },
       "image": {
         "name": "تصویر",
@@ -7651,6 +8056,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -8260,6 +8670,10 @@
       "6": {
         "name": "مدل_۳بعدی",
         "tooltip": null
+      },
+      "7": {
+        "name": "model_3d_info",
+        "tooltip": null
       }
     }
   },
@@ -8309,6 +8723,7 @@
     }
   },
   "LoadImageDataSetFromFolder": {
+    "description": "بارگذاری مجموعه‌ای از تصاویر از یک پوشه مشخص و بازگرداندن لیستی از تصاویر. فرمت‌های پشتیبانی‌شده: PNG، JPG، JPEG، WEBP.",
     "display_name": "بارگذاری مجموعه تصاویر از پوشه",
     "inputs": {
       "folder": {
@@ -8352,6 +8767,7 @@
     }
   },
   "LoadImageTextDataSetFromFolder": {
+    "description": "بارگذاری مجموعه‌ای از جفت‌های تصویر و کپشن متنی از یک پوشه مشخص و بازگرداندن آن‌ها به صورت لیست. فرمت‌های پشتیبانی‌شده: PNG، JPG، JPEG، WEBP.",
     "display_name": "بارگذاری مجموعه داده تصویر و متن از پوشه",
     "inputs": {
       "folder": {
@@ -8378,7 +8794,35 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "بارگذاری MediaPipe Face Landmarker",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "safetensors مربوط به Face Landmarker از مسیر models/mediapipe/."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoadMoGeModel": {
+    "display_name": "بارگذاری مدل MoGe",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadTrainingDataset": {
+    "description": "بارگذاری دیتاست آموزش رمزگذاری‌شده (latents + conditioning) از دیسک برای استفاده در آموزش.",
     "display_name": "بارگذاری مجموعه داده آموزشی",
     "inputs": {
       "folder_name": {
@@ -9162,6 +9606,7 @@
     }
   },
   "MakeTrainingDataset": {
+    "description": "رمزگذاری تصاویر با VAE و متون با CLIP برای ساخت دیتاست آموزشی از latents و conditioning.",
     "display_name": "ایجاد دیتاست آموزش",
     "inputs": {
       "clip": {
@@ -9252,7 +9697,97 @@
       }
     }
   },
+  "MediaPipeFaceLandmarker": {
+    "description": "شناسایی نقاط کلیدی صورت با استفاده از مدل MediaPipe.",
+    "display_name": "MediaPipe Face Landmarker",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "محدوده تشخیص چهره. 'short' برای چهره‌های نزدیک (تا حدود ۲ متر از دوربین) تنظیم شده است؛ 'full' چهره‌های دورتر/کوچکتر (تا حدود ۵ متر) را پوشش می‌دهد اما کندتر است. 'both' هر دو تشخیص‌دهنده را اجرا می‌کند و هر کدام که چهره‌های بیشتری در هر فریم پیدا کند را نگه می‌دارد (هزینه تشخیص تقریباً ۲ برابر)."
+      },
+      "face_detection_model": {
+        "name": "face_detection_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "آستانه امتیاز BlazeFace. برای شناسایی چهره‌های کوچک یا پوشیده مقدار را کاهش دهید."
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "رفتار هر فریم زمانی که تشخیص در یک دسته ناموفق باشد. 'empty' فریم را بدون چهره باقی می‌گذارد. 'previous' آخرین تشخیص موفق را کپی می‌کند. 'interpolate' نقاط/باکس/شکل‌های ترکیبی را بین فریم‌های موفق مجاور میان‌یابی می‌کند. چند چهره: جفت‌سازی چهره‌ها بین فریم‌ها با نزدیک‌ترین مرکز باکس به صورت حریصانه."
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "حداکثر تعداد چهره برای بازگشت در هر فریم. ۰ = بدون محدودیت (همه چهره‌های شناسایی‌شده بازگردانده می‌شوند)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "description": "ترسیم ماسک از نقاط کلیدی صورت.",
+    "display_name": "ماسک چهره MediaPipe",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = اجتماع face_oval+lips+eyes+irises (که به دلیل احاطه شدن توسط face_oval به همان face_oval تبدیل می‌شود). 'custom' = فعال/غیرفعال کردن هر ناحیه به صورت جداگانه برای ترکیب‌هایی مانند lips+eyes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "description": "ترسیم مش نقاط کلیدی صورت روی تصویر ورودی.",
+    "display_name": "بصری‌سازی Face Mesh MediaPipe",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = بیضی+چشم‌ها+ابروها+لب‌ها+عنبیه‌ها+بینی. 'fill' = چندضلعی face_oval پر (ماسک سیلوئت). 'custom' = فعال/غیرفعال کردن هر ویژگی به صورت جداگانه (شامل 'tesselation'، شبکه سیمی کامل با ۲۵۴۷ لبه)."
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "در صورت عدم اتصال، یک بوم سیاه استفاده خواهد شد."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "شعاع نقطه‌های نشانه‌گذاری بر حسب پیکسل. ۰ یعنی رسم نقطه غیرفعال است."
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "ضخامت خطوط لبه بر حسب پیکسل. ۰ یعنی رسم لبه غیرفعال است."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MergeImageLists": {
+    "description": "ادغام چندین لیست تصویر در یک لیست.",
     "display_name": "ادغام فهرست تصاویر",
     "inputs": {
       "images": {
@@ -9264,6 +9799,21 @@
       "0": {
         "name": "تصاویر",
         "tooltip": "تصاویر پردازش‌شده"
+      }
+    }
+  },
+  "MergeSplat": {
+    "description": "هر تعداد splat گوسی را به یک مورد ادغام می‌کند. ترکیب چند decode از یک latent با seedهای مختلف باعث افزایش تراکم سطح می‌شود و این می‌تواند کیفیت سطح را هنگام مش‌بندی بهبود بخشد.",
+    "display_name": "ادغام Splats",
+    "inputs": {
+      "splats": {
+        "name": "splats"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
       }
     }
   },
@@ -9698,6 +10248,126 @@
       "seed": {
         "name": "بذر تصادفی",
         "tooltip": "بذر تصادفی که برای ایجاد نویز استفاده می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeInference": {
+    "description": "اجرای MoGe روی یک تصویر برای تخمین عمق و هندسه.",
+    "display_name": "استنتاج MoGe",
+    "inputs": {
+      "apply_mask": {
+        "name": "apply_mask",
+        "tooltip": "پیکسل‌های ماسک‌شده (آسمان / نامعتبر) را در نقاط و عمق به مقدار inf تنظیم می‌کند تا در مش‌سازی حذف شوند. برای حفظ هندسه خام پیش‌بینی‌شده در همه جا غیرفعال کنید؛ ماسک همچنان به صورت جداگانه بازگردانده می‌شود."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "تعداد تصویر در هر فراخوانی استنتاج. اگر در ویدیو یا مجموعه تصویر طولانی با کمبود حافظه مواجه شدید، مقدار را کاهش دهید."
+      },
+      "force_projection": {
+        "name": "force_projection"
+      },
+      "fov_x_degrees": {
+        "name": "fov_x_degrees",
+        "tooltip": "زاویه دید افقی دوربین منبع. فاصله کانونی برای بازسازی نقشه عمق به سه‌بعدی را تعیین می‌کند. ۰ = بازیابی خودکار از نقاط پیش‌بینی‌شده."
+      },
+      "image": {
+        "name": "image"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "۰ = سریع‌ترین، ۹ = بیشترین جزئیات."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePanoramaInference": {
+    "description": "اجرای MoGe روی یک پانورامای equirectangular با تقسیم آن به ۱۲ نمای پرسپکتیو، اجرای inference روی هر کدام و ادغام نتایج در یک نقشه عمق واحد.",
+    "display_name": "استنتاج پانورامای MoGe",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "تعداد نما در هر دسته استنتاج (۱۲ بخش در کل)."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "پانورامای equirectangular (هر نسبت تصویر)."
+      },
+      "merge_resolution": {
+        "name": "merge_resolution",
+        "tooltip": "وضوح ضلع بلند نقشه فاصله equirect ادغام‌شده."
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "جزئیات هر نما (۰ = سریع‌ترین، ۹ = بیشترین جزئیات)."
+      },
+      "split_resolution": {
+        "name": "split_resolution",
+        "tooltip": "وضوح هر بخش پرسپکتیو."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePointMapToMesh": {
+    "description": "تبدیل نقشه نقاط MoGe به یک مش سه‌بعدی.",
+    "display_name": "MoGe Point Map to Mesh",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "کدام تصویر از هندسه‌ی MoGe دسته‌ای برای مش کردن انتخاب شود. تعداد رأس‌ها در هر تصویر متفاوت است، بنابراین دسته‌ها نمی‌توانند به یک مش واحد تبدیل شوند."
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "گام رأس؛ ۱ = وضوح کامل."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "پیکسل‌هایی که بازه عمق ۳×۳ آن‌ها از این نسبت بیشتر باشد حذف می‌شوند. ۰ = غیرفعال."
+      },
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "تصویر منبع را به عنوان بافت baseColor منتقل می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeRender": {
+    "description": "رندر نقشه عمق یا نقشه نرمال از داده‌های هندسی.",
+    "display_name": "MoGe Render",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "DirectX و OpenGL نحوه نمایش کانال سبز normal-map را کنترل می‌کنند. DirectX: سبز = -Y پایین (Unreal). OpenGL: سبز = +Y بالا (Blender، Substance، Unity، glTF)."
       }
     },
     "outputs": {
@@ -11951,6 +12621,23 @@
       }
     }
   },
+  "MultiGPU_WorkUnits": {
+    "description": "مدل را برای تسریع نمونه‌گیری از طریق تقسیم واحدهای کاری آماده می‌کند.\n\nباید پس از nodeهایی که شیء مدل را تغییر می‌دهند، مانند nodeهای compile یا attention-switch قرار گیرد.\n\nبه جز این استثناها، این node را می‌توان به هر ترتیبی قرار داد.",
+    "display_name": "تقسیم CFG چند GPU",
+    "inputs": {
+      "max_gpus": {
+        "name": "max_gpus"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "NAGuidance": {
     "description": "راهنمای توجه نرمال‌سازی‌شده را به مدل‌ها اعمال می‌کند و امکان استفاده از پرامپت منفی را در مدل‌های distilled/schnell فراهم می‌سازد.",
     "display_name": "راهنمای توجه نرمال‌سازی‌شده",
@@ -11978,6 +12665,7 @@
     }
   },
   "NormalizeImages": {
+    "description": "نرمال‌سازی تصاویر با استفاده از میانگین و انحراف معیار.",
     "display_name": "نرمال‌سازی تصاویر",
     "inputs": {
       "images": {
@@ -12307,6 +12995,39 @@
       }
     }
   },
+  "OpenRouterLLMNode": {
+    "description": "تولید پاسخ متنی از طریق OpenRouter. مسیریابی به مجموعه‌ای منتخب از مدل‌های محبوب xAI، DeepSeek، Qwen، Mistral، Z.AI (GLM)، Moonshot (Kimi) و Perplexity Sonar.",
+    "display_name": "OpenRouter LLM",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدل OpenRouter مورد استفاده برای تولید پاسخ."
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "ورودی متنی برای مدل."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذر نمونه‌گیری. برای حذف، مقدار ۰ را قرار دهید. اکثر مدل‌ها این مقدار را فقط به عنوان راهنما در نظر می‌گیرند."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "دستورالعمل‌های پایه که رفتار مدل را تعیین می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpticalFlowLoader": {
     "display_name": "بارگذاری مدل Optical Flow",
     "inputs": {
@@ -12628,6 +13349,32 @@
       }
     }
   },
+  "PiDConditioning": {
+    "description": "یک latent و یک مقدار degrade_sigma را به CONDITIONING برای رمزگشایی/بزرگ‌نمایی PiD متصل می‌کند.",
+    "display_name": "PiD Conditioning",
+    "inputs": {
+      "degrade_sigma": {
+        "name": "degrade_sigma",
+        "tooltip": "۰ = latent تمیز. برای حذف نویز خروجی‌های latent خراب، مقدار را افزایش دهید."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent (از VAEEncode یا KSampler)."
+      },
+      "latent_format": {
+        "name": "latent_format",
+        "tooltip": "لاتنت‌های Flux1 و Flux2 به طور خودکار از بعد کانال تشخیص داده می‌شوند، sd3 باید به صورت دستی انتخاب شود."
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PixverseImageToVideoNode": {
     "description": "تولید ویدیو بر اساس پرامپت و اندازه خروجی.",
     "display_name": "تبدیل تصویر به ویدیو PixVerse",
@@ -12832,6 +13579,52 @@
       "model_file": {
         "name": "فایل مدل",
         "tooltip": "فایل مدل سه‌بعدی یا مسیر فایل"
+      }
+    }
+  },
+  "Preview3DAdvanced": {
+    "display_name": "پیش‌نمایش سه‌بعدی (پیشرفته)",
+    "inputs": {
+      "camera_info": {
+        "name": "اطلاعات دوربین"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "model_3d_info": {
+        "name": "اطلاعات مدل سه‌بعدی"
+      },
+      "model_file": {
+        "name": "فایل مدل",
+        "tooltip": "فایل مدل سه‌بعدی از یک node سه‌بعدی بالادستی."
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فایل مدل",
+        "tooltip": null
+      },
+      "1": {
+        "name": "اطلاعات دوربین",
+        "tooltip": null
+      },
+      "2": {
+        "name": "اطلاعات مدل سه‌بعدی",
+        "tooltip": null
+      },
+      "3": {
+        "name": "عرض",
+        "tooltip": null
+      },
+      "4": {
+        "name": "ارتفاع",
+        "tooltip": null
       }
     }
   },
@@ -13120,6 +13913,7 @@
     }
   },
   "RandomCropImages": {
+    "description": "برش تصادفی تصویر به ابعاد مشخص شده.",
     "display_name": "برش تصادفی تصاویر",
     "inputs": {
       "control_after_generate": {
@@ -13803,6 +14597,7 @@
     }
   },
   "RemoveBackground": {
+    "description": "یک ماسک پیش‌زمینه ایجاد می‌کند تا پس‌زمینه را با استفاده از مدل حذف پس‌زمینه از تصویر حذف کند.",
     "display_name": "حذف پس‌زمینه",
     "inputs": {
       "bg_removal_model": {
@@ -13818,6 +14613,66 @@
       "0": {
         "name": "ماسک",
         "tooltip": "ماسک پیش‌زمینه تولید شده"
+      }
+    }
+  },
+  "RenderSplat": {
+    "description": "یک Gaussian Splat را به عنوان تصویر با یک رسترایزر EWA ناهمسانگرد (splatهای بیضوی جهت‌دار، ضدعلیاس، عمق‌مرتب‌شده از جلو به عقب) رندر کنید. دوربین از ورودی camera_info دریافت می‌شود (بارگذاری / پیش‌نمایش سه‌بعدی یا یک node ایجاد Camera Info)؛ اگر خالی باشد، splat به‌صورت خودکار قاب‌بندی می‌شود. برای ایجاد دسته‌ای از تصاویر چرخشی جهت استفاده در node ویدیو، مقدار فریم را بیشتر از ۱ قرار دهید.",
+    "display_name": "رندر Splat",
+    "inputs": {
+      "background": {
+        "name": "پس‌زمینه"
+      },
+      "bg_image": {
+        "name": "تصویر پس‌زمینه",
+        "tooltip": "پلیت پس‌زمینه اختیاری که پشت splat ترکیب می‌شود (رنگ پس‌زمینه ثابت را جایگزین می‌کند). به اندازه رندر تغییر اندازه می‌یابد؛ برای هر فریم یک دسته استفاده می‌شود، برای همه یک تصویر. فقط برای color/clay."
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "دوربینی که از آن رندر می‌شود - یک دوربین Load3D / Preview3D یا node ایجاد Camera Info. اگر خالی باشد، splat به‌صورت خودکار از نمای پیش‌فرض سه‌چهارم قاب‌بندی می‌شود."
+      },
+      "frames": {
+        "name": "فریم‌ها",
+        "tooltip": "-۱، ۰، ۱ = یک تصویر ثابت؛ >۱ = چرخشی، دوربین یک دور کامل ۳۶۰ درجه می‌چرخد (با هر camera_info کار می‌کند). مقدار منفی جهت چرخش را معکوس می‌کند."
+      },
+      "headlight_shading": {
+        "name": "سایه‌زنی نور جلویی",
+        "tooltip": "سایه‌زنی پخشی از یک نور در موقعیت دوربین (نور جلویی)، با استفاده از نرمال‌های سطحی splat: سطوحی که از دید دور می‌شوند را تیره می‌کند تا فرم/انحنا را نمایان کند. ۰ = آلبدو تخت، ۱ = قوی‌ترین سایه‌زنی."
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "opacity_threshold": {
+        "name": "آستانه شفافیت",
+        "tooltip": "حذف Gaussianهایی با شفافیت کمتر از این مقدار (حذف شناورهای کم‌رنگ)."
+      },
+      "render_style": {
+        "name": "سبک رندر",
+        "tooltip": "آنچه خروجی تصویر نمایش می‌دهد: رنگ، clay (سایه‌زنی با آلبدو خنثی)، عمق (نزدیک=روشن)، نرمال (نقشه نرمال OpenGL)."
+      },
+      "sharpen": {
+        "name": "وضوح",
+        "tooltip": "افزایش وضوح splatهای همپوشان: ۱.۰ = ترکیب فیزیکی صحیح؛ مقادیر بالاتر هر پیکسل را به سمت splat غالب (نزدیک‌تر) متمایل می‌کند تا بافت واضح‌تر شود، بدون کوچک کردن splatها یا ایجاد فاصله. بالاتر از ۱ غیر فیزیکی است."
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "splat_scale": {
+        "name": "مقیاس splat",
+        "tooltip": "ضریب اندازه تصویرشده هر splat (کمتر = نقاط واضح‌تر، بیشتر = سطح نرم‌تر/پُرتر)."
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "تصویر",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ماسک",
+        "tooltip": null
       }
     }
   },
@@ -13981,6 +14836,7 @@
     }
   },
   "ResizeImagesByLongerEdge": {
+    "description": "تغییر اندازه تصاویر به گونه‌ای که لبه بلندتر با بعد مشخص شده مطابقت داشته باشد و نسبت ابعاد حفظ شود.",
     "display_name": "تغییر اندازه تصاویر بر اساس ضلع بلندتر",
     "inputs": {
       "images": {
@@ -14000,6 +14856,7 @@
     }
   },
   "ResizeImagesByShorterEdge": {
+    "description": "تغییر اندازه تصاویر به گونه‌ای که لبه کوتاه‌تر با ابعاد مشخص شده مطابقت داشته باشد و نسبت ابعاد حفظ شود.",
     "display_name": "تغییر اندازه تصاویر بر اساس ضلع کوتاه‌تر",
     "inputs": {
       "images": {
@@ -14019,6 +14876,7 @@
     }
   },
   "ResolutionBucket": {
+    "description": "گروه‌بندی latentها و conditioningها در سطل‌ها",
     "display_name": "دسته‌بندی بر اساس وضوح",
     "inputs": {
       "conditioning": {
@@ -14247,6 +15105,164 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Image": {
+    "description": "تولید مدل سه‌بعدی از ۱ تا ۵ تصویر مرجع با استفاده از Rodin Gen-2.5. یک حالت (سریع / معمولی / فوق‌العاده بالا) را برای تنظیم کیفیت نسبت به هزینه انتخاب کنید.",
+    "display_name": "Rodin 3D Gen-2.5 - تصویر به سه‌بعدی",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "حالت T/A برای مدل‌های انسان‌نما."
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "افزونه HighPack: بافت ۴K و حدود ۱۶ برابر وجه در حالت Quad."
+      },
+      "bbox_height": {
+        "name": "ارتفاع جعبه محدودکننده",
+        "tooltip": "ارتفاع جعبه محدودکننده (محور Z)."
+      },
+      "bbox_length": {
+        "name": "طول جعبه محدودکننده",
+        "tooltip": "طول جعبه محدودکننده (محور X)."
+      },
+      "bbox_width": {
+        "name": "عرض جعبه محدودکننده",
+        "tooltip": "عرض جعبه محدودکننده (محور Y). برای صرف‌نظر کردن از جعبه، مقدار ۰ را با سایر ابعاد وارد کنید."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "geometry_file_format": {
+        "name": "فرمت فایل هندسه"
+      },
+      "hd_texture": {
+        "name": "hd_texture",
+        "tooltip": "افزایش کیفیت بافت به صورت باکیفیت."
+      },
+      "height_cm": {
+        "name": "ارتفاع مدل (سانتی‌متر)",
+        "tooltip": "ارتفاع تقریبی مدل به سانتی‌متر (۰ برای صرف‌نظر)."
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "۱ تا ۵ تصویر. اولین تصویر برای مواد در حالت چندنما استفاده می‌شود."
+      },
+      "material": {
+        "name": "material"
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "حالت تولید. معمولی = متعادل. سریع = ۱۰۰۰ تا ۲۰۰۰۰ وجه برای نمونه‌سازی سریع. فوق‌العاده بالا = ۲۰۰۰۰ تا ۲ میلیون وجه با جزئیات میکرو اختیاری."
+      },
+      "mode_creative": {
+        "name": "خلاقانه"
+      },
+      "mode_polygon_count": {
+        "name": "تعداد چندضلعی"
+      },
+      "mode_tier": {
+        "name": "سطح"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "texture_delight": {
+        "name": "texture_delight",
+        "tooltip": "حذف نورپردازی baked از بافت‌ها."
+      },
+      "texture_mode": {
+        "name": "حالت بافت",
+        "tooltip": "پیش‌تنظیم کیفیت بافت. «پیش‌فرض» از تنظیمات سرور برای سطح انتخاب‌شده استفاده می‌کند."
+      },
+      "use_original_alpha": {
+        "name": "use_original_alpha",
+        "tooltip": "حفظ شفافیت تصویر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فایل مدل",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "description": "تولید مدل سه‌بعدی از یک متن ورودی با استفاده از Rodin Gen-2.5. یک حالت (سریع / معمولی / بسیار پیشرفته) را برای تنظیم کیفیت نسبت به هزینه انتخاب کنید.",
+    "display_name": "Rodin 3D Gen-2.5 - تبدیل متن به مدل سه‌بعدی",
+    "inputs": {
+      "TAPose": {
+        "name": "T/A pose",
+        "tooltip": "حالت T/A برای مدل‌های انسان‌نما."
+      },
+      "addon_highpack": {
+        "name": "افزونه HighPack",
+        "tooltip": "افزونه HighPack: بافت ۴K و تقریباً ۱۶ برابر وجه بیشتر در حالت Quad."
+      },
+      "bbox_height": {
+        "name": "ارتفاع جعبه محدودکننده",
+        "tooltip": "ارتفاع جعبه محدودکننده (محور Z)."
+      },
+      "bbox_length": {
+        "name": "طول جعبه محدودکننده",
+        "tooltip": "طول جعبه محدودکننده (محور X)."
+      },
+      "bbox_width": {
+        "name": "عرض جعبه محدودکننده",
+        "tooltip": "عرض جعبه محدودکننده (محور Y). برای صرف‌نظر کردن از جعبه، مقدار ۰ را با سایر ابعاد وارد کنید."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "geometry_file_format": {
+        "name": "فرمت فایل هندسه"
+      },
+      "hd_texture": {
+        "name": "افزایش کیفیت بافت",
+        "tooltip": "افزایش کیفیت بافت به صورت پیشرفته."
+      },
+      "height_cm": {
+        "name": "ارتفاع مدل (سانتی‌متر)",
+        "tooltip": "ارتفاع تقریبی مدل به سانتی‌متر (۰ برای صرف‌نظر کردن)."
+      },
+      "material": {
+        "name": "جنس"
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "حالت تولید. معمولی = متعادل. سریع = ۱٬۰۰۰ تا ۲۰٬۰۰۰ وجه برای نمونه‌سازی سریع. بسیار پیشرفته = ۲۰٬۰۰۰ تا ۲٬۰۰۰٬۰۰۰ وجه با جزئیات میکرو اختیاری."
+      },
+      "mode_creative": {
+        "name": "خلاقانه"
+      },
+      "mode_polygon_count": {
+        "name": "تعداد وجه‌ها"
+      },
+      "mode_tier": {
+        "name": "سطح"
+      },
+      "prompt": {
+        "name": "متن ورودی",
+        "tooltip": "متن ورودی برای مدل سه‌بعدی."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "texture_delight": {
+        "name": "حذف نورپردازی بافت",
+        "tooltip": "حذف نورپردازی baked از بافت‌ها."
+      },
+      "texture_mode": {
+        "name": "حالت بافت",
+        "tooltip": "پیش‌تنظیم کیفیت بافت. «پیش‌فرض» از تنظیمات سرور برای سطح انتخاب‌شده استفاده می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فایل مدل",
         "tooltip": null
       }
     }
@@ -15362,7 +16378,32 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "description": "تصاویر ورودی را در پوشه خروجی ComfyUI شما ذخیره می‌کند.",
+    "display_name": "ذخیره تصویر (پیشرفته)",
+    "inputs": {
+      "filename_prefix": {
+        "name": "پیشوند نام فایل",
+        "tooltip": "پیشوند فایل برای ذخیره. می‌تواند شامل توکن‌های قالب‌بندی مانند ‎%date:yyyy-MM-dd%‎ یا ‎%Empty Latent Image.width%‎ باشد."
+      },
+      "format": {
+        "name": "فرمت",
+        "tooltip": "فرمت فایل برای ذخیره تصویر."
+      },
+      "format_bit_depth": {
+        "name": "عمق بیت"
+      },
+      "format_input_color_space": {
+        "name": "فضای رنگ ورودی"
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصاویری که باید ذخیره شوند."
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
+    "description": "ذخیره یک مجموعه داده تصویر در پوشه‌ای مشخص. فرمت‌های پشتیبانی‌شده: PNG.",
     "display_name": "ذخیره مجموعه تصاویر در پوشه",
     "inputs": {
       "filename_prefix": {
@@ -15376,10 +16417,15 @@
       "images": {
         "name": "تصاویر",
         "tooltip": "فهرست تصاویر برای ذخیره."
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "آیا فایل‌های موجود بازنویسی شوند یا نام فایل‌ها به‌صورت افزایشی تغییر کند تا از بازنویسی جلوگیری شود."
       }
     }
   },
   "SaveImageTextDataSetToFolder": {
+    "description": "ذخیره یک مجموعه داده شامل جفت‌های تصویر و کپشن متنی در پوشه‌ای مشخص. تصاویر به صورت فایل PNG و کپشن‌ها به صورت فایل TXT با همان پیشوند نام فایل ذخیره می‌شوند.",
     "display_name": "ذخیره مجموعه تصویر و متن در پوشه",
     "inputs": {
       "filename_prefix": {
@@ -15393,6 +16439,10 @@
       "images": {
         "name": "تصاویر",
         "tooltip": "فهرست تصاویر برای ذخیره."
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "آیا فایل‌های موجود بازنویسی شوند یا نام فایل‌ها به‌صورت افزایشی تغییر کند تا از بازنویسی جلوگیری شود."
       },
       "texts": {
         "name": "متون",
@@ -15450,6 +16500,7 @@
     }
   },
   "SaveTrainingDataset": {
+    "description": "ذخیره مجموعه داده آموزش کدگذاری‌شده (latentها + conditioning) روی دیسک برای بارگذاری سریع‌تر در زمان آموزش.",
     "display_name": "ذخیره مجموعه داده آموزشی",
     "inputs": {
       "conditioning": {
@@ -15537,6 +16588,57 @@
       },
       "shift_y": {
         "name": "جابجایی Y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectCLIPDevice": {
+    "description": "رمزگذار متنی CLIP را روی یک دستگاه خاص قرار دهید (پیش‌فرض / cpu / gpu:N).\n\n- «default» دستگاه اختصاص داده‌شده توسط loader را بازمی‌گرداند.\n- «cpu» هر دو دستگاه بارگذاری و offload را به CPU اختصاص می‌دهد.\n- «gpu:N» دستگاه بارگذاری را به Nامین GPU موجود اختصاص می‌دهد.\n\nزمانی که دستگاه انتخاب‌شده روی سیستم فعلی وجود نداشته باشد\n(مثلاً یک workflow ساخته‌شده روی سیستمی با ۲ GPU که روی سیستمی با ۱ GPU باز می‌شود)،\nnode بدون تغییر CLIP را عبور می‌دهد و به جای خطا، پیامی را ثبت می‌کند.",
+    "display_name": "انتخاب دستگاه CLIP",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "device": {
+        "name": "device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectModelDevice": {
+    "description": "مدل diffusion را روی یک دستگاه خاص قرار دهید (پیش‌فرض / cpu / gpu:N).\n\n- «default» دستگاه اختصاص داده‌شده توسط loader را بازمی‌گرداند (حتی پس از یک\n  فراخوانی قبلی Select Model Device).\n- «cpu» هر دو دستگاه بارگذاری و offload را به CPU اختصاص می‌دهد.\n- «gpu:N» دستگاه بارگذاری را به Nامین GPU موجود اختصاص می‌دهد؛ دستگاه offload\n  به انتخاب اولیه loader بازمی‌گردد.\n\nاگر دستگاه درخواست‌شده با دستگاهی که مدل ورودی هم‌اکنون روی آن قرار دارد متفاوت باشد،\nیک مدل جدید از طریق reload factory loader (cached_patcher_init) ایجاد می‌شود تا patcher جدید وزن‌های مستقل روی دستگاه جدید داشته باشد. loaderهایی که از multigpu پشتیبانی نمی‌کنند (بدون factory) باعث می‌شوند node بدون تغییر عبور کند و هشدار دهد.\n\nاگر workflow قبلاً تقسیم CFG چند GPU را اعمال کرده باشد و GPU انتخاب‌شده با یکی از کلون‌های multigpu موجود تداخل داشته باشد، آن کلون حذف می‌شود تا دو patcher به یک دستگاه متصل نشوند.\n\nزمانی که دستگاه انتخاب‌شده روی سیستم فعلی وجود نداشته باشد\n(مثلاً یک workflow ساخته‌شده روی سیستمی با ۲ GPU که روی سیستمی با ۱ GPU باز می‌شود)،\nnode مدل را بدون تغییر عبور می‌دهد و به جای خطا، پیامی را ثبت می‌کند.\n\nتوجه: قرار دادن Select Model Device بعد از nodeی که قبلاً همان مدل را مصرف کرده است (مثلاً یک KSampler که روی این مدل روی دستگاه اصلی اجرا شده) توصیه نمی‌شود -- هر وضعیتی که مصرف‌کننده قبلی روی مدل اصلی تغییر داده باشد زمانی که دستگاه انتخابی با دستگاه اصلی یکسان باشد (fast path) مشاهده خواهد شد. Select Model Device را قبل از هر مصرف‌کننده مدل قرار دهید.",
+    "display_name": "انتخاب دستگاه مدل",
+    "inputs": {
+      "device": {
+        "name": "device"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectVAEDevice": {
+    "description": "قرار دادن VAE بر روی یک دستگاه مشخص (پیش‌فرض / gpu:N).\n\n- «پیش‌فرض» دستگاه اختصاص داده‌شده توسط لودر را بازیابی می‌کند.\n- «gpu:N» دستگاه بارگذاری را به Nاُمین GPU موجود اختصاص می‌دهد؛ دستگاه offload\n  به دستگاه استاندارد offload برای VAE تنظیم می‌شود.\n\nCPU عمداً در رابط کاربری برای VAE نمایش داده نمی‌شود؛ اگر یک workflow\nبه هر حال «cpu» را ارائه دهد (مثلاً از یک رایانه دیگر باز شده باشد)، درخواست\nبا یک پیام ثبت‌شده رد می‌شود و VAE بدون تغییر عبور داده می‌شود.\n\nزمانی که دستگاه انتخاب‌شده روی دستگاه فعلی وجود نداشته باشد\n(مثلاً یک workflow ساخته‌شده روی سیستمی با ۲ GPU که روی سیستمی با ۱ GPU باز شود)،\nگره VAE را بدون تغییر عبور می‌دهد و به جای خطا، یک پیام ثبت می‌کند.",
+    "display_name": "انتخاب دستگاه VAE",
+    "inputs": {
+      "device": {
+        "name": "دستگاه"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -15636,6 +16738,7 @@
     }
   },
   "ShuffleDataset": {
+    "description": "ترتیب تصاویر را در یک لیست به صورت تصادفی جابجا می‌کند.",
     "display_name": "درهم‌ریختن دیتاست تصویر",
     "inputs": {
       "control_after_generate": {
@@ -15658,6 +16761,7 @@
     }
   },
   "ShuffleImageTextDataset": {
+    "description": "ترتیب جفت‌های تصویر-متن را در یک لیست به صورت تصادفی جابجا می‌کند.",
     "display_name": "درهم‌ریختن دیتاست تصویر-متن",
     "inputs": {
       "control_after_generate": {
@@ -15838,6 +16942,68 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SplatToFile3D": {
+    "description": "یک Gaussian Splat را به شیء File3D برای nodeهای ذخیره/پیش‌نمایش سه‌بعدی سریال‌سازی کنید. فقط یک آیتم در هر دسته پشتیبانی می‌شود.",
+    "display_name": "ایجاد فایل سه‌بعدی (از Splat)",
+    "inputs": {
+      "format": {
+        "name": "فرمت",
+        "tooltip": "ply: Splat سه‌بعدی استاندارد با هارمونیک‌های کروی کامل. ksplat: SplatBuffer mkkellogg (سطح ۰، بدون فشرده‌سازی)، فقط رنگ پایه spz: Niantic فشرده‌سازی gzip (~۱۰ برابر کوچکتر)، فقط رنگ پایه"
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مدل سه‌بعدی",
+        "tooltip": null
+      }
+    }
+  },
+  "SplatToMesh": {
+    "description": "استخراج یک مش رنگی از یک gaussian splat.",
+    "display_name": "استخراج مش از Splat",
+    "inputs": {
+      "color_sharpen": {
+        "name": "افزایش وضوح رنگ",
+        "tooltip": "بافت رأس را شفاف‌تر می‌کند: ۱.۰ = ترکیب فیزیکی صحیح؛ مقادیر بالاتر رنگ هر وکسل را به سمت غالب‌ترین gaussian متمایل می‌کند به جای میانگین‌گیری همسایه‌ها (تارشدگی بافت را کاهش می‌دهد). فقط رنگ - هندسه تغییر نمی‌کند."
+      },
+      "kernel": {
+        "name": "هسته",
+        "tooltip": "حداکثر نیم‌عرض splat در وکسل‌ها. هر gaussian روی پنجره‌ای به اندازه ۳-سیگمای خودش rasterize می‌شود که اینجا محدود شده است - surfelهای کوچک ارزان باقی می‌مانند، بزرگ‌ها قطع نمی‌شوند. اگر splatهای پراکنده باعث ایجاد فاصله شدند، مقدار را افزایش دهید."
+      },
+      "level": {
+        "name": "سطح",
+        "tooltip": "سطح ایزو-سطح. به طور خودکار توسط Otsu انتخاب می‌شود؛ این مقدار آن را تغییر می‌دهد (۱.۰ = خودکار، کمتر = سطح چاق‌تر/متصل‌تر، بیشتر = سطح نازک‌تر/فشرده‌تر)."
+      },
+      "min_component": {
+        "name": "حداقل مؤلفه",
+        "tooltip": "اجزای متصل کوچکتر از این تعداد رأس را حذف کن (۰ = همه را نگه دار). حباب‌های شناور جدا و پوسته داخلی دیوار دوگانه را حذف می‌کند."
+      },
+      "min_opacity": {
+        "name": "حداقل شفافیت",
+        "tooltip": "gaussianهایی که شفافیت آن‌ها کمتر از این مقدار است را قبل از ساخت مش نادیده بگیر."
+      },
+      "resolution": {
+        "name": "وضوح",
+        "tooltip": "وضوح شبکه چگالی در امتداد بلندترین محور. مقدار بالاتر = سطح دقیق‌تر، مصرف VRAM/زمان بیشتر (با توان سوم وضوح افزایش می‌یابد)."
+      },
+      "smooth": {
+        "name": "نرمی",
+        "tooltip": "تعداد تکرارهای صاف‌سازی مش Taubin. سطح را بدون کوچک کردن (حفظ حجم) صاف می‌کند، برخلاف محو کردن چگالی. ۰ = سطح خام."
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مش",
         "tooltip": null
       }
     }
@@ -16470,6 +17636,23 @@
     "outputs": {
       "0": {
         "name": "شامل",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "همانند متد فرمت رشته در پایتون. از تمام گزینه‌ها و ویژگی‌های فرمت پایتون پشتیبانی می‌کند.",
+    "display_name": "فرمت متن",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -17523,6 +18706,48 @@
       }
     }
   },
+  "TransformSplat": {
+    "description": "جابجایی، چرخش و تغییر مقیاس یک gaussian splat. مقیاس غیر یکنواخت همچنین هر splat را به طور جداگانه تغییر شکل می‌دهد و فرآیند کندتری است.",
+    "display_name": "تبدیل Splat",
+    "inputs": {
+      "rotate_x": {
+        "name": "چرخش X"
+      },
+      "rotate_y": {
+        "name": "چرخش Y"
+      },
+      "rotate_z": {
+        "name": "چرخش Z"
+      },
+      "scale_x": {
+        "name": "مقیاس X"
+      },
+      "scale_y": {
+        "name": "مقیاس Y"
+      },
+      "scale_z": {
+        "name": "مقیاس Z"
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "translate_x": {
+        "name": "جابجایی X"
+      },
+      "translate_y": {
+        "name": "جابجایی Y"
+      },
+      "translate_z": {
+        "name": "جابجایی Z"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "TrimAudioDuration": {
     "description": "برش تانسور صوت به بازه زمانی انتخاب شده.",
     "display_name": "برش مدت زمان صوت",
@@ -17768,6 +18993,169 @@
       }
     }
   },
+  "TripoP1ImageToModelNode": {
+    "description": "تبدیل تصویر به مدل سه‌بعدی با Tripo P1. بهینه‌شده برای مش‌های کم‌پلی و مناسب بازی.",
+    "display_name": "Tripo P1: تبدیل تصویر به مدل",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "مقیاس خروجی برای تقریب اندازه واقعی (متر)."
+      },
+      "compress_geometry": {
+        "name": "compress_geometry",
+        "tooltip": "فشرده‌سازی مبتنی بر هندسه. قبل از ویرایش، از حالت فشرده خارج کنید."
+      },
+      "enable_image_autofix": {
+        "name": "enable_image_autofix",
+        "tooltip": "پیش‌پردازش تصویر ورودی برای بهبود کیفیت تولید."
+      },
+      "export_uv": {
+        "name": "export_uv",
+        "tooltip": "بازکردن UV هنگام تولید. برای سرعت بیشتر در حالت فقط هندسه، غیرفعال کنید."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "تعداد هدف برای وجوه مش، از ۴۸ تا ۲۰۰۰۰. مقدار ‎-۱ اجازه می‌دهد Tripo به صورت تطبیقی انتخاب کند."
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "output_mode": {
+        "name": "output_mode",
+        "tooltip": "در حالت «فقط هندسه»، مش بدون بافت خروجی می‌شود. «بافت‌دار» نقشه‌های رنگی/PBR را اضافه می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1MultiviewToModelNode": {
+    "description": "تبدیل چندنما به مدل سه‌بعدی با Tripo P1 از ۲ تا ۴ تصویر مرجع به ترتیب [جلو، چپ، پشت، راست]. نمای جلو الزامی است؛ هر ترکیبی از سه نمای دیگر می‌تواند حذف شود.",
+    "display_name": "Tripo P1: تبدیل چندنما به مدل",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "مقیاس خروجی برای تقریب اندازه واقعی (متر)."
+      },
+      "compress_geometry": {
+        "name": "compress_geometry",
+        "tooltip": "فشرده‌سازی مبتنی بر هندسه. قبل از ویرایش، از حالت فشرده خارج کنید."
+      },
+      "export_uv": {
+        "name": "export_uv",
+        "tooltip": "بازکردن UV هنگام تولید. برای سرعت بیشتر در حالت فقط هندسه، غیرفعال کنید."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "تعداد هدف برای وجوه مش، از ۴۸ تا ۲۰۰۰۰. مقدار ‎-۱ اجازه می‌دهد Tripo به صورت تطبیقی انتخاب کند."
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "نمای جلو (۰°). الزامی."
+      },
+      "image_back": {
+        "name": "image_back",
+        "tooltip": "نمای پشت (۱۸۰°)."
+      },
+      "image_left": {
+        "name": "image_left",
+        "tooltip": "نمای چپ (۹۰°)، یعنی سمت چپ سوژه."
+      },
+      "image_right": {
+        "name": "image_right",
+        "tooltip": "نمای راست (۲۷۰°)، یعنی سمت راست سوژه."
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "output_mode": {
+        "name": "output_mode",
+        "tooltip": "در حالت «فقط هندسه»، مش بدون بافت خروجی می‌شود. «بافت‌دار» نقشه‌های رنگی/PBR را اضافه می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1TextToModelNode": {
+    "description": "تبدیل متن به مدل سه‌بعدی با Tripo P1. بهینه‌شده برای مش‌های کم‌پلی و آماده برای بازی با توپولوژی پایدار.",
+    "display_name": "Tripo P1: تبدیل متن به مدل",
+    "inputs": {
+      "auto_size": {
+        "name": "اندازه خودکار",
+        "tooltip": "خروجی را برای تقریب ابعاد واقعی (متر) مقیاس‌بندی می‌کند."
+      },
+      "compress_geometry": {
+        "name": "فشرده‌سازی هندسه",
+        "tooltip": "فشرده‌سازی مبتنی بر هندسه را اعمال می‌کند. قبل از ویرایش، از حالت فشرده خارج کنید."
+      },
+      "export_uv": {
+        "name": "خروجی UV",
+        "tooltip": "بازکردن UV هنگام تولید. برای اجرای سریع‌تر فقط هندسه، غیرفعال کنید."
+      },
+      "face_limit": {
+        "name": "محدودیت وجه",
+        "tooltip": "تعداد هدف وجه، ۴۸ تا ۲۰۰۰۰. مقدار ‎-۱ اجازه می‌دهد Tripo به صورت تطبیقی انتخاب کند."
+      },
+      "image_seed": {
+        "name": "بذر تصویر"
+      },
+      "model_seed": {
+        "name": "بذر مدل"
+      },
+      "negative_prompt": {
+        "name": "پرامپت منفی",
+        "tooltip": "حداکثر ۲۵۵ کاراکتر."
+      },
+      "output_mode": {
+        "name": "حالت خروجی",
+        "tooltip": "«فقط هندسه» یک مش بدون بافت بازمی‌گرداند. «بافت‌دار» نقشه‌های رنگی/PBR را اضافه می‌کند."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "حداکثر ۱۰۲۴ کاراکتر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فایل مدل",
+        "tooltip": null
+      },
+      "1": {
+        "name": "شناسه وظیفه مدل",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
   "TripoRefineNode": {
     "description": "بهبود یک مدل پیش‌نویس که فقط توسط مدل‌های Tripo نسخه ۱.۴ ایجاد شده است.",
     "display_name": "Tripo: بهبود مدل پیش‌نویس",
@@ -17835,6 +19223,101 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSplatConditioning": {
+    "description": "رمزگذاری تصویر با DINOv3 و Flux2 VAE به شرط‌گذاری مثبت/منفی TripoSplat و ایجاد هدف نویز با اندازه ثابت (latent + دوربین) برای KSampler",
+    "display_name": "شرط‌گذاری TripoSplat",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision",
+        "tooltip": "رمزگذار تصویر DINOv3 ViT-H/16+"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Flux2 VAE"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "هدف نویز با اندازه ثابت (latent + دوربین)."
+      }
+    }
+  },
+  "TripoSplatPreprocessImage": {
+    "description": "مرکز هر تصویر را به یک بوم مربع با پس‌زمینه سیاه برش داده و حاشیه اضافه می‌کند.",
+    "display_name": "پیش‌پردازش تصویر TripoSplat",
+    "inputs": {
+      "erode_radius": {
+        "name": "شعاع فرسایش",
+        "tooltip": "مات آلفا را به اندازه این شعاع پیکسلی پیش از برش فرسایش می‌دهد (برای جلوگیری از نشت لبه‌ها)."
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "mask": {
+        "name": "ماسک"
+      },
+      "size": {
+        "name": "اندازه",
+        "tooltip": "اندازه تصویر مربع. مدل با اندازه ۱۰۲۴ آموزش دیده است؛ سایر اندازه‌ها قابل اجرا هستند اما خارج از توزیع مدل می‌باشند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "تصویر",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSplatSamplingPreview": {
+    "description": "مدل TripoSplat را برای نود استاندارد Ksampler وصله می‌کند تا پیش‌نمایش زنده گوسین اسپلَت رمزگشایی‌شده را در هر مرحله نمایش دهد.",
+    "display_name": "پیش‌نمایش نمونه‌گیری TripoSplat",
+    "inputs": {
+      "model": {
+        "name": "مدل"
+      },
+      "num_gaussians": {
+        "name": "تعداد گوسین‌ها",
+        "tooltip": "تعداد گوسین‌هایی که برای پیش‌نمایش تولید می‌شوند (به مضرب ۳۲ گرد می‌شود)."
+      },
+      "octree_level": {
+        "name": "سطح octree",
+        "tooltip": "عمق octree برای رمزگشایی پیش‌نمایش (کمتر = ارزان‌تر/درشت‌تر)."
+      },
+      "pitch": {
+        "name": "زاویه عمودی (pitch)",
+        "tooltip": "زاویه عمودی دوربین پیش‌نمایش بر حسب درجه."
+      },
+      "point_size": {
+        "name": "اندازه نقطه",
+        "tooltip": "حداکثر شعاع اسپلَت بر حسب پیکسل. هر گوسین بر اساس مقیاس خود اندازه‌گذاری شده و در این مقدار محدود می‌شود؛ مقدار کمتر = ریزتر/نوک‌تیزتر، مقدار بیشتر = درشت‌تر."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "رمزگشای VAE برای TripoSplat"
+      },
+      "yaw": {
+        "name": "زاویه افقی (yaw)",
+        "tooltip": "زاویه افقی دوربین پیش‌نمایش بر حسب درجه."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -18167,6 +19650,36 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "VAEDecodeTripoSplat": {
+    "description": "فضای نهفته نمونه‌گیری‌شده TripoSplat را به یک گوسین اسپلَت سه‌بعدی رمزگشایی می‌کند. با تغییر تعداد گوسین‌ها می‌توانید چگالی را تغییر دهید.",
+    "display_name": "رمزگشایی TripoSplat",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "num_gaussians": {
+        "name": "تعداد گوسین‌ها",
+        "tooltip": "تعداد گوسین‌هایی که تولید می‌شوند (به مضرب ۳۲ گرد می‌شود). مقدار ۲۶۲۱۴۴ با چگالی نقاط octree مطابقت دارد؛ مقادیر بالاتر همان نقاط را بیش‌نمونه‌گیری می‌کند (چگال‌تر، اما بدون جزئیات جدید) و به همان نسبت VRAM/زمان بیشتری مصرف می‌کند."
+      },
+      "samples": {
+        "name": "نمونه‌ها"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر نمونه‌گیر نقاط octree (RNG سراسری) برای رمزگشایی قطعی."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "رمزگشای VAE برای TripoSplat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "اسپلَت",
+        "tooltip": null
       }
     }
   },
@@ -19141,6 +20654,7 @@
     }
   },
   "VoxelToMesh": {
+    "description": "تبدیل شبکه voxel به mesh.",
     "display_name": "VoxelToMesh",
     "inputs": {
       "algorithm": {
@@ -19160,6 +20674,7 @@
     }
   },
   "VoxelToMeshBasic": {
+    "description": "تبدیل شبکه voxel به mesh.",
     "display_name": "VoxelToMeshBasic",
     "inputs": {
       "threshold": {

@@ -144,6 +144,7 @@ describe('useLoad3d', () => {
       setMaterialMode: vi.fn(),
       toggleCamera: vi.fn(),
       setFOV: vi.fn(),
+      setRetainViewOnReload: vi.fn(),
       setLightIntensity: vi.fn(),
       setCameraState: vi.fn(),
       loadModel: vi.fn().mockResolvedValue(undefined),
@@ -191,6 +192,7 @@ describe('useLoad3d', () => {
         rotation: { x: 0, y: 0, z: 0 },
         scale: { x: 1, y: 1, z: 1 }
       }),
+      getModelInfo: vi.fn().mockReturnValue(null),
       captureThumbnail: vi.fn().mockResolvedValue('data:image/png;base64,test'),
       setAnimationTime: vi.fn(),
       renderer: {
@@ -568,17 +570,21 @@ describe('useLoad3d', () => {
 
       vi.mocked(mockLoad3d.toggleCamera!).mockClear()
       vi.mocked(mockLoad3d.setFOV!).mockClear()
+      vi.mocked(mockLoad3d.setRetainViewOnReload!).mockClear()
 
       composable.cameraConfig.value.cameraType = 'orthographic'
       composable.cameraConfig.value.fov = 90
+      composable.cameraConfig.value.retainViewOnReload = true
       await nextTick()
 
       expect(mockLoad3d.toggleCamera).toHaveBeenCalledWith('orthographic')
       expect(mockLoad3d.setFOV).toHaveBeenCalledWith(90)
+      expect(mockLoad3d.setRetainViewOnReload).toHaveBeenCalledWith(true)
       expect(mockNode.properties['Camera Config']).toEqual({
         cameraType: 'orthographic',
         fov: 90,
-        state: null
+        state: null,
+        retainViewOnReload: true
       })
     })
 
@@ -1349,6 +1355,39 @@ describe('useLoad3d', () => {
       expect(composable.modelConfig.value.gizmo!.mode).toBe('rotate')
     })
 
+    it('gizmoTransformChange mirrors the live scene into Scene Config models', async () => {
+      const modelTransform = {
+        position: { x: 5, y: 6, z: 7 },
+        quaternion: { x: 0, y: 0, z: 0, w: 1 },
+        scale: { x: 3, y: 3, z: 3 }
+      }
+      vi.mocked(mockLoad3d.getModelInfo!).mockReturnValue(modelTransform)
+
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+
+      const addEventCalls = vi.mocked(mockLoad3d.addEventListener!).mock.calls
+      const handler = addEventCalls.find(
+        ([event]) => event === 'gizmoTransformChange'
+      )![1] as (data: unknown) => void
+
+      handler({
+        position: { x: 5, y: 6, z: 7 },
+        rotation: { x: 0.5, y: 0.6, z: 0.7 },
+        scale: { x: 3, y: 3, z: 3 },
+        enabled: true,
+        mode: 'rotate'
+      })
+      await nextTick()
+
+      expect(composable.sceneConfig.value.models).toEqual([modelTransform])
+      const savedScene = mockNode.properties['Scene Config'] as {
+        models: unknown[]
+      }
+      expect(savedScene.models).toEqual([modelTransform])
+    })
+
     it('should reset gizmo config on model switch (not first load)', async () => {
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
@@ -1464,9 +1503,11 @@ describe('useLoad3d', () => {
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
       await composable.initializeLoad3d(containerRef)
-      const call = vi
-        .mocked(mockLoad3d.addEventListener!)
-        .mock.calls.find(([event]) => event === 'modelReady')
+      const addEventListenerCalls = vi.mocked(mockLoad3d.addEventListener!).mock
+        .calls
+      const call = addEventListenerCalls.find(
+        ([event]) => event === 'modelReady'
+      )
       return { composable, handler: call![1] as () => void }
     }
 
@@ -1475,9 +1516,9 @@ describe('useLoad3d', () => {
       const containerRef = document.createElement('div')
       await composable.initializeLoad3d(containerRef)
 
-      const events = vi
-        .mocked(mockLoad3d.addEventListener!)
-        .mock.calls.map(([event]) => event)
+      const addEventListenerCalls = vi.mocked(mockLoad3d.addEventListener!).mock
+        .calls
+      const events = addEventListenerCalls.map(([event]) => event)
       expect(events).toContain('modelReady')
       expect(events).toContain('modelLoadingEnd')
       expect(composable).toBeDefined()
@@ -1557,6 +1598,139 @@ describe('useLoad3d', () => {
       expect(() => handler()).not.toThrow()
       await new Promise((r) => setTimeout(r, 0))
       expect(persistThumbnail).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('waitForLoad3d / onLoad3dReady', () => {
+    it('fires waitForLoad3d callback when load3d initializes, then drops it', async () => {
+      const composable = useLoad3d(mockNode)
+      const cb = vi.fn()
+      composable.waitForLoad3d(cb)
+      expect(cb).not.toHaveBeenCalled()
+
+      await composable.initializeLoad3d(document.createElement('div'))
+      expect(cb).toHaveBeenCalledTimes(1)
+
+      composable.cleanup()
+      await composable.initializeLoad3d(document.createElement('div'))
+      expect(cb).toHaveBeenCalledTimes(1)
+    })
+
+    it('fires onLoad3dReady callback on every (re-)initialization', async () => {
+      const composable = useLoad3d(mockNode)
+      const cb = vi.fn()
+      composable.onLoad3dReady(cb)
+      expect(cb).not.toHaveBeenCalled()
+
+      await composable.initializeLoad3d(document.createElement('div'))
+      expect(cb).toHaveBeenCalledTimes(1)
+
+      composable.cleanup()
+      await composable.initializeLoad3d(document.createElement('div'))
+      expect(cb).toHaveBeenCalledTimes(2)
+
+      composable.cleanup()
+      await composable.initializeLoad3d(document.createElement('div'))
+      expect(cb).toHaveBeenCalledTimes(3)
+    })
+
+    it('fires onLoad3dReady synchronously when load3d already exists', async () => {
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      const cb = vi.fn()
+      composable.onLoad3dReady(cb)
+      expect(cb).toHaveBeenCalledTimes(1)
+    })
+
+    it('clears persistent callbacks when the node is removed', async () => {
+      const composable = useLoad3d(mockNode)
+      const cb = vi.fn()
+      composable.onLoad3dReady(cb)
+      await composable.initializeLoad3d(document.createElement('div'))
+      expect(cb).toHaveBeenCalledTimes(1)
+
+      mockNode.onRemoved?.()
+
+      composable.cleanup()
+      await composable.initializeLoad3d(document.createElement('div'))
+      expect(cb).toHaveBeenCalledTimes(1)
+    })
+
+    it('isolates a throwing callback so subsequent callbacks and event wiring still run', async () => {
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+
+      const composable = useLoad3d(mockNode)
+      const throwing = vi.fn(() => {
+        throw new Error('boom')
+      })
+      const after = vi.fn()
+      composable.waitForLoad3d(throwing)
+      composable.onLoad3dReady(after)
+
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      expect(throwing).toHaveBeenCalledTimes(1)
+      expect(after).toHaveBeenCalledTimes(1)
+      expect(mockLoad3d.addEventListener).toHaveBeenCalled()
+      expect(mockToastStore.addAlert).not.toHaveBeenCalled()
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Load3d ready callback failed:',
+        expect.any(Error)
+      )
+
+      consoleErrorSpy.mockRestore()
+    })
+
+    it('isolates a throwing callback in the synchronous already-mounted path', async () => {
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      const throwing = vi.fn(() => {
+        throw new Error('boom')
+      })
+
+      expect(() => composable.waitForLoad3d(throwing)).not.toThrow()
+      expect(() => composable.onLoad3dReady(throwing)).not.toThrow()
+      expect(throwing).toHaveBeenCalledTimes(2)
+
+      consoleErrorSpy.mockRestore()
+    })
+
+    it('cleans up callback maps when the node is removed before initializeLoad3d runs', async () => {
+      const leakedWait = vi.fn()
+      const leakedReady = vi.fn()
+
+      const composable = useLoad3d(mockNode)
+      composable.waitForLoad3d(leakedWait)
+      composable.onLoad3dReady(leakedReady)
+
+      mockNode.onRemoved?.()
+
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      expect(leakedWait).not.toHaveBeenCalled()
+      expect(leakedReady).not.toHaveBeenCalled()
+    })
+
+    it('chains the onRemoved cleanup only once per node', () => {
+      const originalOnRemoved = vi.fn()
+      mockNode.onRemoved = originalOnRemoved
+
+      const composable = useLoad3d(mockNode)
+      composable.waitForLoad3d(vi.fn())
+      composable.onLoad3dReady(vi.fn())
+      composable.onLoad3dReady(vi.fn())
+
+      mockNode.onRemoved?.()
+
+      expect(originalOnRemoved).toHaveBeenCalledTimes(1)
     })
   })
 })

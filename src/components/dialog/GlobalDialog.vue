@@ -8,9 +8,14 @@
       @update:open="(open) => onRekaOpenChange(item.key, open)"
     >
       <DialogPortal>
-        <DialogOverlay />
+        <DialogOverlay
+          v-reka-z-index
+          :class="item.dialogComponentProps.overlayClass"
+        />
         <DialogContent
+          v-reka-z-index
           :size="item.dialogComponentProps.size ?? 'md'"
+          :maximized="!!item.dialogComponentProps.maximized"
           :class="item.dialogComponentProps.contentClass"
           :aria-labelledby="item.key"
           @escape-key-down="
@@ -19,34 +24,51 @@
               e.preventDefault()
           "
           @pointer-down-outside="
-            (e) =>
-              item.dialogComponentProps.dismissableMask === false &&
-              e.preventDefault()
+            (e) => onRekaPointerDownOutside(item.dialogComponentProps, e)
           "
+          @focus-outside="onRekaFocusOutside"
           @mousedown="() => dialogStore.riseDialog({ key: item.key })"
         >
-          <DialogHeader v-if="!item.dialogComponentProps.headless">
-            <component
-              :is="item.headerComponent"
-              v-if="item.headerComponent"
-              v-bind="item.headerProps"
-              :id="item.key"
-            />
-            <DialogTitle v-else :id="item.key">
-              {{ item.title || ' ' }}
-            </DialogTitle>
-            <DialogClose v-if="item.dialogComponentProps.closable !== false" />
-          </DialogHeader>
-          <div class="flex-1 overflow-auto px-4 py-2">
+          <template v-if="item.dialogComponentProps.headless">
             <component
               :is="item.component"
               v-bind="item.contentProps"
               :maximized="item.dialogComponentProps.maximized"
             />
-          </div>
-          <DialogFooter v-if="item.footerComponent">
-            <component :is="item.footerComponent" v-bind="item.footerProps" />
-          </DialogFooter>
+          </template>
+          <template v-else>
+            <DialogHeader>
+              <component
+                :is="item.headerComponent"
+                v-if="item.headerComponent"
+                v-bind="item.headerProps"
+                :id="item.key"
+              />
+              <DialogTitle v-else :id="item.key">
+                {{ item.title || ' ' }}
+              </DialogTitle>
+              <div class="flex items-center gap-1">
+                <DialogMaximize
+                  v-if="item.dialogComponentProps.maximizable"
+                  :maximized="!!item.dialogComponentProps.maximized"
+                  @toggle="toggleMaximize(item)"
+                />
+                <DialogClose
+                  v-if="item.dialogComponentProps.closable !== false"
+                />
+              </div>
+            </DialogHeader>
+            <div class="flex-1 overflow-auto px-4 py-2">
+              <component
+                :is="item.component"
+                v-bind="item.contentProps"
+                :maximized="item.dialogComponentProps.maximized"
+              />
+            </div>
+            <DialogFooter v-if="item.footerComponent">
+              <component :is="item.footerComponent" v-bind="item.footerProps" />
+            </DialogFooter>
+          </template>
         </DialogContent>
       </DialogPortal>
     </Dialog>
@@ -55,7 +77,6 @@
       v-model:visible="item.visible"
       class="global-dialog"
       v-bind="item.dialogComponentProps"
-      :pt="getDialogPt(item)"
       :aria-labelledby="item.key"
     >
       <template #header>
@@ -86,28 +107,24 @@
 </template>
 
 <script setup lang="ts">
-import { merge } from 'es-toolkit/compat'
 import PrimeDialog from 'primevue/dialog'
-import type { DialogPassThroughOptions } from 'primevue/dialog'
-import { computed } from 'vue'
 
 import Dialog from '@/components/ui/dialog/Dialog.vue'
 import DialogClose from '@/components/ui/dialog/DialogClose.vue'
 import DialogContent from '@/components/ui/dialog/DialogContent.vue'
 import DialogFooter from '@/components/ui/dialog/DialogFooter.vue'
 import DialogHeader from '@/components/ui/dialog/DialogHeader.vue'
+import DialogMaximize from '@/components/ui/dialog/DialogMaximize.vue'
 import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { isCloud } from '@/platform/distribution/types'
-import type { DialogComponentProps, DialogInstance } from '@/stores/dialogStore'
+import {
+  onRekaFocusOutside,
+  onRekaPointerDownOutside
+} from '@/components/dialog/rekaPrimeVueBridge'
+import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
+import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
-
-const { flags } = useFeatureFlags()
-const teamWorkspacesEnabled = computed(
-  () => isCloud && flags.teamWorkspacesEnabled
-)
 
 const dialogStore = useDialogStore()
 
@@ -119,20 +136,8 @@ function onRekaOpenChange(key: string, open: boolean) {
   if (!open) dialogStore.closeDialog({ key })
 }
 
-function getDialogPt(item: {
-  key: string
-  dialogComponentProps: DialogComponentProps
-}): DialogPassThroughOptions {
-  const isWorkspaceSettingsDialog =
-    item.key === 'global-settings' && teamWorkspacesEnabled.value
-  const basePt = item.dialogComponentProps.pt || {}
-
-  if (isWorkspaceSettingsDialog) {
-    return merge(basePt, {
-      mask: { class: 'p-8' }
-    })
-  }
-  return basePt
+function toggleMaximize(item: DialogInstance) {
+  item.dialogComponentProps.maximized = !item.dialogComponentProps.maximized
 }
 </script>
 
@@ -161,19 +166,6 @@ function getDialogPt(item: {
     padding: var(--p-dialog-content-padding);
     padding-top: 0;
   }
-}
-
-/* Workspace mode: wider settings dialog */
-.settings-dialog-workspace {
-  width: 100%;
-  max-width: 1440px;
-  height: 100%;
-}
-
-.settings-dialog-workspace .p-dialog-content {
-  width: 100%;
-  height: 100%;
-  overflow-y: auto;
 }
 
 .manager-dialog {

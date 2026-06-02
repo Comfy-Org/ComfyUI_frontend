@@ -663,7 +663,6 @@
     "Collapse": "Recolher",
     "Color": "Cor",
     "Colors": "Cores",
-    "Convert to Group Node": "Converter para Nó de Grupo",
     "Convert to Subgraph": "Converter para Subgrafo",
     "Copy": "Copiar",
     "Copy (Clipspace)": "Copiar (Clipspace)",
@@ -800,11 +799,17 @@
     "CONTROL_NET": "controlnet",
     "CURVE": "CURVA",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "MODELO_DE_DETECÇÃO_DE_FACE",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "ARQUIVO_3D",
     "FILE_3D_FBX": "ARQUIVO_3D_FBX",
     "FILE_3D_GLB": "ARQUIVO_3D_GLB",
     "FILE_3D_GLTF": "ARQUIVO_3D_GLTF",
+    "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "ARQUIVO_3D_OBJ",
+    "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "ARQUIVO_3D_STL",
     "FILE_3D_USDZ": "ARQUIVO_3D_USDZ",
     "FLOAT": "PONTO FLUTUANTE",
@@ -815,14 +820,17 @@
     "HISTOGRAM": "HISTOGRAMA",
     "HOOKS": "GANCHOS",
     "HOOK_KEYFRAMES": "QUADROS-CHAVE DE GANCHO",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "IMAGEM",
     "IMAGECOMPARE": "COMPARAR_IMAGEM",
     "INT": "INTEIRO",
     "INTERP_MODEL": "MODELO_INTERP",
+    "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "LATENT",
     "LATENT_OPERATION": "OPERAÇÃO LATENT",
     "LATENT_UPSCALE_MODEL": "MODELO DE AUMENTO DE LATENT",
     "LOAD3D_CAMERA": "CÂMERA LOAD3D",
+    "LOAD3D_MODEL_INFO": "CARREGAR_INFO_DO_MODELO_3D",
     "LOAD_3D": "CARREGAR 3D",
     "LORA_MODEL": "lora MODEL",
     "LOSS_MAP": "MAPA DE PERDA",
@@ -835,6 +843,8 @@
     "MODEL": "MODELO",
     "MODEL_PATCH": "PATCH DE MODELO",
     "MODEL_TASK_ID": "ID DA TAREFA DO MODELO",
+    "MOGE_GEOMETRY": "MOGE_GEOMETRY",
+    "MOGE_MODEL": "MOGE_MODEL",
     "NOISE": "RUÍDO",
     "OPENAI_CHAT_CONFIG": "CONFIGURAÇÃO DE CHAT OPENAI",
     "OPENAI_INPUT_FILES": "ARQUIVOS DE ENTRADA OPENAI",
@@ -850,6 +860,7 @@
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "AMOSTRADOR",
     "SIGMAS": "SIGMAS",
+    "SPLAT": "SPLAT",
     "STRING": "TEXTO",
     "STYLE_MODEL": "MODELO DE ESTILO",
     "SVG": "SVG",
@@ -905,6 +916,337 @@
     "pause": "Pausar download",
     "paused": "Pausado",
     "resume": "Retomar download"
+  },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "entrada desconhecida",
+      "nodeName": "Este nó"
+    },
+    "promptErrors": {
+      "missing_node_type": {
+        "desc": "Um tipo de nó está ausente ou indisponível. O fluxo de trabalho pode estar corrompido ou requerer um nó personalizado.",
+        "title": "Tipo de nó ausente"
+      },
+      "no_prompt": {
+        "desc": "Os dados do fluxo de trabalho enviados ao servidor estão vazios. Isso pode ser um erro inesperado do sistema.",
+        "title": "Dados do fluxo de trabalho estão vazios"
+      },
+      "prompt_no_outputs": {
+        "desc": "O fluxo de trabalho não contém nenhum nó de saída (ex: Salvar Imagem, Visualizar Imagem) para produzir um resultado.",
+        "title": "Prompt sem saídas"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "O fluxo de trabalho possui entradas de nó inválidas. Corrija os nós destacados antes de executá-lo novamente.",
+        "title": "Falha na validação do prompt"
+      },
+      "server_error_cloud": {
+        "desc": "O servidor encontrou um erro inesperado. Por favor, tente novamente mais tarde.",
+        "title": "Erro no servidor"
+      },
+      "server_error_local": {
+        "desc": "O servidor encontrou um erro inesperado. Por favor, verifique os logs do servidor.",
+        "title": "Erro no servidor"
+      }
+    },
+    "runtimeErrors": {
+      "access_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Esta execução requer um acesso que não está disponível para a conta atual.",
+        "title": "Acesso necessário",
+        "toastMessage": "Esta execução requer um acesso que não está disponível para a conta atual.",
+        "toastTitle": "Acesso necessário"
+      },
+      "content_blocked": {
+        "itemLabel": "{nodeName}",
+        "message": "Esta solicitação foi bloqueada pelo sistema de moderação de conteúdo. Tente alterar o prompt ou as entradas.",
+        "title": "Conteúdo bloqueado",
+        "toastMessage": "Esta solicitação foi bloqueada pelo sistema de moderação de conteúdo. Tente alterar o prompt ou as entradas.",
+        "toastTitle": "Conteúdo bloqueado"
+      },
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "O nó gerou um erro durante a execução.",
+        "title": "Execução falhou",
+        "toastMessage": "Este nó gerou um erro durante a execução. Verifique suas entradas ou tente uma configuração diferente.",
+        "toastTitle": "{nodeName} falhou"
+      },
+      "generation_stalled": {
+        "itemLabel": "{nodeName}",
+        "message": "Este fluxo de trabalho parou de progredir. Tente executá-lo novamente.",
+        "title": "Geração paralisada",
+        "toastMessage": "Este fluxo de trabalho parou de progredir. Tente executá-lo novamente.",
+        "toastTitle": "Geração paralisada"
+      },
+      "image_not_loaded": {
+        "itemLabel": "{nodeName}",
+        "message": "O sistema não conseguiu carregar esta imagem.",
+        "title": "Imagem não carregada",
+        "toastMessage": "A imagem para {nodeName} não pôde ser carregada. Tente adicioná-la novamente.",
+        "toastTitle": "Imagem de entrada não pôde ser carregada"
+      },
+      "insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "Adicione créditos à sua conta para usar este nó.",
+        "title": "Créditos insuficientes",
+        "toastMessage": "Adicione créditos à sua conta para usar este nó.",
+        "toastTitle": "Créditos insuficientes"
+      },
+      "invalid_clip_input": {
+        "itemLabel": "{nodeName}",
+        "message": "A entrada CLIP está ausente ou inválida. Verifique o checkpoint conectado ou o carregador CLIP.",
+        "title": "Entrada CLIP inválida",
+        "toastMessage": "{nodeName} está com a entrada CLIP ausente ou inválida.",
+        "toastTitle": "Entrada CLIP inválida"
+      },
+      "invalid_prompt": {
+        "itemLabel": "{nodeName}",
+        "message": "Digite um prompt antes de executar este fluxo de trabalho.",
+        "title": "Prompt vazio",
+        "toastMessage": "Digite um prompt antes de executar este fluxo de trabalho.",
+        "toastTitle": "Prompt vazio"
+      },
+      "invalid_workflow_request": {
+        "itemLabel": "{nodeName}",
+        "message": "A solicitação do fluxo de trabalho é inválida. Verifique o fluxo de trabalho e tente novamente.",
+        "title": "Solicitação de fluxo de trabalho inválida",
+        "toastMessage": "A solicitação do fluxo de trabalho é inválida. Verifique o fluxo de trabalho e tente novamente.",
+        "toastTitle": "Solicitação de fluxo de trabalho inválida"
+      },
+      "model_access_error": {
+        "itemLabel": "{nodeName}",
+        "message": "Um ou mais modelos necessários não puderam ser acessados.",
+        "title": "Acesso ao modelo necessário",
+        "toastMessage": "Um ou mais modelos necessários não puderam ser acessados.",
+        "toastTitle": "Acesso ao modelo necessário"
+      },
+      "model_download_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "Não foi possível baixar um modelo. Tente novamente.",
+        "title": "Falha ao baixar modelo",
+        "toastMessage": "Não foi possível baixar um modelo. Tente novamente.",
+        "toastTitle": "Falha ao baixar modelo"
+      },
+      "out_of_memory": {
+        "itemLabel": "{nodeName}",
+        "message": "Memória de GPU insuficiente. Tente reduzir a resolução da imagem ou o tamanho do lote e execute novamente.",
+        "title": "Geração falhou",
+        "toastMessage": "Memória de GPU insuficiente. Tente reduzir a resolução da imagem ou o tamanho do lote e execute novamente.",
+        "toastTitle": "Geração falhou"
+      },
+      "preprocessing_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "O fluxo de trabalho não pôde ser preparado. Tente executá-lo novamente.",
+        "title": "Preparação falhou",
+        "toastMessage": "O fluxo de trabalho não pôde ser preparado. Tente executá-lo novamente.",
+        "toastTitle": "Preparação falhou"
+      },
+      "preprocessing_timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "O fluxo de trabalho demorou demais para ser preparado. Tente executá-lo novamente.",
+        "title": "Tempo de preparação esgotado",
+        "toastMessage": "O fluxo de trabalho demorou demais para ser preparado. Tente executá-lo novamente.",
+        "toastTitle": "Tempo de preparação esgotado"
+      },
+      "rate_limited": {
+        "itemLabel": "{nodeName}",
+        "message": "Alta demanda no momento. Tente novamente em instantes.",
+        "title": "Servidores ocupados",
+        "toastMessage": "Alta demanda no momento. Tente novamente em instantes.",
+        "toastTitle": "Servidores ocupados"
+      },
+      "request_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "A solicitação falhou antes da execução ser concluída. Tente novamente.",
+        "title": "Solicitação falhou",
+        "toastMessage": "A solicitação falhou antes da execução ser concluída. Tente novamente.",
+        "toastTitle": "Solicitação falhou"
+      },
+      "run_ended_unexpectedly": {
+        "itemLabel": "{nodeName}",
+        "message": "A execução terminou inesperadamente. Tente novamente.",
+        "title": "Execução terminou inesperadamente",
+        "toastMessage": "A execução terminou inesperadamente. Tente novamente.",
+        "toastTitle": "Execução terminou inesperadamente"
+      },
+      "run_start_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "A execução não pôde ser iniciada. Tente novamente.",
+        "title": "Execução não pôde ser iniciada",
+        "toastMessage": "A execução não pôde ser iniciada. Tente novamente.",
+        "toastTitle": "Execução não pôde ser iniciada"
+      },
+      "server_busy": {
+        "itemLabel": "{nodeName}",
+        "message": "Os servidores estão ocupados no momento. Tente novamente em instantes.",
+        "title": "Servidores ocupados",
+        "toastMessage": "Os servidores estão ocupados no momento. Tente novamente em instantes.",
+        "toastTitle": "Servidores ocupados"
+      },
+      "server_crashed": {
+        "itemLabel": "{nodeName}",
+        "message": "O servidor parou durante a execução deste fluxo de trabalho. Tente novamente.",
+        "title": "Servidor caiu",
+        "toastMessage": "O servidor parou durante a execução deste fluxo de trabalho. Tente novamente.",
+        "toastTitle": "Servidor caiu"
+      },
+      "sign_in_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Nós parceiros requerem uma conta Comfy. Faça login para continuar.",
+        "title": "Login necessário",
+        "toastMessage": "Nós parceiros requerem uma conta Comfy. Faça login para continuar.",
+        "toastTitle": "Faça login para usar este nó"
+      },
+      "subscription_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Assine um plano para continuar executando este fluxo de trabalho.",
+        "title": "Assinatura necessária",
+        "toastMessage": "Assine um plano para continuar executando este fluxo de trabalho.",
+        "toastTitle": "Assinatura necessária"
+      },
+      "subscription_upgrade_required": {
+        "details": "Modelos privados requerem upgrade de assinatura: {modelNames}",
+        "itemLabel": "{nodeName}",
+        "message": "Faça upgrade da sua assinatura para usar os modelos privados neste fluxo de trabalho.",
+        "title": "Upgrade de assinatura necessário",
+        "toastMessage": "Faça upgrade da sua assinatura para usar estes modelos privados: {modelNames}.",
+        "toastTitle": "Upgrade de assinatura necessário"
+      },
+      "timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "Este fluxo de trabalho atingiu o tempo máximo de execução. Tente reduzir a resolução da imagem, o tamanho do lote ou o comprimento do fluxo de trabalho e execute novamente.",
+        "title": "Tempo de geração esgotado",
+        "toastMessage": "Este fluxo de trabalho atingiu o tempo máximo de execução. Tente reduzir a resolução da imagem, o tamanho do lote ou o comprimento do fluxo de trabalho e execute novamente.",
+        "toastTitle": "Tempo de geração esgotado"
+      },
+      "unexpected_service_error": {
+        "itemLabel": "{nodeName}",
+        "message": "O serviço encontrou um erro inesperado. Tente novamente.",
+        "title": "Erro no serviço",
+        "toastMessage": "O serviço encontrou um erro inesperado. Tente novamente.",
+        "toastTitle": "Erro no serviço"
+      },
+      "workspace_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "Adicione créditos ao seu workspace para continuar.",
+        "title": "Créditos insuficientes",
+        "toastMessage": "Adicione créditos ao seu workspace para continuar.",
+        "toastTitle": "Créditos insuficientes"
+      }
+    },
+    "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName} possui uma conexão inválida para {inputName}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Uma conexão de nó não pôde ser lida corretamente.",
+        "title": "Conexão inválida",
+        "toastMessage": "{nodeName} possui uma conexão inválida para {inputName}.",
+        "toastTitle": "Conexão inválida"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName} rejeitou o valor para {inputName}.",
+        "detailsWithRawDetails": "{nodeName} falhou na validação personalizada: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Um nó rejeitou um ou mais valores de entrada.",
+        "title": "Entrada inválida",
+        "toastMessage": "{nodeName} rejeitou o valor para {inputName}.",
+        "toastTitle": "Entrada inválida"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName} faz parte de uma conexão circular.",
+        "detailsWithRawDetails": "{nodeName} faz parte de uma conexão circular: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "O fluxo de trabalho possui uma conexão circular de nós.",
+        "title": "Fluxo de trabalho inválido",
+        "toastMessage": "{nodeName} faz parte de uma conexão circular.",
+        "toastTitle": "Fluxo de trabalho inválido"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName} não conseguiu validar {inputName}.",
+        "detailsWithRawDetails": "{nodeName} não conseguiu validar {inputName}: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "O fluxo de trabalho não pôde validar um nó conectado.",
+        "title": "Falha na validação",
+        "toastMessage": "{nodeName} não conseguiu validar {inputName}.",
+        "toastMessageWithRawDetails": "{nodeName} não conseguiu validar {inputName}: {rawDetails}",
+        "toastTitle": "Falha na validação"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName} falhou durante a validação.",
+        "detailsWithRawDetails": "{nodeName} falhou durante a validação: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "O fluxo de trabalho não pôde ser validado porque uma verificação de validação de nó falhou inesperadamente.",
+        "title": "Falha na validação",
+        "toastMessage": "{nodeName} falhou durante a validação.",
+        "toastMessageWithRawDetails": "{nodeName} falhou durante a validação: {rawDetails}",
+        "toastTitle": "Falha na validação"
+      },
+      "image_not_loaded": {
+        "details": "A imagem de {nodeName} não pôde ser carregada. Tente adicioná-la novamente.",
+        "itemLabel": "{nodeName}",
+        "message": "O sistema não conseguiu carregar esta imagem.",
+        "title": "Imagem não carregada",
+        "toastMessage": "A imagem de {nodeName} não pôde ser carregada. Tente adicioná-la novamente.",
+        "toastTitle": "Imagem de entrada não pôde ser carregada"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName} não conseguiu converter {inputName} para o tipo esperado.",
+        "detailsWithValue": "O valor {receivedValue} para {inputName} de {nodeName} não pôde ser convertido para {expectedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Um valor de entrada está com o tipo incorreto.",
+        "title": "Entrada inválida",
+        "toastMessage": "{nodeName} não conseguiu converter {inputName} para o tipo esperado.",
+        "toastMessageWithValue": "O valor {receivedValue} para {inputName} de {nodeName} não pôde ser convertido para {expectedType}.",
+        "toastTitle": "Entrada inválida"
+      },
+      "required_input_missing": {
+        "details": "{nodeName} está sem uma entrada obrigatória: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Entradas obrigatórias não possuem conexão.",
+        "title": "Conexão ausente",
+        "toastMessage": "{nodeName} está sem uma entrada obrigatória: {inputName}",
+        "toastTitle": "Entrada obrigatória ausente"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName} possui uma conexão incompatível para {inputName}.",
+        "detailsWithTypes": "A entrada {inputName} de {nodeName} espera {expectedType}, mas a saída conectada é {receivedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Os nós conectados estão usando tipos de entrada e saída incompatíveis.",
+        "title": "Conexão inválida",
+        "toastMessage": "{nodeName} possui uma conexão incompatível para {inputName}.",
+        "toastMessageWithTypes": "A entrada {inputName} de {nodeName} espera {expectedType}, mas a saída conectada é {receivedType}.",
+        "toastTitle": "Conexão inválida"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName} possui um valor acima do máximo para {inputName}.",
+        "detailsWithValue": "O valor {receivedValue} para {inputName} de {nodeName} está acima do máximo {maxValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Alguns valores de entrada estão fora do intervalo permitido.",
+        "title": "Entrada fora do intervalo",
+        "toastMessage": "{nodeName} possui um valor acima do máximo para {inputName}.",
+        "toastMessageWithValue": "O valor {receivedValue} para {inputName} de {nodeName} está acima do máximo {maxValue}.",
+        "toastTitle": "Entrada fora do intervalo"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName} possui um valor não suportado para {inputName}.",
+        "detailsWithValue": "O valor {receivedValue} para {inputName} de {nodeName} não está disponível.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Alguns valores de entrada não estão disponíveis para este nó.",
+        "title": "Entrada inválida",
+        "toastMessage": "{nodeName} possui um valor não suportado para {inputName}.",
+        "toastMessageWithValue": "O valor {receivedValue} para {inputName} de {nodeName} não está disponível.",
+        "toastTitle": "Entrada inválida"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName} possui um valor abaixo do mínimo para {inputName}.",
+        "detailsWithValue": "O valor {receivedValue} para {inputName} de {nodeName} está abaixo do mínimo {minValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Alguns valores de entrada estão fora do intervalo permitido.",
+        "title": "Entrada fora do intervalo",
+        "toastMessage": "{nodeName} possui um valor abaixo do mínimo para {inputName}.",
+        "toastMessageWithValue": "O valor {receivedValue} para {inputName} de {nodeName} está abaixo do mínimo {minValue}.",
+        "toastTitle": "Entrada fora do intervalo"
+      }
+    }
   },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
@@ -1203,6 +1545,7 @@
     "logs": "Logs",
     "manageExtensions": "Gerenciar extensões",
     "markdown": "markdown",
+    "maximizeDialog": "Maximizar diálogo",
     "micPermissionDenied": "Permissão do microfone negada",
     "migrate": "Migrar",
     "missing": "Faltando",
@@ -1303,6 +1646,7 @@
     "resizeFromTopLeft": "Redimensionar pelo canto superior esquerdo",
     "resizeFromTopRight": "Redimensionar pelo canto superior direito",
     "restart": "Reiniciar",
+    "restoreDialog": "Restaurar diálogo",
     "resultsCount": "{count} resultados encontrados",
     "running": "Executando",
     "save": "Salvar",
@@ -1662,6 +2006,7 @@
       "orthographic": "Ortográfica",
       "perspective": "Perspectiva"
     },
+    "centerCameraOnModel": "Centralizar câmera no modelo",
     "clearRecording": "Limpar Gravação",
     "dropToLoad": "Arraste o modelo 3D para carregar",
     "edgeThreshold": "Limite de Borda",
@@ -1708,6 +2053,7 @@
     "reloadingModel": "Recarregando modelo...",
     "removeBackgroundImage": "Remover Imagem de Fundo",
     "resizeNodeMatchOutput": "Redimensionar Nó para corresponder à saída",
+    "retainViewOnReload": "Manter a visão da câmera ao recarregar o modelo",
     "scene": "Cena",
     "showGrid": "Mostrar Grade",
     "showSkeleton": "Mostrar Esqueleto",
@@ -1741,6 +2087,10 @@
     "outdatedVersion": "Este fluxo de trabalho foi criado com uma versão mais recente do ComfyUI ({version}). Alguns nós podem não funcionar corretamente.",
     "outdatedVersionGeneric": "Este fluxo de trabalho foi criado com uma versão mais recente do ComfyUI. Alguns nós podem não funcionar corretamente.",
     "unknownVersion": "desconhecida"
+  },
+  "logsTerminal": {
+    "loadError": "Não foi possível carregar os logs. Certifique-se de que você atualizou o backend do ComfyUI.",
+    "resyncError": "Não foi possível ressincronizar os logs após a reconexão do backend. Reabra o console para tentar novamente."
   },
   "maintenance": {
     "None": "Nenhum",
@@ -2094,7 +2444,6 @@
     "ComfyUI Issues": "Problemas do ComfyUI",
     "Contact Support": "Contatar suporte",
     "Convert Selection to Subgraph": "Converter seleção em subgrafo",
-    "Convert selected nodes to group node": "Converter nós selecionados em nó de grupo",
     "Copy": "Copiar",
     "Custom Nodes (Legacy)": "Nós personalizados (Legado)",
     "Custom Nodes Manager": "Gerenciador de nós personalizados",
@@ -2257,6 +2606,7 @@
     "3d_models": "modelos_3d",
     "Anthropic": "Anthropic",
     "BFL": "BFL",
+    "Beeble": "Beeble",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "ElevenLabs": "ElevenLabs",
@@ -2265,12 +2615,14 @@
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
+    "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2287,9 +2639,8 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "ajustes",
     "advanced": "avançado",
-    "animation": "animação",
-    "api node": "nó da API",
     "attention_experiments": "experimentos_de_atenção",
     "audio": "áudio",
     "background removal": "remoção de fundo",
@@ -2305,13 +2656,14 @@
     "controlnet": "controlnet",
     "create": "criar",
     "custom_sampling": "amostragem_personalizada",
-    "dataset": "conjunto_de_dados",
     "debug": "depuração",
     "deprecated": "obsoleto",
     "detection": "detecção",
     "edit_models": "editar_modelos",
     "experimental": "experimental",
+    "filters": "filtros",
     "flux": "flux",
+    "geometry estimation": "estimativa de geometria",
     "gligen": "gligen",
     "guidance": "orientação",
     "guiders": "guias",
@@ -2328,23 +2680,24 @@
     "mask": "máscara",
     "model": "modelo",
     "model_merging": "mesclagem_de_modelos",
-    "model_patches": "correções_de_modelo",
     "model_specific": "específico_do_modelo",
+    "multigpu": "multigpu",
     "noise": "ruído",
     "operations": "operações",
+    "partner": "parceiro",
+    "patch": "patch",
     "photomaker": "photomaker",
-    "postprocessing": "pós-processamento",
     "preprocessors": "pré-processadores",
     "primitive": "primitivo",
     "qwen": "qwen",
     "samplers": "amostradores",
     "sampling": "amostragem",
-    "save": "salvar",
     "schedulers": "agendadores",
     "scheduling": "agendamento",
     "sd3": "sd3",
     "shader": "shader",
     "sigmas": "sigmas",
+    "splat": "splat",
     "stable_cascade": "stable_cascade",
     "style_model": "modelo_de_estilo",
     "supir": "supir",
@@ -2354,7 +2707,7 @@
     "unet": "unet",
     "upscale_diffusion": "difusão_de_aumento",
     "upscaling": "aumento_de_resolução",
-    "utils": "utilitários",
+    "utilities": "utilitários",
     "video": "vídeo",
     "video_models": "modelos_de_vídeo",
     "zimage": "zimage"
@@ -2427,6 +2780,43 @@
     },
     "title": "Seu dispositivo não é suportado"
   },
+  "oauth": {
+    "consent": {
+      "allow": "Continuar",
+      "appTypeNative": "Aplicativo nativo",
+      "appTypeWeb": "Aplicativo web",
+      "deny": "Cancelar",
+      "errorExpired": "Esta solicitação de consentimento expirou ou já foi utilizada. Por favor, reinicie a partir do aplicativo cliente.",
+      "errorScopeBroadening": "As permissões previamente aprovadas não cobrem esta solicitação. Você precisará autorizar novamente com as novas permissões.",
+      "errorUnavailable": "Este recurso não está disponível no momento. Por favor, entre em contato com o suporte se o problema persistir.",
+      "genericError": "A solicitação OAuth falhou. Por favor, reinicie a partir do aplicativo cliente.",
+      "loading": "Carregando solicitação de autorização…",
+      "missingRequest": "Esta solicitação de autorização está ausente. Por favor, reinicie a partir do aplicativo cliente.",
+      "noWorkspaces": "Nenhum workspace elegível está disponível para esta solicitação.",
+      "permissionsHeader": "Permissões",
+      "redirectNotice": "Você será redirecionado para",
+      "resourceFallback": "este aplicativo",
+      "sessionError": "Falha ao estabelecer sessão. Por favor, tente novamente.",
+      "sessionErrorToastSummary": "Não foi possível continuar o login OAuth",
+      "subtitle": "Faça login em {resource} para continuar",
+      "title": "{client} deseja acesso",
+      "workspaceHelp": "As permissões se aplicam somente a este workspace.",
+      "workspaceLabel": "Workspace"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "Executar workflows em seu nome"
+      },
+      "mcp:tools:read": {
+        "label": "Visualizar ferramentas de workflow disponíveis"
+      }
+    },
+    "workspace": {
+      "member": "Membro",
+      "owner": "Proprietário",
+      "personal": "Pessoal"
+    }
+  },
   "openSharedWorkflow": {
     "author": "Autor:",
     "copyAssetsAndOpen": "Importar ativos e abrir fluxo de trabalho",
@@ -2437,7 +2827,8 @@
     "nonPublicAssetsWarningLine1": "Este fluxo de trabalho possui ativos não públicos.",
     "nonPublicAssetsWarningLine2": "Eles serão importados para sua biblioteca ao abrir o fluxo de trabalho",
     "openWithoutImporting": "Abrir sem importar",
-    "openWorkflow": "Abrir fluxo de trabalho"
+    "openWorkflow": "Abrir fluxo de trabalho",
+    "opening": "Abrindo fluxo de trabalho compartilhado..."
   },
   "painter": {
     "background": "Fundo",
@@ -2653,20 +3044,6 @@
     "normal": "Normal",
     "parameters": "Parâmetros",
     "pinned": "Fixado",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "Os dados do fluxo de trabalho enviados ao servidor estão vazios. Isso pode ser um erro de sistema inesperado."
-      },
-      "prompt_no_outputs": {
-        "desc": "O fluxo de trabalho não contém nenhum nó de saída (por exemplo, Salvar Imagem, Visualizar Imagem) para produzir um resultado."
-      },
-      "server_error_cloud": {
-        "desc": "O servidor encontrou um erro inesperado. Por favor, tente novamente mais tarde."
-      },
-      "server_error_local": {
-        "desc": "O servidor encontrou um erro inesperado. Por favor, verifique os logs do servidor."
-      }
-    },
     "properties": "Propriedades",
     "removeFavorite": "Desfavoritar",
     "resetAllParameters": "Redefinir todos os parâmetros",
@@ -2923,6 +3300,7 @@
     "Other": "Outros",
     "PLY": "PLY",
     "PlanCredits": "Plano & Créditos",
+    "PointCloud": "Nuvem de Pontos",
     "Pointer": "Ponteiro",
     "Queue": "Fila",
     "QueueButton": "Botão de Fila",
@@ -3076,6 +3454,7 @@
         "sourceDesc": "Agrupar por tipo de fonte (Core, Custom, API)"
       },
       "noBookmarkedNodes": "Nenhum favorito ainda",
+      "noMatchingNodes": "Nenhum nó corresponde a \"{query}\"",
       "resetView": "Restaurar visualização padrão",
       "sections": {
         "bookmarked": "Favoritos",
@@ -3461,8 +3840,7 @@
       "newest": "Mais Recentes",
       "popular": "Popular",
       "recommended": "Recomendado",
-      "searchPlaceholder": "Buscar...",
-      "vramLowToHigh": "Uso de VRAM (Menor para Maior)"
+      "searchPlaceholder": "Buscar..."
     },
     "sorting": "Ordenar por",
     "title": "Comece com um Modelo",
@@ -3626,7 +4004,8 @@
       "placeholderMesh": "Selecionar malha...",
       "placeholderModel": "Selecionar modelo...",
       "placeholderUnknown": "Selecionar mídia...",
-      "placeholderVideo": "Selecionar vídeo..."
+      "placeholderVideo": "Selecionar vídeo...",
+      "topResult": "Melhor resultado: {result}"
     },
     "valueControl": {
       "decrement": "Decrementar Valor",
