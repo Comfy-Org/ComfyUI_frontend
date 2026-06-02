@@ -15,7 +15,8 @@ const baseRoutes = {
   termsOfService: '/terms-of-service',
   privacyPolicy: '/privacy-policy',
   affiliateTerms: '/affiliates/terms',
-  contact: '/contact'
+  contact: '/contact',
+  models: '/p/supported-models'
 } as const
 
 type Routes = typeof baseRoutes
@@ -28,7 +29,12 @@ type Routes = typeof baseRoutes
 // affiliateTerms: legal-reviewed English-only document. See the comment
 // header in src/pages/affiliates/terms.astro and the affiliate-terms i18n
 // block in src/i18n/translations.ts for the reasoning.
-const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>(['affiliateTerms'])
+//
+// termsOfService: legal-reviewed English-only document, same reasoning.
+const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
+  'affiliateTerms',
+  'termsOfService'
+])
 
 export function getRoutes(locale: Locale = 'en'): Routes {
   if (locale === 'en') return baseRoutes
@@ -45,6 +51,7 @@ export const externalLinks = {
   apiKeys: 'https://platform.comfy.org/profile/api-keys',
   blog: 'https://blog.comfy.org/',
   cloud: 'https://cloud.comfy.org',
+  cloudStatus: 'https://status.comfy.org',
   discord: 'https://discord.com/invite/comfyorg',
   docs: 'https://docs.comfy.org/',
   docsApi: 'https://docs.comfy.org/api-reference/cloud',

@@ -5,6 +5,7 @@ import { useHeroAnimation } from '../../composables/useHeroAnimation'
 import SectionLabel from '../common/SectionLabel.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { ScrollTrigger } from '../../scripts/gsapSetup'
 import VideoPlayer from '../common/VideoPlayer.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -22,6 +23,10 @@ useHeroAnimation({
   logo: logoRef,
   video: videoRef
 })
+
+function handleLogoLoad() {
+  ScrollTrigger.refresh(true)
+}
 </script>
 
 <template>
@@ -37,7 +42,10 @@ useHeroAnimation({
         <img
           src="https://media.comfy.org/website/customers/c-projection.webp"
           alt="Comfy 3D logo"
-          class="mx-auto w-full max-w-md lg:max-w-none"
+          width="1568"
+          height="1763"
+          class="mx-auto h-auto w-full max-w-md lg:max-w-none"
+          @load="handleLogoLoad"
         />
       </div>
 
@@ -64,7 +72,7 @@ useHeroAnimation({
     </div>
 
     <!-- Video -->
-    <div ref="videoRef" class="px-4 pb-20 lg:px-20 lg:pb-40">
+    <div ref="videoRef" class="max-w-9xl mx-auto px-4 pb-20 lg:px-20 lg:pb-40">
       <VideoPlayer
         src="https://media.comfy.org/website/customers/blackmath/video.webm"
         poster="https://media.comfy.org/website/customers/blackmath/poster.webp"

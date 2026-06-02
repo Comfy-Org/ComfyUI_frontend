@@ -35,23 +35,6 @@ test.describe(
         'add-group-group-added.png'
       )
     })
-
-    test('Can convert to group node', async ({ comfyPage }) => {
-      await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
-      await expect(comfyPage.canvas).toHaveScreenshot('selected-2-nodes.png')
-      await comfyPage.canvasOps.rightClick()
-      await comfyPage.contextMenu.clickMenuItem(
-        'Convert to Group Node (Deprecated)'
-      )
-      await comfyPage.contextMenu.waitForHidden()
-      await comfyPage.nodeOps.promptDialogInput.fill('GroupNode2CLIP')
-      await comfyPage.page.keyboard.press('Enter')
-      await comfyPage.nodeOps.promptDialogInput.waitFor({ state: 'hidden' })
-      await comfyPage.expectScreenshot(
-        comfyPage.canvas,
-        'right-click-node-group-node.png'
-      )
-    })
   }
 )
 

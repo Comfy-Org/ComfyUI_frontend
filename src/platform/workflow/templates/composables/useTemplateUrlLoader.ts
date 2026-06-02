@@ -5,6 +5,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
+import { workflowTelemetryId } from '@/platform/telemetry/utils/workflowTelemetryId'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
@@ -123,7 +125,10 @@ export function useTemplateUrlLoader() {
         })
       } else if (modeParam === 'linear') {
         // Set linear mode after successful template load
-        useTelemetry()?.trackEnterLinear({ source: 'template_url' })
+        useTelemetry()?.trackEnterLinear({
+          source: 'template_url',
+          workflow_id: workflowTelemetryId(useWorkflowStore().activeWorkflow)
+        })
         canvasStore.linearMode = true
       }
     } catch (error) {

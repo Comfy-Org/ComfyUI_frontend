@@ -1,16 +1,19 @@
 import { SplatMesh } from '@sparkjsdev/spark'
 import * as THREE from 'three'
 
+import { isGaussianSplatPLY } from '@/scripts/metadata/ply'
+
 import { fetchModelData } from './ModelAdapter'
 import type {
   ModelAdapter,
   ModelAdapterCapabilities,
-  ModelLoadContext
+  ModelLoadContext,
+  ModelLoadResult
 } from './ModelAdapter'
 
 export class SplatModelAdapter implements ModelAdapter {
   readonly kind = 'splat' as const
-  readonly extensions = ['spz', 'splat', 'ksplat'] as const
+  readonly extensions = ['spz', 'splat', 'ksplat', 'ply'] as const
   readonly capabilities: ModelAdapterCapabilities = {
     fitToViewer: true,
     requiresMaterialRebuild: false,
@@ -21,21 +24,33 @@ export class SplatModelAdapter implements ModelAdapter {
     fitTargetSize: 20
   }
 
+  async matches(
+    extension: string,
+    fetchBytes: () => Promise<ArrayBuffer>
+  ): Promise<boolean> {
+    if (extension !== 'ply') return true
+    return isGaussianSplatPLY(await fetchBytes())
+  }
+
   async load(
     ctx: ModelLoadContext,
     path: string,
-    filename: string
-  ): Promise<THREE.Object3D> {
-    const arrayBuffer = await fetchModelData(path, filename)
+    filename: string,
+    fetchBytes?: () => Promise<ArrayBuffer>
+  ): Promise<ModelLoadResult> {
+    const arrayBuffer = await (fetchBytes?.() ?? fetchModelData(path, filename))
 
-    const splatMesh = new SplatMesh({ fileBytes: arrayBuffer })
+    const splatMesh = new SplatMesh({
+      fileBytes: arrayBuffer,
+      fileName: filename
+    })
     await splatMesh.initialized
     splatMesh.quaternion.set(1, 0, 0, 0)
     ctx.setOriginalModel(splatMesh)
 
     const splatGroup = new THREE.Group()
     splatGroup.add(splatMesh)
-    return splatGroup
+    return { object: splatGroup, capabilities: this.capabilities }
   }
 
   computeBounds(model: THREE.Object3D): THREE.Box3 | null {

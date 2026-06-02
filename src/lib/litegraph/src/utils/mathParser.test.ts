@@ -3,52 +3,52 @@ import { describe, expect, test } from 'vitest'
 import { evaluateMathExpression } from '@/lib/litegraph/src/utils/mathParser'
 
 describe('evaluateMathExpression', () => {
-  test.each([
+  test.for<[string, number]>([
     ['2+3', 5],
     ['10-4', 6],
     ['3*7', 21],
     ['15/3', 5]
-  ])('basic arithmetic: %s = %d', (input, expected) => {
+  ])('basic arithmetic: %s = %d', ([input, expected]) => {
     expect(evaluateMathExpression(input)).toBe(expected)
   })
 
-  test.each([
+  test.for<[string, number]>([
     ['2+3*4', 14],
     ['(2+3)*4', 20],
     ['10-2*3', 4],
     ['10/2+3', 8]
-  ])('operator precedence: %s = %d', (input, expected) => {
+  ])('operator precedence: %s = %d', ([input, expected]) => {
     expect(evaluateMathExpression(input)).toBe(expected)
   })
 
-  test.each([
+  test.for<[string, number]>([
     ['3.14*2', 6.28],
     ['.5+.5', 1],
     ['1.5+2.5', 4],
     ['0.1+0.2', 0.1 + 0.2],
     ['123.', 123],
     ['123.+3', 126]
-  ])('decimals: %s', (input, expected) => {
+  ])('decimals: %s', ([input, expected]) => {
     expect(evaluateMathExpression(input)).toBe(expected)
   })
 
-  test.each([
+  test.for<[string, number]>([
     [' 2 + 3 ', 5],
     ['  10  -  4  ', 6],
     [' ( 2 + 3 ) * 4 ', 20]
-  ])('whitespace handling: "%s" = %d', (input, expected) => {
+  ])('whitespace handling: "%s" = %d', ([input, expected]) => {
     expect(evaluateMathExpression(input)).toBe(expected)
   })
 
-  test.each([
+  test.for<[string, number]>([
     ['((2+3))', 5],
     ['(1+(2*(3+4)))', 15],
     ['((1+2)*(3+4))', 21]
-  ])('nested parentheses: %s = %d', (input, expected) => {
+  ])('nested parentheses: %s = %d', ([input, expected]) => {
     expect(evaluateMathExpression(input)).toBe(expected)
   })
 
-  test.each([
+  test.for<[string, number]>([
     ['-5', -5],
     ['-(3+2)', -5],
     ['--5', 5],
@@ -59,11 +59,11 @@ describe('evaluateMathExpression', () => {
     ['2--3', 5],
     ['-2*-3', 6],
     ['-(2+3)*-(4+5)', 45]
-  ])('unary operators: %s = %d', (input, expected) => {
+  ])('unary operators: %s = %d', ([input, expected]) => {
     expect(evaluateMathExpression(input)).toBe(expected)
   })
 
-  test.each([
+  test.for<[string, number]>([
     ['2 /2+3 * 4.75- -6', 21.25],
     ['2 / (2 + 3) * 4.33 - -6', 7.732],
     ['12* 123/-(-5 + 2)', 492],
@@ -78,11 +78,11 @@ describe('evaluateMathExpression', () => {
       '(123.45*(678.90 / (-2.5+ 11.5)-(((80 -(19))) *33.25)) / 20) - (123.45*(678.90 / (-2.5+ 11.5)-(((80 -(19))) *33.25)) / 20) + (13 - 2)/ -(-11) ',
       1
     ]
-  ])('complex expression: %s', (input, expected) => {
+  ])('complex expression: %s', ([input, expected]) => {
     expect(evaluateMathExpression(input)).toBeCloseTo(expected as number)
   })
 
-  test.each(['', 'abc', '2+', '(2+3', '2+3)', '()', '*3', '2 3', '.', '123..'])(
+  test.for(['', 'abc', '2+', '(2+3', '2+3)', '()', '*3', '2 3', '.', '123..'])(
     'invalid input returns undefined: "%s"',
     (input) => {
       expect(evaluateMathExpression(input)).toBeUndefined()
@@ -97,11 +97,11 @@ describe('evaluateMathExpression', () => {
     expect(evaluateMathExpression('0/0')).toBeNaN()
   })
 
-  test.each([
+  test.for<[string, number]>([
     ['10%3', 1],
     ['10%3+1', 2],
     ['7%2', 1]
-  ])('modulo: %s = %d', (input, expected) => {
+  ])('modulo: %s = %d', ([input, expected]) => {
     expect(evaluateMathExpression(input)).toBe(expected)
   })
 

@@ -7,9 +7,9 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 const MASK_CANVAS_INDEX = 2
 const RGB_CANVAS_INDEX = 1
 
-export type BrushSliderLabel = 'thickness'
+type BrushSliderLabel = 'thickness'
 
-export class MaskEditorHelper {
+class MaskEditorHelper {
   constructor(private comfyPage: ComfyPage) {}
 
   private get page() {

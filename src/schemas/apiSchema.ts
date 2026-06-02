@@ -1,8 +1,10 @@
 import { z } from 'zod'
 
-import { LinkMarkerShape } from '@/lib/litegraph/src/litegraph'
+import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
 import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { colorPalettesSchema } from '@/schemas/colorPaletteSchema'
+import { resultItemType } from '@/schemas/resultItemTypeSchema'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { zKeybinding } from '@/platform/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
@@ -10,8 +12,8 @@ import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 const zNodeType = z.string()
 const zJobId = z.string()
 export type JobId = z.infer<typeof zJobId>
-export const resultItemType = z.enum(['input', 'output', 'temp'])
-export type ResultItemType = z.infer<typeof resultItemType>
+export { resultItemType }
+export type { ResultItemType }
 
 const zCustomNodesI18n = z.record(z.string(), z.unknown())
 export type CustomNodesI18n = z.infer<typeof zCustomNodesI18n>
@@ -238,6 +240,12 @@ const zDeviceStats = z.object({
   torch_vram_free: z.number()
 })
 
+const zComfyPackageVersion = z.object({
+  name: z.string(),
+  installed: z.string().nullable(),
+  required: z.string().nullable()
+})
+
 const zSystemStats = z.object({
   system: z.object({
     os: z.string(),
@@ -254,7 +262,8 @@ const zSystemStats = z.object({
     comfyui_frontend_version: z.string().optional(),
     workflow_templates_version: z.string().optional(),
     installed_templates_version: z.string().optional(),
-    required_templates_version: z.string().optional()
+    required_templates_version: z.string().optional(),
+    comfy_package_versions: z.array(zComfyPackageVersion).optional()
   }),
   devices: z.array(zDeviceStats)
 })
@@ -437,7 +446,7 @@ const zSettings = z.object({
   'Comfy.Load3D.LightAdjustmentIncrement': z.number(),
   'Comfy.Load3D.CameraType': z.enum(['perspective', 'orthographic']),
   'Comfy.Load3D.3DViewerEnable': z.boolean(),
-  'Comfy.Load3D.PLYEngine': z.enum(['threejs', 'fastply', 'sparkjs']),
+  'Comfy.Load3D.PLYEngine': z.enum(['threejs', 'fastply']),
   'Comfy.Memory.AllowManualUnload': z.boolean(),
   'pysssss.SnapToGrid': z.boolean(),
   /** VHS setting is used for queue video preview support. */

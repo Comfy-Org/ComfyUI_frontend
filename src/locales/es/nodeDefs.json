@@ -24,6 +24,40 @@
       }
     }
   },
+  "ARVideoI2V": {
+    "display_name": "ARVideoI2V",
+    "inputs": {
+      "batch_size": {
+        "name": "tamaño_de_lote"
+      },
+      "height": {
+        "name": "alto"
+      },
+      "length": {
+        "name": "longitud"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "start_image": {
+        "name": "imagen_inicial"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ancho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "AddNoise": {
     "display_name": "AñadirRuido",
     "inputs": {
@@ -85,6 +119,7 @@
     }
   },
   "AdjustBrightness": {
+    "description": "Ajusta el brillo de una imagen.",
     "display_name": "Ajustar brillo",
     "inputs": {
       "factor": {
@@ -104,6 +139,7 @@
     }
   },
   "AdjustContrast": {
+    "description": "Ajusta el contraste de una imagen.",
     "display_name": "Ajustar contraste",
     "inputs": {
       "factor": {
@@ -142,6 +178,7 @@
     }
   },
   "AudioAdjustVolume": {
+    "description": "Ajusta el volumen del audio en una cantidad especificada en decibelios (dB).",
     "display_name": "Ajustar Volumen de Audio",
     "inputs": {
       "audio": {
@@ -347,6 +384,90 @@
       }
     }
   },
+  "BeebleSwitchXImageEdit": {
+    "description": "Edita una sola imagen con Beeble SwitchX. Cambia cualquier elemento de la escena (fondo, iluminación, vestuario) mientras conserva los píxeles originales del sujeto. Proporciona una imagen de referencia y/o un prompt de texto para describir el nuevo aspecto. Máx. ~2,77MP.",
+    "display_name": "Beeble SwitchX Edición de Imagen",
+    "inputs": {
+      "alpha_mode": {
+        "name": "modo_alpha",
+        "tooltip": "Controla cómo SwitchX decide qué conservar y qué regenerar. 'auto' aísla automáticamente el sujeto principal. 'fill' regenera todo el fotograma conservando la geometría. 'select' propaga un keyframe del primer fotograma a lo largo del clip. 'custom' utiliza un alfa matte por fotograma que proporciones."
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "max_resolution": {
+        "name": "resolución_máxima",
+        "tooltip": "Resolución máxima de salida."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descripción en texto del resultado deseado (máx. 2000 caracteres). Se requiere al menos uno de 'prompt' o 'reference_image'."
+      },
+      "reference_image": {
+        "name": "imagen_de_referencia",
+        "tooltip": "Imagen de referencia cuyo aspecto (fondo, iluminación, vestuario) debe adoptar el resultado. Se requiere al menos uno de 'reference_image' o 'prompt'."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagen",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alfa",
+        "tooltip": "El alfa matte utilizado por Beeble. Vacío en modo 'fill', que no tiene matte separado."
+      }
+    }
+  },
+  "BeebleSwitchXVideoEdit": {
+    "description": "Edita un video con Beeble SwitchX. Cambia cualquier elemento de la escena (fondo, iluminación, vestuario) mientras conserva los píxeles y el movimiento originales del sujeto. Proporciona una imagen de referencia y/o un prompt de texto para describir el nuevo aspecto. Máx. 240 fotogramas, máx. ~2,77MP por fotograma.",
+    "display_name": "Beeble SwitchX Edición de Video",
+    "inputs": {
+      "alpha_mode": {
+        "name": "modo_alpha",
+        "tooltip": "Controla cómo SwitchX decide qué conservar y qué regenerar. 'auto' aísla automáticamente el sujeto principal. 'fill' regenera todo el fotograma conservando la geometría. 'select' propaga un keyframe del primer fotograma a lo largo del clip. 'custom' utiliza un alfa matte por fotograma que proporciones."
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "max_resolution": {
+        "name": "resolución_máxima",
+        "tooltip": "Resolución máxima de salida."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descripción en texto del resultado deseado (máx. 2000 caracteres). Se requiere al menos uno de 'prompt' o 'reference_image'."
+      },
+      "reference_image": {
+        "name": "imagen_de_referencia",
+        "tooltip": "Imagen de referencia cuyo aspecto (fondo, iluminación, vestuario) debe adoptar el resultado. Se requiere al menos uno de 'reference_image' o 'prompt'."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "video",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alfa",
+        "tooltip": "El alfa matte utilizado por Beeble. Vacío en modo 'fill', que no tiene matte separado."
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "ProgramadorMuestreoBeta",
     "inputs": {
@@ -542,6 +663,9 @@
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
+      },
+      "model_auto_upscale": {
+        "name": "auto_upscale"
       },
       "model_duration": {
         "name": "duración"
@@ -862,6 +986,39 @@
       }
     }
   },
+  "ByteDanceSeedNode": {
+    "description": "Genera respuestas de texto con los modelos Seed 2.0 de ByteDance. Proporciona un prompt de texto y opcionalmente una o más imágenes o videos para contexto multimodal.",
+    "display_name": "ByteDance Seed",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "El modelo Seed utilizado para generar la respuesta."
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Entrada de texto para el modelo."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente del seed."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Instrucciones fundamentales que dictan el comportamiento del modelo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceSeedreamNode": {
     "description": "Generación unificada de texto a imagen y edición precisa de oraciones individuales con resolución de hasta 4K.",
     "display_name": "ByteDance Seedream 4",
@@ -911,6 +1068,50 @@
       "width": {
         "name": "ancho",
         "tooltip": "Ancho personalizado para la imagen. El valor funciona solo si `predefinición_de_tamaño` está establecido en `Personalizado`."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamNodeV2": {
+    "description": "Generación unificada de texto a imagen y edición precisa de una sola frase hasta una resolución de 4K.",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_fail_on_partial": {
+        "name": "fallar_en_parcial"
+      },
+      "model_height": {
+        "name": "altura"
+      },
+      "model_max_images": {
+        "name": "imágenes_máximas"
+      },
+      "model_size_preset": {
+        "name": "preajuste_de_tamaño"
+      },
+      "model_width": {
+        "name": "ancho"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Indicador de texto para crear o editar una imagen."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla a utilizar para la generación."
+      },
+      "watermark": {
+        "name": "marca de agua",
+        "tooltip": "Indica si se añade una marca de agua de \"Generado por IA\" a la imagen."
       }
     },
     "outputs": {
@@ -995,6 +1196,10 @@
     "inputs": {
       "model": {
         "name": "modelo"
+      },
+      "pre_cfg": {
+        "name": "pre_cfg",
+        "tooltip": "Si está activado, reajusta el ruido combinado ANTES de la combinación CFG del muestreador, sin limitar (puede amplificar). Coincide con el CFG escalado por norma utilizado por modelos como Lens. El valor predeterminado en falso mantiene el comportamiento original de atenuación solo en el espacio x0 después del CFG."
       },
       "strength": {
         "name": "intensidad"
@@ -1436,6 +1641,7 @@
     }
   },
   "CenterCropImages": {
+    "description": "Recorta una imagen al centro con las dimensiones especificadas.",
     "display_name": "Recorte central de imágenes",
     "inputs": {
       "height": {
@@ -1529,6 +1735,49 @@
       "start_sigma": {
         "name": "sigma_inicial",
         "tooltip": "Primer sigma para el cual estas opciones estarán en efecto."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClaudeNode": {
+    "description": "Genera respuestas de texto con los modelos Claude de Anthropic. Proporciona un mensaje de texto y, opcionalmente, una o más imágenes para contexto multimodal.",
+    "display_name": "Anthropic Claude",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Imagen(es) opcional(es) para usar como contexto para el modelo. Hasta 20 imágenes."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "El modelo Claude utilizado para generar la respuesta."
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Entrada de texto para el modelo."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Instrucciones fundamentales que dictan el comportamiento del modelo."
       }
     },
     "outputs": {
@@ -1639,6 +1888,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "description": "Operación lógica AND. Devuelve verdadero si todos los valores son verdaderos. Usa las reglas de verdad de Python.",
+    "display_name": "Y",
+    "inputs": {
+      "values": {
+        "name": "valores"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "Expresión matemática",
     "inputs": {
@@ -1655,6 +1918,24 @@
       },
       "1": {
         "tooltip": null
+      },
+      "2": {
+        "name": "BOOL",
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyNotNode": {
+    "description": "Operación lógica NOT. Devuelve verdadero si el valor es falso. Usa las reglas de verdad de Python.",
+    "display_name": "No",
+    "inputs": {
+      "value": {
+        "name": "valor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -1670,6 +1951,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "description": "Operación lógica OR. Devuelve verdadero si alguno de los valores es verdadero. Usa las reglas de verdad de Python.",
+    "display_name": "O",
+    "inputs": {
+      "values": {
+        "name": "valores"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -1968,6 +2263,10 @@
     "description": "Establecer manualmente las ventanas de contexto.",
     "display_name": "Ventanas de Contexto (Manual)",
     "inputs": {
+      "causal_window_fix": {
+        "name": "causal_window_fix",
+        "tooltip": "Indica si se debe añadir un fotograma de corrección causal a las ventanas de contexto que no estén indexadas en 0."
+      },
       "closed_loop": {
         "name": "bucle_cerrado",
         "tooltip": "Si se debe cerrar el bucle de la ventana de contexto; solo aplicable a programaciones en bucle."
@@ -2932,6 +3231,28 @@
       }
     }
   },
+  "EmptyARVideoLatent": {
+    "display_name": "EmptyARVideoLatent",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyAceStep1_5LatentAudio": {
     "display_name": "Empty Ace Step 1.5 Latent Audio",
     "inputs": {
@@ -3031,6 +3352,26 @@
   },
   "EmptyFlux2LatentImage": {
     "display_name": "Empty Flux 2 Latent",
+    "inputs": {
+      "batch_size": {
+        "name": "tamaño_lote"
+      },
+      "height": {
+        "name": "alto"
+      },
+      "width": {
+        "name": "ancho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyHiDreamO1LatentImage": {
+    "description": "Latente en espacio de píxeles vacío para HiDream-O1-Image. El modelo fue entrenado a ~4 megapíxeles; resoluciones más bajas salen de la distribución y la calidad disminuye notablemente. Resoluciones entrenadas: 2048x2048, 2304x1728, 1728x2304, 2560x1440, 1440x2560, 2496x1664, 1664x2496, 3104x1312, 1312x3104, 2304x1792, 1792x2304.",
+    "display_name": "Imagen Latente Vacía HiDream-O1",
     "inputs": {
       "batch_size": {
         "name": "tamaño_lote"
@@ -3360,6 +3701,37 @@
     "inputs": {
       "sigmas": {
         "name": "sigmas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux2ImageNode": {
+    "description": "Genera imágenes mediante Flux.2 [pro] o Flux.2 [max] a partir de un prompt y, opcionalmente, imágenes de referencia.",
+    "display_name": "Flux.2 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_height": {
+        "name": "altura"
+      },
+      "model_width": {
+        "name": "ancho"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt para la generación o edición de la imagen"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla aleatoria utilizada para crear el ruido."
       }
     },
     "outputs": {
@@ -4145,6 +4517,54 @@
       }
     }
   },
+  "GeminiNanoBanana2V2": {
+    "description": "Genera o edita imágenes de forma síncrona a través de la API de Google Vertex.",
+    "display_name": "Nano Banana 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Texto descriptivo de la imagen a generar o de las ediciones a aplicar. Incluye cualquier restricción, estilo o detalle que el modelo deba seguir."
+      },
+      "response_modalities": {
+        "name": "response_modalities"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Cuando la semilla se fija a un valor específico, el modelo intenta proporcionar la misma respuesta en solicitudes repetidas. No se garantiza una salida determinista. Además, cambiar el modelo o los parámetros, como la temperatura, puede causar variaciones en la respuesta incluso usando la misma semilla. Por defecto, se utiliza una semilla aleatoria."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Instrucciones fundamentales que dictan el comportamiento de la IA."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "name": "thought_image",
+        "tooltip": "Primera imagen del proceso de pensamiento del modelo. Solo disponible con thinking_level ALTO y modalidad IMAGEN+TEXTO."
+      }
+    }
+  },
   "GeminiNode": {
     "description": "Genera respuestas de texto con el modelo de IA Gemini de Google. Puede proporcionar múltiples tipos de entradas (texto, imágenes, audio, video) como contexto para generar respuestas más relevantes y significativas.",
     "display_name": "Google Gemini",
@@ -4257,6 +4677,22 @@
       }
     }
   },
+  "GetICLoRAParameters": {
+    "description": "Extrae los parámetros IC-LoRA de los metadatos safetensors de un modelo cargado con LoRA y los proporciona para LTXVAddGuide (por ejemplo, reference_downscale_factor).",
+    "display_name": "Obtener parámetros IC-LoRA",
+    "inputs": {
+      "iclora_model": {
+        "name": "iclora_model",
+        "tooltip": "Salida directa de un LoRA Loader para el IC-LoRA específico del que se extraerán los metadatos."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iclora_parameters",
+        "tooltip": "Parámetros IC-LoRA extraídos de los metadatos de LoRA (por ejemplo, reference_downscale_factor). Conectar a LTXVAddGuide si el LoRA requiere un manejo especial de las guías."
+      }
+    }
+  },
   "GetImageSize": {
     "description": "Devuelve el ancho y alto de la imagen, y la pasa sin cambios.",
     "display_name": "Obtener Tamaño de Imagen",
@@ -4335,6 +4771,40 @@
       "seed": {
         "name": "semilla",
         "tooltip": "Semilla para determinar si el nodo debe ejecutarse de nuevo; los resultados reales son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNodeV2": {
+    "description": "Modifica una imagen existente en base a un prompt de texto",
+    "display_name": "Grok Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_aspect_ratio": {
+        "name": "relación_de_aspecto"
+      },
+      "model_number_of_images": {
+        "name": "número_de_imágenes"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "El prompt de texto utilizado para generar la imagen"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para determinar si el nodo debe volver a ejecutarse; los resultados reales son no deterministas independientemente de la semilla."
       }
     },
     "outputs": {
@@ -4680,6 +5150,70 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1PatchSeamSmoothing": {
+    "description": "Promedia la salida del modelo a través de múltiples posiciones desplazadas de la cuadrícula de parches durante la parte final del muestreo. Elimina costuras.",
+    "display_name": "Suavizado de Costuras de Parches HiDream-O1",
+    "inputs": {
+      "blend": {
+        "name": "mezcla",
+        "tooltip": "average: media de igual peso. window: ponderación con ventana de Hann favoreciendo cada pasada lejos de los bordes de su parche. median: mediana por píxel, rechaza pasadas atípicas por envoltura."
+      },
+      "end_percent": {
+        "name": "porcentaje_fin",
+        "tooltip": "Progreso del muestreo en el que se desactiva la mezcla."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "passes": {
+        "name": "pasadas",
+        "tooltip": "Número de pasadas por paso controlado. 2/4 = fijo. ramp_*: el número de pasadas aumenta a medida que el muestreo se acerca al final (más suavizado donde las costuras son más visibles)."
+      },
+      "pattern": {
+        "name": "patrón",
+        "tooltip": "Disposición del desplazamiento. single_shift: una pasada en la cuadrícula natural de parches + otras desplazadas. symmetric: todas las pasadas fuera de la cuadrícula, desplazamientos repartidos alrededor del origen."
+      },
+      "start_percent": {
+        "name": "porcentaje_inicio",
+        "tooltip": "Progreso del muestreo (0=inicio, 1=fin) en el que se activa la mezcla."
+      },
+      "strength": {
+        "name": "fuerza",
+        "tooltip": "Interpolación entre la predicción de la cuadrícula natural (0) y el resultado promediado (1)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HiDreamO1ReferenceImages": {
+    "description": "Adjunta de 1 a 10 imágenes de referencia para el condicionamiento, una para instrucción de edición o varias para personalización basada en el sujeto.",
+    "display_name": "Imágenes de Referencia HiDream-O1",
+    "inputs": {
+      "images": {
+        "name": "imágenes",
+        "tooltip": "Imágenes de referencia. 1 imagen = edición por instrucción; 2-10 imágenes = referencia múltiple."
+      },
+      "negative": {
+        "name": "negativo"
+      },
+      "positive": {
+        "name": "positivo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
         "tooltip": null
       }
     }
@@ -5305,6 +5839,7 @@
     }
   },
   "ImageCropV2": {
+    "description": "Recorta una imagen a las dimensiones especificadas.",
     "display_name": "Recorte de Imagen",
     "inputs": {
       "crop_region": {
@@ -5325,6 +5860,7 @@
     }
   },
   "ImageDeduplication": {
+    "description": "Elimina imágenes duplicadas o muy similares de una lista.",
     "display_name": "Eliminación de Imágenes Duplicadas",
     "inputs": {
       "images": {
@@ -5379,6 +5915,7 @@
     }
   },
   "ImageGrid": {
+    "description": "Organiza varias imágenes en una cuadrícula.",
     "display_name": "Cuadrícula de Imágenes",
     "inputs": {
       "cell_height": {
@@ -7011,6 +7548,71 @@
       }
     }
   },
+  "Krea2ImageNode": {
+    "description": "Genera imágenes con Krea 2: elige Medium (ilustraciones expresivas) o Large (fotorrealismo expresivo). Admite un moodboard opcional y hasta 10 referencias de estilo de imagen encadenadas.",
+    "display_name": "Krea 2 Imagen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Krea 2 Medium es ideal para ilustraciones expresivas; Krea 2 Large es ideal para fotorrealismo expresivo."
+      },
+      "model_aspect_ratio": {
+        "name": "relación_de_aspecto"
+      },
+      "model_creativity": {
+        "name": "creatividad"
+      },
+      "model_moodboard_id": {
+        "name": "moodboard_id"
+      },
+      "model_moodboard_strength": {
+        "name": "fuerza_moodboard"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Texto de entrada para la imagen."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla aleatoria para reproducibilidad."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Krea2StyleReferenceNode": {
+    "description": "Agrega una referencia de estilo de imagen a una generación de Krea 2. Encadena múltiples nodos de Referencia de Estilo Krea 2 (máx. 10) y conecta la salida final `style_reference` a Krea 2 Imagen. Cada imagen se sube al almacenamiento de ComfyAPI y se pasa como URL.",
+    "display_name": "Referencia de Estilo Krea 2",
+    "inputs": {
+      "image": {
+        "name": "imagen",
+        "tooltip": "Imagen de referencia cuyo estilo influye en la generación."
+      },
+      "strength": {
+        "name": "fuerza",
+        "tooltip": "Fuerza de la referencia; los valores negativos invierten la influencia del estilo."
+      },
+      "style_reference": {
+        "name": "style_reference",
+        "tooltip": "Cadena opcional de referencias de estilo entrantes; este nodo añade una más."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_reference",
+        "tooltip": null
+      }
+    }
+  },
   "LTXAVTextEncoderLoader": {
     "description": "[Recetas]\n\nltxav: gemma 3 12B",
     "display_name": "Cargador de codificador de texto LTXV Audio",
@@ -7034,9 +7636,17 @@
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "Máscara espacial opcional en el espacio de píxeles. Controla la influencia de la condición por región mediante self-attention, multiplicada por la intensidad."
+      },
       "frame_idx": {
         "name": "indice_fotograma",
         "tooltip": "Índice de fotograma para comenzar la condición. Para imágenes de un solo fotograma o videos con 1-8 fotogramas, cualquier valor de indice_fotograma es aceptable. Para videos con 9+ fotogramas, indice_fotograma debe ser divisible por 8, de lo contrario se redondeará hacia abajo al múltiplo de 8 más cercano. Los valores negativos se cuentan desde el final del video."
+      },
+      "iclora_parameters": {
+        "name": "iclora_parameters",
+        "tooltip": "Parámetros IC-LoRA opcionales de un nodo Obtener parámetros IC-LoRA. Se usan para ajustar el procesamiento de guías según lo requieran ciertos IC-LoRA (por ejemplo, aquellos con reference_downscale_factor > 1). Cuando se encadenan, cada LTXVAddGuide usa solo los parámetros conectados a él."
       },
       "image": {
         "name": "imagen",
@@ -7306,6 +7916,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -7915,6 +8530,10 @@
       "6": {
         "name": "model_3d",
         "tooltip": null
+      },
+      "7": {
+        "name": "model_3d_info",
+        "tooltip": null
       }
     }
   },
@@ -7937,6 +8556,21 @@
       }
     }
   },
+  "LoadBackgroundRemovalModel": {
+    "display_name": "Cargar modelo de eliminación de fondo",
+    "inputs": {
+      "bg_removal_name": {
+        "name": "nombre_del_modelo_de_eliminación_de_fondo",
+        "tooltip": "El modelo utilizado para eliminar fondos de imágenes"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "modelo_de_fondo",
+        "tooltip": null
+      }
+    }
+  },
   "LoadImage": {
     "display_name": "Cargar Imagen",
     "inputs": {
@@ -7949,6 +8583,7 @@
     }
   },
   "LoadImageDataSetFromFolder": {
+    "description": "Carga un conjunto de datos de imágenes desde una carpeta especificada y devuelve una lista de imágenes. Formatos soportados: PNG, JPG, JPEG, WEBP.",
     "display_name": "Cargar conjunto de imágenes desde carpeta",
     "inputs": {
       "folder": {
@@ -7992,6 +8627,7 @@
     }
   },
   "LoadImageTextDataSetFromFolder": {
+    "description": "Carga un conjunto de datos de pares de imágenes y textos desde una carpeta especificada y los devuelve como una lista. Formatos soportados: PNG, JPG, JPEG, WEBP.",
     "display_name": "Cargar conjunto de imágenes y texto desde carpeta",
     "inputs": {
       "folder": {
@@ -8018,7 +8654,35 @@
       }
     }
   },
+  "LoadMediaPipeFaceLandmarker": {
+    "display_name": "Cargar MediaPipe Face Landmarker",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "Face Landmarker safetensors de models/mediapipe/."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoadMoGeModel": {
+    "display_name": "Cargar modelo MoGe",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LoadTrainingDataset": {
+    "description": "Carga un conjunto de datos de entrenamiento codificado (latentes + condicionamiento) desde el disco para su uso en entrenamiento.",
     "display_name": "Cargar conjunto de datos de entrenamiento",
     "inputs": {
       "folder_name": {
@@ -8327,6 +8991,42 @@
       }
     }
   },
+  "LumaImageEditNode2": {
+    "description": "Edita una imagen existente con un prompt de texto usando el modelo Luma UNI-1.",
+    "display_name": "Luma UNI-1 Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo a utilizar para la edición."
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_web_search": {
+        "name": "web_search"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descripción de la edición deseada. 1–6000 caracteres."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "Imagen de origen a editar."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LumaImageModifyNode": {
     "description": "Modifica imágenes de forma sincrónica según el prompt y la relación de aspecto.",
     "display_name": "Luma Imagen a Imagen",
@@ -8395,6 +9095,41 @@
       "style_image_weight": {
         "name": "style_image_weight",
         "tooltip": "Peso de la imagen de estilo. Se ignora si no se proporciona style_image."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaImageNode2": {
+    "description": "Genera imágenes a partir de texto usando el modelo Luma UNI-1.",
+    "display_name": "Luma UNI-1 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Modelo a utilizar para la generación."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "model_web_search": {
+        "name": "web_search"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descripción en texto de la imagen deseada. 1–6000 caracteres."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
       }
     },
     "outputs": {
@@ -8731,6 +9466,7 @@
     }
   },
   "MakeTrainingDataset": {
+    "description": "Codifica imágenes con VAE y textos con CLIP para crear un conjunto de datos de latentes y condicionamientos para entrenamiento.",
     "display_name": "Crear Conjunto de Datos de Entrenamiento",
     "inputs": {
       "clip": {
@@ -8821,7 +9557,97 @@
       }
     }
   },
+  "MediaPipeFaceLandmarker": {
+    "description": "Detecta puntos de referencia faciales usando el modelo MediaPipe.",
+    "display_name": "MediaPipe Face Landmarker",
+    "inputs": {
+      "detector_variant": {
+        "name": "detector_variant",
+        "tooltip": "Rango del detector facial. 'short' está ajustado para rostros cercanos (a menos de ~2 m de la cámara); 'full' cubre rostros más lejanos/pequeños (hasta ~5 m) pero es más lento. 'both' ejecuta ambos detectores y mantiene el que encontró más rostros por fotograma (costo de detección ~2×)."
+      },
+      "face_detection_model": {
+        "name": "face_detection_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "min_confidence": {
+        "name": "min_confidence",
+        "tooltip": "Umbral de puntuación BlazeFace. Disminuye para captar rostros pequeños/ocultos."
+      },
+      "missing_frame_fallback": {
+        "name": "missing_frame_fallback",
+        "tooltip": "Comportamiento por fotograma cuando falla la detección en un lote. 'empty' deja el fotograma sin rostro. 'previous' copia la detección exitosa más reciente. 'interpolate' interpola puntos clave/bbox/blendshapes entre los fotogramas exitosos adyacentes. Multi-rostro: empareja rostros entre fotogramas por centro de bbox más cercano."
+      },
+      "num_faces": {
+        "name": "num_faces",
+        "tooltip": "Máximo de rostros a devolver por fotograma. 0 = sin límite (devuelve todos los detectados)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "face_landmarks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMask": {
+    "description": "Dibuja una máscara a partir de los puntos de referencia faciales.",
+    "display_name": "MediaPipe Face Mask",
+    "inputs": {
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "regions": {
+        "name": "regions",
+        "tooltip": "'all' = unión de face_oval+lips+eyes+irises (que se reduce a face_oval ya que lo contiene todo). 'custom' = activa cada región individualmente para combinaciones como lips+eyes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MediaPipeFaceMeshVisualize": {
+    "description": "Dibuja la malla de puntos de referencia faciales sobre la imagen de entrada.",
+    "display_name": "Visualizar Malla Facial de MediaPipe",
+    "inputs": {
+      "color": {
+        "name": "color"
+      },
+      "connections": {
+        "name": "connections",
+        "tooltip": "'all' = oval+eyes+brows+lips+irises+nose. 'fill' = polígono sólido face_oval (máscara de silueta). 'custom' = activa cada característica individualmente (incluyendo 'tesselation', el entramado completo de 2547 aristas)."
+      },
+      "face_landmarks": {
+        "name": "face_landmarks"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Si no se conecta, se usará un lienzo negro."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "Radio de los puntos de referencia en píxeles. 0 desactiva el dibujo de puntos."
+      },
+      "thickness": {
+        "name": "thickness",
+        "tooltip": "Grosor de línea de los bordes en píxeles. 0 desactiva el dibujo de bordes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MergeImageLists": {
+    "description": "Concatena varias listas de imágenes en una sola.",
     "display_name": "Unir Listas de Imágenes",
     "inputs": {
       "images": {
@@ -9267,6 +10093,126 @@
       "seed": {
         "name": "semilla",
         "tooltip": "La semilla aleatoria utilizada para crear el ruido."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeInference": {
+    "description": "Ejecuta MoGe en una sola imagen para estimar profundidad y geometría.",
+    "display_name": "Inferencia MoGe",
+    "inputs": {
+      "apply_mask": {
+        "name": "apply_mask",
+        "tooltip": "Establece los píxeles enmascarados (cielo / inválidos) como inf en puntos y profundidad para que el mallado los descarte. Desactivar para mantener la geometría predicha en todas partes; la máscara aún se devuelve por separado."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Imágenes por llamada de inferencia. Disminuir si tienes OOM en un video largo o conjunto de imágenes."
+      },
+      "force_projection": {
+        "name": "force_projection"
+      },
+      "fov_x_degrees": {
+        "name": "fov_x_degrees",
+        "tooltip": "Campo de visión horizontal de la cámara de origen. Establece la distancia focal usada para desproyectar el mapa de profundidad en 3D. 0 = recuperación automática a partir de los puntos predichos."
+      },
+      "image": {
+        "name": "image"
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "0 = más rápido, 9 = mayor detalle."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePanoramaInference": {
+    "description": "Ejecuta MoGe en una panorámica equirectangular dividiéndola en 12 vistas en perspectiva, ejecutando inferencia en cada una y fusionando los resultados en un solo mapa de profundidad.",
+    "display_name": "Inferencia panorámica MoGe",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Vistas por lote de inferencia (12 divisiones en total)."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Panorama equirectangular (cualquier relación de aspecto)."
+      },
+      "merge_resolution": {
+        "name": "merge_resolution",
+        "tooltip": "Resolución del lado largo del mapa de distancias equirectangular fusionado."
+      },
+      "moge_model": {
+        "name": "moge_model"
+      },
+      "resolution_level": {
+        "name": "resolution_level",
+        "tooltip": "Detalle por vista (0 = más rápido, 9 = más detallado)."
+      },
+      "split_resolution": {
+        "name": "split_resolution",
+        "tooltip": "Resolución de cada división de perspectiva."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "moge_geometry",
+        "tooltip": null
+      }
+    }
+  },
+  "MoGePointMapToMesh": {
+    "description": "Convierte un mapa de puntos MoGe en una malla 3D.",
+    "display_name": "MoGe Point Map a Malla",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "Qué imagen de una geometría MoGe por lotes convertir a malla. El número de vértices varía por imagen, por lo que los lotes no pueden combinarse en una sola MALLA."
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "Intervalo de vértices; 1 = resolución completa."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "Descartar píxeles cuyo rango de profundidad 3x3 exceda esta fracción. 0 = desactivado."
+      },
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Transportar la imagen de origen como textura baseColor."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeRender": {
+    "description": "Renderiza un mapa de profundidad o un mapa normal a partir de datos de geometría",
+    "display_name": "MoGe Renderizado",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "DirectX vs OpenGL controla la convención del canal verde del mapa de normales. DirectX: verde = -Y hacia abajo (Unreal). OpenGL: verde = +Y hacia arriba (Blender, Substance, Unity, glTF)."
       }
     },
     "outputs": {
@@ -11347,6 +12293,18 @@
       }
     }
   },
+  "ModelNoiseScale": {
+    "display_name": "Escala de Ruido del Modelo",
+    "inputs": {
+      "model": {
+        "name": "modelo"
+      },
+      "noise_scale": {
+        "name": "escala_ruido",
+        "tooltip": "Escala absoluta de ruido de entrenamiento. Por ejemplo HiDream-O1 base: 8.0, dev: 7.5."
+      }
+    }
+  },
   "ModelPatchLoader": {
     "display_name": "Cargador de Parches de Modelo",
     "inputs": {
@@ -11508,6 +12466,23 @@
       }
     }
   },
+  "MultiGPU_WorkUnits": {
+    "description": "Prepara el modelo para acelerar el muestreo dividiendo las unidades de trabajo.\n\nDebe colocarse después de los nodos que modifican el propio objeto del modelo, como los nodos de compilación o cambio de atención.\n\nA excepción de esos casos, este nodo puede colocarse en cualquier orden.",
+    "display_name": "División CFG MultiGPU",
+    "inputs": {
+      "max_gpus": {
+        "name": "max_gpus"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "NAGuidance": {
     "description": "Aplica la Guía de Atención Normalizada a los modelos, permitiendo prompts negativos en modelos distilled/schnell.",
     "display_name": "Guía de Atención Normalizada",
@@ -11535,6 +12510,7 @@
     }
   },
   "NormalizeImages": {
+    "description": "Normaliza imágenes usando la media y la desviación estándar.",
     "display_name": "Normalizar Imágenes",
     "inputs": {
       "images": {
@@ -11711,8 +12687,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "description": "Genera imágenes de forma síncrona a través del endpoint GPT Image 1 de OpenAI.",
-    "display_name": "OpenAI GPT Image 1",
+    "description": "Genera imágenes de forma síncrona a través del endpoint GPT Image 2 de OpenAI.",
+    "display_name": "OpenAI GPT Image 2",
     "inputs": {
       "background": {
         "name": "background",
@@ -11746,7 +12722,7 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Texto de entrada para GPT Image 1"
+        "tooltip": "Texto de entrada para GPT Image 2"
       },
       "quality": {
         "name": "quality",
@@ -11759,6 +12735,50 @@
       "size": {
         "name": "size",
         "tooltip": "Tamaño de la imagen"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV2": {
+    "description": "Genera imágenes a través del endpoint GPT Image de OpenAI.",
+    "display_name": "OpenAI GPT Image 2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_background": {
+        "name": "fondo"
+      },
+      "model_custom_height": {
+        "name": "altura_personalizada"
+      },
+      "model_custom_width": {
+        "name": "ancho_personalizado"
+      },
+      "model_quality": {
+        "name": "calidad"
+      },
+      "model_size": {
+        "name": "tamaño"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Cuántas imágenes generar"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto para GPT Image"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "aún no implementado en el backend"
       }
     },
     "outputs": {
@@ -11812,6 +12832,53 @@
       },
       "size": {
         "name": "tamaño"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterLLMNode": {
+    "description": "Genera respuestas de texto a través de OpenRouter. Redirige a un conjunto seleccionado de modelos populares de xAI, DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi) y Perplexity Sonar.",
+    "display_name": "OpenRouter LLM",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "El modelo de OpenRouter utilizado para generar la respuesta."
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Entrada de texto para el modelo."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Semilla para muestreo. Establecer en 0 para omitir. La mayoría de los modelos lo toman solo como sugerencia."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Instrucciones fundamentales que dictan el comportamiento del modelo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpticalFlowLoader": {
+    "display_name": "Cargar modelo de flujo óptico",
+    "inputs": {
+      "model_name": {
+        "name": "model_name",
+        "tooltip": "Modelo de flujo óptico a cargar. Los archivos deben colocarse en la carpeta 'optical_flow'. Actualmente solo se admite raft_large.pth de torchvision."
       }
     },
     "outputs": {
@@ -12119,6 +13186,32 @@
     "inputs": {
       "photomaker_model_name": {
         "name": "nombre_del_modelo_photomaker"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PiDConditioning": {
+    "description": "Adjunta un latent y un escalar degrade_sigma a un CONDITIONING para decodificación/upsampling PiD",
+    "display_name": "Condicionamiento PiD",
+    "inputs": {
+      "degrade_sigma": {
+        "name": "degrade_sigma",
+        "tooltip": "0 = latent limpio. Aumenta para eliminar ruido de salidas latentes corruptas."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent (de VAEEncode o un KSampler)."
+      },
+      "latent_format": {
+        "name": "formato_latent",
+        "tooltip": "Los latents de Flux1 y Flux2 se detectan automáticamente por la dimensión de canal, sd3 debe seleccionarse manualmente."
+      },
+      "positive": {
+        "name": "positivo"
       }
     },
     "outputs": {
@@ -12619,6 +13712,7 @@
     }
   },
   "RandomCropImages": {
+    "description": "Recorta aleatoriamente una imagen a las dimensiones especificadas.",
     "display_name": "Recorte Aleatorio de Imágenes",
     "inputs": {
       "control_after_generate": {
@@ -13301,6 +14395,26 @@
       }
     }
   },
+  "RemoveBackground": {
+    "description": "Genera una máscara de primer plano para eliminar el fondo de una imagen utilizando un modelo de eliminación de fondo.",
+    "display_name": "Eliminar fondo",
+    "inputs": {
+      "bg_removal_model": {
+        "name": "modelo_de_eliminación_de_fondo",
+        "tooltip": "Modelo de eliminación de fondo utilizado para generar la máscara"
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Imagen de entrada para eliminar el fondo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "máscara",
+        "tooltip": "Máscara de primer plano generada"
+      }
+    }
+  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -13461,6 +14575,7 @@
     }
   },
   "ResizeImagesByLongerEdge": {
+    "description": "Redimensiona imágenes para que el borde más largo coincida con la dimensión especificada, manteniendo la relación de aspecto.",
     "display_name": "Redimensionar imágenes por el borde más largo",
     "inputs": {
       "images": {
@@ -13480,6 +14595,7 @@
     }
   },
   "ResizeImagesByShorterEdge": {
+    "description": "Redimensiona las imágenes para que el borde más corto coincida con la dimensión especificada, manteniendo la proporción de aspecto.",
     "display_name": "Redimensionar imágenes por el borde más corto",
     "inputs": {
       "images": {
@@ -13499,6 +14615,7 @@
     }
   },
   "ResolutionBucket": {
+    "description": "Agrupa latents y condicionamientos en buckets",
     "display_name": "Agrupación por resolución",
     "inputs": {
       "conditioning": {
@@ -13727,6 +14844,164 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Image": {
+    "description": "Genera un modelo 3D a partir de 1 a 5 imágenes de referencia usando Rodin Gen-2.5. Elige un modo (Rápido / Regular / Extremo-Alto) para ajustar calidad y costo.",
+    "display_name": "Rodin 3D Gen-2.5 - Imagen a 3D",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "Pose T/A para modelos humanoides."
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "Addon HighPack: texturas 4K y ~16x caras en modo Quad."
+      },
+      "bbox_height": {
+        "name": "alto_caja",
+        "tooltip": "Alto de la caja delimitadora (eje Z)."
+      },
+      "bbox_length": {
+        "name": "largo_caja",
+        "tooltip": "Largo de la caja delimitadora (eje X)."
+      },
+      "bbox_width": {
+        "name": "ancho_caja",
+        "tooltip": "Ancho de la caja delimitadora (eje Y). Pon 0 junto con los otros para omitir la caja."
+      },
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "geometry_file_format": {
+        "name": "formato_archivo_geometría"
+      },
+      "hd_texture": {
+        "name": "textura_hd",
+        "tooltip": "Mejora de textura de alta calidad."
+      },
+      "height_cm": {
+        "name": "altura_cm",
+        "tooltip": "Altura aproximada del modelo en centímetros (0 para omitir)."
+      },
+      "images": {
+        "name": "imágenes",
+        "tooltip": "1-5 imágenes. La primera imagen se usa para materiales en vista múltiple."
+      },
+      "material": {
+        "name": "material"
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Modo de generación. Regular = equilibrado. Rápido = 1K-20K caras para prototipado rápido. Extremo-Alto = 20K-2M caras con detalles micro opcionales."
+      },
+      "mode_creative": {
+        "name": "creativo"
+      },
+      "mode_polygon_count": {
+        "name": "conteo_polígonos"
+      },
+      "mode_tier": {
+        "name": "nivel"
+      },
+      "seed": {
+        "name": "semilla"
+      },
+      "texture_delight": {
+        "name": "eliminar_iluminación_textura",
+        "tooltip": "Eliminar iluminación horneada de las texturas."
+      },
+      "texture_mode": {
+        "name": "modo_textura",
+        "tooltip": "Preajuste de calidad de textura. 'Predeterminado' usa el valor por defecto del servidor para el nivel seleccionado."
+      },
+      "use_original_alpha": {
+        "name": "usar_alpha_original",
+        "tooltip": "Conservar la transparencia de la imagen."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "archivo_modelo",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "description": "Genera un modelo 3D a partir de un prompt de texto usando Rodin Gen-2.5. Elige un modo (Rápido / Regular / Extremo-Alto) para ajustar calidad frente a coste.",
+    "display_name": "Rodin 3D Gen-2.5 - Texto a 3D",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "Pose T/A para modelos humanoides."
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "Addon HighPack: texturas 4K y ~16x caras en modo Quad."
+      },
+      "bbox_height": {
+        "name": "alto_bbox",
+        "tooltip": "Alto de la caja delimitadora (eje Z)."
+      },
+      "bbox_length": {
+        "name": "largo_bbox",
+        "tooltip": "Largo de la caja delimitadora (eje X)."
+      },
+      "bbox_width": {
+        "name": "ancho_bbox",
+        "tooltip": "Ancho de la caja delimitadora (eje Y). Pon 0 junto con los otros para omitir la caja."
+      },
+      "control_after_generate": {
+        "name": "controlar tras generar"
+      },
+      "geometry_file_format": {
+        "name": "formato_archivo_geometría"
+      },
+      "hd_texture": {
+        "name": "textura_hd",
+        "tooltip": "Mejora de textura de alta calidad."
+      },
+      "height_cm": {
+        "name": "altura_cm",
+        "tooltip": "Altura aproximada del modelo en centímetros (0 para omitir)."
+      },
+      "material": {
+        "name": "material"
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Modo de generación. Regular = equilibrado. Rápido = 1K-20K caras para prototipado rápido. Extremo-Alto = 20K-2M caras con microdetalles opcionales."
+      },
+      "mode_creative": {
+        "name": "creativo"
+      },
+      "mode_polygon_count": {
+        "name": "conteo_polígonos"
+      },
+      "mode_tier": {
+        "name": "nivel"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto para el modelo 3D."
+      },
+      "seed": {
+        "name": "semilla"
+      },
+      "texture_delight": {
+        "name": "eliminar_iluminación_textura",
+        "tooltip": "Eliminar iluminación horneada de las texturas."
+      },
+      "texture_mode": {
+        "name": "modo_textura",
+        "tooltip": "Preajuste de calidad de textura. 'Predeterminado' usa el valor por defecto del servidor para el nivel seleccionado."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "archivo_modelo",
         "tooltip": null
       }
     }
@@ -14310,6 +15585,20 @@
       }
     }
   },
+  "SamplerARVideo": {
+    "display_name": "Sampler AR Video",
+    "inputs": {
+      "num_frame_per_block": {
+        "name": "num_frame_per_block",
+        "tooltip": "Fotogramas por bloque autorregresivo. 1 = por fotograma, 3 = por fragmento. Debe coincidir con el modo de entrenamiento del checkpoint."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SamplerCustom": {
     "display_name": "Muestreador personalizado",
     "inputs": {
@@ -14572,6 +15861,29 @@
       }
     }
   },
+  "SamplerLCM": {
+    "description": "Muestreador LCM con ruido ajustable por paso. s_noise es un multiplicador en la escala de ruido de entrenamiento del modelo",
+    "display_name": "SamplerLCM",
+    "inputs": {
+      "noise_clip_std": {
+        "name": "noise_clip_std",
+        "tooltip": "Limita el ruido por paso a +/- N*std. 0 desactiva."
+      },
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "Multiplicador de ruido por paso en el primer paso (1.0 = igual que el entrenamiento)."
+      },
+      "s_noise_end": {
+        "name": "s_noise_end",
+        "tooltip": "Multiplicador de ruido por paso en el último paso. Igualar a s_noise para un programa constante."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SamplerLCMUpscale": {
     "display_name": "SamplerLCMUpscale",
     "inputs": {
@@ -14805,7 +16117,32 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "description": "Guarda las imágenes de entrada en tu directorio de salida de ComfyUI.",
+    "display_name": "Guardar imagen (avanzado)",
+    "inputs": {
+      "filename_prefix": {
+        "name": "prefijo_nombre_archivo",
+        "tooltip": "El prefijo para el archivo a guardar. Puede incluir tokens de formato como %date:yyyy-MM-dd% o %Empty Latent Image.width%."
+      },
+      "format": {
+        "name": "formato",
+        "tooltip": "El formato de archivo en el que se guardará la imagen."
+      },
+      "format_bit_depth": {
+        "name": "profundidad_de_bits"
+      },
+      "format_input_color_space": {
+        "name": "espacio_de_color_entrada"
+      },
+      "images": {
+        "name": "imágenes",
+        "tooltip": "Las imágenes que se van a guardar."
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
+    "description": "Guarda un conjunto de imágenes en una carpeta especificada. Formatos soportados: PNG.",
     "display_name": "Guardar conjunto de imágenes en carpeta",
     "inputs": {
       "filename_prefix": {
@@ -14819,10 +16156,15 @@
       "images": {
         "name": "images",
         "tooltip": "Lista de imágenes para guardar."
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Indica si se deben sobrescribir los archivos existentes o incrementar los nombres de archivo para evitar sobrescribir."
       }
     }
   },
   "SaveImageTextDataSetToFolder": {
+    "description": "Guarda un conjunto de pares de imágenes y subtítulos de texto en una carpeta especificada. Las imágenes se guardan como archivos PNG y los subtítulos como archivos TXT con el mismo prefijo de nombre de archivo.",
     "display_name": "Guardar conjunto de imágenes y textos en carpeta",
     "inputs": {
       "filename_prefix": {
@@ -14836,6 +16178,10 @@
       "images": {
         "name": "images",
         "tooltip": "Lista de imágenes para guardar."
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Indica si se deben sobrescribir los archivos existentes o incrementar los nombres de archivo para evitar sobrescribir."
       },
       "texts": {
         "name": "texts",
@@ -14893,6 +16239,7 @@
     }
   },
   "SaveTrainingDataset": {
+    "description": "Guarda el conjunto de datos de entrenamiento codificado (latents + conditioning) en disco para una carga eficiente durante el entrenamiento.",
     "display_name": "Guardar conjunto de datos de entrenamiento",
     "inputs": {
       "conditioning": {
@@ -14980,6 +16327,57 @@
       },
       "shift_y": {
         "name": "desplazamiento_y"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectCLIPDevice": {
+    "description": "Coloca el codificador de texto CLIP en un dispositivo específico (default / cpu / gpu:N).\n\n- \"default\" restaura el dispositivo asignado por el cargador.\n- \"cpu\" fija tanto la carga como la descarga en la CPU.\n- \"gpu:N\" fija el dispositivo de carga en la N-ésima GPU disponible.\n\nCuando el dispositivo seleccionado no existe en la máquina actual\n(por ejemplo, un flujo de trabajo creado en una máquina con 2 GPU abierto en una con 1 GPU),\nel nodo pasa el CLIP sin cambios y registra un mensaje\nen lugar de fallar.",
+    "display_name": "Seleccionar Dispositivo CLIP",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "device": {
+        "name": "device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectModelDevice": {
+    "description": "Coloca el modelo de difusión en un dispositivo específico (default / cpu / gpu:N).\n\n- \"default\" restaura el dispositivo asignado por el cargador (incluso después de una\n  llamada previa a Seleccionar Dispositivo del Modelo).\n- \"cpu\" fija tanto la carga como la descarga en la CPU.\n- \"gpu:N\" fija el dispositivo de carga en la N-ésima GPU disponible; el dispositivo de descarga\n  se restaura a la elección original del cargador.\n\nCuando el dispositivo solicitado difiere del dispositivo en el que ya está\nel modelo de entrada, se genera un modelo nuevo a través de la fábrica de recarga del cargador\n(cached_patcher_init) para que el nuevo patcher tenga pesos independientes en\nel nuevo dispositivo. Los cargadores que no soportan multigpu (sin fábrica)\nharán que el nodo pase sin cambios con una advertencia.\n\nSi el flujo de trabajo ya tiene aplicada la División CFG MultiGPU y la GPU elegida\ncolisiona con uno de los clones multigpu existentes, ese clon se elimina para que dos patchers no terminen asignados al mismo dispositivo.\n\nCuando el dispositivo seleccionado no existe en la máquina actual\n(por ejemplo, un flujo de trabajo creado en una máquina con 2 GPU abierto en una con 1 GPU),\nel nodo pasa el modelo sin cambios y registra un mensaje\nen lugar de fallar.\n\nNOTA: Colocar Seleccionar Dispositivo del Modelo *después* de un nodo que ya\nhaya consumido el mismo modelo (por ejemplo, un KSampler que se ejecutó en este modelo en\nel dispositivo original) no es recomendable -- cualquier estado que el consumidor previo\nhaya modificado en el modelo original se observará cuando el dispositivo seleccionado coincida con el original (ruta rápida). Coloque Seleccionar Dispositivo del Modelo antes de cualquier consumidor del modelo.",
+    "display_name": "Seleccionar Dispositivo del Modelo",
+    "inputs": {
+      "device": {
+        "name": "device"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectVAEDevice": {
+    "description": "Coloca el VAE en un dispositivo específico (por defecto / gpu:N).\n\n- \"default\" restaura el dispositivo asignado por el cargador.\n- \"gpu:N\" fija el dispositivo de carga en la N-ésima GPU disponible; el dispositivo de descarga\n  se establece en el dispositivo estándar de descarga de VAE.\n\nLa CPU no se muestra intencionadamente en la interfaz para el VAE; si un flujo de trabajo\nproporciona \"cpu\" de todos modos (por ejemplo, abierto desde otra máquina), la solicitud\nse descarta con un mensaje en el registro y el VAE pasa sin cambios.\n\nCuando el dispositivo seleccionado no existe en la máquina actual\n(por ejemplo, un flujo de trabajo creado en una caja con 2 GPU abierto en una caja con 1 GPU),\nel nodo pasa el VAE sin cambios y registra un mensaje\nen lugar de fallar.",
+    "display_name": "Seleccionar dispositivo VAE",
+    "inputs": {
+      "device": {
+        "name": "dispositivo"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -15079,6 +16477,7 @@
     }
   },
   "ShuffleDataset": {
+    "description": "Mezcla aleatoriamente el orden de las imágenes en una lista.",
     "display_name": "Barajar conjunto de imágenes",
     "inputs": {
       "control_after_generate": {
@@ -15101,6 +16500,7 @@
     }
   },
   "ShuffleImageTextDataset": {
+    "description": "Mezcla aleatoriamente el orden de los pares imagen-texto en una lista.",
     "display_name": "Barajar conjunto de imágenes y textos",
     "inputs": {
       "control_after_generate": {
@@ -15913,6 +17313,23 @@
     "outputs": {
       "0": {
         "name": "contiene",
+        "tooltip": null
+      }
+    }
+  },
+  "StringFormat": {
+    "description": "Igual que el método de formato de cadenas de Python. Soporta todas las opciones y características de formato de Python.",
+    "display_name": "Formatear Texto",
+    "inputs": {
+      "f_string": {
+        "name": "f_string"
+      },
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -17180,7 +18597,8 @@
         "name": "pbr"
       },
       "quad": {
-        "name": "cuadrilátero"
+        "name": "cuadrilátero",
+        "tooltip": "Este parámetro está obsoleto y no hace nada."
       },
       "texture": {
         "name": "textura"
@@ -17202,6 +18620,169 @@
       },
       "1": {
         "name": "id_de_tarea_de_modelo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1ImageToModelNode": {
+    "description": "Tripo P1 de imagen a 3D. Optimizado para mallas low-poly listas para videojuegos.",
+    "display_name": "Tripo P1: Imagen a Modelo",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_escala",
+        "tooltip": "Escala la salida para aproximar metros reales."
+      },
+      "compress_geometry": {
+        "name": "comprimir_geometría",
+        "tooltip": "Aplicar compresión basada en geometría. Descomprimir antes de editar."
+      },
+      "enable_image_autofix": {
+        "name": "activar_autocorrección_imagen",
+        "tooltip": "Preprocesa la imagen de entrada para mejorar la calidad de generación."
+      },
+      "export_uv": {
+        "name": "exportar_uv",
+        "tooltip": "Desplegar UV durante la generación. Desactivar para ejecuciones solo de geometría más rápidas."
+      },
+      "face_limit": {
+        "name": "límite_de_caras",
+        "tooltip": "Cantidad objetivo de caras, 48-20000. -1 permite que Tripo elija adaptativamente."
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "model_seed": {
+        "name": "semilla_modelo"
+      },
+      "output_mode": {
+        "name": "modo_de_salida",
+        "tooltip": "\"Solo geometría\" devuelve una malla sin texturas. \"Texturizado\" añade mapas de color/PBR."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "archivo_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "id_tarea_modelo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1MultiviewToModelNode": {
+    "description": "Tripo P1 de multivista a 3D a partir de 2-4 imágenes de referencia en orden [frontal, izquierda, trasera, derecha]. La vista frontal es obligatoria; cualquier combinación de las otras tres puede omitirse.",
+    "display_name": "Tripo P1: Multivista a Modelo",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_escala",
+        "tooltip": "Escala la salida para aproximar metros reales."
+      },
+      "compress_geometry": {
+        "name": "comprimir_geometría",
+        "tooltip": "Aplicar compresión basada en geometría. Descomprimir antes de editar."
+      },
+      "export_uv": {
+        "name": "exportar_uv",
+        "tooltip": "Desplegar UV durante la generación. Desactivar para ejecuciones solo de geometría más rápidas."
+      },
+      "face_limit": {
+        "name": "límite_de_caras",
+        "tooltip": "Cantidad objetivo de caras, 48-20000. -1 permite que Tripo elija adaptativamente."
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Vista frontal (0°). Obligatoria."
+      },
+      "image_back": {
+        "name": "imagen_trasera",
+        "tooltip": "Vista trasera (180°)."
+      },
+      "image_left": {
+        "name": "imagen_izquierda",
+        "tooltip": "Vista izquierda (90°), es decir, el lado izquierdo del sujeto."
+      },
+      "image_right": {
+        "name": "imagen_derecha",
+        "tooltip": "Vista derecha (270°), es decir, el lado derecho del sujeto."
+      },
+      "model_seed": {
+        "name": "semilla_modelo"
+      },
+      "output_mode": {
+        "name": "modo_de_salida",
+        "tooltip": "\"Solo geometría\" devuelve una malla sin texturas. \"Texturizado\" añade mapas de color/PBR."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "archivo_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "id_tarea_modelo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1TextToModelNode": {
+    "description": "Tripo P1 texto a 3D. Optimizado para mallas low-poly, listas para juegos, con topología estable.",
+    "display_name": "Tripo P1: Texto a Modelo",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_escala",
+        "tooltip": "Escala la salida para aproximar metros reales."
+      },
+      "compress_geometry": {
+        "name": "comprimir_geometría",
+        "tooltip": "Aplicar compresión basada en geometría. Descomprime antes de editar."
+      },
+      "export_uv": {
+        "name": "exportar_uv",
+        "tooltip": "Desplegar UV durante la generación. Desactiva para ejecuciones solo de geometría más rápidas."
+      },
+      "face_limit": {
+        "name": "límite_de_caras",
+        "tooltip": "Cantidad objetivo de caras, 48-20000. -1 permite que Tripo elija de forma adaptativa."
+      },
+      "image_seed": {
+        "name": "semilla_imagen"
+      },
+      "model_seed": {
+        "name": "semilla_modelo"
+      },
+      "negative_prompt": {
+        "name": "prompt_negativo",
+        "tooltip": "Hasta 255 caracteres."
+      },
+      "output_mode": {
+        "name": "modo_de_salida",
+        "tooltip": "\"Solo geometría\" devuelve una malla sin texturas. \"Texturizado\" añade mapas de color/PBR."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Hasta 1024 caracteres."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "archivo_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "id_tarea_modelo",
         "tooltip": null
       },
       "2": {
@@ -17697,6 +19278,127 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "VOIDInpaintConditioning": {
+    "display_name": "VOIDInpaintConditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Número de fotogramas de píxeles a procesar. Para CogVideoX-Fun-V1.5 (patch_size_t=2), latent_t debe ser par — las longitudes que produzcan latent_t impar se redondean hacia abajo (por ejemplo, 49 → 45)."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "quadmask": {
+        "name": "quadmask",
+        "tooltip": "Quadmask preprocesada de VOIDQuadmaskPreprocess [T, H, W]"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Fotogramas de video de origen [T, H, W, 3]"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDQuadmaskPreprocess": {
+    "display_name": "VOIDQuadmaskPreprocess",
+    "inputs": {
+      "dilate_width": {
+        "name": "dilate_width",
+        "tooltip": "Radio de dilatación para la región principal de la máscara (0 = sin dilatación)"
+      },
+      "mask": {
+        "name": "mask"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "quadmask",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDSampler": {
+    "display_name": "VOIDSampler",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDWarpedNoise": {
+    "display_name": "VOIDWarpedNoise",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length",
+        "tooltip": "Número de fotogramas de píxeles. Se redondea hacia abajo para que latent_t sea par (requisito de patch_size_t=2), por ejemplo, 49 → 45."
+      },
+      "optical_flow": {
+        "name": "optical_flow",
+        "tooltip": "Modelo de flujo óptico de OpticalFlowLoader (RAFT-large)."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Salida de fotogramas de video de la pasada 1 [T, H, W, 3]"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "warped_noise",
+        "tooltip": null
+      }
+    }
+  },
+  "VOIDWarpedNoiseSource": {
+    "display_name": "VOIDWarpedNoiseSource",
+    "inputs": {
+      "warped_noise": {
+        "name": "warped_noise",
+        "tooltip": "Latente de ruido deformado de VOIDWarpedNoise"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -18462,6 +20164,7 @@
     }
   },
   "VoxelToMesh": {
+    "description": "Convierte una cuadrícula de vóxeles en una malla.",
     "display_name": "VoxelToMesh",
     "inputs": {
       "algorithm": {
@@ -18481,6 +20184,7 @@
     }
   },
   "VoxelToMeshBasic": {
+    "description": "Convierte una cuadrícula de vóxeles en una malla.",
     "display_name": "VoxelAMallaBásico",
     "inputs": {
       "threshold": {
@@ -19024,6 +20728,156 @@
     "outputs": {
       "0": {
         "tooltip": "El modelo con ventanas de contexto aplicadas durante el muestreo."
+      }
+    }
+  },
+  "WanDancerEncodeAudio": {
+    "display_name": "WanDancerEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_inject_scale": {
+        "name": "audio_inject_scale",
+        "tooltip": "La escala para las características de audio cuando se inyectan en el modelo de video."
+      },
+      "video_frames": {
+        "name": "video_frames"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio_encoder_output",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps_string",
+        "tooltip": "Los fps calculados en base a la duración del audio y el número de fotogramas de video. Se usa en el prompt."
+      }
+    }
+  },
+  "WanDancerPadKeyframes": {
+    "display_name": "WanDancerPadKeyframes",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio para calcular el total de fotogramas de salida y extraer el audio del segmento."
+      },
+      "images": {
+        "name": "images"
+      },
+      "segment_index": {
+        "name": "segment_index",
+        "tooltip": "Qué segmento es este (0 para el primero, 1 para el segundo, etc.)"
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "Longitud de este segmento (usualmente 149 fotogramas)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "Secuencia de keyframes rellenada"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "Máscara que indica los fotogramas válidos"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "Segmento de audio para este segmento de video"
+      }
+    }
+  },
+  "WanDancerPadKeyframesList": {
+    "display_name": "WanDancerPadKeyframesList",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio para dividir para cada segmento emitido."
+      },
+      "images": {
+        "name": "images"
+      },
+      "num_segments": {
+        "name": "num_segments",
+        "tooltip": "Cuántos segmentos rellenados emitir como listas."
+      },
+      "segment_length": {
+        "name": "segment_length",
+        "tooltip": "Longitud de cada segmento (usualmente 149 fotogramas)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes_sequence",
+        "tooltip": "Secuencias de keyframes rellenadas"
+      },
+      "1": {
+        "name": "keyframes_mask",
+        "tooltip": "Máscaras que indican los fotogramas válidos"
+      },
+      "2": {
+        "name": "audio_segment",
+        "tooltip": "Segmento de audio para cada segmento de video"
+      }
+    }
+  },
+  "WanDancerVideo": {
+    "display_name": "WanDancerVideo",
+    "inputs": {
+      "audio_encoder_output": {
+        "name": "audio_encoder_output"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "Las incrustaciones de visión de CLIP para el primer fotograma."
+      },
+      "clip_vision_output_ref": {
+        "name": "clip_vision_output_ref",
+        "tooltip": "Las incrustaciones de visión de CLIP para la imagen de referencia."
+      },
+      "height": {
+        "name": "alto"
+      },
+      "length": {
+        "name": "longitud",
+        "tooltip": "El número de fotogramas en el video generado. Debe mantenerse en 149 para WanDancer."
+      },
+      "mask": {
+        "name": "máscara",
+        "tooltip": "Máscara de acondicionamiento de imagen para la(s) imagen(es) inicial(es). El blanco se mantiene, el negro se genera. Se utiliza para las generaciones locales."
+      },
+      "negative": {
+        "name": "negativo"
+      },
+      "positive": {
+        "name": "positivo"
+      },
+      "start_image": {
+        "name": "imagen_inicial",
+        "tooltip": "La(s) imagen(es) inicial(es) a codificar, puede ser cualquier cantidad de fotogramas."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ancho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latente",
+        "tooltip": "Latente vacío."
       }
     }
   },
