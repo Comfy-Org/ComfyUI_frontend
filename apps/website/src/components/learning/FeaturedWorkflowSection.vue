@@ -36,10 +36,12 @@ const demoVideoPoster =
         </p>
 
         <div class="flex flex-wrap gap-3">
-          <BrandButton variant="solid" size="xs" class="uppercase">
-            {{ t('learning.featured.watchDemo', locale) }}
-          </BrandButton>
-          <BrandButton variant="outline" size="xs" class="uppercase">
+          <BrandButton
+            variant="outline"
+            size="xs"
+            class="uppercase"
+            href="https://comfy.org/workflows/537cf7f1f745-537cf7f1f745/"
+          >
             {{ t('cta.tryWorkflow', locale) }}
           </BrandButton>
         </div>
