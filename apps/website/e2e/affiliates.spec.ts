@@ -39,15 +39,12 @@ test.describe('Affiliates landing — desktop @smoke', () => {
     await page.goto(PATH)
   })
 
-  test('renders the hero heading and is marked noindex', async ({ page }) => {
+  test('renders the hero heading and is indexable', async ({ page }) => {
     await expect(
       page.getByRole('heading', { name: 'Become a Comfy Partner', level: 1 })
     ).toBeVisible()
 
-    const robotsContent = await page
-      .locator('meta[name="robots"]')
-      .getAttribute('content')
-    expect(robotsContent).toContain('noindex')
+    await expect(page.locator('meta[name="robots"]')).toHaveCount(0)
   })
 
   test('renders every page section in top-to-bottom order', async ({
