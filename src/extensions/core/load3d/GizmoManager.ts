@@ -3,7 +3,7 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
-import type { GizmoMode } from './interfaces'
+import type { GizmoMode, Model3DTransform } from './interfaces'
 
 export class GizmoManager {
   private transformControls: TransformControls | null = null
@@ -211,6 +211,30 @@ export class GizmoManager {
         x: this.targetObject.scale.x,
         y: this.targetObject.scale.y,
         z: this.targetObject.scale.z
+      }
+    }
+  }
+
+  getModelInfo(): Model3DTransform | null {
+    const object = this.targetObject
+    if (!object) return null
+
+    return {
+      position: {
+        x: object.position.x,
+        y: object.position.y,
+        z: object.position.z
+      },
+      quaternion: {
+        x: object.quaternion.x,
+        y: object.quaternion.y,
+        z: object.quaternion.z,
+        w: object.quaternion.w
+      },
+      scale: {
+        x: object.scale.x,
+        y: object.scale.y,
+        z: object.scale.z
       }
     }
   }
