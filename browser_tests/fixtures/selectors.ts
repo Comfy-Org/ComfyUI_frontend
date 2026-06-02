@@ -135,7 +135,8 @@ export const TestIds = {
     colorPickerButton: 'color-picker-button',
     colorPickerCurrentColor: 'color-picker-current-color',
     colorBlue: 'blue',
-    colorRed: 'red'
+    colorRed: 'red',
+    convertSubgraph: 'convert-to-subgraph-button'
   },
   menu: {
     moreMenuContent: 'more-menu-content'
