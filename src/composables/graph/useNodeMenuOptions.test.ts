@@ -5,16 +5,15 @@ import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useNodeMenuOptions } from '@/composables/graph/useNodeMenuOptions'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import type { Positionable } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
-const mockApp = vi.hoisted(() => ({
-  canvas: {
-    selected_nodes: null as Record<string, LGraphNode> | null
-  }
+// canvasStore transitively imports the app singleton; stub it so the real
+// ComfyApp module never loads during these unit tests.
+vi.mock('@/scripts/app', () => ({
+  app: { canvas: { selected_nodes: null } }
 }))
-
-vi.mock('@/scripts/app', () => ({ app: mockApp }))
 
 vi.mock('@/composables/graph/useNodeCustomization', () => ({
   useNodeCustomization: () => ({
@@ -44,18 +43,19 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
-const setSelectedNodes = (nodes: LGraphNode[]) => {
-  const dict: Record<string, LGraphNode> = {}
-  nodes.forEach((n, i) => {
-    dict[String(i)] = n
-  })
-  mockApp.canvas.selected_nodes = dict
+const nodeWithMode = (mode: LGraphEventMode, id = 1): LGraphNode => {
+  const node = new LGraphNode('Test')
+  node.id = id
+  node.mode = mode
+  return node
 }
 
-const nodeWithMode = (mode: LGraphEventMode, id = 1): LGraphNode =>
-  ({ id, mode }) as LGraphNode
+const getBypassLabel = (selected: LGraphNode[]): string => {
+  const canvasStore = useCanvasStore()
+  vi.spyOn(canvasStore, 'canvas', 'get').mockReturnValue({
+    selectedItems: new Set<Positionable>(selected)
+  } as ReturnType<typeof canvasStore.getCanvas>)
 
-const getBypassLabel = (): string => {
   let label = ''
   const Wrapper = defineComponent({
     setup() {
@@ -71,27 +71,29 @@ const getBypassLabel = (): string => {
 describe('useNodeMenuOptions.getBypassOption', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    mockApp.canvas.selected_nodes = null
   })
 
   it('labels as "Bypass" when no node is bypassed', () => {
-    setSelectedNodes([nodeWithMode(LGraphEventMode.ALWAYS, 1)])
-    expect(getBypassLabel()).toBe('contextMenu.Bypass')
+    expect(getBypassLabel([nodeWithMode(LGraphEventMode.ALWAYS, 1)])).toBe(
+      'contextMenu.Bypass'
+    )
   })
 
   it('labels as "Remove Bypass" when every selected node is bypassed', () => {
-    setSelectedNodes([
-      nodeWithMode(LGraphEventMode.BYPASS, 1),
-      nodeWithMode(LGraphEventMode.BYPASS, 2)
-    ])
-    expect(getBypassLabel()).toBe('contextMenu.Remove Bypass')
+    expect(
+      getBypassLabel([
+        nodeWithMode(LGraphEventMode.BYPASS, 1),
+        nodeWithMode(LGraphEventMode.BYPASS, 2)
+      ])
+    ).toBe('contextMenu.Remove Bypass')
   })
 
   it('labels as "Bypass" on mixed selection so it matches the toggle action', () => {
-    setSelectedNodes([
-      nodeWithMode(LGraphEventMode.BYPASS, 1),
-      nodeWithMode(LGraphEventMode.ALWAYS, 2)
-    ])
-    expect(getBypassLabel()).toBe('contextMenu.Bypass')
+    expect(
+      getBypassLabel([
+        nodeWithMode(LGraphEventMode.BYPASS, 1),
+        nodeWithMode(LGraphEventMode.ALWAYS, 2)
+      ])
+    ).toBe('contextMenu.Bypass')
   })
 })
