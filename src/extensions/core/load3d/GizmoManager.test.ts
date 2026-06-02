@@ -314,6 +314,30 @@ describe('GizmoManager', () => {
     })
   })
 
+  describe('getModelInfo', () => {
+    it('returns the full transform payload for the target object', () => {
+      manager.init()
+      const model = new THREE.Object3D()
+      model.name = 'my-model'
+      model.position.set(1, 2, 3)
+      model.rotation.set(0.1, 0.2, 0.3)
+      model.scale.set(4, 5, 6)
+      manager.setupForModel(model)
+
+      const info = manager.getModelInfo()
+
+      expect(info).not.toBeNull()
+      expect(info!.position).toEqual({ x: 1, y: 2, z: 3 })
+      expect(info!.quaternion.w).toBeCloseTo(model.quaternion.w)
+      expect(info!.scale).toEqual({ x: 4, y: 5, z: 6 })
+    })
+
+    it('returns null when there is no target', () => {
+      manager.init()
+      expect(manager.getModelInfo()).toBeNull()
+    })
+  })
+
   describe('removeFromScene / ensureHelperInScene', () => {
     it('removes helper from scene', () => {
       manager.init()
