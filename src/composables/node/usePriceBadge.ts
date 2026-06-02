@@ -2,9 +2,14 @@ import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphBadge } from '@/lib/litegraph/src/litegraph'
 
 import { useNodePricing } from '@/composables/node/useNodePricing'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+
+type LinkedWidgetInput = INodeInputSlot & {
+  _subgraphSlot?: { linkIds?: number[] }
+}
 
 const componentIconSvg = new Image()
 componentIconSvg.src =
@@ -95,11 +100,20 @@ export const usePriceBadge = () => {
   ): ReadonlyMap<string, unknown> {
     const overrides = new Map<string, unknown>()
     if (!wrapper.isSubgraphNode()) return overrides
-    const innerId = String(innerNode.id)
-    for (const w of wrapper.widgets ?? []) {
-      if (!isPromotedWidgetView(w)) continue
-      if (w.sourceNodeId !== innerId) continue
-      overrides.set(w.sourceWidgetName, w.value)
+
+    for (const input of wrapper.inputs as LinkedWidgetInput[]) {
+      if (!input.widgetId) continue
+      for (const linkId of input._subgraphSlot?.linkIds ?? []) {
+        const link = wrapper.subgraph.getLink(linkId)
+        if (link?.target_id !== innerNode.id) continue
+        const targetInput = innerNode.inputs[link.target_slot]
+        const widgetName = targetInput?.widget?.name
+        if (!widgetName) continue
+        overrides.set(
+          widgetName,
+          useWidgetValueStore().getWidget(input.widgetId)?.value
+        )
+      }
     }
     return overrides
   }

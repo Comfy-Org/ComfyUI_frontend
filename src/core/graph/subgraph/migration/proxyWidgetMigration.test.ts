@@ -23,6 +23,7 @@ import {
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})
@@ -53,6 +54,17 @@ function addInnerNode(
   build(node)
   host.subgraph.add(node)
   return node
+}
+
+function getPromotedInputValue(
+  host: SubgraphNode,
+  name: string
+): TWidgetValue | undefined {
+  const input = host.inputs.find((input) => input.name === name)
+  if (!input?.widgetId) return undefined
+  return useWidgetValueStore().getWidget(input.widgetId)?.value as
+    | TWidgetValue
+    | undefined
 }
 
 function addPromotedHostInput(
@@ -183,7 +195,7 @@ describe('flushProxyWidgetMigration', () => {
         hostWidgetValues: [99]
       })
 
-      expect(host.widgets[0].value).toBe(99)
+      expect(getPromotedInputValue(host, 'seed')).toBe(99)
       const innerWidget = inner.widgets!.find((w) => w.name === 'seed')!
       expect(innerWidget.value).toBe(0)
     })
@@ -361,8 +373,7 @@ describe('flushProxyWidgetMigration', () => {
         hostWidgetValues: [123]
       })
 
-      const hostInput = host.inputs.at(-1)
-      expect(hostInput?._widget?.value).toBe(123)
+      expect(getPromotedInputValue(host, 'value')).toBe(123)
     })
 
     it('seeds value from the primitive widget when no host value is supplied', () => {
@@ -375,8 +386,7 @@ describe('flushProxyWidgetMigration', () => {
       host.properties.proxyWidgets = [[String(primitive.id), 'value']]
       flushProxyWidgetMigration({ hostNode: host })
 
-      const hostInput = host.inputs.at(-1)
-      expect(hostInput?._widget?.value).toBe(11)
+      expect(getPromotedInputValue(host, 'value')).toBe(11)
     })
 
     it('quarantines an unlinked primitive node with no fan-out', () => {
@@ -474,10 +484,8 @@ describe('flushProxyWidgetMigration', () => {
       expect(hostA.properties.proxyWidgetErrorQuarantine).toBeUndefined()
       expect(hostB.properties.proxyWidgetErrorQuarantine).toBeUndefined()
 
-      const widgetA = hostA.inputs.at(-1)?._widget
-      const widgetB = hostB.inputs.at(-1)?._widget
-      expect(widgetA?.value).toBe(11)
-      expect(widgetB?.value).toBe(22)
+      expect(getPromotedInputValue(hostA, 'value')).toBe(11)
+      expect(getPromotedInputValue(hostB, 'value')).toBe(22)
     })
   })
 

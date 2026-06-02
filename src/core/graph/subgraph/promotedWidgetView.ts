@@ -1,3 +1,7 @@
+import cloneDeep from 'es-toolkit/compat/cloneDeep'
+
+import type { Component } from 'vue'
+
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
@@ -22,9 +26,8 @@ import {
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
 import { hasWidgetNode } from '@/core/graph/subgraph/widgetNodeTypeGuard'
-import type { WidgetEntityId } from '@/world/entityIds'
-import { widgetEntityId } from '@/world/entityIds'
-import { ensureWidgetState, getWidgetState } from '@/world/widgetValueIO'
+import type { WidgetId } from '@/world/entityIds'
+import { widgetId } from '@/world/entityIds'
 
 import { isPromotedWidgetView } from './promotedWidgetTypes'
 import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidgetTypes'
@@ -41,6 +44,9 @@ interface SubgraphSlotRef {
 type LegacyMouseWidget = IBaseWidget & {
   mouse: (e: CanvasPointerEvent, pos: Point, node: LGraphNode) => unknown
 }
+
+type ElementBackedWidget = IBaseWidget & { element: HTMLElement }
+type ComponentBackedWidget = IBaseWidget & { component: Component }
 
 function hasLegacyMouse(widget: IBaseWidget): widget is LegacyMouseWidget {
   return 'mouse' in widget && typeof widget.mouse === 'function'
@@ -72,6 +78,8 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
   readonly serialize = false
 
+  element?: HTMLElement
+  component?: Component
   last_y?: number
   computedHeight?: number
 
@@ -111,8 +119,12 @@ class PromotedWidgetView implements IPromotedWidgetView {
     return this.identityName ?? this.sourceWidgetName
   }
 
-  get entityId(): WidgetEntityId {
-    return widgetEntityId(this.graphId, this.subgraphNode.id, this.name)
+  get entityId(): WidgetId {
+    return this.widgetId
+  }
+
+  get widgetId(): WidgetId {
+    return widgetId(this.graphId, this.subgraphNode.id, this.name)
   }
 
   get y(): number {
@@ -152,7 +164,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
     const hostState = this.getHostWidgetState()
     if (hostState && isWidgetValue(hostState.value)) return hostState.value
 
-    const state = this.getWidgetState()
+    const state = this.getState()
     if (state && isWidgetValue(state.value)) return state.value
     return this.resolveAtHost()?.widget.value
   }
@@ -162,7 +174,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   private getHostWidgetState(): WidgetState | undefined {
-    return getWidgetState(this.entityId)
+    return useWidgetValueStore().getWidget(this.widgetId)
   }
 
   private setHostWidgetState(value: IBaseWidget['value']): void {
@@ -201,34 +213,41 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 
   private fallbackEffectiveValue(): IBaseWidget['value'] {
-    const state = this.getWidgetState()
+    const state = this.getState()
     if (state && isWidgetValue(state.value)) return state.value
     return this.resolveAtHost()?.widget.value
   }
 
   private registerHostWidgetState(value: IBaseWidget['value']): void {
     const resolved = this.resolveDeepest()
-    ensureWidgetState(this.entityId, {
+    if (resolved) this.snapshotDomBacking(resolved.widget)
+    useWidgetValueStore().registerWidget(this.widgetId, {
       type: resolved?.widget.type ?? 'button',
       value,
-      options: { ...(resolved?.widget.options ?? {}) },
+      options: cloneDeep(resolved?.widget.options ?? {}),
       label: this.displayName,
       serialize: this.serialize,
-      disabled: this.computedDisabled
+      disabled: this.computedDisabled,
+      isDOMWidget: resolved ? isDOMBackedWidget(resolved.widget) : undefined
     })
+  }
+
+  private snapshotDomBacking(widget: IBaseWidget): void {
+    if (hasElement(widget)) this.element = widget.element
+    if (hasComponent(widget)) this.component = widget.component
   }
 
   get label(): string | undefined {
     const slot = this.getBoundSubgraphSlot()
     if (slot) return slot.label ?? slot.displayName ?? slot.name
-    const state = this.getWidgetState()
+    const state = this.getState()
     return state?.label ?? this.displayName
   }
 
   set label(value: string | undefined) {
     const slot = this.getBoundSubgraphSlot()
     if (slot) slot.label = value || undefined
-    const state = this.getWidgetState()
+    const state = this.getState()
     if (state) state.label = value
   }
 
@@ -413,16 +432,18 @@ class PromotedWidgetView implements IPromotedWidgetView {
     return resolved
   }
 
-  private getWidgetState() {
+  private getState() {
     const linkedState = this.getLinkedInputWidgetStates()[0]
     if (linkedState) return linkedState
 
     const resolved = this.resolveDeepest()
     if (!resolved) return undefined
     return useWidgetValueStore().getWidget(
-      this.graphId,
-      stripGraphPrefix(String(resolved.node.id)),
-      resolved.widget.name
+      widgetId(
+        this.graphId,
+        stripGraphPrefix(String(resolved.node.id)),
+        resolved.widget.name
+      )
     )
   }
 
@@ -472,7 +493,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
     return this.getLinkedInputWidgets()
       .map(({ nodeId, widgetName }) =>
-        widgetStore.getWidget(this.graphId, nodeId, widgetName)
+        widgetStore.getWidget(widgetId(this.graphId, nodeId, widgetName))
       )
       .filter((state): state is WidgetState => state !== undefined)
   }
@@ -568,10 +589,22 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 }
 
+function hasElement(widget: IBaseWidget): widget is ElementBackedWidget {
+  return 'element' in widget && widget.element instanceof HTMLElement
+}
+
+function hasComponent(widget: IBaseWidget): widget is ComponentBackedWidget {
+  return 'component' in widget && Boolean(widget.component)
+}
+
+function isDOMBackedWidget(widget: IBaseWidget): boolean {
+  return hasElement(widget) || hasComponent(widget)
+}
+
 function isBaseDOMWidget(
   widget: IBaseWidget
 ): widget is IBaseWidget & { id: string } {
-  return 'id' in widget && ('element' in widget || 'component' in widget)
+  return 'id' in widget && isDOMBackedWidget(widget)
 }
 
 function drawDisconnectedPlaceholder(

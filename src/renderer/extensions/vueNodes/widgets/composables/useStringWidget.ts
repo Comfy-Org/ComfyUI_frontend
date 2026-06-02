@@ -9,6 +9,7 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 
 const TRACKPAD_DETECTION_THRESHOLD = 50
 
@@ -30,14 +31,18 @@ function addMultilineWidget(
   const widget = node.addDOMWidget(name, 'customtext', inputEl, {
     getValue(): string {
       const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
-      const widgetState = widgetStore.getWidget(graphId, node.id, name)
+      const widgetState = widgetStore.getWidget(
+        widgetId(graphId, node.id, name)
+      )
 
       return (widgetState?.value as string) ?? inputEl.value
     },
     setValue(v: string) {
       inputEl.value = v
       const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
-      const widgetState = widgetStore.getWidget(graphId, node.id, name)
+      const widgetState = widgetStore.getWidget(
+        widgetId(graphId, node.id, name)
+      )
       if (widgetState) widgetState.value = v
     }
   })

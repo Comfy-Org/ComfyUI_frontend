@@ -1,4 +1,2 @@
-export type NodeId = number | string
-
 export type { WidgetId } from '@/types/widgetId'
 export { isWidgetId, parseWidgetId, widgetId } from '@/types/widgetId'

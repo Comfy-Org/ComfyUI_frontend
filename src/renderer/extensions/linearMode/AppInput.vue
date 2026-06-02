@@ -4,11 +4,11 @@ import { computed } from 'vue'
 
 import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useAppModeStore } from '@/stores/appModeStore'
-import type { WidgetEntityId } from '@/world/entityIds'
+import type { WidgetId } from '@/world/entityIds'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { entityId, name } = defineProps<{
-  entityId?: WidgetEntityId
+  entityId?: WidgetId
   enable: boolean
   name: string
 }>()

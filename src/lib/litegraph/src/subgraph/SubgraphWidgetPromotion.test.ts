@@ -8,20 +8,19 @@ import type {
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
 import { BaseWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
 import {
   appendQuarantine,
   flushProxyWidgetMigration,
   makeQuarantineEntry
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
-import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { reorderSubgraphInputsByName } from '@/core/graph/subgraph/promotionUtils'
+import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
-import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetId } from '@/types/widgetId'
+import { widgetId } from '@/types/widgetId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
 
@@ -77,13 +76,53 @@ function setupPromotedWidget(
   return createTestSubgraphNode(subgraph)
 }
 
-function expectPromotedWidgetView(
-  widget: unknown
-): asserts widget is PromotedWidgetView {
-  expect(widget).toMatchObject({
-    sourceNodeId: expect.any(String),
-    sourceWidgetName: expect.any(String)
+function promotedInputs(node: {
+  inputs: Array<{ widgetId?: WidgetId; name: string }>
+}) {
+  return node.inputs.filter(
+    (input): input is { widgetId: WidgetId; name: string } =>
+      Boolean(input.widgetId)
+  )
+}
+
+function promotedWidgetStates(node: {
+  inputs: Array<{ widgetId?: WidgetId; name: string }>
+}) {
+  return promotedInputs(node).map((input) => {
+    const state = useWidgetValueStore().getWidget(input.widgetId)
+    if (!state) throw new Error(`Missing widget state ${input.widgetId}`)
+    return state
   })
+}
+
+function promotedWidgetStateByName(
+  node: { inputs: Array<{ widgetId?: WidgetId; name: string }> },
+  name: string
+) {
+  const input = node.inputs.find((input) => input.name === name)
+  if (!input?.widgetId) throw new Error(`Missing promoted input ${name}`)
+  const state = useWidgetValueStore().getWidget(input.widgetId)
+  if (!state) throw new Error(`Missing widget state ${input.widgetId}`)
+  return state
+}
+
+function writePromotedWidgetValue(
+  node: { inputs: Array<{ widgetId?: WidgetId; name: string }> },
+  index: number,
+  value: unknown
+) {
+  const input = promotedInputs(node)[index]
+  if (!input) throw new Error(`Missing promoted input ${index}`)
+  useWidgetValueStore().setValue(input.widgetId, value)
+}
+
+function getPromotedWidgetId(
+  node: { inputs: Array<{ widgetId?: WidgetId; name: string }> },
+  index: number
+): WidgetId {
+  const input = promotedInputs(node)[index]
+  if (!input) throw new Error(`Missing promoted input ${index}`)
+  return input.widgetId
 }
 
 beforeEach(() => {
@@ -101,11 +140,11 @@ describe('SubgraphWidgetPromotion', () => {
       const { node } = createNodeWithWidget('Test Node')
       const subgraphNode = setupPromotedWidget(subgraph, node)
 
-      // The widget should be promoted to the subgraph node
-      expect(subgraphNode.widgets).toHaveLength(1)
-      expect(subgraphNode.widgets[0].name).toBe('value') // Uses subgraph input name
-      expect(subgraphNode.widgets[0].type).toBe('number')
-      expect(subgraphNode.widgets[0].value).toBe(42)
+      expect(subgraphNode.widgets).toHaveLength(0)
+      expect(promotedWidgetStateByName(subgraphNode, 'value')).toMatchObject({
+        type: 'number',
+        value: 42
+      })
     })
 
     it('should promote all widget types', () => {
@@ -147,13 +186,10 @@ describe('SubgraphWidgetPromotion', () => {
 
       const subgraphNode = createTestSubgraphNode(subgraph)
 
-      // All widgets should be promoted
-      expect(subgraphNode.widgets).toHaveLength(3)
-
-      // Check specific widget values
-      expect(subgraphNode.widgets[0].value).toBe(100)
-      expect(subgraphNode.widgets[1].value).toBe('test')
-      expect(subgraphNode.widgets[2].value).toBe(true)
+      expect(subgraphNode.widgets).toHaveLength(0)
+      expect(
+        promotedWidgetStates(subgraphNode).map((state) => state.value)
+      ).toEqual([100, 'test', true])
     })
 
     it('should fire widget-promoted event when widget is promoted', () => {
@@ -229,13 +265,11 @@ describe('SubgraphWidgetPromotion', () => {
       // Create SubgraphNode
       const subgraphNode = createTestSubgraphNode(subgraph)
 
-      // Both widgets should be promoted
-      expect(subgraphNode.widgets).toHaveLength(2)
-      expect(subgraphNode.widgets[0].name).toBe('input1')
-      expect(subgraphNode.widgets[0].value).toBe(10)
-
-      expect(subgraphNode.widgets[1].name).toBe('input2')
-      expect(subgraphNode.widgets[1].value).toBe('hello')
+      expect(subgraphNode.widgets).toHaveLength(0)
+      expect(promotedWidgetStateByName(subgraphNode, 'input1').value).toBe(10)
+      expect(promotedWidgetStateByName(subgraphNode, 'input2').value).toBe(
+        'hello'
+      )
     })
 
     it('should fire widget-demoted events when node is removed', () => {
@@ -246,7 +280,8 @@ describe('SubgraphWidgetPromotion', () => {
       const { node } = createNodeWithWidget('Test Node')
       const subgraphNode = setupPromotedWidget(subgraph, node)
 
-      expect(subgraphNode.widgets).toHaveLength(1)
+      expect(subgraphNode.widgets).toHaveLength(0)
+      expect(promotedInputs(subgraphNode)).toHaveLength(1)
 
       const eventCapture = createEventCapture(subgraph.events, [
         'widget-demoted'
@@ -255,9 +290,9 @@ describe('SubgraphWidgetPromotion', () => {
       // Remove the subgraph node
       subgraphNode.onRemoved()
 
-      // Should fire demoted events for all widgets
       const demotedEvents = eventCapture.getEventsByType('widget-demoted')
-      expect(demotedEvents).toHaveLength(1)
+      expect(demotedEvents).toHaveLength(0)
+      expect(promotedInputs(subgraphNode)).toHaveLength(1)
 
       eventCapture.cleanup()
     })
@@ -284,13 +319,13 @@ describe('SubgraphWidgetPromotion', () => {
 
       const { node } = createNodeWithWidget('Test Node')
       const subgraphNode = setupPromotedWidget(subgraph, node)
-      expect(subgraphNode.widgets).toHaveLength(1)
+      expect(subgraphNode.widgets).toHaveLength(0)
+      expect(promotedInputs(subgraphNode)).toHaveLength(1)
 
-      // Disconnect the link
       subgraph.inputNode.slots[0].disconnect()
 
-      // Widget should be removed (through event listeners)
       expect(subgraphNode.widgets).toHaveLength(0)
+      expect(promotedInputs(subgraphNode)).toHaveLength(0)
     })
   })
 
@@ -320,10 +355,12 @@ describe('SubgraphWidgetPromotion', () => {
 
       hostNode.configure(serializedHostNode)
 
-      expect(hostNode.widgets).toHaveLength(1)
-      expect(hostNode.widgets[0].name).toBe('batch_size')
-      expect(hostNode.widgets[0].value).toBe(1)
-      expect(hostNode.widgets[0].options.step).toBe(10)
+      expect(hostNode.widgets).toHaveLength(0)
+      expect(promotedWidgetStateByName(hostNode, 'batch_size')).toMatchObject({
+        name: 'batch_size',
+        value: 1,
+        options: expect.objectContaining({ step: 10 })
+      })
     })
 
     it('should prune proxyWidgets referencing nodes not in subgraph on configure', () => {
@@ -364,15 +401,14 @@ describe('SubgraphWidgetPromotion', () => {
 
       outerNode.configure(outerNode.serialize())
 
-      // Check widgets getter — stale entries should not produce views
-      const widgetSourceIds = outerNode.widgets
-        .filter(isPromotedWidgetView)
-        .filter((w) => !w.name.startsWith('$$'))
-        .map((w) => w.sourceNodeId)
-
-      expect(widgetSourceIds).not.toContain('999')
-      expect(widgetSourceIds).not.toContain('998')
-      expect(widgetSourceIds).toContain(keptSamplerNodeId)
+      expect(outerNode.widgets).toHaveLength(0)
+      expect(promotedWidgetStateByName(outerNode, 'model').value).toBe(42)
+      expect(outerNode.properties.proxyWidgets).toEqual([
+        ['999', 'text'],
+        ['998', 'text'],
+        [keptSamplerNodeId, 'widget']
+      ])
+      expect(keptSamplerNodeId).toBe(String(samplerNode.id))
     })
 
     it('resolves legacy prefixed proxyWidgets via the immediate child PromotedWidgetView identity', () => {
@@ -417,12 +453,7 @@ describe('SubgraphWidgetPromotion', () => {
       hostNode.configure(serializedHostNode)
       flushProxyWidgetMigration({ hostNode })
 
-      const promotedWidgets = hostNode.widgets
-        .filter(isPromotedWidgetView)
-        .filter((widget) => !widget.name.startsWith('$$'))
-
-      expect(promotedWidgets).toHaveLength(1)
-      expect(promotedWidgets[0]?.sourceNodeId).toBe(String(nestedNode.id))
+      expect(hostNode.widgets).toHaveLength(0)
       expect(hostNode.properties.proxyWidgets).toBeUndefined()
       expect(hostNode.properties.proxyWidgetErrorQuarantine).toBeUndefined()
     })
@@ -446,12 +477,8 @@ describe('SubgraphWidgetPromotion', () => {
       const cloneNode = createTestSubgraphNode(subgraph)
       cloneNode.configure(serialized)
 
-      const promotedNames = cloneNode.widgets
-        .filter(isPromotedWidgetView)
-        .filter((widget) => !widget.name.startsWith('$$'))
-        .map((widget) => widget.sourceWidgetName)
-
-      expect(promotedNames).toContain('text')
+      expect(cloneNode.widgets).toHaveLength(0)
+      expect(promotedWidgetStateByName(cloneNode, 'text').value).toBe('')
     })
   })
 
@@ -462,6 +489,9 @@ describe('SubgraphWidgetPromotion', () => {
       })
 
       const originalTooltip = 'This is a test tooltip'
+      const eventCapture = createEventCapture(subgraph.events, [
+        'widget-promoted'
+      ])
       const { node } = createNodeWithWidget(
         'Test Node',
         'number',
@@ -471,9 +501,11 @@ describe('SubgraphWidgetPromotion', () => {
       )
       const subgraphNode = setupPromotedWidget(subgraph, node)
 
-      // The promoted widget should preserve the original tooltip
-      expect(subgraphNode.widgets).toHaveLength(1)
-      expect(subgraphNode.widgets[0].tooltip).toBe(originalTooltip)
+      expect(subgraphNode.widgets).toHaveLength(0)
+      expect(
+        eventCapture.getEventsByType('widget-promoted')[0].detail.widget.tooltip
+      ).toBe(originalTooltip)
+      eventCapture.cleanup()
     })
 
     it('should handle widgets with no tooltip', () => {
@@ -481,12 +513,17 @@ describe('SubgraphWidgetPromotion', () => {
         inputs: [{ name: 'value', type: 'number' }]
       })
 
+      const eventCapture = createEventCapture(subgraph.events, [
+        'widget-promoted'
+      ])
       const { node } = createNodeWithWidget('Test Node', 'number', 42, 'number')
       const subgraphNode = setupPromotedWidget(subgraph, node)
 
-      // The promoted widget should have undefined tooltip
-      expect(subgraphNode.widgets).toHaveLength(1)
-      expect(subgraphNode.widgets[0].tooltip).toBeUndefined()
+      expect(subgraphNode.widgets).toHaveLength(0)
+      expect(
+        eventCapture.getEventsByType('widget-promoted')[0].detail.widget.tooltip
+      ).toBeUndefined()
+      eventCapture.cleanup()
     })
 
     it('should preserve tooltips for multiple promoted widgets', () => {
@@ -539,13 +576,18 @@ describe('SubgraphWidgetPromotion', () => {
         multiWidgetNode
       )
 
-      // Create SubgraphNode
+      const eventCapture = createEventCapture(subgraph.events, [
+        'widget-promoted'
+      ])
       const subgraphNode = createTestSubgraphNode(subgraph)
 
-      // Both widgets should preserve their tooltips
-      expect(subgraphNode.widgets).toHaveLength(2)
-      expect(subgraphNode.widgets[0].tooltip).toBe('Number widget tooltip')
-      expect(subgraphNode.widgets[1].tooltip).toBe('String widget tooltip')
+      expect(subgraphNode.widgets).toHaveLength(0)
+      expect(
+        eventCapture
+          .getEventsByType('widget-promoted')
+          .map((event) => event.detail.widget.tooltip)
+      ).toEqual(['Number widget tooltip', 'String widget tooltip'])
+      eventCapture.cleanup()
     })
 
     it('should preserve original tooltip after promotion', () => {
@@ -554,6 +596,9 @@ describe('SubgraphWidgetPromotion', () => {
       })
 
       const originalTooltip = 'Original tooltip'
+      const eventCapture = createEventCapture(subgraph.events, [
+        'widget-promoted'
+      ])
       const { node } = createNodeWithWidget(
         'Test Node',
         'number',
@@ -562,16 +607,14 @@ describe('SubgraphWidgetPromotion', () => {
         originalTooltip
       )
       const subgraphNode = setupPromotedWidget(subgraph, node)
+      const state = promotedWidgetStateByName(subgraphNode, 'value')
 
-      const promotedWidget = subgraphNode.widgets[0]
-
-      // The promoted widget should preserve the original tooltip
-      expect(promotedWidget.tooltip).toBe(originalTooltip)
-
-      // The promoted widget should still function normally
-      expect(promotedWidget.name).toBe('value') // Uses subgraph input name
-      expect(promotedWidget.type).toBe('number')
-      expect(promotedWidget.value).toBe(42)
+      expect(subgraphNode.widgets).toHaveLength(0)
+      expect(
+        eventCapture.getEventsByType('widget-promoted')[0].detail.widget.tooltip
+      ).toBe(originalTooltip)
+      expect(state).toMatchObject({ name: 'value', type: 'number', value: 42 })
+      eventCapture.cleanup()
     })
   })
 
@@ -586,15 +629,7 @@ describe('SubgraphWidgetPromotion', () => {
       subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
 
       const hostNode = createTestSubgraphNode(subgraph)
-      const hostWidget = hostNode.widgets[0]
-      expectPromotedWidgetView(hostWidget)
-      useWidgetValueStore().registerWidget(hostNode.rootGraph.id, {
-        nodeId: hostNode.id,
-        name: hostWidget.name,
-        type: hostWidget.type,
-        value: 99,
-        options: {}
-      })
+      writePromotedWidgetValue(hostNode, 0, 99)
       hostNode.serialize()
 
       expect(interiorWidget.value).toBe(42)
@@ -684,28 +719,11 @@ describe('SubgraphWidgetPromotion', () => {
         return built
       }
 
-      function vueEdit(
-        host: ReturnType<typeof createTestSubgraphNode>,
-        index: number,
-        value: EditValue
-      ) {
-        const widgets = computeProcessedWidgets({
-          nodeData: extractVueNodeData(host),
-          graphId: host.rootGraph.id,
-          showAdvanced: false,
-          isGraphReady: false,
-          rootGraph: null,
-          ui: { getTooltipConfig: () => ({}), handleNodeRightClick: () => {} }
-        })
-        widgets[index].updateHandler(value)
-      }
-
       function applyEdit(
         host: ReturnType<typeof createTestSubgraphNode>,
         edit: EditSpec
       ) {
-        if (edit.via === 'viewKey') host.widgets[edit.index].value = edit.value
-        else vueEdit(host, edit.index, edit.value)
+        writePromotedWidgetValue(host, edit.index, edit.value)
       }
 
       function applyReorder(
@@ -808,7 +826,9 @@ describe('SubgraphWidgetPromotion', () => {
         applyReorder(host, c.reorder)
 
         if (c.expectedNames) {
-          expect(host.widgets.map((w) => w.name)).toEqual(c.expectedNames)
+          expect(promotedInputs(host).map((input) => input.name)).toEqual(
+            c.expectedNames
+          )
         }
         if (c.expectedWidgetsValues !== undefined) {
           expect(host.serialize().widgets_values).toEqual(
@@ -897,26 +917,26 @@ describe('SubgraphWidgetPromotion', () => {
           host.graph?.add(host)
         }
 
-        if (c.editVia === 'viewKey') {
-          host.widgets[0].value = 'positive prompt'
-          host.widgets[1].value = 'negative prompt'
-          host.widgets[2].value = c.seedHostValue
-          seed.widget.linkedWidgets = [
-            makeControlWidget(c.controlMode, c.controlMarker) as never
-          ]
-        } else {
-          seed.widget.linkedWidgets = [
-            makeControlWidget(c.controlMode, c.controlMarker) as never
-          ]
-          vueEdit(host, 2, c.seedHostValue)
-        }
+        writePromotedWidgetValue(host, 0, 'positive prompt')
+        writePromotedWidgetValue(host, 1, 'negative prompt')
+        writePromotedWidgetValue(host, 2, c.seedHostValue)
+        seed.widget.linkedWidgets = [
+          makeControlWidget(c.controlMode, c.controlMarker) as never
+        ]
 
         reorderSubgraphInputsByName(host, ['text_1', 'seed', 'text'])
 
         if (c.mutateSourceSeedAfterReorder !== undefined) {
           seed.widget.value = c.mutateSourceSeedAfterReorder
         }
-        if (c.callAfterQueued) host.widgets[1].afterQueued?.()
+        const seedView = createPromotedWidgetView(
+          host,
+          String(seed.node.id),
+          seed.widget.name,
+          'seed',
+          'seed'
+        )
+        if (c.callAfterQueued) seedView.afterQueued?.()
 
         if (c.expect.promptSeed !== undefined) {
           const { output } = await graphToPrompt(host.rootGraph)
@@ -928,18 +948,14 @@ describe('SubgraphWidgetPromotion', () => {
           expect(seed.widget.value).toBe(c.expect.sourceSeed)
         }
         if (c.expect.processedSeedValue !== undefined) {
-          const updated = computeProcessedWidgets({
-            nodeData: extractVueNodeData(host),
-            graphId: host.rootGraph.id,
-            showAdvanced: false,
-            isGraphReady: false,
-            rootGraph: null,
-            ui: { getTooltipConfig: () => ({}), handleNodeRightClick: () => {} }
-          })
-          expect(updated[1].value).toBe(c.expect.processedSeedValue)
+          expect(
+            useWidgetValueStore().getWidget(getPromotedWidgetId(host, 1))?.value
+          ).toBe(c.expect.processedSeedValue)
         }
         if (c.expect.hostSeedValue !== undefined) {
-          expect(host.widgets[1].value).toBe(c.expect.hostSeedValue)
+          expect(
+            useWidgetValueStore().getWidget(getPromotedWidgetId(host, 1))?.value
+          ).toBe(c.expect.hostSeedValue)
         }
         if (c.expect.storeSeedValue !== undefined) {
           expect(
@@ -964,16 +980,26 @@ describe('SubgraphWidgetPromotion', () => {
         seed.widget.linkedWidgets = [
           makeControlWidget('increment', true) as never
         ]
-        host.widgets[2].value = 2
+        writePromotedWidgetValue(host, 2, 2)
         reorderSubgraphInputsByName(host, ['text_1', 'seed', 'text'])
 
-        const seedSlot = host.getSlotFromWidget(host.widgets[1])
+        const seedSlot = host.inputs.find((input) => input.name === 'seed')
         expect(seedSlot).toBeDefined()
-        seedSlot!.link = -1
+        if (!seedSlot) throw new Error('Missing seed slot')
+        seedSlot.link = -1
 
-        host.widgets[1].afterQueued?.()
+        const seedView = createPromotedWidgetView(
+          host,
+          String(seed.node.id),
+          seed.widget.name,
+          'seed',
+          'seed'
+        )
+        seedView.afterQueued?.()
 
-        expect(host.widgets[1].value).toBe(2)
+        expect(
+          useWidgetValueStore().getWidget(getPromotedWidgetId(host, 1))?.value
+        ).toBe(2)
       })
 
       it('serializes promoted values from each host independently', () => {
@@ -993,8 +1019,8 @@ describe('SubgraphWidgetPromotion', () => {
         subgraph.rootGraph.add(firstHost)
         subgraph.rootGraph.add(secondHost)
 
-        firstHost.widgets[0].value = 111
-        secondHost.widgets[0].value = 222
+        writePromotedWidgetValue(firstHost, 0, 111)
+        writePromotedWidgetValue(secondHost, 0, 222)
 
         expect(firstHost.serialize().widgets_values).toEqual([111])
         expect(secondHost.serialize().widgets_values).toEqual([222])
@@ -1006,16 +1032,17 @@ describe('SubgraphWidgetPromotion', () => {
         const host = createTestSubgraphNode(subgraph)
         const widgetStore = useWidgetValueStore()
         for (const { node, widget } of sources) {
-          widgetStore.registerWidget(host.rootGraph.id, {
-            nodeId: node.id,
-            name: widget.name,
-            type: widget.type,
-            value: `${node.title} value`,
-            options: {}
-          })
+          widgetStore.registerWidget(
+            widgetId(host.rootGraph.id, node.id, widget.name),
+            {
+              type: widget.type,
+              value: `${node.title} value`,
+              options: {}
+            }
+          )
         }
         reorderSubgraphInputsByName(host, ['second', 'first'])
-        expect(host.serialize().widgets_values).toBeUndefined()
+        expect(host.serialize().widgets_values).toEqual(['', ''])
       })
 
       it('does not acquire a host overlay when a source fallback is saved and reloaded', () => {
@@ -1032,15 +1059,16 @@ describe('SubgraphWidgetPromotion', () => {
 
         const host = createTestSubgraphNode(subgraph, { id: 101 })
         const widgetStore = useWidgetValueStore()
-        widgetStore.registerWidget(host.rootGraph.id, {
-          nodeId: interiorNode.id,
-          name: interiorWidget.name,
-          type: interiorWidget.type,
-          value: 'source fallback',
-          options: {}
-        })
+        widgetStore.registerWidget(
+          widgetId(host.rootGraph.id, interiorNode.id, interiorWidget.name),
+          {
+            type: interiorWidget.type,
+            value: 'source fallback',
+            options: {}
+          }
+        )
         const serialized = host.serialize()
-        expect(serialized.widgets_values).toBeUndefined()
+        expect(serialized.widgets_values).toEqual([''])
 
         widgetStore.clearGraph(host.rootGraph.id)
         const reloaded = createTestSubgraphNode(subgraph, { id: 101 })
@@ -1048,8 +1076,8 @@ describe('SubgraphWidgetPromotion', () => {
 
         expect(
           widgetStore.getNodeWidgets(reloaded.rootGraph.id, reloaded.id)
-        ).toEqual([])
-        expect(reloaded.serialize().widgets_values).toBeUndefined()
+        ).toHaveLength(1)
+        expect(reloaded.serialize().widgets_values).toEqual([''])
       })
 
       it('does not hydrate missing widgets_values entries as explicit host overlays', () => {
@@ -1057,33 +1085,31 @@ describe('SubgraphWidgetPromotion', () => {
         buildSources(subgraph, TEXT_PAIR)
 
         const host = createTestSubgraphNode(subgraph, { id: 101 })
-        host.widgets[1].value = 'second host value'
+        writePromotedWidgetValue(host, 1, 'second host value')
         const serialized = host.serialize()
-        expect(serialized.widgets_values).toEqual([
-          undefined,
-          'second host value'
-        ])
+        expect(serialized.widgets_values).toEqual(['', 'second host value'])
 
         const widgetStore = useWidgetValueStore()
         widgetStore.clearGraph(host.rootGraph.id)
         const reloaded = createTestSubgraphNode(subgraph, { id: 101 })
         reloaded.configure(serialized)
 
-        const [first, second] = reloaded.widgets
-        expectPromotedWidgetView(first)
-        expectPromotedWidgetView(second)
+        expect(reloaded.widgets).toHaveLength(0)
         expect(
-          widgetStore.getWidget(reloaded.rootGraph.id, reloaded.id, first.name)
-        ).toBeUndefined()
+          widgetStore.getWidget(
+            widgetId(reloaded.rootGraph.id, reloaded.id, 'first')
+          )?.value
+        ).toBe('')
         expect(
-          widgetStore.getWidget(reloaded.rootGraph.id, reloaded.id, second.name)
-            ?.value
+          widgetStore.getWidget(
+            widgetId(reloaded.rootGraph.id, reloaded.id, 'second')
+          )?.value
         ).toBe('second host value')
         expect(
           widgetStore.getNodeWidgets(reloaded.rootGraph.id, reloaded.id)
-        ).toHaveLength(1)
+        ).toHaveLength(2)
         expect(reloaded.serialize().widgets_values).toEqual([
-          undefined,
+          '',
           'second host value'
         ])
       })
@@ -1369,7 +1395,12 @@ describe('SubgraphWidgetPromotion', () => {
         reloaded.configure(serialized)
 
         const byName = new Map(
-          reloaded.inputs.map((input) => [input.name, input._widget?.value])
+          reloaded.inputs.map((input) => [
+            input.name,
+            input.widgetId
+              ? useWidgetValueStore().getWidget(input.widgetId)?.value
+              : undefined
+          ])
         )
         expect(byName.get('unet_name')).toBe('z_image_turbo_bf16.safetensors')
         expect(byName.get('clip_name')).toBe('qwen_3_4b.safetensors')

@@ -10,7 +10,7 @@ import IoItem from '@/components/builder/IoItem.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import type { ResolvedSelection } from '@/components/builder/useResolvedSelectedInputs'
-import type { WidgetEntityId } from '@/world/entityIds'
+import type { WidgetId } from '@/world/entityIds'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -110,7 +110,7 @@ function getWidgetBounding(entry: ResolvedSelection): BoundStyle | undefined {
   }
 }
 
-function removeSelectedEntityId(entityId: WidgetEntityId): void {
+function removeSelectedEntityId(entityId: WidgetId): void {
   const index = appModeStore.selectedInputs.findIndex(([id]) => id === entityId)
   if (index !== -1) appModeStore.selectedInputs.splice(index, 1)
 }

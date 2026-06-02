@@ -31,8 +31,8 @@ import {
 } from '@/stores/widgetValueStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import type { WidgetEntityId } from '@/world/entityIds'
-import { getWidgetState } from '@/world/widgetValueIO'
+import type { WidgetId } from '@/world/entityIds'
+import { widgetId } from '@/types/widgetId'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   LinkedUpstreamInfo,
@@ -51,7 +51,7 @@ interface ProcessedWidget {
   hasError: boolean
   hidden: boolean
   id: string
-  entityId?: WidgetEntityId
+  entityId?: WidgetId
   name: string
   renderKey: string
   simplified: SimplifiedWidget
@@ -199,12 +199,14 @@ export function computeProcessedWidgets({
 
     const identity = getWidgetIdentity(widget, nodeId, index)
     const widgetState = widget.entityId
-      ? getWidgetState(widget.entityId)
+      ? widgetValueStore.getWidget(widget.entityId)
       : graphId
         ? widgetValueStore.getWidget(
-            graphId,
-            String(stripGraphPrefix(widget.nodeId ?? nodeId ?? '')),
-            widget.name
+            widgetId(
+              graphId,
+              String(stripGraphPrefix(widget.nodeId ?? nodeId ?? '')),
+              widget.name
+            )
           )
         : undefined
     const mergedOptions: IWidgetOptions = {

@@ -1,3 +1,4 @@
+import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import * as Sentry from '@sentry/vue'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
@@ -18,7 +19,9 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { readWidgetValue } from '@/world/widgetValueIO'
+import { widgetId } from '@/world/entityIds'
+import type { WidgetId } from '@/world/entityIds'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
 
@@ -46,14 +49,55 @@ export function findHostInputForPromotion(
   sourceWidgetName: string
 ) {
   return subgraphNode.inputs.find((input) => {
-    const w = input._widget
+    const view = input._widget
+    if (
+      view &&
+      isPromotedWidgetView(view) &&
+      view.sourceNodeId === sourceNodeId &&
+      view.sourceWidgetName === sourceWidgetName
+    ) {
+      return true
+    }
+
+    const source = input._subgraphSlot
+      ? resolvePromotionSource(subgraphNode, input._subgraphSlot)
+      : undefined
     return (
-      w &&
-      isPromotedWidgetView(w) &&
-      w.sourceNodeId === sourceNodeId &&
-      w.sourceWidgetName === sourceWidgetName
+      source?.sourceNodeId === sourceNodeId &&
+      source.sourceWidgetName === sourceWidgetName
     )
   })
+}
+
+function resolvePromotionSource(
+  subgraphNode: SubgraphNode,
+  subgraphInput: { linkIds: readonly number[] }
+): PromotedWidgetSource | undefined {
+  for (const linkId of subgraphInput.linkIds) {
+    const link = subgraphNode.subgraph.getLink(linkId)
+    if (!link) continue
+
+    const { inputNode } = link.resolve(subgraphNode.subgraph)
+    if (!inputNode || !Array.isArray(inputNode.inputs)) continue
+
+    const targetInput = inputNode.inputs.find((entry) => entry.link === linkId)
+    if (!targetInput) continue
+
+    if (inputNode.isSubgraphNode()) {
+      return {
+        sourceNodeId: String(inputNode.id),
+        sourceWidgetName: targetInput.name
+      }
+    }
+
+    const targetWidget = inputNode.getWidgetFromSlot(targetInput)
+    if (!targetWidget) continue
+
+    return {
+      sourceNodeId: String(inputNode.id),
+      sourceWidgetName: targetWidget.name
+    }
+  }
 }
 
 export function reorderSubgraphInputsByName(
@@ -83,8 +127,7 @@ export function reorderSubgraphInputsByWidgetOrder(
   const remainingIndices = new Set(subgraphNode.inputs.keys())
   const orderedIndices = orderedWidgets.flatMap((orderedWidget) => {
     for (const index of remainingIndices) {
-      const widget = subgraphNode.inputs[index]?._widget
-      if (widget && isSamePromotedWidget(widget, orderedWidget)) {
+      if (isSamePromotedInput(subgraphNode, index, orderedWidget)) {
         remainingIndices.delete(index)
         return [index]
       }
@@ -101,37 +144,48 @@ function applySubgraphInputOrder(
   subgraphNode: SubgraphNode,
   orderedIndices: readonly number[]
 ): void {
-  const widgetValues = subgraphNode.inputs.map((input) =>
-    getExplicitHostWidgetValue(input?._widget)
-  )
+  const widgetValues = subgraphNode.inputs.map((input) => {
+    const id = input?.widgetId
+    if (!id) return undefined
+    const value = useWidgetValueStore().getWidget(id)?.value
+    return isWidgetValue(value) ? value : undefined
+  })
 
   reorderSubgraphInputs(subgraphNode, orderedIndices)
 
   for (const [newIndex, oldIndex] of orderedIndices.entries()) {
     const value = widgetValues[oldIndex]
-    if (value === undefined) continue
-    const widget = subgraphNode.inputs[newIndex]?._widget
-    if (widget) widget.value = value
+    const id = subgraphNode.inputs[newIndex]?.widgetId
+    if (value === undefined || !id) continue
+    useWidgetValueStore().setValue(id, value)
   }
 }
 
-function getExplicitHostWidgetValue(
-  widget: IBaseWidget | undefined
-): IBaseWidget['value'] | undefined {
-  if (!widget) return undefined
-  if (!isPromotedWidgetView(widget)) return widget.value
+function isSamePromotedInput(
+  subgraphNode: SubgraphNode,
+  inputIndex: number,
+  orderedWidget: IBaseWidget
+): boolean {
+  const input = subgraphNode.inputs[inputIndex]
+  const linkedInput = input?._subgraphSlot
+  if (!input || !linkedInput) return false
 
-  const value = readWidgetValue(widget.entityId)
-  return isWidgetValue(value) ? value : undefined
-}
+  for (const linkId of linkedInput.linkIds) {
+    const link = subgraphNode.subgraph.getLink(linkId)
+    if (!link) continue
 
-function isSamePromotedWidget(left: IBaseWidget, right: IBaseWidget): boolean {
-  return (
-    isPromotedWidgetView(left) &&
-    isPromotedWidgetView(right) &&
-    left.sourceNodeId === right.sourceNodeId &&
-    left.sourceWidgetName === right.sourceWidgetName
-  )
+    const { inputNode, input: targetInput } = link.resolve(
+      subgraphNode.subgraph
+    )
+    if (!inputNode || !targetInput) continue
+
+    const targetWidget = inputNode.getWidgetFromSlot(targetInput)
+    if (targetWidget === orderedWidget) return true
+
+    if (input.widgetId && input.widgetId === orderedWidget.widgetId) return true
+  }
+
+  return false
 }
 
 function isPreviewExposed(
@@ -217,7 +271,39 @@ export function promoteValueWidgetViaSubgraphInput(
     return { ok: false, reason: 'connectFailed' }
   }
 
+  seedNestedPromotedInputState(subgraphNode, subgraphInput.name, sourceSlot)
+
   return { ok: true }
+}
+
+function seedNestedPromotedInputState(
+  subgraphNode: SubgraphNode,
+  inputName: string,
+  sourceSlot: { widgetId?: WidgetId }
+): void {
+  if (!sourceSlot.widgetId) return
+
+  const hostInput = subgraphNode.inputs.find(
+    (input) => input._subgraphSlot?.name === inputName
+  )
+  if (!hostInput || hostInput.widgetId) return
+
+  const sourceState = useWidgetValueStore().getWidget(sourceSlot.widgetId)
+  if (!sourceState) return
+
+  const id = widgetId(subgraphNode.rootGraph.id, subgraphNode.id, inputName)
+  hostInput.widget ??= { name: inputName }
+  hostInput.widget.name = inputName
+  hostInput.widgetId = id
+  useWidgetValueStore().registerWidget(id, {
+    type: sourceState.type,
+    value: sourceState.value,
+    options: cloneDeep(sourceState.options ?? {}),
+    label: hostInput.label ?? inputName,
+    serialize: sourceState.serialize,
+    disabled: sourceState.disabled,
+    isDOMWidget: sourceState.isDOMWidget
+  })
 }
 
 function promotePreviewViaExposure(
@@ -505,37 +591,19 @@ export function pruneDisconnected(subgraphNode: SubgraphNode) {
   const removedEntries: PromotedWidgetSource[] = []
 
   const staleInputs = subgraph.inputs.filter((input) => {
-    const widget = input._widget
-    if (!widget || !isPromotedWidgetView(widget)) return false
+    const source = resolvePromotionSource(subgraphNode, input)
+    if (source) return false
 
-    // If the SubgraphInput has any live link to an interior target slot that
-    // still has a widget, the promotion is alive — even when the widget's
-    // sourceNodeId points at a deeply-nested interior node that does not exist
-    // directly in `subgraph` (nested SubgraphNode promotions).
-    for (const linkId of input.linkIds) {
-      const link = subgraph.getLink(linkId)
-      if (!link) continue
-      const { inputNode } = link.resolve(subgraph)
-      if (!inputNode) continue
-      const targetInputSlot = inputNode.inputs?.find(
-        (slot) => slot.link === linkId
-      )
-      if (!targetInputSlot) continue
-      if (inputNode.getWidgetFromSlot(targetInputSlot)) return false
-    }
-
-    const node = subgraph.getNodeById(widget.sourceNodeId)
-    if (!node) {
-      removedEntries.push(widget)
-      return true
-    }
-    const hasWidget = getPromotableWidgets(node).some(
-      (iw) => iw.name === widget.sourceWidgetName
+    const hostInput = subgraphNode.inputs.find(
+      (entry) => entry._subgraphSlot === input
     )
-    if (!hasWidget) {
-      removedEntries.push(widget)
-    }
-    return !hasWidget
+    if (!hostInput?.widgetId && !hostInput?._widget) return false
+
+    removedEntries.push({
+      sourceNodeId: String(subgraphNode.id),
+      sourceWidgetName: input.name
+    })
+    return true
   })
 
   for (const input of staleInputs) {

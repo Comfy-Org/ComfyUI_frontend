@@ -8,6 +8,7 @@ import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
+import { widgetId } from '@/types/widgetId'
 
 function applyToGraph(this: LGraphNode, extraLinks: LLink[] = []) {
   applyFirstWidgetValueToGraph(this, extraLinks)
@@ -51,16 +52,15 @@ function onCustomComboCreated(this: LGraphNode) {
     Object.defineProperty(widget, 'value', {
       get() {
         return (
-          useWidgetValueStore().getWidget(app.rootGraph.id, node.id, widgetName)
-            ?.value ?? localValue
+          useWidgetValueStore().getWidget(
+            widgetId(app.rootGraph.id, node.id, widgetName)
+          )?.value ?? localValue
         )
       },
       set(v: string) {
         localValue = v
         const state = useWidgetValueStore().getWidget(
-          app.rootGraph.id,
-          node.id,
-          widgetName
+          widgetId(app.rootGraph.id, node.id, widgetName)
         )
         if (state) state.value = v
         updateCombo()

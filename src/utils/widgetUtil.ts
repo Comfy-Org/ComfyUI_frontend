@@ -1,5 +1,3 @@
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
@@ -7,6 +5,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDialogService } from '@/services/dialogService'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 export type WidgetValue = boolean | number | string | object | undefined
 
@@ -49,35 +48,21 @@ export function renameWidget(
   newLabel: string,
   parents?: SubgraphNode[]
 ): boolean {
-  if (
-    isPromotedWidgetView(widget) &&
-    (parents?.length || node.isSubgraphNode())
-  ) {
-    const sourceWidget = resolvePromotedWidgetSource(node, widget)
-    if (!sourceWidget) {
-      console.error('Could not resolve source widget for promoted widget')
-      return false
-    }
+  void parents
+  const label = newLabel || undefined
+  const input = node.inputs?.find(
+    (inp) =>
+      inp.widgetId === widget.widgetId ||
+      inp._widget === widget ||
+      inp.widget?.name === widget.name
+  )
+  const widgetState = widget.widgetId
+    ? useWidgetValueStore().getWidget(widget.widgetId)
+    : undefined
 
-    const originalWidget = sourceWidget.widget
-    const interiorNode = sourceWidget.node
-
-    originalWidget.label = newLabel || undefined
-
-    const interiorInput = interiorNode.inputs?.find(
-      (inp) => inp.widget?.name === originalWidget.name
-    )
-    if (interiorInput) {
-      interiorInput.label = newLabel || undefined
-    }
-  }
-
-  const input = node.inputs?.find((inp) => inp.widget?.name === widget.name)
-
-  widget.label = newLabel || undefined
-  if (input) {
-    input.label = newLabel || undefined
-  }
+  widget.label = label
+  if (widgetState) widgetState.label = label
+  if (input) input.label = label
 
   // Fires for all node types; listeners guard against non-subgraph nodes.
   node.graph?.trigger('node:slot-label:changed', {

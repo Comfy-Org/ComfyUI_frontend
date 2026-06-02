@@ -12,7 +12,7 @@ import type {
 } from '@/composables/graph/useGraphNodeManager'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetEntityId } from '@/world/entityIds'
+import { widgetId } from '@/world/entityIds'
 
 const GRAPH_ID = 'graph-test'
 
@@ -129,12 +129,12 @@ describe('NodeWidgets', () => {
   })
 
   it('deduplicates widgets with identical render identity while keeping distinct promoted sources', () => {
-    const duplicateEntityId = widgetEntityId(
+    const duplicateEntityId = widgetId(
       GRAPH_ID,
       '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
       'string_a'
     )
-    const distinctEntityId = widgetEntityId(
+    const distinctEntityId = widgetId(
       GRAPH_ID,
       '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:20',
       'string_a'
@@ -172,7 +172,7 @@ describe('NodeWidgets', () => {
   })
 
   it('prefers a visible duplicate over a hidden duplicate when identities collide', () => {
-    const sharedEntityId = widgetEntityId(
+    const sharedEntityId = widgetId(
       GRAPH_ID,
       '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
       'string_a'
@@ -204,7 +204,7 @@ describe('NodeWidgets', () => {
   })
 
   it('does not deduplicate entries that share names but have different widget types', () => {
-    const sharedEntityId = widgetEntityId(
+    const sharedEntityId = widgetId(
       GRAPH_ID,
       '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
       'string_a'
@@ -263,14 +263,14 @@ describe('NodeWidgets', () => {
       name: 'text',
       type: 'text',
       nodeId: 'outer-subgraph:1',
-      entityId: widgetEntityId(GRAPH_ID, 'outer-subgraph:1', 'text'),
+      entityId: widgetId(GRAPH_ID, 'outer-subgraph:1', 'text'),
       slotName: 'text'
     })
     const secondPromoted = createMockWidget({
       name: 'text',
       type: 'text',
       nodeId: 'outer-subgraph:2',
-      entityId: widgetEntityId(GRAPH_ID, 'outer-subgraph:2', 'text'),
+      entityId: widgetId(GRAPH_ID, 'outer-subgraph:2', 'text'),
       slotName: 'text'
     })
 
@@ -294,16 +294,17 @@ describe('NodeWidgets', () => {
 
     const { container } = renderComponent(nodeData)
     const widgetValueStore = useWidgetValueStore()
-    widgetValueStore.registerWidget('graph-test', {
-      nodeId: 'test_node',
-      name: 'test_widget',
-      type: 'combo',
-      value: 'value',
-      options: { hidden: true },
-      label: undefined,
-      serialize: true,
-      disabled: false
-    })
+    widgetValueStore.registerWidget(
+      widgetId('graph-test', 'test_node', 'test_widget'),
+      {
+        type: 'combo',
+        value: 'value',
+        options: { hidden: true },
+        label: undefined,
+        serialize: true,
+        disabled: false
+      }
+    )
 
     await nextTick()
 
@@ -311,8 +312,8 @@ describe('NodeWidgets', () => {
   })
 
   it('forwards canonical entityId to AppInput for selection', () => {
-    const seedAEntityId = widgetEntityId(GRAPH_ID, 'test_node', 'seed_a')
-    const seedBEntityId = widgetEntityId(GRAPH_ID, 'test_node', 'seed_b')
+    const seedAEntityId = widgetId(GRAPH_ID, 'test_node', 'seed_a')
+    const seedBEntityId = widgetId(GRAPH_ID, 'test_node', 'seed_b')
     const nodeData = createMockNodeData('TestNode', [
       createMockWidget({
         nodeId: 'test_node',

@@ -16,6 +16,7 @@ import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { getWidgetDefaultValue, promptWidgetLabel } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
@@ -64,9 +65,16 @@ const defaultValue = computed(() => getWidgetDefaultValue(inputSpec.value))
 
 const hasDefault = computed(() => defaultValue.value !== undefined)
 
+const currentValue = computed(
+  () =>
+    (widget.widgetId &&
+      useWidgetValueStore().getWidget(widget.widgetId)?.value) ??
+    widget.value
+)
+
 const isCurrentValueDefault = computed(() => {
   if (!hasDefault.value) return true
-  return isEqual(widget.value, defaultValue.value)
+  return isEqual(currentValue.value, defaultValue.value)
 })
 
 async function handleRename() {

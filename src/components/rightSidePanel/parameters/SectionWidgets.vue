@@ -234,7 +234,7 @@ function navigateToErrorTab() {
   rightSidePanelStore.openPanel('errors')
 }
 
-function writeWidgetValue(widget: IBaseWidget, value: WidgetValue) {
+function setWidgetValue(widget: IBaseWidget, value: WidgetValue) {
   widget.value = value
   widget.callback?.(value)
   canvasStore.canvas?.setDirty(true, true)
@@ -245,18 +245,18 @@ function handleResetAllWidgets() {
     const spec = nodeDefStore.getInputSpecForWidget(widgetNode, widget.name)
     const defaultValue = getWidgetDefaultValue(spec)
     if (defaultValue !== undefined) {
-      writeWidgetValue(widget, defaultValue)
+      setWidgetValue(widget, defaultValue)
     }
   }
 }
 
 function handleWidgetValueUpdate(widget: IBaseWidget, newValue: WidgetValue) {
   if (newValue === undefined) return
-  writeWidgetValue(widget, newValue)
+  setWidgetValue(widget, newValue)
 }
 
 function handleWidgetReset(widget: IBaseWidget, newValue: WidgetValue) {
-  writeWidgetValue(widget, newValue)
+  setWidgetValue(widget, newValue)
 }
 
 defineExpose({

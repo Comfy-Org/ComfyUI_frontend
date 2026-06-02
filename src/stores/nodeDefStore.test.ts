@@ -2,9 +2,13 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { NodeDefFilter } from '@/stores/nodeDefStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 describe('useNodeDefStore', () => {
   let store: ReturnType<typeof useNodeDefStore>
@@ -328,6 +332,72 @@ describe('useNodeDefStore', () => {
       // allNodeDefsByName includes all
       expect(store.allNodeDefsByName).toHaveProperty('Normal')
       expect(store.allNodeDefsByName).toHaveProperty('Deprecated')
+    })
+  })
+
+  describe('subgraph widget input specs', () => {
+    function createSubgraphLikeNode() {
+      const graph = new LGraph()
+      const node = new LGraphNode('Subgraph')
+      graph.add(node)
+      node.isSubgraphNode = function (): this is SubgraphNode {
+        return true
+      }
+      const widget = node.addWidget(
+        'text',
+        'prompt',
+        'original default',
+        () => undefined,
+        {}
+      )
+      const widgetId = widget.widgetId
+      if (!widgetId) throw new Error('Missing widgetId')
+      return { node, widget, widgetId }
+    }
+
+    it('uses the promoted widget options default instead of the current value', () => {
+      const { node, widget, widgetId } = createSubgraphLikeNode()
+      const options: IWidgetOptions & { default: string } = {
+        default: 'real default'
+      }
+      Object.assign(
+        useWidgetValueStore().registerWidget(widgetId, {
+          type: 'STRING',
+          value: 'current edited value',
+          options
+        }),
+        {
+          type: 'STRING',
+          value: 'current edited value',
+          options
+        }
+      )
+
+      expect(store.getInputSpecForWidget(node, widget.name)).toMatchObject({
+        name: 'prompt',
+        type: 'STRING',
+        default: 'real default'
+      })
+    })
+
+    it('does not report current promoted widget value as default', () => {
+      const { node, widget, widgetId } = createSubgraphLikeNode()
+      Object.assign(
+        useWidgetValueStore().registerWidget(widgetId, {
+          type: 'STRING',
+          value: 'current edited value',
+          options: {}
+        }),
+        {
+          type: 'STRING',
+          value: 'current edited value',
+          options: {}
+        }
+      )
+
+      expect(store.getInputSpecForWidget(node, widget.name)).not.toHaveProperty(
+        'default'
+      )
     })
   })
 

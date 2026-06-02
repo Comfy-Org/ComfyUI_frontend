@@ -8,6 +8,7 @@ import { reactive, shallowReactive } from 'vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
 import {
   resolveConcretePromotedWidget,
@@ -29,8 +30,8 @@ import { IS_CONTROL_WIDGET } from '@/scripts/widgets'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
 import { normalizeControlOption } from '@/types/simplifiedWidget'
-import { getWidgetEntityIdForNode } from '@/utils/litegraphUtil'
-import type { WidgetEntityId } from '@/world/entityIds'
+import { getWidgetIdForNode } from '@/utils/litegraphUtil'
+import type { WidgetId } from '@/world/entityIds'
 
 import type {
   LGraph,
@@ -60,7 +61,8 @@ type Badges = (LGraphBadge | (() => LGraphBadge))[]
  * Value and metadata (label, hidden, disabled, etc.) are accessed via widgetValueStore.
  */
 export interface SafeWidgetData {
-  entityId?: WidgetEntityId
+  entityId?: WidgetId
+  widgetId?: WidgetId
   nodeId?: NodeId
   name: string
   type: string
@@ -81,6 +83,7 @@ export interface SafeWidgetData {
     advanced?: boolean
     hidden?: boolean
     read_only?: boolean
+    values?: unknown
   }
   /** Input specification from node definition */
   spec?: InputSpec
@@ -277,8 +280,6 @@ function safeWidgetMapper(
       const { displayName, promotedSource } =
         resolvePromotedWidgetIdentity(widget)
 
-      // Get shared enhancements (controlWidget, spec, nodeType)
-      const sharedEnhancements = getSharedWidgetEnhancements(node, widget)
       const slotInfo =
         slotMetadata.get(displayName) ?? slotMetadata.get(widget.name)
 
@@ -317,6 +318,10 @@ function safeWidgetMapper(
       const sourceNode = resolvedSource?.node
 
       const effectiveWidget = sourceWidget ?? widget
+      const sharedEnhancements = getSharedWidgetEnhancements(
+        node,
+        effectiveWidget
+      )
 
       const localId = isPromotedWidgetView(widget)
         ? String(sourceNode?.id ?? promotedSource?.sourceNodeId)
@@ -331,7 +336,7 @@ function safeWidgetMapper(
       if (isPromotedWidgetView(widget)) widget.ensureHostWidgetState()
 
       return {
-        entityId: getWidgetEntityIdForNode(node, widget),
+        entityId: getWidgetIdForNode(node, widget),
         nodeId,
         name,
         type: effectiveWidget.type,
@@ -471,7 +476,23 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
   })
 
   const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
-    const widgetsSnapshot = node.widgets ?? []
+    const promotedInputWidgets = node.isSubgraphNode()
+      ? node.inputs.flatMap((input) => {
+          if (!input.widgetId) return []
+          const source = resolveSubgraphInputTarget(node, input.name)
+          if (!source) return []
+          return [
+            createPromotedWidgetView(
+              node,
+              source.nodeId,
+              source.widgetName,
+              input.label ?? input.name,
+              input.name
+            )
+          ]
+        })
+      : []
+    const widgetsSnapshot = [...(node.widgets ?? []), ...promotedInputWidgets]
 
     const freshMetadata = buildSlotMetadata(node.inputs, node.graph)
     slotMetadata.clear()

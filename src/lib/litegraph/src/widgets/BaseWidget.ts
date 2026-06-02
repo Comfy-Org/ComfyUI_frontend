@@ -19,8 +19,8 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import type { WidgetState } from '@/stores/widgetValueStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetEntityId } from '@/world/entityIds'
-import { widgetEntityId } from '@/world/entityIds'
+import type { WidgetId } from '@/lib/litegraph/src/types/widgetId'
+import { widgetId } from '@/lib/litegraph/src/types/widgetId'
 
 export interface DrawWidgetOptions {
   /** The width of the node where this widget will be displayed. */
@@ -132,11 +132,15 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._state.value = value
   }
 
-  get entityId(): WidgetEntityId | undefined {
+  get entityId(): WidgetId | undefined {
+    return this.widgetId
+  }
+
+  get widgetId(): WidgetId | undefined {
     const graphId = this.node.graph?.rootGraph.id
     const nodeId = this._state.nodeId
     if (!graphId || nodeId === undefined) return undefined
-    return widgetEntityId(graphId, nodeId, this.name)
+    return widgetId(graphId, nodeId, this.name)
   }
 
   /**
@@ -147,14 +151,13 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const graphId = this.node.graph?.rootGraph.id
     if (!graphId) return
 
-    this._state = useWidgetValueStore().registerWidget(graphId, {
-      ...this._state,
-      // BaseWidget: this.value getter returns this._state.value. So value: this.value === value: this._state.value.
-      // BaseDOMWidgetImpl: this.value getter returns options.getValue?.() ?? ''. Resolves the correct initial value instead of undefined.
-      // I.e., calls overriden getter -> options.getValue() -> correct value (https://github.com/Comfy-Org/ComfyUI_frontend/issues/9194).
-      value: this.value,
-      nodeId
-    })
+    this._state = useWidgetValueStore().registerWidget(
+      widgetId(graphId, nodeId, this.name),
+      {
+        ...this._state,
+        value: this.value
+      }
+    )
   }
 
   constructor(widget: TWidget & { node: LGraphNode })

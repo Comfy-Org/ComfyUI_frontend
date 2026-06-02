@@ -5,13 +5,13 @@
  * IO synchronization, and edge cases.
  */
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -199,6 +199,35 @@ describe('SubgraphNode Synchronization', () => {
     expect(subgraphNode.outputs[0].label).toBe('newOutput')
   })
 
+  it('represents promoted host widgets by input widgetId and WidgetState', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    interiorNode.addOutput('out', 'STRING')
+    interiorNode.addWidget('text', 'value', 'initial', () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const promotedInput = subgraphNode.inputs[0]
+    const inputWidgetId = promotedInput.widgetId
+
+    expect(subgraphNode.widgets).toHaveLength(0)
+    expect(promotedInput._widget).toBeUndefined()
+    expect(inputWidgetId).toBeDefined()
+    expect('sourceNodeId' in promotedInput).toBe(false)
+    expect('sourceWidgetName' in promotedInput).toBe(false)
+    if (!inputWidgetId) throw new Error('Missing widgetId')
+
+    expect(useWidgetValueStore().getWidget(inputWidgetId)?.value).toBe(
+      'initial'
+    )
+  })
+
   it('should keep input.widget.name stable after rename (onGraphConfigured safety)', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'text', type: 'STRING' }]
@@ -218,7 +247,6 @@ describe('SubgraphNode Synchronization', () => {
 
     const originalWidgetName = promotedInput.widget!.name
 
-    // Rename the subgraph input label
     subgraph.inputs[0].label = 'my_custom_prompt'
     subgraph.events.dispatch('renaming-input', {
       input: subgraph.inputs[0],
@@ -227,17 +255,14 @@ describe('SubgraphNode Synchronization', () => {
       newName: 'my_custom_prompt'
     })
 
-    // widget.name stays as the internal name — NOT the display label
     expect(promotedInput.widget!.name).toBe(originalWidgetName)
-
-    // The display label is on input.label (live-read via PromotedWidgetView.label)
     expect(promotedInput.label).toBe('my_custom_prompt')
-
-    // input.widget.name should still match a widget in node.widgets
-    const matchingWidget = subgraphNode.widgets?.find(
-      (w) => w.name === promotedInput.widget!.name
+    expect(subgraphNode.widgets).toHaveLength(0)
+    expect(promotedInput.widgetId).toBeDefined()
+    if (!promotedInput.widgetId) throw new Error('Missing widgetId')
+    expect(useWidgetValueStore().getWidget(promotedInput.widgetId)?.label).toBe(
+      'my_custom_prompt'
     )
-    expect(matchingWidget).toBeDefined()
   })
 
   it('should preserve renamed label through serialize/configure round-trip', () => {
@@ -254,10 +279,10 @@ describe('SubgraphNode Synchronization', () => {
     subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
 
     const subgraphNode = createTestSubgraphNode(subgraph)
-    const promotedWidget = subgraphNode.widgets?.[0]
-    expect(promotedWidget).toBeDefined()
+    const inputSlot = subgraphNode.inputs[0]
+    expect(inputSlot.widgetId).toBeDefined()
+    if (!inputSlot.widgetId) throw new Error('Missing widgetId')
 
-    // Rename via the subgraph slot (simulates right-click rename)
     subgraph.inputs[0].label = 'My Seed'
     subgraphNode.inputs[0].label = 'My Seed'
     subgraph.events.dispatch('renaming-input', {
@@ -267,20 +292,16 @@ describe('SubgraphNode Synchronization', () => {
       newName: 'My Seed'
     })
 
-    // Label should be visible before round-trip
-    const widgetBeforeRoundTrip = subgraphNode.widgets?.[0]
-    expect(widgetBeforeRoundTrip!.label || widgetBeforeRoundTrip!.name).toBe(
+    expect(useWidgetValueStore().getWidget(inputSlot.widgetId)?.label).toBe(
       'My Seed'
     )
 
-    // Serialize and reconfigure (simulates save/reload)
     const serialized = subgraphNode.serialize()
     subgraphNode.configure(serialized)
 
-    // Label should survive the round-trip
-    const widgetAfterRoundTrip = subgraphNode.widgets?.[0]
-    expect(widgetAfterRoundTrip).toBeDefined()
-    expect(widgetAfterRoundTrip!.label || widgetAfterRoundTrip!.name).toBe(
+    expect(subgraphNode.widgets).toHaveLength(0)
+    expect(inputSlot.label).toBe('My Seed')
+    expect(useWidgetValueStore().getWidget(inputSlot.widgetId)?.label).toBe(
       'My Seed'
     )
   })
@@ -339,11 +360,10 @@ describe('SubgraphNode widget name collision on rename', () => {
     // Display labels: input[1] was renamed
     expect(subgraphNode.inputs[1].label).toBe('prompt_a')
 
-    // Distinct _widget bindings
-    expect(subgraphNode.inputs[0]._widget).toBeDefined()
-    expect(subgraphNode.inputs[1]._widget).toBeDefined()
-    expect(subgraphNode.inputs[0]._widget).not.toBe(
-      subgraphNode.inputs[1]._widget
+    expect(subgraphNode.inputs[0].widgetId).toBeDefined()
+    expect(subgraphNode.inputs[1].widgetId).toBeDefined()
+    expect(subgraphNode.inputs[0].widgetId).not.toBe(
+      subgraphNode.inputs[1].widgetId
     )
   })
 
@@ -394,11 +414,10 @@ describe('SubgraphNode widget name collision on rename', () => {
     expect(subgraphNode.inputs[0].widget?.name).toBe(key0)
     expect(subgraphNode.inputs[1].widget?.name).toBe(key1)
 
-    // Distinct _widget bindings survive the rename
-    expect(subgraphNode.inputs[0]._widget).toBeDefined()
-    expect(subgraphNode.inputs[1]._widget).toBeDefined()
-    expect(subgraphNode.inputs[0]._widget).not.toBe(
-      subgraphNode.inputs[1]._widget
+    expect(subgraphNode.inputs[0].widgetId).toBeDefined()
+    expect(subgraphNode.inputs[1].widgetId).toBeDefined()
+    expect(subgraphNode.inputs[0].widgetId).not.toBe(
+      subgraphNode.inputs[1].widgetId
     )
   })
 
@@ -437,17 +456,13 @@ describe('SubgraphNode widget name collision on rename', () => {
       newName: 'alpha'
     })
 
-    // Simulate onGraphConfigured check: for each input with widget,
-    // find a matching widget by name. If not found, the input gets removed.
     for (const input of subgraphNode.inputs) {
-      if (!input.widget) continue
-      const name = input.widget.name
-      const w = subgraphNode.widgets?.find((w) => w.name === name)
-      // Every input should find at least one matching widget
-      expect(w).toBeDefined()
+      expect(input.widgetId).toBeDefined()
+      if (!input.widgetId) throw new Error('Missing widgetId')
+      expect(useWidgetValueStore().getWidget(input.widgetId)).toBeDefined()
     }
 
-    // Both inputs should survive
+    expect(subgraphNode.widgets).toHaveLength(0)
     expect(subgraphNode.inputs).toHaveLength(2)
   })
 })
@@ -929,41 +944,6 @@ describe('Nested SubgraphNode duplicate input prevention', () => {
   })
 })
 
-describe('SubgraphNode promotion view keys', () => {
-  it('distinguishes tuples that differ only by colon placement', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
-    const subgraph = createTestSubgraph()
-    const subgraphNode = createTestSubgraphNode(subgraph)
-    const nodeWithKeyBuilder = fromAny<
-      {
-        _makePromotionViewKey: (
-          inputKey: string,
-          interiorNodeId: string,
-          widgetName: string,
-          inputName?: string
-        ) => string
-      },
-      unknown
-    >(subgraphNode)
-
-    const firstKey = nodeWithKeyBuilder._makePromotionViewKey(
-      '65',
-      '18',
-      'a:b',
-      'c'
-    )
-    const secondKey = nodeWithKeyBuilder._makePromotionViewKey(
-      '65',
-      '18',
-      'a',
-      'b:c'
-    )
-
-    expect(firstKey).not.toBe(secondKey)
-  })
-})
-
 describe('SubgraphNode label propagation', () => {
   it('should preserve input labels from configure path', () => {
     const subgraph = createTestSubgraph({
@@ -1008,15 +988,19 @@ describe('SubgraphNode label propagation', () => {
     const labelChangedSpy = vi.spyOn(subgraphNode.graph!, 'trigger')
 
     expect(promotedInput.label).toBeUndefined()
-    expect(promotedInput._widget).toBeDefined()
+    expect(promotedInput._widget).toBeUndefined()
+    expect(promotedInput.widgetId).toBeDefined()
+    if (!promotedInput.widgetId) throw new Error('Missing widgetId')
 
     subgraph.renameInput(subgraph.inputs[0], 'Steps Count')
 
     expect(promotedInput.label).toBe('Steps Count')
     expect(promotedInput.name).toBe('steps')
     expect(promotedInput.widget?.name).toBe(originalWidgetName)
-    expect(promotedInput._widget?.label).toBe('Steps Count')
-    expect(subgraphNode.widgets?.[0].label).toBe('Steps Count')
+    expect(useWidgetValueStore().getWidget(promotedInput.widgetId)?.label).toBe(
+      'Steps Count'
+    )
+    expect(subgraphNode.widgets).toHaveLength(0)
     expect(labelChangedSpy).toHaveBeenCalledWith('node:slot-label:changed', {
       nodeId: subgraphNode.id,
       slotType: NodeSlotType.INPUT

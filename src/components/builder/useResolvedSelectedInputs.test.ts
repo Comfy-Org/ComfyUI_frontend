@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { app } from '@/scripts/app'
 import { useAppModeStore } from '@/stores/appModeStore'
-import type { WidgetEntityId } from '@/world/entityIds'
+import type { WidgetId } from '@/world/entityIds'
 
 import { useResolvedSelectedInputs } from './useResolvedSelectedInputs'
 
@@ -22,14 +22,14 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 const rootGraphId = '11111111-1111-4111-8111-111111111111'
-const entitySeed = `${rootGraphId}:1:seed` as WidgetEntityId
+const entitySeed = `${rootGraphId}:1:seed` as WidgetId
 
 function makeNode(id: number, widgetNames: string[]): LGraphNode {
   return fromAny<LGraphNode, unknown>({
     id,
     widgets: widgetNames.map((name) => ({
       name,
-      entityId: `${rootGraphId}:${id}:${name}` as WidgetEntityId
+      entityId: `${rootGraphId}:${id}:${name}` as WidgetId
     }))
   })
 }

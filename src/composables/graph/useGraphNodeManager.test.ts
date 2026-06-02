@@ -7,7 +7,7 @@ import { computed, nextTick, watch } from 'vue'
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { widgetEntityId } from '@/world/entityIds'
+import { widgetId } from '@/world/entityIds'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -47,9 +47,10 @@ describe('Node Reactivity', () => {
     expect((widget as BaseWidget).node.id).toBe(node.id)
 
     // Initial value should be in store after setNodeId was called
-    expect(store.getWidget(graph.id, node.id, 'testnum')?.value).toBe(2)
+    const id = widgetId(graph.id, node.id, 'testnum')
+    expect(store.getWidget(id)?.value).toBe(2)
 
-    const state = store.getWidget(graph.id, node.id, 'testnum')
+    const state = store.getWidget(id)
     if (!state) throw new Error('Expected widget state to exist')
 
     const onValueChange = vi.fn()
@@ -74,7 +75,7 @@ describe('Node Reactivity', () => {
     })
     await nextTick()
 
-    const state = store.getWidget(graph.id, node.id, 'testnum')
+    const state = store.getWidget(widgetId(graph.id, node.id, 'testnum'))
     if (!state) throw new Error('Expected widget state to exist')
 
     const widgetValue = computed(() => state.value)
@@ -449,7 +450,7 @@ describe('Nested promoted widget mapping', () => {
     expect(mappedWidget).toBeDefined()
     expect(mappedWidget?.type).toBe('combo')
     expect(mappedWidget?.entityId).toBe(
-      widgetEntityId(graph.id, subgraphNodeB.id, 'b_input')
+      widgetId(graph.id, subgraphNodeB.id, 'b_input')
     )
   })
 
@@ -485,10 +486,10 @@ describe('Nested promoted widget mapping', () => {
 
     expect(widgets).toHaveLength(2)
     expect(widgets?.[0]?.entityId).toBe(
-      widgetEntityId(graph.id, subgraphNode.id, 'first_seed')
+      widgetId(graph.id, subgraphNode.id, 'first_seed')
     )
     expect(widgets?.[1]?.entityId).toBe(
-      widgetEntityId(graph.id, subgraphNode.id, 'second_seed')
+      widgetId(graph.id, subgraphNode.id, 'second_seed')
     )
     expect(widgets?.[0]?.entityId).not.toBe(widgets?.[1]?.entityId)
   })

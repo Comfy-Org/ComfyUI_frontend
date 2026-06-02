@@ -6,13 +6,13 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputWidgetConfig } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { app } from '@/scripts/app'
 import { useAppModeStore } from '@/stores/appModeStore'
-import type { WidgetEntityId } from '@/world/entityIds'
-import { isWidgetEntityId, parseWidgetEntityId } from '@/world/entityIds'
+import type { WidgetId } from '@/world/entityIds'
+import { isWidgetId, parseWidgetId } from '@/world/entityIds'
 
 export type ResolvedSelection =
   | {
       status: 'resolved'
-      entityId: WidgetEntityId
+      entityId: WidgetId
       node: LGraphNode
       widget: IBaseWidget
       displayName: string
@@ -20,7 +20,7 @@ export type ResolvedSelection =
     }
   | {
       status: 'unknown'
-      entityId: WidgetEntityId
+      entityId: WidgetId
       displayName: string
       config?: InputWidgetConfig
     }
@@ -55,8 +55,8 @@ export function useResolvedSelectedInputs() {
 
     return appModeStore.selectedInputs.flatMap(
       ([entityId, displayName, config]): ResolvedSelection[] => {
-        if (!isWidgetEntityId(entityId)) return []
-        const { nodeId, name } = parseWidgetEntityId(entityId)
+        if (!isWidgetId(entityId)) return []
+        const { nodeId, name } = parseWidgetId(entityId)
         const node = rootGraph.getNodeById(nodeId)
         const widget = node?.widgets?.find((w) => w.name === name)
         if (!node || !widget) {

@@ -28,8 +28,8 @@ import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNod
 import { app } from '@/scripts/app'
 import { t } from '@/i18n'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
-import type { WidgetEntityId } from '@/world/entityIds'
-import { widgetEntityId } from '@/world/entityIds'
+import type { WidgetId } from '@/world/entityIds'
+import { widgetId } from '@/world/entityIds'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
 type VideoNode = LGraphNode & {
@@ -372,14 +372,14 @@ export function resolveNodeWidget(
   return []
 }
 
-export function getWidgetEntityIdForNode(
+export function getWidgetIdForNode(
   node: LGraphNode,
   widget: Pick<IBaseWidget, 'name' | 'entityId'>
-): WidgetEntityId | undefined {
+): WidgetId | undefined {
   if (widget.entityId) return widget.entityId
   const graphId = node.graph?.rootGraph.id
   if (!graphId || node.id === -1) return undefined
-  return widgetEntityId(graphId, node.id, widget.name)
+  return widgetId(graphId, node.id, widget.name)
 }
 
 export function isLoad3dNode(node: LGraphNode) {

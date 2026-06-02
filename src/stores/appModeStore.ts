@@ -21,20 +21,20 @@ import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
-  getWidgetEntityIdForNode,
+  getWidgetIdForNode,
   resolveNode,
   resolveNodeWidget
 } from '@/utils/litegraphUtil'
-import type { WidgetEntityId } from '@/world/entityIds'
-import { isWidgetEntityId, parseWidgetEntityId } from '@/world/entityIds'
+import type { WidgetId } from '@/world/entityIds'
+import { isWidgetId, parseWidgetId } from '@/world/entityIds'
 
 function findWidgetByEntityId(
   rootGraph: LGraph,
-  entityId: WidgetEntityId
+  entityId: WidgetId
 ): IBaseWidget | undefined {
   for (const node of rootGraph.nodes) {
     const widget = node.widgets?.find(
-      (w) => getWidgetEntityIdForNode(node, w) === entityId
+      (w) => getWidgetIdForNode(node, w) === entityId
     )
     if (widget) return widget
   }
@@ -82,7 +82,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   function buildEntry(
-    entityId: WidgetEntityId,
+    entityId: WidgetId,
     name: string,
     config: InputWidgetConfig | undefined
   ): LinearInput {
@@ -95,10 +95,10 @@ export const useAppModeStore = defineStore('appMode', () => {
   ): LinearInput | null {
     const [storedId, widgetName, config] = input
 
-    if (typeof storedId === 'string' && isWidgetEntityId(storedId)) {
+    if (typeof storedId === 'string' && isWidgetId(storedId)) {
       const widget = findWidgetByEntityId(rootGraph, storedId)
       if (widget) return buildEntry(storedId, widgetName, config)
-      const { nodeId } = parseWidgetEntityId(storedId)
+      const { nodeId } = parseWidgetId(storedId)
       if (rootGraph.getNodeById?.(nodeId)) {
         return buildEntry(storedId, widgetName, config)
       }
@@ -114,7 +114,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     const directNode = rootGraph.getNodeById?.(storedId)
     const directWidget = directNode?.widgets?.find((w) => w.name === widgetName)
     if (directNode && directWidget) {
-      const derivedId = getWidgetEntityIdForNode(directNode, directWidget)
+      const derivedId = getWidgetIdForNode(directNode, directWidget)
       if (derivedId) return buildEntry(derivedId, widgetName, config)
     }
 

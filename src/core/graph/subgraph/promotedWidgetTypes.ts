@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import type { WidgetEntityId } from '@/world/entityIds'
+import type { WidgetId } from '@/world/entityIds'
 
 export interface ResolvedPromotedWidget {
   node: LGraphNode
@@ -15,7 +15,8 @@ export interface PromotedWidgetSource {
 
 export interface PromotedWidgetView extends IBaseWidget {
   readonly node: SubgraphNode
-  readonly entityId: WidgetEntityId
+  readonly entityId: WidgetId
+  readonly widgetId: WidgetId
   readonly sourceNodeId: string
   readonly sourceWidgetName: string
 
