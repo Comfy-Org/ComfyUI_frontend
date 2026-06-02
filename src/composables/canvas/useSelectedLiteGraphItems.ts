@@ -67,10 +67,11 @@ export function useSelectedLiteGraphItems() {
    * The top-level selected nodes from the canonical selection set.
    * Shallow — does NOT expand subgraph children, unlike {@link getSelectedNodes}.
    * Mode toggles use this so they apply to the selected subgraph node, not its
-   * descendants.
+   * descendants. Returns `[]` when the canvas is not yet available, preserving
+   * the prior null-tolerance for callers wired to early-firing commands.
    */
   const getSelectedNodesShallow = (): LGraphNode[] =>
-    Array.from(canvasStore.getCanvas().selectedItems).filter(isLGraphNode)
+    Array.from(canvasStore.canvas?.selectedItems ?? []).filter(isLGraphNode)
 
   /**
    * Get only the selected nodes (LGraphNode instances) from the canvas.

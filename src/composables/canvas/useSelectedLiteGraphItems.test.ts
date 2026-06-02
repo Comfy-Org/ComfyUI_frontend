@@ -1,23 +1,27 @@
 import { createPinia, setActivePinia } from 'pinia'
+import { markRaw } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
-import type { LGraphNode, Positionable } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode, Reroute } from '@/lib/litegraph/src/litegraph'
+import type { Positionable } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphEventMode,
+  LGraphNode,
+  Reroute
+} from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeId } from '@/renderer/core/layout/types'
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
-import { createMockSubgraphNode } from '@/utils/__tests__/litegraphTestUtils'
+
+const mockApp = vi.hoisted(() => ({
+  canvas: {
+    selected_nodes: null as Record<string, LGraphNode> | null
+  }
+}))
 
 // canvasStore transitively imports the app singleton; stub it so the real
 // ComfyApp module never loads during these unit tests.
-vi.mock('@/scripts/app', () => ({
-  app: {
-    canvas: {
-      selected_nodes: null
-    }
-  }
-}))
+vi.mock('@/scripts/app', () => ({ app: mockApp }))
 
 // Mock the litegraph module
 vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
@@ -30,17 +34,26 @@ vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
   }
 })
 
-// The node accessors filter the canonical selectedItems set via isLGraphNode.
-// Treat any object carrying a `mode` as a node so the lightweight fixtures below
-// (groups/reroutes have no `mode`) are recognised without real LGraphNode instances.
-vi.mock('@/utils/litegraphUtil', async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>
-  return {
-    ...actual,
-    isLGraphNode: (item: unknown): boolean =>
-      item != null && typeof item === 'object' && 'mode' in item
-  }
-})
+// Real LGraphNode instances so the production isLGraphNode (instanceof) guard runs
+// unmodified — the node accessors filter selectedItems with the real predicate.
+const makeNode = (mode: LGraphEventMode, id = 1): LGraphNode => {
+  const node = new LGraphNode('Test')
+  node.id = id
+  node.mode = mode
+  return node
+}
+
+const makeSubgraphNode = (
+  children: LGraphNode[],
+  overrides: { id?: number; mode?: LGraphEventMode } = {}
+): LGraphNode =>
+  Object.assign(
+    makeNode(overrides.mode ?? LGraphEventMode.ALWAYS, overrides.id ?? 1),
+    {
+      isSubgraphNode: () => true,
+      subgraph: { nodes: children }
+    }
+  )
 
 // Mock Positionable objects
 
@@ -89,14 +102,20 @@ describe('useSelectedLiteGraphItems', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     canvasStore = useCanvasStore()
+    mockApp.canvas.selected_nodes = null
 
-    // Mock canvas with selectedItems Set
-    mockCanvas = {
+    // markRaw so the spied getter's return is not reactive-wrapped by the Pinia
+    // store proxy — production reads a shallowRef, so nodes stay raw references.
+    mockCanvas = markRaw({
       selectedItems: new Set<Positionable>()
-    }
+    })
 
-    // Mock getCanvas to return our mock canvas
+    // getSelectableItems reads getCanvas(); the node accessors read canvasStore.canvas.
+    // Point both at the same mock canvas.
     vi.spyOn(canvasStore, 'getCanvas').mockReturnValue(
+      mockCanvas as ReturnType<typeof canvasStore.getCanvas>
+    )
+    vi.spyOn(canvasStore, 'canvas', 'get').mockReturnValue(
       mockCanvas as ReturnType<typeof canvasStore.getCanvas>
     )
   })
@@ -219,8 +238,8 @@ describe('useSelectedLiteGraphItems', () => {
   describe('node-specific methods', () => {
     it('getSelectedNodes should return only LGraphNode instances', () => {
       const { getSelectedNodes } = useSelectedLiteGraphItems()
-      const node1 = { id: 1, mode: LGraphEventMode.ALWAYS } as LGraphNode
-      const node2 = { id: 2, mode: LGraphEventMode.NEVER } as LGraphNode
+      const node1 = makeNode(LGraphEventMode.ALWAYS, 1)
+      const node2 = makeNode(LGraphEventMode.NEVER, 2)
 
       mockCanvas.selectedItems = new Set([node1, node2])
 
@@ -241,8 +260,8 @@ describe('useSelectedLiteGraphItems', () => {
 
     it('toggleSelectedNodesMode should toggle node modes correctly', () => {
       const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
-      const node1 = { id: 1, mode: LGraphEventMode.ALWAYS } as LGraphNode
-      const node2 = { id: 2, mode: LGraphEventMode.NEVER } as LGraphNode
+      const node1 = makeNode(LGraphEventMode.ALWAYS, 1)
+      const node2 = makeNode(LGraphEventMode.NEVER, 2)
 
       mockCanvas.selectedItems = new Set([node1, node2])
 
@@ -257,7 +276,7 @@ describe('useSelectedLiteGraphItems', () => {
 
     it('toggleSelectedNodesMode should set mode to ALWAYS when already in target mode', () => {
       const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
-      const node = { id: 1, mode: LGraphEventMode.BYPASS } as LGraphNode
+      const node = makeNode(LGraphEventMode.BYPASS, 1)
 
       mockCanvas.selectedItems = new Set([node])
 
@@ -270,8 +289,8 @@ describe('useSelectedLiteGraphItems', () => {
 
     it('areAllSelectedNodesInMode returns true when every selected node matches', () => {
       const { areAllSelectedNodesInMode } = useSelectedLiteGraphItems()
-      const node1 = { id: 1, mode: LGraphEventMode.BYPASS } as LGraphNode
-      const node2 = { id: 2, mode: LGraphEventMode.BYPASS } as LGraphNode
+      const node1 = makeNode(LGraphEventMode.BYPASS, 1)
+      const node2 = makeNode(LGraphEventMode.BYPASS, 2)
 
       mockCanvas.selectedItems = new Set([node1, node2])
 
@@ -280,8 +299,8 @@ describe('useSelectedLiteGraphItems', () => {
 
     it('areAllSelectedNodesInMode returns false on mixed selection', () => {
       const { areAllSelectedNodesInMode } = useSelectedLiteGraphItems()
-      const bypassed = { id: 1, mode: LGraphEventMode.BYPASS } as LGraphNode
-      const active = { id: 2, mode: LGraphEventMode.ALWAYS } as LGraphNode
+      const bypassed = makeNode(LGraphEventMode.BYPASS, 1)
+      const active = makeNode(LGraphEventMode.ALWAYS, 2)
 
       mockCanvas.selectedItems = new Set([bypassed, active])
 
@@ -298,27 +317,27 @@ describe('useSelectedLiteGraphItems', () => {
 
     it('getSelectedNodes should include nodes from subgraphs', () => {
       const { getSelectedNodes } = useSelectedLiteGraphItems()
-      const subNode1 = { id: 11, mode: LGraphEventMode.ALWAYS } as LGraphNode
-      const subNode2 = { id: 12, mode: LGraphEventMode.NEVER } as LGraphNode
-      const subgraphNode = createMockSubgraphNode([subNode1, subNode2])
-      const regularNode = { id: 2, mode: LGraphEventMode.NEVER } as LGraphNode
+      const subNode1 = makeNode(LGraphEventMode.ALWAYS, 11)
+      const subNode2 = makeNode(LGraphEventMode.NEVER, 12)
+      const subgraphNode = makeSubgraphNode([subNode1, subNode2])
+      const regularNode = makeNode(LGraphEventMode.NEVER, 2)
 
       mockCanvas.selectedItems = new Set([subgraphNode, regularNode])
 
       const selectedNodes = getSelectedNodes()
       expect(selectedNodes).toHaveLength(4) // subgraphNode + 2 sub nodes + regularNode
-      expect(selectedNodes).toContainEqual(subgraphNode)
-      expect(selectedNodes).toContainEqual(regularNode)
-      expect(selectedNodes).toContainEqual(subNode1)
-      expect(selectedNodes).toContainEqual(subNode2)
+      expect(selectedNodes).toContain(subgraphNode)
+      expect(selectedNodes).toContain(regularNode)
+      expect(selectedNodes).toContain(subNode1)
+      expect(selectedNodes).toContain(subNode2)
     })
 
     it('toggleSelectedNodesMode should not apply state to subgraph children', () => {
       const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
-      const subNode1 = { id: 11, mode: LGraphEventMode.ALWAYS } as LGraphNode
-      const subNode2 = { id: 12, mode: LGraphEventMode.NEVER } as LGraphNode
-      const subgraphNode = createMockSubgraphNode([subNode1, subNode2])
-      const regularNode = { id: 2, mode: LGraphEventMode.BYPASS } as LGraphNode
+      const subNode1 = makeNode(LGraphEventMode.ALWAYS, 11)
+      const subNode2 = makeNode(LGraphEventMode.NEVER, 12)
+      const subgraphNode = makeSubgraphNode([subNode1, subNode2])
+      const regularNode = makeNode(LGraphEventMode.BYPASS, 2)
 
       mockCanvas.selectedItems = new Set([subgraphNode, regularNode])
 
@@ -338,9 +357,9 @@ describe('useSelectedLiteGraphItems', () => {
 
     it('toggleSelectedNodesMode should toggle to ALWAYS when subgraph is already in target mode', () => {
       const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
-      const subNode1 = { id: 11, mode: LGraphEventMode.ALWAYS } as LGraphNode
-      const subNode2 = { id: 12, mode: LGraphEventMode.BYPASS } as LGraphNode
-      const subgraphNode = createMockSubgraphNode([subNode1, subNode2], {
+      const subNode1 = makeNode(LGraphEventMode.ALWAYS, 11)
+      const subNode2 = makeNode(LGraphEventMode.BYPASS, 12)
+      const subgraphNode = makeSubgraphNode([subNode1, subNode2], {
         id: 1,
         mode: LGraphEventMode.NEVER // Already in NEVER mode
       })
@@ -358,17 +377,30 @@ describe('useSelectedLiteGraphItems', () => {
       expect(subNode2.mode).toBe(LGraphEventMode.BYPASS)
     })
 
-    it('sources node selection from the canonical selectedItems set', () => {
+    it('reads only the canonical selectedItems set, ignoring the legacy dict', () => {
       const { getSelectedNodes, areAllSelectedNodesInMode } =
         useSelectedLiteGraphItems()
-      const node = { id: 1, mode: LGraphEventMode.BYPASS } as LGraphNode
+      const selected = makeNode(LGraphEventMode.BYPASS, 1)
+      const legacyOnly = makeNode(LGraphEventMode.ALWAYS, 99)
 
-      // Only the canonical selection set is populated; the legacy
-      // app.canvas.selected_nodes dict stays empty to prove it is no longer read.
-      mockCanvas.selectedItems = new Set([node])
+      mockCanvas.selectedItems = new Set([selected])
+      // A different node lives only in the legacy dict; it must be ignored.
+      mockApp.canvas.selected_nodes = { '0': legacyOnly }
 
-      expect(getSelectedNodes()).toEqual([node])
+      const selectedNodes = getSelectedNodes()
+      expect(selectedNodes).toHaveLength(1)
+      expect(selectedNodes).toContain(selected)
+      expect(selectedNodes).not.toContain(legacyOnly)
       expect(areAllSelectedNodesInMode(LGraphEventMode.BYPASS)).toBe(true)
+    })
+
+    it('returns empty without throwing when the canvas is unavailable', () => {
+      vi.spyOn(canvasStore, 'canvas', 'get').mockReturnValue(null)
+      const { getSelectedNodes, areAllSelectedNodesInMode } =
+        useSelectedLiteGraphItems()
+
+      expect(getSelectedNodes()).toEqual([])
+      expect(areAllSelectedNodesInMode(LGraphEventMode.BYPASS)).toBe(false)
     })
   })
 

@@ -5,8 +5,8 @@ import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useNodeMenuOptions } from '@/composables/graph/useNodeMenuOptions'
-import type { LGraphNode, Positionable } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import type { Positionable } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 // canvasStore transitively imports the app singleton; stub it so the real
@@ -14,18 +14,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 vi.mock('@/scripts/app', () => ({
   app: { canvas: { selected_nodes: null } }
 }))
-
-// The Bypass label filters the canonical selectedItems set via isLGraphNode.
-// Treat any object carrying a `mode` as a node so the lightweight fixtures below
-// are recognised without real LGraphNode instances.
-vi.mock('@/utils/litegraphUtil', async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>
-  return {
-    ...actual,
-    isLGraphNode: (item: unknown): boolean =>
-      item != null && typeof item === 'object' && 'mode' in item
-  }
-})
 
 vi.mock('@/composables/graph/useNodeCustomization', () => ({
   useNodeCustomization: () => ({
@@ -55,12 +43,16 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
-const nodeWithMode = (mode: LGraphEventMode, id = 1): LGraphNode =>
-  ({ id, mode }) as LGraphNode
+const nodeWithMode = (mode: LGraphEventMode, id = 1): LGraphNode => {
+  const node = new LGraphNode('Test')
+  node.id = id
+  node.mode = mode
+  return node
+}
 
 const getBypassLabel = (selected: LGraphNode[]): string => {
   const canvasStore = useCanvasStore()
-  vi.spyOn(canvasStore, 'getCanvas').mockReturnValue({
+  vi.spyOn(canvasStore, 'canvas', 'get').mockReturnValue({
     selectedItems: new Set<Positionable>(selected)
   } as ReturnType<typeof canvasStore.getCanvas>)
 
