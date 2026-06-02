@@ -1,0 +1,30 @@
+---
+// Affiliate Program Terms — English only, by design.
+// Legal-reviewed copy must not be served under a localized route until
+// legal explicitly approves a translation; rendering an unreviewed
+// translation as the active terms exposes us to liability from the
+// translation diverging from the approved English source. See the
+// matching comment in src/i18n/translations.ts for the i18n block.
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import HeroSection from '../../components/legal/HeroSection.vue'
+import LegalContentSection from '../../components/legal/LegalContentSection.vue'
+import { t } from '../../i18n/translations'
+---
+
+<BaseLayout
+  title={t('affiliate-terms.page.title')}
+  description={t('affiliate-terms.page.description')}
+>
+  <HeroSection title={t('affiliate-terms.page.heading')} />
+  <p class="text-primary-warm-gray mt-2 text-center text-sm">
+    {t('affiliate-terms.page.effectiveDateLabel')}: {
+      t('affiliate-terms.effective-date')
+    }
+  </p>
+  <LegalContentSection
+    prefix="affiliate-terms"
+    locale="en"
+    tocLabelKey="affiliate-terms.page.tocLabel"
+    client:load
+  />
+</BaseLayout>

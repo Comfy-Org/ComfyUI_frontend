@@ -93,6 +93,22 @@ export function useSelectedLiteGraphItems() {
     return collectFromNodes(nodeArray)
   }
 
+  const getSelectedNodesShallow = (): LGraphNode[] =>
+    Object.values(app.canvas.selected_nodes ?? {})
+
+  /**
+   * True iff every selected node is in `mode`. Mirrors the predicate used by
+   * {@link toggleSelectedNodesMode} so labels match the toggle's effect.
+   * An empty selection returns `false` (no node is in the mode).
+   */
+  const areAllSelectedNodesInMode = (mode: LGraphEventMode): boolean => {
+    const selectedNodeArray = getSelectedNodesShallow()
+    return (
+      selectedNodeArray.length > 0 &&
+      selectedNodeArray.every((node) => node.mode === mode)
+    )
+  }
+
   /**
    * Toggle the execution mode of all selected nodes
    *
@@ -102,18 +118,10 @@ export function useSelectedLiteGraphItems() {
    * @param mode - The LGraphEventMode to toggle to (e.g., NEVER for mute, BYPASS for bypass)
    */
   const toggleSelectedNodesMode = (mode: LGraphEventMode): void => {
-    const selectedNodes = app.canvas.selected_nodes
-    if (!selectedNodes) return
-
-    // Convert selected_nodes object to array
-    const selectedNodeArray: LGraphNode[] = []
-    for (const i in selectedNodes) {
-      selectedNodeArray.push(selectedNodes[i])
-    }
-    const allNodesMatch = !selectedNodeArray.some(
-      (selectedNode) => selectedNode.mode !== mode
-    )
-    const newModeForSelectedNode = allNodesMatch ? LGraphEventMode.ALWAYS : mode
+    const selectedNodeArray = getSelectedNodesShallow()
+    const newModeForSelectedNode = areAllSelectedNodesInMode(mode)
+      ? LGraphEventMode.ALWAYS
+      : mode
 
     for (const selectedNode of selectedNodeArray)
       selectedNode.mode = newModeForSelectedNode
@@ -126,6 +134,7 @@ export function useSelectedLiteGraphItems() {
     hasSelectableItems,
     hasMultipleSelectableItems,
     getSelectedNodes,
+    areAllSelectedNodesInMode,
     toggleSelectedNodesMode
   }
 }

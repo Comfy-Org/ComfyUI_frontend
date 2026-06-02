@@ -433,12 +433,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackWorkflowExecution(): void {
     const context = getExecutionContext()
-    const { isAppMode, mode } = useAppMode()
     const eventContext: ExecutionContext = {
       ...context,
-      trigger_source: this.lastTriggerSource ?? 'unknown',
-      is_app_mode: isAppMode.value,
-      view_mode: mode.value
+      trigger_source: this.lastTriggerSource ?? 'unknown'
     }
     this.trackEvent(TelemetryEvents.EXECUTION_START, eventContext)
     this.lastTriggerSource = undefined

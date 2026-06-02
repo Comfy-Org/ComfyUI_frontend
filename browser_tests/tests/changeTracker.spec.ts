@@ -4,6 +4,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 type ChangeTrackerDebugState = {
   changeCount: number
@@ -310,4 +311,28 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
         ]
       })
   })
+
+  test(
+    'Tracks convert to subgraph as undo step',
+    { tag: ['@vue-nodes', '@subgraph'] },
+    async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
+
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Empty Latent')
+      const width = comfyPage.vueNodes.getWidgetByName('Empty Latent', 'width')
+      const { input } = comfyPage.vueNodes.getInputNumberControls(width)
+
+      await input.fill('40')
+      await node.title.click()
+      await comfyPage.page
+        .getByTestId(TestIds.selectionToolbox.convertSubgraph)
+        .click()
+      await expect(input).toBeHidden()
+
+      await comfyPage.keyboard.undo()
+      await expect(input).toHaveValue('40')
+      await comfyPage.keyboard.undo()
+      await expect(input).toHaveValue('512')
+    }
+  )
 })
