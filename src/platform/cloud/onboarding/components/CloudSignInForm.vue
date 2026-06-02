@@ -67,7 +67,8 @@
     <Button
       v-else
       type="submit"
-      class="mt-4 h-10 font-medium text-white"
+      variant="secondary"
+      class="relative mt-4 h-10 w-full gap-4 rounded-md border border-solid border-smoke-800/10 bg-smoke-800/10 text-sm/4 font-medium text-primary-comfy-canvas shadow-inset-highlight hover:bg-sand-300/20"
       :disabled="!$form.valid"
     >
       {{ t('auth.login.loginButton') }}
@@ -117,11 +118,21 @@ const onSubmit = (event: FormSubmitEvent) => {
   border: none !important;
   box-shadow: none !important;
   background: #2d2e32 !important;
+  color: var(--color-primary-comfy-canvas) !important;
+  caret-color: var(--color-primary-comfy-canvas);
+}
+
+:deep(.p-inputtext::placeholder) {
+  color: rgb(from var(--color-primary-comfy-canvas) r g b / 0.5);
 }
 
 :deep(.p-password input) {
   border: none !important;
   box-shadow: none !important;
+}
+
+:deep(.p-password-toggle-mask-icon) {
+  cursor: pointer;
 }
 :deep(.p-checkbox-checked .p-checkbox-box) {
   background-color: #f0ff41 !important;
