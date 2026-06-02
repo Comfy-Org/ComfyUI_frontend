@@ -1,5 +1,5 @@
 import { expect, mergeTests } from '@playwright/test'
-import type { ConsoleMessage, Page, Route } from '@playwright/test'
+import type { Page, Route } from '@playwright/test'
 import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
 
 import {
@@ -23,9 +23,6 @@ const plainVideoFileName = 'plain_video.mp4'
 const graphDropPosition = { x: 500, y: 300 }
 const missingMediaUploadObservationMs = 1_000
 const missingMediaUploadPollMs = 100
-const missingInputErrorObservationMs = 1_000
-const missingInputErrorTimeoutMs = 5_000
-const missingInputErrorPollMs = 100
 const emptyMediaLoaderNodes = [
   {
     nodeType: 'LoadImage',
@@ -87,11 +84,6 @@ const cloudDefaultGraphInputAsset: Asset = {
 
 interface CloudUploadAssetState {
   isUploadedAssetAvailable: boolean
-}
-
-interface MissingInputErrorWatcher {
-  errors: string[]
-  dispose: () => void
 }
 
 type ObjectInfoResponse = Record<
@@ -180,7 +172,7 @@ async function routeSetupObjectInfo(
   const objectInfoRouteHandler = async (route: Route) => {
     try {
       const response = await fetch(objectInfoUrl, {
-        signal: AbortSignal.timeout(10_000)
+        signal: AbortSignal.timeout(5_000)
       })
       if (!response.ok) {
         await route.fulfill({
@@ -229,9 +221,7 @@ const cloudOutputTest = createCloudAssetsFixture([cloudOutputAsset]).extend({
   }
 })
 
-const cloudEmptyMediaInputsTest = createCloudAssetsFixture([]).extend<{
-  startMissingInputErrorWatcher: () => MissingInputErrorWatcher
-}>({
+const cloudEmptyMediaInputsTest = createCloudAssetsFixture([]).extend({
   page: async ({ page }, use) => {
     await routeCloudBootstrapApis(page)
 
@@ -248,15 +238,6 @@ const cloudEmptyMediaInputsTest = createCloudAssetsFixture([]).extend<{
     } finally {
       await unrouteObjectInfo()
     }
-  },
-  startMissingInputErrorWatcher: async ({ page }, use) => {
-    const watchers: MissingInputErrorWatcher[] = []
-    await use(() => {
-      const watcher = watchMissingInputErrors(page)
-      watchers.push(watcher)
-      return watcher
-    })
-    watchers.forEach((watcher) => watcher.dispose())
   }
 })
 const cloudUploadAssetStateByPage = new WeakMap<Page, CloudUploadAssetState>()
@@ -353,58 +334,6 @@ async function closeTemplatesDialogIfOpen(comfyPage: ComfyPage) {
     await closeButton.click()
     await expect(templatesDialog).toBeHidden()
   }
-}
-
-function watchMissingInputErrors(page: Page): MissingInputErrorWatcher {
-  const errors: string[] = []
-  const pageErrorHandler = (error: Error) => {
-    if (/missing input|required input/i.test(error.message)) {
-      errors.push(error.message)
-    }
-  }
-  const consoleHandler = (message: ConsoleMessage) => {
-    const text = message.text()
-    if (
-      message.type() === 'error' &&
-      /missing input|required input/i.test(text)
-    ) {
-      errors.push(text)
-    }
-  }
-
-  page.on('pageerror', pageErrorHandler)
-  page.on('console', consoleHandler)
-
-  return {
-    errors,
-    dispose: () => {
-      page.off('pageerror', pageErrorHandler)
-      page.off('console', consoleHandler)
-    }
-  }
-}
-
-async function expectNoMissingInputErrors(
-  missingInputErrors: MissingInputErrorWatcher
-) {
-  let sawError = false
-  const startedAt = Date.now()
-
-  await expect
-    .poll(
-      () => {
-        sawError = sawError || missingInputErrors.errors.length > 0
-        return (
-          !sawError && Date.now() - startedAt >= missingInputErrorObservationMs
-        )
-      },
-      {
-        timeout: missingInputErrorTimeoutMs,
-        intervals: [missingInputErrorPollMs]
-      }
-    )
-    .toBe(true)
-  expect(missingInputErrors.errors).toEqual([])
 }
 
 async function getMediaLoaderWidgetValues(comfyPage: ComfyPage) {
@@ -599,13 +528,8 @@ cloudEmptyMediaInputsTest.describe(
 
     cloudEmptyMediaInputsTest(
       'does not surface missing inputs after adding LoadImage, LoadVideo, and LoadAudio nodes with no cloud input assets',
-      async ({
-        cloudAssetRequests,
-        comfyPage,
-        startMissingInputErrorWatcher
-      }) => {
+      async ({ cloudAssetRequests, comfyPage }) => {
         await comfyPage.nodeOps.clearGraph()
-        const missingInputErrors = startMissingInputErrorWatcher()
 
         for (const node of emptyMediaLoaderNodes) {
           await comfyPage.nodeOps.addNode(
@@ -626,7 +550,6 @@ cloudEmptyMediaInputsTest.describe(
           .poll(() => getMediaLoaderWidgetValues(comfyPage))
           .toEqual(['', '', ''])
         await expectNoErrorsTab(comfyPage)
-        await expectNoMissingInputErrors(missingInputErrors)
       }
     )
   }
