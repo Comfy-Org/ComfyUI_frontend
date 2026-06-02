@@ -89,7 +89,6 @@ describe('showTopUpCreditsDialog', () => {
     // The member notice draws its own header + close button, so it must open
     // headless or Reka wraps it in duplicate chrome.
     expect(args.dialogComponentProps.headless).toBe(true)
-    expect(args.dialogComponentProps.renderer).toBe('reka')
 
     args.props.onClose()
     expect(closeDialog).toHaveBeenCalledWith({

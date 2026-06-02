@@ -93,13 +93,10 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   })
 }))
 
-function expectRekaPricingDialogProps(
+function expectPricingDialogProps(
   dialogComponentProps: Record<string, unknown>
 ) {
-  expect(dialogComponentProps).toMatchObject({
-    renderer: 'reka',
-    size: 'full'
-  })
+  expect(dialogComponentProps).toMatchObject({ size: 'full' })
   expect(dialogComponentProps).not.toHaveProperty('style')
   expect(dialogComponentProps).not.toHaveProperty('pt')
 }
@@ -164,7 +161,7 @@ describe('useSubscriptionDialog', () => {
       showPricingTable()
 
       const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
-      expectRekaPricingDialogProps(dialogComponentProps)
+      expectPricingDialogProps(dialogComponentProps)
     })
 
     it('defaults to the personal tab in a personal workspace', () => {
@@ -289,7 +286,7 @@ describe('useSubscriptionDialog', () => {
       expect(props).toHaveProperty('onChooseTeam')
       expect(props).not.toHaveProperty('initialCheckout')
       const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
-      expectRekaPricingDialogProps(dialogComponentProps)
+      expectPricingDialogProps(dialogComponentProps)
       expect(mockTrackSubscription).toHaveBeenCalledWith(
         'modal_opened',
         expect.objectContaining({ reason: 'deep_link' })
@@ -339,7 +336,7 @@ describe('useSubscriptionDialog', () => {
       expect(dialogComponentProps).toMatchObject({
         modal: false
       })
-      expectRekaPricingDialogProps(dialogComponentProps)
+      expectPricingDialogProps(dialogComponentProps)
     })
 
     it('defaults an unsubscribed team workspace to the team tab', () => {

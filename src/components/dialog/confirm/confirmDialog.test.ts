@@ -1,8 +1,7 @@
 /**
- * Dialog migration regression net: the showConfirmDialog helper must open
- * its dialog through the Reka renderer with zeroed section padding (the
- * Confirm* sections carry their own). Catches accidental reverts of the
- * Phase 6 renderer flip.
+ * The showConfirmDialog helper must open its dialog with zeroed section
+ * padding (the Confirm* sections carry their own) and forward the caller's
+ * header/body/footer props to the Confirm* components.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -17,16 +16,15 @@ import ConfirmFooter from '@/components/dialog/confirm/ConfirmFooter.vue'
 import ConfirmHeader from '@/components/dialog/confirm/ConfirmHeader.vue'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 
-describe('showConfirmDialog Reka renderer opt-in', () => {
+describe('showConfirmDialog configuration', () => {
   beforeEach(() => {
     showDialog.mockReset()
   })
 
-  it("sets renderer 'reka' with size 'md' and zeroed section padding", () => {
+  it("sets size 'md' and zeroed section padding", () => {
     showConfirmDialog()
 
     const [args] = showDialog.mock.calls[0]
-    expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('md')
     expect(args.dialogComponentProps.headerClass).toBe('p-0')
     expect(args.dialogComponentProps.bodyClass).toBe('p-0')

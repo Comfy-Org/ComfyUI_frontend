@@ -9,7 +9,6 @@ export const useQueueClearHistoryDialog = () => {
       key: 'queue-clear-history',
       component: QueueClearHistoryDialog,
       dialogComponentProps: {
-        renderer: 'reka',
         headless: true,
         closable: false,
         closeOnEscape: true,

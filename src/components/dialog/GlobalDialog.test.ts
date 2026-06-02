@@ -66,7 +66,7 @@ function mountDialog() {
   })
 }
 
-describe('GlobalDialog renderer branching', () => {
+describe('GlobalDialog rendering', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
@@ -75,13 +75,13 @@ describe('GlobalDialog renderer branching', () => {
     cleanup()
   })
 
-  it('renders the Reka branch when renderer is omitted (default)', async () => {
+  it('renders a dialog through the Reka primitives (no PrimeVue DOM)', async () => {
     mountDialog()
     const store = useDialogStore()
 
     store.showDialog({
-      key: 'renderer-default',
-      title: 'Default renderer dialog',
+      key: 'reka-dialog',
+      title: 'Reka dialog',
       component: Body
     })
 
@@ -89,56 +89,9 @@ describe('GlobalDialog renderer branching', () => {
     expect(dialogs.length).toBeGreaterThan(0)
     expect(dialogs.some((el) => el.classList.contains('p-dialog'))).toBe(false)
   })
-
-  it("renders the legacy PrimeVue branch when renderer is 'primevue'", async () => {
-    mountDialog()
-    const store = useDialogStore()
-
-    store.showDialog({
-      key: 'primevue-escape-hatch',
-      title: 'PrimeVue dialog',
-      component: Body,
-      dialogComponentProps: { renderer: 'primevue' }
-    })
-
-    const dialogs = await screen.findAllByRole('dialog')
-    expect(dialogs.some((el) => el.classList.contains('p-dialog'))).toBe(true)
-  })
-
-  it('renders the Reka branch when renderer is reka', async () => {
-    mountDialog()
-    const store = useDialogStore()
-
-    store.showDialog({
-      key: 'reka-opt-in',
-      title: 'Reka dialog',
-      component: Body,
-      dialogComponentProps: { renderer: 'reka' }
-    })
-
-    const dialogs = await screen.findAllByRole('dialog')
-    expect(dialogs.length).toBeGreaterThan(0)
-    expect(dialogs.some((el) => el.classList.contains('p-dialog'))).toBe(false)
-  })
-
-  it('preserves the renderer flag on the dialog stack item', async () => {
-    mountDialog()
-    const store = useDialogStore()
-
-    store.showDialog({
-      key: 'reka-flag-check',
-      title: 'Reka',
-      component: Body,
-      dialogComponentProps: { renderer: 'reka' }
-    })
-
-    await screen.findByRole('dialog')
-    const item = store.dialogStack.find((d) => d.key === 'reka-flag-check')
-    expect(item?.dialogComponentProps.renderer).toBe('reka')
-  })
 })
 
-describe('GlobalDialog Reka parity with PrimeVue', () => {
+describe('GlobalDialog Reka behavior', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
@@ -155,7 +108,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
       key: 'reka-not-closable',
       title: 'No close',
       component: Body,
-      dialogComponentProps: { renderer: 'reka', closable: false }
+      dialogComponentProps: { closable: false }
     })
 
     await screen.findByRole('dialog')
@@ -170,7 +123,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
       key: 'reka-closable',
       title: 'Closable',
       component: Body,
-      dialogComponentProps: { renderer: 'reka' }
+      dialogComponentProps: {}
     })
 
     await screen.findByRole('dialog')
@@ -185,7 +138,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
       key: 'reka-headless',
       title: 'Hidden title',
       component: Body,
-      dialogComponentProps: { renderer: 'reka', headless: true }
+      dialogComponentProps: { headless: true }
     })
 
     await screen.findByRole('dialog')
@@ -200,7 +153,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
       key: 'reka-titled',
       title: 'Visible title',
       component: Body,
-      dialogComponentProps: { renderer: 'reka' }
+      dialogComponentProps: {}
     })
 
     await screen.findByRole('dialog')
@@ -220,7 +173,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
         creditsUsed: 645,
         currentLimit: 3000
       },
-      dialogComponentProps: { renderer: 'reka', headless: true }
+      dialogComponentProps: { headless: true }
     })
 
     expect(
@@ -239,7 +192,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
       key: 'reka-esc-default',
       title: 'Esc closes',
       component: Body,
-      dialogComponentProps: { renderer: 'reka' }
+      dialogComponentProps: {}
     })
 
     await screen.findByRole('dialog')
@@ -257,7 +210,7 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
       key: 'reka-esc-blocked',
       title: 'Esc blocked',
       component: Body,
-      dialogComponentProps: { renderer: 'reka', closable: false }
+      dialogComponentProps: { closable: false }
     })
 
     await screen.findByRole('dialog')
@@ -275,7 +228,6 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
       title: 'Section classes',
       component: Body,
       dialogComponentProps: {
-        renderer: 'reka',
         headerClass: 'p-2',
         bodyClass: 'p-0'
       }
@@ -305,7 +257,6 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
       title: 'Maximize wins',
       component: Body,
       dialogComponentProps: {
-        renderer: 'reka',
         maximizable: true,
         contentClass:
           'w-[80vw] max-w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]'
@@ -345,8 +296,7 @@ describe('GlobalDialog Reka overlay scrim', () => {
     store.showDialog({
       key: 'reka-modal-scrim',
       title: 'Modal',
-      component: Body,
-      dialogComponentProps: { renderer: 'reka' }
+      component: Body
     })
 
     await screen.findByRole('dialog')
@@ -363,7 +313,7 @@ describe('GlobalDialog Reka overlay scrim', () => {
       key: 'reka-non-modal-scrim',
       title: 'Non-modal',
       component: Body,
-      dialogComponentProps: { renderer: 'reka', modal: false }
+      dialogComponentProps: { modal: false }
     })
 
     await screen.findByRole('dialog')
@@ -392,7 +342,7 @@ describe('GlobalDialog Reka overlay scrim', () => {
       key: 'reka-scrim-dismiss',
       title: 'Non-modal',
       component: Body,
-      dialogComponentProps: { renderer: 'reka', modal: false }
+      dialogComponentProps: { modal: false }
     })
 
     await screen.findByRole('dialog')
