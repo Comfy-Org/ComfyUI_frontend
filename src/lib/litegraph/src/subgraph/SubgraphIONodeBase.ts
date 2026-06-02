@@ -265,7 +265,7 @@ export abstract class SubgraphIONodeBase<
         break
     }
 
-    this.subgraph.setDirtyCanvas(true)
+    this.subgraph.setDirtyCanvas(true, true)
   }
 
   /**

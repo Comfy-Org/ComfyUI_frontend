@@ -43,7 +43,7 @@ const DEFAULT_UPLOAD_URL_RESPONSE: HubAssetUploadUrlResponse = {
   token: 'mock-upload-token'
 }
 
-export class PublishApiHelper {
+class PublishApiHelper {
   private routeHandlers: Array<{
     pattern: string
     handler: (route: Route) => Promise<void>

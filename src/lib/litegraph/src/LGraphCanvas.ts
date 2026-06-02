@@ -1,6 +1,7 @@
 import { toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
 
+import { isMiddleButtonEvent } from '@/base/pointerUtils'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
@@ -84,6 +85,7 @@ import {
 } from './measure'
 import { NodeInputSlot } from './node/NodeInputSlot'
 import type { Subgraph } from './subgraph/Subgraph'
+import { topologicalSortSubgraphs } from './subgraph/subgraphDeduplication'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphNode } from './subgraph/SubgraphNode'
@@ -111,7 +113,7 @@ import type { IBaseWidget, TWidgetValue } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getAllNestedItems } from './utils/collections'
 import { resolveConnectingLinkColor } from './utils/linkColors'
-import { createUuidv4 } from './utils/uuid'
+import { createUuidv4 } from '@/utils/uuid'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
 
@@ -1986,7 +1988,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   /** Prevents default for middle-click auxclick only. */
   _preventMiddleAuxClick(e: MouseEvent): void {
-    if (e.button === 1) e.preventDefault()
+    if (isMiddleButtonEvent(e)) e.preventDefault()
   }
 
   /** Captures an event and prevents default - returns true. */
@@ -2312,7 +2314,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // left button mouse / single finger
     if (e.button === 0 && !pointer.isDouble) {
       this._processPrimaryButton(e, node)
-    } else if (e.button === 1) {
+    } else if (isMiddleButtonEvent(e)) {
       this._processMiddleButton(e, node)
     } else if (
       (e.button === 2 || pointer.isDouble) &&
@@ -3593,7 +3595,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             this._highlight_pos = reroute.pos
           }
 
-          return (underPointer |= CanvasItem.RerouteSlot)
+          return underPointer | CanvasItem.RerouteSlot
         }
       }
     }
@@ -3863,7 +3865,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           this
         )
       }
-    } else if (e.button === 1) {
+    } else if (isMiddleButtonEvent(e)) {
       // middle button
       this.dirty_canvas = true
       this.dragging_canvas = false
@@ -4191,7 +4193,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const subgraph = graph.createSubgraph(info)
       results.subgraphs.set(info.id, subgraph)
     }
-    for (const info of parsed.subgraphs)
+    const configureOrder = topologicalSortSubgraphs(parsed.subgraphs)
+    for (const info of configureOrder)
       results.subgraphs.get(info.id)?.configure(info)
 
     // Groups
@@ -4217,6 +4220,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       graph.add(node)
       node.configure(info)
+
+      if (node instanceof SubgraphNode) {
+        if (
+          node.properties?.proxyWidgets !== undefined &&
+          LiteGraph.LGraph.proxyWidgetMigrationFlush
+        ) {
+          LiteGraph.LGraph.proxyWidgetMigrationFlush(node, info)
+        }
+        LiteGraph.LGraph.autoExposePreviewNodes?.(node)
+      }
 
       created.push(node)
     }
@@ -5440,7 +5453,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ctx.fillText('No graph selected', 5, lineHeight * line++)
     }
     if (this.info_text) {
-      ctx.fillText(this.info_text, 5, lineHeight * line++)
+      ctx.fillText(this.info_text, 5, lineHeight * line)
     }
     ctx.restore()
   }
@@ -5762,7 +5775,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // @ts-expect-error TODO: Better value typing
     if (this.onDrawLinkTooltip?.(ctx, link, this) == true) return
 
-    let text: string | null = null
+    let text: string | null
 
     if (typeof data === 'number') text = data.toFixed(2)
     else if (typeof data === 'string') text = `"${data}"`
@@ -6722,7 +6735,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     let slotX = isFrom ? opts.slotFrom : opts.slotTo
 
-    let iSlotConn: number | false = false
+    let iSlotConn: number | false
     if (nodeX instanceof SubgraphIONodeBase) {
       if (typeof slotX !== 'object' || !slotX) {
         console.warn('Cant get slot information', slotX)
@@ -7515,7 +7528,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
           // join node after inserting
           if (options.node_from) {
-            let iS: number | false = false
+            let iS: number | false
             switch (typeof options.slot_from) {
               case 'string':
                 iS = options.node_from.findOutputSlot(options.slot_from)
@@ -7559,7 +7572,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             }
           }
           if (options.node_to) {
-            let iS: number | false = false
+            let iS: number | false
             switch (typeof options.slot_from) {
               case 'string':
                 iS = options.node_to.findInputSlot(options.slot_from)
@@ -7816,7 +7829,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const info = node.getPropertyInfo(property)
     const { type } = info
 
-    let input_html = ''
+    let input_html: string
 
     if (
       type == 'string' ||
@@ -9045,12 +9058,35 @@ function remapProxyWidgets(
   }
 }
 
-/**
- * Remaps pasted subgraph interior node IDs that would collide with existing
- * node IDs in the root graph. Also patches subgraph link node IDs and
- * SubgraphNode `properties.proxyWidgets` references so promoted widget
- * associations stay aligned with remapped interior IDs.
- */
+function hasStringSourceNodeId(
+  value: unknown
+): value is { sourceNodeId: string } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'sourceNodeId' in value &&
+    typeof value.sourceNodeId === 'string'
+  )
+}
+
+function remapPreviewExposures(
+  info: ISerialisedNode,
+  remappedIds: Map<NodeId, NodeId> | undefined
+) {
+  if (!remappedIds || remappedIds.size === 0) return
+
+  const previewExposures = info.properties?.previewExposures
+  if (!Array.isArray(previewExposures)) return
+
+  for (const entry of previewExposures) {
+    if (!hasStringSourceNodeId(entry) || entry.sourceNodeId === '-1') continue
+
+    const remappedNodeId = remapNodeId(entry.sourceNodeId, remappedIds)
+    if (remappedNodeId !== undefined)
+      entry.sourceNodeId = String(remappedNodeId)
+  }
+}
+
 export function remapClipboardSubgraphNodeIds(
   parsed: ClipboardItems,
   rootGraph: LGraph
@@ -9104,6 +9140,8 @@ export function remapClipboardSubgraphNodeIds(
 
   for (const nodeInfo of allNodeInfo) {
     if (typeof nodeInfo.type !== 'string') continue
-    remapProxyWidgets(nodeInfo, subgraphNodeIdMap.get(nodeInfo.type))
+    const remappedIds = subgraphNodeIdMap.get(nodeInfo.type)
+    remapProxyWidgets(nodeInfo, remappedIds)
+    remapPreviewExposures(nodeInfo, remappedIds)
   }
 }

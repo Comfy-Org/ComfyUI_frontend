@@ -8,10 +8,7 @@
 
 @plugin 'tailwindcss-primeui';
 
-@plugin "@iconify/tailwind4" {
-  scale: 1.2;
-  icon-sets: from-folder(comfy, './packages/design-system/src/icons');
-}
+@plugin "./iconifyDynamicPlugin.js";
 
 @plugin "./lucideStrokePlugin.js";
 
@@ -1891,4 +1888,18 @@ audio.comfy-audio.empty-audio-widget {
     300% 14px,
     300% 14px;
   background-attachment: local, local, scroll, scroll;
+}
+
+/*
+  PrimeVue overlays teleport to body. When a Reka modal dialog is open it sets
+  body { pointer-events: none } via DismissableLayer, which propagates to the
+  body-portaled overlays and makes them unclickable. PrimeVue's own Dialog
+  sets pointer-events inline, but Select / ColorPicker / Popover / Autocomplete
+  overlays do not, so they need to opt in here.
+*/
+.p-select-overlay,
+.p-colorpicker-panel,
+.p-popover,
+.p-autocomplete-overlay {
+  pointer-events: auto;
 }

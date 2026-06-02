@@ -19,7 +19,7 @@ export const sharedWorkflowImportScenario = {
   inputFileName: 'shared_imported_image.png'
 } as const
 
-export type SharedWorkflowRequestEvent =
+type SharedWorkflowRequestEvent =
   | 'import'
   | 'input-assets-including-public-before-import'
   | 'input-assets-including-public-after-import'

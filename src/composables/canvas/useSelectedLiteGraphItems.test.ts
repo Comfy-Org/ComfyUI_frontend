@@ -258,6 +258,34 @@ describe('useSelectedLiteGraphItems', () => {
       expect(node.mode).toBe(LGraphEventMode.ALWAYS)
     })
 
+    it('areAllSelectedNodesInMode returns true when every selected node matches', () => {
+      const { areAllSelectedNodesInMode } = useSelectedLiteGraphItems()
+      const node1 = { id: 1, mode: LGraphEventMode.BYPASS } as LGraphNode
+      const node2 = { id: 2, mode: LGraphEventMode.BYPASS } as LGraphNode
+
+      app.canvas.selected_nodes = { '0': node1, '1': node2 }
+
+      expect(areAllSelectedNodesInMode(LGraphEventMode.BYPASS)).toBe(true)
+    })
+
+    it('areAllSelectedNodesInMode returns false on mixed selection', () => {
+      const { areAllSelectedNodesInMode } = useSelectedLiteGraphItems()
+      const bypassed = { id: 1, mode: LGraphEventMode.BYPASS } as LGraphNode
+      const active = { id: 2, mode: LGraphEventMode.ALWAYS } as LGraphNode
+
+      app.canvas.selected_nodes = { '0': bypassed, '1': active }
+
+      expect(areAllSelectedNodesInMode(LGraphEventMode.BYPASS)).toBe(false)
+    })
+
+    it('areAllSelectedNodesInMode returns false for empty selection', () => {
+      const { areAllSelectedNodesInMode } = useSelectedLiteGraphItems()
+
+      app.canvas.selected_nodes = {}
+
+      expect(areAllSelectedNodesInMode(LGraphEventMode.BYPASS)).toBe(false)
+    })
+
     it('getSelectedNodes should include nodes from subgraphs', () => {
       const { getSelectedNodes } = useSelectedLiteGraphItems()
       const subNode1 = { id: 11, mode: LGraphEventMode.ALWAYS } as LGraphNode

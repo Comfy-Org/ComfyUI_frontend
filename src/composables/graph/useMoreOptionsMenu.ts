@@ -211,7 +211,7 @@ export function useMoreOptionsMenu() {
     }
     if (!groupContext) {
       const pin = getPinOption(states, bump)
-      const bypass = getBypassOption(states, bump)
+      const bypass = getBypassOption(bump)
       options.push(pin)
       options.push(bypass)
     }

@@ -2,23 +2,14 @@ import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import type { UUID } from '@/utils/uuid'
 import type {
   IBaseWidget,
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
 
-/**
- * Widget state is keyed by `nodeId:widgetName` without graph context.
- * This is intentional: nodes viewed at different subgraph depths share
- * the same widget state, enabling synchronized values across the hierarchy.
- */
 type WidgetKey = `${NodeId}:${string}`
 
-/**
- * Strips graph/subgraph prefixes from a scoped node ID to get the bare node ID.
- * e.g., "graph1:subgraph2:42" → "42"
- */
 export function stripGraphPrefix(scopedId: NodeId | string): NodeId {
   return String(scopedId).replace(/^(.*:)+/, '') as NodeId
 }
@@ -50,6 +41,11 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return `${nodeId}:${widgetName}`
   }
 
+  /**
+   * @deprecated Use `ensureWidgetState(widget.entityId, init)` from
+   * `src/world/widgetValueIO.ts` — the branded `WidgetEntityId` prevents
+   * producer/consumer drift that loose triples allow.
+   */
   function registerWidget<TValue = unknown>(
     graphId: UUID,
     state: WidgetState<TValue>
@@ -68,12 +64,30 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       .map(([, state]) => state)
   }
 
+  /**
+   * @deprecated Use `getWidgetState(widget.entityId)` or
+   * `readWidgetValue(widget.entityId)` from `src/world/widgetValueIO.ts` —
+   * the branded `WidgetEntityId` prevents producer/consumer drift that loose
+   * triples allow.
+   */
   function getWidget(
     graphId: UUID,
     nodeId: NodeId,
     widgetName: string
   ): WidgetState | undefined {
     return getWidgetStateMap(graphId).get(makeKey(nodeId, widgetName))
+  }
+
+  function setValue(
+    graphId: UUID,
+    nodeId: NodeId,
+    widgetName: string,
+    value: WidgetState['value']
+  ): boolean {
+    const state = getWidgetStateMap(graphId).get(makeKey(nodeId, widgetName))
+    if (!state) return false
+    state.value = value
+    return true
   }
 
   function clearGraph(graphId: UUID): void {
@@ -83,6 +97,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   return {
     registerWidget,
     getWidget,
+    setValue,
     getNodeWidgets,
     clearGraph
   }

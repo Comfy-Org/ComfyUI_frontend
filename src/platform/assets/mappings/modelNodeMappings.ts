@@ -236,5 +236,8 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   ['optical_flow', 'OpticalFlowLoader', 'model_name'],
 
   // ---- WanVideo (ComfyUI-WanVideoWrapper) ----
-  ['loras', 'WanVideoLoraSelect', 'lora']
+  ['loras', 'WanVideoLoraSelect', 'lora'],
+
+  // ---- LTX-Video IC-LoRA (ComfyUI-LTXVideo) ----
+  ['loras', 'LTXICLoRALoaderModelOnly', 'lora_name']
 ] as const satisfies ReadonlyArray<readonly [string, string, string]>
