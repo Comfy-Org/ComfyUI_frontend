@@ -6,6 +6,9 @@ import {
 } from './errorMessageResolver'
 import type { NodeValidationError } from './types'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
+import type { MissingMediaGroup } from '@/platform/missingMedia/types'
+import type { MissingModelGroup } from '@/platform/missingModel/types'
+import type { MissingNodeType } from '@/types/comfy'
 import { i18n } from '@/i18n'
 
 function nodeValidationError(
@@ -1307,17 +1310,338 @@ describe('errorMessageResolver', () => {
   })
 
   it('resolves missing error group display copy', () => {
+    const missingNodeTypes: MissingNodeType[] = [
+      {
+        type: 'FooNode',
+        nodeId: '7',
+        cnrId: 'foo-pack',
+        isReplaceable: false
+      }
+    ]
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_node',
+        nodeTypes: missingNodeTypes,
+        count: 1,
+        isCloud: false
+      })
+    ).toEqual({
+      catalogId: 'missing_node',
+      displayTitle: 'Missing Node Packs (1)',
+      displayMessage: 'Install missing packs to use this workflow.',
+      displayDetails: 'FooNode is missing. Referenced by 1 node.',
+      displayItemLabel: 'FooNode',
+      toastTitle: 'Missing node: FooNode',
+      toastMessage:
+        "This workflow uses a custom node that isn't installed. Install it from the registry or replace the node."
+    })
+
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_node',
+        nodeTypes: missingNodeTypes,
+        count: 1,
+        isCloud: true
+      }).displayMessage
+    ).toBe(
+      "Required custom nodes aren't supported on Cloud. Replace them with supported nodes."
+    )
+
+    const swapNodeTypes: MissingNodeType[] = [
+      {
+        type: 'OldNode',
+        nodeId: '8',
+        isReplaceable: true,
+        replacement: {
+          old_node_id: 'OldNode',
+          new_node_id: 'NewNode',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        }
+      }
+    ]
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'swap_nodes',
+        nodeTypes: swapNodeTypes,
+        count: 1,
+        isCloud: false
+      })
+    ).toEqual({
+      catalogId: 'swap_nodes',
+      displayTitle: 'Swap Nodes (1)',
+      displayMessage: 'Some nodes can be replaced with alternatives',
+      displayDetails: 'OldNode can be replaced with NewNode.',
+      displayItemLabel: 'OldNode',
+      toastTitle: 'OldNode can be replaced',
+      toastMessage: 'Replace it with NewNode from the error panel.'
+    })
+
+    const groups: MissingModelGroup[] = [
+      {
+        directory: 'checkpoints',
+        isAssetSupported: true,
+        models: [
+          {
+            name: 'sdxl.safetensors',
+            representative: {
+              name: 'sdxl.safetensors',
+              nodeId: '1',
+              nodeType: 'CheckpointLoaderSimple',
+              widgetName: 'ckpt_name',
+              directory: 'checkpoints',
+              isAssetSupported: true,
+              isMissing: true
+            },
+            referencingNodes: [{ nodeId: '1', widgetName: 'ckpt_name' }]
+          }
+        ]
+      }
+    ]
+
     expect(
       resolveMissingErrorMessage({
         kind: 'missing_model',
-        groups: [],
+        groups,
         count: 1,
         isCloud: false
       })
     ).toEqual({
       catalogId: 'missing_model',
       displayTitle: 'Missing Models (1)',
-      displayMessage: '1 required model is missing'
+      displayMessage: 'Download a model, or open the node to replace it.',
+      displayDetails:
+        'ComfyUI needs sdxl.safetensors in checkpoints. Referenced by 1 node.',
+      displayItemLabel: 'sdxl.safetensors',
+      toastTitle: 'sdxl.safetensors is missing',
+      toastMessage: 'Checkpoint Loader Simple is missing a required model file.'
+    })
+
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_model',
+        groups,
+        count: 1,
+        isCloud: true
+      })
+    ).toEqual({
+      catalogId: 'missing_model',
+      displayTitle: 'Missing Models (1)',
+      displayMessage: 'Import a model, or open the node to replace it.',
+      displayDetails:
+        'ComfyUI needs sdxl.safetensors in checkpoints. Referenced by 1 node.',
+      displayItemLabel: 'sdxl.safetensors',
+      toastTitle: "sdxl.safetensors isn't available on Cloud",
+      toastMessage: "This model isn't supported. Choose a different one."
+    })
+  })
+
+  it('resolves missing media group detail and item label copy', () => {
+    const groups: MissingMediaGroup[] = [
+      {
+        mediaType: 'image',
+        items: [
+          {
+            name: 'portrait.png',
+            mediaType: 'image',
+            representative: {
+              nodeId: '4',
+              nodeType: 'LoadImage',
+              widgetName: 'image',
+              mediaType: 'image',
+              name: 'portrait.png',
+              isMissing: true
+            },
+            referencingNodes: [{ nodeId: '4', widgetName: 'image' }]
+          }
+        ]
+      }
+    ]
+
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_media',
+        groups,
+        count: 1,
+        mediaTypes: ['image'],
+        isCloud: false
+      })
+    ).toEqual({
+      catalogId: 'missing_media',
+      displayTitle: 'Missing Inputs (1)',
+      displayMessage: 'A required media input has no file selected.',
+      displayDetails:
+        'Load Image node needs a selected image. Referenced by 1 node.',
+      displayItemLabel: 'portrait.png',
+      toastTitle: 'Media input missing',
+      toastMessage: 'Load Image is missing a required media file.'
+    })
+  })
+
+  it.for([
+    [
+      'image',
+      'LoadImage',
+      'image',
+      'portrait.png',
+      'Media input missing',
+      'Load Image is missing a required media file.'
+    ],
+    [
+      'video',
+      'LoadVideo',
+      'file',
+      'clip.mp4',
+      'Media input missing',
+      'Load Video is missing a required media file.'
+    ],
+    [
+      'audio',
+      'LoadAudio',
+      'audio',
+      'voice.wav',
+      'Media input missing',
+      'Load Audio is missing a required media file.'
+    ]
+  ] as const)(
+    'resolves missing %s toast copy from media type and node type',
+    ([
+      mediaType,
+      nodeType,
+      widgetName,
+      mediaName,
+      toastTitle,
+      toastMessage
+    ]) => {
+      const groups: MissingMediaGroup[] = [
+        {
+          mediaType,
+          items: [
+            {
+              name: mediaName,
+              mediaType,
+              representative: {
+                nodeId: '4',
+                nodeType,
+                widgetName,
+                mediaType,
+                name: mediaName,
+                isMissing: true
+              },
+              referencingNodes: [{ nodeId: '4', widgetName }]
+            }
+          ]
+        }
+      ]
+
+      expect(
+        resolveMissingErrorMessage({
+          kind: 'missing_media',
+          groups,
+          count: 1,
+          mediaTypes: [mediaType],
+          isCloud: false
+        })
+      ).toMatchObject({
+        toastTitle,
+        toastMessage
+      })
+    }
+  )
+
+  it('summarizes multiple missing model and media items', () => {
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_model',
+        groups: [
+          {
+            directory: 'checkpoints',
+            isAssetSupported: true,
+            models: [
+              {
+                name: 'a.safetensors',
+                representative: {
+                  name: 'a.safetensors',
+                  nodeType: 'CheckpointLoaderSimple',
+                  widgetName: 'ckpt_name',
+                  directory: 'checkpoints',
+                  isAssetSupported: true,
+                  isMissing: true
+                },
+                referencingNodes: []
+              },
+              {
+                name: 'b.safetensors',
+                representative: {
+                  name: 'b.safetensors',
+                  nodeType: 'CheckpointLoaderSimple',
+                  widgetName: 'ckpt_name',
+                  directory: 'checkpoints',
+                  isAssetSupported: true,
+                  isMissing: true
+                },
+                referencingNodes: []
+              }
+            ]
+          }
+        ],
+        count: 2,
+        isCloud: false
+      })
+    ).toMatchObject({
+      displayDetails: 'Required models: a.safetensors, b.safetensors.',
+      displayItemLabel: '2 missing models',
+      toastTitle: 'Missing models',
+      toastMessage: '2 model files are missing.'
+    })
+
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_media',
+        groups: [
+          {
+            mediaType: 'image',
+            items: [
+              {
+                name: 'a.png',
+                mediaType: 'image',
+                representative: {
+                  nodeId: '1',
+                  nodeType: 'LoadImage',
+                  widgetName: 'image',
+                  mediaType: 'image',
+                  name: 'a.png',
+                  isMissing: true
+                },
+                referencingNodes: [{ nodeId: '1', widgetName: 'image' }]
+              },
+              {
+                name: 'b.png',
+                mediaType: 'image',
+                representative: {
+                  nodeId: '2',
+                  nodeType: 'LoadImage',
+                  widgetName: 'image',
+                  mediaType: 'image',
+                  name: 'b.png',
+                  isMissing: true
+                },
+                referencingNodes: [{ nodeId: '2', widgetName: 'image' }]
+              }
+            ]
+          }
+        ],
+        count: 2,
+        mediaTypes: ['image'],
+        isCloud: false
+      })
+    ).toMatchObject({
+      displayDetails: 'Missing media inputs are referenced by 2 nodes.',
+      displayItemLabel: '2 missing inputs',
+      toastTitle: 'Missing media inputs',
+      toastMessage:
+        'Please select the missing media inputs before running this workflow.'
     })
   })
 })

@@ -154,6 +154,17 @@
             </div>
           </template>
 
+          <div
+            v-if="group.type !== 'execution' && group.displayMessage"
+            class="px-4 pt-1 pb-3"
+          >
+            <p
+              class="m-0 text-sm/relaxed wrap-break-word whitespace-pre-wrap text-muted-foreground"
+            >
+              {{ group.displayMessage }}
+            </p>
+          </div>
+
           <!-- Missing Node Packs -->
           <MissingNodeCard
             v-if="group.type === 'missing_node'"

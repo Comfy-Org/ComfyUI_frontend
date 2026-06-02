@@ -302,7 +302,27 @@ describe('useErrorGroups', () => {
       expect(missingGroup?.groupKey).toBe('missing_node')
       expect(missingGroup?.displayTitle).toBe('Missing Node Packs (1)')
       expect(missingGroup?.displayMessage).toBe(
-        'Some nodes are missing and need to be installed'
+        'Install missing packs to use this workflow.'
+      )
+      expect(missingGroup?.displayDetails).toBe(
+        'NodeA is missing. Referenced by 1 node.'
+      )
+    })
+
+    it('uses Cloud copy for missing_node group in Cloud', async () => {
+      mockIsCloud.value = true
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
+        makeMissingNodeType('NodeA', { cnrId: 'pack-1' })
+      ])
+      await nextTick()
+
+      const missingGroup = groups.allErrorGroups.value.find(
+        (g) => g.type === 'missing_node'
+      )
+      expect(missingGroup?.displayMessage).toBe(
+        "Required custom nodes aren't supported on Cloud. Replace them with supported nodes."
       )
     })
 
@@ -321,6 +341,9 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'swap_nodes'
       )
       expect(swapGroup).toBeDefined()
+      expect(swapGroup?.displayDetails).toBe(
+        'OldNode can be replaced with NewNode.'
+      )
     })
 
     it('includes both swap_nodes and missing_node when both exist', async () => {

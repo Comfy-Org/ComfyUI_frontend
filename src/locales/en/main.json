@@ -3533,7 +3533,6 @@
     "skipForNow": "Skip for Now",
     "installMissingNodes": "Install Missing Nodes",
     "replaceWarning": "This will permanently modify the workflow. Save a copy first if unsure.",
-    "swapNodesGuide": "The following nodes can be automatically replaced with compatible alternatives.",
     "willBeReplacedBy": "This node will be replaced by:",
     "replaceNode": "Replace Node",
     "replaceAll": "Replace All",
@@ -3615,8 +3614,8 @@
     "missingNodePacks": {
       "title": "Missing Node Packs",
       "unsupportedTitle": "Unsupported Node Packs",
-      "cloudMessage": "This workflow requires custom nodes not yet available on Comfy Cloud.",
-      "ossMessage": "This workflow uses custom nodes you haven't installed yet.",
+      "cloudMessage": "Required custom nodes aren't supported on Cloud. Replace them with supported nodes.",
+      "ossMessage": "Install missing packs to use this workflow.",
       "ossManagerDisabledHint": "To install missing nodes, first run {pipCmd} in your Python environment to install Node Manager, then restart ComfyUI with the {flag} flag.",
       "installAll": "Install All",
       "installNodePack": "Install node pack",
@@ -3693,6 +3692,77 @@
     "fallbacks": {
       "nodeName": "This node",
       "inputName": "unknown input"
+    },
+    "missingErrors": {
+      "listWithMore": "{itemNames}, and {remainingCount} more",
+      "referenceOne": "1 node",
+      "referenceMany": "{count} nodes",
+      "referenceWorkflow": "workflow metadata",
+      "nodeLabel": "{nodeName} node",
+      "missing_node": {
+        "displayMessageCloud": "Required custom nodes aren't supported on Cloud. Replace them with supported nodes.",
+        "displayMessageOss": "Install missing packs to use this workflow.",
+        "detailsSingle": "{nodeType} is missing. Referenced by {referenceLabel}.",
+        "detailsMany": "Missing nodes: {itemNames}.",
+        "detailsUnavailable": "Missing node details are unavailable.",
+        "itemLabelOne": "1 missing node",
+        "itemLabelMany": "{count} missing nodes",
+        "toastTitleOneCloud": "{nodeType} isn't available on Cloud",
+        "toastTitleOneOss": "Missing node: {nodeType}",
+        "toastTitleManyCloud": "Nodes aren't available on Cloud",
+        "toastTitleManyOss": "Missing nodes",
+        "toastMessageOneCloud": "This node isn't supported on Cloud.",
+        "toastMessageOneOss": "This workflow uses a custom node that isn't installed. Install it from the registry or replace the node.",
+        "toastMessageManyCloud": "This workflow uses nodes that aren't supported on Cloud.",
+        "toastMessageManyOss": "{count} nodes require missing node packs."
+      },
+      "swap_nodes": {
+        "detailsSingle": "{nodeType} can be replaced with {replacementNodeType}.",
+        "detailsSingleWithoutReplacement": "{nodeType} can be replaced with a compatible alternative.",
+        "detailsMany": "Replaceable nodes: {itemNames}.",
+        "detailsUnavailable": "Swap node details are unavailable.",
+        "itemLabelOne": "1 replaceable node",
+        "itemLabelMany": "{count} replaceable nodes",
+        "toastTitleOne": "{nodeType} can be replaced",
+        "toastTitleMany": "Nodes can be replaced",
+        "toastMessageOne": "Replace it with {replacementNodeType} from the error panel.",
+        "toastMessageMany": "{count} node types can be replaced with compatible alternatives."
+      },
+      "mediaFileTypes": {
+        "image": "image",
+        "video": "video",
+        "audio": "audio file"
+      },
+      "missing_model": {
+        "displayMessageCloud": "Import a model, or open the node to replace it.",
+        "displayMessageOss": "Download a model, or open the node to replace it.",
+        "detailsSingle": "ComfyUI needs {modelName}. Referenced by {referenceLabel}.",
+        "detailsSingleWithCategory": "ComfyUI needs {modelName} in {directory}. Referenced by {referenceLabel}.",
+        "detailsMany": "Required models: {itemNames}.",
+        "detailsUnavailable": "Missing model details are unavailable.",
+        "itemLabelOne": "1 missing model",
+        "itemLabelMany": "{count} missing models",
+        "toastTitleOneCloud": "{modelName} isn't available on Cloud",
+        "toastTitleOneOss": "{modelName} is missing",
+        "toastTitleMany": "Missing models",
+        "toastTitleManyCloud": "Models aren't available on Cloud",
+        "toastMessageOneCloud": "This model isn't supported. Choose a different one.",
+        "toastMessageOneOss": "{nodeName} is missing a required model file.",
+        "toastMessageManyCloud": "Some models aren't supported. Choose different ones.",
+        "toastMessageManyOss": "{count} model files are missing."
+      },
+      "missing_media": {
+        "displayMessage": "A required media input has no file selected.",
+        "detailsSingle": "{nodeLabel} needs a selected {mediaType}. Referenced by {referenceLabel}.",
+        "detailsMany": "Missing media inputs are referenced by {referenceLabel}.",
+        "detailsUnavailable": "Missing input details are unavailable.",
+        "itemLabelOne": "1 missing input",
+        "itemLabelMany": "{count} missing inputs",
+        "toastTitleOne": "Media input missing",
+        "toastTitleMany": "Missing media inputs",
+        "toastMessageWithNode": "{nodeName} is missing a required media file.",
+        "toastMessageMany": "Please select the missing media inputs before running this workflow."
+      }
     },
     "validationErrors": {
       "required_input_missing": {

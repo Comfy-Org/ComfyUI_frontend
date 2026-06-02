@@ -262,6 +262,7 @@ export function groupCandidatesByName(
       map.set(c.name, {
         name: c.name,
         mediaType: c.mediaType,
+        representative: c,
         referencingNodes: [{ nodeId: c.nodeId, widgetName: c.widgetName }]
       })
     }
