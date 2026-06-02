@@ -12,11 +12,12 @@ const STAGING_PLATFORM_BASE_URL = 'https://stagingplatform.comfy.org'
 
 const BUILD_TIME_API_BASE_URL = __USE_PROD_CONFIG__
   ? PROD_API_BASE_URL
-  : STAGING_API_BASE_URL
+  : (import.meta.env.VITE_STAGING_API_BASE_URL ?? STAGING_API_BASE_URL)
 
 const BUILD_TIME_PLATFORM_BASE_URL = __USE_PROD_CONFIG__
   ? PROD_PLATFORM_BASE_URL
-  : STAGING_PLATFORM_BASE_URL
+  : (import.meta.env.VITE_STAGING_PLATFORM_BASE_URL ??
+    STAGING_PLATFORM_BASE_URL)
 
 export function getComfyApiBaseUrl(): string {
   if (!isCloud) {

@@ -1,11 +1,15 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import {
   getPromotedWidgetNames,
   getPromotedWidgetCountByName
 } from '@e2e/fixtures/utils/promotedWidgets'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+const wstest = mergeTests(test, webSocketFixture)
 
 test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
   async function loadImageOnNode(comfyPage: ComfyPage) {
@@ -21,9 +25,8 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
     })
 
     const nodeId = String(loadImageNode.id)
-    const imagePreview = comfyPage.vueNodes
-      .getNodeLocator(nodeId)
-      .locator('.image-preview')
+    const { imagePreview } =
+      await comfyPage.vueNodes.getFixtureByTitle('Load Image')
 
     await expect(imagePreview).toBeVisible()
     await expect(imagePreview.locator('img')).toBeVisible({ timeout: 30_000 })
@@ -42,6 +45,25 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
     await comfyPage.page.getByLabel('Edit or mask image').click()
 
     await expect(comfyPage.page.locator('.mask-editor-dialog')).toBeVisible()
+  })
+
+  test('hides mask and download buttons when image is missing', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow(
+      'widgets/load_image_widget_missing_file'
+    )
+
+    const { imagePreview } =
+      await comfyPage.vueNodes.getFixtureByTitle('Load Image')
+
+    await expect(imagePreview).toBeVisible()
+    await expect(imagePreview.getByTestId('error-loading-image')).toBeVisible()
+
+    await imagePreview.getByRole('region').hover()
+
+    await expect(imagePreview.getByLabel('Edit or mask image')).toHaveCount(0)
+    await expect(imagePreview.getByLabel('Download image')).toHaveCount(0)
   })
 
   test('shows image context menu options', async ({ comfyPage }) => {
@@ -93,12 +115,10 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
         )
         .toBe(1)
 
-      await expect(
-        firstSubgraphNode.locator('.lg-node-widgets')
-      ).not.toContainText('$$canvas-image-preview')
-      await expect(
-        secondSubgraphNode.locator('.lg-node-widgets')
-      ).not.toContainText('$$canvas-image-preview')
+      await expect(firstSubgraphNode.locator('.lg-node-widgets')).toHaveCount(0)
+      await expect(secondSubgraphNode.locator('.lg-node-widgets')).toHaveCount(
+        0
+      )
 
       await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
       await comfyPage.command.executeCommand('Comfy.QueuePrompt')
@@ -117,6 +137,47 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
       await expect(comfyPage.canvas).toHaveScreenshot(
         'vue-node-multiple-promoted-previews.png'
       )
+    }
+  )
+})
+
+async function countColumns(locator: Locator) {
+  return await locator.locator('img').evaluateAll((images) => {
+    const yOffsets = images.map((image) => image.getBoundingClientRect().y)
+    return yOffsets.filter((yOffset) => yOffset === yOffsets[0]).length
+  })
+}
+
+test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
+  wstest(
+    'Image previews tile to fit node',
+    async ({ comfyMouse, comfyPage, getWebSocket }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+
+      await test.step('Add node', async () => {
+        await comfyPage.menu.topbar.newWorkflowButton.click()
+        await comfyPage.nextFrame()
+
+        await comfyPage.searchBoxV2.addNode('Preview Image')
+        const previewImage = comfyPage.vueNodes.getNodeByTitle('Preview Image')
+        await expect(previewImage).toBeVisible()
+      })
+
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
+
+      await test.step('Inject multiple previews', async () => {
+        const file = { filename: 'example.png', type: 'input' }
+        const images = new Array(100).fill(file)
+        execution.executed('', '1', { images })
+        await expect(node.imageGrid.locator('img')).toHaveCount(100)
+      })
+
+      const { bottomRight } = node.resize
+      await expect.poll(() => countColumns(node.imageGrid)).toBe(10)
+      await comfyMouse.resizeByDragging(bottomRight, { x: 200 })
+      await expect.poll(() => countColumns(node.imageGrid)).toBeGreaterThan(10)
+      await comfyMouse.resizeByDragging(bottomRight, { x: -200, y: 200 })
+      await expect.poll(() => countColumns(node.imageGrid)).toBeLessThan(10)
     }
   )
 })

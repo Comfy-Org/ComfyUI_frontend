@@ -168,7 +168,7 @@ onUnmounted(() => {
   >
     <!-- Illustration (stacks above on mobile, left on lg) -->
     <div
-      class="aspect-550/800 w-4/5 max-w-md scale-150 self-center overflow-visible md:max-w-2xl lg:pointer-events-none lg:z-1 lg:-mr-12 lg:translate-x-[10%] lg:translate-y-20 lg:self-center xl:size-[clamp(32rem,max(40vh,32vw),36rem)] xl:min-h-[min(32vw,24rem)] xl:min-w-[min(24vw,20rem)]"
+      class="aspect-550/800 w-4/5 max-w-xs self-center overflow-visible md:max-w-sm lg:pointer-events-none lg:z-1 lg:-mr-12 lg:max-w-md lg:translate-x-[10%] lg:translate-y-20 lg:self-center xl:size-[clamp(32rem,max(40vh,32vw),36rem)] xl:min-h-[min(32vw,24rem)] xl:min-w-[min(24vw,20rem)]"
     >
       <svg
         ref="svgRef"
@@ -276,29 +276,6 @@ onUnmounted(() => {
             fill="#211927"
           />
         </g>
-
-        <!-- Left-edge fade -->
-        <rect
-          x="300"
-          y="150"
-          width="250"
-          height="900"
-          fill="url(#localHeroFadeLeft)"
-        />
-
-        <defs>
-          <linearGradient
-            id="localHeroFadeLeft"
-            x1="550"
-            y1="600"
-            x2="300"
-            y2="600"
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop stop-color="#211927" stop-opacity="0" />
-            <stop offset="1" stop-color="#211927" />
-          </linearGradient>
-        </defs>
       </svg>
     </div>
 

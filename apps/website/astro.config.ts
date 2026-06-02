@@ -30,7 +30,8 @@ export default defineConfig({
     '/cloud/enterprise-case-studies/comfyui-at-architectural-scale-how-moment-factory-reimagined-3d-projection-mapping':
       '/customers/moment-factory/',
     '/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui':
-      '/customers/series-entertainment/'
+      '/customers/series-entertainment/',
+    '/zh-CN/terms-of-service': '/terms-of-service'
   },
   build: {
     assets: '_website'

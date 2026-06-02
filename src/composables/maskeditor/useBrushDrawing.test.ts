@@ -233,6 +233,35 @@ describe('handleDrawing', () => {
     expect(rafSpy).toHaveBeenCalled()
     rafSpy.mockRestore()
   })
+
+  it('sets DestinationOut composition when tool is eraser during move', async () => {
+    mockStoreDef.currentTool = 'eraser'
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+      cb(0)
+      return 0
+    })
+    const { startDrawing, handleDrawing } = setup()
+    await startDrawing(makePointerEvent(50, 50))
+    await handleDrawing(makePointerEvent(55, 55))
+    expect(mockStoreDef.maskCtx!.globalCompositeOperation).toBe(
+      'destination-out'
+    )
+    vi.restoreAllMocks()
+  })
+
+  it('sets DestinationOut composition when right mouse button held during move', async () => {
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+      cb(0)
+      return 0
+    })
+    const { startDrawing, handleDrawing } = setup()
+    await startDrawing(makePointerEvent(50, 50))
+    await handleDrawing(makePointerEvent(55, 55, { buttons: 2 }))
+    expect(mockStoreDef.maskCtx!.globalCompositeOperation).toBe(
+      'destination-out'
+    )
+    vi.restoreAllMocks()
+  })
 })
 
 describe('drawEnd canvas visibility', () => {
@@ -270,6 +299,36 @@ describe('drawEnd', () => {
     await drawEnd(makePointerEvent(60, 60))
     expect(useGPUResources().compositeStroke).toHaveBeenCalledOnce()
     expect(useGPUResources().compositeStroke).toHaveBeenCalledWith(false, false)
+  })
+
+  it('passes isRgb=true to compositeStroke when active layer is rgb', async () => {
+    mockStoreDef.activeLayer = 'rgb'
+    const { startDrawing, drawEnd } = setup()
+    await startDrawing(makePointerEvent(50, 50))
+    await drawEnd(makePointerEvent(60, 60))
+    expect(useGPUResources().compositeStroke).toHaveBeenCalledWith(true, false)
+  })
+
+  it('passes isErasing=true to compositeStroke when tool is eraser', async () => {
+    mockStoreDef.currentTool = 'eraser'
+    const { startDrawing, drawEnd } = setup()
+    await startDrawing(makePointerEvent(50, 50))
+    await drawEnd(makePointerEvent(60, 60))
+    expect(useGPUResources().compositeStroke).toHaveBeenCalledWith(false, true)
+  })
+
+  it('restores mask canvas opacity after drawing on mask layer', async () => {
+    mockStoreDef.activeLayer = 'mask'
+    const mockMaskCanvas = {
+      width: 200,
+      height: 200,
+      style: { opacity: '' }
+    } as unknown as HTMLCanvasElement
+    mockStoreDef.maskCanvas = mockMaskCanvas
+    const { startDrawing, drawEnd } = setup()
+    await startDrawing(makePointerEvent(50, 50))
+    await drawEnd(makePointerEvent(60, 60))
+    expect(mockMaskCanvas.style.opacity).toBe(String(mockStoreDef.maskOpacity))
   })
 
   it('calls clearPreview to clean up the GPU overlay', async () => {

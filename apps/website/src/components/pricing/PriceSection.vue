@@ -2,11 +2,11 @@
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import { ref } from 'vue'
 
 import BrandButton from '../common/BrandButton.vue'
 import PricingPlanFeatureList from './PricingPlanFeatureList.vue'
 import PricingTierCard from './PricingTierCard.vue'
+import { SHOW_FREE_TIER } from '../../config/features'
 import { externalLinks, getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
 
@@ -37,21 +37,23 @@ interface PricingPlan {
   isEnterprise?: boolean
 }
 
+const freePlan: PricingPlan = {
+  id: 'free',
+  labelKey: 'pricing.plan.free.label',
+  summaryKey: 'pricing.plan.free.summary',
+  priceKey: 'pricing.plan.free.price',
+  creditsKey: 'pricing.plan.free.credits',
+  estimateKey: 'pricing.plan.free.estimate',
+  ctaKey: 'pricing.plan.free.cta',
+  ctaHref: externalLinks.cloud,
+  features: [
+    { text: 'pricing.plan.free.feature1' },
+    { text: 'pricing.plan.free.feature2' }
+  ]
+}
+
 const plans: PricingPlan[] = [
-  {
-    id: 'free',
-    labelKey: 'pricing.plan.free.label',
-    summaryKey: 'pricing.plan.free.summary',
-    priceKey: 'pricing.plan.free.price',
-    creditsKey: 'pricing.plan.free.credits',
-    estimateKey: 'pricing.plan.free.estimate',
-    ctaKey: 'pricing.plan.free.cta',
-    ctaHref: externalLinks.cloud,
-    features: [
-      { text: 'pricing.plan.free.feature1' },
-      { text: 'pricing.plan.free.feature2' }
-    ]
-  },
+  ...(SHOW_FREE_TIER ? [freePlan] : []),
   {
     id: 'standard',
     labelKey: 'pricing.plan.standard.label',
@@ -61,7 +63,9 @@ const plans: PricingPlan[] = [
     estimateKey: 'pricing.plan.standard.estimate',
     ctaKey: 'pricing.plan.standard.cta',
     ctaHref: subscribeUrl('standard'),
-    featureIntroKey: 'pricing.plan.standard.featureIntro',
+    featureIntroKey: SHOW_FREE_TIER
+      ? 'pricing.plan.standard.featureIntro'
+      : undefined,
     features: [
       { text: 'pricing.plan.standard.feature1' },
       { text: 'pricing.plan.standard.feature2' }
@@ -77,7 +81,10 @@ const plans: PricingPlan[] = [
     ctaKey: 'pricing.plan.creator.cta',
     ctaHref: subscribeUrl('creator'),
     featureIntroKey: 'pricing.plan.creator.featureIntro',
-    features: [{ text: 'pricing.plan.creator.feature1' }],
+    features: [
+      { text: 'pricing.plan.creator.feature1' },
+      { text: 'pricing.plan.creator.feature2' }
+    ],
     isPopular: true
   },
   {
@@ -90,7 +97,10 @@ const plans: PricingPlan[] = [
     ctaKey: 'pricing.plan.pro.cta',
     ctaHref: subscribeUrl('pro'),
     featureIntroKey: 'pricing.plan.pro.featureIntro',
-    features: [{ text: 'pricing.plan.pro.feature1' }]
+    features: [
+      { text: 'pricing.plan.pro.feature1' },
+      { text: 'pricing.plan.pro.feature2' }
+    ]
   },
   {
     id: 'enterprise',
@@ -105,12 +115,10 @@ const plans: PricingPlan[] = [
 
 const standardPlans = plans.filter((p) => !p.isEnterprise)
 const enterprisePlan = plans.find((p) => p.isEnterprise)!
-
-const activePlanIndex = ref(0)
 </script>
 
 <template>
-  <section class="px-4 py-16 lg:px-20 lg:py-14">
+  <section class="max-w-9xl mx-auto px-4 py-16 lg:px-20 lg:py-14">
     <!-- Header -->
     <div class="mx-auto mb-8 max-w-3xl text-center lg:mb-10">
       <h1
@@ -123,30 +131,14 @@ const activePlanIndex = ref(0)
       </p>
     </div>
 
-    <!-- Mobile plan tabs -->
-    <div class="scrollbar-none mb-6 flex gap-2 overflow-x-auto lg:hidden">
-      <button
-        v-for="(plan, index) in plans"
-        :key="plan.id"
-        :class="
-          cn(
-            'shrink-0 rounded-full px-4 py-2 text-xs font-bold tracking-wider transition-colors',
-            activePlanIndex === index
-              ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
-              : 'bg-transparency-white-t4 text-primary-comfy-canvas'
-          )
-        "
-        @click="activePlanIndex = index"
-      >
-        <span class="ppformula-text-center">
-          {{ t(plan.labelKey, locale) }}
-        </span>
-      </button>
-    </div>
-
-    <!-- Desktop: 4-column grid / Mobile: single card -->
+    <!-- Desktop: dynamic grid (3 or 4 columns) / Mobile: stacked cards -->
     <div
-      class="rounded-5xl bg-transparency-white-t4 hidden p-2 lg:grid lg:grid-cols-4 lg:gap-2"
+      :class="
+        cn(
+          'rounded-5xl bg-transparency-white-t4 hidden p-2 lg:grid lg:gap-2',
+          standardPlans.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'
+        )
+      "
     >
       <PricingTierCard v-for="plan in standardPlans" :key="plan.id">
         <!-- Label + badge -->
@@ -217,10 +209,18 @@ const activePlanIndex = ref(0)
 
         <!-- Features -->
         <div v-if="plan.features.length" class="px-6 py-3">
-          <p class="text-primary-comfy-canvas mb-2 text-sm font-semibold">
-            {{
-              plan.featureIntroKey ? t(plan.featureIntroKey, locale) : '&nbsp;'
-            }}
+          <p
+            v-if="plan.featureIntroKey"
+            class="text-primary-comfy-canvas mb-2 text-sm font-semibold"
+          >
+            {{ t(plan.featureIntroKey, locale) }}
+          </p>
+          <p
+            v-else
+            class="text-primary-comfy-canvas mb-2 text-sm font-semibold"
+            aria-hidden="true"
+          >
+            &nbsp;
           </p>
           <ul class="space-y-2">
             <li
@@ -249,13 +249,9 @@ const activePlanIndex = ref(0)
       </PricingTierCard>
     </div>
 
-    <!-- Mobile: single plan view -->
-    <div class="lg:hidden">
-      <div
-        v-for="(plan, index) in plans"
-        :key="plan.id"
-        :class="cn('flex-col', activePlanIndex !== index ? 'hidden' : 'flex')"
-      >
+    <!-- Mobile: stacked plans -->
+    <div class="flex flex-col gap-8 lg:hidden">
+      <div v-for="plan in plans" :key="plan.id" class="flex flex-col">
         <!-- Main info card -->
         <div class="bg-transparency-white-t4 rounded-3xl p-6">
           <!-- Label + badge -->

@@ -8,7 +8,9 @@ export const TestIds = {
     toolbar: 'side-toolbar',
     nodeLibrary: 'node-library-tree',
     nodeLibrarySearch: 'node-library-search',
+    nodePreviewCard: 'node-preview-card',
     workflows: 'workflows-sidebar',
+    workflowsRefreshButton: 'workflows-refresh-button',
     modeToggle: 'mode-toggle'
   },
   tree: {
@@ -75,7 +77,15 @@ export const TestIds = {
     publishTabPanel: 'publish-tab-panel',
     apiSignin: 'api-signin-dialog',
     updatePassword: 'update-password-dialog',
-    cloudNotification: 'cloud-notification-dialog'
+    cloudNotification: 'cloud-notification-dialog',
+    openSharedWorkflow: 'open-shared-workflow-dialog',
+    openSharedWorkflowTitle: 'open-shared-workflow-title',
+    openSharedWorkflowClose: 'open-shared-workflow-close',
+    openSharedWorkflowErrorClose: 'open-shared-workflow-error-close',
+    openSharedWorkflowCancel: 'open-shared-workflow-cancel',
+    openSharedWorkflowOpenWithoutImporting:
+      'open-shared-workflow-open-without-importing',
+    openSharedWorkflowConfirm: 'open-shared-workflow-confirm'
   },
   keybindings: {
     presetMenu: 'keybinding-preset-menu'
@@ -103,21 +113,24 @@ export const TestIds = {
     errorsTab: 'panel-tab-errors'
   },
   subgraphEditor: {
-    toggle: 'subgraph-editor-toggle',
-    shownSection: 'subgraph-editor-shown-section',
     hiddenSection: 'subgraph-editor-hidden-section',
-    widgetToggle: 'subgraph-widget-toggle',
-    widgetLabel: 'subgraph-widget-label',
-    iconLink: 'icon-link',
     iconEye: 'icon-eye',
-    widgetActionsMenuButton: 'widget-actions-menu-button'
+    iconLink: 'icon-link',
+    nodeName: 'subgraph-widget-node-name',
+    shownSection: 'subgraph-editor-shown-section',
+    toggle: 'subgraph-editor-toggle',
+    widgetActionsMenuButton: 'widget-actions-menu-button',
+    widgetItem: 'subgraph-widget-item',
+    widgetLabel: 'subgraph-widget-label',
+    widgetToggle: 'subgraph-widget-toggle'
   },
   node: {
     titleInput: 'node-title-input',
     pinIndicator: 'node-pin-indicator',
     innerWrapper: 'node-inner-wrapper',
     mainImage: 'main-image',
-    slotConnectionDot: 'slot-connection-dot'
+    slotConnectionDot: 'slot-connection-dot',
+    imageGrid: 'image-grid'
   },
   selectionToolbox: {
     root: 'selection-toolbox',
@@ -141,8 +154,19 @@ export const TestIds = {
     widget: 'node-widget',
     decrement: 'decrement',
     increment: 'increment',
+    valueControl: 'value-control',
     domWidgetTextarea: 'dom-widget-textarea',
-    subgraphEnterButton: 'subgraph-enter-button'
+    subgraphEnterButton: 'subgraph-enter-button',
+    selectDefaultSearchInput: 'widget-select-default-search-input',
+    selectDefaultViewport: 'widget-select-default-viewport'
+  },
+  linear: {
+    centerPanel: 'linear-center-panel',
+    mobile: 'linear-mobile',
+    mobileNavigation: 'linear-mobile-navigation',
+    mobileWorkflows: 'linear-mobile-workflows',
+    outputInfo: 'linear-output-info',
+    widgetContainer: 'linear-widgets'
   },
   builder: {
     footerNav: 'builder-footer-nav',
@@ -213,7 +237,10 @@ export const TestIds = {
     currentUserIndicator: 'current-user-indicator'
   },
   queue: {
+    jobHistorySidebar: 'job-history-sidebar',
+    progressOverlay: 'queue-progress-overlay',
     overlayToggle: 'queue-overlay-toggle',
+    dockedJobHistoryAction: 'docked-job-history-action',
     jobDetailsPopover: 'queue-job-details-popover',
     clearHistoryAction: 'clear-history-action',
     jobAssetsList: 'job-assets-list',
@@ -276,12 +303,3 @@ export const TestIds = {
     typeFilter: (key: 'input' | 'output') => `search-filter-${key}`
   }
 } as const
-
-export type TestId<K extends keyof typeof TestIds> = Exclude<
-  (typeof TestIds)[K][keyof (typeof TestIds)[K]],
-  (...args: never[]) => string
->
-
-export type TestIdValue = {
-  [K in keyof typeof TestIds]: TestId<K>
-}[keyof typeof TestIds]

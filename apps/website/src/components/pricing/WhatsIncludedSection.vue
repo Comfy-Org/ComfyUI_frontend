@@ -60,7 +60,7 @@ const features: IncludedFeature[] = [
 </script>
 
 <template>
-  <section class="px-4 py-16 lg:px-20 lg:py-24">
+  <section class="max-w-9xl mx-auto px-4 py-16 lg:px-20 lg:py-24">
     <div class="mx-auto w-full lg:grid lg:grid-cols-[280px_1fr] lg:gap-x-16">
       <!-- Heading -->
       <div

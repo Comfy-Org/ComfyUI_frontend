@@ -26,8 +26,8 @@ async function assertNoOverflow(page: Page) {
 }
 
 async function navigateAndSettle(page: Page, url: string) {
-  await page.goto(url)
-  await page.waitForLoadState('networkidle')
+  await page.goto(url, { waitUntil: 'domcontentloaded' })
+  await page.waitForLoadState('load')
 }
 
 test.describe('Home', { tag: '@visual' }, () => {
