@@ -36,6 +36,9 @@ catalogs:
     '@iconify/tailwind4':
       specifier: ^1.2.3
       version: 1.2.3
+    '@iconify/tools':
+      specifier: ^5.0.3
+      version: 5.0.12
     '@iconify/utils':
       specifier: ^3.1.0
       version: 3.1.3
@@ -1002,6 +1005,9 @@ importers:
       '@iconify/tailwind4':
         specifier: 'catalog:'
         version: 1.2.3(tailwindcss@4.3.0)
+      '@iconify/tools':
+        specifier: 'catalog:'
+        version: 5.0.12
       '@iconify/utils':
         specifier: 'catalog:'
         version: 3.1.3

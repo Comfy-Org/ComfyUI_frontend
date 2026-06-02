@@ -1,60 +1,60 @@
 # Partner Nodes
-/src/composables/node/useNodePricing.ts           @jojodecayz @bigcat88 @comfy_frontend_devs
+/src/composables/node/useNodePricing.ts           @jojodecayz @bigcat88 @Comfy-Org/comfy_frontend_devs
 
 # Workflow Templates
-/src/platform/workflow/templates/                 @christian-byrne @comfyui-wiki @comfy_frontend_devs
-/src/components/templates/                        @christian-byrne @comfyui-wiki @comfy_frontend_devs
+/src/platform/workflow/templates/                 @christian-byrne @comfyui-wiki @Comfy-Org/comfy_frontend_devs
+/src/components/templates/                        @christian-byrne @comfyui-wiki @Comfy-Org/comfy_frontend_devs
 
 # Mask Editor
-/src/extensions/core/maskeditor.ts                @trsommer @brucew4yn3rp @jtydhr88 @comfy_frontend_devs
-/src/extensions/core/maskEditorLayerFilenames.ts  @trsommer @brucew4yn3rp @jtydhr88 @comfy_frontend_devs
-/src/components/maskeditor/                       @trsommer @brucew4yn3rp @jtydhr88 @comfy_frontend_devs
-/src/composables/maskeditor/                      @trsommer @brucew4yn3rp @jtydhr88 @comfy_frontend_devs
-/src/stores/maskEditorStore.ts                    @trsommer @brucew4yn3rp @jtydhr88 @comfy_frontend_devs
-/src/stores/maskEditorDataStore.ts                @trsommer @brucew4yn3rp @jtydhr88 @comfy_frontend_devs
+/src/extensions/core/maskeditor.ts                @trsommer @brucew4yn3rp @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/maskEditorLayerFilenames.ts  @trsommer @brucew4yn3rp @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/components/maskeditor/                       @trsommer @brucew4yn3rp @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/composables/maskeditor/                      @trsommer @brucew4yn3rp @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/stores/maskEditorStore.ts                    @trsommer @brucew4yn3rp @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/stores/maskEditorDataStore.ts                @trsommer @brucew4yn3rp @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
 # Image Crop
-/src/extensions/core/imageCrop.ts                 @jtydhr88 @comfy_frontend_devs
-/src/components/imagecrop/                        @jtydhr88 @comfy_frontend_devs
-/src/composables/useImageCrop.ts                  @jtydhr88 @comfy_frontend_devs
-/src/lib/litegraph/src/widgets/ImageCropWidget.ts @jtydhr88 @comfy_frontend_devs
+/src/extensions/core/imageCrop.ts                 @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/components/imagecrop/                        @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/composables/useImageCrop.ts                  @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/lib/litegraph/src/widgets/ImageCropWidget.ts @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
 # Image Compare
-/src/extensions/core/imageCompare.ts                                                @jtydhr88 @comfy_frontend_devs
-/src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue         @jtydhr88 @comfy_frontend_devs
-/src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.test.ts     @jtydhr88 @comfy_frontend_devs
-/src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.stories.ts  @jtydhr88 @comfy_frontend_devs
-/src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts      @jtydhr88 @comfy_frontend_devs
-/src/lib/litegraph/src/widgets/ImageCompareWidget.ts                                @jtydhr88 @comfy_frontend_devs
+/src/extensions/core/imageCompare.ts                                                @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue         @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.test.ts     @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.stories.ts  @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts      @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/lib/litegraph/src/widgets/ImageCompareWidget.ts                                @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
 # Painter
-/src/extensions/core/painter.ts                                             @jtydhr88 @comfy_frontend_devs
-/src/components/painter/                                                    @jtydhr88 @comfy_frontend_devs
-/src/composables/painter/                                                   @jtydhr88 @comfy_frontend_devs
-/src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts   @jtydhr88 @comfy_frontend_devs
-/src/lib/litegraph/src/widgets/PainterWidget.ts                             @jtydhr88 @comfy_frontend_devs
+/src/extensions/core/painter.ts                                             @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/components/painter/                                                    @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/composables/painter/                                                   @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts   @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/lib/litegraph/src/widgets/PainterWidget.ts                             @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
 # GLSL
-/src/renderer/glsl/                               @jtydhr88 @pythongosssss @christian-byrne @comfy_frontend_devs
+/src/renderer/glsl/                               @jtydhr88 @pythongosssss @christian-byrne @Comfy-Org/comfy_frontend_devs
 
 # 3D
-/src/extensions/core/load3d.ts                    @jtydhr88 @comfy_frontend_devs
-/src/extensions/core/load3dLazy.ts                @jtydhr88 @comfy_frontend_devs
-/src/extensions/core/load3d/                      @jtydhr88 @comfy_frontend_devs
-/src/components/load3d/                           @jtydhr88 @comfy_frontend_devs
-/src/composables/useLoad3d.ts                     @jtydhr88 @comfy_frontend_devs
-/src/composables/useLoad3d.test.ts                @jtydhr88 @comfy_frontend_devs
-/src/composables/useLoad3dDrag.ts                 @jtydhr88 @comfy_frontend_devs
-/src/composables/useLoad3dDrag.test.ts            @jtydhr88 @comfy_frontend_devs
-/src/composables/useLoad3dViewer.ts               @jtydhr88 @comfy_frontend_devs
-/src/composables/useLoad3dViewer.test.ts          @jtydhr88 @comfy_frontend_devs
-/src/services/load3dService.ts                    @jtydhr88 @comfy_frontend_devs
+/src/extensions/core/load3d.ts                    @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/load3dLazy.ts                @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/extensions/core/load3d/                      @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/components/load3d/                           @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/composables/useLoad3d.ts                     @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/composables/useLoad3d.test.ts                @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/composables/useLoad3dDrag.ts                 @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/composables/useLoad3dDrag.test.ts            @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/composables/useLoad3dViewer.ts               @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/composables/useLoad3dViewer.test.ts          @jtydhr88 @Comfy-Org/comfy_frontend_devs
+/src/services/load3dService.ts                    @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
 # Manager
-/src/workbench/extensions/manager/                @christian-byrne @ltdrdata @comfy_frontend_devs
+/src/workbench/extensions/manager/                @christian-byrne @ltdrdata @Comfy-Org/comfy_frontend_devs
 
 # Model-to-node mappings (cloud team)
-/src/platform/assets/mappings/                    @deepme987 @comfy_frontend_devs
+/src/platform/assets/mappings/                    @deepme987 @Comfy-Org/comfy_frontend_devs
 
 # LLM Instructions (blank on purpose)
 .claude/
