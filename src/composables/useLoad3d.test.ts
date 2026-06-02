@@ -192,6 +192,7 @@ describe('useLoad3d', () => {
         rotation: { x: 0, y: 0, z: 0 },
         scale: { x: 1, y: 1, z: 1 }
       }),
+      getModelInfo: vi.fn().mockReturnValue(null),
       captureThumbnail: vi.fn().mockResolvedValue('data:image/png;base64,test'),
       setAnimationTime: vi.fn(),
       renderer: {
@@ -1354,6 +1355,39 @@ describe('useLoad3d', () => {
       expect(composable.modelConfig.value.gizmo!.mode).toBe('rotate')
     })
 
+    it('gizmoTransformChange mirrors the live scene into Scene Config models', async () => {
+      const modelTransform = {
+        position: { x: 5, y: 6, z: 7 },
+        quaternion: { x: 0, y: 0, z: 0, w: 1 },
+        scale: { x: 3, y: 3, z: 3 }
+      }
+      vi.mocked(mockLoad3d.getModelInfo!).mockReturnValue(modelTransform)
+
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+
+      const addEventCalls = vi.mocked(mockLoad3d.addEventListener!).mock.calls
+      const handler = addEventCalls.find(
+        ([event]) => event === 'gizmoTransformChange'
+      )![1] as (data: unknown) => void
+
+      handler({
+        position: { x: 5, y: 6, z: 7 },
+        rotation: { x: 0.5, y: 0.6, z: 0.7 },
+        scale: { x: 3, y: 3, z: 3 },
+        enabled: true,
+        mode: 'rotate'
+      })
+      await nextTick()
+
+      expect(composable.sceneConfig.value.models).toEqual([modelTransform])
+      const savedScene = mockNode.properties['Scene Config'] as {
+        models: unknown[]
+      }
+      expect(savedScene.models).toEqual([modelTransform])
+    })
+
     it('should reset gizmo config on model switch (not first load)', async () => {
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
@@ -1469,9 +1503,11 @@ describe('useLoad3d', () => {
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
       await composable.initializeLoad3d(containerRef)
-      const call = vi
-        .mocked(mockLoad3d.addEventListener!)
-        .mock.calls.find(([event]) => event === 'modelReady')
+      const addEventListenerCalls = vi.mocked(mockLoad3d.addEventListener!).mock
+        .calls
+      const call = addEventListenerCalls.find(
+        ([event]) => event === 'modelReady'
+      )
       return { composable, handler: call![1] as () => void }
     }
 
@@ -1480,9 +1516,9 @@ describe('useLoad3d', () => {
       const containerRef = document.createElement('div')
       await composable.initializeLoad3d(containerRef)
 
-      const events = vi
-        .mocked(mockLoad3d.addEventListener!)
-        .mock.calls.map(([event]) => event)
+      const addEventListenerCalls = vi.mocked(mockLoad3d.addEventListener!).mock
+        .calls
+      const events = addEventListenerCalls.map(([event]) => event)
       expect(events).toContain('modelReady')
       expect(events).toContain('modelLoadingEnd')
       expect(composable).toBeDefined()

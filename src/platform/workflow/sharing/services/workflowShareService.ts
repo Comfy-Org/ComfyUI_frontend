@@ -9,7 +9,6 @@ import type {
 import { assetService } from '@/platform/assets/services/assetService'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { AssetInfo } from '@/schemas/apiSchema'
 import {
   zHubWorkflowPrefillResponse,
@@ -248,12 +247,6 @@ export function useWorkflowShareService() {
     if (!workflow) {
       throw new Error('Failed to load shared workflow: invalid response')
     }
-
-    const validated = await validateComfyWorkflow(workflow.workflowJson)
-    if (!validated) {
-      throw new Error('Failed to load shared workflow: invalid workflow data')
-    }
-    workflow.workflowJson = validated
 
     return workflow
   }

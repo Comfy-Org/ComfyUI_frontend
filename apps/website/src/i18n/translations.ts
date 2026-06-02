@@ -1458,9 +1458,9 @@ const translations = {
   // ContactSection
   'gallery.contact.label': { en: 'CONTACT', 'zh-CN': '联系' },
   'gallery.contact.heading': {
-    en: 'Built something cool with ComfyUI? <a href="https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Submit</a> your work to be featured on our website and socials and get seen by the global ComfyUI community.',
+    en: 'Built something cool with ComfyUI?<br> <a href="https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Submit</a> your work to be featured on our website and socials and get seen by the global ComfyUI community.',
     'zh-CN':
-      '用 ComfyUI 创作了很酷的作品？<a href="https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">提交</a>你的作品，展示在我们的网站和社交媒体上，让全球 ComfyUI 社区看到。'
+      '用 ComfyUI 创作了很酷的作品？<br><a href="https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">提交</a>你的作品，展示在我们的网站和社交媒体上，让全球 ComfyUI 社区看到。'
   },
 
   // AboutHeroSection
@@ -2638,6 +2638,189 @@ const translations = {
     en: 'If you have any questions regarding this Agreement or the Comfy Products, please contact us at: <a href="mailto:legal@comfy.org" class="text-white underline">legal@comfy.org</a>.',
     'zh-CN':
       'If you have any questions regarding this Agreement or the Comfy Products, please contact us at: <a href="mailto:legal@comfy.org" class="text-white underline">legal@comfy.org</a>.'
+  },
+
+  // ── Affiliate Program Terms ───────────────────────────────────────
+  // Legal-reviewed copy — ENGLISH ONLY. There is no /zh-CN/affiliates/terms
+  // route, and the `'zh-CN'` values below intentionally duplicate `en`
+  // verbatim only to satisfy the translations dictionary's required
+  // Record<Locale, string> shape. Do NOT translate these into Chinese:
+  // shipping an unreviewed translation as the active terms exposes us to
+  // liability from the translation diverging from the legal-approved
+  // English source. If a translated terms page is ever needed, add a
+  // separate `/affiliates/terms/<locale>` route only after legal signs
+  // off on that specific translation as the authoritative version.
+  'affiliate-terms.effective-date': {
+    en: 'May 16, 2026',
+    'zh-CN': 'May 16, 2026'
+  },
+  'affiliate-terms.1-program-overview.label': {
+    en: 'PROGRAM',
+    'zh-CN': 'PROGRAM'
+  },
+  'affiliate-terms.1-program-overview.title': {
+    en: '1. Program Overview',
+    'zh-CN': '1. Program Overview'
+  },
+  'affiliate-terms.1-program-overview.block.0': {
+    en: 'The <a href="https://comfy.org" class="text-white underline">Comfy.org</a> Affiliate Program ("<strong>Program</strong>") allows approved participants ("<strong>Affiliates</strong>") to earn commissions by referring new paying customers to Comfy Cloud. By participating in this program, you agree to these terms.',
+    'zh-CN':
+      'The <a href="https://comfy.org" class="text-white underline">Comfy.org</a> Affiliate Program ("<strong>Program</strong>") allows approved participants ("<strong>Affiliates</strong>") to earn commissions by referring new paying customers to Comfy Cloud. By participating in this program, you agree to these terms.'
+  },
+  'affiliate-terms.2-eligible-products.label': {
+    en: 'PRODUCTS',
+    'zh-CN': 'PRODUCTS'
+  },
+  'affiliate-terms.2-eligible-products.title': {
+    en: '2. Eligible Products',
+    'zh-CN': '2. Eligible Products'
+  },
+  'affiliate-terms.2-eligible-products.block.0': {
+    en: 'Commissions are earned on Comfy Cloud paid subscription plans only. The following are excluded from commission eligibility: free tier signups (unless they later convert to paid), one-time credit purchases, enterprise contracts negotiated directly with Comfy sales, and API-only usage billed outside of standard subscription plans.',
+    'zh-CN':
+      'Commissions are earned on Comfy Cloud paid subscription plans only. The following are excluded from commission eligibility: free tier signups (unless they later convert to paid), one-time credit purchases, enterprise contracts negotiated directly with Comfy sales, and API-only usage billed outside of standard subscription plans.'
+  },
+  'affiliate-terms.3-commission-structure.label': {
+    en: 'COMMISSION',
+    'zh-CN': 'COMMISSION'
+  },
+  'affiliate-terms.3-commission-structure.title': {
+    en: '3. Commission Structure',
+    'zh-CN': '3. Commission Structure'
+  },
+  'affiliate-terms.3-commission-structure.block.0': {
+    en: 'Commission rate: 30% recurring on the net subscription amount received by Comfy.org\nCommission duration: 3 months from the referred customer\u2019s first paid subscription\nCookie/attribution window: 60 days from the referral click\nMinimum payout threshold: $100\nPayout schedule: Monthly, within the first 10 business days of each month after the receipt of applicable payment by Comfy from its referred customer\nPayout method: Via the affiliate tracking platform (Stripe Express or PayPal)\nCommission cessation: To the extent a referred customer\u2019s subscription is canceled, in whole or in part, the affiliate shall correspondingly cease to receive commission payments, even within the 3-month commission window. Refunded or charged-back transactions are not eligible for commission, and any commission previously paid for such transactions will be deducted from future payouts (see Section 4).',
+    'zh-CN':
+      'Commission rate: 30% recurring on the net subscription amount received by Comfy.org\nCommission duration: 3 months from the referred customer\u2019s first paid subscription\nCookie/attribution window: 60 days from the referral click\nMinimum payout threshold: $100\nPayout schedule: Monthly, within the first 10 business days of each month after the receipt of applicable payment by Comfy from its referred customer\nPayout method: Via the affiliate tracking platform (Stripe Express or PayPal)\nCommission cessation: To the extent a referred customer\u2019s subscription is canceled, in whole or in part, the affiliate shall correspondingly cease to receive commission payments, even within the 3-month commission window. Refunded or charged-back transactions are not eligible for commission, and any commission previously paid for such transactions will be deducted from future payouts (see Section 4).'
+  },
+  'affiliate-terms.4-attribution-rules.label': {
+    en: 'ATTRIBUTION',
+    'zh-CN': 'ATTRIBUTION'
+  },
+  'affiliate-terms.4-attribution-rules.title': {
+    en: '4. Attribution Rules',
+    'zh-CN': '4. Attribution Rules'
+  },
+  'affiliate-terms.4-attribution-rules.block.0': {
+    en: 'Commissions are attributed on a last-click basis within the 60-day cookie window\nIf a referred customer cancels and re-subscribes within 60 days, the original affiliate retains attribution\nIf a referred customer upgrades their plan, commission is calculated on the upgraded amount\nIf a referred customer downgrades their plan, commission adjusts to the new plan amount\nRefunded transactions are not eligible for commission\nAny commission paid on refunded transactions will be deducted from future payouts to you',
+    'zh-CN':
+      'Commissions are attributed on a last-click basis within the 60-day cookie window\nIf a referred customer cancels and re-subscribes within 60 days, the original affiliate retains attribution\nIf a referred customer upgrades their plan, commission is calculated on the upgraded amount\nIf a referred customer downgrades their plan, commission adjusts to the new plan amount\nRefunded transactions are not eligible for commission\nAny commission paid on refunded transactions will be deducted from future payouts to you'
+  },
+  'affiliate-terms.5-prohibited-activities.label': {
+    en: 'PROHIBITED',
+    'zh-CN': 'PROHIBITED'
+  },
+  'affiliate-terms.5-prohibited-activities.title': {
+    en: '5. Prohibited Activities',
+    'zh-CN': '5. Prohibited Activities'
+  },
+  'affiliate-terms.5-prohibited-activities.block.0': {
+    en: 'Affiliates must NOT:',
+    'zh-CN': 'Affiliates must NOT:'
+  },
+  'affiliate-terms.5-prohibited-activities.block.1': {
+    en: '<strong>Self-refer</strong>: Use your own affiliate link to purchase or receive discounts on your own account\n<strong>Bid on branded keywords</strong>: Run paid search campaigns (Google Ads, Bing Ads, etc.) targeting "ComfyUI," "Comfy.org," "Comfy Cloud," or any misspellings or variations thereof\n<strong>Misrepresent</strong>: Impersonate Comfy.org, claim to be an employee, or create assets that could be confused with official Comfy.org materials\n<strong>Spam</strong>: Send unsolicited bulk emails, messages, or engage in any form of spam promotion\n<strong>Cookie stuff</strong>: Use hidden iframes, pop-unders, or any technical means to set cookies without genuine user intent\n<strong>Incentivize clicks</strong>: Offer monetary rewards, points, or other incentives solely for clicking your affiliate link (content recommendations are fine)\n<strong>Use misleading claims</strong>: Make false or exaggerated claims about Comfy.org products, pricing, or features\n<strong>Promote on prohibited content</strong>: Place affiliate links on sites containing illegal content, hate speech, or adult content\n<strong>Contrary to laws</strong>: Place affiliate links in any market that is prohibited as a region under the laws of the United States of America.',
+    'zh-CN':
+      '<strong>Self-refer</strong>: Use your own affiliate link to purchase or receive discounts on your own account\n<strong>Bid on branded keywords</strong>: Run paid search campaigns (Google Ads, Bing Ads, etc.) targeting "ComfyUI," "Comfy.org," "Comfy Cloud," or any misspellings or variations thereof\n<strong>Misrepresent</strong>: Impersonate Comfy.org, claim to be an employee, or create assets that could be confused with official Comfy.org materials\n<strong>Spam</strong>: Send unsolicited bulk emails, messages, or engage in any form of spam promotion\n<strong>Cookie stuff</strong>: Use hidden iframes, pop-unders, or any technical means to set cookies without genuine user intent\n<strong>Incentivize clicks</strong>: Offer monetary rewards, points, or other incentives solely for clicking your affiliate link (content recommendations are fine)\n<strong>Use misleading claims</strong>: Make false or exaggerated claims about Comfy.org products, pricing, or features\n<strong>Promote on prohibited content</strong>: Place affiliate links on sites containing illegal content, hate speech, or adult content\n<strong>Contrary to laws</strong>: Place affiliate links in any market that is prohibited as a region under the laws of the United States of America.'
+  },
+  'affiliate-terms.6-content-guidelines.label': {
+    en: 'CONTENT & IP',
+    'zh-CN': 'CONTENT & IP'
+  },
+  'affiliate-terms.6-content-guidelines.title': {
+    en: '6. Content Guidelines and Intellectual Property Rights',
+    'zh-CN': '6. Content Guidelines and Intellectual Property Rights'
+  },
+  'affiliate-terms.6-content-guidelines.block.0': {
+    en: 'Affiliates must clearly disclose the affiliate relationship in accordance with FTC guidelines (US) and equivalent regulations in their jurisdiction\nRecommended disclosure: "This page contains affiliate links. I may earn a commission if you sign up through my link."\nAffiliates may use Comfy.org logos and brand assets only as provided in the official affiliate asset kit, and may not modify them\nComfy.org retains all rights, including in any of its intellectual property apart from the limited use rights granted herein',
+    'zh-CN':
+      'Affiliates must clearly disclose the affiliate relationship in accordance with FTC guidelines (US) and equivalent regulations in their jurisdiction\nRecommended disclosure: "This page contains affiliate links. I may earn a commission if you sign up through my link."\nAffiliates may use Comfy.org logos and brand assets only as provided in the official affiliate asset kit, and may not modify them\nComfy.org retains all rights, including in any of its intellectual property apart from the limited use rights granted herein'
+  },
+  'affiliate-terms.7-termination.label': {
+    en: 'TERMINATION',
+    'zh-CN': 'TERMINATION'
+  },
+  'affiliate-terms.7-termination.title': {
+    en: '7. Termination',
+    'zh-CN': '7. Termination'
+  },
+  'affiliate-terms.7-termination.block.0': {
+    en: 'Either party may terminate the affiliate relationship at any time with 14 days\u2019 prior written notice\nComfy.org reserves the right to immediately terminate and withhold commissions if an affiliate violates any of the prohibited activities listed above\nUpon termination, any unpaid commissions above the minimum threshold will be paid in the next regular payout cycle\nCommissions on referred customers will cease at the time of termination, even if within the 3-month commission window',
+    'zh-CN':
+      'Either party may terminate the affiliate relationship at any time with 14 days\u2019 prior written notice\nComfy.org reserves the right to immediately terminate and withhold commissions if an affiliate violates any of the prohibited activities listed above\nUpon termination, any unpaid commissions above the minimum threshold will be paid in the next regular payout cycle\nCommissions on referred customers will cease at the time of termination, even if within the 3-month commission window'
+  },
+  'affiliate-terms.8-program-modifications.label': {
+    en: 'MODIFICATIONS',
+    'zh-CN': 'MODIFICATIONS'
+  },
+  'affiliate-terms.8-program-modifications.title': {
+    en: '8. Program Modifications',
+    'zh-CN': '8. Program Modifications'
+  },
+  'affiliate-terms.8-program-modifications.block.0': {
+    en: 'Comfy.org reserves the right to modify these terms, commission rates, or program structure with 30 days notice to active affiliates\nContinued participation after notice constitutes acceptance of modified terms',
+    'zh-CN':
+      'Comfy.org reserves the right to modify these terms, commission rates, or program structure with 30 days notice to active affiliates\nContinued participation after notice constitutes acceptance of modified terms'
+  },
+  'affiliate-terms.9-indemnification.label': {
+    en: 'LIABILITY',
+    'zh-CN': 'LIABILITY'
+  },
+  'affiliate-terms.9-indemnification.title': {
+    en: '9. Indemnification and Limitation of Liability',
+    'zh-CN': '9. Indemnification and Limitation of Liability'
+  },
+  'affiliate-terms.9-indemnification.block.0': {
+    en: 'You will indemnify Comfy.org from any third party claim arising out of your breach of these terms.\nComfy.org\u2019s liability to any affiliate shall not (i) exceed the total commissions paid to that affiliate in the preceding 12 months, and (ii) include any indirect, consequential, punitive or any other type of special damages.\nComfy.org is not responsible for tracking failures caused by user browser settings, ad blockers, or VPNs, though we employ server-side tracking to minimize these issues',
+    'zh-CN':
+      'You will indemnify Comfy.org from any third party claim arising out of your breach of these terms.\nComfy.org\u2019s liability to any affiliate shall not (i) exceed the total commissions paid to that affiliate in the preceding 12 months, and (ii) include any indirect, consequential, punitive or any other type of special damages.\nComfy.org is not responsible for tracking failures caused by user browser settings, ad blockers, or VPNs, though we employ server-side tracking to minimize these issues'
+  },
+  'affiliate-terms.10-governing-law.label': {
+    en: 'GOVERNING LAW',
+    'zh-CN': 'GOVERNING LAW'
+  },
+  'affiliate-terms.10-governing-law.title': {
+    en: '10. Governing Law',
+    'zh-CN': '10. Governing Law'
+  },
+  'affiliate-terms.10-governing-law.block.0': {
+    en: 'These terms shall be governed by and construed in accordance with the laws of the State of Delaware, without regard to conflict of law principles. All disputes arising under this Agreement shall be resolved exclusively in the state or federal courts in the State of Delaware.',
+    'zh-CN':
+      'These terms shall be governed by and construed in accordance with the laws of the State of Delaware, without regard to conflict of law principles. All disputes arising under this Agreement shall be resolved exclusively in the state or federal courts in the State of Delaware.'
+  },
+  'affiliate-terms.11-miscellaneous.label': {
+    en: 'MISCELLANEOUS',
+    'zh-CN': 'MISCELLANEOUS'
+  },
+  'affiliate-terms.11-miscellaneous.title': {
+    en: '11. Miscellaneous',
+    'zh-CN': '11. Miscellaneous'
+  },
+  'affiliate-terms.11-miscellaneous.block.0': {
+    en: '<strong>(a) Entire Agreement.</strong> These terms constitutes the sole and entire agreement (including the attached schedules and exhibits) of the Parties with respect to the subject matter of these terms, and supersedes all prior and contemporaneous understandings, agreements, representations, and warranties, both written and oral, with respect to the subject matter. <strong>(b) Relationship of Parties.</strong> Each party is an independent contractor with regard to these terms. Nothing contained in These terms shall be construed as creating any agency, partnership, joint venture, or other form of joint enterprise, employment, or fiduciary relationship between the Parties. Neither party, by virtue of these terms, will have any right, power, or authority to act or create an obligation, express or implied, on behalf of the other party. <strong>(c) Assignment.</strong> Neither party shall assign any of its rights or delegate any of its obligations hereunder without the prior written consent of the other party, which consent shall not be unreasonably withheld, conditioned or delayed. <strong>(d) Severability.</strong> If any term or provision of these terms is invalid, illegal, or unenforceable in any jurisdiction, such invalidity, illegality, or unenforceability shall not affect any other term or provision of these terms or invalidate or render unenforceable such term or provision in any other jurisdiction. Upon a determination that any term or provision is invalid, illegal or unenforceable, the Parties hereto shall negotiate in good faith to modify these terms to effect the original intent of the Parties as closely as possible in order that the transactions contemplated hereby be consummated as originally contemplated to the greatest extent possible. <strong>(e) Waiver.</strong> No waiver by either party of any of the provisions hereof shall be effective unless explicitly set forth in writing and signed by the party so waiving. <strong>(f) Notice.</strong> Each party shall deliver all notices, requests, consents, claims, demands, waivers, and other communications under these terms in writing to the email utilized for the primary contact for the other party. <strong>(g) Cumulative Remedies.</strong> All rights and remedies provided in these terms are cumulative and not exclusive, and the exercise by a party of any right or remedy does not preclude the exercise of any other rights or remedies that may now or subsequently be available at Law, in equity, by statute, in any other agreement between the Parties or otherwise. <strong>(h) No Third-Party Beneficiaries.</strong> These terms benefits solely the Parties to these terms and their respective permitted successors and assigns and nothing in these terms, express or implied, confers on any other person or entity any legal or equitable right, benefit, or remedy of any nature whatsoever under or by reason of these terms.',
+    'zh-CN':
+      '<strong>(a) Entire Agreement.</strong> These terms constitutes the sole and entire agreement (including the attached schedules and exhibits) of the Parties with respect to the subject matter of these terms, and supersedes all prior and contemporaneous understandings, agreements, representations, and warranties, both written and oral, with respect to the subject matter. <strong>(b) Relationship of Parties.</strong> Each party is an independent contractor with regard to these terms. Nothing contained in These terms shall be construed as creating any agency, partnership, joint venture, or other form of joint enterprise, employment, or fiduciary relationship between the Parties. Neither party, by virtue of these terms, will have any right, power, or authority to act or create an obligation, express or implied, on behalf of the other party. <strong>(c) Assignment.</strong> Neither party shall assign any of its rights or delegate any of its obligations hereunder without the prior written consent of the other party, which consent shall not be unreasonably withheld, conditioned or delayed. <strong>(d) Severability.</strong> If any term or provision of these terms is invalid, illegal, or unenforceable in any jurisdiction, such invalidity, illegality, or unenforceability shall not affect any other term or provision of these terms or invalidate or render unenforceable such term or provision in any other jurisdiction. Upon a determination that any term or provision is invalid, illegal or unenforceable, the Parties hereto shall negotiate in good faith to modify these terms to effect the original intent of the Parties as closely as possible in order that the transactions contemplated hereby be consummated as originally contemplated to the greatest extent possible. <strong>(e) Waiver.</strong> No waiver by either party of any of the provisions hereof shall be effective unless explicitly set forth in writing and signed by the party so waiving. <strong>(f) Notice.</strong> Each party shall deliver all notices, requests, consents, claims, demands, waivers, and other communications under these terms in writing to the email utilized for the primary contact for the other party. <strong>(g) Cumulative Remedies.</strong> All rights and remedies provided in these terms are cumulative and not exclusive, and the exercise by a party of any right or remedy does not preclude the exercise of any other rights or remedies that may now or subsequently be available at Law, in equity, by statute, in any other agreement between the Parties or otherwise. <strong>(h) No Third-Party Beneficiaries.</strong> These terms benefits solely the Parties to these terms and their respective permitted successors and assigns and nothing in these terms, express or implied, confers on any other person or entity any legal or equitable right, benefit, or remedy of any nature whatsoever under or by reason of these terms.'
+  },
+
+  'affiliate-terms.page.title': {
+    en: 'Affiliate Terms — Comfy',
+    'zh-CN': 'Affiliate Terms — Comfy'
+  },
+  'affiliate-terms.page.description': {
+    en: 'Comfy.org Affiliate Program Terms and Conditions.',
+    'zh-CN': 'Comfy.org Affiliate Program Terms and Conditions.'
+  },
+  'affiliate-terms.page.heading': {
+    en: 'Affiliate Terms',
+    'zh-CN': 'Affiliate Terms'
+  },
+  'affiliate-terms.page.tocLabel': {
+    en: 'On this page',
+    'zh-CN': '本页内容'
+  },
+  'affiliate-terms.page.effectiveDateLabel': {
+    en: 'Effective Date',
+    'zh-CN': '生效日期'
   },
 
   // Customers page
@@ -4235,6 +4418,315 @@ const translations = {
   'payment.failed.secondaryCta': {
     en: 'READ SUBSCRIPTION DOCS',
     'zh-CN': '查看订阅文档'
+  },
+
+  // Affiliate landing page (/affiliates)
+  // English-only copy; zh-CN values mirror en until a localized version lands.
+  'affiliate-landing.page.title': {
+    en: 'Comfy.org Affiliate Program — Become a Partner',
+    'zh-CN': 'Comfy.org Affiliate Program — Become a Partner'
+  },
+  'affiliate-landing.page.description': {
+    en: 'Earn 30% recurring commission for 3 months on every Comfy Cloud subscription you refer. Apply to become a Comfy Partner.',
+    'zh-CN':
+      'Earn 30% recurring commission for 3 months on every Comfy Cloud subscription you refer. Apply to become a Comfy Partner.'
+  },
+  'affiliate-landing.cta.apply': {
+    en: 'Apply Now',
+    'zh-CN': 'Apply Now'
+  },
+  'affiliate-landing.cta.applyAriaLabel': {
+    en: 'Apply Now (opens in new tab)',
+    'zh-CN': 'Apply Now (opens in new tab)'
+  },
+
+  // Hero
+  'affiliate-landing.hero.heading': {
+    en: 'Become a Comfy Partner',
+    'zh-CN': 'Become a Comfy Partner'
+  },
+  'affiliate-landing.hero.subheading': {
+    en: 'Earn 30% Commission for 3 Months.',
+    'zh-CN': 'Earn 30% Commission for 3 Months.'
+  },
+  'affiliate-landing.hero.body': {
+    en: 'Join the Comfy.org Affiliate Program and earn 30% recurring commission for 3 months on every Comfy Cloud subscription you refer:',
+    'zh-CN':
+      'Join the Comfy.org Affiliate Program and earn 30% recurring commission for 3 months on every Comfy Cloud subscription you refer:'
+  },
+  'affiliate-landing.hero.highlight.0': {
+    en: '30% recurring commission for 3 months',
+    'zh-CN': '30% recurring commission for 3 months'
+  },
+  'affiliate-landing.hero.highlight.1': {
+    en: '60-day cookie window',
+    'zh-CN': '60-day cookie window'
+  },
+  'affiliate-landing.hero.highlight.2': {
+    en: '$100 minimum payout',
+    'zh-CN': '$100 minimum payout'
+  },
+  'affiliate-landing.hero.highlight.3': {
+    en: 'Monthly payouts',
+    'zh-CN': 'Monthly payouts'
+  },
+
+  // Trust band
+  'affiliate-landing.trust.label': {
+    en: 'Trusted by 2M+ creators worldwide',
+    'zh-CN': 'Trusted by 2M+ creators worldwide'
+  },
+
+  // How it works
+  'affiliate-landing.how.heading': {
+    en: 'How it works',
+    'zh-CN': 'How it works'
+  },
+  'affiliate-landing.how.step.0.title': {
+    en: 'Apply.',
+    'zh-CN': 'Apply.'
+  },
+  'affiliate-landing.how.step.0.body': {
+    en: 'Submit a quick form. Most applicants approved same day.',
+    'zh-CN': 'Submit a quick form. Most applicants approved same day.'
+  },
+  'affiliate-landing.how.step.1.title': {
+    en: 'Share.',
+    'zh-CN': 'Share.'
+  },
+  'affiliate-landing.how.step.1.body': {
+    en: 'Get your unique tracking link. Share via content, social, email, however you reach your audience.',
+    'zh-CN':
+      'Get your unique tracking link. Share via content, social, email, however you reach your audience.'
+  },
+  'affiliate-landing.how.step.2.title': {
+    en: 'Earn.',
+    'zh-CN': 'Earn.'
+  },
+  'affiliate-landing.how.step.2.body': {
+    en: '30% recurring commission for 3 months on every Comfy Cloud subscriber you refer. Tracked in real-time. Paid monthly.',
+    'zh-CN':
+      '30% recurring commission for 3 months on every Comfy Cloud subscriber you refer. Tracked in real-time. Paid monthly.'
+  },
+
+  // Who we're looking for
+  'affiliate-landing.audience.heading': {
+    en: "Who we're looking for",
+    'zh-CN': "Who we're looking for"
+  },
+  'affiliate-landing.audience.item.0': {
+    en: 'ComfyUI tutorial creators and workflow builders',
+    'zh-CN': 'ComfyUI tutorial creators and workflow builders'
+  },
+  'affiliate-landing.audience.item.1': {
+    en: 'AI tool reviewers on YouTube, TikTok, blogs',
+    'zh-CN': 'AI tool reviewers on YouTube, TikTok, blogs'
+  },
+  'affiliate-landing.audience.item.2': {
+    en: 'Tech bloggers covering AI creative tools',
+    'zh-CN': 'Tech bloggers covering AI creative tools'
+  },
+  'affiliate-landing.audience.item.3': {
+    en: 'Newsletter operators in the AI/creative space',
+    'zh-CN': 'Newsletter operators in the AI/creative space'
+  },
+  'affiliate-landing.audience.item.4': {
+    en: 'Anyone with an audience interested in AI image, video, or 3D generation',
+    'zh-CN':
+      'Anyone with an audience interested in AI image, video, or 3D generation'
+  },
+
+  // Program details
+  'affiliate-landing.details.heading': {
+    en: 'Program details',
+    'zh-CN': 'Program details'
+  },
+  'affiliate-landing.details.headerLabel': {
+    en: 'Detail',
+    'zh-CN': 'Detail'
+  },
+  'affiliate-landing.details.headerValue': {
+    en: 'Value',
+    'zh-CN': 'Value'
+  },
+  'affiliate-landing.details.row.0.label': {
+    en: 'Commission rate',
+    'zh-CN': 'Commission rate'
+  },
+  'affiliate-landing.details.row.0.value': {
+    en: '30% recurring',
+    'zh-CN': '30% recurring'
+  },
+  'affiliate-landing.details.row.1.label': {
+    en: 'Commission duration',
+    'zh-CN': 'Commission duration'
+  },
+  'affiliate-landing.details.row.1.value': {
+    en: '3 months',
+    'zh-CN': '3 months'
+  },
+  'affiliate-landing.details.row.2.label': {
+    en: 'Cookie window',
+    'zh-CN': 'Cookie window'
+  },
+  'affiliate-landing.details.row.2.value': {
+    en: '60 days',
+    'zh-CN': '60 days'
+  },
+  'affiliate-landing.details.row.3.label': {
+    en: 'Eligible products',
+    'zh-CN': 'Eligible products'
+  },
+  'affiliate-landing.details.row.3.value': {
+    en: 'Comfy Cloud paid subscription plans',
+    'zh-CN': 'Comfy Cloud paid subscription plans'
+  },
+  'affiliate-landing.details.row.4.label': {
+    en: 'Payouts',
+    'zh-CN': 'Payouts'
+  },
+  'affiliate-landing.details.row.4.value': {
+    en: 'Monthly, within first 10 business days',
+    'zh-CN': 'Monthly, within first 10 business days'
+  },
+  'affiliate-landing.details.row.5.label': {
+    en: 'Minimum payout',
+    'zh-CN': 'Minimum payout'
+  },
+  'affiliate-landing.details.row.5.value': {
+    en: '$100',
+    'zh-CN': '$100'
+  },
+
+  // Brand assets
+  'affiliate-landing.assets.heading': {
+    en: 'Brand assets',
+    'zh-CN': 'Brand assets'
+  },
+  'affiliate-landing.assets.subheading': {
+    en: 'Approved Comfy logos for your content. Banners, screenshots, and talking points are in your affiliate dashboard after approval.',
+    'zh-CN':
+      'Approved Comfy logos for your content. Banners, screenshots, and talking points are in your affiliate dashboard after approval.'
+  },
+  'affiliate-landing.assets.downloadLabel': {
+    en: 'Download',
+    'zh-CN': 'Download'
+  },
+  'affiliate-landing.assets.tile.logo-horizontal.title': {
+    en: 'Comfy logo (horizontal)',
+    'zh-CN': 'Comfy logo (horizontal)'
+  },
+  'affiliate-landing.assets.tile.logomark.title': {
+    en: 'Comfy logomark',
+    'zh-CN': 'Comfy logomark'
+  },
+  'affiliate-landing.assets.tile.comfy-full-logo-yellow.title': {
+    en: 'Comfy full logo (yellow)',
+    'zh-CN': 'Comfy full logo (yellow)'
+  },
+  'affiliate-landing.assets.tile.comfy-full-logo-ink.title': {
+    en: 'Comfy full logo (ink)',
+    'zh-CN': 'Comfy full logo (ink)'
+  },
+  'affiliate-landing.assets.tile.amplified-logo-mark.title': {
+    en: 'Amplified logo mark',
+    'zh-CN': 'Amplified logo mark'
+  },
+  'affiliate-landing.assets.tile.dimensional-logo-mark.title': {
+    en: 'Dimensional logo mark',
+    'zh-CN': 'Dimensional logo mark'
+  },
+  'affiliate-landing.assets.tile.color-combo-yellow.title': {
+    en: 'Color combo (yellow)',
+    'zh-CN': 'Color combo (yellow)'
+  },
+  'affiliate-landing.assets.tile.color-combo-ink.title': {
+    en: 'Color combo (ink)',
+    'zh-CN': 'Color combo (ink)'
+  },
+
+  // FAQ — keys follow the FAQSection contract: <prefix>.<n>.q / <prefix>.<n>.a, 1-indexed
+  'affiliate-landing.faq.heading': {
+    en: 'Questions',
+    'zh-CN': 'Questions'
+  },
+  'affiliate-landing.faq.1.q': {
+    en: 'How do I track my referrals?',
+    'zh-CN': 'How do I track my referrals?'
+  },
+  'affiliate-landing.faq.1.a': {
+    en: 'Real-time dashboard via our partner portal.',
+    'zh-CN': 'Real-time dashboard via our partner portal.'
+  },
+  'affiliate-landing.faq.2.q': {
+    en: 'What plans qualify?',
+    'zh-CN': 'What plans qualify?'
+  },
+  'affiliate-landing.faq.2.a': {
+    en: 'All Comfy Cloud paid subscription plans (Creator, Pro, Teams).',
+    'zh-CN': 'All Comfy Cloud paid subscription plans (Creator, Pro, Teams).'
+  },
+  'affiliate-landing.faq.3.q': {
+    en: 'How long does approval take?',
+    'zh-CN': 'How long does approval take?'
+  },
+  'affiliate-landing.faq.3.a': {
+    en: 'Most applications approved within 24 hours.',
+    'zh-CN': 'Most applications approved within 24 hours.'
+  },
+  'affiliate-landing.faq.4.q': {
+    en: 'When do I get paid?',
+    'zh-CN': 'When do I get paid?'
+  },
+  'affiliate-landing.faq.4.a': {
+    en: 'Monthly, within the first 10 business days. Minimum balance $100. Paid via Stripe Express or PayPal.',
+    'zh-CN':
+      'Monthly, within the first 10 business days. Minimum balance $100. Paid via Stripe Express or PayPal.'
+  },
+  'affiliate-landing.faq.5.q': {
+    en: 'What happens if my referral upgrades or downgrades?',
+    'zh-CN': 'What happens if my referral upgrades or downgrades?'
+  },
+  'affiliate-landing.faq.5.a': {
+    en: 'If they upgrade, your commission increases. If they downgrade, it adjusts accordingly. Commission is based on actual amounts received by Comfy.org, net of refunds.',
+    'zh-CN':
+      'If they upgrade, your commission increases. If they downgrade, it adjusts accordingly. Commission is based on actual amounts received by Comfy.org, net of refunds.'
+  },
+  'affiliate-landing.faq.6.q': {
+    en: 'Can I use coupon codes?',
+    'zh-CN': 'Can I use coupon codes?'
+  },
+  'affiliate-landing.faq.6.a': {
+    en: 'Yes. We support both tracking links and unique coupon codes.',
+    'zh-CN': 'Yes. We support both tracking links and unique coupon codes.'
+  },
+  'affiliate-landing.faq.7.q': {
+    en: 'What if my referral uses an ad blocker?',
+    'zh-CN': 'What if my referral uses an ad blocker?'
+  },
+  'affiliate-landing.faq.7.a': {
+    en: 'We use server-side tracking, so conversions are tracked regardless.',
+    'zh-CN':
+      'We use server-side tracking, so conversions are tracked regardless.'
+  },
+  'affiliate-landing.faq.8.q': {
+    en: 'What assets do you provide?',
+    'zh-CN': 'What assets do you provide?'
+  },
+  'affiliate-landing.faq.8.a': {
+    en: 'Logos and banners on this page, plus screenshots and talking points in your affiliate dashboard after approval.',
+    'zh-CN':
+      'Logos and banners on this page, plus screenshots and talking points in your affiliate dashboard after approval.'
+  },
+
+  // Footer CTA
+  'affiliate-landing.footerCta.heading': {
+    en: 'Ready to start earning?',
+    'zh-CN': 'Ready to start earning?'
+  },
+  'affiliate-landing.footerCta.termsLink': {
+    en: 'Read the affiliate program terms',
+    'zh-CN': 'Read the affiliate program terms'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 

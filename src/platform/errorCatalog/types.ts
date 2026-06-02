@@ -1,4 +1,8 @@
-import type { NodeError, PromptError } from '@/schemas/apiSchema'
+import type {
+  ExecutionErrorWsMessage,
+  NodeError,
+  PromptError
+} from '@/schemas/apiSchema'
 import type {
   MissingMediaGroup,
   MediaType
@@ -39,6 +43,11 @@ export type RunErrorMessageSource =
       kind: 'prompt'
       error: PromptError
       isCloud: boolean
+    }
+  | {
+      kind: 'execution'
+      error: ExecutionErrorWsMessage
+      nodeDisplayName: string
     }
 
 export type MissingErrorMessageSource =

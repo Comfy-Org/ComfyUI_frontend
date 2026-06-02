@@ -212,7 +212,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
   PrimitiveNode: {
     name: 'PrimitiveNode',
     display_name: 'Primitive',
-    category: 'utils',
+    category: 'utilities/primitive',
     input: { required: {}, optional: {} },
     output: ['*'],
     output_name: ['connect to widget input'],
@@ -224,7 +224,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
   Reroute: {
     name: 'Reroute',
     display_name: 'Reroute',
-    category: 'utils',
+    category: 'utilities',
     input: { required: { '': ['*', {}] }, optional: {} },
     output: ['*'],
     output_name: [''],
@@ -236,7 +236,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
   Note: {
     name: 'Note',
     display_name: 'Note',
-    category: 'utils',
+    category: 'utilities',
     input: {
       required: { text: ['STRING', { multiline: true }] },
       optional: {}
@@ -251,7 +251,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
   MarkdownNote: {
     name: 'MarkdownNote',
     display_name: 'Markdown Note',
-    category: 'utils',
+    category: 'utilities',
     input: {
       required: { text: ['STRING', { multiline: true }] },
       optional: {}
