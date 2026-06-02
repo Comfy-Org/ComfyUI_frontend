@@ -10,7 +10,7 @@ import type {
   LGraphNode,
   Size
 } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type {
   IBaseWidget,
@@ -213,8 +213,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
 
   getOutlineColor() {
     return this.advanced
-      ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR
-      : LiteGraph.WIDGET_OUTLINE_COLOR
+      ? litegraph().WIDGET_ADVANCED_OUTLINE_COLOR
+      : litegraph().WIDGET_OUTLINE_COLOR
   }
 
   get outline_color() {
@@ -222,23 +222,23 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   get background_color() {
-    return LiteGraph.WIDGET_BGCOLOR
+    return litegraph().WIDGET_BGCOLOR
   }
 
   get height() {
-    return LiteGraph.NODE_WIDGET_HEIGHT
+    return litegraph().NODE_WIDGET_HEIGHT
   }
 
   get text_color() {
-    return LiteGraph.WIDGET_TEXT_COLOR
+    return litegraph().WIDGET_TEXT_COLOR
   }
 
   get secondary_text_color() {
-    return LiteGraph.WIDGET_SECONDARY_TEXT_COLOR
+    return litegraph().WIDGET_SECONDARY_TEXT_COLOR
   }
 
   get disabledTextColor() {
-    return LiteGraph.WIDGET_DISABLED_TEXT_COLOR
+    return litegraph().WIDGET_DISABLED_TEXT_COLOR
   }
 
   get displayName() {
@@ -360,7 +360,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     if (requiredWidth <= totalWidth) {
       // Draw label & value normally
       drawTextInArea({ ctx, text: displayName, area, align: 'left' })
-    } else if (LiteGraph.truncateWidgetTextEvenly) {
+    } else if (litegraph().truncateWidgetTextEvenly) {
       // Label + value will not fit - scale evenly to fit
       const scale = (totalWidth - gap) / (requiredWidth - gap)
       area.width = labelWidth * scale
@@ -370,7 +370,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       // Move the area to the right to render the value
       area.right = x + totalWidth
       area.setWidthRightAnchored(valueWidth * scale)
-    } else if (LiteGraph.truncateWidgetValuesFirst) {
+    } else if (litegraph().truncateWidgetValuesFirst) {
       // Label + value will not fit - use legacy scaling of value first
       const cappedLabelWidth = Math.min(labelWidth, totalWidth)
 
