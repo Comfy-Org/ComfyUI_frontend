@@ -5,7 +5,6 @@ import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { modeIsAppMode } from '@/composables/useAppMode'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { syncLayoutStoreNodeBoundsFromGraph } from '@/renderer/core/layout/sync/syncLayoutStoreFromGraph'
 import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
@@ -1421,19 +1420,19 @@ export class ComfyApp {
         missingNodeTypes
       )
 
-      const serializedGraph =
-        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       const telemetryPayload = {
         missing_node_count: missingNodeTypes.length,
         missing_node_types: missingNodeTypes.map((node) =>
           typeof node === 'string' ? node : node.type
         ),
-        open_source: openSource ?? 'unknown',
-        is_app: serializedGraph.extra?.linearMode === true
+        open_source: openSource ?? 'unknown'
       }
       useTelemetry()?.trackWorkflowOpened(telemetryPayload)
       useTelemetry()?.trackWorkflowImported(telemetryPayload)
-      await useWorkflowService().afterLoadNewGraph(workflow, serializedGraph)
+      await useWorkflowService().afterLoadNewGraph(
+        workflow,
+        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+      )
 
       // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
       // This fixes switching from app mode to a new graph mode workflow (e.g. load template)
@@ -1613,9 +1612,6 @@ export class ComfyApp {
           // user switches tabs while the request is in flight.
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
-          const queuedViewMode =
-            queuedWorkflow?.activeMode ?? queuedWorkflow?.initialMode ?? 'graph'
-          const queuedIsAppMode = modeIsAppMode(queuedViewMode)
           const p = await this.graphToPrompt(this.rootGraph)
           const queuedNodes = collectAllNodes(this.rootGraph)
           try {
@@ -1639,9 +1635,7 @@ export class ComfyApp {
                   id: res.prompt_id,
                   nodes: Object.keys(p.output),
                   promptOutput: p.output,
-                  workflow: queuedWorkflow,
-                  isAppMode: queuedIsAppMode,
-                  viewMode: queuedViewMode
+                  workflow: queuedWorkflow
                 })
               }
             } catch (error) {
