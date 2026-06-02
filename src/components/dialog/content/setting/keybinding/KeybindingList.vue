@@ -1,7 +1,7 @@
 <template>
   <span
     v-if="keybindings.length > 0"
-    class="@container/keybindings flex min-w-0 items-center gap-1"
+    class="@container/keybindings flex w-full min-w-0 items-center gap-1 overflow-hidden"
     data-testid="keybinding-list"
   >
     <KeyComboDisplay

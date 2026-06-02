@@ -1,7 +1,7 @@
 <template>
   <div
     :ref="primeVueOverlay.overlayScopeRef"
-    class="keybinding-panel flex flex-col gap-2"
+    class="keybinding-panel flex min-w-0 flex-col gap-2 overflow-x-hidden"
   >
     <Teleport defer to="#keybinding-panel-header">
       <SearchInput
@@ -46,7 +46,10 @@
 
     <ContextMenuRoot>
       <ContextMenuTrigger as-child>
-        <div @contextmenu.capture="clearContextMenuTarget">
+        <div
+          class="min-w-0 overflow-x-hidden"
+          @contextmenu.capture="clearContextMenuTarget"
+        >
           <DataTable
             v-model:selection="selectedCommandData"
             v-model:expanded-rows="expandedRows"
@@ -60,6 +63,7 @@
             selection-mode="single"
             context-menu
             striped-rows
+            :table-style="{ tableLayout: 'fixed', width: '100%' }"
             :pt="{
               header: 'px-0'
             }"
@@ -71,12 +75,11 @@
               field="id"
               :header="$t('g.command')"
               sortable
-              class="max-w-64 2xl:max-w-full"
               :pt="{ bodyCell: 'p-1 min-h-8' }"
             >
               <template #body="slotProps">
                 <div
-                  class="flex items-center gap-1 truncate"
+                  class="flex min-w-0 items-center gap-1 truncate"
                   :class="slotProps.data.keybindings.length < 2 && 'pl-5'"
                   :title="slotProps.data.id"
                 >
@@ -103,6 +106,7 @@
             <Column
               field="keybindings"
               :header="$t('g.keybinding')"
+              :style="{ width: '30%' }"
               :pt="{ bodyCell: 'p-1 min-h-8' }"
             >
               <template #body="slotProps">
@@ -115,10 +119,11 @@
             <Column
               field="source"
               :header="$t('g.source')"
+              :style="{ width: '16%' }"
               :pt="{ bodyCell: 'p-1 min-h-8' }"
             >
               <template #body="slotProps">
-                <span class="overflow-hidden text-ellipsis">{{
+                <span class="block truncate" :title="slotProps.data.source">{{
                   slotProps.data.source || '-'
                 }}</span>
               </template>
@@ -126,6 +131,7 @@
             <Column
               field="actions"
               header=""
+              :style="{ width: '9rem' }"
               :pt="{ bodyCell: 'p-1 min-h-8 whitespace-nowrap' }"
             >
               <template #body="slotProps">
