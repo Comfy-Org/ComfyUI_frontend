@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { createUuidv4 } from '@/lib/litegraph/src/utils/uuid'
+import { createUuidv4 } from '@/utils/uuid'
 
 import { isUuidShapedSubgraphId, zSubgraphId } from './subgraphIdSchema'
 

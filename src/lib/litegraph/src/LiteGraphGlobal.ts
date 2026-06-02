@@ -28,7 +28,7 @@ import {
   RenderShape,
   TitleMode
 } from './types/globalEnums'
-import { createUuidv4 } from './utils/uuid'
+import { createUuidv4 } from '@/utils/uuid'
 
 /**
  * The Global Scope. It contains all the registered node classes.

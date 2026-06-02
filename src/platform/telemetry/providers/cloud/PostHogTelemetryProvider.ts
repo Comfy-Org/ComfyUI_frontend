@@ -84,6 +84,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private isEnabled = true
   private posthog: PostHog | null = null
   private eventQueue: QueuedEvent[] = []
+  private pendingFirstAuthAt = new Map<string, string>()
   private isInitialized = false
   private lastTriggerSource: ExecutionTriggerSource | undefined
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
@@ -127,11 +128,24 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             this.isInitialized = true
             this.flushEventQueue()
 
-            useCurrentUser().onUserResolved((user) => {
+            const currentUser = useCurrentUser()
+            currentUser.onUserResolved((user) => {
               if (this.posthog && user.id) {
                 this.posthog.identify(user.id)
                 this.setSubscriptionProperties()
               }
+            })
+            // Anchored to session state rather than the logout button so it
+            // also covers token revocation, account deletion, and cross-tab
+            // sign-out (browserLocalPersistence). A logout that lands during
+            // the posthog-js dynamic-import window will not be observed here:
+            // events buffered pre-init are intentionally NOT queue-cleared on
+            // logout, which leaves a narrow race where a logout + different
+            // login both inside the import window would flush pre-init events
+            // under the new identity. Accepted as a known edge — re-adding
+            // pre-init logout handling would defeat the simplification.
+            currentUser.onUserLogout(() => {
+              this.posthog?.reset(true)
             })
           })
           .catch((error) => {
@@ -151,6 +165,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private flushEventQueue(): void {
     if (!this.isInitialized || !this.posthog) return
 
+    this.flushPendingFirstAuthAt()
+
     while (this.eventQueue.length > 0) {
       const event = this.eventQueue.shift()!
       try {
@@ -158,6 +174,33 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
       } catch (error) {
         console.error('Failed to track queued PostHog event:', error)
       }
+    }
+  }
+
+  private flushPendingFirstAuthAt(): void {
+    for (const [userId, firstAuthAt] of this.pendingFirstAuthAt) {
+      this.setFirstAuthAt(userId, firstAuthAt)
+    }
+    this.pendingFirstAuthAt.clear()
+  }
+
+  private setFirstAuthAt(
+    userId: string,
+    firstAuthAt = new Date().toISOString()
+  ): void {
+    if (!this.isEnabled) return
+
+    if (this.isInitialized && this.posthog) {
+      try {
+        this.posthog.identify(userId, undefined, { first_auth_at: firstAuthAt })
+      } catch (error) {
+        console.error('Failed to set PostHog first auth timestamp:', error)
+      }
+      return
+    }
+
+    if (!this.pendingFirstAuthAt.has(userId)) {
+      this.pendingFirstAuthAt.set(userId, firstAuthAt)
     }
   }
 
@@ -241,6 +284,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackAuth(metadata: AuthMetadata): void {
+    if (metadata.is_new_user && metadata.user_id) {
+      this.setFirstAuthAt(metadata.user_id)
+    }
     this.trackEvent(TelemetryEvents.USER_AUTH_COMPLETED, metadata)
   }
 
@@ -433,12 +479,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackWorkflowExecution(): void {
     const context = getExecutionContext()
-    const { isAppMode, mode } = useAppMode()
     const eventContext: ExecutionContext = {
       ...context,
-      trigger_source: this.lastTriggerSource ?? 'unknown',
-      is_app_mode: isAppMode.value,
-      view_mode: mode.value
+      trigger_source: this.lastTriggerSource ?? 'unknown'
     }
     this.trackEvent(TelemetryEvents.EXECUTION_START, eventContext)
     this.lastTriggerSource = undefined
