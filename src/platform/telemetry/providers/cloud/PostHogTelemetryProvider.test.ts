@@ -7,20 +7,25 @@ const hoisted = vi.hoisted(() => {
   const mockInit = vi.fn()
   const mockIdentify = vi.fn()
   const mockPeopleSet = vi.fn()
+  const mockReset = vi.fn()
   const mockOnUserResolved = vi.fn()
+  const mockOnUserLogout = vi.fn()
 
   return {
     mockCapture,
     mockInit,
     mockIdentify,
     mockPeopleSet,
+    mockReset,
     mockOnUserResolved,
+    mockOnUserLogout,
     mockPosthog: {
       default: {
         init: mockInit,
         capture: mockCapture,
         identify: mockIdentify,
-        people: { set: mockPeopleSet }
+        people: { set: mockPeopleSet },
+        reset: mockReset
       }
     }
   }
@@ -36,7 +41,8 @@ vi.mock('vue', async () => {
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({
-    onUserResolved: hoisted.mockOnUserResolved
+    onUserResolved: hoisted.mockOnUserResolved,
+    onUserLogout: hoisted.mockOnUserLogout
   })
 }))
 
@@ -315,6 +321,32 @@ describe('PostHogTelemetryProvider', () => {
         {}
       )
       expect(hoisted.mockPeopleSet).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('logout', () => {
+    it('registers onUserLogout watcher after init', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockOnUserLogout).toHaveBeenCalledOnce()
+    })
+
+    it('calls posthog.reset(true) when the watcher fires', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const callback = hoisted.mockOnUserLogout.mock.calls[0][0]
+      callback()
+
+      expect(hoisted.mockReset).toHaveBeenCalledWith(true)
+    })
+
+    it('does not register the watcher before init resolves', () => {
+      createProvider()
+
+      expect(hoisted.mockOnUserLogout).not.toHaveBeenCalled()
+      expect(hoisted.mockReset).not.toHaveBeenCalled()
     })
   })
 
