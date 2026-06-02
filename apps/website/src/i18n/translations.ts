@@ -1469,9 +1469,9 @@ const translations = {
     'zh-CN': '作者：Doug Hogan'
   },
   'learning.featured.description': {
-    en: 'Detailed explanation here fpo lorem ipsum Detailed explanation here fpo lorem ipsum Detailed explem ipsum Detailed explanation here fpo lorem ipsum',
+    en: 'A sky replacement workflow built on Wan AI models. WanVideoSampler and WanVideoDecode synthesize new sky visuals into existing footage. CLIPVisionLoader and WanVideoClipVisionEncode ensure replacements feel native, not composited.',
     'zh-CN':
-      '此处为详细说明的占位文本，待补充实际内容。此处为详细说明的占位文本，待补充实际内容。'
+      '基于 Wan AI 模型构建的天空替换工作流。WanVideoSampler 与 WanVideoDecode 将全新的天空视觉合成到现有素材中。CLIPVisionLoader 与 WanVideoClipVisionEncode 确保替换效果自然融合，而非生硬叠加。'
   },
   'learning.featured.watchDemo': {
     en: 'Watch Demo',
