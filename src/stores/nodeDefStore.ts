@@ -4,8 +4,6 @@ import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
 
 import { t } from '@/i18n'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveInputType } from '@/core/graph/widgets/dynamicTypes'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -24,6 +22,7 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { ESSENTIALS_CATEGORY_CANONICAL } from '@/constants/essentialsNodes'
 import { CORE_NODE_MODULES, getNodeSource } from '@/types/nodeSource'
 import type { NodeSource } from '@/types/nodeSource'
@@ -428,12 +427,17 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
       return nodeDef.inputs[widgetName]
     }
     const widget = node.widgets?.find((w) => w.name === widgetName)
-    if (!widget || !isPromotedWidgetView(widget)) return undefined
+    const widgetId = widget?.widgetId
+    if (!widgetId) return undefined
 
-    const sourceWidget = resolvePromotedWidgetSource(node, widget)
-    if (!sourceWidget) return undefined
+    const state = useWidgetValueStore().getWidget(widgetId)
+    if (!state) return undefined
 
-    return getInputSpecForWidget(sourceWidget.node, sourceWidget.widget.name)
+    return {
+      type: state.type,
+      name: widgetName,
+      ...(state.options ?? {})
+    } as InputSpecV2
   }
 
   /**
