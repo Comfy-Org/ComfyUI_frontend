@@ -5,7 +5,7 @@ import { ref } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
-import { t } from '@/i18n'
+import { st, t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -46,6 +46,12 @@ export const useAuthActions = () => {
           domain: window.location.hostname,
           email: 'support@comfy.org'
         })
+      })
+    } else if (error instanceof FirebaseError) {
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: st(`auth.errors.${error.code}`, t('auth.errors.generic'))
       })
     } else {
       toastErrorHandler(error)
