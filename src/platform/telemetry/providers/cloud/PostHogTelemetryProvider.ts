@@ -121,7 +121,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
             useCurrentUser().onUserResolved((user) => {
               if (this.posthog && user.id) {
-                this.posthog.identify(user.id)
+                this.posthog.identify(user.id, undefined, {
+                  first_auth_at: new Date().toISOString()
+                })
                 this.setSubscriptionProperties()
               }
             })
@@ -233,10 +235,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackAuth(metadata: AuthMetadata): void {
-    this.captureRaw(TelemetryEvents.USER_AUTH_COMPLETED, {
-      ...metadata,
-      $set_once: { first_auth_at: new Date().toISOString() }
-    })
+    this.trackEvent(TelemetryEvents.USER_AUTH_COMPLETED, metadata)
   }
 
   trackUserLoggedIn(): void {

@@ -137,7 +137,13 @@ describe('PostHogTelemetryProvider', () => {
       const callback = hoisted.mockOnUserResolved.mock.calls[0][0]
       callback({ id: 'user-123' })
 
-      expect(hoisted.mockIdentify).toHaveBeenCalledWith('user-123')
+      expect(hoisted.mockIdentify).toHaveBeenCalledWith(
+        'user-123',
+        undefined,
+        expect.objectContaining({
+          first_auth_at: expect.any(String)
+        })
+      )
     })
   })
 
@@ -162,12 +168,7 @@ describe('PostHogTelemetryProvider', () => {
 
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.USER_AUTH_COMPLETED,
-        expect.objectContaining({
-          method: 'google',
-          $set_once: expect.objectContaining({
-            first_auth_at: expect.any(String)
-          })
-        })
+        { method: 'google' }
       )
     })
 
