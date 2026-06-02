@@ -2,7 +2,7 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -13,7 +13,6 @@ import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 export interface NodeSelectionState {
   collapsed: boolean
   pinned: boolean
-  bypassed: boolean
 }
 
 /**
@@ -78,12 +77,10 @@ export function useSelectionState() {
   const computeSelectionStatesFromNodes = (
     nodes: LGraphNode[]
   ): NodeSelectionState => {
-    if (!nodes.length)
-      return { collapsed: false, pinned: false, bypassed: false }
+    if (!nodes.length) return { collapsed: false, pinned: false }
     return {
       collapsed: nodes.some((n) => n.flags?.collapsed),
-      pinned: nodes.some((n) => n.pinned),
-      bypassed: nodes.some((n) => n.mode === LGraphEventMode.BYPASS)
+      pinned: nodes.some((n) => n.pinned)
     }
   }
 
