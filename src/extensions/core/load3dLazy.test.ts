@@ -26,6 +26,7 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 vi.mock('@/extensions/core/load3d', () => ({}))
+vi.mock('@/extensions/core/load3dPreviewExtensions', () => ({}))
 vi.mock('@/extensions/core/saveMesh', () => ({}))
 
 type Hook = (
@@ -83,7 +84,13 @@ describe('load3dLazy', () => {
     expect(enabledExtensionsGetter).not.toHaveBeenCalled()
   })
 
-  it.each(['Load3D', 'Preview3D', 'SaveGLB'])(
+  it.for([
+    'Load3D',
+    'Preview3D',
+    'PreviewGaussianSplat',
+    'PreviewPointCloud',
+    'SaveGLB'
+  ])(
     'recognizes %s as a 3D node type and triggers the lazy-load path',
     async (nodeType) => {
       const { hook } = await loadLazyExtensionFresh()

@@ -2,7 +2,37 @@ import * as THREE from 'three'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import Load3d from '@/extensions/core/load3d/Load3d'
-import type { GizmoMode } from '@/extensions/core/load3d/interfaces'
+import type {
+  CameraState,
+  GizmoMode
+} from '@/extensions/core/load3d/interfaces'
+
+const {
+  cloneSkinnedMock,
+  exportGLBMock,
+  exportOBJMock,
+  exportSTLMock,
+  exportFBXMock
+} = vi.hoisted(() => ({
+  cloneSkinnedMock: vi.fn(),
+  exportGLBMock: vi.fn(),
+  exportOBJMock: vi.fn(),
+  exportSTLMock: vi.fn(),
+  exportFBXMock: vi.fn()
+}))
+
+vi.mock('three/examples/jsm/utils/SkeletonUtils.js', () => ({
+  clone: cloneSkinnedMock
+}))
+
+vi.mock('@/extensions/core/load3d/ModelExporter', () => ({
+  ModelExporter: {
+    exportGLB: exportGLBMock,
+    exportOBJ: exportOBJMock,
+    exportSTL: exportSTLMock,
+    exportFBX: exportFBXMock
+  }
+}))
 
 type GizmoStub = {
   setEnabled: ReturnType<typeof vi.fn>
@@ -136,7 +166,7 @@ describe('Load3d', () => {
       expect(ctx.forceRender).toHaveBeenCalledOnce()
     })
 
-    it.each(['translate', 'rotate', 'scale'] as const)(
+    it.for(['translate', 'rotate', 'scale'] as const)(
       'setGizmoMode delegates "%s" and forces a render',
       (mode: GizmoMode) => {
         ctx.load3d.setGizmoMode(mode)
@@ -742,6 +772,133 @@ describe('Load3d', () => {
     })
   })
 
+  describe('retainViewOnReload', () => {
+    function setupLoadInternal(initialFlag: boolean) {
+      const getCameraState = vi.fn<() => CameraState>(() => ({
+        position: new THREE.Vector3(1, 2, 3),
+        target: new THREE.Vector3(),
+        zoom: 1,
+        cameraType: 'perspective'
+      }))
+      const setCameraState = vi.fn()
+      const getCurrentCameraType = vi.fn(() => 'perspective' as const)
+      const loaderLoadModel = vi.fn().mockResolvedValue(undefined)
+      Object.assign(ctx.load3d, {
+        cameraManager: {
+          ...ctx.cameraManager,
+          getCameraState,
+          setCameraState,
+          getCurrentCameraType
+        },
+        controlsManager: { ...ctx.controlsManager, reset: vi.fn() },
+        loaderManager: { loadModel: loaderLoadModel },
+        modelManager: {
+          ...ctx.modelManager,
+          currentModel: new THREE.Group(),
+          originalModel: null
+        },
+        animationManager: {
+          ...ctx.animationManager,
+          setupModelAnimations: vi.fn()
+        },
+        handleResize: vi.fn(),
+        retainViewOnReload: initialFlag,
+        hasLoadedModel: false
+      })
+      return { getCameraState, setCameraState, getCurrentCameraType }
+    }
+
+    it('first load uses default framing even with retain enabled', async () => {
+      const mocks = setupLoadInternal(true)
+
+      await ctx.load3d.loadModel('a.glb')
+
+      // hasLoadedModel started false, so retain shouldn't kick in yet.
+      expect(ctx.cameraManager.reset).toHaveBeenCalledOnce()
+      expect(mocks.getCameraState).not.toHaveBeenCalled()
+      expect(mocks.setCameraState).not.toHaveBeenCalled()
+    })
+
+    it('subsequent load captures camera state, skips reset, and restores it', async () => {
+      const mocks = setupLoadInternal(true)
+
+      await ctx.load3d.loadModel('a.glb')
+      ;(ctx.cameraManager.reset as ReturnType<typeof vi.fn>).mockClear()
+      mocks.getCameraState.mockClear()
+      mocks.setCameraState.mockClear()
+
+      await ctx.load3d.loadModel('b.glb')
+
+      expect(ctx.cameraManager.reset).not.toHaveBeenCalled()
+      expect(mocks.getCameraState).toHaveBeenCalledOnce()
+      expect(mocks.setCameraState).toHaveBeenCalledOnce()
+    })
+
+    it('does not retain when the flag is off, even after a prior load', async () => {
+      const mocks = setupLoadInternal(false)
+
+      await ctx.load3d.loadModel('a.glb')
+      ;(ctx.cameraManager.reset as ReturnType<typeof vi.fn>).mockClear()
+      mocks.getCameraState.mockClear()
+      mocks.setCameraState.mockClear()
+
+      await ctx.load3d.loadModel('b.glb')
+
+      expect(ctx.cameraManager.reset).toHaveBeenCalledOnce()
+      expect(mocks.getCameraState).not.toHaveBeenCalled()
+      expect(mocks.setCameraState).not.toHaveBeenCalled()
+    })
+
+    it('toggles to the saved camera type before restoring state when types differ', async () => {
+      const mocks = setupLoadInternal(true)
+      mocks.getCameraState.mockImplementation(() => ({
+        position: new THREE.Vector3(0, 0, 5),
+        target: new THREE.Vector3(),
+        zoom: 1,
+        cameraType: 'orthographic'
+      }))
+      // First load (active type stays perspective per the default mock).
+      await ctx.load3d.loadModel('a.glb')
+      ;(ctx.cameraManager.toggleCamera as ReturnType<typeof vi.fn>).mockClear()
+
+      await ctx.load3d.loadModel('b.glb')
+
+      expect(ctx.cameraManager.toggleCamera).toHaveBeenCalledWith(
+        'orthographic'
+      )
+      expect(mocks.setCameraState).toHaveBeenCalledOnce()
+    })
+
+    it('resets hasLoadedModel on clearModel so the next load uses default framing', async () => {
+      const mocks = setupLoadInternal(true)
+      await ctx.load3d.loadModel('a.glb')
+      ctx.load3d.clearModel()
+      ;(ctx.cameraManager.reset as ReturnType<typeof vi.fn>).mockClear()
+      mocks.getCameraState.mockClear()
+
+      await ctx.load3d.loadModel('b.glb')
+
+      expect(ctx.cameraManager.reset).toHaveBeenCalledOnce()
+      expect(mocks.getCameraState).not.toHaveBeenCalled()
+    })
+
+    it('setRetainViewOnReload flips the runtime behavior between loads', async () => {
+      const mocks = setupLoadInternal(false)
+
+      await ctx.load3d.loadModel('a.glb')
+      ctx.load3d.setRetainViewOnReload(true)
+      ;(ctx.cameraManager.reset as ReturnType<typeof vi.fn>).mockClear()
+      mocks.getCameraState.mockClear()
+      mocks.setCameraState.mockClear()
+
+      await ctx.load3d.loadModel('b.glb')
+
+      expect(ctx.cameraManager.reset).not.toHaveBeenCalled()
+      expect(mocks.getCameraState).toHaveBeenCalledOnce()
+      expect(mocks.setCameraState).toHaveBeenCalledOnce()
+    })
+  })
+
   describe('captureScene', () => {
     it('hides the gizmo helper during capture and restores it after success', async () => {
       const captureResult = { scene: 'a', mask: 'b', normal: 'c' }
@@ -847,6 +1004,191 @@ describe('Load3d', () => {
 
       await expect(ctx.load3d.captureThumbnail(64, 64)).rejects.toThrow('boom')
       expect(ctx.forceRender).toHaveBeenCalled()
+    })
+  })
+
+  describe('exportModel', () => {
+    beforeEach(() => {
+      cloneSkinnedMock.mockReset()
+      exportGLBMock.mockReset()
+      exportOBJMock.mockReset()
+      exportSTLMock.mockReset()
+      exportFBXMock.mockReset()
+    })
+
+    function setupForExport(overrides: {
+      currentModel: THREE.Object3D | null
+      originalModel?: THREE.Object3D | null
+      originalFileName?: string | null
+      originalURL?: string | null
+    }) {
+      Object.assign(ctx.load3d, {
+        modelManager: {
+          ...ctx.modelManager,
+          currentModel: overrides.currentModel,
+          originalModel: overrides.originalModel ?? null,
+          originalFileName: overrides.originalFileName ?? 'cube',
+          originalURL: overrides.originalURL ?? null
+        }
+      })
+    }
+
+    it('throws when no model is loaded', async () => {
+      setupForExport({ currentModel: null })
+
+      await expect(ctx.load3d.exportModel('fbx')).rejects.toThrow(
+        'No model to export'
+      )
+    })
+
+    it('zeroes the source transform during export, then restores it', async () => {
+      const model = new THREE.Object3D()
+      model.position.set(5, 6, 7)
+      model.rotation.set(0.1, 0.2, 0.3)
+      model.scale.set(2, 3, 4)
+
+      let transformDuringExport: {
+        position: THREE.Vector3
+        rotation: THREE.Euler
+        scale: THREE.Vector3
+      } | null = null
+      exportGLBMock.mockImplementation(async () => {
+        transformDuringExport = {
+          position: model.position.clone(),
+          rotation: model.rotation.clone(),
+          scale: model.scale.clone()
+        }
+      })
+
+      setupForExport({ currentModel: model })
+
+      await ctx.load3d.exportModel('glb')
+
+      expect(transformDuringExport!.position.x).toBe(0)
+      expect(transformDuringExport!.position.y).toBe(0)
+      expect(transformDuringExport!.position.z).toBe(0)
+      expect(transformDuringExport!.rotation.x).toBe(0)
+      expect(transformDuringExport!.scale.x).toBe(1)
+      expect(transformDuringExport!.scale.y).toBe(1)
+      expect(transformDuringExport!.scale.z).toBe(1)
+
+      expect(model.position.x).toBe(5)
+      expect(model.position.y).toBe(6)
+      expect(model.position.z).toBe(7)
+      expect(model.rotation.x).toBeCloseTo(0.1)
+      expect(model.scale.x).toBe(2)
+      expect(model.scale.z).toBe(4)
+    })
+
+    it('restores the source transform even when the exporter throws', async () => {
+      const model = new THREE.Object3D()
+      model.position.set(3, 4, 5)
+      model.scale.set(7, 7, 7)
+      exportGLBMock.mockRejectedValueOnce(new Error('boom'))
+
+      setupForExport({ currentModel: model })
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await expect(ctx.load3d.exportModel('glb')).rejects.toThrow('boom')
+
+      expect(model.position.x).toBe(3)
+      expect(model.scale.x).toBe(7)
+    })
+
+    it('routes fbx through SkeletonUtils.clone and attaches the source animations', async () => {
+      const model = new THREE.Object3D()
+      const clip = { name: 'walk' } as unknown as THREE.AnimationClip
+      model.animations = [clip]
+      const cloned = new THREE.Object3D()
+      cloneSkinnedMock.mockReturnValueOnce(cloned)
+
+      setupForExport({
+        currentModel: model,
+        originalFileName: 'rig',
+        originalURL: 'http://example.com/api/view?filename=rig.fbx'
+      })
+
+      await ctx.load3d.exportModel('fbx')
+
+      expect(cloneSkinnedMock).toHaveBeenCalledWith(model)
+      expect(exportFBXMock).toHaveBeenCalledOnce()
+      const [exportedModel, filename, originalURL] = exportFBXMock.mock
+        .calls[0] as [
+        THREE.Object3D & { animations: THREE.AnimationClip[] },
+        string,
+        string | null
+      ]
+      expect(exportedModel).toBe(cloned)
+      expect(exportedModel.animations).toEqual([clip])
+      expect(filename).toBe('rig.fbx')
+      expect(originalURL).toBe('http://example.com/api/view?filename=rig.fbx')
+    })
+
+    it('falls back to originalModel.animations when the working model has none (fbx)', async () => {
+      const model = new THREE.Object3D()
+      const original = new THREE.Object3D()
+      const clip = { name: 'idle' } as unknown as THREE.AnimationClip
+      original.animations = [clip]
+      const cloned = new THREE.Object3D()
+      cloneSkinnedMock.mockReturnValueOnce(cloned)
+
+      setupForExport({ currentModel: model, originalModel: original })
+
+      await ctx.load3d.exportModel('fbx')
+
+      const [exportedModel] = exportFBXMock.mock.calls[0] as [
+        THREE.Object3D & { animations: THREE.AnimationClip[] }
+      ]
+      expect(exportedModel.animations).toEqual([clip])
+    })
+
+    it('uses Object3D.clone (not SkeletonUtils) for non-fbx formats', async () => {
+      const model = new THREE.Object3D()
+      const cloneSpy = vi.spyOn(model, 'clone')
+
+      setupForExport({
+        currentModel: model,
+        originalFileName: 'cube',
+        originalURL: null
+      })
+
+      await ctx.load3d.exportModel('glb')
+
+      expect(cloneSpy).toHaveBeenCalled()
+      expect(cloneSkinnedMock).not.toHaveBeenCalled()
+      expect(exportGLBMock).toHaveBeenCalledOnce()
+      const [, filename] = exportGLBMock.mock.calls[0] as [
+        unknown,
+        string,
+        unknown
+      ]
+      expect(filename).toBe('cube.glb')
+    })
+
+    it('emits exportLoadingStart and exportLoadingEnd around the export', async () => {
+      const model = new THREE.Object3D()
+      setupForExport({ currentModel: model })
+
+      await ctx.load3d.exportModel('glb')
+
+      expect(ctx.eventManager.emitEvent).toHaveBeenCalledWith(
+        'exportLoadingStart',
+        'Exporting as GLB...'
+      )
+      expect(ctx.eventManager.emitEvent).toHaveBeenCalledWith(
+        'exportLoadingEnd',
+        null
+      )
+    })
+
+    it('throws on unsupported format', async () => {
+      const model = new THREE.Object3D()
+      setupForExport({ currentModel: model })
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await expect(ctx.load3d.exportModel('xyz')).rejects.toThrow(
+        'Unsupported export format: xyz'
+      )
     })
   })
 })
