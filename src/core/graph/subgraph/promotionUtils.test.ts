@@ -3,6 +3,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import {
@@ -10,7 +11,6 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/world/entityIds'
@@ -33,50 +33,12 @@ function writePromotedInputValue(
   useWidgetValueStore().setValue(input.widgetId, value)
 }
 
-function promotedWidgetRef(
-  host: { inputs: Array<{ widgetId?: WidgetId; name: string }> },
-  name: string
-): IBaseWidget {
+function promotedWidgetRef(host: SubgraphNode, name: string): IBaseWidget {
   const input = host.inputs.find((input) => input.name === name)
   if (!input?.widgetId) throw new Error(`Missing promoted input ${name}`)
-  const value = useWidgetValueStore().getWidget(input.widgetId)?.value
-  if (!isWidgetValue(value)) throw new Error(`Missing promoted value ${name}`)
-  return {
-    name,
-    type: 'text',
-    value,
-    options: {},
-    y: 0,
-    widgetId: input.widgetId
-  }
-}
-
-function nestedPromotedWidgetRef(
-  host: {
-    id: string | number
-    inputs: Array<{ widgetId?: WidgetId; name: string }>
-  },
-  name: string
-): TestPromotedWidget & { widgetId: WidgetId } {
-  const input = host.inputs.find((input) => input.name === name)
-  if (!input?.widgetId) throw new Error(`Missing promoted input ${name}`)
-  const value = useWidgetValueStore().getWidget(input.widgetId)?.value
-  if (!isWidgetValue(value)) throw new Error(`Missing promoted value ${name}`)
-  return {
-    name,
-    type: 'text',
-    value,
-    options: {},
-    y: 0,
-    sourceNodeId: String(host.id),
-    sourceWidgetName: name,
-    widgetId: input.widgetId
-  }
-}
-
-type TestPromotedWidget = IBaseWidget & {
-  sourceNodeId: string
-  sourceWidgetName: string
+  const widget = promotedInputWidget(input)
+  if (!widget) throw new Error(`Missing promoted input ${name}`)
+  return widget
 }
 
 const updatePreviewsMock = vi.hoisted(() => vi.fn())
@@ -852,7 +814,7 @@ describe('demoteWidget — axiomatic projection retraction', () => {
         promoteValueWidgetViaSubgraphInput(
           outerHost,
           innerHost,
-          nestedPromotedWidgetRef(innerHost, input.name)
+          promotedWidgetRef(innerHost, input.name)
         ).ok
       ).toBe(true)
     }
@@ -861,9 +823,7 @@ describe('demoteWidget — axiomatic projection retraction', () => {
       'text_1'
     ])
 
-    demoteWidget(innerHost, nestedPromotedWidgetRef(innerHost, 'text_1'), [
-      outerHost
-    ])
+    demoteWidget(innerHost, promotedWidgetRef(innerHost, 'text_1'), [outerHost])
 
     expect(outerHost.subgraph.inputs.map((i) => i.name)).toEqual(['text'])
     expect(isLinkedPromotion(outerHost, String(innerHost.id), 'text_1')).toBe(
@@ -890,7 +850,7 @@ describe('disambiguated nested promotion identity', () => {
       promoteValueWidgetViaSubgraphInput(
         host,
         innerHost,
-        nestedPromotedWidgetRef(innerHost, 'text_1')
+        promotedWidgetRef(innerHost, 'text_1')
       ).ok
     ).toBe(true)
 
@@ -931,7 +891,7 @@ describe('disambiguated nested promotion identity', () => {
         promoteValueWidgetViaSubgraphInput(
           outerHost,
           innerHost,
-          nestedPromotedWidgetRef(innerHost, input.name)
+          promotedWidgetRef(innerHost, input.name)
         ).ok
       ).toBe(true)
     }

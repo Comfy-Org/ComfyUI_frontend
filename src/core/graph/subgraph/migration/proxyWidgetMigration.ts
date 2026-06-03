@@ -1,5 +1,6 @@
 import { isEqual } from 'es-toolkit/compat'
 
+import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   findHostInputForPromotion,
@@ -99,22 +100,9 @@ function resolveSourceWidget(
       const target = resolveSubgraphInputTarget(sourceNode, input.name)
       return target?.widgetName === sourceWidgetName
     })
-    if (input?.widgetId) {
-      const state = useWidgetValueStore().getWidget(input.widgetId)
-      // Plain source ref for a promoted input on a nested subgraph node:
-      // getSlotFromWidget locates the backing slot by widgetId.
-      return {
-        name: input.name,
-        type: state?.type ?? '*',
-        options: state?.options ?? {},
-        value: state?.value,
-        serialize: state?.serialize,
-        y: 0,
-        widgetId: input.widgetId,
-        sourceNodeId: String(sourceNode.id),
-        sourceWidgetName: input.name
-      } as IBaseWidget
-    }
+    // Store-backed projection for a promoted input on a nested subgraph node:
+    // getSlotFromWidget locates the backing slot by widgetId.
+    if (input?.widgetId) return promotedInputWidget(input) ?? undefined
   }
 
   const widgets = sourceNode.widgets
