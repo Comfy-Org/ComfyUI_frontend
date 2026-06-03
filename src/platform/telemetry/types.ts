@@ -603,6 +603,7 @@ export type TelemetryEventProperties =
   | TabCountMetadata
   | NodeSearchMetadata
   | NodeSearchResultMetadata
+  | SearchQueryMetadata
   | TemplateFilterMetadata
   | SettingChangedMetadata
   | UiButtonClickMetadata

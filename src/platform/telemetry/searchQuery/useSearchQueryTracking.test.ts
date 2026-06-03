@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Ref } from 'vue'
+import type { EffectScope, Ref } from 'vue'
 import { effectScope, ref } from 'vue'
 
 const hoisted = vi.hoisted(() => ({
@@ -15,20 +15,28 @@ import { useSearchQueryTracking } from './useSearchQueryTracking'
 const DEBOUNCE_FLUSH_MS = 600
 const flush = () => new Promise((r) => setTimeout(r, DEBOUNCE_FLUSH_MS))
 
-function track(query: Ref<string>, results: Ref<{ length: number }>) {
-  const scope = effectScope()
-  scope.run(() => {
-    useSearchQueryTracking('node_sidebar', query, results)
-  })
-  return scope
-}
-
 describe('useSearchQueryTracking', () => {
+  const scopes: EffectScope[] = []
+
+  function track(
+    query: Ref<string>,
+    results: Ref<{ length: number }>
+  ): EffectScope {
+    const scope = effectScope()
+    scope.run(() => {
+      useSearchQueryTracking('node_sidebar', query, results)
+    })
+    scopes.push(scope)
+    return scope
+  }
+
   beforeEach(() => {
     hoisted.trackSearchQuery.mockClear()
   })
 
   afterEach(() => {
+    scopes.forEach((s) => s.stop())
+    scopes.length = 0
     vi.useRealTimers()
   })
 
@@ -67,6 +75,16 @@ describe('useSearchQueryTracking', () => {
     const results = ref<string[]>(['a', 'b'])
     track(query, results)
     query.value = '   '
+    await flush()
+    expect(hoisted.trackSearchQuery).not.toHaveBeenCalled()
+  })
+
+  it('cancels a pending debounced call when the scope is disposed', async () => {
+    const query = ref('')
+    const results = ref<string[]>(['a', 'b'])
+    const scope = track(query, results)
+    query.value = 'hello'
+    scope.stop()
     await flush()
     expect(hoisted.trackSearchQuery).not.toHaveBeenCalled()
   })

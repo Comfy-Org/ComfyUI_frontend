@@ -1,5 +1,5 @@
 import { debounce } from 'es-toolkit/compat'
-import { watch } from 'vue'
+import { onScopeDispose, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -11,7 +11,9 @@ const DEBOUNCE_MS = 500
  * Fires `app:search_query` for the given surface, debounced 500ms.
  * Empty queries are skipped. `results` is read at fire time and only its
  * `.length` is observed, so callers can pass any reactive array (filtered
- * suggestions, displayed results, etc.).
+ * suggestions, displayed results, etc.). The pending debounced call is
+ * cancelled on scope dispose so a user who types-and-closes within the
+ * window doesn't emit a stale event.
  */
 export function useSearchQueryTracking(
   surface: SearchSurface,
@@ -32,4 +34,5 @@ export function useSearchQueryTracking(
   }, DEBOUNCE_MS)
 
   watch(query, fire)
+  onScopeDispose(() => fire.cancel())
 }
