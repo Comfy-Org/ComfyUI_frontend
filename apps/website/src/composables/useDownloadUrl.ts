@@ -3,8 +3,8 @@ import { computed, onMounted, ref } from 'vue'
 import { externalLinks } from '@/config/routes'
 
 const downloadUrls = {
-  windows: 'https://download.comfy.org/windows/nsis/x64',
-  macArm: 'https://download.comfy.org/mac/dmg/arm64'
+  windows: 'https://dl.todesktop.com/241130tqe9q3y',
+  macArm: 'https://dl.todesktop.com/241130tqe9q3y'
 } as const
 
 type DetectedPlatform = 'windows' | 'mac' | null
