@@ -84,7 +84,7 @@ describe('TabSubgraphInputs', () => {
   })
 
   it('lists a subgraph node promoted widget as a store-backed parameter row', () => {
-    const { host, sourceNode } = buildHostWithPromotedSeed()
+    const { host } = buildHostWithPromotedSeed()
 
     renderPanel(host)
 
@@ -96,9 +96,6 @@ describe('TabSubgraphInputs', () => {
       widgetId(host.rootGraph.id, host.id, 'seed')
     )
     expect(seedRow?.widget.value).toBe(42)
-    // Source identity is preserved so promote/demote actions resolve correctly.
-    const seedWidget = seedRow?.widget as { sourceNodeId?: string } | undefined
-    expect(seedWidget?.sourceNodeId).toBe(String(sourceNode.id))
   })
 
   it('reflects the current host widget value from the store', () => {

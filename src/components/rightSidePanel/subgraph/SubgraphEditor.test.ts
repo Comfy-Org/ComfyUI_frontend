@@ -14,6 +14,7 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 
+import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import SubgraphEditor from './SubgraphEditor.vue'
@@ -167,33 +168,20 @@ describe('SubgraphEditor', () => {
         .map((el) => el.textContent?.trim())
     ).toEqual(['first', 'second'])
 
-    const descriptorFor = (sourceNode: LGraphNode) => {
+    const rowFor = (sourceNode: LGraphNode) => {
       const input = host.inputs.find((input) => {
         if (!input.widgetId) return false
         const target = resolveSubgraphInputTarget(host, input.name)
         return target?.nodeId === String(sourceNode.id)
       })!
-      const target = resolveSubgraphInputTarget(host, input.name)!
       return {
-        sourceNodeId: target.nodeId,
-        sourceWidgetName: target.widgetName,
-        name: input.name,
-        label: input.label ?? input.name,
-        widgetId: input.widgetId
+        kind: 'promoted',
+        node: sourceNode,
+        input,
+        widget: promotedInputWidget(input)!
       }
     }
-    const reversed = [
-      {
-        kind: 'promoted',
-        node: secondNode,
-        descriptor: descriptorFor(secondNode)
-      },
-      {
-        kind: 'promoted',
-        node: firstNode,
-        descriptor: descriptorFor(firstNode)
-      }
-    ] as PromotedRow[]
+    const reversed = [rowFor(secondNode), rowFor(firstNode)] as PromotedRow[]
     listSetter?.(reversed)
     await nextTick()
 

@@ -3,20 +3,17 @@ import { storeToRefs } from 'pinia'
 import { computed, nextTick, ref, shallowRef, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { promotedInputWidgets } from '@/core/graph/subgraph/promotedInputWidget'
 import {
   getWidgetName,
   isWidgetPromotedOnSubgraphNode,
   reorderSubgraphInputsByWidgetOrder
 } from '@/core/graph/subgraph/promotionUtils'
-import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { searchWidgets } from '../shared'
 import type { NodeWidgetsList } from '../shared'
@@ -47,46 +44,6 @@ const isAllCollapsed = computed({
 })
 const advancedInputsSectionRef = useTemplateRef('advancedInputsSectionRef')
 
-function buildPromotedWidget(input: INodeInputSlot): IBaseWidget | null {
-  if (!input.widgetId) return null
-  const target = resolveSubgraphInputTarget(node, input.name)
-  if (!target) return null
-
-  const id = input.widgetId
-  const store = useWidgetValueStore()
-  // Store-backed descriptor so a promoted subgraph input renders through the
-  // same parameter widgets as an ordinary node widget. Type/value/options read
-  // live via getters (mirroring BaseWidget) rather than at build time, so the
-  // row list does not reactively rebuild — and re-key — on every value edit.
-  return {
-    name: target.widgetName,
-    label: input.label ?? input.name,
-    y: 0,
-    widgetId: id,
-    sourceNodeId: target.nodeId,
-    sourceWidgetName: target.widgetName,
-    get type() {
-      return store.getWidget(id)?.type ?? 'text'
-    },
-    get options() {
-      return store.getWidget(id)?.options ?? {}
-    },
-    get value() {
-      return store.getWidget(id)?.value
-    },
-    set value(next) {
-      store.setValue(id, next)
-    }
-  } as IBaseWidget
-}
-
-function getPromotedWidgets(): IBaseWidget[] {
-  return node.inputs.flatMap((input) => {
-    const widget = buildPromotedWidget(input)
-    return widget ? [widget] : []
-  })
-}
-
 watch(
   focusedSection,
   async (section) => {
@@ -109,7 +66,7 @@ watch(
 )
 
 const widgetsList = computed((): NodeWidgetsList => {
-  return getPromotedWidgets().map((widget) => ({ node, widget }))
+  return promotedInputWidgets(node).map((widget) => ({ node, widget }))
 })
 
 const advancedInputsWidgets = computed((): NodeWidgetsList => {
