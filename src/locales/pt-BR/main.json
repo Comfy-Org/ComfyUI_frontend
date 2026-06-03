@@ -233,7 +233,8 @@
       "auth/user-disabled": "Esta conta foi desativada. Por favor, entre em contato com o suporte.",
       "auth/user-not-found": "Nenhuma conta encontrada com este e-mail. Gostaria de criar uma nova conta?",
       "auth/weak-password": "A senha é muito fraca. Use uma senha mais forte com pelo menos 6 caracteres.",
-      "auth/wrong-password": "A senha que você digitou está incorreta. Por favor, tente novamente."
+      "auth/wrong-password": "A senha que você digitou está incorreta. Por favor, tente novamente.",
+      "generic": "Algo deu errado ao fazer login. Por favor, tente novamente."
     },
     "login": {
       "andText": "e",
@@ -407,6 +408,29 @@
   "cloudForgotPassword_passwordResetSent": "Redefinição de senha enviada",
   "cloudForgotPassword_sendResetLink": "Enviar link de redefinição",
   "cloudForgotPassword_title": "Esqueceu a senha",
+  "cloudHero": {
+    "nextSlide": "Próximo slide",
+    "previousSlide": "Slide anterior",
+    "slidePagerLabel": "Ir para o slide {index}",
+    "slides": {
+      "cloud": {
+        "description": "Melhor opção para a maioria dos usuários que desejam trabalhar de qualquer lugar com modelos verificados para uso comercial.",
+        "title": "Nuvem"
+      },
+      "models": {
+        "description": "Modelos selecionados e licenciados comercialmente, prontos para uso sem configuração.",
+        "title": "Modelos"
+      },
+      "team": {
+        "description": "Adicione sua equipe hoje mesmo. Compartilhe workflows e ativos em toda a sua organização.",
+        "title": "Equipe"
+      },
+      "workflows": {
+        "description": "Da ideia ao resultado em minutos. Gere múltiplas variações lado a lado.",
+        "title": "Workflows"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "Continuar Localmente",
     "exploreCloud": "Experimente a Nuvem Gratuitamente",

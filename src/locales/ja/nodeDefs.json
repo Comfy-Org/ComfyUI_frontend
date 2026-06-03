@@ -1721,6 +1721,10 @@
         "name": "終了シグマ",
         "tooltip": "これらのオプションが有効になる最後のシグマ値。"
       },
+      "force_sequential_txt_ids": {
+        "name": "force_sequential_txt_ids",
+        "tooltip": "ゼロの代わりに連番のテキストトークンIDを強制的に使用します。この方法でトレーニングされたが state dict に __sequential__ キーが含まれていない 2026-05-22 から 2026-06-01 までのチェックポイントで使用してください。"
+      },
       "model": {
         "name": "モデル"
       },

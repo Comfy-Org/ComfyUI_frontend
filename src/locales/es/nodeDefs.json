@@ -1721,6 +1721,10 @@
         "name": "sigma_final",
         "tooltip": "Último sigma para el cual estas opciones estarán en efecto."
       },
+      "force_sequential_txt_ids": {
+        "name": "forzar_ids_de_texto_secuenciales",
+        "tooltip": "Forzar el uso de identificadores de tokens de texto secuenciales en lugar de ceros. Debe usarse para los checkpoints del 22-05-2026 al 01-06-2026 que fueron entrenados de esta manera pero no contienen la clave __sequential__ en el state dict."
+      },
       "model": {
         "name": "modelo"
       },

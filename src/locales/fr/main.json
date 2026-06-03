@@ -233,7 +233,8 @@
       "auth/user-disabled": "Ce compte a été désactivé. Veuillez contacter le support.",
       "auth/user-not-found": "Aucun compte trouvé avec cette adresse e-mail. Souhaitez-vous créer un nouveau compte ?",
       "auth/weak-password": "Le mot de passe est trop faible. Veuillez utiliser un mot de passe plus fort avec au moins 6 caractères.",
-      "auth/wrong-password": "Le mot de passe que vous avez saisi est incorrect. Veuillez réessayer."
+      "auth/wrong-password": "Le mot de passe que vous avez saisi est incorrect. Veuillez réessayer.",
+      "generic": "Une erreur s'est produite lors de votre connexion. Veuillez réessayer."
     },
     "login": {
       "andText": "et",
@@ -407,6 +408,29 @@
   "cloudForgotPassword_passwordResetSent": "Réinitialisation du mot de passe envoyée",
   "cloudForgotPassword_sendResetLink": "Envoyer le lien de réinitialisation",
   "cloudForgotPassword_title": "Mot de passe oublié",
+  "cloudHero": {
+    "nextSlide": "Diapositive suivante",
+    "previousSlide": "Diapositive précédente",
+    "slidePagerLabel": "Aller à la diapositive {index}",
+    "slides": {
+      "cloud": {
+        "description": "Idéal pour la plupart des utilisateurs souhaitant travailler de n'importe où avec des modèles vérifiés pour une licence commerciale.",
+        "title": "Cloud"
+      },
+      "models": {
+        "description": "Modèles sélectionnés et licenciés commercialement, prêts à l’emploi sans configuration.",
+        "title": "Modèles"
+      },
+      "team": {
+        "description": "Intégrez votre équipe dès aujourd'hui. Partagez des workflows et des ressources dans toute votre organisation.",
+        "title": "Équipe"
+      },
+      "workflows": {
+        "description": "De l’idée au résultat en quelques minutes. Générez plusieurs variantes côte à côte.",
+        "title": "Workflows"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "Continuer localement",
     "exploreCloud": "Essayer le cloud gratuitement",
