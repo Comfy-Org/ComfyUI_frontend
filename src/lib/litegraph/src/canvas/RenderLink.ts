@@ -45,6 +45,8 @@ export interface RenderLink {
 
   readonly isIoNodeLink?: boolean
 
+  disconnectOnDrop?: boolean
+
   /**
    * Capability checks used for hit-testing and validation during drag.
    * Implementations should return `false` when a connection is not possible
@@ -91,5 +93,10 @@ export interface RenderLink {
     outputNode: LGraphNode,
     output: INodeOutputSlot,
     events: CustomEventTarget<LinkConnectorEventMap>
+  ): void
+
+  drawConnectionCircle?(
+    ctx: CanvasRenderingContext2D,
+    to: Readonly<Point>
   ): void
 }

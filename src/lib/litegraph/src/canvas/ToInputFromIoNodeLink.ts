@@ -1,4 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
@@ -24,6 +25,8 @@ export class ToInputFromIoNodeLink implements RenderLink {
   readonly fromPos: Point
   fromDirection: LinkDirection = LinkDirection.RIGHT
   readonly existingLink?: LLink
+  disconnectOnDrop: boolean
+  readonly disconnectOrigin: Point | undefined
   readonly isIoNodeLink = true
 
   constructor(
@@ -44,6 +47,11 @@ export class ToInputFromIoNodeLink implements RenderLink {
     this.fromSlotIndex = outputIndex
     this.fromPos = fromReroute ? fromReroute.pos : fromSlot.pos
     this.existingLink = existingLink
+    this.disconnectOnDrop = true
+
+    if (!existingLink) return
+    const toNode = network.getNodeById(existingLink.target_id)
+    this.disconnectOrigin = toNode?.getInputPos(existingLink.target_slot)
   }
 
   canConnectToInput(inputNode: NodeLike, input: INodeInputSlot): boolean {
@@ -161,5 +169,23 @@ export class ToInputFromIoNodeLink implements RenderLink {
       })
 
     return true
+  }
+  drawConnectionCircle(ctx: CanvasRenderingContext2D, to: Readonly<Point>) {
+    if (!this.disconnectOnDrop || !this.disconnectOrigin) return
+
+    const [originX, originY] = this.disconnectOrigin
+    const radius = 35
+    const distSquared = (originX - to[0]) ** 2 + (originY - to[1]) ** 2
+
+    ctx.save()
+    ctx.strokeStyle = LiteGraph.WIDGET_OUTLINE_COLOR
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    ctx.moveTo(originX + radius, originY)
+    ctx.arc(originX, originY, radius, 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.restore()
+
+    this.disconnectOnDrop = distSquared < radius ** 2
   }
 }

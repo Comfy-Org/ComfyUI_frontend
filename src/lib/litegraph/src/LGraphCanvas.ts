@@ -6156,9 +6156,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     const highlightPos = this._getHighlightPosition()
-    this.linkConnector.renderLinks
-      .filter((rl) => rl instanceof MovingInputLink)
-      .forEach((rl) => rl.drawConnectionCircle(ctx, highlightPos))
+    this.linkConnector.renderLinks.forEach((rl: RenderLink) =>
+      rl.drawConnectionCircle?.(ctx, highlightPos)
+    )
 
     ctx.globalAlpha = 1
   }
