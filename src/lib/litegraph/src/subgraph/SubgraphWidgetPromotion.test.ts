@@ -401,7 +401,7 @@ describe('SubgraphWidgetPromotion', () => {
       expect(keptSamplerNodeId).toBe(String(samplerNode.id))
     })
 
-    it('resolves legacy prefixed proxyWidgets via the immediate child PromotedWidgetView identity', () => {
+    it('resolves legacy prefixed proxyWidgets via the immediate child promoted-widget identity', () => {
       const rootGraph = createTestRootGraph()
 
       const innerSubgraph = createTestSubgraph({

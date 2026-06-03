@@ -1,7 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import type { WidgetId } from '@/world/entityIds'
 
 export interface ResolvedPromotedWidget {
   node: LGraphNode
@@ -13,19 +11,15 @@ export interface PromotedWidgetSource {
   sourceWidgetName: string
 }
 
-export interface PromotedWidgetView extends IBaseWidget {
-  readonly node: SubgraphNode
-  readonly widgetId: WidgetId
-  readonly sourceNodeId: string
-  readonly sourceWidgetName: string
+/**
+ * A widget that carries the identity of the interior source it was promoted
+ * from. Promoted host widgets are store-backed and addressed by widgetId; this
+ * source identity drives promote/demote and linked-promotion checks.
+ */
+export type PromotedWidget = IBaseWidget & PromotedWidgetSource
 
-  hydrateHostValue(value: IBaseWidget['value']): void
-
-  ensureHostWidgetState(): void
-}
-
-export function isPromotedWidgetView(
+export function isPromotedWidget(
   widget: IBaseWidget
-): widget is PromotedWidgetView {
+): widget is PromotedWidget {
   return 'sourceNodeId' in widget && 'sourceWidgetName' in widget
 }

@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { isPromotedWidget } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   demoteWidget,
   isLinkedPromotion,
@@ -46,7 +46,7 @@ const { t } = useI18n()
 
 const hasParents = computed(() => parents?.length > 0)
 const isLinked = computed(() => {
-  if (!node.isSubgraphNode() || !isPromotedWidgetView(widget)) return false
+  if (!node.isSubgraphNode() || !isPromotedWidget(widget)) return false
   return isLinkedPromotion(node, widget.sourceNodeId, widget.sourceWidgetName)
 })
 const canToggleVisibility = computed(() => hasParents.value && !isLinked.value)
@@ -85,7 +85,7 @@ async function handleRename() {
 function handleHideInput() {
   if (!parents?.length) return
 
-  if (isPromotedWidgetView(widget)) {
+  if (isPromotedWidget(widget)) {
     for (const parent of parents) {
       const sourceNodeId =
         String(node.id) === String(parent.id)
