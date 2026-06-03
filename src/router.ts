@@ -7,7 +7,6 @@ import {
 } from 'vue-router'
 import type { RouteLocationNormalized } from 'vue-router'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
@@ -128,7 +127,6 @@ router.afterEach(() => {
 })
 
 if (isCloud) {
-  const { flags } = useFeatureFlags()
   const PUBLIC_ROUTE_NAMES = new Set([
     'cloud-login',
     'cloud-signup',
@@ -218,31 +216,9 @@ if (isCloud) {
       })
     }
 
-    // User is logged in - check if they need onboarding (when enabled)
-    // For root path, check actual user status to handle waitlisted users
-    if (!isDesktop && isLoggedIn && to.path === '/') {
-      if (!flags.onboardingSurveyEnabled) {
-        return next()
-      }
-      // Import auth functions dynamically to avoid circular dependency
-      const { getSurveyCompletedStatus } =
-        await import('@/platform/cloud/onboarding/auth')
-      try {
-        // Check user's actual status
-        const surveyCompleted = await getSurveyCompletedStatus()
-
-        // Survey is required for all users (when feature flag enabled)
-        if (!surveyCompleted) {
-          return next({ name: 'cloud-survey' })
-        }
-      } catch (error) {
-        console.error('Failed to check user status:', error)
-        // On error, redirect to user-check as fallback
-        return next({ name: 'cloud-user-check' })
-      }
-    }
-
-    // User is logged in and accessing protected route
+    // User is logged in and accessing a protected route.
+    // Onboarding survey is gated post-login in UserCheckView, never here, so a
+    // mid-session navigation can't bounce a working user to the survey.
     return next()
   })
 }
