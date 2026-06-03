@@ -11,7 +11,6 @@ import type {
   HelpResourceClickedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
-  SearchKeystrokeMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
   SettingChangedMetadata,
@@ -314,14 +313,6 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     this.pushEvent('select_item', {
       item_id: metadata.node_type,
       search_term: metadata.last_query
-    })
-  }
-
-  trackSearchKeystroke(metadata: SearchKeystrokeMetadata): void {
-    this.pushEvent('search_keystroke', {
-      surface: metadata.surface,
-      search_term: metadata.query,
-      query_length: metadata.query_length
     })
   }
 

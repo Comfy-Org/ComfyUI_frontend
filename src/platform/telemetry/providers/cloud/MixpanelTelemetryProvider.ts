@@ -27,7 +27,6 @@ import type {
   HelpResourceClickedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
-  SearchKeystrokeMetadata,
   PageVisibilityMetadata,
   RunButtonProperties,
   SettingChangedMetadata,
@@ -399,10 +398,6 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackNodeSearchResultSelected(metadata: NodeSearchResultMetadata): void {
     this.trackEvent(TelemetryEvents.NODE_SEARCH_RESULT_SELECTED, metadata)
-  }
-
-  trackSearchKeystroke(metadata: SearchKeystrokeMetadata): void {
-    this.trackEvent(TelemetryEvents.SEARCH_KEYSTROKE, metadata)
   }
 
   trackTemplateFilterChanged(metadata: TemplateFilterMetadata): void {
