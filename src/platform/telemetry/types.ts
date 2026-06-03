@@ -325,6 +325,7 @@ export interface CheckoutAttributionMetadata {
   ga_session_id?: string
   ga_session_number?: string
   im_ref?: string
+  rewardful_referral?: string
   utm_source?: string
   utm_medium?: string
   utm_campaign?: string
