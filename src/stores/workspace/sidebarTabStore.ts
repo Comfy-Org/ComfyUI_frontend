@@ -2,8 +2,8 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarTab'
+import { useCloudModelLibrarySidebarTab } from '@/composables/sidebarTabs/useCloudModelLibrarySidebarTab'
 import { useJobHistorySidebarTab } from '@/composables/sidebarTabs/useJobHistorySidebarTab'
-import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLibrarySidebarTab'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
 import { t, te } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -134,7 +134,9 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
 
     registerSidebarTab(useAssetsSidebarTab())
     registerSidebarTab(useNodeLibrarySidebarTab())
-    registerSidebarTab(useModelLibrarySidebarTab())
+    // Use the unified Model Library tab everywhere — its data source branches
+    // on isCloud internally.
+    registerSidebarTab(useCloudModelLibrarySidebarTab())
     registerSidebarTab(useWorkflowsSidebarTab())
     registerSidebarTab(useAppsSidebarTab())
 

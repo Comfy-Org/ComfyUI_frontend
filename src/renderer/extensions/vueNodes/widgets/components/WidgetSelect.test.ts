@@ -20,6 +20,7 @@ const mockShouldUseAssetBrowser = vi.hoisted(() => vi.fn(() => false))
 const mockIsAssetAPIEnabled = vi.hoisted(() => vi.fn(() => false))
 
 vi.mock('@/platform/assets/services/assetService', () => ({
+  MODELS_TAG: 'models',
   assetService: {
     shouldUseAssetBrowser: mockShouldUseAssetBrowser,
     isAssetAPIEnabled: mockIsAssetAPIEnabled

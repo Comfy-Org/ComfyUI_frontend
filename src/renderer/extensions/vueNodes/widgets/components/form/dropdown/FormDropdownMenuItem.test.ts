@@ -119,12 +119,15 @@ describe('FormDropdownMenuItem', () => {
       expect(screen.queryByLabelText('item_name')).toBeNull()
     })
 
-    it('omits media area entirely for list-small layout', () => {
+    it('renders a compact leading thumbnail for list-small layout', () => {
       renderItem(
         { previewUrl: '/p.png', layout: 'list-small' },
         { assetKind: 'image' }
       )
-      expect(screen.queryByRole('img', { name: 'item_name' })).toBeNull()
+      // list-small shows a compact leading thumbnail instead of the full
+      // aspect-square media area.
+      const thumb = screen.getByRole('img', { name: 'item_name' })
+      expect(thumb).toHaveAttribute('src', '/p.png')
     })
 
     it('does not look up mesh preview when kind is image', async () => {

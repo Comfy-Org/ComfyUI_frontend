@@ -18,6 +18,10 @@ export interface FormDropdownItem {
   is_immutable?: boolean
   /** Base models this item is compatible with - used for base model filtering */
   base_models?: string[]
+  /** Author / publisher, shown after the base model on model cards */
+  author?: string
+  /** Category key used to render a gradient placeholder when no preview_url exists */
+  placeholder_category?: string
 }
 
 export interface SortOption<TId extends string = string> {
@@ -48,6 +52,12 @@ export interface FormDropdownMenuItemProps {
   previewUrl: string
   name: string
   label?: string
+  /** Publisher/organisation, shown after the base model on model cards. */
+  author?: string
+  /** Base models this item is compatible with, shown on model cards. */
+  baseModels?: string[]
+  /** When set and no previewUrl is present, render the matching gradient. */
+  placeholderCategory?: string
   layout?: LayoutMode
 }
 

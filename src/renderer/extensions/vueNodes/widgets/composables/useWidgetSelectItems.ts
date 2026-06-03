@@ -2,6 +2,11 @@ import { capitalize } from 'es-toolkit'
 import { computed, ref, shallowRef, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
+import {
+  UNKNOWN_PROVIDER,
+  getAssetProvider
+} from '@/components/sidebar/tabs/cloudModelLibrary/modelGroups'
+import { placeholderCategoryForAsset } from '@/composables/sidebarTabs/useCategoryPlaceholder'
 import { t } from '@/i18n'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
@@ -46,6 +51,11 @@ function getDisplayLabel(
 
 function assetKindToMediaType(kind: AssetKind): string {
   return kind === 'mesh' ? '3D' : kind
+}
+
+function getAssetAuthorLabel(asset: AssetItem): string | undefined {
+  const provider = getAssetProvider(asset)
+  return provider && provider !== UNKNOWN_PROVIDER ? provider : undefined
 }
 
 function getMediaUrl(
@@ -292,13 +302,21 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
   const assetItems = computed<FormDropdownItem[]>(() => {
     if (!toValue(options.isAssetMode) || !assetData) return []
+    // The category placeholder is a model-type gradient; media assets resolve
+    // to a non-model tag, so leave it unset and let the generic media fallback
+    // render (matching the non-asset-mode media path).
+    const isModelKind = toValue(options.assetKind) === 'model'
     return assetData.assets.value.map((asset) => ({
       id: asset.id,
       name: getAssetFilename(asset),
       label: getAssetDisplayName(asset),
       preview_url: asset.preview_url,
       is_immutable: asset.is_immutable,
-      base_models: getAssetBaseModels(asset)
+      base_models: getAssetBaseModels(asset),
+      author: getAssetAuthorLabel(asset),
+      placeholder_category: isModelKind
+        ? placeholderCategoryForAsset(asset)
+        : undefined
     }))
   })
 

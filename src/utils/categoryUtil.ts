@@ -109,6 +109,17 @@ export function getProviderIcon(providerName: string): string {
 }
 
 /**
+ * Checks whether a custom brand icon is registered for the given provider.
+ * Backed by [[PROVIDER_COLORS]], which is the source of truth for partner
+ * brands that ship with a colored SVG under
+ * [[packages/design-system/src/icons]].
+ */
+export function hasProviderIcon(providerName: string): boolean {
+  const iconKey = providerName.toLowerCase().replaceAll(/\s+/g, '-')
+  return iconKey in PROVIDER_COLORS
+}
+
+/**
  * Returns the border color(s) for an API node provider badge.
  * @param providerName - The provider name from the node category
  * @returns CSS color string or gradient definition

@@ -17,6 +17,7 @@ const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
 
 vi.mock('@/platform/assets/services/assetService', () => ({
+  MODELS_TAG: 'models',
   assetService: {
     shouldUseAssetBrowser: vi.fn(() => true),
     isAssetAPIEnabled: vi.fn(() => true)
