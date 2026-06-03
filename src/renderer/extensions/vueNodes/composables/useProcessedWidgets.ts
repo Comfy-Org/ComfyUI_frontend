@@ -211,7 +211,7 @@ export function computeProcessedWidgets({
       const fallbackEntityId = deriveWidgetEntityId(
         graphId,
         String(extractRawNodeId(widget.nodeId ?? nodeId ?? '')),
-        widget.name
+        widget.slotName ?? widget.name
       )
       widgetState = fallbackEntityId
         ? widgetValueStore.getWidget(fallbackEntityId)

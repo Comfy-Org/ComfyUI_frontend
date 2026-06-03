@@ -486,6 +486,28 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     expect(state?.value).toBe(99)
   })
 
+  it('uses slotName for fallback widget-state lookup when entityId is absent', () => {
+    const widget = createMockWidget({
+      name: 'source_seed',
+      slotName: 'host_seed',
+      nodeId: NODE_ID,
+      entityId: undefined
+    })
+
+    useWidgetValueStore().registerWidget(
+      widgetEntityId(GRAPH_ID, NODE_ID, 'host_seed'),
+      {
+        type: 'combo',
+        value: 42,
+        options: {}
+      }
+    )
+
+    const [processed] = processWidgets([widget])
+
+    expect(processed.value).toBe(42)
+  })
+
   it('clears execution errors on update', () => {
     const widget = createMockWidget({
       name: 'seed',

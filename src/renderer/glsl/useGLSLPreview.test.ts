@@ -4,14 +4,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, ref, shallowRef } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { asGraphId, widgetEntityId } from '@/world/entityIds'
 
 type WidgetValueStoreStub = {
   _widgetMap: Map<string, { value: unknown }>
 }
+
+const TEST_GRAPH_ID = 'test-graph-id'
 
 const mockRendererFactory = vi.hoisted(() => {
   const init = vi.fn(() => true)
@@ -76,13 +79,9 @@ vi.mock('@/stores/nodeOutputStore', () => ({
   })
 }))
 
-vi.mock('@/stores/widgetValueStore', async () => {
-  const { parseWidgetEntityId } = await import('@/world/entityIds')
+vi.mock('@/stores/widgetValueStore', () => {
   const widgetMap = new Map<string, { value: unknown }>()
-  const getWidget = vi.fn((widgetId: string) => {
-    const { name } = parseWidgetEntityId(widgetId as never)
-    return widgetMap.get(name)
-  })
+  const getWidget = vi.fn((widgetId: string) => widgetMap.get(widgetId))
   const getNodeWidgets = vi.fn(() => [])
   return {
     useWidgetValueStore: () => ({
@@ -106,7 +105,7 @@ vi.mock('@/utils/objectUrlUtil', () => ({
 }))
 
 function createMockNode(overrides: Record<string, unknown> = {}): LGraphNode {
-  const graph = { id: 'test-graph-id', rootGraph: { id: 'test-graph-id' } }
+  const graph = { id: TEST_GRAPH_ID, rootGraph: { id: TEST_GRAPH_ID } }
   return fromAny<LGraphNode, unknown>({
     id: 1,
     type: 'GLSLShader',
@@ -122,6 +121,18 @@ function wrapNode(
   node: LGraphNode | null
 ): MaybeRefOrGetter<LGraphNode | null> {
   return ref(node) as MaybeRefOrGetter<LGraphNode | null>
+}
+
+function setWidget(
+  store: WidgetValueStoreStub,
+  node: LGraphNode,
+  name: string,
+  value: unknown
+) {
+  store._widgetMap.set(
+    widgetEntityId(asGraphId(TEST_GRAPH_ID), node.id as NodeId, name),
+    { value }
+  )
 }
 
 describe('useGLSLPreview', () => {
@@ -188,9 +199,7 @@ describe('useGLSLPreview', () => {
       const store = fromAny<WidgetValueStoreStub, unknown>(
         useWidgetValueStore()
       )
-      store._widgetMap.set('fragment_shader', {
-        value: 'void main() {}'
-      })
+      setWidget(store, node, 'fragment_shader', 'void main() {}')
 
       const nodeRef = shallowRef<LGraphNode | null>(null)
       useGLSLPreview(nodeRef)
@@ -252,9 +261,7 @@ describe('useGLSLPreview', () => {
       const store = fromAny<WidgetValueStoreStub, unknown>(
         useWidgetValueStore()
       )
-      store._widgetMap.set('fragment_shader', {
-        value: 'void main() {}'
-      })
+      setWidget(store, node, 'fragment_shader', 'void main() {}')
 
       const nodeRef = shallowRef<LGraphNode | null>(null)
       const result = useGLSLPreview(nodeRef)
@@ -310,9 +317,15 @@ describe('useGLSLPreview', () => {
       const store = fromAny<WidgetValueStoreStub, unknown>(
         useWidgetValueStore()
       )
-      store._widgetMap.delete('fragment_shader')
 
       const node = createMockNode()
+      store._widgetMap.delete(
+        widgetEntityId(
+          asGraphId(TEST_GRAPH_ID),
+          node.id as NodeId,
+          'fragment_shader'
+        )
+      )
       mockNodeOutputs[String(node.id)] = {
         images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
       }
@@ -331,32 +344,30 @@ describe('useGLSLPreview', () => {
       const store = fromAny<WidgetValueStoreStub, unknown>(
         useWidgetValueStore()
       )
-      store._widgetMap.set('size_mode', { value: 'custom' })
-      store._widgetMap.set('size_mode.width', { value: 800 })
-      store._widgetMap.set('size_mode.height', { value: 600 })
 
       const node = createMockNode()
+      setWidget(store, node, 'size_mode', 'custom')
+      setWidget(store, node, 'size_mode.width', 800)
+      setWidget(store, node, 'size_mode.height', 600)
       await setupAndRender(node)
 
       expect(mockRendererFactory.setResolution).toHaveBeenCalledWith(800, 600)
 
-      store._widgetMap.delete('size_mode')
-      store._widgetMap.delete('size_mode.width')
-      store._widgetMap.delete('size_mode.height')
+      store._widgetMap.clear()
     })
 
     it('uses default resolution when size_mode is not custom', async () => {
       const store = fromAny<WidgetValueStoreStub, unknown>(
         useWidgetValueStore()
       )
-      store._widgetMap.set('size_mode', { value: 'from_input' })
 
       const node = createMockNode()
+      setWidget(store, node, 'size_mode', 'from_input')
       await setupAndRender(node)
 
       expect(mockRendererFactory.setResolution).toHaveBeenCalledWith(512, 512)
 
-      store._widgetMap.delete('size_mode')
+      store._widgetMap.clear()
     })
 
     it('disposes renderer and cancels debounce on cleanup', async () => {
