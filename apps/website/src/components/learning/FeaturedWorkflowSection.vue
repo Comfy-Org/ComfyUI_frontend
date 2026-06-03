@@ -2,6 +2,7 @@
 import type { Locale } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
+import Badge from '../common/Badge.vue'
 import BrandButton from '../common/BrandButton.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
 
@@ -46,15 +47,11 @@ const demoVideoPoster =
           </BrandButton>
         </div>
 
-        <div class="mt-2 flex flex-wrap gap-3">
-          <span
-            v-for="tag in tags"
-            :key="tag"
-            class="text-primary-warm-gray border-primary-warm-gray/40 rounded-full border px-4 py-1.5 text-xs"
-          >
-            {{ tag }}
-          </span>
-        </div>
+        <ul class="mt-2 flex flex-wrap gap-3">
+          <li v-for="tag in tags" :key="tag">
+            <Badge variant="subtle">{{ tag }}</Badge>
+          </li>
+        </ul>
       </div>
 
       <div class="border-primary-warm-gray rounded-4.5xl border p-4">
