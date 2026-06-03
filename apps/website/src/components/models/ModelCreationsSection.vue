@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+import type { GalleryItem } from '../../data/gallery'
 import type { Locale } from '../../i18n/translations'
-import type { GalleryItem } from '../gallery/GallerySection.vue'
 
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
@@ -16,44 +16,54 @@ const ctaHref = 'https://comfy.org/workflows/model/grok'
 
 const items: GalleryItem[] = [
   {
-    video: 'https://media.comfy.org/videos/compressed_512/eye.webm',
-    title: 'Until Our Eye Interlink harajuku',
-    userAlias: 'ShaneF Motion Design',
-    teamAlias: 'ThinkDiffusion',
+    id: 'subway-swan',
+    image: 'https://media.comfy.org/website/gallery/subway-swan_compressed.png',
+    title: 'Subway Swan',
+    userAlias: 'Purz Beats',
+    teamAlias: 'Comfy',
     tool: 'Grok Imagine',
-    href: 'https://www.thinkdiffusion.com/studio#success-stories-anta'
+    href: 'https://www.youtube.com/@PurzBeats'
   },
   {
-    image: 'https://media.comfy.org/website/gallery/gallery.webp',
-    title: 'Amber Astronaut',
-    userAlias: 'Yogo',
-    teamAlias: '',
+    id: 'milos-little-wonder',
+    video:
+      'https://media.comfy.org/website/gallery/milos-little-wonder_compressed.mp4',
+    title: 'Milos Little Wonder',
+    userAlias: 'Purz Beats',
+    teamAlias: 'Comfy',
     tool: 'Grok Imagine',
-    href: 'https://de.linkedin.com/in/milan-kastenmueller-18778a174'
+    href: 'https://www.youtube.com/@PurzBeats'
   },
   {
-    video: 'https://media.comfy.org/videos/compressed_512/cigarette.webm',
-    title: 'Autopoiesis',
-    userAlias: 'Yogo',
-    teamAlias: 'Visual Frisson',
+    id: 'amber-passage',
+    image:
+      'https://media.comfy.org/website/gallery/amber-passage_compressed.jpg',
+    title: 'Amber Passage',
+    userAlias: 'Purz Beats',
+    teamAlias: 'Comfy',
     tool: 'Grok Imagine',
-    href: 'https://www.instagram.com/visualfrisson/?hl=en'
+    href: 'https://www.youtube.com/@PurzBeats',
+    objectPosition: 'bottom'
   },
   {
-    video: 'https://media.comfy.org/videos/compressed_512/kyrie.webm',
-    title: 'Origins',
-    userAlias: 'ShaneF Motion Design',
-    teamAlias: 'ThinkDiffusion',
+    id: 'neon-revenant',
+    video:
+      'https://media.comfy.org/website/gallery/neon-revenant_compressed.mp4',
+    title: 'Neon Revenant',
+    userAlias: 'Eric Solorio',
+    teamAlias: 'Comfy',
     tool: 'Grok Imagine',
-    href: 'https://vimeo.com/1021360563'
+    href: 'https://www.instagram.com/enigmatic_e'
   },
   {
-    image: 'https://media.comfy.org/website/gallery/desert.webp',
-    title: 'Desert Landing',
-    userAlias: 'Yogo',
-    teamAlias: '',
+    id: 'midnight-umami',
+    image:
+      'https://media.comfy.org/website/gallery/midnight_umami_compressed.png',
+    title: 'Midnight Umami',
+    userAlias: 'Purz Beats',
+    teamAlias: 'Comfy',
     tool: 'Grok Imagine',
-    href: 'https://de.linkedin.com/in/milan-kastenmueller-18778a174'
+    href: 'https://www.youtube.com/@PurzBeats'
   }
 ]
 
@@ -78,7 +88,7 @@ const ctaLabel = t('models.list.creations.cta', locale)
     class="flex flex-col items-center px-4 pt-16 pb-20 lg:px-20 lg:pt-36"
   >
     <h2
-      class="text-primary-comfy-canvas max-w-4xl text-center text-3xl font-light tracking-tight lg:text-5xl"
+      class="max-w-4xl text-center text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl"
     >
       {{ title }}
     </h2>
@@ -98,6 +108,8 @@ const ctaLabel = t('models.list.creations.cta', locale)
           :key="i"
           :item
           :locale
+          :object-position="item.objectPosition"
+          :object-fit="item.objectFit"
           @click="openDetail(i)"
         />
       </div>
@@ -107,6 +119,8 @@ const ctaLabel = t('models.list.creations.cta', locale)
           :key="i + 2"
           :item
           :locale
+          :object-position="item.objectPosition"
+          :object-fit="item.objectFit"
           @click="openDetail(i + 2)"
         />
       </div>
@@ -120,6 +134,8 @@ const ctaLabel = t('models.list.creations.cta', locale)
         :key="i"
         :item
         :locale
+        :object-position="item.objectPosition"
+        :object-fit="item.objectFit"
         mobile
         @click="openDetail(i)"
       />

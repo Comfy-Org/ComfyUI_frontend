@@ -7,6 +7,8 @@ export interface GalleryItem {
   teamAlias: string
   tool: string
   href?: string
+  objectPosition?: string
+  objectFit?: string
   /** Defaults to true. Set to false to hide this item from rendered lists. */
   visible?: boolean
 }

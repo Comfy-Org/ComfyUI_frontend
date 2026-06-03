@@ -7,12 +7,16 @@ const {
   item,
   locale = 'en',
   aspect = 'var(--aspect-ratio-gallery-card)',
-  mobile = false
+  mobile = false,
+  objectPosition = 'center',
+  objectFit = 'cover'
 } = defineProps<{
   item: GalleryItem
   locale?: Locale
   aspect?: string
   mobile?: boolean
+  objectPosition?: string
+  objectFit?: string
 }>()
 
 defineEmits<{ click: [] }>()
@@ -31,13 +35,15 @@ defineEmits<{ click: [] }>()
         loop
         muted
         playsinline
-        class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+        class="size-full transition-transform duration-300 group-hover:scale-105"
+        :style="{ objectPosition, objectFit }"
       />
       <img
         v-else
         :src="item.image"
         :alt="item.title"
-        class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+        class="size-full transition-transform duration-300 group-hover:scale-105"
+        :style="{ objectPosition, objectFit }"
       />
       <!-- Desktop hover overlay -->
       <div
