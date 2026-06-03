@@ -33,13 +33,13 @@ export function getWidgetDefaultValue(
 }
 
 /**
- * Renames a widget and its corresponding input.
- * Handles both regular widgets and promoted widget views in subgraphs.
+ * Renames a widget: a label-only write across the widget, its store state, and
+ * its backing input slot (matched by widgetId). Never touches the widget/input
+ * name or widgetId — those are the stable identity a promoted input derives from.
  *
  * @param widget The widget to rename
  * @param node The node containing the widget
  * @param newLabel The new label for the widget (empty string or undefined to clear)
- * @param parents Optional array of parent SubgraphNodes (for promoted widgets)
  * @returns true if the rename was successful, false otherwise
  */
 export function renameWidget(
@@ -50,12 +50,9 @@ export function renameWidget(
 ): boolean {
   void parents
   const label = newLabel || undefined
-  const input = node.inputs?.find(
-    (inp) =>
-      inp.widgetId === widget.widgetId ||
-      inp._widget === widget ||
-      inp.widget?.name === widget.name
-  )
+  const input = widget.widgetId
+    ? node.inputs?.find((inp) => inp.widgetId === widget.widgetId)
+    : undefined
   const widgetState = widget.widgetId
     ? useWidgetValueStore().getWidget(widget.widgetId)
     : undefined

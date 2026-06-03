@@ -12,8 +12,8 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { isWidgetPromotedOnSubgraphNode } from '@/core/graph/subgraph/promotionUtils'
-import { isPromotedWidget } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -147,16 +147,17 @@ function isWidgetShownOnParents(
   widgetNode: LGraphNode,
   widget: IBaseWidget
 ): boolean {
+  const source = widgetPromotedSource(widgetNode, widget)
   return parents.some((parent) => {
-    if (isPromotedWidget(widget)) {
+    if (source) {
       const interiorNodeId =
         String(widgetNode.id) === String(parent.id)
-          ? widget.sourceNodeId
+          ? source.nodeId
           : String(widgetNode.id)
 
       return isWidgetPromotedOnSubgraphNode(parent, {
         sourceNodeId: interiorNodeId,
-        sourceWidgetName: widget.sourceWidgetName
+        sourceWidgetName: source.widgetName
       })
     }
     return isWidgetPromotedOnSubgraphNode(parent, {

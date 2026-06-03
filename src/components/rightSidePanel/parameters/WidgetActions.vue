@@ -5,8 +5,9 @@ import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { isPromotedWidget } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import {
+  demotePromotedInput,
   demoteWidget,
   isLinkedPromotion,
   promoteWidget
@@ -46,8 +47,10 @@ const { t } = useI18n()
 
 const hasParents = computed(() => parents?.length > 0)
 const isLinked = computed(() => {
-  if (!node.isSubgraphNode() || !isPromotedWidget(widget)) return false
-  return isLinkedPromotion(node, widget.sourceNodeId, widget.sourceWidgetName)
+  if (!node.isSubgraphNode()) return false
+  const source = widgetPromotedSource(node, widget)
+  if (!source) return false
+  return isLinkedPromotion(node, source.nodeId, source.widgetName)
 })
 const canToggleVisibility = computed(() => hasParents.value && !isLinked.value)
 const favoriteNode = computed(() =>
@@ -85,21 +88,15 @@ async function handleRename() {
 function handleHideInput() {
   if (!parents?.length) return
 
-  if (isPromotedWidget(widget)) {
+  const source = widgetPromotedSource(node, widget)
+  if (source) {
     for (const parent of parents) {
       const sourceNodeId =
-        String(node.id) === String(parent.id)
-          ? widget.sourceNodeId
-          : String(node.id)
-      demoteWidget(
-        {
-          id: sourceNodeId,
-          title: node.title,
-          type: node.type
-        },
-        widget,
-        [parent]
-      )
+        String(node.id) === String(parent.id) ? source.nodeId : String(node.id)
+      demotePromotedInput(parent, {
+        sourceNodeId,
+        sourceWidgetName: source.widgetName
+      })
     }
     canvasStore.canvas?.setDirty(true, true)
   } else {

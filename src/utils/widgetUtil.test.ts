@@ -76,9 +76,14 @@ describe('renameWidget', () => {
     vi.clearAllMocks()
   })
 
-  it('renames a regular widget and its matching input', () => {
-    const widget = makeWidget({ name: 'seed' })
-    const input = { name: 'seed', widget: { name: 'seed' } } as INodeInputSlot
+  it('writes the label to the widget and the input matched by widgetId', () => {
+    const id = 'graph-id:1:seed' as WidgetId
+    const widget = makeWidget({ name: 'seed', widgetId: id })
+    const input = {
+      name: 'seed',
+      widgetId: id,
+      widget: { name: 'seed' }
+    } as INodeInputSlot
     const node = makeNode({ inputs: [input] })
 
     const result = renameWidget(widget, node, 'My Seed')
@@ -97,7 +102,7 @@ describe('renameWidget', () => {
     expect(widget.label).toBeUndefined()
   })
 
-  it('renames host subgraph widget state and matching input without source identity', () => {
+  it('writes the label to host widget state for a promoted subgraph input', () => {
     const hostWidgetId = 'graph-id:7:seed' as WidgetId
     useWidgetValueStore().registerWidget(hostWidgetId, {
       type: 'number',
@@ -105,15 +110,11 @@ describe('renameWidget', () => {
       options: {},
       label: undefined
     })
-    const widget = makeWidget({
-      name: 'seed',
-      widgetId: hostWidgetId
-    })
+    const widget = makeWidget({ name: 'seed', widgetId: hostWidgetId })
     const input = {
       name: 'seed',
       widgetId: hostWidgetId,
-      widget: { name: 'seed' },
-      _widget: widget
+      widget: { name: 'seed' }
     } as INodeInputSlot
     const subgraphNode = makeNode({ isSubgraph: true, inputs: [input] })
 
@@ -125,17 +126,21 @@ describe('renameWidget', () => {
     expect(widget.label).toBe('Renamed')
   })
 
-  it('renames source-like widgets locally when no widgetId state exists', () => {
-    const widget = makeWidget({
+  it('never mutates the widget or input name/widgetId (label-only)', () => {
+    const id = 'graph-id:7:seed' as WidgetId
+    const widget = makeWidget({ name: 'seed', widgetId: id })
+    const input = {
       name: 'seed',
-      sourceNodeId: '5',
-      sourceWidgetName: 'innerSeed'
-    })
-    const node = makeNode({ isSubgraph: false })
+      widgetId: id,
+      widget: { name: 'seed' }
+    } as INodeInputSlot
+    const subgraphNode = makeNode({ isSubgraph: true, inputs: [input] })
 
-    const result = renameWidget(widget, node, 'Renamed')
+    renameWidget(widget, subgraphNode, 'Display Only')
 
-    expect(result).toBe(true)
-    expect(widget.label).toBe('Renamed')
+    expect(widget.name).toBe('seed')
+    expect(widget.widgetId).toBe(id)
+    expect(input.name).toBe('seed')
+    expect(input.widgetId).toBe(id)
   })
 })

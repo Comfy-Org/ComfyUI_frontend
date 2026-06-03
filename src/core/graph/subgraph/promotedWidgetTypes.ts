@@ -6,20 +6,12 @@ export interface ResolvedPromotedWidget {
   widget: IBaseWidget
 }
 
+/**
+ * A persisted promotion's source identity: the interior node + widget a host
+ * subgraph input was promoted from. Used by the migration/schema layer, where
+ * the source is a stored tuple rather than something link-derivable.
+ */
 export interface PromotedWidgetSource {
   sourceNodeId: string
   sourceWidgetName: string
-}
-
-/**
- * A widget that carries the identity of the interior source it was promoted
- * from. Promoted host widgets are store-backed and addressed by widgetId; this
- * source identity drives promote/demote and linked-promotion checks.
- */
-export type PromotedWidget = IBaseWidget & PromotedWidgetSource
-
-export function isPromotedWidget(
-  widget: IBaseWidget
-): widget is PromotedWidget {
-  return 'sourceNodeId' in widget && 'sourceWidgetName' in widget
 }
