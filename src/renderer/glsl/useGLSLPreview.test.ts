@@ -78,8 +78,8 @@ vi.mock('@/stores/nodeOutputStore', () => ({
 
 vi.mock('@/stores/widgetValueStore', () => {
   const widgetMap = new Map<string, { value: unknown }>()
-  const getWidget = vi.fn((_graphId: string, _nodeId: string, name: string) =>
-    widgetMap.get(name)
+  const getWidget = vi.fn((id: string) =>
+    widgetMap.get(id.split(':').slice(2).join(':'))
   )
   return {
     useWidgetValueStore: () => ({
