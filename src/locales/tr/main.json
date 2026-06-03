@@ -233,7 +233,8 @@
       "auth/user-disabled": "Bu hesap devre dışı bırakıldı. Lütfen destek ekibiyle iletişime geçin.",
       "auth/user-not-found": "Bu e-posta ile ilişkili bir hesap bulunamadı. Yeni bir hesap oluşturmak ister misiniz?",
       "auth/weak-password": "Parola çok zayıf. Lütfen en az 6 karakterden oluşan daha güçlü bir parola kullanın.",
-      "auth/wrong-password": "Girdiğiniz parola yanlış. Lütfen tekrar deneyin."
+      "auth/wrong-password": "Girdiğiniz parola yanlış. Lütfen tekrar deneyin.",
+      "generic": "Oturum açarken bir hata oluştu. Lütfen tekrar deneyin."
     },
     "login": {
       "andText": "ve",
@@ -407,6 +408,29 @@
   "cloudForgotPassword_passwordResetSent": "Parola sıfırlama gönderildi",
   "cloudForgotPassword_sendResetLink": "Sıfırlama bağlantısını gönder",
   "cloudForgotPassword_title": "Şifremi Unuttum",
+  "cloudHero": {
+    "nextSlide": "Sonraki slayt",
+    "previousSlide": "Önceki slayt",
+    "slidePagerLabel": "Slayta git {index}",
+    "slides": {
+      "cloud": {
+        "description": "Ticari lisans için doğrulanmış modellerle her yerden çalışmak isteyen çoğu kullanıcı için en iyisi.",
+        "title": "Bulut"
+      },
+      "models": {
+        "description": "Sıfır kurulumla çalışmaya hazır, özenle seçilmiş ve ticari lisanslı modeller.",
+        "title": "Modeller"
+      },
+      "team": {
+        "description": "Ekibinizi bugün dahil edin. İş akışlarını ve varlıkları organizasyonunuz genelinde paylaşın.",
+        "title": "Ekip"
+      },
+      "workflows": {
+        "description": "Fikirden çıktıya dakikalar içinde. Birden fazla varyasyonu yan yana oluşturun.",
+        "title": "İş Akışları"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "Yerelde Devam Et",
     "exploreCloud": "Bulutu Ücretsiz Dene",

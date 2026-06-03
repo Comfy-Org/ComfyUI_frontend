@@ -1721,6 +1721,10 @@
         "name": "结束sigma",
         "tooltip": "这些选项生效的最后一个sigma值。"
       },
+      "force_sequential_txt_ids": {
+        "name": "强制顺序文本ID",
+        "tooltip": "强制使用顺序文本标记ID，而不是零。应在2026-05-22至2026-06-01期间以此方式训练但状态字典中不包含 __sequential__ 键的检查点中使用。"
+      },
       "model": {
         "name": "模型"
       },

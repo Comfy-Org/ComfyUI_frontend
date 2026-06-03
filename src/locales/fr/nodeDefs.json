@@ -1721,6 +1721,10 @@
         "name": "sigma_fin",
         "tooltip": "Dernier sigma pour lequel ces options seront actives."
       },
+      "force_sequential_txt_ids": {
+        "name": "force_sequential_txt_ids",
+        "tooltip": "Forcer l’utilisation d’identifiants de jetons de texte séquentiels au lieu de zéros. À utiliser pour les checkpoints du 22/05/2026 au 01/06/2026 qui ont été entraînés de cette manière mais ne contiennent pas la clé __sequential__ dans le dictionnaire d’état."
+      },
       "model": {
         "name": "modèle"
       },

@@ -1721,6 +1721,10 @@
         "name": "結束 sigma",
         "tooltip": "這些選項將生效的最後一個 sigma 值。"
       },
+      "force_sequential_txt_ids": {
+        "name": "強制使用連續文本標記ID",
+        "tooltip": "強制使用連續文本標記ID，而非全為零。此選項適用於2026-05-22至2026-06-01期間訓練、但狀態字典中未包含 __sequential__ 鍵的checkpoint。"
+      },
       "model": {
         "name": "模型"
       },
