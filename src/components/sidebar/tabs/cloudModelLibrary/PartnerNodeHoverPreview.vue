@@ -32,13 +32,11 @@ import { computed } from 'vue'
 
 import NodePreview from '@/components/node/NodePreview.vue'
 import { formatPartnerProvider } from '@/components/sidebar/tabs/cloudModelLibrary/modelGroups'
+import { partnerKind } from '@/components/sidebar/tabs/cloudModelLibrary/modelLibraryGrouping'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 const { nodeDef } = defineProps<{ nodeDef: ComfyNodeDefImpl }>()
 
 const provider = computed(() => formatPartnerProvider(nodeDef.category))
-const kind = computed(() => {
-  const parts = (nodeDef.category ?? '').split('/')
-  return parts[1] ?? ''
-})
+const kind = computed(() => partnerKind(nodeDef.category))
 </script>

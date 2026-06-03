@@ -144,7 +144,6 @@
       </div>
     </template>
   </SidebarTabTemplate>
-  <div id="cloud-model-library-preview-container" />
   <teleport v-if="hoveredItem" to="body">
     <div
       ref="hoverPopoverRef"
@@ -164,12 +163,11 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener, useResizeObserver, useStorage } from '@vueuse/core'
+import { useStorage } from '@vueuse/core'
 import { useFuse } from '@vueuse/integrations/useFuse'
 import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
 import { useToast } from 'primevue/usetoast'
-import type { CSSProperties } from 'vue'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
@@ -178,48 +176,44 @@ import AssetHoverPreview from '@/components/sidebar/tabs/cloudModelLibrary/Asset
 import CloudModelLeaf from '@/components/sidebar/tabs/cloudModelLibrary/CloudModelLeaf.vue'
 import CloudPartnerLeaf from '@/components/sidebar/tabs/cloudModelLibrary/CloudPartnerLeaf.vue'
 import PartnerNodeHoverPreview from '@/components/sidebar/tabs/cloudModelLibrary/PartnerNodeHoverPreview.vue'
-import { getCategoryOverrideForBase } from '@/components/sidebar/tabs/cloudModelLibrary/baseModelCategoryOverrides'
 import {
   MODEL_GROUPS,
   PARTNER_NODES_GROUP_ID,
   fallbackGroupLabel,
   formatPartnerProvider,
-  formatRowDisplayName,
   getAssetProvider,
-  groupIdForRawTag,
   isPartnerNodeCategory
 } from '@/components/sidebar/tabs/cloudModelLibrary/modelGroups'
+import {
+  firstNonModelsTag,
+  groupIdForAsset,
+  groupLabelForAsset,
+  partnerKind,
+  rawTagTopLevel
+} from '@/components/sidebar/tabs/cloudModelLibrary/modelLibraryGrouping'
+import { buildProviderGroups } from '@/components/sidebar/tabs/cloudModelLibrary/modelLibrarySort'
+import type {
+  Section,
+  SidebarItem,
+  SortMode
+} from '@/components/sidebar/tabs/cloudModelLibrary/modelLibrarySort'
 import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/Popover.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import { isCloud } from '@/platform/distribution/types'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useModelLibraryHoverPopover } from '@/composables/sidebarTabs/useModelLibraryHoverPopover'
 import { useModelLibrarySource } from '@/composables/sidebarTabs/useModelLibrarySource'
-import { MODELS_TAG } from '@/platform/assets/services/assetService'
+import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetBaseModels,
-  getAssetDisplayName,
   getAssetTriggerPhrases
 } from '@/platform/assets/utils/assetMetadataUtils'
-import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
 import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
-import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
+import { isCloud } from '@/platform/distribution/types'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { cn } from '@comfyorg/tailwind-utils'
-
-type AssetEntry = { kind: 'asset'; asset: AssetItem }
-type PartnerEntry = { kind: 'partner'; nodeDef: ComfyNodeDefImpl }
-type SidebarItem = AssetEntry | PartnerEntry
-
-type ProviderGroup = { provider: string; items: SidebarItem[] }
-type Section = {
-  id: string
-  label: string
-  providers: ProviderGroup[]
-  totalCount: number
-}
 
 // Surface the most important categories at the top of the library, in this
 // exact order, ahead of the alphabetically-sorted long tail.
@@ -248,14 +242,6 @@ const { isUploadButtonEnabled, showUploadDialog } =
 
 const searchQuery = ref('')
 
-type SortMode =
-  | 'recent'
-  | 'oldest'
-  | 'nameAsc'
-  | 'nameDesc'
-  | 'baseModelAsc'
-  | 'baseModelDesc'
-
 const ALL_SORT_OPTIONS: ReadonlyArray<{ value: SortMode; labelKey: string }> = [
   { value: 'baseModelAsc', labelKey: 'assets.sort.baseModelAsc' },
   { value: 'baseModelDesc', labelKey: 'assets.sort.baseModelDesc' },
@@ -273,8 +259,6 @@ const SORT_OPTIONS = isCloud
       (option) =>
         option.value !== 'baseModelAsc' && option.value !== 'baseModelDesc'
     )
-
-const UNKNOWN_BASE_MODEL_LABEL = '—'
 
 const sortMode = useStorage<SortMode>(
   'Comfy.CloudModelLibrary.SortBy',
@@ -390,182 +374,14 @@ const matchedPartners = computed(() =>
   partnerFuseResults.value.map((result) => result.item)
 )
 
-function firstNonModelsTag(asset: AssetItem): string | null {
-  for (const tag of asset.tags) {
-    if (tag && tag !== MODELS_TAG) return tag
-  }
-  return null
-}
-
-function rawTagTopLevel(tag: string): string {
-  return tag.split('/')[0]
-}
-
-function groupLabelForAsset(asset: AssetItem): string {
-  const groupId = groupIdForAsset(asset)
-  if (groupId) {
-    const group = MODEL_GROUPS.find((g) => g.id === groupId)
-    if (group) return group.label
-  }
-  const tag = firstNonModelsTag(asset)
-  return tag ? formatCategoryLabel(rawTagTopLevel(tag)) : ''
-}
-
-function partnerKind(category: string | undefined): string {
-  if (!category) return ''
-  const parts = category.split('/')
-  return parts[1] ?? ''
-}
-
-function groupIdForAsset(asset: AssetItem): string | null {
-  const tag = firstNonModelsTag(asset)
-  if (!tag) return null
-  const tagGroup = groupIdForRawTag(rawTagTopLevel(tag))
-  // Cross-base file-types stay in their type bucket. The Base-model sort
-  // axis still keeps each family's items grouped together within that bucket.
-  if (
-    tagGroup === 'loras' ||
-    tagGroup === 'vae' ||
-    tagGroup === 'conditioning'
-  ) {
-    return tagGroup
-  }
-  // Filename-based VAE detection: any file with "vae" in any path segment of
-  // its tag, name, or filepath belongs in the VAE bucket — catches assets
-  // tagged generically (`latentsync/vae`, `CogVideo/VAE`, `SEEDVR2`) or named
-  // `*_vae_*` but tagged as something else.
-  if (looksLikeVae(asset, tag)) return 'vae'
-  // For everything else, let the resolved base model's primary category
-  // override the file-type-derived bucket — keeps a family's text encoders
-  // and checkpoints visible together rather than scattered.
-  const bases = getAssetBaseModels(asset)
-  for (const base of bases) {
-    const override = getCategoryOverrideForBase(base)
-    if (override) return override
-  }
-  return tagGroup
-}
-
-function looksLikeVae(asset: AssetItem, tag: string): boolean {
-  // Any path segment of the tag containing "vae" (handles `latentsync/vae`,
-  // `CogVideo/VAE`, etc.)
-  for (const segment of tag.split('/')) {
-    if (/^vae(_approx)?$/i.test(segment)) return true
-  }
-  // "vae" appearing as a word in the filename / display name
-  const sources = [
-    asset.name,
-    typeof asset.metadata?.filename === 'string'
-      ? asset.metadata.filename
-      : undefined,
-    typeof asset.metadata?.filepath === 'string'
-      ? asset.metadata.filepath
-      : undefined
-  ]
-  for (const source of sources) {
-    if (typeof source !== 'string') continue
-    if (/(?:^|[^a-zA-Z0-9])vae(?:[^a-zA-Z0-9]|$)/i.test(source)) return true
-  }
-  return false
-}
-
-function itemSortKey(item: SidebarItem): string {
-  return item.kind === 'asset'
-    ? formatRowDisplayName(getAssetDisplayName(item.asset))
-    : (item.nodeDef.display_name ?? item.nodeDef.name)
-}
-
-function itemTimestamp(item: SidebarItem): number {
-  if (item.kind !== 'asset') return 0
-  const ts = item.asset.created_at ?? item.asset.updated_at
-  if (!ts) return 0
-  const parsed = Date.parse(ts)
-  return Number.isNaN(parsed) ? 0 : parsed
-}
-
-function compareByName(a: SidebarItem, b: SidebarItem): number {
-  return itemSortKey(a).localeCompare(itemSortKey(b), undefined, {
-    sensitivity: 'base'
-  })
-}
-
-function compareByMode(a: SidebarItem, b: SidebarItem, mode: SortMode): number {
-  switch (mode) {
-    case 'recent':
-      return itemTimestamp(b) - itemTimestamp(a) || compareByName(a, b)
-    case 'oldest':
-      return itemTimestamp(a) - itemTimestamp(b) || compareByName(a, b)
-    case 'nameDesc':
-    case 'baseModelDesc':
-      return -compareByName(a, b)
-    case 'nameAsc':
-    case 'baseModelAsc':
-    default:
-      return compareByName(a, b)
-  }
-}
-
-function isBaseModelMode(mode: SortMode): boolean {
-  return mode === 'baseModelAsc' || mode === 'baseModelDesc'
-}
-
-function itemBaseModels(item: SidebarItem): string[] {
-  if (item.kind === 'asset') return getAssetBaseModels(item.asset)
-  return []
-}
-
-function buildProviderGroups(items: SidebarItem[]): ProviderGroup[] {
-  // When a search is active, preserve Fuse's relevance ranking instead of
-  // re-sorting by the user's chosen sort mode.
-  if (searchQuery.value.trim().length > 0) {
-    return [{ provider: '', items: items.slice() }]
-  }
-  const mode = sortMode.value
-  if (!isBaseModelMode(mode)) {
-    return [
-      {
-        provider: '',
-        items: items.slice().sort((a, b) => compareByMode(a, b, mode))
-      }
-    ]
-  }
-
-  // Items with multiple compatible base models show under each. Items with
-  // no known base land in a trailing "—" bucket.
-  const buckets = new Map<string, SidebarItem[]>()
-  for (const item of items) {
-    const bases = itemBaseModels(item)
-    if (bases.length === 0) {
-      const list = buckets.get(UNKNOWN_BASE_MODEL_LABEL) ?? []
-      list.push(item)
-      buckets.set(UNKNOWN_BASE_MODEL_LABEL, list)
-      continue
-    }
-    for (const base of bases) {
-      const list = buckets.get(base) ?? []
-      list.push(item)
-      buckets.set(base, list)
-    }
-  }
-  const direction = mode === 'baseModelDesc' ? -1 : 1
-  const labels = Array.from(buckets.keys()).sort((a, b) => {
-    if (a === UNKNOWN_BASE_MODEL_LABEL && b !== UNKNOWN_BASE_MODEL_LABEL)
-      return 1
-    if (b === UNKNOWN_BASE_MODEL_LABEL && a !== UNKNOWN_BASE_MODEL_LABEL)
-      return -1
-    return direction * a.localeCompare(b, undefined, { sensitivity: 'base' })
-  })
-  return labels.map((label) => ({
-    provider: label,
-    items: (buckets.get(label) ?? []).slice().sort(compareByName)
-  }))
-}
-
 const sections = computed<Section[]>(() => {
+  const isSearching = searchQuery.value.trim().length > 0
+  const mode = sortMode.value
+
   // With an active search, collapse category sections into a single flat
   // "Search results" list ordered by Fuse relevance across both pools
   // (assets and partner nodes). Lower score = better match.
-  if (searchQuery.value.trim().length > 0) {
+  if (isSearching) {
     type Scored = { score: number; item: SidebarItem }
     const merged: Scored[] = []
     for (const r of assetFuseResults.value) {
@@ -635,7 +451,7 @@ const sections = computed<Section[]>(() => {
     return {
       id,
       label,
-      providers: buildProviderGroups(items),
+      providers: buildProviderGroups(items, mode, isSearching),
       totalCount: items.length
     }
   }
@@ -650,7 +466,7 @@ const sections = computed<Section[]>(() => {
       return {
         id: PARTNER_NODES_GROUP_ID,
         label: t('sideToolbar.nodeLibraryTab.sections.partnerNodes'),
-        providers: buildProviderGroups(items),
+        providers: buildProviderGroups(items, mode, isSearching),
         totalCount: items.length
       }
     }
@@ -755,111 +571,15 @@ const handlePartnerActivate = (nodeDef: ComfyNodeDefImpl) => {
   litegraphService.addNodeOnGraph(nodeDef)
 }
 
-// Single shared hover popover, owned by the sidebar tab. Leaves emit
-// `hover-change` with their row rect; we position the popover next to the
-// row, swap content as the user moves between rows (no stacking), and
-// support the row → popover mouse bridge with a short hide delay.
-const HOVER_BRIDGE_DELAY_MS = 120
-const HOVER_GAP_PX = 12
-const HOVER_VIEWPORT_MARGIN_PX = 8
-
-type HoveredItem =
-  | { kind: 'asset'; asset: AssetItem; rect: DOMRect }
-  | { kind: 'partner'; nodeDef: ComfyNodeDefImpl; rect: DOMRect }
-
-const hoveredItem = ref<HoveredItem | null>(null)
 const hoverPopoverRef = ref<HTMLElement | null>(null)
-const hoverPopoverStyle = ref<CSSProperties>({ top: '0px', left: '0px' })
-
-let hoverHideTimer: ReturnType<typeof setTimeout> | null = null
-function cancelHoverHide() {
-  if (hoverHideTimer !== null) {
-    clearTimeout(hoverHideTimer)
-    hoverHideTimer = null
-  }
-}
-function scheduleHoverHide() {
-  cancelHoverHide()
-  hoverHideTimer = setTimeout(() => {
-    hoveredItem.value = null
-    hoverHideTimer = null
-  }, HOVER_BRIDGE_DELAY_MS)
-}
-
-function handleAssetHoverChange(
-  payload: { asset: AssetItem; rect: DOMRect } | { asset: null }
-) {
-  if (payload.asset) {
-    cancelHoverHide()
-    hoveredItem.value = {
-      kind: 'asset',
-      asset: payload.asset,
-      rect: payload.rect
-    }
-  } else {
-    scheduleHoverHide()
-  }
-}
-function handlePartnerHoverChange(
-  payload: { nodeDef: ComfyNodeDefImpl; rect: DOMRect } | { nodeDef: null }
-) {
-  if (payload.nodeDef) {
-    cancelHoverHide()
-    hoveredItem.value = {
-      kind: 'partner',
-      nodeDef: payload.nodeDef,
-      rect: payload.rect
-    }
-  } else {
-    scheduleHoverHide()
-  }
-}
-function handlePopoverEnter() {
-  cancelHoverHide()
-}
-function handlePopoverLeave() {
-  scheduleHoverHide()
-}
-
-async function updateHoverPopoverPosition() {
-  const rect = hoveredItem.value?.rect
-  if (!rect) return
-  await nextTick()
-  const el = hoverPopoverRef.value
-  const popoverHeight = el?.offsetHeight ?? 240
-  const minTop = HOVER_VIEWPORT_MARGIN_PX
-  const maxTop = Math.max(
-    minTop,
-    window.innerHeight - popoverHeight - HOVER_VIEWPORT_MARGIN_PX
-  )
-  const top = Math.max(minTop, Math.min(rect.top, maxTop))
-  hoverPopoverStyle.value = {
-    top: `${top}px`,
-    left: `${rect.right + HOVER_GAP_PX}px`
-  }
-}
-
-watch(hoveredItem, () => {
-  void updateHoverPopoverPosition()
-})
-useResizeObserver(hoverPopoverRef, () => {
-  void updateHoverPopoverPosition()
-})
-useEventListener(window, 'resize', () => {
-  void updateHoverPopoverPosition()
-})
-useEventListener(
-  window,
-  'scroll',
-  () => {
-    void updateHoverPopoverPosition()
-  },
-  true
-)
-
-onBeforeUnmount(() => {
-  cancelHoverHide()
-})
+const {
+  hoveredItem,
+  hoverPopoverStyle,
+  handleAssetHoverChange,
+  handlePartnerHoverChange,
+  handlePopoverEnter,
+  handlePopoverLeave
+} = useModelLibraryHoverPopover(hoverPopoverRef)
 
 onMounted(() => {
   void refreshAssets()
