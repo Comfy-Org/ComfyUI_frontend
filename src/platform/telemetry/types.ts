@@ -234,7 +234,7 @@ export interface NodeSearchMetadata {
 
 /**
  * Search keystroke metadata. One event per debounced query change across
- * each search surface. Gated to paid subscribers at the call site.
+ * each search surface.
  */
 export type SearchSurface =
   | 'node_search_modal'
@@ -454,7 +454,7 @@ export interface TelemetryProvider {
   trackNodeSearch?(metadata: NodeSearchMetadata): void
   trackNodeSearchResultSelected?(metadata: NodeSearchResultMetadata): void
 
-  // Search keystroke analytics (paid users only)
+  // Search keystroke analytics
   trackSearchKeystroke?(metadata: SearchKeystrokeMetadata): void
 
   // Template filter tracking events

@@ -9,8 +9,7 @@ const DEBOUNCE_MS = 500
 
 /**
  * Fires `app:search_keystroke` for the given surface, debounced 500ms.
- * Empty queries are skipped. Tier-based filtering happens at the PostHog
- * side via the `subscription_tier` person property.
+ * Empty queries are skipped.
  */
 export function useSearchKeystrokeTracking(
   surface: SearchSurface,
