@@ -3,16 +3,7 @@ import type { Ref } from 'vue'
 import { effectScope, ref } from 'vue'
 
 const hoisted = vi.hoisted(() => ({
-  subscriptionTier: { value: 'FREE' as string | null },
-  trackSearchKeystroke: vi.fn(),
-  shouldThrow: { value: false }
-}))
-
-vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
-  useSubscription: () => {
-    if (hoisted.shouldThrow.value) throw new Error('store unavailable')
-    return { subscriptionTier: hoisted.subscriptionTier }
-  }
+  trackSearchKeystroke: vi.fn()
 }))
 
 vi.mock('@/platform/telemetry', () => ({
@@ -35,33 +26,13 @@ function track(query: Ref<string>) {
 describe('useSearchKeystrokeTracking', () => {
   beforeEach(() => {
     hoisted.trackSearchKeystroke.mockClear()
-    hoisted.subscriptionTier.value = 'FREE'
-    hoisted.shouldThrow.value = false
   })
 
   afterEach(() => {
     vi.useRealTimers()
   })
 
-  it('does not fire for FREE users', async () => {
-    const query = ref('')
-    track(query)
-    query.value = 'hello'
-    await flush()
-    expect(hoisted.trackSearchKeystroke).not.toHaveBeenCalled()
-  })
-
-  it('does not fire when subscriptionTier is null', async () => {
-    hoisted.subscriptionTier.value = null
-    const query = ref('')
-    track(query)
-    query.value = 'hello'
-    await flush()
-    expect(hoisted.trackSearchKeystroke).not.toHaveBeenCalled()
-  })
-
-  it('fires for paid users with the surface, trimmed query, and length', async () => {
-    hoisted.subscriptionTier.value = 'PRO'
+  it('fires with the surface, trimmed query, and length', async () => {
     const query = ref('')
     track(query)
     query.value = '  hello  '
@@ -73,8 +44,7 @@ describe('useSearchKeystrokeTracking', () => {
     })
   })
 
-  it('skips empty queries even for paid users', async () => {
-    hoisted.subscriptionTier.value = 'PRO'
+  it('skips empty queries', async () => {
     const query = ref('seed')
     track(query)
     query.value = '   '
@@ -82,12 +52,18 @@ describe('useSearchKeystrokeTracking', () => {
     expect(hoisted.trackSearchKeystroke).not.toHaveBeenCalled()
   })
 
-  it('treats a throwing subscription store as not paid', async () => {
-    hoisted.shouldThrow.value = true
+  it('debounces rapid changes to a single event', async () => {
     const query = ref('')
     track(query)
+    query.value = 'h'
+    query.value = 'he'
+    query.value = 'hel'
     query.value = 'hello'
     await flush()
-    expect(hoisted.trackSearchKeystroke).not.toHaveBeenCalled()
+    expect(hoisted.trackSearchKeystroke).toHaveBeenCalledExactlyOnceWith({
+      surface: 'node_sidebar',
+      query: 'hello',
+      query_length: 5
+    })
   })
 })
