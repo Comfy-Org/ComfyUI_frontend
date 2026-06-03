@@ -100,4 +100,3 @@ vitest.config.*.timestamp*
 /output.txt
 
 .amp
-.glary/
