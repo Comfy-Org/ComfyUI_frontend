@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { CameraState } from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyExtension } from '@/types/comfy'
@@ -121,6 +122,7 @@ type ExtCreated = ComfyExtension & {
   onNodeOutputsUpdated: (
     nodeOutputs: Record<string, Record<string, unknown>>
   ) => void
+  getCustomWidgets: () => Record<string, (node: LGraphNode) => unknown>
 }
 
 async function loadExtensionsFresh(): Promise<{
@@ -208,6 +210,7 @@ interface FakeLoad3d {
   getModelInfo: ReturnType<typeof vi.fn>
   applyModelTransform: ReturnType<typeof vi.fn>
   isSplatModel: ReturnType<typeof vi.fn>
+  forceRender: ReturnType<typeof vi.fn>
   cameraManager: { perspectiveCamera: { fov: number } }
   currentLoadGeneration: number
 }
@@ -223,6 +226,7 @@ function makeLoad3dMock(): FakeLoad3d {
     getModelInfo: vi.fn(() => null),
     applyModelTransform: vi.fn(),
     isSplatModel: vi.fn(() => false),
+    forceRender: vi.fn(),
     cameraManager: { perspectiveCamera: { fov: 35 } },
     currentLoadGeneration: 0
   }
@@ -514,6 +518,47 @@ describe('Comfy.Load3D.nodeCreated', () => {
   })
 })
 
+describe('Comfy.Load3D.getCustomWidgets LOAD_3D', () => {
+  beforeEach(setupBaseMocks)
+
+  it('adds upload and clear buttons when the node has a model_file widget', async () => {
+    const { load3DExt } = await loadExtensionsFresh()
+    const node = makeLoad3DNode()
+    const addWidget = node.addWidget as ReturnType<typeof vi.fn>
+
+    load3DExt.getCustomWidgets().LOAD_3D(node)
+
+    const buttonNames = addWidget.mock.calls
+      .filter(([type]) => type === 'button')
+      .map(([, name]) => name)
+    expect(buttonNames).toEqual([
+      'upload 3d model',
+      'upload extra resources',
+      'clear'
+    ])
+  })
+
+  it('skips upload and clear buttons when the node has no model_file widget (e.g. Preview3DAdvanced)', async () => {
+    const { load3DExt } = await loadExtensionsFresh()
+    const node = makeLoad3DNode({
+      comfyClass: 'Preview3DAdvanced',
+      widgets: [
+        { name: 'width', value: 512 },
+        { name: 'height', value: 512 },
+        { name: 'image', value: '' }
+      ]
+    })
+    const addWidget = node.addWidget as ReturnType<typeof vi.fn>
+
+    load3DExt.getCustomWidgets().LOAD_3D(node)
+
+    const buttonCalls = addWidget.mock.calls.filter(
+      ([type]) => type === 'button'
+    )
+    expect(buttonCalls).toEqual([])
+  })
+})
+
 describe('getNodeMenuItems', () => {
   beforeEach(setupBaseMocks)
 
@@ -684,6 +729,58 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
       'prev/model.glb',
       { silentOnNotFound: true }
     )
+  })
+
+  it('restores the saved camera state after model load when reloading the page', async () => {
+    const persistedCameraState = {
+      position: [1, 2, 3],
+      target: [0, 0, 0]
+    } as unknown as CameraState
+    const load3dInstance = makeLoad3dMock()
+    onLoad3dReadyMock.mockImplementationOnce(
+      (cb: (load3d: FakeLoad3d) => void) => {
+        cb(load3dInstance)
+      }
+    )
+
+    const { preview3DAdvancedExt } = await loadExtensionsFresh()
+    const node = makePreview3DAdvancedNode({
+      properties: {
+        'Last Time Model File': 'prev/model.glb',
+        'Camera Config': {
+          cameraType: 'perspective',
+          fov: 35,
+          state: persistedCameraState
+        }
+      }
+    })
+
+    await preview3DAdvancedExt.nodeCreated(node)
+    await flush()
+
+    expect(load3dInstance.setCameraState).toHaveBeenCalledWith(
+      persistedCameraState
+    )
+    expect(load3dInstance.forceRender).toHaveBeenCalled()
+  })
+
+  it('does not call setCameraState when no Camera Config state is persisted', async () => {
+    const load3dInstance = makeLoad3dMock()
+    onLoad3dReadyMock.mockImplementationOnce(
+      (cb: (load3d: FakeLoad3d) => void) => {
+        cb(load3dInstance)
+      }
+    )
+
+    const { preview3DAdvancedExt } = await loadExtensionsFresh()
+    const node = makePreview3DAdvancedNode({
+      properties: { 'Last Time Model File': 'prev/model.glb' }
+    })
+
+    await preview3DAdvancedExt.nodeCreated(node)
+    await flush()
+
+    expect(load3dInstance.setCameraState).not.toHaveBeenCalled()
   })
 
   it('attaches a camera-only serializeValue to the image widget', async () => {

@@ -272,7 +272,10 @@ useExtensionService().registerExtension({
   getCustomWidgets() {
     return {
       LOAD_3D(node) {
-        if (node.constructor.comfyClass === 'Load3D') {
+        const hasModelFileWidget = node.widgets?.some(
+          (w) => w.name === 'model_file'
+        )
+        if (hasModelFileWidget) {
           const fileInput = createFileInput(SUPPORTED_EXTENSIONS_ACCEPT, false)
 
           node.properties['Resource Folder'] = ''
@@ -688,11 +691,34 @@ useExtensionService().registerExtension({
       config.configureForSaveMesh('output', lastTimeModelFile as string, {
         silentOnNotFound: true
       })
+
+      const cameraConfig = node.properties['Camera Config'] as
+        | CameraConfig
+        | undefined
+      const cameraState = cameraConfig?.state
+      if (!cameraState) return
+
+      const targetGeneration = load3d.currentLoadGeneration
+      void load3d
+        .whenLoadIdle()
+        .then(() => {
+          if (load3d.currentLoadGeneration !== targetGeneration) return
+          load3d.setCameraState(cameraState)
+          load3d.forceRender()
+        })
+        .catch((error) => {
+          console.error(
+            'Failed to restore camera state for Preview3DAdvanced:',
+            error
+          )
+        })
     })
 
     useLoad3d(node).waitForLoad3d((load3d) => {
       const sceneWidget = node.widgets?.find((w) => w.name === 'image')
       if (!sceneWidget) return
+
+      const resolveLoad3d = () => nodeToLoad3dMap.get(node) ?? load3d
 
       const widthWidget = node.widgets?.find((w) => w.name === 'width')
       const heightWidget = node.widgets?.find((w) => w.name === 'height')
@@ -702,10 +728,10 @@ useExtensionService().registerExtension({
           heightWidget.value as number
         )
         widthWidget.callback = (value: number) => {
-          load3d.setTargetSize(value, heightWidget.value as number)
+          resolveLoad3d().setTargetSize(value, heightWidget.value as number)
         }
         heightWidget.callback = (value: number) => {
-          load3d.setTargetSize(widthWidget.value as number, value)
+          resolveLoad3d().setTargetSize(widthWidget.value as number, value)
         }
       }
 
@@ -754,7 +780,8 @@ useExtensionService().registerExtension({
         const normalizedPath = filePath.replaceAll('\\', '/')
         node.properties['Last Time Model File'] = normalizedPath
 
-        const config = new Load3DConfiguration(load3d, node.properties)
+        const currentLoad3d = resolveLoad3d()
+        const config = new Load3DConfiguration(currentLoad3d, node.properties)
         config.configureForSaveMesh('output', normalizedPath, {
           silentOnNotFound: true
         })
@@ -762,13 +789,15 @@ useExtensionService().registerExtension({
         const cameraState = result?.[1]
         const modelTransform = result?.[2]?.[0]
         if (cameraState || modelTransform) {
-          const targetGeneration = load3d.currentLoadGeneration
-          void load3d
+          const targetGeneration = currentLoad3d.currentLoadGeneration
+          void currentLoad3d
             .whenLoadIdle()
             .then(() => {
-              if (load3d.currentLoadGeneration !== targetGeneration) return
-              if (cameraState) load3d.setCameraState(cameraState)
-              if (modelTransform) load3d.applyModelTransform(modelTransform)
+              if (currentLoad3d.currentLoadGeneration !== targetGeneration)
+                return
+              if (cameraState) currentLoad3d.setCameraState(cameraState)
+              if (modelTransform)
+                currentLoad3d.applyModelTransform(modelTransform)
             })
             .catch((error) => {
               console.error(

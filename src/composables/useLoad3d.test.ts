@@ -333,6 +333,20 @@ describe('useLoad3d', () => {
       expect(composable.isPreview.value).toBe(true)
     })
 
+    it('should set preview mode when comfyClass starts with Preview, even with width/height widgets', async () => {
+      Object.defineProperty(mockNode, 'constructor', {
+        value: { comfyClass: 'Preview3DAdvanced' },
+        configurable: true
+      })
+
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+
+      await composable.initializeLoad3d(containerRef)
+
+      expect(composable.isPreview.value).toBe(true)
+    })
+
     it('should handle initialization errors', async () => {
       vi.mocked(createLoad3d).mockImplementationOnce(() => {
         throw new Error('Load3d creation failed')
