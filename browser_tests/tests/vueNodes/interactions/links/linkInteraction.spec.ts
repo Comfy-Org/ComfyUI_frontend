@@ -1240,12 +1240,12 @@ test(
     async function performDisconnect(slot: Locator, isFast: boolean) {
       await comfyMouse.resizeByDragging(slot, { x: isFast ? -25 : -80 })
 
-      if (isFast) {
-        await comfyPage.nextFrame()
-      } else {
+      if (!isFast) {
         await expect(comfyPage.contextMenu.litegraphContextMenu).toBeVisible()
         await comfyMouse.click(100, 100)
       }
+      const isConnected = () => comfyPage.vueNodes.isSlotConnected(slot)
+      await expect.poll(isConnected).toBe(false)
       await expect(comfyPage.contextMenu.litegraphContextMenu).toBeHidden()
     }
 
