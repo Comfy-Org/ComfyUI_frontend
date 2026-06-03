@@ -52,20 +52,31 @@ function buildPromotedWidget(input: INodeInputSlot): IBaseWidget | null {
   const target = resolveSubgraphInputTarget(node, input.name)
   if (!target) return null
 
-  const state = useWidgetValueStore().getWidget(input.widgetId)
-  // Plain, store-backed descriptor so a promoted subgraph input renders through
-  // the same parameter widgets as an ordinary node widget. Value reads/writes
-  // resolve through widgetId; source identity drives promote/demote actions.
+  const id = input.widgetId
+  const store = useWidgetValueStore()
+  // Store-backed descriptor so a promoted subgraph input renders through the
+  // same parameter widgets as an ordinary node widget. Type/value/options read
+  // live via getters (mirroring BaseWidget) rather than at build time, so the
+  // row list does not reactively rebuild — and re-key — on every value edit.
   return {
     name: target.widgetName,
-    type: state?.type ?? 'text',
-    value: state?.value,
-    options: state?.options ?? {},
     label: input.label ?? input.name,
     y: 0,
-    widgetId: input.widgetId,
+    widgetId: id,
     sourceNodeId: target.nodeId,
-    sourceWidgetName: target.widgetName
+    sourceWidgetName: target.widgetName,
+    get type() {
+      return store.getWidget(id)?.type ?? 'text'
+    },
+    get options() {
+      return store.getWidget(id)?.options ?? {}
+    },
+    get value() {
+      return store.getWidget(id)?.value
+    },
+    set value(next) {
+      store.setValue(id, next)
+    }
   } as IBaseWidget
 }
 

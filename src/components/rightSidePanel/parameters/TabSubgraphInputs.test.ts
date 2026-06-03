@@ -111,4 +111,20 @@ describe('TabSubgraphInputs', () => {
     const seedRow = captured.rows.find((row) => row.widget.name === 'seed')
     expect(seedRow?.widget.value).toBe(7)
   })
+
+  it('reflects value changes through the same descriptor without rebuilding it', () => {
+    const { host } = buildHostWithPromotedSeed()
+    renderPanel(host)
+
+    const seedRow = captured.rows.find((row) => row.widget.name === 'seed')!
+    expect(seedRow.widget.value).toBe(42)
+
+    // A value edit must not require a new descriptor object: the same row
+    // reflects the store change via its live getter, keeping render keys stable.
+    useWidgetValueStore().setValue(
+      widgetId(host.rootGraph.id, host.id, 'seed'),
+      100
+    )
+    expect(seedRow.widget.value).toBe(100)
+  })
 })
