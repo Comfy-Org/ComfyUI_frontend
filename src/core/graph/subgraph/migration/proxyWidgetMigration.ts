@@ -1,6 +1,5 @@
 import { isEqual } from 'es-toolkit/compat'
 
-import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
@@ -103,13 +102,20 @@ function resolveSourceWidget(
       return target?.widgetName === sourceWidgetName
     })
     if (input?.widgetId) {
-      return createPromotedWidgetView(
-        sourceNode,
-        String(sourceNode.id),
-        input.name,
-        input.label ?? input.name,
-        input.name
-      )
+      const state = useWidgetValueStore().getWidget(input.widgetId)
+      // Plain source ref for a promoted input on a nested subgraph node:
+      // getSlotFromWidget locates the backing slot by widgetId.
+      return {
+        name: input.name,
+        type: state?.type ?? '*',
+        options: state?.options ?? {},
+        value: state?.value,
+        serialize: state?.serialize,
+        y: 0,
+        widgetId: input.widgetId,
+        sourceNodeId: String(sourceNode.id),
+        sourceWidgetName: input.name
+      } as IBaseWidget
     }
   }
 
