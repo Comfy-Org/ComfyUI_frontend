@@ -1356,6 +1356,10 @@
       "nerf_tile_size": {
         "name": "nerf_tile_size",
         "tooltip": "Allows overriding the default NeRF tile size. -1 means use the default (32). 0 means use non-tiling mode (may require a lot of VRAM)."
+      },
+      "force_sequential_txt_ids": {
+        "name": "force_sequential_txt_ids",
+        "tooltip": "Force usage of sequential text token IDs instead of zeroes. Should be used for checkpoints from 2026-05-22 to 2026-06-01 that are trained in this way but do not contain the __sequential__ key in the state dict."
       }
     },
     "outputs": {
@@ -13362,7 +13366,7 @@
       },
       "latent_format": {
         "name": "latent_format",
-        "tooltip": "Flux1 and Flux2 latents auto-detected from channel dim, sd3 has to be selected manually."
+        "tooltip": "Flux1 (16-ch) and Flux2 (128-ch) latents are auto-detected from channel dim under 'flux'. For SD3 (16-ch), SDXL (4-ch), or QwenImage (16-ch), select manually."
       },
       "degrade_sigma": {
         "name": "degrade_sigma",

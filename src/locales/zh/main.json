@@ -233,7 +233,8 @@
       "auth/user-disabled": "此账户已被禁用。请联系客服。",
       "auth/user-not-found": "未找到使用此电子邮件的账户。您想要创建一个新账户吗？",
       "auth/weak-password": "密码强度太弱。请使用至少6个字符的更强密码。",
-      "auth/wrong-password": "您输入的密码不正确，请重试。"
+      "auth/wrong-password": "您输入的密码不正确，请重试。",
+      "generic": "登录时出现问题，请重试。"
     },
     "login": {
       "andText": "和",
@@ -407,6 +408,29 @@
   "cloudForgotPassword_passwordResetSent": "密码重置邮件已发送",
   "cloudForgotPassword_sendResetLink": "发送重置链接",
   "cloudForgotPassword_title": "忘记密码",
+  "cloudHero": {
+    "nextSlide": "下一张幻灯片",
+    "previousSlide": "上一张幻灯片",
+    "slidePagerLabel": "跳转到第 {index} 张幻灯片",
+    "slides": {
+      "cloud": {
+        "description": "适合大多数希望随时随地使用、并需要经过商业授权验证模型的用户。",
+        "title": "云端"
+      },
+      "models": {
+        "description": "精选、具备商业授权的模型，开箱即用，无需配置。",
+        "title": "模型"
+      },
+      "team": {
+        "description": "立即邀请您的团队加入。可在组织内共享工作流和资源。",
+        "title": "团队"
+      },
+      "workflows": {
+        "description": "从创意到成果只需几分钟。可并排生成多个变体。",
+        "title": "工作流"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "本地继续",
     "exploreCloud": "免费试用云端",

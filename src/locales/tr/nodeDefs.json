@@ -1721,6 +1721,10 @@
         "name": "bitiş sigma",
         "tooltip": "Bu seçeneklerin geçerli olacağı son sigma değeri."
       },
+      "force_sequential_txt_ids": {
+        "name": "force_sequential_txt_ids",
+        "tooltip": "Sıralı metin belirteç kimliklerinin sıfırlar yerine kullanılmasını zorla. Bu seçenek, bu şekilde eğitilmiş ancak state dict içinde __sequential__ anahtarını içermeyen 2026-05-22 ile 2026-06-01 tarihleri arasındaki kontrol noktaları için kullanılmalıdır."
+      },
       "model": {
         "name": "model"
       },

@@ -233,7 +233,8 @@
       "auth/user-disabled": "이 계정이 비활성화되었습니다. 지원팀에 문의해 주세요.",
       "auth/user-not-found": "이 이메일로 등록된 계정이 없습니다. 새 계정을 생성하시겠습니까?",
       "auth/weak-password": "비밀번호가 너무 약합니다. 최소 6자 이상의 강력한 비밀번호를 사용해 주세요.",
-      "auth/wrong-password": "입력하신 비밀번호가 올바르지 않습니다. 다시 시도해 주세요."
+      "auth/wrong-password": "입력하신 비밀번호가 올바르지 않습니다. 다시 시도해 주세요.",
+      "generic": "로그인 중 문제가 발생했습니다. 다시 시도해 주세요."
     },
     "login": {
       "andText": "및",
@@ -407,6 +408,29 @@
   "cloudForgotPassword_passwordResetSent": "비밀번호 재설정 전송됨",
   "cloudForgotPassword_sendResetLink": "재설정 링크 보내기",
   "cloudForgotPassword_title": "비밀번호 찾기",
+  "cloudHero": {
+    "nextSlide": "다음 슬라이드",
+    "previousSlide": "이전 슬라이드",
+    "slidePagerLabel": "{index}번 슬라이드로 이동",
+    "slides": {
+      "cloud": {
+        "description": "상업적 라이선스가 검증된 모델을 어디서나 사용하고 싶은 대부분의 사용자에게 최적입니다.",
+        "title": "클라우드"
+      },
+      "models": {
+        "description": "엄선된 상업적 라이선스 모델을 별도의 설정 없이 바로 실행할 수 있습니다.",
+        "title": "모델"
+      },
+      "team": {
+        "description": "오늘 바로 팀을 온보딩하세요. 조직 내에서 워크플로우와 에셋을 공유할 수 있습니다.",
+        "title": "팀"
+      },
+      "workflows": {
+        "description": "아이디어에서 결과까지 몇 분 만에. 여러 변형을 나란히 생성하세요.",
+        "title": "워크플로우"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "로컬에서 계속하기",
     "exploreCloud": "클라우드 무료 체험",

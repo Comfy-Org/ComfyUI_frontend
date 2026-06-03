@@ -1721,6 +1721,10 @@
         "name": "end_sigma",
         "tooltip": "이 옵션이 적용될 마지막 시그마 값입니다."
       },
+      "force_sequential_txt_ids": {
+        "name": "force_sequential_txt_ids",
+        "tooltip": "연속 텍스트 토큰 ID를 0 대신 강제로 사용합니다. 2026-05-22부터 2026-06-01 사이에 이 방식으로 학습되었으나 state dict에 __sequential__ 키가 없는 체크포인트에 사용해야 합니다."
+      },
       "model": {
         "name": "model"
       },
