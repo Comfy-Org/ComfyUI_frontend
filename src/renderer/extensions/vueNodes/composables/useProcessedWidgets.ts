@@ -90,8 +90,8 @@ function createWidgetUpdateHandler(
     const effectiveExecId = widget.sourceExecutionId ?? nodeExecId
     executionErrorStore.clearWidgetRelatedErrors(
       effectiveExecId,
-      widget.slotName ?? widget.name,
       widget.name,
+      widget.sourceWidgetName ?? widget.name,
       newValue,
       { min: widgetOptions?.min, max: widgetOptions?.max }
     )
@@ -110,12 +110,11 @@ export function hasWidgetError(
   const errors = widget.sourceExecutionId
     ? executionErrorStore.lastNodeErrors?.[widget.sourceExecutionId]?.errors
     : nodeErrors?.errors
-  const inputName = widget.slotName ?? widget.name
   return (
-    !!errors?.some((e) => e.extra_info?.input_name === inputName) ||
+    !!errors?.some((e) => e.extra_info?.input_name === widget.name) ||
     missingModelStore.isWidgetMissingModel(
       widget.sourceExecutionId ?? nodeExecId,
-      widget.name
+      widget.sourceWidgetName ?? widget.name
     )
   )
 }
@@ -132,7 +131,6 @@ export function getWidgetIdentity(
     const dedupeIdentity = `${widget.widgetId}:${widget.type}`
     return { dedupeIdentity, renderKey: dedupeIdentity }
   }
-  const slotNameForIdentity = widget.slotName ?? widget.name
   const hostNodeIdRoot =
     nodeId !== undefined && nodeId !== ''
       ? `node:${String(stripGraphPrefix(nodeId))}`
@@ -144,11 +142,11 @@ export function getWidgetIdentity(
       : hostNodeIdRoot
 
   const dedupeIdentity = stableIdentityRoot
-    ? `${stableIdentityRoot}:${widget.name}:${slotNameForIdentity}:${widget.type}`
+    ? `${stableIdentityRoot}:${widget.name}:${widget.type}`
     : undefined
   const renderKey =
     dedupeIdentity ??
-    `transient:${String(nodeId ?? '')}:${widget.name}:${slotNameForIdentity}:${widget.type}:${index}`
+    `transient:${String(nodeId ?? '')}:${widget.name}:${widget.type}:${index}`
   return { dedupeIdentity, renderKey }
 }
 
@@ -296,7 +294,7 @@ export function computeProcessedWidgets({
       borderStyle,
       callback: widget.callback,
       controlWidget: widget.controlWidget,
-      label: widget.promotedLabel ?? widgetState?.label,
+      label: widgetState?.label,
       linkedUpstream,
       nodeLocatorId,
       options: widgetOptions,

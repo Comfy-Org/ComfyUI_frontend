@@ -62,7 +62,7 @@ describe('getWidgetIdentity', () => {
       sourceExecutionId: undefined
     })
     const { dedupeIdentity, renderKey } = getWidgetIdentity(widget, '5', 3)
-    expect(dedupeIdentity).toBe('node:5:test_widget:test_widget:combo')
+    expect(dedupeIdentity).toBe('node:5:test_widget:combo')
     expect(renderKey).toBe(dedupeIdentity)
   })
 
@@ -77,7 +77,7 @@ describe('getWidgetIdentity', () => {
       3
     )
     expect(dedupeIdentity).toBeUndefined()
-    expect(renderKey).toBe('transient::test_widget:test_widget:combo:3')
+    expect(renderKey).toBe('transient::test_widget:combo:3')
   })
 
   it('uses sourceExecutionId for identity when no nodeId', () => {
@@ -86,7 +86,7 @@ describe('getWidgetIdentity', () => {
       sourceExecutionId: '65:18'
     })
     const { dedupeIdentity } = getWidgetIdentity(widget, '1', 0)
-    expect(dedupeIdentity).toBe('exec:65:18:test_widget:test_widget:combo')
+    expect(dedupeIdentity).toBe('exec:65:18:test_widget:combo')
   })
 })
 
@@ -191,10 +191,10 @@ describe('hasWidgetError', () => {
     ).toBe(true)
   })
 
-  it('uses slotName for error matching when present', () => {
+  it('matches errors by the slot name (widget.name) for promoted widgets', () => {
     const widget = createMockWidget({
-      name: 'internal_name',
-      slotName: 'display_slot'
+      name: 'display_slot',
+      sourceWidgetName: 'internal_name'
     })
     const nodeErrors = {
       errors: [{ extra_info: { input_name: 'display_slot' } }]
@@ -209,6 +209,27 @@ describe('hasWidgetError', () => {
       )
     ).toBe(true)
   })
+
+  it('matches missing models by the interior source widget name', () => {
+    const widget = createMockWidget({
+      name: 'display_slot',
+      sourceExecutionId: '65:18',
+      sourceWidgetName: 'ckpt_name'
+    })
+    const spy = vi
+      .spyOn(missingModelStore, 'isWidgetMissingModel')
+      .mockReturnValue(true)
+    expect(
+      hasWidgetError(
+        widget,
+        '1',
+        undefined,
+        executionErrorStore,
+        missingModelStore
+      )
+    ).toBe(true)
+    expect(spy).toHaveBeenCalledWith('65:18', 'ckpt_name')
+  })
 })
 
 const noopUi = {
@@ -222,13 +243,18 @@ describe('computeProcessedWidgets borderStyle', () => {
   })
 
   it('does not apply border styling to promoted widgets', () => {
+    const id = widgetId(GRAPH_ID, 'inner-subgraph:1', 'text')
+    useWidgetValueStore().registerWidget(id, {
+      type: 'combo',
+      value: 'a',
+      options: {},
+      label: 'Text'
+    })
     const promotedWidget = createMockWidget({
       name: 'text',
       type: 'combo',
       nodeId: 'inner-subgraph:1',
-      widgetId: widgetId(GRAPH_ID, 'inner-subgraph:1', 'text'),
-      slotName: 'text',
-      promotedLabel: 'Text'
+      widgetId: id
     })
 
     const result = computeProcessedWidgets({
@@ -259,8 +285,7 @@ describe('computeProcessedWidgets borderStyle', () => {
       name: 'text',
       type: 'combo',
       nodeId: 'inner-subgraph:1',
-      widgetId: widgetId(GRAPH_ID, 'inner-subgraph:1', 'text'),
-      slotName: 'text'
+      widgetId: widgetId(GRAPH_ID, 'inner-subgraph:1', 'text')
     })
 
     const result = computeProcessedWidgets({
@@ -373,7 +398,6 @@ describe('computeProcessedWidgets borderStyle', () => {
       type: 'combo',
       nodeId: '1',
       widgetId: sharedWidgetId,
-      slotName: 'text',
       options: { hidden: true }
     })
 
@@ -381,8 +405,7 @@ describe('computeProcessedWidgets borderStyle', () => {
       name: 'text',
       type: 'combo',
       nodeId: '1',
-      widgetId: sharedWidgetId,
-      slotName: 'text'
+      widgetId: sharedWidgetId
     })
 
     const result = computeProcessedWidgets({
@@ -443,7 +466,7 @@ describe('computeProcessedWidgets borderStyle', () => {
 
     expect(result).toHaveLength(1)
     expect(result[0].name).toBe('color')
-    expect(result[0].renderKey).toBe('node:1:color:color:color')
+    expect(result[0].renderKey).toBe('node:1:color:color')
   })
 })
 

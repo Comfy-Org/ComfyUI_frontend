@@ -210,9 +210,10 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     expect(widgetData?.slotMetadata?.linked).toBe(true)
   })
 
-  it('resolves slotMetadata for promoted widgets where SafeWidgetData.name differs from the subgraph input name', () => {
-    // Subgraph input named "value" promotes an interior "prompt" widget, so the
-    // promoted SafeWidgetData.name is "prompt" while the input slot is "value".
+  it('names promoted widgets after the subgraph input slot and exposes the interior source name', () => {
+    // Subgraph input named "value" promotes an interior "prompt" widget. The
+    // projected widget's name is the input slot name "value"; the interior
+    // source widget name "prompt" is carried separately for backend lookups.
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'value', type: 'STRING' }]
     })
@@ -231,11 +232,9 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     const { vueNodeData } = useGraphNodeManager(graph)
     const nodeData = vueNodeData.get(String(subgraphNode.id))
 
-    // SafeWidgetData.name is "prompt" (source widget name), but the subgraph
-    // input slot is "value" — slotName bridges this gap.
-    const widgetData = nodeData?.widgets?.find((w) => w.name === 'prompt')
+    const widgetData = nodeData?.widgets?.find((w) => w.name === 'value')
     expect(widgetData).toBeDefined()
-    expect(widgetData?.slotName).toBe('value')
+    expect(widgetData?.sourceWidgetName).toBe('prompt')
     expect(widgetData?.slotMetadata).toBeDefined()
   })
 
@@ -455,10 +454,11 @@ describe('Promoted widget sourceExecutionId', () => {
     const { vueNodeData } = useGraphNodeManager(graph)
     const nodeData = vueNodeData.get(String(subgraphNode.id))
     const promotedWidget = nodeData?.widgets?.find(
-      (w) => w.name === 'ckpt_name'
+      (w) => w.name === 'ckpt_input'
     )
 
     expect(promotedWidget).toBeDefined()
+    expect(promotedWidget?.sourceWidgetName).toBe('ckpt_name')
     // The interior node is inside subgraphNode (id=65),
     // so its execution ID should be "65:<interiorNodeId>"
     expect(promotedWidget?.sourceExecutionId).toBe(

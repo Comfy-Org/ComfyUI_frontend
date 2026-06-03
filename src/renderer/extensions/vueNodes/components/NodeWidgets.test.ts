@@ -143,22 +143,19 @@ describe('NodeWidgets', () => {
       name: 'string_a',
       type: 'text',
       nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
-      widgetId: duplicateEntityId,
-      slotName: 'string_a'
+      widgetId: duplicateEntityId
     })
     const duplicateB = createMockWidget({
       name: 'string_a',
       type: 'text',
       nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
-      widgetId: duplicateEntityId,
-      slotName: 'string_a'
+      widgetId: duplicateEntityId
     })
     const distinct = createMockWidget({
       name: 'string_a',
       type: 'text',
       nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:20',
-      widgetId: distinctEntityId,
-      slotName: 'string_a'
+      widgetId: distinctEntityId
     })
     const nodeData = createMockNodeData('SubgraphNode', [
       duplicateA,
@@ -182,7 +179,6 @@ describe('NodeWidgets', () => {
       type: 'text',
       nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
       widgetId: sharedEntityId,
-      slotName: 'string_a',
       options: { hidden: true }
     })
     const visibleDuplicate = createMockWidget({
@@ -190,7 +186,6 @@ describe('NodeWidgets', () => {
       type: 'text',
       nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
       widgetId: sharedEntityId,
-      slotName: 'string_a',
       options: { hidden: false }
     })
     const nodeData = createMockNodeData('SubgraphNode', [
@@ -213,15 +208,13 @@ describe('NodeWidgets', () => {
       name: 'string_a',
       type: 'text',
       nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
-      widgetId: sharedEntityId,
-      slotName: 'string_a'
+      widgetId: sharedEntityId
     })
     const comboWidget = createMockWidget({
       name: 'string_a',
       type: 'combo',
       nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
-      widgetId: sharedEntityId,
-      slotName: 'string_a'
+      widgetId: sharedEntityId
     })
     const nodeData = createMockNodeData('SubgraphNode', [
       textWidget,
@@ -237,14 +230,12 @@ describe('NodeWidgets', () => {
     const firstTransientEntry = createMockWidget({
       nodeId: undefined,
       name: 'string_a',
-      slotName: 'string_a',
       type: 'text',
       sourceExecutionId: '65:18'
     })
     const secondTransientEntry = createMockWidget({
       nodeId: undefined,
       name: 'string_a',
-      slotName: 'string_a',
       type: 'text',
       sourceExecutionId: '65:19'
     })
@@ -263,15 +254,13 @@ describe('NodeWidgets', () => {
       name: 'text',
       type: 'text',
       nodeId: 'outer-subgraph:1',
-      widgetId: widgetId(GRAPH_ID, 'outer-subgraph:1', 'text'),
-      slotName: 'text'
+      widgetId: widgetId(GRAPH_ID, 'outer-subgraph:1', 'text')
     })
     const secondPromoted = createMockWidget({
       name: 'text',
       type: 'text',
       nodeId: 'outer-subgraph:2',
-      widgetId: widgetId(GRAPH_ID, 'outer-subgraph:2', 'text'),
-      slotName: 'text'
+      widgetId: widgetId(GRAPH_ID, 'outer-subgraph:2', 'text')
     })
 
     const nodeData = createMockNodeData('SubgraphNode', [
