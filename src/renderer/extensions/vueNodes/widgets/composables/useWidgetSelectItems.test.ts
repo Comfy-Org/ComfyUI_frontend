@@ -428,6 +428,41 @@ describe('useWidgetSelectItems', () => {
         true
       )
     })
+
+    it('maps author and placeholder_category onto cloud asset items', () => {
+      mockAssetsData.items = [
+        {
+          id: 'asset-1',
+          name: 'flux_lora.safetensors',
+          preview_url: '',
+          tags: ['models', 'loras'],
+          metadata: { author: 'Black Forest Labs' }
+        }
+      ]
+
+      const assetData = {
+        category: computed(() => 'loras'),
+        assets: computed(() => mockAssetsData.items),
+        isLoading: computed(() => false),
+        error: computed(() => null)
+      }
+
+      const { dropdownItems } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref('flux_lora.safetensors'),
+          assetKind: () => 'model',
+          isAssetMode: () => true,
+          assetData
+        })
+      )
+
+      expect(dropdownItems.value[0]).toMatchObject({
+        name: 'flux_lora.safetensors',
+        author: 'Black Forest Labs',
+        placeholder_category: 'loras'
+      })
+    })
   })
 
   describe('multi-output jobs', () => {

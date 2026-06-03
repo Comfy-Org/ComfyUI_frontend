@@ -75,6 +75,7 @@ vi.mock('@/i18n', () => ({
 }))
 
 vi.mock('@/platform/assets/services/assetService', () => ({
+  MODELS_TAG: 'models',
   assetService: {
     isAssetBrowserEligible: vi.fn(() => false),
     shouldUseAssetBrowser: vi.fn(() => false)

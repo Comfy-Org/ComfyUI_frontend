@@ -1,52 +1,85 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import type { FilterOption } from '@/platform/assets/types/filterTypes'
-import { cn } from '@comfyorg/tailwind-utils'
 
-const { filterOptions } = defineProps<{
+const { filterOptions, uploadable = false } = defineProps<{
   filterOptions: FilterOption[]
+  uploadable?: boolean
+  accept?: string
 }>()
 
 const filterSelected = defineModel<string>('filterSelected')
 
+const emit = defineEmits<{
+  'file-change': [event: Event]
+}>()
+
 const { isUploadButtonEnabled, showUploadDialog } = useModelUpload()
 
 const singleFilterOption = computed(() => filterOptions.length === 1)
+
+const fileInputRef = useTemplateRef<HTMLInputElement>('fileInputRef')
+
+function triggerImport() {
+  fileInputRef.value?.click()
+}
 </script>
 
 <template>
-  <div class="text-secondary mb-4 flex justify-start gap-1 px-4">
-    <button
-      v-for="option in filterOptions"
-      :key="option.value"
-      type="button"
-      :disabled="singleFilterOption"
-      :class="
-        cn(
-          'inline-flex appearance-none items-center justify-center rounded-md border-0 px-4 py-2 text-base-foreground select-none',
-          !singleFilterOption &&
-            'cursor-pointer transition-all duration-150 hover:bg-interface-menu-component-surface-hovered hover:text-base-foreground active:scale-95',
-          !singleFilterOption && filterSelected === option.value
-            ? 'bg-interface-menu-component-surface-selected! text-base-foreground'
-            : 'bg-transparent'
-        )
-      "
-      @click="filterSelected = option.value"
+  <div class="text-secondary mb-4 flex items-center justify-between gap-2 px-4">
+    <!-- Model picker: single non-interactive category title -->
+    <span
+      v-if="singleFilterOption"
+      class="text-base font-semibold text-base-foreground"
     >
-      {{ option.name }}
-    </button>
+      {{ filterOptions[0]?.name }}
+    </span>
+    <!-- Media picker: tab buttons -->
+    <div v-else class="flex min-w-0 items-center gap-2">
+      <Button
+        v-for="option in filterOptions"
+        :key="option.value"
+        size="md"
+        :variant="
+          filterSelected === option.value ? 'secondary' : 'muted-textonly'
+        "
+        class="text-sm font-normal"
+        @click="filterSelected = option.value"
+      >
+        {{ option.name }}
+      </Button>
+    </div>
+
     <Button
       v-if="isUploadButtonEnabled && singleFilterOption"
       class="ml-auto"
       size="md"
-      variant="textonly"
+      variant="inverted"
       @click="showUploadDialog"
     >
-      <i class="icon-[lucide--folder-input]" />
+      <i class="icon-[lucide--folder-input] size-4" />
       <span>{{ $t('g.import') }}</span>
     </Button>
+    <Button
+      v-else-if="uploadable"
+      class="ml-auto"
+      size="md"
+      variant="inverted"
+      @click="triggerImport"
+    >
+      <i class="icon-[lucide--folder-search] size-4" />
+      <span>{{ $t('widgets.uploadSelect.importMedia') }}</span>
+    </Button>
+    <input
+      ref="fileInputRef"
+      type="file"
+      class="hidden"
+      data-testid="media-upload-input"
+      :accept
+      @change="emit('file-change', $event)"
+    />
   </div>
 </template>

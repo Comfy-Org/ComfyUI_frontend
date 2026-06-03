@@ -80,6 +80,26 @@ describe('FormDropdownMenu', () => {
     expect(virtualItems[1]).toHaveProperty('key', '2')
   })
 
+  it('keeps pinned items in the flat list when ungrouped', () => {
+    const items = [createItem('1', 'Item 1'), createItem('2', 'Item 2')]
+    render(FormDropdownMenu, {
+      props: {
+        ...defaultProps,
+        items,
+        pinTopNames: ['Item 1']
+      },
+      global: globalConfig
+    })
+
+    const virtualGrid = screen.getByTestId('virtual-grid')
+    const virtualItems = JSON.parse(virtualGrid.getAttribute('data-items')!)
+
+    expect(virtualItems.map((i: { name: string }) => i.name)).toEqual([
+      'Item 1',
+      'Item 2'
+    ])
+  })
+
   it('uses single column layout for list modes', () => {
     render(FormDropdownMenu, {
       props: {
