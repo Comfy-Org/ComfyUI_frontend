@@ -6,6 +6,7 @@ import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationD
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
+import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
@@ -280,9 +281,11 @@ export function useMediaAssetActions() {
       return
     }
 
-    const node = litegraphService.addNodeOnGraph(nodeDef, {
-      pos: litegraphService.getCanvasCenter()
-    })
+    const node = withNodeAddSource('programmatic', () =>
+      litegraphService.addNodeOnGraph(nodeDef, {
+        pos: litegraphService.getCanvasCenter()
+      })
+    )
 
     if (!node) {
       toast.add({
@@ -425,12 +428,14 @@ export function useMediaAssetActions() {
       }
 
       const center = litegraphService.getCanvasCenter()
-      const node = litegraphService.addNodeOnGraph(nodeDef, {
-        pos: [
-          center[0] + nodeIndex * NODE_OFFSET,
-          center[1] + nodeIndex * NODE_OFFSET
-        ]
-      })
+      const node = withNodeAddSource('programmatic', () =>
+        litegraphService.addNodeOnGraph(nodeDef, {
+          pos: [
+            center[0] + nodeIndex * NODE_OFFSET,
+            center[1] + nodeIndex * NODE_OFFSET
+          ]
+        })
+      )
 
       if (!node) {
         failed++

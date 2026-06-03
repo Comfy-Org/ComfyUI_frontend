@@ -10,6 +10,7 @@ import type {
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
   NodeSearchMetadata,
+  NodeAddedMetadata,
   NodeSearchResultMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
@@ -313,6 +314,13 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     this.pushEvent('select_item', {
       item_id: metadata.node_type,
       search_term: metadata.last_query
+    })
+  }
+
+  trackNodeAdded(metadata: NodeAddedMetadata): void {
+    this.pushEvent('node_added', {
+      node_type: metadata.node_type,
+      source: metadata.source
     })
   }
 
