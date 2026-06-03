@@ -124,5 +124,11 @@ const handleSubmit = async () => {
   border: none !important;
   box-shadow: none !important;
   background: #2d2e32 !important;
+  color: var(--color-primary-comfy-canvas) !important;
+  caret-color: var(--color-primary-comfy-canvas);
+}
+
+:deep(.p-inputtext::placeholder) {
+  color: rgb(from var(--color-primary-comfy-canvas) r g b / 0.5);
 }
 </style>
