@@ -6,6 +6,7 @@ import type { Ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { useSearchKeystrokeTracking } from '@/platform/telemetry/searchKeystroke/useSearchKeystrokeTracking'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -47,6 +48,7 @@ export function useTemplateFiltering(
   const rankingStore = useTemplateRankingStore()
 
   const searchQuery = ref('')
+  useSearchKeystrokeTracking('template_search', searchQuery)
   const selectedModels = ref<string[]>(
     settingStore.get('Comfy.Templates.SelectedModels')
   )

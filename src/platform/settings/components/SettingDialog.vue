@@ -95,6 +95,7 @@ import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMess
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
+import { useSearchKeystrokeTracking } from '@/platform/telemetry/searchKeystroke/useSearchKeystrokeTracking'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import type {
   ISettingGroup,
@@ -128,6 +129,8 @@ const {
   handleSearch: handleSearchBase,
   getSearchResults
 } = useSettingSearch()
+
+useSearchKeystrokeTracking('settings_search', searchQuery)
 
 const authActions = useAuthActions()
 

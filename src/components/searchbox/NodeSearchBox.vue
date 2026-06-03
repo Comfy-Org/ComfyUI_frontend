@@ -80,7 +80,6 @@
 </template>
 
 <script setup lang="ts">
-import { debounce } from 'es-toolkit/compat'
 import Dialog from 'primevue/dialog'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -92,6 +91,7 @@ import NodeSearchItem from '@/components/searchbox/NodeSearchItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { useSearchKeystrokeTracking } from '@/platform/telemetry/searchKeystroke/useSearchKeystrokeTracking'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
@@ -126,12 +126,7 @@ const placeholder = computed(() => {
 const nodeDefStore = useNodeDefStore()
 const nodeFrequencyStore = useNodeFrequencyStore()
 
-// Debounced search tracking (500ms as per implementation plan)
-const debouncedTrackSearch = debounce((query: string) => {
-  if (query.trim()) {
-    telemetry?.trackNodeSearch({ query })
-  }
-}, 500)
+useSearchKeystrokeTracking('node_search_modal', currentQuery)
 
 const search = (query: string) => {
   const queryIsEmpty = query === '' && filters.length === 0
@@ -143,9 +138,6 @@ const search = (query: string) => {
           limit: searchLimit
         })
       ]
-
-  // Track search queries with debounce
-  debouncedTrackSearch(query)
 }
 
 const emit = defineEmits<{

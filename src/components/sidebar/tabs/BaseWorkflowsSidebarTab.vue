@@ -166,6 +166,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useAppMode } from '@/composables/useAppMode'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSearchKeystrokeTracking } from '@/platform/telemetry/searchKeystroke/useSearchKeystrokeTracking'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   ComfyWorkflow,
@@ -204,6 +205,7 @@ const workflowTabsPosition = computed(() =>
 const searchBoxRef = ref()
 
 const searchQuery = ref('')
+useSearchKeystrokeTracking('apps_sidebar', searchQuery)
 const isSearching = computed(() => searchQuery.value.length > 0)
 const filteredWorkflows = computed(() => {
   if (searchQuery.value.length === 0) return []

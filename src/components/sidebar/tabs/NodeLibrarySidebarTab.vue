@@ -189,6 +189,7 @@ import NodeTreeFolder from '@/components/sidebar/tabs/nodeLibrary/NodeTreeFolder
 import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
+import { useSearchKeystrokeTracking } from '@/platform/telemetry/searchKeystroke/useSearchKeystrokeTracking'
 import { useLitegraphService } from '@/services/litegraphService'
 import {
   DEFAULT_GROUPING_ID,
@@ -240,6 +241,7 @@ const selectedSortingId = useLocalStorage<SortingStrategyId>(
 )
 
 const searchQuery = ref<string>('')
+useSearchKeystrokeTracking('node_sidebar', searchQuery)
 
 const { currentHelpNode, isHelpOpen } = storeToRefs(nodeHelpStore)
 const { openHelp, closeHelp } = nodeHelpStore
