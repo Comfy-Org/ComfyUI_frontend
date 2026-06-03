@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro'
 import AudienceSection from '../templates/affiliate/AudienceSection.vue'
 import BenefitsSection from '../templates/affiliate/BenefitsSection.vue'
+import FAQSection from '../templates/affiliate/FAQSection.vue'
 import HeroSection from '../templates/affiliate/HeroSection.vue'
 import HowItWorksSection from '../templates/affiliate/HowItWorksSection.vue'
 ---
@@ -14,4 +15,5 @@ import HowItWorksSection from '../templates/affiliate/HowItWorksSection.vue'
   <AudienceSection />
   <HowItWorksSection />
   <BenefitsSection />
+  <FAQSection client:visible />
 </BaseLayout>
