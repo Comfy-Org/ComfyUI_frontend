@@ -5,10 +5,11 @@ import { ref } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
-import { t } from '@/i18n'
+import { st, t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
@@ -46,6 +47,12 @@ export const useAuthActions = () => {
           email: 'support@comfy.org'
         })
       })
+    } else if (error instanceof FirebaseError) {
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: st(`auth.errors.${error.code}`, t('auth.errors.generic'))
+      })
     } else {
       toastErrorHandler(error)
     }
@@ -53,14 +60,30 @@ export const useAuthActions = () => {
 
   const logout = wrapWithErrorHandlingAsync(async () => {
     const workflowStore = useWorkflowStore()
-    if (workflowStore.modifiedWorkflows.length > 0) {
+    const modifiedWorkflows = workflowStore.modifiedWorkflows
+    if (modifiedWorkflows.length > 0) {
       const dialogService = useDialogService()
       const confirmed = await dialogService.confirm({
         title: t('auth.signOut.unsavedChangesTitle'),
         message: t('auth.signOut.unsavedChangesMessage'),
-        type: 'dirtyClose'
+        type: 'dirtyClose',
+        denyLabel: t('auth.signOut.signOutAnyway')
       })
-      if (!confirmed) return
+      if (confirmed === null) return
+
+      if (confirmed === true) {
+        const workflowService = useWorkflowService()
+        for (const workflow of modifiedWorkflows) {
+          try {
+            const saved = await workflowService.saveWorkflow(workflow)
+            if (!saved) return
+          } catch {
+            throw new Error(
+              t('auth.signOut.saveFailed', { workflow: workflow.path })
+            )
+          }
+        }
+      }
     }
 
     await authStore.logout()

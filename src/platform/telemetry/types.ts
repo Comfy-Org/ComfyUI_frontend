@@ -139,9 +139,23 @@ export interface CreditTopupMetadata {
 /**
  * Workflow import metadata
  */
+export interface MissingNodePack {
+  /**
+   * Custom node pack identifier (cnrId / aux_id from node properties).
+   * `'unknown'` when the workflow JSON has no pack hint for the node.
+   */
+  pack_id: string
+  node_types: string[]
+}
+
 export interface WorkflowImportMetadata {
   missing_node_count: number
   missing_node_types: string[]
+  /**
+   * Missing nodes grouped by their custom node pack. Populated from the
+   * `cnr_id` / `aux_id` baked into node properties — no network lookups.
+   */
+  missing_node_packs?: MissingNodePack[]
   /**
    * The source of the workflow open/import action
    */
@@ -325,6 +339,7 @@ export interface CheckoutAttributionMetadata {
   ga_session_id?: string
   ga_session_number?: string
   im_ref?: string
+  rewardful_referral?: string
   utm_source?: string
   utm_medium?: string
   utm_campaign?: string

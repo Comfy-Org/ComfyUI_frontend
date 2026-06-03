@@ -209,6 +209,40 @@ describe('ErrorNodeCard.vue', () => {
     expect(screen.queryByText(/ComfyUI Error Report/)).not.toBeInTheDocument()
   })
 
+  it('displays catalog-resolved copy when available', async () => {
+    renderCard({
+      id: `node-${++cardIdCounter}`,
+      title: 'KSampler',
+      nodeId: '10',
+      nodeTitle: 'KSampler',
+      errors: [
+        {
+          message: 'Required input is missing',
+          details: 'model',
+          displayTitle: 'Missing connection',
+          displayMessage:
+            'Required input slots have no connection feeding them.',
+          displayDetails: 'KSampler is missing a required input: model',
+          displayItemLabel: 'KSampler - model'
+        }
+      ]
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('Missing connection')).toBeInTheDocument()
+    })
+    expect(
+      screen.getByText('Required input slots have no connection feeding them.')
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('KSampler is missing a required input: model')
+    ).toBeInTheDocument()
+    expect(screen.queryByText('KSampler - model')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Required input is missing')
+    ).not.toBeInTheDocument()
+  })
+
   it('copies enriched report when copy button is clicked for runtime error', async () => {
     const reportText = '# Full Report Content'
     mockGenerateErrorReport.mockReturnValue(reportText)

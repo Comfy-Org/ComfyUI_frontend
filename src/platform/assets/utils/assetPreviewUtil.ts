@@ -1,9 +1,11 @@
 import { assetService } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 interface AssetRecord {
   id: string
   name: string
+  hash?: string
   asset_hash?: string
   preview_url?: string
   preview_id?: string | null
@@ -41,7 +43,7 @@ export async function findOutputAsset(
   name: string
 ): Promise<AssetRecord | undefined> {
   const byHash = await fetchAssets({ asset_hash: name })
-  const hashMatch = byHash.find((a) => a.asset_hash === name)
+  const hashMatch = byHash.find((a) => (a.hash ?? a.asset_hash) === name)
   if (hashMatch) return hashMatch
 
   const byName = await fetchAssets({ name_contains: name })
@@ -80,6 +82,9 @@ export async function persistThumbnail(
     await assetService.updateAsset(asset.id, {
       preview_id: uploaded.id
     })
+
+    const previewUrl = api.apiURL(`/assets/${uploaded.id}/content`)
+    useAssetsStore().setAssetPreview(asset.name, uploaded.id, previewUrl)
   } catch {
     // Non-critical — client still shows the rendered thumbnail
   }

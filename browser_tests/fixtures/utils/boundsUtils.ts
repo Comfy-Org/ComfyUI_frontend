@@ -3,9 +3,7 @@ import type { Page } from '@playwright/test'
 import { SELECTION_BOUNDS_PADDING } from '@/base/common/selectionBounds'
 import type { CanvasRect } from '@/base/common/selectionBounds'
 
-export type { CanvasRect }
-
-export interface MeasureResult {
+interface MeasureResult {
   selectionBounds: CanvasRect | null
   nodeVisualBounds: Record<string, CanvasRect>
 }

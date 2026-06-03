@@ -4,6 +4,7 @@ import QuickLRU from '@alloc/quick-lru'
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
+import { isLoad3dPreviewNode } from '@/extensions/core/load3d/nodeTypes'
 import type {
   AnimationItem,
   BackgroundRenderModeType,
@@ -368,7 +369,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         | LightConfig
         | undefined
 
-      isPreview.value = node.type === 'Preview3D'
+      isPreview.value = isLoad3dPreviewNode(node.type ?? '')
 
       if (sceneConfig) {
         backgroundColor.value =
@@ -619,7 +620,11 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         intensity: initialState.value.lightIntensity
       }
 
+      const existingModelConfig = nodeValue.properties['Model Config'] as
+        | ModelConfig
+        | undefined
       nodeValue.properties['Model Config'] = {
+        ...existingModelConfig,
         upDirection: initialState.value.upDirection,
         materialMode: initialState.value.materialMode,
         gizmo: {
@@ -671,10 +676,13 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       }
 
       const gizmoTransform = load3d.getGizmoTransform()
+      const existingModelConfig = nodeValue.properties['Model Config'] as
+        | ModelConfig
+        | undefined
       nodeValue.properties['Model Config'] = {
+        ...existingModelConfig,
         upDirection: upDirection.value,
         materialMode: materialMode.value,
-        showSkeleton: false,
         gizmo: {
           enabled: gizmoEnabled.value,
           mode: gizmoMode.value,

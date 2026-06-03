@@ -15,18 +15,48 @@ export type UpDirection = 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
 export type CameraType = 'perspective' | 'orthographic'
 export type BackgroundRenderModeType = 'tiled' | 'panorama'
 
+interface CameraQuaternion {
+  x: number
+  y: number
+  z: number
+  w: number
+}
+
+interface CameraFrustum {
+  left: number
+  right: number
+  top: number
+  bottom: number
+}
+
 export interface CameraState {
   position: THREE.Vector3
   target: THREE.Vector3
   zoom: number
   cameraType: CameraType
+  quaternion?: CameraQuaternion
+  fov?: number
+  aspect?: number
+  near?: number
+  far?: number
+  frustum?: CameraFrustum
 }
+
+// Coordinate system: right-handed, Y-up, world space
+export interface Model3DTransform {
+  position: { x: number; y: number; z: number } // scene units
+  quaternion: { x: number; y: number; z: number; w: number } // normalized, dimensionless; world rotation
+  scale: { x: number; y: number; z: number } // dimensionless multiplier
+}
+
+export type Model3DInfo = Model3DTransform[]
 
 export interface SceneConfig {
   showGrid: boolean
   backgroundColor: string
   backgroundImage?: string
   backgroundRenderMode?: BackgroundRenderModeType
+  models?: Model3DInfo
 }
 
 export type GizmoMode = 'translate' | 'rotate' | 'scale'
@@ -50,6 +80,7 @@ export interface CameraConfig {
   cameraType: CameraType
   fov: number
   state?: CameraState
+  retainViewOnReload?: boolean
 }
 
 export interface LightConfig {
@@ -76,6 +107,11 @@ export interface Load3DOptions {
   // Dynamic dimension provider (called on every render)
   // Use this for reactive dimensions that change over time
   getDimensions?: () => { width: number; height: number } | null
+
+  // Returns the current canvas zoom scale (e.g. ds.scale from LiteGraph).
+  // Used to scale the renderer pixel ratio so the 3D scene renders at the
+  // correct resolution when the graph is zoomed in or out.
+  getZoomScale?: () => number
 
   // Viewer mode flag (affects aspect ratio behavior)
   isViewerMode?: boolean

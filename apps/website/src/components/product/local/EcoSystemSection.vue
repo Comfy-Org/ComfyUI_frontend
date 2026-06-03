@@ -10,7 +10,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
 
 <template>
-  <section class="px-4 py-24 lg:px-20 lg:py-40">
+  <section class="max-w-9xl mx-auto px-4 py-24 lg:px-20 lg:py-40">
     <div
       class="bg-transparency-white-t4 rounded-5xl flex flex-col-reverse items-stretch gap-10 p-2 lg:flex-row lg:gap-8"
     >
@@ -28,7 +28,11 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         <!-- CTA buttons -->
         <div class="mt-10 flex flex-col gap-4 lg:flex-row">
           <DownloadLocalButton :locale />
-          <BrandButton :href="externalLinks.github" variant="outline" size="lg">
+          <BrandButton
+            :href="externalLinks.githubInstall"
+            variant="outline"
+            size="lg"
+          >
             <span class="inline-flex items-center gap-2">
               <i
                 class="icon-mask size-5 -translate-y-px mask-[url('/icons/social/github.svg')]"

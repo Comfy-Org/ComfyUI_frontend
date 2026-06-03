@@ -1,38 +1,43 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 import { getPseudoPreviewWidgets } from '@e2e/fixtures/utils/promotedWidgets'
 
 const domPreviewSelector = '.image-preview'
 
 test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
-  test.describe('Cleanup Behavior After Promoted Source Removal', () => {
-    test('Deleting the promoted source removes the exterior DOM widget', async ({
-      comfyPage
-    }) => {
-      await comfyPage.workflow.loadWorkflow(
-        'subgraphs/subgraph-with-promoted-text-widget'
-      )
+  test.describe(
+    'Cleanup Behavior After Promoted Source Removal',
+    { tag: ['@vue-nodes'] },
+    () => {
+      test('Deleting the promoted source removes the exterior promoted widget', async ({
+        comfyPage
+      }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-promoted-text-widget'
+        )
 
-      const textarea = comfyPage.page.getByTestId(
-        TestIds.widgets.domWidgetTextarea
-      )
-      await expect(textarea).toBeVisible()
+        const subgraphNode = comfyPage.vueNodes.getNodeLocator('11')
+        const promotedTextarea = subgraphNode.getByRole('textbox', {
+          name: 'text'
+        })
+        await expect(promotedTextarea).toBeVisible()
 
-      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
-      await subgraphNode.navigateIntoSubgraph()
+        await comfyPage.vueNodes.enterSubgraph('11')
 
-      const clipNode = await comfyPage.nodeOps.getNodeRefById('10')
-      await clipNode.delete()
+        const clipNode = await comfyPage.nodeOps.getNodeRefById('10')
+        await clipNode.delete()
 
-      await comfyPage.subgraph.exitViaBreadcrumb()
+        await comfyPage.subgraph.exitViaBreadcrumb()
 
-      await expect(
-        comfyPage.page.getByTestId(TestIds.widgets.domWidgetTextarea)
-      ).toHaveCount(0)
-    })
-  })
+        await expect(
+          comfyPage.vueNodes
+            .getNodeLocator('11')
+            .getByRole('textbox', { name: 'text' })
+        ).toHaveCount(0)
+      })
+    }
+  )
 
   test.describe('Unpack/Remove Cleanup for Pseudo-Preview Targets', () => {
     test('Unpacking the preview subgraph clears promoted preview state and DOM', async ({

@@ -15,11 +15,15 @@
     "test:e2e:local": "cross-env PLAYWRIGHT_LOCAL=1 playwright test",
     "test:visual": "playwright test --project visual",
     "test:visual:update": "playwright test --project visual --update-snapshots",
-    "ashby:refresh-snapshot": "tsx ./scripts/refresh-ashby-snapshot.ts"
+    "ashby:refresh-snapshot": "tsx ./scripts/refresh-ashby-snapshot.ts",
+    "cloud-nodes:refresh-snapshot": "tsx ./scripts/refresh-cloud-nodes-snapshot.ts",
+    "generate:models": "tsx ./scripts/generate-models.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
     "@comfyorg/design-system": "workspace:*",
+    "@comfyorg/object-info-parser": "workspace:*",
+    "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
     "@vercel/analytics": "catalog:",
     "@vueuse/core": "catalog:",
@@ -27,6 +31,7 @@
     "gsap": "catalog:",
     "lenis": "catalog:",
     "posthog-js": "catalog:",
+    "three": "catalog:",
     "vue": "catalog:",
     "zod": "catalog:"
   },
@@ -40,88 +45,5 @@
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
-  },
-  "nx": {
-    "tags": [
-      "scope:website",
-      "type:app"
-    ],
-    "targets": {
-      "dev": {
-        "executor": "nx:run-commands",
-        "continuous": true,
-        "options": {
-          "cwd": "apps/website",
-          "command": "astro dev"
-        }
-      },
-      "serve": {
-        "executor": "nx:run-commands",
-        "continuous": true,
-        "options": {
-          "cwd": "apps/website",
-          "command": "astro dev"
-        }
-      },
-      "build": {
-        "executor": "nx:run-commands",
-        "cache": true,
-        "dependsOn": [
-          "^build"
-        ],
-        "options": {
-          "cwd": "apps/website",
-          "command": "astro build"
-        },
-        "outputs": [
-          "{projectRoot}/dist"
-        ]
-      },
-      "preview": {
-        "executor": "nx:run-commands",
-        "continuous": true,
-        "dependsOn": [
-          "build"
-        ],
-        "options": {
-          "cwd": "apps/website",
-          "command": "astro preview"
-        }
-      },
-      "typecheck": {
-        "executor": "nx:run-commands",
-        "cache": true,
-        "options": {
-          "cwd": "apps/website",
-          "command": "astro check"
-        }
-      },
-      "test:unit": {
-        "executor": "nx:run-commands",
-        "cache": true,
-        "options": {
-          "cwd": "apps/website",
-          "command": "vitest run"
-        }
-      },
-      "test:coverage": {
-        "executor": "nx:run-commands",
-        "cache": true,
-        "options": {
-          "cwd": "apps/website",
-          "command": "vitest run --coverage"
-        }
-      },
-      "test:e2e": {
-        "executor": "nx:run-commands",
-        "dependsOn": [
-          "build"
-        ],
-        "options": {
-          "cwd": "apps/website",
-          "command": "playwright test"
-        }
-      }
-    }
   }
 }

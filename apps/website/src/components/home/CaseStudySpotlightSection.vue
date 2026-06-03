@@ -12,7 +12,9 @@ const routes = getRoutes(locale)
 </script>
 
 <template>
-  <section class="bg-primary-comfy-ink px-4 py-20 lg:px-20 lg:py-24">
+  <section
+    class="bg-primary-comfy-ink max-w-9xl mx-auto px-4 py-20 lg:px-20 lg:py-24"
+  >
     <GlassCard
       class="flex flex-col gap-12 lg:flex-row lg:items-stretch lg:gap-8"
     >
@@ -35,7 +37,10 @@ const routes = getRoutes(locale)
       </div>
 
       <!-- Right: content -->
-      <div class="flex flex-col justify-between p-6 lg:flex-1">
+      <div
+        data-testid="case-study-content"
+        class="flex flex-col justify-between p-6 lg:flex-1"
+      >
         <div class="flex flex-col gap-8">
           <p
             class="text-primary-comfy-yellow text-sm font-bold tracking-widest uppercase"
@@ -52,12 +57,8 @@ const routes = getRoutes(locale)
           </p>
         </div>
 
-        <div class="flex flex-col gap-3 sm:flex-row">
-          <BrandButton
-            :href="routes.customers"
-            variant="outline"
-            class="flex-1 text-center"
-          >
+        <div class="mt-8 flex flex-col items-start gap-3 sm:flex-row lg:mt-0">
+          <BrandButton :href="routes.customers" variant="outline">
             {{ t('caseStudy.seeAll', locale) }}
           </BrandButton>
         </div>

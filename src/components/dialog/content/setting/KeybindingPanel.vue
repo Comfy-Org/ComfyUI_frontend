@@ -1,5 +1,8 @@
 <template>
-  <div class="keybinding-panel flex flex-col gap-2">
+  <div
+    :ref="primeVueOverlay.overlayScopeRef"
+    class="keybinding-panel flex flex-col gap-2"
+  >
     <Teleport defer to="#keybinding-panel-header">
       <SearchInput
         v-model="filters['global'].value"
@@ -15,10 +18,12 @@
       <div class="flex items-center gap-2">
         <KeybindingPresetToolbar
           :preset-names="presetNames"
+          :content-style="keybindingOverlayContentStyle"
           @presets-changed="refreshPresetList"
         />
         <DropdownMenu
           :entries="menuEntries"
+          :style="keybindingOverlayContentStyle"
           icon="icon-[lucide--ellipsis]"
           item-class="text-sm gap-2"
           button-size="unset"
@@ -193,11 +198,12 @@
               </template>
             </Column>
             <template #expansion="slotProps">
-              <div class="pl-4">
+              <div class="pl-4" data-testid="keybinding-expansion-content">
                 <div
                   v-for="(binding, idx) in (slotProps.data as ICommandData)
                     .keybindings"
                   :key="binding.combo.serialize()"
+                  data-testid="keybinding-expansion-binding"
                   class="flex items-center justify-between border-b border-border-subtle py-1.5 last:border-b-0"
                 >
                   <div class="flex items-center gap-4">
@@ -237,7 +243,8 @@
       </ContextMenuTrigger>
       <ContextMenuPortal>
         <ContextMenuContent
-          class="z-1200 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
+          :style="keybindingOverlayContentStyle"
+          class="z-1800 min-w-56 rounded-lg border border-border-subtle bg-base-background px-2 py-3 shadow-interface"
         >
           <ContextMenuItem
             class="flex cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm text-text-primary outline-none select-none hover:bg-node-component-surface-hovered focus:bg-node-component-surface-hovered data-disabled:cursor-default data-disabled:opacity-50"
@@ -313,6 +320,7 @@ import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import { useEditKeybindingDialog } from '@/composables/useEditKeybindingDialog'
+import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
@@ -336,6 +344,8 @@ const settingStore = useSettingStore()
 const commandStore = useCommandStore()
 const dialogStore = useDialogStore()
 const { t } = useI18n()
+const primeVueOverlay = usePrimeVueOverlayChildStyle()
+const keybindingOverlayContentStyle = primeVueOverlay.contentStyle
 
 const presetNames = ref<string[]>([])
 

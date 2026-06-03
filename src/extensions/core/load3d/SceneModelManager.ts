@@ -1,3 +1,4 @@
+import { SparkRenderer } from '@sparkjsdev/spark'
 import * as THREE from 'three'
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
 
@@ -317,6 +318,7 @@ export class SceneModelManager implements ModelManagerInterface {
         object instanceof THREE.GridHelper ||
         object instanceof THREE.Light ||
         object instanceof THREE.Camera ||
+        object instanceof SparkRenderer ||
         object.name === 'GizmoTransformControls'
 
       if (!isEnvironmentObject) {
@@ -433,6 +435,11 @@ export class SceneModelManager implements ModelManagerInterface {
     )
   }
 
+  getCurrentBounds(): THREE.Box3 | null {
+    if (!this.currentModel) return null
+    return this.computeWorldBounds(this.currentModel)
+  }
+
   async setupModel(model: THREE.Object3D): Promise<void> {
     this.currentModel = model
     model.name = 'MainModel'
@@ -447,15 +454,22 @@ export class SceneModelManager implements ModelManagerInterface {
     }
 
     this.scene.add(model)
+    const pendingMaterialMode = this.materialMode
+    this.setupModelMaterials(model)
 
-    if (this.materialMode !== 'original') {
-      this.setMaterialMode(this.materialMode)
+    if (pendingMaterialMode !== 'original') {
+      this.setMaterialMode(pendingMaterialMode)
+    }
+
+    const validModes = this.getCurrentCapabilities().materialModes
+    if (validModes.length > 0 && !validModes.includes(this.materialMode)) {
+      this.materialMode = validModes[0]
+      this.eventManager.emitEvent('materialModeChange', this.materialMode)
     }
 
     if (this.currentUpDirection !== 'original') {
       this.setUpDirection(this.currentUpDirection)
     }
-    this.setupModelMaterials(model)
 
     const box = this.computeWorldBounds(model)
     const size = box.getSize(new THREE.Vector3())
@@ -490,6 +504,13 @@ export class SceneModelManager implements ModelManagerInterface {
     scaledBox.getSize(size)
 
     model.position.set(-center.x, -scaledBox.min.y, -center.z)
+
+    // fitToViewer resets rotation to (0,0,0), so originalRotation must be cleared
+    // before reapplying currentUpDirection to avoid compounding rotations.
+    this.originalRotation = null
+    if (this.currentUpDirection !== 'original') {
+      this.setUpDirection(this.currentUpDirection)
+    }
 
     const newBox = this.computeWorldBounds(model)
     const newSize = newBox.getSize(new THREE.Vector3())

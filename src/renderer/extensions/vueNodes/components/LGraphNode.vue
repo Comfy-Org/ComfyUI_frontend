@@ -41,7 +41,6 @@
     @dragleave="handleDragLeave"
     @drop="handleDrop"
   >
-    <!-- Selection/Execution Outline Overlay -->
     <AppOutput
       v-if="
         lgraphNode?.constructor?.nodeData?.output_node &&
@@ -58,14 +57,13 @@
         cn(
           'pointer-events-none absolute z-0 border-3 outline-none',
           selectionShapeClass,
-          hasAnyError ? '-inset-[7px]' : '-inset-[3px]',
+          hasAnyError ? 'inset-[-7px]' : 'inset-[-3px]',
           isSelected
             ? 'border-node-component-outline'
             : 'border-node-stroke-executing'
         )
       "
     />
-    <!-- Root Border Overlay -->
     <div
       :class="
         cn(
@@ -137,7 +135,6 @@
 
       <template v-else-if="!isCollapsed">
         <div class="relative">
-          <!-- Progress bar for executing state -->
           <div
             v-if="executing && progress !== undefined"
             :class="
@@ -177,9 +174,8 @@
               :media="preview"
             />
           </div>
-          <!-- Live mid-execution preview images -->
           <LivePreview
-            v-if="shouldShowPreviewImg"
+            v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
             :image-url="latestPreviewUrl"
           />
           <NodeBadges
@@ -216,6 +212,7 @@
         v-for="handle in RESIZE_HANDLES"
         :key="handle.corner"
         role="button"
+        :data-corner="handle.corner"
         :aria-label="t(handle.i18nKey)"
         :class="
           cn(
@@ -784,6 +781,8 @@ const nodeMedia = computed(() => {
 
   if (!node || !newOutputs?.images?.length || node.hideOutputImages)
     return undefined
+
+  if (node instanceof SubgraphNode) return undefined
 
   const urls = nodeOutputs.getNodeImageUrls(node)
   if (!urls?.length) return undefined

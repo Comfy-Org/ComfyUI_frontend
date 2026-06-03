@@ -2,16 +2,17 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type {
-  LGraph,
-  LGraphCanvas,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+import { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   CanvasPointerEvent,
   CanvasPointerExtensions
 } from '@/lib/litegraph/src/types/events'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { ComfyApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
 import {
@@ -24,14 +25,30 @@ import {
 } from '@/composables/usePaste'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { api } from '@/scripts/api'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import type { NodeError } from '@/schemas/apiSchema'
 
 const {
+  mockApiKeyAuthStore,
+  mockAuthStore,
+  mockSettingStore,
   mockToastStore,
   mockExtensionService,
   mockNodeOutputStore,
   mockWorkspaceWorkflow,
   mockRefreshMissingModelPipeline
 } = vi.hoisted(() => ({
+  mockApiKeyAuthStore: {
+    getApiKey: vi.fn()
+  },
+  mockAuthStore: {
+    getAuthToken: vi.fn()
+  },
+  mockSettingStore: {
+    get: vi.fn()
+  },
   mockToastStore: {
     addAlert: vi.fn(),
     add: vi.fn(),
@@ -45,7 +62,7 @@ const {
     refreshNodeOutputs: vi.fn()
   },
   mockWorkspaceWorkflow: {
-    activeWorkflow: null
+    activeWorkflow: null as ComfyWorkflow | null
   },
   mockRefreshMissingModelPipeline: vi.fn()
 }))
@@ -57,6 +74,18 @@ vi.mock('@/utils/litegraphUtil', () => ({
   isAudioNode: vi.fn(),
   executeWidgetsCallback: vi.fn(),
   fixLinkInputSlots: vi.fn()
+}))
+
+vi.mock('@/stores/apiKeyAuthStore', () => ({
+  useApiKeyAuthStore: vi.fn(() => mockApiKeyAuthStore)
+}))
+
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: vi.fn(() => mockAuthStore)
+}))
+
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: vi.fn(() => mockSettingStore)
 }))
 
 vi.mock('@/composables/usePaste', () => ({
@@ -114,7 +143,9 @@ function createMockCanvas(): Partial<LGraphCanvas> {
 
   return {
     graph: mockGraph as LGraph,
-    selectItems: vi.fn()
+    draw: vi.fn(),
+    selectItems: vi.fn(),
+    setDirty: vi.fn()
   }
 }
 
@@ -185,8 +216,70 @@ describe('ComfyApp', () => {
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
     app.canvas = mockCanvas as LGraphCanvas
+    mockWorkspaceWorkflow.activeWorkflow = null
+    mockApiKeyAuthStore.getApiKey.mockReturnValue(undefined)
+    mockAuthStore.getAuthToken.mockResolvedValue(undefined)
     mockExtensionService.invokeExtensions.mockReturnValue([])
     mockExtensionService.invokeExtensionsAsync.mockResolvedValue(undefined)
+    mockSettingStore.get.mockImplementation((key: string) =>
+      key === 'Comfy.RightSidePanel.ShowErrorsTab' ? true : undefined
+    )
+  })
+
+  describe('queuePrompt', () => {
+    it('shows the error overlay for successful prompt responses with node errors', async () => {
+      const graph = new LGraph()
+      const workflow = new ComfyWorkflow({
+        path: 'workflows/review.json',
+        modified: 0,
+        size: 0
+      })
+      const promptOutput: ComfyApiWorkflow = {
+        '1': {
+          class_type: 'PreviewAny',
+          inputs: {},
+          _meta: { title: 'PreviewAny' }
+        }
+      }
+      const nodeErrors: Record<string, NodeError> = {
+        '1': {
+          class_type: 'PreviewAny',
+          dependent_outputs: ['1'],
+          errors: [
+            {
+              type: 'required_input_missing',
+              message: 'Required input is missing: source',
+              details: '',
+              extra_info: { input_name: 'source' }
+            }
+          ]
+        }
+      }
+      Reflect.set(app, 'rootGraphInternal', graph)
+      mockWorkspaceWorkflow.activeWorkflow = workflow
+      vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
+        output: promptOutput,
+        workflow: createWorkflowGraphData()
+      })
+      vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1',
+        node_errors: nodeErrors,
+        error: ''
+      })
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      const errorStore = useExecutionErrorStore()
+      const executionStore = useExecutionStore()
+      expect(errorStore.lastNodeErrors).toEqual(nodeErrors)
+      expect(errorStore.isErrorOverlayOpen).toBe(true)
+      expect(executionStore.queuedJobs['job-1']?.nodes).toEqual({ '1': false })
+      expect(executionStore.jobIdToSessionWorkflowPath.get('job-1')).toBe(
+        'workflows/review.json'
+      )
+      expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+    })
   })
 
   describe('refreshComboInNodes', () => {
@@ -510,6 +603,30 @@ describe('ComfyApp', () => {
   })
 
   describe('addDropHandler', () => {
+    it('syncs graph_mouse from the drop event before downstream handlers run', async () => {
+      // graph_mouse is only updated on mousemove, so when files are dragged in
+      // from another window the canvas-space cursor is stale. The drop handler
+      // must derive the position from the drop event itself.
+      const graphMouse: [number, number] = [-999, -999]
+      const adjustMouseEvent = vi.fn((e: DragEvent) => {
+        ;(e as DragEvent & { canvasX: number; canvasY: number }).canvasX = 123
+        ;(e as DragEvent & { canvasX: number; canvasY: number }).canvasY = 456
+      })
+      app.canvas = {
+        ...mockCanvas,
+        graph_mouse: graphMouse,
+        adjustMouseEvent
+      } as unknown as LGraphCanvas
+
+      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+
+      document.dispatchEvent(new DragEvent('drop'))
+      await Promise.resolve()
+
+      expect(adjustMouseEvent).toHaveBeenCalledTimes(1)
+      expect(graphMouse).toEqual([123, 456])
+    })
+
     it('routes default-prevented canvas drops to the previous drag-over node', async () => {
       const dragOverNode = createMockNode({
         id: 1,
