@@ -1,7 +1,10 @@
 import { computed, ref } from 'vue'
 
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import type {
+  BillingStatus,
+  BillingSubscriptionStatus,
   PreviewSubscribeResponse,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
@@ -34,6 +37,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
   } = useSubscription()
 
   const authStore = useAuthStore()
+  const authActions = useAuthActions()
 
   const isInitialized = ref(false)
   const isLoading = ref(false)
@@ -74,6 +78,16 @@ export function useLegacyBilling(): BillingState & BillingActions {
       cloudCreditBalanceMicros: legacyBalance.cloud_credit_balance_micros ?? 0
     }
   })
+
+  // Legacy has no coarse billing_status concept (workspace-only).
+  const billingStatus = computed<BillingStatus | null>(() => null)
+  const subscriptionStatus = computed<BillingSubscriptionStatus | null>(() => {
+    if (isCancelled.value) return 'canceled'
+    if (legacyIsActiveSubscription.value) return 'active'
+    return null
+  })
+  const tier = computed(() => subscriptionTier.value)
+  const renewalDate = computed(() => formattedRenewalDate.value || null)
 
   // Legacy billing doesn't have workspace-style plans
   const plans = computed(() => [])
@@ -152,6 +166,16 @@ export function useLegacyBilling(): BillingState & BillingActions {
     await legacyManageSubscription()
   }
 
+  async function resubscribe(): Promise<void> {
+    // Legacy has no resubscribe endpoint; resubscribing is a fresh checkout.
+    await legacySubscribe()
+  }
+
+  async function topup(amountCents: number): Promise<void> {
+    // Facade standardizes on cents; legacy /customers/credit takes dollars.
+    await authActions.purchaseCredits(amountCents / 100)
+  }
+
   async function fetchPlans(): Promise<void> {
     // Legacy billing doesn't have workspace-style plans
     // Plans are hardcoded in the UI for legacy subscriptions
@@ -179,6 +203,10 @@ export function useLegacyBilling(): BillingState & BillingActions {
     error,
     isActiveSubscription,
     isFreeTier,
+    billingStatus,
+    subscriptionStatus,
+    tier,
+    renewalDate,
 
     // Actions
     initialize,
@@ -188,6 +216,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
     previewSubscribe,
     manageSubscription,
     cancelSubscription,
+    resubscribe,
+    topup,
     fetchPlans,
     requireActiveSubscription,
     showSubscriptionDialog

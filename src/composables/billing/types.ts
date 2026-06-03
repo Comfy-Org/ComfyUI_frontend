@@ -2,6 +2,9 @@ import type { ComputedRef, Ref } from 'vue'
 
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
+  BillingStatus,
+  BillingSubscriptionStatus,
+  CreateTopupResponse,
   Plan,
   PreviewSubscribeResponse,
   SubscribeResponse,
@@ -44,6 +47,16 @@ export interface BillingActions {
   ) => Promise<PreviewSubscribeResponse | null>
   manageSubscription: () => Promise<void>
   cancelSubscription: () => Promise<void>
+  /**
+   * Reactivates a cancelled-but-still-active subscription. Legacy has no
+   * dedicated endpoint, so the legacy adapter re-runs the checkout flow.
+   */
+  resubscribe: () => Promise<void>
+  /**
+   * Purchases additional credits. Standardized on **cents**; the legacy
+   * adapter converts to dollars for the /customers/credit endpoint.
+   */
+  topup: (amountCents: number) => Promise<CreateTopupResponse | void>
   fetchPlans: () => Promise<void>
   /**
    * Ensures billing is initialized and subscription is active.
@@ -75,6 +88,20 @@ export interface BillingState {
    * Workspace-aware: reflects the active workspace's tier, not the user's personal tier.
    */
   isFreeTier: ComputedRef<boolean>
+  /**
+   * Coarse billing/funding state (workspace `billing_status`). Drives the
+   * orientation banners (B6). Legacy has no equivalent and reports null.
+   */
+  billingStatus: ComputedRef<BillingStatus | null>
+  /**
+   * Subscription lifecycle state (`subscription_status`). Legacy synthesizes
+   * it from active/cancelled flags.
+   */
+  subscriptionStatus: ComputedRef<BillingSubscriptionStatus | null>
+  /** Convenience accessor for the active subscription tier. */
+  tier: ComputedRef<SubscriptionTier | null>
+  /** Convenience accessor for the next renewal date (ISO string). */
+  renewalDate: ComputedRef<string | null>
 }
 
 export interface BillingContext extends BillingState, BillingActions {

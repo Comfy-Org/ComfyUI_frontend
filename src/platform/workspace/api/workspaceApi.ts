@@ -196,9 +196,13 @@ export interface PreviewSubscribeResponse {
   new_plan: PreviewPlanInfo
 }
 
-type BillingSubscriptionStatus = 'active' | 'scheduled' | 'ended' | 'canceled'
+export type BillingSubscriptionStatus =
+  | 'active'
+  | 'scheduled'
+  | 'ended'
+  | 'canceled'
 
-type BillingStatus =
+export type BillingStatus =
   | 'awaiting_payment_method'
   | 'pending_payment'
   | 'paid'
@@ -233,7 +237,7 @@ interface CreateTopupRequest {
 
 type TopupStatus = 'pending' | 'completed' | 'failed'
 
-interface CreateTopupResponse {
+export interface CreateTopupResponse {
   billing_op_id: string
   topup_id: string
   status: TopupStatus

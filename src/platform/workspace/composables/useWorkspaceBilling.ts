@@ -5,6 +5,7 @@ import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables
 import type {
   BillingBalanceResponse,
   BillingStatusResponse,
+  CreateTopupResponse,
   PreviewSubscribeResponse,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
@@ -69,6 +70,13 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       cloudCreditBalanceMicros: data.cloud_credit_balance_micros
     }
   })
+
+  const billingStatus = computed(() => statusData.value?.billing_status ?? null)
+  const subscriptionStatus = computed(
+    () => statusData.value?.subscription_status ?? null
+  )
+  const tier = computed(() => statusData.value?.subscription_tier ?? null)
+  const renewalDate = computed(() => statusData.value?.renewal_date ?? null)
 
   const plans = computed(() => billingPlans.plans.value)
   const currentPlanSlug = computed(
@@ -262,6 +270,38 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
+  async function resubscribe(): Promise<void> {
+    isLoading.value = true
+    error.value = null
+    try {
+      await workspaceApi.resubscribe()
+      await Promise.all([fetchStatus(), fetchBalance()])
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to resubscribe'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function topup(amountCents: number): Promise<CreateTopupResponse> {
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await workspaceApi.createTopup(amountCents)
+      if (response.status === 'completed') {
+        await fetchBalance()
+      }
+      return response
+    } catch (err) {
+      error.value =
+        err instanceof Error ? err.message : 'Failed to top up credits'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   async function fetchPlans(): Promise<void> {
     isLoading.value = true
     error.value = null
@@ -303,6 +343,10 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     error,
     isActiveSubscription,
     isFreeTier,
+    billingStatus,
+    subscriptionStatus,
+    tier,
+    renewalDate,
 
     // Actions
     initialize,
@@ -312,6 +356,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     previewSubscribe,
     manageSubscription,
     cancelSubscription,
+    resubscribe,
+    topup,
     fetchPlans,
     requireActiveSubscription,
     showSubscriptionDialog
