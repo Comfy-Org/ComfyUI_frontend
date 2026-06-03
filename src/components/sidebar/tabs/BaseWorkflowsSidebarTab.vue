@@ -213,11 +213,7 @@ const filteredWorkflows = computed(() => {
     workflow.path.toLocaleLowerCase().includes(lowerQuery)
   )
 })
-useSearchQueryTracking(
-  'apps',
-  searchQuery,
-  computed(() => filteredWorkflows.value.length)
-)
+useSearchQueryTracking('apps', searchQuery, filteredWorkflows)
 const filteredRoot = computed<TreeNode>(() => {
   return buildWorkflowTree(filteredWorkflows.value as ComfyWorkflow[])
 })

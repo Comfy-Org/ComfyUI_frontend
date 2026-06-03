@@ -334,11 +334,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
 })
 
 const filteredNodeDefs = ref<ComfyNodeDefImpl[]>([])
-useSearchQueryTracking(
-  'node_sidebar',
-  searchQuery,
-  computed(() => filteredNodeDefs.value.length)
-)
+useSearchQueryTracking('node_sidebar', searchQuery, filteredNodeDefs)
 const filters: Ref<
   (SearchFilter & { filter: FuseFilterWithValue<ComfyNodeDefImpl, string> })[]
 > = ref([])

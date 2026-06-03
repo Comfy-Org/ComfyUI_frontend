@@ -345,11 +345,7 @@ const hoveredNodeDef = computed(
   () => displayedResults.value[selectedIndex.value] ?? null
 )
 
-useSearchQueryTracking(
-  'node_modal',
-  searchQuery,
-  computed(() => displayedResults.value.length)
-)
+useSearchQueryTracking('node_modal', searchQuery, displayedResults)
 
 watch(
   hoveredNodeDef,

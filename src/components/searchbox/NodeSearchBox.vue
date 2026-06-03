@@ -126,11 +126,7 @@ const placeholder = computed(() => {
 const nodeDefStore = useNodeDefStore()
 const nodeFrequencyStore = useNodeFrequencyStore()
 
-useSearchQueryTracking(
-  'node_modal',
-  currentQuery,
-  computed(() => suggestions.value.length)
-)
+useSearchQueryTracking('node_modal', currentQuery, suggestions)
 
 const search = (query: string) => {
   const queryIsEmpty = query === '' && filters.length === 0

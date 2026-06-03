@@ -9,19 +9,19 @@ const DEBOUNCE_MS = 500
 
 /**
  * Fires `app:search_query` for the given surface, debounced 500ms.
- * Empty queries are skipped. `resultCount` is read at fire time so the
- * caller can pass any reactive source (computed off filtered length,
- * etc.).
+ * Empty queries are skipped. `results` is read at fire time and only its
+ * `.length` is observed, so callers can pass any reactive array (filtered
+ * suggestions, displayed results, etc.).
  */
 export function useSearchQueryTracking(
   surface: SearchSurface,
   query: Ref<string>,
-  resultCount: Ref<number>
+  results: Ref<{ length: number }>
 ): void {
   const fire = debounce((value: string) => {
     const trimmed = value.trim()
     if (!trimmed) return
-    const count = resultCount.value
+    const count = results.value.length
     useTelemetry()?.trackSearchQuery({
       surface,
       query: trimmed,

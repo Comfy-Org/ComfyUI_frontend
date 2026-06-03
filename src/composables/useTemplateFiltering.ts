@@ -308,7 +308,7 @@ export function useTemplateFiltering(
 
   const filteredCount = computed(() => filteredTemplates.value.length)
   const totalCount = computed(() => visibleTemplates.value.length)
-  useSearchQueryTracking('templates', searchQuery, filteredCount)
+  useSearchQueryTracking('templates', searchQuery, filteredTemplates)
 
   // Template filter tracking (debounced to avoid excessive events)
   const debouncedTrackFilterChange = debounce(() => {

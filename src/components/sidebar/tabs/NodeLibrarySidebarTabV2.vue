@@ -290,11 +290,7 @@ const activeNodes = computed(() =>
     : filteredNodeDefs.value
 )
 
-useSearchQueryTracking(
-  'node_sidebar',
-  searchQuery,
-  computed(() => filteredNodeDefs.value.length)
-)
+useSearchQueryTracking('node_sidebar', searchQuery, filteredNodeDefs)
 
 const hasNoMatches = computed(
   () => searchQuery.value.length > 0 && filteredNodeDefs.value.length === 0

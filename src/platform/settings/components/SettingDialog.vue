@@ -206,11 +206,7 @@ function onNavItemClick(id: string) {
 
 const searchResults = computed<ISettingGroup[]>(() => getSearchResults(null))
 
-useSearchQueryTracking(
-  'settings',
-  searchQuery,
-  computed(() => searchResults.value.length)
-)
+useSearchQueryTracking('settings', searchQuery, searchResults)
 
 // Scroll to and highlight the target setting once the correct category renders.
 if (scrollToSettingId) {

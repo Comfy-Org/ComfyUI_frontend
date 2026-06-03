@@ -15,10 +15,10 @@ import { useSearchQueryTracking } from './useSearchQueryTracking'
 const DEBOUNCE_FLUSH_MS = 600
 const flush = () => new Promise((r) => setTimeout(r, DEBOUNCE_FLUSH_MS))
 
-function track(query: Ref<string>, resultCount: Ref<number>) {
+function track(query: Ref<string>, results: Ref<{ length: number }>) {
   const scope = effectScope()
   scope.run(() => {
-    useSearchQueryTracking('node_sidebar', query, resultCount)
+    useSearchQueryTracking('node_sidebar', query, results)
   })
   return scope
 }
@@ -34,8 +34,8 @@ describe('useSearchQueryTracking', () => {
 
   it('fires with surface, trimmed query, length, and result_count', async () => {
     const query = ref('')
-    const resultCount = ref(3)
-    track(query, resultCount)
+    const results = ref<string[]>(['a', 'b', 'c'])
+    track(query, results)
     query.value = '  hello  '
     await flush()
     expect(hoisted.trackSearchQuery).toHaveBeenCalledExactlyOnceWith({
@@ -47,10 +47,10 @@ describe('useSearchQueryTracking', () => {
     })
   })
 
-  it('sets has_results false when result_count is 0', async () => {
+  it('sets has_results false when results are empty', async () => {
     const query = ref('')
-    const resultCount = ref(0)
-    track(query, resultCount)
+    const results = ref<string[]>([])
+    track(query, results)
     query.value = 'nothingmatches'
     await flush()
     expect(hoisted.trackSearchQuery).toHaveBeenCalledExactlyOnceWith({
@@ -64,8 +64,8 @@ describe('useSearchQueryTracking', () => {
 
   it('skips empty queries', async () => {
     const query = ref('seed')
-    const resultCount = ref(2)
-    track(query, resultCount)
+    const results = ref<string[]>(['a', 'b'])
+    track(query, results)
     query.value = '   '
     await flush()
     expect(hoisted.trackSearchQuery).not.toHaveBeenCalled()
