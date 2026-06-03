@@ -31,6 +31,7 @@ type AttributionQueryKey = (typeof ATTRIBUTION_QUERY_KEYS)[number]
 const ATTRIBUTION_STORAGE_KEY = 'comfy_checkout_attribution'
 const GENERATE_CLICK_ID_TIMEOUT_MS = 300
 const GET_GA_IDENTITY_TIMEOUT_MS = 300
+const GET_REWARDFUL_REFERRAL_TIMEOUT_MS = 300
 
 function readStoredAttribution(): Partial<Record<AttributionQueryKey, string>> {
   if (typeof window === 'undefined') return {}
@@ -180,9 +181,28 @@ async function getGeneratedClickId(): Promise<string | undefined> {
   }
 }
 
-function getRewardfulReferral(): string | undefined {
+async function getRewardfulReferral(): Promise<string | undefined> {
   if (typeof window === 'undefined') return undefined
-  return asNonEmptyString(window.Rewardful?.referral)
+
+  const referral = asNonEmptyString(window.Rewardful?.referral)
+  if (referral) return referral
+
+  const rewardful = window.rewardful
+  if (typeof rewardful !== 'function') return undefined
+
+  return withTimeout(
+    () =>
+      new Promise<string | undefined>((resolve, reject) => {
+        try {
+          rewardful('ready', () => {
+            resolve(asNonEmptyString(window.Rewardful?.referral))
+          })
+        } catch (error) {
+          reject(error)
+        }
+      }),
+    GET_REWARDFUL_REFERRAL_TIMEOUT_MS
+  ).catch(() => undefined)
 }
 
 export function captureCheckoutAttributionFromSearch(search: string): void {
@@ -203,6 +223,7 @@ export async function getCheckoutAttribution(): Promise<CheckoutAttributionMetad
 
   const storedAttribution = readStoredAttribution()
   const fromUrl = readAttributionFromUrl(window.location.search)
+  const rewardfulReferralPromise = getRewardfulReferral()
   const generatedClickId = await getGeneratedClickId()
   const attribution: Partial<Record<AttributionQueryKey, string>> = {
     ...storedAttribution,
@@ -217,8 +238,10 @@ export async function getCheckoutAttribution(): Promise<CheckoutAttributionMetad
     persistAttribution(attribution)
   }
 
-  const gaIdentity = await getGaIdentity()
-  const rewardfulReferral = getRewardfulReferral()
+  const [gaIdentity, rewardfulReferral] = await Promise.all([
+    getGaIdentity(),
+    rewardfulReferralPromise
+  ])
 
   return {
     ...attribution,

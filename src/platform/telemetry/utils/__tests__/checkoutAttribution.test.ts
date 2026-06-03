@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   captureCheckoutAttributionFromSearch,
@@ -15,8 +15,13 @@ describe('getCheckoutAttribution', () => {
     }
     window.gtag = undefined
     window.ire = undefined
+    window.rewardful = undefined
     window.Rewardful = undefined
     window.history.pushState({}, '', '/')
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('reads GA identity and URL attribution, and prefers generated click id', async () => {
@@ -243,6 +248,39 @@ describe('getCheckoutAttribution', () => {
   it('returns undefined Rewardful referral when window.Rewardful is absent', async () => {
     const attribution = await getCheckoutAttribution()
 
+    expect(attribution.rewardful_referral).toBeUndefined()
+  })
+
+  it('waits for Rewardful ready before reading the referral', async () => {
+    let readyCallback: (() => void) | undefined
+    window.rewardful = vi.fn((_method: 'ready', callback: () => void) => {
+      readyCallback = callback
+    }) as Window['rewardful']
+
+    const attributionPromise = getCheckoutAttribution()
+    await Promise.resolve()
+
+    expect(window.rewardful).toHaveBeenCalledWith('ready', expect.any(Function))
+
+    window.Rewardful = {
+      referral: 'rwd-ready-123'
+    }
+    readyCallback?.()
+
+    const attribution = await attributionPromise
+
+    expect(attribution.rewardful_referral).toBe('rwd-ready-123')
+  })
+
+  it('continues checkout attribution when Rewardful ready never runs', async () => {
+    vi.useFakeTimers()
+    window.rewardful = vi.fn() as Window['rewardful']
+
+    const attributionPromise = getCheckoutAttribution()
+    await vi.advanceTimersByTimeAsync(300)
+    const attribution = await attributionPromise
+
+    expect(window.rewardful).toHaveBeenCalledWith('ready', expect.any(Function))
     expect(attribution.rewardful_referral).toBeUndefined()
   })
 
