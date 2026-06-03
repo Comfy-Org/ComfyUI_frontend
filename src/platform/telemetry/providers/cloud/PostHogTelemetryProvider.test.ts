@@ -172,6 +172,22 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures search keystrokes with surface, query, and length', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackSearchKeystroke({
+        surface: 'node_sidebar',
+        query: 'sampler',
+        query_length: 7
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SEARCH_KEYSTROKE,
+        { surface: 'node_sidebar', query: 'sampler', query_length: 7 }
+      )
+    })
+
     it('sets first_auth_at on new-user auth', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
