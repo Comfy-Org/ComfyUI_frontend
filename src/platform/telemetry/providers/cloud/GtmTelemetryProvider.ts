@@ -318,7 +318,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   }
 
   trackNodeAdded(metadata: NodeAddedMetadata): void {
-    this.pushEvent('node_added', {
+    this.pushEvent('node_added_to_workflow', {
       node_type: metadata.node_type,
       source: metadata.source
     })

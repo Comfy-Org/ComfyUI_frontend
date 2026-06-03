@@ -5,7 +5,7 @@ import { useTelemetry } from '..'
 import { getCurrentNodeAddSource } from './nodeAddSource'
 
 /**
- * Wire `app:node_added` telemetry into a graph. Wraps any existing
+ * Wire `app:node_added_to_workflow` telemetry into a graph. Wraps any existing
  * `onNodeAdded` callback so we don't displace other subscribers. Bulk
  * additions during workflow load are skipped — `workflow_imported`
  * already covers those.

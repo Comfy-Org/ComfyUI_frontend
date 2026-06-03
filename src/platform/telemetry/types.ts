@@ -543,7 +543,7 @@ export const TelemetryEvents = {
   // Node Search Analytics
   NODE_SEARCH: 'app:node_search',
   NODE_SEARCH_RESULT_SELECTED: 'app:node_search_result_selected',
-  NODE_ADDED: 'app:node_added',
+  NODE_ADDED: 'app:node_added_to_workflow',
 
   // Template Filter Analytics
   TEMPLATE_FILTER_CHANGED: 'app:template_filter_changed',
