@@ -4551,6 +4551,12 @@ const translations = {
   'affiliate.howItWorks.heading': {
     en: 'How it works',
     'zh-CN': '运作方式'
+  },
+
+  // AffiliateBenefitsSection
+  'affiliate.benefits.heading': {
+    en: 'Why ComfyUI for Affiliate Creators',
+    'zh-CN': '为什么联盟创作者选择 ComfyUI'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
