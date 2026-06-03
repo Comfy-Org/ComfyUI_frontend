@@ -233,7 +233,8 @@
       "auth/user-disabled": "このアカウントは無効化されています。サポートまでご連絡ください。",
       "auth/user-not-found": "このメールアドレスに紐づくアカウントが見つかりません。新しいアカウントを作成しますか？",
       "auth/weak-password": "パスワードが弱すぎます。6文字以上のより強力なパスワードを使用してください。",
-      "auth/wrong-password": "入力されたパスワードが正しくありません。もう一度お試しください。"
+      "auth/wrong-password": "入力されたパスワードが正しくありません。もう一度お試しください。",
+      "generic": "サインイン中に問題が発生しました。もう一度お試しください。"
     },
     "login": {
       "andText": "および",
@@ -407,6 +408,29 @@
   "cloudForgotPassword_passwordResetSent": "パスワードリセットを送信しました",
   "cloudForgotPassword_sendResetLink": "リセットリンクを送信",
   "cloudForgotPassword_title": "パスワードを忘れた場合",
+  "cloudHero": {
+    "nextSlide": "次のスライド",
+    "previousSlide": "前のスライド",
+    "slidePagerLabel": "スライド{index}へ移動",
+    "slides": {
+      "cloud": {
+        "description": "商用ライセンスが確認されたモデルを使い、どこからでも作業したいほとんどのユーザーに最適です。",
+        "title": "クラウド"
+      },
+      "models": {
+        "description": "厳選された商用ライセンス付きモデルが、セットアップ不要ですぐに利用可能です。",
+        "title": "モデル"
+      },
+      "team": {
+        "description": "今すぐチームをオンボードしましょう。ワークフローやアセットを組織全体で共有できます。",
+        "title": "チーム"
+      },
+      "workflows": {
+        "description": "アイデアから出力まで数分で。複数のバリエーションを並べて生成できます。",
+        "title": "ワークフロー"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "ローカルで続行",
     "exploreCloud": "クラウドを無料で試す",
@@ -805,7 +829,11 @@
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
     "FILE_3D_GLTF": "FILE_3D_GLTF",
+    "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FILE_3D_OBJ",
+    "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
     "FLOAT": "浮動小数点",
@@ -856,6 +884,7 @@
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "サンプラー",
     "SIGMAS": "シグマ",
+    "SPLAT": "スプラット",
     "STRING": "文字列",
     "STYLE_MODEL": "スタイルモデル",
     "SVG": "SVG",
@@ -2001,6 +2030,7 @@
       "orthographic": "オルソグラフィック",
       "perspective": "パースペクティブ"
     },
+    "centerCameraOnModel": "モデルにカメラを中央揃え",
     "clearRecording": "録画をクリア",
     "dropToLoad": "3Dモデルをドロップして読み込み",
     "edgeThreshold": "エッジしきい値",
@@ -2691,6 +2721,7 @@
     "sd3": "SD3",
     "shader": "shader",
     "sigmas": "シグマ",
+    "splat": "スプラット",
     "stable_cascade": "安定したカスケード",
     "style_model": "スタイルモデル",
     "supir": "supir",
@@ -3293,6 +3324,7 @@
     "Other": "その他",
     "PLY": "PLY",
     "PlanCredits": "プランとクレジット",
+    "PointCloud": "ポイントクラウド",
     "Pointer": "ポインタ",
     "Queue": "キュー",
     "QueueButton": "キューボタン",

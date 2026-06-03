@@ -233,7 +233,8 @@
       "auth/user-disabled": "此帳戶已被停用。請聯絡支援團隊。",
       "auth/user-not-found": "找不到使用此電子郵件的帳戶。您要建立新帳戶嗎？",
       "auth/weak-password": "密碼強度不足。請使用至少 6 個字元的更強密碼。",
-      "auth/wrong-password": "您輸入的密碼不正確。請再試一次。"
+      "auth/wrong-password": "您輸入的密碼不正確。請再試一次。",
+      "generic": "登入時發生錯誤，請再試一次。"
     },
     "login": {
       "andText": "以及",
@@ -407,6 +408,29 @@
   "cloudForgotPassword_passwordResetSent": "密碼重設已發送",
   "cloudForgotPassword_sendResetLink": "寄送重設連結",
   "cloudForgotPassword_title": "忘記密碼",
+  "cloudHero": {
+    "nextSlide": "下一張幻燈片",
+    "previousSlide": "上一張幻燈片",
+    "slidePagerLabel": "前往第 {index} 張幻燈片",
+    "slides": {
+      "cloud": {
+        "description": "最適合希望隨時隨地工作，並使用經商業授權驗證模型的大多數用戶。",
+        "title": "雲端"
+      },
+      "models": {
+        "description": "精選、具商業授權的模型，零設定即可運行。",
+        "title": "模型"
+      },
+      "team": {
+        "description": "立即邀請您的團隊加入。於組織內共享工作流程與資產。",
+        "title": "團隊"
+      },
+      "workflows": {
+        "description": "從想法到成果只需幾分鐘。可同時產生多種變化。",
+        "title": "工作流程"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "在本地繼續",
     "exploreCloud": "免費試用雲端",
@@ -805,7 +829,11 @@
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
     "FILE_3D_GLTF": "FILE_3D_GLTF",
+    "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FILE_3D_OBJ",
+    "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
     "FLOAT": "浮點數",
@@ -856,6 +884,7 @@
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "取樣器",
     "SIGMAS": "Sigma 值",
+    "SPLAT": "SPLAT",
     "STRING": "字串",
     "STYLE_MODEL": "風格模型",
     "SVG": "SVG",
@@ -2001,6 +2030,7 @@
       "orthographic": "正交",
       "perspective": "透視"
     },
+    "centerCameraOnModel": "將相機置中於模型",
     "clearRecording": "清除錄影",
     "dropToLoad": "拖放3D模型以載入",
     "edgeThreshold": "邊緣閾值",
@@ -2691,6 +2721,7 @@
     "sd3": "sd3",
     "shader": "著色器",
     "sigmas": "西格瑪值",
+    "splat": "splat",
     "stable_cascade": "stable_cascade",
     "style_model": "風格模型",
     "supir": "supir",
@@ -3293,6 +3324,7 @@
     "Other": "其他",
     "PLY": "PLY",
     "PlanCredits": "方案與點數",
+    "PointCloud": "點雲",
     "Pointer": "指標",
     "Queue": "佇列",
     "QueueButton": "佇列按鈕",

@@ -64,7 +64,8 @@ function widgetValueVariantsForAsset(asset: AssetItem): string[] {
       variants.push(`${name} [input]`)
     }
   }
-  if (asset.asset_hash) variants.push(asset.asset_hash)
+  const hash = asset.hash ?? asset.asset_hash
+  if (hash) variants.push(hash)
   return variants
 }
 

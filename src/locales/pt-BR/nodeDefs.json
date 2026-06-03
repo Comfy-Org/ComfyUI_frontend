@@ -1721,6 +1721,10 @@
         "name": "end_sigma",
         "tooltip": "Último sigma em que essas opções estarão em vigor."
       },
+      "force_sequential_txt_ids": {
+        "name": "force_sequential_txt_ids",
+        "tooltip": "Forçar o uso de IDs de tokens de texto sequenciais em vez de zeros. Deve ser usado para checkpoints de 22/05/2026 a 01/06/2026 que foram treinados dessa forma, mas não contêm a chave __sequential__ no state dict."
+      },
       "model": {
         "name": "model"
       },
@@ -2519,6 +2523,57 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreateCameraInfo": {
+    "description": "Constrói um camera_info. O modo 'orbit' mira com yaw/pitch/distância ao redor do alvo; 'look_at' posiciona a câmera em uma posição no mundo. As coordenadas estão no espaço mundial do visualizador (mão direita, Y para cima).",
+    "display_name": "Criar Informações da Câmera",
+    "inputs": {
+      "camera_type": {
+        "name": "tipo_de_câmera",
+        "tooltip": "Projeção usada pelo Render Splat: perspectiva (com profundidade) ou ortográfica (paralela)."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "Campo de visão vertical em graus."
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Como definir a câmera: ângulos de órbita, uma posição explícita ou uma posição + quaternion."
+      },
+      "mode_distance": {
+        "name": "distância"
+      },
+      "mode_pitch": {
+        "name": "pitch"
+      },
+      "mode_yaw": {
+        "name": "yaw"
+      },
+      "roll": {
+        "name": "rolagem",
+        "tooltip": "Rolagem da câmera sobre o eixo de visão, em graus."
+      },
+      "target_x": {
+        "name": "alvo_x",
+        "tooltip": "Ponto de foco (pivô/objetivo da órbita). No modo órbita, mova para transladar toda a câmera. Ignorado no modo quaternion. Padrão é a origem."
+      },
+      "target_y": {
+        "name": "alvo_y"
+      },
+      "target_z": {
+        "name": "alvo_z"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "Zoom digital (multiplicador da distância focal). >1 aproxima sem mover a câmera."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
         "tooltip": null
       }
     }
@@ -3696,6 +3751,22 @@
       }
     }
   },
+  "File3DToSplat": {
+    "description": "Converte um arquivo File3D splat em um gaussian splat. Inverso de Criar Arquivo 3D (a partir de Splat). Formatos suportados: PLY, SPLAT, KSPLAT, SPZ. PLY contém harmônicos esféricos completos, os outros formatos apenas cor base. O formato é detectado automaticamente pelo conteúdo do arquivo.",
+    "display_name": "Obter Splat",
+    "inputs": {
+      "model_3d": {
+        "name": "modelo_3d",
+        "tooltip": "Um arquivo 3D gaussian splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "FlipSigmas": {
     "display_name": "FlipSigmas",
     "inputs": {
@@ -3837,6 +3908,28 @@
     "inputs": {
       "conditioning": {
         "name": "condicionamento"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxEraseNode": {
+    "description": "Remove o objeto mascarado de uma imagem e reconstrói o fundo. Pinte a máscara sobre o que deseja apagar.",
+    "display_name": "Flux Apagar Imagem",
+    "inputs": {
+      "dilate_pixels": {
+        "name": "dilatar_pixels",
+        "tooltip": "Expande os limites da máscara para garantir cobertura limpa das bordas do objeto."
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "mask": {
+        "name": "máscara",
+        "tooltip": "Áreas brancas são removidas; áreas pretas são preservadas."
       }
     },
     "outputs": {
@@ -4114,6 +4207,36 @@
       "seed": {
         "name": "seed",
         "tooltip": "A seed aleatória usada para criar o ruído."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVTONode": {
+    "description": "Prova virtual: veste a pessoa com a peça de roupa fornecida.",
+    "display_name": "Flux Prova Virtual de Roupas",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "garment": {
+        "name": "roupa",
+        "tooltip": "Imagem da peça de roupa a ser aplicada."
+      },
+      "person": {
+        "name": "pessoa",
+        "tooltip": "Imagem da pessoa a ser vestida."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Instrução opcional de estilo em linguagem natural (ex: como a roupa deve se ajustar)."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente aleatória usada para criar o ruído."
       }
     },
     "outputs": {
@@ -4716,6 +4839,25 @@
       }
     }
   },
+  "GetSplatCount": {
+    "description": "Retorna o número de splats somados em todo o lote.",
+    "display_name": "Obter Contagem de Splat",
+    "inputs": {
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "contagem",
+        "tooltip": null
+      }
+    }
+  },
   "GetVideoComponents": {
     "description": "Extrai todos os componentes de um vídeo: quadros, áudio e taxa de quadros.",
     "display_name": "Obter Componentes do Vídeo",
@@ -4926,10 +5068,12 @@
         "tooltip": "A duração do vídeo de saída em segundos."
       },
       "image": {
-        "name": "image"
+        "name": "image",
+        "tooltip": "Imagem inicial opcional para grok-imagine-video. Obrigatória para grok-imagine-video-1.5."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "grok-imagine-video-1.5 atualmente sempre requer uma imagem de entrada."
       },
       "prompt": {
         "name": "prompt",
@@ -9662,6 +9806,21 @@
       }
     }
   },
+  "MergeSplat": {
+    "description": "Concatene qualquer número de gaussian splats em um só. Unir várias decodificações do mesmo latent com seeds diferentes densifica a superfície, o que pode melhorar a qualidade da superfície ao criar malha.",
+    "display_name": "Mesclar Splats",
+    "inputs": {
+      "splats": {
+        "name": "splats"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "MergeTextLists": {
     "display_name": "Mesclar Listas de Textos",
     "inputs": {
@@ -13427,6 +13586,52 @@
       }
     }
   },
+  "Preview3DAdvanced": {
+    "display_name": "Visualizar 3D (Avançado)",
+    "inputs": {
+      "camera_info": {
+        "name": "info_câmera"
+      },
+      "height": {
+        "name": "altura"
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "model_3d_info": {
+        "name": "info_modelo_3d"
+      },
+      "model_file": {
+        "name": "arquivo_modelo",
+        "tooltip": "Arquivo de modelo 3D de um nó 3D anterior."
+      },
+      "width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "arquivo_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "info_câmera",
+        "tooltip": null
+      },
+      "2": {
+        "name": "info_modelo_3d",
+        "tooltip": null
+      },
+      "3": {
+        "name": "largura",
+        "tooltip": null
+      },
+      "4": {
+        "name": "altura",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewAny": {
     "display_name": "Pré-visualizar como Texto",
     "inputs": {
@@ -14412,6 +14617,66 @@
       "0": {
         "name": "máscara",
         "tooltip": "Máscara de primeiro plano gerada"
+      }
+    }
+  },
+  "RenderSplat": {
+    "description": "Renderize um gaussian splat como uma imagem com um rasterizador EWA anisotrópico (splats elípticos orientados, antialiasing, ordenados por profundidade do mais próximo para o mais distante). A câmera vem de uma entrada camera_info (Load / Preview 3D, ou um nó Create Camera Info); deixe vazio para enquadrar automaticamente o splat. Defina frames maior que 1 para um lote de imagens em turntable para alimentar um nó Video.",
+    "display_name": "Render Splat",
+    "inputs": {
+      "background": {
+        "name": "fundo"
+      },
+      "bg_image": {
+        "name": "imagem_fundo",
+        "tooltip": "Imagem de fundo opcional composta atrás do splat (substitui a cor sólida de fundo). Redimensionada para o tamanho do render; um lote é usado por frame, uma única imagem para todos. Apenas para color/clay."
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "Câmera para renderizar - uma câmera Load3D / Preview3D ou um nó Create Camera Info. Se vazio, o splat é enquadrado automaticamente de uma visão padrão 3/4."
+      },
+      "frames": {
+        "name": "frames",
+        "tooltip": "-1, 0, 1 = imagem única; >1 = turntable, a câmera orbita em 360 graus completos (funciona com qualquer camera_info). Valor negativo orbita no sentido oposto."
+      },
+      "headlight_shading": {
+        "name": "sombreamento_headlight",
+        "tooltip": "Sombreamento difuso de uma luz na câmera (headlight), usando as normais dos surfels do splat: escurece superfícies que se afastam da visão para revelar forma/curvatura. 0 = albedo plano, 1 = sombreamento mais forte."
+      },
+      "height": {
+        "name": "altura"
+      },
+      "opacity_threshold": {
+        "name": "limite_opacidade",
+        "tooltip": "Remove gaussians com opacidade abaixo deste valor (remove flutuantes fracos)."
+      },
+      "render_style": {
+        "name": "estilo_render",
+        "tooltip": "O que a imagem de saída mostra: color (cor), clay (sombreamento neutro), depth (próximo=claro), normal (mapa de normais OpenGL)."
+      },
+      "sharpen": {
+        "name": "nitidez",
+        "tooltip": "Aumenta a nitidez dos splats sobrepostos: 1.0 = mistura fisicamente correta; valores maiores tendem cada pixel ao splat dominante (mais próximo) para textura mais nítida, sem encolher splats ou abrir lacunas. Não físico acima de 1."
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "splat_scale": {
+        "name": "escala_splat",
+        "tooltip": "Multiplicador na projeção de cada splat (menor = pontos mais nítidos, maior = superfície mais suave/preenchida)."
+      },
+      "width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagem",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": null
       }
     }
   },
@@ -16685,6 +16950,68 @@
       }
     }
   },
+  "SplatToFile3D": {
+    "description": "Serializa um gaussian splat para um objeto File3D para os nós Save / Preview 3D. Suporta apenas um item por lote.",
+    "display_name": "Criar Arquivo 3D (de Splat)",
+    "inputs": {
+      "format": {
+        "name": "formato",
+        "tooltip": "ply: Gaussian Splat 3D padrão com harmônicos esféricos completos. ksplat: SplatBuffer mkkellogg (nível 0, sem compressão), apenas cor base. spz: Niantic gzip-comprimido (~10x menor), apenas cor base."
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "modelo_3d",
+        "tooltip": null
+      }
+    }
+  },
+  "SplatToMesh": {
+    "description": "Extrai uma malha colorida de um gaussian splat.",
+    "display_name": "Extrair Malha do Splat",
+    "inputs": {
+      "color_sharpen": {
+        "name": "nitidez_cor",
+        "tooltip": "Deixa a textura dos vértices mais nítida: 1.0 = mistura fisicamente correta; valores maiores tendem a cor de cada voxel para sua gaussiana dominante ao invés de fazer média com vizinhos (reduz borrão da textura). Apenas cor - geometria não é alterada."
+      },
+      "kernel": {
+        "name": "kernel",
+        "tooltip": "Largura máxima do splat em voxels (meia-largura). Cada gaussiana é rasterizada em uma janela do seu próprio 3-sigma, limitada aqui - surfels pequenos permanecem leves, grandes não são truncados. Aumente se splats esparsos deixarem lacunas."
+      },
+      "level": {
+        "name": "nível",
+        "tooltip": "Nível da iso-superfície. Escolhido automaticamente por Otsu; este valor o ajusta (1.0 = auto, menor = superfície mais grossa/conectada, maior = mais fina/justa)."
+      },
+      "min_component": {
+        "name": "mín_componente",
+        "tooltip": "Descarta componentes conectados menores que este número de vértices (0 = mantém todos). Remove blobs flutuantes desconectados e a camada interna da parede dupla."
+      },
+      "min_opacity": {
+        "name": "mín_opacidade",
+        "tooltip": "Ignora gaussianas mais fracas que este valor antes de gerar a malha."
+      },
+      "resolution": {
+        "name": "resolução",
+        "tooltip": "Resolução da grade de densidade ao longo do eixo mais longo. Maior = superfície mais fina, mais VRAM/tempo (cresce com resolução^3)."
+      },
+      "smooth": {
+        "name": "suavizar",
+        "tooltip": "Iterações de suavização de malha Taubin. Suaviza a superfície sem encolhê-la (preserva o volume), diferente do desfoque da densidade. 0 = superfície bruta."
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "malha",
+        "tooltip": null
+      }
+    }
+  },
   "SplitAudioChannels": {
     "description": "Separa o áudio em canais esquerdo e direito.",
     "display_name": "Dividir Canais de Áudio",
@@ -18383,6 +18710,48 @@
       }
     }
   },
+  "TransformSplat": {
+    "description": "Translada, rotaciona e escala um gaussian splat. Escala não uniforme também deforma cada splat individualmente, processo mais lento.",
+    "display_name": "Transformar Splat",
+    "inputs": {
+      "rotate_x": {
+        "name": "rotacionar_x"
+      },
+      "rotate_y": {
+        "name": "rotacionar_y"
+      },
+      "rotate_z": {
+        "name": "rotacionar_z"
+      },
+      "scale_x": {
+        "name": "escala_x"
+      },
+      "scale_y": {
+        "name": "escala_y"
+      },
+      "scale_z": {
+        "name": "escala_z"
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "translate_x": {
+        "name": "transladar_x"
+      },
+      "translate_y": {
+        "name": "transladar_y"
+      },
+      "translate_z": {
+        "name": "transladar_z"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "TrimAudioDuration": {
     "description": "Corta o tensor de áudio no intervalo de tempo escolhido.",
     "display_name": "Cortar Duração do Áudio",
@@ -18862,6 +19231,101 @@
       }
     }
   },
+  "TripoSplatConditioning": {
+    "description": "Codifica a imagem com DINOv3 e o Flux2 VAE em condicionamento positivo/negativo TripoSplat, e cria o alvo de ruído de tamanho fixo (latent + câmera) para o KSampler",
+    "display_name": "Condicionamento TripoSplat",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision",
+        "tooltip": "Codificador de imagem DINOv3 ViT-H/16+"
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Flux2 VAE"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "O alvo de ruído de tamanho fixo (latent + câmera)."
+      }
+    }
+  },
+  "TripoSplatPreprocessImage": {
+    "description": "Recorta o centro de cada imagem para um canvas quadrado em fundo preto e adiciona preenchimento.",
+    "display_name": "TripoSplat Pré-processar Imagem",
+    "inputs": {
+      "erode_radius": {
+        "name": "raio_de_erosão",
+        "tooltip": "Erosiona o canal alfa por este raio em pixels antes de recortar (evita vazamento nas bordas)."
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "size": {
+        "name": "tamanho",
+        "tooltip": "Tamanho da imagem quadrada. O modelo foi treinado em 1024; outros tamanhos funcionam, mas ficam fora da distribuição."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagem",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSplatSamplingPreview": {
+    "description": "Adapta o modelo TripoSplat para o nó padrão Ksampler para mostrar uma prévia ao vivo do gaussian splat decodificado em cada etapa.",
+    "display_name": "Pré-visualização de Amostragem TripoSplat",
+    "inputs": {
+      "model": {
+        "name": "modelo"
+      },
+      "num_gaussians": {
+        "name": "número_de_gaussianos",
+        "tooltip": "Número de gaussianos a serem produzidos para a pré-visualização (arredondado para múltiplos de 32)."
+      },
+      "octree_level": {
+        "name": "nível_octree",
+        "tooltip": "Profundidade da octree para a pré-visualização da decodificação (menor = mais barato/grosseiro)."
+      },
+      "pitch": {
+        "name": "pitch",
+        "tooltip": "Ângulo de pitch da câmera de pré-visualização em graus."
+      },
+      "point_size": {
+        "name": "tamanho_do_ponto",
+        "tooltip": "Raio máximo do splat em pixels. Cada gaussiano é dimensionado a partir de sua escala e limitado aqui; menor = mais fino/pontudo, maior = mais grosso."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Decodificador VAE do TripoSplat"
+      },
+      "yaw": {
+        "name": "yaw",
+        "tooltip": "Ângulo de yaw da câmera de pré-visualização em graus."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TripoTextToModelNode": {
     "display_name": "Tripo: Texto para Modelo",
     "inputs": {
@@ -19190,6 +19654,36 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "VAEDecodeTripoSplat": {
+    "description": "Decodifica o latent TripoSplat amostrado em um gaussian splat 3D. Modifique o número de gaussianos para variar a densidade.",
+    "display_name": "Decodificar TripoSplat",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "num_gaussians": {
+        "name": "número_de_gaussianos",
+        "tooltip": "Número de gaussianos a serem produzidos (arredondado para múltiplos de 32). 262144 corresponde à densidade de pontos da octree; valores maiores superamostram os mesmos pontos (mais denso, mas sem novos detalhes) e custam proporcionalmente mais VRAM/tempo."
+      },
+      "samples": {
+        "name": "amostras"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Define a semente do amostrador de pontos da octree (RNG global) para decodificações determinísticas."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Decodificador VAE do TripoSplat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
       }
     }
   },

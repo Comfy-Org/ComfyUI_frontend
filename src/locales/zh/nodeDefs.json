@@ -1721,6 +1721,10 @@
         "name": "结束sigma",
         "tooltip": "这些选项生效的最后一个sigma值。"
       },
+      "force_sequential_txt_ids": {
+        "name": "强制顺序文本ID",
+        "tooltip": "强制使用顺序文本标记ID，而不是零。应在2026-05-22至2026-06-01期间以此方式训练但状态字典中不包含 __sequential__ 键的检查点中使用。"
+      },
       "model": {
         "name": "模型"
       },
@@ -2519,6 +2523,57 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreateCameraInfo": {
+    "description": "构建 camera_info。模式 'orbit' 通过偏航/俯仰/距离围绕目标旋转；'look_at' 将相机放置在世界坐标位置。坐标为观察者的世界空间（右手系，Y轴向上）。",
+    "display_name": "创建相机信息",
+    "inputs": {
+      "camera_type": {
+        "name": "相机类型",
+        "tooltip": "Render Splat 使用的投影方式：透视（有透视缩短）或正交（平行投影）。"
+      },
+      "fov": {
+        "name": "视场角",
+        "tooltip": "垂直视场角，单位为度。"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "定义相机方式：轨道角度、显式位置，或位置+四元数。"
+      },
+      "mode_distance": {
+        "name": "距离"
+      },
+      "mode_pitch": {
+        "name": "俯仰"
+      },
+      "mode_yaw": {
+        "name": "偏航"
+      },
+      "roll": {
+        "name": "滚转",
+        "tooltip": "相机绕视轴的滚转角度，单位为度。"
+      },
+      "target_x": {
+        "name": "目标X",
+        "tooltip": "注视点（轨道中心/瞄准点）。在轨道模式下，移动它可平移整个相机。四元数模式下忽略。默认原点。"
+      },
+      "target_y": {
+        "name": "目标Y"
+      },
+      "target_z": {
+        "name": "目标Z"
+      },
+      "zoom": {
+        "name": "缩放",
+        "tooltip": "数码变焦（焦距倍数）。大于1时无需移动相机即可放大。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
         "tooltip": null
       }
     }
@@ -3696,6 +3751,22 @@
       }
     }
   },
+  "File3DToSplat": {
+    "description": "将 Splat File3D 解析为高斯 Splat。与“从 Splat 创建 3D 文件”相反。支持格式：PLY、SPLAT、KSPLAT、SPZ。PLY 包含完整球谐信息，其他格式仅有基础颜色。格式会根据文件内容自动检测。",
+    "display_name": "获取 Splat",
+    "inputs": {
+      "model_3d": {
+        "name": "3D模型",
+        "tooltip": "高斯 Splat 3D 文件"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "FlipSigmas": {
     "display_name": "翻转Sigma",
     "inputs": {
@@ -3837,6 +3908,28 @@
     "inputs": {
       "conditioning": {
         "name": "条件"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxEraseNode": {
+    "description": "从图像中移除被遮罩的对象并重建背景。用遮罩涂抹你想要擦除的部分。",
+    "display_name": "Flux 擦除图像",
+    "inputs": {
+      "dilate_pixels": {
+        "name": "膨胀像素",
+        "tooltip": "扩展遮罩边界，以确保对象边缘被干净覆盖。"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "mask": {
+        "name": "遮罩",
+        "tooltip": "白色区域将被移除；黑色区域将被保留。"
       }
     },
     "outputs": {
@@ -4113,6 +4206,36 @@
       },
       "seed": {
         "name": "种子",
+        "tooltip": "用于生成噪声的随机种子。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVTONode": {
+    "description": "虚拟试穿：为人物穿上提供的服装。",
+    "display_name": "Flux 虚拟试穿",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "garment": {
+        "name": "服装",
+        "tooltip": "要应用的服装图像。"
+      },
+      "person": {
+        "name": "人物",
+        "tooltip": "需要穿衣的人物图像。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "可选的自然语言风格说明（如服装如何贴合）。"
+      },
+      "seed": {
+        "name": "随机种子",
         "tooltip": "用于生成噪声的随机种子。"
       }
     },
@@ -4716,6 +4839,25 @@
       }
     }
   },
+  "GetSplatCount": {
+    "description": "返回批处理中所有 splat 的总数。",
+    "display_name": "获取 Splat 数量",
+    "inputs": {
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "数量",
+        "tooltip": null
+      }
+    }
+  },
   "GetVideoComponents": {
     "description": "提取视频中的所有元素：帧、音频和帧率。",
     "display_name": "获取视频元素",
@@ -4926,10 +5068,12 @@
         "tooltip": "输出视频的时长（秒）。"
       },
       "image": {
-        "name": "image"
+        "name": "image",
+        "tooltip": "grok-imagine-video 的可选起始图像。grok-imagine-video-1.5 必须提供。"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "grok-imagine-video-1.5 当前始终需要输入图像。"
       },
       "prompt": {
         "name": "prompt",
@@ -9662,6 +9806,21 @@
       }
     }
   },
+  "MergeSplat": {
+    "description": "将任意数量的高斯 splat 拼接为一个。对同一 latent 在不同种子下的多次解码进行合并，可以使表面更密集，从而提升网格化时的表面质量。",
+    "display_name": "合并 Splats",
+    "inputs": {
+      "splats": {
+        "name": "splats"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "MergeTextLists": {
     "display_name": "融合文本序列",
     "inputs": {
@@ -13427,6 +13586,52 @@
       }
     }
   },
+  "Preview3DAdvanced": {
+    "display_name": "3D 预览（高级）",
+    "inputs": {
+      "camera_info": {
+        "name": "相机信息"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "model_3d_info": {
+        "name": "3D 模型信息"
+      },
+      "model_file": {
+        "name": "模型文件",
+        "tooltip": "来自上游 3D 节点的 3D 模型文件。"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "相机信息",
+        "tooltip": null
+      },
+      "2": {
+        "name": "3D 模型信息",
+        "tooltip": null
+      },
+      "3": {
+        "name": "宽度",
+        "tooltip": null
+      },
+      "4": {
+        "name": "高度",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewAny": {
     "display_name": "预览任意",
     "inputs": {
@@ -14412,6 +14617,66 @@
       "0": {
         "name": "mask",
         "tooltip": "生成的前景 mask"
+      }
+    }
+  },
+  "RenderSplat": {
+    "description": "使用各向异性 EWA 光栅化器将高斯 splat 渲染为图像（定向椭圆 splat，抗锯齿，按深度从前到后排序）。相机来自 camera_info 输入（加载 / 预览 3D，或创建相机信息节点）；留空则自动框选 splat。将帧数设置为大于 1，可生成转台批量图像以供视频节点使用。",
+    "display_name": "渲染 Splat",
+    "inputs": {
+      "background": {
+        "name": "背景"
+      },
+      "bg_image": {
+        "name": "背景图像",
+        "tooltip": "可选的背景底图，合成在 splat 背后（覆盖纯色背景）。会调整为渲染尺寸；批量渲染时每帧一张，单张图像则全部使用。仅适用于 color/clay。"
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "渲染所用相机 - 来自 Load3D / Preview3D 相机或创建相机信息节点。留空则自动从默认 3/4 视角框选 splat。"
+      },
+      "frames": {
+        "name": "帧数",
+        "tooltip": "-1、0、1 = 单张静态图像；>1 = 转台，摄像机围绕 360 度旋转（适用于任何 camera_info）。负值则反向旋转。"
+      },
+      "headlight_shading": {
+        "name": "前照灯光照",
+        "tooltip": "来自摄像机位置的光源（前照灯）进行漫反射光照，利用 splat 表面法线：转离视角的表面会变暗以突出形状/曲率。0 = 纯色反照率，1 = 最强光照。"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "opacity_threshold": {
+        "name": "不透明度阈值",
+        "tooltip": "剔除不透明度低于此值的高斯（去除微弱漂浮点）。"
+      },
+      "render_style": {
+        "name": "渲染风格",
+        "tooltip": "图像输出内容：color（颜色）、clay（中性反照率着色）、depth（近=亮）、normal（OpenGL 法线贴图）。"
+      },
+      "sharpen": {
+        "name": "锐化",
+        "tooltip": "锐化重叠的 splat：1.0 = 物理正确混合；更高值会让每个像素更偏向其主导（最近）的 splat，获得更清晰的纹理，但不会缩小 splat 或产生空隙。大于 1 时为非物理效果。"
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "splat_scale": {
+        "name": "splat 缩放",
+        "tooltip": "每个 splat 投影面积的倍数（数值越小点越锐利，数值越大表面越柔和/饱满）。"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": null
       }
     }
   },
@@ -16685,6 +16950,68 @@
       }
     }
   },
+  "SplatToFile3D": {
+    "description": "将高斯 splat 序列化为 File3D 对象，供保存 / 预览 3D 节点使用。仅支持每批次一个项目。",
+    "display_name": "创建 3D 文件（由 Splat）",
+    "inputs": {
+      "format": {
+        "name": "格式",
+        "tooltip": "ply：标准 3D 高斯 Splat，带完整球谐。ksplat：mkkellogg SplatBuffer（0 级，未压缩），仅基色。spz：Niantic gzip 压缩（约小 10 倍），仅基色。"
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "3D 模型",
+        "tooltip": null
+      }
+    }
+  },
+  "SplatToMesh": {
+    "description": "从高斯 splat 中提取带颜色的网格。",
+    "display_name": "从 Splat 提取网格",
+    "inputs": {
+      "color_sharpen": {
+        "name": "颜色锐化",
+        "tooltip": "增强顶点纹理清晰度：1.0=物理正确混合；更高值会让每个体素颜色更偏向主导高斯而非邻域平均（减少纹理模糊）。仅影响颜色，不改变几何。"
+      },
+      "kernel": {
+        "name": "核宽",
+        "tooltip": "最大 splat 半宽（体素数）。每个高斯会在自身 3-σ 范围内栅格化，窗口大小受此限制——小的 surfel 计算量低，大的不会被截断。如果稀疏 splat 出现空洞可适当提高。"
+      },
+      "level": {
+        "name": "等值面级别",
+        "tooltip": "等值面级别。默认由 Otsu 自动选择；此参数可调整（1.0=自动，数值越低表面越厚/连通性更强，数值越高表面越薄/更紧致）。"
+      },
+      "min_component": {
+        "name": "最小组件",
+        "tooltip": "移除小于该顶点数的连通组件（0=保留全部）。可去除悬浮小块和双层壳体的内层。"
+      },
+      "min_opacity": {
+        "name": "最小不透明度",
+        "tooltip": "网格化前忽略低于该值的不透明高斯。"
+      },
+      "resolution": {
+        "name": "分辨率",
+        "tooltip": "沿最长轴的密度网格分辨率。数值越高，表面越精细，但显存/时间消耗越大（随分辨率的立方增长）。"
+      },
+      "smooth": {
+        "name": "平滑",
+        "tooltip": "Taubin 网格平滑迭代次数。可在不缩小体积的情况下平滑表面（与模糊密度不同）。0 表示原始表面。"
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "网格",
+        "tooltip": null
+      }
+    }
+  },
   "SplitAudioChannels": {
     "description": "将音频分离为左右声道。",
     "display_name": "分离音频通道",
@@ -18383,6 +18710,48 @@
       }
     }
   },
+  "TransformSplat": {
+    "description": "对高斯 splat 进行平移、旋转和缩放。非均匀缩放也会改变每个 splat 的形状，处理速度较慢。",
+    "display_name": "变换 Splat",
+    "inputs": {
+      "rotate_x": {
+        "name": "X 轴旋转"
+      },
+      "rotate_y": {
+        "name": "Y 轴旋转"
+      },
+      "rotate_z": {
+        "name": "Z 轴旋转"
+      },
+      "scale_x": {
+        "name": "X 轴缩放"
+      },
+      "scale_y": {
+        "name": "Y 轴缩放"
+      },
+      "scale_z": {
+        "name": "Z 轴缩放"
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "translate_x": {
+        "name": "X 轴平移"
+      },
+      "translate_y": {
+        "name": "Y 轴平移"
+      },
+      "translate_z": {
+        "name": "Z 轴平移"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "TrimAudioDuration": {
     "description": "将音频张量修剪到选定的时间范围。",
     "display_name": "修剪音频时长",
@@ -18862,6 +19231,101 @@
       }
     }
   },
+  "TripoSplatConditioning": {
+    "description": "使用 DINOv3 和 Flux2 VAE 对图像进行编码，生成 TripoSplat 正/负条件，并为 KSampler 创建固定尺寸的噪声目标（latent + 相机）。",
+    "display_name": "TripoSplat 条件编码",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision",
+        "tooltip": "DINOv3 ViT-H/16+ 图像编码器"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Flux2 VAE"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向条件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "负向条件",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "固定尺寸的噪声目标（latent + 相机）。"
+      }
+    }
+  },
+  "TripoSplatPreprocessImage": {
+    "description": "将每张图像居中裁剪为黑色背景的正方形画布，并添加填充。",
+    "display_name": "TripoSplat 预处理图像",
+    "inputs": {
+      "erode_radius": {
+        "name": "erode_radius",
+        "tooltip": "在裁剪前按此像素半径腐蚀 alpha 蒙版（避免边缘溢出）。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "正方形图像尺寸。模型在 1024 上训练；其他尺寸可用但分布不同。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSplatSamplingPreview": {
+    "description": "为标准 Ksampler 节点打补丁，在每一步显示实时解码的高斯溅射预览。",
+    "display_name": "TripoSplat 采样预览",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "num_gaussians": {
+        "name": "num_gaussians",
+        "tooltip": "用于预览的高斯数量（四舍五入为 32 的倍数）。"
+      },
+      "octree_level": {
+        "name": "octree_level",
+        "tooltip": "预览解码的八叉树深度（越低越省资源/越粗糙）。"
+      },
+      "pitch": {
+        "name": "pitch",
+        "tooltip": "预览相机的俯仰角（度）。"
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "最大溅射半径（像素）。每个高斯根据其缩放设置大小，并在此处限制；数值越低越细致，越高越粗大。"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "TripoSplat VAE 解码器"
+      },
+      "yaw": {
+        "name": "yaw",
+        "tooltip": "预览相机的偏航角（度）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TripoTextToModelNode": {
     "display_name": "Tripo: 文本转模型",
     "inputs": {
@@ -19190,6 +19654,36 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "VAEDecodeTripoSplat": {
+    "description": "将采样的 TripoSplat latent 解码为 3D 高斯溅射。可通过调整高斯数量改变密度。",
+    "display_name": "TripoSplat 解码",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "num_gaussians": {
+        "name": "num_gaussians",
+        "tooltip": "生成的高斯数量（四舍五入为 32 的倍数）。262144 匹配八叉树的点密度；更高会对同一点过采样（更密集，但无新细节），并消耗更多显存/时间。"
+      },
+      "samples": {
+        "name": "samples"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "为八叉树点采样器（全局随机数生成器）设置种子，实现确定性解码。"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "TripoSplat VAE 解码器"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
       }
     }
   },

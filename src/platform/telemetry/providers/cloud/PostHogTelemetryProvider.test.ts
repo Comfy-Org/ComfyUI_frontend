@@ -7,20 +7,25 @@ const hoisted = vi.hoisted(() => {
   const mockInit = vi.fn()
   const mockIdentify = vi.fn()
   const mockPeopleSet = vi.fn()
+  const mockReset = vi.fn()
   const mockOnUserResolved = vi.fn()
+  const mockOnUserLogout = vi.fn()
 
   return {
     mockCapture,
     mockInit,
     mockIdentify,
     mockPeopleSet,
+    mockReset,
     mockOnUserResolved,
+    mockOnUserLogout,
     mockPosthog: {
       default: {
         init: mockInit,
         capture: mockCapture,
         identify: mockIdentify,
-        people: { set: mockPeopleSet }
+        people: { set: mockPeopleSet },
+        reset: mockReset
       }
     }
   }
@@ -36,7 +41,8 @@ vi.mock('vue', async () => {
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({
-    onUserResolved: hoisted.mockOnUserResolved
+    onUserResolved: hoisted.mockOnUserResolved,
+    onUserLogout: hoisted.mockOnUserLogout
   })
 }))
 
@@ -56,29 +62,6 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   })
 }))
 
-const mockAppMode = vi.hoisted(() => ({
-  mode: { value: 'app' },
-  isAppMode: { value: false }
-}))
-
-vi.mock('@/composables/useAppMode', () => ({
-  useAppMode: () => mockAppMode
-}))
-
-vi.mock('@/platform/telemetry/utils/getExecutionContext', () => ({
-  getExecutionContext: () => ({
-    is_template: false,
-    workflow_name: 'untitled',
-    custom_node_count: 0,
-    total_node_count: 0,
-    subgraph_count: 0,
-    has_api_nodes: false,
-    api_node_names: [],
-    has_toolkit_nodes: false,
-    toolkit_node_names: []
-  })
-}))
-
 import { PostHogTelemetryProvider } from './PostHogTelemetryProvider'
 
 function createProvider(
@@ -95,7 +78,6 @@ describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockRemoteConfig.value = null
-    mockAppMode.isAppMode.value = false
     window.__CONFIG__ = {
       posthog_project_token: 'phc_test_token'
     } as typeof window.__CONFIG__
@@ -154,7 +136,7 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockOnUserResolved).toHaveBeenCalledOnce()
     })
 
-    it('identifies user when onUserResolved fires', async () => {
+    it('identifies user without setting first_auth_at when onUserResolved fires', async () => {
       createProvider()
       await vi.dynamicImportSettled()
 
@@ -187,6 +169,88 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.USER_AUTH_COMPLETED,
         { method: 'google' }
+      )
+    })
+
+    it('sets first_auth_at on new-user auth', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAuth({
+        method: 'google',
+        is_new_user: true,
+        user_id: 'user-123'
+      })
+
+      expect(hoisted.mockIdentify).toHaveBeenCalledWith(
+        'user-123',
+        undefined,
+        expect.objectContaining({
+          first_auth_at: expect.any(String)
+        })
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.USER_AUTH_COMPLETED,
+        {
+          method: 'google',
+          is_new_user: true,
+          user_id: 'user-123'
+        }
+      )
+    })
+
+    it('does not set first_auth_at on returning-user auth', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAuth({
+        method: 'google',
+        is_new_user: false,
+        user_id: 'user-123'
+      })
+
+      expect(hoisted.mockIdentify).not.toHaveBeenCalled()
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.USER_AUTH_COMPLETED,
+        {
+          method: 'google',
+          is_new_user: false,
+          user_id: 'user-123'
+        }
+      )
+    })
+
+    it('flushes queued first_auth_at before queued auth event', async () => {
+      const provider = createProvider()
+
+      provider.trackAuth({
+        method: 'google',
+        is_new_user: true,
+        user_id: 'user-123'
+      })
+
+      expect(hoisted.mockIdentify).not.toHaveBeenCalled()
+      expect(hoisted.mockCapture).not.toHaveBeenCalled()
+
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockIdentify).toHaveBeenCalledWith(
+        'user-123',
+        undefined,
+        expect.objectContaining({
+          first_auth_at: expect.any(String)
+        })
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.USER_AUTH_COMPLETED,
+        {
+          method: 'google',
+          is_new_user: true,
+          user_id: 'user-123'
+        }
+      )
+      expect(hoisted.mockIdentify.mock.invocationCallOrder[0]).toBeLessThan(
+        hoisted.mockCapture.mock.invocationCallOrder[0]
       )
     })
 
@@ -260,6 +324,32 @@ describe('PostHogTelemetryProvider', () => {
     })
   })
 
+  describe('logout', () => {
+    it('registers onUserLogout watcher after init', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockOnUserLogout).toHaveBeenCalledOnce()
+    })
+
+    it('calls posthog.reset(true) when the watcher fires', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const callback = hoisted.mockOnUserLogout.mock.calls[0][0]
+      callback()
+
+      expect(hoisted.mockReset).toHaveBeenCalledWith(true)
+    })
+
+    it('does not register the watcher before init resolves', () => {
+      createProvider()
+
+      expect(hoisted.mockOnUserLogout).not.toHaveBeenCalled()
+      expect(hoisted.mockReset).not.toHaveBeenCalled()
+    })
+  })
+
   describe('page view', () => {
     it('captures page view with page_name property', async () => {
       const provider = createProvider()
@@ -288,25 +378,6 @@ describe('PostHogTelemetryProvider', () => {
     })
   })
 
-  describe('execution tracking', () => {
-    it('stamps is_app_mode and view_mode on the execution_start event', async () => {
-      const provider = createProvider()
-      await vi.dynamicImportSettled()
-      mockAppMode.isAppMode.value = true
-      mockAppMode.mode.value = 'app'
-
-      provider.trackWorkflowExecution()
-
-      expect(hoisted.mockCapture).toHaveBeenCalledWith(
-        TelemetryEvents.EXECUTION_START,
-        expect.objectContaining({
-          is_app_mode: true,
-          view_mode: 'app',
-          trigger_source: 'unknown'
-        })
-      )
-    })
-  })
   describe('before_send', () => {
     it('strips PII keys from event properties, $set, and $set_once', async () => {
       createProvider()

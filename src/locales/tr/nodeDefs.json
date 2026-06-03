@@ -1721,6 +1721,10 @@
         "name": "bitiş sigma",
         "tooltip": "Bu seçeneklerin geçerli olacağı son sigma değeri."
       },
+      "force_sequential_txt_ids": {
+        "name": "force_sequential_txt_ids",
+        "tooltip": "Sıralı metin belirteç kimliklerinin sıfırlar yerine kullanılmasını zorla. Bu seçenek, bu şekilde eğitilmiş ancak state dict içinde __sequential__ anahtarını içermeyen 2026-05-22 ile 2026-06-01 tarihleri arasındaki kontrol noktaları için kullanılmalıdır."
+      },
       "model": {
         "name": "model"
       },
@@ -2519,6 +2523,57 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreateCameraInfo": {
+    "description": "Bir kamera_info oluştur. 'orbit' modu, hedef etrafında yaw/pitch/mesafe ile döner; 'look_at' ise kamerayı dünya konumuna yerleştirir. Koordinatlar, izleyicinin dünya uzayındadır (sağ el kuralı, Y-yukarı).",
+    "display_name": "Kamera Bilgisi Oluştur",
+    "inputs": {
+      "camera_type": {
+        "name": "kamera_tipi",
+        "tooltip": "Render Splat tarafından kullanılan projeksiyon: perspektif (kısalma) veya ortografik (paralel)."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "Dikey görüş alanı, derece cinsinden."
+      },
+      "mode": {
+        "name": "mod",
+        "tooltip": "Kameranın nasıl tanımlanacağı: orbit açıları, açık bir konum veya konum + quaternion."
+      },
+      "mode_distance": {
+        "name": "mesafe"
+      },
+      "mode_pitch": {
+        "name": "pitch"
+      },
+      "mode_yaw": {
+        "name": "yaw"
+      },
+      "roll": {
+        "name": "roll",
+        "tooltip": "Görüş ekseni etrafında kamera yuvarlanması, derece cinsinden."
+      },
+      "target_x": {
+        "name": "hedef_x",
+        "tooltip": "Bakış noktası (orbit merkezi / hedef). Orbit modunda, tüm kamerayı kaydırmak için hareket ettirin. Quaternion modunda dikkate alınmaz. Varsayılan olarak orijindir."
+      },
+      "target_y": {
+        "name": "hedef_y"
+      },
+      "target_z": {
+        "name": "hedef_z"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "Dijital yakınlaştırma (odak uzunluğu çarpanı). >1 değeri, kamerayı hareket ettirmeden yakınlaştırır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "kamera_bilgisi",
         "tooltip": null
       }
     }
@@ -3696,6 +3751,22 @@
       }
     }
   },
+  "File3DToSplat": {
+    "description": "Bir splat File3D dosyasını gaussian splat'a ayrıştırır. Create 3D File (from Splat) işleminin tersidir. Desteklenen formatlar: PLY, SPLAT, KSPLAT, SPZ. PLY tam küresel harmonikleri taşır, diğer formatlar yalnızca temel renktir. Format dosya içeriğinden otomatik olarak algılanır.",
+    "display_name": "Splat Al",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Bir gaussian splat 3D dosyası"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "FlipSigmas": {
     "display_name": "Sigmaları Çevir",
     "inputs": {
@@ -3837,6 +3908,28 @@
     "inputs": {
       "conditioning": {
         "name": "koşullandırma"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxEraseNode": {
+    "description": "Maske uygulanan nesneyi bir görselden kaldırır ve arka planı yeniden oluşturur. Silmek istediğiniz alanın üzerine maske boyayın.",
+    "display_name": "Flux Görsel Silme",
+    "inputs": {
+      "dilate_pixels": {
+        "name": "piksel_genişlet",
+        "tooltip": "Nesnenin kenarlarının temiz bir şekilde kapsanmasını sağlamak için maske sınırlarını genişletir."
+      },
+      "image": {
+        "name": "görsel"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "Beyaz alanlar kaldırılır; siyah alanlar korunur."
       }
     },
     "outputs": {
@@ -4114,6 +4207,36 @@
       "seed": {
         "name": "tohum",
         "tooltip": "Gürültüyü oluşturmak için kullanılan rastgele tohum."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVTONode": {
+    "description": "Sanal deneme: kişiyi verilen giysiyle giydirir.",
+    "display_name": "Flux Sanal Deneme",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "garment": {
+        "name": "giysi",
+        "tooltip": "Uygulanacak giysinin görseli."
+      },
+      "person": {
+        "name": "kişi",
+        "tooltip": "Giydirilecek kişinin görseli."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "İsteğe bağlı doğal dilde stil talimatı (ör. giysinin nasıl oturacağı)."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Gürültü oluşturmak için kullanılan rastgele tohum."
       }
     },
     "outputs": {
@@ -4716,6 +4839,25 @@
       }
     }
   },
+  "GetSplatCount": {
+    "description": "Toplam toplu işlemdeki splat sayısını döndürür.",
+    "display_name": "Splat Sayısını Al",
+    "inputs": {
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "sayı",
+        "tooltip": null
+      }
+    }
+  },
   "GetVideoComponents": {
     "description": "Bir videodan tüm bileşenleri çıkarır: kareler, ses ve kare hızı.",
     "display_name": "Video Bileşenlerini Al",
@@ -4926,10 +5068,12 @@
         "tooltip": "Çıktı videonun süresi (saniye cinsinden)."
       },
       "image": {
-        "name": "görüntü"
+        "name": "görüntü",
+        "tooltip": "grok-imagine-video için isteğe bağlı başlangıç görseli. grok-imagine-video-1.5 için gereklidir."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "grok-imagine-video-1.5 şu anda her zaman bir giriş görseli gerektirir."
       },
       "prompt": {
         "name": "istem",
@@ -9662,6 +9806,21 @@
       }
     }
   },
+  "MergeSplat": {
+    "description": "Herhangi bir sayıda gaussian splatı birleştirerek tek bir splat oluşturur. Aynı latent'in farklı seed'lerdeki birkaç çözümlemesinin birleştirilmesi yüzeyi yoğunlaştırır, bu da meshleme sırasında yüzey kalitesini artırabilir.",
+    "display_name": "Splats Birleştir",
+    "inputs": {
+      "splats": {
+        "name": "splats"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "MergeTextLists": {
     "display_name": "Metin Listelerini Birleştir",
     "inputs": {
@@ -13427,6 +13586,52 @@
       }
     }
   },
+  "Preview3DAdvanced": {
+    "display_name": "3D Önizleme (Gelişmiş)",
+    "inputs": {
+      "camera_info": {
+        "name": "kamera_bilgisi"
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "image": {
+        "name": "görsel"
+      },
+      "model_3d_info": {
+        "name": "model_3d_bilgisi"
+      },
+      "model_file": {
+        "name": "model_dosyası",
+        "tooltip": "Yukarı akıştaki bir 3D node'dan alınan 3D model dosyası."
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      },
+      "1": {
+        "name": "kamera_bilgisi",
+        "tooltip": null
+      },
+      "2": {
+        "name": "model_3d_bilgisi",
+        "tooltip": null
+      },
+      "3": {
+        "name": "genişlik",
+        "tooltip": null
+      },
+      "4": {
+        "name": "yükseklik",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewAny": {
     "display_name": "Herhangi Bir Şeyi Önizle",
     "inputs": {
@@ -14412,6 +14617,66 @@
       "0": {
         "name": "mask",
         "tooltip": "Oluşturulan ön plan maskesi"
+      }
+    }
+  },
+  "RenderSplat": {
+    "description": "Anizotropik EWA rasterizer ile bir gaussian splat'ı (yönlendirilmiş eliptik splatlar, kenar yumuşatmalı, derinlik sıralamalı önden arkaya) görsel olarak oluşturur. Kamera, camera_info girişinden gelir (Yükle / 3D Önizleme veya Kamera Bilgisi Oluştur düğümü); boş bırakılırsa splat otomatik olarak çerçevelenir. Video düğümüne beslemek için birden fazla kare ayarlayın. 1'den büyük kareler, döner tabla şeklinde birden fazla görsel oluşturur.",
+    "display_name": "Splat Oluştur",
+    "inputs": {
+      "background": {
+        "name": "arka_plan"
+      },
+      "bg_image": {
+        "name": "arka_plan_görseli",
+        "tooltip": "Splat'ın arkasına yerleştirilecek isteğe bağlı arka plan görseli (düz arka plan rengini geçersiz kılar). Oluşturma boyutuna yeniden boyutlandırılır; toplu işlemde kare başına bir görsel, tek görsel ise tüm kareler için kullanılır. Sadece renk/kil modunda."
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "Görselin hangi kameradan oluşturulacağını belirtir - bir Yükle3D / Önizleme3D kamerası veya Kamera Bilgisi Oluştur düğümü. Boş bırakılırsa, splat varsayılan 3/4 açıdan otomatik çerçevelenir."
+      },
+      "frames": {
+        "name": "kareler",
+        "tooltip": "-1, 0, 1 = tek bir sabit görsel; >1 = döner tabla, kamera tam 360 derece döner (herhangi bir camera_info ile çalışır). Negatif değer ters yönde döner."
+      },
+      "headlight_shading": {
+        "name": "far_gölgeleme",
+        "tooltip": "Kameradaki bir ışıktan (far) difüz gölgeleme, splat yüzey normalleri kullanılarak: bakış açısından uzaklaşan yüzeyleri karartır ve form/kavis ortaya çıkarır. 0 = düz albedo, 1 = en güçlü gölgeleme."
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "opacity_threshold": {
+        "name": "opaklık_eşiği",
+        "tooltip": "Opaklığı bu değerin altında olan gaussian'ları ayıklar (zayıf yüzenleri kaldırır)."
+      },
+      "render_style": {
+        "name": "oluşturma_stili",
+        "tooltip": "Görsel çıktısının ne göstereceği: renk, kil (nötr-albedo gölgeli), derinlik (yakın=parlak), normal (OpenGL normal haritası)."
+      },
+      "sharpen": {
+        "name": "keskinleştir",
+        "tooltip": "Çakışan splatları keskinleştir: 1.0 = fiziksel olarak doğru karışım; daha yüksek değerler, her pikseli baskın (en yakın) splat'a daha fazla yaklaştırır ve daha keskin doku sağlar, splatları küçültmeden veya boşluk açmadan. 1'in üzeri fiziksel değildir."
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "splat_scale": {
+        "name": "splat_ölçeği",
+        "tooltip": "Her splat'ın projeksiyon alanı için çarpan (daha düşük = daha keskin noktalar, daha yüksek = daha yumuşak/dolgun yüzey)."
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "görsel",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": null
       }
     }
   },
@@ -16685,6 +16950,68 @@
       }
     }
   },
+  "SplatToFile3D": {
+    "description": "Bir gaussian splat'ı, Kaydet / 3D Önizleme düğümleri için bir File3D nesnesine serileştirir. Sadece toplu işlem başına bir öğe desteklenir.",
+    "display_name": "3D Dosya Oluştur (Splat'tan)",
+    "inputs": {
+      "format": {
+        "name": "format",
+        "tooltip": "ply: tam küresel harmoniklerle standart 3D Gaussian Splat. ksplat: mkkellogg SplatBuffer (seviye 0, sıkıştırılmamış), sadece ana renk. spz: Niantic gzip-sıkıştırılmış (~10 kat daha küçük), sadece ana renk."
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      }
+    }
+  },
+  "SplatToMesh": {
+    "description": "Bir gaussian splat'tan renkli bir mesh çıkar.",
+    "display_name": "Splat'tan Mesh Çıkar",
+    "inputs": {
+      "color_sharpen": {
+        "name": "renk_keskinleştirme",
+        "tooltip": "Vertex dokusunu netleştir: 1.0 = fiziksel olarak doğru karışım; daha yüksek değer, her voxel'in rengini komşuların ortalaması yerine baskın gaussian'a yaklaştırır (dokuyu bulanıklıktan arındırır). Sadece renk - geometri değişmez."
+      },
+      "kernel": {
+        "name": "çekirdek",
+        "tooltip": "Maksimum splat yarı genişliği (voxel cinsinden). Her gaussian, kendi 3-sigma penceresi kadar rasterize edilir, burada sınırlandırılır - küçük surfeller ucuz kalır, büyükler kesilmez. Seyrek splat'lar boşluk bırakıyorsa artırın."
+      },
+      "level": {
+        "name": "seviye",
+        "tooltip": "İzo-yüzey seviyesi. Otsu ile otomatik seçilir; bu değerle kaydırılır (1.0 = otomatik, daha düşük = daha kalın/daha bağlantılı yüzey, daha yüksek = daha ince/daha sıkı)."
+      },
+      "min_component": {
+        "name": "min_bileşen",
+        "tooltip": "Bu kadar vertex'ten küçük bağlantılı bileşenleri at. (0 = hepsini tut). Ayrık yüzen parçaları ve çift duvarın iç kabuğunu kaldırır."
+      },
+      "min_opacity": {
+        "name": "min_opaklık",
+        "tooltip": "Meshleme öncesi bu değerden daha soluk gaussian'ları yok say."
+      },
+      "resolution": {
+        "name": "çözünürlük",
+        "tooltip": "En uzun eksen boyunca yoğunluk-ızgara çözünürlüğü. Daha yüksek = daha ince yüzey, daha fazla VRAM/zaman (çözünürlük^3 ile artar)."
+      },
+      "smooth": {
+        "name": "yumuşatma",
+        "tooltip": "Taubin mesh-yumuşatma iterasyonları. Yüzeyi küçültmeden (hacmi koruyarak) yumuşatır, yoğunluğu bulanıklaştırmanın aksine. 0 = ham yüzey."
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
   "SplitAudioChannels": {
     "description": "Sesi sol ve sağ kanallara ayırır.",
     "display_name": "Ses Kanallarını Ayır",
@@ -18383,6 +18710,48 @@
       }
     }
   },
+  "TransformSplat": {
+    "description": "Bir gaussian splat'ı taşı, döndür ve ölçekle. Orantısız ölçekleme her bir splat'ı da yeniden şekillendirir, daha yavaş bir işlemdir.",
+    "display_name": "Splat'ı Dönüştür",
+    "inputs": {
+      "rotate_x": {
+        "name": "x_ekseni_döndür"
+      },
+      "rotate_y": {
+        "name": "y_ekseni_döndür"
+      },
+      "rotate_z": {
+        "name": "z_ekseni_döndür"
+      },
+      "scale_x": {
+        "name": "x_ekseni_ölçek"
+      },
+      "scale_y": {
+        "name": "y_ekseni_ölçek"
+      },
+      "scale_z": {
+        "name": "z_ekseni_ölçek"
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "translate_x": {
+        "name": "x_ekseni_taşı"
+      },
+      "translate_y": {
+        "name": "y_ekseni_taşı"
+      },
+      "translate_z": {
+        "name": "z_ekseni_taşı"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "TrimAudioDuration": {
     "description": "Ses tensörünü seçilen zaman aralığına kırp.",
     "display_name": "Ses Süresini Kırp",
@@ -18862,6 +19231,101 @@
       }
     }
   },
+  "TripoSplatConditioning": {
+    "description": "Görseli DINOv3 ve Flux2 VAE ile kodlayarak TripoSplat pozitif/negatif koşullandırma oluşturur ve KSampler için sabit boyutlu gürültü hedefini (latent + kamera) üretir.",
+    "display_name": "TripoSplat Koşullandırma",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision",
+        "tooltip": "DINOv3 ViT-H/16+ görsel kodlayıcı"
+      },
+      "image": {
+        "name": "görsel"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Flux2 VAE"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negatif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Sabit boyutlu gürültü hedefi (latent + kamera)."
+      }
+    }
+  },
+  "TripoSplatPreprocessImage": {
+    "description": "Her görüntünün merkezini siyah arka plan üzerinde kare bir tuvale kırp ve dolgu ekle.",
+    "display_name": "TripoSplat Ön İşlem Görüntüsü",
+    "inputs": {
+      "erode_radius": {
+        "name": "aşındırma_yarıçapı",
+        "tooltip": "Kırpmadan önce alfa matını bu piksel yarıçapı kadar aşındır (kenar taşmasını önler)."
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "size": {
+        "name": "boyut",
+        "tooltip": "Kare görüntü boyutu. Model 1024 boyutunda eğitildi; diğer boyutlar çalışır ancak dağılım dışıdır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "görüntü",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSplatSamplingPreview": {
+    "description": "TripoSplat modelini standart Ksampler düğümü için yamalayarak her adımda canlı kodu çözülmüş gaussian splat önizlemesi gösterir.",
+    "display_name": "TripoSplat Örnekleme Önizlemesi",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "num_gaussians": {
+        "name": "gauss_sayısı",
+        "tooltip": "Önizleme için üretilecek gaussian sayısı (32'nin katına yuvarlanır)."
+      },
+      "octree_level": {
+        "name": "oktav_seviyesi",
+        "tooltip": "Önizleme kod çözme için oktav derinliği (daha düşük = daha ucuz/daha kaba)."
+      },
+      "pitch": {
+        "name": "eğim",
+        "tooltip": "Önizleme kamerası eğimi (derece cinsinden)."
+      },
+      "point_size": {
+        "name": "nokta_boyutu",
+        "tooltip": "Maksimum splat yarıçapı (piksel cinsinden). Her gaussian kendi ölçeğinden boyutlandırılır ve burada sınırlandırılır; daha düşük = daha ince/noktasal, daha yüksek = daha kalın."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "TripoSplat VAE kod çözücü"
+      },
+      "yaw": {
+        "name": "yana_dönüş",
+        "tooltip": "Önizleme kamerası yana dönüşü (derece cinsinden)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TripoTextToModelNode": {
     "display_name": "Tripo: Metinden Modele",
     "inputs": {
@@ -19190,6 +19654,36 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "VAEDecodeTripoSplat": {
+    "description": "Örneklenen TripoSplat latent'ini 3B gaussian splat'e kod çöz. Yoğunluğu değiştirmek için gaussian sayısını ayarla.",
+    "display_name": "TripoSplat Kod Çözme",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "num_gaussians": {
+        "name": "gauss_sayısı",
+        "tooltip": "Üretilecek gaussian sayısı (32'nin katına yuvarlanır). 262144, oktavın nokta yoğunluğuna karşılık gelir; daha yüksek değerler aynı noktaları aşırı örnekler (daha yoğun, ancak yeni detay yok) ve orantılı olarak daha fazla VRAM/zaman gerektirir."
+      },
+      "samples": {
+        "name": "örnekler"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Deterministik kod çözümler için oktav nokta örnekleyicisini (küresel RNG) başlatır."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "TripoSplat VAE kod çözücü"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
       }
     }
   },

@@ -67,6 +67,10 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
         label: t('nav.youtube', locale),
         href: externalLinks.youtube,
         external: true
+      },
+      {
+        label: t('footer.affiliateProgram', locale),
+        href: routes.affiliates
       }
     ]
   }
@@ -104,7 +108,7 @@ const contactColumn: { title: string; links: FooterLink[] } = {
 <template>
   <footer
     ref="footerRef"
-    class="bg-primary-comfy-ink text-primary-comfy-canvas px-6 py-8 lg:px-20"
+    class="bg-primary-comfy-ink px-6 py-8 text-primary-comfy-canvas lg:px-20"
   >
     <div
       class="border-primary-warm-gray grid gap-12 border-t pt-16 lg:grid-cols-2 lg:gap-4"

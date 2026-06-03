@@ -317,9 +317,15 @@ describe('assetMetadataUtils', () => {
       expect(getAssetStoredFilename(mockAsset)).toBe('hash123')
     })
 
-    it('falls back to name on cloud when asset_hash is missing', () => {
+    it('prefers hash over the deprecated asset_hash alias on cloud', () => {
       isCloudRef.value = true
-      const asset = { ...mockAsset, asset_hash: undefined }
+      const asset = { ...mockAsset, hash: 'canonical-hash' }
+      expect(getAssetStoredFilename(asset)).toBe('canonical-hash')
+    })
+
+    it('falls back to name on cloud when no hash is present', () => {
+      isCloudRef.value = true
+      const asset = { ...mockAsset, hash: undefined, asset_hash: undefined }
       expect(getAssetStoredFilename(asset)).toBe('test-model')
     })
 

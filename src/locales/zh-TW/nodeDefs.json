@@ -1721,6 +1721,10 @@
         "name": "結束 sigma",
         "tooltip": "這些選項將生效的最後一個 sigma 值。"
       },
+      "force_sequential_txt_ids": {
+        "name": "強制使用連續文本標記ID",
+        "tooltip": "強制使用連續文本標記ID，而非全為零。此選項適用於2026-05-22至2026-06-01期間訓練、但狀態字典中未包含 __sequential__ 鍵的checkpoint。"
+      },
       "model": {
         "name": "模型"
       },
@@ -2519,6 +2523,57 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreateCameraInfo": {
+    "description": "建立 camera_info。模式 'orbit' 以目標為中心進行偏航/俯仰/距離的環繞；'look_at' 則將相機放置於世界座標位置。座標為觀者的世界空間（右手座標系，Y 軸向上）。",
+    "display_name": "建立相機資訊",
+    "inputs": {
+      "camera_type": {
+        "name": "相機類型",
+        "tooltip": "Render Splat 使用的投影方式：透視（有透視縮短）或正交（平行投影）。"
+      },
+      "fov": {
+        "name": "視野",
+        "tooltip": "垂直視野角度（度）。"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "定義相機方式：環繞角度、明確位置，或位置加四元數。"
+      },
+      "mode_distance": {
+        "name": "距離"
+      },
+      "mode_pitch": {
+        "name": "俯仰"
+      },
+      "mode_yaw": {
+        "name": "偏航"
+      },
+      "roll": {
+        "name": "滾轉",
+        "tooltip": "相機繞視線軸的滾轉角度（度）。"
+      },
+      "target_x": {
+        "name": "目標_x",
+        "tooltip": "注視點（環繞樞紐/瞄準點）。在環繞模式下，移動此點可平移整個相機。四元數模式下忽略。預設為原點。"
+      },
+      "target_y": {
+        "name": "目標_y"
+      },
+      "target_z": {
+        "name": "目標_z"
+      },
+      "zoom": {
+        "name": "縮放",
+        "tooltip": "數位縮放（焦距倍率）。大於 1 時不移動相機而放大。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
         "tooltip": null
       }
     }
@@ -3696,6 +3751,22 @@
       }
     }
   },
+  "File3DToSplat": {
+    "description": "解析 splat File3D 為高斯 splat。為『建立 3D 檔案（由 Splat）』的反向操作。支援格式：PLY、SPLAT、KSPLAT、SPZ。PLY 含完整球諧資訊，其餘格式僅有基礎色彩。格式會自動從檔案內容判斷。",
+    "display_name": "取得 Splat",
+    "inputs": {
+      "model_3d": {
+        "name": "3D 模型",
+        "tooltip": "高斯 splat 3D 檔案"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "FlipSigmas": {
     "display_name": "FlipSigmas",
     "inputs": {
@@ -3837,6 +3908,28 @@
     "inputs": {
       "conditioning": {
         "name": "條件設定"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxEraseNode": {
+    "description": "從影像中移除被遮罩的物件並重建背景。請將 mask 塗在你想要擦除的區域。",
+    "display_name": "Flux 擦除影像",
+    "inputs": {
+      "dilate_pixels": {
+        "name": "膨脹像素",
+        "tooltip": "擴展 mask 邊界，以確保物件邊緣被完整覆蓋。"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "白色區域會被移除；黑色區域會被保留。"
       }
     },
     "outputs": {
@@ -4113,6 +4206,36 @@
       },
       "seed": {
         "name": "種子",
+        "tooltip": "用於產生雜訊的隨機種子。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVTONode": {
+    "description": "虛擬試穿：將提供的服裝穿在人物身上。",
+    "display_name": "Flux 虛擬試穿",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "garment": {
+        "name": "服裝",
+        "tooltip": "要套用的服裝影像。"
+      },
+      "person": {
+        "name": "人物",
+        "tooltip": "要穿上服裝的人物影像。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "可選的自然語言造型指示（例如服裝如何貼合）。"
+      },
+      "seed": {
+        "name": "隨機種子",
         "tooltip": "用於產生雜訊的隨機種子。"
       }
     },
@@ -4716,6 +4839,25 @@
       }
     }
   },
+  "GetSplatCount": {
+    "description": "回傳整個批次中 splat 的總數。",
+    "display_name": "取得 Splat 數量",
+    "inputs": {
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "數量",
+        "tooltip": null
+      }
+    }
+  },
   "GetVideoComponents": {
     "description": "從影片中提取所有元件：影格、音訊與影格率。",
     "display_name": "取得影片元件",
@@ -4926,10 +5068,12 @@
         "tooltip": "輸出影片的長度（秒）。"
       },
       "image": {
-        "name": "image"
+        "name": "image",
+        "tooltip": "grok-imagine-video 的可選起始圖像。grok-imagine-video-1.5 則為必填。"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "grok-imagine-video-1.5 目前必須要有輸入圖像。"
       },
       "prompt": {
         "name": "prompt",
@@ -9662,6 +9806,21 @@
       }
     }
   },
+  "MergeSplat": {
+    "description": "將任意數量的高斯 splat 合併為一個。對同一 latent 以不同種子進行多次解碼並合併，可讓表面更密集，進而提升網格品質。",
+    "display_name": "合併 Splats",
+    "inputs": {
+      "splats": {
+        "name": "splats"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "MergeTextLists": {
     "display_name": "合併文字清單",
     "inputs": {
@@ -13427,6 +13586,52 @@
       }
     }
   },
+  "Preview3DAdvanced": {
+    "display_name": "3D 預覽（進階）",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "model_file": {
+        "name": "model_file",
+        "tooltip": "來自上游 3D 節點的 3D 模型檔案。"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "寬度",
+        "tooltip": null
+      },
+      "4": {
+        "name": "高度",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewAny": {
     "display_name": "預覽任意",
     "inputs": {
@@ -14412,6 +14617,66 @@
       "0": {
         "name": "mask",
         "tooltip": "產生的前景 mask"
+      }
+    }
+  },
+  "RenderSplat": {
+    "description": "使用各向異性 EWA 光柵器將高斯 splat 渲染為影像（定向橢圓 splat，抗鋸齒，深度排序由前到後）。相機來自 camera_info 輸入（載入 / 預覽 3D，或建立 Camera Info 節點）；留空則自動框選 splat。將 frames 設為大於 1 可產生旋轉台批次影像，供 Video 節點使用。",
+    "display_name": "渲染 Splat",
+    "inputs": {
+      "background": {
+        "name": "背景"
+      },
+      "bg_image": {
+        "name": "背景影像",
+        "tooltip": "可選的背景底圖，合成於 splat 後方（會覆蓋實色背景）。會調整為渲染尺寸；批次時每幀一張，單張時全用同一張。僅適用於 color/clay。"
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "渲染所用相機 - 來自 Load3D / Preview3D 相機或 Create Camera Info 節點。若留空，splat 會自動以預設 3/4 視角框選。"
+      },
+      "frames": {
+        "name": "幀數",
+        "tooltip": "-1、0、1 = 單張靜態影像；>1 = 旋轉台，相機繞 360 度旋轉（適用於任何 camera_info）。負值則反向旋轉。"
+      },
+      "headlight_shading": {
+        "name": "頭燈光影",
+        "tooltip": "來自相機（頭燈）的漫射光影，使用 splat 表面法線：轉離視角的表面會變暗，以顯示形體/曲率。0 = 平面反照率，1 = 最強光影。"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "opacity_threshold": {
+        "name": "不透明度閾值",
+        "tooltip": "剔除不透明度低於此值的高斯（移除微弱的漂浮點）。"
+      },
+      "render_style": {
+        "name": "渲染樣式",
+        "tooltip": "影像輸出顯示內容：color（顏色）、clay（中性反照率光影）、depth（近=亮）、normal（OpenGL 法線貼圖）。"
+      },
+      "sharpen": {
+        "name": "銳化",
+        "tooltip": "銳化重疊的 splat：1.0 = 物理正確混合；更高值會讓每個像素更偏向其主導（最近）的 splat，產生更銳利的紋理，但不會縮小 splat 或產生縫隙。超過 1 則非物理。"
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "splat_scale": {
+        "name": "splat 縮放",
+        "tooltip": "每個 splat 投影面積的乘數（較低 = 點更銳利，較高 = 表面更柔和/飽滿）。"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "影像",
+        "tooltip": null
+      },
+      "1": {
+        "name": "遮罩",
+        "tooltip": null
       }
     }
   },
@@ -16685,6 +16950,68 @@
       }
     }
   },
+  "SplatToFile3D": {
+    "description": "將高斯 splat 序列化為 File3D 物件，供 Save / Preview 3D 節點使用。僅支援每批次一項。",
+    "display_name": "建立 3D 檔案（由 Splat）",
+    "inputs": {
+      "format": {
+        "name": "格式",
+        "tooltip": "ply：標準 3D Gaussian Splat，含完整球面諧波。ksplat：mkkellogg SplatBuffer（等級 0，未壓縮），僅基礎色 spz：Niantic gzip 壓縮（約小 10 倍），僅基礎色"
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "3D 模型",
+        "tooltip": null
+      }
+    }
+  },
+  "SplatToMesh": {
+    "description": "從高斯 splat 擷取帶有顏色的網格。",
+    "display_name": "從 Splat 擷取網格",
+    "inputs": {
+      "color_sharpen": {
+        "name": "顏色銳化",
+        "tooltip": "使頂點紋理更清晰：1.0 = 物理正確混合；更高則使每個體素的顏色偏向其主導高斯而非鄰近平均（減少紋理模糊）。僅影響顏色，不改變幾何。"
+      },
+      "kernel": {
+        "name": "核心",
+        "tooltip": "最大 splat 半寬（以體素為單位）。每個高斯會在以自身 3-sigma 為大小的視窗內光柵化，最大值由此設定——小的 surfel 保持高效，大的則不會被截斷。如稀疏 splat 出現空隙可提高此值。"
+      },
+      "level": {
+        "name": "等值面層級",
+        "tooltip": "等值面層級。預設由 Otsu 自動選取；此參數可調整其偏好（1.0 = 自動，較低 = 表面更厚/連接性更高，較高 = 表面更薄/更緊密）。"
+      },
+      "min_component": {
+        "name": "最小組件",
+        "tooltip": "移除小於此頂點數的連通組件（0 = 保留全部）。可去除分離的浮動塊與雙層牆的內殼。"
+      },
+      "min_opacity": {
+        "name": "最小不透明度",
+        "tooltip": "網格化前忽略低於此值的不透明高斯。"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "沿最長軸的密度網格解析度。數值越高，表面越細緻，但會消耗更多 VRAM/時間（隨解析度^3 增長）。"
+      },
+      "smooth": {
+        "name": "平滑",
+        "tooltip": "Taubin 網格平滑迭代次數。可平滑表面但不會縮小體積（與模糊密度不同）。0 = 原始表面。"
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "網格",
+        "tooltip": null
+      }
+    }
+  },
   "SplitAudioChannels": {
     "description": "將音訊分離為左右聲道。",
     "display_name": "分離音訊聲道",
@@ -18383,6 +18710,48 @@
       }
     }
   },
+  "TransformSplat": {
+    "description": "平移、旋轉與縮放高斯 splat。非等比縮放也會改變每個 splat 的形狀，處理較慢。",
+    "display_name": "變換 Splat",
+    "inputs": {
+      "rotate_x": {
+        "name": "旋轉 X"
+      },
+      "rotate_y": {
+        "name": "旋轉 Y"
+      },
+      "rotate_z": {
+        "name": "旋轉 Z"
+      },
+      "scale_x": {
+        "name": "縮放 X"
+      },
+      "scale_y": {
+        "name": "縮放 Y"
+      },
+      "scale_z": {
+        "name": "縮放 Z"
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "translate_x": {
+        "name": "平移 X"
+      },
+      "translate_y": {
+        "name": "平移 Y"
+      },
+      "translate_z": {
+        "name": "平移 Z"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "TrimAudioDuration": {
     "description": "將音訊張量修剪至選定的時間範圍。",
     "display_name": "修剪音訊時長",
@@ -18862,6 +19231,101 @@
       }
     }
   },
+  "TripoSplatConditioning": {
+    "description": "使用 DINOv3 與 Flux2 VAE 將圖像編碼為 TripoSplat 正/負條件，並為 KSampler 建立固定大小的噪聲目標（latent + 相機）。",
+    "display_name": "TripoSplat 條件編碼",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision",
+        "tooltip": "DINOv3 ViT-H/16+ 圖像編碼器"
+      },
+      "image": {
+        "name": "圖像"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Flux2 VAE"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "name": "負向",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "固定大小的噪聲目標（latent + 相機）。"
+      }
+    }
+  },
+  "TripoSplatPreprocessImage": {
+    "description": "將每張圖像以中心裁切方式裁成方形畫布，背景為黑色，並加入邊距。",
+    "display_name": "TripoSplat 預處理圖像",
+    "inputs": {
+      "erode_radius": {
+        "name": "腐蝕半徑",
+        "tooltip": "在裁切前，將 alpha 遮罩以此像素半徑進行腐蝕（避免邊緣溢出）。"
+      },
+      "image": {
+        "name": "圖像"
+      },
+      "mask": {
+        "name": "遮罩"
+      },
+      "size": {
+        "name": "尺寸",
+        "tooltip": "方形圖像尺寸。模型訓練於 1024；其他尺寸可運行但分布會有偏差。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "圖像",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSplatSamplingPreview": {
+    "description": "為標準 Ksampler 節點修補 TripoSplat 模型，在每一步顯示即時解碼的高斯點雲預覽。",
+    "display_name": "TripoSplat 採樣預覽",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "num_gaussians": {
+        "name": "高斯數量",
+        "tooltip": "預覽所產生的高斯點數（四捨五入為 32 的倍數）。"
+      },
+      "octree_level": {
+        "name": "八叉樹層級",
+        "tooltip": "預覽解碼的八叉樹深度（越低越省資源/越粗糙）。"
+      },
+      "pitch": {
+        "name": "俯仰角",
+        "tooltip": "預覽相機俯仰角（度）。"
+      },
+      "point_size": {
+        "name": "點大小",
+        "tooltip": "最大點雲半徑（像素）。每個高斯點根據其縮放設定大小，並以此值為上限；越小越細緻，越大越粗壯。"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "TripoSplat VAE 解碼器"
+      },
+      "yaw": {
+        "name": "偏航角",
+        "tooltip": "預覽相機偏航角（度）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TripoTextToModelNode": {
     "display_name": "Tripo：文字轉模型",
     "inputs": {
@@ -19190,6 +19654,36 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "VAEDecodeTripoSplat": {
+    "description": "將採樣後的 TripoSplat latent 解碼為 3D 高斯點雲。調整高斯數量以改變密度。",
+    "display_name": "TripoSplat 解碼",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "num_gaussians": {
+        "name": "高斯數量",
+        "tooltip": "產生的高斯點數（四捨五入為 32 的倍數）。262144 與八叉樹點密度相符；更高則對同一點過度取樣（更密但無新細節），且 VRAM/時間成本等比增加。"
+      },
+      "samples": {
+        "name": "樣本"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "為八叉樹點採樣器（全域隨機數生成器）設置種子，以獲得可重現的解碼結果。"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "TripoSplat VAE 解碼器"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "點雲",
+        "tooltip": null
       }
     }
   },

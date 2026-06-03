@@ -175,8 +175,9 @@ export function getAssetFilename(asset: AssetItem): string {
 /**
  * Resolves the *stored* filename for an asset — the filename used to
  * construct asset paths (for /view URLs and widget values), not the
- * user-facing display string. Cloud uses `asset_hash` (content-
- * addressed); OSS uses `name` (filesystem-backed).
+ * user-facing display string. Cloud uses the content hash (`hash`,
+ * falling back to the deprecated `asset_hash` alias); OSS uses `name`
+ * (filesystem-backed).
  *
  * For display use {@link getAssetDisplayFilename}; for serialized
  * identifiers use {@link getAssetFilename}.
@@ -184,7 +185,8 @@ export function getAssetFilename(asset: AssetItem): string {
  * TODO(BE-933/934): collapse to `asset.file_path ?? asset.name`.
  */
 export function getAssetStoredFilename(asset: AssetItem): string {
-  return isCloud && asset.asset_hash ? asset.asset_hash : asset.name
+  const hash = asset.hash ?? asset.asset_hash
+  return isCloud && hash ? hash : asset.name
 }
 
 /**
@@ -222,5 +224,5 @@ export function getAssetCardTitle(asset: AssetItem): string {
  * values or media URLs that must round-trip through the view endpoint.
  */
 export function getAssetUrlFilename(asset: AssetItem): string {
-  return asset.asset_hash || asset.name
+  return asset.hash ?? asset.asset_hash ?? asset.name
 }
