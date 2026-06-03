@@ -1,5 +1,6 @@
 import type { ResolvedPromotedWidget } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -41,6 +42,17 @@ function traversePromotedWidgetChain(
       return { status: 'failure', failure: 'missing-node' }
     }
 
+    if (sourceNode.isSubgraphNode()) {
+      const target = resolveSubgraphInputTarget(sourceNode, currentWidgetName)
+      if (!target) {
+        return { status: 'failure', failure: 'missing-widget' }
+      }
+      currentHost = sourceNode
+      currentNodeId = target.nodeId
+      currentWidgetName = target.widgetName
+      continue
+    }
+
     const sourceWidget = sourceNode.widgets?.find(
       (entry) => entry.name === currentWidgetName
     )
@@ -48,20 +60,10 @@ function traversePromotedWidgetChain(
       return { status: 'failure', failure: 'missing-widget' }
     }
 
-    if (!isPromotedWidgetView(sourceWidget)) {
-      return {
-        status: 'resolved',
-        resolved: { node: sourceNode, widget: sourceWidget }
-      }
+    return {
+      status: 'resolved',
+      resolved: { node: sourceNode, widget: sourceWidget }
     }
-
-    if (!sourceWidget.node?.isSubgraphNode()) {
-      return { status: 'failure', failure: 'missing-node' }
-    }
-
-    currentHost = sourceWidget.node
-    currentNodeId = sourceWidget.sourceNodeId
-    currentWidgetName = sourceWidget.sourceWidgetName
   }
 
   return { status: 'failure', failure: 'max-depth-exceeded' }

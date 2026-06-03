@@ -34,12 +34,10 @@ import type {
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
-import {
-  createPromotedWidgetView,
-  isPromotedWidgetView
-} from '@/core/graph/subgraph/promotedWidgetView'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -148,13 +146,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
           const widget = inputNode.getWidgetFromSlot(input)
           if (widget)
-            this._setWidget(
-              subgraphInput,
-              existingInput,
-              widget,
-              input.widget,
-              inputNode
-            )
+            this._setWidget(subgraphInput, existingInput, widget, input.widget)
           return
         }
         const input = this.addInput(name, type, {
@@ -303,8 +295,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
             subgraphInput,
             input,
             e.detail.widget,
-            e.detail.input.widget,
-            e.detail.node
+            e.detail.input.widget
           )
 
         this.invalidatePromotedViews()
@@ -573,30 +564,46 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       }
 
       const widget = inputNode.getWidgetFromSlot(targetInput)
-      if (!widget) continue
+      if (widget) {
+        this._setWidget(subgraphInput, input, widget, targetInput.widget)
+        break
+      }
 
-      this._setWidget(
-        subgraphInput,
-        input,
-        widget,
-        targetInput.widget,
-        inputNode
-      )
-      break
+      // Nested promotion: the source is itself a promoted subgraph input with
+      // no concrete widget. Resolve the deepest interior widget so this input
+      // still receives widget state and a widgetId.
+      const nested = this._resolveNestedPromotedSource(inputNode, targetInput)
+      if (nested) {
+        this._setWidget(subgraphInput, input, nested.widget, targetInput.widget)
+        break
+      }
     }
+  }
+
+  private _resolveNestedPromotedSource(
+    inputNode: LGraphNode,
+    targetInput: INodeInputSlot
+  ): { node: LGraphNode; widget: IBaseWidget } | undefined {
+    if (!inputNode.isSubgraphNode() || !targetInput.widgetId) return undefined
+
+    const target = resolveSubgraphInputTarget(inputNode, targetInput.name)
+    if (!target) return undefined
+
+    const resolved = resolveConcretePromotedWidget(
+      inputNode,
+      target.nodeId,
+      target.widgetName
+    )
+    return resolved.status === 'resolved' ? resolved.resolved : undefined
   }
 
   private _setWidget(
     subgraphInput: Readonly<SubgraphInput>,
     input: INodeInputSlot,
     interiorWidget: Readonly<IBaseWidget>,
-    inputWidget: IWidgetLocator | undefined,
-    interiorNode: LGraphNode
+    inputWidget: IWidgetLocator | undefined
   ) {
     this.invalidatePromotedViews()
-
-    const nodeId = String(interiorNode.id)
-    const widgetName = interiorWidget.name
 
     if (input._widget && isPromotedWidgetView(input._widget)) {
       this._removePromotedView(input._widget)
@@ -623,15 +630,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           : undefined
     })
 
-    const view = createPromotedWidgetView(
-      this,
-      nodeId,
-      widgetName,
-      input.label ?? subgraphInput.name,
-      subgraphInput.name
-    )
     this.subgraph.events.dispatch('widget-promoted', {
-      widget: view,
+      widget: interiorWidget,
       subgraphNode: this
     })
   }

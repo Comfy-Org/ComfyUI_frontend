@@ -358,12 +358,7 @@ describe('Nested promoted widget mapping', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  // Known limitation: two-layer nested promotion does not yet resolve through
-  // to the deepest concrete widget under the widget-id model. The host input
-  // gets no widgetId because its source is itself a promoted subgraph input
-  // (no concrete widget), so no view is built. Needs multi-level resolution in
-  // SubgraphNode._resolveInputWidget + the promoted-view resolver.
-  it.skip('maps store identity to deepest concrete widget for two-layer promotions', () => {
+  it('maps store identity to deepest concrete widget for two-layer promotions', () => {
     const subgraphA = createTestSubgraph({
       inputs: [{ name: 'a_input', type: '*' }]
     })
