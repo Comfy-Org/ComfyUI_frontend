@@ -10,23 +10,34 @@ defineProps<{
   steps: readonly Step[]
 }>()
 
-function isLastInRow(index: number, total: number): boolean {
-  if (index === total - 1) return true
-  return index % 2 === 1
-}
+const isRtlRow = (i: number) => Math.floor(i / 2) % 2 === 1
+const isFullSpan = (i: number, total: number) =>
+  i === total - 1 && total % 2 === 1
 
-function isInLastRow(index: number, total: number): boolean {
-  if (index === total - 1) return true
-  if (total % 2 === 0 && index === total - 2) return true
+function hasHorizontalConnector(i: number, total: number) {
+  if (isFullSpan(i, total)) return false
+  if (!isRtlRow(i) && i % 2 === 0 && i + 1 < total) return true
+  if (isRtlRow(i) && i % 2 === 1) return true
   return false
 }
 
-function hasRightConnector(index: number, total: number): boolean {
-  return index % 2 === 0 && index + 1 < total
+function hasMobileVertical(i: number, total: number) {
+  return i < total - 1
 }
 
-function hasBottomConnector(index: number, total: number): boolean {
-  return isLastInRow(index, total) && !isInLastRow(index, total)
+function hasLgVertical(i: number, total: number) {
+  return i % 2 === 1 && i + 1 < total
+}
+
+function cardClass(i: number, total: number) {
+  const fullSpan = isFullSpan(i, total)
+  const rtl = isRtlRow(i)
+  return cn(
+    'border-primary-comfy-yellow relative rounded-3xl border-2 p-8 lg:p-10',
+    fullSpan && 'lg:col-span-2',
+    !fullSpan && rtl && i % 2 === 0 && 'lg:col-start-2',
+    !fullSpan && rtl && i % 2 === 1 && 'lg:col-start-1'
+  )
 }
 </script>
 
@@ -38,18 +49,13 @@ function hasBottomConnector(index: number, total: number): boolean {
       {{ heading }}
     </h2>
 
-    <div class="mx-auto grid max-w-3xl grid-cols-1 gap-4 lg:grid-cols-2">
+    <div
+      class="mx-auto grid max-w-3xl grid-cols-1 gap-4 lg:grid-flow-dense lg:grid-cols-2"
+    >
       <div
         v-for="(step, index) in steps"
         :key="step.id"
-        :class="
-          cn(
-            'border-primary-comfy-yellow relative rounded-3xl border-2 p-8 lg:p-10',
-            index === steps.length - 1 && steps.length % 2 === 1
-              ? 'lg:col-span-2'
-              : ''
-          )
-        "
+        :class="cardClass(index, steps.length)"
       >
         <span
           class="bg-primary-comfy-yellow text-primary-comfy-ink font-formula-narrow inline-block -skew-x-12 rounded-sm px-3 py-1.5 text-sm font-bold tracking-wide uppercase lg:text-base"
@@ -63,13 +69,21 @@ function hasBottomConnector(index: number, total: number): boolean {
         </p>
 
         <NodeUnionIcon
-          v-if="hasRightConnector(index, steps.length)"
-          class="text-primary-comfy-yellow pointer-events-none absolute top-1/2 right-0 z-10 hidden h-12 w-16 translate-x-1/2 -translate-y-1/2 lg:block"
+          v-if="hasHorizontalConnector(index, steps.length)"
+          class="text-primary-comfy-yellow absolute top-1/2 right-0 hidden size-4 translate-x-[calc(100%+2px)] -translate-y-1/2 scale-x-150 rotate-90 lg:block"
         />
-
         <NodeUnionIcon
-          v-if="hasBottomConnector(index, steps.length)"
-          class="text-primary-comfy-yellow pointer-events-none absolute bottom-0 left-1/2 z-10 hidden h-12 w-16 -translate-x-1/2 translate-y-1/2 rotate-90 lg:block"
+          v-if="
+            hasMobileVertical(index, steps.length) ||
+            hasLgVertical(index, steps.length)
+          "
+          :class="
+            cn(
+              'text-primary-comfy-yellow absolute bottom-0 left-1/2 size-4 -translate-x-1/2 translate-y-[calc(100%+2px)] scale-x-150',
+              !hasMobileVertical(index, steps.length) && 'hidden lg:block',
+              !hasLgVertical(index, steps.length) && 'lg:hidden'
+            )
+          "
         />
       </div>
     </div>
