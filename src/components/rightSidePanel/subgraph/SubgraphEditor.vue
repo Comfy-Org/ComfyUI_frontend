@@ -5,9 +5,8 @@ import { computed, onMounted, shallowRef, watch } from 'vue'
 
 import DraggableList from '@/components/common/DraggableList.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import {
+  demotePromotedInput,
   demoteWidget,
   getPromotableWidgets,
   isLinkedPromotion,
@@ -27,14 +26,22 @@ import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import type { WidgetId } from '@/world/entityIds'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
 
+type PromotedDescriptor = {
+  sourceNodeId: string
+  sourceWidgetName: string
+  name: string
+  label: string
+  widgetId: WidgetId
+}
 type PromotedRow = {
   kind: 'promoted'
   node: LGraphNode
-  widget: PromotedWidgetView
+  descriptor: PromotedDescriptor
 }
 type PreviewRow = {
   kind: 'preview'
@@ -55,26 +62,26 @@ const activeNode = computed(() => {
   return undefined
 })
 
-const promotedWidgets = shallowRef<readonly PromotedWidgetView[]>([])
-function buildPromotedViews(node: SubgraphNode): PromotedWidgetView[] {
+const promotedWidgets = shallowRef<readonly PromotedDescriptor[]>([])
+function buildPromotedDescriptors(node: SubgraphNode): PromotedDescriptor[] {
   return node.inputs.flatMap((input) => {
     if (!input.widgetId) return []
     const target = resolveSubgraphInputTarget(node, input.name)
     if (!target) return []
     return [
-      createPromotedWidgetView(
-        node,
-        target.nodeId,
-        target.widgetName,
-        input.label ?? input.name,
-        input.name
-      )
+      {
+        sourceNodeId: target.nodeId,
+        sourceWidgetName: target.widgetName,
+        name: input.name,
+        label: input.label ?? input.name,
+        widgetId: input.widgetId
+      }
     ]
   })
 }
 function refreshPromotedWidgets() {
   const node = activeNode.value
-  promotedWidgets.value = node ? buildPromotedViews(node) : []
+  promotedWidgets.value = node ? buildPromotedDescriptors(node) : []
 }
 watch(activeNode, refreshPromotedWidgets, { immediate: true })
 useEventListener(
@@ -106,10 +113,10 @@ const activePromotedRows = computed<PromotedRow[]>({
 })
 
 function getActivePromotedRows(node: SubgraphNode): PromotedRow[] {
-  return promotedWidgets.value.flatMap((widget): PromotedRow[] => {
-    const sourceNode = node.subgraph._nodes_by_id[widget.sourceNodeId]
+  return promotedWidgets.value.flatMap((descriptor): PromotedRow[] => {
+    const sourceNode = node.subgraph._nodes_by_id[descriptor.sourceNodeId]
     if (!sourceNode) return []
-    return [{ kind: 'promoted', node: sourceNode, widget }]
+    return [{ kind: 'promoted', node: sourceNode, descriptor }]
   })
 }
 
@@ -147,7 +154,7 @@ function updateActivePromotedRows(
   if (currentKeys.size === nextKeys.size) {
     reorderSubgraphInputsByWidgetOrder(
       node,
-      value.map((row) => row.widget)
+      value.map((row) => ({ widgetId: row.descriptor.widgetId }))
     )
   }
   refreshPromotedWidgetRendering()
@@ -169,7 +176,7 @@ const interiorWidgets = computed<WidgetItem[]>(() => {
 
 function activeRowSourceKey(row: ActiveRow): string {
   return row.kind === 'promoted'
-    ? `${row.widget.sourceNodeId}:${row.widget.sourceWidgetName}`
+    ? `${row.descriptor.sourceNodeId}:${row.descriptor.sourceWidgetName}`
     : `${row.exposure.sourceNodeId}:${row.exposure.sourcePreviewName}`
 }
 
@@ -233,7 +240,7 @@ function refreshPromotedWidgetRendering() {
 
 function rowDisplayName(row: ActiveRow): string {
   if (row.kind === 'promoted') {
-    return row.widget.label || row.widget.name
+    return row.descriptor.label || row.descriptor.name
   }
   return (
     row.realWidget?.label ||
@@ -250,13 +257,13 @@ function isRowLinked(row: ActiveRow): boolean {
     isLinkedPromotion(
       activeNode.value,
       String(row.node.id),
-      row.widget.sourceWidgetName
+      row.descriptor.sourceWidgetName
     )
   )
 }
 
 function promotedRowKey(row: PromotedRow): string {
-  return `${row.node.id}: ${row.widget.name}:${row.widget.sourceNodeId}`
+  return `${row.node.id}: ${row.descriptor.name}:${row.descriptor.sourceNodeId}`
 }
 
 function rowKey(row: ActiveRow): string {
@@ -273,7 +280,11 @@ function demoteRow(row: ActiveRow) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
   if (row.kind === 'promoted') {
-    demoteWidget(row.node, row.widget, [subgraphNode])
+    demotePromotedInput(subgraphNode, {
+      sourceNodeId: row.descriptor.sourceNodeId,
+      sourceWidgetName: row.descriptor.sourceWidgetName
+    })
+    refreshPromotedWidgetRendering()
     return
   }
   if (row.realWidget) {
@@ -291,7 +302,10 @@ function demoteRow(row: ActiveRow) {
 function promotePromotedRow(row: PromotedRow) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
-  promoteWidget(row.node, row.widget, [subgraphNode])
+  const sourceWidget = row.node.widgets?.find(
+    (widget) => widget.name === row.descriptor.sourceWidgetName
+  )
+  if (sourceWidget) promoteWidget(row.node, sourceWidget, [subgraphNode])
 }
 
 function promoteCandidate([node, widget]: WidgetItem) {

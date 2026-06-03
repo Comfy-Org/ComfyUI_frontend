@@ -14,7 +14,6 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 
-import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import SubgraphEditor from './SubgraphEditor.vue'
@@ -168,27 +167,32 @@ describe('SubgraphEditor', () => {
         .map((el) => el.textContent?.trim())
     ).toEqual(['first', 'second'])
 
-    const promotedWidgets = host.inputs
-      .filter((input) => input.widgetId)
-      .map((input) => {
-        const target = resolveSubgraphInputTarget(host, input.name)!
-        return createPromotedWidgetView(
-          host,
-          target.nodeId,
-          target.widgetName,
-          input.label ?? input.name,
-          input.name
-        )
-      })
-    const firstView = promotedWidgets.find(
-      (w) => w.sourceNodeId === String(firstNode.id)
-    )!
-    const secondView = promotedWidgets.find(
-      (w) => w.sourceNodeId === String(secondNode.id)
-    )!
+    const descriptorFor = (sourceNode: LGraphNode) => {
+      const input = host.inputs.find((input) => {
+        if (!input.widgetId) return false
+        const target = resolveSubgraphInputTarget(host, input.name)
+        return target?.nodeId === String(sourceNode.id)
+      })!
+      const target = resolveSubgraphInputTarget(host, input.name)!
+      return {
+        sourceNodeId: target.nodeId,
+        sourceWidgetName: target.widgetName,
+        name: input.name,
+        label: input.label ?? input.name,
+        widgetId: input.widgetId
+      }
+    }
     const reversed = [
-      { kind: 'promoted', node: secondNode, widget: secondView },
-      { kind: 'promoted', node: firstNode, widget: firstView }
+      {
+        kind: 'promoted',
+        node: secondNode,
+        descriptor: descriptorFor(secondNode)
+      },
+      {
+        kind: 'promoted',
+        node: firstNode,
+        descriptor: descriptorFor(firstNode)
+      }
     ] as PromotedRow[]
     listSetter?.(reversed)
     await nextTick()

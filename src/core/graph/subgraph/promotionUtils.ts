@@ -122,7 +122,7 @@ export function reorderSubgraphInputsByName(
 
 export function reorderSubgraphInputsByWidgetOrder(
   subgraphNode: SubgraphNode,
-  orderedWidgets: readonly IBaseWidget[]
+  orderedWidgets: readonly Pick<IBaseWidget, 'widgetId'>[]
 ): void {
   const remainingIndices = new Set(subgraphNode.inputs.keys())
   const orderedIndices = orderedWidgets.flatMap((orderedWidget) => {
@@ -164,7 +164,7 @@ function applySubgraphInputOrder(
 function isSamePromotedInput(
   subgraphNode: SubgraphNode,
   inputIndex: number,
-  orderedWidget: IBaseWidget
+  orderedWidget: Pick<IBaseWidget, 'widgetId'>
 ): boolean {
   const input = subgraphNode.inputs[inputIndex]
   const linkedInput = input?._subgraphSlot
@@ -369,6 +369,32 @@ export function promoteWidget(
   })
 }
 
+/**
+ * Removes the host input projecting a linked promotion identified by source.
+ * Returns true when an input was found and demoted.
+ */
+export function demotePromotedInput(
+  subgraphNode: SubgraphNode,
+  source: PromotedWidgetSource
+): boolean {
+  if (!subgraphNode.subgraph) return false
+
+  const hostInput = findHostInputForPromotion(
+    subgraphNode,
+    source.sourceNodeId,
+    source.sourceWidgetName
+  )
+  const linkedInput = hostInput?._subgraphSlot
+  if (!linkedInput) return false
+
+  if (hostInput.link != null) {
+    linkedInput.disconnect()
+  } else {
+    subgraphNode.subgraph.removeInput(linkedInput)
+  }
+  return true
+}
+
 export function demoteWidget(
   node: PartialNode,
   widget: IBaseWidget,
@@ -378,21 +404,7 @@ export function demoteWidget(
   for (const parent of parents) {
     if (!parent.subgraph) continue
 
-    const hostInput = findHostInputForPromotion(
-      parent,
-      source.sourceNodeId,
-      source.sourceWidgetName
-    )
-    const linkedInput = hostInput?._subgraphSlot
-    if (linkedInput) {
-      const hasExternalLink = hostInput.link != null
-      if (hasExternalLink) {
-        linkedInput.disconnect()
-      } else {
-        parent.subgraph.removeInput(linkedInput)
-      }
-      continue
-    }
+    if (demotePromotedInput(parent, source)) continue
 
     if (isPreviewPseudoWidget(widget)) {
       const previewStore = usePreviewExposureStore()
