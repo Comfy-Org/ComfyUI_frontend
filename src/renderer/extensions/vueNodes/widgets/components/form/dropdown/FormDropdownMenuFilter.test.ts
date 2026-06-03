@@ -34,7 +34,12 @@ function getUploadMock() {
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: { g: { import: 'Import' } } }
+  messages: {
+    en: {
+      g: { import: 'Import' },
+      widgets: { uploadSelect: { importMedia: 'Import media' } }
+    }
+  }
 })
 
 const ButtonStub = {
@@ -52,14 +57,16 @@ const singleOption: FilterOption[] = [{ value: 'all', name: 'All' }]
 
 function renderMenu(
   filterOptions: FilterOption[] = options,
-  modelValue: string | undefined = 'all'
+  modelValue: string | undefined = 'all',
+  extraProps: Record<string, unknown> = {},
+  onFileChange: (event: Event) => void = () => {}
 ) {
   const value = ref<string | undefined>(modelValue)
   const Harness = defineComponent({
     components: { FormDropdownMenuFilter },
-    setup: () => ({ value, filterOptions }),
+    setup: () => ({ value, filterOptions, extraProps, onFileChange }),
     template:
-      '<FormDropdownMenuFilter v-model:filter-selected="value" :filter-options="filterOptions" />'
+      '<FormDropdownMenuFilter v-model:filter-selected="value" :filter-options="filterOptions" v-bind="extraProps" @file-change="onFileChange" />'
   })
   const utils = render(Harness, {
     global: {
@@ -92,9 +99,10 @@ describe('FormDropdownMenuFilter', () => {
       expect(value.value).toBe('mine')
     })
 
-    it('disables option buttons when there is only one option', () => {
+    it('renders the single option as a non-interactive title', () => {
       renderMenu(singleOption)
-      expect(screen.getByRole('button', { name: 'All' })).toBeDisabled()
+      expect(screen.getByText('All')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'All' })).toBeNull()
     })
 
     it('does not disable buttons when there are multiple options', () => {
@@ -132,6 +140,46 @@ describe('FormDropdownMenuFilter', () => {
       const user = userEvent.setup()
       await user.click(screen.getByRole('button', { name: /Import/i }))
       expect(upload.showUploadDialog).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('Media import button', () => {
+    it('shows an Import media button when uploadable with multiple options', () => {
+      renderMenu(options, 'all', { uploadable: true })
+      expect(
+        screen.getByRole('button', { name: 'Import media' })
+      ).toBeInTheDocument()
+    })
+
+    it('is hidden when not uploadable', () => {
+      renderMenu(options, 'all', { uploadable: false })
+      expect(screen.queryByRole('button', { name: 'Import media' })).toBeNull()
+    })
+
+    it('defers to the model import button for a single filter option', () => {
+      getUploadMock().isUploadButtonEnabled.value = true
+      renderMenu(singleOption, 'all', { uploadable: true })
+      expect(screen.queryByRole('button', { name: 'Import media' })).toBeNull()
+      expect(
+        screen.getByRole('button', { name: /Import/i })
+      ).toBeInTheDocument()
+    })
+
+    it('emits file-change when a file is selected', async () => {
+      const onFileChange = vi.fn()
+      renderMenu(
+        options,
+        'all',
+        { uploadable: true, accept: 'image/*' },
+        onFileChange
+      )
+      await userEvent
+        .setup()
+        .upload(
+          screen.getByTestId('media-upload-input'),
+          new File(['x'], 'a.png', { type: 'image/png' })
+        )
+      expect(onFileChange).toHaveBeenCalled()
     })
   })
 })

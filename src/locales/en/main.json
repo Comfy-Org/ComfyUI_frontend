@@ -2756,14 +2756,15 @@
     "selectModel": "Select model",
     "uploadSelect": {
       "placeholder": "Select...",
-      "placeholderImage": "Select image...",
+      "placeholderImage": "Search media assets",
       "placeholderAudio": "Select audio...",
       "placeholderVideo": "Select video...",
       "placeholderMesh": "Select mesh...",
       "placeholderModel": "Select model...",
       "placeholderUnknown": "Select media...",
       "maxSelectionReached": "Maximum selection limit reached",
-      "topResult": "Top result: {result}"
+      "topResult": "Top result: {result}",
+      "importMedia": "Import media"
     },
     "valueControl": {
       "header": {
@@ -3126,6 +3127,7 @@
     "selectFrameworks": "Select Frameworks",
     "selectModelType": "Select model type",
     "selectProjects": "Select Projects",
+    "recentlyUsed": "Recently used",
     "sortAZ": "A-Z",
     "sortDefault": "Default",
     "sortBy": "Sort by",
