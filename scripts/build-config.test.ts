@@ -183,6 +183,6 @@ describe('vite.config.mts vitest test configuration', () => {
 
   it('test config includes retry for CI', () => {
     // Retry logic must remain to avoid flaky tests in CI
-    expect(configContent).toContain("process.env.CI ? 2 : 0")
+    expect(configContent).toContain('process.env.CI ? 2 : 0')
   })
 })
