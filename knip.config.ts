@@ -60,7 +60,15 @@ const config: KnipConfig = {
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js',
     // Devtools extensions, included dynamically
-    'tools/devtools/web/**'
+    'tools/devtools/web/**',
+    // Model Library foundation — consumers land in stacked PRs (sidebar + picker)
+    'src/components/sidebar/tabs/cloudModelLibrary/baseModelCategoryOverrides.ts',
+    'src/components/sidebar/tabs/cloudModelLibrary/CategoryPlaceholder.vue',
+    'src/components/sidebar/tabs/cloudModelLibrary/useNodePreviewDragImage.ts',
+    'src/composables/sidebarTabs/useCategoryPlaceholder.ts',
+    'src/composables/sidebarTabs/useLocalModelLibrarySource.ts',
+    'src/composables/sidebarTabs/useModelLibrarySource.ts',
+    'src/composables/sidebarTabs/useRecentlyUsedModels.ts'
   ],
   vite: {
     config: ['vite?(.*).config.mts']

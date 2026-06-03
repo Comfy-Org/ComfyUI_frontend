@@ -390,17 +390,20 @@ function createAssetService() {
 
   /**
    * Checks if the asset browser should be used for a given node input.
-   * Combines the cloud environment check, user setting, and eligibility check.
    *
-   * @param nodeType - The ComfyUI node comfyClass
-   * @param widgetName - The name of the widget to check
-   * @returns true if this input should use the asset browser
+   * Activates in two cases:
+   *   - cloud: when the user has opted into the Assets API and the input is
+   *     a recognised model widget on a registered loader node.
+   *   - desktop / localhost: any registered model loader widget, since the
+   *     local Model Library source already enumerates /models/<folder>.
    */
   function shouldUseAssetBrowser(
     nodeType: string | undefined,
     widgetName: string
   ): boolean {
-    return isAssetAPIEnabled() && isAssetBrowserEligible(nodeType, widgetName)
+    if (!isAssetBrowserEligible(nodeType, widgetName)) return false
+    if (isCloud) return isAssetAPIEnabled()
+    return true
   }
 
   /**

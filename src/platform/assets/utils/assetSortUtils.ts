@@ -12,11 +12,16 @@ import type { AssetSortOption } from '../types/filterTypes'
 export interface SortableItem {
   name: string
   label?: string
+  author?: string
   created_at?: string | null
 }
 
 function getDisplayName(item: SortableItem): string {
   return item.label ?? item.name
+}
+
+function getAuthorKey(item: SortableItem): string {
+  return item.author?.trim() ?? ''
 }
 
 /**
@@ -49,6 +54,34 @@ export function sortAssets<T extends SortableItem>(
           new Date(b.created_at ?? 0).getTime() -
           new Date(a.created_at ?? 0).getTime()
       )
+    case 'oldest':
+      return sorted.sort(
+        (a, b) =>
+          new Date(a.created_at ?? 0).getTime() -
+          new Date(b.created_at ?? 0).getTime()
+      )
+    case 'author-asc':
+    case 'author-desc': {
+      const direction = sortBy === 'author-desc' ? -1 : 1
+      const hasAuthor = (i: SortableItem) => !!i.author?.trim()
+      return sorted.sort((a, b) => {
+        const ah = hasAuthor(a)
+        const bh = hasAuthor(b)
+        // Always sink unknown-author rows to the bottom, irrespective of
+        // direction — keeps the "Other" bucket visually anchored at the end.
+        if (ah !== bh) return ah ? -1 : 1
+        const authorCmp =
+          direction *
+          getAuthorKey(a).localeCompare(getAuthorKey(b), undefined, {
+            sensitivity: 'base'
+          })
+        if (authorCmp !== 0) return authorCmp
+        return getDisplayName(a).localeCompare(getDisplayName(b), undefined, {
+          numeric: true,
+          sensitivity: 'base'
+        })
+      })
+    }
     case 'name-asc':
     default:
       return sorted.sort((a, b) =>
