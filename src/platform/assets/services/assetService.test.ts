@@ -89,12 +89,20 @@ describe(assetService.shouldUseAssetBrowser, () => {
     mockSettingStoreGet.mockReturnValue(false)
   })
 
-  it('returns false when not on cloud', () => {
+  it('returns true on local for an eligible model widget regardless of the asset API setting', () => {
     mockDistributionState.isCloud = false
-    mockSettingStoreGet.mockReturnValue(true)
+    mockSettingStoreGet.mockReturnValue(false)
 
     expect(
       assetService.shouldUseAssetBrowser('CheckpointLoaderSimple', 'ckpt_name')
+    ).toBe(true)
+  })
+
+  it('returns false on local for an ineligible widget', () => {
+    mockDistributionState.isCloud = false
+
+    expect(
+      assetService.shouldUseAssetBrowser('UnknownNode', 'some_input')
     ).toBe(false)
   })
 

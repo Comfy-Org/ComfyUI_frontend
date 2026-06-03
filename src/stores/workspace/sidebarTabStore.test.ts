@@ -63,15 +63,6 @@ vi.mock('@/composables/sidebarTabs/useNodeLibrarySidebarTab', () => ({
   })
 }))
 
-vi.mock('@/composables/sidebarTabs/useModelLibrarySidebarTab', () => ({
-  useModelLibrarySidebarTab: () => ({
-    id: 'model-library',
-    title: 'model-library',
-    type: 'vue',
-    component: {}
-  })
-}))
-
 vi.mock(
   '@/platform/workflow/management/composables/useWorkflowsSidebarTab',
   () => ({

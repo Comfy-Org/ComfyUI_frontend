@@ -60,7 +60,9 @@ const config: KnipConfig = {
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js',
     // Devtools extensions, included dynamically
-    'tools/devtools/web/**'
+    'tools/devtools/web/**',
+    // Model Library foundation — consumed by the stacked in-node picker PR
+    'src/composables/sidebarTabs/useRecentlyUsedModels.ts'
   ],
   vite: {
     config: ['vite?(.*).config.mts']

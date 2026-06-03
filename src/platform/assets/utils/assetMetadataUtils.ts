@@ -1,3 +1,8 @@
+import {
+  inferBaseModelFromText,
+  refineBaseModelLabels
+} from '@/components/sidebar/tabs/cloudModelLibrary/baseModelInference'
+import { getBaseModelOverrides } from '@/components/sidebar/tabs/cloudModelLibrary/baseModelOverrides'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCivitaiUrl } from '@/utils/formatUtil'
 
@@ -46,13 +51,38 @@ export function getAssetBaseModel(asset: AssetItem): string | null {
  * @returns Array of base model strings
  */
 export function getAssetBaseModels(asset: AssetItem): string[] {
+  const filenameSources = [
+    asset.name,
+    typeof asset.metadata?.filename === 'string'
+      ? asset.metadata.filename
+      : undefined,
+    typeof asset.metadata?.filepath === 'string'
+      ? asset.metadata.filepath
+      : undefined
+  ].filter((s): s is string => Boolean(s))
+
   const baseModel =
     asset.user_metadata?.base_model ?? asset.metadata?.base_model
+  let labels: string[] = []
   if (Array.isArray(baseModel)) {
-    return baseModel.filter((m): m is string => typeof m === 'string')
+    labels = baseModel.filter((m): m is string => typeof m === 'string')
+  } else if (typeof baseModel === 'string' && baseModel) {
+    labels = [baseModel]
+  } else {
+    const repoId = asset.metadata?.repo_id
+    if (typeof repoId === 'string' && repoId) {
+      labels = [...getBaseModelOverrides(repoId)]
+    }
   }
-  if (typeof baseModel === 'string' && baseModel) {
-    return [baseModel]
+
+  // base_model can name the family root (e.g. `Lightricks/LTX-Video`) while the
+  // filename names a specific variant (`LTX_2.3_…`); let inference refine it.
+  if (labels.length > 0) return refineBaseModelLabels(labels, filenameSources)
+
+  // Civitai LoRAs etc. carry no repo_id or base_model — infer from filename.
+  for (const source of filenameSources) {
+    const inferred = inferBaseModelFromText(source)
+    if (inferred) return [inferred]
   }
   return []
 }
@@ -93,19 +123,38 @@ export function getAssetSourceUrl(asset: AssetItem): string | null {
 }
 
 /**
- * Extracts trigger phrases from asset metadata
- * Checks user_metadata first, then metadata, then returns empty array
+ * Extracts trigger phrases from asset metadata.
+ *
+ * Cloud assets expose Civitai-style `trained_words` (an array). Local assets
+ * read from safetensors expose a single `trigger_phrase` string (from the
+ * `modelspec.trigger_phrase` header), so fall back to that when no
+ * `trained_words` are present.
+ *
+ * Values are comma-delimited in the source data, often with trailing-comma
+ * artifacts (e.g. `"freckles,"`). Splitting on commas and trimming yields
+ * clean phrases for both display and copy-to-clipboard.
+ *
+ * Checks user_metadata first, then metadata.
  * @param asset - The asset to extract trigger phrases from
  * @returns Array of trigger phrases
  */
 export function getAssetTriggerPhrases(asset: AssetItem): string[] {
   const phrases =
     asset.user_metadata?.trained_words ?? asset.metadata?.trained_words
-  if (Array.isArray(phrases)) {
-    return phrases.filter((p): p is string => typeof p === 'string')
+  const raw = Array.isArray(phrases)
+    ? phrases.filter((p): p is string => typeof p === 'string')
+    : typeof phrases === 'string' && phrases
+      ? [phrases]
+      : []
+  if (raw.length === 0) {
+    const single =
+      asset.user_metadata?.trigger_phrase ?? asset.metadata?.trigger_phrase
+    if (typeof single === 'string') raw.push(single)
   }
-  if (typeof phrases === 'string') return [phrases]
-  return []
+  return raw
+    .flatMap((entry) => entry.split(','))
+    .map((phrase) => phrase.trim())
+    .filter((phrase) => phrase.length > 0)
 }
 
 /**
