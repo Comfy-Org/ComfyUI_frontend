@@ -24,6 +24,7 @@
 import { computed } from 'vue'
 
 import { assetService } from '@/platform/assets/services/assetService'
+import { isCloud } from '@/platform/distribution/types'
 import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
 import WidgetWithControl from '@/renderer/extensions/vueNodes/widgets/components/WidgetWithControl.vue'
@@ -115,7 +116,11 @@ const isAssetMode = computed(
     (assetService.isAssetAPIEnabled() && props.widget.type === 'asset')
 )
 
-const assetKind = computed(() => specDescriptor.value.kind)
+const assetKind = computed(() =>
+  isAssetMode.value && specDescriptor.value.kind === 'unknown'
+    ? 'model'
+    : specDescriptor.value.kind
+)
 const isDropdownUIWidget = computed(
   () => isAssetMode.value || assetKind.value !== 'unknown'
 )
@@ -125,6 +130,8 @@ const uploadFolder = computed<ResultItemType>(() => {
 })
 const uploadSubfolder = computed(() => specDescriptor.value.subfolder)
 const defaultLayoutMode = computed<LayoutMode>(() => {
-  return isAssetMode.value ? 'list' : 'grid'
+  if (!isAssetMode.value) return 'grid'
+  // Local builds use the compact name-only row; cloud uses the standard list.
+  return isCloud ? 'list' : 'list-small'
 })
 </script>

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, provide, ref, toRef } from 'vue'
+import { computed, provide, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
+import { useRecentlyUsedModels } from '@/composables/sidebarTabs/useRecentlyUsedModels'
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
 import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
 import { useFlatOutputAssets } from '@/platform/assets/composables/media/useFlatOutputAssets'
@@ -14,6 +14,10 @@ import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
+import {
+  getDefaultSortOptions,
+  getModelSortOptions
+} from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/shared'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
@@ -53,12 +57,9 @@ const outputMediaAssets = isCloud
   ? useFlatOutputAssets()
   : useAssetsApi('output')
 
-const transformCompatProps = useTransformCompatOverlayProps()
-
-const combinedProps = computed(() => ({
-  ...filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS),
-  ...transformCompatProps.value
-}))
+const combinedProps = computed(() =>
+  filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)
+)
 
 const getAssetData = () => {
   const nodeType: string | undefined =
@@ -149,6 +150,32 @@ const acceptTypes = computed(() => {
 
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
+const isModel = computed(() => props.assetKind === 'model')
+
+// Models sort/group by base model; other pickers use the recency/name options.
+// Local builds lack reliable base-model metadata, so they drop the base-model
+// sort and list A-Z like the sidebar.
+const sortOptions = computed(() => {
+  if (!isModel.value) return getDefaultSortOptions()
+  const options = getModelSortOptions()
+  if (isCloud) return options
+  return options.filter(
+    (option) =>
+      option.id !== 'base-model-asc' && option.id !== 'base-model-desc'
+  )
+})
+// Cloud models default to base-model grouping; local defaults to A-Z.
+const sortSelected = ref(
+  isModel.value ? (isCloud ? 'base-model-asc' : 'name-asc') : 'default'
+)
+
+// Surface recently-picked models at the top of the grouped model picker.
+const { topNames, markUsed } = useRecentlyUsedModels()
+const pinTopNames = computed(() => (isModel.value ? topNames() : undefined))
+watch(modelValue, (value) => {
+  if (isModel.value && value) markUsed(value)
+})
+
 function handleIsOpenUpdate(isOpen: boolean) {
   if (isOpen && !outputMediaAssets.loading.value) {
     void outputMediaAssets.refresh()
@@ -161,6 +188,7 @@ function handleIsOpenUpdate(isOpen: boolean) {
     <FormDropdown
       v-model:filter-selected="filterSelected"
       v-model:layout-mode="layoutMode"
+      v-model:sort-selected="sortSelected"
       v-model:ownership-selected="ownershipSelected"
       v-model:base-model-selected="baseModelSelected"
       :selected="selectedSet"
@@ -171,10 +199,12 @@ function handleIsOpenUpdate(isOpen: boolean) {
       :uploadable
       :accept="acceptTypes"
       :filter-options
-      :show-ownership-filter
+      :sort-options="sortOptions"
+      :show-ownership-filter="isCloud && showOwnershipFilter"
       :ownership-options
-      :show-base-model-filter
+      :show-base-model-filter="isCloud && showBaseModelFilter"
       :base-model-options
+      :pin-top-names="pinTopNames"
       v-bind="combinedProps"
       class="w-full"
       @update:selected="updateSelectedItems"
