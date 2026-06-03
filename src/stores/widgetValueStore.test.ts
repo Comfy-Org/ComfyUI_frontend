@@ -226,18 +226,20 @@ describe('useWidgetValueStore', () => {
 
   describe('returned state identity', () => {
     const node = 'node-1' as NodeId
-    const sample = widgetState('number', 100)
     const widgetId = wid(graphA, node, 'seed')
 
     it('getWidget returns the same reference as registerWidget', () => {
       const store = useWidgetValueStore()
-      const registered = store.registerWidget(widgetId, sample)
+      const registered = store.registerWidget(
+        widgetId,
+        widgetState('number', 100)
+      )
       expect(store.getWidget(widgetId)).toBe(registered)
     })
 
     it('cached references detach safely after clearGraph', () => {
       const store = useWidgetValueStore()
-      const view = store.registerWidget(widgetId, sample)
+      const view = store.registerWidget(widgetId, widgetState('number', 100))
       store.clearGraph(graphA)
       view.value = 999
       view.label = 'ignored'
