@@ -7,13 +7,7 @@ import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
-import {
-  resolveConcretePromotedWidget,
-  resolvePromotedWidgetSource
-} from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type {
   INodeInputSlot,
@@ -147,18 +141,6 @@ export interface GraphNodeManager {
   cleanup(): void
 }
 
-function isPromotedDOMWidget(widget: IBaseWidget): boolean {
-  if (!isPromotedWidgetView(widget)) return false
-  const sourceWidget = resolvePromotedWidgetSource(widget.node, widget)
-  if (!sourceWidget) return false
-
-  const innerWidget = sourceWidget.widget
-  return (
-    ('element' in innerWidget && !!innerWidget.element) ||
-    ('component' in innerWidget && !!innerWidget.component)
-  )
-}
-
 export function getControlWidget(
   widget: IBaseWidget
 ): SafeControlWidget | undefined {
@@ -242,54 +224,9 @@ function safeWidgetMapper(
   node: LGraphNode,
   slotMetadata: Map<string, WidgetSlotMetadata>
 ): (widget: IBaseWidget) => SafeWidgetData {
-  function resolvePromotedSourceByInputName(
-    inputName: string
-  ): PromotedWidgetSource | null {
-    const resolvedTarget = resolveSubgraphInputTarget(node, inputName)
-    if (!resolvedTarget) return null
-
-    return {
-      sourceNodeId: resolvedTarget.nodeId,
-      sourceWidgetName: resolvedTarget.widgetName
-    }
-  }
-
-  function resolvePromotedWidgetIdentity(widget: IBaseWidget): {
-    displayName: string
-    promotedSource: PromotedWidgetSource | null
-  } {
-    if (!isPromotedWidgetView(widget)) {
-      return {
-        displayName: widget.name,
-        promotedSource: null
-      }
-    }
-
-    const matchedInput = matchPromotedInput(node.inputs, widget)
-    const promotedInputName = matchedInput?.name
-    const displayName = promotedInputName ?? widget.name
-    const directSource: PromotedWidgetSource = {
-      sourceNodeId: widget.sourceNodeId,
-      sourceWidgetName: widget.sourceWidgetName
-    }
-    const promotedSource =
-      matchedInput?._widget === widget
-        ? (resolvePromotedSourceByInputName(displayName) ?? directSource)
-        : directSource
-
-    return {
-      displayName,
-      promotedSource
-    }
-  }
-
   return function (widget) {
     try {
-      const { displayName, promotedSource } =
-        resolvePromotedWidgetIdentity(widget)
-
-      const slotInfo =
-        slotMetadata.get(displayName) ?? slotMetadata.get(widget.name)
+      const slotInfo = slotMetadata.get(widget.name)
 
       // Wrapper callback specific to Nodes 2.0 rendering
       const callback = (v: unknown) => {
@@ -303,71 +240,17 @@ function safeWidgetMapper(
         node.widgets?.forEach((w) => w.triggerDraw?.())
       }
 
-      const isPromotedPseudoWidget =
-        isPromotedWidgetView(widget) && widget.sourceWidgetName.startsWith('$$')
-
-      // Extract only render-critical options (canvasOnly, advanced, read_only)
-      const options = extractWidgetDisplayOptions(widget)
-      const subgraphId = node.isSubgraphNode() && node.subgraph.id
-
-      const resolvedSourceResult =
-        isPromotedWidgetView(widget) && promotedSource
-          ? resolveConcretePromotedWidget(
-              node,
-              promotedSource.sourceNodeId,
-              promotedSource.sourceWidgetName
-            )
-          : null
-      const resolvedSource =
-        resolvedSourceResult?.status === 'resolved'
-          ? resolvedSourceResult.resolved
-          : undefined
-      const sourceWidget = resolvedSource?.widget
-      const sourceNode = resolvedSource?.node
-
-      const effectiveWidget = sourceWidget ?? widget
-      const sharedEnhancements = getSharedWidgetEnhancements(
-        node,
-        effectiveWidget
-      )
-
-      const localId = isPromotedWidgetView(widget)
-        ? String(sourceNode?.id ?? promotedSource?.sourceNodeId)
-        : undefined
-      const nodeId =
-        subgraphId && localId ? `${subgraphId}:${localId}` : undefined
-      const sourceWidgetName = isPromotedWidgetView(widget)
-        ? (sourceWidget?.name ?? promotedSource?.sourceWidgetName)
-        : undefined
-      const name = sourceWidgetName ?? displayName
-
-      if (isPromotedWidgetView(widget)) widget.ensureHostWidgetState()
-
       return {
         widgetId: getWidgetIdForNode(node, widget),
-        nodeId,
-        name,
-        type: effectiveWidget.type,
-        ...sharedEnhancements,
+        name: widget.name,
+        type: widget.type,
+        ...getSharedWidgetEnhancements(node, widget),
         callback,
-        hasLayoutSize: typeof effectiveWidget.computeLayoutSize === 'function',
-        isDOMWidget: isDOMWidget(widget) || isPromotedDOMWidget(widget),
-        options: isPromotedPseudoWidget
-          ? {
-              ...(extractWidgetDisplayOptions(effectiveWidget) ?? options),
-              canvasOnly: true
-            }
-          : (extractWidgetDisplayOptions(effectiveWidget) ?? options),
+        hasLayoutSize: typeof widget.computeLayoutSize === 'function',
+        isDOMWidget: isDOMWidget(widget),
+        options: extractWidgetDisplayOptions(widget),
         slotMetadata: slotInfo,
-        // For promoted widgets, name is sourceWidgetName while widget.name
-        // is the subgraph input slot name — store the slot name for lookups.
-        slotName: name !== widget.name ? widget.name : undefined,
-        sourceExecutionId:
-          sourceNode && app.rootGraph
-            ? (getExecutionIdByNode(app.rootGraph, sourceNode) ?? undefined)
-            : undefined,
-        tooltip: widget.tooltip,
-        promotedLabel: isPromotedWidgetView(widget) ? widget.label : undefined
+        tooltip: widget.tooltip
       }
     } catch (error) {
       console.warn(

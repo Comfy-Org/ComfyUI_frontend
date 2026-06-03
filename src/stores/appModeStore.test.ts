@@ -5,8 +5,17 @@ import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
-import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphNode as LGraphNodeClass,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { widgetId } from '@/world/entityIds'
 import type {
   InputWidgetConfig,
   LinearInput,
@@ -804,33 +813,38 @@ describe('appModeStore', () => {
     const rootGraphId = '11111111-1111-4111-8111-111111111111'
 
     it('migrates legacy `(sourceNodeId, sourceWidgetName)` to the host promoted widget entity id', () => {
-      const hostId = 5
-      const sourceNodeId = 42
       const subgraphInputName = 'Prompt'
       const sourceWidgetName = 'text'
-      const promotedEntityId =
-        `${rootGraphId}:${hostId}:${subgraphInputName}` as WidgetId
-      const hostWidget = {
-        name: subgraphInputName,
-        sourceNodeId: String(sourceNodeId),
-        sourceWidgetName,
-        widgetId: promotedEntityId
-      }
-      const hostNode = Object.assign(Object.create(SubgraphNode.prototype), {
-        id: hostId,
-        inputs: [{ name: subgraphInputName, _widget: hostWidget }],
-        widgets: [hostWidget],
-        isSubgraphNode: () => true
-      }) as SubgraphNode
 
-      vi.mocked(app.rootGraph).id = rootGraphId
-      vi.mocked(app.rootGraph).nodes = [hostNode]
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: subgraphInputName, type: 'STRING' }]
+      })
+      const interior = new LGraphNodeClass('Interior')
+      const interiorInput = interior.addInput(subgraphInputName, 'STRING')
+      interior.addWidget('string', sourceWidgetName, '', () => undefined)
+      interiorInput.widget = { name: sourceWidgetName }
+      subgraph.add(interior)
+      subgraph.inputNode.slots[0].connect(interiorInput, interior)
+
+      const host = createTestSubgraphNode(subgraph, { id: 5 })
+      const rootGraph = host.graph as LGraph
+      rootGraph.add(host)
+      host._internalConfigureAfterSlots()
+
+      const promotedEntityId = widgetId(
+        rootGraph.id,
+        host.id,
+        subgraphInputName
+      )
+
+      vi.mocked(app.rootGraph).id = rootGraph.id
+      vi.mocked(app.rootGraph).nodes = rootGraph.nodes
       vi.mocked(app.rootGraph).getNodeById = vi.fn(
-        (id: NodeId | null | undefined) => (id == hostId ? hostNode : null)
+        (id: NodeId | null | undefined) => rootGraph.getNodeById(id as NodeId)
       )
 
       const result = store.pruneLinearData({
-        inputs: [[sourceNodeId, sourceWidgetName, { height: 120 }]],
+        inputs: [[interior.id, sourceWidgetName, { height: 120 }]],
         outputs: []
       })
 

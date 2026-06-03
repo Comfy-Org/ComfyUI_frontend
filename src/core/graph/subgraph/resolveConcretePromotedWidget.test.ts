@@ -2,10 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
-import {
-  resolveConcretePromotedWidget,
-  resolvePromotedWidgetAtHost
-} from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import {
@@ -40,32 +37,6 @@ function addConcreteWidget(node: LGraphNode, name: string): IBaseWidget {
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
-})
-
-describe('resolvePromotedWidgetAtHost', () => {
-  test('resolves a direct concrete widget on the host subgraph node', () => {
-    const host = createHostNode(100)
-    const concreteNode = addNodeToHost(host, 'leaf')
-    addConcreteWidget(concreteNode, 'seed')
-
-    const resolved = resolvePromotedWidgetAtHost(
-      host,
-      String(concreteNode.id),
-      'seed'
-    )
-
-    expect(resolved).toBeDefined()
-    expect(resolved?.node.id).toBe(concreteNode.id)
-    expect(resolved?.widget.name).toBe('seed')
-  })
-
-  test('returns undefined when host does not contain the target node', () => {
-    const host = createHostNode(100)
-
-    const resolved = resolvePromotedWidgetAtHost(host, 'missing', 'seed')
-
-    expect(resolved).toBeUndefined()
-  })
 })
 
 describe('resolveConcretePromotedWidget', () => {

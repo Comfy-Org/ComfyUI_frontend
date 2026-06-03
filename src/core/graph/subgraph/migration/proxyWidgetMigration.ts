@@ -1,6 +1,5 @@
 import { isEqual } from 'es-toolkit/compat'
 
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   findHostInputForPromotion,
@@ -92,8 +91,7 @@ export function normalizeLegacyProxyWidgetEntry(
 
 function resolveSourceWidget(
   sourceNode: LGraphNode,
-  sourceWidgetName: string,
-  disambiguatingSourceNodeId?: string
+  sourceWidgetName: string
 ): IBaseWidget | undefined {
   if (sourceNode.isSubgraphNode()) {
     const input = sourceNode.inputs.find((input) => {
@@ -120,22 +118,6 @@ function resolveSourceWidget(
   }
 
   const widgets = sourceNode.widgets
-  if (widgets && disambiguatingSourceNodeId !== undefined) {
-    const byDisambiguator = widgets.find(
-      (w) =>
-        isPromotedWidgetView(w) &&
-        w.sourceNodeId === disambiguatingSourceNodeId &&
-        w.sourceWidgetName === sourceWidgetName
-    )
-    if (byDisambiguator) return byDisambiguator
-    // Disambiguator missed: fall back only to non-promoted same-name widgets.
-    // A sibling PromotedWidgetView would re-introduce the cross-binding bug.
-    const byName = widgets.find(
-      (w) => !isPromotedWidgetView(w) && w.name === sourceWidgetName
-    )
-    if (byName) return byName
-  }
-
   return (
     widgets?.find((w) => w.name === sourceWidgetName) ??
     getPromotableWidgets(sourceNode).find((w) => w.name === sourceWidgetName)
@@ -326,19 +308,6 @@ function classify(
     normalized.sourceWidgetName
   )
   if (linkedInput) {
-    const ambiguous =
-      hostNode.inputs.filter((input) => {
-        const w = input._widget
-        return (
-          !!w &&
-          isPromotedWidgetView(w) &&
-          w.sourceNodeId === normalized.sourceNodeId &&
-          w.sourceWidgetName === normalized.sourceWidgetName
-        )
-      }).length > 1
-    if (ambiguous) {
-      return { kind: 'quarantine', reason: 'ambiguousSubgraphInput' }
-    }
     return { kind: 'alreadyLinked', subgraphInputName: linkedInput.name }
   }
 
@@ -376,8 +345,7 @@ function classify(
 
   const sourceWidget = resolveSourceWidget(
     sourceNode,
-    normalized.sourceWidgetName,
-    normalized.disambiguatingSourceNodeId
+    normalized.sourceWidgetName
   )
   if (!sourceWidget) {
     return { kind: 'quarantine', reason: 'missingSourceWidget' }
@@ -399,29 +367,10 @@ function classify(
   }
 }
 
-function applyHostValue(widget: IBaseWidget, entry: PendingEntry): void {
-  if (entry.isHole) return
-  if (
-    isPromotedWidgetView(widget) &&
-    typeof widget.hydrateHostValue === 'function'
-  ) {
-    widget.hydrateHostValue(entry.hostValue)
-    return
-  }
-  console.error(
-    '[proxyWidgetMigration] applyHostValue called with non-promoted widget; refusing to write to shared interior',
-    { widgetName: widget.name, type: widget.type }
-  )
-}
-
 function applyHostValueToInput(
   input: INodeInputSlot,
   entry: PendingEntry
 ): boolean {
-  if (input._widget) {
-    applyHostValue(input._widget, entry)
-    return true
-  }
   if (!input.widgetId || entry.isHole) return Boolean(input.widgetId)
   return useWidgetValueStore().setValue(input.widgetId, entry.hostValue)
 }
@@ -479,11 +428,7 @@ function repairCreateSubgraphInput(
     return { ok: false, reason: 'missingSourceNode' }
   }
 
-  const sourceWidget = resolveSourceWidget(
-    sourceNode,
-    sourceWidgetName,
-    entry.normalized.disambiguatingSourceNodeId
-  )
+  const sourceWidget = resolveSourceWidget(sourceNode, sourceWidgetName)
   if (!sourceWidget) {
     return { ok: false, reason: 'missingSourceWidget' }
   }

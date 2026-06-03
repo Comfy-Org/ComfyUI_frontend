@@ -1,7 +1,6 @@
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import * as Sentry from '@sentry/vue'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -49,16 +48,6 @@ export function findHostInputForPromotion(
   sourceWidgetName: string
 ) {
   return subgraphNode.inputs.find((input) => {
-    const view = input._widget
-    if (
-      view &&
-      isPromotedWidgetView(view) &&
-      view.sourceNodeId === sourceNodeId &&
-      view.sourceWidgetName === sourceWidgetName
-    ) {
-      return true
-    }
-
     const source = input._subgraphSlot
       ? resolvePromotionSource(subgraphNode, input._subgraphSlot)
       : undefined
@@ -222,13 +211,9 @@ function toPromotionSource(
   node: PartialNode,
   widget: IBaseWidget
 ): PromotedWidgetSource {
-  const widgetIsParentLevelView =
-    isPromotedWidgetView(widget) && widget.sourceNodeId === String(node.id)
   return {
     sourceNodeId: String(node.id),
-    sourceWidgetName: widgetIsParentLevelView
-      ? widget.sourceWidgetName
-      : getWidgetName(widget)
+    sourceWidgetName: getWidgetName(widget)
   }
 }
 

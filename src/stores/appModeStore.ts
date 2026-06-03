@@ -17,7 +17,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
@@ -121,17 +121,15 @@ export const useAppModeStore = defineStore('appMode', () => {
     const matches: LinearInput[] = rootGraph.nodes.flatMap((node) => {
       if (!(node instanceof SubgraphNode)) return []
       return node.inputs.flatMap((inputSlot): LinearInput[] => {
-        const widget = inputSlot._widget
-        if (!widget || !isPromotedWidgetView(widget)) return []
+        if (!inputSlot.widgetId) return []
+        const target = resolveSubgraphInputTarget(node, inputSlot.name)
         if (
-          widget.sourceNodeId !== String(storedId) ||
-          widget.sourceWidgetName !== widgetName
+          target?.nodeId !== String(storedId) ||
+          target.widgetName !== widgetName
         ) {
           return []
         }
-        return widget.widgetId
-          ? [buildEntry(widget.widgetId, inputSlot.name, config)]
-          : []
+        return [buildEntry(inputSlot.widgetId, inputSlot.name, config)]
       })
     })
     if (matches.length === 1) return matches[0]

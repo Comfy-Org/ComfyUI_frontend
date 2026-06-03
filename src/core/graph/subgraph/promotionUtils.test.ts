@@ -4,13 +4,13 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
-import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/world/entityIds'
@@ -89,11 +89,9 @@ import {
   autoExposeKnownPreviewNodes,
   demoteWidget,
   getPromotableWidgets,
-  getWidgetName,
   hasUnpromotedWidgets,
   isLinkedPromotion,
   isPreviewPseudoWidget,
-  isWidgetPromotedOnSubgraphNode,
   promoteValueWidgetViaSubgraphInput,
   promoteRecommendedWidgets,
   pruneDisconnected,
@@ -546,79 +544,45 @@ describe('isLinkedPromotion', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  function linkedWidget(
-    sourceNodeId: string,
-    sourceWidgetName: string,
-    extra: Record<string, unknown> = {}
-  ): IBaseWidget {
-    return {
-      sourceNodeId,
-      sourceWidgetName,
-      name: 'value',
-      type: 'text',
-      value: '',
-      options: {},
-      y: 0,
-      ...extra
-    } as unknown as IBaseWidget
+  function promoteSource(host: SubgraphNode, widgetName: string): LGraphNode {
+    const node = new LGraphNode('Source')
+    const input = node.addInput(widgetName, 'STRING')
+    const widget = node.addWidget('text', widgetName, '', () => {})
+    input.widget = { name: widget.name }
+    host.subgraph.add(node)
+    promoteValueWidgetViaSubgraphInput(host, node, widget)
+    return node
   }
 
-  function createSubgraphWithInputs(count = 1) {
-    const subgraph = createTestSubgraph({
-      inputs: Array.from({ length: count }, (_, i) => ({
-        name: `input_${i}`,
-        type: 'STRING' as const
-      }))
-    })
-    return createTestSubgraphNode(subgraph)
-  }
+  it('returns true for a linked promotion', () => {
+    const host = createTestSubgraphNode(createTestSubgraph())
+    const node = promoteSource(host, 'text')
 
-  it('returns true when an input has a matching _widget', () => {
-    const subgraphNode = createSubgraphWithInputs()
-    subgraphNode.inputs[0]._widget = linkedWidget('3', 'text')
-
-    expect(isLinkedPromotion(subgraphNode, '3', 'text')).toBe(true)
+    expect(isLinkedPromotion(host, String(node.id), 'text')).toBe(true)
   })
 
-  it('returns false when no inputs exist or none match', () => {
-    const subgraph = createTestSubgraph()
-    const subgraphNode = createTestSubgraphNode(subgraph)
+  it('returns false when no promotion exists', () => {
+    const host = createTestSubgraphNode(createTestSubgraph())
 
-    expect(isLinkedPromotion(subgraphNode, '999', 'nonexistent')).toBe(false)
+    expect(isLinkedPromotion(host, '999', 'nonexistent')).toBe(false)
   })
 
-  it('returns false when sourceNodeId matches but sourceWidgetName does not', () => {
-    const subgraphNode = createSubgraphWithInputs()
-    subgraphNode.inputs[0]._widget = linkedWidget('3', 'text')
+  it('returns false when sourceWidgetName does not match', () => {
+    const host = createTestSubgraphNode(createTestSubgraph())
+    const node = promoteSource(host, 'text')
 
-    expect(isLinkedPromotion(subgraphNode, '3', 'wrong_name')).toBe(false)
+    expect(isLinkedPromotion(host, String(node.id), 'wrong_name')).toBe(false)
   })
 
-  it('returns false when _widget is undefined on input', () => {
-    const subgraphNode = createSubgraphWithInputs()
+  it('identifies linked widgets across different inputs', () => {
+    const host = createTestSubgraphNode(createTestSubgraph())
+    const nodeA = promoteSource(host, 'string_a')
+    const nodeB = promoteSource(host, 'value')
 
-    expect(isLinkedPromotion(subgraphNode, '3', 'text')).toBe(false)
-  })
-
-  it('matches by sourceNodeId even when disambiguatingSourceNodeId is present', () => {
-    const subgraphNode = createSubgraphWithInputs()
-    subgraphNode.inputs[0]._widget = linkedWidget('6', 'text', {
-      disambiguatingSourceNodeId: '1'
-    })
-
-    expect(isLinkedPromotion(subgraphNode, '6', 'text')).toBe(true)
-    expect(isLinkedPromotion(subgraphNode, '1', 'text')).toBe(false)
-  })
-
-  it('identifies multiple linked widgets across different inputs', () => {
-    const subgraphNode = createSubgraphWithInputs(2)
-    subgraphNode.inputs[0]._widget = linkedWidget('3', 'string_a')
-    subgraphNode.inputs[1]._widget = linkedWidget('4', 'value')
-
-    expect(isLinkedPromotion(subgraphNode, '3', 'string_a')).toBe(true)
-    expect(isLinkedPromotion(subgraphNode, '4', 'value')).toBe(true)
-    expect(isLinkedPromotion(subgraphNode, '3', 'value')).toBe(false)
-    expect(isLinkedPromotion(subgraphNode, '5', 'string_a')).toBe(false)
+    expect(isLinkedPromotion(host, String(nodeA.id), 'string_a')).toBe(true)
+    expect(isLinkedPromotion(host, String(nodeB.id), 'value')).toBe(true)
+    expect(isLinkedPromotion(host, String(nodeA.id), 'value')).toBe(false)
+    expect(isLinkedPromotion(host, '5', 'string_a')).toBe(false)
   })
 })
 
@@ -869,15 +833,7 @@ describe('demoteWidget — axiomatic projection retraction', () => {
     const { host, nodeA, widgetA, nodeB, widgetB } =
       buildDuplicateNamePromotion()
 
-    const promotedViewForB = createPromotedWidgetView(
-      host,
-      String(nodeB.id),
-      widgetB.name,
-      'text_1',
-      'text_1'
-    )
-
-    demoteWidget(nodeB, promotedViewForB, [host])
+    demoteWidget(nodeB, widgetB, [host])
 
     expect(host.subgraph.inputs.map((i) => i.name)).toEqual(['text'])
     expect(isLinkedPromotion(host, String(nodeB.id), widgetB.name)).toBe(false)
@@ -905,15 +861,9 @@ describe('demoteWidget — axiomatic projection retraction', () => {
       'text_1'
     ])
 
-    const innerViewForB = createPromotedWidgetView(
-      innerHost,
-      String(innerHost.id),
-      'text_1',
-      'text_1',
-      'text_1'
-    )
-
-    demoteWidget(innerHost, innerViewForB, [outerHost])
+    demoteWidget(innerHost, nestedPromotedWidgetRef(innerHost, 'text_1'), [
+      outerHost
+    ])
 
     expect(outerHost.subgraph.inputs.map((i) => i.name)).toEqual(['text'])
     expect(isLinkedPromotion(outerHost, String(innerHost.id), 'text_1')).toBe(
@@ -928,51 +878,6 @@ describe('demoteWidget — axiomatic projection retraction', () => {
 describe('disambiguated nested promotion identity', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  function linkedView(
-    sourceNodeId: string,
-    sourceWidgetName: string,
-    overrides: Record<string, unknown> = {}
-  ): IBaseWidget {
-    return {
-      sourceNodeId,
-      sourceWidgetName,
-      name: sourceWidgetName,
-      type: 'text',
-      value: '',
-      options: {},
-      y: 0,
-      ...overrides
-    } as unknown as IBaseWidget
-  }
-
-  function createSubgraphHost() {
-    const subgraph = createTestSubgraph({
-      inputs: [{ name: 'text_1', type: 'STRING' }]
-    })
-    return createTestSubgraphNode(subgraph)
-  }
-
-  it('identifies a promoted nested view by its immediate slot name, not its deep source widget name', () => {
-    const host = createSubgraphHost()
-    host.inputs[0]._widget = linkedView('inner', 'text_1')
-
-    const interiorWidget = linkedView('inner', 'text', { name: 'text_1' })
-    const interiorNode = {
-      id: 'inner',
-      title: 'inner',
-      type: 'inner'
-    } as unknown as LGraphNode
-
-    const source = {
-      sourceNodeId: String(interiorNode.id),
-      sourceWidgetName: getWidgetName(interiorWidget)
-    }
-
-    expect(isWidgetPromotedOnSubgraphNode(host, source, interiorWidget)).toBe(
-      true
-    )
   })
 
   it('does not prune a promotion whose source is a nested SubgraphNode exposing a disambiguated widget', () => {

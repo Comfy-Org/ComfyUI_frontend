@@ -1,7 +1,6 @@
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type {
   LGraphGroup,
   LGraphNode,
@@ -265,16 +264,8 @@ export function useMoreOptionsMenu() {
       options.push(...getImageMenuOptions(selectedNodes.value[0]))
       options.push({ type: 'divider' })
     }
-    const [widgetName, nodeId] = hoveredWidget.value ?? []
-    const widget =
-      nodeId !== undefined
-        ? node?.widgets?.find(
-            (w) =>
-              isPromotedWidgetView(w) &&
-              w.sourceWidgetName === widgetName &&
-              w.sourceNodeId === nodeId
-          )
-        : node?.widgets?.find((w) => w.name === widgetName)
+    const [widgetName] = hoveredWidget.value ?? []
+    const widget = node?.widgets?.find((w) => w.name === widgetName)
     if (widget) {
       const widgetOptions = convertContextMenuToOptions(
         getExtraOptionsForWidget(node, widget)

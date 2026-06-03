@@ -1,5 +1,4 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -21,7 +20,6 @@ import {
   normalizeLegacyProxyWidgetEntry,
   readHostQuarantine
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
-import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -65,41 +63,6 @@ function getPromotedInputValue(
   return useWidgetValueStore().getWidget(input.widgetId)?.value as
     | TWidgetValue
     | undefined
-}
-
-function addPromotedHostInput(
-  host: SubgraphNode,
-  args: {
-    inputName: string
-    promotedName: string
-    sourceNodeId: string
-    sourceWidgetName: string
-    initialValue?: TWidgetValue
-  }
-): { setValue: (v: TWidgetValue) => void; getValue: () => TWidgetValue } {
-  let widgetValue: TWidgetValue = args.initialValue ?? 0
-  const slot = host.addInput(args.inputName, '*')
-  slot._widget = fromPartial<PromotedWidgetView>({
-    node: host,
-    name: args.promotedName,
-    sourceNodeId: args.sourceNodeId,
-    sourceWidgetName: args.sourceWidgetName,
-    get value() {
-      return widgetValue
-    },
-    set value(v: TWidgetValue) {
-      widgetValue = v
-    },
-    hydrateHostValue(v: TWidgetValue) {
-      widgetValue = v
-    }
-  })
-  return {
-    setValue: (v) => {
-      widgetValue = v
-    },
-    getValue: () => widgetValue
-  }
 }
 
 function addPrimitiveWithTargets(
@@ -153,29 +116,6 @@ describe('flushProxyWidgetMigration', () => {
   })
 
   describe('value-widget repair', () => {
-    it('alreadyLinked: applies host value to the matching promoted widget', () => {
-      const host = buildHost()
-      const inner = addInnerNode(host, 'Inner', (n) => {
-        n.addWidget('number', 'seed', 0, () => {})
-      })
-      const handle = addPromotedHostInput(host, {
-        inputName: 'seed_link',
-        promotedName: 'seed',
-        sourceNodeId: String(inner.id),
-        sourceWidgetName: 'seed',
-        initialValue: 0
-      })
-
-      host.properties.proxyWidgets = [[String(inner.id), 'seed']]
-      flushProxyWidgetMigration({
-        hostNode: host,
-        hostWidgetValues: [99]
-      })
-
-      expect(handle.getValue()).toBe(99)
-      expect(host.properties.proxyWidgets).toBeUndefined()
-    })
-
     it('alreadyLinked: hydrates real promoted widget without mutating the interior widget', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'seed', type: 'INT' }]
@@ -201,17 +141,17 @@ describe('flushProxyWidgetMigration', () => {
     })
 
     it('alreadyLinked: leaves widget value unchanged when host value is a sparse hole', () => {
-      const host = buildHost()
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'seed', type: 'INT' }]
+      })
+      const host = createTestSubgraphNode(subgraph)
+      host.graph!.add(host)
       const inner = addInnerNode(host, 'Inner', (n) => {
-        n.addWidget('number', 'seed', 0, () => {})
+        const slot = n.addInput('seed', 'INT')
+        const innerWidget = n.addWidget('number', 'seed', 7, () => {})
+        slot.widget = { name: innerWidget.name }
       })
-      const handle = addPromotedHostInput(host, {
-        inputName: 'seed_link',
-        promotedName: 'seed',
-        sourceNodeId: String(inner.id),
-        sourceWidgetName: 'seed',
-        initialValue: 7
-      })
+      subgraph.inputNode.slots[0].connect(inner.inputs[0], inner)
 
       host.properties.proxyWidgets = [[String(inner.id), 'seed']]
       const sparse: unknown[] = []
@@ -220,43 +160,7 @@ describe('flushProxyWidgetMigration', () => {
         hostWidgetValues: sparse
       })
 
-      expect(handle.getValue()).toBe(7)
-    })
-
-    it('alreadyLinked: ambiguous matching inputs quarantine without applying host value', () => {
-      const host = buildHost()
-      const inner = addInnerNode(host, 'Inner', (n) => {
-        n.addWidget('number', 'seed', 0, () => {})
-      })
-      const a = addPromotedHostInput(host, {
-        inputName: 'first_seed',
-        promotedName: 'seed',
-        sourceNodeId: String(inner.id),
-        sourceWidgetName: 'seed',
-        initialValue: 1
-      })
-      const b = addPromotedHostInput(host, {
-        inputName: 'second_seed',
-        promotedName: 'seed',
-        sourceNodeId: String(inner.id),
-        sourceWidgetName: 'seed',
-        initialValue: 2
-      })
-
-      host.properties.proxyWidgets = [[String(inner.id), 'seed']]
-      flushProxyWidgetMigration({
-        hostNode: host,
-        hostWidgetValues: [99]
-      })
-
-      expect(a.getValue()).toBe(1)
-      expect(b.getValue()).toBe(2)
-      expect(readHostQuarantine(host)).toEqual([
-        expect.objectContaining({
-          originalEntry: [String(inner.id), 'seed'],
-          reason: 'ambiguousSubgraphInput'
-        })
-      ])
+      expect(getPromotedInputValue(host, 'seed')).toBe(7)
     })
 
     it('createSubgraphInput: creates exactly one new SubgraphInput linked to the source widget', () => {
@@ -274,31 +178,6 @@ describe('flushProxyWidgetMigration', () => {
       expect(host.subgraph.inputs).toHaveLength(inputCountBefore + 1)
       const created = host.subgraph.inputs.at(-1)
       expect(created?._widget).toBeDefined()
-    })
-
-    it('createSubgraphInput: honors disambiguatingSourceNodeId when source widget name has been deduplicated', () => {
-      const host = buildHost()
-      const inner = addInnerNode(host, 'InnerWithDedupedPromotion', (n) => {
-        const slot1 = n.addInput('text', 'STRING')
-        slot1.widget = { name: 'text' }
-        const w1 = n.addWidget('text', 'text', '11111111111', () => {})
-        Object.assign(w1, { sourceNodeId: '1', sourceWidgetName: 'text' })
-
-        const slot2 = n.addInput('text_1', 'STRING')
-        slot2.widget = { name: 'text_1' }
-        const w2 = n.addWidget('text', 'text_1', '22222222222', () => {})
-        Object.assign(w2, { sourceNodeId: '2', sourceWidgetName: 'text' })
-      })
-
-      host.properties.proxyWidgets = [[String(inner.id), 'text', '2']]
-      flushProxyWidgetMigration({ hostNode: host })
-
-      const created = host.subgraph.inputs.at(-1)
-      expect(created?._widget).toBeDefined()
-      const linkedSlot = inner.inputs.find(
-        (slot) => slot.link === created?.linkIds[0]
-      )
-      expect(linkedSlot?.name).toBe('text_1')
     })
 
     it('createSubgraphInput: quarantines missingSubgraphInput when source widget has no backing input slot', () => {

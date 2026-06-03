@@ -14,7 +14,6 @@ import {
   makeQuarantineEntry
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { reorderSubgraphInputsByName } from '@/core/graph/subgraph/promotionUtils'
-import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
@@ -114,15 +113,6 @@ function writePromotedWidgetValue(
   const input = promotedInputs(node)[index]
   if (!input) throw new Error(`Missing promoted input ${index}`)
   useWidgetValueStore().setValue(input.widgetId, value)
-}
-
-function getPromotedWidgetId(
-  node: { inputs: Array<{ widgetId?: WidgetId; name: string }> },
-  index: number
-): WidgetId {
-  const input = promotedInputs(node)[index]
-  if (!input) throw new Error(`Missing promoted input ${index}`)
-  return input.widgetId
 }
 
 beforeEach(() => {
@@ -853,13 +843,9 @@ describe('SubgraphWidgetPromotion', () => {
         controlMarker: boolean
         seedHostValue: number
         mutateSourceSeedAfterReorder?: number
-        callAfterQueued?: boolean
         expect: {
           promptSeed?: number
           sourceSeed?: number
-          processedSeedValue?: number
-          hostSeedValue?: number
-          storeSeedValue?: number
         }
       }
 
@@ -880,25 +866,6 @@ describe('SubgraphWidgetPromotion', () => {
           controlMarker: false,
           seedHostValue: 123456,
           expect: { sourceSeed: 0 }
-        },
-        {
-          name: 'Vue + increment + afterQueued: processed widgets reflect increment',
-          editVia: 'vue',
-          controlMode: 'increment',
-          controlMarker: true,
-          seedHostValue: 123456,
-          callAfterQueued: true,
-          expect: { processedSeedValue: 123457 }
-        },
-        {
-          name: 'ViewKey + increment + afterQueued: host seed increments without source value',
-          editVia: 'viewKey',
-          controlMode: 'increment',
-          controlMarker: true,
-          seedHostValue: 2,
-          mutateSourceSeedAfterReorder: 8,
-          callAfterQueued: true,
-          expect: { hostSeedValue: 3, storeSeedValue: 3 }
         }
       ]
 
@@ -929,14 +896,6 @@ describe('SubgraphWidgetPromotion', () => {
         if (c.mutateSourceSeedAfterReorder !== undefined) {
           seed.widget.value = c.mutateSourceSeedAfterReorder
         }
-        const seedView = createPromotedWidgetView(
-          host,
-          String(seed.node.id),
-          seed.widget.name,
-          'seed',
-          'seed'
-        )
-        if (c.callAfterQueued) seedView.afterQueued?.()
 
         if (c.expect.promptSeed !== undefined) {
           const { output } = await graphToPrompt(host.rootGraph)
@@ -947,59 +906,6 @@ describe('SubgraphWidgetPromotion', () => {
         if (c.expect.sourceSeed !== undefined) {
           expect(seed.widget.value).toBe(c.expect.sourceSeed)
         }
-        if (c.expect.processedSeedValue !== undefined) {
-          expect(
-            useWidgetValueStore().getWidget(getPromotedWidgetId(host, 1))?.value
-          ).toBe(c.expect.processedSeedValue)
-        }
-        if (c.expect.hostSeedValue !== undefined) {
-          expect(
-            useWidgetValueStore().getWidget(getPromotedWidgetId(host, 1))?.value
-          ).toBe(c.expect.hostSeedValue)
-        }
-        if (c.expect.storeSeedValue !== undefined) {
-          expect(
-            useWidgetValueStore()
-              .getNodeWidgets(host.rootGraph.id, host.id)
-              .find((entry) => entry.name === 'seed')?.value
-          ).toBe(c.expect.storeSeedValue)
-        }
-      })
-
-      it('afterQueued does not run value-control when the host input is externally linked', () => {
-        const subgraph = createTestSubgraph()
-        const sources = buildSources(
-          subgraph,
-          TEXT_TEXT_SEED.map((s) =>
-            s.title === 'Sampler' ? { ...s, hugeMaxSeed: true } : s
-          )
-        )
-        const seed = sources[2]
-        const host = createTestSubgraphNode(subgraph)
-
-        seed.widget.linkedWidgets = [
-          makeControlWidget('increment', true) as never
-        ]
-        writePromotedWidgetValue(host, 2, 2)
-        reorderSubgraphInputsByName(host, ['text_1', 'seed', 'text'])
-
-        const seedSlot = host.inputs.find((input) => input.name === 'seed')
-        expect(seedSlot).toBeDefined()
-        if (!seedSlot) throw new Error('Missing seed slot')
-        seedSlot.link = -1
-
-        const seedView = createPromotedWidgetView(
-          host,
-          String(seed.node.id),
-          seed.widget.name,
-          'seed',
-          'seed'
-        )
-        seedView.afterQueued?.()
-
-        expect(
-          useWidgetValueStore().getWidget(getPromotedWidgetId(host, 1))?.value
-        ).toBe(2)
       })
 
       it('serializes promoted values from each host independently', () => {

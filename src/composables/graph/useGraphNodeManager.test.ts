@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
-import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { widgetId } from '@/world/entityIds'
 import {
@@ -211,43 +210,29 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     expect(widgetData?.slotMetadata?.linked).toBe(true)
   })
 
-  it('resolves slotMetadata for promoted widgets where SafeWidgetData.name differs from input.widget.name', () => {
-    // Set up a subgraph with an interior node that has a "prompt" widget.
-    // createPromotedWidgetView resolves against this interior node.
-    const subgraph = createTestSubgraph()
+  it('resolves slotMetadata for promoted widgets where SafeWidgetData.name differs from the subgraph input name', () => {
+    // Subgraph input named "value" promotes an interior "prompt" widget, so the
+    // promoted SafeWidgetData.name is "prompt" while the input slot is "value".
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'STRING' }]
+    })
     const interiorNode = new LGraphNode('interior')
-    interiorNode.id = 10
+    const interiorInput = interiorNode.addInput('value', 'STRING')
     interiorNode.addWidget('string', 'prompt', 'hello', () => undefined, {})
+    interiorInput.widget = { name: 'prompt' }
     subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorInput, interiorNode)
 
     const subgraphNode = createTestSubgraphNode(subgraph, { id: 123 })
-
-    // Create a PromotedWidgetView with identityName="value" (subgraph input
-    // slot name) and sourceWidgetName="prompt" (interior widget name).
-    // PromotedWidgetView.name returns "value" (identity), safeWidgetMapper
-    // sets SafeWidgetData.name to sourceWidgetName ("prompt").
-    const promotedView = createPromotedWidgetView(
-      subgraphNode,
-      '10',
-      'prompt',
-      'value',
-      'value'
-    )
-
-    // Host the promoted view on a regular node so we can control widgets
-    // directly (SubgraphNode.widgets is a synthetic getter).
-    const graph = new LGraph()
-    const hostNode = new LGraphNode('host')
-    hostNode.widgets = [promotedView]
-    const input = hostNode.addInput('value', 'STRING')
-    input.widget = { name: 'value' }
-    graph.add(hostNode)
+    subgraphNode._internalConfigureAfterSlots()
+    const graph = subgraphNode.graph as LGraph
+    graph.add(subgraphNode)
 
     const { vueNodeData } = useGraphNodeManager(graph)
-    const nodeData = vueNodeData.get(String(hostNode.id))
+    const nodeData = vueNodeData.get(String(subgraphNode.id))
 
-    // SafeWidgetData.name is "prompt" (sourceWidgetName), but the
-    // input slot widget name is "value" — slotName bridges this gap.
+    // SafeWidgetData.name is "prompt" (source widget name), but the subgraph
+    // input slot is "value" — slotName bridges this gap.
     const widgetData = nodeData?.widgets?.find((w) => w.name === 'prompt')
     expect(widgetData).toBeDefined()
     expect(widgetData?.slotName).toBe('value')
