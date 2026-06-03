@@ -3,12 +3,12 @@
  * Provides event-driven reactivity with performance optimizations
  */
 import { reactiveComputed } from '@vueuse/core'
+import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { createPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetView'
 import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
 import {
   resolveConcretePromotedWidget,
@@ -28,6 +28,7 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { IS_CONTROL_WIDGET } from '@/scripts/widgets'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
 import { normalizeControlOption } from '@/types/simplifiedWidget'
 import { getWidgetIdForNode } from '@/utils/litegraphUtil'
@@ -39,7 +40,8 @@ import type {
   LGraphNode,
   LGraphTriggerAction,
   LGraphTriggerEvent,
-  LGraphTriggerParam
+  LGraphTriggerParam,
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
@@ -216,23 +218,30 @@ function normalizeWidgetValue(value: unknown): WidgetValue {
   return undefined
 }
 
+function extractWidgetDisplayOptions(
+  widget: IBaseWidget
+): SafeWidgetData['options'] {
+  if (!widget.options) return undefined
+
+  return {
+    canvasOnly: widget.options.canvasOnly,
+    advanced: widget.options?.advanced ?? widget.advanced,
+    hidden: widget.options.hidden,
+    read_only: widget.options.read_only
+  }
+}
+
+function isDOMBackedWidget(widget: IBaseWidget): boolean {
+  return (
+    ('element' in widget && !!widget.element) ||
+    ('component' in widget && !!widget.component)
+  )
+}
+
 function safeWidgetMapper(
   node: LGraphNode,
   slotMetadata: Map<string, WidgetSlotMetadata>
 ): (widget: IBaseWidget) => SafeWidgetData {
-  function extractWidgetDisplayOptions(
-    widget: IBaseWidget
-  ): SafeWidgetData['options'] {
-    if (!widget.options) return undefined
-
-    return {
-      canvasOnly: widget.options.canvasOnly,
-      advanced: widget.options?.advanced ?? widget.advanced,
-      hidden: widget.options.hidden,
-      read_only: widget.options.read_only
-    }
-  }
-
   function resolvePromotedSourceByInputName(
     inputName: string
   ): PromotedWidgetSource | null {
@@ -374,6 +383,92 @@ function safeWidgetMapper(
   }
 }
 
+function ensurePromotedHostWidgetState(
+  id: WidgetId,
+  input: INodeInputSlot,
+  sourceWidget: IBaseWidget | undefined
+): void {
+  if (!sourceWidget) return
+  const store = useWidgetValueStore()
+  if (store.getWidget(id)) return
+  store.registerWidget(id, {
+    type: sourceWidget.type,
+    value: sourceWidget.value,
+    options: cloneDeep(sourceWidget.options ?? {}),
+    label: input.label ?? input.name,
+    serialize: sourceWidget.serialize,
+    disabled: sourceWidget.disabled
+  })
+}
+
+/**
+ * Builds render-safe data for a promoted subgraph input directly from the
+ * input's stored WidgetId, its resolved interior source widget, and widget
+ * state — without constructing a synthetic widget view.
+ */
+function promotedInputToSafeWidget(
+  node: SubgraphNode,
+  input: INodeInputSlot,
+  id: WidgetId,
+  slotMetadata: Map<string, WidgetSlotMetadata>
+): SafeWidgetData {
+  const displayName = input.name
+  const source = resolveSubgraphInputTarget(node, displayName)
+  const slotInfo = slotMetadata.get(displayName)
+
+  const resolution = source
+    ? resolveConcretePromotedWidget(node, source.nodeId, source.widgetName)
+    : undefined
+  const resolved =
+    resolution?.status === 'resolved' ? resolution.resolved : undefined
+  const sourceWidget = resolved?.widget
+  const sourceNode = resolved?.node
+
+  const name = sourceWidget?.name ?? source?.widgetName ?? displayName
+  const isPseudoWidget = !!source?.widgetName?.startsWith('$$')
+
+  const localId = String(sourceNode?.id ?? source?.nodeId)
+  const nodeId = node.subgraph.id ? `${node.subgraph.id}:${localId}` : undefined
+
+  ensurePromotedHostWidgetState(id, input, sourceWidget)
+
+  const callback = (v: unknown) => {
+    const value = normalizeWidgetValue(v)
+    useWidgetValueStore().setValue(id, value ?? undefined)
+    sourceWidget?.callback?.(value, app.canvas, sourceNode ?? node)
+  }
+
+  const baseOptions = sourceWidget
+    ? extractWidgetDisplayOptions(sourceWidget)
+    : undefined
+
+  const enhancements: SharedWidgetEnhancements = sourceWidget
+    ? getSharedWidgetEnhancements(node, sourceWidget)
+    : { spec: useNodeDefStore().getInputSpecForWidget(node, name) }
+
+  return {
+    widgetId: id,
+    nodeId,
+    name,
+    type: sourceWidget?.type ?? 'button',
+    ...enhancements,
+    callback,
+    hasLayoutSize: typeof sourceWidget?.computeLayoutSize === 'function',
+    isDOMWidget: sourceWidget ? isDOMBackedWidget(sourceWidget) : false,
+    options: isPseudoWidget
+      ? { ...(baseOptions ?? {}), canvasOnly: true }
+      : baseOptions,
+    slotMetadata: slotInfo,
+    slotName: name !== displayName ? displayName : undefined,
+    sourceExecutionId:
+      sourceNode && app.rootGraph
+        ? (getExecutionIdByNode(app.rootGraph, sourceNode) ?? undefined)
+        : undefined,
+    tooltip: sourceWidget?.tooltip,
+    promotedLabel: input.label ?? displayName
+  }
+}
+
 function buildSlotMetadata(
   inputs: INodeInputSlot[] | undefined,
   graphRef: LGraph | null | undefined
@@ -475,30 +570,23 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
   })
 
   const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
-    const promotedInputWidgets = node.isSubgraphNode()
-      ? node.inputs.flatMap((input) => {
-          if (!input.widgetId) return []
-          const source = resolveSubgraphInputTarget(node, input.name)
-          if (!source) return []
-          return [
-            createPromotedWidgetView(
-              node,
-              source.nodeId,
-              source.widgetName,
-              input.label ?? input.name,
-              input.name
-            )
-          ]
-        })
-      : []
-    const widgetsSnapshot = [...(node.widgets ?? []), ...promotedInputWidgets]
-
     const freshMetadata = buildSlotMetadata(node.inputs, node.graph)
     slotMetadata.clear()
     for (const [key, value] of freshMetadata) {
       slotMetadata.set(key, value)
     }
-    return widgetsSnapshot.map(safeWidgetMapper(node, slotMetadata))
+
+    const regularWidgets = (node.widgets ?? []).map(
+      safeWidgetMapper(node, slotMetadata)
+    )
+    if (!node.isSubgraphNode()) return regularWidgets
+
+    const promotedWidgets = node.inputs.flatMap((input) =>
+      input.widgetId
+        ? [promotedInputToSafeWidget(node, input, input.widgetId, slotMetadata)]
+        : []
+    )
+    return [...regularWidgets, ...promotedWidgets]
   })
 
   const nodeType =
