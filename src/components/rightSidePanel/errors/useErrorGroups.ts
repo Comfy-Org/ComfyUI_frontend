@@ -347,8 +347,14 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     card.errors.push(...errors)
   }
 
-  function processPromptError(groupsMap: Map<string, GroupEntry>) {
-    if (selectedNodeInfo.value.nodeIds || !executionErrorStore.lastPromptError)
+  function processPromptError(
+    groupsMap: Map<string, GroupEntry>,
+    filterBySelection = false
+  ) {
+    if (
+      (filterBySelection && selectedNodeInfo.value.nodeIds) ||
+      !executionErrorStore.lastPromptError
+    )
       return
 
     const error = executionErrorStore.lastPromptError
@@ -861,7 +867,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   const tabErrorGroups = computed<ErrorGroup[]>(() => {
     const groupsMap = new Map<string, GroupEntry>()
 
-    processPromptError(groupsMap)
+    processPromptError(groupsMap, true)
     processNodeErrors(groupsMap, true)
     processExecutionError(groupsMap, true)
 
