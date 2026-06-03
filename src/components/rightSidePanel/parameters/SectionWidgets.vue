@@ -20,6 +20,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -235,6 +236,9 @@ function navigateToErrorTab() {
 }
 
 function setWidgetValue(widget: IBaseWidget, value: WidgetValue) {
+  // Store-backed widgets (interior node widgets and promoted subgraph inputs)
+  // are addressed by widgetId; writing there keeps the displayed value in sync.
+  if (widget.widgetId) useWidgetValueStore().setValue(widget.widgetId, value)
   widget.value = value
   widget.callback?.(value)
   canvasStore.canvas?.setDirty(true, true)

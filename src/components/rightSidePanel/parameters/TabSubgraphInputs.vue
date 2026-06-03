@@ -3,18 +3,20 @@ import { storeToRefs } from 'pinia'
 import { computed, nextTick, ref, shallowRef, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   getWidgetName,
   isWidgetPromotedOnSubgraphNode,
   reorderSubgraphInputsByWidgetOrder
 } from '@/core/graph/subgraph/promotionUtils'
+import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { searchWidgets } from '../shared'
 import type { NodeWidgetsList } from '../shared'
@@ -45,30 +47,33 @@ const isAllCollapsed = computed({
 })
 const advancedInputsSectionRef = useTemplateRef('advancedInputsSectionRef')
 
-function isSamePromotedWidget(a: IBaseWidget, b: IBaseWidget): boolean {
-  return (
-    isPromotedWidgetView(a) &&
-    isPromotedWidgetView(b) &&
-    a.sourceNodeId === b.sourceNodeId &&
-    a.sourceWidgetName === b.sourceWidgetName
-  )
+function buildPromotedWidget(input: INodeInputSlot): IBaseWidget | null {
+  if (!input.widgetId) return null
+  const target = resolveSubgraphInputTarget(node, input.name)
+  if (!target) return null
+
+  const state = useWidgetValueStore().getWidget(input.widgetId)
+  // Plain, store-backed descriptor so a promoted subgraph input renders through
+  // the same parameter widgets as an ordinary node widget. Value reads/writes
+  // resolve through widgetId; source identity drives promote/demote actions.
+  return {
+    name: target.widgetName,
+    type: state?.type ?? 'text',
+    value: state?.value,
+    options: state?.options ?? {},
+    label: input.label ?? input.name,
+    y: 0,
+    widgetId: input.widgetId,
+    sourceNodeId: target.nodeId,
+    sourceWidgetName: target.widgetName
+  } as IBaseWidget
 }
 
 function getPromotedWidgets(): IBaseWidget[] {
-  const inputWidgets = node.inputs
-    .map((input) => input._widget)
-    .filter((widget): widget is IBaseWidget =>
-      Boolean(widget && isPromotedWidgetView(widget))
-    )
-  const extraWidgets = (node.widgets ?? []).filter(
-    (widget) =>
-      isPromotedWidgetView(widget) &&
-      !inputWidgets.some((inputWidget) =>
-        isSamePromotedWidget(inputWidget, widget)
-      )
-  )
-
-  return [...inputWidgets, ...extraWidgets]
+  return node.inputs.flatMap((input) => {
+    const widget = buildPromotedWidget(input)
+    return widget ? [widget] : []
+  })
 }
 
 watch(
