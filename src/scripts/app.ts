@@ -25,6 +25,7 @@ import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
 import type { WorkflowOpenSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
@@ -1425,6 +1426,7 @@ export class ComfyApp {
         missing_node_types: missingNodeTypes.map((node) =>
           typeof node === 'string' ? node : node.type
         ),
+        missing_node_packs: groupMissingNodesByPack(missingNodeTypes),
         open_source: openSource ?? 'unknown'
       }
       useTelemetry()?.trackWorkflowOpened(telemetryPayload)
