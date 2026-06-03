@@ -25,7 +25,6 @@
     <ColorPicker
       v-if="selectedColorOption.name === '_custom'"
       v-model="customColorValue"
-      class="w-28"
     />
   </div>
 </template>

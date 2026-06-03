@@ -3,7 +3,6 @@
     <ColorPicker
       :id="id"
       v-model="hexValue"
-      class="w-28"
       :disabled="disabled"
       :aria-labelledby="ariaLabelledby"
     />

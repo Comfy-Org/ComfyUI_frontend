@@ -238,11 +238,12 @@ test.describe('Topbar commands', () => {
 
           await expect
             .poll(() =>
-              component.evaluate((el) => {
-                if (el instanceof HTMLInputElement) return el.disabled
-                if (el instanceof HTMLButtonElement) return el.disabled
-                return el.classList.contains('p-disabled')
-              })
+              component.evaluate((el) =>
+                el instanceof HTMLInputElement ||
+                el instanceof HTMLButtonElement
+                  ? el.disabled
+                  : el.classList.contains('p-disabled')
+              )
             )
             .toBe(true)
         })
