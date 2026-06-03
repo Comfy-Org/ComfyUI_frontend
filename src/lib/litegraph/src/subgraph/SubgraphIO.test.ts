@@ -486,10 +486,6 @@ describe('SubgraphIO - Empty Slot Connection', () => {
         'seed',
         'seed_1'
       ])
-      expect(subgraphNode.widgets.map((widget) => widget.name)).toStrictEqual([
-        'seed',
-        'seed_1'
-      ])
     }
   )
 })

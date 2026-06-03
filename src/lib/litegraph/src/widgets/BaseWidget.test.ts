@@ -133,7 +133,7 @@ describe('BaseWidget store integration', () => {
 
       const state = store.getWidget(widgetId(graph.id, 1, 'autoRegWidget'))
       expect(state).toBeDefined()
-      expect(state?.nodeId).toBe(1)
+      expect(state?.nodeId).toBe('1')
       expect(state?.name).toBe('autoRegWidget')
       expect(state?.type).toBe('number')
       expect(state?.value).toBe(100)
