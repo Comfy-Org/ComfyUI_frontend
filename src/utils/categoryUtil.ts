@@ -113,7 +113,6 @@ export function getProviderIcon(providerName: string): string {
  * Backed by [[PROVIDER_COLORS]], which is the source of truth for partner
  * brands that ship with a colored SVG under
  * [[packages/design-system/src/icons]].
- * @knipIgnoreUsedByStackedPR
  */
 export function hasProviderIcon(providerName: string): boolean {
   const iconKey = providerName.toLowerCase().replaceAll(/\s+/g, '-')

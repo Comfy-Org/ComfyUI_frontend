@@ -3,7 +3,6 @@ import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
 
 import { COMFY_ORG_PROVIDER_OVERRIDES } from './comfyOrgProviderOverrides'
 
-/** @knipIgnoreUsedByStackedPR */
 export const PARTNER_NODES_GROUP_ID = 'partner-nodes'
 export const UNKNOWN_PROVIDER = '—'
 
@@ -14,7 +13,6 @@ interface ModelGroupDef {
   tags: readonly string[]
 }
 
-/** @knipIgnoreUsedByStackedPR */
 export const MODEL_GROUPS: readonly ModelGroupDef[] = [
   { id: 'loras', label: 'LoRAs', tags: ['loras'] },
   {
@@ -146,7 +144,6 @@ const TAG_TO_GROUP_ID = (() => {
  * Maps a raw asset category tag (e.g. "loras", "sam3d") to a group id.
  * Returns null if the tag is unmapped — caller should render a fallback
  * section keyed on the raw tag so new categories surface immediately.
- * @knipIgnoreUsedByStackedPR
  */
 export function groupIdForRawTag(rawTag: string): string | null {
   return TAG_TO_GROUP_ID.get(rawTag) ?? null
@@ -155,7 +152,6 @@ export function groupIdForRawTag(rawTag: string): string | null {
 /**
  * Extracts the provider segment from a partner-node category string.
  * Example: "api node/image/BFL" -> "BFL".
- * @knipIgnoreUsedByStackedPR
  */
 export function formatPartnerProvider(category: string | undefined): string {
   if (!category) return ''
@@ -163,13 +159,11 @@ export function formatPartnerProvider(category: string | undefined): string {
   return parts[parts.length - 1] ?? ''
 }
 
-/** @knipIgnoreUsedByStackedPR */
 export function isPartnerNodeCategory(category: string | undefined): boolean {
   if (!category) return false
   return category.toLowerCase().startsWith('api node')
 }
 
-/** @knipIgnoreUsedByStackedPR */
 export function fallbackGroupLabel(rawTag: string): string {
   return formatCategoryLabel(rawTag)
 }
@@ -181,7 +175,6 @@ export function fallbackGroupLabel(rawTag: string): string {
  *     "Florence-2-large" -> "Florence 2 large"
  *   - Hyphens with a space on either side (" - ") are preserved.
  *   - Replaces underscores with spaces ("t5gemma_b_b_ul2" -> "t5gemma b b ul2").
- * @knipIgnoreUsedByStackedPR
  */
 export function formatRowDisplayName(raw: string): string {
   const slashIdx = raw.indexOf('/')

@@ -4,6 +4,8 @@ import { useSharedCanvasPositionConversion } from '@/composables/element/useCanv
 import { usePragmaticDroppable } from '@/composables/usePragmaticDragAndDrop'
 import type { LGraphNode, Point } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { app as comfyApp } from '@/scripts/app'
@@ -14,6 +16,11 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
+const isCopyDropSource = (type: unknown) =>
+  type === 'tree-explorer-node' ||
+  type === 'cloud-model-asset' ||
+  type === 'partner-node'
+
 export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement | null>) => {
   const modelToNodeStore = useModelToNodeStore()
   const litegraphService = useLitegraphService()
@@ -21,10 +28,28 @@ export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement | null>) => {
 
   usePragmaticDroppable(() => canvasRef.value, {
     getDropEffect: (args): Exclude<DataTransfer['dropEffect'], 'none'> =>
-      args.source.data.type === 'tree-explorer-node' ? 'copy' : 'move',
+      isCopyDropSource(args.source.data.type) ? 'copy' : 'move',
     onDrop: async (event) => {
       const loc = event.location.current.input
       const dndData = event.source.data
+
+      if (dndData.type === 'cloud-model-asset') {
+        const asset = dndData.asset as AssetItem
+        const conv = useSharedCanvasPositionConversion()
+        const basePos = conv.clientPosToCanvasPos([loc.clientX, loc.clientY])
+        createModelNodeFromAsset(asset, { position: basePos })
+        return
+      }
+
+      if (dndData.type === 'partner-node') {
+        const nodeDef = dndData.nodeDef as ComfyNodeDefImpl
+        const conv = useSharedCanvasPositionConversion()
+        const basePos = conv.clientPosToCanvasPos([loc.clientX, loc.clientY])
+        const pos: Point = [...basePos]
+        pos[1] += LiteGraph.NODE_TITLE_HEIGHT
+        litegraphService.addNodeOnGraph(nodeDef, { pos })
+        return
+      }
 
       if (dndData.type === 'tree-explorer-node') {
         const node = dndData.data as RenderedTreeExplorerNode

@@ -3005,6 +3005,34 @@
   "cloudSurvey_steps_familiarity": "How familiar are you with ComfyUI?",
   "cloudSurvey_steps_intent": "What do you want to create with ComfyUI?",
   "cloudSurvey_steps_source": "Where did you hear about ComfyUI?",
+  "assets": {
+    "sort": {
+      "tooltip": "Sort",
+      "recent": "Most recent first",
+      "oldest": "Oldest first",
+      "nameAsc": "Name A–Z",
+      "nameDesc": "Name Z–A",
+      "baseModelAsc": "Base model A–Z",
+      "baseModelDesc": "Base model Z–A"
+    },
+    "searchResults": "Search results"
+  },
+  "cloudModelLibrary": {
+    "preview": {
+      "createsNode": "Creates node",
+      "triggerWords": "Trigger words",
+      "description": "Description",
+      "nodePreview": "Node preview",
+      "url": "URL",
+      "openUrl": "Open URL"
+    },
+    "contextMenu": {
+      "addToGraph": "Add to graph",
+      "copyFilename": "Copy filename",
+      "copyNodeName": "Copy node name",
+      "openOnHuggingFace": "Open on Hugging Face"
+    }
+  },
   "assetBrowser": {
     "allCategory": "All {category}",
     "allModels": "All Models",
