@@ -4,38 +4,44 @@ import { TelemetryRegistry } from './TelemetryRegistry'
 import type { TelemetryProvider } from './types'
 
 describe('TelemetryRegistry', () => {
-  it('dispatches trackSearchKeystroke to every registered provider', () => {
-    const a: TelemetryProvider = { trackSearchKeystroke: vi.fn() }
-    const b: TelemetryProvider = { trackSearchKeystroke: vi.fn() }
+  it('dispatches trackSearchQuery to every registered provider', () => {
+    const a: TelemetryProvider = { trackSearchQuery: vi.fn() }
+    const b: TelemetryProvider = { trackSearchQuery: vi.fn() }
     const registry = new TelemetryRegistry()
     registry.registerProvider(a)
     registry.registerProvider(b)
 
-    registry.trackSearchKeystroke({
-      surface: 'template_search',
+    registry.trackSearchQuery({
+      surface: 'templates',
       query: 'flux',
-      query_length: 4
+      query_length: 4,
+      result_count: 3,
+      has_results: true
     })
 
     const payload = {
-      surface: 'template_search',
+      surface: 'templates',
       query: 'flux',
-      query_length: 4
+      query_length: 4,
+      result_count: 3,
+      has_results: true
     }
-    expect(a.trackSearchKeystroke).toHaveBeenCalledExactlyOnceWith(payload)
-    expect(b.trackSearchKeystroke).toHaveBeenCalledExactlyOnceWith(payload)
+    expect(a.trackSearchQuery).toHaveBeenCalledExactlyOnceWith(payload)
+    expect(b.trackSearchQuery).toHaveBeenCalledExactlyOnceWith(payload)
   })
 
-  it('skips providers that do not implement trackSearchKeystroke', () => {
+  it('skips providers that do not implement trackSearchQuery', () => {
     const empty: TelemetryProvider = {}
     const registry = new TelemetryRegistry()
     registry.registerProvider(empty)
 
     expect(() =>
-      registry.trackSearchKeystroke({
-        surface: 'settings_search',
+      registry.trackSearchQuery({
+        surface: 'settings',
         query: 'theme',
-        query_length: 5
+        query_length: 5,
+        result_count: 0,
+        has_results: false
       })
     ).not.toThrow()
   })

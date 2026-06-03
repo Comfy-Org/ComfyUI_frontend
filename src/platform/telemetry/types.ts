@@ -233,20 +233,22 @@ export interface NodeSearchMetadata {
 }
 
 /**
- * Search keystroke metadata. One event per debounced query change across
+ * Search query metadata. One event per debounced query change across
  * each search surface.
  */
 export type SearchSurface =
-  | 'node_search_modal'
+  | 'node_modal'
   | 'node_sidebar'
-  | 'apps_sidebar'
-  | 'template_search'
-  | 'settings_search'
+  | 'apps'
+  | 'templates'
+  | 'settings'
 
-export interface SearchKeystrokeMetadata {
+export interface SearchQueryMetadata {
   surface: SearchSurface
   query: string
   query_length: number
+  result_count: number
+  has_results: boolean
 }
 
 /**
@@ -454,8 +456,8 @@ export interface TelemetryProvider {
   trackNodeSearch?(metadata: NodeSearchMetadata): void
   trackNodeSearchResultSelected?(metadata: NodeSearchResultMetadata): void
 
-  // Search keystroke analytics
-  trackSearchKeystroke?(metadata: SearchKeystrokeMetadata): void
+  // Search query analytics
+  trackSearchQuery?(metadata: SearchQueryMetadata): void
 
   // Template filter tracking events
   trackTemplateFilterChanged?(metadata: TemplateFilterMetadata): void
@@ -543,7 +545,7 @@ export const TelemetryEvents = {
   // Node Search Analytics
   NODE_SEARCH: 'app:node_search',
   NODE_SEARCH_RESULT_SELECTED: 'app:node_search_result_selected',
-  SEARCH_KEYSTROKE: 'app:search_keystroke',
+  SEARCH_QUERY: 'app:search_query',
 
   // Template Filter Analytics
   TEMPLATE_FILTER_CHANGED: 'app:template_filter_changed',

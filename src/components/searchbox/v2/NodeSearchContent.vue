@@ -121,7 +121,7 @@ import NodeSearchInput from '@/components/searchbox/v2/NodeSearchInput.vue'
 import NodeSearchListItem from '@/components/searchbox/v2/NodeSearchListItem.vue'
 import { RootCategory } from '@/components/searchbox/v2/rootCategories'
 import type { RootCategoryId } from '@/components/searchbox/v2/rootCategories'
-import { useSearchKeystrokeTracking } from '@/platform/telemetry/searchKeystroke/useSearchKeystrokeTracking'
+import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
@@ -181,7 +181,6 @@ const dialogRef = ref<HTMLElement>()
 const searchInputRef = ref<InstanceType<typeof NodeSearchInput>>()
 
 const searchQuery = ref('')
-useSearchKeystrokeTracking('node_search_modal', searchQuery)
 const selectedCategory = ref(DEFAULT_CATEGORY)
 const selectedIndex = ref(0)
 
@@ -344,6 +343,12 @@ const displayedResults = computed<ComfyNodeDefImpl[]>(() => {
 
 const hoveredNodeDef = computed(
   () => displayedResults.value[selectedIndex.value] ?? null
+)
+
+useSearchQueryTracking(
+  'node_modal',
+  searchQuery,
+  computed(() => displayedResults.value.length)
 )
 
 watch(

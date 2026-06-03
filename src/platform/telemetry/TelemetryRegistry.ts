@@ -14,7 +14,7 @@ import type {
   HelpResourceClickedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
-  SearchKeystrokeMetadata,
+  SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
   SettingChangedMetadata,
@@ -199,8 +199,8 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     )
   }
 
-  trackSearchKeystroke(metadata: SearchKeystrokeMetadata): void {
-    this.dispatch((provider) => provider.trackSearchKeystroke?.(metadata))
+  trackSearchQuery(metadata: SearchQueryMetadata): void {
+    this.dispatch((provider) => provider.trackSearchQuery?.(metadata))
   }
 
   trackTemplateFilterChanged(metadata: TemplateFilterMetadata): void {

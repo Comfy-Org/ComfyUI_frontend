@@ -190,7 +190,7 @@ import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { usePerTabState } from '@/composables/usePerTabState'
-import { useSearchKeystrokeTracking } from '@/platform/telemetry/searchKeystroke/useSearchKeystrokeTracking'
+import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import {
   DEFAULT_SORTING_ID,
   DEFAULT_TAB_ID,
@@ -262,7 +262,6 @@ const { t } = useI18n()
 
 const searchBoxRef = ref<InstanceType<typeof SearchInput> | null>(null)
 const searchQuery = ref('')
-useSearchKeystrokeTracking('node_sidebar', searchQuery)
 const expandedKeysByTab = ref<Record<TabId, string[]>>({
   essentials: [],
   all: [],
@@ -289,6 +288,12 @@ const activeNodes = computed(() =>
   searchQuery.value.length === 0
     ? nodeDefStore.visibleNodeDefs
     : filteredNodeDefs.value
+)
+
+useSearchQueryTracking(
+  'node_sidebar',
+  searchQuery,
+  computed(() => filteredNodeDefs.value.length)
 )
 
 const hasNoMatches = computed(

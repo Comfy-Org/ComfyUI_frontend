@@ -54,16 +54,13 @@ vi.mock('@/stores/systemStatsStore', () => ({
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => ({
     trackTemplateFilterChanged: vi.fn(),
-    trackSearchKeystroke: vi.fn()
+    trackSearchQuery: vi.fn()
   }))
 }))
 
-vi.mock(
-  '@/platform/telemetry/searchKeystroke/useSearchKeystrokeTracking',
-  () => ({
-    useSearchKeystrokeTracking: vi.fn()
-  })
-)
+vi.mock('@/platform/telemetry/searchQuery/useSearchQueryTracking', () => ({
+  useSearchQueryTracking: vi.fn()
+}))
 
 const mockGetFuseOptions = vi.hoisted(() => vi.fn())
 vi.mock('@/scripts/api', () => ({

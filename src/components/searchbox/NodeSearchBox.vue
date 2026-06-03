@@ -91,7 +91,7 @@ import NodeSearchItem from '@/components/searchbox/NodeSearchItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
-import { useSearchKeystrokeTracking } from '@/platform/telemetry/searchKeystroke/useSearchKeystrokeTracking'
+import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
@@ -126,7 +126,11 @@ const placeholder = computed(() => {
 const nodeDefStore = useNodeDefStore()
 const nodeFrequencyStore = useNodeFrequencyStore()
 
-useSearchKeystrokeTracking('node_search_modal', currentQuery)
+useSearchQueryTracking(
+  'node_modal',
+  currentQuery,
+  computed(() => suggestions.value.length)
+)
 
 const search = (query: string) => {
   const queryIsEmpty = query === '' && filters.length === 0
