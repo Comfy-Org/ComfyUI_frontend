@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
+import type { TranslationKey } from '../../i18n/translations'
+
+import { getRoutes } from '../../config/routes'
 import { hasKey, t, translationKeys } from '../../i18n/translations'
-import { dropItems } from './dropItems'
+import { dropItems, resolveDropHref } from './dropItems'
 
 const PREFIX = 'drops-landing'
 
@@ -84,7 +87,7 @@ describe('drops landing i18n', () => {
 
   it('returns non-empty english copy for every drops-landing key', () => {
     for (const key of dropsKeys()) {
-      expect(t(key as never, 'en').trim().length).toBeGreaterThan(0)
+      expect(t(key as TranslationKey, 'en').trim().length).toBeGreaterThan(0)
     }
   })
 
@@ -100,10 +103,33 @@ describe('drops landing i18n', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
-  it('has a non-empty image url and href for every drop item', () => {
+  it('has a non-empty image url and resolvable href for every drop item', () => {
+    const routes = getRoutes('en')
     for (const item of dropItems) {
       expect(item.imageUrl.length).toBeGreaterThan(0)
-      expect(item.href.length).toBeGreaterThan(0)
+      expect(resolveDropHref(item, routes).length).toBeGreaterThan(0)
+    }
+  })
+
+  it('resolves internal drop hrefs through the locale-aware route helper', () => {
+    const internalItems = dropItems.filter((item) => !item.external)
+    expect(internalItems.length).toBeGreaterThan(0)
+    const enRoutes = getRoutes('en')
+    const zhRoutes = getRoutes('zh-CN')
+    for (const item of internalItems) {
+      expect(resolveDropHref(item, enRoutes)).toBe(enRoutes[item.routeKey])
+      expect(resolveDropHref(item, zhRoutes)).toBe(zhRoutes[item.routeKey])
+    }
+  })
+
+  it('preserves external drop hrefs regardless of locale', () => {
+    const externalItems = dropItems.filter((item) => item.external)
+    expect(externalItems.length).toBeGreaterThan(0)
+    const enRoutes = getRoutes('en')
+    const zhRoutes = getRoutes('zh-CN')
+    for (const item of externalItems) {
+      expect(resolveDropHref(item, enRoutes)).toBe(item.url)
+      expect(resolveDropHref(item, zhRoutes)).toBe(item.url)
     }
   })
 })

@@ -5,7 +5,7 @@ export function captureDropClick(
   properties: Record<string, unknown> = {}
 ): void {
   try {
-    posthog.capture('drops_cta_clicked', { location, ...properties })
+    posthog.capture('drops_cta_clicked', { ...properties, location })
   } catch (error) {
     console.error('PostHog capture failed', error)
   }

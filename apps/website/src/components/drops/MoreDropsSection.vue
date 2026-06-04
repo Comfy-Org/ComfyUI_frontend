@@ -4,17 +4,24 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { DropItem } from './dropItems'
 import type { Locale } from '../../i18n/translations'
 
+import { getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
-import { dropItems } from './dropItems'
+import { dropItems, resolveDropHref } from './dropItems'
 import { captureDropClick } from './useDropClickCapture'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
+const routes = getRoutes(locale)
+
+function hrefFor(item: DropItem): string {
+  return resolveDropHref(item, routes)
+}
+
 function handleClick(item: DropItem) {
   captureDropClick('more_drops', {
     drop_id: item.id,
-    href: item.href,
+    href: hrefFor(item),
     external: item.external
   })
 }
@@ -76,7 +83,7 @@ function handleClick(item: DropItem) {
           </p>
           <div class="mt-2">
             <BrandButton
-              :href="item.href"
+              :href="hrefFor(item)"
               :target="item.external ? '_blank' : undefined"
               :rel="item.external ? 'noopener noreferrer' : undefined"
               size="md"
