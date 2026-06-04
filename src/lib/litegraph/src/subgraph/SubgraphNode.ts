@@ -77,6 +77,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return this.graph.rootGraph
   }
 
+  get isDetached(): boolean {
+    return !this.graph
+  }
+
   override get displayType(): string {
     return 'Subgraph node'
   }
@@ -199,7 +203,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   private _getPromotedViews(): PromotedWidgetView[] {
-    if (!this.graph) return []
+    if (this.isDetached) return []
     const cachedViews = this._promotedViewsCache
     if (cachedViews?.version === this._cacheVersion) return cachedViews.views
 

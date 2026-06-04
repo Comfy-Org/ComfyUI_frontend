@@ -631,9 +631,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     }
   }
 
-  // Drop refs while node is still attached, before reactive store writes
-  // in node.onRemoved can invalidate computeds holding the node.
-  const handleBeforeNodeRemoved = (node: LGraphNode) => {
+  const dropNodeReferences = (node: LGraphNode) => {
     const id = String(node.id)
     nodeRefs.delete(id)
     vueNodeData.delete(id)
@@ -643,8 +641,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     node: LGraphNode,
     originalCallback?: (node: LGraphNode) => void
   ) => {
-    // Fallback for LGraph.clear() which bypasses node:before-removed
-    handleBeforeNodeRemoved(node)
     const id = String(node.id)
     setSource(LayoutSource.Canvas)
     void deleteNode(id)
@@ -689,7 +685,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     const beforeNodeRemovedListener = (
       e: CustomEvent<{ node: LGraphNode }>
     ) => {
-      handleBeforeNodeRemoved(e.detail.node)
+      dropNodeReferences(e.detail.node)
     }
     graph.events.addEventListener(
       'node:before-removed',

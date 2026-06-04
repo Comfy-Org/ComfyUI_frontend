@@ -102,63 +102,35 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
   test.describe('Detach Race Repro', { tag: ['@vue-nodes'] }, () => {
     const SUBGRAPH_NODE_TITLE = 'New Subgraph'
 
-    // Capture-and-defer the legacy onNodeRemoved/onSelectionChange handlers
-    // so the test can drive unpack to completion before they run. Widens
-    // the race window so a guard regression deterministically surfaces; on
-    // fast environments the legacy cleanup runs in time and masks the bug.
-    const DEFERRED_HANDLERS_KEY = '__deferredHandlers'
-
+    // Queues legacy onNodeRemoved/onSelectionChange so unpack completes first,
+    // widening the race window so a guard regression deterministically surfaces.
     async function deferLegacyHandlers(comfyPage: ComfyPage) {
-      await comfyPage.page.evaluate((key) => {
-        const w = window as unknown as Record<string, unknown>
+      return await comfyPage.page.evaluateHandle(() => {
         const graph = window.app!.graph!
         const canvas = window.app!.canvas!
         const queue: Array<() => void> = []
         const originalNodeRemoved = graph.onNodeRemoved
         const originalSelectionChange = canvas.onSelectionChange
-        w[key] = { queue, originalNodeRemoved, originalSelectionChange }
         graph.onNodeRemoved = function (node) {
           queue.push(() => originalNodeRemoved?.call(this, node))
         }
         canvas.onSelectionChange = function (selected) {
           queue.push(() => originalSelectionChange?.call(this, selected))
         }
-      }, DEFERRED_HANDLERS_KEY)
-    }
-
-    async function runDeferredHandlers(comfyPage: ComfyPage) {
-      await comfyPage.page.evaluate((key) => {
-        const stash = (window as unknown as Record<string, unknown>)[key] as
-          | { queue: Array<() => void> }
-          | undefined
-        if (!stash) return
-        for (const fn of stash.queue.splice(0)) fn()
-      }, DEFERRED_HANDLERS_KEY)
-    }
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.page.evaluate((key) => {
-        const w = window as unknown as Record<string, unknown>
-        const graph = window.app?.graph
-        const canvas = window.app?.canvas
-        const stash = w[key] as
-          | {
-              originalNodeRemoved?: NonNullable<typeof graph>['onNodeRemoved']
-              originalSelectionChange?: NonNullable<
-                typeof canvas
-              >['onSelectionChange']
-            }
-          | undefined
-        if (stash) {
-          if (graph) graph.onNodeRemoved = stash.originalNodeRemoved
-          if (canvas) canvas.onSelectionChange = stash.originalSelectionChange
+        return {
+          drain: () => {
+            for (const fn of queue.splice(0)) fn()
+          },
+          restore: () => {
+            graph.onNodeRemoved = originalNodeRemoved
+            canvas.onSelectionChange = originalSelectionChange
+          }
         }
-        delete w[key]
-      }, DEFERRED_HANDLERS_KEY)
-    })
+      })
+    }
 
     function isNullGraphErrorText(text: string): boolean {
-      return text.includes('NullGraphError') || /has no graph/.test(text)
+      return text.includes('NullGraphError') || text.endsWith('has no graph')
     }
 
     // Vue's default errorHandler routes render throws to console.error,
@@ -203,15 +175,17 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
       const subgraphNode =
         comfyPage.vueNodes.getNodeByTitle(SUBGRAPH_NODE_TITLE)
       const errors = captureNullGraphErrors(comfyPage)
+      const deferred = await deferLegacyHandlers(comfyPage)
       try {
-        await deferLegacyHandlers(comfyPage)
         await unpackViaContextMenu(comfyPage, SUBGRAPH_NODE_TITLE)
         await expect(subgraphNode).toHaveCount(0)
-        await runDeferredHandlers(comfyPage)
+        await deferred.evaluate((handlers) => handlers.drain())
         // Let drained-handler reactive flushes settle before stop().
         await comfyPage.nextFrame()
         return errors.getErrors()
       } finally {
+        await deferred.evaluate((handlers) => handlers.restore())
+        await deferred.dispose()
         errors.stop()
       }
     }

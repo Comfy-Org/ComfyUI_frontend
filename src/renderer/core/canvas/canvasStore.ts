@@ -131,8 +131,11 @@ export const useCanvasStore = defineStore('canvas', () => {
   whenever(
     () => canvas.value,
     (newCanvas) => {
+      currentGraph.value = newCanvas.graph
+      // Scoped to the on-screen graph: selection only holds items from it,
+      // so removals in other graphs can't affect the live selection.
       useEventListener(
-        () => (currentGraph.value ?? newCanvas.graph)?.events,
+        () => currentGraph.value?.events,
         'node:before-removed',
         (e: CustomEvent<{ node: LGraphNode }>) => {
           newCanvas.deselect(e.detail.node)

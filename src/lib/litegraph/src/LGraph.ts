@@ -175,6 +175,13 @@ export interface BaseLGraph {
   readonly rootGraph: LGraph
 }
 
+function fireNodeRemovalLifecycle(node: LGraphNode): void {
+  const graph: LGraph | null = node.graph
+  graph?.events.dispatch('node:before-removed', { node })
+  node.onRemoved?.()
+  graph?.onNodeRemoved?.(node)
+}
+
 /**
  * LGraph is the class that contain a full graph. We instantiate one and add nodes to it, and then we can run the execution loop.
  * supported callbacks:
@@ -406,8 +413,7 @@ export class LGraph
     // safe clear
     if (this._nodes) {
       for (const _node of this._nodes) {
-        _node.onRemoved?.()
-        this.onNodeRemoved?.(_node)
+        fireNodeRemovalLifecycle(_node)
       }
     }
 
@@ -1107,15 +1113,7 @@ export class LGraph
       )
 
       if (!hasRemainingReferences) {
-        forEachNode(node.subgraph, (innerNode) => {
-          if (innerNode.graph) {
-            ;(
-              innerNode.graph.events as CustomEventTarget<LGraphEventMap>
-            ).dispatch('node:before-removed', { node: innerNode })
-          }
-          innerNode.onRemoved?.()
-          innerNode.graph?.onNodeRemoved?.(innerNode)
-        })
+        forEachNode(node.subgraph, fireNodeRemovalLifecycle)
         this.rootGraph.subgraphs.delete(node.subgraph.id)
       }
     }
