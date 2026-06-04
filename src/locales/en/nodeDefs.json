@@ -593,6 +593,32 @@
       }
     }
   },
+  "BriaTransparentVideoBackground": {
+    "display_name": "Bria Remove Video Background (Transparent)",
+    "description": "Remove the background from a video using Bria and return the cut-out frames plus an alpha mask. Connect both to a compositing node, or feed them to Save WEBM to write a transparent video.",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "display_name": "ByteDance Seedance 2.0 First-Last-Frame to Video",
     "description": "Generate video using Seedance 2.0 from a first frame image and optional last frame image.",
@@ -1267,6 +1293,29 @@
     "outputs": {
       "0": {
         "name": "patched_model",
+        "tooltip": null
+      }
+    }
+  },
+  "CFGOverride": {
+    "display_name": "CFG Override",
+    "description": "Override cfg to a fixed value over a [start, end] percent slice of the steps. With multiple overrides, the one nearest the sampler wins on overlap.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "cfg": {
+        "name": "cfg"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -2954,6 +3003,34 @@
       },
       "device": {
         "name": "device"
+      }
+    }
+  },
+  "DualModelGuider": {
+    "display_name": "Dual Model CFG Guider",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model used for the positive (conditional) pass."
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "cfg": {
+        "name": "cfg"
+      },
+      "model_negative": {
+        "name": "model_negative",
+        "tooltip": "Model used for the negative (unconditional) pass. Use the same model for ordinary CFG."
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "Negative conditioning run on the negative model. Leave unconnected for a text-free (image-only) unconditional pass."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -5679,6 +5756,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "Ideogram 4 Scheduler",
+    "inputs": {
+      "steps": {
+        "name": "steps"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "mu": {
+        "name": "mu"
+      },
+      "std": {
+        "name": "std"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "display_name": "Ideogram V1",
     "description": "Generates images using the Ideogram V1 model.",
@@ -5812,6 +5914,34 @@
       "character_mask": {
         "name": "character_mask",
         "tooltip": "Optional mask for character reference image."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "display_name": "Ideogram V4",
+    "description": "Generates images using the Ideogram 4.0 model from a text prompt.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for the image generation."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "rendering_speed": {
+        "name": "rendering_speed",
+        "tooltip": "Controls the trade-off between generation speed and quality."
+      },
+      "seed": {
+        "name": "seed"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -16293,7 +16423,8 @@
     "display_name": "Save WEBM",
     "inputs": {
       "images": {
-        "name": "images"
+        "name": "images",
+        "tooltip": "RGBA images are saved with their alpha channel as transparency (vp9 codec only)."
       },
       "filename_prefix": {
         "name": "filename_prefix"

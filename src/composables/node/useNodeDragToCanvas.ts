@@ -1,5 +1,6 @@
 import { ref, shallowRef } from 'vue'
 
+import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -37,7 +38,8 @@ function isOverCanvas(clientX: number, clientY: number): boolean {
 }
 
 function addNodeAtPosition(clientX: number, clientY: number): boolean {
-  if (!draggedNode.value) return false
+  const nodeDef = draggedNode.value
+  if (!nodeDef) return false
   const canvas = useCanvasStore().canvas
   if (!canvas) return false
   if (!isOverCanvas(clientX, clientY)) return false
@@ -46,7 +48,9 @@ function addNodeAtPosition(clientX: number, clientY: number): boolean {
     clientX,
     clientY
   } as PointerEvent)
-  const node = useLitegraphService().addNodeOnGraph(draggedNode.value, { pos })
+  const node = withNodeAddSource('sidebar_drag', () =>
+    useLitegraphService().addNodeOnGraph(nodeDef, { pos })
+  )
   if (node) canvas.selectItems([node])
   return true
 }

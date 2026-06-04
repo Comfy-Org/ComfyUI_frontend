@@ -593,6 +593,32 @@
       }
     }
   },
+  "BriaTransparentVideoBackground": {
+    "description": "Bria를 사용하여 비디오에서 배경을 제거하고 잘라낸 프레임과 알파 마스크를 반환합니다. 둘 다 합성 노드에 연결하거나, Save WEBM에 전달하여 투명 비디오로 저장할 수 있습니다.",
+    "display_name": "Bria 비디오 배경 제거 (투명)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed는 노드가 다시 실행될지 여부를 제어합니다. seed와 관계없이 결과는 비결정적입니다."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "이미지",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Seedance 2.0을 사용하여 첫 프레임 이미지와 선택적인 마지막 프레임 이미지로 비디오를 생성합니다.",
     "display_name": "ByteDance Seedance 2.0 첫-마지막 프레임에서 비디오 생성",
@@ -1208,6 +1234,29 @@
     "outputs": {
       "0": {
         "name": "patched_model",
+        "tooltip": null
+      }
+    }
+  },
+  "CFGOverride": {
+    "description": "[start, end] 퍼센트 구간 동안 cfg를 고정 값으로 오버라이드합니다. 여러 오버라이드가 있을 경우, 샘플러에 가장 가까운 것이 겹치는 부분에서 우선 적용됩니다.",
+    "display_name": "CFG 오버라이드",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_percent": {
+        "name": "종료 퍼센트"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_percent": {
+        "name": "시작 퍼센트"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -2954,6 +3003,34 @@
       },
       "type": {
         "name": "유형"
+      }
+    }
+  },
+  "DualModelGuider": {
+    "display_name": "Dual Model CFG Guider",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "양수(조건부) 패스에 사용되는 모델입니다."
+      },
+      "model_negative": {
+        "name": "model_negative",
+        "tooltip": "음수(비조건부) 패스에 사용되는 모델입니다. 일반 CFG에는 동일한 모델을 사용하세요."
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "음수 모델에서 실행되는 네거티브 컨디셔닝입니다. 연결하지 않으면 텍스트 없는(이미지 전용) 비조건부 패스가 됩니다."
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -5679,6 +5756,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "Ideogram 4 스케줄러",
+    "inputs": {
+      "height": {
+        "name": "height"
+      },
+      "mu": {
+        "name": "mu"
+      },
+      "std": {
+        "name": "std"
+      },
+      "steps": {
+        "name": "steps"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "description": "Ideogram V1 모델을 사용하여 동기적으로 이미지를 생성합니다.\n\n이미지 링크는 제한된 기간 동안만 제공되며, 이미지를 보관하려면 반드시 다운로드해야 합니다.",
     "display_name": "Ideogram V1",
@@ -5815,6 +5917,34 @@
       },
       "seed": {
         "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "description": "텍스트 프롬프트로 Ideogram 4.0 모델을 사용해 이미지를 생성합니다.",
+    "display_name": "Ideogram V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위한 텍스트 프롬프트입니다."
+      },
+      "rendering_speed": {
+        "name": "렌더링 속도",
+        "tooltip": "생성 속도와 품질 간의 균형을 제어합니다."
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -16564,7 +16694,8 @@
         "name": "fps"
       },
       "images": {
-        "name": "이미지"
+        "name": "이미지",
+        "tooltip": "RGBA 이미지는 알파 채널이 투명도로 저장됩니다(vp9 코덱만 지원)."
       }
     }
   },

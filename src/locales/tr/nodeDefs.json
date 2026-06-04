@@ -593,6 +593,32 @@
       }
     }
   },
+  "BriaTransparentVideoBackground": {
+    "description": "Bria kullanarak bir videonun arka planını kaldırın ve kesilmiş karelerle birlikte bir alfa maskesi döndürün. Her ikisini de bir birleştirme (compositing) düğümüne bağlayın veya şeffaf bir video yazmak için Kaydet WEBM'e gönderin.",
+    "display_name": "Bria Video Arka Planını Kaldır (Şeffaf)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar seed'den bağımsız olarak deterministik değildir."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "görseller",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Seedance 2.0 kullanarak bir ilk kare görseli ve isteğe bağlı son kare görseli ile video oluşturun.",
     "display_name": "ByteDance Seedance 2.0 İlk-Son-Kareden Videoya",
@@ -1208,6 +1234,29 @@
     "outputs": {
       "0": {
         "name": "yama uygulanmış model",
+        "tooltip": null
+      }
+    }
+  },
+  "CFGOverride": {
+    "description": "Adımların [başlangıç, bitiş] yüzde diliminde cfg'yi sabit bir değere geçersiz kılın. Birden fazla geçersiz kılma olduğunda, örnekleyiciye en yakın olan çakışmada kazanır.",
+    "display_name": "CFG Geçersiz Kılma",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_percent": {
+        "name": "bitiş_yüzdesi"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_percent": {
+        "name": "başlangıç_yüzdesi"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -2954,6 +3003,34 @@
       },
       "type": {
         "name": "tür"
+      }
+    }
+  },
+  "DualModelGuider": {
+    "display_name": "Çift Model CFG Yönlendirici",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Pozitif (koşullu) geçiş için kullanılan model."
+      },
+      "model_negative": {
+        "name": "model_negative",
+        "tooltip": "Negatif (koşulsuz) geçiş için kullanılan model. Normal CFG için aynı modeli kullanın."
+      },
+      "negative": {
+        "name": "negatif",
+        "tooltip": "Negatif modelde çalıştırılan negatif koşullandırma. Koşulsuz (yalnızca görsel) geçiş için bağlantısız bırakın."
+      },
+      "positive": {
+        "name": "pozitif"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -5679,6 +5756,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "Ideogram 4 Zamanlayıcı",
+    "inputs": {
+      "height": {
+        "name": "yükseklik"
+      },
+      "mu": {
+        "name": "mu"
+      },
+      "std": {
+        "name": "std"
+      },
+      "steps": {
+        "name": "adımlar"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "description": "Ideogram V1 modelini kullanarak eşzamanlı olarak görüntüler oluşturur.\n\nGörüntü bağlantıları sınırlı bir süre için mevcuttur; görüntüyü saklamak isterseniz indirmeniz gerekir.",
     "display_name": "Ideogram V1",
@@ -5815,6 +5917,34 @@
       },
       "seed": {
         "name": "tohum"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "description": "Bir metin isteminden Ideogram 4.0 modeliyle görseller üretir.",
+    "display_name": "Ideogram V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Görsel üretimi için metin istemi."
+      },
+      "rendering_speed": {
+        "name": "oluşturma_hızı",
+        "tooltip": "Oluşturma hızı ile kalite arasındaki dengeyi kontrol eder."
+      },
+      "resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -16564,7 +16694,8 @@
         "name": "fps"
       },
       "images": {
-        "name": "görüntüler"
+        "name": "görüntüler",
+        "tooltip": "RGBA görseller, alfa kanalıyla şeffaf olarak kaydedilir (yalnızca vp9 codec)."
       }
     }
   },
