@@ -358,8 +358,14 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   function restoreOutputs(
     outputs: Record<string, ExecutedWsMessage['output']>
   ) {
-    app.nodeOutputs = outputs
-    nodeOutputs.value = { ...outputs }
+    const parsedOutputs = Object.fromEntries(
+      Object.entries(outputs).map(([id, output]) => [
+        executionIdToNodeLocatorId(app.rootGraph, id) ?? id,
+        output
+      ])
+    )
+    app.nodeOutputs = parsedOutputs
+    nodeOutputs.value = { ...parsedOutputs }
   }
 
   function updateNodeImages(node: LGraphNode) {
