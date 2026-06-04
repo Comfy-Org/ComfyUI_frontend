@@ -2,11 +2,27 @@ import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { usdToCredits } from '@/base/credits/comfyCredits'
 import { TEAM_PLAN_CREDIT_STOPS } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 
 import CreditSlider from './CreditSlider.vue'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      subscription: { perMonth: '/ month' },
+      credits: { credits: 'Credits' }
+    }
+  }
+})
+
+function renderSlider(props: Record<string, unknown> = {}) {
+  return render(CreditSlider, { props, global: { plugins: [i18n] } })
+}
 
 async function flush() {
   await nextTick()
@@ -15,7 +31,7 @@ async function flush() {
 
 describe('CreditSlider', () => {
   it('defaults to the $700 stop (index 2) when no value is bound', async () => {
-    render(CreditSlider)
+    renderSlider()
     await flush()
 
     const thumb = screen.getByRole('slider')
@@ -28,9 +44,7 @@ describe('CreditSlider', () => {
     const user = userEvent.setup()
     const onUpdate = vi.fn<(usd: number) => void>()
 
-    render(CreditSlider, {
-      props: { modelValue: 700, 'onUpdate:modelValue': onUpdate }
-    })
+    renderSlider({ modelValue: 700, 'onUpdate:modelValue': onUpdate })
     await flush()
 
     screen.getByRole('slider').focus()
@@ -43,9 +57,7 @@ describe('CreditSlider', () => {
     const user = userEvent.setup()
     const onUpdate = vi.fn<(usd: number) => void>()
 
-    render(CreditSlider, {
-      props: { modelValue: 700, 'onUpdate:modelValue': onUpdate }
-    })
+    renderSlider({ modelValue: 700, 'onUpdate:modelValue': onUpdate })
     await flush()
 
     screen.getByRole('slider').focus()
@@ -58,7 +70,7 @@ describe('CreditSlider', () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
 
-    render(CreditSlider, { props: { modelValue: 700, onChange } })
+    renderSlider({ modelValue: 700, onChange })
     await flush()
 
     screen.getByRole('slider').focus()
@@ -72,7 +84,7 @@ describe('CreditSlider', () => {
   })
 
   it('renders all five fixed USD stop labels', async () => {
-    render(CreditSlider, { props: { modelValue: 700 } })
+    renderSlider({ modelValue: 700 })
     await flush()
 
     const stops = within(screen.getByTestId('credit-slider-stops'))

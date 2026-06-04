@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -52,6 +53,8 @@ const sliderModel = computed<number[]>({
 
 const lastIndex = TEAM_PLAN_CREDIT_STOPS.length - 1
 const formatNumber = (value: number) => value.toLocaleString('en-US')
+
+const { t } = useI18n()
 </script>
 
 <template>
@@ -60,14 +63,16 @@ const formatNumber = (value: number) => value.toLocaleString('en-US')
     <div class="flex items-baseline justify-between">
       <span class="text-2xl font-semibold text-base-foreground">
         ${{ formatNumber(current.usd) }}
-        <span class="text-sm font-normal text-muted-foreground">/ month</span>
+        <span class="text-sm font-normal text-muted-foreground">{{
+          t('subscription.perMonth')
+        }}</span>
       </span>
-      <span class="flex items-center gap-1 text-sm text-secondary-foreground">
+      <span class="text-secondary-foreground flex items-center gap-1 text-sm">
         <i
           class="icon-[comfy--credits] size-4 bg-amber-400"
           aria-hidden="true"
         />
-        {{ formatNumber(current.credits) }} credits
+        {{ formatNumber(current.credits) }} {{ t('credits.credits') }}
       </span>
     </div>
 
@@ -83,7 +88,7 @@ const formatNumber = (value: number) => value.toLocaleString('en-US')
     <!-- Stop labels; the selected stop is emphasized -->
     <div
       data-testid="credit-slider-stops"
-      class="flex justify-between text-xxs text-muted-foreground"
+      class="text-xxs flex justify-between text-muted-foreground"
     >
       <span
         v-for="(stop, i) in TEAM_PLAN_CREDIT_STOPS"
