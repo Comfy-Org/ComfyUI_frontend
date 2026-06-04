@@ -102,6 +102,14 @@ describe('isWidgetVisible', () => {
   it('returns true for advanced widgets when showAdvanced is true', () => {
     expect(isWidgetVisible({ advanced: true }, true)).toBe(true)
   })
+
+  it('keeps advanced widgets visible when linked and showAdvanced is false', () => {
+    expect(isWidgetVisible({ advanced: true }, false, true)).toBe(true)
+  })
+
+  it('keeps hidden widgets hidden when linked', () => {
+    expect(isWidgetVisible({ hidden: true }, false, true)).toBe(false)
+  })
 })
 
 describe('hasWidgetError', () => {
