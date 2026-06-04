@@ -8,18 +8,20 @@ import { getMimeType } from '@e2e/fixtures/utils/mimeTypeUtil'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 
+type DragDropOptions = {
+  fileName?: string
+  filePath?: string
+  url?: string
+  dropPosition?: Position
+  waitForUpload?: boolean
+  preserveNativePropagation?: boolean
+}
+
 export class DragDropHelper {
   constructor(private readonly page: Page) {}
 
   async dragAndDropExternalResource(
-    options: {
-      fileName?: string
-      filePath?: string
-      url?: string
-      dropPosition?: Position
-      waitForUpload?: boolean
-      preserveNativePropagation?: boolean
-    } = {}
+    options: DragDropOptions = {}
   ): Promise<void> {
     const {
       dropPosition = { x: 100, y: 100 },
@@ -156,24 +158,21 @@ export class DragDropHelper {
 
   async dragAndDropFile(
     fileName: string,
-    options: { dropPosition?: Position; waitForUpload?: boolean } = {}
+    options: DragDropOptions = {}
   ): Promise<void> {
     return this.dragAndDropExternalResource({ fileName, ...options })
   }
 
   async dragAndDropFilePath(
     filePath: string,
-    options: { dropPosition?: Position; waitForUpload?: boolean } = {}
+    options: DragDropOptions = {}
   ): Promise<void> {
     return this.dragAndDropExternalResource({ filePath, ...options })
   }
 
   async dragAndDropURL(
     url: string,
-    options: {
-      dropPosition?: Position
-      preserveNativePropagation?: boolean
-    } = {}
+    options: DragDropOptions = {}
   ): Promise<void> {
     return this.dragAndDropExternalResource({ url, ...options })
   }
