@@ -81,6 +81,30 @@ interface QueuedEvent {
  * CRITICAL: OSS Build Safety
  * Entire file is tree-shaken away in OSS builds (DISTRIBUTION unset).
  */
+interface DesktopEntryProps {
+  source_app: 'desktop'
+  desktop_device_id?: string
+}
+
+/**
+ * Read `?utm_source=comfy.desktop&desktop_device_id=<id>` from the current URL.
+ * Returns null when the visitor did not arrive from the desktop app.
+ *
+ * Why both fields are needed: `utm_source` is captured automatically by
+ * posthog-js as a super-property on this browser session, but `desktop_device_id`
+ * is an arbitrary param that posthog-js ignores. We have to explicitly read it
+ * and register it so backend events (Stripe webhooks → billing:subscription_created)
+ * can be joined back to the originating desktop install via person-on-events.
+ */
+function readDesktopEntryProps(): DesktopEntryProps | null {
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('utm_source') !== 'comfy.desktop') return null
+  const props: DesktopEntryProps = { source_app: 'desktop' }
+  const deviceId = params.get('desktop_device_id')
+  if (deviceId) props.desktop_device_id = deviceId
+  return props
+}
+
 export class PostHogTelemetryProvider implements TelemetryProvider {
   private isEnabled = true
   private posthog: PostHog | null = null
@@ -89,6 +113,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private isInitialized = false
   private lastTriggerSource: ExecutionTriggerSource | undefined
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
+  private desktopEntryProps: DesktopEntryProps | null = null
 
   constructor() {
     this.configureDisabledEvents(
@@ -128,11 +153,13 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             })
             this.isInitialized = true
             this.flushEventQueue()
+            this.registerDesktopEntryProps()
 
             const currentUser = useCurrentUser()
             currentUser.onUserResolved((user) => {
               if (this.posthog && user.id) {
                 this.posthog.identify(user.id)
+                this.setDesktopEntryPersonProperties()
                 this.setSubscriptionProperties()
               }
             })
@@ -265,6 +292,48 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         return isValid
       })
     )
+  }
+
+  /**
+   * Register desktop-entry props as super-properties on every event from this
+   * browser session. Caches the props on the instance so we can re-apply them
+   * to the person profile once the user authenticates.
+   *
+   * Fires regardless of whether a person profile exists yet — super-properties
+   * are session-scoped, not person-scoped, so they survive the
+   * `person_profiles: 'identified_only'` gate.
+   */
+  private registerDesktopEntryProps(): void {
+    if (!this.posthog) return
+    const props = readDesktopEntryProps()
+    if (!props) return
+    this.desktopEntryProps = props
+    try {
+      this.posthog.register(props)
+    } catch (error) {
+      console.error('Failed to register desktop entry props:', error)
+    }
+  }
+
+  /**
+   * Persist the desktop-entry props onto the person profile once `identify` has
+   * created one. Backend-fired events (Stripe webhook → billing:subscription_created)
+   * pick `desktop_device_id` up via person-on-events at ingest, so the join
+   * "subs where person.properties.desktop_device_id is not null" gives accurate
+   * Desktop → Cloud attribution even when the sub fires from outside the browser.
+   */
+  private setDesktopEntryPersonProperties(): void {
+    if (!this.posthog || !this.desktopEntryProps) return
+    const now = new Date().toISOString()
+    try {
+      this.posthog.people.set({
+        ...this.desktopEntryProps,
+        last_seen_via_desktop: now
+      })
+      this.posthog.people.set_once({ first_seen_via_desktop: now })
+    } catch (error) {
+      console.error('Failed to set desktop entry person properties:', error)
+    }
   }
 
   private setSubscriptionProperties(): void {
