@@ -85,7 +85,7 @@ const ctaLabel = t('models.list.creations.cta', locale)
 <template>
   <section
     data-testid="model-creations"
-    class="flex flex-col items-center px-4 pt-16 pb-20 lg:px-20 lg:pt-36"
+    class="flex flex-col items-center px-4 py-16 lg:px-20 lg:pt-36"
   >
     <h2
       class="max-w-4xl text-center text-3xl font-light tracking-tight text-primary-comfy-canvas lg:text-5xl"
