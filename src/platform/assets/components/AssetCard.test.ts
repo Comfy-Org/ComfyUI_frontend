@@ -49,7 +49,7 @@ const ORIGINAL_FILENAME = 'sunset_photo.png'
 function createDisplayAsset(
   overrides: Partial<AssetDisplayItem> = {}
 ): AssetDisplayItem {
-  return {
+  const base = {
     id: 'asset-1',
     name: HASH,
     asset_hash: HASH,
@@ -62,6 +62,8 @@ function createDisplayAsset(
     metadata: { filename: ORIGINAL_FILENAME },
     ...overrides
   }
+  // Canonical reads use `hash`; mirror `asset_hash` unless explicitly set.
+  return { hash: overrides.hash ?? base.asset_hash, ...base }
 }
 
 function renderCard(asset: AssetDisplayItem) {

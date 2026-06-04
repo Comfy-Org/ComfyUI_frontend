@@ -1463,6 +1463,7 @@ describe('assetsStore - Deletion State and Input Mapping', () => {
           {
             id: 'input-1',
             name: 'cute-puppy.png',
+            hash: 'abc123def.png',
             asset_hash: 'abc123def.png',
             tags: ['input']
           }
@@ -1516,6 +1517,7 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
   ): AssetItem => ({
     id,
     name,
+    hash: asset_hash,
     asset_hash,
     size: 0,
     tags: ['output']

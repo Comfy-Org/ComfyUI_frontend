@@ -691,6 +691,7 @@ describe('useWidgetSelectItems', () => {
         {
           id: 'asset-flat-1',
           name: 'z-image-turbo_00093_.png',
+          hash: '039b051670f08941649419dcecea41cb9057f2895388f2e8165ec99df3af0b13.png',
           asset_hash:
             '039b051670f08941649419dcecea41cb9057f2895388f2e8165ec99df3af0b13.png',
           tags: ['output'],
@@ -734,6 +735,7 @@ describe('useWidgetSelectItems', () => {
         {
           id: 'asset-out-1',
           name: 'z-image-turbo_00093_.png',
+          hash: '039b051670f08941649419dcecea41cb9057f2895388f2e8165ec99df3af0b13.png',
           asset_hash:
             '039b051670f08941649419dcecea41cb9057f2895388f2e8165ec99df3af0b13.png',
           preview_url: '/api/view?filename=039b...0b13.png',
@@ -973,6 +975,7 @@ describe('useWidgetSelectItems', () => {
         {
           id: 'asset-hash-1',
           name: 'a1ef7d292026e89ce9bbbd8093e2d0ed6a8850361a0c22e49522ac7baa5494e5.png',
+          hash: 'a1ef7d292026e89ce9bbbd8093e2d0ed6a8850361a0c22e49522ac7baa5494e5',
           asset_hash:
             'a1ef7d292026e89ce9bbbd8093e2d0ed6a8850361a0c22e49522ac7baa5494e5',
           preview_url: '/preview.png',

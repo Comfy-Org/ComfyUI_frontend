@@ -32,6 +32,7 @@ function makeAsset(overrides: Partial<AssetMeta> = {}): AssetMeta {
   return {
     id: 'asset-1',
     name: 'mesh.glb',
+    hash: null,
     asset_hash: null,
     mime_type: 'model/gltf-binary',
     tags: [],

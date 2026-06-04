@@ -10,7 +10,7 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 // Mock factory using actual type
 function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
-  return {
+  const base = {
     id: 'test-asset-id',
     name: 'test-image.png',
     asset_hash: 'hash123',
@@ -22,6 +22,8 @@ function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
     last_access_time: new Date().toISOString(),
     ...overrides
   }
+  // Canonical reads use `hash`; mirror `asset_hash` unless explicitly set.
+  return { hash: overrides.hash ?? base.asset_hash, ...base }
 }
 
 // Use vi.hoisted() to ensure mock state is initialized before mocks

@@ -221,7 +221,7 @@ vi.mock('../utils/markDeletedAssetsAsMissingMedia', () => ({
 }))
 
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
-  return {
+  const base = {
     id: 'test-asset-id',
     name: 'original-name.jpeg',
     size: 1024,
@@ -229,6 +229,8 @@ function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
     tags: ['input'],
     ...overrides
   }
+  // Canonical reads use `hash`; mirror `asset_hash` unless explicitly set.
+  return { hash: overrides.hash ?? base.asset_hash, ...base }
 }
 
 function createMockMediaAsset(overrides: Partial<AssetMeta> = {}): AssetMeta {
