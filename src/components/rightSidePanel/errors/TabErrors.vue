@@ -177,7 +177,7 @@
 
           <!-- Swap Nodes -->
           <SwapNodesCard
-            v-else-if="group.type === 'swap_nodes'"
+            v-if="group.type === 'swap_nodes'"
             :swap-node-groups="swapNodeGroups"
             :show-node-id-badge="showNodeIdBadge"
             @locate-node="handleLocateMissingNode"
@@ -185,7 +185,7 @@
           />
 
           <!-- Execution Errors -->
-          <div v-else-if="group.type === 'execution'" class="space-y-3 px-4">
+          <div v-if="group.type === 'execution'" class="space-y-3 px-4">
             <ErrorNodeCard
               v-for="card in group.cards"
               :key="card.id"
@@ -200,7 +200,7 @@
 
           <!-- Missing Models -->
           <MissingModelCard
-            v-else-if="group.type === 'missing_model'"
+            v-if="group.type === 'missing_model'"
             :missing-model-groups="missingModelGroups"
             :show-node-id-badge="showNodeIdBadge"
             @locate-model="handleLocateAssetNode"
@@ -208,7 +208,7 @@
 
           <!-- Missing Media -->
           <MissingMediaCard
-            v-else-if="group.type === 'missing_media'"
+            v-if="group.type === 'missing_media'"
             :missing-media-groups="missingMediaGroups"
             :show-node-id-badge="showNodeIdBadge"
             @locate-node="handleLocateAssetNode"

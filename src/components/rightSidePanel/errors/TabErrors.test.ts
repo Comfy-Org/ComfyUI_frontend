@@ -8,6 +8,7 @@ import TabErrors from './TabErrors.vue'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import type { MissingNodeType } from '@/types/comfy'
 
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -347,6 +348,40 @@ describe('TabErrors.vue', () => {
     expect(screen.getByText('Missing Inputs (1)')).toBeInTheDocument()
     expect(
       screen.getByText('A required media input has no file selected.')
+    ).toBeInTheDocument()
+  })
+
+  it('renders swap node rows below the section display message', () => {
+    const swapNode = {
+      type: 'OldSampler',
+      nodeId: '1',
+      isReplaceable: true,
+      replacement: {
+        old_node_id: 'OldSampler',
+        new_node_id: 'KSampler',
+        old_widget_ids: null,
+        input_mapping: null,
+        output_mapping: null
+      }
+    } satisfies MissingNodeType
+
+    renderComponent({
+      missingNodesError: {
+        missingNodesError: {
+          message: 'Missing Node Packs',
+          nodeTypes: [swapNode]
+        }
+      }
+    })
+
+    expect(screen.getByText('Swap Nodes (1)')).toBeInTheDocument()
+    expect(
+      screen.getByText('Some nodes can be replaced with alternatives')
+    ).toBeInTheDocument()
+    expect(screen.getByText('OldSampler (1)')).toBeInTheDocument()
+    expect(screen.getByText('KSampler')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Replace Node/ })
     ).toBeInTheDocument()
   })
 
