@@ -35,7 +35,7 @@ describe('useAssetBrowser', () => {
   const createApiAsset = (overrides: Partial<AssetItem> = {}): AssetItem => ({
     id: 'test-id',
     name: 'test-asset.safetensors',
-    asset_hash: 'blake3:abc123',
+    hash: 'blake3:abc123',
     size: 1024,
     mime_type: 'application/octet-stream',
     tags: ['models', 'checkpoints'],
