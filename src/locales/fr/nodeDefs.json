@@ -593,6 +593,32 @@
       }
     }
   },
+  "BriaTransparentVideoBackground": {
+    "description": "Supprimez l’arrière-plan d’une vidéo avec Bria et obtenez les images détourées ainsi qu’un masque alpha. Connectez-les à un nœud de composition ou transmettez-les à Enregistrer WEBM pour créer une vidéo transparente.",
+    "display_name": "Bria Suppression de l’arrière-plan vidéo (Transparent)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit la graine."
+      },
+      "video": {
+        "name": "vidéo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Générez une vidéo avec Seedance 2.0 à partir d'une image de première image et, optionnellement, d'une image de dernière image.",
     "display_name": "ByteDance Seedance 2.0 Première-Dernière-Image vers Vidéo",
@@ -1208,6 +1234,29 @@
     "outputs": {
       "0": {
         "name": "modèle_patché",
+        "tooltip": null
+      }
+    }
+  },
+  "CFGOverride": {
+    "description": "Remplace le cfg par une valeur fixe sur une tranche de pourcentage [début, fin] des étapes. En cas de remplacements multiples, celui le plus proche du sampler prévaut en cas de chevauchement.",
+    "display_name": "Remplacement CFG",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_percent": {
+        "name": "pourcentage_fin"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "start_percent": {
+        "name": "pourcentage_début"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -2954,6 +3003,34 @@
       },
       "type": {
         "name": "type"
+      }
+    }
+  },
+  "DualModelGuider": {
+    "display_name": "Guider CFG Double Modèle",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle utilisé pour le passage positif (conditionnel)."
+      },
+      "model_negative": {
+        "name": "modèle_négatif",
+        "tooltip": "Modèle utilisé pour le passage négatif (inconditionnel). Utilisez le même modèle pour un CFG ordinaire."
+      },
+      "negative": {
+        "name": "négatif",
+        "tooltip": "Conditionnement négatif exécuté sur le modèle négatif. Laissez non connecté pour un passage inconditionnel sans texte (image uniquement)."
+      },
+      "positive": {
+        "name": "positif"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -5679,6 +5756,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "Planificateur Ideogram 4",
+    "inputs": {
+      "height": {
+        "name": "hauteur"
+      },
+      "mu": {
+        "name": "mu"
+      },
+      "std": {
+        "name": "écart_type"
+      },
+      "steps": {
+        "name": "étapes"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "description": "Génère des images de manière synchrone en utilisant le modèle Ideogram V1.\n\nLes liens des images sont disponibles pour une durée limitée ; si vous souhaitez conserver l'image, vous devez la télécharger.",
     "display_name": "Ideogram V1",
@@ -5815,6 +5917,34 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "description": "Génère des images à l’aide du modèle Ideogram 4.0 à partir d’une invite textuelle.",
+    "display_name": "Ideogram V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Invite textuelle pour la génération d’image."
+      },
+      "rendering_speed": {
+        "name": "vitesse_de_rendu",
+        "tooltip": "Contrôle le compromis entre la vitesse de génération et la qualité."
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine"
       }
     },
     "outputs": {
@@ -16564,7 +16694,8 @@
         "name": "fps"
       },
       "images": {
-        "name": "images"
+        "name": "images",
+        "tooltip": "Les images RGBA sont enregistrées avec leur canal alpha comme transparence (codec vp9 uniquement)."
       }
     }
   },

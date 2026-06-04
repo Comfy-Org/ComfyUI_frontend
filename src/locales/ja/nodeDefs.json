@@ -593,6 +593,32 @@
       }
     }
   },
+  "BriaTransparentVideoBackground": {
+    "description": "Bria を使用して動画の背景を除去し、切り抜かれたフレームとアルファマスクを返します。両方を合成ノードに接続するか、「Save WEBM」に渡して透明な動画を書き出せます。",
+    "display_name": "Bria 動画背景除去（透明）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seedはノードの再実行を制御します。seedに関わらず結果は非決定的です。"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像",
+        "tooltip": null
+      },
+      "1": {
+        "name": "マスク",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Seedance 2.0 を使用して、最初のフレーム画像とオプションの最後のフレーム画像から動画を生成します。",
     "display_name": "ByteDance Seedance 2.0 ファースト・ラストフレームから動画生成",
@@ -1208,6 +1234,29 @@
     "outputs": {
       "0": {
         "name": "修正済みモデル",
+        "tooltip": null
+      }
+    }
+  },
+  "CFGOverride": {
+    "description": "ステップの [開始, 終了] パーセント区間で cfg を固定値に上書きします。複数の上書きが重なる場合、サンプラーに最も近いものが優先されます。",
+    "display_name": "CFG 上書き",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_percent": {
+        "name": "終了パーセント"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_percent": {
+        "name": "開始パーセント"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -2954,6 +3003,34 @@
       },
       "type": {
         "name": "タイプ"
+      }
+    }
+  },
+  "DualModelGuider": {
+    "display_name": "デュアルモデル CFG ガイダー",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "ポジティブ（条件付き）パスで使用するモデル。"
+      },
+      "model_negative": {
+        "name": "model_negative",
+        "tooltip": "ネガティブ（無条件）パスで使用するモデル。通常のCFGには同じモデルを使用します。"
+      },
+      "negative": {
+        "name": "ネガティブ",
+        "tooltip": "ネガティブモデルで実行するネガティブコンディショニング。未接続の場合はテキストなし（画像のみ）の無条件パスになります。"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -5679,6 +5756,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "Ideogram 4 スケジューラー",
+    "inputs": {
+      "height": {
+        "name": "高さ"
+      },
+      "mu": {
+        "name": "μ"
+      },
+      "std": {
+        "name": "σ"
+      },
+      "steps": {
+        "name": "ステップ数"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "description": "Ideogram V1モデルを使用して同期的に画像を生成します。\n\n画像リンクは一定期間のみ有効です。画像を保存したい場合は、ダウンロードしてください。",
     "display_name": "Ideogram V1",
@@ -5815,6 +5917,34 @@
       },
       "seed": {
         "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "description": "Ideogram 4.0 モデルを使い、テキストプロンプトから画像を生成します。",
+    "display_name": "Ideogram V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像生成用のテキストプロンプト。"
+      },
+      "rendering_speed": {
+        "name": "レンダリング速度",
+        "tooltip": "生成速度と品質のトレードオフを制御します。"
+      },
+      "resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -16564,7 +16694,8 @@
         "name": "fps"
       },
       "images": {
-        "name": "画像"
+        "name": "画像",
+        "tooltip": "RGBA画像はアルファチャンネルを透明度として保存します（vp9コーデックのみ対応）。"
       }
     }
   },
