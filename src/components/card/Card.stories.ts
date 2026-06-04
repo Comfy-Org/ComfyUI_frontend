@@ -3,6 +3,7 @@ import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import Tag from '@/components/chip/Tag.vue'
+import RatingPanel from '@/components/widget/panel/RatingPanel.vue'
 import CardBottom from './CardBottom.vue'
 import CardContainer from './CardContainer.vue'
 import CardDescription from './CardDescription.vue'
@@ -260,6 +261,110 @@ const createCardTemplate = (args: CardStoryArgs) => ({
           </CardBottom>
         </template>
       </CardContainer>
+    </div>
+  `
+})
+
+const createCardWithRatingPanelTemplate = (args: CardStoryArgs) => ({
+  components: {
+    CardContainer,
+    CardTop,
+    CardBottom,
+    CardTitle,
+    CardDescription,
+    Button,
+    Tag,
+    RatingPanel
+  },
+  setup() {
+    const favorited = ref(false)
+    const toggleFavorite = () => {
+      favorited.value = !favorited.value
+    }
+
+    return {
+      args,
+      favorited,
+      toggleFavorite
+    }
+  },
+  template: `
+    <div class="flex gap-0 p-8 bg-white/90! rounded-2xl items-start justify-left">
+      <div class="flex-0">
+        <RatingPanel/>
+      </div>
+      <div class="flex-1 max-w-xs bg-white/90! rounded-2xl shadow p-0 flex flex-col gap-4">
+        <CardContainer 
+          :size="args.containerSize"
+          :variant="args.variant"
+          :rounded="args.rounded"
+          :custom-aspect-ratio="args.customAspectRatio"
+          :has-border="args.hasBorder"
+          :has-background="args.hasBackground"
+          :has-shadow="args.hasShadow"
+          :has-cursor="args.hasCursor"
+          :class="args.customClass || 'max-w-[320px] mx-auto'"
+        >
+          <template #top>
+            <CardTop :ratio="args.topRatio">
+              <template #default>
+                <div 
+                  v-if="!args.showImage"
+                  class="w-full h-full"
+                  :style="{ backgroundColor: args.backgroundColor }"
+                ></div>
+                <img 
+                  v-else
+                  :src="args.imageUrl || 'https://via.placeholder.com/400'"
+                  class="w-full h-full object-cover"
+                  alt="Card image"
+                />
+              </template>
+              
+              <template v-if="args.showTopLeft" #top-left>
+                <Tag label="Featured" />
+              </template>
+              
+              <template v-if="args.showTopRight" #top-right>
+                <Button
+                  class="bg-white/90! text-neutral-900!"
+                  @click="() => console.log('Info clicked')"
+                >
+                  <i class="icon-[lucide--info] size-4" />
+                </Button>
+                <Button
+                  class="bg-white/90!"
+                  :class="favorited ? 'text-red-500!' : 'text-neutral-900!'"
+                  @click="toggleFavorite"
+                >
+                  <i class="icon-[lucide--heart] size-4" :class="favorited ? 'fill-current' : ''" />
+                </Button>
+              </template>
+              
+              <template v-if="args.showBottomLeft" #bottom-left>
+                <Tag label="New" />
+              </template>
+              
+              <template v-if="args.showBottomRight" #bottom-right>
+                <Tag v-if="args.showFileType" :label="args.fileType" />
+                <Tag v-if="args.showFileSize" :label="args.fileSize" />
+                <Tag v-for="tag in args.tags" :key="tag" :label="tag">
+                  <template v-if="tag === 'LoRA'" #icon>
+                    <i class="icon-[lucide--folder] size-3" />
+                  </template>
+                </Tag>
+              </template>
+            </CardTop>
+          </template>
+          
+          <template #bottom>
+            <CardBottom>
+              <CardTitle v-if="args.showTitle">{{ args.title }}</CardTitle>
+              <CardDescription v-if="args.showDescription">{{ args.description }}</CardDescription>
+            </CardBottom>
+          </template>
+        </CardContainer>
+      </div>
     </div>
   `
 })
@@ -680,5 +785,37 @@ export const FullFeaturedCard: Story = {
     fileSize: '5.4 GB',
     showFileType: true,
     fileType: 'pack'
+  }
+}
+
+export const ImageCardWithRating: Story = {
+  render: (args: CardStoryArgs) => createCardWithRatingPanelTemplate(args),
+  args: {
+    containerSize: 'portrait',
+    variant: 'default',
+    rounded: 'lg',
+    customAspectRatio: '',
+    hasBorder: true,
+    hasBackground: true,
+    hasShadow: true,
+    hasCursor: true,
+    customClass: '',
+    topRatio: 'square',
+    showTopLeft: false,
+    showTopRight: true,
+    showBottomLeft: false,
+    showBottomRight: true,
+    showTitle: true,
+    showDescription: true,
+    title: 'Generated Image',
+    description: 'Created with DreamShaper XL',
+    backgroundColor: '#3b82f6',
+    showImage: true,
+    imageUrl: 'https://picsum.photos/400/400',
+    tags: ['Output'],
+    showFileSize: true,
+    fileSize: '856 KB',
+    showFileType: true,
+    fileType: 'png'
   }
 }
