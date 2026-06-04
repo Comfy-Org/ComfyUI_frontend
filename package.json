@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.46.8",
+  "version": "1.46.9",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -8,12 +8,12 @@
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "type": "module",
   "scripts": {
-    "build:cloud": "cross-env DISTRIBUTION=cloud NODE_OPTIONS='--max-old-space-size=8192' vite build --config vite.config.mts",
+    "build:cloud": "cross-env DISTRIBUTION=cloud vite build --config vite.config.mts",
     "build:desktop": "pnpm --filter @comfyorg/desktop-ui run build",
     "build-storybook": "storybook build",
-    "build:types": "cross-env NODE_OPTIONS='--max-old-space-size=8192' vite build --config vite.types.config.mts && node scripts/prepare-types.js",
+    "build:types": "vite build --config vite.types.config.mts && node scripts/prepare-types.js",
     "build:analyze": "cross-env ANALYZE_BUNDLE=true pnpm build",
-    "build": "cross-env NODE_OPTIONS='--max-old-space-size=8192' pnpm typecheck && vite build --config vite.config.mts",
+    "build": "pnpm typecheck && vite build --config vite.config.mts",
     "clean": "pnpm dlx rimraf dist dist-ssr coverage playwright-report blob-report test-results node_modules/.vite apps/desktop-ui/dist apps/website/dist",
     "clean:all": "pnpm clean && pnpm dlx rimraf node_modules",
     "size:collect": "node scripts/size-collect.js",

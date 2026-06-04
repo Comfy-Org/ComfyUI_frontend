@@ -593,6 +593,32 @@
       }
     }
   },
+  "BriaTransparentVideoBackground": {
+    "description": "إزالة الخلفية من الفيديو باستخدام Bria وإرجاع الإطارات المقطوعة بالإضافة إلى قناع ألفا. قم بتوصيلهما مع عقدة تركيب، أو مررهما إلى حفظ WEBM لكتابة فيديو شفاف.",
+    "display_name": "Bria إزالة خلفية الفيديو (شفافة)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "video": {
+        "name": "فيديو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "صور",
+        "tooltip": null
+      },
+      "1": {
+        "name": "قناع",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "إنشاء فيديو باستخدام Seedance 2.0 من صورة الإطار الأول وصورة الإطار الأخير (اختياري).",
     "display_name": "ByteDance Seedance 2.0 من الإطار الأول/الأخير إلى فيديو",
@@ -1208,6 +1234,29 @@
     "outputs": {
       "0": {
         "name": "النموذج المعدل",
+        "tooltip": null
+      }
+    }
+  },
+  "CFGOverride": {
+    "description": "تجاوز قيمة cfg إلى قيمة ثابتة خلال شريحة [بداية، نهاية] مئوية من الخطوات. مع وجود عدة تجاوزات، يتم اختيار الأقرب إلى العينة في حالة التداخل.",
+    "display_name": "تجاوز cfg",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_percent": {
+        "name": "النسبة المئوية للنهاية"
+      },
+      "model": {
+        "name": "نموذج"
+      },
+      "start_percent": {
+        "name": "النسبة المئوية للبداية"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -2954,6 +3003,34 @@
       },
       "type": {
         "name": "النوع"
+      }
+    }
+  },
+  "DualModelGuider": {
+    "display_name": "موجه نموذج مزدوج CFG",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "نموذج",
+        "tooltip": "النموذج المستخدم للتمرير الإيجابي (الشرطي)."
+      },
+      "model_negative": {
+        "name": "نموذج سلبي",
+        "tooltip": "النموذج المستخدم للتمرير السلبي (غير الشرطي). استخدم نفس النموذج لـ CFG العادي."
+      },
+      "negative": {
+        "name": "سلبي",
+        "tooltip": "تشغيل التكييف السلبي على النموذج السلبي. اتركه غير متصل للحصول على تمرير غير شرطي بدون نص (صور فقط)."
+      },
+      "positive": {
+        "name": "إيجابي"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -5679,6 +5756,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "مجدول Ideogram 4",
+    "inputs": {
+      "height": {
+        "name": "الارتفاع"
+      },
+      "mu": {
+        "name": "mu"
+      },
+      "std": {
+        "name": "std"
+      },
+      "steps": {
+        "name": "خطوات"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "description": "ينشئ صورًا تزامنيًا باستخدام نموذج Ideogram V1.\n\nروابط الصور متاحة لفترة محدودة؛ إذا أردت الاحتفاظ بالصورة، يجب تنزيلها.",
     "display_name": "Ideogram V1",
@@ -5812,6 +5914,34 @@
       "resolution": {
         "name": "الدقة",
         "tooltip": "دقة توليد الصورة. إذا لم يتم تعيينها إلى تلقائي، فإنها تتجاوز إعداد نسبة العرض إلى الارتفاع."
+      },
+      "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "description": "ينتج صورًا باستخدام نموذج Ideogram 4.0 من خلال موجه نصي.",
+    "display_name": "Ideogram V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "prompt": {
+        "name": "موجه",
+        "tooltip": "موجه نصي لتوليد الصورة."
+      },
+      "rendering_speed": {
+        "name": "سرعة العرض",
+        "tooltip": "يتحكم في التوازن بين سرعة التوليد والجودة."
+      },
+      "resolution": {
+        "name": "الدقة"
       },
       "seed": {
         "name": "البذرة"
@@ -16564,7 +16694,8 @@
         "name": "معدل الإطارات في الثانية"
       },
       "images": {
-        "name": "الصور"
+        "name": "الصور",
+        "tooltip": "يتم حفظ صور RGBA مع قناة ألفا الخاصة بها كشفافية (ترميز vp9 فقط)."
       }
     }
   },

@@ -247,6 +247,23 @@ export interface NodeSearchMetadata {
 }
 
 /**
+ * Node added metadata. `source` indicates how the user initiated the add.
+ * Bulk additions during workflow load are excluded — workflow_imported
+ * already covers that.
+ */
+export type NodeAddSource =
+  | 'sidebar_drag'
+  | 'search_modal'
+  | 'paste'
+  | 'programmatic'
+  | 'unknown'
+
+export interface NodeAddedMetadata {
+  node_type: string
+  source: NodeAddSource
+}
+
+/**
  * Node search result selection metadata
  */
 export interface NodeSearchResultMetadata {
@@ -339,6 +356,7 @@ export interface CheckoutAttributionMetadata {
   ga_session_id?: string
   ga_session_number?: string
   im_ref?: string
+  rewardful_referral?: string
   utm_source?: string
   utm_medium?: string
   utm_campaign?: string
@@ -451,6 +469,9 @@ export interface TelemetryProvider {
   trackNodeSearch?(metadata: NodeSearchMetadata): void
   trackNodeSearchResultSelected?(metadata: NodeSearchResultMetadata): void
 
+  // Node-added-to-canvas analytics
+  trackNodeAdded?(metadata: NodeAddedMetadata): void
+
   // Template filter tracking events
   trackTemplateFilterChanged?(metadata: TemplateFilterMetadata): void
 
@@ -537,6 +558,7 @@ export const TelemetryEvents = {
   // Node Search Analytics
   NODE_SEARCH: 'app:node_search',
   NODE_SEARCH_RESULT_SELECTED: 'app:node_search_result_selected',
+  NODE_ADDED: 'app:node_added_to_workflow',
 
   // Template Filter Analytics
   TEMPLATE_FILTER_CHANGED: 'app:template_filter_changed',

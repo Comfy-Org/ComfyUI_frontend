@@ -593,6 +593,32 @@
       }
     }
   },
+  "BriaTransparentVideoBackground": {
+    "description": "使用 Bria 移除视频背景，并返回抠图帧和 alpha mask。可将两者连接到合成节点，或传递给保存 WEBM 节点以生成透明视频。",
+    "display_name": "Bria 移除视频背景（透明）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子用于控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      },
+      "video": {
+        "name": "视频"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "使用 Seedance 2.0 从首帧图像和可选的末帧图像生成视频。",
     "display_name": "ByteDance Seedance 2.0 首帧-末帧生成视频",
@@ -1208,6 +1234,29 @@
     "outputs": {
       "0": {
         "name": "模型",
+        "tooltip": null
+      }
+    }
+  },
+  "CFGOverride": {
+    "description": "在步骤的 [起始百分比, 结束百分比] 区间内将 cfg 覆盖为固定值。若有多个覆盖，采样器最近的覆盖优先生效。",
+    "display_name": "CFG 覆盖",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_percent": {
+        "name": "结束百分比"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "start_percent": {
+        "name": "起始百分比"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -2954,6 +3003,34 @@
       },
       "type": {
         "name": "类型"
+      }
+    }
+  },
+  "DualModelGuider": {
+    "display_name": "双模型 CFG 指导器",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于正向（条件）推理的模型。"
+      },
+      "model_negative": {
+        "name": "负向模型",
+        "tooltip": "用于负向（无条件）推理的模型。普通 CFG 可用同一模型。"
+      },
+      "negative": {
+        "name": "负向",
+        "tooltip": "在负向模型上运行的负向条件。若不连接则为无文本（仅图像）无条件推理。"
+      },
+      "positive": {
+        "name": "正向"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -5679,6 +5756,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "Ideogram 4 调度器",
+    "inputs": {
+      "height": {
+        "name": "高度"
+      },
+      "mu": {
+        "name": "均值"
+      },
+      "std": {
+        "name": "标准差"
+      },
+      "steps": {
+        "name": "步数"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "description": "使用 Ideogram V1 模型同步生成图像。\n\n图片链接仅在有限时间内有效；如果您想保留图片，请务必下载。",
     "display_name": "Ideogram V1",
@@ -5815,6 +5917,34 @@
       },
       "seed": {
         "name": "随机种"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "description": "使用 Ideogram 4.0 模型根据文本提示生成图像。",
+    "display_name": "Ideogram V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于图像生成的文本提示。"
+      },
+      "rendering_speed": {
+        "name": "生成速度",
+        "tooltip": "控制生成速度与质量的权衡。"
+      },
+      "resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "种子"
       }
     },
     "outputs": {
@@ -16564,7 +16694,8 @@
         "name": "帧率"
       },
       "images": {
-        "name": "图像"
+        "name": "图像",
+        "tooltip": "RGBA 图像将以 alpha 通道作为透明度保存（仅 vp9 编解码器支持）。"
       }
     }
   },
