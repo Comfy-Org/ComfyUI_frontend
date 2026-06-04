@@ -23,7 +23,7 @@ const cards: FreshCard[] = [
     titleKey: 'drops-landing.fresh.card1.title',
     bodyKey: 'drops-landing.fresh.card1.body',
     ctaKey: 'drops-landing.fresh.card1.cta',
-    href: externalLinks.youtube,
+    href: externalLinks.liveDemoEvent,
     imageUrl: '/drops/fresh-drops.svg'
   },
   {
@@ -31,7 +31,7 @@ const cards: FreshCard[] = [
     titleKey: 'drops-landing.fresh.card2.title',
     bodyKey: 'drops-landing.fresh.card2.body',
     ctaKey: 'drops-landing.fresh.card2.cta',
-    href: 'https://blog.comfy.org/',
+    href: externalLinks.blog,
     imageUrl: '/drops/fresh-originals.svg'
   }
 ]

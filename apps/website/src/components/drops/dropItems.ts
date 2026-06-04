@@ -43,37 +43,37 @@ export const dropItems: DropItem[] = [
     ctaKey: 'drops-landing.item.oss-vram.cta',
     imageUrl: '/drops/oss-vram.svg',
     external: true,
-    url: 'https://github.com/Comfy-Org/ComfyUI/releases'
+    url: 'https://blog.comfy.org/p/dynamic-vram-in-comfyui-saving-local'
   },
   {
     id: 'comfy-mcp',
     titleKey: 'drops-landing.item.comfy-mcp.title',
     taglineKey: 'drops-landing.item.comfy-mcp.tagline',
     bodyKey: 'drops-landing.item.comfy-mcp.body',
-    ctaKey: 'drops-landing.item.comfy-mcp.cta',
+    ctaKey: 'drops-landing.item.register-for-live-demo.cta',
     imageUrl: '/drops/comfy-mcp.svg',
     external: true,
-    url: 'https://docs.comfy.org/'
+    url: 'https://luma.com/l7c5z4gp?tk=nm3dWZ'
   },
   {
     id: 'comfy-cli',
     titleKey: 'drops-landing.item.comfy-cli.title',
     taglineKey: 'drops-landing.item.comfy-cli.tagline',
     bodyKey: 'drops-landing.item.comfy-cli.body',
-    ctaKey: 'drops-landing.item.comfy-cli.cta',
+    ctaKey: 'drops-landing.item.register-for-live-demo.cta',
     imageUrl: '/drops/comfy-cli.svg',
     external: true,
-    url: 'https://docs.comfy.org/'
+    url: 'https://luma.com/l7c5z4gp?tk=nm3dWZ'
   },
   {
     id: 'team-plans',
     titleKey: 'drops-landing.item.team-plans.title',
     taglineKey: 'drops-landing.item.team-plans.tagline',
     bodyKey: 'drops-landing.item.team-plans.body',
-    ctaKey: 'drops-landing.item.team-plans.cta',
+    ctaKey: 'drops-landing.item.register-for-live-demo.cta',
     imageUrl: '/drops/team-plans.svg',
     external: true,
-    url: 'https://cloud.comfy.org'
+    url: 'https://luma.com/l7c5z4gp?tk=nm3dWZ'
   }
 ]
 

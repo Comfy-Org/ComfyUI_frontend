@@ -39,11 +39,18 @@ const dropsUrl = `comfy.org${routes.drops}`
       class="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
     >
       <BrandButton
-        href="#more-drops"
+        :href="externalLinks.liveDemoEvent"
+        target="_blank"
+        rel="noopener noreferrer"
         size="lg"
         data-testid="drops-hero-primary-cta"
         class="px-8 py-4 text-base"
-        @click="captureDropClick('hero', { cta: 'explore_whats_new' })"
+        @click="
+          captureDropClick('hero', {
+            cta: 'explore_whats_new',
+            href: externalLinks.liveDemoEvent
+          })
+        "
       >
         {{ t('drops-landing.hero.primaryCta', locale) }}
       </BrandButton>

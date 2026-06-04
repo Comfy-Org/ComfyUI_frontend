@@ -4830,10 +4830,6 @@ const translations = {
     'zh-CN':
       'Build pipelines that talk directly to your stack. Every connection is a node. Every parameter is yours to control.'
   },
-  'drops-landing.item.comfy-mcp.cta': {
-    en: 'TRY COMFY MCP',
-    'zh-CN': 'TRY COMFY MCP'
-  },
   'drops-landing.item.comfy-cli.title': {
     en: 'Comfy CLI',
     'zh-CN': 'Comfy CLI'
@@ -4846,10 +4842,6 @@ const translations = {
     en: 'Full pipeline control without the GUI. Scriptable, composable, and built for teams who move fast.',
     'zh-CN':
       'Full pipeline control without the GUI. Scriptable, composable, and built for teams who move fast.'
-  },
-  'drops-landing.item.comfy-cli.cta': {
-    en: 'TRY COMFY CLI',
-    'zh-CN': 'TRY COMFY CLI'
   },
   'drops-landing.item.team-plans.title': {
     en: 'Comfy Team Plans',
@@ -4864,9 +4856,9 @@ const translations = {
     'zh-CN':
       'Shared workflows, collaborative node graphs, and enterprise-ready controls — all in one place.'
   },
-  'drops-landing.item.team-plans.cta': {
-    en: 'SEE TEAM PLANS',
-    'zh-CN': 'SEE TEAM PLANS'
+  'drops-landing.item.register-for-live-demo.cta': {
+    en: 'REGISTER FOR THE LIVE DEMO',
+    'zh-CN': 'REGISTER FOR THE LIVE DEMO'
   },
 
   // Get Started in 3 Steps section

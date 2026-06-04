@@ -55,6 +55,8 @@ export const externalLinks = {
   affiliateApplicationForm: 'https://forms.gle/RS8L2ttcuGap4Q1v6',
   apiKeys: 'https://platform.comfy.org/profile/api-keys',
   blog: 'https://blog.comfy.org/',
+  blogDynamicVram:
+    'https://blog.comfy.org/p/dynamic-vram-in-comfyui-saving-local',
   cloud: 'https://cloud.comfy.org',
   cloudStatus: 'https://status.comfy.org',
   discord: 'https://discord.com/invite/comfyorg',
@@ -63,6 +65,7 @@ export const externalLinks = {
   docsSubscription: 'https://docs.comfy.org/support/subscription/subscribing',
   github: 'https://github.com/Comfy-Org/ComfyUI',
   githubInstall: 'https://github.com/Comfy-Org/ComfyUI#installing',
+  liveDemoEvent: 'https://luma.com/l7c5z4gp?tk=nm3dWZ',
   platform: 'https://platform.comfy.org',
   platformUsage: 'https://platform.comfy.org/profile/usage',
   support: 'https://support.comfy.org/hc/en-us',
