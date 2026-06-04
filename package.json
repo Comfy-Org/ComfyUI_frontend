@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.45.13",
+  "version": "1.46.9",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -8,12 +8,12 @@
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "type": "module",
   "scripts": {
-    "build:cloud": "cross-env DISTRIBUTION=cloud NODE_OPTIONS='--max-old-space-size=8192' vite build --config vite.config.mts",
+    "build:cloud": "cross-env DISTRIBUTION=cloud vite build --config vite.config.mts",
     "build:desktop": "pnpm --filter @comfyorg/desktop-ui run build",
     "build-storybook": "storybook build",
-    "build:types": "cross-env NODE_OPTIONS='--max-old-space-size=8192' vite build --config vite.types.config.mts && node scripts/prepare-types.js",
+    "build:types": "vite build --config vite.types.config.mts && node scripts/prepare-types.js",
     "build:analyze": "cross-env ANALYZE_BUNDLE=true pnpm build",
-    "build": "cross-env NODE_OPTIONS='--max-old-space-size=8192' pnpm typecheck && vite build --config vite.config.mts",
+    "build": "pnpm typecheck && vite build --config vite.config.mts",
     "clean": "pnpm dlx rimraf dist dist-ssr coverage playwright-report blob-report test-results node_modules/.vite apps/desktop-ui/dist apps/website/dist",
     "clean:all": "pnpm clean && pnpm dlx rimraf node_modules",
     "size:collect": "node scripts/size-collect.js",
@@ -97,7 +97,7 @@
     "axios": "catalog:",
     "chart.js": "^4.5.0",
     "cva": "catalog:",
-    "dompurify": "^3.2.5",
+    "dompurify": "catalog:",
     "dotenv": "catalog:",
     "es-toolkit": "^1.39.9",
     "extendable-media-recorder": "^9.2.27",
@@ -193,7 +193,7 @@
     "unplugin-icons": "catalog:",
     "unplugin-typegpu": "catalog:",
     "unplugin-vue-components": "catalog:",
-    "uuid": "^11.1.0",
+    "uuid": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",
     "vite-plugin-html": "catalog:",
@@ -206,8 +206,8 @@
     "zod-to-json-schema": "catalog:"
   },
   "engines": {
-    "node": "24.x",
-    "pnpm": ">=11"
+    "node": ">=25",
+    "pnpm": ">=11.3"
   },
-  "packageManager": "pnpm@11.1.1"
+  "packageManager": "pnpm@11.3.0"
 }

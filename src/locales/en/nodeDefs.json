@@ -384,6 +384,90 @@
       }
     }
   },
+  "BeebleSwitchXImageEdit": {
+    "display_name": "Beeble SwitchX Image Edit",
+    "description": "Edit a single image with Beeble SwitchX. Switches anything in the scene (background, lighting, costume) while preserving the original subject's pixels. Provide a reference image and/or text prompt to describe the new look. Max ~2.77MP.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of the desired output (max 2000 chars). At least one of 'prompt' or 'reference_image' is required."
+      },
+      "alpha_mode": {
+        "name": "alpha_mode",
+        "tooltip": "Controls how SwitchX decides what to keep vs. regenerate. 'auto' isolates the main subject automatically. 'fill' regenerates the entire frame while preserving geometry. 'select' propagates a first-frame keyframe across the clip. 'custom' uses a per-frame alpha matte you provide."
+      },
+      "max_resolution": {
+        "name": "max_resolution",
+        "tooltip": "Maximum output resolution."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "Reference image whose look (background, lighting, costume) the result should adopt. At least one of 'reference_image' or 'prompt' is required."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alpha",
+        "tooltip": "The alpha matte Beeble used. Empty for 'fill' mode, which has no separate matte."
+      }
+    }
+  },
+  "BeebleSwitchXVideoEdit": {
+    "display_name": "Beeble SwitchX Video Edit",
+    "description": "Edit a video with Beeble SwitchX. Switches anything in the scene (background, lighting, costume) while preserving the original subject's pixels and motion. Provide a reference image and/or text prompt to describe the new look. Max 240 frames, max ~2.77MP per frame.",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text description of the desired output (max 2000 chars). At least one of 'prompt' or 'reference_image' is required."
+      },
+      "alpha_mode": {
+        "name": "alpha_mode",
+        "tooltip": "Controls how SwitchX decides what to keep vs. regenerate. 'auto' isolates the main subject automatically. 'fill' regenerates the entire frame while preserving geometry. 'select' propagates a first-frame keyframe across the clip. 'custom' uses a per-frame alpha matte you provide."
+      },
+      "max_resolution": {
+        "name": "max_resolution",
+        "tooltip": "Maximum output resolution."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "Reference image whose look (background, lighting, costume) the result should adopt. At least one of 'reference_image' or 'prompt' is required."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "video",
+        "tooltip": null
+      },
+      "1": {
+        "name": "alpha",
+        "tooltip": "The alpha matte Beeble used. Empty for 'fill' mode, which has no separate matte."
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "BetaSamplingScheduler",
     "inputs": {
@@ -505,6 +589,32 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaTransparentVideoBackground": {
+    "display_name": "Bria Remove Video Background (Transparent)",
+    "description": "Remove the background from a video using Bria and return the cut-out frames plus an alpha mask. Connect both to a compositing node, or feed them to Save WEBM to write a transparent video.",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
         "tooltip": null
       }
     }
@@ -1174,11 +1284,38 @@
       },
       "strength": {
         "name": "strength"
+      },
+      "pre_cfg": {
+        "name": "pre_cfg",
+        "tooltip": "If true, rescale the combined noise BEFORE the sampler's CFG combine, without clamping (can amplify). Matches the norm-scaled CFG used by models like Lens. Default false keeps the original post-CFG x0-space attenuate-only behavior."
       }
     },
     "outputs": {
       "0": {
         "name": "patched_model",
+        "tooltip": null
+      }
+    }
+  },
+  "CFGOverride": {
+    "display_name": "CFG Override",
+    "description": "Override cfg to a fixed value over a [start, end] percent slice of the steps. With multiple overrides, the one nearest the sampler wins on overlap.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "cfg": {
+        "name": "cfg"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -1268,6 +1405,10 @@
       "nerf_tile_size": {
         "name": "nerf_tile_size",
         "tooltip": "Allows overriding the default NeRF tile size. -1 means use the default (32). 0 means use non-tiling mode (may require a lot of VRAM)."
+      },
+      "force_sequential_txt_ids": {
+        "name": "force_sequential_txt_ids",
+        "tooltip": "Force usage of sequential text token IDs instead of zeroes. Should be used for checkpoints from 2026-05-22 to 2026-06-01 that are trained in this way but do not contain the __sequential__ key in the state dict."
       }
     },
     "outputs": {
@@ -1346,7 +1487,7 @@
   },
   "CLIPLoader": {
     "display_name": "Load CLIP",
-    "description": "[Recipes]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\n hidream: llama-3.1 (Recommend) or t5\nomnigen2: qwen vl 2.5 3B",
+    "description": "[Recipes]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\n hidream: llama-3.1 (Recommend) or t5\nomnigen2: qwen vl 2.5 3B\nlens: gpt-oss-20b\n pixeldit: gemma 2 2B elm",
     "inputs": {
       "clip_name": {
         "name": "clip_name"
@@ -1800,6 +1941,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "display_name": "And",
+    "description": "Logical AND operation. Returns true if all of the values are truthy. Uses Python's rules for truthiness.",
+    "inputs": {
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "Math Expression",
     "inputs": {
@@ -1823,6 +1978,20 @@
       }
     }
   },
+  "ComfyNotNode": {
+    "display_name": "Not",
+    "description": "Logical NOT operation. Returns true if the value is falsy. Uses Python's rules for truthiness.",
+    "inputs": {
+      "value": {
+        "name": "value"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyNumberConvert": {
     "display_name": "Convert Number",
     "inputs": {
@@ -1835,6 +2004,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "display_name": "Or",
+    "description": "Logical OR operation. Returns true if any of the values are truthy. Uses Python's rules for truthiness.",
+    "inputs": {
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -2393,6 +2576,57 @@
       }
     }
   },
+  "CreateCameraInfo": {
+    "display_name": "Create Camera Info",
+    "description": "Build a camera_infoMode 'orbit' aims with yaw/pitch/distance around the target; 'look_at' places the camera at world position. Coordinates are the viewer's world space (right-handed,Y-up).",
+    "inputs": {
+      "mode": {
+        "name": "mode",
+        "tooltip": "How to define the camera: orbit angles, an explicit position, or a position + quaternion."
+      },
+      "target_x": {
+        "name": "target_x",
+        "tooltip": "Look-at point (orbit pivot / aim). In orbit mode, move it to pan/translate the whole camera. Ignored in quaternion mode. Defaults to the origin."
+      },
+      "target_y": {
+        "name": "target_y"
+      },
+      "target_z": {
+        "name": "target_z"
+      },
+      "roll": {
+        "name": "roll",
+        "tooltip": "Camera roll about the view axis, degrees."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "Vertical field of view in degrees."
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "Digital zoom (focal-length multiplier). >1 zooms in without moving the camera."
+      },
+      "camera_type": {
+        "name": "camera_type",
+        "tooltip": "Projection used by Render Splat: perspective (foreshortening) or orthographic (parallel)."
+      },
+      "mode_distance": {
+        "name": "distance"
+      },
+      "mode_pitch": {
+        "name": "pitch"
+      },
+      "mode_yaw": {
+        "name": "yaw"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      }
+    }
+  },
   "CreateHookKeyframe": {
     "display_name": "Create Hook Keyframe",
     "inputs": {
@@ -2769,6 +3003,34 @@
       },
       "device": {
         "name": "device"
+      }
+    }
+  },
+  "DualModelGuider": {
+    "display_name": "Dual Model CFG Guider",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model used for the positive (conditional) pass."
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "cfg": {
+        "name": "cfg"
+      },
+      "model_negative": {
+        "name": "model_negative",
+        "tooltip": "Model used for the negative (unconditional) pass. Use the same model for ordinary CFG."
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "Negative conditioning run on the negative model. Leave unconnected for a text-free (image-only) unconditional pass."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3566,6 +3828,22 @@
       }
     }
   },
+  "File3DToSplat": {
+    "display_name": "Get Splat",
+    "description": "Parse a splat File3D into a gaussian splat. Inverse of Create 3D File (from Splat). Supported format:  PLY, SPLAT, KSPLAT, SPZ. PLY carries full spherical harmonics, the other formats are base color only. Format is auto-detected from the file contents.",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "A gaussian splat 3D file"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "FlipSigmas": {
     "display_name": "FlipSigmas",
     "inputs": {
@@ -3707,6 +3985,28 @@
     "inputs": {
       "conditioning": {
         "name": "conditioning"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxEraseNode": {
+    "display_name": "Flux Erase Image",
+    "description": "Removes the masked object from an image and reconstructs the background. Paint the mask over what you want to erase.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "White areas are removed; black areas are preserved."
+      },
+      "dilate_pixels": {
+        "name": "dilate_pixels",
+        "tooltip": "Expands the mask boundaries to ensure clean coverage of the object's edges."
       }
     },
     "outputs": {
@@ -3981,6 +4281,36 @@
       "image_prompt_strength": {
         "name": "image_prompt_strength",
         "tooltip": "Blend between the prompt and the image prompt."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVTONode": {
+    "display_name": "Flux Virtual Try-On",
+    "description": "Virtual try-on: dresses the person in the provided garment.",
+    "inputs": {
+      "person": {
+        "name": "person",
+        "tooltip": "Image of the person to dress."
+      },
+      "garment": {
+        "name": "garment",
+        "tooltip": "Image of the garment to apply."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Optional natural-language styling instruction (e.g. how the garment should fit)."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for creating the noise."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -4478,6 +4808,25 @@
       }
     }
   },
+  "GetSplatCount": {
+    "display_name": "Get Splat Count",
+    "description": "Returns the number of splats summed across the batch.",
+    "inputs": {
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "count",
+        "tooltip": null
+      }
+    }
+  },
   "GetVideoComponents": {
     "display_name": "Get Video Components",
     "description": "Extracts all components from a video: frames, audio, and framerate.",
@@ -4785,7 +5134,8 @@
     "description": "Generate video from a prompt or an image",
     "inputs": {
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "grok-imagine-video-1.5 currently always requires an input image."
       },
       "prompt": {
         "name": "prompt",
@@ -4808,7 +5158,8 @@
         "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
       },
       "image": {
-        "name": "image"
+        "name": "image",
+        "tooltip": "Optional starting image for grok-imagine-video. Required for grok-imagine-video-1.5."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -5405,6 +5756,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "Ideogram 4 Scheduler",
+    "inputs": {
+      "steps": {
+        "name": "steps"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "mu": {
+        "name": "mu"
+      },
+      "std": {
+        "name": "std"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "display_name": "Ideogram V1",
     "description": "Generates images using the Ideogram V1 model.",
@@ -5538,6 +5914,34 @@
       "character_mask": {
         "name": "character_mask",
         "tooltip": "Optional mask for character reference image."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "display_name": "Ideogram V4",
+    "description": "Generates images using the Ideogram 4.0 model from a text prompt.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for the image generation."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "rendering_speed": {
+        "name": "rendering_speed",
+        "tooltip": "Controls the trade-off between generation speed and quality."
+      },
+      "seed": {
+        "name": "seed"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -7304,6 +7708,71 @@
       }
     }
   },
+  "Krea2ImageNode": {
+    "display_name": "Krea 2 Image",
+    "description": "Generate images via Krea 2 — pick Medium (expressive illustrations) or Large (expressive photorealism). Supports an optional moodboard and up to 10 chained image style references.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for the image."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Krea 2 Medium is best for expressive illustrations; Krea 2 Large is best for expressive photorealism."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Random seed for reproducibility."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_moodboard_id": {
+        "name": "moodboard_id"
+      },
+      "model_moodboard_strength": {
+        "name": "moodboard_strength"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Krea2StyleReferenceNode": {
+    "display_name": "Krea 2 Style Reference",
+    "description": "Add an image style reference to a Krea 2 generation. Chain multiple Krea 2 Style Reference nodes (max 10) and feed the final `style_reference` output into Krea 2 Image. Each image is uploaded to ComfyAPI storage and passed as URL.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Reference image whose style influences the generation."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Reference strength; negative values invert the style influence."
+      },
+      "style_reference": {
+        "name": "style_reference",
+        "tooltip": "Optional incoming chain of style references; this node appends one more."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_reference",
+        "tooltip": null
+      }
+    }
+  },
   "KSampler": {
     "display_name": "KSampler",
     "description": "Uses the provided model, positive and negative conditioning to denoise the latent image.",
@@ -7908,6 +8377,10 @@
       },
       "6": {
         "name": "model_3d",
+        "tooltip": null
+      },
+      "7": {
+        "name": "model_3d_info",
         "tooltip": null
       }
     }
@@ -8641,6 +9114,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9455,6 +9933,21 @@
       "0": {
         "name": "images",
         "tooltip": "Processed images"
+      }
+    }
+  },
+  "MergeSplat": {
+    "display_name": "Merge Splats",
+    "description": "Concatenate any number of gaussian splats into one. Unioning several decodes of the same latent at different seeds densifies the surface, this can improve surface quality when meshing.",
+    "inputs": {
+      "splats": {
+        "name": "splats"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
       }
     }
   },
@@ -12262,6 +12755,23 @@
       }
     }
   },
+  "MultiGPU_WorkUnits": {
+    "display_name": "MultiGPU CFG Split",
+    "description": "Prepares model to have sampling accelerated via splitting work units.\n\nShould be placed after nodes that modify the model object itself, such as compile or attention-switch nodes.\n\nOther than those exceptions, this node can be placed in any order.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "max_gpus": {
+        "name": "max_gpus"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "NAGuidance": {
     "display_name": "Normalized Attention Guidance",
     "description": "Applies Normalized Attention Guidance to models, enabling negative prompts on distilled/schnell models.",
@@ -12973,6 +13483,32 @@
       }
     }
   },
+  "PiDConditioning": {
+    "display_name": "PiD Conditioning",
+    "description": "Attaches a latent and a degrade_sigma scalar to a CONDITIONING for PiD decoding/upscaling",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent (from VAEEncode or a KSampler)."
+      },
+      "latent_format": {
+        "name": "latent_format",
+        "tooltip": "Flux1 (16-ch) and Flux2 (128-ch) latents are auto-detected from channel dim under 'flux'. For SD3 (16-ch), SDXL (4-ch), or QwenImage (16-ch), select manually."
+      },
+      "degrade_sigma": {
+        "name": "degrade_sigma",
+        "tooltip": "0 = clean latent. Increase to denoise corrupted latent outputs."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PixverseImageToVideoNode": {
     "display_name": "PixVerse Image to Video",
     "description": "Generates videos based on prompt and output_size.",
@@ -13177,6 +13713,52 @@
       },
       "image": {
         "name": "image"
+      }
+    }
+  },
+  "Preview3DAdvanced": {
+    "display_name": "Preview 3D (Advanced)",
+    "inputs": {
+      "model_file": {
+        "name": "model_file",
+        "tooltip": "3D model file from an upstream 3D node."
+      },
+      "image": {
+        "name": "image"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
       }
     }
   },
@@ -14140,6 +14722,66 @@
       }
     }
   },
+  "RenderSplat": {
+    "display_name": "Render Splat",
+    "description": "Render a gaussian splat as an image with an anisotropic EWA rasterizer (oriented elliptical splats, antialiased, depth-sorted front-to-back). The camera comes from a camera_info input (Load / Preview 3D, or a Create Camera Info node); leave it empty to auto-frame the splat. Set frames greater than 1 for a turntable batch of images to feed a Video node.",
+    "inputs": {
+      "splat": {
+        "name": "splat"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "frames": {
+        "name": "frames",
+        "tooltip": "-1, 0, 1 = single still image; >1 = turntable, the camera orbits over a full 360 turn (works with any camera_info). Negative value orbits the other way."
+      },
+      "splat_scale": {
+        "name": "splat_scale",
+        "tooltip": "Multiplier on each splat's projected footprint (lower = crisper points, higher = softer/fuller surface)."
+      },
+      "sharpen": {
+        "name": "sharpen",
+        "tooltip": "Sharpen overlapping splats: 1.0 = physically-correct blend; higher biases each pixel toward its dominant (nearest) splat for crisper texture, without shrinking splats or opening gaps. Non-physical above 1."
+      },
+      "headlight_shading": {
+        "name": "headlight_shading",
+        "tooltip": "Diffuse shading from a light at the camera (headlight), using the splat surfel normals: darkens surfaces that turn away from view to reveal form/curvature. 0 = flat albedo, 1 = strongest shading."
+      },
+      "opacity_threshold": {
+        "name": "opacity_threshold",
+        "tooltip": "Cull gaussians with opacity below this (removes faint floaters)."
+      },
+      "render_style": {
+        "name": "render_style",
+        "tooltip": "What the image output shows: color, clay (neutral-albedo shaded), depth (near=bright), normal (OpenGL normal map)."
+      },
+      "background": {
+        "name": "background"
+      },
+      "bg_image": {
+        "name": "bg_image",
+        "tooltip": "Optional background plate composited behind the splat (overrides the solid background colour). Resized to the render size; a batch is used per frame, a single image for all. color/clay only."
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "Camera to render from - a Load3D / Preview3D camera or a Create Camera Info node. If empty, the splat is auto-framed from a default 3/4 view."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -14569,6 +15211,164 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Image": {
+    "display_name": "Rodin 3D Gen-2.5 - Image to 3D",
+    "description": "Generate a 3D model from 1-5 reference images via Rodin Gen-2.5. Pick a mode (Fast / Regular / Extreme-High) to tune quality vs. cost.",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "1-5 images. The first image is used for materials when multi-view."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Generation mode. Regular = balanced. Fast = 1K-20K faces for rapid prototyping. Extreme-High = 20K-2M faces with optional micro details."
+      },
+      "material": {
+        "name": "material"
+      },
+      "geometry_file_format": {
+        "name": "geometry_file_format"
+      },
+      "texture_mode": {
+        "name": "texture_mode",
+        "tooltip": "Texture quality preset. 'Default' uses the server's default for the selected tier."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "T/A pose for human-like models."
+      },
+      "hd_texture": {
+        "name": "hd_texture",
+        "tooltip": "High-quality texture enhancement."
+      },
+      "texture_delight": {
+        "name": "texture_delight",
+        "tooltip": "Remove baked lighting from textures."
+      },
+      "use_original_alpha": {
+        "name": "use_original_alpha",
+        "tooltip": "Preserve image transparency."
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "HighPack addon: 4K textures and ~16x faces in Quad mode."
+      },
+      "bbox_width": {
+        "name": "bbox_width",
+        "tooltip": "Bounding-box width (Y axis). Set to 0 with the others to skip bbox."
+      },
+      "bbox_height": {
+        "name": "bbox_height",
+        "tooltip": "Bounding-box height (Z axis)."
+      },
+      "bbox_length": {
+        "name": "bbox_length",
+        "tooltip": "Bounding-box length (X axis)."
+      },
+      "height_cm": {
+        "name": "height_cm",
+        "tooltip": "Approximate model height in centimeters (0 to skip)."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "mode_creative": {
+        "name": "creative"
+      },
+      "mode_polygon_count": {
+        "name": "polygon_count"
+      },
+      "mode_tier": {
+        "name": "tier"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "display_name": "Rodin 3D Gen-2.5 - Text to 3D",
+    "description": "Generate a 3D model from a text prompt via Rodin Gen-2.5. Pick a mode (Fast / Regular / Extreme-High) to tune quality vs. cost.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for the 3D model."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Generation mode. Regular = balanced. Fast = 1K-20K faces for rapid prototyping. Extreme-High = 20K-2M faces with optional micro details."
+      },
+      "material": {
+        "name": "material"
+      },
+      "geometry_file_format": {
+        "name": "geometry_file_format"
+      },
+      "texture_mode": {
+        "name": "texture_mode",
+        "tooltip": "Texture quality preset. 'Default' uses the server's default for the selected tier."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "T/A pose for human-like models."
+      },
+      "hd_texture": {
+        "name": "hd_texture",
+        "tooltip": "High-quality texture enhancement."
+      },
+      "texture_delight": {
+        "name": "texture_delight",
+        "tooltip": "Remove baked lighting from textures."
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "HighPack addon: 4K textures and ~16x faces in Quad mode."
+      },
+      "bbox_width": {
+        "name": "bbox_width",
+        "tooltip": "Bounding-box width (Y axis). Set to 0 with the others to skip bbox."
+      },
+      "bbox_height": {
+        "name": "bbox_height",
+        "tooltip": "Bounding-box height (Z axis)."
+      },
+      "bbox_length": {
+        "name": "bbox_length",
+        "tooltip": "Bounding-box length (X axis)."
+      },
+      "height_cm": {
+        "name": "height_cm",
+        "tooltip": "Approximate model height in centimeters (0 to skip)."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "mode_creative": {
+        "name": "creative"
+      },
+      "mode_polygon_count": {
+        "name": "polygon_count"
+      },
+      "mode_tier": {
+        "name": "tier"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
       }
     }
@@ -15454,6 +16254,30 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "display_name": "Save Image (Advanced)",
+    "description": "Saves the input images to your ComfyUI output directory.",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "The images to save."
+      },
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "The prefix for the file to save. May include formatting tokens such as %date:yyyy-MM-dd% or %Empty Latent Image.width%."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "The file format in which to save the image."
+      },
+      "format_bit_depth": {
+        "name": "bit_depth"
+      },
+      "format_input_color_space": {
+        "name": "input_color_space"
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
     "display_name": "Save Image (to Folder) (DEPRECATED)",
     "description": "Save a dataset of images to a specified folder. Supported formats: PNG.",
@@ -15469,6 +16293,10 @@
       "filename_prefix": {
         "name": "filename_prefix",
         "tooltip": "Prefix for saved image filenames."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Whether to overwrite existing files or increment filenames to avoid overwriting."
       }
     }
   },
@@ -15487,6 +16315,10 @@
       "filename_prefix": {
         "name": "filename_prefix",
         "tooltip": "Prefix for saved image filenames."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Whether to overwrite existing files or increment filenames to avoid overwriting."
       },
       "texts": {
         "name": "texts",
@@ -15591,7 +16423,8 @@
     "display_name": "Save WEBM",
     "inputs": {
       "images": {
-        "name": "images"
+        "name": "images",
+        "tooltip": "RGBA images are saved with their alpha channel as transparency (vp9 codec only)."
       },
       "filename_prefix": {
         "name": "filename_prefix"
@@ -15769,6 +16602,57 @@
       },
       "denoise": {
         "name": "denoise"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectCLIPDevice": {
+    "display_name": "Select CLIP Device",
+    "description": "Place the CLIP text encoder on a specific device (default / cpu / gpu:N).\n\n- \"default\" restores the device assigned by the loader.\n- \"cpu\" pins both the load and offload device to CPU.\n- \"gpu:N\" pins the load device to the Nth available GPU.\n\nWhen the selected device does not exist on the current machine\n(e.g. a workflow built on a 2-GPU box opened on a 1-GPU box),\nthe node passes the CLIP through unchanged and logs a message\ninstead of failing.",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "device": {
+        "name": "device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectModelDevice": {
+    "display_name": "Select Model Device",
+    "description": "Place the diffusion model on a specific device (default / cpu / gpu:N).\n\n- \"default\" restores the device assigned by the loader (even after a\n  prior Select Model Device call).\n- \"cpu\" pins both the load and offload device to CPU.\n- \"gpu:N\" pins the load device to the Nth available GPU; the offload\n  device is restored to the loader's original choice.\n\nWhen the requested device differs from the device the input model is\nalready on, a fresh model is spawned via the loader's reload factory\n(cached_patcher_init) so the new patcher owns independent weights on\nthe new device. Loaders that don't support multigpu (no factory) will\ncause the node to pass through unchanged with a warning.\n\nIf the workflow already has MultiGPU CFG Split applied and the chosen\nGPU collides with one of the existing multigpu clones, that clone is\ndropped so two patchers don't end up bound to the same device.\n\nWhen the selected device does not exist on the current machine\n(e.g. a workflow built on a 2-GPU box opened on a 1-GPU box),\nthe node passes the model through unchanged and logs a message\ninstead of failing.\n\nNOTE: Placing Select Model Device *after* a node that has already\nconsumed the same model (e.g. a KSampler that ran on this model on\nthe original device) is not recommended -- any state the prior\nconsumer mutated on the original model will be observed when the\nselected device matches the original (fast path). Place Select Model\nDevice before any consumer of the model.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "device": {
+        "name": "device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectVAEDevice": {
+    "display_name": "Select VAE Device",
+    "description": "Place the VAE on a specific device (default / gpu:N).\n\n- \"default\" restores the device assigned by the loader.\n- \"gpu:N\" pins the load device to the Nth available GPU; the offload\n  device is set to the standard VAE offload device.\n\nCPU is intentionally not exposed in the UI for the VAE; if a workflow\nsupplies \"cpu\" anyway (e.g. opened from another machine), the request\nis dropped with a log message and the VAE is passed through unchanged.\n\nWhen the selected device does not exist on the current machine\n(e.g. a workflow built on a 2-GPU box opened on a 1-GPU box),\nthe node passes the VAE through unchanged and logs a message\ninstead of failing.",
+    "inputs": {
+      "vae": {
+        "name": "vae"
+      },
+      "device": {
+        "name": "device"
       }
     },
     "outputs": {
@@ -16072,6 +16956,68 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SplatToFile3D": {
+    "display_name": "Create 3D File (from Splat)",
+    "description": "Serialize a gaussian splat to a File3D object for Save / Preview 3D nodes. Supports one item per batch only.",
+    "inputs": {
+      "splat": {
+        "name": "splat"
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "ply: standard 3D Gaussian Splat with full spherical harmonics. ksplat: mkkellogg SplatBuffer (level 0, uncompressed), base color only spz: Niantic gzip-compressed (~10x smaller), base color only "
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      }
+    }
+  },
+  "SplatToMesh": {
+    "display_name": "Extract Mesh from Splat",
+    "description": "Extract a coloured mesh from a gaussian splat.",
+    "inputs": {
+      "splat": {
+        "name": "splat"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Density-grid resolution along the longest axis. Higher = finer surface, more VRAM/time (grows with resolution^3)."
+      },
+      "kernel": {
+        "name": "kernel",
+        "tooltip": "Max splat half-width in voxels. Each gaussian is rasterized over a window sized to its own 3-sigma, capped here - small surfels stay cheap, large ones aren't truncated. Raise if sparse splats leave gaps."
+      },
+      "smooth": {
+        "name": "smooth",
+        "tooltip": "Taubin mesh-smoothing iterations. Smooths the surface without shrinking it (volume-preserving), unlike blurring the density. 0 = raw surface."
+      },
+      "level": {
+        "name": "level",
+        "tooltip": "Iso-surface level. Auto-picked by Otsu; this biases it (1.0 = auto, lower = fatter/more-connected surface, higher = thinner/tighter)."
+      },
+      "min_component": {
+        "name": "min_component",
+        "tooltip": "Drop connected components smaller than this many vertices (0 = keep all). Removes detached floater blobs and the inner shell of the double wall."
+      },
+      "min_opacity": {
+        "name": "min_opacity",
+        "tooltip": "Ignore gaussians fainter than this before meshing."
+      },
+      "color_sharpen": {
+        "name": "color_sharpen",
+        "tooltip": "Crisp up the vertex texture: 1.0 = physically-correct blend; higher biases each voxel's colour toward its dominant gaussian instead of averaging neighbours (de-smears the texture). Colour only - geometry is unchanged."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
@@ -17895,6 +18841,48 @@
       }
     }
   },
+  "TransformSplat": {
+    "display_name": "Transform Splat",
+    "description": "Translate, rotate, and scale a gaussian splat. Non-uniform scale also reshapes every individual splat, slower process.",
+    "inputs": {
+      "splat": {
+        "name": "splat"
+      },
+      "translate_x": {
+        "name": "translate_x"
+      },
+      "translate_y": {
+        "name": "translate_y"
+      },
+      "translate_z": {
+        "name": "translate_z"
+      },
+      "rotate_x": {
+        "name": "rotate_x"
+      },
+      "rotate_y": {
+        "name": "rotate_y"
+      },
+      "rotate_z": {
+        "name": "rotate_z"
+      },
+      "scale_x": {
+        "name": "scale_x"
+      },
+      "scale_y": {
+        "name": "scale_y"
+      },
+      "scale_z": {
+        "name": "scale_z"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "TrimAudioDuration": {
     "display_name": "Trim Audio Duration",
     "description": "Trim audio tensor into chosen time range.",
@@ -18140,6 +19128,169 @@
       }
     }
   },
+  "TripoP1ImageToModelNode": {
+    "display_name": "Tripo P1: Image to Model",
+    "description": "Tripo P1 image-to-3D. Optimized for low-poly, game-ready meshes.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "output_mode": {
+        "name": "output_mode",
+        "tooltip": "\"Geometry only\" returns an untextured mesh. \"Textured\" adds color/PBR maps."
+      },
+      "enable_image_autofix": {
+        "name": "enable_image_autofix",
+        "tooltip": "Pre-process the input image for better generation quality."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Target face count, 48-20000. -1 lets Tripo pick adaptively."
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Scale the output to approximate real-world meters."
+      },
+      "export_uv": {
+        "name": "export_uv",
+        "tooltip": "UV unwrap during generation. Turn off for faster geometry-only runs."
+      },
+      "compress_geometry": {
+        "name": "compress_geometry",
+        "tooltip": "Apply geometry-based compression. Decompress before editing."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1MultiviewToModelNode": {
+    "display_name": "Tripo P1: Multiview to Model",
+    "description": "Tripo P1 multiview-to-3D from 2-4 reference images in [front, left, back, right] order. Front is required; any combination of the other three may be omitted.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Front view (0°). Required."
+      },
+      "output_mode": {
+        "name": "output_mode",
+        "tooltip": "\"Geometry only\" returns an untextured mesh. \"Textured\" adds color/PBR maps."
+      },
+      "image_left": {
+        "name": "image_left",
+        "tooltip": "Left view (90°), i.e. the subject's left side."
+      },
+      "image_back": {
+        "name": "image_back",
+        "tooltip": "Back view (180°)."
+      },
+      "image_right": {
+        "name": "image_right",
+        "tooltip": "Right view (270°), i.e. the subject's right side."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Target face count, 48-20000. -1 lets Tripo pick adaptively."
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Scale the output to approximate real-world meters."
+      },
+      "export_uv": {
+        "name": "export_uv",
+        "tooltip": "UV unwrap during generation. Turn off for faster geometry-only runs."
+      },
+      "compress_geometry": {
+        "name": "compress_geometry",
+        "tooltip": "Apply geometry-based compression. Decompress before editing."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1TextToModelNode": {
+    "display_name": "Tripo P1: Text to Model",
+    "description": "Tripo P1 text-to-3D. Optimized for low-poly, game-ready meshes with stable topology.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Up to 1024 characters."
+      },
+      "output_mode": {
+        "name": "output_mode",
+        "tooltip": "\"Geometry only\" returns an untextured mesh. \"Textured\" adds color/PBR maps."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Up to 255 characters."
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Target face count, 48-20000. -1 lets Tripo pick adaptively."
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Scale the output to approximate real-world meters."
+      },
+      "export_uv": {
+        "name": "export_uv",
+        "tooltip": "UV unwrap during generation. Turn off for faster geometry-only runs."
+      },
+      "compress_geometry": {
+        "name": "compress_geometry",
+        "tooltip": "Apply geometry-based compression. Decompress before editing."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
   "TripoRefineNode": {
     "display_name": "Tripo: Refine Draft model",
     "description": "Refine a draft model created by v1.4 Tripo models only.",
@@ -18207,6 +19358,101 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSplatConditioning": {
+    "display_name": "TripoSplat Conditioning",
+    "description": "Encode the image with DINOv3 and the Flux2 VAE into TripoSplat positive/negative conditioning, and create the fixed size noise target (latent + camera) for the KSampler",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision",
+        "tooltip": "DINOv3 ViT-H/16+ image encoder"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Flux2 VAE"
+      },
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "The fixed size noise target (latent +camera)."
+      }
+    }
+  },
+  "TripoSplatPreprocessImage": {
+    "display_name": "TripoSplat Preprocess Image",
+    "description": "Crop center each image to a square canvas on a black background and add padding.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "erode_radius": {
+        "name": "erode_radius",
+        "tooltip": "Erode the alpha matte by this pixel radius before cropping (avoids border bleed)."
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "Square image size. The model is trained at 1024; other sizes run but are off-distribution."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSplatSamplingPreview": {
+    "display_name": "TripoSplat Sampling Preview",
+    "description": "Patch the TripoSplat model for the standard Ksampler node to show a live decoded gaussian splat preview at each step.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "TripoSplat VAE decoder"
+      },
+      "octree_level": {
+        "name": "octree_level",
+        "tooltip": "Octree depth for the preview decode (lower = cheaper/coarser)."
+      },
+      "num_gaussians": {
+        "name": "num_gaussians",
+        "tooltip": "Number of gaussians to produce for the preview (rounded to a multiple of 32)."
+      },
+      "yaw": {
+        "name": "yaw",
+        "tooltip": "Preview camera yaw in degrees."
+      },
+      "pitch": {
+        "name": "pitch",
+        "tooltip": "Preview camera pitch in degrees."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "Maximum splat radius in pixels. Each gaussian is sized from its scale and capped here; lower = finer/pointier, higher = chunkier."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -18564,6 +19810,36 @@
       "temporal_overlap": {
         "name": "temporal_overlap",
         "tooltip": "Only used for video VAEs: Amount of frames to overlap."
+      }
+    }
+  },
+  "VAEDecodeTripoSplat": {
+    "display_name": "TripoSplat Decode",
+    "description": "Decode the sampled TripoSplat latent into a 3D gaussian splat. Modify the number of gaussians to vary the density.",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "TripoSplat VAE decoder"
+      },
+      "num_gaussians": {
+        "name": "num_gaussians",
+        "tooltip": "Number of gaussians to produce (rounded to a multiple of 32). 262144 matches the octree's point density; higher oversamples the same points (denser, but no new detail) and costs proportionally more VRAM/time."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seeds the octree point sampler (global RNG) for deterministic decodes."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
       }
     }
   },

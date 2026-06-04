@@ -1,6 +1,7 @@
 import { downloadUrlToHfRepoUrl, isCivitaiModelUrl } from '@/utils/formatUtil'
 import { isDesktop } from '@/platform/distribution/types'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const ALLOWED_SOURCES = [
   'https://civitai.com/',
@@ -25,6 +26,8 @@ const WHITE_LISTED_URLS: ReadonlySet<string> = new Set([
   'https://huggingface.co/TencentARC/T2I-Adapter/resolve/main/models/t2iadapter_depth_sd14v1.pth?download=true',
   'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth'
 ])
+
+const MODEL_LIBRARY_TAB_ID = 'model-library'
 
 export interface ModelWithUrl {
   name: string
@@ -72,6 +75,7 @@ export function downloadModel(
 
   const modelPaths = paths[model.directory]
   if (modelPaths?.[0]) {
+    useSidebarTabStore().activeSidebarTabId = MODEL_LIBRARY_TAB_ID
     void useElectronDownloadStore().start({
       url: model.url,
       savePath: modelPaths[0],

@@ -160,8 +160,8 @@ describe('MeshModelAdapter', () => {
       expect(stlLoaderStub.setPath).toHaveBeenCalledWith('/api/view/')
       expect(stlLoaderStub.loadAsync).toHaveBeenCalledWith('model.stl')
       expect(ctx.setOriginalModel).toHaveBeenCalledWith(geometry)
-      expect(result).toBeInstanceOf(THREE.Group)
-      expect(result!.children[0]).toBeInstanceOf(THREE.Mesh)
+      expect(result!.object).toBeInstanceOf(THREE.Group)
+      expect(result!.object.children[0]).toBeInstanceOf(THREE.Mesh)
     })
   })
 
@@ -179,7 +179,7 @@ describe('MeshModelAdapter', () => {
       expect(fbxLoaderStub.loadAsync).toHaveBeenCalledWith('rig.fbx')
       expect(ctx.setOriginalModel).toHaveBeenCalledWith(fbxModel)
       expect(ctx.registerOriginalMaterial).toHaveBeenCalledTimes(1)
-      expect(result).toBe(fbxModel)
+      expect(result!.object).toBe(fbxModel)
     })
 
     it('disables frustum culling on SkinnedMesh children', async () => {
@@ -224,7 +224,7 @@ describe('MeshModelAdapter', () => {
         'cube.obj'
       )
 
-      expect(result).toBeInstanceOf(THREE.Group)
+      expect(result!.object).toBeInstanceOf(THREE.Group)
       expect(objLoaderStub.setMaterials).not.toHaveBeenCalled()
     })
 
@@ -271,7 +271,7 @@ describe('MeshModelAdapter', () => {
       expect(ctx.setOriginalModel).toHaveBeenCalledWith(gltf)
       expect(computeNormals).toHaveBeenCalled()
       expect(ctx.registerOriginalMaterial).toHaveBeenCalledTimes(1)
-      expect(result).toBe(scene)
+      expect(result!.object).toBe(scene)
     })
 
     it('also handles .gltf filenames', async () => {

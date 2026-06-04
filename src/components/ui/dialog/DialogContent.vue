@@ -10,11 +10,13 @@ import { dialogContentVariants } from './dialog.variants'
 
 const {
   size,
+  maximized = false,
   class: customClass = '',
   ...restProps
 } = defineProps<
   DialogContentProps & {
     size?: DialogContentSize
+    maximized?: boolean
     class?: HTMLAttributes['class']
   }
 >()
@@ -26,7 +28,7 @@ const forwarded = useForwardPropsEmits(restProps, emits)
 <template>
   <DialogContent
     v-bind="forwarded"
-    :class="cn(dialogContentVariants({ size }), customClass)"
+    :class="cn(dialogContentVariants({ size, maximized }), customClass)"
   >
     <slot />
   </DialogContent>

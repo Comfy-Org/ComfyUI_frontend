@@ -384,6 +384,90 @@
       }
     }
   },
+  "BeebleSwitchXImageEdit": {
+    "description": "Beeble SwitchX で単一画像を編集します。シーン内のあらゆる要素（背景、照明、衣装など）を切り替えつつ、元の被写体のピクセルを保持します。新しい外観を説明する参照画像やテキストプロンプトを入力してください。最大約2.77MP。",
+    "display_name": "Beeble SwitchX 画像編集",
+    "inputs": {
+      "alpha_mode": {
+        "name": "アルファモード",
+        "tooltip": "SwitchX が保持する部分と再生成する部分を決定する方法を制御します。「auto」は主被写体を自動で分離します。「fill」はジオメトリを保持しつつ全フレームを再生成します。「select」は最初のフレームのキーフレームをクリップ全体に適用します。「custom」はフレームごとのアルファマットを使用します。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "max_resolution": {
+        "name": "最大解像度",
+        "tooltip": "出力の最大解像度。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "希望する出力のテキスト説明（最大2000文字）。「プロンプト」または「参照画像」のいずれかが必須です。"
+      },
+      "reference_image": {
+        "name": "参照画像",
+        "tooltip": "結果が採用すべき外観（背景、照明、衣装など）の参照画像。「参照画像」または「プロンプト」のいずれかが必須です。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像",
+        "tooltip": null
+      },
+      "1": {
+        "name": "アルファ",
+        "tooltip": "Beeble が使用したアルファマット。「fill」モードではマットはありません。"
+      }
+    }
+  },
+  "BeebleSwitchXVideoEdit": {
+    "description": "Beeble SwitchX で動画を編集します。シーン内のあらゆる要素（背景、照明、衣装など）を切り替えつつ、元の被写体のピクセルと動きを保持します。新しい外観を説明する参照画像やテキストプロンプトを入力してください。最大240フレーム、1フレームあたり最大約2.77MP。",
+    "display_name": "Beeble SwitchX 動画編集",
+    "inputs": {
+      "alpha_mode": {
+        "name": "アルファモード",
+        "tooltip": "SwitchX が保持する部分と再生成する部分を決定する方法を制御します。「auto」は主被写体を自動で分離します。「fill」はジオメトリを保持しつつ全フレームを再生成します。「select」は最初のフレームのキーフレームをクリップ全体に適用します。「custom」はフレームごとのアルファマットを使用します。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "max_resolution": {
+        "name": "最大解像度",
+        "tooltip": "出力の最大解像度。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "希望する出力のテキスト説明（最大2000文字）。「プロンプト」または「参照画像」のいずれかが必須です。"
+      },
+      "reference_image": {
+        "name": "参照画像",
+        "tooltip": "結果が採用すべき外観（背景、照明、衣装など）の参照画像。「参照画像」または「プロンプト」のいずれかが必須です。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "video": {
+        "name": "動画"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "動画",
+        "tooltip": null
+      },
+      "1": {
+        "name": "アルファ",
+        "tooltip": "Beeble が使用したアルファマット。「fill」モードではマットはありません。"
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "ベータサンプリングスケジューラー",
     "inputs": {
@@ -505,6 +589,32 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaTransparentVideoBackground": {
+    "description": "Bria を使用して動画の背景を除去し、切り抜かれたフレームとアルファマスクを返します。両方を合成ノードに接続するか、「Save WEBM」に渡して透明な動画を書き出せます。",
+    "display_name": "Bria 動画背景除去（透明）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seedはノードの再実行を制御します。seedに関わらず結果は非決定的です。"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像",
+        "tooltip": null
+      },
+      "1": {
+        "name": "マスク",
         "tooltip": null
       }
     }
@@ -1113,6 +1223,10 @@
       "model": {
         "name": "モデル"
       },
+      "pre_cfg": {
+        "name": "pre_cfg",
+        "tooltip": "trueの場合、サンプラーのCFG結合の前に結合されたノイズをリスケールし、クランプせず（増幅する可能性あり）に処理します。Lensのようなモデルで使われるノルムスケールCFGと一致します。デフォルトのfalseでは、元のCFG後のx0空間での減衰のみの動作を維持します。"
+      },
       "strength": {
         "name": "強度"
       }
@@ -1120,6 +1234,29 @@
     "outputs": {
       "0": {
         "name": "修正済みモデル",
+        "tooltip": null
+      }
+    }
+  },
+  "CFGOverride": {
+    "description": "ステップの [開始, 終了] パーセント区間で cfg を固定値に上書きします。複数の上書きが重なる場合、サンプラーに最も近いものが優先されます。",
+    "display_name": "CFG 上書き",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_percent": {
+        "name": "終了パーセント"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_percent": {
+        "name": "開始パーセント"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -1633,6 +1770,10 @@
         "name": "終了シグマ",
         "tooltip": "これらのオプションが有効になる最後のシグマ値。"
       },
+      "force_sequential_txt_ids": {
+        "name": "force_sequential_txt_ids",
+        "tooltip": "ゼロの代わりに連番のテキストトークンIDを強制的に使用します。この方法でトレーニングされたが state dict に __sequential__ キーが含まれていない 2026-05-22 から 2026-06-01 までのチェックポイントで使用してください。"
+      },
       "model": {
         "name": "モデル"
       },
@@ -1800,6 +1941,20 @@
       }
     }
   },
+  "ComfyAndNode": {
+    "description": "論理積（AND）演算。すべての値が真の場合に true を返します。Python の真偽値判定ルールを使用します。",
+    "display_name": "And",
+    "inputs": {
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "数式",
     "inputs": {
@@ -1823,6 +1978,20 @@
       }
     }
   },
+  "ComfyNotNode": {
+    "description": "論理否定（NOT）演算。値が偽の場合に true を返します。Python の真偽値判定ルールを使用します。",
+    "display_name": "Not",
+    "inputs": {
+      "value": {
+        "name": "value"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyNumberConvert": {
     "display_name": "数値変換",
     "inputs": {
@@ -1835,6 +2004,20 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyOrNode": {
+    "description": "論理和（OR）演算。いずれかの値が真の場合に true を返します。Python の真偽値判定ルールを使用します。",
+    "display_name": "Or",
+    "inputs": {
+      "values": {
+        "name": "values"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -2393,6 +2576,57 @@
       }
     }
   },
+  "CreateCameraInfo": {
+    "description": "camera_infoを構築します。モード「orbit」はターゲットの周囲をヨー/ピッチ/距離で回転します。「look_at」はカメラをワールド座標に配置します。座標はビューアのワールド空間（右手系、Yアップ）です。",
+    "display_name": "カメラ情報の作成",
+    "inputs": {
+      "camera_type": {
+        "name": "カメラタイプ",
+        "tooltip": "Render Splatで使用する投影方法：パースペクティブ（遠近法）またはオーソグラフィック（平行投影）。"
+      },
+      "fov": {
+        "name": "視野角",
+        "tooltip": "垂直方向の視野角（度数）。"
+      },
+      "mode": {
+        "name": "モード",
+        "tooltip": "カメラの定義方法：オービット角度、明示的な位置、または位置＋クォータニオン。"
+      },
+      "mode_distance": {
+        "name": "距離"
+      },
+      "mode_pitch": {
+        "name": "ピッチ"
+      },
+      "mode_yaw": {
+        "name": "ヨー"
+      },
+      "roll": {
+        "name": "ロール",
+        "tooltip": "視軸に対するカメラのロール（度数）。"
+      },
+      "target_x": {
+        "name": "ターゲットX",
+        "tooltip": "注視点（オービットの中心/狙い）。オービットモードでは、これを動かすとカメラ全体をパン/移動します。クォータニオンモードでは無視されます。デフォルトは原点です。"
+      },
+      "target_y": {
+        "name": "ターゲットY"
+      },
+      "target_z": {
+        "name": "ターゲットZ"
+      },
+      "zoom": {
+        "name": "ズーム",
+        "tooltip": "デジタルズーム（焦点距離の倍率）。1より大きいとカメラを動かさずにズームインします。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      }
+    }
+  },
   "CreateHookKeyframe": {
     "display_name": "フックキーフレームを作成",
     "inputs": {
@@ -2769,6 +3003,34 @@
       },
       "type": {
         "name": "タイプ"
+      }
+    }
+  },
+  "DualModelGuider": {
+    "display_name": "デュアルモデル CFG ガイダー",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "ポジティブ（条件付き）パスで使用するモデル。"
+      },
+      "model_negative": {
+        "name": "model_negative",
+        "tooltip": "ネガティブ（無条件）パスで使用するモデル。通常のCFGには同じモデルを使用します。"
+      },
+      "negative": {
+        "name": "ネガティブ",
+        "tooltip": "ネガティブモデルで実行するネガティブコンディショニング。未接続の場合はテキストなし（画像のみ）の無条件パスになります。"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3566,6 +3828,22 @@
       }
     }
   },
+  "File3DToSplat": {
+    "description": "splat File3Dをガウシアンスプラットに変換します。Create 3D File（from Splat）の逆操作です。対応フォーマット：PLY、SPLAT、KSPLAT、SPZ。PLYは完全な球面調和関数を持ち、他のフォーマットはベースカラーのみです。フォーマットはファイル内容から自動検出されます。",
+    "display_name": "スプラット取得",
+    "inputs": {
+      "model_3d": {
+        "name": "3Dモデル",
+        "tooltip": "ガウシアンスプラット3Dファイル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "FlipSigmas": {
     "display_name": "シグマを反転",
     "inputs": {
@@ -3707,6 +3985,28 @@
     "inputs": {
       "conditioning": {
         "name": "conditioning"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxEraseNode": {
+    "description": "画像からマスクされたオブジェクトを削除し、背景を再構築します。消したい部分にマスクを塗ってください。",
+    "display_name": "Flux 消去画像",
+    "inputs": {
+      "dilate_pixels": {
+        "name": "膨張ピクセル数",
+        "tooltip": "マスクの境界を拡張し、オブジェクトの端をきれいにカバーします。"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "mask": {
+        "name": "マスク",
+        "tooltip": "白い部分が削除され、黒い部分が保持されます。"
       }
     },
     "outputs": {
@@ -3984,6 +4284,36 @@
       "seed": {
         "name": "シード",
         "tooltip": "ノイズ生成に使用されるランダムシード。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVTONode": {
+    "description": "バーチャル試着：指定した衣服を人物に着せます。",
+    "display_name": "Flux バーチャル試着",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後コントロール"
+      },
+      "garment": {
+        "name": "衣服",
+        "tooltip": "適用する衣服の画像。"
+      },
+      "person": {
+        "name": "人物",
+        "tooltip": "着せたい人物の画像。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "オプションの自然言語スタイリング指示（例：衣服のフィット感など）。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノイズ生成に使用する乱数シード。"
       }
     },
     "outputs": {
@@ -4586,6 +4916,25 @@
       }
     }
   },
+  "GetSplatCount": {
+    "description": "バッチ全体で合計されたスプラットの数を返します。",
+    "display_name": "スプラット数を取得",
+    "inputs": {
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "カウント",
+        "tooltip": null
+      }
+    }
+  },
   "GetVideoComponents": {
     "description": "ビデオからすべてのコンポーネント（フレーム、オーディオ、フレームレート）を抽出します。",
     "display_name": "ビデオコンポーネントの取得",
@@ -4796,10 +5145,12 @@
         "tooltip": "出力動画の長さ（秒単位）。"
       },
       "image": {
-        "name": "image"
+        "name": "image",
+        "tooltip": "grok-imagine-video のオプションの開始画像。grok-imagine-video-1.5 では必須です。"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "grok-imagine-video-1.5 では必ず入力画像が必要です。"
       },
       "prompt": {
         "name": "プロンプト",
@@ -5405,6 +5756,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "Ideogram 4 スケジューラー",
+    "inputs": {
+      "height": {
+        "name": "高さ"
+      },
+      "mu": {
+        "name": "μ"
+      },
+      "std": {
+        "name": "σ"
+      },
+      "steps": {
+        "name": "ステップ数"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "description": "Ideogram V1モデルを使用して同期的に画像を生成します。\n\n画像リンクは一定期間のみ有効です。画像を保存したい場合は、ダウンロードしてください。",
     "display_name": "Ideogram V1",
@@ -5541,6 +5917,34 @@
       },
       "seed": {
         "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "description": "Ideogram 4.0 モデルを使い、テキストプロンプトから画像を生成します。",
+    "display_name": "Ideogram V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像生成用のテキストプロンプト。"
+      },
+      "rendering_speed": {
+        "name": "レンダリング速度",
+        "tooltip": "生成速度と品質のトレードオフを制御します。"
+      },
+      "resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -7418,6 +7822,71 @@
       }
     }
   },
+  "Krea2ImageNode": {
+    "description": "Krea 2 を使って画像を生成します — Medium（表現力豊かなイラスト）または Large（表現力豊かなフォトリアリズム）を選択できます。オプションでムードボードと最大10個までの連鎖した画像スタイル参照をサポートします。",
+    "display_name": "Krea 2 画像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "Krea 2 Medium は表現力豊かなイラストに最適です。Krea 2 Large は表現力豊かなフォトリアリズムに最適です。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_creativity": {
+        "name": "創造性"
+      },
+      "model_moodboard_id": {
+        "name": "ムードボードID"
+      },
+      "model_moodboard_strength": {
+        "name": "ムードボード強度"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像のためのテキストプロンプト。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "再現性のためのランダムシード。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Krea2StyleReferenceNode": {
+    "description": "Krea 2 生成に画像スタイル参照を追加します。複数の Krea 2 スタイル参照ノード（最大10個）を連鎖させ、最終的な `style_reference` 出力を Krea 2 画像ノードに入力します。各画像は ComfyAPI ストレージにアップロードされ、URL として渡されます。",
+    "display_name": "Krea 2 スタイル参照",
+    "inputs": {
+      "image": {
+        "name": "画像",
+        "tooltip": "生成に影響を与えるスタイル参照画像。"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "参照強度。負の値でスタイルの影響を反転します。"
+      },
+      "style_reference": {
+        "name": "スタイル参照",
+        "tooltip": "オプションの連鎖スタイル参照。このノードでさらに1つ追加します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "スタイル参照",
+        "tooltip": null
+      }
+    }
+  },
   "LTXAVTextEncoderLoader": {
     "description": "[レシピ]\n\nltxav: gemma 3 12B",
     "display_name": "LTXV オーディオテキストエンコーダーローダー",
@@ -7721,6 +8190,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -8329,6 +8803,10 @@
       },
       "6": {
         "name": "model_3d",
+        "tooltip": null
+      },
+      "7": {
+        "name": "model_3d_info",
         "tooltip": null
       }
     }
@@ -9455,6 +9933,21 @@
       "0": {
         "name": "画像",
         "tooltip": "処理済み画像"
+      }
+    }
+  },
+  "MergeSplat": {
+    "description": "任意の数のガウススプラットを1つに連結します。同じ latent を異なるシードで複数回デコードして結合すると、表面が密になり、メッシュ化時の表面品質が向上します。",
+    "display_name": "スプラットを結合",
+    "inputs": {
+      "splats": {
+        "name": "splats"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
       }
     }
   },
@@ -12262,6 +12755,23 @@
       }
     }
   },
+  "MultiGPU_WorkUnits": {
+    "description": "モデルを分割してワークユニットごとにサンプリングを高速化できるように準備します。\n\nモデルオブジェクト自体を変更するノード（例：compileやattention-switchノード）の後に配置してください。\n\nそれ以外の場合、このノードは任意の順序で配置できます。",
+    "display_name": "MultiGPU CFG分割",
+    "inputs": {
+      "max_gpus": {
+        "name": "max_gpus"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "NAGuidance": {
     "description": "モデルに正規化アテンションガイダンスを適用し、distilled/schnellモデルでネガティブプロンプトを有効にします。",
     "display_name": "正規化アテンションガイダンス",
@@ -12973,6 +13483,32 @@
       }
     }
   },
+  "PiDConditioning": {
+    "description": "PiD デコード／アップスケーリング用に latent と degrade_sigma スカラーを CONDITIONING に付加します。",
+    "display_name": "PiD コンディショニング",
+    "inputs": {
+      "degrade_sigma": {
+        "name": "degrade_sigma",
+        "tooltip": "0 = クリーンな latent。値を上げると破損した latent 出力をノイズ除去します。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "latent（VAEEncode または KSampler から）。"
+      },
+      "latent_format": {
+        "name": "latent_format",
+        "tooltip": "Flux1 および Flux2 の latent はチャンネル次元から自動検出されます。sd3 は手動で選択する必要があります。"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PixverseImageToVideoNode": {
     "description": "プロンプトと出力サイズに基づいて同期的に動画を生成します。",
     "display_name": "PixVerse 画像から動画へ",
@@ -13177,6 +13713,52 @@
       "model_file": {
         "name": "モデルファイル",
         "tooltip": "3Dモデルファイルまたはパス文字列"
+      }
+    }
+  },
+  "Preview3DAdvanced": {
+    "display_name": "3Dプレビュー（詳細）",
+    "inputs": {
+      "camera_info": {
+        "name": "カメラ情報"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model_3d_info": {
+        "name": "3Dモデル情報"
+      },
+      "model_file": {
+        "name": "model_file",
+        "tooltip": "上流の3Dノードからの3Dモデルファイル。"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "カメラ情報",
+        "tooltip": null
+      },
+      "2": {
+        "name": "3Dモデル情報",
+        "tooltip": null
+      },
+      "3": {
+        "name": "幅",
+        "tooltip": null
+      },
+      "4": {
+        "name": "高さ",
+        "tooltip": null
       }
     }
   },
@@ -14168,6 +14750,66 @@
       }
     }
   },
+  "RenderSplat": {
+    "description": "ガウススプラットを異方性EWAラスタライザー（向き付き楕円スプラット、アンチエイリアス、奥から手前への深度ソート）で画像としてレンダリングします。カメラはcamera_info入力（Load / Preview 3D、またはCreate Camera Infoノード）から取得します。空欄の場合はスプラットを自動フレーミングします。フレーム数を1より大きく設定すると、ビデオノードに渡すターンテーブル画像のバッチを生成します。",
+    "display_name": "スプラットをレンダリング",
+    "inputs": {
+      "background": {
+        "name": "背景"
+      },
+      "bg_image": {
+        "name": "背景画像",
+        "tooltip": "スプラットの背後に合成するオプションの背景画像（単色背景を上書き）。レンダーサイズにリサイズされます。バッチの場合はフレームごと、単一画像の場合は全フレーム共通。color/clayのみ対応。"
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "レンダリングに使用するカメラ - Load3D / Preview3DカメラまたはCreate Camera Infoノード。空欄の場合はデフォルトの3/4ビューから自動フレーミングされます。"
+      },
+      "frames": {
+        "name": "フレーム数",
+        "tooltip": "-1, 0, 1 = 静止画像1枚; >1 = ターンテーブル、カメラが360度回転します（任意のcamera_infoで動作）。負の値で逆方向に回転します。"
+      },
+      "headlight_shading": {
+        "name": "ヘッドライトシェーディング",
+        "tooltip": "カメラ位置のライト（ヘッドライト）による拡散シェーディング。スプラットのサーフェル法線を使用し、視線から外れる面を暗くして形状や曲率を強調します。0 = フラットアルベド、1 = 最強のシェーディング。"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "opacity_threshold": {
+        "name": "不透明度しきい値",
+        "tooltip": "この値未満の不透明度のガウスを除去します（薄い浮遊物を削除）。"
+      },
+      "render_style": {
+        "name": "レンダースタイル",
+        "tooltip": "画像出力の内容：color（色）、clay（ニュートラルアルベドシェーディング）、depth（近いほど明るい）、normal（OpenGL法線マップ）。"
+      },
+      "sharpen": {
+        "name": "シャープ化",
+        "tooltip": "重なったスプラットをシャープ化：1.0 = 物理的に正しいブレンド; それ以上は各ピクセルを支配的（最も近い）スプラットに寄せてテクスチャをシャープにしますが、スプラットを縮小したり隙間を開けたりしません。1を超えると物理的ではありません。"
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "splat_scale": {
+        "name": "スプラットスケール",
+        "tooltip": "各スプラットの投影フットプリントの倍率（小さいほどシャープ、大きいほど柔らかく/厚くなります）。"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像",
+        "tooltip": null
+      },
+      "1": {
+        "name": "マスク",
+        "tooltip": null
+      }
+    }
+  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -14597,6 +15239,164 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Image": {
+    "description": "Rodin Gen-2.5 を使って1～5枚の参照画像から3Dモデルを生成します。モード（高速／通常／超高）を選択して品質とコストを調整できます。",
+    "display_name": "Rodin 3D Gen-2.5 - 画像から3D生成",
+    "inputs": {
+      "TAPose": {
+        "name": "TAPose",
+        "tooltip": "人型モデル用のT/Aポーズ。"
+      },
+      "addon_highpack": {
+        "name": "addon_highpack",
+        "tooltip": "HighPackアドオン：4KテクスチャとQuadモードで約16倍のポリゴン数。"
+      },
+      "bbox_height": {
+        "name": "bbox_height",
+        "tooltip": "バウンディングボックスの高さ（Z軸）。"
+      },
+      "bbox_length": {
+        "name": "bbox_length",
+        "tooltip": "バウンディングボックスの長さ（X軸）。"
+      },
+      "bbox_width": {
+        "name": "bbox_width",
+        "tooltip": "バウンディングボックスの幅（Y軸）。他と合わせて0にするとバウンディングボックスをスキップします。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "geometry_file_format": {
+        "name": "geometry_file_format"
+      },
+      "hd_texture": {
+        "name": "hd_texture",
+        "tooltip": "高品質テクスチャ強化。"
+      },
+      "height_cm": {
+        "name": "height_cm",
+        "tooltip": "モデルのおおよその高さ（cm単位、0でスキップ）。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "1～5枚の画像。マルチビュー時は最初の画像がマテリアルに使用されます。"
+      },
+      "material": {
+        "name": "material"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "生成モード。通常＝バランス型。高速＝1K～20Kポリゴンで高速プロトタイピング向け。超高＝20K～200万ポリゴン、オプションでマイクロディテール対応。"
+      },
+      "mode_creative": {
+        "name": "creative"
+      },
+      "mode_polygon_count": {
+        "name": "polygon_count"
+      },
+      "mode_tier": {
+        "name": "tier"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "texture_delight": {
+        "name": "texture_delight",
+        "tooltip": "テクスチャから焼き付けられたライティングを除去します。"
+      },
+      "texture_mode": {
+        "name": "texture_mode",
+        "tooltip": "テクスチャ品質プリセット。「Default」は選択したティアのサーバーデフォルトを使用します。"
+      },
+      "use_original_alpha": {
+        "name": "use_original_alpha",
+        "tooltip": "画像の透明度を保持します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "Rodin3D_Gen25_Text": {
+    "description": "Rodin Gen-2.5を使ってテキストプロンプトから3Dモデルを生成します。モード（高速 / 通常 / 超高精細）を選択して、品質とコストのバランスを調整できます。",
+    "display_name": "Rodin 3D Gen-2.5 - テキストから3D生成",
+    "inputs": {
+      "TAPose": {
+        "name": "T/Aポーズ",
+        "tooltip": "人型モデル用のT/Aポーズ。"
+      },
+      "addon_highpack": {
+        "name": "HighPackアドオン",
+        "tooltip": "HighPackアドオン：4KテクスチャとQuadモードで約16倍のフェイス数。"
+      },
+      "bbox_height": {
+        "name": "バウンディングボックス高さ",
+        "tooltip": "バウンディングボックスの高さ（Z軸）。"
+      },
+      "bbox_length": {
+        "name": "バウンディングボックス長さ",
+        "tooltip": "バウンディングボックスの長さ（X軸）。"
+      },
+      "bbox_width": {
+        "name": "バウンディングボックス幅",
+        "tooltip": "バウンディングボックスの幅（Y軸）。他と合わせて0にするとバウンディングボックスをスキップします。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "geometry_file_format": {
+        "name": "ジオメトリファイル形式"
+      },
+      "hd_texture": {
+        "name": "高精細テクスチャ",
+        "tooltip": "高品質テクスチャの強化。"
+      },
+      "height_cm": {
+        "name": "高さ（cm）",
+        "tooltip": "モデルのおおよその高さ（センチメートル）。0でスキップ。"
+      },
+      "material": {
+        "name": "マテリアル"
+      },
+      "mode": {
+        "name": "モード",
+        "tooltip": "生成モード。通常＝バランス型。高速＝1K～20Kフェイスで迅速なプロトタイピング向け。超高精細＝20K～200万フェイス、オプションでマイクロディテール対応。"
+      },
+      "mode_creative": {
+        "name": "クリエイティブ"
+      },
+      "mode_polygon_count": {
+        "name": "ポリゴン数"
+      },
+      "mode_tier": {
+        "name": "ティア"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "3Dモデル用のテキストプロンプト。"
+      },
+      "seed": {
+        "name": "シード"
+      },
+      "texture_delight": {
+        "name": "テクスチャデライト",
+        "tooltip": "テクスチャから焼き付けられたライティングを除去します。"
+      },
+      "texture_mode": {
+        "name": "テクスチャモード",
+        "tooltip": "テクスチャ品質プリセット。「デフォルト」は選択したティアのサーバーデフォルトを使用します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデルファイル",
         "tooltip": null
       }
     }
@@ -15712,6 +16512,30 @@
       }
     }
   },
+  "SaveImageAdvanced": {
+    "description": "入力画像をComfyUIの出力ディレクトリに保存します。",
+    "display_name": "画像を保存（詳細）",
+    "inputs": {
+      "filename_prefix": {
+        "name": "ファイル名プレフィックス",
+        "tooltip": "保存するファイルのプレフィックス。%date:yyyy-MM-dd% や %Empty Latent Image.width% などの書式トークンを含めることができます。"
+      },
+      "format": {
+        "name": "フォーマット",
+        "tooltip": "画像を保存するファイル形式。"
+      },
+      "format_bit_depth": {
+        "name": "ビット深度"
+      },
+      "format_input_color_space": {
+        "name": "入力カラースペース"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "保存する画像。"
+      }
+    }
+  },
   "SaveImageDataSetToFolder": {
     "description": "画像データセットを指定したフォルダーに保存します。対応フォーマット：PNG。",
     "display_name": "画像データセットをフォルダに保存",
@@ -15727,6 +16551,10 @@
       "images": {
         "name": "images",
         "tooltip": "保存する画像のリスト。"
+      },
+      "mode": {
+        "name": "モード",
+        "tooltip": "既存のファイルを上書きするか、上書きを避けるためにファイル名を増分するかを選択します。"
       }
     }
   },
@@ -15745,6 +16573,10 @@
       "images": {
         "name": "images",
         "tooltip": "保存する画像のリスト。"
+      },
+      "mode": {
+        "name": "モード",
+        "tooltip": "既存のファイルを上書きするか、上書きを避けるためにファイル名を増分するかを選択します。"
       },
       "texts": {
         "name": "texts",
@@ -15862,7 +16694,8 @@
         "name": "fps"
       },
       "images": {
-        "name": "画像"
+        "name": "画像",
+        "tooltip": "RGBA画像はアルファチャンネルを透明度として保存します（vp9コーデックのみ対応）。"
       }
     }
   },
@@ -15890,6 +16723,57 @@
       },
       "shift_y": {
         "name": "Y軸シフト"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectCLIPDevice": {
+    "description": "CLIPテキストエンコーダーを特定のデバイス（default / cpu / gpu:N）に配置します。\n\n- 「default」はローダーによって割り当てられたデバイスに戻します。\n- 「cpu」はロードとオフロードの両方のデバイスをCPUに固定します。\n- 「gpu:N」はロードデバイスを利用可能なN番目のGPUに固定します。\n\n選択したデバイスが現在のマシンに存在しない場合\n（例：2GPUマシンで作成したワークフローを1GPUマシンで開いた場合）、\nノードはCLIPを変更せずに通過させ、失敗せずにメッセージをログに記録します。",
+    "display_name": "CLIPデバイス選択",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "device": {
+        "name": "device"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectModelDevice": {
+    "description": "拡散モデルを特定のデバイス（default / cpu / gpu:N）に配置します。\n\n- 「default」はローダーによって割り当てられたデバイスに戻します（以前にモデルデバイス選択を呼び出した後でも）。\n- 「cpu」はロードとオフロードの両方のデバイスをCPUに固定します。\n- 「gpu:N」はロードデバイスを利用可能なN番目のGPUに固定し、オフロードデバイスはローダーの元の選択に戻します。\n\n要求されたデバイスが入力モデルの既存のデバイスと異なる場合、ローダーのリロードファクトリー（cached_patcher_init）を通じて新しいモデルが生成され、新しいデバイス上で独立した重みを持つ新しいパッチャーが所有します。マルチGPUをサポートしないローダー（ファクトリーなし）は、ノードを変更せずに通過させ、警告を表示します。\n\nワークフローですでにMultiGPU CFG分割が適用されており、選択したGPUが既存のマルチGPUクローンのいずれかと重複する場合、そのクローンは削除され、2つのパッチャーが同じデバイスにバインドされることを防ぎます。\n\n選択したデバイスが現在のマシンに存在しない場合\n（例：2GPUマシンで作成したワークフローを1GPUマシンで開いた場合）、\nノードはモデルを変更せずに通過させ、失敗せずにメッセージをログに記録します。\n\n注意：すでに同じモデルを消費したノード（例：このモデルでKSamplerを元のデバイスで実行した場合）の後にモデルデバイス選択を配置することは推奨されません。選択したデバイスが元のデバイスと一致する場合（高速パス）、前の消費者が元のモデルで変更した状態が観測されます。モデルの消費者より前にモデルデバイス選択を配置してください。",
+    "display_name": "モデルデバイス選択",
+    "inputs": {
+      "device": {
+        "name": "device"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SelectVAEDevice": {
+    "description": "VAEを特定のデバイスに配置します（デフォルト / gpu:N）。\n\n- 「default」はローダーによって割り当てられたデバイスに戻します。\n- 「gpu:N」はロードデバイスをN番目の利用可能なGPUに固定し、オフロードデバイスは標準のVAEオフロードデバイスに設定されます。\n\nVAE用のCPUはUI上で意図的に公開されていません。ワークフローが「cpu」を指定した場合（例：他のマシンから開いた場合）、リクエストはログメッセージとともに破棄され、VAEは変更されずにそのまま渡されます。\n\n選択したデバイスが現在のマシンに存在しない場合（例：2GPUマシンで作成したワークフローを1GPUマシンで開いた場合）、ノードはVAEを変更せずにそのまま渡し、失敗する代わりにメッセージをログに記録します。",
+    "display_name": "VAEデバイスの選択",
+    "inputs": {
+      "device": {
+        "name": "デバイス"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -16193,6 +17077,68 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SplatToFile3D": {
+    "description": "ガウススプラットをFile3Dオブジェクトにシリアライズし、Save / Preview 3Dノードで利用します。バッチごとに1アイテムのみ対応。",
+    "display_name": "3Dファイルを作成（スプラットから）",
+    "inputs": {
+      "format": {
+        "name": "フォーマット",
+        "tooltip": "ply: 標準3Dガウススプラット（完全な球面調和関数）。ksplat: mkkellogg SplatBuffer（レベル0、非圧縮）、ベースカラーのみ。spz: Niantic gzip圧縮（約10倍小さい）、ベースカラーのみ。"
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "3Dモデル",
+        "tooltip": null
+      }
+    }
+  },
+  "SplatToMesh": {
+    "description": "ガウシアンスプラットからカラー付きメッシュを抽出します。",
+    "display_name": "スプラットからメッシュを抽出",
+    "inputs": {
+      "color_sharpen": {
+        "name": "色シャープ化",
+        "tooltip": "頂点テクスチャを鮮明にします：1.0＝物理的に正しいブレンド、それ以上は各ボクセルの色を近傍の平均ではなく支配的なガウシアンに寄せます（テクスチャのぼやけを軽減）。色のみで、ジオメトリは変化しません。"
+      },
+      "kernel": {
+        "name": "カーネル",
+        "tooltip": "ボクセル単位での最大スプラット半幅。各ガウシアンは自身の3シグマサイズのウィンドウでラスタライズされ、ここで上限が設定されます。小さいサーフェルは計算コストが低く、大きいものは切り捨てられません。スプラットが疎で隙間ができる場合は値を上げてください。"
+      },
+      "level": {
+        "name": "レベル",
+        "tooltip": "アイソサーフェスレベル。大津法で自動選択されますが、ここでバイアスをかけられます（1.0＝自動、低いほど太く・連結した表面、高いほど細く・締まった表面）。"
+      },
+      "min_component": {
+        "name": "最小コンポーネント",
+        "tooltip": "この頂点数未満の連結成分を削除します（0＝すべて保持）。浮遊した小片や二重壁の内側シェルを除去します。"
+      },
+      "min_opacity": {
+        "name": "最小不透明度",
+        "tooltip": "メッシュ化前にこの値よりも淡いガウシアンを無視します。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "最長軸に沿った密度グリッドの解像度。高いほど表面が細かくなり、VRAMや時間が多く必要です（解像度^3で増加）。"
+      },
+      "smooth": {
+        "name": "スムーズ",
+        "tooltip": "Taubinメッシュスムージングの反復回数。密度のぼかしとは異なり、体積を保ったまま表面を滑らかにします。0の場合は生の表面です。"
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "メッシュ",
         "tooltip": null
       }
     }
@@ -17895,6 +18841,48 @@
       }
     }
   },
+  "TransformSplat": {
+    "description": "ガウシアンスプラットを移動、回転、スケールします。不均一なスケールは各スプラット自体の形状も変化させ、処理が遅くなります。",
+    "display_name": "スプラットの変換",
+    "inputs": {
+      "rotate_x": {
+        "name": "X回転"
+      },
+      "rotate_y": {
+        "name": "Y回転"
+      },
+      "rotate_z": {
+        "name": "Z回転"
+      },
+      "scale_x": {
+        "name": "Xスケール"
+      },
+      "scale_y": {
+        "name": "Yスケール"
+      },
+      "scale_z": {
+        "name": "Zスケール"
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "translate_x": {
+        "name": "X移動"
+      },
+      "translate_y": {
+        "name": "Y移動"
+      },
+      "translate_z": {
+        "name": "Z移動"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "TrimAudioDuration": {
     "description": "オーディオテンソルを選択した時間範囲でトリミングします。",
     "display_name": "オーディオの長さをトリミング",
@@ -18140,6 +19128,169 @@
       }
     }
   },
+  "TripoP1ImageToModelNode": {
+    "description": "Tripo P1 画像から3Dへ。低ポリゴンでゲーム向けメッシュに最適化。",
+    "display_name": "Tripo P1：画像からモデルへ",
+    "inputs": {
+      "auto_size": {
+        "name": "自動サイズ調整",
+        "tooltip": "出力を実際のメートル単位に近づけてスケーリングします。"
+      },
+      "compress_geometry": {
+        "name": "ジオメトリ圧縮",
+        "tooltip": "ジオメトリベースの圧縮を適用します。編集前に解凍してください。"
+      },
+      "enable_image_autofix": {
+        "name": "画像自動補正を有効化",
+        "tooltip": "生成品質向上のため入力画像を前処理します。"
+      },
+      "export_uv": {
+        "name": "UV展開を出力",
+        "tooltip": "生成時にUV展開を行います。オフにするとジオメトリのみの高速処理になります。"
+      },
+      "face_limit": {
+        "name": "面数制限",
+        "tooltip": "目標面数（48～20000）。-1でTripoが自動調整します。"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "model_seed": {
+        "name": "モデルシード"
+      },
+      "output_mode": {
+        "name": "出力モード",
+        "tooltip": "「ジオメトリのみ」はテクスチャなしのメッシュを返します。「テクスチャ付き」はカラー／PBRマップを追加します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデルファイル",
+        "tooltip": null
+      },
+      "1": {
+        "name": "モデルタスクID",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1MultiviewToModelNode": {
+    "description": "Tripo P1 マルチビューから3Dへ。[前面、左側、背面、右側]の順で2～4枚の参照画像から生成。前面は必須、他3つは任意。",
+    "display_name": "Tripo P1：マルチビューからモデルへ",
+    "inputs": {
+      "auto_size": {
+        "name": "自動サイズ調整",
+        "tooltip": "出力を実際のメートル単位に近づけてスケーリングします。"
+      },
+      "compress_geometry": {
+        "name": "ジオメトリ圧縮",
+        "tooltip": "ジオメトリベースの圧縮を適用します。編集前に解凍してください。"
+      },
+      "export_uv": {
+        "name": "UV展開を出力",
+        "tooltip": "生成時にUV展開を行います。オフにするとジオメトリのみの高速処理になります。"
+      },
+      "face_limit": {
+        "name": "面数制限",
+        "tooltip": "目標面数（48～20000）。-1でTripoが自動調整します。"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "前面ビュー（0°）。必須。"
+      },
+      "image_back": {
+        "name": "背面画像",
+        "tooltip": "背面ビュー（180°）。"
+      },
+      "image_left": {
+        "name": "左側画像",
+        "tooltip": "左側ビュー（90°）、被写体の左側。"
+      },
+      "image_right": {
+        "name": "右側画像",
+        "tooltip": "右側ビュー（270°）、被写体の右側。"
+      },
+      "model_seed": {
+        "name": "モデルシード"
+      },
+      "output_mode": {
+        "name": "出力モード",
+        "tooltip": "「ジオメトリのみ」はテクスチャなしのメッシュを返します。「テクスチャ付き」はカラー／PBRマップを追加します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデルファイル",
+        "tooltip": null
+      },
+      "1": {
+        "name": "モデルタスクID",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1TextToModelNode": {
+    "description": "Tripo P1 テキストから3Dへ。安定したトポロジーで、ローポリ・ゲーム向けメッシュに最適化。",
+    "display_name": "Tripo P1：テキストからモデルへ",
+    "inputs": {
+      "auto_size": {
+        "name": "自動サイズ調整",
+        "tooltip": "出力を実際のメートル単位に近づけてスケーリングします。"
+      },
+      "compress_geometry": {
+        "name": "ジオメトリ圧縮",
+        "tooltip": "ジオメトリベースの圧縮を適用します。編集前に解凍してください。"
+      },
+      "export_uv": {
+        "name": "UVエクスポート",
+        "tooltip": "生成時にUVアンラップを行います。高速なジオメトリのみの場合はオフにしてください。"
+      },
+      "face_limit": {
+        "name": "面数制限",
+        "tooltip": "目標面数：48～20000。-1でTripoが自動調整します。"
+      },
+      "image_seed": {
+        "name": "画像シード"
+      },
+      "model_seed": {
+        "name": "モデルシード"
+      },
+      "negative_prompt": {
+        "name": "ネガティブプロンプト",
+        "tooltip": "最大255文字まで。"
+      },
+      "output_mode": {
+        "name": "出力モード",
+        "tooltip": "「ジオメトリのみ」はテクスチャなしのメッシュを返します。「テクスチャ付き」はカラー／PBRマップを追加します。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "最大1024文字まで。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデルファイル",
+        "tooltip": null
+      },
+      "1": {
+        "name": "モデルタスクID",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
   "TripoRefineNode": {
     "description": "v1.4 Tripoモデルでのみ作成されたドラフトモデルをリファインします。",
     "display_name": "Tripo: ドラフトモデルのリファイン",
@@ -18207,6 +19358,101 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSplatConditioning": {
+    "description": "画像をDINOv3とFlux2 VAEでエンコードし、TripoSplatのポジティブ／ネガティブコンディショニングを作成し、KSampler用の固定サイズノイズターゲット（latent＋カメラ）を生成します。",
+    "display_name": "TripoSplatコンディショニング",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision",
+        "tooltip": "DINOv3 ViT-H/16+ 画像エンコーダ"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Flux2 VAE"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ネガティブ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "固定サイズノイズターゲット（latent＋カメラ）。"
+      }
+    }
+  },
+  "TripoSplatPreprocessImage": {
+    "description": "各画像の中心を黒い背景の正方形キャンバスにクロップし、パディングを追加します。",
+    "display_name": "TripoSplat 前処理画像",
+    "inputs": {
+      "erode_radius": {
+        "name": "erode_radius",
+        "tooltip": "クロップ前にこのピクセル半径でアルファマットを収縮します（境界のにじみを防ぎます）。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "正方形画像のサイズ。モデルは1024で学習されていますが、他のサイズも動作します（分布外となります）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSplatSamplingPreview": {
+    "description": "標準のKsamplerノード用にTripoSplatモデルをパッチし、各ステップでライブデコードされたガウシアンスプラットのプレビューを表示します。",
+    "display_name": "TripoSplat サンプリングプレビュー",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "num_gaussians": {
+        "name": "num_gaussians",
+        "tooltip": "プレビュー用に生成するガウシアンの数（32の倍数に丸められます）。"
+      },
+      "octree_level": {
+        "name": "octree_level",
+        "tooltip": "プレビューデコード用のオクツリー深度（小さいほど高速/粗い）。"
+      },
+      "pitch": {
+        "name": "pitch",
+        "tooltip": "プレビューカメラのピッチ角（度）。"
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "最大スプラット半径（ピクセル単位）。各ガウシアンはスケールからサイズが決まり、ここで上限が設定されます。小さいほど細かく/尖り、大きいほど太くなります。"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "TripoSplat VAEデコーダ"
+      },
+      "yaw": {
+        "name": "yaw",
+        "tooltip": "プレビューカメラのヨー角（度）。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -18539,6 +19785,36 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "VAEDecodeTripoSplat": {
+    "description": "サンプリングされたTripoSplatのlatentを3Dガウシアンスプラットにデコードします。ガウシアンの数を変更して密度を調整できます。",
+    "display_name": "TripoSplat デコード",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "num_gaussians": {
+        "name": "num_gaussians",
+        "tooltip": "生成するガウシアンの数（32の倍数に丸められます）。262144はオクツリーの点密度と一致します。これより多いと同じ点をオーバーサンプリングします（より密ですが新しいディテールは増えません）。VRAM/時間コストも比例して増加します。"
+      },
+      "samples": {
+        "name": "samples"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "オクツリーポイントサンプラー（グローバルRNG）のシード値。デコードを決定的にします。"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "TripoSplat VAEデコーダ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
       }
     }
   },

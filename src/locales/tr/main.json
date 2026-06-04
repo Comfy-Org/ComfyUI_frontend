@@ -233,7 +233,8 @@
       "auth/user-disabled": "Bu hesap devre dışı bırakıldı. Lütfen destek ekibiyle iletişime geçin.",
       "auth/user-not-found": "Bu e-posta ile ilişkili bir hesap bulunamadı. Yeni bir hesap oluşturmak ister misiniz?",
       "auth/weak-password": "Parola çok zayıf. Lütfen en az 6 karakterden oluşan daha güçlü bir parola kullanın.",
-      "auth/wrong-password": "Girdiğiniz parola yanlış. Lütfen tekrar deneyin."
+      "auth/wrong-password": "Girdiğiniz parola yanlış. Lütfen tekrar deneyin.",
+      "generic": "Oturum açarken bir hata oluştu. Lütfen tekrar deneyin."
     },
     "login": {
       "andText": "ve",
@@ -407,6 +408,29 @@
   "cloudForgotPassword_passwordResetSent": "Parola sıfırlama gönderildi",
   "cloudForgotPassword_sendResetLink": "Sıfırlama bağlantısını gönder",
   "cloudForgotPassword_title": "Şifremi Unuttum",
+  "cloudHero": {
+    "nextSlide": "Sonraki slayt",
+    "previousSlide": "Önceki slayt",
+    "slidePagerLabel": "Slayta git {index}",
+    "slides": {
+      "cloud": {
+        "description": "Ticari lisans için doğrulanmış modellerle her yerden çalışmak isteyen çoğu kullanıcı için en iyisi.",
+        "title": "Bulut"
+      },
+      "models": {
+        "description": "Sıfır kurulumla çalışmaya hazır, özenle seçilmiş ve ticari lisanslı modeller.",
+        "title": "Modeller"
+      },
+      "team": {
+        "description": "Ekibinizi bugün dahil edin. İş akışlarını ve varlıkları organizasyonunuz genelinde paylaşın.",
+        "title": "Ekip"
+      },
+      "workflows": {
+        "description": "Fikirden çıktıya dakikalar içinde. Birden fazla varyasyonu yan yana oluşturun.",
+        "title": "İş Akışları"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "Yerelde Devam Et",
     "exploreCloud": "Bulutu Ücretsiz Dene",
@@ -663,7 +687,6 @@
     "Collapse": "Daralt",
     "Color": "Renk",
     "Colors": "Renkler",
-    "Convert to Group Node": "Grup Düğümüne Dönüştür",
     "Convert to Subgraph": "Alt Grafiğe Dönüştür",
     "Copy": "Kopyala",
     "Copy (Clipspace)": "Kopyala (Clipspace)",
@@ -806,7 +829,11 @@
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
     "FILE_3D_GLTF": "FILE_3D_GLTF",
+    "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FILE_3D_OBJ",
+    "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
     "FLOAT": "FLOAT",
@@ -822,10 +849,12 @@
     "IMAGECOMPARE": "GÖRSELKARŞILAŞTIR",
     "INT": "TAMSAYI",
     "INTERP_MODEL": "YORUMLAMA_MODELİ",
+    "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "GİZLİ",
     "LATENT_OPERATION": "GİZLİ_İŞLEM",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
     "LOAD3D_CAMERA": "YÜKLE3D_KAMERA",
+    "LOAD3D_MODEL_INFO": "3D_MODEL_BİLGİSİNİ_YÜKLE",
     "LOAD_3D": "3D_YÜKLE",
     "LORA_MODEL": "LORA_MODEL",
     "LOSS_MAP": "KAYIP_HARITASI",
@@ -855,6 +884,7 @@
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "ÖRNEKLEYİCİ",
     "SIGMAS": "SİGMALAR",
+    "SPLAT": "SPLAT",
     "STRING": "METİN",
     "STYLE_MODEL": "STİL_MODELİ",
     "SVG": "SVG",
@@ -910,6 +940,337 @@
     "pause": "İndirmeyi Duraklat",
     "paused": "Duraklatıldı",
     "resume": "İndirmeye Devam Et"
+  },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "bilinmeyen giriş",
+      "nodeName": "Bu düğüm"
+    },
+    "promptErrors": {
+      "missing_node_type": {
+        "desc": "Bir düğüm türü eksik veya kullanılamıyor. Çalışma akışı bozulmuş olabilir veya özel bir düğüm gerektiriyor olabilir.",
+        "title": "Eksik düğüm türü"
+      },
+      "no_prompt": {
+        "desc": "Sunucuya gönderilen çalışma akışı verisi boş. Bu beklenmeyen bir sistem hatası olabilir.",
+        "title": "Çalışma akışı verisi boş"
+      },
+      "prompt_no_outputs": {
+        "desc": "Çalışma akışında sonuç üretecek herhangi bir çıktı düğümü (örn. Görseli Kaydet, Görseli Önizle) bulunmuyor.",
+        "title": "İstemde çıktı yok"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "Çalışma akışında geçersiz düğüm girişleri var. Tekrar çalıştırmadan önce vurgulanan düğümleri düzeltin.",
+        "title": "İstem doğrulaması başarısız"
+      },
+      "server_error_cloud": {
+        "desc": "Sunucuda beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin.",
+        "title": "Sunucu hatası"
+      },
+      "server_error_local": {
+        "desc": "Sunucuda beklenmeyen bir hata oluştu. Lütfen sunucu günlüklerini kontrol edin.",
+        "title": "Sunucu hatası"
+      }
+    },
+    "runtimeErrors": {
+      "access_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Bu çalıştırma mevcut hesap için erişilemeyen bir izin gerektiriyor.",
+        "title": "Erişim gerekli",
+        "toastMessage": "Bu çalıştırma mevcut hesap için erişilemeyen bir izin gerektiriyor.",
+        "toastTitle": "Erişim gerekli"
+      },
+      "content_blocked": {
+        "itemLabel": "{nodeName}",
+        "message": "Bu istek içerik denetleme sistemi tarafından engellendi. İstemi veya girdileri değiştirip tekrar deneyin.",
+        "title": "İçerik engellendi",
+        "toastMessage": "Bu istek içerik denetleme sistemi tarafından engellendi. İstemi veya girdileri değiştirip tekrar deneyin.",
+        "toastTitle": "İçerik engellendi"
+      },
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "Düğüm çalıştırma sırasında bir hata verdi.",
+        "title": "Çalıştırma başarısız",
+        "toastMessage": "Bu düğüm çalıştırma sırasında bir hata verdi. Girdilerini kontrol edin veya farklı bir yapılandırmayı deneyin.",
+        "toastTitle": "{nodeName} başarısız oldu"
+      },
+      "generation_stalled": {
+        "itemLabel": "{nodeName}",
+        "message": "Bu iş akışı ilerleme kaydetmeyi durdurdu. Tekrar çalıştırmayı deneyin.",
+        "title": "Oluşturma durdu",
+        "toastMessage": "Bu iş akışı ilerleme kaydetmeyi durdurdu. Tekrar çalıştırmayı deneyin.",
+        "toastTitle": "Oluşturma durdu"
+      },
+      "image_not_loaded": {
+        "itemLabel": "{nodeName}",
+        "message": "Sistem bu görüntüyü yükleyemedi.",
+        "title": "Görüntü yüklenemedi",
+        "toastMessage": "{nodeName} için görüntü yüklenemedi. Tekrar eklemeyi deneyin.",
+        "toastTitle": "Girdi görüntüsü yüklenemedi"
+      },
+      "insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "Bu düğümü kullanmak için hesabınıza kredi ekleyin.",
+        "title": "Yetersiz kredi",
+        "toastMessage": "Bu düğümü kullanmak için hesabınıza kredi ekleyin.",
+        "toastTitle": "Yetersiz kredi"
+      },
+      "invalid_clip_input": {
+        "itemLabel": "{nodeName}",
+        "message": "CLIP girişi eksik veya geçersiz. Bağlı kontrol noktası veya CLIP yükleyicisini kontrol edin.",
+        "title": "Geçersiz CLIP girişi",
+        "toastMessage": "{nodeName} için CLIP girişi eksik veya geçersiz.",
+        "toastTitle": "Geçersiz CLIP girişi"
+      },
+      "invalid_prompt": {
+        "itemLabel": "{nodeName}",
+        "message": "Bu iş akışını çalıştırmadan önce bir istem girin.",
+        "title": "İstem boş",
+        "toastMessage": "Bu iş akışını çalıştırmadan önce bir istem girin.",
+        "toastTitle": "İstem boş"
+      },
+      "invalid_workflow_request": {
+        "itemLabel": "{nodeName}",
+        "message": "İş akışı isteği geçersiz. İş akışını kontrol edip tekrar deneyin.",
+        "title": "Geçersiz iş akışı isteği",
+        "toastMessage": "İş akışı isteği geçersiz. İş akışını kontrol edip tekrar deneyin.",
+        "toastTitle": "Geçersiz iş akışı isteği"
+      },
+      "model_access_error": {
+        "itemLabel": "{nodeName}",
+        "message": "Bir veya daha fazla gerekli modele erişilemiyor.",
+        "title": "Model erişimi gerekli",
+        "toastMessage": "Bir veya daha fazla gerekli modele erişilemiyor.",
+        "toastTitle": "Model erişimi gerekli"
+      },
+      "model_download_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "Bir model indirilemedi. Tekrar deneyin.",
+        "title": "Model indirme başarısız",
+        "toastMessage": "Bir model indirilemedi. Tekrar deneyin.",
+        "toastTitle": "Model indirme başarısız"
+      },
+      "out_of_memory": {
+        "itemLabel": "{nodeName}",
+        "message": "Yeterli GPU belleği yok. Görüntü çözünürlüğünü veya toplu iş boyutunu azaltıp tekrar deneyin.",
+        "title": "Oluşturma başarısız",
+        "toastMessage": "Yeterli GPU belleği yok. Görüntü çözünürlüğünü veya toplu iş boyutunu azaltıp tekrar deneyin.",
+        "toastTitle": "Oluşturma başarısız"
+      },
+      "preprocessing_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "İş akışı hazırlanamadı. Tekrar çalıştırmayı deneyin.",
+        "title": "Hazırlık başarısız",
+        "toastMessage": "İş akışı hazırlanamadı. Tekrar çalıştırmayı deneyin.",
+        "toastTitle": "Hazırlık başarısız"
+      },
+      "preprocessing_timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "İş akışının hazırlanması çok uzun sürdü. Tekrar çalıştırmayı deneyin.",
+        "title": "Hazırlık zaman aşımına uğradı",
+        "toastMessage": "İş akışının hazırlanması çok uzun sürdü. Tekrar çalıştırmayı deneyin.",
+        "toastTitle": "Hazırlık zaman aşımına uğradı"
+      },
+      "rate_limited": {
+        "itemLabel": "{nodeName}",
+        "message": "Şu anda yüksek talep var. Birazdan tekrar deneyin.",
+        "title": "Sunucular meşgul",
+        "toastMessage": "Şu anda yüksek talep var. Birazdan tekrar deneyin.",
+        "toastTitle": "Sunucular meşgul"
+      },
+      "request_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "İstek, çalıştırma tamamlanmadan önce başarısız oldu. Tekrar deneyin.",
+        "title": "İstek başarısız",
+        "toastMessage": "İstek, çalıştırma tamamlanmadan önce başarısız oldu. Tekrar deneyin.",
+        "toastTitle": "İstek başarısız"
+      },
+      "run_ended_unexpectedly": {
+        "itemLabel": "{nodeName}",
+        "message": "Çalıştırma beklenmedik şekilde sona erdi. Tekrar deneyin.",
+        "title": "Çalıştırma beklenmedik şekilde sona erdi",
+        "toastMessage": "Çalıştırma beklenmedik şekilde sona erdi. Tekrar deneyin.",
+        "toastTitle": "Çalıştırma beklenmedik şekilde sona erdi"
+      },
+      "run_start_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "Çalıştırma başlatılamadı. Tekrar deneyin.",
+        "title": "Çalıştırma başlatılamadı",
+        "toastMessage": "Çalıştırma başlatılamadı. Tekrar deneyin.",
+        "toastTitle": "Çalıştırma başlatılamadı"
+      },
+      "server_busy": {
+        "itemLabel": "{nodeName}",
+        "message": "Sunucular şu anda meşgul. Birazdan tekrar deneyin.",
+        "title": "Sunucular meşgul",
+        "toastMessage": "Sunucular şu anda meşgul. Birazdan tekrar deneyin.",
+        "toastTitle": "Sunucular meşgul"
+      },
+      "server_crashed": {
+        "itemLabel": "{nodeName}",
+        "message": "Sunucu bu iş akışını çalıştırırken durdu. Tekrar deneyin.",
+        "title": "Sunucu çöktü",
+        "toastMessage": "Sunucu bu iş akışını çalıştırırken durdu. Tekrar deneyin.",
+        "toastTitle": "Sunucu çöktü"
+      },
+      "sign_in_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Ortak düğümler için Comfy hesabı gereklidir. Devam etmek için giriş yapın.",
+        "title": "Giriş gerekli",
+        "toastMessage": "Ortak düğümler için Comfy hesabı gereklidir. Devam etmek için giriş yapın.",
+        "toastTitle": "Bu düğümü kullanmak için giriş yapın"
+      },
+      "subscription_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Bu iş akışını çalıştırmaya devam etmek için bir plana abone olun.",
+        "title": "Abonelik gerekli",
+        "toastMessage": "Bu iş akışını çalıştırmaya devam etmek için bir plana abone olun.",
+        "toastTitle": "Abonelik gerekli"
+      },
+      "subscription_upgrade_required": {
+        "details": "Özel modeller için abonelik yükseltmesi gerekli: {modelNames}",
+        "itemLabel": "{nodeName}",
+        "message": "Bu iş akışındaki özel modelleri kullanmak için aboneliğinizi yükseltin.",
+        "title": "Abonelik yükseltmesi gerekli",
+        "toastMessage": "Bu özel modelleri kullanmak için aboneliğinizi yükseltin: {modelNames}.",
+        "toastTitle": "Abonelik yükseltmesi gerekli"
+      },
+      "timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "Bu iş akışı maksimum çalışma süresine ulaştı. Görüntü çözünürlüğünü, toplu iş boyutunu veya iş akışı uzunluğunu azaltıp tekrar deneyin.",
+        "title": "Oluşturma zaman aşımına uğradı",
+        "toastMessage": "Bu iş akışı maksimum çalışma süresine ulaştı. Görüntü çözünürlüğünü, toplu iş boyutunu veya iş akışı uzunluğunu azaltıp tekrar deneyin.",
+        "toastTitle": "Oluşturma zaman aşımına uğradı"
+      },
+      "unexpected_service_error": {
+        "itemLabel": "{nodeName}",
+        "message": "Serviste beklenmeyen bir hata oluştu. Tekrar deneyin.",
+        "title": "Servis hatası",
+        "toastMessage": "Serviste beklenmeyen bir hata oluştu. Tekrar deneyin.",
+        "toastTitle": "Servis hatası"
+      },
+      "workspace_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "Devam etmek için çalışma alanınıza kredi ekleyin.",
+        "title": "Yetersiz kredi",
+        "toastMessage": "Devam etmek için çalışma alanınıza kredi ekleyin.",
+        "toastTitle": "Yetersiz kredi"
+      }
+    },
+    "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName} için {inputName} bağlantısı geçersiz.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Bir düğüm bağlantısı doğru şekilde okunamadı.",
+        "title": "Geçersiz bağlantı",
+        "toastMessage": "{nodeName} için {inputName} bağlantısı geçersiz.",
+        "toastTitle": "Geçersiz bağlantı"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName}, {inputName} değerini reddetti.",
+        "detailsWithRawDetails": "{nodeName} özel doğrulamadan geçemedi: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Bir düğüm bir veya daha fazla giriş değerini reddetti.",
+        "title": "Geçersiz giriş",
+        "toastMessage": "{nodeName}, {inputName} değerini reddetti.",
+        "toastTitle": "Geçersiz giriş"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName} döngüsel bir bağlantının parçası.",
+        "detailsWithRawDetails": "{nodeName} döngüsel bir bağlantının parçası: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "Çalışma akışında döngüsel bir düğüm bağlantısı var.",
+        "title": "Geçersiz çalışma akışı",
+        "toastMessage": "{nodeName} döngüsel bir bağlantının parçası.",
+        "toastTitle": "Geçersiz çalışma akışı"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName}, {inputName} değerini doğrulayamadı.",
+        "detailsWithRawDetails": "{nodeName}, {inputName} değerini doğrulayamadı: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Çalışma akışı bağlı bir düğümü doğrulayamadı.",
+        "title": "Doğrulama başarısız",
+        "toastMessage": "{nodeName}, {inputName} değerini doğrulayamadı.",
+        "toastMessageWithRawDetails": "{nodeName}, {inputName} değerini doğrulayamadı: {rawDetails}",
+        "toastTitle": "Doğrulama başarısız"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName} doğrulama sırasında başarısız oldu.",
+        "detailsWithRawDetails": "{nodeName} doğrulama sırasında başarısız oldu: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "Çalışma akışı doğrulanamadı çünkü bir düğüm doğrulama kontrolü beklenmedik şekilde başarısız oldu.",
+        "title": "Doğrulama başarısız",
+        "toastMessage": "{nodeName} doğrulama sırasında başarısız oldu.",
+        "toastMessageWithRawDetails": "{nodeName} doğrulama sırasında başarısız oldu: {rawDetails}",
+        "toastTitle": "Doğrulama başarısız"
+      },
+      "image_not_loaded": {
+        "details": "{nodeName} için görsel yüklenemedi. Tekrar eklemeyi deneyin.",
+        "itemLabel": "{nodeName}",
+        "message": "Sistem bu görseli yükleyemedi.",
+        "title": "Görsel yüklenemedi",
+        "toastMessage": "{nodeName} için görsel yüklenemedi. Tekrar eklemeyi deneyin.",
+        "toastTitle": "Giriş görseli yüklenemedi"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName}, {inputName} değerini beklenen tipe dönüştüremedi.",
+        "detailsWithValue": "{nodeName} adlı düğümün {inputName} girişi için {receivedValue} değeri {expectedType} tipine dönüştürülemedi.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Bir giriş değeri yanlış tipte.",
+        "title": "Geçersiz giriş",
+        "toastMessage": "{nodeName}, {inputName} değerini beklenen tipe dönüştüremedi.",
+        "toastMessageWithValue": "{nodeName} adlı düğümün {inputName} girişi için {receivedValue} değeri {expectedType} tipine dönüştürülemedi.",
+        "toastTitle": "Geçersiz giriş"
+      },
+      "required_input_missing": {
+        "details": "{nodeName} için gerekli bir giriş eksik: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Gerekli giriş yuvalarına bağlantı yapılmamış.",
+        "title": "Eksik bağlantı",
+        "toastMessage": "{nodeName} için gerekli bir giriş eksik: {inputName}",
+        "toastTitle": "Gerekli giriş eksik"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName} için {inputName} bağlantısı uyumsuz.",
+        "detailsWithTypes": "{nodeName} adlı düğümün {inputName} girişi {expectedType} bekliyor, ancak bağlı çıkış {receivedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Bağlı düğümler uyumsuz giriş ve çıkış tipleri kullanıyor.",
+        "title": "Geçersiz bağlantı",
+        "toastMessage": "{nodeName} için {inputName} bağlantısı uyumsuz.",
+        "toastMessageWithTypes": "{nodeName} adlı düğümün {inputName} girişi {expectedType} bekliyor, ancak bağlı çıkış {receivedType}.",
+        "toastTitle": "Geçersiz bağlantı"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName} için {inputName} değeri maksimumun üstünde.",
+        "detailsWithValue": "{nodeName} adlı düğümün {inputName} girişi için {receivedValue} değeri maksimum {maxValue} değerinin üstünde.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Bazı giriş değerleri izin verilen aralığın dışında.",
+        "title": "Giriş aralık dışında",
+        "toastMessage": "{nodeName} için {inputName} değeri maksimumun üstünde.",
+        "toastMessageWithValue": "{nodeName} adlı düğümün {inputName} girişi için {receivedValue} değeri maksimum {maxValue} değerinin üstünde.",
+        "toastTitle": "Giriş aralık dışında"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName} için {inputName} değeri desteklenmiyor.",
+        "detailsWithValue": "{nodeName} adlı düğümün {inputName} girişi için {receivedValue} değeri mevcut değil.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Bazı giriş değerleri bu düğüm için mevcut değil.",
+        "title": "Geçersiz giriş",
+        "toastMessage": "{nodeName} için {inputName} değeri desteklenmiyor.",
+        "toastMessageWithValue": "{nodeName} adlı düğümün {inputName} girişi için {receivedValue} değeri mevcut değil.",
+        "toastTitle": "Geçersiz giriş"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName} için {inputName} değeri minimumun altında.",
+        "detailsWithValue": "{nodeName} adlı düğümün {inputName} girişi için {receivedValue} değeri minimum {minValue} değerinin altında.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Bazı giriş değerleri izin verilen aralığın dışında.",
+        "title": "Giriş aralık dışında",
+        "toastMessage": "{nodeName} için {inputName} değeri minimumun altında.",
+        "toastMessageWithValue": "{nodeName} adlı düğümün {inputName} girişi için {receivedValue} değeri minimum {minValue} değerinin altında.",
+        "toastTitle": "Giriş aralık dışında"
+      }
+    }
   },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
@@ -1208,6 +1569,7 @@
     "logs": "Kayıtlar",
     "manageExtensions": "Eklentileri yönet",
     "markdown": "markdown",
+    "maximizeDialog": "Diyaloğu büyüt",
     "micPermissionDenied": "Mikrofon izni reddedildi",
     "migrate": "Taşı",
     "missing": "Eksik",
@@ -1308,6 +1670,7 @@
     "resizeFromTopLeft": "Sol üst köşeden yeniden boyutlandır",
     "resizeFromTopRight": "Sağ üst köşeden yeniden boyutlandır",
     "restart": "Yeniden Başlat",
+    "restoreDialog": "Diyaloğu geri yükle",
     "resultsCount": "{count} Sonuç Bulundu",
     "running": "Çalışıyor",
     "save": "Kaydet",
@@ -1667,6 +2030,7 @@
       "orthographic": "Ortografik",
       "perspective": "Perspektif"
     },
+    "centerCameraOnModel": "Kamerayı Modelin Ortasına Getir",
     "clearRecording": "Kaydı Temizle",
     "dropToLoad": "Yüklemek için 3B modeli bırakın",
     "edgeThreshold": "Kenar Eşiği",
@@ -1713,6 +2077,7 @@
     "reloadingModel": "Model yeniden yükleniyor...",
     "removeBackgroundImage": "Arka Plan Resmini Kaldır",
     "resizeNodeMatchOutput": "Düğümü çıktıya uyacak şekilde yeniden boyutlandır",
+    "retainViewOnReload": "Model yeniden yüklendiğinde kamera görünümünü kilitle",
     "scene": "Sahne",
     "showGrid": "Izgarayı Göster",
     "showSkeleton": "İskeleti Göster",
@@ -2103,7 +2468,6 @@
     "ComfyUI Issues": "ComfyUI Sorunları",
     "Contact Support": "Destekle İletişime Geç",
     "Convert Selection to Subgraph": "Seçimi Alt Grafiğe Dönüştür",
-    "Convert selected nodes to group node": "Seçili düğümleri grup düğümüne dönüştür",
     "Copy": "Kopyala",
     "Custom Nodes (Legacy)": "Özel Düğümler (Eski)",
     "Custom Nodes Manager": "Özel Düğüm Yöneticisi",
@@ -2266,6 +2630,7 @@
     "3d_models": "3d_modeller",
     "Anthropic": "Anthropic",
     "BFL": "BFL",
+    "Beeble": "Beeble",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "ElevenLabs": "ElevenLabs",
@@ -2274,6 +2639,7 @@
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
+    "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
     "Magnific": "Magnific",
@@ -2299,7 +2665,6 @@
     "WaveSpeed": "WaveSpeed",
     "adjustments": "ayarlar",
     "advanced": "gelişmiş",
-    "api node": "api düğümü",
     "attention_experiments": "dikkat_deneyleri",
     "audio": "ses",
     "background removal": "arka plan kaldırma",
@@ -2315,7 +2680,6 @@
     "controlnet": "controlnet",
     "create": "oluştur",
     "custom_sampling": "özel_örnekleme",
-    "dataset": "veri seti",
     "debug": "hata ayıklama",
     "deprecated": "kullanımdan kaldırılmış",
     "detection": "tespit",
@@ -2323,7 +2687,7 @@
     "experimental": "deneysel",
     "filters": "filtreler",
     "flux": "flux",
-    "geometry_estimation": "geometri_tahmini",
+    "geometry estimation": "geometri tahmini",
     "gligen": "gligen",
     "guidance": "rehberlik",
     "guiders": "rehberler",
@@ -2340,10 +2704,12 @@
     "mask": "maske",
     "model": "model",
     "model_merging": "model_birleştirme",
-    "model_patches": "model_yamaları",
     "model_specific": "modele_özgü",
+    "multigpu": "çoklu gpu",
     "noise": "gürültü",
     "operations": "işlemler",
+    "partner": "partner",
+    "patch": "yama",
     "photomaker": "photomaker",
     "preprocessors": "ön işlemciler",
     "primitive": "ilkel",
@@ -2355,6 +2721,7 @@
     "sd3": "sd3",
     "shader": "shader",
     "sigmas": "sigmalar",
+    "splat": "splat",
     "stable_cascade": "stabil_çağlayan",
     "style_model": "stil_modeli",
     "supir": "supir",
@@ -2364,7 +2731,7 @@
     "unet": "unet",
     "upscale_diffusion": "yükseltme_difüzyonu",
     "upscaling": "yükseltme",
-    "utils": "yardımcı programlar",
+    "utilities": "yardımcılar",
     "video": "video",
     "video_models": "video_modelleri",
     "zimage": "zimage"
@@ -2436,6 +2803,43 @@
       "windows": "Windows (CUDA destekli Nvidia GPU)"
     },
     "title": "Cihazınız desteklenmiyor"
+  },
+  "oauth": {
+    "consent": {
+      "allow": "Devam Et",
+      "appTypeNative": "Yerel uygulama",
+      "appTypeWeb": "Web uygulaması",
+      "deny": "İptal",
+      "errorExpired": "Bu onay isteğinin süresi doldu veya zaten kullanıldı. Lütfen istemci uygulamasından tekrar başlatın.",
+      "errorScopeBroadening": "Önceden onaylanan izinler bu isteği kapsamıyor. Yeni izinlerle tekrar yetkilendirmeniz gerekiyor.",
+      "errorUnavailable": "Bu özellik şu anda kullanılamıyor. Sorun devam ederse lütfen destek ile iletişime geçin.",
+      "genericError": "OAuth isteği başarısız oldu. Lütfen istemci uygulamasından tekrar başlatın.",
+      "loading": "Yetkilendirme isteği yükleniyor…",
+      "missingRequest": "Bu yetkilendirme isteği eksik. Lütfen istemci uygulamasından tekrar başlatın.",
+      "noWorkspaces": "Bu istek için uygun çalışma alanı yok.",
+      "permissionsHeader": "İzinler",
+      "redirectNotice": "Yönlendirileceksiniz:",
+      "resourceFallback": "bu uygulama",
+      "sessionError": "Oturum başlatılamadı. Lütfen tekrar deneyin.",
+      "sessionErrorToastSummary": "OAuth oturum açma devam ettirilemedi",
+      "subtitle": "Devam etmek için {resource} hesabınızla oturum açın",
+      "title": "{client} erişim istiyor",
+      "workspaceHelp": "İzinler yalnızca bu çalışma alanı için geçerlidir.",
+      "workspaceLabel": "Çalışma Alanı"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "Sizin adınıza iş akışlarını çalıştır"
+      },
+      "mcp:tools:read": {
+        "label": "Mevcut iş akışı araçlarını görüntüle"
+      }
+    },
+    "workspace": {
+      "member": "Üye",
+      "owner": "Sahip",
+      "personal": "Kişisel"
+    }
   },
   "openSharedWorkflow": {
     "author": "Yazar:",
@@ -2664,20 +3068,6 @@
     "normal": "Normal",
     "parameters": "Parametreler",
     "pinned": "Sabitlendi",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "Sunucuya gönderilen çalışma akışı verisi boş. Bu beklenmeyen bir sistem hatası olabilir."
-      },
-      "prompt_no_outputs": {
-        "desc": "Çalışma akışında sonuç üretecek herhangi bir çıktı düğümü (ör. Görüntüyü Kaydet, Görüntüyü Önizle) bulunmuyor."
-      },
-      "server_error_cloud": {
-        "desc": "Sunucu beklenmeyen bir hata ile karşılaştı. Lütfen daha sonra tekrar deneyin."
-      },
-      "server_error_local": {
-        "desc": "Sunucu beklenmeyen bir hata ile karşılaştı. Lütfen sunucu günlüklerini kontrol edin."
-      }
-    },
     "properties": "Özellikler",
     "removeFavorite": "Favorilerden Kaldır",
     "resetAllParameters": "Tüm parametreleri sıfırla",
@@ -2934,6 +3324,7 @@
     "Other": "Diğer",
     "PLY": "PLY",
     "PlanCredits": "Plan & Krediler",
+    "PointCloud": "Nokta Bulutu",
     "Pointer": "İşaretçi",
     "Queue": "Kuyruk",
     "QueueButton": "Kuyruk Düğmesi",
@@ -3075,6 +3466,7 @@
         "sourceDesc": "Kaynak türüne göre gruplandır (Çekirdek, Özel, API)"
       },
       "noBookmarkedNodes": "Henüz favori yok",
+      "noMatchingNodes": "\"{query}\" ile eşleşen düğüm yok",
       "resetView": "Görünümü Varsayılana Sıfırla",
       "sections": {
         "bookmarked": "Favoriler",
@@ -3460,8 +3852,7 @@
       "newest": "En Yeni",
       "popular": "Popüler",
       "recommended": "Önerilen",
-      "searchPlaceholder": "Ara...",
-      "vramLowToHigh": "VRAM Kullanımı (Düşükten Yükseğe)"
+      "searchPlaceholder": "Ara..."
     },
     "sorting": "Sıralama ölçütü",
     "title": "Bir Şablonla Başlayın",

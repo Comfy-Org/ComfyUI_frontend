@@ -270,6 +270,27 @@ describe('useNodePointerInteractions', () => {
     expect(handleNodeSelect).toHaveBeenCalledTimes(1)
   })
 
+  it('should not start drag on shift+move when pointerdown was stopped by a child', async () => {
+    const { handleNodeSelect } = useNodeEventHandlers()
+    const { startDrag } = useNodeDrag()
+
+    const { pointerHandlers } = useNodePointerInteractions('test-node-123')
+
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', {
+        shiftKey: true,
+        buttons: 1,
+        clientX: 200,
+        clientY: 200
+      })
+    )
+
+    await nextTick()
+    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
+    expect(startDrag).not.toHaveBeenCalled()
+    expect(handleNodeSelect).not.toHaveBeenCalled()
+  })
+
   it('on ctrl+click: calls toggleNodeSelectionAfterPointerUp on pointer up (not pointer down)', async () => {
     const { pointerHandlers } = useNodePointerInteractions('test-node-123')
     const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()

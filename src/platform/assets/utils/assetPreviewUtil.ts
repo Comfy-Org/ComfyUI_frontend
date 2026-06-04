@@ -5,6 +5,7 @@ import { useAssetsStore } from '@/stores/assetsStore'
 interface AssetRecord {
   id: string
   name: string
+  hash?: string
   asset_hash?: string
   preview_url?: string
   preview_id?: string | null
@@ -42,7 +43,7 @@ export async function findOutputAsset(
   name: string
 ): Promise<AssetRecord | undefined> {
   const byHash = await fetchAssets({ asset_hash: name })
-  const hashMatch = byHash.find((a) => a.asset_hash === name)
+  const hashMatch = byHash.find((a) => (a.hash ?? a.asset_hash) === name)
   if (hashMatch) return hashMatch
 
   const byName = await fetchAssets({ name_contains: name })
