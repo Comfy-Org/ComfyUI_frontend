@@ -2054,6 +2054,10 @@
     "unlockRatio": "Unlock aspect ratio",
     "custom": "Custom"
   },
+  "imageGridSlice": {
+    "connectImage": "Connect an image to preview the grid",
+    "gridSummary": "{rows} × {columns} grid · {tiles} tiles"
+  },
   "painter": {
     "tool": "Tool",
     "brush": "Brush",
