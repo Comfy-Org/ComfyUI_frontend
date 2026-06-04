@@ -12,6 +12,7 @@ const baseRoutes = {
   careers: '/careers',
   customers: '/customers',
   demos: '/demos',
+  drops: '/drops',
   termsOfService: '/terms-of-service',
   privacyPolicy: '/privacy-policy',
   affiliates: '/affiliates',

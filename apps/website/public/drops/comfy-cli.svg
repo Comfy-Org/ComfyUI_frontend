@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 270" fill="none">
+  <rect width="480" height="270" fill="#211927"/>
+  <text x="240" y="40" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#c2bfb9" letter-spacing="2">COMFY CLI</text>
+  <rect x="60" y="70" width="360" height="160" rx="8" fill="#000000" stroke="#f2ff59" stroke-width="2" opacity="0.9"/>
+  <g font-family="monospace" font-size="14" fill="#f2ff59">
+    <text x="76" y="100">$ comfy launch</text>
+    <text x="76" y="124" opacity="0.7">→ starting ComfyUI...</text>
+    <text x="76" y="148" opacity="0.7">→ http://127.0.0.1:8188</text>
+    <text x="76" y="172">$ comfy node install</text>
+    <text x="76" y="196" opacity="0.7">→ installed 3 nodes ✓</text>
+    <text x="76" y="220">$ _</text>
+  </g>
+</svg>

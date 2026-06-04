@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 270" fill="none">
+  <rect width="480" height="270" fill="#211927"/>
+  <text x="240" y="40" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#c2bfb9" letter-spacing="2">COMFY ORIGINALS</text>
+  <rect x="120" y="80" width="240" height="160" rx="8" fill="#f2ff59" opacity="0.15" stroke="#f2ff59" stroke-width="2"/>
+  <path d="M180 130 L240 90 L300 130 L300 200 L180 200 Z" fill="#f2ff59" opacity="0.3"/>
+  <circle cx="240" cy="160" r="22" fill="#f2ff59"/>
+  <text x="240" y="167" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="800" fill="#211927">C</text>
+</svg>

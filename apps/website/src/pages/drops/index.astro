@@ -1,0 +1,23 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import FooterCtaSection from '../../components/drops/FooterCtaSection.vue'
+import FreshFromComfyCreateSection from '../../components/drops/FreshFromComfyCreateSection.vue'
+import GetStartedSection from '../../components/drops/GetStartedSection.vue'
+import HeroSection from '../../components/drops/HeroSection.vue'
+import MoreDropsSection from '../../components/drops/MoreDropsSection.vue'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
+
+const locale: Locale = Astro.currentLocale === 'zh-CN' ? 'zh-CN' : 'en'
+---
+
+<BaseLayout
+  title={t('drops-landing.page.title', locale)}
+  description={t('drops-landing.page.description', locale)}
+>
+  <HeroSection locale={locale} client:load />
+  <MoreDropsSection locale={locale} client:load />
+  <GetStartedSection locale={locale} />
+  <FreshFromComfyCreateSection locale={locale} client:load />
+  <FooterCtaSection locale={locale} />
+</BaseLayout>

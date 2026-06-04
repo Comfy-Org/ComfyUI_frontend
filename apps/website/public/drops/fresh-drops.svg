@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 270" fill="none">
+  <rect width="480" height="270" fill="#211927"/>
+  <text x="240" y="40" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#c2bfb9" letter-spacing="2">COMFY CREATE 2026</text>
+  <rect x="80" y="70" width="320" height="170" rx="12" fill="#f2ff59" opacity="0.08" stroke="#f2ff59" stroke-width="2"/>
+  <polygon points="220,130 220,200 290,165" fill="#f2ff59"/>
+  <circle cx="255" cy="165" r="60" fill="none" stroke="#f2ff59" stroke-width="2" opacity="0.4"/>
+</svg>

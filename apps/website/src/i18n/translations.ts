@@ -4731,6 +4731,222 @@ const translations = {
   'affiliate-landing.footerCta.termsLink': {
     en: 'Read the affiliate program terms',
     'zh-CN': 'Read the affiliate program terms'
+  },
+
+  // Drops landing page (/drops)
+  // English-only copy; zh-CN values mirror en until a localized version lands.
+  'drops-landing.page.title': {
+    en: 'Discover Our Latest Drops — Comfy',
+    'zh-CN': 'Discover Our Latest Drops — Comfy'
+  },
+  'drops-landing.page.description': {
+    en: 'Every model, every feature, every update — visible, inspectable, and ready to run. Build with the latest. Ship faster than any one company could alone.',
+    'zh-CN':
+      'Every model, every feature, every update — visible, inspectable, and ready to run. Build with the latest. Ship faster than any one company could alone.'
+  },
+
+  // Hero
+  'drops-landing.hero.eyebrow': {
+    en: "WHAT'S",
+    'zh-CN': "WHAT'S"
+  },
+  'drops-landing.hero.headingAccent': {
+    en: 'NEW',
+    'zh-CN': 'NEW'
+  },
+  'drops-landing.hero.body1': {
+    en: 'Every model, every feature, every update — visible, inspectable, and ready to run.',
+    'zh-CN':
+      'Every model, every feature, every update — visible, inspectable, and ready to run.'
+  },
+  'drops-landing.hero.body2': {
+    en: 'Build with the latest. Ship faster than any one company could alone.',
+    'zh-CN':
+      'Build with the latest. Ship faster than any one company could alone.'
+  },
+  'drops-landing.hero.primaryCta': {
+    en: "EXPLORE WHAT'S NEW",
+    'zh-CN': "EXPLORE WHAT'S NEW"
+  },
+  'drops-landing.hero.secondaryCta': {
+    en: 'SEE ALL WORKFLOWS',
+    'zh-CN': 'SEE ALL WORKFLOWS'
+  },
+
+  // More Drops section
+  'drops-landing.moreDrops.eyebrow': {
+    en: 'MORE DROPS FROM',
+    'zh-CN': 'MORE DROPS FROM'
+  },
+  'drops-landing.moreDrops.headingAccent': {
+    en: 'COMFY CREATE',
+    'zh-CN': 'COMFY CREATE'
+  },
+
+  // Drop items (5 of them)
+  'drops-landing.item.desktop-client.title': {
+    en: 'New Desktop Client',
+    'zh-CN': 'New Desktop Client'
+  },
+  'drops-landing.item.desktop-client.tagline': {
+    en: 'A native desktop experience built for the way you actually work.',
+    'zh-CN': 'A native desktop experience built for the way you actually work.'
+  },
+  'drops-landing.item.desktop-client.body': {
+    en: 'Every node, every model — faster, tighter, and always local.',
+    'zh-CN': 'Every node, every model — faster, tighter, and always local.'
+  },
+  'drops-landing.item.desktop-client.cta': {
+    en: 'TRY THE DESKTOP CLIENT',
+    'zh-CN': 'TRY THE DESKTOP CLIENT'
+  },
+  'drops-landing.item.oss-vram.title': {
+    en: 'OSS VRAM Improvements',
+    'zh-CN': 'OSS VRAM Improvements'
+  },
+  'drops-landing.item.oss-vram.tagline': {
+    en: 'Push more through your hardware.',
+    'zh-CN': 'Push more through your hardware.'
+  },
+  'drops-landing.item.oss-vram.body': {
+    en: 'Significant open-source VRAM optimizations so you can run larger models, deeper pipelines, and more complex workflows — without hitting the ceiling.',
+    'zh-CN':
+      'Significant open-source VRAM optimizations so you can run larger models, deeper pipelines, and more complex workflows — without hitting the ceiling.'
+  },
+  'drops-landing.item.oss-vram.cta': {
+    en: 'SEE THE IMPROVEMENTS',
+    'zh-CN': 'SEE THE IMPROVEMENTS'
+  },
+  'drops-landing.item.comfy-mcp.title': {
+    en: 'Comfy MCP',
+    'zh-CN': 'Comfy MCP'
+  },
+  'drops-landing.item.comfy-mcp.tagline': {
+    en: 'Connect Comfy to any tool that speaks MCP.',
+    'zh-CN': 'Connect Comfy to any tool that speaks MCP.'
+  },
+  'drops-landing.item.comfy-mcp.body': {
+    en: 'Build pipelines that talk directly to your stack. Every connection is a node. Every parameter is yours to control.',
+    'zh-CN':
+      'Build pipelines that talk directly to your stack. Every connection is a node. Every parameter is yours to control.'
+  },
+  'drops-landing.item.comfy-mcp.cta': {
+    en: 'TRY COMFY MCP',
+    'zh-CN': 'TRY COMFY MCP'
+  },
+  'drops-landing.item.comfy-cli.title': {
+    en: 'Comfy CLI',
+    'zh-CN': 'Comfy CLI'
+  },
+  'drops-landing.item.comfy-cli.tagline': {
+    en: 'Run, manage, and automate your workflows from the terminal.',
+    'zh-CN': 'Run, manage, and automate your workflows from the terminal.'
+  },
+  'drops-landing.item.comfy-cli.body': {
+    en: 'Full pipeline control without the GUI. Scriptable, composable, and built for teams who move fast.',
+    'zh-CN':
+      'Full pipeline control without the GUI. Scriptable, composable, and built for teams who move fast.'
+  },
+  'drops-landing.item.comfy-cli.cta': {
+    en: 'TRY COMFY CLI',
+    'zh-CN': 'TRY COMFY CLI'
+  },
+  'drops-landing.item.team-plans.title': {
+    en: 'Comfy Team Plans',
+    'zh-CN': 'Comfy Team Plans'
+  },
+  'drops-landing.item.team-plans.tagline': {
+    en: 'Professional-grade infrastructure for teams who build together.',
+    'zh-CN': 'Professional-grade infrastructure for teams who build together.'
+  },
+  'drops-landing.item.team-plans.body': {
+    en: 'Shared workflows, collaborative node graphs, and enterprise-ready controls — all in one place.',
+    'zh-CN':
+      'Shared workflows, collaborative node graphs, and enterprise-ready controls — all in one place.'
+  },
+  'drops-landing.item.team-plans.cta': {
+    en: 'SEE TEAM PLANS',
+    'zh-CN': 'SEE TEAM PLANS'
+  },
+
+  // Get Started in 3 Steps section
+  'drops-landing.getStarted.eyebrow': {
+    en: 'GET STARTED IN',
+    'zh-CN': 'GET STARTED IN'
+  },
+  'drops-landing.getStarted.headingAccent': {
+    en: '3 STEPS',
+    'zh-CN': '3 STEPS'
+  },
+  'drops-landing.getStarted.step.1.title': {
+    en: 'Download or Sign up',
+    'zh-CN': 'Download or Sign up'
+  },
+  'drops-landing.getStarted.step.1.body': {
+    en: 'Download Local or launch Cloud.',
+    'zh-CN': 'Download Local or launch Cloud.'
+  },
+  'drops-landing.getStarted.step.2.title': {
+    en: 'Load a workflow',
+    'zh-CN': 'Load a workflow'
+  },
+  'drops-landing.getStarted.step.2.body': {
+    en: 'Start from a community template or build your own from scratch.',
+    'zh-CN': 'Start from a community template or build your own from scratch.'
+  },
+  'drops-landing.getStarted.step.3.title': {
+    en: 'Generate & Iterate',
+    'zh-CN': 'Generate & Iterate'
+  },
+  'drops-landing.getStarted.step.3.body': {
+    en: "Run, adjust, and scale when you're ready.",
+    'zh-CN': "Run, adjust, and scale when you're ready."
+  },
+
+  // Fresh From Comfy Create section
+  'drops-landing.fresh.eyebrow': {
+    en: 'FRESH FROM',
+    'zh-CN': 'FRESH FROM'
+  },
+  'drops-landing.fresh.headingAccent': {
+    en: 'COMFY CREATE',
+    'zh-CN': 'COMFY CREATE'
+  },
+  'drops-landing.fresh.card1.title': {
+    en: 'All the latest drops',
+    'zh-CN': 'All the latest drops'
+  },
+  'drops-landing.fresh.card1.body': {
+    en: 'Catch up on every new node, model, and feature from Comfy Create 2026.',
+    'zh-CN':
+      'Catch up on every new node, model, and feature from Comfy Create 2026.'
+  },
+  'drops-landing.fresh.card1.cta': {
+    en: 'WATCH THE DROPS',
+    'zh-CN': 'WATCH THE DROPS'
+  },
+  'drops-landing.fresh.card2.title': {
+    en: 'From Comfy, to your world',
+    'zh-CN': 'From Comfy, to your world'
+  },
+  'drops-landing.fresh.card2.body': {
+    en: 'The workflows you love — now wearable, collectible, and designed for everyday inspiration.',
+    'zh-CN':
+      'The workflows you love — now wearable, collectible, and designed for everyday inspiration.'
+  },
+  'drops-landing.fresh.card2.cta': {
+    en: 'SHOP COMFY ORIGINALS',
+    'zh-CN': 'SHOP COMFY ORIGINALS'
+  },
+
+  // Footer CTA
+  'drops-landing.footerCta.line1': {
+    en: 'THE MOST POWERFUL',
+    'zh-CN': 'THE MOST POWERFUL'
+  },
+  'drops-landing.footerCta.line2': {
+    en: 'WORKFLOW ENGINE FOR VISUAL AI.',
+    'zh-CN': 'WORKFLOW ENGINE FOR VISUAL AI.'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
