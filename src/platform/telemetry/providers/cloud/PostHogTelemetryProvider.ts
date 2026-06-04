@@ -72,30 +72,11 @@ interface QueuedEvent {
   properties?: TelemetryEventProperties
 }
 
-/**
- * PostHog Telemetry Provider - Cloud Build Implementation
- *
- * Sends all telemetry events to PostHog so they can be correlated
- * with session recordings. Follows the same pattern as MixpanelTelemetryProvider.
- *
- * CRITICAL: OSS Build Safety
- * Entire file is tree-shaken away in OSS builds (DISTRIBUTION unset).
- */
 interface DesktopEntryProps {
   source_app: 'desktop'
   desktop_device_id?: string
 }
 
-/**
- * Read `?utm_source=comfy.desktop&desktop_device_id=<id>` from the current URL.
- * Returns null when the visitor did not arrive from the desktop app.
- *
- * Why both fields are needed: `utm_source` is captured automatically by
- * posthog-js as a super-property on this browser session, but `desktop_device_id`
- * is an arbitrary param that posthog-js ignores. We have to explicitly read it
- * and register it so backend events (Stripe webhooks → billing:subscription_created)
- * can be joined back to the originating desktop install via person-on-events.
- */
 function readDesktopEntryProps(): DesktopEntryProps | null {
   const params = new URLSearchParams(window.location.search)
   if (params.get('utm_source') !== 'comfy.desktop') return null
@@ -105,6 +86,15 @@ function readDesktopEntryProps(): DesktopEntryProps | null {
   return props
 }
 
+/**
+ * PostHog Telemetry Provider - Cloud Build Implementation
+ *
+ * Sends all telemetry events to PostHog so they can be correlated
+ * with session recordings. Follows the same pattern as MixpanelTelemetryProvider.
+ *
+ * CRITICAL: OSS Build Safety
+ * Entire file is tree-shaken away in OSS builds (DISTRIBUTION unset).
+ */
 export class PostHogTelemetryProvider implements TelemetryProvider {
   private isEnabled = true
   private posthog: PostHog | null = null
@@ -294,15 +284,6 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     )
   }
 
-  /**
-   * Register desktop-entry props as super-properties on every event from this
-   * browser session. Caches the props on the instance so we can re-apply them
-   * to the person profile once the user authenticates.
-   *
-   * Fires regardless of whether a person profile exists yet — super-properties
-   * are session-scoped, not person-scoped, so they survive the
-   * `person_profiles: 'identified_only'` gate.
-   */
   private registerDesktopEntryProps(): void {
     if (!this.posthog) return
     const props = readDesktopEntryProps()
@@ -315,13 +296,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     }
   }
 
-  /**
-   * Persist the desktop-entry props onto the person profile once `identify` has
-   * created one. Backend-fired events (Stripe webhook → billing:subscription_created)
-   * pick `desktop_device_id` up via person-on-events at ingest, so the join
-   * "subs where person.properties.desktop_device_id is not null" gives accurate
-   * Desktop → Cloud attribution even when the sub fires from outside the browser.
-   */
+  // Persisted onto the person so backend-fired billing events inherit
+  // desktop_device_id via person-on-events at ingest.
   private setDesktopEntryPersonProperties(): void {
     if (!this.posthog || !this.desktopEntryProps) return
     const now = new Date().toISOString()
