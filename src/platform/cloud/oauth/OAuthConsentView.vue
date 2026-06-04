@@ -1,12 +1,4 @@
 <template>
-  <!--
-    The cloud onboarding shell (CloudTemplate) renders on a dark surface but
-    never sets `.dark-theme`, so this view's semantic tokens
-    (secondary-background, base-foreground, muted, primary-background) would
-    otherwise fall back to their light values and render an illegible light
-    card. Scope dark-theme to this view's root so the consent card themes
-    correctly without changing the sibling login/signup/survey views.
-  -->
   <main
     class="dark-theme mx-auto flex min-h-screen max-w-md flex-col justify-center p-6"
   >
