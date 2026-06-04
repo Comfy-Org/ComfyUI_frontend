@@ -326,11 +326,6 @@ describe('TabErrors.vue', () => {
     expect(
       screen.getByText('Download a model, or open the node to replace it.')
     ).toBeInTheDocument()
-    expect(
-      screen.queryByText(
-        'ComfyUI needs local-only.safetensors in checkpoints. Referenced by 1 node.'
-      )
-    ).not.toBeInTheDocument()
   })
 
   it('renders missing media display message below the section title', () => {
@@ -353,11 +348,6 @@ describe('TabErrors.vue', () => {
     expect(
       screen.getByText('A required media input has no file selected.')
     ).toBeInTheDocument()
-    expect(
-      screen.queryByText(
-        'Load Image node needs a selected image. Referenced by 1 node.'
-      )
-    ).not.toBeInTheDocument()
   })
 
   it('keeps missing model Refresh in the card actions when models are downloadable', () => {

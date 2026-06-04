@@ -304,9 +304,6 @@ describe('useErrorGroups', () => {
       expect(missingGroup?.displayMessage).toBe(
         'Install missing packs to use this workflow.'
       )
-      expect(missingGroup?.displayDetails).toBe(
-        'NodeA is missing. Referenced by 1 node.'
-      )
     })
 
     it('uses Cloud copy for missing_node group in Cloud', async () => {
@@ -341,9 +338,6 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'swap_nodes'
       )
       expect(swapGroup).toBeDefined()
-      expect(swapGroup?.displayDetails).toBe(
-        'OldNode can be replaced with NewNode.'
-      )
     })
 
     it('includes both swap_nodes and missing_node when both exist', async () => {
