@@ -63,6 +63,19 @@ export function getOutputKey({
   return `${nodeId}-${subfolder}-${filename}`
 }
 
+/**
+ * Maps a job's outputs to AssetItems with ids derived from the composite
+ * `<nodeId>-<subfolder>-<filename>` key. Records sharing a composite key are
+ * dropped after the first to keep `:key` unique in VirtualGrid — colliding
+ * ids cause Vue to reuse one DOM node and visibly duplicate the asset on
+ * scroll.
+ *
+ * The dedupe key ignores `type`/`mediaType`/`format`/`frame_rate` because
+ * those fields don't appear in `AssetItem.id`, so widening the key would
+ * just let the collision propagate. The kept copy is the first one seen;
+ * callers that reverse the input (e.g. `resolveOutputAssetItems`) retain
+ * the last record in the API's original order.
+ */
 function mapOutputsToAssetItems({
   jobId,
   outputs,
@@ -72,12 +85,17 @@ function mapOutputsToAssetItems({
   excludeOutputKey
 }: OutputAssetMapOptions): AssetItem[] {
   const createdAtValue = createdAt ?? new Date().toISOString()
+  const seenOutputKeys = new Set<string>()
 
   return outputs.reduce<AssetItem[]>((items, output) => {
     const outputKey = getOutputKey(output)
     if (!output.filename || !outputKey || outputKey === excludeOutputKey) {
       return items
     }
+    if (seenOutputKeys.has(outputKey)) {
+      return items
+    }
+    seenOutputKeys.add(outputKey)
 
     items.push({
       id: `${jobId}-${outputKey}`,
