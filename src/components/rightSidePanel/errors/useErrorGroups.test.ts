@@ -174,6 +174,7 @@ describe('useErrorGroups', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     mockIsCloud.value = false
+    vi.mocked(isLGraphNode).mockReturnValue(false)
   })
 
   describe('missingPackGroups', () => {
@@ -510,6 +511,28 @@ describe('useErrorGroups', () => {
 
     it('includes prompt error when present', async () => {
       const { store, groups } = createErrorGroups()
+      store.lastPromptError = {
+        type: 'prompt_no_outputs',
+        message: 'No outputs',
+        details: ''
+      }
+      await nextTick()
+
+      const promptGroup = groups.allErrorGroups.value.find(
+        (g) =>
+          g.type === 'execution' && g.displayTitle === 'Prompt has no outputs'
+      )
+      expect(promptGroup).toBeDefined()
+    })
+
+    it('includes prompt error when a node is selected', async () => {
+      const { store, groups } = createErrorGroups()
+      const canvasStore = useCanvasStore()
+      vi.mocked(isLGraphNode).mockReturnValue(true)
+      canvasStore.selectedItems = fromAny<
+        typeof canvasStore.selectedItems,
+        unknown
+      >([{ id: '1' }])
       store.lastPromptError = {
         type: 'prompt_no_outputs',
         message: 'No outputs',
@@ -958,6 +981,30 @@ describe('useErrorGroups', () => {
       expect(groups.filteredMissingModelGroups.value).not.toBe(
         groups.missingModelGroups.value
       )
+    })
+  })
+
+  describe('tabErrorGroups', () => {
+    it('filters prompt error when a node is selected', async () => {
+      const { store, groups } = createErrorGroups()
+      const canvasStore = useCanvasStore()
+      vi.mocked(isLGraphNode).mockReturnValue(true)
+      canvasStore.selectedItems = fromAny<
+        typeof canvasStore.selectedItems,
+        unknown
+      >([{ id: '1' }])
+      store.lastPromptError = {
+        type: 'prompt_no_outputs',
+        message: 'No outputs',
+        details: ''
+      }
+      await nextTick()
+
+      const promptGroup = groups.tabErrorGroups.value.find(
+        (g) =>
+          g.type === 'execution' && g.displayTitle === 'Prompt has no outputs'
+      )
+      expect(promptGroup).toBeUndefined()
     })
   })
 })
