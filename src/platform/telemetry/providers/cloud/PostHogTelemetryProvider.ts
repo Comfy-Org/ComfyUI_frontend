@@ -72,6 +72,20 @@ interface QueuedEvent {
   properties?: TelemetryEventProperties
 }
 
+interface DesktopEntryProps {
+  source_app: 'desktop'
+  desktop_device_id?: string
+}
+
+function readDesktopEntryProps(): DesktopEntryProps | null {
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('utm_source') !== 'comfy.desktop') return null
+  const props: DesktopEntryProps = { source_app: 'desktop' }
+  const deviceId = params.get('desktop_device_id')
+  if (deviceId) props.desktop_device_id = deviceId
+  return props
+}
+
 /**
  * PostHog Telemetry Provider - Cloud Build Implementation
  *
@@ -89,6 +103,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private isInitialized = false
   private lastTriggerSource: ExecutionTriggerSource | undefined
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
+  private desktopEntryProps: DesktopEntryProps | null = null
 
   constructor() {
     this.configureDisabledEvents(
@@ -128,11 +143,13 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             })
             this.isInitialized = true
             this.flushEventQueue()
+            this.registerDesktopEntryProps()
 
             const currentUser = useCurrentUser()
             currentUser.onUserResolved((user) => {
               if (this.posthog && user.id) {
                 this.posthog.identify(user.id)
+                this.setDesktopEntryPersonProperties()
                 this.setSubscriptionProperties()
               }
             })
@@ -265,6 +282,34 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         return isValid
       })
     )
+  }
+
+  private registerDesktopEntryProps(): void {
+    if (!this.posthog) return
+    const props = readDesktopEntryProps()
+    if (!props) return
+    this.desktopEntryProps = props
+    try {
+      this.posthog.register(props)
+    } catch (error) {
+      console.error('Failed to register desktop entry props:', error)
+    }
+  }
+
+  // Persisted onto the person so backend-fired billing events inherit
+  // desktop_device_id via person-on-events at ingest.
+  private setDesktopEntryPersonProperties(): void {
+    if (!this.posthog || !this.desktopEntryProps) return
+    const now = new Date().toISOString()
+    try {
+      this.posthog.people.set({
+        ...this.desktopEntryProps,
+        last_seen_via_desktop: now
+      })
+      this.posthog.people.set_once({ first_seen_via_desktop: now })
+    } catch (error) {
+      console.error('Failed to set desktop entry person properties:', error)
+    }
   }
 
   private setSubscriptionProperties(): void {
